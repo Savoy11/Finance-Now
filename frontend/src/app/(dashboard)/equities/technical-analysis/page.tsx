@@ -16,6 +16,7 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { SourceLine } from '@/components/ui/SourceLine'
 import { LiveUnavailable } from '@/components/ui/LiveUnavailable'
 import type { ChartType, DrawingTool, Drawing } from '@/components/charts/CandlestickChart'
+import { INDICATOR_CATALOG } from '@/components/charts/indicatorCatalog'
 import type { LucideIcon } from 'lucide-react'
 import {
   rsi, sma, computeSignalSummary, detectPatterns,
@@ -136,7 +137,10 @@ function SymbolSearch({ symbol, onSelect }: { symbol: string; onSelect: (s: stri
 // shared CandlestickChart, indicator registry, signal engine, and pattern
 // detector — fed by /live-data/security-ohlcv instead of the crypto route.
 
-const RANGES = ['1M', '3M', '6M', '1Y', '5Y', 'MAX'] as const
+// 3Y fills the gap between 1Y and 5Y — long enough to hold a full cycle and to
+// give EMA200/SMA200 a meaningful run-up, short enough that daily candles stay
+// legible. Every entry here must exist in the security-ohlcv route's RANGE_CONFIG.
+const RANGES = ['1M', '3M', '6M', '1Y', '3Y', '5Y', 'MAX'] as const
 type Range = typeof RANGES[number]
 
 const CHART_TYPES: { type: ChartType; label: string; Icon: LucideIcon }[] = [
@@ -150,26 +154,12 @@ const CHART_TYPES: { type: ChartType; label: string; Icon: LucideIcon }[] = [
   { type: 'baseline',    label: 'Baseline',    Icon: Layers },
 ]
 
-const INDICATORS: Array<{ key: string; label: string; group: 'overlay' | 'panel' }> = [
-  { key: 'ema20',    label: 'EMA 20',          group: 'overlay' },
-  { key: 'ema50',    label: 'EMA 50',          group: 'overlay' },
-  { key: 'ema200',   label: 'EMA 200',         group: 'overlay' },
-  { key: 'sma20',    label: 'SMA 20',          group: 'overlay' },
-  { key: 'sma50',    label: 'SMA 50',          group: 'overlay' },
-  { key: 'sma200',   label: 'SMA 200',         group: 'overlay' },
-  { key: 'bb',       label: 'Bollinger Bands', group: 'overlay' },
-  { key: 'keltner',  label: 'Keltner',         group: 'overlay' },
-  { key: 'donchian', label: 'Donchian',        group: 'overlay' },
-  { key: 'vwap',     label: 'VWAP',            group: 'overlay' },
-  { key: 'psar',     label: 'Parabolic SAR',   group: 'overlay' },
-  { key: 'ichimoku', label: 'Ichimoku',        group: 'overlay' },
-  { key: 'rsi',      label: 'RSI (14)',        group: 'panel' },
-  { key: 'macd',     label: 'MACD',            group: 'panel' },
-  { key: 'stoch',    label: 'Stochastic',      group: 'panel' },
-  { key: 'stochrsi', label: 'Stoch RSI',       group: 'panel' },
-  { key: 'cci',      label: 'CCI (20)',        group: 'panel' },
-  { key: 'williamsr', label: 'Williams %R',    group: 'panel' },
-]
+// Full shared catalog. Equities carry real exchange volume (both Tiingo and FMP
+// return it, split-adjusted), so the volume/money-flow family is meaningful here
+// and nothing is filtered out — unlike the macro page, which drops those.
+// This page previously hand-listed 18 of the 62 implemented indicators; the
+// other 44 rendered fine and were simply never offered.
+const INDICATORS = INDICATOR_CATALOG
 
 const DRAWING_TOOLS: Array<{ tool: DrawingTool; label: string; Icon: LucideIcon }> = [
   { tool: 'none',      label: 'Select',     Icon: MousePointer2 },
@@ -292,22 +282,43 @@ function ChartTab() {
         </button>
       </div>
 
-      {/* Indicator chips */}
-      <div className="flex flex-wrap gap-1.5">
-        {INDICATORS.map(({ key, label, group }) => (
-          <button
-            key={key}
-            onClick={() => toggleIndicator(key)}
-            className={clsx('px-2 py-0.5 rounded-full text-[11px] font-medium border transition-colors',
-              active.has(key)
-                ? group === 'overlay'
-                  ? 'bg-accent-blue/15 text-accent-blue border-accent-blue/30'
-                  : 'bg-violet-500/15 text-violet-400 border-violet-500/30'
-                : 'text-text-muted border-border hover:text-text-secondary hover:bg-bg-elevated')}
-          >
-            {label}
-          </button>
+      {/* Indicator chips — split by group. At 62 indicators a single flat wrap
+          was an undifferentiated wall; overlays and panels do different things
+          (drawn on price vs. their own pane) so they read as separate shelves.
+          `title` carries the same explanatory text the crypto page shows. */}
+      <div className="space-y-2.5">
+        {([
+          { group: 'overlay' as const, label: 'Overlays', hint: '— drawn on the price chart', accent: 'text-accent-blue', on: 'bg-accent-blue/15 text-accent-blue border-accent-blue/30' },
+          { group: 'panel' as const,   label: 'Panels',   hint: '— drawn in their own pane',  accent: 'text-violet-400', on: 'bg-violet-500/15 text-violet-400 border-violet-500/30' },
+        ]).map(({ group, label, hint, accent, on }) => (
+          <div key={group}>
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className={clsx('text-[10px] font-semibold uppercase tracking-wider', accent)}>{label}</span>
+              <span className="text-[10px] text-text-muted">{hint}</span>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {INDICATORS.filter((i) => i.group === group).map(({ key, label: chipLabel, tip }) => (
+                <button
+                  key={key}
+                  title={tip}
+                  onClick={() => toggleIndicator(key)}
+                  className={clsx('px-2 py-0.5 rounded-full text-[11px] font-medium border transition-colors',
+                    active.has(key) ? on : 'text-text-muted border-border hover:text-text-secondary hover:bg-bg-elevated')}
+                >
+                  {chipLabel}
+                </button>
+              ))}
+            </div>
+          </div>
         ))}
+        {active.size > 0 && (
+          <button
+            onClick={() => setActive(new Set())}
+            className="text-[10px] text-text-muted hover:text-text-secondary underline underline-offset-2"
+          >
+            Clear all ({active.size})
+          </button>
+        )}
       </div>
 
       {/* Chart + sidebar */}

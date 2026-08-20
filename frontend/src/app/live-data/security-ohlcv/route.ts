@@ -21,11 +21,16 @@ import { adjustCandles } from '@/lib/utils/ohlcvAdjust'
 export const dynamic = 'force-dynamic'
 
 /** Ranges the route accepts, and how long each is cached. */
+// '2Y' was offered by the macro TA page's range switcher but was NOT listed
+// here, so selecting it 400'd ("range must be one of …") and the chart went
+// blank. Added along with '3Y'. Keep this in sync with any page's RANGES.
 const RANGE_CONFIG: Record<string, { revalidate: number }> = {
   '1M':  { revalidate: 300 },
   '3M':  { revalidate: 900 },
   '6M':  { revalidate: 900 },
   '1Y':  { revalidate: 900 },
+  '2Y':  { revalidate: 1800 },
+  '3Y':  { revalidate: 1800 },
   '5Y':  { revalidate: 3600 },
   'MAX': { revalidate: 3600 },
 }
@@ -40,7 +45,12 @@ export interface SecurityOhlcvResponse {
   error?: string
 }
 
-const RANGE_DAYS: Record<string, number> = { '1M': 22, '3M': 66, '6M': 130, '1Y': 260, '5Y': 1300, 'MAX': 10000 }
+// Trading days, not calendar days (~260/yr). fetchTiingoOhlcv converts back to a
+// calendar start date with its own ×1.5 factor, so these must stay trading-day
+// counts or the Tiingo leg silently returns a shorter series than requested.
+const RANGE_DAYS: Record<string, number> = {
+  '1M': 22, '3M': 66, '6M': 130, '1Y': 260, '2Y': 520, '3Y': 780, '5Y': 1300, 'MAX': 10000,
+}
 
 async function fetchFmpOhlcv(symbol: string, range: string): Promise<OhlcvCandle[]> {
   // UI-saved key (Integrations page) or FMP_API_KEY env var. FMP's free tier

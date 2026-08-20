@@ -22,10 +22,23 @@ import type { SecurityOhlcvResponse } from '@/app/live-data/security-ohlcv/route
 // real strategy backtests on actual price history — same educational intent,
 // live math instead of curated narratives.
 
+// ⚠ EVERY range returns DAILY candles, so barsPerYear is 252 throughout.
+//
+// It was not always so: until 2026-08-06 the security-ohlcv route had a Yahoo
+// leg that requested interval=1wk for 5Y and 1mo for MAX, which is what the old
+// 52 / 12 values and the "(weekly)" / "(monthly)" labels described. PR #75
+// removed Yahoo on source-terms grounds and the `interval` concept went with it
+// — both remaining providers are daily-only (Tiingo daily/prices, FMP
+// historical-price-eod). The stale values then annualized DAILY returns by √52
+// and √12, understating Sharpe by ~2.2× on 5Y and ~4.6× on MAX.
+//
+// If a provider that honours bar intervals is ever added back, change these
+// together with the route — they are one decision expressed in two files.
 const PERIODS = [
-  { value: '1Y',  label: '1 Year (daily)',    barsPerYear: 252 },
-  { value: '5Y',  label: '5 Years (weekly)',  barsPerYear: 52 },
-  { value: 'MAX', label: 'Max (monthly)',     barsPerYear: 12 },
+  { value: '1Y',  label: '1 Year',   barsPerYear: 252 },
+  { value: '3Y',  label: '3 Years',  barsPerYear: 252 },
+  { value: '5Y',  label: '5 Years',  barsPerYear: 252 },
+  { value: 'MAX', label: 'Max',      barsPerYear: 252 },
 ] as const
 type Period = typeof PERIODS[number]['value']
 

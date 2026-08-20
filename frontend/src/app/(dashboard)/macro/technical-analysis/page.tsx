@@ -15,6 +15,7 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { SourceLine } from '@/components/ui/SourceLine'
 import { LiveUnavailable } from '@/components/ui/LiveUnavailable'
 import type { ChartType } from '@/components/charts/CandlestickChart'
+import { PRICE_ONLY_INDICATORS } from '@/components/charts/indicatorCatalog'
 import type { LucideIcon } from 'lucide-react'
 import {
   rsi, sma, computeSignalSummary, detectPatterns,
@@ -102,8 +103,11 @@ const SCANNER_INSTRUMENTS = MACRO_INSTRUMENTS.filter((m) => m.liquid)
 
 // ─── Controls ─────────────────────────────────────────────────────────────────
 
-type Range = '3M' | '6M' | '1Y' | '2Y' | '5Y'
-const RANGES: Range[] = ['3M', '6M', '1Y', '2Y', '5Y']
+// Every value here must exist in the security-ohlcv route's RANGE_CONFIG *and*
+// RANGE_DAYS. '2Y' was listed here but not there, so the button 400'd and blanked
+// the chart from launch until 2026-08-08; '3Y' was added at the same time.
+type Range = '3M' | '6M' | '1Y' | '2Y' | '3Y' | '5Y'
+const RANGES: Range[] = ['3M', '6M', '1Y', '2Y', '3Y', '5Y']
 
 const CHART_TYPES: Array<{ type: ChartType; label: string; Icon: LucideIcon }> = [
   { type: 'candlestick', label: 'Candlestick', Icon: CandlestickIcon },
@@ -114,26 +118,19 @@ const CHART_TYPES: Array<{ type: ChartType; label: string; Icon: LucideIcon }> =
   { type: 'baseline',    label: 'Baseline',    Icon: Layers },
 ]
 
-const INDICATORS: Array<{ key: string; label: string; group: 'overlay' | 'panel' }> = [
-  { key: 'ema20',     label: 'EMA 20',          group: 'overlay' },
-  { key: 'ema50',     label: 'EMA 50',          group: 'overlay' },
-  { key: 'ema200',    label: 'EMA 200',         group: 'overlay' },
-  { key: 'sma50',     label: 'SMA 50',          group: 'overlay' },
-  { key: 'sma200',    label: 'SMA 200',         group: 'overlay' },
-  { key: 'bb',        label: 'Bollinger Bands', group: 'overlay' },
-  { key: 'keltner',   label: 'Keltner',         group: 'overlay' },
-  { key: 'donchian',  label: 'Donchian',        group: 'overlay' },
-  { key: 'psar',      label: 'Parabolic SAR',   group: 'overlay' },
-  { key: 'ichimoku',  label: 'Ichimoku',        group: 'overlay' },
-  { key: 'rsi',       label: 'RSI (14)',        group: 'panel' },
-  { key: 'macd',      label: 'MACD',            group: 'panel' },
-  { key: 'stoch',     label: 'Stochastic',      group: 'panel' },
-  { key: 'stochrsi',  label: 'Stoch RSI',       group: 'panel' },
-  { key: 'cci',       label: 'CCI (20)',        group: 'panel' },
-  { key: 'williamsr', label: 'Williams %R',     group: 'panel' },
-]
-// VWAP is deliberately absent: it needs meaningful volume, and continuous
-// front-month futures and FX series don't carry it usefully.
+// The shared catalog minus every volume-dependent indicator (51 of 62).
+//
+// The exclusion rule is unchanged and still deliberate — VWAP, OBV, MFI, CMF,
+// A/D, Volume Osc, Force Index, Ease of Move, Klinger and Chaikin Osc all need
+// meaningful volume, and continuous front-month futures and FX series don't
+// carry it usefully. What changed (2026-08-08) is that the rule is now applied
+// by `PRICE_ONLY_INDICATORS` instead of by a hand-written 16-entry list, so the
+// other 35 price-only indicators — which were implemented and rendering fine —
+// are offered here too, and new ones arrive automatically.
+//
+// Note `elderray` and `bop` ARE included: they sound volume-based but are
+// computed purely from OHLC.
+const INDICATORS = PRICE_ONLY_INDICATORS
 
 const SIGNAL_STYLES: Record<Signal, { label: string; color: string; Icon: LucideIcon }> = {
   strong_buy:  { label: 'Strong Buy',  color: 'text-emerald-400', Icon: TrendingUp },
@@ -245,22 +242,46 @@ function ChartTab() {
         </button>
       </div>
 
-      {/* Indicator chips */}
-      <div className="flex flex-wrap gap-1.5">
-        {INDICATORS.map(({ key, label, group }) => (
-          <button
-            key={key}
-            onClick={() => toggleIndicator(key)}
-            className={clsx('px-2 py-0.5 rounded-full text-[11px] font-medium border transition-colors',
-              active.has(key)
-                ? group === 'overlay'
-                  ? 'bg-accent-blue/15 text-accent-blue border-accent-blue/30'
-                  : 'bg-violet-500/15 text-violet-400 border-violet-500/30'
-                : 'text-text-muted border-border hover:text-text-secondary hover:bg-bg-elevated')}
-          >
-            {label}
-          </button>
+      {/* Indicator chips — grouped, matching the equities TA page. At 51 chips a
+          single flat wrap is an undifferentiated wall; overlays draw on the price
+          chart, panels get their own pane. `title` carries the catalog's tip. */}
+      <div className="space-y-2.5">
+        {([
+          { group: 'overlay' as const, label: 'Overlays', hint: '— drawn on the price chart', accent: 'text-accent-blue', on: 'bg-accent-blue/15 text-accent-blue border-accent-blue/30' },
+          { group: 'panel' as const,   label: 'Panels',   hint: '— drawn in their own pane',  accent: 'text-violet-400', on: 'bg-violet-500/15 text-violet-400 border-violet-500/30' },
+        ]).map(({ group, label, hint, accent, on }) => (
+          <div key={group}>
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className={clsx('text-[10px] font-semibold uppercase tracking-wider', accent)}>{label}</span>
+              <span className="text-[10px] text-text-muted">{hint}</span>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {INDICATORS.filter((i) => i.group === group).map(({ key, label: chipLabel, tip }) => (
+                <button
+                  key={key}
+                  title={tip}
+                  onClick={() => toggleIndicator(key)}
+                  className={clsx('px-2 py-0.5 rounded-full text-[11px] font-medium border transition-colors',
+                    active.has(key) ? on : 'text-text-muted border-border hover:text-text-secondary hover:bg-bg-elevated')}
+                >
+                  {chipLabel}
+                </button>
+              ))}
+            </div>
+          </div>
         ))}
+        <p className="text-[10px] text-text-muted">
+          Volume-based indicators (VWAP, OBV, MFI, money-flow) are excluded here — continuous
+          front-month futures and FX series carry no volume that is comparable bar to bar.
+        </p>
+        {active.size > 0 && (
+          <button
+            onClick={() => setActive(new Set())}
+            className="text-[10px] text-text-muted hover:text-text-secondary underline underline-offset-2"
+          >
+            Clear all ({active.size})
+          </button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-4">
