@@ -79,14 +79,47 @@ export interface StakingDiscoveryResponse {
 // down" apart from "legitimately no matching pools".
 const RETRY_DELAY_MS = 400
 
+/**
+ * Per-request timeout budget.
+ *
+ * This route fans out to four upstreams in parallel, so the response is gated by
+ * the SLOWEST of them — and with no timeout, "slowest" had no upper bound at
+ * all. It was measured at 18-22 s (DATA-AVAILABILITY, standing perf item). Six
+ * seconds is generous for a JSON list endpoint and short enough that a wedged
+ * upstream costs the page one slot instead of the whole response: the fan-out is
+ * `allSettled`, so a timed-out leg drops its pools and the other three still
+ * serve.
+ */
+const UPSTREAM_TIMEOUT_MS = 6_000
+
+/**
+ * A TIMEOUT is not retried, unlike a transient error.
+ *
+ * The retry exists for the failures the comment above describes — upstreams that
+ * throw and then immediately succeed. A timeout says the upstream is slow, and
+ * retrying a slow upstream buys the same likely answer for twice the wait, which
+ * is exactly the cost this budget exists to remove. Worst case is therefore
+ * ~6 s for a hanging upstream rather than ~12.4 s.
+ */
+function isTimeout(err: unknown): boolean {
+  return err instanceof Error && (err.name === 'TimeoutError' || err.name === 'AbortError')
+}
+
 async function getJson<T>(url: string, revalidate: number): Promise<T> {
   for (let attempt = 0; ; attempt++) {
     try {
-      const res = await fetch(url, { headers: { Accept: 'application/json' }, next: { revalidate } })
+      const res = await fetch(url, {
+        headers: { Accept: 'application/json' },
+        next: { revalidate },
+        signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
+      })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       return await res.json() as T
     } catch (err) {
       if (attempt >= 1) throw err
+      if (isTimeout(err)) {
+        throw new Error(`upstream did not respond within ${UPSTREAM_TIMEOUT_MS / 1000}s: ${url}`)
+      }
       await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS))
     }
   }

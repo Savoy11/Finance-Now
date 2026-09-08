@@ -418,7 +418,7 @@ Project convention (CLAUDE.md): every `/live-data` route needs `export const dyn
 
 | Route | Latency | Note |
 |-------|---------|------|
-| `staking-discovery` | ~18 s | 4 upstreams (DefiLlama, Yearn, Pendle, Beefy) |
+| `staking-discovery` | ~18 s **at the time of measurement** | 4 upstreams (DefiLlama, Yearn, Pendle, Beefy) — **bounded 2026-09-08.** The fan-out is parallel, so the response was gated by the slowest leg, and with no timeout "slowest" had no upper bound. Each upstream now gets a 6 s budget, and a TIMEOUT is not retried — the retry exists for upstreams that throw and immediately succeed, whereas retrying a slow one buys the same answer for twice the wait. The fan-out is `allSettled`, so a timed-out leg drops its pools and the other three still serve. **The new figure needs re-measuring on the owner's machine** — the bound is ~6 s, not a measurement. |
 | `fund-universe` | ~11 s / **14 MB** | 28,977 entries in one payload — payload slimmed 2026-07-30 (see action item 11), size pending re-measurement; first-fetch latency is upstream, 24 h-cached after |
 | `staking-rates` | ~6 s | 17 parallel upstreams with a 6 s per-fetch timeout |
 | `stock-social` | ~6 s | Reddit RSS fetches frequently hit the 429 path |
