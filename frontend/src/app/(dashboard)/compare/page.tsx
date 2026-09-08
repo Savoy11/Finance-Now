@@ -30,6 +30,7 @@ import {
 import type { SecurityChartResponse } from '@/app/live-data/security-chart/route'
 import type { CompanyFactsResponse } from '@/app/live-data/company-facts/route'
 import { FundOverlapSection } from '@/components/markets/FundOverlapSection'
+import { FundFactsSection } from '@/components/markets/FundFactsSection'
 
 // Cross-module comparison of 2–6 assets of ANY class — stocks, ETFs, mutual
 // funds, crypto, commodities, currencies, rate indices: a normalized
@@ -628,6 +629,12 @@ function CompareInner() {
       )}
 
       <FundOverlapSection symbols={symbols.filter((s) => OPTION_BY_SYMBOL.get(s)?.kind === 'fund')} />
+
+      {/* Fund facts side by side (S6 / T-069). Sits beside the overlap section
+          because the two answer adjacent questions: overlap says whether these
+          are the same bet, this says what they cost and hold. Renders nothing
+          unless two or more catalogued funds are selected. */}
+      <FundFactsSection symbols={symbols.filter((s) => OPTION_BY_SYMBOL.get(s)?.kind === 'fund')} />
 
       {/* Filed fundamentals — stocks only, keyless SEC EDGAR XBRL. Kept in its
           own table rather than merged into the reference stats below, because

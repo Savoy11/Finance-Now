@@ -1987,6 +1987,33 @@ screening restore (the code carries its own restore condition).
 four. Its real dependency is the D2/enterprise-key conversation, which is
 already parked with the owner's planning session.
 
+> **Status: items (1) and (3) done. 2026-09-08 / 2026-09-05.**
+>
+> - **(3) fee-impact screener — ✅ shipped** in `9eb2be2` (#147), merged
+>   2026-09-08. `lib/data/feeImpact.ts` over `computeFeeDrag`, with a test
+>   asserting its figures match the detail-page analyzer exactly.
+> - **(1) fund comparison view — ✅ shipped 2026-09-08** as
+>   `components/markets/FundFactsSection.tsx`, a funds-only section on
+>   `/compare` beside the holdings-overlap section. Issuer, category, strategy,
+>   tracked index, expense ratio, sales charge, **fee cost in dollars over 20
+>   years**, yield, AUM, inception and trading restriction. It reuses the same
+>   fee engine and assumptions as the detail page rather than recomputing, since
+>   two implementations of one dollar figure is how two surfaces drift apart.
+>
+>   **Duration and credit quality are NOT shown, and the section says so.**
+>   The build-out line above asks for "duration/credit for bonds" — `FundEntry`
+>   carries neither. Every bond fund is simply `category: 'bond'`; the maturity
+>   mandate lives in the `indexTracked` string ("ICE US Treasury 1-3 Year",
+>   "20+ Year") and in prose. So the table shows that string verbatim and states
+>   outright that no duration figure or credit tier exists in the catalog,
+>   pointing the reader at the issuer's page. Deriving a number from a fund's
+>   name would put a fabricated figure on a page built for ranking — a test
+>   forbids any extraction from `indexTracked`, and a second test fails if a real
+>   duration field is ever added, so this note cannot outlive its own truth.
+>
+> Remaining: **(2) catalog growth** (needs sec.gov from the owner's machine for
+> `npm run fund-fees`) and **(4) return columns/screening**, still gated on D2.
+
 **Suggested order, if the owner wants a default:** S3 first (a live staleness
 problem is worth more than any new feature), then S4 (small, self-contained),
 S5 and S6 behind their respective open conversations (legality note; key).
