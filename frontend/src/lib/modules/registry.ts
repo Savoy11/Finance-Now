@@ -125,6 +125,12 @@ export const MODULES: SuiteModule[] = [
         children: [
           { href: '/agent-config', label: 'AI Agents', icon: Bot },
           { href: '/data-sources', label: 'Data Sources', icon: Network },
+          // Sits beside Data Sources because it answers the sibling question:
+          // that page says where the data comes from, this one says what the
+          // app is paid for. It is reachable from the nav rather than only from
+          // a per-link tag, because a disclosure a reader can only find by
+          // clicking the thing being disclosed is not much of a disclosure.
+          { href: '/how-we-make-money', label: 'How We Make Money', icon: Coins },
         ],
       },
     ],

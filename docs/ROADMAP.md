@@ -391,37 +391,80 @@ the **Staking Opportunities** page, then open it to any surface where an outboun
 genuinely useful. Applies to **both distributions — the free web version and the desktop
 app** (they differ in attribution and in what some affiliate terms allow; see below).
 
+> **Status: ✅ plumbing + disclosure shipped 2026-09-08; no link is monetised yet.**
+> The owner activated this work on 2026-09-08. Every integrity rule below is
+> implemented AND enforced by a test that fails the build if it stops holding —
+> `lib/data/__tests__/affiliates.test.ts`. Two of those guards were verified by
+> deliberately breaking them (a paid-first sort in the v1 API, and a bare anchor
+> bypassing the disclosure component): both were caught.
+>
+> What shipped: `affiliateUrl?`/`affiliateProgram?` beside `website` (never
+> overwriting it); one `SponsoredLink` component carrying `rel="sponsored
+> noopener noreferrer"` and a visible per-link **Paid link** tag; a
+> `RankableProvider` type that OMITS the affiliate fields, so reading one inside
+> a sort comparator is a compile error; aggregate-only click counting at
+> `/api/affiliate/clicks`; a `/how-we-make-money` page in the core nav; and the
+> not-advice framing plus a **computed** coverage-bias disclosure above the
+> provider grid.
+>
+> **`affiliateUrl` is unset for all 55 providers**, pinned by a test whose failure
+> message says to fill in the owner copy first. Nothing is earning anything, and
+> the disclosure page reads the catalog live so it reports zero rather than
+> claiming a hypothetical arrangement.
+>
+> **Two things are deliberately NOT done**, and both are the owner's:
+> 1. **The disclosure prose.** `/how-we-make-money` renders four explicit
+>    "Owner copy required" placeholders — the formal disclosure statement, which
+>    programs were joined and their placement restrictions, jurisdiction handling
+>    (UK FCA financial-promotion rules apply to crypto referrals), and a
+>    complaints route. They state what belongs there rather than attempting it:
+>    BUSINESS-CHECKLIST §3 makes these owner-decided, and invented wording in a
+>    compliance document reads as reviewed when it is not.
+> 2. **Desktop-app placement.** The system-browser requirement below is
+>    unaddressed because no program has been joined to confirm its terms against.
+>
+> One finding worth recording: the coverage bias runs **against** the reader's
+> suspicion rather than with it. Referral programs cluster in CeFi exchanges,
+> which score WORST on counterparty risk in our own model — so the providers we
+> could be paid by are systematically not the ones that rank best. The
+> disclosure page says so.
+
 ### Non-negotiable integrity rules (decide these before writing any code)
 
 Finance Now *rates* the providers it would be paid by — `computeOverallRisk()` scores 55 staking
 providers across 6 risk dimensions. That is a real conflict of interest, and the product's
 value dies if scores follow the money.
 
-- [ ] **Affiliate status never influences ranking, scoring, sorting, or filtering.** Enforce it
-      structurally: the risk engine must not be able to read the affiliate field.
-- [ ] **Coverage bias is disclosed.** Exchanges (Coinbase, Kraken, Binance, OKX, Bybit) run
-      referral programs; liquid-staking protocols (Lido, Rocket Pool, Marinade) largely don't —
-      so paid links will cluster in CeFi. Default ordering must stay risk-based, never
-      "monetizable first".
-- [ ] **Warnings are never softened for a paying partner.** Celsius stays as the cautionary
-      example; a high risk score stays loud even if that provider pays.
-- [ ] **Per-link disclosure in the UI** (FTC requires clear and conspicuous), plus a plain
-      "How we make money" page. Mark affiliate rows visibly, not in a footer nobody reads.
-- [ ] **Keep the honest URL.** Add an optional `affiliateUrl` beside the existing
-      `website` field in `stakingProviders.ts` — never overwrite `website`, so a
-      non-affiliate path always exists and links stay auditable.
+- [x] **Affiliate status never influences ranking, scoring, sorting, or filtering.** ✅ Three layers:
+      the scoring functions take a bare `RiskProfile` (six numbers — no provider object in scope);
+      ranking code takes `RankableProvider`, which omits the fields, so reading one is a compile
+      error; and a source scan covers code that takes a whole provider for other reasons.
+- [x] **Coverage bias is disclosed.** ✅ And **computed**, not written in prose:
+      `affiliateCoverageByCategory()` reads the catalog, so the disclosure describes the real
+      distribution rather than yesterday's. Ordering is untouched — the guard above is what makes
+      "never monetizable first" structural.
+- [x] **Warnings are never softened for a paying partner.** ✅ Stronger than asked:
+      `resolveOutboundLink()` returns **null for any defunct provider even when an affiliate URL is
+      set**, so a route to a failed platform cannot be monetised at all. Refused at the resolver
+      rather than left to each call site.
+- [x] **Per-link disclosure in the UI** ✅ — a **Paid link** tag rendered from the same value that
+      decides the URL, so a link cannot be sponsored while its tag says otherwise. Plus
+      `/how-we-make-money` in the core nav. ⚠ Its prose is placeholdered pending owner copy.
+- [x] **Keep the honest URL.** ✅ `website` is never written to; `OutboundLink.honestUrl` carries it
+      alongside any referral link, and a test pins that both survive.
 
 ### Implementation notes
 
-- [ ] Hook: `StakingProvider.website?` already exists (`src/lib/data/stakingProviders.ts`);
-      add `affiliateUrl?` + `affiliateProgram?` and render through one shared component so
-      disclosure can't be forgotten on a new surface.
+- [x] Hook ✅ — fields added, and `SponsoredLink` is the only outbound path, so "can't be forgotten
+      on a new surface" holds because there is nowhere else to put the link.
 - [ ] **Desktop app:** open affiliate links in the system browser (not an embedded webview) —
       cookie-based attribution usually fails in-app, and several programs' terms restrict
       desktop/app placement. Confirm per program before enabling there.
-- [ ] **Web:** `rel="sponsored noopener"` on paid links (Google requires `sponsored`).
-- [ ] Track click-through per provider so the value is measurable, without shipping
-      user-identifying analytics.
+- [x] **Web:** ✅ `rel="sponsored noopener noreferrer"` on paid links only — applying `sponsored` to
+      every outbound link would make the signal meaningless.
+- [x] Track click-through per provider ✅ — `/api/affiliate/clicks`, a bare `{providerId: count}`.
+      No user id, session, IP, cookie, user agent or per-click timestamp; a test scans for each of
+      them. It cannot be joined to a person later because there is nothing to join on.
 
 ### Other surfaces to consider once the pattern exists
 

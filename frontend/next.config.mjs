@@ -41,8 +41,10 @@ const nextConfig = {
         // The same trap catches any dynamic segment: /api/user/builder-plans/
         // [id] would proxy too. First-party routes with dynamic params MUST
         // live under an excluded prefix — add new prefixes here, not routes
-        // outside /api/user/.
-        source: '/api/:path((?!auth/|user/).*)',
+        // outside /api/user/ — or add the prefix to the exclusion above, as
+        // `affiliate/` does: its counts are aggregate rather than user-scoped,
+        // so `/api/user/` would have been the wrong namespace for them.
+        source: '/api/:path((?!auth/|user/|affiliate/).*)',
         destination: `${apiUrl}/api/:path`,
       },
     ]

@@ -13,6 +13,8 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { LivePoolsPanel } from './LivePoolsPanel'
 import { SourceLine } from '@/components/ui/SourceLine'
 import { ProvenanceNotice } from '@/components/ui/ProvenanceNotice'
+import { SponsoredLink } from '@/components/ui/SponsoredLink'
+import { resolveOutboundLink, affiliateCoverageByCategory, sponsoredProviders } from '@/lib/data/affiliates'
 import { clsx } from 'clsx'
 import { aprDisplay, resolveLiveAprKey } from '@/lib/utils/aprDisplay'
 import {
@@ -45,6 +47,52 @@ function categoryBadgeClass(cat: ProviderCategory) {
 
 // ─── Provider Card ────────────────────────────────────────────────────────────
 
+/**
+ * The standing disclosure above the provider grid.
+ *
+ * The not-advice half renders unconditionally. The affiliate half renders only
+ * when the catalog actually contains a paid link — a disclosure for something
+ * that is not happening trains readers to skip the one that matters — and its
+ * coverage figures come from `affiliateCoverageByCategory()`, so the bias it
+ * admits to is measured rather than asserted.
+ */
+function AffiliateDisclosure() {
+  const sponsored = sponsoredProviders(STAKING_PROVIDERS)
+  const coverage = affiliateCoverageByCategory(STAKING_PROVIDERS)
+  const biased = coverage.filter((c) => c.sponsored > 0)
+
+  return (
+    <div className="rounded-card border border-border bg-bg-card px-4 py-3 space-y-2">
+      <p className="text-[11px] leading-relaxed text-text-secondary">
+        <strong className="text-text-primary">This is information, not advice.</strong>{' '}
+        Risk profiles and rates here are educational reference data for comparing providers.
+        Nothing on this page is a recommendation to stake with anyone, and a low risk score is
+        not a safety guarantee — Celsius scored well before it froze customer funds, which is
+        why it is still in the catalog.
+      </p>
+
+      {sponsored.length > 0 && (
+        <p className="text-[11px] leading-relaxed text-amber-300/80">
+          <strong>Some links on this page are paid.</strong>{' '}
+          {sponsored.length} of {STAKING_PROVIDERS.filter((p) => !p.defunct).length} active providers
+          have a referral link, marked <span className="font-semibold uppercase">Paid link</span> beside
+          the provider name. We may earn a commission if you sign up through one; it costs you nothing.
+          {biased.length > 0 && (
+            <>
+              {' '}Those links are not evenly spread —{' '}
+              {biased.map((c) => `${c.sponsored} of ${c.total} ${categoryLabel(c.category)}`).join(', ')}
+              {' '}— because referral programs are common among exchanges and rare among liquid-staking
+              protocols. <strong>Ordering here is by risk and rate, never by whether we are paid</strong>,
+              and no paid provider’s warnings or score are softened.{' '}
+            </>
+          )}
+          <a href="/how-we-make-money" className="underline hover:text-amber-200">How we make money</a>.
+        </p>
+      )}
+    </div>
+  )
+}
+
 function ProviderCard({
   provider,
   coinFilter,
@@ -60,6 +108,11 @@ function ProviderCard({
 }) {
   const [expanded, setExpanded] = useState(false)
   const CategoryIcon = categoryIcon(provider.category)
+  // One resolution per card, shared by the name link and the CTA below, so the
+  // two anchors can never disagree about whether this link is monetised.
+  // Returns null for a defunct provider — no outbound link at all, monetised or
+  // otherwise (see resolveOutboundLink).
+  const outbound = resolveOutboundLink(provider)
 
   const visibleAssets = useMemo(() => {
     const entries = Object.entries(provider.assets) as [StakingCoinId, NonNullable<(typeof provider.assets)[StakingCoinId]>][]
@@ -112,16 +165,14 @@ function ProviderCard({
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              {provider.website && !provider.defunct ? (
-                <a
-                  href={provider.website}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-bold text-sm text-text-primary hover:text-accent-blue transition-colors flex items-center gap-1 group"
+              {outbound ? (
+                <SponsoredLink
+                  link={outbound}
+                  providerId={provider.id}
+                  className="font-bold text-sm text-text-primary hover:text-accent-blue transition-colors group"
                 >
                   {provider.name}
-                  <ExternalLink size={11} className="text-text-muted group-hover:text-accent-blue shrink-0" />
-                </a>
+                </SponsoredLink>
               ) : (
                 <span className={clsx('font-bold text-sm', provider.defunct ? 'text-red-300' : 'text-text-primary')}>
                   {provider.name}
@@ -151,18 +202,24 @@ function ProviderCard({
             </p>
           </div>
 
-          {/* Direct call-to-action to the provider's actual staking page */}
-          {provider.website && !provider.defunct && (
-            <a
-              href={provider.website}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="shrink-0 self-start flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-accent-blue/40 bg-accent-blue/10 text-accent-blue hover:bg-accent-blue/20 hover:border-accent-blue/60 transition-colors"
-              title={`Open ${provider.name}'s staking page`}
-            >
-              {provider.category === 'cefi' ? 'Stake' : provider.category === 'wallet' ? 'Open wallet' : 'Open app'}
-              <ExternalLink size={12} className="shrink-0" />
-            </a>
+          {/* Direct call-to-action to the provider's actual staking page.
+              The name link above already carries the disclosure tag for this
+              exact URL, so this one suppresses a second copy of it — one visible
+              tag per link, not per anchor. */}
+          {outbound && (
+            <span className="shrink-0 self-start">
+              <SponsoredLink
+                link={outbound}
+                providerId={provider.id}
+                suppressTag
+                showIcon={false}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-accent-blue/40 bg-accent-blue/10 text-accent-blue hover:bg-accent-blue/20 hover:border-accent-blue/60 transition-colors"
+                title={`Open ${provider.name}'s staking page`}
+              >
+                {provider.category === 'cefi' ? 'Stake' : provider.category === 'wallet' ? 'Open wallet' : 'Open app'}
+                <ExternalLink size={12} className="shrink-0" />
+              </SponsoredLink>
+            </span>
           )}
 
         </div>
@@ -588,6 +645,16 @@ function StakingPageInner() {
       {tab === 'pools' && <LivePoolsPanel />}
 
       {tab === 'providers' && (<>
+      {/* ── Not-advice framing + affiliate disclosure ──────────────────────
+          Kept ABOVE the provider grid, not in a footer (T-126). Two reasons it
+          sits here rather than lower: the FTC standard for an affiliate
+          disclosure is "clear and conspicuous", and a paid link beside a risk
+          score edges closer to a recommendation than either does alone — which
+          is exactly the framing the risk register asks to preserve. The
+          coverage-bias line is COMPUTED from the catalog, not written in prose,
+          so it describes the real distribution rather than yesterday's. */}
+      <AffiliateDisclosure />
+
       {/* Network base APY reference */}
       <NetworkAprReference />
 

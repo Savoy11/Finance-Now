@@ -154,7 +154,28 @@ export interface StakingProvider {
   tvlBillions?: number
   auditCount?: number
   founded?: number
+  /**
+   * The provider's own, unmonetised URL. ALWAYS the honest path.
+   *
+   * `affiliateUrl` never overwrites this (ROADMAP integrity rule): a
+   * non-affiliate route to every provider must keep existing, so links stay
+   * auditable and a reader can always reach the provider without passing
+   * through a referral.
+   */
   website?: string
+  /**
+   * Referral URL, when one exists. **Unset for every provider today** — the
+   * plumbing ships before any program is joined, so nothing changes visibly
+   * until a real URL is filled in here.
+   *
+   * ⚠ Read it through `resolveOutboundLink()` in `lib/data/affiliates.ts`, never
+   * directly: that function is what guarantees the link carries `rel="sponsored"`
+   * and a visible disclosure. Reading this field at a new call site is how a
+   * paid link ships undisclosed.
+   */
+  affiliateUrl?: string
+  /** Name of the referral program, for the "How we make money" disclosure. */
+  affiliateProgram?: string
   risks: RiskProfile
   assets: Partial<Record<StakingCoinId, StakingAsset>>
 }
