@@ -35,7 +35,7 @@ describe('fibRetracement', () => {
   candles[30] = { ...candles[30], low: 100 }
 
   it('computes each ratio level against the window high/low', () => {
-    const fib = fibRetracement(candles)
+    const fib = fibRetracement(candles)!
     expect(fib.high).toBe(200)
     expect(fib.low).toBe(100)
     const byRatio = Object.fromEntries(fib.levels.map((l) => [l.ratio, l.price]))
@@ -54,27 +54,32 @@ describe('fibRetracement', () => {
     long[0] = { ...long[0], high: 1000 }
     long[110] = { ...long[110], high: 200 }
     long[115] = { ...long[115], low: 100 }
-    const fib = fibRetracement(long, 100)
+    const fib = fibRetracement(long, 100)!
     expect(fib.high).toBe(200)
     expect(fib.low).toBe(100)
   })
 
   it('collapses to a single price on a constant series, NaN-free', () => {
-    const fib = fibRetracement(series(Array(30).fill(100)))
+    const fib = fibRetracement(series(Array(30).fill(100)))!
     for (const l of fib.levels) {
       expect(l.price).toBe(100)
       expect(Number.isFinite(l.price)).toBe(true)
     }
   })
 
-  it('returns non-finite prices on empty input — callers must guard', () => {
-    // Pinned behavior, not an endorsement: Math.max()/Math.min() of an empty
-    // slice give ±Infinity, so an empty series yields Infinity/NaN levels
-    // instead of throwing or returning null. Every UI caller checks
-    // candles.length before calling; this test documents the contract.
-    const fib = fibRetracement([])
-    expect(Number.isFinite(fib.high)).toBe(false)
-    expect(Number.isFinite(fib.low)).toBe(false)
+  it('returns null on empty input rather than ±Infinity levels', () => {
+    // This test used to PIN the old behaviour: Math.max()/Math.min() of an
+    // empty slice gave ±Infinity, so an empty series produced Infinity/NaN
+    // prices and the contract was "every UI caller checks candles.length
+    // first". D-24 #4 (owner-approved 2026-09-08) moved the guard into the
+    // function, because a contract that depends on every present and future
+    // caller remembering it is how `$NaN` reaches a chart.
+    expect(fibRetracement([])).toBeNull()
+  })
+
+  it('returns null when the window has no usable highs or lows', () => {
+    const broken = series(Array(30).fill(100)).map(c => ({ ...c, high: NaN, low: NaN }))
+    expect(fibRetracement(broken)).toBeNull()
   })
 })
 
@@ -263,6 +268,21 @@ describe('buildTechnicalRead', () => {
     expect(read.confidence).toBe(0)
   })
 
+  it('returns an explicit empty read on an empty series', () => {
+    // Previously ran the whole derivation with `undefined` as the last close,
+    // producing NaN detail strings that render verbatim on both TA pages.
+    // "Nothing to read" is a different statement from a neutral verdict, and
+    // this is the one it should make (D-24 #4, owner-approved 2026-09-08).
+    const read = buildTechnicalRead([], summaryOf(0, 0, 0, 0))
+    expect(read.trendBias.state).toBe('neutral')
+    expect(read.confidence).toBe(0)
+    expect(read.trendBias.detail).toBe('No price history available.')
+    expect(read.sourceExplanation).toContain('No candles')
+    for (const v of [read.trendBias.detail, read.momentum.detail, read.volatility.detail, read.srProximity.detail]) {
+      expect(v).not.toContain('NaN')
+    }
+  })
+
   it('degrades to defaults on a 2-candle series without throwing', () => {
     const read = buildTechnicalRead(series([100, 101]), summaryOf(0, 0, 0, 0))
     expect(read.trendBias.state).toBe('neutral')
@@ -348,8 +368,20 @@ describe('detectSetups', () => {
     expect(keys(swapped)).not.toContain('obv_divergence')
   })
 
-  it('volatility compression: zero-width bands are a squeeze, expanding ones are not', () => {
-    expect(keys(series(Array(60).fill(100)))).toContain('volatility_compression')
+  it('volatility compression needs an actual range to be narrowing', () => {
+    // A motionless series gives zero-width bands and used to rank as the
+    // tightest squeeze on the board — so a halted market or a stablecoin at peg
+    // outranked every genuine coiling setup. A squeeze is a NARROWING range,
+    // which presupposes a range (D-24 #4, owner-approved 2026-09-08).
+    expect(keys(series(Array(60).fill(100)))).not.toContain('volatility_compression')
+
+    // A real squeeze: wide early, then genuinely tightening but never zero.
+    const coiling = series(Array.from({ length: 60 }, (_, i) => {
+      const amp = i < 30 ? 6 : 6 * (1 - (i - 30) / 34)
+      return 100 + (i % 2 === 0 ? -1 : 1) * amp
+    }))
+    expect(keys(coiling)).toContain('volatility_compression')
+
     const expanding = series(Array.from({ length: 60 }, (_, i) => 100 + (i % 2 === 0 ? -1 : 1) * i * 0.2))
     expect(keys(expanding)).not.toContain('volatility_compression')
   })

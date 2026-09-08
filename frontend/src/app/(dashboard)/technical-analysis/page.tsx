@@ -279,6 +279,9 @@ function PatternsPanel({ patterns, candles }: { patterns: DetectedPattern[]; can
 function KeyLevelsPanel({ candles }: { candles: OhlcvCandle[] }) {
   if (candles.length < 20) return null
   const fib = fibRetracement(candles, Math.min(candles.length, 100))
+  // null means the series carried no usable highs/lows. Dropping the panel
+  // says so; an empty level list would read as "no levels near price".
+  if (!fib) return null
   const last = candles[candles.length - 1].close
   const ema20Now = ema(candles.map((c) => c.close), 20)[candles.length - 1]
   const ema50Now = ema(candles.map((c) => c.close), 50)[candles.length - 1]
@@ -354,13 +357,36 @@ interface TFRow {
   loading: boolean
 }
 
+const loadingRows = (): TFRow[] => TF_ROWS.map(r => ({ ...r, summary: null, loading: true }))
+
+/**
+ * Fold one timeframe's result into the keyed state. If the state still belongs
+ * to a previous asset, it starts from a fresh loading set — so a response that
+ * lands just after the asset changed cannot graft the old coin's rows onto the
+ * new one.
+ */
+function mergeRow(
+  prev: { assetId: string; rows: TFRow[] },
+  assetId: string,
+  range: string,
+  patch: Partial<TFRow>,
+): { assetId: string; rows: TFRow[] } {
+  const base = prev.assetId === assetId ? prev.rows : loadingRows()
+  return { assetId, rows: base.map(r => (r.range === range ? { ...r, ...patch } : r)) }
+}
+
 function MultiTimeframeGrid({ assetId }: { assetId: string }) {
-  const [rows, setRows] = useState<TFRow[]>(
-    TF_ROWS.map(r => ({ ...r, summary: null, loading: true })),
+  // State is KEYED on the asset rather than reset by a synchronous setState at
+  // the top of the effect. The reset used to happen a render late — for one
+  // paint the grid showed the previous coin's verdicts under the new coin's
+  // name — and it cost a cascading render every time (react-hooks/
+  // set-state-in-effect). Deriving the reset makes both go away.
+  const [state, setState] = useState<{ assetId: string; rows: TFRow[] }>(
+    () => ({ assetId, rows: loadingRows() }),
   )
+  const rows = state.assetId === assetId ? state.rows : loadingRows()
 
   useEffect(() => {
-    setRows(TF_ROWS.map(r => ({ ...r, summary: null, loading: true })))
     let cancelled = false
 
     Promise.all(TF_ROWS.map(async (tf) => {
@@ -369,11 +395,9 @@ function MultiTimeframeGrid({ assetId }: { assetId: string }) {
         const json = await res.json()
         const candles: OhlcvCandle[] = json.candles ?? []
         const summary = candles.length >= 50 ? computeSignalSummary(candles) : null
-        if (!cancelled)
-          setRows(prev => prev.map(r => r.range === tf.range ? { ...r, summary, loading: false } : r))
+        if (!cancelled) setState(prev => mergeRow(prev, assetId, tf.range, { summary, loading: false }))
       } catch {
-        if (!cancelled)
-          setRows(prev => prev.map(r => r.range === tf.range ? { ...r, loading: false } : r))
+        if (!cancelled) setState(prev => mergeRow(prev, assetId, tf.range, { loading: false }))
       }
     }))
 
@@ -758,14 +782,18 @@ function BacktestPanel({ assetId, symbol }: { assetId: string; symbol: string })
     [candles, feesPct, direction],
   )
 
-  // Auto-pick the first strategy that has trades on first data load.
-  useEffect(() => {
-    if (strategyKey !== null || candles.length === 0) return
+  // The default strategy is DERIVED, not written into state by an effect: the
+  // first one that actually has trades. As state it took an extra render to
+  // appear (one paint of an empty strategy) and it stuck to the first asset
+  // loaded — a later asset with no trades on that strategy kept showing it. An
+  // explicit pick by the reader still wins, because strategyKey takes priority.
+  const defaultKey = useMemo(() => {
+    if (candles.length === 0) return STRATEGIES[0].key
     const first = STRATEGIES.find(s => (allResults[s.key]?.metrics.sampleCount ?? 0) > 0)
-    setStrategyKey((first ?? STRATEGIES[0]).key)
-  }, [allResults, candles.length, strategyKey])
+    return (first ?? STRATEGIES[0]).key
+  }, [allResults, candles.length])
 
-  const activeKey = strategyKey ?? STRATEGIES[0].key
+  const activeKey = strategyKey ?? defaultKey
   const result    = allResults[activeKey] ?? null
   const strat     = STRATEGIES.find(s => s.key === activeKey)!
 

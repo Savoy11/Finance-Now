@@ -73,7 +73,15 @@ export function detectSetups(candles: OhlcvCandle[]): DetectedSetup[] {
   if (widths.length > 10) {
     const cur = widths[widths.length - 1]
     const min = Math.min(...widths)
-    if (cur <= min * 1.1) setups.push({ key: 'volatility_compression', detail: 'Bollinger bands at a 50-bar squeeze' })
+    // A squeeze is a NARROWING range, which presupposes there is a range. A
+    // perfectly flat series gives zero-width bands and used to be reported as
+    // the tightest squeeze on the board — so a halted market, a stablecoin at
+    // peg, or a provider repeating one price ranked above every genuine
+    // coiling setup. Requiring a non-zero width makes the detector say what it
+    // means (D-24 #4, owner-approved 2026-09-08).
+    if (cur > 0 && cur <= min * 1.1) {
+      setups.push({ key: 'volatility_compression', detail: 'Bollinger bands at a 50-bar squeeze' })
+    }
   }
 
   return setups

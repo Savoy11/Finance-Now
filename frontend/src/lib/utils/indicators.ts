@@ -1124,10 +1124,25 @@ export interface FibLevels {
   levels: { ratio: number; label: string; price: number }[]
 }
 
-export function fibRetracement(candles: OhlcvCandle[], lookback = 100): FibLevels {
+/**
+ * Retracement levels over the last `lookback` bars.
+ *
+ * Returns `null` when there is nothing to measure. It used to return
+ * `{ high: -Infinity, low: Infinity }` with NaN prices on an empty series —
+ * Math.max()/Math.min() of an empty list — and a pinning test recorded that as
+ * the contract on the grounds that "every UI caller checks candles.length
+ * first". Relying on every present and future caller to remember a guard is
+ * exactly the arrangement that puts `$NaN` on a chart, so the guard lives here
+ * now (D-24 #4, owner-approved 2026-09-08).
+ */
+export function fibRetracement(candles: OhlcvCandle[], lookback = 100): FibLevels | null {
   const slice = candles.slice(-lookback)
+  if (slice.length === 0) return null
   const high = Math.max(...slice.map((c) => c.high))
   const low = Math.min(...slice.map((c) => c.low))
+  // A series can be non-empty and still unusable (a provider sending nulls
+  // through as NaN). Non-finite bounds would produce non-finite levels.
+  if (!Number.isFinite(high) || !Number.isFinite(low)) return null
   const diff = high - low
   const ratios = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1]
   return {
@@ -1671,7 +1686,24 @@ export interface TechnicalRead {
  * derivation from the candle series — no external data. `summary` is reused so we
  * don't recompute the indicator votes.
  */
+/** The read for "there is no series to read" — every state neutral, no conviction. */
+export const EMPTY_TECHNICAL_READ: TechnicalRead = {
+  trendBias:   { state: 'neutral', detail: 'No price history available.' },
+  momentum:    { state: 'neutral', detail: 'No price history available.' },
+  volatility:  { state: 'normal',  detail: 'No price history available.' },
+  srProximity: { detail: 'No nearby support/resistance level detected.' },
+  confidence:  0,
+  sourceExplanation: 'No candles were returned for this asset and range.',
+}
+
 export function buildTechnicalRead(candles: OhlcvCandle[], summary: SignalSummary): TechnicalRead {
+  // An empty series used to run the whole derivation on `undefined` as the last
+  // close, producing NaN detail strings that render verbatim on both TA pages.
+  // Returning an explicit empty read says "nothing to read" rather than
+  // inventing a neutral verdict out of arithmetic on nothing
+  // (D-24 #4, owner-approved 2026-09-08).
+  if (candles.length === 0) return EMPTY_TECHNICAL_READ
+
   const closes = candles.map((c) => c.close)
   const n = candles.length
   const last = closes[n - 1]

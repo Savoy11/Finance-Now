@@ -152,6 +152,9 @@ function EmbedSignalSummary({ summary }: { summary: SignalSummary }) {
 function EmbedKeyLevels({ candles }: { candles: OhlcvCandle[] }) {
   if (candles.length < 20) return null
   const fib  = fibRetracement(candles, Math.min(candles.length, 100))
+  // null means the series carried no usable highs/lows. Dropping the panel
+  // says so; an empty level list would read as "no levels near price".
+  if (!fib) return null
   const last = candles[candles.length - 1].close
   const closes = candles.map((c) => c.close)
   const ema20 = ema(closes, 20)[candles.length - 1]

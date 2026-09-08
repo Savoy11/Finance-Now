@@ -183,7 +183,12 @@ export function FundsClient() {
   // Fee-impact assumptions (S6 item 3) — one set for the whole table, so every
   // row is compared under identical conditions.
   const [feeParams, setFeeParams] = useState<FeeImpactParams>(DEFAULT_FEE_IMPACT_PARAMS)
-  const [page, setPage] = useState(0)
+  // Pagination is KEYED on the filter/sort signature rather than reset by an
+  // effect. `useEffect(() => setPage(0), [...12 deps])` reset a render late, so
+  // changing a filter while on page 4 painted an empty table for one frame
+  // before snapping back — and it cost a cascading render each time
+  // (react-hooks/set-state-in-effect). Deriving it removes both.
+  const [pageState, setPageState] = useState<{ sig: string; page: number }>({ sig: '', page: 0 })
   // Screener filters (reference values; blank = no filter)
   const [issuer, setIssuer] = useState('all')
   const [style, setStyle] = useState<FundStyle>('all')
@@ -353,8 +358,10 @@ export function FundsClient() {
     })
   }, [universe, type, category, industry, riskLevel, strategy, issuer, style, curatedOnly, ranges, search, sortKey, sortAsc, feeParams])
 
-  // Reset to first page whenever the result set changes
-  useEffect(() => { setPage(0) }, [type, category, industry, riskLevel, strategy, issuer, style, curatedOnly, ranges, search, sortKey, sortAsc])
+  // Any change to this signature is a different result set, so page 0.
+  const filterSig = JSON.stringify([type, category, industry, riskLevel, strategy, issuer, style, curatedOnly, ranges, search, sortKey, sortAsc])
+  const page = pageState.sig === filterSig ? pageState.page : 0
+  const setPage = (next: number) => setPageState({ sig: filterSig, page: next })
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const safePage = Math.min(page, totalPages - 1)
