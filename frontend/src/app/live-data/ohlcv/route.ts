@@ -111,7 +111,12 @@ function applySlice(candles: OhlcvCandle[], cfg: RangeConfig): OhlcvCandle[] {
     const cutoff = Date.now() / 1000 - cfg.sliceDays * 86400
     return candles.filter((c) => c.time >= cutoff)
   }
-  if (cfg.cgDays === '1') return candles.slice(-168) // 1H: last week of 30m bars
+  // Cap only. CoinGecko's `/ohlc?days=1` returns 30-minute candles covering one
+  // day — about 48 bars — so this slice never actually trims. It is a ceiling
+  // against a provider that starts serving more, not a window: 168 × 30m would
+  // be 3.5 days, not the week an earlier comment here claimed. (The Binance rung
+  // is unaffected; it asks for 168 × 1h bars directly.)
+  if (cfg.cgDays === '1') return candles.slice(-168)
   return candles
 }
 

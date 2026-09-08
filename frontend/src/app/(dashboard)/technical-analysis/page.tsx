@@ -28,6 +28,8 @@ import {
 } from '@/lib/utils/indicators'
 import { detectSetups, type SetupKey, type DetectedSetup } from '@/lib/utils/scanSetups'
 import { DataBadge } from '@/components/ui/DataBadge'
+import { confluenceLabel } from '@/lib/utils/confluence'
+import { ohlcvSourceLabel } from '@/lib/utils/ohlcvSource'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { SignalBadge } from '@/components/charts/SignalBadge'
 import { formatAdaptivePrice } from '@/lib/utils/format'
@@ -383,16 +385,7 @@ function MultiTimeframeGrid({ assetId }: { assetId: string }) {
   const bullish = loaded.filter(r => r.summary!.overall === 'buy' || r.summary!.overall === 'strong_buy').length
   const bearish = loaded.filter(r => r.summary!.overall === 'sell' || r.summary!.overall === 'strong_sell').length
 
-  function confluenceLabel() {
-    if (loaded.length < 3) return null
-    if (bullish >= 4) return { text: `${bullish}/${loaded.length} timeframes bullish — strong confluence`, color: 'text-emerald-400' }
-    if (bearish >= 4) return { text: `${bearish}/${loaded.length} timeframes bearish — strong confluence`, color: 'text-red-400' }
-    if (bullish >= 3) return { text: `${bullish}/${loaded.length} timeframes bullish — moderate confluence`, color: 'text-green-400' }
-    if (bearish >= 3) return { text: `${bearish}/${loaded.length} timeframes bearish — moderate confluence`, color: 'text-orange-400' }
-    return { text: 'Mixed signals across timeframes — no clear confluence', color: 'text-text-muted' }
-  }
-
-  const confluence = confluenceLabel()
+  const confluence = confluenceLabel(loaded.length, bullish, bearish)
 
   // Plain-English per-timeframe agreement, e.g. "1D bullish · 4H overbought · 1H weakening"
   function tfPhrase(summary: SignalSummary): { word: string; color: string } {
@@ -1012,12 +1005,12 @@ function TechnicalAnalysisContent() {
     queryFn: async () => {
       const res = await fetch(`/live-data/ohlcv?id=${assetId}&range=${range}`)
       if (!res.ok) throw new Error('fetch failed')
-      return res.json() as Promise<{ ok: boolean; candles: OhlcvCandle[]; source?: string; granularity?: string }>
+      return res.json() as Promise<{ ok: boolean; candles: OhlcvCandle[]; source?: string; venue?: string; granularity?: string }>
     },
     staleTime: range === '1H' ? 60_000 : range === '4H' || range === '1M' ? 300_000 : 900_000,
   })
 
-  const ohlcvSource = data?.source === 'binance' ? 'Binance' : data?.source === 'coingecko' ? 'CoinGecko' : undefined
+  const ohlcvSource = ohlcvSourceLabel(data?.source, data?.venue)
 
   // News-derived event markers for the chart (feature #4)
   const candles = useMemo<OhlcvCandle[]>(() => data?.candles ?? [], [data])

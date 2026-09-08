@@ -1,4 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
+import {
+  WALLET_FETCH_TIMEOUT_MS,
+  WALLET_LADDER_BUDGET_MS,
+  walletFetchErrorMessage,
+} from '@/lib/server/walletFetch'
 
 export const dynamic = 'force-dynamic'
 
@@ -28,6 +33,7 @@ async function rpcCall(rpcUrl: string, method: string, params: unknown[]) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
     next: { revalidate: 0 },
+    signal: AbortSignal.timeout(WALLET_FETCH_TIMEOUT_MS),
   })
   if (!res.ok) throw new Error(`HTTP ${res.status}`)
   const data = await res.json()
@@ -42,7 +48,15 @@ async function rpcCall(rpcUrl: string, method: string, params: unknown[]) {
 // self-consistent pair (balance and txCount from the same node).
 async function evmRpcPair(rpcs: string[], address: string): Promise<{ balanceHex: string; txCountHex: string; rpc: string }> {
   let lastErr = 'no endpoints configured'
+  // Per-request timeouts alone would let three dead endpoints cost three full
+  // budgets, so the ladder also refuses to START a rung past the overall
+  // deadline. A rung already in flight is allowed to finish on its own timeout.
+  const deadline = Date.now() + WALLET_LADDER_BUDGET_MS
   for (const rpc of rpcs) {
+    if (Date.now() >= deadline) {
+      lastErr = `ladder budget of ${WALLET_LADDER_BUDGET_MS / 1000}s exhausted after ${lastErr}`
+      break
+    }
     try {
       const [balanceHex, txCountHex] = await Promise.all([
         rpcCall(rpc, 'eth_getBalance', [address, 'latest']),
@@ -50,7 +64,7 @@ async function evmRpcPair(rpcs: string[], address: string): Promise<{ balanceHex
       ])
       return { balanceHex, txCountHex, rpc }
     } catch (err) {
-      lastErr = err instanceof Error ? err.message : String(err)
+      lastErr = walletFetchErrorMessage(err)
       // try the next endpoint in the ladder
     }
   }
@@ -94,7 +108,6 @@ export async function GET(req: NextRequest) {
       updatedAt: Date.now(),
     })
   } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Unknown error'
-    return NextResponse.json({ ok: false, error: msg }, { status: 502 })
+    return NextResponse.json({ ok: false, error: walletFetchErrorMessage(err) }, { status: 502 })
   }
 }

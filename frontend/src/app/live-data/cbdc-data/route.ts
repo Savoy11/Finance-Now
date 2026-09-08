@@ -22,11 +22,60 @@ export interface CbdcEntry {
   sourceUrl: string
 }
 
+export interface CbdcFallbackProvenance {
+  source: string
+  verifiedAt: string
+  ageDays: number
+  stale: boolean
+  confidence: 'high' | 'medium' | 'low'
+}
+
 export interface CbdcDataResponse {
   countries: CbdcEntry[]
+  /**
+   * When this payload was compiled — NOT when the request was served. On the
+   * `fallback` path this is CBDC_FALLBACK_COMPILED, a fixed date. It used to be
+   * `new Date()` on every branch, so a frozen 2026-06-28 table reported itself
+   * as "just now" (T5 utility triage, 2026-07-20). Curated data stamped with a
+   * fresh timestamp reads as live; that is the one thing this app does not do.
+   */
   updatedAt: string
   source: 'live' | 'fallback'
   count: number
+  /** Present only on the `fallback` path — nothing to disclose about a live fetch. */
+  provenance?: CbdcFallbackProvenance
+}
+
+/**
+ * The date the fallback table was compiled AS A WHOLE — 28a78c5, 2026-06-28.
+ * A one-line correction landed 2026-07-07 (99cc802); per the repo's provenance
+ * rule a partial edit does not re-date the table, because re-verifying two rows
+ * of 55 does not refresh the other 53.
+ */
+export const CBDC_FALLBACK_COMPILED = '2026-06-28'
+/** Country CBDC programmes move on a policy timescale, not a market one. */
+export const CBDC_FALLBACK_STALE_AFTER_DAYS = 180
+
+export function cbdcFallbackAgeDays(now: Date = new Date()): number {
+  const compiled = new Date(`${CBDC_FALLBACK_COMPILED}T00:00:00Z`).getTime()
+  return Math.max(0, Math.floor((now.getTime() - compiled) / 86_400_000))
+}
+
+export function cbdcFallbackIsStale(now: Date = new Date()): boolean {
+  return cbdcFallbackAgeDays(now) > CBDC_FALLBACK_STALE_AFTER_DAYS
+}
+
+export function getCbdcFallbackProvenance(now: Date = new Date()): CbdcFallbackProvenance {
+  const stale = cbdcFallbackIsStale(now)
+  return {
+    source: 'Curated from central-bank and Atlantic Council CBDC tracker publications',
+    verifiedAt: CBDC_FALLBACK_COMPILED,
+    ageDays: cbdcFallbackAgeDays(now),
+    stale,
+    // Never better than medium: the notes are pinned to 2023-2024 policy states
+    // and no code path in this route can refresh them.
+    confidence: stale ? 'low' : 'medium',
+  }
 }
 
 // ─── Static fallback data ─────────────────────────────────────────────────────
@@ -393,9 +442,10 @@ export async function GET() {
     if (!countries) {
       return NextResponse.json<CbdcDataResponse>({
         countries: FALLBACK_DATA,
-        updatedAt: new Date().toISOString(),
+        updatedAt: CBDC_FALLBACK_COMPILED,
         source: 'fallback',
         count: FALLBACK_DATA.length,
+        provenance: getCbdcFallbackProvenance(),
       })
     }
 
@@ -411,9 +461,10 @@ export async function GET() {
     // Always fall back to static data on any error
     return NextResponse.json<CbdcDataResponse>({
       countries: FALLBACK_DATA,
-      updatedAt: new Date().toISOString(),
+      updatedAt: CBDC_FALLBACK_COMPILED,
       source: 'fallback',
       count: FALLBACK_DATA.length,
+      provenance: getCbdcFallbackProvenance(),
     })
   }
 }

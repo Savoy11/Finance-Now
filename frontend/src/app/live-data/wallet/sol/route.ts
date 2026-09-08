@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { WALLET_FETCH_TIMEOUT_MS, walletFetchErrorMessage } from '@/lib/server/walletFetch'
 
 export const dynamic = 'force-dynamic'
 
@@ -10,6 +11,7 @@ async function solRpc(method: string, params: unknown[]) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
     next: { revalidate: 0 },
+    signal: AbortSignal.timeout(WALLET_FETCH_TIMEOUT_MS),
   })
   const data = await res.json()
   if (data.error) throw new Error(data.error.message)
