@@ -472,21 +472,39 @@ jobs:
       - docker-build
       - security-scan
       - terraform-validate
-    if: always()
+
+    # `!cancelled()`, not `always()`. With always(), a run superseded by the next
+    # push — this workflow sets `cancel-in-progress: true` above — still reached
+    # this gate, which read a CANCELLED dependency as a failure and posted a red
+    # "CI Success Gate" against the abandoned commit. That happened three times on
+    # PR #153 alone, once with every step of the cancelled job having already
+    # succeeded, so the red X said "docker-build failed" about a job that built
+    # both images and passed its structure test.
+    #
+    # A spurious red X is indistinguishable from a real one — the same reasoning
+    # that gated cd-staging.yml behind a repository variable rather than leaving
+    # `main` permanently red. This still runs when a job FAILS, so the gate keeps
+    # gating; it is skipped only when the run itself was abandoned, and a skipped
+    # gate is the honest answer there: nothing was concluded.
+    if: ${{ !cancelled() }}
 
     steps:
       - name: Check all jobs succeeded
         run: |
-          if [[ "${{ needs.backend-lint.result }}" != "success" ]]; then
-            echo "backend-lint failed"; exit 1
-          fi
-          if [[ "${{ needs.backend-test.result }}" != "success" ]]; then
-            echo "backend-test failed"; exit 1
-          fi
-          if [[ "${{ needs.frontend-check.result }}" != "success" ]]; then
-            echo "frontend-check failed"; exit 1
-          fi
-          if [[ "${{ needs.docker-build.result }}" != "success" ]]; then
-            echo "docker-build failed"; exit 1
-          fi
+          status=0
+          check() {
+            if [[ "$2" != "success" ]]; then
+              # Report the actual result. "failed" was wrong for a cancelled or
+              # skipped job and sent at least one investigation down the wrong path.
+              echo "::error::$1 did not succeed (result: $2)"
+              status=1
+            fi
+          }
+          # Reports every non-success before exiting, rather than stopping at the
+          # first — with the old early exit, two broken jobs cost two CI cycles.
+          check backend-lint   "${{ needs.backend-lint.result }}"
+          check backend-test   "${{ needs.backend-test.result }}"
+          check frontend-check "${{ needs.frontend-check.result }}"
+          check docker-build   "${{ needs.docker-build.result }}"
+          [[ $status -eq 0 ]] || exit 1
           echo "All CI checks passed!"
