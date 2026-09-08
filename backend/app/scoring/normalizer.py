@@ -81,6 +81,19 @@ def normalize_series(
 
     arr = np.asarray([v for v in series if not math.isnan(v)], dtype=np.float64)
 
+    # An all-NaN series leaves `arr` empty, and both branches below then reduce
+    # over nothing: minmax RAISED ("zero-size array to reduction operation
+    # minimum"), and zscore limped through on a NaN mean while emitting a
+    # RuntimeWarning. Neither is right, and an all-NaN series is a plausible
+    # input rather than an abuse — it is what a metric with no readings for any
+    # asset looks like.
+    #
+    # The function already passes NaN through per element, so returning all-NaN
+    # here is the same contract applied to the degenerate case, not a new one.
+    # Fixed 2026-09-08 while raising coverage on this module, which was at 0%.
+    if arr.size == 0:
+        return [float("nan") for _ in series]
+
     if method == "minmax":
         lo, hi = arr.min(), arr.max()
         return [
