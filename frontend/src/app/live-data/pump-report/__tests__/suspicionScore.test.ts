@@ -30,6 +30,18 @@ describe('pump-report suspicionScore (Phase 6 rename)', () => {
     expect(tab).not.toMatch(/report\.riskScore/)
   })
 
+  it('the CONFIGURABLE default prompt asks for the same key as the route', () => {
+    // The route uses `agentCfg?.systemPrompt ?? buildSystem(...)`, so the
+    // prompts.ts default is what the agent-config UI shows and what becomes the
+    // saved override the moment anyone edits it. If that copy asks for
+    // `riskScore` while the reader expects `suspicionScore`, the score silently
+    // reads 0 and the UI paints a clean bar on an unscored report — a bug with
+    // no error anywhere. Two copies of one schema need a test that they agree.
+    const prompts = read('lib/agents/prompts.ts')
+    expect(prompts).toContain('"suspicionScore": <0.0-10.0')
+    expect(prompts).not.toContain('"overallRisk": "clean|suspicious|flagged|critical",\n  "riskScore"')
+  })
+
   it('leaves no riskScore key anywhere in the pump-report surface', () => {
     // Comments explaining the rename are fine; a live `riskScore:` key or a
     // `.riskScore` read is not.

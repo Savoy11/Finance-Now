@@ -64,11 +64,21 @@ Verified: `tsc` clean · `eslint` clean · `vitest` 118 pass · `npm run build` 
   query, UA, referer, and a `legacyRiskFilter` flag when `max_risk` is used).
   Read-only (`NextResponse.next()`), no bodies/cookies/PII. This is the telemetry
   §5.3 requires *before* any decision to remove the legacy fields.
-- **5b (`mcp-server/` adopts canonical fields, version bump) — DEFERRED by design.**
-  The spec says ship 5b **only after 5a is deployed**. 5a is not yet deployed, so the
-  MCP server is untouched. When 5a is live: update `get_staking_opportunities` /
-  `compare_staking_risk` to request + display `safetyScore`/`band`, state the
-  direction ("higher = safer") in tool descriptions, and bump the MCP version.
+- **5b (`mcp-server/` adopts canonical fields, version bump) — ~~DEFERRED by design~~
+  COMPLETED 2026-09-08.** The original note read: *"The spec says ship 5b only after
+  5a is deployed. 5a is not yet deployed, so the MCP server is untouched."*
+  `get_staking_opportunities` and `compare_staking_risk` already requested and
+  displayed `safetyScore`/`band` — that half landed with the P2 review — but the tool
+  DESCRIPTION still named neither scale nor direction, and the version had never
+  moved.
+  Now: both scales are named in `compare_staking_risk`'s description with their
+  directions and the instruction to read the direction before the number, the table
+  rows are labelled `SAFETY ↑=safer` / `Legacy ↑=riskier` rather than an unqualified
+  "SAFETY SCORE" and "Legacy risk", and the server is **1.1.0** in both
+  `package.json` and the `McpServer` constructor. A consumer reading two numbers
+  that point opposite ways needs the direction beside each one, not only in a
+  footnote under the table. `npx tsc --noEmit` and `npm run build` clean; the NT12
+  boundary-drift test passes.
 - **5c (breaking removal / `/api/v2` or `?scale=`) — DEFERRED.** Gated on E2
   telemetry showing no legacy traffic, or an explicit product decision (P4). Do not
   remove legacy fields before then.

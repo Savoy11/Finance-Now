@@ -61,7 +61,7 @@ async function post<T>(path: string, body: unknown): Promise<T> {
 
 const server = new McpServer({
   name: 'finance-now',
-  version: '1.0.0',
+  version: '1.1.0',
   description: 'Finance Now — crypto transfer fees, staking analysis, network fees, prices and news, plus stock/ETF/fund/macro quotes and history, the US Treasury yield curve, ECB FX rates, and an options-trade risk scorer',
 })
 
@@ -361,7 +361,11 @@ server.tool(
 
 server.tool(
   'compare_staking_risk',
-  'Compare the risk profiles of two or more staking providers side by side. Useful for explaining the difference between custodial exchange staking (e.g. Celsius/Coinbase), self-custody wallet staking (e.g. Ledger), and liquid staking protocols (e.g. Lido, Rocket Pool).',
+  'Compare the risk profiles of two or more staking providers side by side. Reports the canonical Safety Score '
+  + '(0-100, HIGHER = SAFER) with its 5-level band, plus the legacy 1-10 risk score (HIGHER = RISKIER) for reference — '
+  + 'read the direction before the number, they point opposite ways. Useful for explaining the difference between '
+  + 'custodial exchange staking (e.g. Celsius/Coinbase), self-custody wallet staking (e.g. Ledger), and liquid '
+  + 'staking protocols (e.g. Lido, Rocket Pool).',
   {
     providers: z.string().describe('Comma-separated provider ids. E.g. "coinbase,lido,rocketpool,ledger-live". Use list_exchanges or get_staking_opportunities to find valid ids.'),
     coin:      z.string().optional().describe('Coin to compare for (affects asset-level risk overrides). E.g. "eth"'),
@@ -428,10 +432,10 @@ server.tool(
 
     // Canonical Safety Score first — the additive R2 fields this consumer
     // never surfaced (review P2); legacy 1–10 kept, labelled.
-    text += padR('SAFETY SCORE', nameWidth)
+    text += padR('SAFETY ↑=safer', nameWidth)
     for (const p of found) text += padL(`${p.safetyScore.toFixed(0)}/100 ${p.band}`, 14)
     text += '\n'
-    text += padR('Legacy risk', nameWidth)
+    text += padR('Legacy ↑=riskier', nameWidth)
     for (const p of found) text += padL(`${p.riskScore.toFixed(1)}/10`, 14)
     text += '\n'
 
