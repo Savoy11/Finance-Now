@@ -10,7 +10,7 @@
 
 import { PORTFOLIO_COINS, type CoinCategory } from './portfolioCoins'
 import { EQUITY_CATALOG } from './equityCatalog'
-import { FUND_CATALOG } from './fundCatalog'
+import { FUND_CATALOG, fundStrategy, type FundEntry } from './fundCatalog'
 import { COMMODITY_CATALOG, COMMODITY_CATEGORY_INFO, THINLY_TRADED_COMMODITIES } from './commodityCatalog'
 import { CURRENCY_CATALOG, CURRENCY_CATEGORY_INFO } from './currencyCatalog'
 import { RATES_CATALOG, RATES_CATEGORY_INFO } from './ratesCatalog'
@@ -76,12 +76,42 @@ function equityRiskTier(beta: number): number {
   return 6
 }
 
-function fundRiskTier(category: string): number {
+function fundCategoryTier(category: string): number {
   if (category === 'bond') return 2
   if (category === 'commodity') return 4
   if (category === 'crypto') return 7
   if (category === 'balanced') return 3
   return 4 // broad/sector equity funds
+}
+
+// A daily-reset leveraged or inverse fund is speculative whatever it tracks, and
+// `category` cannot see that. Reading the category alone put UPRO (3× S&P), SH
+// (−1× S&P) and SOXL (3× semiconductors) on tier 4 — VOO's tier — which
+// /portfolios prints per holding as "4/10" beside a coloured bar.
+//
+// `fundRiskLevel()` in fundCatalog.ts has always read `strategy` and called those
+// funds 'speculative'. This function did not, so the repo carried two fund-risk
+// models that disagreed, and the one the user sees was the wrong one.
+//
+// 7 is not a new number invented here: it is the tier crypto funds already carry
+// above, and `fundRiskLevel` puts crypto and leveraged/inverse in the same
+// 'speculative' band. Holding the two functions to the same band is what stops
+// them drifting apart again — `instrumentRiskTier.test.ts` asserts they agree
+// across the whole catalog, so a future strategy added to one and not the other
+// fails the suite.
+const SPECULATIVE_STRATEGY_TIER = 7
+
+/**
+ * Risk tier for a fund, on the same 1–10 scale as crypto and equities.
+ *
+ * A speculative STRATEGY raises the tier and never lowers it — a 3× long
+ * Treasury fund is not a tier-2 bond holding — so the strategy acts as a floor
+ * over the category tier rather than replacing it.
+ */
+function fundRiskTier(f: Pick<FundEntry, 'category' | 'strategy' | 'indexTracked'>): number {
+  const strategy = fundStrategy(f)
+  const speculative = strategy === 'leveraged' || strategy === 'inverse'
+  return Math.max(fundCategoryTier(f.category), speculative ? SPECULATIVE_STRATEGY_TIER : 0)
 }
 
 function fundCategory(category: string): CoinCategory {
@@ -105,7 +135,7 @@ export const INSTRUMENTS: Instrument[] = [
     symbol: f.symbol, name: f.name,
     class: (f.type === 'etf' ? 'etf' : 'mutual') as InstrumentClass,
     category: fundCategory(f.category),
-    riskTier: fundRiskTier(f.category), color: f.category === 'bond' ? '#64748b' : '#14b8a6',
+    riskTier: fundRiskTier(f), color: f.category === 'bond' ? '#64748b' : '#14b8a6',
   })),
   // Macro instruments (ROADMAP "instruments" open item). All quote through
   // the same security routes as stocks/funds, so the sec: key works as-is;

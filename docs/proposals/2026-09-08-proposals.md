@@ -131,7 +131,24 @@ one small UX decision.
 
 ## 3. ETF/fund risk profile on the canonical scale (T-353) · proposed `P1` · target section: `docs/TASK-QUEUE.md` → new "Wave 5 — Improvement-agent intake (2026-09-08)" → "Approved proposals (build work)" (cross-reference the S6 — Fund Registry charter and P2-R3, whose pattern it copies)
 
-**Status:** PENDING
+**Status:** PENDING — but its *symptom* is already fixed, so read the scope again
+before ruling.
+
+> **Owner instruction 2026-09-08: "fix the fund risk tier to read strategy".**
+> Done, as the narrow fix this proposal itself offered as the cheaper alternative:
+> `fundRiskTier()` in `lib/data/instruments.ts` now reads `strategy` and applies a
+> speculative FLOOR (leverage raises a tier, never lowers it, so a 3× Treasury
+> fund is not a tier-2 bond holding). Five of 126 funds moved, all leveraged or
+> inverse and all already `'speculative'` per `fundRiskLevel()`: TQQQ, SQQQ, UPRO,
+> SH, SOXL — each 4/10 → 7/10. The other 121 are pinned unchanged by test.
+>
+> **What this does NOT do**, and is the remaining question for you: the tier is
+> still hand-set beside the catalog rather than derived through `composeRisk()` +
+> `canonicalToRiskTier` the way the macro profiles are. Expense ratio, AUM and
+> type still do not reach the tier at all. So the two-disagreeing-models bug is
+> closed and guarded (`instrumentRiskTier.test.ts` fails if `fundRiskTier` and
+> `fundRiskLevel` ever disagree on which funds are speculative), while the
+> *architectural* half of this proposal stands as written.
 
 **What:** `frontend/src/lib/risk/profiles/fund.ts` — a fund profile scored on the
 canonical 0–100 higher-is-safer scale from catalog facts (category, **strategy**,
