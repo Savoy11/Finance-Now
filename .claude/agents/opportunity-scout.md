@@ -90,6 +90,18 @@ Discard anything that fails these:
     links"). You may propose work in that territory; anchor it to the ROADMAP's integrity rules
     and say which of them the proposal depends on
   - No paid placement in any ranked or scored output, either project
+  - **No per-coin risk score published anywhere (RP-6, 2026-08-29)** — a risk figure on an asset
+    the reader is viewing may be read as a recommendation, a regulated activity. Do not propose
+    restoring one, or a near-equivalent under another name. Scoring inside the surviving
+    `lib/risk` consumers (options scorer, staking providers, macro/equity profiles) is fine
+  - **Ranking vs explanation (item 4, 2026-08-18)** — a leaderboard over a universe is out; an
+    explanation of the one asset the reader opened is in. Screeners that FILTER are fine; a
+    sortable score column over the universe is the thing that was removed
+  - **Yahoo Finance is hard-blocked on terms grounds (2026-08-06)** and refused at the socket.
+    Never propose it as a source or a fallback, however convenient
+  - **No exchange API-key custody (RP-5, 2026-08-18)** — forbidden outright
+  - **Free-tier sources only until near release** (owner ruling). A proposal that needs a paid
+    tier is not rejected, but must say so and be sequenced behind the release decision
   - Non-personalised advertising only on News Charts
   - Data honesty — sources named, estimates labelled, no fabricated values, coverage travels
     with any score

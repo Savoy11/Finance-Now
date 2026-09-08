@@ -109,16 +109,49 @@ You **propose**, the owner **approves**, then you apply. Never the reverse.
 
 ---
 
-## Known open items (state as of 2026-07-30 — verify before relying on this)
+## Known open items (state as of 2026-09-08 — verify before relying on this)
 
-- **M4** — transfer-fee table needs a ~520-entry re-verification (owner-machine work; the
-  staleness banner is correctly on until then).
-- **DATA-AVAILABILITY action items 9, 15, 17, 18** — paid FMP decision, staking live
-  coverage (4/51), CoinGecko harness pacing, macro quote check.
-- **Item 11** — fund-universe payload fix shipped 2026-07-30, pending owner re-measurement.
-- **T6/T7** — completion unrecorded (no assessment docs); either re-run or write the
-  assessment before anything relies on them.
-- ROADMAP owner backlog: all items unticked except the risk-framework one (settled).
+Refreshed from the 2026-09-07 outstanding-task verification sweep (398 items read
+across the ledgers and the tree) plus the corrections applied on 2026-09-08.
+**Every entry here is a pointer, not a verdict** — re-read the source before acting.
+
+**Still open, owner-machine:**
+- **M4** — the transfer-fee table needs a ~520-entry re-verification. The staleness
+  banner is correctly on until then. Unchanged since 2026-07-30.
+- **DATA-AVAILABILITY item 15** — live staking APR coverage is **4 of 51**. Adding
+  rate adapters is code work; the resulting ratio must be re-measured on the owner's
+  machine.
+- **Item 11** — the fund-universe payload shipped compact on 2026-07-30 and still
+  awaits a re-measurement. Note pagination was **rejected**, not deferred: the
+  registry screens client-side.
+- **The terms queue.** 54 of 56 registry entries are `seeded`. Two are `verified`
+  (Cboe, CoinGecko). The **news publishers** are the priority — the only keyless
+  content sources — and the **personal-vs-commercial question** decides eight more,
+  FMP among them, which is load-bearing across 7 live-data routes.
+
+**Still open, owner-decision:**
+- **The rollout gate itself.** Owner, 2026-09-05: not ready for rollout — do NOT run
+  the P3-W3 gate. Several ledger items sit behind it.
+- Free-tier data sources only until near release; pay for completeness at release.
+
+**Closed since the 2026-07-30 snapshot:**
+- **DATA-AVAILABILITY item 17** (CoinGecko harness pacing) and **item 18** (macro
+  quote check) — both landed 2026-09-08. Item 18's row still needs one `npm run audit`
+  on the owner's machine to fill in.
+- **T6** — the prompt drift it was meant to catch is real and was corrected
+  2026-09-08; the assessment doc is written. **T7 remains unrecorded.**
+- **The permanent red X on `main`** — `cd-staging` is gated on a repository variable
+  and `ci.yml` now runs on pushes to `main` (#134).
+
+**Ledger accuracy, as of the 2026-09-08 pass:**
+- **60 items the docs present as open were found already done, superseded or
+  rejected.** Seven of the most misleading were corrected in place in
+  DATA-AVAILABILITY (a "Risk scores 🟢 Derived" row that RP-6 deleted, an "Exchange
+  connections 🟢 Live" row that RP-5 deleted, "only Bitcoin's fee is live" when 5 of
+  18 are). The rest are still listed as open and are the next batch's work.
+- ROADMAP owner backlog: mostly unticked. The pillar table, the Budget phase, the
+  wallets-persistence note and the agent-invocation item were annotated 2026-09-08 —
+  annotated, not rewritten.
 
 ---
 

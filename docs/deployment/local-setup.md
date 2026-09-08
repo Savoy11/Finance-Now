@@ -23,7 +23,7 @@ cd finance-now
 
 # 2. Copy environment files
 cp backend/.env.example backend/.env
-cp frontend/.env.example frontend/.env.local  # Create if not present
+cp frontend/.env.example frontend/.env.local
 
 # 3. Start all services
 docker compose -f infrastructure/docker/docker-compose.yml up -d
@@ -79,12 +79,10 @@ cd frontend
 # Install dependencies
 npm install
 
-# Configure environment
-cat > .env.local << 'EOF'
-NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
-NEXT_PUBLIC_WS_URL=ws://localhost:8000/ws
-NEXT_PUBLIC_USE_MOCK=true
-EOF
+# Configure environment. Nothing here is required to run the app: it is
+# live-only against keyless public providers, and every surface with no
+# reachable source says so rather than inventing a figure.
+cp .env.example .env.local
 
 # Start dev server
 npm run dev
@@ -125,9 +123,22 @@ npm run lint
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `NEXT_PUBLIC_API_URL` | — | Backend API base URL |
-| `NEXT_PUBLIC_WS_URL` | — | WebSocket base URL |
-| `NEXT_PUBLIC_USE_MOCK` | `false` | Use mock data (no backend needed) |
+**None of these are required.** Full annotated list with what each one unlocks:
+`frontend/.env.example`, and `CLAUDE.md` § Environment Variables.
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `DATABASE_URL` | — | Postgres. Backs portfolios, watchlists, builder plans, wallets, users. Without it those routes answer 503 and the rest of the app runs |
+| `AUTH_SECRET` | — | Required only once the login wall is re-enabled. `openssl rand -base64 32` |
+| `FN_ALLOW_LOCAL_USER` | dev: allow, prod: deny | ⚠ true in production hands every anonymous visitor the same account |
+| `NEXT_PUBLIC_API_URL` | `http://localhost:8000` | Optional dormant legacy backend. The **origin only** — no `/api` or `/api/v1` suffix; the rewrite appends `/api/:path` itself |
+| `ANTHROPIC_API_KEY` | — | Daily Brief, all agents, Pump Report. Also settable in Integrations → AI Providers, where the UI key wins |
+| `FMP_API_KEY` | — | First rung of the quote ladder; the only source for the Stock Registry universe. Free tier covers per-symbol data, not the broad universe |
+
+> **`NEXT_PUBLIC_WS_URL` and `NEXT_PUBLIC_USE_MOCK` were listed here and no longer
+> exist** (removed in M8). The app opens no socket, and `LIVE_DATA` is hardcoded
+> `true` in `lib/constants.ts` — there is no mock data path at all. Corrected
+> 2026-09-08.
 
 ---
 
@@ -140,6 +151,6 @@ npm run lint
 docker exec -it fn-postgres psql -U fn -c "CREATE EXTENSION IF NOT EXISTS timescaledb;"
 ```
 
-**Frontend auth redirect loop**: Ensure `NEXT_PUBLIC_USE_MOCK=true` in `.env.local` for local development without backend.
+**Frontend auth redirect loop**: Not reachable at present — the login wall is off (`REQUIRE_AUTH = false` in `src/app/(dashboard)/layout.tsx`, `LOGIN_DISABLED = true` on the login page). See `docs/architecture/auth.md` before changing either.
 
 **CORS errors**: Add `http://localhost:3000` to `CORS_ORIGINS` in `backend/.env`.

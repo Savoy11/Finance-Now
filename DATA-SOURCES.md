@@ -5,7 +5,7 @@ change the registry and regenerate. This is the "where does the data come from" 
 `DATA-AVAILABILITY.md` (which tracks whether each surface is live). The same registry powers the
 in-app **/data-sources** page and the per-page provenance badges, so the app and the docs never diverge._
 
-_Last generated: **2026-09-04**_
+_Last generated: **2026-09-08**_
 
 ## Legend
 
@@ -59,7 +59,7 @@ Provider tags: `key` = needs an API key · `paid` = needs a paid plan · untagge
 - **Staking APR/APY** — Liquid-staking/restaking protocols + native network rates are live (DefiLlama + protocol APIs + chain inflation). CeFi exchange rates are static estimates. Each rate carries sources[key] = "live" | "estimate". Reference/fallback data: `lib/data/stakingProviders.ts (risk profiles, fallback APRs)`.
 - **Crypto price chart (legacy, internal)** — Synthesises zero-range OHLC from a price-only series (marked synthetic:true). No app consumers — /live-data/ohlcv provides real candles.
 - **Crypto news + sentiment** — Multi-provider RSS/JSON merge. Sentiment/category are heuristic classifiers (labeled derived).
-- **Crypto social sentiment** — Reddit’s JSON API 403s server-side; the .rss feeds work but 429 aggressively, so coverage is partial by nature.
+- **Crypto social sentiment** — What is live vs derived, since the row said only "partial": the Santiment and LunarCrush SOCIAL VOLUME/MENTION COUNTS are live, and both are KEY-GATED — without a key those signals are absent, not zero. The SENTIMENT LABELS are not a provider signal at all: they are a keyword classifier over the post text (derived). The Reddit score/upvote figure is not live either — it is whatever the feed carried when fetched. Reddit itself is doubly constrained: its JSON API 403s server-side, the .rss feeds 429 aggressively, and since the 2026-08-29 terms review its robots.txt disallows this app’s agent, so reddit.com is gated off in pinnedFetch unless REDDIT_CLIENT_ID is set.
 - **Videos / video search** — RSS video list works keyless; search/analyze report configured:false without a key rather than fabricating.
 - **Portfolio history** — Requires ids + date; returns HTTP 400 on missing/invalid params.
 - **On-chain wallet balances (BTC/ETH/SOL/TRON/XRP + EVM)** — Each chain walks a fallback ladder of public RPC/explorer endpoints and reports the serving endpoint in `rpc`.
@@ -98,12 +98,12 @@ Provider tags: `key` = needs an API key · `paid` = needs a paid plan · untagge
 
 | Surface | Status | Provider(s) | Cadence | Route |
 |---------|--------|-------------|---------|-------|
-| Fund universe | Live | [SEC](https://www.sec.gov/edgar) `www.sec.gov`<br>NASDAQ Trader `www.nasdaqtrader.com` | daily-cached · ~11s / 14MB | `/live-data/fund-universe` |
+| Fund universe | Live | [SEC](https://www.sec.gov/edgar) `www.sec.gov`<br>NASDAQ Trader `www.nasdaqtrader.com` | daily-cached | `/live-data/fund-universe` |
 | ETF / fund holdings | Live | [SEC N-PORT](https://www.sec.gov/edgar) `data.sec.gov`<br>FMP `financialmodelingprep.com` _(key)_<br>Catalog | — | `/live-data/fund-holdings` |
 | Holdings quarter-over-quarter diff | Partial | [SEC N-PORT](https://www.sec.gov/edgar) `data.sec.gov`<br>FMP `financialmodelingprep.com` _(key)_ | — | `/live-data/fund-holdings-history` |
 
-- **Fund universe** — 28,977 entries in one payload — pagination is a tracked follow-up.
-- **ETF / fund holdings** — N-PORT is keyless and authoritative, and holdings are unaffected by the Yahoo removal. Two side panels are: SECTOR WEIGHTS now need an FMP key (N-PORT carries no GICS classification), and the stock/bond/cash ASSET MIX has no source at all — that section no longer renders. UITs (e.g. SPY) file no N-PORT and correctly fall back to indicative top holdings.
+- **Fund universe** — Discovered funds ship as compact {symbol,name} rows (2026-07-30, audit follow-up F3). PAGINATION WAS CONSIDERED AND REJECTED in item 11, not deferred: the registry screens client-side, so a page-at-a-time API would filter as though it had seen the whole universe when it had seen fifty rows. The earlier ~11s / 14MB figure predates the compact shape and is not a current measurement — payload size is pending a re-measure on the owner’s machine.
+- **ETF / fund holdings** — N-PORT is keyless and authoritative, and holdings are unaffected by the Yahoo removal. Two side panels are: SECTOR WEIGHTS now need an FMP key (N-PORT carries no GICS classification), and the stock/bond/cash ASSET MIX is DERIVED FROM N-PORT’s assetCat field (NT9) rather than having no source — the earlier "no source at all" note was overtaken by that work. It is therefore keyless and unaffected by the Yahoo removal, but absent for filers that publish no N-PORT (UITs such as SPY), where the section correctly does not render. UITs (e.g. SPY) file no N-PORT and correctly fall back to indicative top holdings.
 - **Holdings quarter-over-quarter diff** — Works where an N-PORT series exists.
 
 ## Macro Markets
@@ -122,7 +122,7 @@ Provider tags: `key` = needs an API key · `paid` = needs a paid plan · untagge
 - **Treasury par yield curve** — Official 13-maturity daily par curve (XML).
 - **Macro news (commodities/bonds/FX)** — 8 keyless RSS feeds with a content-first pillar classifier.
 - **Futures term structure (forward curve)** — Dated contract months (CLZ26.NYM style) priced through Yahoo’s v8 chart API, verified 9/9 across NYMEX/COMEX/CBOT by the P2-O1 audit (2026-08-05). Yahoo was withdrawn on terms grounds 2026-08-06 and nothing else the app can reach quotes a dated month — FMP/Tiingo/Finnhub/Twelve Data/Alpha Vantage carry continuous front-months at best, exchange settlement files are licensed. The route resolves the contract months and returns ok:false with the reason; the card states it on-page. Front-month prices are unaffected.
-- **Commodity / FX / rate quotes + charts** — Futures, FX pairs, and yield indices still price through the equity quote/chart routes (no separate plumbing). ⚠ This is the surface the Yahoo removal hit hardest: symbols like GC=F, EURUSD=X and ^TNX were quoted keylessly and are NOT covered by Tiingo, so coverage now depends on the keyed provider you configure and is expected to be partial. Catalogs carry no reference prices, so anything unpriced renders an honest dash rather than a stale number. The FX converter and Treasury yield curve are keyless and unaffected. Reference/fallback data: `lib/data/commodityCatalog.ts`, `lib/data/currencyCatalog.ts`, `lib/data/ratesCatalog.ts`.
+- **Commodity / FX / rate quotes + charts** — FUTURES and FX PAIRS still price through the equity quote/chart routes (no separate plumbing). The four YIELD INDICES no longer do: since D3 (2026-09-03) ^IRX/^FVX/^TNX/^TYX read the official treasury.gov par curve via lib/data/ratesFromCurve.ts — keyless, plain percent, published daily — after a probe found no free provider quotes them at all (FMP paywalls, Finnhub empty, Twelve Data 404, Alpha Vantage empty, Tiingo has no index space). ⚠ Of what remains, this is still the surface the Yahoo removal hit hardest: GC=F and EURUSD=X were quoted keylessly and are NOT covered by Tiingo, so coverage depends on the keyed provider you configure and is expected to be partial. Catalogs carry no reference prices, so anything unpriced renders an honest dash rather than a stale number. The FX converter and Treasury yield curve are keyless and unaffected. Reference/fallback data: `lib/data/commodityCatalog.ts`, `lib/data/currencyCatalog.ts`, `lib/data/ratesCatalog.ts`.
 
 ## Shared / Cross-module
 

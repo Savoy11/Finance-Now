@@ -17,6 +17,22 @@ One application, three kinds of modules, one license system:
 | **Invest** | Portfolio (holdings, cost basis, P&L), Wallets, Watchlists | UI exists; needs real persistence |
 | **Budget & Plan** | Budgeting (accounts, transactions, budgets), Planning (net worth, goals, projections) | New |
 
+> **Update (2026-09-08) — this table is the original framing and is kept as
+> written; here is where each pillar actually stands.**
+>
+> - **Analyze** is built out well past "crypto only": Equities, Macro Markets
+>   (commodities, currencies, bonds & rates — 45 instruments) and ETFs & Funds
+>   all ship as entitlement-gated modules with their own registries, detail
+>   pages, TA and scanners.
+> - **Invest** has real persistence. Portfolios, watchlists, builder plans and
+>   wallets are all Postgres-backed through `/api/user/*` (NT3 completed the
+>   wallets leg on 2026-08-18). The trade ledger remains scaffolded and unwired.
+> - **Budget & Plan** was built, shipped, and then **removed on 2026-08-20** —
+>   owner decision to build personal-finance tooling as a separate product. The
+>   pages, `/api/user/budget/*` and `lib/budget/` are deleted; the DB tables are
+>   deliberately retained so no migration drops imported bank history. The
+>   Retirement Planner went with it. See RP-2's recorded reopen trigger.
+
 Differentiator: the personal-finance modules see live market data from the
 analysis modules (crypto portfolio value flows straight into net worth), and
 the `/api/v1` + MCP layer turns the whole suite into a personal-finance
@@ -130,10 +146,13 @@ module registry.
 > **Watchlist is DONE** (the note above predates it): `/api/user/watchlists`
 > (+`/[id]`), `useWatchlistStore` optimistic with client-UUID ids and a
 > one-time merging localStorage import. Still open:
-> - **Wallets are still localStorage.** `useWalletStore` persists to
->   `fn:wallets` via zustand `persist`; there is no `/api/user/wallets` route
->   (the namespace holds only budget, builder-plans, portfolios, watchlists).
->   Mechanical work — portfolios/watchlists are the template.
+> - ~~**Wallets are still localStorage.**~~ **DONE 2026-08-18 (NT3).**
+>   `/api/user/wallets` (+`/[id]` PATCH/DELETE) exists; `useWalletStore` is
+>   optimistic with client-UUID ids and a one-time merging `fn:wallets` import,
+>   exactly on the portfolios/watchlists template. Note the `/wallets` PAGE was
+>   separately held out of the initial rollout on 2026-08-22 — the API is
+>   deliberately left up, since user-data CRUD carries no staleness harm and
+>   saved addresses must survive the hide.
 > - **The trade ledger is scaffolded but unwired.** `trade_transactions` is
 >   fully defined (`schema/invest.ts`, created in migration 0000, with a
 >   `(portfolio_id, instrument_id, executed_at)` index whose comment says it
@@ -155,6 +174,17 @@ module registry.
 after a browser wipe.
 
 ### Phase 2 — Budget module
+> **⚪ REMOVED 2026-08-20 — read this before the progress note below.** Owner
+> decision: *"we will build this out in a completely different tool."* The
+> pages, `/api/user/budget/*` and `lib/budget/` are deleted, along with the
+> Retirement Planner and its 53 tests. The **DB tables are retained on purpose**
+> (`lib/db/schema/budget.ts` is kept precisely so drizzle never generates a
+> DROP), because imported bank history is user data — export instructions live
+> in that file's banner. The engine is recoverable by name from
+> `archive/wave-two-pre-reset` if the separate tool wants it. This reverses RP-2
+> via its recorded reopen trigger. The note below is the historical record of
+> what shipped and is left as written.
+>
 > Progress (2026-07-30): **shipped as the `budget` suite module** (`/budget` +
 > `/budget/transactions`, ModuleGated, own sidebar section). Accounts with
 > anchor-based balances, manual entry, CSV import (column mapping UI, saved
@@ -323,8 +353,9 @@ needs the most careful honest-data framing, not for data availability.
     search_macro_instruments, get_macro_quote, get_macro_price_history,
     get_yield_curve, get_fx_rates, get_macro_news). Research page has a
     Macro selector; App Assistant sees macro tools via toolset `'all'`.
-  - Instruments layer: all 46 macro instruments (19 commodities, 18 FX +
-    DXY, 8 rates) are `sec:`-keyed entries in `instruments.ts` with classes
+  - Instruments layer: all 45 macro instruments (19 commodities, 18 FX
+    **including** DXY, 8 rates — corrected 2026-09-08; "18 FX + DXY" counted
+    DXY twice, and the catalogs are 19/18/8) are `sec:`-keyed entries in `instruments.ts` with classes
     `commodity`/`currency`/`rate` and `detailPath` slug routing, resolvable
     to DB rows — watchlists, portfolios, and Compare can hold them.
 
@@ -459,9 +490,15 @@ went to `docs/BUSINESS-CHECKLIST.md`, which is worked separately from both produ
       id used to render NOTHING, so a typo removed attribution invisibly — it is now loud in
       development. Both fixes exist because hand-written per-page attribution is the failure
       mode this item is really about.
-- [ ] **Test and fine-tune all agents and AI-enhanced tools.** 11 agents exist; `data-scraper`,
+- [ ] **Test and fine-tune all agents and AI-enhanced tools.** ~~11 agents exist; `data-scraper`,
       `equity-data-scraper` and `equity-diligence` are configurable but have **no invocation
-      trigger** — either give them a UI entry point or retire them. Judge output against the
+      trigger** — either give them a UI entry point or retire them.~~
+      **The invocation half is DONE (NT5, 2026-08-18):** the Research page carries a per-market
+      agent picker, so every whitelisted agent is selectable, and
+      `lib/agents/__tests__/researchAgents.test.ts` guards picker ↔ route ↔ catalog symmetry so
+      an agent cannot go configurable-but-unrunnable again. What remains open is the
+      TESTING half — judging actual output, which needs the owner's machine.
+      *(Annotated 2026-09-08.)* Judge output against the
       REAL vs FALLBACK rule: an agent answering vaguely off a fallback route is a data problem,
       not a prompt problem.
 

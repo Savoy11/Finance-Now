@@ -10,14 +10,19 @@ starts (see `docs/ROADMAP.md` Phase 6 and the Sell-Readiness Plan).
 
 ## Current state: the auth wall is intentionally OFF
 
-Three separate switches keep login out of the way. They were set deliberately
-by the owner, not left half-finished:
+**Two** switches keep login out of the way. They were set deliberately by the
+owner, not left half-finished:
 
 | Location | Switch | Effect |
 |---|---|---|
 | `src/app/(dashboard)/layout.tsx` | `REQUIRE_AUTH = false` | Dashboard never redirects to `/login` |
 | `src/app/(auth)/login/page.tsx` | `LOGIN_DISABLED = true` | `/login` redirects to `/headlines`, renders `null` |
-| `src/store/useAuthStore.ts` | — | Still points at the **dormant** legacy FastAPI backend, not Auth.js |
+
+> *Corrected 2026-09-08:* this table listed a third row, `src/store/useAuthStore.ts`
+> ("still points at the dormant legacy FastAPI backend"). **That store no longer
+> exists** — nothing in `src/` references `useAuthStore`. The session comes from
+> `next-auth/react`'s `useSession()`. A switches table naming a file that is not
+> there sends the next reader looking for a toggle nobody can find.
 
 **Do not re-enable these without asking.** They are a product decision, not a bug.
 
@@ -85,11 +90,14 @@ completely broken while signup appeared to work.
 
 Fixed by excluding Auth.js paths: `source: '/api/:path((?!auth/).*)'`.
 
-> **Still outstanding in that rule:** `NEXT_PUBLIC_API_URL` is
-> `http://localhost:8000/api/v1`, and the destination appends `/api/:path`,
-> producing a doubled `http://localhost:8000/api/v1/api/...`. Any `/api/*` path
-> without a concrete route file 500s. Harmless while the backend is dormant,
-> but it will bite whoever revives it.
+> **Fixed 2026-09-08.** `NEXT_PUBLIC_API_URL` was often set to
+> `http://localhost:8000/api/v1` while the destination appends `/api/:path`,
+> producing a doubled `http://localhost:8000/api/v1/api/...` — any `/api/*` path
+> without a concrete route file 500'd. `next.config.mjs` now strips a trailing
+> `/api` or `/api/vN` from the configured base, so the fix applies to every
+> deployment rather than depending on each one setting the variable the way this
+> rule happens to want. The docs and the k8s ConfigMap were corrected to the bare
+> origin as well.
 
 ---
 
@@ -100,9 +108,13 @@ yet, and building it now means maintaining a login system with no users.
 
 1. **Wire the login page to Auth.js.** Replace `useAuthStore.login()` (legacy
    backend) with `signIn('credentials', …)`. Remove `LOGIN_DISABLED`.
-2. **Add `SessionProvider`** to `src/app/providers.tsx` and make
+2. ~~**Add `SessionProvider`** to `src/app/providers.tsx` and make
    `useAuthStore` read from `useSession()` rather than holding its own tokens —
-   or delete the store entirely, since Auth.js already owns this state.
+   or delete the store entirely, since Auth.js already owns this state.~~
+   **DONE (`5e1c32a`).** `SessionProvider` wraps the tree at
+   `src/app/providers.tsx:65`, and the store was deleted rather than rewired —
+   Auth.js already owned the state, so a second copy of it was the bug. Steps 1,
+   3, 4 and 5 remain deferred.
 3. **Restore the wall:** `REQUIRE_AUTH = true`. Prefer Next.js middleware over
    the current client-side effect, so protected pages never render before the
    redirect.

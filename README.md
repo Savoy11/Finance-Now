@@ -1,10 +1,12 @@
 # Finance Now — Multi-Asset Financial Analytics
 
+[![CI](https://github.com/Savoy11/Finance-Now/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Savoy11/Finance-Now/actions/workflows/ci.yml?query=branch%3Amain)
+
 **An AI-enhanced investment evaluator, and the flagship module of a growing suite of financial analysis tools.**
 
 Finance Now evaluates crypto assets — stablecoins, Layer 1s, tokenized assets, and CBDCs — by combining live multi-provider market data, reserve transparency monitoring, regulatory news intelligence, and a configurable AI agent layer into a single Bloomberg-terminal-style workspace. It is built on a strict data-honesty principle: **every number is attributed to its source, estimates are labeled as estimates, and derived metrics with no reliable data source show "not available" rather than fabricated values.**
 
-Finance Now is one module in a larger suite. The same shell hosts entitlement-gated modules for Equities, ETFs & Funds, and a Portfolio Builder, with personal-finance modules (budgeting, planning) on the roadmap — one application, one auth layer, individually licensable modules. See [`docs/ROADMAP.md`](docs/ROADMAP.md).
+Finance Now is one module in a larger suite. The same shell hosts entitlement-gated modules for Equities, Macro Markets, ETFs & Funds, and a Portfolio Builder — one application, one auth layer, individually licensable modules. See [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 ---
 
@@ -12,12 +14,12 @@ Finance Now is one module in a larger suite. The same shell hosts entitlement-ga
 
 | Module | Scope | Status |
 |---|---|---|
-| **Crypto (Finance Now)** | 110 monitored assets: risk evaluation, reserves, peg tracking, fees, staking, TA, news | 🟢 Active — flagship |
+| **Crypto (Finance Now)** | 108 catalogued assets: reserves, peg tracking, fees, staking, TA, news, scanner | 🟢 Active — flagship |
 | **Equities** | 79 large-caps across 11 sectors: live quotes, breadth, screener, TA, news, calendar | 🟢 Active |
-| **ETFs & Funds** | Fund registry (118 ETFs/mutual funds) and per-symbol detail | 🟢 Active |
+| **ETFs & Funds** | Fund registry (126: 114 ETFs + 12 mutual funds) and per-symbol detail | 🟢 Active |
 | **Macro Markets** | Commodities, currencies, bonds/rates: 45 instruments, official yield curve, two-tier FX converter | 🟢 Active |
 | **Portfolio Builder** | Cross-module portfolio construction | 🟡 Early |
-| Budgeting & Planning | Accounts, budgets, net worth, goals | ⚪ Planned |
+| ~~Budgeting & Planning~~ | Accounts, budgets, net worth, goals | ⚪ **Moved to a separate product, 2026-08-20.** Owner decision — personal-finance tooling is being built elsewhere. The pages, routes and `lib/budget/` are deleted; the DB tables are deliberately RETAINED so no migration drops imported bank history. Reverses RP-2 via its recorded reopen trigger |
 
 Modules are declared in `src/lib/modules/registry.ts`; the sidebar renders from the registry and modules toggle in **Integrations → Suite Modules**.
 
@@ -42,19 +44,19 @@ Plus a **Daily Brief** generated from your holdings, live prices, and headlines.
 
 ## Feature Status (honest)
 
-Verified against the running application, July 2026.
+Verified against the running application, July 2026. **Rows corrected 2026-09-08** against `CLAUDE.md`'s feature inventory and `DATA-AVAILABILITY.md` — the July table had gone stale on six of them, three in ways that overstated what ships.
 
 | Feature | State |
 |---|---|
 | Live market data | 🟢 110 crypto assets via CoinGecko + CoinMarketCap + Binance, 3-way fallback |
 | Reserve Transparency Monitor | 🟢 Live DefiLlama supply + attestation metadata for 9 stablecoins |
-| Transfer Fee Calculator | 🟢 750 coins, live BTC/gas fees, ranked cheapest routes, safety checklist |
-| Staking Explorer | 🟢 55 providers, custody-risk taxonomy; live APRs from DefiLlama Yields + native sources, estimates labeled |
-| Technical Analysis | 🟢 Live OHLCV, 25+ indicators, pattern scanner, backtester, drawing tools |
+| Transfer Fee Calculator | ⚪ **Hidden from the initial rollout (2026-08-22)** — kept, not deleted; `/transfer-fees` redirects. 30 exchanges × 22 coins × 18 networks from a staleness-labelled static table, plus a live withdrawal-fee overlay and live BTC/EVM-L1 gas |
+| Staking Explorer | 🟡 55 providers with a custody-risk taxonomy, plus a live on-chain pools tab. **Only 4 of 51 APRs are live** (stETH, rETH, mSOL, jitoSOL); the rest are labelled static estimates |
+| Technical Analysis | 🟢 Live OHLCV, 62 indicators (shared registry), patterns, drawing tools, and a separate Scanner page per section. **The backtester is hidden** (2026-08-20, owner: "I may revisit back testing") — every engine and panel is retained in place |
 | News & Analysis | 🟢 7 providers with sentiment + asset tagging, incl. US Congress bill tracker |
-| Equities & Funds | 🟢 Live quotes; screener runs on reference (static) fundamentals |
+| Equities & Funds | 🟡 **Key-gated since the Yahoo removal (2026-08-06).** Every live quote rung needs an API key; with none configured, stocks and funds show catalog reference prices behind an amber `ref` tag rather than a fabricated number. Screener fundamentals are reference data; P/E is backfilled free from SEC XBRL |
 | AI agents + Daily Brief | 🟢 Working with any configured provider key |
-| **Safety Score (composite risk)** | 🟢 **Live** since 2026-07-18. Five-pillar composites (reserve, peg, market, structure, news sentiment) on the canonical 0–100 higher-is-safer scale with a fatal-flaw override for stablecoins — see `docs/architecture/risk-scale-spec.md`. |
+| Safety Score (per-coin composite risk) | ⚪ **Removed 2026-08-29 (RP-6).** No per-coin risk score is published anywhere: a risk figure on an asset the reader is viewing may be read as a recommendation, which is a regulated activity. The scoring framework in `lib/risk/` remains and still powers the options Trade Risk Scorer, staking-provider risk and the macro/equity profiles — see `docs/architecture/risk-scale-spec.md` |
 | Authentication / multi-tenancy | 🟡 Login scaffolded, deliberately disabled during single-user development |
 
 ---
@@ -71,20 +73,29 @@ npm install
 npm run dev
 ```
 
-Create `frontend/.env.local`:
+**No configuration is required to run it.** The app is live-only against keyless
+public providers; every surface with no reachable source says so rather than
+inventing a figure. To unlock the key-gated ones:
+
+```bash
+cp .env.example .env.local   # every variable annotated with what it unlocks
+```
+
+The ones worth setting first:
 
 ```
-NEXT_PUBLIC_API_URL=http://localhost:8000
-NEXT_PUBLIC_WS_URL=ws://localhost:8000
-
-# Optional — unlock AI agents & Daily Brief (any one is enough)
+# AI agents & Daily Brief (any one provider is enough)
 ANTHROPIC_API_KEY=...
-OPENAI_API_KEY=...
 
-# Optional — richer data (higher rate limits, extra providers)
-# COINMARKETCAP_API_KEY=...
-# NEWSAPI_API_KEY=...
+# Live stock / fund / macro quotes — all rungs are key-gated since the
+# Yahoo Finance removal (2026-08-06, terms grounds). Without one of these,
+# stocks and funds show catalog reference prices behind an amber `ref` tag.
+FMP_API_KEY=...
 ```
+
+`NEXT_PUBLIC_WS_URL` was listed here and no longer exists — the app opens no
+socket (removed in M8). `NEXT_PUBLIC_API_URL` is optional and points at the
+dormant legacy backend; set the **origin only**, with no `/api` suffix.
 
 Open [http://localhost:3000](http://localhost:3000). Windows users: `start.bat` at the repo root.
 
@@ -93,9 +104,16 @@ Open [http://localhost:3000](http://localhost:3000). Windows users: `start.bat` 
 The FastAPI + TimescaleDB + Redis backend supports auth and agent persistence; it is not required for the live dashboards.
 
 ```bash
-cp infrastructure/docker/.env.example infrastructure/docker/.env   # fill in secrets
+cp backend/.env.example backend/.env   # backend secrets; edit before starting
 docker compose -f infrastructure/docker/docker-compose.yml up --build
 ```
+
+The compose file supplies its own defaults for every variable it reads
+(`${VAR:-default}`), so it starts without an env file. There is deliberately no
+`infrastructure/docker/.env.example` — this line used to tell you to copy one
+that has never existed. Set `COINGECKO_API_KEY` and friends in your shell if you
+want the container to pick them up.
+
 
 | Service | URL |
 |---|---|

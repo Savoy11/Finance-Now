@@ -64,6 +64,13 @@ const EXTENDED_CURRENCIES = [
   'bzd', 'cdf', 'clp', 'cop', 'crc', 'cup', 'cve', 'djf', 'dop', 'dzd', 'egp',
   'ern', 'etb', 'fjd', 'fkp', 'gel', 'ggp', 'ghs', 'gip', 'gmd', 'gnf', 'gtq',
   'gyd', 'hnl', 'htg', 'imp', 'iqd', 'irr', 'jep', 'jmd', 'jod', 'kes', 'kgs',
+  // 'kpw' (North Korean won) and 'syp' (Syrian pound) are deliberately KEPT
+  // even though the upstream never prices them, which permanently classifies
+  // this route FALLBACK in the audit harness. Decided 2026-09-08: dropping
+  // them would change nothing about what the route does and only make the
+  // audit line tidier — optimising the measurement instead of the thing
+  // measured. A user who picks KPW learns that nobody quotes it; a user who
+  // cannot find KPW learns nothing.
   'khr', 'kmf', 'kpw', 'kwd', 'kyd', 'kzt', 'lak', 'lbp', 'lkr', 'lrd', 'lsl',
   'lyd', 'mad', 'mdl', 'mga', 'mkd', 'mmk', 'mnt', 'mop', 'mru', 'mur', 'mvr',
   'mwk', 'mzn', 'nad', 'ngn', 'nio', 'npr', 'omr', 'pab', 'pen', 'pgk', 'pkr',

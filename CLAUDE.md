@@ -7,7 +7,7 @@ This file is auto-loaded by Claude Code at session start. It gives instant conte
 
 ## What This Is
 
-An institutional-grade financial analytics suite built with Next.js 15 (App Router). It began as a crypto dashboard (risk, reserves, news sentiment, transfer fees, staking) and has grown into an entitlement-gated module suite (see `docs/ROADMAP.md`): a **core** section (headlines, watchlist, portfolios, compare, research, brief) plus seven optional modules — **Crypto** (the original Finance Now), **Equities** (`/equities`), **Macro Markets** (`/macro`), **ETFs & Funds** (`/funds`), and the premium **Portfolio Builder** (`/portfolio-builder`, its own entitlement). Modules are declared in `src/lib/modules/registry.ts`; the sidebar renders from that registry, modules can be toggled in Integrations → Suite Modules, and **every optional module's pages are wrapped in `<ModuleGate>`** so a disabled module is locked by direct URL too, not just hidden from the nav. The frontend runs **live-only** against public data providers via its `/live-data/*` route handlers. User data (portfolios, watchlists, builder plans, wallets) persists to Postgres through `/api/user/*`; module entitlements are **localStorage-only** (`useEntitlementStore` — the `entitlements` table exists in the schema but no route serves it yet, which is the Phase 6 rollout-posture question); an optional legacy Python backend still serves assets/market-data/alerts/risk-scores, but **not** auth — sign-in is Auth.js against the app's own `users` table. Surfaces with no free real-time source show an explicit "not available" notice — there is no mock/demo data path.
+An institutional-grade financial analytics suite built with Next.js 15 (App Router). It began as a crypto dashboard (risk, reserves, news sentiment, transfer fees, staking) and has grown into an entitlement-gated module suite (see `docs/ROADMAP.md`): a **core** section (headlines, watchlist, portfolios, compare, research, brief) plus **five** optional modules — **Crypto** (the original Finance Now), **Equities** (`/equities`), **Macro Markets** (`/macro`), **ETFs & Funds** (`/funds`), and the premium **Portfolio Builder** (`/portfolio-builder`, its own entitlement). (This said "seven" while listing five; `lib/modules/registry.ts` is the count that matters — `core` plus those five.) Modules are declared in `src/lib/modules/registry.ts`; the sidebar renders from that registry, modules can be toggled in Integrations → Suite Modules, and **every optional module's pages are wrapped in `<ModuleGate>`** so a disabled module is locked by direct URL too, not just hidden from the nav. The frontend runs **live-only** against public data providers via its `/live-data/*` route handlers. User data (portfolios, watchlists, builder plans, wallets) persists to Postgres through `/api/user/*`; module entitlements are **localStorage-only** (`useEntitlementStore` — the `entitlements` table exists in the schema but no route serves it yet, which is the Phase 6 rollout-posture question); an optional legacy Python backend still serves assets/market-data/alerts/risk-scores, but **not** auth — sign-in is Auth.js against the app's own `users` table. Surfaces with no free real-time source show an explicit "not available" notice — there is no mock/demo data path.
 
 **Working directory:** the repo root is the `Finance-Now` monorepo (`frontend/`, `backend/`,
 `mcp-server/`, `infrastructure/`, `docs/`); **the Next.js app and all its npm commands live in
@@ -355,12 +355,12 @@ To add an exchange: append to `EXCHANGES` array following the existing pattern. 
 ### `src/lib/data/stakingProviders.ts`
 Central data file for the Staking Opportunities page.
 
-- **Provenance:** `STAKING_DATA_LAST_VERIFIED` + `getStakingDataProvenance()` drive the freshness notice on `/staking` and `/staking-discovery`, and the `referenceData` block on `/api/v1/staking/opportunities`. Stale after 90 days (shorter than the 120 used for fees/attestations — a provider's risk profile can change overnight, which is why Celsius is in the catalog).
+- **Provenance:** `STAKING_DATA_LAST_VERIFIED` + `getStakingDataProvenance()` drive the freshness notice on `/staking` (both the Providers and Live Pools tabs — `/staking-discovery` was merged in on 2026-08-20 and now redirects), and the `referenceData` block on `/api/v1/staking/opportunities`. Stale after 90 days (shorter than the 120 used for fees/attestations — a provider's risk profile can change overnight, which is why Celsius is in the catalog).
 - **`StakingCoinId`** — 16 stakeable coins: eth, sol, ada, dot, atom, matic, avax, bnb, trx, btc, cro, osmo, ksm, inj, tia, near
 - **`ProviderCategory`** — `'cefi' | 'wallet' | 'liquid'`
 - **`RiskProfile`** — 6 dimensions, each 1–10: `custodyRisk`, `counterpartyRisk`, `contractRisk`, `slashingRisk`, `liquidityRisk`, `regulatoryRisk`
-- **`computeOverallRisk(risks)`** — weighted composite score (counterparty 25%, custody 20%, liquidity 20%, contract 15%, slashing 10%, regulatory 10%)
-- **`getRiskLevel(score)`** — returns `'low' | 'medium' | 'high' | 'critical'`
+- **`computeOverallRisk(risks)` and `getRiskLevel(score)` are `@internal` legacy helpers — do not reach for them in new code.** They run a **1–10, higher-is-RISKIER** scale (weights: counterparty 25%, custody 20%, liquidity 20%, contract 15%, slashing 10%, regulatory 10%) with a 4-level band whose `medium` does not exist in the canonical vocabulary at all. They are kept for exactly one reason: the public `/api/v1/staking/opportunities` contract still serves those fields (R2 §5.3). There is deliberately **no deprecation date** (P4, 2026-07-19) — removing them is an API break, not a cleanup.
+  **New code scores staking through `scoreStakingProvider()`** (`lib/risk/profiles/stakingAdapter.ts`), which wraps the same weights and converts at the boundary to the canonical **0–100, higher-is-SAFER** score with the 5-band vocabulary (low/moderate/elevated/high/critical). Two scales pointing opposite ways is precisely the collision the risk-scale spec exists to prevent, so read the direction before you read the number.
 - **`STAKING_PROVIDERS`** array — 55 providers (count is dynamic; the page reads `STAKING_PROVIDERS.length`). Representative names:
   - CeFi: Celsius (defunct, cautionary), Coinbase, Kraken, Binance, OKX, Bybit, KuCoin, Crypto.com, Bitget, Gate.io, HTX, Robinhood, Nexo, Gemini, Bitfinex, Bitstamp, MEXC, Upbit
   - Wallet: Ledger Live, MetaMask, Phantom, Trust Wallet, Exodus, Keplr, Solflare, Coinbase Wallet, Atomic Wallet, Trezor Suite
@@ -437,7 +437,7 @@ site nobody has reviewed. Full design: `docs/architecture/source-terms.md`.
 > | **Futures term structure** (`/live-data/futures-curve`) | **No source at all.** Nothing reachable quotes a dated contract month. The route resolves the months and returns `ok:false` with the reason; `TermStructureCard` prints it. Front-month prices are unaffected |
 > | Trailing returns | One request per symbol. `?universe=` is **refused**, not truncated; `?symbols=` capped at 60. Fund return **screening and sorting are off** — a screen that could only see the visible page would filter as though it had seen every fund. Per-page Returns columns still live |
 > | Per-ticker news | **Gone.** Symbol mode reads the general wires and keeps articles that name the company. It no longer force-tags the requested symbol onto unrelated stories |
-> | Fund holdings | Unaffected (SEC N-PORT, keyless). But sector weights now need an FMP key, and the stock/bond/cash **asset mix has no source** — that section doesn't render |
+> | Fund holdings | Unaffected (SEC N-PORT, keyless). Sector weights now need an FMP key (N-PORT carries no GICS classification). The stock/bond/cash **asset mix is derived from N-PORT's `assetCat`** (NT9, `lib/utils/assetMix.ts`) — keyless, so also unaffected; the earlier "no source" note here was overtaken by that work. It is absent only for filers that publish no N-PORT (UITs such as SPY), where the section correctly does not render |
 > | FX converter, Treasury curve, SEC filings/XBRL, all of crypto | **Unaffected** — keyless and unrelated |
 >
 > The fix for any of the key-gated rows is a free API key on the Integrations page — **not
@@ -448,8 +448,9 @@ site nobody has reviewed. Full design: `docs/architecture/source-terms.md`.
 > blocked every publisher and provider host at the gateway, so not one terms document
 > could be opened. The entries are honest starting positions drawn from each
 > provider's publicly documented posture (published API docs, documented free tiers,
-> openly advertised RSS feeds) — they are **not readings**. Only the Cboe entry is
-> `verified`, from the P2-O1 audit on the owner's machine.
+> openly advertised RSS feeds) — they are **not readings**. Two entries are
+> `verified`: **Cboe** (P2-O1 audit, 2026-08-05) and **CoinGecko** (the
+> 2026-08-29 probe run) — both read on the owner's machine.
 >
 > A seeded `approved`/`conditional` means *nobody has objected yet*, not *cleared*.
 > Seeded entries still serve data — breaking the app over a documentation gap is the
@@ -848,7 +849,7 @@ return NextResponse.json(data, { headers: CORS })
 
 ## MCP Server (`mcp-server/`)
 
-A standalone Node.js MCP server at `Crypto-Stuff/mcp-server/` that exposes Finance Now tools to Claude and any MCP-compatible AI agent. It calls the `/api/v1/` endpoints — Finance Now frontend must be running.
+A standalone Node.js MCP server at `mcp-server/` (repo root) that exposes Finance Now tools to Claude and any MCP-compatible AI agent. It calls the `/api/v1/` endpoints — Finance Now frontend must be running.
 
 ### Tools exposed
 | Tool | Description |
@@ -880,7 +881,7 @@ npm run build
   "mcpServers": {
     "finance-now": {
       "command": "node",
-      "args": ["C:/Users/marcu/OneDrive/Desktop/Crypto-Stuff/mcp-server/dist/index.js"],
+      "args": ["<path-to-repo>/mcp-server/dist/index.js"],
       "env": { "FN_BASE_URL": "http://localhost:3000" }
     }
   }
@@ -891,7 +892,7 @@ Claude Desktop config lives at `%APPDATA%\Claude\claude_desktop_config.json` on 
 ### Add to Claude Code (project-level MCP)
 ```bash
 # Run from any directory — adds Finance Now MCP to this project's .claude/settings.json
-claude mcp add finance-now node C:/Users/marcu/OneDrive/Desktop/Crypto-Stuff/mcp-server/dist/index.js
+claude mcp add finance-now node <path-to-repo>/mcp-server/dist/index.js
 ```
 
 ### Environment variable
