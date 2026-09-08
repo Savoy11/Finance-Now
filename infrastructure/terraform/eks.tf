@@ -4,7 +4,7 @@
 
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
-  version = "~> 19.21"
+  version = "~> 20.37"
 
   cluster_name    = "${local.name_prefix}-eks"
   cluster_version = var.eks_cluster_version
@@ -20,6 +20,19 @@ module "eks" {
   cluster_endpoint_public_access_cidrs = var.eks_public_access_cidrs
 
   # Cluster encryption with KMS
+  #
+  # `create_kms_key = false` is what makes `provider_key_arn` below mean
+  # anything. The module defaults it to TRUE, and its encryption_config reads
+  # `var.create_kms_key ? module.kms.key_arn : provider_key_arn` — so with the
+  # default left in place the module creates a second KMS key of its own and
+  # silently ignores the one named here. The cluster's secrets would then be
+  # encrypted under a key that iam.tf's grants (scoped to `aws_kms_key.fn.arn`)
+  # do not cover.
+  #
+  # The default and that expression are identical in v19.21 and v20.37, so this
+  # was already true before the upgrade — it has simply never been applied.
+  create_kms_key = false
+
   cluster_encryption_config = {
     resources        = ["secrets"]
     provider_key_arn = aws_kms_key.fn.arn
@@ -75,26 +88,61 @@ module "eks" {
   create_cloudwatch_log_group            = true
   cloudwatch_log_group_retention_in_days = 30
 
-  # aws-auth configmap
-  manage_aws_auth_configmap = true
+  #############################################################################
+  # Cluster access — EKS access entries, not the aws-auth ConfigMap
+  #
+  # v20 removed `manage_aws_auth_configmap` / `aws_auth_roles` / `aws_auth_users`
+  # from this module. Access is now an EKS API object instead of a ConfigMap the
+  # module has to reach inside the cluster to write.
+  #
+  # `API` rather than the module's `API_AND_CONFIG_MAP` default: this cluster has
+  # never been provisioned (docs/deployment/aws-provisioning.md), so there is no
+  # existing ConfigMap to preserve and no staged one-way migration to perform —
+  # the mode is simply chosen at creation. Nothing in this repo writes aws-auth,
+  # and `API` is the direction the module has announced for v21, so choosing it
+  # now avoids doing this twice.
+  #
+  # It is also the recoverable failure mode. A principal holding
+  # `eks:CreateAccessEntry` can repair cluster access from outside; a broken
+  # aws-auth ConfigMap can only be fixed from inside the cluster it just locked
+  # you out of.
+  #############################################################################
 
-  aws_auth_roles = [
-    {
-      rolearn  = aws_iam_role.eks_node_group.arn
-      username = "system:node:{{EC2PrivateDNSName}}"
-      groups   = ["system:bootstrappers", "system:nodes"]
-    },
+  authentication_mode = "API"
+
+  # Not optional here. Terraform manages kubernetes_* resources in this file (the
+  # fn-deployers ClusterRole and binding below, and the gp3 StorageClass) through
+  # a kubernetes provider that authenticates as the Terraform caller via
+  # `aws eks get-token` (main.tf). Without this entry that caller reaches the API
+  # server with no RBAC whatsoever and every one of those resources fails on the
+  # very first apply.
+  enable_cluster_creator_admin_permissions = true
+
+  access_entries = {
     # CI/CD deploy role. Must reference the role Terraform actually creates —
     # a hardcoded name here silently maps a role that does not exist, and the
     # deploy then fails at kubectl time with an opaque authorization error.
-    {
-      rolearn  = aws_iam_role.cicd_deploy.arn
-      username = "fn-cicd"
-      groups   = ["fn-deployers"]
-    },
-  ]
+    #
+    # No `policy_associations` on purpose: the role draws its permissions from
+    # the least-privilege fn-deployers ClusterRole below, via `kubernetes_groups`,
+    # rather than from one of the AWS-managed cluster policies. The narrowest of
+    # those that could deploy at all, AmazonEKSEditPolicy, still grants far more
+    # than this pipeline needs — it writes secrets, which the ClusterRole below
+    # deliberately does not (they belong to the External Secrets Operator).
+    cicd_deploy = {
+      principal_arn     = aws_iam_role.cicd_deploy.arn
+      type              = "STANDARD"
+      user_name         = "fn-cicd"
+      kubernetes_groups = ["fn-deployers"]
+    }
+  }
 
-  aws_auth_users = []
+  # The node groups need no entry: EKS creates access entries for EKS-managed
+  # node group roles automatically. The v19 config mapped
+  # `aws_iam_role.eks_node_group` by hand, but the node groups below never set
+  # `iam_role_arn`, so the module creates their roles (`create_iam_role` defaults
+  # to true) and that hand-written mapping named a role no node ever assumed.
+  # See the note left on that role in iam.tf.
 
   ###############################################################################
   # Managed Node Groups
@@ -366,7 +414,7 @@ resource "helm_release" "metrics_server" {
 ###############################################################################
 # RBAC for the CI/CD deploy role
 #
-# aws_auth_roles above maps the deploy role to the "fn-deployers" group, but a
+# The access entry above maps the deploy role to the "fn-deployers" group, but a
 # group with no binding grants nothing: the role authenticates to the cluster and
 # then fails every kubectl apply with a bare "cannot ... at the cluster scope".
 # These two resources are what make that mapping mean something.
@@ -440,7 +488,7 @@ resource "kubernetes_cluster_role_binding" "fn_deployers" {
     name      = kubernetes_cluster_role.fn_deployers.metadata[0].name
   }
 
-  # Matches the group name in aws_auth_roles above. These two strings must agree.
+  # Matches kubernetes_groups on the access entry above. These strings must agree.
   subject {
     api_group = "rbac.authorization.k8s.io"
     kind      = "Group"

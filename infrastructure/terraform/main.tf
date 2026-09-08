@@ -8,9 +8,14 @@ terraform {
   required_version = ">= 1.9.0"
 
   required_providers {
+    # Floor set by the EKS module, not by anything this config uses directly:
+    # terraform-aws-modules/eks v20.37 declares `>= 5.95, < 6.0.0`. Leaving the
+    # old `~> 5.30` here would still resolve to a working version today, but it
+    # would let a lockfile pin 5.30-5.94 and fail inside the module rather than
+    # at constraint-resolution time, which is a much harder error to read.
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 5.30"
+      version = "~> 5.95"
     }
     kubernetes = {
       source  = "hashicorp/kubernetes"

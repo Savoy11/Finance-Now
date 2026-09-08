@@ -4,6 +4,19 @@
 
 ###############################################################################
 # EKS Node Group IAM Role
+#
+# ⚠ No node actually assumes this role. The node groups in eks.tf do not set
+# `iam_role_arn`, so the EKS module creates a role per node group itself
+# (`create_iam_role` defaults to true) and attaches `iam_role_additional_policies`
+# to those. This role's only consumer was the hand-written aws-auth mapping,
+# which the v20 access-entry migration removed — EKS maps managed node group
+# roles automatically, so nothing replaced it.
+#
+# It is left in place rather than deleted because deleting infrastructure is a
+# separate decision from upgrading a module, and `outputs.tf` still publishes its
+# ARN as `eks_node_group_arn`. If you want the node instances to use THIS role
+# with these five attachments, set `iam_role_arn = aws_iam_role.eks_node_group.arn`
+# on each node group; if you do not, this role and its attachments can go.
 ###############################################################################
 
 resource "aws_iam_role" "eks_node_group" {
