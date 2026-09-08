@@ -82,13 +82,13 @@ kubectl scale deployment fn-backend --replicas=10 -n fn
 
 Aurora automatically promotes a read replica within ~30 seconds. To verify:
 ```bash
-aws rds describe-db-clusters --db-cluster-identifier fn-cluster \
+aws rds describe-db-clusters --db-cluster-identifier fn-staging-aurora \
   --query 'DBClusters[0].DBClusterMembers[*].{Instance:DBInstanceIdentifier,Writer:IsClusterWriter}'
 ```
 
 If manual intervention is required:
 ```bash
-aws rds failover-db-cluster --db-cluster-identifier fn-cluster
+aws rds failover-db-cluster --db-cluster-identifier fn-staging-aurora
 ```
 
 **Post-failover**: Update `DATABASE_URL` in Kubernetes secret if the writer endpoint changed.

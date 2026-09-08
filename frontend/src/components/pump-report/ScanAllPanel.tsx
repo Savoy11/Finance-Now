@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { clsx } from 'clsx'
 import { Loader2, RadarIcon, ExternalLink, AlertTriangle } from 'lucide-react'
 import type { ScanFinding, ScanResponse, ScanTarget } from '@/app/live-data/pump-report/scan/route'
-import { SCAN_TARGET_CAP } from '@/app/live-data/pump-report/scan/route'
+import { SCAN_TARGET_CAP } from '@/lib/pumpReport/scanLimits'
 import { riskBg, riskColor, riskLabel } from './riskStyles'
 
 // ─── Why this panel exists ────────────────────────────────────────────────────

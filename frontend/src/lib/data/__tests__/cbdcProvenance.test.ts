@@ -5,7 +5,7 @@ import {
   cbdcFallbackAgeDays,
   cbdcFallbackIsStale,
   getCbdcFallbackProvenance,
-} from '../route'
+} from '../cbdcProvenance'
 
 const compiled = new Date(`${CBDC_FALLBACK_COMPILED}T00:00:00Z`)
 const plusDays = (n: number) => new Date(compiled.getTime() + n * 86_400_000)

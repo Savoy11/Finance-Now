@@ -60,6 +60,32 @@ const fallback = (detail) => ({ verdict: FALLBACK, detail })
 const unconfigured = (detail) => ({ verdict: UNCONFIGURED, detail })
 const empty = (detail) => ({ verdict: EMPTY, detail })
 
+/** Pause between consecutive CoinGecko-backed checks. See the runner loop. */
+const COINGECKO_GAP_MS = 1_800
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+
+/**
+ * Routes whose upstream is CoinGecko — directly or as the first rung of a
+ * ladder. Matched on the route path so a renamed test cannot silently drop out
+ * of the pacing.
+ */
+const COINGECKO_ROUTES = [
+  '/live-data/markets',
+  '/live-data/ohlcv',
+  '/live-data/chart',
+  '/live-data/coin-list',
+  '/live-data/coin-search',
+  '/live-data/coin-discovery',
+  '/live-data/coin-profile',
+  '/live-data/portfolio-prices',
+  '/live-data/portfolio-history',
+  '/live-data/alerts',
+  '/live-data/global',
+  '/live-data/staking-rates',
+  '/live-data/network-fees',
+]
+const isCoinGeckoBacked = (t) => COINGECKO_ROUTES.some((r) => t.path.startsWith(r))
+
 const results = []
 
 async function getJson(path) {
@@ -642,6 +668,37 @@ const tests = [
     return `${pts} maturities, 2s10s=${j.spread2s10s}, 3m10y=${j.spread3m10y}, shape=${j.shape}`
   }},
 
+  // DATA-AVAILABILITY item 18: macro instrument quotes were the one row still
+  // "Not measured". They ride the same security-quotes ladder as equities, but
+  // their coverage is a separate question — Tiingo does not carry futures or FX
+  // pairs at all, so which of these three answer depends entirely on WHICH
+  // keyed provider is configured, and the honest expectation is partial.
+  // Symbols are encoded because '=' is meaningful in a query string.
+  { group: 'macro', path: `/live-data/security-quotes?symbols=${encodeURIComponent('GC=F,EURUSD=X,ZN=F')}`,
+    name: 'macro quotes (gold / EURUSD / 10y future)', check: (j) => {
+      if (!j.ok || !j.quotes) throw new Error('no quotes payload')
+      const asked = ['GC=F', 'EURUSD=X', 'ZN=F']
+      const rows = asked.map((sym) => [sym, j.quotes[sym]])
+      const priced = rows.filter(([, q]) => q && typeof q.price === 'number' && !q.reference)
+      const ref = rows.filter(([, q]) => q && q.reference)
+      const missing = rows.filter(([, q]) => !q).map(([sym]) => sym)
+
+      // No keyed provider at all is a CONFIGURATION state, not a failure: the
+      // route is behaving correctly by declining to invent a price.
+      if (priced.length === 0 && ref.length === 0) {
+        return unconfigured(`no keyed provider served any macro quote (source=${j.source}; missing: ${missing.join(', ') || 'none'})`)
+      }
+      if (priced.length === 0) {
+        return fallback(`all ${ref.length} macro quotes are catalog reference values (source=${j.source})`)
+      }
+      if (priced.length < asked.length) {
+        // Expected on most configurations — say which, so the gap is a fact
+        // rather than a suspicion.
+        return fallback(`${priced.length}/${asked.length} live via ${j.source}; reference: ${ref.map(([s]) => s).join(', ') || 'none'}; missing: ${missing.join(', ') || 'none'}`)
+      }
+      return `${priced.length}/${asked.length} live via ${j.source}`
+    }},
+
   // ── Config / infra ──────────────────────────────────────────────────────────
   { group: 'infra', path: '/live-data/config', name: 'config (no key leakage)', quick: true, check: (j) => {
     if (!Array.isArray(j.providers)) throw new Error('no providers array')
@@ -804,7 +861,25 @@ async function crossLayerChecks() {
 const run = async () => {
   const selected = QUICK ? tests.filter((t) => t.quick) : tests
 
+  let lastWasCoinGecko = false
+
   for (const t of selected) {
+    // ── CoinGecko pacing (DATA-AVAILABILITY item 17) ──────────────────────────
+    //
+    // The free tier rate-limits a burst, and this harness issues one request
+    // after another with no gap. The 2026-07-27 audit's signature symptom was
+    // coin-discovery, portfolio-history and alerts failing TOGETHER mid-run and
+    // passing individually — three routes that share one upstream, throttled by
+    // the harness itself. That is an artifact of the measurement, and an audit
+    // whose own load changes the answer is worse than no audit: it sends the
+    // next reader to debug a route that works.
+    //
+    // So: a short pause before each CoinGecko-backed check, but only when the
+    // previous request also hit CoinGecko — a gap after an unrelated route buys
+    // nothing and the full run is already slow.
+    if (isCoinGeckoBacked(t) && lastWasCoinGecko) await sleep(COINGECKO_GAP_MS)
+    lastWasCoinGecko = isCoinGeckoBacked(t)
+
     try {
       const { status, json, headers, ms } = await getJson(t.path)
 

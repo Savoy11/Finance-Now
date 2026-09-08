@@ -84,9 +84,7 @@ function Setup-Env {
     }
 
     @"
-NEXT_PUBLIC_USE_MOCK=true
 NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
-NEXT_PUBLIC_WS_URL=ws://localhost:8000/ws
 "@ | Set-Content -Path $ENV_FILE -Encoding utf8
 
     Write-Ok ".env.local created (mock data enabled)"

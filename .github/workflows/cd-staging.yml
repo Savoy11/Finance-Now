@@ -46,6 +46,27 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
+    # ── Why this gate exists ────────────────────────────────────────────────
+    #
+    # AWS has never been provisioned, so AWS_ACCOUNT_ID has never been set, so
+    # every push to main since 2026-07-18 failed this workflow — about 90 times.
+    # `main` therefore carried a permanent red X, and a permanent red X is
+    # indistinguishable from a new one: the whole point of a status check is
+    # lost, and a real failure would have gone unnoticed exactly as this one did
+    # (docs/deployment/aws-provisioning.md:14-17).
+    #
+    # Deleting the workflow would lose the provisioning work; leaving it red
+    # trains everyone to ignore the signal. So it is gated instead, and gated on
+    # a REPOSITORY VARIABLE rather than a code change — the day AWS is
+    # provisioned, setting STAGING_DEPLOY_ENABLED=true under
+    # Settings → Secrets and variables → Actions → Variables turns automatic
+    # staging deploys back on with no PR.
+    #
+    # A manual `workflow_dispatch` run always proceeds, so the deploy path stays
+    # testable while the variable is unset — and the preflight below still fails
+    # by name if the secret is missing when you do.
+    if: ${{ vars.STAGING_DEPLOY_ENABLED == 'true' || github.event_name == 'workflow_dispatch' }}
+
     outputs:
       image_tag: ${{ steps.meta.outputs.image_tag }}
       backend_image: ${{ steps.meta.outputs.backend_image }}
@@ -143,7 +164,6 @@ jobs:
             org.opencontainers.image.revision=${{ github.sha }}
           build-args: |
             NEXT_PUBLIC_API_URL=https://staging.financenow.example.com/api
-            NEXT_PUBLIC_WS_URL=wss://staging.financenow.example.com/ws
             NEXT_TELEMETRY_DISABLED=1
 
       - name: Scan images with Trivy
@@ -333,7 +353,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     needs: [build-and-push, deploy-staging, smoke-tests]
-    if: always()
+    # `always()` alone would run this on a gated-off push too, where the deploy
+    # was skipped rather than attempted — and the status step below treats
+    # anything that is not `success` as a failure, so it would announce a failed
+    # deploy that never ran, and then fail itself on the absent Slack token.
+    # Nothing happened; say nothing.
+    if: ${{ always() && needs.build-and-push.result != 'skipped' }}
 
     steps:
       - name: Determine deploy status

@@ -17,7 +17,16 @@ const nextConfig = {
     formats: ['image/avif', 'image/webp'],
   },
   async rewrites() {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+    // The destination below appends `/api/:path`, so the base must be the
+    // backend ORIGIN, not an API path. Several config files and runbooks set
+    // NEXT_PUBLIC_API_URL to `http://localhost:8000/api/v1`, which produced
+    // `http://localhost:8000/api/v1/api/...` — every /api/* path without a
+    // concrete route file 500'd. Harmless while the backend is dormant; it
+    // would bite whoever revives it. Normalising here fixes it for every
+    // deployment at once, rather than depending on each one setting the
+    // variable the way this rule happens to want.
+    const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+    const apiUrl = rawApiUrl.replace(/\/+$/, '').replace(/\/api(\/v\d+)?$/, '')
     return [
       {
         // Proxies leftover /api/* traffic to the legacy backend.

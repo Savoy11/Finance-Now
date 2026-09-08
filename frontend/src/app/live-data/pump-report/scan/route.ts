@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { guardSensitiveRoute } from '@/lib/server/apiGuard'
 import { getProviderKey } from '@/lib/api/live/providers'
+import { SCAN_TARGET_CAP } from '@/lib/pumpReport/scanLimits'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,13 +20,6 @@ export interface ScanFinding {
   sources: string[]
   scannedAt: string
 }
-
-/**
- * Hard cap on targets per scan. Exported so the UI states the same number the
- * server enforces — a silently truncated list is how a reader concludes an
- * address came back clean when it was never scanned at all.
- */
-export const SCAN_TARGET_CAP = 5
 
 export interface ScanResponse {
   ok: boolean

@@ -125,7 +125,6 @@ setup_frontend_env() {
 #   ANTHROPIC_API_KEY=      # AI agents, Research page, Daily Brief
 #   FINNHUB_API_KEY=        # extra equity quote provider
 NEXT_PUBLIC_API_URL=http://localhost:8000
-NEXT_PUBLIC_WS_URL=ws://localhost:8000
 EOF
   ok ".env.local created (live data via public APIs; optional keys commented)."
 }

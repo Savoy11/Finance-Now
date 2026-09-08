@@ -294,7 +294,6 @@ jobs:
       - name: Build Next.js application
         env:
           NEXT_PUBLIC_API_URL: http://localhost:8000
-          NEXT_PUBLIC_WS_URL: ws://localhost:8000
           NEXT_PUBLIC_ENV: test
           NEXT_TELEMETRY_DISABLED: 1
         run: |
