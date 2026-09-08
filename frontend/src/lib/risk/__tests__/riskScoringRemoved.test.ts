@@ -87,3 +87,28 @@ describe('lib/risk survives for its other, separately-decided consumers', () => 
     }
   })
 })
+
+describe('no permanently-null risk field renders as a missing one', () => {
+  // The failure this catches is subtler than a surviving score, and it is the
+  // one RP-6 named when it chose to DELETE the Asset fields rather than null
+  // them: a field that is always null still reaches a surface, which renders
+  // "N/A" — and a reader takes that as "we could not fetch it" rather than "we
+  // do not publish it". Withholding a number and failing to get one must not
+  // look the same.
+  //
+  // Found live on 2026-09-08: the market-overview popout showed
+  // "Avg Safety Score — N/A" and "High / Critical — N/A" off two fields
+  // hardcoded null since the RP-6 removal.
+
+  it('getMarketOverview returns no risk aggregate at all', () => {
+    const src = read('src/lib/api/market-data.ts')
+    expect(src).not.toMatch(/avgRiskScore\s*[:?]/)
+    expect(src).not.toMatch(/criticalHighCount\s*[:?]/)
+  })
+
+  it('the market-overview popout shows no risk row', () => {
+    const src = read('src/components/ui/PopoutContent.tsx')
+    expect(src).not.toContain("label: 'Avg Safety Score'")
+    expect(src).not.toContain("label: 'High / Critical'")
+  })
+})
