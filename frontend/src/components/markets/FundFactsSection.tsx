@@ -6,7 +6,7 @@ import {
   FUND_CATEGORY_INFO, FUND_STRATEGY_INFO, fundStrategy, fundSalesCharge, getFund,
   type FundEntry,
 } from '@/lib/data/fundCatalog'
-import { feeImpact, DEFAULT_FEE_IMPACT_PARAMS, FEE_IMPACT_BENCHMARK_ER_PCT } from '@/lib/data/feeImpact'
+import { feeImpact, feeCostDisplay, DEFAULT_FEE_IMPACT_PARAMS, FEE_IMPACT_BENCHMARK_ER_PCT } from '@/lib/data/feeImpact'
 import { formatCompact, formatCurrency } from '@/lib/utils/format'
 
 // ─── Side-by-side fund facts (S6, T-069) ──────────────────────────────────────
@@ -94,11 +94,12 @@ const ROWS: Row[] = [
     cell: (f) => {
       const impact = feeImpact(f, FEE_HORIZON)
       if (!impact) return null
-      const cheaper = impact.costUsd < 0
+      const cost = feeCostDisplay(impact.costUsd, 2)
       return (
         <span className="inline-flex flex-col">
-          <span className={clsx('font-mono font-semibold', cheaper ? 'text-emerald-400' : 'text-orange-400')}>
-            {cheaper ? '+' : '−'}{formatCurrency(Math.abs(impact.costUsd))}
+          <span className={clsx('font-mono font-semibold',
+            cost.kind === 'saving' ? 'text-emerald-400' : cost.kind === 'none' ? 'text-text-secondary' : 'text-orange-400')}>
+            {cost.sign}{formatCurrency(cost.abs)}
           </span>
           {impact.unverifiedLoad && (
             <span className="text-[10px] leading-tight text-orange-400">+load — true cost is higher</span>

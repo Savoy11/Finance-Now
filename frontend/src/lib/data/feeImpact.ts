@@ -82,3 +82,32 @@ export function feeImpact(
     unverifiedLoad: charge != null && charge.maxPct == null,
   }
 }
+
+/**
+ * How a fee-impact cost should be shown: the sign to prefix, the absolute
+ * dollars to format, and whether the figure is a cost, a saving, or neither.
+ *
+ * This exists because the registry rounds costs to whole dollars, and rounding
+ * can erase the very thing the sign is asserting. VOO and IVV both charge
+ * exactly the 0.03% benchmark, so their cost is exactly 0 — and the naive rule
+ * ("negative means saving, everything else is a cost") rendered that as
+ * "−$0" in the amber cost colour: a minus sign on nothing, warning-coloured,
+ * on the two cheapest funds in the catalog. Found by looking at the rendered
+ * page (T-074); no unit test on the arithmetic could have caught it, because
+ * the arithmetic was right.
+ *
+ * A figure that rounds to zero is therefore shown unsigned and neutral. That
+ * covers both the exactly-zero case and the sub-dollar case (an expense ratio
+ * a hair off the benchmark), where the sign is true but invisible and printing
+ * it implies a magnitude the reader cannot see.
+ */
+export type FeeCostKind = 'cost' | 'saving' | 'none'
+
+export function feeCostDisplay(costUsd: number, decimals = 0): { kind: FeeCostKind; sign: string; abs: number } {
+  const abs = Math.abs(costUsd)
+  const factor = 10 ** decimals
+  if (Math.round(abs * factor) === 0) return { kind: 'none', sign: '', abs: 0 }
+  return costUsd < 0
+    ? { kind: 'saving', sign: '+', abs }
+    : { kind: 'cost', sign: '−', abs }
+}

@@ -14,7 +14,7 @@ import {
   type FundCategoryId, type FundRiskLevel, type FundStrategy, type FundType,
 } from '@/lib/data/fundCatalog'
 import {
-  feeImpact, DEFAULT_FEE_IMPACT_PARAMS, FEE_IMPACT_BENCHMARK_ER_PCT, type FeeImpactParams,
+  feeImpact, feeCostDisplay, DEFAULT_FEE_IMPACT_PARAMS, FEE_IMPACT_BENCHMARK_ER_PCT, type FeeImpactParams,
 } from '@/lib/data/feeImpact'
 import { SECTOR_INFO } from '@/lib/data/equityCatalog'
 import { formatCompact, formatCurrency, formatPercent } from '@/lib/utils/format'
@@ -846,7 +846,7 @@ export function FundsClient() {
                             getFund(row.symbol) ?? { expenseRatioPct: row.expenseRatioPct as number, type: row.type, issuer: row.issuer ?? '' },
                             feeParams,
                           )
-                          const saving = impact != null && impact.costUsd < 0
+                          const cost = impact != null ? feeCostDisplay(impact.costUsd, 0) : null
                           return (
                             <>
                               <div className={clsx('col-span-1 text-right font-mono tabular-nums text-xs',
@@ -854,8 +854,11 @@ export function FundsClient() {
                                 {row.expenseRatioPct != null ? `${row.expenseRatioPct.toFixed(row.expenseRatioPct < 0.1 ? 3 : 2)}%` : '—'}
                               </div>
                               <div className={clsx('col-span-2 text-right font-mono tabular-nums text-xs',
-                                impact == null ? 'text-text-muted' : saving ? 'text-emerald-400' : impact.costUsd > feeParams.principal * 0.1 ? 'text-orange-400' : 'text-amber-400')}>
-                                {impact == null ? '—' : `${saving ? '+' : '−'}${formatCurrency(Math.abs(impact.costUsd), 0)}`}
+                                cost == null ? 'text-text-muted'
+                                  : cost.kind === 'saving' ? 'text-emerald-400'
+                                  : cost.kind === 'none' ? 'text-text-secondary'
+                                  : impact!.costUsd > feeParams.principal * 0.1 ? 'text-orange-400' : 'text-amber-400')}>
+                                {cost == null ? '—' : `${cost.sign}${formatCurrency(cost.abs, 0)}`}
                                 {/* An unverified sales load means the figure UNDERSTATES the
                                     cost — flagged beside the number, never guessed into it.
                                     Same rule as the detail-page analyzer. */}
