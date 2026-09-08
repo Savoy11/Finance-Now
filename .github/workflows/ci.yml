@@ -502,9 +502,19 @@ jobs:
           }
           # Reports every non-success before exiting, rather than stopping at the
           # first — with the old early exit, two broken jobs cost two CI cycles.
-          check backend-lint   "${{ needs.backend-lint.result }}"
-          check backend-test   "${{ needs.backend-test.result }}"
-          check frontend-check "${{ needs.frontend-check.result }}"
-          check docker-build   "${{ needs.docker-build.result }}"
+          check backend-lint      "${{ needs.backend-lint.result }}"
+          check backend-test      "${{ needs.backend-test.result }}"
+          check frontend-check    "${{ needs.frontend-check.result }}"
+          check docker-build      "${{ needs.docker-build.result }}"
+          # security-scan and terraform-validate were listed in `needs:` but never
+          # checked, so the gate WAITED for them and then ignored what they said.
+          # That silently undid two changes in this same PR: `npm audit
+          # --audit-level=high` lost its `|| true` under the note "A check that
+          # cannot fail is not a check" — and it still could not fail the gate —
+          # while the EKS v20 migration edits three .tf files that
+          # `terraform validate` and `fmt -check` guard. Both jobs already pass;
+          # this makes their result count.
+          check security-scan     "${{ needs.security-scan.result }}"
+          check terraform-validate "${{ needs.terraform-validate.result }}"
           [[ $status -eq 0 ]] || exit 1
           echo "All CI checks passed!"

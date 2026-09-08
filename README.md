@@ -48,10 +48,10 @@ Verified against the running application, July 2026. **Rows corrected 2026-09-08
 
 | Feature | State |
 |---|---|
-| Live market data | 🟢 110 crypto assets via CoinGecko + CoinMarketCap + Binance, 3-way fallback |
+| Live market data | 🟢 108 crypto assets via CoinGecko + CoinMarketCap + Binance, 3-way fallback |
 | Reserve Transparency Monitor | 🟢 Live DefiLlama supply + attestation metadata for 9 stablecoins |
 | Transfer Fee Calculator | ⚪ **Hidden from the initial rollout (2026-08-22)** — kept, not deleted; `/transfer-fees` redirects. 30 exchanges × 22 coins × 18 networks from a staleness-labelled static table, plus a live withdrawal-fee overlay and live BTC/EVM-L1 gas |
-| Staking Explorer | 🟡 55 providers with a custody-risk taxonomy, plus a live on-chain pools tab. **Only 4 of 51 APRs are live** (stETH, rETH, mSOL, jitoSOL); the rest are labelled static estimates |
+| Staking Explorer | 🟡 55 providers with a custody-risk taxonomy, plus a live on-chain pools tab. Live-APR **wiring** covers 33 distinct rate keys — native endpoints (Lido, Rocket Pool, Marinade, Jito, Stride, and per-chain natives) plus a keyless DeFiLlama Yields rung mapping 25 more. The last **measurement**, though, is 4 of 51 live (2026-07-29), and it has not been re-run. So the gap is either stale docs or upstreams that do not answer; one `npm run audit` on the owner's machine settles which. Anything not live is labelled a static estimate |
 | Technical Analysis | 🟢 Live OHLCV, 62 indicators (shared registry), patterns, drawing tools, and a separate Scanner page per section. **The backtester is hidden** (2026-08-20, owner: "I may revisit back testing") — every engine and panel is retained in place |
 | News & Analysis | 🟢 7 providers with sentiment + asset tagging, incl. US Congress bill tracker |
 | Equities & Funds | 🟡 **Key-gated since the Yahoo removal (2026-08-06).** Every live quote rung needs an API key; with none configured, stocks and funds show catalog reference prices behind an amber `ref` tag rather than a fabricated number. Screener fundamentals are reference data; P/E is backfilled free from SEC XBRL |

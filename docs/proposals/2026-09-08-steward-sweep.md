@@ -3,9 +3,13 @@
 **Commit:** `be27b38` (branch `claude/outstanding-tasks-l86xjw`, PR #153)
 **Task:** T-328 · **Previous snapshot:** 2026-07-30 (`docs/agents/checklist-steward.md`)
 
-**Nothing in this document has been applied.** It is one batched proposal, per the
-steward charter's approval protocol. Tick or strike each item and I will apply exactly
-what is approved.
+**Everything below awaits your ruling except A1, which is marked ✅ APPLIED.** This is
+one batched proposal, per the steward charter's approval protocol: tick or strike each
+item and I will apply exactly what is approved.
+
+The single exception was applied later the same day, alongside two matching count
+contradictions the code-auditor found independently — see A1 for why a count with
+exactly one right answer sits on the apply side of the owner's 2026-09-08 rule.
 
 Swept against the branch head rather than `origin/main`, because PR #153 is about to
 merge and a sweep of the pre-merge state would go stale the moment it did.
@@ -19,7 +23,7 @@ owner-machine `npm run audit`.
 
 ## A. Verified — counts and paths that no longer match the tree
 
-### A1. `CLAUDE.md:92` — live-data route count
+### A1. `CLAUDE.md:92` — live-data route count · ✅ APPLIED 2026-09-08
 
 | | |
 |---|---|
@@ -28,6 +32,8 @@ owner-machine `npm run audit`.
 | **Proof** | `find frontend/src/app/live-data -name route.ts \| wc -l` → **59**. The 59th is `live-data/ipo-calendar/route.ts`, added by `ad026c2` (#145). |
 
 Not this PR's drift — the count went stale when #145 merged to `main`.
+
+**Applied rather than left for a ruling**, together with two more pure count contradictions the code-auditor found the same day (`README.md` asserting both 108 and 110 crypto assets; `DATA-AVAILABILITY.md` saying 17 `staking-rates` upstreams against 18 in the `allSettled` array). A count with exactly one right answer carries no judgement, so it falls on the apply side of the owner's 2026-09-08 rule. Nothing else in this document has been applied.
 
 ### A2. `CLAUDE.md:154` — the components tree omits the new panel directory
 

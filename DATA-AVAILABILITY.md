@@ -32,6 +32,7 @@ what is — and is not — backed by real data, with no fabricated figures prese
 > | Exchange connections | 🟢 Live | ⚪ Removed 2026-08-18 (RP-5) — routes and credential store deleted |
 > | Fund asset mix | "no source at all" | Derived from N-PORT `assetCat` (NT9, `lib/utils/assetMix.ts`) |
 > | Stock social | "Known issue: Reddit is starved" | Fixed 2026-07-22 (`socialBlend.ts`); Reddit is now gated by robots.txt instead |
+> | Staking APR (live coverage) | "PR #37 grew the catalog … **without adding live rate sources**" | Contradicted by the tree: `staking-rates/route.ts` carries a keyless **DeFiLlama Yields** rung mapping 25 provider keys plus ~20 native live keys, and `stakingProviders.ts` wires **33 distinct `liveAprKey`** values across 35 of 55 providers. The 4-of-51 RATIO is a 2026-07-29 measurement and is NOT changed here — only the claim that no live source was added. Whether those rungs answer is the owner-machine question (T-004) |
 > | Social sentiment (crypto) | "Partial" with no live/derived split | Split stated: post text + Santiment/LunarCrush VOLUME are live (the latter two key-gated); every sentiment LABEL is computed in `social/route.ts` (Reddit = keyword regex, LunarCrush = galaxy-score threshold, Santiment = hardcoded neutral); Reddit `score`/`upvoteRatio` are absent-sentinels, not data |
 >
 > **Nothing here re-measures anything.** These correct claims about which code
@@ -421,7 +422,7 @@ Project convention (CLAUDE.md): every `/live-data` route needs `export const dyn
 |-------|---------|------|
 | `staking-discovery` | ~18 s **at the time of measurement** | 4 upstreams (DefiLlama, Yearn, Pendle, Beefy) — **bounded 2026-09-08.** The fan-out is parallel, so the response was gated by the slowest leg, and with no timeout "slowest" had no upper bound. Each upstream now gets a 6 s budget, and a TIMEOUT is not retried — the retry exists for upstreams that throw and immediately succeed, whereas retrying a slow one buys the same answer for twice the wait. The fan-out is `allSettled`, so a timed-out leg drops its pools and the other three still serve. **The new figure needs re-measuring on the owner's machine** — the bound is ~6 s, not a measurement. |
 | `fund-universe` | ~11 s / **14 MB** | 28,977 entries in one payload — payload slimmed 2026-07-30 (see action item 11), size pending re-measurement; first-fetch latency is upstream, 24 h-cached after |
-| `staking-rates` | ~6 s | 17 parallel upstreams with a 6 s per-fetch timeout |
+| `staking-rates` | ~6 s | 18 parallel upstreams with a 6 s per-fetch timeout |
 | `stock-social` | ~6 s | Reddit RSS fetches frequently hit the 429 path |
 
 ---
