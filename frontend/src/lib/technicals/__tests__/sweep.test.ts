@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { computeTechnicals, sweepTechnicals } from '../sweep'
+import { computeTechnicals, realisedVolatilityPct, sweepTechnicals } from '../sweep'
 import type { OhlcvCandle } from '@/lib/utils/indicators'
 
 const candles = (closes: number[]): OhlcvCandle[] =>
@@ -10,7 +10,7 @@ const rising = (n: number) => candles(Array.from({ length: n }, (_, i) => 100 + 
 
 describe('computeTechnicals', () => {
   it('returns all-null for an empty series rather than zeros', () => {
-    expect(computeTechnicals([])).toEqual({ rsi14: null, vsSma50Pct: null, vsSma200Pct: null })
+    expect(computeTechnicals([])).toEqual({ rsi14: null, vsSma50Pct: null, vsSma200Pct: null, realisedVol30dPct: null })
   })
 
   it('withholds the 200-day average when history is shorter than 200 candles', () => {
@@ -99,5 +99,101 @@ describe('sweepTechnicals', () => {
     const fetchImpl = vi.fn(async () => okResponse(250)) as unknown as typeof fetch
     await sweepTechnicals(['a', 'b', 'c', 'd'], { fetchImpl })
     expect((fetchImpl as unknown as { mock: { calls: unknown[] } }).mock.calls).toHaveLength(4)
+  })
+})
+
+describe('realisedVolatilityPct', () => {
+  const flat = Array(40).fill(100)
+
+  it('returns null below a full window rather than 0', () => {
+    // 0% would sort a coin nobody measured to the calm end of the screener.
+    expect(realisedVolatilityPct(Array(29).fill(100))).toBeNull()
+    expect(realisedVolatilityPct([])).toBeNull()
+    expect(realisedVolatilityPct(Array(30).fill(100))).not.toBeNull()
+  })
+
+  it('is 0 for a genuinely motionless series — measured, not missing', () => {
+    expect(realisedVolatilityPct(flat)).toBe(0)
+  })
+
+  it('annualises over 365 days, not 252 — crypto trades every day', () => {
+    // A series alternating ±1% has a known daily stdev; the only thing under
+    // test here is the annualisation factor, so compare the two conventions.
+    const closes = [100]
+    for (let i = 1; i < 31; i++) closes.push(closes[i - 1] * (i % 2 === 0 ? 1.01 : 0.99))
+    const crypto = realisedVolatilityPct(closes, 30, 365)!
+    const equity = realisedVolatilityPct(closes, 30, 252)!
+    expect(crypto / equity).toBeCloseTo(Math.sqrt(365 / 252), 6)
+    // Using the equity convention would understate it by about a fifth.
+    expect(equity).toBeLessThan(crypto)
+  })
+
+  it('scales with the size of the moves', () => {
+    const build = (pct: number) => {
+      const out = [100]
+      for (let i = 1; i < 31; i++) out.push(out[i - 1] * (i % 2 === 0 ? 1 + pct : 1 - pct))
+      return out
+    }
+    const calm = realisedVolatilityPct(build(0.005))!
+    const wild = realisedVolatilityPct(build(0.05))!
+    expect(wild).toBeGreaterThan(calm * 5)
+  })
+
+  it('is scale-invariant — a $1 coin and a $50,000 coin moving alike agree', () => {
+    const pattern = (base: number) => {
+      const out = [base]
+      for (let i = 1; i < 31; i++) out.push(out[i - 1] * (i % 3 === 0 ? 1.02 : 0.995))
+      return out
+    }
+    const cheap = realisedVolatilityPct(pattern(1))!
+    const dear = realisedVolatilityPct(pattern(50_000))!
+    expect(cheap).toBeCloseTo(dear, 8)
+  })
+
+  it('refuses a window containing a non-positive or non-finite close', () => {
+    // A log return is undefined there. One bad tick must not read as a flat day.
+    const withZero = [...Array(29).fill(100), 0]
+    expect(realisedVolatilityPct(withZero)).toBeNull()
+    const withNaN = [...Array(29).fill(100), NaN]
+    expect(realisedVolatilityPct(withNaN)).toBeNull()
+    const negative = [...Array(29).fill(100), -5]
+    expect(realisedVolatilityPct(negative)).toBeNull()
+  })
+
+  it('only looks at the last `window` closes', () => {
+    const calmThenSame = [...Array(200).fill(50), ...Array(30).fill(100)]
+    expect(realisedVolatilityPct(calmThenSame)).toBe(0)
+  })
+
+  it('uses the sample standard deviation (n−1)', () => {
+    // Hand-computed: two distinct log returns repeated, so the n vs n−1 choice
+    // is visible rather than a rounding difference.
+    const closes = [100]
+    for (let i = 1; i < 31; i++) closes.push(closes[i - 1] * (i % 2 === 0 ? 1.02 : 1.0))
+    const rets: number[] = []
+    for (let i = 1; i < closes.length; i++) rets.push(Math.log(closes[i] / closes[i - 1]))
+    const mean = rets.reduce((a, b) => a + b, 0) / rets.length
+    const sample = Math.sqrt(rets.reduce((a, r) => a + (r - mean) ** 2, 0) / (rets.length - 1))
+    expect(realisedVolatilityPct(closes)).toBeCloseTo(sample * Math.sqrt(365) * 100, 8)
+  })
+})
+
+describe('computeTechnicals — realised volatility field', () => {
+  const candles = (closes: number[]) =>
+    closes.map((c, i) => ({ time: 1_700_000_000 + i * 86_400, open: c, high: c, low: c, close: c, volume: 1 }))
+
+  it('reports the figure once there is a full window', () => {
+    const rising = Array.from({ length: 60 }, (_, i) => 100 * 1.01 ** i)
+    expect(computeTechnicals(candles(rising)).realisedVol30dPct).not.toBeNull()
+  })
+
+  it('is null on a short series, alongside the other short-history nulls', () => {
+    const short = computeTechnicals(candles(Array.from({ length: 20 }, (_, i) => 100 + i)))
+    expect(short.realisedVol30dPct).toBeNull()
+    expect(short.vsSma200Pct).toBeNull()
+  })
+
+  it('is null for an empty series', () => {
+    expect(computeTechnicals([]).realisedVol30dPct).toBeNull()
   })
 })

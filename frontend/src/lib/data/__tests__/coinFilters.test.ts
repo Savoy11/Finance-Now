@@ -10,7 +10,7 @@ import type { Asset } from '@/types/asset'
 const asset = (id: string, f: Partial<Asset> = {}): Asset =>
   ({ id, symbol: id.toUpperCase(), name: id, assetType: 'layer1', blockchain: 'other',
      contractAddress: '', isActive: true, marketCap: null, price: null, volume24h: null,
-     pegDeviation: null, riskScore: null, riskBand: null, reserveRatio: null,
+     pegDeviation: null, reserveRatio: null,  // no riskScore/riskBand — RP-6 deleted them from Asset
      createdAt: '', updatedAt: '', ...f } as Asset)
 
 const rule = (field: string, operator: 'gte' | 'lte', value: number): FilterRule =>
@@ -222,11 +222,18 @@ describe('technical fields and the sweep gate', () => {
     expect(needsTechnicalSweep([{ id: '1', field: 'vsSma200Pct', operator: 'gte', value: 0 }])).toBe(true)
   })
 
+  it('no longer warns that volatility is unavailable — it is built', () => {
+    // UNAVAILABLE_FACTORS must shrink as factors are built, or the page keeps
+    // telling users it cannot do something it does.
+    expect(UNAVAILABLE_FACTORS.map(f => f.label)).not.toContain('Volatility')
+    expect(FILTER_FIELDS.map(f => f.key)).toContain('realisedVol30dPct')
+  })
+
   it('lists exactly the fields that need the sweep', () => {
     // Guards the guard: a technical field added to FILTER_FIELDS without the
     // 'technical' group would never trigger a sweep, so every row would be
     // untested and the filter would look broken rather than expensive.
-    expect(TECHNICAL_FIELD_KEYS.sort()).toEqual(['rsi14', 'vsSma200Pct', 'vsSma50Pct'])
+    expect(TECHNICAL_FIELD_KEYS.sort()).toEqual(['realisedVol30dPct', 'rsi14', 'vsSma200Pct', 'vsSma50Pct'])
   })
 
   it('screens on a swept RSI and counts an unswept coin as untested', () => {

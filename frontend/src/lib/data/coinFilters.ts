@@ -106,6 +106,9 @@ export const FILTER_FIELDS: FieldDef<Asset>[] = [
   { key: 'vsSma200Pct', label: 'Price vs 200-day average', group: 'technical', unit: 'percent',
     hint: 'Percent above or below the 200-day simple moving average. Blank for coins with under 200 days of history.',
     valueOf: a => a.vsSma200Pct ?? null },
+  { key: 'realisedVol30dPct', label: 'Realised volatility (30d)', group: 'technical', unit: 'percent',
+    hint: 'Annualised standard deviation of daily log returns over the last 30 candles. Annualised over 365 days, not 252 — crypto trades every day. A description of how much the price HAS moved, not a forecast and not a risk score: a coin can be calm and worthless. Blank for coins with under 30 days of history.',
+    valueOf: a => a.realisedVol30dPct ?? null },
 ]
 
 /** Fields that require the per-coin candle sweep rather than the markets feed. */
@@ -133,11 +136,10 @@ export const GROUP_LABELS: Record<FilterGroup, string> = {
  * them here would either hang the page or quietly compute them from nothing.
  */
 export const UNAVAILABLE_FACTORS: { label: string; needs: string }[] = [
-  // RSI and the moving averages moved OUT of this list when the shared sweep
-  // shipped — they are real fields in the Technical group now. What is left
-  // here is what still has no source, and the list must shrink honestly rather
-  // than keep warning about something the page can do.
-  { label: 'Volatility', needs: 'a realised-volatility calculation over the candle sweep — not yet built' },
+  // RSI, the moving averages and (2026-09-08) realised volatility all moved OUT
+  // of this list as they were built — they are real fields in the Technical
+  // group now. What is left is what still has no source, and the list must
+  // shrink honestly rather than keep warning about something the page can do.
   { label: 'On-chain metrics', needs: 'a chain-data provider this app does not carry' },
 ]
 

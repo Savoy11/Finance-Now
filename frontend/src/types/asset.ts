@@ -41,6 +41,12 @@ export interface Asset {
   rsi14?: number | null
   vsSma50Pct?: number | null
   vsSma200Pct?: number | null
+  /**
+   * Annualised realised volatility over the last 30 daily closes, percent.
+   * A description of past price movement — deliberately NOT a risk score, which
+   * RP-6 forbids publishing per coin.
+   */
+  realisedVol30dPct?: number | null
   // Derived metrics have no free live source — strict N/A (always null in live mode).
   pegDeviation: number | null // fractional, e.g. 0.0001 = 1 bps
   pegDeviationBps?: number | null // alias in basis points

@@ -400,12 +400,27 @@ jobs:
           cd backend
           pip install poetry==1.7.1
           poetry export -f requirements.txt --output requirements.txt --without-hashes
+          # Still non-gating, deliberately and separately from the Node step
+          # above: `safety check` is deprecated in favour of `safety scan`, which
+          # requires an authenticated account, and the pinned 3.0.1 emits its own
+          # deprecation warning. Gating on a tool that is on its way out would
+          # break CI on a schedule nobody controls. Revisit when the backend's
+          # future is settled (ROADMAP Phase 6).
           safety check -r requirements.txt --output text || true
 
+      # GATING since 2026-09-08. The `|| true` meant this step reported and then
+      # passed regardless, so two HIGH advisories (js-yaml CVE-2026-59870,
+      # brace-expansion DoS) sat in the tree with a green Security Scan beside
+      # them. A check that cannot fail is not a check.
+      #
+      # Threshold is `high`, not `moderate`: the four remaining moderates all
+      # come from esbuild via drizzle-kit, a build-time-only tool, and clearing
+      # them needs a breaking drizzle-kit downgrade. Gating on moderate would
+      # make the first action be to disable the gate again.
       - name: Node.js dependency audit
         run: |
           cd frontend
-          npm audit --audit-level=high || true
+          npm audit --audit-level=high
 
   # ─── Infrastructure: Terraform Validate ───────────────────────────────────
   terraform-validate:
