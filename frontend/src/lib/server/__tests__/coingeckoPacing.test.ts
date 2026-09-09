@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 // Plain .mjs helper shared with the audit harness — imported directly so the
 // tested code IS the code that runs, not a copy of it.
-import { createCoinGeckoPacer } from '../../../../scripts/lib/coingeckoPacing.mjs'
+import { createCoinGeckoPacer, derivedMinGapMs } from '../../../../scripts/lib/coingeckoPacing.mjs'
 
 /**
  * Guards scripts/test-live-data.mjs's self-throttling.
@@ -121,6 +121,59 @@ describe('CoinGecko audit pacing', () => {
     const p = createCoinGeckoPacer({ ...OPTS, now: c.now, sleep: c.sleep })
     await p.pace(0)
     expect(p.windowLoad).toBe(1)
+  })
+
+  describe('the gap is derived from the cap, not chosen beside it', () => {
+    /**
+     * The third wrong model, and the one that made the first two look like cap
+     * problems. A cap of N per window only limits the RATE if the calls are
+     * spread across that window; with a fixed 1.8s floor, ten calls fit inside
+     * eighteen seconds. Measured on the 2026-09-09 owner run: seven real
+     * CoinGecko requests inside 19.4s — a peak of 22/min — under a cap the
+     * harness reported as 10/min. The seventh was refused.
+     */
+    it('spaces calls so the cap is the rate it claims to be', () => {
+      expect(derivedMinGapMs(60_000, 10)).toBe(6_000)
+      expect(derivedMinGapMs(60_000, 8)).toBe(7_500)
+    })
+
+    it('never divides by zero on a nonsense cap', () => {
+      expect(derivedMinGapMs(60_000, 0)).toBe(60_000)
+      expect(derivedMinGapMs(60_000, -5)).toBe(60_000)
+    })
+
+    it('holds the real peak rate at the cap, where a fixed gap did not', async () => {
+      const CAP = 10
+      // Peak rate = calls / elapsed. Run the cap's worth back to back and see
+      // how long they take: under the derived gap that must be a full window.
+      const measure = async (gap: number) => {
+        const c = fakeClock()
+        const p = createCoinGeckoPacer({
+          minGapMs: gap, windowMs: 60_000, maxPerWindow: CAP, now: c.now, sleep: c.sleep,
+        })
+        const t0 = c.at()
+        for (let i = 0; i < CAP; i++) await p.pace()
+        const elapsedMs = c.at() - t0
+        return (CAP / elapsedMs) * 60_000        // calls per minute
+      }
+
+      const fixed = await measure(1_800)
+      const derived = await measure(derivedMinGapMs(60_000, CAP))
+
+      // The shipped gap let the cap's worth of calls out at more than triple the
+      // rate the cap names — which is why tuning the cap changed so little.
+      expect(fixed).toBeGreaterThan(CAP * 3)
+
+      // Derived, it lands just above the cap rather than exactly on it: N calls
+      // span N-1 gaps, so ten calls at 6s occupy 54s, not 60 — 11.1/min. That
+      // fencepost is left in rather than papered over by widening the gap,
+      // because the sliding window is the HARD backstop (it caps the count in
+      // the window outright, tested above) and the gap's job is the steady-state
+      // rate. Over-widening to chase an exact 10.0 would cost run time for a
+      // tenth of a call.
+      expect(derived).toBeCloseTo((CAP / (CAP - 1)) * CAP, 1)
+      expect(derived).toBeLessThan(CAP * 1.2)
+    })
   })
 
   /**

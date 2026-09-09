@@ -31,6 +31,29 @@
 // charging for calls that turned out to be CoinGecko's.
 
 /**
+ * The spacing a cap actually implies.
+ *
+ * ⚠ THE GAP AND THE CAP ARE NOT INDEPENDENT KNOBS, and treating them as two
+ * unrelated numbers was the third wrong pacing model. A cap of "10 per 60s" with
+ * a 1.8s minimum gap permits ten calls inside EIGHTEEN seconds — a peak of
+ * ~33/min — because nothing spreads them across the window. The cap only binds
+ * once the calls are already slow, which is exactly when you do not need it.
+ *
+ * Measured on the 2026-09-09 owner run: seven real CoinGecko requests landed in
+ * 19.4s, a peak of 22/min, under a cap the harness reported as 10/min. The
+ * seventh was refused. Moving the cap between 8 and 10 barely changed that,
+ * which is why two rounds of cap-tuning did not fix `coin-discovery`.
+ *
+ * So the floor spacing is DERIVED: to average N calls per window, space them
+ * window/N apart. Then the cap is what it claims to be, and the sliding window
+ * stays as the backstop for bursts a single check makes internally (coin-list
+ * fires three pages 250ms apart no matter what the harness does).
+ */
+export function derivedMinGapMs(windowMs, maxPerWindow) {
+  return Math.ceil(windowMs / Math.max(1, maxPerWindow))
+}
+
+/**
  * @param {object} opts
  * @param {number} opts.minGapMs      Minimum spacing between CoinGecko calls.
  * @param {number} opts.windowMs      Sliding window the cap applies over.

@@ -675,18 +675,23 @@ at all, and over-counting costs seconds while under-counting costs a 429 that re
 as a broken route. The run prints what the pacing cost, so the delay is never
 mistaken for slowness and "optimised" back out.
 >
-> ⚠ **`AUDIT_CG_PER_MIN` defaults to 10 (owner, 2026-09-09) and at that value the
-> weighting throttles the sequence that failed not at all** — it weighs exactly 10,
-> so the harness reissues the request pattern that 429'd. 8 or 9 do hold it back,
-> at roughly +48s. The weighting is still what makes the budget honest; the cap is
-> where the protection is spent. **If `coin-discovery` 429s again, move the cap
-> first — 8 is the value the evidence supports — not the weighting.** And note the
-> real CoinGecko call count in that window was ~7, not 10 (the three `ohlcv` checks
-> were served by Binance), so the per-minute rate may not be the trigger at all:
-> `coin-list` issues its three pages 250ms apart, and a burst that tight is the
-> likelier cause. That fix would live in `lib/server/coingeckoPages.ts`, which
-> serves real users and not just the harness — confirm on an owner-machine run
-> before touching it. Run `npm run audit` before trusting any route, and read its
+> ⚠ **The minimum gap is DERIVED from the cap (`derivedMinGapMs`), and that was
+> the third wrong model.** The gap and the cap are not independent knobs: a cap of
+> "10 per 60s" beside a fixed 1.8s floor lets ten calls land inside **eighteen**
+> seconds, so the cap never binds until the calls are already slow. Measured on
+> the 2026-09-09 owner run — seven real CoinGecko requests inside 19.4s, a peak of
+> **22/min under a cap reporting 10/min**, and the seventh refused. That is why
+> two rounds of cap-tuning (8 → 10) barely moved anything: the gap was governing
+> the rate the whole time. Spacing is now `window / cap`, so the cap means what it
+> says; the sliding window stays as the backstop for bursts a single check makes
+> internally. `AUDIT_CG_GAP_MS` still overrides for deliberate experiments.
+>
+> ⚠ **And the limit itself is still unread.** All three models were tuned against
+> an allowance inferred from how many calls a run made before a refusal — a guess
+> wearing the clothes of a measurement. `coingeckoPages.ts` now reports what a 429
+> actually states (rate-limit headers plus the body's `error_message`), so the next
+> failure is a reading rather than another inference. **Read that line before
+> touching the cap again.** Run `npm run audit` before trusting any route, and read its
 **REAL vs FALLBACK** classification rather than the HTTP status: a 200 carrying fallback data
 is the failure mode that misdirects debugging to the UI layer. An earlier harness reported
 43/43 PASS while several routes were quietly serving static catalogs.

@@ -552,3 +552,101 @@ catch. **Needs one owner-machine run to resolve all six.**
   `native_ksm`. Owner's policy call, unchanged.
 - **The six DeFiLlama symbols** — one `npm run llama-symbols` away.
 
+---
+
+## Sixth owner-machine run — the prediction held, and it exposed a third wrong model
+
+`npm run audit` with #162 and #163 both merged. Two things confirmed, one of them
+mine, and a defect underneath both.
+
+### Confirmed working
+
+- **`staking-rates` reports `6/7 upstreams healthy`.** The NEAR rung is gone and
+  the diagnostic no longer carries a row for it. #162 landed as intended.
+- **The pacing line now names the weight** — *"10/min cap, 1800ms min gap,
+  coin-list weighted 3 calls"*. #163 landed as intended.
+- **The six DeFiLlama misses are still named and still unresolved** — the probe
+  has not been run yet.
+
+### `coin-discovery` 429'd again, exactly as predicted
+
+Written before this run: *"at cap 10 the weighting throttles nothing, so the
+harness reissues the request pattern that 429'd."* It did, and it did. Pacing held
+the run 38.7s against 40.3s before — barely moved, because at cap 10 nothing extra
+was ever held back.
+
+The stated next step was *"move the cap first — 8 is the value the evidence
+supports."* **That was wrong, and this run shows why.**
+
+### The real defect: the gap and the cap were independent knobs
+
+Counting only real CoinGecko requests before the refusal — verified by reading the
+routes, not assumed:
+
+| Check | Real CoinGecko calls |
+|---|---|
+| `markets` | 1 |
+| `ohlcv` ×3 | 0 (served by Binance.US) |
+| `chart` | 1 (`market_chart`) |
+| `coin-list` | 3 |
+| `coin-search` | 1 |
+| `coin-discovery` | 1 → **429** |
+
+**Seven real requests, and they all landed inside 19.4 seconds — a peak of
+22/min, under a cap the harness was reporting as 10/min.**
+
+That is the whole problem, and it is not the cap. A cap of N per 60s only limits
+the *rate* if something spreads the calls across the window. With a fixed 1.8s
+floor, ten calls fit in eighteen seconds. The cap binds only once the calls are
+already slow — precisely when it is not needed. Both previous rounds of tuning
+moved a number that was never governing anything.
+
+Note what this also says about the cap-8 plan: at 8 the harness *would* have
+throttled, but only because `ohlcv` is charged 3 calls it does not spend. It
+would have prevented the 429 **by accident**, through an over-count, while the
+real rate stayed unmodelled.
+
+**Fixed:** the floor is now `derivedMinGapMs(window, cap)` — `window / cap`, so
+the cap is the rate it claims to be. The sliding window stays as the hard backstop
+for bursts a single check makes internally (`coin-list` fires three pages 250ms
+apart regardless of what the harness does). Cost across the CoinGecko-backed set:
+**71.0s → 96.3s** of pacing, a gentler shape than the 48s cliff that cap 8 would
+have produced.
+
+A test pins the difference: the shipped 1.8s gap let the cap's worth of calls out
+at **more than triple** the named rate; derived, the peak sits at the cap plus a
+fencepost (N calls span N−1 gaps, so ten at 6s occupy 54s → 11.1/min). The
+fencepost is left in and documented rather than papered over by widening the gap
+— the window already caps the count outright, and chasing an exact 10.0 would buy
+a tenth of a call for real run time.
+
+### The limit is still unread, and that is now fixed too
+
+Every one of the three models was tuned against an allowance **inferred from how
+many calls a run made before a refusal** — a guess wearing the clothes of a
+measurement. Nobody read what CoinGecko says its limit is.
+
+`coingeckoPages.ts` now reports it: on a terminal 429 the error carries the
+rate-limit headers (`x-ratelimit-limit` / `-remaining` / `-reset`, `retry-after`)
+and the body's `error_message`, which on the free tier states the allowance in
+words. The body is read from a **clone**, so the retry path still sees an
+undisturbed stream — pinned by a test, since getting that wrong would break the
+retry while looking like a throttling bug.
+
+If no headers come back the line says *"upstream stated no limit headers"*, which
+must not read like headers nobody looked at.
+
+**So the next run answers the question directly.** Read that line before touching
+the cap again. If the stated limit turns out to be below ~10/min, the derived gap
+follows it by lowering the cap; if the limit is fine and the refusal persists, the
+remaining suspect is `coin-list`'s three pages at 250ms, and that fix lives in
+code serving real users — still not something to change on inference.
+
+### Unchanged, and still open
+
+- **Subscan (polkadot/kusama)** — a keyed provider. Owner's policy call.
+- **The six DeFiLlama symbols** — `npm run llama-symbols`, one owner-machine run.
+- Everything under *Not defects* in the fifth-run section re-confirmed: BTC fee on
+  the static estimate, Binance.US on `ohlcv`, key-gated macro/returns/universe,
+  SPY-from-catalog.
+
