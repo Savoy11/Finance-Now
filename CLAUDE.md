@@ -672,9 +672,21 @@ belonged to its neighbour. Weights **mirror the routes** (`coin-list` = 3 pages)
 keep them in step or the budget drifts back out. The weight is an upper bound on
 purpose — a ladder check like `ohlcv` may be served by Binance and spend no budget
 at all, and over-counting costs seconds while under-counting costs a 429 that reads
-as a broken route. Tune with `AUDIT_CG_PER_MIN` / `AUDIT_CG_GAP_MS`; the run prints
-what the pacing cost so the delay is never mistaken for slowness and "optimised"
-back out. Run `npm run audit` before trusting any route, and read its
+as a broken route. The run prints what the pacing cost, so the delay is never
+mistaken for slowness and "optimised" back out.
+>
+> ⚠ **`AUDIT_CG_PER_MIN` defaults to 10 (owner, 2026-09-09) and at that value the
+> weighting throttles the sequence that failed not at all** — it weighs exactly 10,
+> so the harness reissues the request pattern that 429'd. 8 or 9 do hold it back,
+> at roughly +48s. The weighting is still what makes the budget honest; the cap is
+> where the protection is spent. **If `coin-discovery` 429s again, move the cap
+> first — 8 is the value the evidence supports — not the weighting.** And note the
+> real CoinGecko call count in that window was ~7, not 10 (the three `ohlcv` checks
+> were served by Binance), so the per-minute rate may not be the trigger at all:
+> `coin-list` issues its three pages 250ms apart, and a burst that tight is the
+> likelier cause. That fix would live in `lib/server/coingeckoPages.ts`, which
+> serves real users and not just the harness — confirm on an owner-machine run
+> before touching it. Run `npm run audit` before trusting any route, and read its
 **REAL vs FALLBACK** classification rather than the HTTP status: a 200 carrying fallback data
 is the failure mode that misdirects debugging to the UI layer. An earlier harness reported
 43/43 PASS while several routes were quietly serving static catalogs.

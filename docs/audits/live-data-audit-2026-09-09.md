@@ -483,22 +483,41 @@ order that **fails under the shipped model and passes under the weighted one** �
 the discrimination checked deliberately, since a replay asserting only "peak ≤ cap"
 passes under both and proves nothing.
 
-⚠ **It costs run time, and the amount depends on the cap.** Measured over the
-CoinGecko-backed check order:
+⚠ **It costs run time, and the amount depends on the cap — and the first table
+written here measured the wrong thing.** That table covered all fifteen
+CoinGecko-backed routes and reported 10/min as costing only +3.6s. Re-measured
+over the **eight checks that actually produced the 429**, the picture is not a
+gradient at all:
 
-| Cap | Was | Weighted | Δ |
+| Cap | Unweighted | Weighted | Does it throttle the failing sequence? |
 |---|---|---|---|
-| 8/min (default) | 71.0s | 120.5s | **+49.5s** |
-| 10/min | 67.5s | 71.0s | +3.6s |
-| 12/min | 63.9s | 67.5s | +3.6s |
+| 8/min | 12.6s | 62.0s | **yes** (+49.4s) |
+| 9/min | 12.6s | 60.3s | **yes** (+47.7s) |
+| **10/min (shipped)** | 12.6s | **12.6s** | **no — identical request pattern to the failing run** |
 
-The default stays **8**, deliberately: 8 counted *checks* was ~10 real requests
-per minute and CoinGecko refused, so 8 real requests is the first setting the
-evidence supports. The jump is an artifact of the window filling exactly at
-`coin-list` and every later check then waiting for the oldest call to age out.
-`AUDIT_CG_PER_MIN=10` buys most of the time back and is one env var — but it is a
-setting the owner should choose knowing the run that failed, not a default that
-quietly restores the rate which produced the 429.
+The sequence weighs exactly ten, so a cap of ten fits it precisely and no wait
+ever fires. The choice is close to binary: throttle at ~60s, or don't.
+
+**The owner set 10 on 2026-09-09**, for run speed, with that consequence stated.
+Recorded plainly because the earlier framing — "+3.6s, slightly riskier" —
+understated it, and a wrong number in an audit file is worse than no number: the
+weighting is still what makes the budget *honest*, but at this cap it does not on
+its own prevent a repeat. A test pins exactly that, so nobody later reads "we
+fixed the pacing" and concludes `coin-discovery` is protected. **If it 429s again,
+move the cap first — 8 is the value the evidence supports — not the weighting.**
+
+⚠ **And the per-minute rate may not be the trigger at all.** Real CoinGecko calls
+in that window were about **seven**, not ten: the three `ohlcv` checks were served
+by Binance and spent no CoinGecko budget. Seven requests in a minute should not
+trip a keyless limiter. What *is* unusual is the shape — `coin-list` issues its
+three pages **250ms apart** (`coingeckoPages.ts`, `gapMs = 250`), and a burst that
+tight is the likelier cause than the minute-long average.
+
+That would be a fix in `lib/server/coingeckoPages.ts`, which serves real users and
+not just the harness, so it is **not** being changed on this evidence. It wants one
+owner-machine run to confirm: if `coin-discovery` 429s again at cap 10 while the
+run is nowhere near ten calls a minute, burst is the answer and the audit's cap was
+never the right lever.
 
 ### The six DeFiLlama misses now have a probe
 

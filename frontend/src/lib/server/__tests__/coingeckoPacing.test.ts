@@ -24,7 +24,22 @@ function fakeClock() {
   }
 }
 
+/**
+ * The cap these tests exercise the MODEL at. Deliberately 8 rather than the
+ * shipped default: 8 is where the weighted and unweighted models visibly
+ * differ on the failing sequence, which is the property under test. What the
+ * shipped default actually permits is pinned separately, below.
+ */
 const OPTS = { minGapMs: 1_800, windowMs: 60_000, maxPerWindow: 8 }
+
+/** Mirrors AUDIT_CG_PER_MIN's default in scripts/test-live-data.mjs. */
+const SHIPPED_CAP = 10
+
+/** The CoinGecko-backed sequence from the 2026-09-09 run that 429'd, in order. */
+const FAILING_SEQUENCE: Array<[string, number]> = [
+  ['markets', 1], ['ohlcv-btc', 1], ['ohlcv-xrp', 1], ['ohlcv-eth', 1],
+  ['chart', 1], ['coin-list', 3], ['coin-search', 1], ['coin-discovery', 1],
+]
 
 describe('CoinGecko audit pacing', () => {
   it('spaces consecutive calls by the minimum gap', async () => {
@@ -64,18 +79,15 @@ describe('CoinGecko audit pacing', () => {
   })
 
   it("replays the failing run's order and throttles where the old model did not", async () => {
-    // The exact CoinGecko-backed sequence from the 2026-09-09 run, in order.
-    // coin-discovery is the check that 429'd, and coin-list is the one that
-    // actually spent the budget: three pages booked as a single call.
-    const NAMES = ['markets', 'ohlcv-btc', 'ohlcv-xrp', 'ohlcv-eth',
-                   'chart', 'coin-list', 'coin-search', 'coin-discovery']
-    const MIN_GAPS_ONLY = (NAMES.length - 1) * OPTS.minGapMs
+    // coin-discovery is the check that 429'd; coin-list is the one that actually
+    // spent the budget — three pages booked as a single call.
+    const MIN_GAPS_ONLY = (FAILING_SEQUENCE.length - 1) * OPTS.minGapMs
 
     const replay = async (coinListWeight: number) => {
       const c = fakeClock()
       const p = createCoinGeckoPacer({ ...OPTS, now: c.now, sleep: c.sleep })
       let peak = 0
-      for (const name of NAMES) {
+      for (const [name] of FAILING_SEQUENCE) {
         await p.pace(name === 'coin-list' ? coinListWeight : 1)
         peak = Math.max(peak, p.windowLoad)
       }
@@ -109,5 +121,37 @@ describe('CoinGecko audit pacing', () => {
     const p = createCoinGeckoPacer({ ...OPTS, now: c.now, sleep: c.sleep })
     await p.pace(0)
     expect(p.windowLoad).toBe(1)
+  })
+
+  /**
+   * What the SHIPPED default actually buys, stated rather than assumed.
+   *
+   * The owner set AUDIT_CG_PER_MIN=10 on 2026-09-09 to keep the audit fast,
+   * knowing the consequence: the failing sequence weighs exactly 10, so at a cap
+   * of 10 nothing is throttled and the harness reissues the pattern that 429'd.
+   * The weighting is still correct — it is what makes the budget honest — but at
+   * this cap it does not, on its own, prevent a repeat.
+   *
+   * This is pinned so nobody later reads "we fixed the pacing" and concludes
+   * coin-discovery is protected. If it 429s again, the cap is the first number
+   * to move, and 8 is the value the evidence supports.
+   */
+  it('records that the shipped cap does not throttle the failing sequence', async () => {
+    const minGapsOnly = (FAILING_SEQUENCE.length - 1) * 1_800
+
+    const run = async (cap: number) => {
+      const c = fakeClock()
+      const p = createCoinGeckoPacer({
+        minGapMs: 1_800, windowMs: 60_000, maxPerWindow: cap, now: c.now, sleep: c.sleep,
+      })
+      for (const [, w] of FAILING_SEQUENCE) await p.pace(w)
+      return p.pacedMs
+    }
+
+    // Exactly at the cap, so no wait is ever triggered.
+    expect(await run(SHIPPED_CAP)).toBe(minGapsOnly)
+    // One lower, and the same sequence is held back — the protection is real,
+    // it just sits below where the cap is currently set.
+    expect(await run(SHIPPED_CAP - 1)).toBeGreaterThan(minGapsOnly)
   })
 })

@@ -71,7 +71,26 @@ const empty = (detail) => ({ verdict: EMPTY, detail })
 // what left `coin-discovery` taking `coin-list`'s 429 on 2026-09-09.
 const COINGECKO_MIN_GAP_MS = Number(process.env.AUDIT_CG_GAP_MS ?? 1_800)
 const COINGECKO_WINDOW_MS = 60_000
-const COINGECKO_MAX_PER_WINDOW = Number(process.env.AUDIT_CG_PER_MIN ?? 8)
+// Default 10, set by the owner on 2026-09-09 to keep the run fast, with the
+// trade-off recorded rather than left to be rediscovered:
+//
+//   On the sequence that actually 429'd (markets, 3x ohlcv, chart, coin-list,
+//   coin-search, coin-discovery) a cap of 10 means the weighting throttles
+//   NOTHING — 10 weighted calls fit exactly, so the harness issues the same
+//   request pattern as the failing run. 8 or 9 do throttle it, and cost ~48s.
+//   The choice is close to binary; 9 saves under 2s over 8.
+//
+//   Note also that the real CoinGecko call count in that window was ~7, not 10
+//   (the three ohlcv checks were served by Binance and spent no budget), so a
+//   per-minute cap may not be the lever at all — coin-list issues its three
+//   pages 250ms apart, and a burst that tight is the likelier trigger. That
+//   would be a fix in lib/server/coingeckoPages.ts, which serves real users and
+//   not just this harness, so it wants an owner-machine run to confirm before
+//   anyone touches it. See docs/audits/live-data-audit-2026-09-09.md.
+//
+// If coin-discovery 429s again, this is the first number to move — not the
+// weighting, which is correct independently of where the cap sits.
+const COINGECKO_MAX_PER_WINDOW = Number(process.env.AUDIT_CG_PER_MIN ?? 10)
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
 const cgPacer = createCoinGeckoPacer({
