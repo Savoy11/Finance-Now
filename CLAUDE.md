@@ -658,7 +658,23 @@ VOO), so a per-value rule produces a silent 100× error on the cheapest funds. A
 aborts the run.
 
 Both run `scripts/test-live-data.mjs` (the old `scripts/smoke.mjs` was folded into it —
-`smoke` is now just `--quick`). Run `npm run audit` before trusting any route, and read its
+`smoke` is now just `--quick`).
+
+⚠ **The harness throttles its own CoinGecko calls, and the pacing is WEIGHTED per
+check** (`scripts/lib/coingeckoPacing.mjs`, pure + tested with an injectable
+clock). Two earlier models each looked right and weren't, and the symptom both
+times was a healthy route reported as broken: first *adjacency* (pause only after
+another CoinGecko check — backwards, a rate limit is a rate over a window), then
+*one check = one call* — which fixed `alerts` and `portfolio-history` but not
+`coin-discovery`, because `coin-list` issues **three** upstream page requests
+inside a single check and the budget recorded one. The next check took the 429 that
+belonged to its neighbour. Weights **mirror the routes** (`coin-list` = 3 pages);
+keep them in step or the budget drifts back out. The weight is an upper bound on
+purpose — a ladder check like `ohlcv` may be served by Binance and spend no budget
+at all, and over-counting costs seconds while under-counting costs a 429 that reads
+as a broken route. Tune with `AUDIT_CG_PER_MIN` / `AUDIT_CG_GAP_MS`; the run prints
+what the pacing cost so the delay is never mistaken for slowness and "optimised"
+back out. Run `npm run audit` before trusting any route, and read its
 **REAL vs FALLBACK** classification rather than the HTTP status: a 200 carrying fallback data
 is the failure mode that misdirects debugging to the UI layer. An earlier harness reported
 43/43 PASS while several routes were quietly serving static catalogs.
@@ -710,6 +726,30 @@ from "you ran this in the wrong place".
 upstream names, or timeout drift from the route's — a mirror is only useful while
 it matches, and a stale one looks authoritative while pointing at a source the app
 no longer uses.
+
+**DeFiLlama symbol resolution (owner machine):**
+
+```bash
+npm run llama-symbols              # which LLAMA_MAP keys no longer match a pool, and what does
+npm run llama-symbols -- --json
+```
+
+`staking-rates` reports `defillama-yields: partial (19/25 live)` and names the
+misses. Naming them is what made them fixable — but it stops one step short: that
+`STKBNB` matched nothing does not say whether the **token was renamed**, the
+**pool was delisted**, or the **chain label moved**, and those have three
+different cures. `scripts/probe-llama-symbols.mjs` fetches the pool list once and,
+per unmatched key, prints what DeFiLlama actually carries through three lenses —
+same project staking that asset, same project any asset, similar symbol any
+project. Nothing from that project at all means the rung is gone and should follow
+the NEAR one out, on the same evidence standard.
+
+It **reports, never writes** (same split as the fee scripts — an automated symbol
+rewrite is how a rate from the wrong protocol lands on a coin), reproduces the
+route's matcher exactly including the chain preference, and exits **2** rather
+than 1 when DeFiLlama is unreachable — "you ran this in the wrong place" is not
+"the symbols are wrong". `lib/server/__tests__/llamaSymbolProbe.test.ts` fails if
+the probe's map drifts from the route's.
 
 **⚠ Data-availability results are IP-dependent — audits MUST run on the owner's machine.**
 LunarCrush blocks datacenter IPs and the cloud gateway blocks most provider hosts outright, so a

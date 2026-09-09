@@ -40,6 +40,8 @@
 // lighter, overlapping check; its unique cross-layer consistency assertions were
 // folded in below (see the "cross-layer" group) so the two cannot drift apart.
 
+import { createCoinGeckoPacer } from './lib/coingeckoPacing.mjs'
+
 const BASE = process.env.BASE_URL ?? process.env.FN_BASE_URL ?? process.env.CAEP_BASE_URL ?? 'http://localhost:3000'
 const ARGS = new Set(process.argv.slice(2))
 const QUICK = ARGS.has('--quick')
@@ -61,49 +63,40 @@ const unconfigured = (detail) => ({ verdict: UNCONFIGURED, detail })
 const empty = (detail) => ({ verdict: EMPTY, detail })
 
 // ─── CoinGecko pacing ────────────────────────────────────────────────────────
-// A rate limit is a RATE OVER A WINDOW, not a rule about adjacency. The previous
-// version paused only when the immediately preceding check also hit CoinGecko,
-// on the stated reasoning that "a gap after an unrelated route buys nothing" —
-// which is exactly backwards. Slotting an unrelated route between two CoinGecko
-// calls does not lower the CoinGecko rate one bit; it just cancels the pause.
-//
-// Three owner-machine runs on 2026-09-09 showed the consequence, the same three
-// routes failing every time: `alerts` is preceded by `risk-scores` (not
-// CoinGecko), so it got NO pause and 429'd, while `coin-discovery` sits eighth in
-// an unbroken run of CoinGecko checks and 429'd through the gaps. Both symptoms
-// are the harness throttling itself — the failure this pacing exists to prevent,
-// still happening after the fix meant to stop it.
-//
-// So: a minimum spacing between CoinGecko CALLS (whatever ran in between), plus a
-// sliding-window cap. The cap is deliberately conservative because a single check
-// can be several upstream calls — coin-discovery pages through markets, coin-list
-// pulls 750 coins — so counting checks understates the real request rate.
+// The model and its two past mistakes are documented in scripts/lib/
+// coingeckoPacing.mjs, which is where the logic lives so it can be tested.
+// In short: a minimum spacing between CoinGecko CALLS (whatever ran in
+// between), plus a sliding-window cap, plus a per-check WEIGHT — because a
+// single check can be several upstream requests and charging it one slot is
+// what left `coin-discovery` taking `coin-list`'s 429 on 2026-09-09.
 const COINGECKO_MIN_GAP_MS = Number(process.env.AUDIT_CG_GAP_MS ?? 1_800)
 const COINGECKO_WINDOW_MS = 60_000
 const COINGECKO_MAX_PER_WINDOW = Number(process.env.AUDIT_CG_PER_MIN ?? 8)
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
-/** Timestamps of CoinGecko-backed checks already issued, oldest first. */
-const cgCalls = []
-let cgPacedMs = 0
+const cgPacer = createCoinGeckoPacer({
+  minGapMs: COINGECKO_MIN_GAP_MS,
+  windowMs: COINGECKO_WINDOW_MS,
+  maxPerWindow: COINGECKO_MAX_PER_WINDOW,
+})
 
-async function paceCoinGecko() {
-  const drop = () => { while (cgCalls.length && Date.now() - cgCalls[0] > COINGECKO_WINDOW_MS) cgCalls.shift() }
-
-  drop()
-  // Window full: wait for the oldest call to age out of it.
-  if (cgCalls.length >= COINGECKO_MAX_PER_WINDOW) {
-    const waitMs = COINGECKO_WINDOW_MS - (Date.now() - cgCalls[0]) + 250
-    if (waitMs > 0) { cgPacedMs += waitMs; await sleep(waitMs) }
-    drop()
-  }
-  // Minimum spacing since the last CoinGecko call, regardless of what ran between.
-  const last = cgCalls[cgCalls.length - 1]
-  if (last != null) {
-    const waitMs = COINGECKO_MIN_GAP_MS - (Date.now() - last)
-    if (waitMs > 0) { cgPacedMs += waitMs; await sleep(waitMs) }
-  }
-  cgCalls.push(Date.now())
+/**
+ * Upstream CoinGecko requests a single check issues, where it is more than one.
+ * These MIRROR the routes — keep them in step or the budget drifts back out:
+ *   coin-list       fetchCoinGeckoPages(3, ...)      — hardcoded 3 pages
+ *   coin-discovery  ceil(limit / 250), limit=250     — 1 page at the audit's
+ *                                                      default; raise this if
+ *                                                      the audit ever passes
+ *                                                      ?limit= above 250
+ * Anything absent counts as 1. Over-counting only costs the run time; see the
+ * module's note on why that asymmetry is deliberate.
+ */
+const COINGECKO_CALL_WEIGHT = {
+  '/live-data/coin-list': 3,
+}
+const coinGeckoWeight = (t) => {
+  const hit = Object.entries(COINGECKO_CALL_WEIGHT).find(([r]) => t.path.startsWith(r))
+  return hit ? hit[1] : 1
 }
 
 /**
@@ -931,9 +924,10 @@ const run = async () => {
   for (const t of selected) {
     // ── CoinGecko pacing (DATA-AVAILABILITY item 17) ──────────────────────────
     // An audit whose own load changes the answer is worse than no audit: it sends
-    // the next reader to debug a route that works. See paceCoinGecko above for
-    // why adjacency was the wrong model and a sliding window is the right one.
-    if (isCoinGeckoBacked(t)) await paceCoinGecko()
+    // the next reader to debug a route that works. scripts/lib/coingeckoPacing.mjs
+    // records why adjacency was the wrong model, and why a per-check weight was
+    // still needed after the sliding window replaced it.
+    if (isCoinGeckoBacked(t)) await cgPacer.pace(coinGeckoWeight(t))
 
     try {
       const { status, json, headers, ms } = await getJson(t.path)
@@ -1033,9 +1027,10 @@ const run = async () => {
 
   // Say what the pacing cost, or the run just looks mysteriously slow and someone
   // "optimises" the throttle back out — which is how the 429s returned last time.
-  if (cgPacedMs > 0) {
-    console.log(`\n⏸  CoinGecko pacing held the run for ${(cgPacedMs / 1000).toFixed(1)}s`
-      + ` (${COINGECKO_MAX_PER_WINDOW}/min cap, ${COINGECKO_MIN_GAP_MS}ms min gap).`)
+  if (cgPacer.pacedMs > 0) {
+    console.log(`\n⏸  CoinGecko pacing held the run for ${(cgPacer.pacedMs / 1000).toFixed(1)}s`
+      + ` (${COINGECKO_MAX_PER_WINDOW}/min cap, ${COINGECKO_MIN_GAP_MS}ms min gap,`
+      + ` coin-list weighted ${COINGECKO_CALL_WEIGHT['/live-data/coin-list']} calls).`)
     console.log('   That is deliberate: without it coin-discovery, alerts and')
     console.log('   portfolio-history 429 and read as broken routes. Tune with')
     console.log('   AUDIT_CG_PER_MIN / AUDIT_CG_GAP_MS if the limit changes.')
