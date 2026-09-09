@@ -3,3 +3,22 @@
 # misconfigured core.autocrlf, instead of relying on every writer's local config.
 # Working-tree checkout endings still follow each machine's own settings.
 * text=auto
+
+# ── Scripts, where the working-tree ending is CORRECTNESS, not preference ──
+# The rule above deliberately leaves checkout endings to each machine, which is
+# right for source files. It is wrong for these two, and both directions were
+# genuinely broken on a stock Git-for-Windows clone (whose SYSTEM gitconfig ships
+# core.autocrlf=true). Verified 2026-09-09 by checking the blobs out under that
+# setting rather than reasoning about it:
+#
+#   *.sh  came out CRLF, making the shebang `#!/usr/bin/env bash` — the
+#         `bad interpreter: ^M` failure. setup.sh and start.sh were both hit.
+#   *.bat needs the opposite: cmd.exe is only reliably LF-tolerant for simple
+#         one-command-per-line files, and start.bat carries a multi-line
+#         `if (...) else (...)` block.
+#
+# Pinning both makes every script correct on any clone regardless of local
+# config, instead of correct only where someone happened to set core.eol.
+*.sh  text eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf

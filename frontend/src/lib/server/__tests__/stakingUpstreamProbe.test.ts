@@ -17,8 +17,30 @@ import { join } from 'node:path'
  */
 
 const root = join(__dirname, '..', '..', '..', '..')
-const routeSrc = readFileSync(join(root, 'src/app/live-data/staking-rates/route.ts'), 'utf8')
-const probeSrc = readFileSync(join(root, 'scripts/probe-staking-upstreams.mjs'), 'utf8')
+
+/**
+ * Read a source file with its line endings normalised to LF.
+ *
+ * The repo is uniformly LF in git (`* text=auto` in .gitattributes), but the
+ * WORKING TREE follows each machine's `core.autocrlf` — so on a Windows clone
+ * every line arrives as CRLF. That is invisible to a matcher working inside a
+ * single line, which is why the URL scrape below never noticed it, but it
+ * silently breaks any pattern spanning a line boundary: `const \[\n` cannot
+ * match `const [\r\n`. The `allSettled` regex therefore returned null and both
+ * structural guards below failed — on every Windows full-suite run since they
+ * arrived in #160, while passing in CI on LF the whole time.
+ *
+ * A guard that holds only on the CI platform has stopped guarding for whoever
+ * is actually editing the file, which is exactly the positional-binding mistake
+ * #160 exists to catch. Normalise on the way in, so the assertions describe the
+ * source rather than the checkout.
+ */
+function readSrc(rel: string): string {
+  return readFileSync(join(root, rel), 'utf8').replace(/\r\n/g, '\n')
+}
+
+const routeSrc = readSrc('src/app/live-data/staking-rates/route.ts')
+const probeSrc = readSrc('scripts/probe-staking-upstreams.mjs')
 
 /** Every https:// URL that is actually fetched, ignoring ones inside comments. */
 function fetchedUrls(src: string): Set<string> {
