@@ -40,7 +40,7 @@
 // lighter, overlapping check; its unique cross-layer consistency assertions were
 // folded in below (see the "cross-layer" group) so the two cannot drift apart.
 
-import { createCoinGeckoPacer } from './lib/coingeckoPacing.mjs'
+import { createCoinGeckoPacer, derivedMinGapMs } from './lib/coingeckoPacing.mjs'
 
 const BASE = process.env.BASE_URL ?? process.env.FN_BASE_URL ?? process.env.CAEP_BASE_URL ?? 'http://localhost:3000'
 const ARGS = new Set(process.argv.slice(2))
@@ -69,7 +69,6 @@ const empty = (detail) => ({ verdict: EMPTY, detail })
 // between), plus a sliding-window cap, plus a per-check WEIGHT — because a
 // single check can be several upstream requests and charging it one slot is
 // what left `coin-discovery` taking `coin-list`'s 429 on 2026-09-09.
-const COINGECKO_MIN_GAP_MS = Number(process.env.AUDIT_CG_GAP_MS ?? 1_800)
 const COINGECKO_WINDOW_MS = 60_000
 // Default 10, set by the owner on 2026-09-09 to keep the run fast, with the
 // trade-off recorded rather than left to be rediscovered:
@@ -91,6 +90,14 @@ const COINGECKO_WINDOW_MS = 60_000
 // If coin-discovery 429s again, this is the first number to move — not the
 // weighting, which is correct independently of where the cap sits.
 const COINGECKO_MAX_PER_WINDOW = Number(process.env.AUDIT_CG_PER_MIN ?? 10)
+
+// DERIVED from the cap, not chosen independently — see derivedMinGapMs. A fixed
+// 1.8s gap let ten calls land in eighteen seconds, so the "10/min" cap was really
+// permitting ~22-33/min and never bound. AUDIT_CG_GAP_MS still overrides for
+// deliberate experiments; it just is not the default any more.
+const COINGECKO_MIN_GAP_MS = Number(
+  process.env.AUDIT_CG_GAP_MS ?? derivedMinGapMs(COINGECKO_WINDOW_MS, COINGECKO_MAX_PER_WINDOW),
+)
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
 const cgPacer = createCoinGeckoPacer({
