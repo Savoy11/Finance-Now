@@ -44,6 +44,17 @@ interface NetworkGasInfo {
 // Erring high costs a user an over-estimate; erring low costs them a stuck
 // transaction. Keep the safe direction, and let the live provider do the
 // precision.
+//
+// BITCOIN, same rule, written out because it keeps getting re-raised: 0.00015 BTC
+// over BTC_TYPICAL_VBYTES implies ~60 sat/vByte. The owner's 2026-09-09 audit read
+// the live fee at ~1 sat/vByte, so the estimate showed $11.95 where live was $0.20
+// — about 60x. That was reported as a defect and it is NOT one; it is this same
+// deliberate margin, sized for a congested mempool rather than a quiet one.
+// Lowering it to match a quiet market is exactly the change this comment forbids:
+// the estimate is only ever served when the live read failed, and fee spikes are
+// precisely when mempool.space struggles. What WAS missing is that the assumption
+// was invisible — a reader saw $11.95 with no way to tell it assumed 60 sat/vByte.
+// `btcSatPerVbyteAssumed` below fixes that without touching the margin.
 export const NETWORK_GAS: Record<NetworkKey, NetworkGasInfo> = {
   erc20:        { native: 0.002,    token: 'ETH',  priceKey: 'eth',   coingeckoId: 'ethereum' },
   arbitrum:     { native: 0.00005,  token: 'ETH',  priceKey: 'eth',   coingeckoId: 'ethereum' },
@@ -99,8 +110,15 @@ export interface ComputedNetworkFees {
   /** Live USD prices keyed by lowercase priceKey (falls back where needed). */
   prices: Record<string, number>
   priceSource: 'live' | 'fallback'
-  /** Live BTC fee rate when available. */
+  /** OBSERVED BTC fee rate — null whenever the live read failed. */
   btcSatPerVbyte: number | null
+  /**
+   * The sat/vByte the static bitcoin fallback ASSUMES. Always present, never a
+   * measurement. Kept separate from `btcSatPerVbyte` so an assumption can never be
+   * mistaken for a reading — and so a caller showing an `estimate` fee can say what
+   * it is priced at instead of presenting a bare figure the reader cannot situate.
+   */
+  btcSatPerVbyteAssumed: number
   updatedAt: string
 }
 
@@ -227,6 +245,17 @@ function evmGasProvider(network: NetworkKey, label: string): FeeProvider {
   }
 }
 
+/**
+ * vBytes assumed for a "typical" BTC transfer. Used BOTH to convert a live
+ * sat/vByte reading into a fee and to derive what the static fallback implies, so
+ * the two cannot drift into disagreeing about what transaction they describe.
+ */
+export const BTC_TYPICAL_VBYTES = 250
+
+/** The sat/vByte the static bitcoin fallback implies — an ASSUMPTION, not a reading. */
+export const btcSatPerVbyteAssumed = (): number =>
+  (NETWORK_GAS.bitcoin.native * 1e8) / BTC_TYPICAL_VBYTES
+
 const bitcoinProvider: FeeProvider = {
   network: 'bitcoin',
   label: 'mempool.space',
@@ -240,8 +269,11 @@ const bitcoinProvider: FeeProvider = {
       const d = (await r.json()) as { halfHourFee?: number; fastestFee?: number; hourFee?: number }
       const satPerVbyte = d.halfHourFee ?? d.fastestFee ?? null
       if (!satPerVbyte) return null
-      // Typical transfer ~250 vBytes.
-      return { network: 'bitcoin', feeNative: (satPerVbyte * 250) / 1e8, meta: { btcSatPerVbyte: satPerVbyte } }
+      return {
+        network: 'bitcoin',
+        feeNative: (satPerVbyte * BTC_TYPICAL_VBYTES) / 1e8,
+        meta: { btcSatPerVbyte: satPerVbyte },
+      }
     } catch {
       return null
     }
@@ -320,5 +352,17 @@ export async function computeNetworkFees(): Promise<ComputedNetworkFees> {
     }
   }
 
-  return { fees, prices, priceSource, btcSatPerVbyte, updatedAt: new Date().toISOString() }
+  return {
+    fees,
+    prices,
+    priceSource,
+    // Observed — null whenever the live read failed. Deliberately NOT backfilled
+    // from the constant: that would make an assumption indistinguishable from a
+    // measurement, which is the whole failure mode this codebase keeps hitting.
+    btcSatPerVbyte,
+    // Always present, always an assumption. Lets a caller see that a $11.95
+    // fallback means "priced at ~60 sat/vByte" rather than "this is the fee now".
+    btcSatPerVbyteAssumed: parseFloat(btcSatPerVbyteAssumed().toFixed(2)),
+    updatedAt: new Date().toISOString(),
+  }
 }

@@ -326,7 +326,29 @@ rather than the current cheap one. `btc-stats` did answer (height 966181) but to
 10.5s, so mempool.space was slow, not gone.
 
 The disclosure works — the route flags `estimate` and the audit lists it under
-silent degradation — so nothing is being passed off as live. But a reader who sees
-$11.95 has a badly wrong number, and choosing the right constant needs a view of
-typical fee levels rather than one reading. Left for a decision rather than
-guessed at.
+silent degradation — so nothing is being passed off as live.
+
+**⚠ Correction (same day): calling this a defect was wrong.** `lib/data/networkFees.ts`
+carries a ⚠ note above `NETWORK_GAS` stating that these constants are *deliberately*
+high, with the reasoning spelled out: the estimate is served **only when the live read
+failed**, and fee spikes are exactly when mempool.space struggles — so a fallback
+sized for a quiet market would have users underfund withdrawals during congestion.
+*"Erring high costs a user an over-estimate; erring low costs them a stuck
+transaction."* The note even cites the identical pattern for ERC-20 at ~200×.
+
+So the 60× gap is the documented safety margin working as intended, and lowering it is
+the specific change that comment forbids. Two other claims made alongside it were also
+wrong and were checked before being acted on: there is no missing blockchain.info
+fallback (that `dataSources` row is `btc-stats`, which does use it), and the fallback
+was not caused by a timeout (that fetch has none — it returned a non-OK response).
+
+**What was genuinely missing** is that the assumption was invisible. `btcSatPerVbyte`
+is reported only for observed readings, so a reader saw $11.95 with no way to tell it
+was priced at ~60 sat/vByte rather than quoted. `computeNetworkFees()` now also returns
+`btcSatPerVbyteAssumed` — always present, always an assumption, deliberately kept in a
+separate field so it can never be mistaken for a measurement. `BTC_TYPICAL_VBYTES` is
+named once so the constant and the live conversion cannot drift apart about which
+transaction they describe, and the BTC figures are written into the do-not-lower note
+so the next reader does not re-raise this as I did. A test pins the fallback above a
+quiet-mempool rate, with the reasoning attached: if that ever needs relaxing it is a
+decision to record, not a test to edit.
