@@ -11,6 +11,7 @@ import { guardSensitiveRoute } from '@/lib/server/apiGuard'
 import { validatePublicHttpUrl } from '@/lib/server/urlSafety'
 import { pinnedFetch } from '@/lib/server/pinnedFetch'
 import { probeSiteTerms, type TermsProbeReport } from '@/lib/server/termsProbe'
+import { describeThrottle } from '@/lib/server/coingeckoThrottle'
 
 export const dynamic = 'force-dynamic'
 
@@ -243,7 +244,11 @@ async function testCoinGecko(key?: string): Promise<TestResult> {
   const headers: Record<string, string> = { Accept: 'application/json' }
   if (key) headers['x-cg-demo-api-key'] = key
   const res = await fetch('https://api.coingecko.com/api/v3/ping', { headers })
-  if (!res.ok) return { ok: false, error: `HTTP ${res.status}` }
+  // A 429 on the connection test is the one place a user can act on the stated
+  // limit directly, so report it rather than a bare status. The other providers'
+  // tests below keep the plain form — this is the CoinGecko call site, and
+  // widening it to every provider is a separate change.
+  if (!res.ok) return { ok: false, error: `HTTP ${res.status}${await describeThrottle(res)}` }
   const data = await res.json()
   return { ok: !!data.gecko_says, detail: 'CoinGecko ping successful' }
 }

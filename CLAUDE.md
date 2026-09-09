@@ -686,12 +686,23 @@ mistaken for slowness and "optimised" back out.
 > says; the sliding window stays as the backstop for bursts a single check makes
 > internally. `AUDIT_CG_GAP_MS` still overrides for deliberate experiments.
 >
-> ⚠ **And the limit itself is still unread.** All three models were tuned against
-> an allowance inferred from how many calls a run made before a refusal — a guess
-> wearing the clothes of a measurement. `coingeckoPages.ts` now reports what a 429
-> actually states (rate-limit headers plus the body's `error_message`), so the next
-> failure is a reading rather than another inference. **Read that line before
-> touching the cap again.** Run `npm run audit` before trusting any route, and read its
+> ⚠ **And the limit itself is still unread — but the reporting now covers every
+> call site.** Four models were tuned against an allowance inferred from how many
+> calls a run made before a refusal, which is a guess wearing the clothes of a
+> measurement. `lib/server/coingeckoThrottle.ts` (`describeThrottle`) reports what
+> a refusal actually states — rate-limit headers plus the body's `error_message` —
+> and **every** CoinGecko route uses it. It first went into `coingeckoPages.ts`
+> alone, and the very next run moved the 429 onto `alerts` and `portfolio-history`,
+> which fetch CoinGecko directly, so the run still said `HTTP 429` and settled
+> nothing. `__tests__/coingeckoThrottleReporting.test.ts` walks every CoinGecko
+> route and fails any that builds a failure string from a bare status, so a new one
+> inherits the requirement instead of rediscovering it. **Read that line before
+> touching the cap again.**
+>
+> ⚠ **Known bound as of the seventh run: ~9 real CoinGecko calls in ~60s was still
+> refused**, with `coin-discovery` passing (the derived gap fixed it) and `alerts`
+> + `portfolio-history` taking the 429 instead. So the true allowance is BELOW the
+> 10/min cap, and the next run's error line should say by how much. Run `npm run audit` before trusting any route, and read its
 **REAL vs FALLBACK** classification rather than the HTTP status: a 200 carrying fallback data
 is the failure mode that misdirects debugging to the UI layer. An earlier harness reported
 43/43 PASS while several routes were quietly serving static catalogs.
@@ -767,6 +778,24 @@ route's matcher exactly including the chain preference, and exits **2** rather
 than 1 when DeFiLlama is unreachable — "you ran this in the wrong place" is not
 "the symbols are wrong". `lib/server/__tests__/llamaSymbolProbe.test.ts` fails if
 the probe's map drifts from the route's.
+
+> **First run: 2026-09-09, over 17,193 pools. All six misses were REMOVALS, not
+> renames** — `LLAMA_MAP` went 25 → 19 and now matches everything it asks for.
+> Ankr is present with five products but no longer Solana; Stader has ETHX and
+> MATICX but no BNBX; pSTAKE and Quicksilver are absent from the dataset entirely;
+> Meta Pool appears only as `meta-pool-eth`. All six keep the static fallback they
+> were already serving, so nothing regressed.
+>
+> ⚠ **The near-misses the probe printed were LP pairs, and they are traps.**
+> `BNBX-WBNB` (thena-fusion) and `STKATOM-WETH` (sushiswap) are liquidity pools:
+> their APY blends trading fees and incentives and carries impermanent-loss
+> exposure, so publishing one as a "staking APR" is a category error, not an
+> approximation. The route matches symbols EXACTLY so it cannot drift into one —
+> but a maintainer reading probe output might paste one in.
+>
+> Seen and deliberately not acted on: **ANKRMATIC** and **MPETH/SPETH** are live
+> pools with no key in the map. Adding them means new keys in the static table and
+> on the staking page — a feature, not this cleanup.
 
 **⚠ Data-availability results are IP-dependent — audits MUST run on the owner's machine.**
 LunarCrush blocks datacenter IPs and the cloud gateway blocks most provider hosts outright, so a

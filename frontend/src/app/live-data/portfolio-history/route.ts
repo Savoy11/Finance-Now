@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { describeThrottle } from '@/lib/server/coingeckoThrottle'
 
 export const dynamic = 'force-dynamic'
 
@@ -70,7 +71,10 @@ export async function GET(req: NextRequest) {
       )
       // A refusal is not an absence: 429/5xx means "ask again", while a 200
       // carrying no price means the provider genuinely has none for that date.
-      if (!res.ok) return { id, price: null, failed: `HTTP ${res.status}` }
+      // The refusal carries what CoinGecko says its own limit is, so a run that
+      // hits the ceiling reports the ceiling — see coingeckoThrottle.ts for why
+      // a bare status was not enough.
+      if (!res.ok) return { id, price: null, failed: `HTTP ${res.status}${await describeThrottle(res)}` }
       const data = await res.json() as { market_data?: { current_price?: { usd?: number } } }
       return { id, price: data.market_data?.current_price?.usd ?? null, failed: undefined }
     })

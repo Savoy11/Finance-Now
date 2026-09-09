@@ -650,3 +650,98 @@ code serving real users — still not something to change on inference.
   the static estimate, Binance.US on `ohlcv`, key-gated macro/returns/universe,
   SPY-from-catalog.
 
+---
+
+## Seventh run — `coin-discovery` fixed, and the 429 moved somewhere I had not instrumented
+
+`npm run audit` with #164 merged, plus the first real `npm run llama-symbols` run.
+
+### The derived gap worked
+
+| | Before | After |
+|---|---|---|
+| `coin-discovery` | **503** (CoinGecko 429 on page 1) | **REAL, 209 candidates** |
+| Pacing held | 38.7s | 51.6s (10/min cap, **6000ms** derived gap) |
+
+That is the fix landing: spacing the calls to the rate the cap names is what
+`coin-discovery` needed, and it cost ~13s.
+
+### But `alerts` and `portfolio-history` took the 429 instead — and reported nothing
+
+Both failed on a CoinGecko 429, and both printed a **bare status**:
+
+```
+alerts:             Error: CoinGecko HTTP 429
+portfolio-history:  bitcoin: HTTP 429 (transient: re-run)
+```
+
+No headers, no body, no stated limit. **That is a gap in the previous fix, not a
+new problem.** `describeThrottle` went into `coingeckoPages.ts` — the *paging*
+helper — and these two routes fetch CoinGecko directly and never touch it. So the
+one run that was supposed to finally read the allowance read nothing, because the
+refusal moved to a call site the instrumentation did not cover.
+
+Instrumenting whichever site happens to be failing is whack-a-mole. So:
+
+- `describeThrottle` moved to **`lib/server/coingeckoThrottle.ts`**, one
+  implementation, imported by every CoinGecko call site — `coingeckoPages`,
+  `alerts`, `portfolio-history`, and the `config` connection test.
+- **`__tests__/coingeckoThrottleReporting.test.ts` walks every CoinGecko route**
+  and fails any that builds a failure string from a bare `HTTP ${res.status}`. A
+  new route inherits the requirement instead of rediscovering it. Verified by
+  stripping the instrumentation back out of `alerts` and watching the guard name
+  the file.
+- The guard found a **third** site nobody had considered: `config/route.ts`'s
+  CoinGecko ping, which backs the Integrations connection test. That is the one
+  place a user can act on a stated limit directly, so it reports it now. The other
+  providers' tests in that file keep the plain form — widening it to all of them is
+  a separate change.
+
+### What this run does establish about the limit
+
+Real CoinGecko calls before `alerts` was refused — `markets` 1, `ohlcv`×3 **0**
+(Binance.US), `chart` 1, `coin-list` 3, `coin-search` 1, `coin-discovery` 1,
+`network-fees` 1, `alerts` 1 = **nine**, spread over roughly a minute by the 6s
+gap.
+
+**Nine real calls in ~60s was still refused.** So the true allowance is *below* the
+10/min cap — a bound, not a reading. The cap is deliberately **not** being moved on
+that bound: two previous rounds moved this number on inference and both were wrong,
+and the next run now reports the actual figure. Set it from the reading.
+
+### DeFiLlama: all six misses were removals, not renames
+
+First `npm run llama-symbols` run, over DeFiLlama's full **17,193** pools. The
+probe's three lenses agreed on every one, and no corrected symbol exists for any:
+
+| Key | What DeFiLlama actually carries |
+|---|---|
+| `ankr_sol` | Ankr is present with **five** products (ANKRETH, ANKRFLOWEVM, ANKRBNB, ANKRAVAX, ANKRMATIC) — Solana is not among them |
+| `stader_bnb` | Stader present with ETHX and MATICX only; no BNBX |
+| `pstake_bnb` | pSTAKE absent from the dataset entirely |
+| `pstake_atom` | ditto |
+| `quicksilver_atom` | Quicksilver absent entirely |
+| `metapool_near` | Meta Pool appears only as `meta-pool-eth` (MPETH, SPETH) |
+
+`LLAMA_MAP` goes **25 → 19**, and now matches everything it asks for — so
+`defillama-yields` stops reporting a permanent `partial (19/25)` that no fix could
+close. All six keep the static fallback they were already serving, exactly like the
+NEAR rung, so no rate regressed.
+
+⚠ **The near-misses the probe printed are traps, and worth recording as such.**
+`BNBX-WBNB` (thena-fusion) and `STKATOM-WETH` (sushiswap) look like the answer and
+are not: an LP APY blends trading fees and incentives and carries
+impermanent-loss exposure, so publishing one under "staking APR" is a category
+error rather than an approximation. The route compares symbols exactly, so it
+cannot drift into one — but a maintainer reading the probe output could paste one
+in, which is why it is written at the removal site as well as here.
+
+Seen, deliberately not acted on: **ANKRMATIC** (~2.4%) and **MPETH/SPETH** are live
+pools with no key in the map. Adding them means new keys in the static table and on
+the staking page — a feature, not this cleanup.
+
+### Still open
+
+- **Subscan (polkadot/kusama)** — a keyed provider. Owner's policy call.
+- **The CoinGecko allowance** — one more run reads it. Then set the cap.
+

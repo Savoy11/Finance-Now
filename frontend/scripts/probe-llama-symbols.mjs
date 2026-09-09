@@ -43,19 +43,13 @@ const LLAMA_MAP = [
   { key: 'etherfi_eth',      symbols: ['WEETH', 'EETH'],   chain: 'Ethereum' },
   { key: 'ankr_eth',         symbols: ['ANKRETH'],         chain: 'Ethereum' },
   { key: 'sanctum_sol',      symbols: ['INF'],             chain: 'Solana' },
-  { key: 'ankr_sol',         symbols: ['ANKRSOL'],         chain: 'Solana' },
   { key: 'benqi_avax',       symbols: ['SAVAX'],           chain: 'Avalanche' },
   { key: 'ankr_avax',        symbols: ['ANKRAVAX'],        chain: 'Avalanche' },
   { key: 'stader_matic',     symbols: ['MATICX'],          chain: 'Polygon' },
-  { key: 'stader_bnb',       symbols: ['BNBX'],            chain: 'BSC' },
-  { key: 'pstake_bnb',       symbols: ['STKBNB'],          chain: 'BSC' },
   { key: 'ankr_bnb',         symbols: ['ANKRBNB'],         chain: 'BSC' },
-  { key: 'quicksilver_atom', symbols: ['QATOM'] },
-  { key: 'pstake_atom',      symbols: ['STKATOM'] },
   { key: 'bifrost_dot',      symbols: ['VDOT'] },
   { key: 'bifrost_ksm',      symbols: ['VKSM'] },
   { key: 'lombard_btc',      symbols: ['LBTC'],            chain: 'Ethereum' },
-  { key: 'metapool_near',    symbols: ['STNEAR'],          chain: 'Near' },
 ]
 
 /** The protocol a key names, and the asset it stakes — both drive the near-miss search. */

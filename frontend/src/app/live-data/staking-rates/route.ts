@@ -117,6 +117,40 @@ const FALLBACK: Record<string, number> = {
 // staking pools are just the ticker, e.g. "STETH"; LP pools are "STETH-ETH" and
 // are excluded by the exact match), disambiguated by chain + highest TVL. This
 // avoids hardcoding DeFiLlama's pool UUIDs, which churn.
+// ── Six keys removed 2026-09-09, on a single `npm run llama-symbols` run
+//    against DeFiLlama's full 17,193-pool set (owner machine). Every one is a
+//    REMOVAL, not a rename — the probe's three lenses agreed each time, and no
+//    corrected symbol exists to swap in:
+//
+//      ankr_sol          Ankr IS in the set with five products (ANKRETH,
+//                        ANKRFLOWEVM, ANKRBNB, ANKRAVAX, ANKRMATIC) — Solana is
+//                        simply not among them any more.
+//      stader_bnb        Stader is present with ETHX and MATICX only; no BNBX.
+//      pstake_bnb        pSTAKE is absent from the dataset entirely.
+//      pstake_atom       ditto.
+//      quicksilver_atom  Quicksilver is absent from the dataset entirely.
+//      metapool_near     Meta Pool appears only as meta-pool-eth (MPETH, SPETH);
+//                        no NEAR product. Same conclusion the native NEAR rung
+//                        reached separately — see the removal note below.
+//
+//    ⚠ THE NEAR MISSES ARE NOT LP PAIRS. The probe's "similar symbol" lens
+//    surfaced `BNBX-WBNB` (thena-fusion) and `STKATOM-WETH` (sushiswap), and
+//    neither is a staking yield: an LP APY blends trading fees and incentives
+//    and carries impermanent-loss exposure, so publishing one under "staking
+//    APR" would be a category error, not an approximation. The matcher below
+//    compares symbols EXACTLY, so it cannot drift into one by accident — but a
+//    maintainer reading the probe output might paste one in, which is why this
+//    is written down rather than left to the matcher.
+//
+//    All six keep the static fallback they were already serving (STATIC_RATES
+//    above), so nothing regresses; the route just stops asking for six pools
+//    that cannot answer, and `defillama-yields` stops reporting a permanent
+//    partial that no fix could close.
+//
+//    Not acted on, but seen: ANKRMATIC (Polygon, ~2.4%) and MPETH/SPETH
+//    (meta-pool-eth) are live pools with no key here. Adding them means new
+//    keys in STATIC_RATES and on the staking page, which is a feature, not
+//    this cleanup.
 const LLAMA_MAP: { key: string; symbols: string[]; chain?: string }[] = [
   // ETH liquid staking / restaking
   { key: 'frax_eth',        symbols: ['SFRXETH'],          chain: 'Ethereum' },
@@ -132,26 +166,20 @@ const LLAMA_MAP: { key: string; symbols: string[]; chain?: string }[] = [
   { key: 'ankr_eth',        symbols: ['ANKRETH'],          chain: 'Ethereum' },
   // Solana
   { key: 'sanctum_sol',     symbols: ['INF'],              chain: 'Solana' },
-  { key: 'ankr_sol',        symbols: ['ANKRSOL'],          chain: 'Solana' },
   // Avalanche
   { key: 'benqi_avax',      symbols: ['SAVAX'],            chain: 'Avalanche' },
   { key: 'ankr_avax',       symbols: ['ANKRAVAX'],         chain: 'Avalanche' },
   // Polygon
   { key: 'stader_matic',    symbols: ['MATICX'],           chain: 'Polygon' },
   // BNB Chain
-  { key: 'stader_bnb',      symbols: ['BNBX'],             chain: 'BSC' },
-  { key: 'pstake_bnb',      symbols: ['STKBNB'],           chain: 'BSC' },
   { key: 'ankr_bnb',        symbols: ['ANKRBNB'],          chain: 'BSC' },
   // Cosmos LSTs (chain left open — symbol is distinctive and the chain label varies)
-  { key: 'quicksilver_atom', symbols: ['QATOM'] },
-  { key: 'pstake_atom',     symbols: ['STKATOM'] },
   // Polkadot / Kusama LSTs
   { key: 'bifrost_dot',     symbols: ['VDOT'] },
   { key: 'bifrost_ksm',     symbols: ['VKSM'] },
   // Bitcoin LST
   { key: 'lombard_btc',     symbols: ['LBTC'],             chain: 'Ethereum' },
   // NEAR (Meta Pool) — upgrades the metapool_near fallback to a live reading
-  { key: 'metapool_near',   symbols: ['STNEAR'],           chain: 'Near' },
 ]
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

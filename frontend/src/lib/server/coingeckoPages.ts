@@ -1,3 +1,5 @@
+import { describeThrottle } from './coingeckoThrottle'
+
 // Paged CoinGecko fetching that survives the free tier's rate limit.
 //
 // The failure this exists to prevent: firing every page in parallel
@@ -33,40 +35,6 @@ interface Options {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
-/** Rate-limit headers CoinGecko may set. Absent ones are simply skipped. */
-const RATE_LIMIT_HEADERS = [
-  'retry-after',
-  'x-ratelimit-limit',
-  'x-ratelimit-remaining',
-  'x-ratelimit-reset',
-  'ratelimit-limit',
-  'ratelimit-remaining',
-  'ratelimit-reset',
-] as const
-
-/**
- * What a 429 actually says about the limit, rather than what we assume.
- *
- * The audit harness has now shipped three pacing models tuned against a limit
- * nobody read: each was derived from how many calls the run happened to make
- * before a refusal, which is a guess dressed as a measurement. CoinGecko states
- * its allowance in headers and often in the body; capturing both turns the next
- * failure into a reading. Kept short — this lands in a route's `errors` array
- * and from there into the audit line, so it has to stay one line long.
- */
-async function describeThrottle(res: Response): Promise<string> {
-  const parts: string[] = []
-  for (const h of RATE_LIMIT_HEADERS) {
-    const v = res.headers.get(h)
-    if (v) parts.push(`${h}=${v}`)
-  }
-  try {
-    const body = (await res.clone().text()).replace(/\s+/g, ' ').trim()
-    // CoinGecko's free tier states the allowance in status.error_message.
-    if (body) parts.push(`body="${body.slice(0, 180)}"`)
-  } catch { /* body already consumed or unreadable — headers still stand */ }
-  return parts.length ? ` (${parts.join(', ')})` : ' (upstream stated no limit headers)'
-}
 
 /**
  * Fetch `count` pages one at a time.
