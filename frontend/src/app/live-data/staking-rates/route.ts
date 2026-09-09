@@ -15,28 +15,74 @@ export interface StakingRatesResponse {
    * This says which upstream failed and how.
    */
   upstreams: Record<string, string>
+  /**
+   * Which FALLBACK values rest on a measured reading and which do not. A
+   * fallback is what publishes when an upstream fails, so a surface showing an
+   * `estimate` rate needs to be able to say whether that estimate was ever
+   * checked — 24 of them never have been.
+   */
+  fallbackProvenance: {
+    measuredOn: string
+    measuredKeys: number
+    unmeasuredKeys: number
+  }
   updatedAt: string
 }
 
 // ─── Static fallback APRs ────────────────────────────────────────────────────
 // These are shown any time a live fetch fails or times out.
 // Keys must match the liveAprKey values used in stakingProviders.ts.
+//
+// ⚠ THIS TABLE IS HALF MEASURED AND HALF LEGACY, AND THE TWO HALVES DO NOT
+//   CARRY THE SAME WEIGHT. Check FALLBACK_MEASURED before trusting a number.
+//
+//   27 of the 51 keys were set on 2026-09-09 from a live reading of this route
+//   on the owner's machine (all 7 upstreams live, defillama-yields 19/19).
+//   Those keys are listed in FALLBACK_MEASURED and dated by
+//   FALLBACK_MEASURED_ON.
+//
+//   The other 24 have no upstream and were never measured — they are the
+//   original hand-written estimates, of unknown vintage. FALLBACK_MEASURED_ON
+//   deliberately does NOT date them: re-verifying 27 rows of 51 does not
+//   refresh the other 24, and stamping the whole table with one fresh date is
+//   the staleness lie the provenance convention exists to prevent.
+//
+//   WHAT THE 2026-09-09 PASS FOUND, and why this was worth doing: 22 of the 27
+//   were off by ≥25%, and every one of them was OVERSTATED —
+//
+//     lombard_btc    3.2  → 0.17   (−95%)
+//     swell_eth      4.2  → 0.64   (−85%)
+//     ankr_bnb       5.5  → 1.16   (−79%)
+//     puffer_eth     4.0  → 0.92   (−77%)
+//     stride_tia    16.0  → 4.52   (−72%)
+//     bifrost_dot   12.0  → 3.34   (−72%)
+//
+//   A one-directional error in 22 of 22 is not scatter. The table was written
+//   when staking yields were far higher and never revisited. A fallback is
+//   precisely what publishes when an upstream fails, so the app was quoting
+//   yields up to 20× the real rate at the exact moment it had no source for
+//   them — on a percentage a user acts on.
+//
+//   ⚠ Each measured value is a SINGLE point-in-time reading, not a
+//     multi-source verification, and staking APRs move daily. That is a real
+//     limit of this refresh, recorded rather than glossed: a dated single
+//     reading still beats an undated estimate that is provably 95% high.
 const FALLBACK: Record<string, number> = {
   // ETH liquid staking
-  lido_eth:        3.8,
-  rocketpool_eth:  3.6,
-  ankr_eth:        3.7,
+  lido_eth:        2.19,
+  rocketpool_eth:  2.16,
+  ankr_eth:        2.45,
   coinbase_eth:    3.2,
   kraken_eth:      3.5,
   binance_eth:     3.1,
 
   // Solana
-  marinade_sol:    7.0,
-  jito_sol:        7.5,
+  marinade_sol:    6.14,
+  jito_sol:        4.86,
   native_sol:      6.5,   // generic Solana native staking
 
   // Cosmos / ATOM
-  stride_atom:     14.0,
+  stride_atom:     14.3,
   native_atom:     13.0,  // Cosmos Hub baseline (~13%)
   osmo_native:     9.0,   // Osmosis
 
@@ -67,12 +113,12 @@ const FALLBACK: Record<string, number> = {
   native_cro:      10.0,
 
   // Injective
-  native_inj:      14.0,
-  stride_inj:      13.0,
+  native_inj:      7.33,
+  stride_inj:      7.16,
 
   // Celestia
   native_tia:      17.0,
-  stride_tia:      16.0,
+  stride_tia:      4.52,
 
   // NEAR Protocol
   native_near:     10.0,
@@ -80,36 +126,58 @@ const FALLBACK: Record<string, number> = {
 
   // ── Liquid-staking / restaking protocols (live via DeFiLlama Yields) ────────
   // ETH LSTs & restaking
-  frax_eth:         4.5,
-  stakewise_eth:    3.7,
-  stader_eth:       3.9,
-  swell_eth:        4.2,
-  renzo_eth:        4.5,
-  kelp_eth:         4.3,
-  puffer_eth:       4.0,
-  origin_eth:       4.2,
-  bedrock_eth:      4.1,
-  etherfi_eth:      4.8,
+  frax_eth:         2.7,
+  stakewise_eth:    2.25,
+  stader_eth:       2.31,
+  swell_eth:        0.64,
+  renzo_eth:        2.05,
+  kelp_eth:         2.65,
+  puffer_eth:       0.92,
+  origin_eth:       2.65,
+  bedrock_eth:      2.73,
+  etherfi_eth:      2.54,
   // Solana LSTs
-  sanctum_sol:      7.8,
+  sanctum_sol:      6.06,
   ankr_sol:         6.2,
   // Avalanche LSTs
-  benqi_avax:       6.5,
-  ankr_avax:        6.0,
+  benqi_avax:       3.81,
+  ankr_avax:        6.32,
   // Polygon / BNB LSTs
-  stader_matic:     4.5,
+  stader_matic:     2.34,
   stader_bnb:       5.0,
   pstake_bnb:       5.5,
-  ankr_bnb:         5.5,
+  ankr_bnb:         1.16,
   // Cosmos LSTs
   quicksilver_atom:13.0,
   pstake_atom:     12.5,
   // Polkadot / Kusama LSTs
-  bifrost_dot:     12.0,
-  bifrost_ksm:     14.0,
+  bifrost_dot:     3.34,
+  bifrost_ksm:     12.03,
   // Bitcoin LST
-  lombard_btc:      3.2,
+  lombard_btc:      0.17,
 }
+
+/** When the FALLBACK_MEASURED keys were read from live upstreams. */
+const FALLBACK_MEASURED_ON = '2026-09-09'
+
+/**
+ * Exactly which keys FALLBACK_MEASURED_ON covers — every other key in FALLBACK
+ * is an undated legacy estimate. Kept as an explicit list rather than derived
+ * at runtime from `sources`, because "was this number ever checked by a human
+ * against a real upstream" is a fact about the TABLE, not about whether today's
+ * fetch happened to succeed.
+ *
+ * `stakingFallbackProvenance.test.ts` fails if a key here is absent from
+ * FALLBACK, so the two cannot drift apart in a later edit.
+ */
+const FALLBACK_MEASURED: ReadonlySet<string> = new Set([
+  'ankr_avax', 'ankr_bnb', 'ankr_eth', 'bedrock_eth', 'benqi_avax',
+  'bifrost_dot', 'bifrost_ksm', 'etherfi_eth', 'frax_eth', 'jito_sol',
+  'kelp_eth', 'lido_eth', 'lombard_btc', 'marinade_sol', 'native_inj',
+  'origin_eth', 'puffer_eth', 'renzo_eth', 'rocketpool_eth', 'sanctum_sol',
+  'stader_eth', 'stader_matic', 'stakewise_eth', 'stride_atom', 'stride_inj',
+  'stride_tia', 'swell_eth',
+])
 
 // ─── DeFiLlama Yields mapping ────────────────────────────────────────────────
 // Maps our internal rate key → the receipt-token symbol(s) DeFiLlama lists for
@@ -487,6 +555,11 @@ export async function GET() {
     rates,
     sources,
     upstreams,
+    fallbackProvenance: {
+      measuredOn: FALLBACK_MEASURED_ON,
+      measuredKeys: FALLBACK_MEASURED.size,
+      unmeasuredKeys: Object.keys(FALLBACK).length - FALLBACK_MEASURED.size,
+    },
     updatedAt: new Date().toISOString(),
   } satisfies StakingRatesResponse)
 }
