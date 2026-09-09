@@ -101,3 +101,64 @@ correctly; only the framing of the cause was wrong.
   systematically-wrong baseline this file exists to avoid.
 - The FMP personal-vs-commercial terms question (7 live-data routes,
   20 files) remains the owner's to answer — unchanged by this run.
+
+---
+
+## Second owner-machine run, same day — the diagnostic paid off, and it says "not the sources"
+
+The `upstreams` map from the first fix reported **4/17 healthy**, and the shape of
+the failure is the finding:
+
+| # | Upstream | Outcome |
+|---|---|---|
+| 1–4 | lido-eth, rocketpool-eth, marinade-sol, jito-sol | **answered** |
+| 5 | stride-cosmos-lsts | **answered**, but the parse found no rate (0 of 3) |
+| 6–17 | cosmoshub, osmosis, polkadot, kusama, cardano, bnb, lido-matic, tron, injective, celestia, near, **defillama-yields** | **all "timeout after 6s"** |
+
+**Positions 1–5 answered; positions 6–17 timed out, in array order.** Twelve
+unrelated hosts across three continents do not fail in the order a JavaScript
+array happens to list them. Position decided the outcome, so this is **client-side
+contention** — the route fires all 17 at once and gives them a *shared* 6-second
+wall clock, so a request that spends 5.9s queued gets 0.1s to complete. The
+route's total time was 6695ms, i.e. it returned the moment the budget expired.
+
+So the earlier reading — "13 of 17 live rungs produced nothing" — was right about
+the count and **wrong about the cause**. Almost none of those twelve is a dead
+endpoint. `defillama-yields` alone backs ~24 of the route's live keys, and it is
+in the timed-out block.
+
+### The probe had the same flaw
+
+`scripts/probe-staking-upstreams.mjs` fanned out with `Promise.all` over all 17 —
+the same pattern as the route. It would have reproduced these false timeouts and
+reported twelve healthy hosts as gone: the exact misattribution the probe was
+written to prevent, one layer up.
+
+**Corrected: the probe is sequential by default**, one host at a time with a
+generous 20s ceiling, so a timeout means that host really is slow. `--parallel`
+reproduces the route's behaviour deliberately, and the *difference between the two
+runs is the measurement of contention*. A new `over-budget` verdict marks a host
+that serves a usable rate but takes longer than the route's 6s — nothing to
+reparse or replace there; the budget is what would have to move. Parallel mode
+also detects the array-order signature explicitly and prints that position, not
+host health, decided the result.
+
+### Two things this run does NOT settle
+
+- **The route's fix.** Raising the budget, bounding concurrency, or both — the
+  number should come from the sequential run's real per-host latencies, not from a
+  guess. One `npm run staking-upstreams` supplies them.
+- **`stride-cosmos-lsts`.** A genuine parse failure (HTTP 200, no rate found), and
+  the only one of the thirteen that is. Fixing it needs the body excerpt the
+  sequential probe prints; the audit's summary line does not carry it.
+
+### The rest of this run reads as locally degraded, not as source outages
+
+Also newly red: `news` (no articles, was 10 from 4 providers), `staking-discovery`
+(no pools, was 97), `alerts`, `coin-discovery` and `portfolio-history` (all
+CoinGecko HTTP 429). `news` and `staking-discovery` are keyless multi-source routes
+that fan out exactly like `staking-rates`, and three 429s in one run point at the
+audit's own request volume. Treat these as suspected collateral of the same
+bottleneck and re-check them on a quiet run before opening anything upstream —
+`risk-scores` taking 12.4s for a route that only proves a removal is the same
+smell.
