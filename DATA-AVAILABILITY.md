@@ -1,6 +1,6 @@
 # Finance Now — Data Availability Report
 
-_Last generated: **2026-07-20**, from a full audit of all `/live-data/*` route handlers
+_Last generated: **2026-09-09**, from a full audit of all `/live-data/*` route handlers
 executed against a running dev server on the development machine. This document is the
 authoritative record of **what data in Finance Now is live, what is partially live, and what has
 no free real-time source**. It exists so that a walk-through of the app surfaces exactly
@@ -40,35 +40,38 @@ what is — and is not — backed by real data, with no fabricated figures prese
 > depends on reaching an upstream still needs `npm run audit` on the owner's
 > machine, for the IP-dependence reason stated above.
 
-> ⚠ **2026-08-06 — YAHOO FINANCE REMOVED AS A DATA SOURCE. THE STATUSES BELOW ARE
-> PRE-REMOVAL FOR EVERY SURFACE IT TOUCHED, AND `npm run audit` HAS NOT BEEN RE-RUN
-> SINCE (it must run on the owner's machine — see the note above).**
+> ✅ **2026-08-06 YAHOO REMOVAL — NOW MEASURED, NOT PREDICTED (run of 2026-09-09).**
 >
 > Yahoo was withdrawn on **terms grounds, not availability**: the
 > `query1/query2.finance.yahoo.com` v8/v10 endpoints are undocumented internals of
 > Yahoo's own web app with no published third-party API terms, and Yahoo's ToS
-> prohibit automated access and redistribution. It is now hard-blocked in code —
+> prohibit automated access and redistribution. It is hard-blocked in code —
 > `frontend/src/lib/server/sourceTerms.ts` refuses `*.yahoo.com` at the socket, so
 > re-adding a fetcher does not bring it back.
 >
 > It was the only **keyless** rung on the equity/fund/macro quote, chart and OHLCV
-> paths, so the honest expectation for the next audit run is:
+> paths. The block that stood here was an honest *prediction from the code*; it has
+> now been replaced by what `npm run audit` actually reported on the owner's machine.
 >
-> | Surface | Was | Expected now |
+> ⚠ **Read the middle column as "with this machine's keys configured".** The
+> quote/chart/OHLCV rows came back REAL because FMP and Finnhub keys are present
+> here. An unkeyed deployment still lands on the catalog `ref` path the prediction
+> described — that path was not removed, it simply was not exercised. Nothing below
+> says the key-gating went away.
+>
+> | Surface | Predicted | **Measured 2026-09-09** |
 > |---|---|---|
-> | Quotes (stocks/ETFs/funds) | 🟢 Live keyless | 🟡 **Key-gated** — FMP/Finnhub/Twelve Data/Tiingo/Alpha Vantage, else catalog `ref` prices |
-> | Price chart | 🟢 Live keyless | 🟡 **Key-gated** — Tiingo → FMP |
-> | OHLCV / TA / backtests | 🟢 Live keyless | 🟡 **Key-gated** — Tiingo → FMP |
-> | Trailing returns | 🟢 Live keyless | 🟡 **Key-gated**, and capped: one request per symbol, so whole-universe requests are now REFUSED rather than truncated. Fund return screening/sorting is off; the Returns columns still work per page |
-> | Market news | 🟢 Live keyless | 🟡 **Partial** — MarketWatch + CNBC only. The one free per-ticker feed was Yahoo's; symbol news is now the general wires filtered to articles that name the company |
-> | Fund holdings | 🟢 Live keyless | 🟢 **Unchanged** — SEC N-PORT is authoritative and keyless. Sector weights now need an FMP key (N-PORT carries no GICS classification). The stock/bond/cash **asset mix is derived from N-PORT's `assetCat`** (NT9, `lib/utils/assetMix.ts`), so it is keyless and unaffected too — the earlier "no source at all" note was written before that work and is superseded. Absent only for filers publishing no N-PORT (UITs such as SPY) |
-> | Commodity / FX quotes | ⬜ Not measured | 🟡 **Key-gated and expected partial** — `GC=F`, `EURUSD=X` are not covered by Tiingo, so coverage depends on which keyed provider is configured. **This is the surface hit hardest.** |
-> | Treasury yield indices (`^IRX`/`^FVX`/`^TNX`/`^TYX`) | ⬜ Not measured | 🟢 **Keyless since 2026-09-03 (D3)** — no longer quoted at all. Probed with real keys on the owner's machine (`npm run rates-providers`): FMP paywalls them (402), Finnhub returns nothing, Twelve Data 404s the symbol, Alpha Vantage returns an empty quote, Tiingo has no index space. They now read the official treasury.gov par curve instead — keyless and plain percent, but **daily**, so no intraday change |
-> | Futures term structure | 🟢 Live (P2-O4) | 🔴 **Not available** — nothing reachable quotes a dated contract month. The route resolves the months and returns `ok:false` with the reason; the card states it on-page |
-> | FX converter, Treasury yield curve, SEC filings/XBRL, all crypto | — | 🟢 **Unaffected** — keyless and unrelated |
->
-> Everything above is a *prediction from the code*, not a measurement. Re-run
-> `npm run audit` on the owner's machine and replace this block with what it says.
+> | Quotes (stocks/ETFs/funds) | 🟡 Key-gated, else catalog `ref` | 🟢 **REAL** — 3/3 live via **Finnhub**, AAPL=$316.22. Key-gating intact; a key is configured |
+> | Price chart | 🟡 Key-gated — Tiingo → FMP | 🟢 **REAL** — 130 close points (close-only by design) |
+> | OHLCV / TA / backtests | 🟡 Key-gated — Tiingo → FMP | 🟢 **REAL** — 130 candles via **FMP** |
+> | Trailing returns | 🟡 Key-gated and capped | 🟡 **FALLBACK** — `source=none`, no returns served. **Prediction confirmed:** no Tiingo key, so the surface is dark rather than degraded |
+> | Market news | 🟡 Partial — MarketWatch + CNBC | 🟢 **REAL** — 10 articles from CNBC + MarketWatch. Prediction exactly right |
+> | Fund holdings | 🟢 Unchanged — SEC N-PORT | 🟢 **REAL** — VOO: 513 holdings via SEC, asOf 2026-06-30. SPY correctly falls back (UIT, files no N-PORT) |
+> | Commodity / FX quotes | 🟡 Key-gated, hit hardest | 🔑 **UNCONFIGURED** — **no keyed provider served any macro quote**; `GC=F`, `EURUSD=X`, `ZN=F` all missing. The prediction's worst-case row is the one that came true |
+> | Treasury yield indices | 🟢 Keyless since D3 | 🟢 **REAL** — treasury.gov, 13 maturities, 2s10s=0.41, 3m10y=0.86, shape=normal |
+> | FX converter | 🟢 Unaffected | 🟢 **REAL** — ECB official tier 30 currencies + community extended tier 126, both date=2026-09-08 |
+> | SEC filings / XBRL | 🟢 Unaffected | 🟢 **REAL** — filings, `company-facts` (rev=$416B, netMargin=26.9%), `company-profile` all live |
+> | Futures term structure | 🔴 Not available | ⬜ **Not covered by the harness** — no check exists, so this run says nothing about it. Left as-is rather than assumed |
 >
 > A companion safeguard shipped in the same change: every external host now carries a
 > dated terms verdict in `sourceTerms.ts`, a vitest fails if a host in `dataSources.ts`
@@ -200,8 +203,8 @@ field will treat catalog/reference/estimate values as live readings.
 | `ohlcv` | `source: "binance"` | **Binance.US**, a different venue with its own liquidity and prices | `venue: "binance-us"` (added 2026-07-20) |
 | `stock-universe` | 79 stocks, `ok: true` | Curated `equityCatalog.ts` fallback — the real universe is thousands | `source: "catalog"` |
 | `stock-outliers` | Sector z-score screener | Screens only those 79 catalog names, so "outlier" means outlier within a hand-picked large-cap set | inherits `stock-universe` |
-| `staking-rates` | **51** APRs, `ok: true` | **Only 4 are live** (stETH, rETH, mSOL, jitoSOL); the other **47** are static estimates. Re-measured 2026-07-29 — the catalog grew 28→51 without new live sources | `sources: { key: "live" \| "estimate" }` |
-| `network-fees` | 18 networks with USD fees | **5 of 18 are live** (Bitcoin via mempool.space; ETH / BNB / Polygon / AVAX via keyless `eth_gasPrice`, added 2026-08-21, `01d6bfe`). The other 13 are static gas × live price. **The L2s are estimates on purpose** — `eth_gasPrice` omits their L1 data fee, which is most of the real cost — so the remaining work here is non-EVM chains, not L2s. *(Corrected 2026-09-08: this row said "only Bitcoin", written before the EVM-L1 work.)* | per-network `source: "estimate"`, `btcFeeSource` |
+| `staking-rates` | **51** APRs, `ok: true` | **27 are live, 24 are static estimates** *(re-measured 2026-09-09; this row read 4 live / 47 estimated, measured 2026-07-29)*. The remaining 24 are **sourceless** — no upstream publishes a rate for them — rather than merely unfetched. Their FALLBACK values were undated until 2026-09-09, and of the 27 that could be checked against a live reading, **22 were ≥25% overstated** (worst: `lombard_btc` 3.2 → 0.17). | `sources: { key: "live" \| "estimate" }`, plus `fallbackProvenance` — whether the estimate was ever checked |
+| `network-fees` | 18 networks with USD fees | **5 of 18 are live** (Bitcoin via mempool.space; ETH / BNB / Polygon / AVAX via keyless `eth_gasPrice`, added 2026-08-21, `01d6bfe`). The other 13 are static gas × live price. **The L2s are estimates on purpose** — `eth_gasPrice` omits their L1 data fee, which is most of the real cost — so the remaining work here is non-EVM chains, not L2s. *(Corrected 2026-09-08: this row said "only Bitcoin", written before the EVM-L1 work.)* | per-network `source: "estimate"`, `btcFeeSource`. ⚠ **2026-09-09: BTC read `estimate` on the owner's machine** because mempool.space was unreachable from that connection (DNS resolved to a non-canonical range; every path timed out while control hosts answered). Count deliberately left at 5 of 18 — that is an environment artifact, not a source failure. See "Environment dependence found by this run" |
 | `cbdc-data` | 55 countries | Entirely the static table; the live CBDC news feed did not resolve | `source: "fallback"` |
 | `fund-holdings` (SPY) | 5 holdings | Catalog's indicative top holdings. **Expected** — SPY is a unit investment trust and files no N-PORT | `source: "catalog"`, `full: false` |
 | `chart` | OHLCV candles | **Synthesised** — `open==high==low==close`; built from a price-only series | `synthetic: true` (added 2026-07-20) |
@@ -212,7 +215,111 @@ silently again. Run `npm run audit:strict` to make them exit non-zero.
 
 ---
 
+## Run of 2026-09-09 — measured results
+
+`npm run audit`, **owner's machine**, app on localhost:3000, tree at `57bb322`.
+**77 checks: 62 REAL · 11 FALLBACK · 3 UNCONFIGURED · 0 EMPTY · 1 FAIL.**
+
+This is the run the 2026-08-06 Yahoo block was waiting for — see the measured table
+near the top of this file.
+
+### 🔴 Failures (1) — transient, and it produced a reading worth keeping
+
+| Check | Verdict |
+|---|---|
+| `portfolio-history` | CoinGecko **HTTP 429** on `bitcoin`, `retry-after=7`. Transient — re-run |
+
+**What the 429 body actually says**, because three rounds of cap-tuning were done on
+inference and this run was meant to settle it:
+
+> `"You've exceeded the Rate Limit. Please visit`
+> `https://www.coingecko.com/en/api/pricing to subscribe to our API plans for higher`
+> `rate lim…"`
+
+**CoinGecko states no numeric allowance** — just that phrase, a pricing link, and
+`retry-after=7`. The instrumentation added in #164/#165 worked exactly as designed, and
+the honest conclusion is that **the cap still cannot be read off a refusal**;
+`retry-after=7` is the only hard datum. Do not move `AUDIT_CG_PER_MIN` on the strength
+of this. It is not the reading that was hoped for, and treating it as one would be the
+fourth inference in a row.
+
+Pacing held the run for **52.5s** (10/min cap, 6000ms derived gap, `coin-list` weighted
+3 calls) and a 429 still landed — so the real allowance remains **below 10/min**.
+
+### 🟡 Silent degradation (11) — 200 OK, not the intended source
+
+| Check | What it actually served |
+|---|---|
+| `ohlcv` btc 1Y / xrp 6M / eth MAX | Binance.com geo-blocked (451, US) → served by **Binance.US**: different venue, different prices. Steady state for a US owner, not a fault |
+| `chart` | 721 price points, correctly marked `synthetic:true` — a close-price proxy, not real OHLC |
+| `network-fees` | **BTC fee not live** (`btcFeeSource=estimate`) — see the environment note below |
+| `cbdc-data` | 55 countries from the static table (de-routed surface) |
+| `security-returns` | `source=none` — no Tiingo key |
+| `stock-universe` | 79 stocks from the curated catalog — FMP `company-screener` needs a **paid** plan |
+| `stock-outliers` | only 66 evaluated across 7 sectors — screening the catalog, not the real universe |
+| `fund-holdings` (SPY) | 5 indicative holdings from catalog — **expected**: SPY is a UIT and files no N-PORT |
+
+### 🔑 Unconfigured (3) — honestly reported
+
+| Check | Missing |
+|---|---|
+| `social` | 0 signals, every provider withheld. Reddit is gated by **our own robots.txt honouring**, not a rate limit — needs `REDDIT_CLIENT_ID` |
+| `video-search` | no YouTube API key |
+| macro quotes | no keyed provider served `GC=F` / `EURUSD=X` / `ZN=F` |
+
+### ✅ Measurements this run settles
+
+| Question | Measured |
+|---|---|
+| **Staking live-rate coverage** | **27 of 51 keys live · 7/7 upstreams healthy · `defillama-yields` 19/19.** Was 4/51. The cascade is fixed: four dead hosts were hanging DNS ~10s each on libuv's 4-thread pool and starving the shared 6s budget (#157–#165) |
+| **`fund-universe` payload size** | **2,271,262 bytes (2.27 MB)** uncompressed, 10.9s, 126 catalog + **28,962** discovered funds. Still large, and **served unzipped** — a `gzip` `Accept-Encoding` request returned the same byte count |
+| `coin-list` | 750 coins, source=coingecko |
+| `btc-stats` | height 966,190 · hashrate 855 EH/s (10.9s) |
+| `staking-discovery` | 94 pools, APY 0.1–88.7% |
+
+### ⚠ Environment dependence found by this run
+
+**mempool.space is unreachable from this machine**, which is why the BTC fee reads
+`estimate`. Diagnosed rather than assumed: DNS resolves (5 addresses), but **every**
+path hangs — `/`, `/api/v1/fees/recommended` and `/api/blocks/tip/height` all time out
+at 20s — while control hosts answer normally in the same second (lido 0.83s, CoinGecko
+0.63s). So it is host-specific, not a general network fault.
+
+The resolved addresses sit in `103.165.192.0/24` (APNIC), which is **not** where
+mempool.space normally lives, so DNS interception on this connection is a likelier
+explanation than the host being down.
+
+⚠ **This row is therefore NOT recorded as a source failure.** It is exactly the
+IP-dependence this document warns about at the top: one machine's resolver is not
+evidence about an upstream. Re-check from another network before changing
+`network-fees`.
+
+### 🐢 Slow (>3s)
+
+`network count matches across layers` 22.8s · `v1 network-fees` 11.1s · `fund-universe`
+11.1s · `network-fees` 10.9s · `btc-stats` 10.9s · `staking-discovery` 6.4s.
+
+The three `network-fees` figures share one cause: each waits out the unreachable
+mempool.space before falling back.
+
+### ⚙ How to reproduce this run
+
+`next dev` **exhausts its default heap** partway through a full audit — it reached
+1.87 GB, went unresponsive, and stalled the run for 83 minutes with the harness blocked
+on a request that never returned. `next start` is not an option here (`output:
+'standalone'`). Run it with headroom:
+
+    NODE_OPTIONS=--max-old-space-size=8192 npm run dev
+    # then, in another shell:
+    npm run audit
+
+With 8 GB the same run completed in ~4 minutes at a steady 1.06 GB.
+
+---
+
 ## Run of 2026-07-29 — measured results
+
+_Superseded by the 2026-09-09 run above; kept for the record of what changed._
 
 `npm run audit`, owner's machine, app on localhost:3000, tree at `54fbf0c` (evening run).
 **76 checks: 60 REAL · 9 FALLBACK · 3 UNCONFIGURED · 1 EMPTY · 3 FAIL.**
@@ -304,8 +411,8 @@ added 2026-07-29; their rows stay ⬜ **Not measured** until the next run.
 ### Crypto — staking, news, social
 | Feature / Page | Status | Source | Notes |
 |----------------|--------|--------|-------|
-| Staking APR — stETH / rETH / mSOL / jitoSOL | 🟢 Live | Lido, Rocket Pool, Marinade, Jito | **jitoSOL was restored 2026-07-20**: the old `/api/v1/apy` endpoint 404s and had silently pinned it to a 7.5% static estimate — ~41% above the real 5.32%. Now reads `/api/v1/stake_pool_stats`. |
-| Staking APR — all other providers | 🟡 Partial | static estimates | **47 of 51 rates** (re-measured 2026-07-29). PR #37 grew the catalog from 28 to 51 providers without adding live rate sources, so live coverage went 4/28 → **4/51**. Each estimate carries `sources[key] = 'estimate'`. Improving this ratio is the open work, not the catalog size. |
+| Staking APR — stETH / rETH / mSOL / jitoSOL | 🟢 Live | Lido, Rocket Pool, Marinade, Jito | **jitoSOL was restored 2026-07-20**: the old `/api/v1/apy` endpoint 404s and had silently pinned it to a 7.5% static estimate. Now reads `/api/v1/stake_pool_stats`. **The 7.5 FALLBACK itself was only corrected 2026-09-09** — it survived the endpoint fix by 7 weeks, and measured 4.86 against it (54% high, not the 41% recorded here). It was one of 22 of 27 measured fallbacks that were ≥25% overstated; see the FALLBACK header comment in `staking-rates/route.ts`. |
+| Staking APR — all other providers | 🟡 Partial | 7 live upstreams + static estimates | **27 of 51 live, 24 estimated** (re-measured 2026-09-09, owner's machine; was 4/51). The 4/51 was never a catalog-size problem: four dead hosts were hanging DNS ~10s each on libuv's 4-thread resolver pool, starving the route's shared 6s budget so healthy upstreams aborted without ever opening a socket (#157–#165). All 7 remaining upstreams are live and `defillama-yields` is 19/19. Each estimate still carries `sources[key] = 'estimate'`; the 24 unmeasured FALLBACK values are flagged in `fallbackProvenance`. |
 | Staking discovery | 🟢 Live | DefiLlama + Yearn + Pendle + Beefy | 95 pools. **Slow: ~18 s.** |
 | News + sentiment + categories | 🟢 Live | 4 keyless publisher RSS feeds + optional keyed providers | **Verified 2026-07-29 (evening): 10 articles from 4 providers; `v1 news` 5 articles.** The outage earlier that day was **structural, not a feed failure**: every built-in crypto news provider required an API key, and CryptoPanic's free tier — the one carrying this — ended April 2026. With no key saved all four resolved to `disabled`, so the route found zero providers and returned `ok:false`, which `/api/v1/news` reported as "all news providers failed upstream" — blaming the upstream for a config state. Fixed by adding keyless RSS built-ins (CoinDesk, Cointelegraph, Decrypt, Bitcoin Magazine), matching what equities and macro already had, so the feed has a default that needs no key. Articles use `headline` (not `title`); sentiment/category are heuristic classifiers (labeled derived). |
 | Social sentiment (crypto) | 🟡 Partial | Reddit **Atom/RSS** feeds | Reddit's JSON API 403s server-side; the `.rss` feeds work but 429 aggressively (~1 request per window per IP), so coverage is partial by nature. **Live vs derived, stated 2026-09-08 (code reading, not a re-measurement):** LIVE — post title/body/link/author/timestamp from the Atom feed, plus `mentionsCount` (Santiment) and `social_volume_24h`/`galaxy_score` (LunarCrush), both **key-gated**, so with no key those signals are ABSENT rather than zero. DERIVED — every sentiment label, all computed in `social/route.ts`: Reddit's from a keyword regex over the post text, LunarCrush's from a galaxy-score threshold (≥60 / ≤35) rather than the provider's own `sentiment` field, Santiment's hardcoded `neutral`. The per-asset `sentimentScore` counts those derived labels, so it is derived twice over. NEITHER — Reddit `score` is a literal `0` and `upvoteRatio` is never set, because Atom carries no vote data; both pages render those badges only when present, so nothing shows rather than a fake zero. |
@@ -497,9 +604,14 @@ minimum** for free-tier polling without hitting 429.
     for a *config* reason — zero enabled providers — not a fetch failure. Every built-in crypto news
     provider required a key and CryptoPanic's free tier ended April 2026, so nothing keyless was left.
     Four keyless publisher RSS built-ins restore a default that works with no key at all.
-15. ⏳ **Raise live staking coverage.** 4 of 51 rates are live (re-confirmed in the evening run). PR #37
-    grew the catalog, not the live sources. The estimates are labeled honestly, but 92% of the table is
-    estimated.
+15. 🟢 **Raise live staking coverage.** **Largely done: 27 of 51 live as of 2026-09-09** (was 4 of 51 —
+    47% of the table, up from 8%). The diagnosis recorded here was wrong: this was never "PR #37 grew the
+    catalog, not the live sources". Four dead hosts were hanging DNS ~10s each on libuv's 4-thread resolver
+    pool, so the route's shared 6s budget expired and healthy upstreams aborted in array order without ever
+    opening a socket — positions 1–5 answered and 6–17 "timed out". Removing the dead rungs was the fix
+    (#157–#165). What remains is genuinely sourceless: 24 keys have no upstream that publishes a rate, and
+    their FALLBACK values are now dated and disclosed via `fallbackProvenance` rather than presented as
+    equivalent to live.
 16. ✅ ~~**Re-run for Macro.**~~ Done 2026-07-29 (evening). 3 of 4 checks REAL, `fx-rates-extended`
     FALLBACK on two unquoted currencies (KPW, SYP). See the Macro Markets table.
 17. ⏳ **Clear the CoinGecko rate-limit artifact.** `coin-discovery`, `portfolio-history` and `alerts` all
@@ -507,10 +619,19 @@ minimum** for free-tier polling without hitting 429.
     same run succeed. Either set `COINGECKO_API_KEY` or pace the harness's CoinGecko checks — as it stands
     every full audit reports three failures that say nothing about the app's real availability, which
     devalues the failure list.
-18. ⏳ **Add a macro quote check.** Commodity/currency/rate quotes are the one macro row still ⬜ Not
-    measured: they are *inferred* to work because they share the `security-quotes` ladder, but no check
-    exercises a macro instrument through it. Inference is what left the other four rows unmeasured for
-    eight days.
+17b. 🟢 **CoinGecko rate-limit artifact — paced, and the limit probed.** The harness now paces its own
+    CoinGecko calls, weighted per check (`coin-list` = 3 upstream pages), with the minimum gap **derived
+    from the cap** (`window / cap`) rather than fixed — a fixed 1.8s floor beside a 10/min cap let ten
+    calls land inside 18s, so the cap never bound. On 2026-09-09 that took `coin-discovery` and `alerts`
+    from FAIL to REAL; only `portfolio-history` still 429'd, one failure instead of three.
+    ⚠ **The allowance itself is still unread.** Every CoinGecko call site now reports what a 429 states,
+    and what it states is nothing numeric: `retry-after=7`, the phrase "You've exceeded the Rate Limit",
+    and a pricing link. So the cap remains set on a bound (below 10/min), not a reading — do not tune it
+    further on inference.
+18. ✅ ~~**Add a macro quote check.**~~ Done — the harness now exercises `GC=F` / `EURUSD=X` / `ZN=F`
+    through the `security-quotes` ladder. First result, 2026-09-09: 🔑 **UNCONFIGURED — no keyed provider
+    served any of the three.** The inference this item distrusted was indeed wrong; sharing the ladder did
+    not mean sharing its coverage.
 
 ## Validation
 
