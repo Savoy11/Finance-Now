@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { WALLET_FETCH_TIMEOUT_MS, walletFetchErrorMessage } from '@/lib/server/walletFetch'
 
 export const dynamic = 'force-dynamic'
 
@@ -29,6 +30,7 @@ export async function GET(req: NextRequest) {
         params: [{ account: address, ledger_index: 'validated' }],
       }),
       next: { revalidate: 0 },
+      signal: AbortSignal.timeout(WALLET_FETCH_TIMEOUT_MS),
     })
     if (!res.ok) throw new Error(`XRPL HTTP ${res.status}`)
 
@@ -59,7 +61,6 @@ export async function GET(req: NextRequest) {
       updatedAt: Date.now(),
     })
   } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Unknown error'
-    return NextResponse.json({ ok: false, error: msg }, { status: 502 })
+    return NextResponse.json({ ok: false, error: walletFetchErrorMessage(err) }, { status: 502 })
   }
 }

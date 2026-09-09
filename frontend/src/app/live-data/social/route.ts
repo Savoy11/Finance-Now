@@ -291,6 +291,11 @@ async function fetchRedditRss(feedUrl: string, assetFilter: string, limit: numbe
     const content = stripCdata(inner.match(/<content[^>]*>([\s\S]*?)<\/content>/i)?.[1] ?? '')
     const author = inner.match(/<name>([\s\S]*?)<\/name>/i)?.[1] ?? undefined
 
+    // DERIVED, not a Reddit signal. Reddit publishes no sentiment; this is a
+    // keyword classifier over the post's own text, and every surface that shows
+    // a sentiment label for a Reddit post is showing the output of these two
+    // regexes. The per-asset summary counts aggregate these labels, so they are
+    // derived twice over.
     const text = (title + ' ' + content).toLowerCase()
     const sentiment: SocialSignal['sentiment'] =
       /\b(bullish|surge\w*|soar\w*|ath|gains?|grow(?:th|ing)?|pump\w*|rall(?:y|ies)|breakout|good|great|positive|up \d)\b/.test(text) ? 'positive' :
@@ -305,6 +310,12 @@ async function fetchRedditRss(feedUrl: string, assetFilter: string, limit: numbe
       body: decodeHtmlEntities(content).replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim().slice(0, 300) || undefined,
       url: link,
       author,
+      // Atom carries no score or upvote_ratio, so `score: 0` is the
+      // "no score available" sentinel and upvoteRatio is left undefined —
+      // both social pages render those badges only when present, so this reads
+      // as absent rather than as a real zero-upvote post. stock-social/route.ts
+      // cites this file as the origin of that convention; it is written down
+      // here now so the citation points at something.
       score: 0,
       sentiment,
       publishedAt: updated ? new Date(updated).toISOString() : new Date().toISOString(),

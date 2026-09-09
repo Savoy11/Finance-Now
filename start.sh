@@ -85,9 +85,7 @@ setup_env() {
   fi
 
   cat > "$ENV_FILE" << 'EOF'
-NEXT_PUBLIC_USE_MOCK=true
 NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
-NEXT_PUBLIC_WS_URL=ws://localhost:8000/ws
 EOF
 
   ok ".env.local created with mock data enabled"

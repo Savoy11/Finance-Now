@@ -5,7 +5,7 @@ import { TrendingUp, TrendingDown, RefreshCw } from 'lucide-react'
 import { clsx } from 'clsx'
 import { useMarketOverview } from '@/hooks/useMarketData'
 import { useAlertStats } from '@/hooks/useAlerts'
-import { formatCompact, formatScore, formatOrNA, NA_LABEL } from '@/lib/utils/format'
+import { formatCompact, formatOrNA, NA_LABEL } from '@/lib/utils/format'
 import { getScoreColor } from '@/lib/utils/risk'
 import type { PopoutKey } from '@/store/usePopoutStore'
 
@@ -58,12 +58,17 @@ function MarketOverviewPopout() {
   const { data: overview } = useMarketOverview()
   const { data: alertStats } = useAlertStats()
 
+  // "Avg Safety Score" and "High / Critical" were removed here on 2026-09-08.
+  // Both read a field that had been hardcoded null since RP-6 (2026-08-29)
+  // withdrew per-coin risk scoring, so both rendered a permanent "N/A" — which a
+  // reader takes as "we could not fetch it" rather than "we do not publish it".
+  // Do not reinstate them; an average or a band count over coins is the same
+  // withdrawn figure in aggregate.
   const items = [
     { label: 'Assets Monitored', value: overview?.totalAssets?.toString() ?? '—' },
-    { label: 'Avg Safety Score', value: overview?.avgRiskScore != null ? formatScore(overview.avgRiskScore) : NA_LABEL },
-    { label: 'High / Critical', value: overview?.criticalHighCount?.toString() ?? NA_LABEL },
     { label: 'Active Alerts', value: alertStats?.unread?.toString() ?? '—' },
     { label: 'Total Market Cap', value: overview?.totalMarketCap != null ? formatCompact(overview.totalMarketCap) : NA_LABEL },
+    { label: '24h Volume', value: overview?.totalVolume24h != null ? formatCompact(overview.totalVolume24h) : NA_LABEL },
   ]
 
   return (

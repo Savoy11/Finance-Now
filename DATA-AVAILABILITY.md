@@ -17,6 +17,29 @@ what is — and is not — backed by real data, with no fabricated figures prese
 > `npm run smoke` runs the fast CI subset. **Do not hand-edit the statuses below
 > without re-running the audit** — that is how this file went stale last time.
 
+> ### Correction pass — 2026-09-08
+>
+> Seven rows below asserted a state the code contradicts. Each was corrected in
+> place with a dated marker, under the owner's 2026-09-08 ruling on the
+> checklist-steward flow: **apply where the evidence is a file-and-line
+> contradiction with no judgement in it; propose the judgement calls.** All seven
+> are the first kind — the code says what it says.
+>
+> | Row | Was | Is |
+> |---|---|---|
+> | `network-fees` (×2 places) | "Only Bitcoin's fee is live" | 5 of 18 live — BTC plus ETH/BNB/Polygon/AVAX (`networkFees.ts` FEE_PROVIDERS). L2s stay estimates on purpose |
+> | Risk scores | 🟢 Derived | ⚪ Removed 2026-08-29 (RP-6) — no per-coin score is published anywhere |
+> | Exchange connections | 🟢 Live | ⚪ Removed 2026-08-18 (RP-5) — routes and credential store deleted |
+> | Fund asset mix | "no source at all" | Derived from N-PORT `assetCat` (NT9, `lib/utils/assetMix.ts`) |
+> | Stock social | "Known issue: Reddit is starved" | Fixed 2026-07-22 (`socialBlend.ts`); Reddit is now gated by robots.txt instead |
+> | Staking APR (live coverage) | "PR #37 grew the catalog … **without adding live rate sources**" | Contradicted by the tree: `staking-rates/route.ts` carries a keyless **DeFiLlama Yields** rung mapping 25 provider keys plus ~20 native live keys, and `stakingProviders.ts` wires **33 distinct `liveAprKey`** values across 35 of 55 providers. The 4-of-51 RATIO is a 2026-07-29 measurement and is NOT changed here — only the claim that no live source was added. Whether those rungs answer is the owner-machine question (T-004) |
+> | Social sentiment (crypto) | "Partial" with no live/derived split | Split stated: post text + Santiment/LunarCrush VOLUME are live (the latter two key-gated); every sentiment LABEL is computed in `social/route.ts` (Reddit = keyword regex, LunarCrush = galaxy-score threshold, Santiment = hardcoded neutral); Reddit `score`/`upvoteRatio` are absent-sentinels, not data |
+>
+> **Nothing here re-measures anything.** These correct claims about which code
+> exists — which is a reading, not a measurement. Every LIVE/PARTIAL verdict that
+> depends on reaching an upstream still needs `npm run audit` on the owner's
+> machine, for the IP-dependence reason stated above.
+
 > ⚠ **2026-08-06 — YAHOO FINANCE REMOVED AS A DATA SOURCE. THE STATUSES BELOW ARE
 > PRE-REMOVAL FOR EVERY SURFACE IT TOUCHED, AND `npm run audit` HAS NOT BEEN RE-RUN
 > SINCE (it must run on the owner's machine — see the note above).**
@@ -38,7 +61,7 @@ what is — and is not — backed by real data, with no fabricated figures prese
 > | OHLCV / TA / backtests | 🟢 Live keyless | 🟡 **Key-gated** — Tiingo → FMP |
 > | Trailing returns | 🟢 Live keyless | 🟡 **Key-gated**, and capped: one request per symbol, so whole-universe requests are now REFUSED rather than truncated. Fund return screening/sorting is off; the Returns columns still work per page |
 > | Market news | 🟢 Live keyless | 🟡 **Partial** — MarketWatch + CNBC only. The one free per-ticker feed was Yahoo's; symbol news is now the general wires filtered to articles that name the company |
-> | Fund holdings | 🟢 Live keyless | 🟢 **Unchanged** — SEC N-PORT is authoritative and keyless. But sector weights now need an FMP key, and the stock/bond/cash **asset mix has no source at all** |
+> | Fund holdings | 🟢 Live keyless | 🟢 **Unchanged** — SEC N-PORT is authoritative and keyless. Sector weights now need an FMP key (N-PORT carries no GICS classification). The stock/bond/cash **asset mix is derived from N-PORT's `assetCat`** (NT9, `lib/utils/assetMix.ts`), so it is keyless and unaffected too — the earlier "no source at all" note was written before that work and is superseded. Absent only for filers publishing no N-PORT (UITs such as SPY) |
 > | Commodity / FX quotes | ⬜ Not measured | 🟡 **Key-gated and expected partial** — `GC=F`, `EURUSD=X` are not covered by Tiingo, so coverage depends on which keyed provider is configured. **This is the surface hit hardest.** |
 > | Treasury yield indices (`^IRX`/`^FVX`/`^TNX`/`^TYX`) | ⬜ Not measured | 🟢 **Keyless since 2026-09-03 (D3)** — no longer quoted at all. Probed with real keys on the owner's machine (`npm run rates-providers`): FMP paywalls them (402), Finnhub returns nothing, Twelve Data 404s the symbol, Alpha Vantage returns an empty quote, Tiingo has no index space. They now read the official treasury.gov par curve instead — keyless and plain percent, but **daily**, so no intraday change |
 > | Futures term structure | 🟢 Live (P2-O4) | 🔴 **Not available** — nothing reachable quotes a dated contract month. The route resolves the months and returns `ok:false` with the reason; the card states it on-page |
@@ -174,7 +197,7 @@ field will treat catalog/reference/estimate values as live readings.
 | `stock-universe` | 79 stocks, `ok: true` | Curated `equityCatalog.ts` fallback — the real universe is thousands | `source: "catalog"` |
 | `stock-outliers` | Sector z-score screener | Screens only those 79 catalog names, so "outlier" means outlier within a hand-picked large-cap set | inherits `stock-universe` |
 | `staking-rates` | **51** APRs, `ok: true` | **Only 4 are live** (stETH, rETH, mSOL, jitoSOL); the other **47** are static estimates. Re-measured 2026-07-29 — the catalog grew 28→51 without new live sources | `sources: { key: "live" \| "estimate" }` |
-| `network-fees` | 18 networks with USD fees | **Only Bitcoin's fee is live.** Every other chain is static gas × live price | per-network `source: "estimate"`, `btcFeeSource` |
+| `network-fees` | 18 networks with USD fees | **5 of 18 are live** (Bitcoin via mempool.space; ETH / BNB / Polygon / AVAX via keyless `eth_gasPrice`, added 2026-08-21, `01d6bfe`). The other 13 are static gas × live price. **The L2s are estimates on purpose** — `eth_gasPrice` omits their L1 data fee, which is most of the real cost — so the remaining work here is non-EVM chains, not L2s. *(Corrected 2026-09-08: this row said "only Bitcoin", written before the EVM-L1 work.)* | per-network `source: "estimate"`, `btcFeeSource` |
 | `cbdc-data` | 55 countries | Entirely the static table; the live CBDC news feed did not resolve | `source: "fallback"` |
 | `fund-holdings` (SPY) | 5 holdings | Catalog's indicative top holdings. **Expected** — SPY is a unit investment trust and files no N-PORT | `source: "catalog"`, `full: false` |
 | `chart` | OHLCV candles | **Synthesised** — `open==high==low==close`; built from a price-only series | `synthetic: true` (added 2026-07-20) |
@@ -231,6 +254,13 @@ SPY (no N-PORT series *and* no FMP key).
 
 `wallet exchange-connections` — 0 configured, which is correct for a fresh install.
 
+> **Overtaken, 2026-09-08.** This run record is left as measured. The surface it
+> measured no longer exists: exchange API linking was removed on 2026-08-18 under
+> **RP-5** (it stored an apiKey + apiSecret in plaintext at rest — the highest-value
+> secret the app held — to power a read-only balance view that watched addresses
+> already approximate from public chain data). Both `/live-data/wallet/exchange*`
+> routes and `lib/server/exchangeCredentials.ts` are deleted.
+
 ### 🐢 Slow (>3s)
 
 `staking-discovery` **21.8s** · `fund-universe` **12.4s** (28,988 funds) ·
@@ -258,10 +288,12 @@ added 2026-07-29; their rows stay ⬜ **Not measured** until the next run.
 | DeFi TVL | 🟢 Live | DefiLlama | 50 protocols. |
 | BTC network stats | 🟢 Live | blockchain.info + mempool.space | Height, hashrate, difficulty, mempool. Hashrate **unit is inferred from magnitude** (`lib/server/btcHashrate.ts`), not assumed: the upstream sends GH/s and a hardcoded `/1e12` reported `0 EH/s` while block height advanced normally (fixed 2026-07-29). Returns `null` — rendered as not-available — rather than a figure it cannot justify. A wrong field inside an otherwise healthy payload is the one failure the REAL/FALLBACK split cannot catch. |
 | Reserves / collateralization | 🟢 Live | DefiLlama Stablecoins API | 9 stablecoins. Composition breakdown is **approximate / derived** from chain distribution, not issuer attestation. |
-| Risk scores | 🟢 Derived | DefiLlama + CoinGecko + curated disclosures + news | Live-computed composites via `src/lib/risk`. Pillars without data show N/A and drop coverage/confidence. |
+| Risk scores | ⚪ **Removed 2026-08-29 (RP-6)** | — | **No per-coin risk score is published anywhere.** Owner: a risk figure on an asset the reader is viewing may be read as a recommendation, which is a regulated activity. `/live-data/risk-scores`, `lib/api/live/riskScores.ts`, `useRiskScoreIndex`, `RiskScoreBadge` and the `Asset.riskScore`/`riskBand` fields are all gone, and `lib/risk/__tests__/riskScoringRemoved.test.ts` guards it. **`lib/risk/` itself stays** — the options Trade Risk Scorer, staking-provider risk and the macro/equity profiles are separate decisions and remain live. |
 | Alerts | 🟢 Live | Derived from live market thresholds | Generated from live price/peg movement, not a stored backend. |
 | Network fee — Bitcoin | 🟢 Live | mempool.space | Real sat/vByte. |
-| Network fees — all other chains | 🟡 Partial | static gas amount × live token price | Gas amount is a **static estimate**; only the price is live. Labeled `estimate`. |
+| Network fees — ETH / BNB / Polygon / AVAX | 🟢 Live | keyless `eth_gasPrice` (publicnode) | Live gas amount × live token price (2026-08-21, `01d6bfe`). |
+| Network fees — L2s (Arbitrum, Base, Optimism) | 🟡 Partial | static gas amount × live token price | **Estimate on purpose.** `eth_gasPrice` returns only the L2 execution price and omits the L1 data fee, which is most of what a rollup transaction actually costs — a live-looking number that is wrong by the majority of the total is worse than a labelled estimate. |
+| Network fees — non-EVM (Solana, Tron, XRPL, Litecoin, Dogecoin, Cardano, Polkadot, Cosmos, TON, NEAR) | 🟡 Partial | static gas amount × live token price | Gas amount is a **static estimate**; only the price is live. Labeled `estimate`. This is where the remaining work is. |
 | Transfer withdrawal fees | 🟡 Partial | static table (`transferFees.ts`) | Hand-maintained, carries `lastVerified` + confidence (high ≤60d / medium ≤120d / low when stale). Stale ⇒ ranking degraded with an explicit caveat. |
 | `chart` route | 🟡 Partial | CoinGecko market_chart | **Synthetic OHLC** (zero-range candles) now marked `synthetic: true`. **No consumers in the app** — use `/live-data/ohlcv` for real candles. |
 
@@ -272,7 +304,7 @@ added 2026-07-29; their rows stay ⬜ **Not measured** until the next run.
 | Staking APR — all other providers | 🟡 Partial | static estimates | **47 of 51 rates** (re-measured 2026-07-29). PR #37 grew the catalog from 28 to 51 providers without adding live rate sources, so live coverage went 4/28 → **4/51**. Each estimate carries `sources[key] = 'estimate'`. Improving this ratio is the open work, not the catalog size. |
 | Staking discovery | 🟢 Live | DefiLlama + Yearn + Pendle + Beefy | 95 pools. **Slow: ~18 s.** |
 | News + sentiment + categories | 🟢 Live | 4 keyless publisher RSS feeds + optional keyed providers | **Verified 2026-07-29 (evening): 10 articles from 4 providers; `v1 news` 5 articles.** The outage earlier that day was **structural, not a feed failure**: every built-in crypto news provider required an API key, and CryptoPanic's free tier — the one carrying this — ended April 2026. With no key saved all four resolved to `disabled`, so the route found zero providers and returned `ok:false`, which `/api/v1/news` reported as "all news providers failed upstream" — blaming the upstream for a config state. Fixed by adding keyless RSS built-ins (CoinDesk, Cointelegraph, Decrypt, Bitcoin Magazine), matching what equities and macro already had, so the feed has a default that needs no key. Articles use `headline` (not `title`); sentiment/category are heuristic classifiers (labeled derived). |
-| Social sentiment (crypto) | 🟡 Partial | Reddit **Atom/RSS** feeds | Reddit's JSON API 403s server-side; the `.rss` feeds work but 429 aggressively (~1 request per window per IP), so coverage is partial by nature. |
+| Social sentiment (crypto) | 🟡 Partial | Reddit **Atom/RSS** feeds | Reddit's JSON API 403s server-side; the `.rss` feeds work but 429 aggressively (~1 request per window per IP), so coverage is partial by nature. **Live vs derived, stated 2026-09-08 (code reading, not a re-measurement):** LIVE — post title/body/link/author/timestamp from the Atom feed, plus `mentionsCount` (Santiment) and `social_volume_24h`/`galaxy_score` (LunarCrush), both **key-gated**, so with no key those signals are ABSENT rather than zero. DERIVED — every sentiment label, all computed in `social/route.ts`: Reddit's from a keyword regex over the post text, LunarCrush's from a galaxy-score threshold (≥60 / ≤35) rather than the provider's own `sentiment` field, Santiment's hardcoded `neutral`. The per-asset `sentimentScore` counts those derived labels, so it is derived twice over. NEITHER — Reddit `score` is a literal `0` and `upvoteRatio` is never set, because Atom carries no vote data; both pages render those badges only when present, so nothing shows rather than a fake zero. |
 | Videos | 🟢 Live | RSS | 60 videos. |
 | Video search / analyze | 🔑 Key-gated | YouTube Data API | Reports `configured: false`; returns empty rather than fabricating. |
 
@@ -282,7 +314,7 @@ added 2026-07-29; their rows stay ⬜ **Not measured** until the next run.
 | Portfolio prices | 🟢 Live | CoinGecko | `source: live \| partial \| error`. |
 | Portfolio history | 🔴 **FAILING (2026-07-29)** | CoinGecko history | **No historical prices, `source=error`.** The param validation is fine — the missing-params case still correctly returns HTTP 400 — so this is the upstream call, not the handler. Likely the same CoinGecko rate-limiting that fails `coin-discovery`. |
 | Wallet — BTC / ETH / SOL / TRON / XRP | 🟢 Live | Public explorers + JSON-RPC | **ETH/EVM fixed 2026-07-20:** was hard-502ing on Ethereum and Polygon because each chain had a single RPC and `cloudflare-eth.com` / `polygon-rpc.com` both broke. Now walks a fallback ladder and reports the serving endpoint in `rpc`. All 7 EVM chains verified. |
-| Exchange connections | 🟢 Live | local credential store | Empty until the user configures one. |
+| Exchange connections | ⚪ **Removed 2026-08-18 (RP-5)** | — | Exchange API-key linking was withdrawn on security grounds: plaintext `apiKey`/`apiSecret` at rest for a read-only balance view that watched addresses already approximate. Routes and credential store deleted; the wallet store's v2 migration drops persisted connection metadata. Do not reintroduce without a decision reversing RP-5. |
 | Pump report metrics | 🟢 Live | derived | 20 metrics. `scan`/`investigate`/`chat` are POST-only (405 on GET is correct). |
 
 ### Equities module
@@ -295,7 +327,7 @@ added 2026-07-29; their rows stay ⬜ **Not measured** until the next run.
 | Stock Registry universe | 🟡 Partial | **curated catalog fallback** | FMP `company-screener` is **PAID-only**; without it the registry is 79 hand-maintained names. P/E backfill from SEC XBRL frames only runs on the FMP path. |
 | Equity screener / outliers | 🟡 Partial | derived from the above | Screens 66 evaluable names across 7 sectors — inherits the catalog's narrowness. Backs the `equity-screener` agent. |
 | Market news | 🟡 Partial _(was 🟢)_ | MarketWatch / CNBC RSS | Keyless and unaffected in themselves. What went is the **per-ticker** feed — Yahoo's was the only free one — so symbol news is now these general wires filtered to articles that actually name the company. An empty result for a symbol is the honest answer, not a fault. |
-| Stock social | 🟡 Partial | StockTwits + **Reddit (fixed 2026-07-20)** | Reddit was calling the `.json` API, which **403s 100% of the time server-side** — a permanently dead provider that looked like a quiet feed. Switched to the `.rss` Atom feeds already proven in the crypto route. **Known issue:** signals merge by recency, and StockTwits posts are minutes old vs Reddit's hours/days, so at `limit ≤ 30` StockTwits fills every slot and Reddit is starved (0 at limit 20, 10 at 40, 45 at 80). |
+| Stock social | 🟡 Partial | StockTwits + **Reddit (fixed 2026-07-20)** | Reddit was calling the `.json` API, which **403s 100% of the time server-side** — a permanently dead provider that looked like a quiet feed. Switched to the `.rss` Atom feeds already proven in the crypto route. **Starvation fixed 2026-07-22** (`lib/server/socialBlend.ts`, unit-tested): merging by recency let StockTwits — minutes old, against Reddit's hours — fill every slot at `limit ≤ 30`. The blend now allocates the budget round-robin across providers and orders the winners by recency, so the slower source keeps its share. **Separately, since the 2026-08-29 terms review, reddit.com is gated off** — its robots.txt disallows this app's agent — unless `REDDIT_CLIENT_ID` is set, enforced in `pinnedFetch`. So expect StockTwits-only in server/CI environments, by policy rather than by bug. |
 | SEC filings | 🟢 Live | SEC EDGAR | Keyless. |
 | Company fundamentals / ratios | 🟢 Live | SEC EDGAR XBRL | AAPL rev $416B, net margin 26.9% — sanity-checked. |
 | Company profile | 🟢 Live | SEC EDGAR + Wikipedia | |
@@ -319,7 +351,7 @@ cover the module; only the shared quote path is still inferred rather than obser
 |----------------|--------|-------------------|-------|
 | Macro news | 🟢 Live | 8 keyless RSS feeds (Investing.com ×3, OilPrice, FXStreet, MarketWatch, CNBC ×2) | `macro-news` — **20 articles across 3 pillars** (commodities, bonds, currencies) in 1.7s. Content-first pillar classifier; 14-day staleness cutoff. Note only 3 of 4 pillars were represented in this sample; the balanced merge caps each at ¼ of slots, so an empty pillar means that feed set returned nothing in-window, not that classification failed. Several of these publishers bot-block elsewhere in this report — expect per-feed variance by IP. |
 | FX rates — official tier | 🟢 Live | ECB daily reference via frankfurter.dev (keyless) | `fx-rates` — **30 currencies**, `date=2026-07-29`, `source=frankfurter-ecb`. Confirms the 30-currency set is ECB's complete published list, not a subset. |
-| FX rates — extended tier | 🟡 Partial | community `fawazahmed0/currency-api` (keyless) | `fx-rates-extended` — **124 of 126 allowlisted currencies priced; KPW and SYP unpriced upstream.** Classified FALLBACK by the harness, which is the honest reading: the tier works, two codes have no rate. North Korean won and Syrian pound are both effectively unquoted in open markets, so this is the source being accurate rather than broken — but the allowlist could drop them. Labeled community-sourced in the UI, never blended with the ECB tier unattributed. |
+| FX rates — extended tier | 🟡 Partial | community `fawazahmed0/currency-api` (keyless) | `fx-rates-extended` — **124 of 126 allowlisted currencies priced; KPW and SYP unpriced upstream.** Classified FALLBACK by the harness, which is the honest reading: the tier works, two codes have no rate. North Korean won and Syrian pound are both effectively unquoted in open markets, so this is the source being accurate rather than broken. **Decided 2026-09-08: keep them, accepted as-is.** Dropping the two codes would make the harness report REAL, and that is the whole argument against it — the route's behaviour would be identical while the audit line got tidier, which is optimising the measurement rather than the thing measured. A user who picks KPW learns that nobody quotes it; a user who cannot find KPW learns nothing. The permanent FALLBACK on this row is therefore expected, not an open item. Labeled community-sourced in the UI, never blended with the ECB tier unattributed. |
 | Treasury yield curve | 🟢 Live | treasury.gov daily par curve XML (keyless) | `treasury-yield-curve` — **13 maturities**, 2s10s=+0.45, 3m10y=+0.84, `shape=normal`. Both spreads positive and the curve un-inverted as of this run. 4h revalidate. |
 | Commodity / currency / rate quotes | 🟡 Key-gated, expected partial _(never measured directly)_ | existing `security-quotes` ladder | **The surface the Yahoo removal hit hardest, and still the least-measured.** `GC=F` / `EURUSD=X` / `^TNX` were quoted keylessly and are **not** covered by Tiingo, so coverage now depends entirely on which keyed provider is configured. Unpriced renders a dash — the catalogs carry no reference prices by design. A dedicated check is now the highest-value gap to close. |
 | Futures term structure (forward curve) | 🔴 Not available _(was 🟢, P2-O4)_ | — | Dated contract months (`CLZ26.NYM`) had exactly one reachable source and it was Yahoo. FMP/Tiingo/Finnhub/Twelve Data/Alpha Vantage carry continuous front-months at best; exchange settlement files are licensed. `/live-data/futures-curve` still resolves the months and returns `ok:false` with the reason, and `TermStructureCard` prints it — the section says why rather than vanishing. Front-month prices are unaffected. |
@@ -388,9 +420,9 @@ Project convention (CLAUDE.md): every `/live-data` route needs `export const dyn
 
 | Route | Latency | Note |
 |-------|---------|------|
-| `staking-discovery` | ~18 s | 4 upstreams (DefiLlama, Yearn, Pendle, Beefy) |
+| `staking-discovery` | ~18 s **at the time of measurement** | 4 upstreams (DefiLlama, Yearn, Pendle, Beefy) — **bounded 2026-09-08.** The fan-out is parallel, so the response was gated by the slowest leg, and with no timeout "slowest" had no upper bound. Each upstream now gets a 6 s budget, and a TIMEOUT is not retried — the retry exists for upstreams that throw and immediately succeed, whereas retrying a slow one buys the same answer for twice the wait. The fan-out is `allSettled`, so a timed-out leg drops its pools and the other three still serve. **The new figure needs re-measuring on the owner's machine** — the bound is ~6 s, not a measurement. |
 | `fund-universe` | ~11 s / **14 MB** | 28,977 entries in one payload — payload slimmed 2026-07-30 (see action item 11), size pending re-measurement; first-fetch latency is upstream, 24 h-cached after |
-| `staking-rates` | ~6 s | 17 parallel upstreams with a 6 s per-fetch timeout |
+| `staking-rates` | ~6 s | 18 parallel upstreams with a 6 s per-fetch timeout |
 | `stock-social` | ~6 s | Reddit RSS fetches frequently hit the 429 path |
 
 ---

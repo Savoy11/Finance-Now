@@ -101,9 +101,29 @@ and dates in prose that no longer match. Generated files edited by hand — Fina
 `DATA-SOURCES.md` must come from `npm run data-sources`, never a manual edit.
 
 **Policy violations.** Decided positions, not preferences:
-- Risk scores 0–100, **higher = safer**, per `docs/architecture/risk-scale-spec.md`. Any inverted
-  scale or alternative banding is a defect.
+- **No per-coin risk score is published anywhere (RP-6, 2026-08-29).** Owner: a risk figure on an
+  asset the reader is viewing may be read as a recommendation, which is a regulated activity.
+  `/live-data/risk-scores`, `useRiskScoreIndex`, `RiskScoreBadge` and the
+  `Asset.riskScore`/`riskBand` fields are gone; `lib/risk/__tests__/riskScoringRemoved.test.ts`
+  guards it. A diff that reintroduces a per-coin score is a defect. **`lib/risk/` itself stays** —
+  it still serves the options Trade Risk Scorer, staking-provider profiles and the macro/equity
+  profiles, which are separate decisions.
+- **Ranking vs explanation is the line (short-list item 4, 2026-08-18).** A leaderboard over a
+  universe goes; scoring the one asset the reader opened stays. Do not report either half of that
+  as an inconsistency to be resolved.
+- Where a score IS published — the surviving `lib/risk` consumers above — it is 0–100,
+  **higher = safer**, per `docs/architecture/risk-scale-spec.md`. Any inverted scale or alternative
+  banding is a defect. The `@internal` 1–10 higher-is-riskier helpers in `stakingProviders.ts` are
+  the one sanctioned exception, retained for the public `/api/v1` contract (R2 §5.3).
 - A score rendered without its coverage figure claims more than the data supports.
+- **Yahoo Finance is hard-blocked on terms grounds (2026-08-06), not availability.** `pinnedFetch`
+  refuses `*.yahoo.com` at the socket. Any code path reaching for it — or a doc recommending it as
+  a fallback — is a defect, and the honest degradations it caused (key-gated quotes, no futures
+  term structure, no per-ticker news) are deliberate, not gaps to fill with a scraper.
+- **No exchange API-key custody (RP-5, 2026-08-18).** Storing an exchange `apiKey`/`apiSecret` is
+  forbidden outright, not a thing to guard well.
+- **Free-tier data sources only until near release** (owner ruling). A proposal or code path that
+  assumes a paid tier is premature, not wrong — flag it as sequencing, not as a defect.
 - Estimates must be labelled. Fabricated or silently substituted values are never acceptable — a
   failed provider degrades with visible provenance or shows nothing.
 - **No affiliate links, referral parameters, partner IDs or commission-bearing URLs in Finance Now

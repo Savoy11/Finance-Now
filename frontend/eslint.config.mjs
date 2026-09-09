@@ -26,6 +26,9 @@ export default [
       '.next/**',
       'node_modules/**',
       'drizzle/**',
+      // Generated HTML coverage report (npm run test:coverage). Its bundled
+      // prettify/sorter scripts are third-party and carry their own warnings.
+      'coverage/**',
       'next-env.d.ts',
       'src/app/globals.compiled.css',
     ],

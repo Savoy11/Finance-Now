@@ -11,6 +11,7 @@ import {
 import { clsx } from 'clsx'
 import type { PumpMetric } from '@/app/live-data/pump-report/metrics/route'
 import type { ScanTarget } from '@/app/live-data/pump-report/scan/route'
+import { riskColor, riskBg, riskLabel } from './riskStyles'
 import type { InvestigationReport, ReportFinding, EvidenceLink } from '@/app/live-data/pump-report/investigate/route'
 
 // ─── Chat types ───────────────────────────────────────────────────────────────
@@ -20,32 +21,7 @@ interface ChatMessage {
   content: string
 }
 
-// ─── Risk helpers ─────────────────────────────────────────────────────────────
-
-function riskColor(level: string) {
-  if (level === 'error') return 'text-slate-400'
-  if (level === 'critical') return 'text-red-400'
-  if (level === 'flagged'  || level === 'high')    return 'text-orange-400'
-  if (level === 'suspicious' || level === 'elevated') return 'text-amber-400'
-  return 'text-emerald-400'
-}
-
-function riskBg(level: string) {
-  if (level === 'error')      return 'bg-slate-500/15 border-slate-500/30'
-  if (level === 'critical')   return 'bg-red-500/15 border-red-500/30'
-  if (level === 'flagged'   || level === 'high')    return 'bg-orange-500/15 border-orange-500/30'
-  if (level === 'suspicious'|| level === 'elevated') return 'bg-amber-500/15 border-amber-500/30'
-  if (level === 'moderate')   return 'bg-yellow-500/15 border-yellow-500/30'
-  return 'bg-emerald-500/10 border-emerald-500/20'
-}
-
-function riskLabel(level: string) {
-  const map: Record<string, string> = {
-    critical: 'CRITICAL', flagged: 'FLAGGED', suspicious: 'SUSPICIOUS',
-    high: 'HIGH', elevated: 'ELEVATED', moderate: 'MODERATE', low: 'LOW', clean: 'CLEAN', error: 'SCAN FAILED',
-  }
-  return map[level] ?? level.toUpperCase()
-}
+// Risk-level presentation is shared with the batch scan panel — see riskStyles.ts.
 
 function severityIcon(s: ReportFinding['severity']) {
   if (s === 'critical') return <AlertTriangle size={14} className="text-red-400 shrink-0 mt-0.5" />
@@ -139,7 +115,7 @@ function FindingCard({ f }: { f: ReportFinding }) {
 // ─── Structured report ────────────────────────────────────────────────────────
 
 function ReportDocument({ report, onAsk }: { report: InvestigationReport; onAsk: (q: string) => void }) {
-  const score = report.riskScore ?? 0
+  const score = report.suspicionScore ?? 0
   const pct   = (score / 10) * 100
 
   return (
@@ -162,7 +138,7 @@ function ReportDocument({ report, onAsk }: { report: InvestigationReport; onAsk:
 
             {/* Score bar */}
             <div className="mt-2.5 flex items-center gap-2">
-              <span className="text-[10px] text-text-muted w-20 shrink-0">Fraud Risk</span>
+              <span className="text-[10px] text-text-muted w-20 shrink-0">Fraud Suspicion</span>
               <div className="flex-1 h-2 rounded-full bg-bg-elevated overflow-hidden">
                 <div className={clsx('h-full rounded-full transition-all', scoreBarColor(score))} style={{ width: `${pct}%` }} />
               </div>
@@ -492,7 +468,7 @@ export function PumpReportTab({ targets, coinId, symbol, agentIntro }: PumpRepor
 
   // Build report context string for the agent chat
   const reportContext = report
-    ? JSON.stringify({ target: report.target, overallRisk: report.overallRisk, riskScore: report.riskScore, executiveSummary: report.executiveSummary, redFlags: report.redFlags, conclusion: report.conclusion, findingSummaries: report.findings?.map(f => ({ category: f.category, severity: f.severity, headline: f.headline })) })
+    ? JSON.stringify({ target: report.target, overallRisk: report.overallRisk, suspicionScore: report.suspicionScore, executiveSummary: report.executiveSummary, redFlags: report.redFlags, conclusion: report.conclusion, findingSummaries: report.findings?.map(f => ({ category: f.category, severity: f.severity, headline: f.headline })) })
     : ''
 
   const runInvestigation = useCallback(async () => {

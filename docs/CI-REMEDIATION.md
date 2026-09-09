@@ -74,22 +74,64 @@ Note: the KMS resource is `aws_kms_key.fn`, not `.caep` — renamed in the
 
 ## Open
 
-### Coverage floor is below where it should be
+*(Nothing outstanding. The two items that stood here were closed on 2026-09-08 —
+see below.)*
 
-`ci.yml` runs pytest with `--cov-fail-under=45` against a measured ~51%. The
-inline comment is explicit that this is measured reality rather than a target,
-and that raising it should come with new tests instead of a broken gate. That
-work is still outstanding.
+---
 
-**Inconsistency worth fixing alongside it:** `backend/pyproject.toml:67` still
-sets `addopts = "... --cov-fail-under=80"`. CI overrides it on the command line,
-so a developer running a bare `pytest` locally fails an 80% gate that CI does not
-enforce — the local run reports *"Required test coverage of 80% not reached"* on
-a suite CI calls green. Pick one number and let both read it.
+## Closed 2026-09-08
 
-### eks module pinned to v19
+### Coverage floor is below where it should be — RESOLVED
 
-`infrastructure/terraform/eks.tf:7` pins `terraform-aws-modules/eks/aws` at
-`~> 19.21` to match the existing `aws_auth_*` arguments. Migrating to v20
-(`authentication_mode` + `access_entries`) remains a separate, deliberate
-follow-up — unchanged since PR #22.
+Closed the way the entry asked for: with tests, not by moving a number. The
+weakest modules were the scoring ones (`app/scoring` measured 0%), which is the
+layer that turns raw metrics into figures a user reads. Two new test files took
+all five of those modules to 100% and the suite from **49.92% to 57.31%**
+locally. The floor moved 45 → 55 afterwards.
+
+The two-numbers inconsistency is gone as well: the floor is now declared once,
+in `backend/pyproject.toml` (`--cov-fail-under=55`), and `ci.yml` deliberately
+does **not** override it on the command line. A bare local `pytest` and CI now
+gate on the same number.
+
+It sits under the lower of the two measurements on purpose. CI runs ~1.1pp
+higher than a local run, because its Postgres service lets the 15 DB-dependent
+API tests execute; a floor set above the local figure would fail a developer's
+`pytest` for a reason that has nothing to do with their change.
+
+### eks module pinned to v19 — RESOLVED
+
+`infrastructure/terraform/eks.tf` now pins `~> 20.37`, with
+`manage_aws_auth_configmap` / `aws_auth_roles` / `aws_auth_users` replaced by
+`authentication_mode = "API"` plus an `access_entries` map.
+
+The upgrade guide's staged migration (interim module, `terraform state rm`, a
+one-way `authentication_mode` change on a live cluster) did **not** apply here:
+this cluster has never been provisioned, as this document's own opening section
+records. With no cluster there is no ConfigMap to preserve, so the end state
+could be written directly and `API` chosen at creation rather than migrated to.
+
+Two things surfaced while doing it, both recorded in comments at the code:
+
+- **`create_kms_key` was silently discarding the KMS key this config names.**
+  The module defaults it to `true` and its encryption config reads
+  `var.create_kms_key ? module.kms.key_arn : provider_key_arn`, so the
+  module would have made a second key of its own and ignored `aws_kms_key.fn`
+  — leaving cluster secrets encrypted under a key that `iam.tf`'s grants do not
+  cover. The default and that expression are byte-identical in v19.21, so this
+  was already true before the upgrade; it has simply never been applied. Fixed
+  with `create_kms_key = false`.
+- **`aws_iam_role.eks_node_group` is assumed by no node.** The node groups never
+  set `iam_role_arn`, so the module creates their roles; that role's only
+  consumer was the hand-written aws-auth mapping this change removed. Annotated
+  in `iam.tf` rather than deleted — removing infrastructure is a separate
+  decision from upgrading a module.
+
+`aws` provider floor raised `~> 5.30` → `~> 5.95`, which is what v20.37
+declares.
+
+Verified by running `terraform validate` against the real
+`terraform-aws-modules/eks` v20.37.2 with the aws 5.95 provider, and confirmed
+capable of failing: restoring the three v19 `aws_auth*` arguments produces three
+`Unsupported argument` errors, and the migrated config passes. `terraform fmt
+-check -recursive` is clean. No `plan` was run — that needs AWS credentials.

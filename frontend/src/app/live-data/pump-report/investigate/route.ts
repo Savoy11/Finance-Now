@@ -29,7 +29,19 @@ export interface InvestigationReport {
   targetType: string
   generatedAt: string
   overallRisk: 'clean' | 'suspicious' | 'flagged' | 'critical'
-  riskScore: number
+  /**
+   * 0-10, HIGHER = MORE SUSPICIOUS. Named `suspicionScore`, not `riskScore`,
+   * since 2026-09-08 (risk-scale spec, Phase 6).
+   *
+   * The app's canonical Safety Score is 0-100 and higher = SAFER. A field here
+   * called `riskScore` on a 0-10 higher-is-worse scale collided with that on
+   * both the range and the direction, so a reader — or an agent — carrying one
+   * convention across would invert the meaning. This number is also not a risk
+   * assessment of an asset (RP-6 forbids publishing one): it is how much
+   * evidence of fraud an investigation turned up about a target. `suspicion`
+   * says that; `risk` did not.
+   */
+  suspicionScore: number
   executiveSummary: string
   findings: ReportFinding[]
   redFlags: string[]
@@ -70,7 +82,7 @@ After the log, output exactly:
   "targetType": "${targetType}",
   "generatedAt": "<ISO timestamp>",
   "overallRisk": "clean|suspicious|flagged|critical",
-  "riskScore": <0.0-10.0>,
+  "suspicionScore": <0.0-10.0>,
   "executiveSummary": "<2-3 sentence summary>",
   "findings": [
     {

@@ -232,7 +232,7 @@ export const DATA_SOURCES: DataSourceEntry[] = [
     id: 'social', surface: 'Crypto social sentiment', module: 'crypto',
     route: '/live-data/social', status: 'partial',
     providers: [{ name: 'Reddit (Atom/RSS)', host: 'www.reddit.com', role: 'primary', auth: 'none' }, { name: 'Santiment', host: 'api.santiment.net', role: 'primary', auth: 'key' }, { name: 'LunarCrush', host: 'lunarcrush.com', role: 'fallback', auth: 'key' }],
-    notes: 'Reddit’s JSON API 403s server-side; the .rss feeds work but 429 aggressively, so coverage is partial by nature.',
+    notes: 'What is live vs derived, since the row said only "partial": the Santiment and LunarCrush SOCIAL VOLUME/MENTION COUNTS are live, and both are KEY-GATED — without a key those signals are absent, not zero. The SENTIMENT LABELS are not a provider signal at all: they are a keyword classifier over the post text (derived). The Reddit score/upvote figure is not live either — Reddit’s Atom feed carries no score or upvote ratio at all, so the route sets a literal 0 as its “no score available” sentinel and leaves upvoteRatio undefined; both pages then render those badges only when present, so nothing displays rather than a fake zero. Reddit itself is doubly constrained: its JSON API 403s server-side, the .rss feeds 429 aggressively, and since the 2026-08-29 terms review its robots.txt disallows this app’s agent, so reddit.com is gated off in pinnedFetch unless REDDIT_CLIENT_ID is set.',
   },
   {
     id: 'videos', surface: 'Videos / video search', module: 'crypto',
@@ -339,13 +339,14 @@ export const DATA_SOURCES: DataSourceEntry[] = [
     id: 'fund-universe', surface: 'Fund universe', module: 'funds',
     route: '/live-data/fund-universe', status: 'live',
     providers: [{ ...SEC_EDGAR, name: 'SEC', host: 'www.sec.gov' }, { name: 'NASDAQ Trader', host: 'www.nasdaqtrader.com', role: 'primary', auth: 'none' }],
-    cadence: 'daily-cached · ~11s / 14MB', notes: '28,977 entries in one payload — pagination is a tracked follow-up.',
+    cadence: 'daily-cached',
+    notes: 'Discovered funds ship as compact {symbol,name} rows (2026-07-30, audit follow-up F3). PAGINATION WAS CONSIDERED AND REJECTED in item 11, not deferred: the registry screens client-side, so a page-at-a-time API would filter as though it had seen the whole universe when it had seen fifty rows. The earlier ~11s / 14MB figure predates the compact shape and is not a current measurement — payload size is pending a re-measure on the owner’s machine.',
   },
   {
     id: 'fund-holdings', surface: 'ETF / fund holdings', module: 'funds',
     route: '/live-data/fund-holdings', status: 'live',
     providers: [{ ...SEC_EDGAR, name: 'SEC N-PORT' }, { name: 'FMP', host: 'financialmodelingprep.com', role: 'fallback', auth: 'key' }, { name: 'Catalog', role: 'fallback', auth: 'none' }],
-    notes: 'N-PORT is keyless and authoritative, and holdings are unaffected by the Yahoo removal. Two side panels are: SECTOR WEIGHTS now need an FMP key (N-PORT carries no GICS classification), and the stock/bond/cash ASSET MIX has no source at all — that section no longer renders. UITs (e.g. SPY) file no N-PORT and correctly fall back to indicative top holdings.',
+    notes: 'N-PORT is keyless and authoritative, and holdings are unaffected by the Yahoo removal. Two side panels are: SECTOR WEIGHTS now need an FMP key (N-PORT carries no GICS classification), and the stock/bond/cash ASSET MIX is DERIVED FROM N-PORT’s assetCat field (NT9) rather than having no source — the earlier "no source at all" note was overtaken by that work. It is therefore keyless and unaffected by the Yahoo removal, but absent for filers that publish no N-PORT (UITs such as SPY), where the section correctly does not render. UITs (e.g. SPY) file no N-PORT and correctly fall back to indicative top holdings.',
   },
   {
     id: 'fund-holdings-history', surface: 'Holdings quarter-over-quarter diff', module: 'funds',
@@ -390,7 +391,7 @@ export const DATA_SOURCES: DataSourceEntry[] = [
     route: '/live-data/security-quotes · security-chart · security-ohlcv', status: 'key-gated',
     providers: [FMP, { name: 'Finnhub / Twelve Data / Alpha Vantage', role: 'fallback', auth: 'key' }],
     staticData: ['lib/data/commodityCatalog.ts', 'lib/data/currencyCatalog.ts', 'lib/data/ratesCatalog.ts'],
-    notes: 'Futures, FX pairs, and yield indices still price through the equity quote/chart routes (no separate plumbing). ⚠ This is the surface the Yahoo removal hit hardest: symbols like GC=F, EURUSD=X and ^TNX were quoted keylessly and are NOT covered by Tiingo, so coverage now depends on the keyed provider you configure and is expected to be partial. Catalogs carry no reference prices, so anything unpriced renders an honest dash rather than a stale number. The FX converter and Treasury yield curve are keyless and unaffected.',
+    notes: 'FUTURES and FX PAIRS still price through the equity quote/chart routes (no separate plumbing). The four YIELD INDICES no longer do: since D3 (2026-09-03) ^IRX/^FVX/^TNX/^TYX read the official treasury.gov par curve via lib/data/ratesFromCurve.ts — keyless, plain percent, published daily — after a probe found no free provider quotes them at all (FMP paywalls, Finnhub empty, Twelve Data 404, Alpha Vantage empty, Tiingo has no index space). ⚠ Of what remains, this is still the surface the Yahoo removal hit hardest: GC=F and EURUSD=X were quoted keylessly and are NOT covered by Tiingo, so coverage depends on the keyed provider you configure and is expected to be partial. Catalogs carry no reference prices, so anything unpriced renders an honest dash rather than a stale number. The FX converter and Treasury yield curve are keyless and unaffected.',
   },
 
   // ── SHARED / OTHER ─────────────────────────────────────────────────────────

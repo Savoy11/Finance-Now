@@ -1,7 +1,13 @@
 # Unified Risk Framework
 
-**Status:** v1 core implemented (`frontend/src/lib/risk/`) · profiles: staking (adapter), equities, options trades
-**Date:** 2026-07-03
+**Status:** v1 core implemented (`frontend/src/lib/risk/`) · **8 profiles**: commodity,
+cryptoAsset, currency, equity, optionsTrade, rateInstrument, stablecoin, stakingAdapter
+**Date:** 2026-07-03 · **Status line refreshed:** 2026-09-08
+
+> **The canonical scale, its bands and its vocabulary are specified in
+> [`risk-scale-spec.md`](./risk-scale-spec.md), not here.** This document is the
+> design rationale and the profile roadmap; that one is the contract. Where they
+> appear to disagree, the spec wins.
 
 ## Why
 
@@ -10,7 +16,7 @@ funds, bonds, commodities — sellable together or separately, sharing a home sh
 a set of common services. Risk scoring is Finance Now's identity feature, so it must become
 a **shared service with one vocabulary**, not a per-app reinvention.
 
-The codebase already has **three inconsistent risk systems**:
+The codebase had **three inconsistent risk systems** when this was written:
 
 | System | Location | Scale | Polarity | Bands |
 |---|---|---|---|---|
@@ -21,6 +27,27 @@ The codebase already has **three inconsistent risk systems**:
 Same product, three scales, two polarities, two band vocabularies, and thresholds
 that disagree even where the vocabulary matches. Every new asset class would have
 multiplied this. The unified framework fixes the vocabulary before that happens.
+
+> **Where those three stand now (2026-09-08).** The table above is the problem
+> statement, kept as written.
+>
+> - **Frontend risk utils — resolved (R1/R2).** `lib/utils/risk.ts` is a thin
+>   re-export of `lib/risk/presentation.ts` and `bandForScore()`; it holds no
+>   thresholds of its own. The canonical bands are 80/60/40/20.
+> - **Staking providers — deliberately unresolved, and bounded.**
+>   `computeOverallRisk()`/`getRiskLevel()` are marked `@internal` and retained
+>   **only** because the public `/api/v1/staking/opportunities` contract still
+>   serves those fields (R2 §5.3). No deprecation date, on purpose: removing them
+>   is an API break, not a cleanup. New code goes through
+>   `scoreStakingProvider()`, which wraps the same weights and converts at the
+>   boundary.
+> - **Backend scoring engine — dormant.** Its 65/50/30 bands still differ, and
+>   that stays open while the FastAPI backend's future is itself an open question
+>   (ROADMAP.md, Phase 6). Nothing in the shipping app reads them.
+> - **A fourth system was removed rather than reconciled**: the per-coin composite
+>   published on `/assets` (RP-6, 2026-08-29). See the spec's post-implementation
+>   note. The pump-report's separate 0–10 measure was renamed `suspicionScore` on
+>   2026-09-08 so it can no longer be mistaken for this scale.
 
 ## Research grounding
 
@@ -115,13 +142,23 @@ investment-advice line.
 
 ## Roadmap
 
-1. **Wire into UI** — risk breakdown component (dimension bars + evidence tooltip)
-   reusable across staking, assets, and the future options helper.
-2. **Expose to the suite** — `/api/v1/risk/*` endpoints + `score_options_trade` /
-   `score_equity` MCP tools, making risk scoring part of the sellable connector surface.
-3. **ETF/fund profile** — expense ratio, AUM, tracking error, concentration.
-4. **Bond profile** — duration, credit rating, spread (pending data sourcing).
-5. **Crypto token profile** — port the backend's four components so frontend
-   mock-mode and backend produce identical shapes.
-6. **Calibration pass** — replace v1 anchors with percentile-derived thresholds once
-   real distributions are available per asset class.
+*Annotated 2026-09-08 with what shipped.*
+
+1. **Wire into UI** — ⚠ **partly done, and partly reversed.** The breakdown UI ships
+   on the Trade Risk Scorer (`/equities/options`). The **assets** half was built and
+   then removed under RP-6, so this item can never complete as written.
+2. **Expose to the suite** — ⚠ partial. `score_options_trade` exists as an agent tool,
+   `POST /api/v1/options/score` and an MCP tool. `score_equity` and the general
+   `/api/v1/risk/*` surface are not built.
+3. **ETF/fund profile** (`fund.ts`) — ⬜ not built. Inputs exist in `fundCatalog`
+   (expense ratio, AUM, category) plus concentration from `lookThrough`.
+4. **Bond profile** — ✅ **DONE (P2-R3)** as `rateInstrument.ts`. The follow-up idea of
+   scaling the duration dimension by realised rate volatility is deferred: it needs a
+   persisted daily yield series that does not exist yet.
+5. **Crypto token profile** — ⬜ **superseded.** It was framed as porting the backend's
+   components so "frontend mock-mode and backend produce identical shapes"; there is no
+   mock mode (`LIVE_DATA` is hardcoded true) and the backend is dormant. `cryptoAsset.ts`
+   exists but publishes nothing (RP-6).
+6. **Calibration pass** — ⬜ not started; still waiting on real per-class distributions.
+
+Also shipped beyond this list, all P2-R3: `commodity.ts` and `currency.ts`.

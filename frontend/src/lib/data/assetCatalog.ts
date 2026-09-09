@@ -2664,8 +2664,12 @@ export const ASSET_CATALOG: Asset[] = RAW_CATALOG.map((a) => ({
   priceChangePercent24h: null,
   pegDeviation: null,
   pegDeviationBps: null,
-  riskScore: null,
-  riskBand: null,
+  // riskScore / riskBand are NOT set here: RP-6 (2026-08-29) deleted them from
+  // the Asset type, and these two lines survived only because a spread in an
+  // object literal suppresses TypeScript's excess-property check. Setting a
+  // permanently-null property nothing can read is precisely what RP-6 removed —
+  // it invites a future surface to render "N/A" as though a score were missing
+  // rather than deliberately not computed. Removed 2026-09-08.
   reserveRatio: null,
   marketDominance: undefined,
 }))

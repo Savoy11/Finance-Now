@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { coingeckoIdFor } from '@/lib/api/live/coingeckoIds'
 import { normalizeDaysParam } from '@/lib/utils/chartParams'
+import { coingeckoBase } from '@/lib/api/live/coingecko'
 
 // Server-side proxy for CoinGecko market_chart history. Maps the platform's
 // internal asset id to a CoinGecko coin id, fetches daily price/volume series,
@@ -29,7 +30,6 @@ import { normalizeDaysParam } from '@/lib/utils/chartParams'
 export const dynamic = 'force-dynamic'
 export const revalidate = 300
 
-const BASE_URL = process.env.COINGECKO_BASE_URL?.replace(/\/$/, '') || 'https://api.coingecko.com/api/v3'
 const API_KEY = process.env.COINGECKO_API_KEY && process.env.COINGECKO_API_KEY !== 'your-coingecko-api-key'
   ? process.env.COINGECKO_API_KEY
   : undefined
@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
   if (API_KEY) headers['x-cg-demo-api-key'] = API_KEY
 
   try {
-    const res = await fetch(`${BASE_URL}/coins/${cgId}/market_chart?${params.toString()}`, {
+    const res = await fetch(`${coingeckoBase()}/coins/${cgId}/market_chart?${params.toString()}`, {
       headers,
       next: { revalidate: 300 },
     })

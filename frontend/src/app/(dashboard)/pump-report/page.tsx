@@ -5,6 +5,7 @@ import { Plus, X, ShieldAlert } from 'lucide-react'
 import { ModuleGate } from '@/components/layout/ModuleGate'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { PumpReportTab } from '@/components/pump-report/PumpReportTab'
+import { ScanAllPanel } from '@/components/pump-report/ScanAllPanel'
 import { useWalletStore, hydrateWallets } from '@/store/useWalletStore'
 import type { ScanTarget } from '@/app/live-data/pump-report/scan/route'
 
@@ -150,10 +151,16 @@ function PumpReportPageInner() {
           Add an address above to run a scan.
         </div>
       ) : (
-        <PumpReportTab
-          targets={targets}
-          agentIntro="I'm your Pump Report AI Agent. I can search the web for fraud intelligence on the addresses you've added — rug pulls, flagged addresses, scam sites."
-        />
+        <>
+          {/* Batch sweep across every address, then the deep read on the first.
+              Shallow-then-deep: the sweep says which address deserves the deep
+              investigation, which is one target at a time by design. */}
+          <ScanAllPanel targets={targets} />
+          <PumpReportTab
+            targets={targets}
+            agentIntro="I'm your Pump Report AI Agent. I can search the web for fraud intelligence on the addresses you've added — rug pulls, flagged addresses, scam sites."
+          />
+        </>
       )}
     </div>
   )

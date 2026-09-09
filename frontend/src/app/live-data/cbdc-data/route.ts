@@ -1,4 +1,9 @@
 import { NextResponse } from 'next/server'
+import {
+  CBDC_FALLBACK_COMPILED,
+  getCbdcFallbackProvenance,
+  type CbdcFallbackProvenance,
+} from '@/lib/data/cbdcProvenance'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 3600 // Cache for 1 hour
@@ -24,9 +29,18 @@ export interface CbdcEntry {
 
 export interface CbdcDataResponse {
   countries: CbdcEntry[]
+  /**
+   * When this payload was compiled — NOT when the request was served. On the
+   * `fallback` path this is CBDC_FALLBACK_COMPILED, a fixed date. It used to be
+   * `new Date()` on every branch, so a frozen 2026-06-28 table reported itself
+   * as "just now" (T5 utility triage, 2026-07-20). Curated data stamped with a
+   * fresh timestamp reads as live; that is the one thing this app does not do.
+   */
   updatedAt: string
   source: 'live' | 'fallback'
   count: number
+  /** Present only on the `fallback` path — nothing to disclose about a live fetch. */
+  provenance?: CbdcFallbackProvenance
 }
 
 // ─── Static fallback data ─────────────────────────────────────────────────────
@@ -393,9 +407,10 @@ export async function GET() {
     if (!countries) {
       return NextResponse.json<CbdcDataResponse>({
         countries: FALLBACK_DATA,
-        updatedAt: new Date().toISOString(),
+        updatedAt: CBDC_FALLBACK_COMPILED,
         source: 'fallback',
         count: FALLBACK_DATA.length,
+        provenance: getCbdcFallbackProvenance(),
       })
     }
 
@@ -411,9 +426,10 @@ export async function GET() {
     // Always fall back to static data on any error
     return NextResponse.json<CbdcDataResponse>({
       countries: FALLBACK_DATA,
-      updatedAt: new Date().toISOString(),
+      updatedAt: CBDC_FALLBACK_COMPILED,
       source: 'fallback',
       count: FALLBACK_DATA.length,
+      provenance: getCbdcFallbackProvenance(),
     })
   }
 }

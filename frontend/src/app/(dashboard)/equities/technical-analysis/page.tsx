@@ -397,7 +397,7 @@ function EquityTaContent() {
       <PageHeader
         title="Equity Technical Analysis"
         subtitle="Candlestick charting, 62 indicators from the shared registry, and pattern detection"
-        description="The same TA engine as the crypto module — indicator registry, signal aggregation, and pattern detection — running on daily/weekly stock candles from Tiingo (FMP fallback). Both need an API key."
+        description="The same TA engine as the crypto module — indicator registry, signal aggregation, and pattern detection — running on daily stock candles from Tiingo (FMP fallback). Both need an API key."
         details={[
           { label: 'Signals', text: 'The summary aggregates RSI, MACD, moving-average posture, and stochastic into buy/neutral/sell counts. Informational only.' },
           { label: 'Drawings', text: 'Trendlines, horizontal rays, rectangles, and Fibonacci retracements — click two points on the chart.' },

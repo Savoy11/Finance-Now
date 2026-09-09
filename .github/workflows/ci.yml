@@ -294,7 +294,6 @@ jobs:
       - name: Build Next.js application
         env:
           NEXT_PUBLIC_API_URL: http://localhost:8000
-          NEXT_PUBLIC_WS_URL: ws://localhost:8000
           NEXT_PUBLIC_ENV: test
           NEXT_TELEMETRY_DISABLED: 1
         run: |
@@ -401,12 +400,27 @@ jobs:
           cd backend
           pip install poetry==1.7.1
           poetry export -f requirements.txt --output requirements.txt --without-hashes
+          # Still non-gating, deliberately and separately from the Node step
+          # above: `safety check` is deprecated in favour of `safety scan`, which
+          # requires an authenticated account, and the pinned 3.0.1 emits its own
+          # deprecation warning. Gating on a tool that is on its way out would
+          # break CI on a schedule nobody controls. Revisit when the backend's
+          # future is settled (ROADMAP Phase 6).
           safety check -r requirements.txt --output text || true
 
+      # GATING since 2026-09-08. The `|| true` meant this step reported and then
+      # passed regardless, so two HIGH advisories (js-yaml CVE-2026-59870,
+      # brace-expansion DoS) sat in the tree with a green Security Scan beside
+      # them. A check that cannot fail is not a check.
+      #
+      # Threshold is `high`, not `moderate`: the four remaining moderates all
+      # come from esbuild via drizzle-kit, a build-time-only tool, and clearing
+      # them needs a breaking drizzle-kit downgrade. Gating on moderate would
+      # make the first action be to disable the gate again.
       - name: Node.js dependency audit
         run: |
           cd frontend
-          npm audit --audit-level=high || true
+          npm audit --audit-level=high
 
   # ─── Infrastructure: Terraform Validate ───────────────────────────────────
   terraform-validate:
@@ -458,21 +472,49 @@ jobs:
       - docker-build
       - security-scan
       - terraform-validate
-    if: always()
+
+    # `!cancelled()`, not `always()`. With always(), a run superseded by the next
+    # push — this workflow sets `cancel-in-progress: true` above — still reached
+    # this gate, which read a CANCELLED dependency as a failure and posted a red
+    # "CI Success Gate" against the abandoned commit. That happened three times on
+    # PR #153 alone, once with every step of the cancelled job having already
+    # succeeded, so the red X said "docker-build failed" about a job that built
+    # both images and passed its structure test.
+    #
+    # A spurious red X is indistinguishable from a real one — the same reasoning
+    # that gated cd-staging.yml behind a repository variable rather than leaving
+    # `main` permanently red. This still runs when a job FAILS, so the gate keeps
+    # gating; it is skipped only when the run itself was abandoned, and a skipped
+    # gate is the honest answer there: nothing was concluded.
+    if: ${{ !cancelled() }}
 
     steps:
       - name: Check all jobs succeeded
         run: |
-          if [[ "${{ needs.backend-lint.result }}" != "success" ]]; then
-            echo "backend-lint failed"; exit 1
-          fi
-          if [[ "${{ needs.backend-test.result }}" != "success" ]]; then
-            echo "backend-test failed"; exit 1
-          fi
-          if [[ "${{ needs.frontend-check.result }}" != "success" ]]; then
-            echo "frontend-check failed"; exit 1
-          fi
-          if [[ "${{ needs.docker-build.result }}" != "success" ]]; then
-            echo "docker-build failed"; exit 1
-          fi
+          status=0
+          check() {
+            if [[ "$2" != "success" ]]; then
+              # Report the actual result. "failed" was wrong for a cancelled or
+              # skipped job and sent at least one investigation down the wrong path.
+              echo "::error::$1 did not succeed (result: $2)"
+              status=1
+            fi
+          }
+          # Reports every non-success before exiting, rather than stopping at the
+          # first — with the old early exit, two broken jobs cost two CI cycles.
+          check backend-lint      "${{ needs.backend-lint.result }}"
+          check backend-test      "${{ needs.backend-test.result }}"
+          check frontend-check    "${{ needs.frontend-check.result }}"
+          check docker-build      "${{ needs.docker-build.result }}"
+          # security-scan and terraform-validate were listed in `needs:` but never
+          # checked, so the gate WAITED for them and then ignored what they said.
+          # That silently undid two changes in this same PR: `npm audit
+          # --audit-level=high` lost its `|| true` under the note "A check that
+          # cannot fail is not a check" — and it still could not fail the gate —
+          # while the EKS v20 migration edits three .tf files that
+          # `terraform validate` and `fmt -check` guard. Both jobs already pass;
+          # this makes their result count.
+          check security-scan     "${{ needs.security-scan.result }}"
+          check terraform-validate "${{ needs.terraform-validate.result }}"
+          [[ $status -eq 0 ]] || exit 1
           echo "All CI checks passed!"

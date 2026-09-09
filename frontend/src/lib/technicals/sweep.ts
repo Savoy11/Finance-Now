@@ -38,9 +38,69 @@ export interface TechnicalRow {
   vsSma50Pct: number | null
   /** Last close vs its 200-period simple moving average, in percent. */
   vsSma200Pct: number | null
+  /**
+   * Annualised realised volatility over the last {@link REALISED_VOL_WINDOW}
+   * daily closes, as a percent. Null when there is not a full window.
+   *
+   * This is a DESCRIPTION of how much the price has moved, not a forecast and
+   * not a risk score — a coin can be calm and worthless. It is annualised with
+   * √365 rather than √252 because crypto trades every day; using the equity
+   * convention here would understate it by about a fifth.
+   */
+  realisedVol30dPct: number | null
 }
 
-const EMPTY: TechnicalRow = { rsi14: null, vsSma50Pct: null, vsSma200Pct: null }
+/** Daily closes required before a realised-volatility figure is reported. */
+export const REALISED_VOL_WINDOW = 30
+/** Crypto trades 365 days a year, unlike the 252 trading days equities use. */
+export const CRYPTO_PERIODS_PER_YEAR = 365
+
+const EMPTY: TechnicalRow = {
+  rsi14: null, vsSma50Pct: null, vsSma200Pct: null, realisedVol30dPct: null,
+}
+
+/**
+ * Annualised standard deviation of daily LOG returns over the last `window`
+ * closes, in percent.
+ *
+ * Log returns, not simple returns: they are additive across periods, so
+ * annualising by √n is the arithmetic the formula assumes. With simple returns
+ * the same scaling is an approximation that drifts exactly where crypto lives —
+ * on large daily moves.
+ *
+ * Uses the SAMPLE standard deviation (n−1). With 30 observations the difference
+ * from the population form is about 1.7%, which is small but free to get right.
+ *
+ * Returns null rather than 0 when the window is short or a non-positive close
+ * makes a log return undefined: 0% volatility is a claim about a motionless
+ * market, and would sort a coin nobody measured to the calm end of the screener.
+ */
+export function realisedVolatilityPct(
+  closes: number[],
+  window = REALISED_VOL_WINDOW,
+  periodsPerYear = CRYPTO_PERIODS_PER_YEAR,
+): number | null {
+  if (window < 2) return null
+  // window closes give window-1 returns; require the full window.
+  if (closes.length < window) return null
+
+  const slice = closes.slice(-window)
+  const returns: number[] = []
+  for (let i = 1; i < slice.length; i++) {
+    const prev = slice[i - 1]
+    const curr = slice[i]
+    // A zero or negative close makes the log return undefined. One bad tick
+    // must not be silently treated as a flat day.
+    if (!(prev > 0) || !(curr > 0) || !Number.isFinite(prev) || !Number.isFinite(curr)) return null
+    returns.push(Math.log(curr / prev))
+  }
+  if (returns.length < 2) return null
+
+  const mean = returns.reduce((a, b) => a + b, 0) / returns.length
+  const variance = returns.reduce((a, r) => a + (r - mean) ** 2, 0) / (returns.length - 1)
+  const annualised = Math.sqrt(variance) * Math.sqrt(periodsPerYear) * 100
+  return Number.isFinite(annualised) ? annualised : null
+}
 
 /**
  * The maths, split out from the fetching so it is testable without a network
@@ -72,6 +132,7 @@ export function computeTechnicals(candles: OhlcvCandle[]): TechnicalRow {
     rsi14: Number.isFinite(rsiLast) ? rsiLast : null,
     vsSma50Pct: vsSma(50),
     vsSma200Pct: vsSma(200),
+    realisedVol30dPct: realisedVolatilityPct(closes),
   }
 }
 

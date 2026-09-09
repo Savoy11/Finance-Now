@@ -327,17 +327,34 @@ underlying ratings and their relative ordering are untouched.
                            ├── stakingAdapter.ts  (built, unconsumed)
                            ├── equity.ts          (built, unconsumed)
                            ├── optionsTrade.ts    (built, unconsumed)
-                           ├── coinScreen.ts      ← NEW (Phase 4)
+                           ├── coinScreen.ts      ← deferred (see note)
                            ├── fund.ts            ← planned
-                           ├── bond.ts            ← planned (§6)
-                           └── commodity.ts       ← planned (§6)
+                           ├── commodity.ts       ← BUILT (P2-R3)
+                           ├── currency.ts        ← BUILT (P2-R3)
+                           └── rateInstrument.ts  ← BUILT (P2-R3; the §6 "bond" profile)
                                   ↓
       ┌───────────────────────────┼───────────────────────────┐
       ↓                           ↓                           ↓
-lib/utils/risk.ts          /live-data/risk-scores      /api/v1/risk/*  (planned)
-(thin re-export,           (composites, live)          + MCP tools
- 12 consumers                     ↓
- unchanged)               asset overlay + 12 components
+lib/utils/risk.ts          (per-coin path REMOVED)     /api/v1/risk/*  (planned)
+(thin re-export)            RP-6, 2026-08-29           + MCP tools
+
+> **Post-implementation state (2026-09-08).** This diagram is the design as
+> drawn; here is where it landed.
+>
+> - **`commodity.ts`, `currency.ts` and `rateInstrument.ts` are BUILT** (P2-R3),
+>   so §6.2 below describes shipped code, not a plan. `rateInstrument.ts` is what
+>   §6's "bond profile" became. Eight profiles now exist in
+>   `lib/risk/profiles/`: commodity, cryptoAsset, currency, equity, optionsTrade,
+>   rateInstrument, stablecoin, stakingAdapter.
+> - **The per-coin path is gone (RP-6, 2026-08-29).** `/live-data/risk-scores`,
+>   the asset overlay and the score components were removed: a risk figure on an
+>   asset the reader is viewing may be read as a recommendation, which is a
+>   regulated activity. `lib/risk/__tests__/riskScoringRemoved.test.ts` guards it.
+> - **`coinScreen.ts` is therefore deferred, not merely unbuilt** — it was the
+>   screening front-end of the removed path.
+> - `lib/utils/risk.ts` also stopped being a pure re-export shim on 2026-09-08:
+>   `getPegDeviationColorClass` moved to `lib/utils/pegFormat.ts`, since a peg
+>   deviation is a distance from $1.00 rather than a point on this scale.
 ```
 
 ### 4.1 `lib/utils/risk.ts` becomes presentation-only

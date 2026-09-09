@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { coingeckoBase } from '@/lib/api/live/coingecko'
 
 export const dynamic = 'force-dynamic'
 
@@ -94,7 +95,7 @@ function computeSignal(coin: {
 }
 
 export async function GET() {
-  const cgBase = process.env.COINGECKO_BASE_URL?.replace(/\/$/, '') || 'https://api.coingecko.com/api/v3'
+  const cgBase = coingeckoBase()
   const cgKey  = process.env.COINGECKO_API_KEY && process.env.COINGECKO_API_KEY !== 'your-coingecko-api-key'
     ? process.env.COINGECKO_API_KEY : undefined
 

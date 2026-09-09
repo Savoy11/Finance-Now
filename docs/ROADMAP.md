@@ -17,6 +17,22 @@ One application, three kinds of modules, one license system:
 | **Invest** | Portfolio (holdings, cost basis, P&L), Wallets, Watchlists | UI exists; needs real persistence |
 | **Budget & Plan** | Budgeting (accounts, transactions, budgets), Planning (net worth, goals, projections) | New |
 
+> **Update (2026-09-08) — this table is the original framing and is kept as
+> written; here is where each pillar actually stands.**
+>
+> - **Analyze** is built out well past "crypto only": Equities, Macro Markets
+>   (commodities, currencies, bonds & rates — 45 instruments) and ETFs & Funds
+>   all ship as entitlement-gated modules with their own registries, detail
+>   pages, TA and scanners.
+> - **Invest** has real persistence. Portfolios, watchlists, builder plans and
+>   wallets are all Postgres-backed through `/api/user/*` (NT3 completed the
+>   wallets leg on 2026-08-18). The trade ledger remains scaffolded and unwired.
+> - **Budget & Plan** was built, shipped, and then **removed on 2026-08-20** —
+>   owner decision to build personal-finance tooling as a separate product. The
+>   pages, `/api/user/budget/*` and `lib/budget/` are deleted; the DB tables are
+>   deliberately retained so no migration drops imported bank history. The
+>   Retirement Planner went with it. See RP-2's recorded reopen trigger.
+
 Differentiator: the personal-finance modules see live market data from the
 analysis modules (crypto portfolio value flows straight into net worth), and
 the `/api/v1` + MCP layer turns the whole suite into a personal-finance
@@ -130,10 +146,13 @@ module registry.
 > **Watchlist is DONE** (the note above predates it): `/api/user/watchlists`
 > (+`/[id]`), `useWatchlistStore` optimistic with client-UUID ids and a
 > one-time merging localStorage import. Still open:
-> - **Wallets are still localStorage.** `useWalletStore` persists to
->   `fn:wallets` via zustand `persist`; there is no `/api/user/wallets` route
->   (the namespace holds only budget, builder-plans, portfolios, watchlists).
->   Mechanical work — portfolios/watchlists are the template.
+> - ~~**Wallets are still localStorage.**~~ **DONE 2026-08-18 (NT3).**
+>   `/api/user/wallets` (+`/[id]` PATCH/DELETE) exists; `useWalletStore` is
+>   optimistic with client-UUID ids and a one-time merging `fn:wallets` import,
+>   exactly on the portfolios/watchlists template. Note the `/wallets` PAGE was
+>   separately held out of the initial rollout on 2026-08-22 — the API is
+>   deliberately left up, since user-data CRUD carries no staleness harm and
+>   saved addresses must survive the hide.
 > - **The trade ledger is scaffolded but unwired.** `trade_transactions` is
 >   fully defined (`schema/invest.ts`, created in migration 0000, with a
 >   `(portfolio_id, instrument_id, executed_at)` index whose comment says it
@@ -155,6 +174,17 @@ module registry.
 after a browser wipe.
 
 ### Phase 2 — Budget module
+> **⚪ REMOVED 2026-08-20 — read this before the progress note below.** Owner
+> decision: *"we will build this out in a completely different tool."* The
+> pages, `/api/user/budget/*` and `lib/budget/` are deleted, along with the
+> Retirement Planner and its 53 tests. The **DB tables are retained on purpose**
+> (`lib/db/schema/budget.ts` is kept precisely so drizzle never generates a
+> DROP), because imported bank history is user data — export instructions live
+> in that file's banner. The engine is recoverable by name from
+> `archive/wave-two-pre-reset` if the separate tool wants it. This reverses RP-2
+> via its recorded reopen trigger. The note below is the historical record of
+> what shipped and is left as written.
+>
 > Progress (2026-07-30): **shipped as the `budget` suite module** (`/budget` +
 > `/budget/transactions`, ModuleGated, own sidebar section). Accounts with
 > anchor-based balances, manual entry, CSV import (column mapping UI, saved
@@ -323,8 +353,9 @@ needs the most careful honest-data framing, not for data availability.
     search_macro_instruments, get_macro_quote, get_macro_price_history,
     get_yield_curve, get_fx_rates, get_macro_news). Research page has a
     Macro selector; App Assistant sees macro tools via toolset `'all'`.
-  - Instruments layer: all 46 macro instruments (19 commodities, 18 FX +
-    DXY, 8 rates) are `sec:`-keyed entries in `instruments.ts` with classes
+  - Instruments layer: all 45 macro instruments (19 commodities, 18 FX
+    **including** DXY, 8 rates — corrected 2026-09-08; "18 FX + DXY" counted
+    DXY twice, and the catalogs are 19/18/8) are `sec:`-keyed entries in `instruments.ts` with classes
     `commodity`/`currency`/`rate` and `detailPath` slug routing, resolvable
     to DB rows — watchlists, portfolios, and Compare can hold them.
 
@@ -360,37 +391,80 @@ the **Staking Opportunities** page, then open it to any surface where an outboun
 genuinely useful. Applies to **both distributions — the free web version and the desktop
 app** (they differ in attribution and in what some affiliate terms allow; see below).
 
+> **Status: ✅ plumbing + disclosure shipped 2026-09-08; no link is monetised yet.**
+> The owner activated this work on 2026-09-08. Every integrity rule below is
+> implemented AND enforced by a test that fails the build if it stops holding —
+> `lib/data/__tests__/affiliates.test.ts`. Two of those guards were verified by
+> deliberately breaking them (a paid-first sort in the v1 API, and a bare anchor
+> bypassing the disclosure component): both were caught.
+>
+> What shipped: `affiliateUrl?`/`affiliateProgram?` beside `website` (never
+> overwriting it); one `SponsoredLink` component carrying `rel="sponsored
+> noopener noreferrer"` and a visible per-link **Paid link** tag; a
+> `RankableProvider` type that OMITS the affiliate fields, so reading one inside
+> a sort comparator is a compile error; aggregate-only click counting at
+> `/api/affiliate/clicks`; a `/how-we-make-money` page in the core nav; and the
+> not-advice framing plus a **computed** coverage-bias disclosure above the
+> provider grid.
+>
+> **`affiliateUrl` is unset for all 55 providers**, pinned by a test whose failure
+> message says to fill in the owner copy first. Nothing is earning anything, and
+> the disclosure page reads the catalog live so it reports zero rather than
+> claiming a hypothetical arrangement.
+>
+> **Two things are deliberately NOT done**, and both are the owner's:
+> 1. **The disclosure prose.** `/how-we-make-money` renders four explicit
+>    "Owner copy required" placeholders — the formal disclosure statement, which
+>    programs were joined and their placement restrictions, jurisdiction handling
+>    (UK FCA financial-promotion rules apply to crypto referrals), and a
+>    complaints route. They state what belongs there rather than attempting it:
+>    BUSINESS-CHECKLIST §3 makes these owner-decided, and invented wording in a
+>    compliance document reads as reviewed when it is not.
+> 2. **Desktop-app placement.** The system-browser requirement below is
+>    unaddressed because no program has been joined to confirm its terms against.
+>
+> One finding worth recording: the coverage bias runs **against** the reader's
+> suspicion rather than with it. Referral programs cluster in CeFi exchanges,
+> which score WORST on counterparty risk in our own model — so the providers we
+> could be paid by are systematically not the ones that rank best. The
+> disclosure page says so.
+
 ### Non-negotiable integrity rules (decide these before writing any code)
 
 Finance Now *rates* the providers it would be paid by — `computeOverallRisk()` scores 55 staking
 providers across 6 risk dimensions. That is a real conflict of interest, and the product's
 value dies if scores follow the money.
 
-- [ ] **Affiliate status never influences ranking, scoring, sorting, or filtering.** Enforce it
-      structurally: the risk engine must not be able to read the affiliate field.
-- [ ] **Coverage bias is disclosed.** Exchanges (Coinbase, Kraken, Binance, OKX, Bybit) run
-      referral programs; liquid-staking protocols (Lido, Rocket Pool, Marinade) largely don't —
-      so paid links will cluster in CeFi. Default ordering must stay risk-based, never
-      "monetizable first".
-- [ ] **Warnings are never softened for a paying partner.** Celsius stays as the cautionary
-      example; a high risk score stays loud even if that provider pays.
-- [ ] **Per-link disclosure in the UI** (FTC requires clear and conspicuous), plus a plain
-      "How we make money" page. Mark affiliate rows visibly, not in a footer nobody reads.
-- [ ] **Keep the honest URL.** Add an optional `affiliateUrl` beside the existing
-      `website` field in `stakingProviders.ts` — never overwrite `website`, so a
-      non-affiliate path always exists and links stay auditable.
+- [x] **Affiliate status never influences ranking, scoring, sorting, or filtering.** ✅ Three layers:
+      the scoring functions take a bare `RiskProfile` (six numbers — no provider object in scope);
+      ranking code takes `RankableProvider`, which omits the fields, so reading one is a compile
+      error; and a source scan covers code that takes a whole provider for other reasons.
+- [x] **Coverage bias is disclosed.** ✅ And **computed**, not written in prose:
+      `affiliateCoverageByCategory()` reads the catalog, so the disclosure describes the real
+      distribution rather than yesterday's. Ordering is untouched — the guard above is what makes
+      "never monetizable first" structural.
+- [x] **Warnings are never softened for a paying partner.** ✅ Stronger than asked:
+      `resolveOutboundLink()` returns **null for any defunct provider even when an affiliate URL is
+      set**, so a route to a failed platform cannot be monetised at all. Refused at the resolver
+      rather than left to each call site.
+- [x] **Per-link disclosure in the UI** ✅ — a **Paid link** tag rendered from the same value that
+      decides the URL, so a link cannot be sponsored while its tag says otherwise. Plus
+      `/how-we-make-money` in the core nav. ⚠ Its prose is placeholdered pending owner copy.
+- [x] **Keep the honest URL.** ✅ `website` is never written to; `OutboundLink.honestUrl` carries it
+      alongside any referral link, and a test pins that both survive.
 
 ### Implementation notes
 
-- [ ] Hook: `StakingProvider.website?` already exists (`src/lib/data/stakingProviders.ts`);
-      add `affiliateUrl?` + `affiliateProgram?` and render through one shared component so
-      disclosure can't be forgotten on a new surface.
+- [x] Hook ✅ — fields added, and `SponsoredLink` is the only outbound path, so "can't be forgotten
+      on a new surface" holds because there is nowhere else to put the link.
 - [ ] **Desktop app:** open affiliate links in the system browser (not an embedded webview) —
       cookie-based attribution usually fails in-app, and several programs' terms restrict
       desktop/app placement. Confirm per program before enabling there.
-- [ ] **Web:** `rel="sponsored noopener"` on paid links (Google requires `sponsored`).
-- [ ] Track click-through per provider so the value is measurable, without shipping
-      user-identifying analytics.
+- [x] **Web:** ✅ `rel="sponsored noopener noreferrer"` on paid links only — applying `sponsored` to
+      every outbound link would make the signal meaningless.
+- [x] Track click-through per provider ✅ — `/api/affiliate/clicks`, a bare `{providerId: count}`.
+      No user id, session, IP, cookie, user agent or per-click timestamp; a test scans for each of
+      them. It cannot be joined to a person later because there is nothing to join on.
 
 ### Other surfaces to consider once the pattern exists
 
@@ -459,9 +533,15 @@ went to `docs/BUSINESS-CHECKLIST.md`, which is worked separately from both produ
       id used to render NOTHING, so a typo removed attribution invisibly — it is now loud in
       development. Both fixes exist because hand-written per-page attribution is the failure
       mode this item is really about.
-- [ ] **Test and fine-tune all agents and AI-enhanced tools.** 11 agents exist; `data-scraper`,
+- [ ] **Test and fine-tune all agents and AI-enhanced tools.** ~~11 agents exist; `data-scraper`,
       `equity-data-scraper` and `equity-diligence` are configurable but have **no invocation
-      trigger** — either give them a UI entry point or retire them. Judge output against the
+      trigger** — either give them a UI entry point or retire them.~~
+      **The invocation half is DONE (NT5, 2026-08-18):** the Research page carries a per-market
+      agent picker, so every whitelisted agent is selectable, and
+      `lib/agents/__tests__/researchAgents.test.ts` guards picker ↔ route ↔ catalog symmetry so
+      an agent cannot go configurable-but-unrunnable again. What remains open is the
+      TESTING half — judging actual output, which needs the owner's machine.
+      *(Annotated 2026-09-08.)* Judge output against the
       REAL vs FALLBACK rule: an agent answering vaguely off a fallback route is a data problem,
       not a prompt problem.
 

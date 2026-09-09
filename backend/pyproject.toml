@@ -70,10 +70,21 @@ testpaths = ["tests"]
 # while CI overrode it to 45, so a bare local `pytest` failed on the exact
 # suite CI called green — the 80 was aspirational, set back when the suite
 # couldn't run at all, and nothing measured it after the suite was fixed.
-# 45 is under the ~51% first real measurement (2026-07-28). Raise it with new
-# tests, in one place; do not re-add a --cov-fail-under override to the CI
-# workflow, or the two numbers will drift apart again.
-addopts = "--cov=app --cov-report=term-missing --cov-fail-under=45"
+# Raise it with new tests, in one place; do not re-add a --cov-fail-under
+# override to the CI workflow, or the two numbers will drift apart again.
+#
+# 2026-09-08: raised 45 → 55 on the back of 47 new tests over app/scoring
+# (normalizer.py was at 0%; the four components at 28–45%; all five now 100%).
+# Measured 49.92% → 57.31% WITHOUT a database — 15 API tests error out locally
+# for want of Postgres and contribute nothing to that figure. CI has a Postgres
+# service container and measured ~1.1pp higher than local on the same tree
+# (51% vs 49.92%), so the true CI figure is expected around 58%.
+#
+# 55 is deliberately set under the LOWER of the two measurements, not between
+# them: the floor has to hold for a developer running a bare `pytest` with no
+# database, or it fails for a reason that has nothing to do with their change.
+# A floor that trips on unrelated work gets raised by deleting it.
+addopts = "--cov=app --cov-report=term-missing --cov-fail-under=55"
 
 [tool.coverage.run]
 omit = ["tests/*", "app/db/migrations/*"]

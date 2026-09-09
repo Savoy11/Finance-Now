@@ -55,8 +55,10 @@ metadata:
     component: config
 data:
   NEXT_PUBLIC_ENV: "production"
-  NEXT_PUBLIC_API_URL: "https://financenow.example.com/api"
-  NEXT_PUBLIC_WS_URL: "wss://financenow.example.com/ws"
+  # The backend ORIGIN, with no /api or /api/v1 suffix: the Next rewrite
+  # appends /api/:path itself, so a suffix here produced /api/v1/api/...
+  # (next.config.mjs now strips one defensively, but set it correctly).
+  NEXT_PUBLIC_API_URL: "https://financenow.example.com"
   NEXT_TELEMETRY_DISABLED: "1"
 ---
 apiVersion: v1

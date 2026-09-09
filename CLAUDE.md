@@ -7,7 +7,7 @@ This file is auto-loaded by Claude Code at session start. It gives instant conte
 
 ## What This Is
 
-An institutional-grade financial analytics suite built with Next.js 15 (App Router). It began as a crypto dashboard (risk, reserves, news sentiment, transfer fees, staking) and has grown into an entitlement-gated module suite (see `docs/ROADMAP.md`): a **core** section (headlines, watchlist, portfolios, compare, research, brief) plus seven optional modules — **Crypto** (the original Finance Now), **Equities** (`/equities`), **Macro Markets** (`/macro`), **ETFs & Funds** (`/funds`), and the premium **Portfolio Builder** (`/portfolio-builder`, its own entitlement). Modules are declared in `src/lib/modules/registry.ts`; the sidebar renders from that registry, modules can be toggled in Integrations → Suite Modules, and **every optional module's pages are wrapped in `<ModuleGate>`** so a disabled module is locked by direct URL too, not just hidden from the nav. The frontend runs **live-only** against public data providers via its `/live-data/*` route handlers. User data (portfolios, watchlists, builder plans, wallets) persists to Postgres through `/api/user/*`; module entitlements are **localStorage-only** (`useEntitlementStore` — the `entitlements` table exists in the schema but no route serves it yet, which is the Phase 6 rollout-posture question); an optional legacy Python backend still serves assets/market-data/alerts/risk-scores, but **not** auth — sign-in is Auth.js against the app's own `users` table. Surfaces with no free real-time source show an explicit "not available" notice — there is no mock/demo data path.
+An institutional-grade financial analytics suite built with Next.js 15 (App Router). It began as a crypto dashboard (risk, reserves, news sentiment, transfer fees, staking) and has grown into an entitlement-gated module suite (see `docs/ROADMAP.md`): a **core** section (headlines, watchlist, portfolios, compare, research, brief) plus **five** optional modules — **Crypto** (the original Finance Now), **Equities** (`/equities`), **Macro Markets** (`/macro`), **ETFs & Funds** (`/funds`), and the premium **Portfolio Builder** (`/portfolio-builder`, its own entitlement). (This said "seven" while listing five; `lib/modules/registry.ts` is the count that matters — `core` plus those five.) Modules are declared in `src/lib/modules/registry.ts`; the sidebar renders from that registry, modules can be toggled in Integrations → Suite Modules, and **every optional module's pages are wrapped in `<ModuleGate>`** so a disabled module is locked by direct URL too, not just hidden from the nav. The frontend runs **live-only** against public data providers via its `/live-data/*` route handlers. User data (portfolios, watchlists, builder plans, wallets) persists to Postgres through `/api/user/*`; module entitlements are **localStorage-only** (`useEntitlementStore` — the `entitlements` table exists in the schema but no route serves it yet, which is the Phase 6 rollout-posture question); an optional legacy Python backend still serves assets/market-data/alerts/risk-scores, but **not** auth — sign-in is Auth.js against the app's own `users` table. Surfaces with no free real-time source show an explicit "not available" notice — there is no mock/demo data path.
 
 **Working directory:** the repo root is the `Finance-Now` monorepo (`frontend/`, `backend/`,
 `mcp-server/`, `infrastructure/`, `docs/`); **the Next.js app and all its npm commands live in
@@ -89,7 +89,7 @@ frontend/src/
 │   │   ├── funds/                  # FUNDS MODULE — ETF/mutual fund registry + [symbol] detail
 │   │   ├── portfolio-builder/      # PREMIUM module — own entitlement
 │   │   └── global-adoption/        # De-routed (T5) — redirects to /headlines; page retained
-│   └── live-data/                  # Server-side API proxy routes (no API keys exposed) — 58 routes
+│   └── live-data/                  # Server-side API proxy routes (no API keys exposed) — 59 routes
 │       ├── markets/route.ts        # CoinGecko price data
 │       ├── news/route.ts           # Multi-provider crypto news (RSS + JSON feeds)
 │       ├── social/route.ts         # Social sentiment data
@@ -355,12 +355,12 @@ To add an exchange: append to `EXCHANGES` array following the existing pattern. 
 ### `src/lib/data/stakingProviders.ts`
 Central data file for the Staking Opportunities page.
 
-- **Provenance:** `STAKING_DATA_LAST_VERIFIED` + `getStakingDataProvenance()` drive the freshness notice on `/staking` and `/staking-discovery`, and the `referenceData` block on `/api/v1/staking/opportunities`. Stale after 90 days (shorter than the 120 used for fees/attestations — a provider's risk profile can change overnight, which is why Celsius is in the catalog).
+- **Provenance:** `STAKING_DATA_LAST_VERIFIED` + `getStakingDataProvenance()` drive the freshness notice on `/staking` (both the Providers and Live Pools tabs — `/staking-discovery` was merged in on 2026-08-20 and now redirects), and the `referenceData` block on `/api/v1/staking/opportunities`. Stale after 90 days (shorter than the 120 used for fees/attestations — a provider's risk profile can change overnight, which is why Celsius is in the catalog).
 - **`StakingCoinId`** — 16 stakeable coins: eth, sol, ada, dot, atom, matic, avax, bnb, trx, btc, cro, osmo, ksm, inj, tia, near
 - **`ProviderCategory`** — `'cefi' | 'wallet' | 'liquid'`
 - **`RiskProfile`** — 6 dimensions, each 1–10: `custodyRisk`, `counterpartyRisk`, `contractRisk`, `slashingRisk`, `liquidityRisk`, `regulatoryRisk`
-- **`computeOverallRisk(risks)`** — weighted composite score (counterparty 25%, custody 20%, liquidity 20%, contract 15%, slashing 10%, regulatory 10%)
-- **`getRiskLevel(score)`** — returns `'low' | 'medium' | 'high' | 'critical'`
+- **`computeOverallRisk(risks)` and `getRiskLevel(score)` are `@internal` legacy helpers — do not reach for them in new code.** They run a **1–10, higher-is-RISKIER** scale (weights: counterparty 25%, custody 20%, liquidity 20%, contract 15%, slashing 10%, regulatory 10%) with a 4-level band whose `medium` does not exist in the canonical vocabulary at all. They are kept for exactly one reason: the public `/api/v1/staking/opportunities` contract still serves those fields (R2 §5.3). There is deliberately **no deprecation date** (P4, 2026-07-19) — removing them is an API break, not a cleanup.
+  **New code scores staking through `scoreStakingProvider()`** (`lib/risk/profiles/stakingAdapter.ts`), which wraps the same weights and converts at the boundary to the canonical **0–100, higher-is-SAFER** score with the 5-band vocabulary (low/moderate/elevated/high/critical). Two scales pointing opposite ways is precisely the collision the risk-scale spec exists to prevent, so read the direction before you read the number.
 - **`STAKING_PROVIDERS`** array — 55 providers (count is dynamic; the page reads `STAKING_PROVIDERS.length`). Representative names:
   - CeFi: Celsius (defunct, cautionary), Coinbase, Kraken, Binance, OKX, Bybit, KuCoin, Crypto.com, Bitget, Gate.io, HTX, Robinhood, Nexo, Gemini, Bitfinex, Bitstamp, MEXC, Upbit
   - Wallet: Ledger Live, MetaMask, Phantom, Trust Wallet, Exodus, Keplr, Solflare, Coinbase Wallet, Atomic Wallet, Trezor Suite
@@ -437,7 +437,7 @@ site nobody has reviewed. Full design: `docs/architecture/source-terms.md`.
 > | **Futures term structure** (`/live-data/futures-curve`) | **No source at all.** Nothing reachable quotes a dated contract month. The route resolves the months and returns `ok:false` with the reason; `TermStructureCard` prints it. Front-month prices are unaffected |
 > | Trailing returns | One request per symbol. `?universe=` is **refused**, not truncated; `?symbols=` capped at 60. Fund return **screening and sorting are off** — a screen that could only see the visible page would filter as though it had seen every fund. Per-page Returns columns still live |
 > | Per-ticker news | **Gone.** Symbol mode reads the general wires and keeps articles that name the company. It no longer force-tags the requested symbol onto unrelated stories |
-> | Fund holdings | Unaffected (SEC N-PORT, keyless). But sector weights now need an FMP key, and the stock/bond/cash **asset mix has no source** — that section doesn't render |
+> | Fund holdings | Unaffected (SEC N-PORT, keyless). Sector weights now need an FMP key (N-PORT carries no GICS classification). The stock/bond/cash **asset mix is derived from N-PORT's `assetCat`** (NT9, `lib/utils/assetMix.ts`) — keyless, so also unaffected; the earlier "no source" note here was overtaken by that work. It is absent only for filers that publish no N-PORT (UITs such as SPY), where the section correctly does not render |
 > | FX converter, Treasury curve, SEC filings/XBRL, all of crypto | **Unaffected** — keyless and unrelated |
 >
 > The fix for any of the key-gated rows is a free API key on the Integrations page — **not
@@ -448,8 +448,9 @@ site nobody has reviewed. Full design: `docs/architecture/source-terms.md`.
 > blocked every publisher and provider host at the gateway, so not one terms document
 > could be opened. The entries are honest starting positions drawn from each
 > provider's publicly documented posture (published API docs, documented free tiers,
-> openly advertised RSS feeds) — they are **not readings**. Only the Cboe entry is
-> `verified`, from the P2-O1 audit on the owner's machine.
+> openly advertised RSS feeds) — they are **not readings**. Two entries are
+> `verified`: **Cboe** (P2-O1 audit, 2026-08-05) and **CoinGecko** (the
+> 2026-08-29 probe run) — both read on the owner's machine.
 >
 > A seeded `approved`/`conditional` means *nobody has objected yet*, not *cleared*.
 > Seeded entries still serve data — breaking the app over a documentation gap is the
@@ -713,7 +714,7 @@ Risk/status color convention used across the app:
 | Alerts | TopBar bell | 🟢 Live | `/live-data/alerts` — stablecoin depegs + major-asset 24h moves; surfaced in the TopBar bell (no standalone page) |
 | Watchlist | `/watchlist` | 🟢 Live | Cross-module: coins, stocks, ETFs & funds, and macro instruments in named lists with live prices. **DB-backed** via `/api/user/watchlists` (+`/[id]` PUT/DELETE) through `useWatchlistStore` (optimistic, client-UUID ids, one-time localStorage import that MERGES even into a non-empty account — see store comment). Feed bias (`lib/watchlist/bias.ts`) and the Daily Brief read the store, not localStorage |
 | News | `/news` | 🟢 Live | Multi-provider RSS/JSON; sentiment + asset detection |
-| Social | `/social` | 🟡 Partial | `/live-data/social` — verify which signals are live vs derived |
+| Social | `/social` | 🟡 Partial | `/live-data/social`. **Live:** Reddit post text/link/author/timestamp (Atom feeds, keyless but robots-gated — see below), and the social VOLUME figures from Santiment (`mentionsCount`) and LunarCrush (`social_volume_24h`, `galaxy_score`), both **key-gated**: with no key those signals are absent, not zero. **Derived:** every sentiment label. Reddit's is a keyword regex over the post text; LunarCrush's is a threshold on galaxy score (≥60 / ≤35) rather than the provider's own `sentiment` field; Santiment's is hardcoded `neutral`. The per-asset `sentimentScore` aggregates those derived labels, so it is derived twice over. **Neither live nor derived:** Reddit `score` is a literal 0 and `upvoteRatio` is never set — Atom carries no vote data, and both are sentinels the pages render only when present. Reddit itself is gated off in `pinnedFetch` unless `REDDIT_CLIENT_ID` is set (its robots.txt disallows this app's agent, 2026-08-29 terms review). |
 | Global | `/global-adoption` | ⚪ De-routed | Access removed (T5) pending a post-production rework — a mislabeled CBDC tracker on stale/duplicated static data with a fabricated live timestamp. Page + `/live-data/cbdc-data` route retained; `/global-adoption` redirects to `/headlines`. See `docs/assessments/T5-utility-triage.md`. |
 | Transfer Fee Calc | ~~`/transfer-fees`~~ | ⚪ **Hidden from rollout** | Static fee table (`transferFees.ts`) + live token prices; staleness-labeled. **Live withdrawal-fee overlay** (`/live-data/withdraw-fees`, keyless KuCoin/HTX confirmed + 5 unprobed; RP-5 forbids keyed endpoints) — overlay-only, per-row `live` tags. **Withdrawal availability is disclosed as assumed, not checked**: live-reported suspensions render as blocked routes with attribution, and the notice is deliberately NOT gated on fee staleness. `depositEnabled` is the same assumption with no source — a known open gap. Tax-character panel (`lib/data/taxCharacter.ts`) states what kind of event each leg is, with no numbers |
 | Staking | `/staking` | 🟡 Partial | **Two tabs since 2026-08-20 (W3-3):** Providers (curated catalog, live APR where available, defunct toggle) and Live Pools (on-chain opportunities via `/live-data/staking-discovery`). Curated catalog is staleness-labeled (`getStakingDataProvenance()`) |
@@ -848,7 +849,7 @@ return NextResponse.json(data, { headers: CORS })
 
 ## MCP Server (`mcp-server/`)
 
-A standalone Node.js MCP server at `Crypto-Stuff/mcp-server/` that exposes Finance Now tools to Claude and any MCP-compatible AI agent. It calls the `/api/v1/` endpoints — Finance Now frontend must be running.
+A standalone Node.js MCP server at `mcp-server/` (repo root) that exposes Finance Now tools to Claude and any MCP-compatible AI agent. It calls the `/api/v1/` endpoints — Finance Now frontend must be running.
 
 ### Tools exposed
 | Tool | Description |
@@ -880,7 +881,7 @@ npm run build
   "mcpServers": {
     "finance-now": {
       "command": "node",
-      "args": ["C:/Users/marcu/OneDrive/Desktop/Crypto-Stuff/mcp-server/dist/index.js"],
+      "args": ["<path-to-repo>/mcp-server/dist/index.js"],
       "env": { "FN_BASE_URL": "http://localhost:3000" }
     }
   }
@@ -891,7 +892,7 @@ Claude Desktop config lives at `%APPDATA%\Claude\claude_desktop_config.json` on 
 ### Add to Claude Code (project-level MCP)
 ```bash
 # Run from any directory — adds Finance Now MCP to this project's .claude/settings.json
-claude mcp add finance-now node C:/Users/marcu/OneDrive/Desktop/Crypto-Stuff/mcp-server/dist/index.js
+claude mcp add finance-now node <path-to-repo>/mcp-server/dist/index.js
 ```
 
 ### Environment variable

@@ -17,7 +17,16 @@ const nextConfig = {
     formats: ['image/avif', 'image/webp'],
   },
   async rewrites() {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+    // The destination below appends `/api/:path`, so the base must be the
+    // backend ORIGIN, not an API path. Several config files and runbooks set
+    // NEXT_PUBLIC_API_URL to `http://localhost:8000/api/v1`, which produced
+    // `http://localhost:8000/api/v1/api/...` — every /api/* path without a
+    // concrete route file 500'd. Harmless while the backend is dormant; it
+    // would bite whoever revives it. Normalising here fixes it for every
+    // deployment at once, rather than depending on each one setting the
+    // variable the way this rule happens to want.
+    const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+    const apiUrl = rawApiUrl.replace(/\/+$/, '').replace(/\/api(\/v\d+)?$/, '')
     return [
       {
         // Proxies leftover /api/* traffic to the legacy backend.
@@ -32,8 +41,10 @@ const nextConfig = {
         // The same trap catches any dynamic segment: /api/user/builder-plans/
         // [id] would proxy too. First-party routes with dynamic params MUST
         // live under an excluded prefix — add new prefixes here, not routes
-        // outside /api/user/.
-        source: '/api/:path((?!auth/|user/).*)',
+        // outside /api/user/ — or add the prefix to the exclusion above, as
+        // `affiliate/` does: its counts are aggregate rather than user-scoped,
+        // so `/api/user/` would have been the wrong namespace for them.
+        source: '/api/:path((?!auth/|user/|affiliate/).*)',
         destination: `${apiUrl}/api/:path`,
       },
     ]
@@ -76,13 +87,20 @@ const nextConfig = {
       // Owner decision: "these scores may represent a recommendation, which is
       // a regulated activity." The line drawn was RANKING vs EXPLANATION —
       // scoring a coin the user opened explains; ranking a universe to surface
-      // winners is closer to a recommendation. So the leaderboard goes and the
-      // per-coin risk panel on /assets/[id] STAYS, along with the options Trade
-      // Risk Scorer and the Portfolio Builder.
+      // winners is closer to a recommendation. So the leaderboard went here.
       //
-      // /live-data/risk-scores is intentionally LEFT IN PLACE — the kept
-      // per-coin panel is its consumer. Deleting the route would remove an
-      // explanatory surface the decision preserves.
+      // ⚠ SUPERSEDED 2026-08-29 by RP-6 — do not act on the paragraph that used
+      // to sit here. It said the per-coin risk panel on /assets/[id] "STAYS" and
+      // that /live-data/risk-scores was "intentionally LEFT IN PLACE", which was
+      // true for eleven days. RP-6 then removed the per-coin score everywhere:
+      // the panel, the route, lib/api/live/riskScores.ts, useRiskScoreIndex,
+      // RiskScoreBadge, and the Asset.riskScore / riskBand fields themselves.
+      // A maintainer reading the old text would have "restored" a surface that
+      // was withdrawn on regulatory grounds. Guarded by
+      // lib/risk/__tests__/riskScoringRemoved.test.ts.
+      //
+      // Still true: lib/risk/ stays, and with it the options Trade Risk Scorer,
+      // staking-provider risk and the macro/equity profiles — separate decisions.
       { source: '/risk-scores', destination: '/headlines', permanent: false },
       // Equity Strategy Backtests HIDDEN 2026-08-20 — owner decision, explicitly
       // revisitable ("I may revisit back testing"). Page + engine + tests +

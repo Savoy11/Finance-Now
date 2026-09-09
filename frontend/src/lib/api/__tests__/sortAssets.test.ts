@@ -69,8 +69,8 @@ describe('applyParams merges technicals before filtering', () => {
     // Technicals arrive from a separate query, so they have the same hazard.
     const assets = [mkAsset('btc'), mkAsset('eth')]
     const technicals = new Map([
-      ['btc', { rsi14: 25, vsSma50Pct: -5, vsSma200Pct: -10 }],
-      ['eth', { rsi14: 80, vsSma50Pct: 5, vsSma200Pct: 10 }],
+      ['btc', { rsi14: 25, vsSma50Pct: -5, vsSma200Pct: -10, realisedVol30dPct: 60 }],
+      ['eth', { rsi14: 80, vsSma50Pct: 5, vsSma200Pct: 10, realisedVol30dPct: 90 }],
     ])
     const res = applyParams(assets, {
       technicals,

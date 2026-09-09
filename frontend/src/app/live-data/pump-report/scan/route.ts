@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { guardSensitiveRoute } from '@/lib/server/apiGuard'
 import { getProviderKey } from '@/lib/api/live/providers'
+import { SCAN_TARGET_CAP } from '@/lib/pumpReport/scanLimits'
 
 export const dynamic = 'force-dynamic'
 
@@ -23,6 +24,12 @@ export interface ScanFinding {
 export interface ScanResponse {
   ok: boolean
   findings: ScanFinding[]
+  /** How many targets the caller sent. */
+  requested: number
+  /** How many were actually scanned (≤ SCAN_TARGET_CAP). */
+  scanned: number
+  /** Labels of the targets past the cap — surfaced, not swallowed. */
+  skipped: string[]
   scanId: string
   completedAt: string
 }
@@ -120,8 +127,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: 'No targets provided' }, { status: 400 })
   }
 
-  // Cap to 5 targets per scan to keep latency reasonable
-  const capped = targets.slice(0, 5)
+  // Cap per scan to keep latency reasonable. Each target costs one web search,
+  // so this is a cost ceiling as much as a latency one.
+  const capped = targets.slice(0, SCAN_TARGET_CAP)
 
   const findings = await Promise.allSettled(capped.map((t) => scanTarget(t, client)))
 
@@ -141,6 +149,11 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({
     ok: true,
     findings: results,
+    // Reported, never implied: the caller asked for more than the cap allows and
+    // needs to know which addresses did NOT get looked at.
+    requested: targets.length,
+    scanned: capped.length,
+    skipped: targets.slice(SCAN_TARGET_CAP).map((t) => t.label),
     scanId: `scan_${Date.now()}`,
     completedAt: new Date().toISOString(),
   } satisfies ScanResponse)

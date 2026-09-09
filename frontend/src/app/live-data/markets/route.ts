@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ALL_COINGECKO_IDS, ASSET_ID_BY_COINGECKO, COINGECKO_IDS } from '@/lib/api/live/coingeckoIds'
 import { getProviderKey, recordProviderFetch } from '@/lib/api/live/providers'
+import { coingeckoBase, coingeckoHeaders } from '@/lib/api/live/coingecko'
 
 // Server-side proxy for market data.
 // Supports multiple sources via ?source= query param:
@@ -17,9 +18,6 @@ import { getProviderKey, recordProviderFetch } from '@/lib/api/live/providers'
 
 export const dynamic = 'force-dynamic'
 
-const CG_BASE = process.env.COINGECKO_BASE_URL?.replace(/\/$/, '') || 'https://api.coingecko.com/api/v3'
-const CG_KEY = process.env.COINGECKO_API_KEY && process.env.COINGECKO_API_KEY !== 'your-coingecko-api-key'
-  ? process.env.COINGECKO_API_KEY : undefined
 
 // Binance symbol → internal asset id
 const BINANCE_SYMBOL_MAP: Record<string, string> = {
@@ -35,10 +33,10 @@ async function fetchCoinGecko(): Promise<Record<string, unknown>> {
     order: 'market_cap_desc', per_page: '250', page: '1',
     sparkline: 'false', price_change_percentage: '24h,7d,30d',
   })
-  const headers: Record<string, string> = { Accept: 'application/json' }
-  if (CG_KEY) headers['x-cg-demo-api-key'] = CG_KEY
-
-  const res = await fetch(`${CG_BASE}/coins/markets?${params}`, { headers, next: { revalidate: 60 } })
+  const res = await fetch(`${coingeckoBase()}/coins/markets?${params}`, {
+    headers: coingeckoHeaders(),
+    next: { revalidate: 60 },
+  })
   if (!res.ok) throw new Error(`CoinGecko ${res.status}`)
 
   const rows = await res.json() as Array<{

@@ -239,6 +239,18 @@ rather than Wilder's.
 > and refuses whole-universe requests on purpose — a returns column over the
 > visible page is fine, a screener over the universe is not (see CLAUDE.md's
 > Yahoo-removal table). Kept for the history of what the session chose not to do.
+>
+> **Update (2026-09-08): the half that is possible is built.** The Stock Registry
+> now carries YTD and 1Y columns for the visible page, on the same
+> `security-returns?symbols=` pattern the Funds registry uses. They are
+> deliberately **not sortable and not screenable**, and the header tooltips and
+> the footer say so: a sort over a column that has seen fifty of several thousand
+> rows would order as though it had seen them all, which is the same reason fund
+> return screening is off. Without a key the route reports `source: 'none'`, every
+> value is null, and the cells render a dash with an amber note naming the missing
+> key — "we could not fetch this" and "this stock returned nothing" must not look
+> alike. The **universe-wide screener remains open** and is gated on the owner's
+> paid-tier decision (D2), not on effort.
 
 - **Live fundamentals** (P/E, market cap, dividend yield from a feed) — the
   catalogs carry labelled reference values; a free FMP key upgrades market cap

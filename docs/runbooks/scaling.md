@@ -31,7 +31,7 @@ kubectl get pods -n fn | grep -E "backend|frontend"
 ```bash
 aws rds create-db-instance \
   --db-instance-identifier fn-reader-2 \
-  --db-cluster-identifier fn-cluster \
+  --db-cluster-identifier fn-staging-aurora \
   --engine aurora-postgresql \
   --db-instance-class db.r6g.large
 ```

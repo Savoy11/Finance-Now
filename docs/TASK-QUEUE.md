@@ -1987,6 +1987,33 @@ screening restore (the code carries its own restore condition).
 four. Its real dependency is the D2/enterprise-key conversation, which is
 already parked with the owner's planning session.
 
+> **Status: items (1) and (3) done. 2026-09-08 / 2026-09-05.**
+>
+> - **(3) fee-impact screener — ✅ shipped** in `9eb2be2` (#147), merged
+>   2026-09-08. `lib/data/feeImpact.ts` over `computeFeeDrag`, with a test
+>   asserting its figures match the detail-page analyzer exactly.
+> - **(1) fund comparison view — ✅ shipped 2026-09-08** as
+>   `components/markets/FundFactsSection.tsx`, a funds-only section on
+>   `/compare` beside the holdings-overlap section. Issuer, category, strategy,
+>   tracked index, expense ratio, sales charge, **fee cost in dollars over 20
+>   years**, yield, AUM, inception and trading restriction. It reuses the same
+>   fee engine and assumptions as the detail page rather than recomputing, since
+>   two implementations of one dollar figure is how two surfaces drift apart.
+>
+>   **Duration and credit quality are NOT shown, and the section says so.**
+>   The build-out line above asks for "duration/credit for bonds" — `FundEntry`
+>   carries neither. Every bond fund is simply `category: 'bond'`; the maturity
+>   mandate lives in the `indexTracked` string ("ICE US Treasury 1-3 Year",
+>   "20+ Year") and in prose. So the table shows that string verbatim and states
+>   outright that no duration figure or credit tier exists in the catalog,
+>   pointing the reader at the issuer's page. Deriving a number from a fund's
+>   name would put a fabricated figure on a page built for ranking — a test
+>   forbids any extraction from `indexTracked`, and a second test fails if a real
+>   duration field is ever added, so this note cannot outlive its own truth.
+>
+> Remaining: **(2) catalog growth** (needs sec.gov from the owner's machine for
+> `npm run fund-fees`) and **(4) return columns/screening**, still gated on D2.
+
 **Suggested order, if the owner wants a default:** S3 first (a live staleness
 problem is worth more than any new feature), then S4 (small, self-contained),
 S5 and S6 behind their respective open conversations (legality note; key).
@@ -2173,6 +2200,22 @@ Rebasing them onto current `main` produced the signal that was missing, and it s
   mostly proves it imports, not that it behaves.
 - **#45, #50, #52** — still unrebased, still unverified.
 
+> **Status: ✅ resolved — annotation added 2026-09-08.** Verified against `main`'s
+> log, not against a summary. All six held majors are closed; two landed, one was
+> superseded, three were dropped. The table and the CI notes above are left as
+> written — this block is the current state.
+>
+> | PR | Outcome |
+> |---|---|
+> | **#50** date-fns 4.4.0 | **Merged** — `02ec56f`. The silent-date-bug risk the table names did not materialise. |
+> | **#52** recharts 3.10.1 | **Merged** — `4fc6e62`, with `ac3e836` (#133) following to make the tooltip call sites version-agnostic. The table's instinct was right: the work was in the pages, not in `tsc`. |
+> | **#45** node 26-alpine | **Closed, superseded** by `936e1a8` (#135), which moved the frontend runtime to Node **24 LTS** in all three places at once — Dockerfile, CI, and `engines` — rather than the Dockerfile alone. |
+> | **#54 / #47** TypeScript 7 | **Closed 2026-09-02**, pending Next.js support for TS 7. Held together as the table required, so the two packages never drifted. |
+> | **#59** redis 8.1.0 | Superseded by **#97**, which is still open. |
+>
+> Also worth recording against the CI note below: **`ci.yml` now runs on pushes to
+> `main`** (`e3d629f`, #134), so the "no post-merge run at all" gap is closed.
+
 ### Resolved — merged 2026-08-11
 
 - **#57** structlog 24.4.0 → 26.1.0 — green after rebase, merged.
@@ -2189,6 +2232,22 @@ the lock is not the shortcut it looks like; a hand-edited `content-hash` stops m
 long-rewritten docs remained), #39 (175-line checklist under the retired CAEP name).
 
 ### Unrelated finding: `main` shows a permanent red X
+
+> **Status: ✅ fixed 2026-09-08.** Two things changed since this was written, and
+> both halves of the problem are now closed.
+>
+> 1. **The missing signal** — `ci.yml` now runs on pushes to `main` (`e3d629f`,
+>    #134), so `main` has a real post-merge test/lint/build run.
+> 2. **The permanent red X** — `cd-staging.yml`'s deploy jobs are gated on the
+>    repository variable `STAGING_DEPLOY_ENABLED` (owner decision, 2026-09-08).
+>    They no longer run, and no longer fail, on a push to `main`; a manual
+>    `workflow_dispatch` still runs them, and the preflight still fails by name if
+>    the secret is missing. Setting the variable to `true` re-enables automatic
+>    staging deploys the day AWS is provisioned — no PR needed.
+>
+> The count, for the record: this workflow failed roughly **90** consecutive
+> pushes between 2026-07-18 and the fix. The section text below is left as
+> written.
 
 Pushing to `main` triggers `cd-staging.yml`, which fails its preflight with
 `Missing repository secret(s): AWS_ACCOUNT_ID` — every time, on every push, since the

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { coingeckoIdFor } from '@/lib/api/live/coingeckoIds'
+import { coingeckoBase, coingeckoHeaders } from '@/lib/api/live/coingecko'
 
 // OHLCV proxy — Binance is primary, CoinGecko is fallback.
 // Query params:
@@ -12,10 +13,6 @@ import { coingeckoIdFor } from '@/lib/api/live/coingeckoIds'
 
 export const dynamic = 'force-dynamic'
 
-const CG_BASE = (process.env.COINGECKO_BASE_URL ?? 'https://api.coingecko.com/api/v3').replace(/\/$/, '')
-const CG_KEY  = process.env.COINGECKO_API_KEY && process.env.COINGECKO_API_KEY !== 'your-coingecko-api-key'
-  ? process.env.COINGECKO_API_KEY : undefined
-
 export interface OhlcvCandle {
   time: number   // unix seconds
   open: number
@@ -25,11 +22,7 @@ export interface OhlcvCandle {
   volume: number // USD millions
 }
 
-const CG_HEADERS = () => {
-  const h: Record<string, string> = { Accept: 'application/json' }
-  if (CG_KEY) h['x-cg-demo-api-key'] = CG_KEY
-  return h
-}
+const CG_HEADERS = coingeckoHeaders
 
 // ─── Legacy alias ──────────────────────────────────────────────────────────────
 const LEGACY_MAP: Record<string, string> = { '1D': '1Y', '1W': '5Y' }
@@ -111,7 +104,12 @@ function applySlice(candles: OhlcvCandle[], cfg: RangeConfig): OhlcvCandle[] {
     const cutoff = Date.now() / 1000 - cfg.sliceDays * 86400
     return candles.filter((c) => c.time >= cutoff)
   }
-  if (cfg.cgDays === '1') return candles.slice(-168) // 1H: last week of 30m bars
+  // Cap only. CoinGecko's `/ohlc?days=1` returns 30-minute candles covering one
+  // day — about 48 bars — so this slice never actually trims. It is a ceiling
+  // against a provider that starts serving more, not a window: 168 × 30m would
+  // be 3.5 days, not the week an earlier comment here claimed. (The Binance rung
+  // is unaffected; it asks for 168 × 1h bars directly.)
+  if (cfg.cgDays === '1') return candles.slice(-168)
   return candles
 }
 
@@ -182,11 +180,11 @@ async function fetchCoinGecko(id: string, cfg: RangeConfig): Promise<OhlcvCandle
   if (!cgId) throw new Error('no-cg-mapping')
 
   const [ohlcRes, volRes] = await Promise.all([
-    fetch(`${CG_BASE}/coins/${cgId}/ohlc?vs_currency=usd&days=${cfg.cgDays}`, {
+    fetch(`${coingeckoBase()}/coins/${cgId}/ohlc?vs_currency=usd&days=${cfg.cgDays}`, {
       headers: CG_HEADERS(),
       next: { revalidate: cfg.revalidate },
     }),
-    fetch(`${CG_BASE}/coins/${cgId}/market_chart?vs_currency=usd&days=${cfg.cgDays}`, {
+    fetch(`${coingeckoBase()}/coins/${cgId}/market_chart?vs_currency=usd&days=${cfg.cgDays}`, {
       headers: CG_HEADERS(),
       next: { revalidate: cfg.revalidate },
     }),

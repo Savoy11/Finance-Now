@@ -1,6 +1,12 @@
 # Opportunity proposals — 2026-07-30
 
 **Commit:** `14d6d76f5208c12a990d55dd439fb3301d861092` (branch `chore/improvement-agents`) · **Reviewed:** `README.md`, `docs/TASK-QUEUE.md` (incl. Phase 2 + Wave-0 follow-ups), `docs/ROADMAP.md` (Macro Markets spec + owner backlog), `docs/FEATURE-ADDITIONS.md` ("deliberately NOT added yet"), `docs/MARKET-ASSESSMENT.md` headings, `docs/PRELIMINARY-FINDINGS-2026-07-30.md`, `frontend/src/lib/modules/registry.ts`, `frontend/src/app/live-data/fund-holdings/route.ts`, `frontend/src/app/(dashboard)/funds/[symbol]/*`, `frontend/src/app/(dashboard)/equities/technical-analysis/page.tsx`, `frontend/src/app/(dashboard)/macro/` · **Proposals:** 2
+> **Note (2026-09-08):** commit `14d6d76` predates the **2026-08-05 re-root of
+> `main`** and is **not reachable from `main`** — `git show 14d6d76` fails on a
+> fresh clone. It survives only on the archive branches; fetch
+> `archive/pre-reset-main` (or the relevant `archive/pre-reset/*` tip) first.
+> See CLAUDE.md § "How Changes Land" and
+> `docs/audits/git-repo-audit-2026-08-23.md`.
 
 > Smoke-test run — scope was deliberately capped at 2 proposals, not a full survey.
 > _(Superseded 2026-08-15: the ledger was created during P3-W2.)_

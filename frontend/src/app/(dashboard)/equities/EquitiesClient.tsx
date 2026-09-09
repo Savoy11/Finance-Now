@@ -15,13 +15,32 @@ import { STALE_TIME_SHORT } from '@/lib/constants'
 import { useScreenerUrl } from '@/lib/hooks/useScreenerUrl'
 import type { StockUniverseResponse, UniverseEntry } from '@/app/live-data/stock-universe/route'
 import type { SecurityQuotesResponse } from '@/app/live-data/security-quotes/route'
+import type { SecurityReturnsResponse } from '@/app/live-data/security-returns/route'
 
 type SortKey = 'symbol' | 'sector' | 'price' | 'marketCap' | 'pe' | 'dividend' | 'beta'
 const PAGE_SIZE = 50
 
 // Shared column template so the header and every row line up. 8 columns:
 // Company · Sector · Price · Chg% · Mkt Cap · P/E · Yield · Beta
-const COLS = 'grid grid-cols-[minmax(0,2.6fr)_1.3fr_1fr_0.8fr_1.1fr_0.7fr_0.7fr_0.7fr] gap-2 px-4'
+const COLS = 'grid grid-cols-[minmax(0,2.4fr)_1.2fr_1fr_0.8fr_1.1fr_0.7fr_0.7fr_0.7fr_0.8fr_0.8fr] gap-2 px-4'
+
+/**
+ * A trailing-return cell. Module-level, not declared inside the client: a
+ * component created during render is a new component type every render, which
+ * defeats reconciliation (the code-scanning finding on #147).
+ *
+ * A missing return renders a dash, never 0%. Without a provider key the route
+ * reports `source: 'none'` and every value is null — "we could not fetch this"
+ * and "this stock returned nothing" must not look the same.
+ */
+function ReturnCell({ value }: { value: number | null }) {
+  return (
+    <div className={clsx('text-right font-mono tabular-nums text-xs',
+      value == null ? 'text-text-muted' : value >= 0 ? 'text-emerald-400' : 'text-red-400')}>
+      {value == null ? '—' : formatPercent(value, 1)}
+    </div>
+  )
+}
 
 interface Row extends UniverseEntry {
   livePrice: number
@@ -33,6 +52,45 @@ interface Row extends UniverseEntry {
    *  returns marketCap: null, so a live price beside a reference market cap is
    *  the normal path, not an edge case (W4-C8). */
   marketCapIsRef: boolean
+  /** Trailing returns, page-scoped and key-gated. Null when unavailable — never 0. */
+  ytdPct: number | null
+  y1Pct: number | null
+}
+
+const SORT_BASIS_HINT: Partial<Record<SortKey, string>> = {
+  price: 'Sorted by daily reference price — live quotes load per page, so intraday moves may not change the order',
+  marketCap: 'Sorted by daily reference market cap — live quotes load per page',
+}
+
+/**
+ * Sortable column header. Module-level, not declared inside `EquitiesClient`:
+ * a component declared during render is a NEW component type every render, so
+ * React unmounts and remounts everything beneath it instead of reconciling.
+ * Same defect and same fix as FundsClient's SortHeader (#147) — the sort state
+ * arrives as props rather than through a closure.
+ */
+function SortHeader({ label, colKey, align = 'end', sortKey, sortAsc, onToggle }: {
+  label: string
+  colKey: SortKey
+  align?: 'start' | 'end'
+  sortKey: SortKey
+  sortAsc: boolean
+  onToggle: (key: SortKey) => void
+}) {
+  return (
+    <button
+      onClick={() => onToggle(colKey)}
+      title={SORT_BASIS_HINT[colKey]}
+      className={clsx('flex items-center gap-1 text-xs font-medium uppercase tracking-wider transition-colors',
+        align === 'end' ? 'justify-end' : 'justify-start',
+        sortKey === colKey ? 'text-accent-blue' : 'text-text-muted hover:text-text-secondary')}
+    >
+      {label}
+      {sortKey === colKey
+        ? (sortAsc ? <ArrowUp size={11} aria-hidden /> : <ArrowDown size={11} aria-hidden />)
+        : <ArrowUpDown size={11} className="opacity-40" aria-hidden />}
+    </button>
+  )
 }
 
 const parseNum = (s: string): number => parseFloat(s)
@@ -42,7 +100,10 @@ export function EquitiesClient() {
   const [search, setSearch] = useState('')
   const [sortKey, setSortKey] = useState<SortKey>('marketCap')
   const [sortAsc, setSortAsc] = useState(false)
-  const [page, setPage] = useState(0)
+  // Pagination keyed on the filter/sort signature rather than reset by an
+  // effect — the reset used to land a render late, painting an empty table for
+  // one frame when a filter changed past page 1. Same fix as FundsClient.
+  const [pageState, setPageState] = useState<{ sig: string; page: number }>({ sig: '', page: 0 })
   // Screener ranges (blank = no bound)
   const [minMcapB, setMinMcapB] = useState('')
   const [maxMcapB, setMaxMcapB] = useState('')
@@ -134,7 +195,10 @@ export function EquitiesClient() {
   }, [universe, sector, search, sortKey, sortAsc, minMcapB, maxMcapB, minPe, maxPe, minYield, maxYield, minBeta, maxBeta, minPrice, maxPrice, payersOnly])
 
   // Reset to first page whenever the result set changes
-  useEffect(() => { setPage(0) }, [sector, search, sortKey, sortAsc, minMcapB, maxMcapB, minPe, maxPe, minYield, maxYield, minBeta, maxBeta, minPrice, maxPrice, payersOnly])
+  const filterSig = JSON.stringify([sector, search, sortKey, sortAsc, minMcapB, maxMcapB, minPe, maxPe, minYield, maxYield, minBeta, maxBeta, minPrice, maxPrice, payersOnly])
+  const page = pageState.sig === filterSig ? pageState.page : 0
+  const setPage = (next: number | ((p: number) => number)) =>
+    setPageState({ sig: filterSig, page: typeof next === 'function' ? next(page) : next })
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const safePage = Math.min(page, totalPages - 1)
@@ -151,8 +215,26 @@ export function EquitiesClient() {
     placeholderData: keepPreviousData,
   })
 
+  // ── Trailing returns for the visible page only ──
+  //
+  // Deliberately page-scoped, and deliberately NOT sortable or screenable. The
+  // route is one keyed request per symbol since the Yahoo removal (it refuses
+  // `?universe=` outright rather than truncating), so the only returns the app
+  // can see are the fifty on screen. A sort or a screen over a column that has
+  // seen fifty of several thousand rows would filter as though it had seen them
+  // all — the same reason fund return screening is off.
+  const { data: pageReturnsData } = useQuery<SecurityReturnsResponse>({
+    queryKey: ['security-returns', 'equities-page', pageSymbols.join(',')],
+    queryFn: () => fetch(`/live-data/security-returns?symbols=${encodeURIComponent(pageSymbols.join(','))}`).then((r) => r.json()),
+    enabled: pageSymbols.length > 0,
+    staleTime: 1000 * 60 * 15,
+    placeholderData: keepPreviousData,
+  })
+  const returnsUnavailable = pageReturnsData?.source === 'none'
+
   const rows: Row[] = pageEntries.map((e) => {
     const q = quoteData?.quotes?.[e.symbol.toUpperCase()]
+    const r = pageReturnsData?.returns?.[e.symbol.toUpperCase()]
     const live = !!q && quoteData?.source !== 'reference' && !q.reference
     return {
       ...e,
@@ -160,6 +242,8 @@ export function EquitiesClient() {
       changePercent: live ? q?.changePercent ?? null : null,
       liveMarketCap: q?.marketCap ?? e.marketCapB * 1e9,
       marketCapIsRef: q?.marketCap == null,
+      ytdPct: r?.ytd ?? null,
+      y1Pct: r?.y1 ?? null,
       live,
     }
   })
@@ -183,26 +267,6 @@ export function EquitiesClient() {
   // sort + pagination, so a live-quote sort over thousands of rows is not
   // possible. Cells still show the live quote, so order and display can differ
   // slightly intraday; the tooltip states it (review E-note-1).
-  const SORT_BASIS_HINT: Partial<Record<SortKey, string>> = {
-    price: 'Sorted by daily reference price — live quotes load per page, so intraday moves may not change the order',
-    marketCap: 'Sorted by daily reference market cap — live quotes load per page',
-  }
-
-  const SortHeader = ({ label, colKey, align = 'end' }: { label: string; colKey: SortKey; align?: 'start' | 'end' }) => (
-    <button
-      onClick={() => toggleSort(colKey)}
-      title={SORT_BASIS_HINT[colKey]}
-      className={clsx('flex items-center gap-1 text-xs font-medium uppercase tracking-wider transition-colors',
-        align === 'end' ? 'justify-end' : 'justify-start',
-        sortKey === colKey ? 'text-accent-blue' : 'text-text-muted hover:text-text-secondary')}
-    >
-      {label}
-      {sortKey === colKey
-        ? (sortAsc ? <ArrowUp size={11} aria-hidden /> : <ArrowDown size={11} aria-hidden />)
-        : <ArrowUpDown size={11} className="opacity-40" aria-hidden />}
-    </button>
-  )
-
   return (
     <div className="space-y-6 max-w-screen-2xl mx-auto">
       <div className="flex items-start justify-between gap-4">
@@ -314,14 +378,22 @@ export function EquitiesClient() {
       {/* Table */}
       <div className="rounded-card border border-border bg-bg-card overflow-hidden">
         <div className={clsx(COLS, 'py-2.5 border-b border-border bg-bg-elevated/40')}>
-          <SortHeader label="Company" colKey="symbol" align="start" />
-          <SortHeader label="Sector" colKey="sector" align="start" />
-          <SortHeader label="Price" colKey="price" />
+          <SortHeader label="Company" colKey="symbol" align="start" sortKey={sortKey} sortAsc={sortAsc} onToggle={toggleSort} />
+          <SortHeader label="Sector" colKey="sector" align="start" sortKey={sortKey} sortAsc={sortAsc} onToggle={toggleSort} />
+          <SortHeader label="Price" colKey="price" sortKey={sortKey} sortAsc={sortAsc} onToggle={toggleSort} />
           <span className="text-xs font-medium uppercase tracking-wider text-text-muted text-right">Chg %</span>
-          <SortHeader label="Mkt Cap" colKey="marketCap" />
-          <SortHeader label="P/E" colKey="pe" />
-          <SortHeader label="Yield" colKey="dividend" />
-          <SortHeader label="Beta" colKey="beta" />
+          <SortHeader label="Mkt Cap" colKey="marketCap" sortKey={sortKey} sortAsc={sortAsc} onToggle={toggleSort} />
+          <SortHeader label="P/E" colKey="pe" sortKey={sortKey} sortAsc={sortAsc} onToggle={toggleSort} />
+          <SortHeader label="Yield" colKey="dividend" sortKey={sortKey} sortAsc={sortAsc} onToggle={toggleSort} />
+          <SortHeader label="Beta" colKey="beta" sortKey={sortKey} sortAsc={sortAsc} onToggle={toggleSort} />
+          <span
+            className="text-xs font-medium uppercase tracking-wider text-text-muted text-right"
+            title="Year-to-date total return for the visible page. Not sortable or screenable: returns are fetched per page, so a sort would order fifty rows as though it had seen every one."
+          >YTD</span>
+          <span
+            className="text-xs font-medium uppercase tracking-wider text-text-muted text-right"
+            title="Trailing one-year return for the visible page. Not sortable or screenable, for the same reason as YTD."
+          >1Y</span>
         </div>
 
         <div className="divide-y divide-border/60">
@@ -363,6 +435,8 @@ export function EquitiesClient() {
                     <div className="text-right font-mono tabular-nums text-xs text-text-secondary">{row.peRatio ?? '—'}</div>
                     <div className="text-right font-mono tabular-nums text-xs text-text-secondary">{row.dividendYieldPct != null ? `${row.dividendYieldPct.toFixed(1)}%` : '—'}</div>
                     <div className="text-right font-mono tabular-nums text-xs text-text-secondary">{row.beta ? row.beta.toFixed(2) : '—'}</div>
+                    <ReturnCell value={row.ytdPct} />
+                    <ReturnCell value={row.y1Pct} />
                   </Link>
                 )
               })}
@@ -402,6 +476,12 @@ export function EquitiesClient() {
         {configured ? 'Universe live via Financial Modeling Prep · refreshed daily' : 'Curated fallback universe'}
         {quoteData?.updatedAt && ` · quotes updated ${new Date(quoteData.updatedAt).toLocaleTimeString()}`}
         {' · '}live quotes cover the visible page; P/E &amp; beta are reference values
+        {' · '}YTD/1Y returns cover the visible page only and are not sortable or screenable
+        {returnsUnavailable && (
+          <span className="text-amber-400">
+            {' · '}returns need a Tiingo or FMP key — showing dashes rather than a figure we cannot source
+          </span>
+        )}
       </p>
     </div>
   )

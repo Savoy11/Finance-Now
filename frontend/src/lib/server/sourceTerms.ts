@@ -175,9 +175,10 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     finding:
       'The delayed-quote pages carry a notice, checked verbatim across four product pages (CBOE, OPTIONS, VIX, futures): downloading quote-table data "by using auto-extraction programs/queries and/or software" is strictly prohibited, Cboe blocks the IP addresses of parties who attempt it, and access by any means other than manual ticker-symbol entry is prohibited. cdn.cboe.com/api/global/delayed_quotes/* is the backing API for exactly those pages, so a server-side route polling it is the prohibited pattern described almost word for word. Programmatic use is routed through the paid All Access API. This is why Finance Now carries no options chain and the Trade Risk Scorer takes hand-entered legs.',
     reviewedAt: '2026-08-05',
-    // The one VERIFIED entry in this registry: read on the owner's machine
-    // during the P2-O1 audit, evidence written up in
-    // docs/assessments/P2-O1-options-data.md. Everything else is seeded.
+    // Verified: read on the owner's machine during the P2-O1 audit, evidence
+    // written up in docs/assessments/P2-O1-options-data.md. It was the ONLY
+    // verified entry until the 2026-08-29 probe run added CoinGecko — 2 of 56
+    // now; everything else is seeded.
     review: 'verified',
     confidence: 'high',
   },

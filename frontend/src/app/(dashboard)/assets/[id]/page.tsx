@@ -51,7 +51,7 @@ import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 import { SourceLine } from '@/components/ui/SourceLine'
 import { formatCompact, formatAddress, formatBps, formatDate, formatAssetPrice, formatOrNA, timeAgoCompact, NA_LABEL } from '@/lib/utils/format'
-import { getPegDeviationColorClass } from '@/lib/utils/risk'
+import { getPegDeviationColorClass } from '@/lib/utils/pegFormat'
 import { ASSET_TYPE_LABELS, BLOCKCHAIN_LABELS, LIVE_DATA } from '@/lib/constants'
 import { PumpReportTab } from '@/components/pump-report/PumpReportTab'
 import { LiveUnavailable } from '@/components/ui/LiveUnavailable'
@@ -152,6 +152,9 @@ function EmbedSignalSummary({ summary }: { summary: SignalSummary }) {
 function EmbedKeyLevels({ candles }: { candles: OhlcvCandle[] }) {
   if (candles.length < 20) return null
   const fib  = fibRetracement(candles, Math.min(candles.length, 100))
+  // null means the series carried no usable highs/lows. Dropping the panel
+  // says so; an empty level list would read as "no levels near price".
+  if (!fib) return null
   const last = candles[candles.length - 1].close
   const closes = candles.map((c) => c.close)
   const ema20 = ema(closes, 20)[candles.length - 1]

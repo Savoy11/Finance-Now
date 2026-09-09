@@ -18,15 +18,15 @@ blocklist written but never read, an export that only a production build rejects
 cd frontend
 npm install --no-audit --no-fund
 npx tsc --noEmit        # must be clean
-npx vitest run          # 412 tests as of 2026-07-30; must all pass
-npx eslint .            # 0 errors; ~67 pre-existing warnings
+npx vitest run          # 1311 tests in 88 files as of 2026-09-08; must all pass
+npx eslint .            # 0 errors; ~52 pre-existing warnings
 npx next build          # THE check dev mode misses — see C1 below
 ```
 
 - **`next build` is load-bearing.** Finding C1 (2026-07-27): a helper exported from a
   route file passed tsc, vitest, and dev mode, and broke only the production build. Any
   review that skips the build can miss an unshippable app.
-- **Lint warnings: diff instances, not counts.** The ~67 warnings are pre-existing
+- **Lint warnings: diff instances, not counts.** The ~52 warnings are pre-existing
   (react-hooks rules). Judge a change by whether it *adds* instances — line numbers shift,
   so compare rule+context, or stash and compare.
 - **`npm run audit` results are IP-dependent.** From a datacenter/container, most
@@ -77,8 +77,14 @@ npx next build          # THE check dev mode misses — see C1 below
   that it returns.
 
 **Security**
-- Sensitive routes (agents, provider config writes, exchange creds, video-analyze POST)
-  call `guardSensitiveRoute` first.
+- Sensitive routes (agents, provider config writes, video-analyze POST, the
+  pump-report scan/investigate/chat routes) call `guardSensitiveRoute` first.
+- **Exchange API-key custody is forbidden, not guarded (RP-5, 2026-08-18).** This
+  bullet used to list "exchange creds" among the routes to check the guard on. Those
+  routes are deleted: they stored an `apiKey` + `apiSecret` in plaintext at rest — the
+  highest-value secret the app held — for a read-only balance view that watched
+  addresses already approximate from public chain data. A diff that reintroduces
+  exchange-key storage is a 🔴 finding regardless of how well it is guarded.
 - User-supplied URLs go through `validatePublicHttpUrlResolved` + `pinnedFetch`
   (resolve-time validation AND connection pinning — string-level checks alone are the M3
   gap). Redirects on user-URL fetches: `redirect: 'manual'` or re-validate every hop (H1).
@@ -87,8 +93,11 @@ npx next build          # THE check dev mode misses — see C1 below
 - Ownership scoping on `/api/user/*`: every query filters by `getCurrentUserId()`.
 
 **Frontend**
-- Tailwind runs from a committed prebuilt CSS file — a new utility class without
-  `npm run css:build` silently renders as a no-op.
+- Tailwind compiles at build time (`aa35239`). `src/app/layout.tsx` imports
+  `globals.css` directly; the old committed `globals.compiled.css` froze the CSS at
+  whenever someone last remembered to run a build step, so a new utility class
+  silently rendered as a no-op. There is no `css:build` script and none is needed.
+  *(This bullet said the opposite until 2026-09-08.)*
 - React Query uses the stale-time constants from `lib/constants.ts`.
 - Money/net-worth columns are `numeric`, never float (see `invest.ts` note).
 
@@ -120,6 +129,21 @@ as a question with your reasoning — do not change it.
 | The three TA pages offer different chart ranges | Deliberate per asset class (owner, 2026-08-08). Crypto alone has 1H/4H — it trades continuously and moves enough intraday for an hourly candle to carry signal; on a ~6.5h equity session or a yield index the same view is mostly gaps and microstructure. Macro also omits MAX: its series are continuous front-month futures stitched across rolled contracts, which read as one price history past ~5Y when they are not. Indicators and drawing tools **are** shared across all three (2026-08-08) — ranges are the exception, not the rule |
 | No options chain browser beside the Trade Risk Scorer | Owner decision 2026-08-05 (P2-O1): there is NO keyless chain source — CBOE's delayed feed is prohibited by its own terms, Yahoo's options endpoint 401s. The scorer takes hand-entered legs on purpose. Do not add a chain fetch, and do not "improve" the scorer by inferring bid/ask/IV |
 | `ivRank` is manual-entry only in the options scorer | No keyless source carries IV *history*. Computing it forward needs persistence and a 52-week warm-up — flagged as a product decision, not an oversight |
+
+### Added 2026-09-08 (decisions since 2026-08-08)
+
+| Looks like | Actually |
+|------------|----------|
+| No per-coin risk score anywhere — no `riskScore` field, no score column, no `/live-data/risk-scores` | **RP-6 (2026-08-29).** Owner: a risk figure on an asset the reader is viewing may be read as a recommendation, a regulated activity. The `Asset.riskScore`/`riskBand` fields were deleted rather than nulled, because a permanently-null field invites a future "N/A" that reads as *missing* rather than *withheld*. Guarded by `lib/risk/__tests__/riskScoringRemoved.test.ts`. **`lib/risk/` itself stays** — the options scorer, staking-provider risk and the macro/equity profiles are separate decisions |
+| A leaderboard-shaped surface was removed but a per-asset explanation kept | **Short-list item 4 (2026-08-18): ranking vs explanation.** Ranking a universe by a score goes; scoring the one thing the reader opened stays. That is the line — do not "restore consistency" by removing the second or reinstating the first |
+| `ratesCatalog` yield entries bypass `security-quotes` | **D3 (2026-09-03).** `^IRX`/`^FVX`/`^TNX`/`^TYX` read the official treasury.gov par curve via `lib/data/ratesFromCurve.ts`. A probe (`npm run rates-providers`) found no free provider quotes them: FMP 402, Finnhub empty, Twelve Data 404, Alpha Vantage empty, Tiingo has no index space. Daily readings with no intraday change are correct here, not a degradation |
+| Exchange API linking absent from Wallets | **RP-5 (2026-08-18)** — see the security note above. Not an unfinished feature |
+| `/transfer-fees`, `/wallets`, `/equities/backtests`, `/global-adoption`, `/backtests`, `/risk-scores` redirect away | Deliberate rollout hides and removals with distinct reasons and dates (owner, 2026-08-18 → 2026-08-22). Every site carries a comment saying exactly how to restore it. The engines, panels and tests behind the hidden ones are retained on purpose |
+| StatusBar shows no market-open status | Removed 2026-09-04 (`#146`) — it was computed from the clock, not from a venue calendar, so it asserted "open" on holidays. No source, no claim |
+| `pump-report` scores a target 0–10 higher-is-worse under the name `suspicionScore` | Renamed from `riskScore` 2026-09-08 (risk-scale spec Phase 6). It collided with the canonical 0–100 higher-is-SAFER scale on both range and direction, and it is not an asset risk assessment (RP-6) but a measure of fraud evidence found. A guard test pins prompt and reader to the same key |
+| `pinnedFetch` is not used on the CoinGecko call sites | Deliberate (2026-09-08): pinnedFetch attaches a custom dispatcher, which removes the request from Next's fetch cache, and every CoinGecko caller depends on `next: { revalidate }` to stay inside the rate limit. Terms gate on a first-party, terms-VERIFIED host vs. multiplying the request volume that already throttles us — see `lib/api/live/coingecko.ts` |
+| A relentless uptrend reports `overall: 'neutral'` in the TA signal summary | The panel working, not a bug: trend indicators say buy while mean-reversion oscillators correctly say overbought, averaging inside the ±0.5 neutral band. The buy/sell counts beside it carry the disagreement. Widening the bands would suppress the overbought half — pinned with a note in `signalSummary.test.ts` |
+| `cd-staging` deploy jobs are gated on `vars.STAGING_DEPLOY_ENABLED` | Owner decision 2026-09-08. The workflow had failed ~90 pushes since 2026-07-18 on an unset `AWS_ACCOUNT_ID`, making `main`'s red X permanent and therefore meaningless. Gated on a repository variable so provisioning re-enables it with no PR |
 
 When a review establishes a *new* deliberate decision, propose adding it to this table —
 that's how it stays cheaper than re-litigating.

@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { clsx } from 'clsx'
 import type { Asset } from '@/types/asset'
 import { formatCompact, formatBps, formatPercent, formatOrNA, NA_LABEL } from '@/lib/utils/format'
-import { getPegDeviationColorClass } from '@/lib/utils/risk'
+import { getPegDeviationColorClass } from '@/lib/utils/pegFormat'
 import { ASSET_TYPE_LABELS, BLOCKCHAIN_LABELS } from '@/lib/constants'
 import { TrendingUp, TrendingDown } from 'lucide-react'
 

@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server'
+import { coingeckoBase, coingeckoHeaders } from '@/lib/api/live/coingecko'
+import { recordProviderFetch } from '@/lib/api/live/providers'
 
 export const dynamic = 'force-dynamic'
 
@@ -88,14 +90,24 @@ export async function GET() {
   try {
     const all = [...STABLECOINS, ...MAJORS]
     const ids = all.map((a) => a.id).join(',')
-    const url = `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true&precision=6`
+    // Base URL and key come from the shared resolver rather than a hardcoded
+    // string, so COINGECKO_BASE_URL and a configured key apply here too. This
+    // route used to bypass both: pointing the app at a proxy or a Pro endpoint
+    // silently missed it, and it was billed against the free-tier limit even on
+    // a paid plan.
+    const url = `${coingeckoBase()}/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true&precision=6`
 
     const res = await fetch(url, {
-      headers: { Accept: 'application/json' },
+      headers: coingeckoHeaders(),
       next: { revalidate: 60 },  // 1-minute server cache to stay within rate limits
     })
 
-    if (!res.ok) throw new Error(`CoinGecko HTTP ${res.status}`)
+    if (!res.ok) {
+      // Recorded before throwing, so a route that is quietly 429ing shows up on
+      // the Integrations page instead of only in this request's 502.
+      recordProviderFetch('coingecko', { error: `CoinGecko HTTP ${res.status}` })
+      throw new Error(`CoinGecko HTTP ${res.status}`)
+    }
 
     const prices: Record<string, { usd: number; usd_24h_change?: number }> = await res.json()
     const now = new Date().toISOString()
@@ -163,6 +175,12 @@ export async function GET() {
       if (sd !== 0) return sd
       return Math.abs(b.deviation) - Math.abs(a.deviation)
     })
+
+    // Utilization is recorded on the SUCCESS path too, so the Integrations page
+    // can tell "serving data" from "configured but contributing nothing".
+    // `count` is coins priced, not alerts raised: zero alerts is the healthy
+    // state and must not read as a dead provider.
+    recordProviderFetch('coingecko', { count: Object.keys(prices).length })
 
     return NextResponse.json({
       ok: true,

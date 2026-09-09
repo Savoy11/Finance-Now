@@ -20,8 +20,14 @@ Integrations page.
 > ⚠ **The registry ships almost entirely `seeded`, and that is a deliberate,
 > visible state — not a claim of review.** It was authored in an environment whose
 > network policy blocked every publisher and provider host at the gateway, so no
-> terms document could be opened. 47 of 48 entries are starting positions drawn from
-> documented posture; only Cboe is `verified` (P2-O1, owner's machine, 2026-08-05).
+> terms document could be opened. **54 of 56 entries** are starting positions drawn
+> from documented posture. Two are `verified`, both read on the owner's machine:
+> **Cboe** (P2-O1, 2026-08-05) and **CoinGecko** (the first real probe run,
+> 2026-08-29 — see `docs/audits/terms-review-2026-08-29.md`).
+>
+> By verdict, the 56 are 14 `approved`, 40 `conditional`, 2 `prohibited`.
+> *(Counts refreshed 2026-09-08; this section said 47 of 48 with Cboe the only
+> verified entry, written 2026-08-06.)*
 >
 > The first cut of this file had no `review` field at all, and gave every entry a
 > `verifiedAt` date — which made 47 assumptions look like 47 readings. That is the
@@ -54,8 +60,30 @@ Integrations page.
   review: 'seeded',               // 'verified' = someone read it | 'seeded' = nobody has
   reviewedAt: '2026-08-06',       // date of that read, or of writing for a seeded entry
   confidence: 'high',
+
+  // Optional, and deliberately SEPARATE from `review` — see below.
+  robotsDisallowed: {
+    observedAt: '2026-08-29',     // ISO date the robots.txt was actually read
+    liftedBy: 'REDDIT_CLIENT_ID', // env var whose presence lifts the block
+    note: '…what the directive says…',
+  },
 }
 ```
+
+### `robotsDisallowed` is not a terms verdict, and the split is the point
+
+A robots.txt directive and a terms reading are different kinds of thing. **robots.txt
+is a machine-readable instruction we either honour or do not**; a terms verdict is
+*our interpretation* of a legal document. Folding the first into the second would
+launder a first-hand observation into looking like a completed review — an entry can
+legitimately be `seeded` on its terms while carrying a dated, verified robots
+reading, which is exactly Reddit's state after the 2026-08-29 probe.
+
+When present, `assertRobotsPermits` (inside `pinnedFetch`) refuses the fetch unless
+the named credential is configured — the credential being the thing that moves the
+request off the disallowed anonymous path. Enforcing it at the socket means a new
+call site inherits the block rather than having to remember it. One entry currently
+carries this: **reddit.com**, lifted by `REDDIT_CLIENT_ID`.
 
 Three verdicts, because two would collapse a real distinction:
 
@@ -200,6 +228,30 @@ policy rather than a licence attached to a key. Four questions settle each one:
 4. Is **attribution** required, and in what form? Record it as a `conditions` entry.
 
 The open queue is `docs/audits/terms-review-news-2026-08-07.md`.
+
+### What the first real probe run settled (2026-08-29)
+
+`docs/audits/terms-review-2026-08-29.md` is the first run from an environment that
+could actually reach these hosts. Two findings were acted on:
+
+- **CoinGecko → `verified`**, against its **API Terms** — not the Website Terms the
+  probe read by mistake. Clause 4.1.6 permits charging for products built on the API
+  and bars only reselling API *access*, so the "non-commercial" alarm never applied
+  here. Clause 4.4 prescribes the attribution **wording**, so
+  `SourceProvider.attribution` carries "Powered by CoinGecko" verbatim with a 10px
+  floor, and a test parses the rendered class and fails below it.
+- **Reddit's robots.txt disallows this app's agent** — recorded as
+  `robotsDisallowed`, not as a terms verdict, for the reason above.
+
+**One question is still open and it decides eight sources**: whether this project's
+use counts as personal or commercial (Finnhub, Twelve Data, Tiingo, Binance.US,
+YouTube, OilPrice, Bitget — and **FMP**, added 2026-09-02). FMP is the load-bearing
+one: first rung of the quote ladder, sole source for the Stock Registry universe and
+the market calendar, and the OHLCV fallback — 7 live-data routes across 20 files. Its
+seeded finding asserts the permission is tier-dependent; a 2026-09-01 fund-fee
+assessment asserts personal use on every tier. Neither is a reading, and the seeded
+finding read as already settled, so it never joined the queue. That is precisely what
+`seeded` exists to expose.
 
 ## Maintenance
 
