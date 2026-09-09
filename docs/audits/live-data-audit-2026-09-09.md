@@ -258,3 +258,75 @@ The route now fetches **8 upstreams instead of 17**, all confirmed reachable and
 sub-1.3s, with no dead host able to starve the resolver pool. Expect the next
 `npm run audit` to show materially more than 4 live keys — DeFiLlama alone backs
 ~24 of them and was in the strangled block.
+
+---
+
+## Third owner-machine run — the fix landed: 4 live → 27 live
+
+`npm run audit` after #160 merged.
+
+| | Before | After |
+|---|---|---|
+| Live staking APRs | **4 / 51** | **27 / 51** |
+| Healthy upstreams | 4 / 17 | **6 / 8** |
+| Route duration | 6695ms (= the 6s budget, expired) | **1846ms** |
+
+The route now returns in under two seconds instead of running out its budget, and
+serves nearly seven times as many live rates. That confirms the diagnosis: the
+cascade was four dead hosts holding Node's DNS threads, not slow sources.
+
+Two upstreams remain imperfect, both now precisely identified:
+
+- **`near-native`** — still `reachable but no usable rate (0/1)`. Unchanged and
+  expected: the parse path needs the response body, and the widened excerpt only
+  reaches the output on the next `npm run staking-upstreams`.
+- **`defillama-yields`** — `partial (19/25 live)`. **New information**: DeFiLlama
+  is healthy and 19 of its 25 `LLAMA_MAP` symbols match a pool; six no longer do.
+  A miss there is a one-line map fix, but only once you know which symbol — so the
+  verdict now names them rather than only counting them, the same correction
+  "4/51 live" needed.
+
+### The harness was still throttling itself, and the earlier fix had it backwards
+
+`coin-discovery`, `alerts` and `portfolio-history` failed on CoinGecko 429 in **all
+three** runs today. The pacing added for exactly this (its comment names the same
+three routes from a 2026-07-27 audit) did not work, because of the model it used:
+
+> *"a short pause before each CoinGecko-backed check, but only when the previous
+> request also hit CoinGecko — a gap after an unrelated route buys nothing"*
+
+That is backwards. A rate limit is a **rate over a window**, not a rule about
+adjacency. Slotting an unrelated route between two CoinGecko calls does not lower
+the CoinGecko rate at all; it just cancels the pause. The run proves it:
+
+- **`alerts`** is preceded by `risk-scores` (not CoinGecko), so it received **no
+  pause whatsoever** — then 429'd.
+- **`coin-discovery`** sits eighth in an unbroken run of CoinGecko checks and 429'd
+  *through* the gaps, because ~8 calls in ~13s exceeds the keyless allowance
+  however they are spaced.
+
+Replaced with a **sliding window** (a per-minute cap plus a minimum spacing since
+the last CoinGecko *call*, whatever ran in between), both tunable via
+`AUDIT_CG_PER_MIN` / `AUDIT_CG_GAP_MS`. The cap is deliberately conservative
+because one check can be several upstream calls — `coin-discovery` pages through
+markets, `coin-list` pulls 750 coins — so counting checks understates the rate.
+
+Verified against a fake clock over this run's actual check order: `alerts` now gets
+its gap despite the non-CoinGecko check before it, and no window exceeds the cap.
+The run reports what pacing cost it, so the delay is never mistaken for slowness
+and quietly "optimised" back out — which is how the 429s returned last time.
+
+### Also seen, not acted on
+
+**BTC network fee fell back to the static estimate**, and the gap is large:
+`network-fees` took 10.8s and reported `btcFeeSource=estimate`, with
+`bitcoin feeUsd` at **$11.95** against **$0.20** on an earlier run today — the
+static figure is roughly **60× the live fee**, being calibrated for a busy mempool
+rather than the current cheap one. `btc-stats` did answer (height 966181) but took
+10.5s, so mempool.space was slow, not gone.
+
+The disclosure works — the route flags `estimate` and the audit lists it under
+silent degradation — so nothing is being passed off as live. But a reader who sees
+$11.95 has a badly wrong number, and choosing the right constant needs a view of
+typical fee levels rather than one reading. Left for a decision rather than
+guessed at.

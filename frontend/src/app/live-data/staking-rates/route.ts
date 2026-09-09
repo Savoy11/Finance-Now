@@ -444,7 +444,17 @@ export async function GET() {
     if (!res.value.ok) return [name, `http ${res.value.status}`]
     const landed = keys.filter((k) => sources[k] === 'live')
     if (landed.length === keys.length) return [name, `live (${landed.length}/${keys.length})`]
-    if (landed.length > 0) return [name, `partial (${landed.length}/${keys.length} live)`]
+    if (landed.length > 0) {
+      // Name the misses, not just the count. "partial (19/25)" is the same dead
+      // end "4/51 live" was: it says something is wrong without saying what, and
+      // for DeFiLlama a miss means a symbol in LLAMA_MAP no longer matches any
+      // pool — a one-line map fix, but only once you know which symbol. Capped so
+      // a wholesale mismatch cannot flood the line.
+      const missed = keys.filter((k) => sources[k] !== 'live')
+      const shown = missed.slice(0, 8).join(', ')
+      const more = missed.length > 8 ? `, +${missed.length - 8} more` : ''
+      return [name, `partial (${landed.length}/${keys.length} live; no match: ${shown}${more})`]
+    }
     // HTTP 200 whose body the parser could not turn into a rate: a changed
     // response shape or a symbol that no longer matches. This is the failure
     // that used to be indistinguishable from a healthy estimate.
