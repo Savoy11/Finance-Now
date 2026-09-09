@@ -54,12 +54,27 @@ describe('pinnedFetch', () => {
     )
   })
 
+  // 30s, not the 5s default, and the number is measured rather than picked.
+  // An NXDOMAIN is not instant: the OS resolver works through a retry schedule
+  // before giving up, and under a full-suite run this lookup queues behind
+  // Node's 4-thread resolver pool while 90-odd other files run. Measured on the
+  // owner's machine: 3848ms for this file alone, but 11145 / 11126 / 11152ms
+  // across three full-suite runs — a 26ms spread across all three, so it is
+  // the resolver's schedule, not jitter. That is the same contention the
+  // 2026-09-09 staking audit measured, where dead hosts' lookups hung ~10s each
+  // and starved the route's whole 6s budget.
+  //
+  // So 5s never had a chance under load: it sat at 2.2x below the real figure
+  // and this test failed on every Windows full-suite run while passing alone
+  // and passing in CI. The headroom over 11.2s is for a resolver configured
+  // with one more retry than this one, NOT slack to be trimmed back — if this
+  // starts failing again, measure it before lowering it.
   it('refuses an unresolvable host', async () => {
     // .invalid is reserved by RFC 2606 and must never resolve.
     await expect(pinnedFetch('http://nothing-here.invalid/')).rejects.toThrow(
       /Could not resolve host|private or internal address/
     )
-  })
+  }, 30_000)
 
   it('refuses a host the source-terms registry prohibits, before any lookup', async () => {
     // The registry entry is what enforces the Yahoo removal. It must bite at the
