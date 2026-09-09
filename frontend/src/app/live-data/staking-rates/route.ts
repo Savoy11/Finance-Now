@@ -192,16 +192,7 @@ export async function GET() {
     marinadeRes,
     jitoRes,
     strideRes,
-    cosmosRes,
-    osmosisRes,
-    dotRes,
-    ksmRes,
-    adaRes,
-    bnbRes,
-    maticRes,
-    trxRes,
     injRes,
-    tiaRes,
     nearRes,
     llamaRes,
   ] = await Promise.allSettled([
@@ -220,29 +211,47 @@ export async function GET() {
     timedFetch('https://kobe.mainnet.jito.network/api/v1/stake_pool_stats', { headers: { Accept: 'application/json' } }),
     // 5. Stride stATOM APY
     timedFetch('https://edge.stride.zone/api/stake-stats', { headers: { Accept: 'application/json' } }),
-    // 6. Cosmos Hub staking APR (Mintscan public API)
-    timedFetch('https://api-cosmoshub-ia.cosmostation.io/cosmos/mint/v1beta1/inflation', { headers: { Accept: 'application/json' } }),
-    // 7. Osmosis staking APR
-    timedFetch('https://api-osmosis.cosmostation.io/cosmos/mint/v1beta1/inflation', { headers: { Accept: 'application/json' } }),
-    // 8. Polkadot staking APY (Polkadot.js API via Subscan public)
-    timedFetch('https://polkadot.webapi.subscan.io/api/v2/scan/staking_apy', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }),
-    // 9. Kusama staking APY (Subscan)
-    timedFetch('https://kusama.webapi.subscan.io/api/v2/scan/staking_apy', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }),
-    // 10. Cardano staking yield (adapools public)
-    timedFetch('https://js.adapools.org/global.json', { headers: { Accept: 'application/json' } }),
-    // 11. (was Avalanche) — removed. api.avax.network/ext/info returns a node
-    //     version, never an APY, so the response was fetched and discarded on
-    //     every request. See leg 11 below: AVAX keeps its static fallback.
-    // 12. BNB staking APR (BSC staking info)
-    timedFetch('https://api.binance.org/v1/staking/asset?assetName=BNB', { headers: { Accept: 'application/json' } }),
-    // 13. Polygon staking APR (Lido stMATIC)
-    timedFetch('https://polygon.lido.fi/api/stats', { headers: { Accept: 'application/json' } }),
-    // 14. TRON staking APR (TronScan public)
-    timedFetch('https://apilist.tronscanapi.com/api/trx/staking-info', { headers: { Accept: 'application/json' } }),
+    // ── Nine rungs removed 2026-09-09, each on first-hand evidence from a
+    //    sequential owner-machine probe (`npm run staking-upstreams`; results in
+    //    docs/audits/live-data-audit-2026-09-09.md). Every coin below keeps its
+    //    static fallback, which is what it was already serving — these fetches
+    //    produced nothing but latency.
+    //
+    //    DNS failure, no address at all (the three Cosmostation LCDs went
+    //    together, so the pattern is gone rather than one host):
+    //      api-cosmoshub-ia.cosmostation.io   native_atom   ~10.7s to fail
+    //      api-osmosis.cosmostation.io        osmo_native   ~10.6s
+    //      api-celestia-ia.cosmostation.io    native_tia    ~10.2s
+    //      js.adapools.org                    native_ada    fast NXDOMAIN
+    //
+    //    ⚠ Those four are why the route was returning 4 of 51 live. Node resolves
+    //    DNS on the libuv threadpool (4 threads by default), so four hosts each
+    //    hanging ~10s occupied every thread for longer than the whole 6s budget —
+    //    and the upstreams queued behind them aborted without a socket ever
+    //    opening. That is the array-order failure the 2026-09-09 audit recorded:
+    //    positions 1-5 answered, 6-17 "timed out". Removing dead hosts IS the
+    //    fix for the cascade; there was never anything wrong with the twelve.
+    //
+    //    Now requires an API key — the endpoint answers 403 with that in the body
+    //    ("If you want to use a program to access the API, see support.subscan.io"):
+    //      polkadot.webapi.subscan.io         native_dot
+    //      kusama.webapi.subscan.io           native_ksm
+    //    Restoring these means adding a keyed provider, which is a policy
+    //    decision, not a URL swap. Deliberately left out rather than left failing.
+    //
+    //    HTTP 404 — path or product retired:
+    //      api.binance.org/v1/staking/asset   native_bnb   (BNB Beacon Chain)
+    //      apilist.tronscanapi.com/.../staking-info  native_trx  (host alive,
+    //        path gone; no replacement path verified, so not guessed at)
+    //
+    //    Serving a marketing page, not an API — the body is Lido's HTML site:
+    //      polygon.lido.fi/api/stats          lido_matic
+    //
+    //    (11 was Avalanche, removed earlier: api.avax.network/ext/info returns a
+    //    node version, never an APY.)
     // 15. Injective inflation (Cosmos LCD)
     timedFetch('https://lcd.injective.network/cosmos/mint/v1beta1/inflation', { headers: { Accept: 'application/json' } }),
-    // 16. Celestia inflation (Cosmostation LCD)
-    timedFetch('https://api-celestia-ia.cosmostation.io/cosmos/mint/v1beta1/inflation', { headers: { Accept: 'application/json' } }),
+    // (16 was Celestia — removed with the other Cosmostation LCDs above.)
     // 17. NEAR staking APY (NEAR public stats)
     timedFetch('https://api.nearblocks.io/v1/stats', { headers: { Accept: 'application/json' } }),
     // 18. DeFiLlama Yields — live APY for liquid-staking & restaking protocols (keyless)
@@ -321,66 +330,26 @@ export async function GET() {
   if (strideRes.status === 'fulfilled' && strideRes.value.ok) {
     try {
       const d = await strideRes.value.json()
-      // Stride API: { atom: { apr: "0.142" }, inj: { apr: "0.135" }, tia: { apr: "0.165" }, ... }
+      // Stride now answers { stats: [ { chainId, name, denom: "ATOM",
+      //   currentYield: 0.1485, strideYield: 0.1429, ... }, … ] } — an ARRAY keyed
+      //   by denom, not the { atom: { apr } } map this used to read. Observed
+      //   2026-09-09; the endpoint was healthy the whole time (HTTP 200) and only
+      //   the shape moved, which is exactly the failure that looks identical to a
+      //   healthy static estimate from outside the route.
+      //
+      //   strideYield, not currentYield: these keys are stATOM/stINJ/stTIA, so the
+      //   number a holder actually earns after Stride's fee is the honest one.
+      //   Both are fractions, so normPct scales them.
+      const strideStats: Array<{ denom?: string; strideYield?: number; currentYield?: number }> =
+        Array.isArray(d?.stats) ? d.stats : []
       const parseStride = (key: string) => {
-        const raw = parseFloat(d?.[key]?.apr ?? d?.[key.toUpperCase()]?.apr ?? '')
-        return isNaN(raw) ? null : clamp(normPct(raw), 0, 40)
+        const row = strideStats.find((r) => (r?.denom ?? '').toUpperCase() === key.toUpperCase())
+        const raw = row?.strideYield ?? row?.currentYield
+        return typeof raw !== 'number' || isNaN(raw) ? null : clamp(normPct(raw), 0, 40)
       }
       const atom = parseStride('atom'); if (atom != null) { rates.stride_atom = round2(atom); sources.stride_atom = 'live' }
       const inj  = parseStride('inj');  if (inj  != null) { rates.stride_inj  = round2(inj);  sources.stride_inj  = 'live' }
       const tia  = parseStride('tia');  if (tia  != null) { rates.stride_tia  = round2(tia);  sources.stride_tia  = 'live' }
-    } catch { /* fallback */ }
-  }
-
-  // ── 6. Cosmos Hub inflation → APR estimate ─────────────────────────────────
-  if (cosmosRes.status === 'fulfilled' && cosmosRes.value.ok) {
-    try {
-      const d = await cosmosRes.value.json()
-      const raw = parseFloat(d?.inflation ?? '')
-      // Rough conversion: inflation / bonded_ratio (~67%) ≈ staking APR
-      const apr = clamp(normPct(raw) / 0.67, 0, 35)
-      if (apr != null) { rates.native_atom = round2(apr); sources.native_atom = 'live' }
-    } catch { /* fallback */ }
-  }
-
-  // ── 7. Osmosis inflation ───────────────────────────────────────────────────
-  if (osmosisRes.status === 'fulfilled' && osmosisRes.value.ok) {
-    try {
-      const d = await osmosisRes.value.json()
-      const raw = parseFloat(d?.inflation ?? '')
-      const apr = clamp(normPct(raw) / 0.50, 0, 50)   // Osmosis bonded ~50%
-      if (apr != null) { rates.osmo_native = round2(apr); sources.osmo_native = 'live' }
-    } catch { /* fallback */ }
-  }
-
-  // ── 8. Polkadot staking APY ────────────────────────────────────────────────
-  if (dotRes.status === 'fulfilled' && dotRes.value.ok) {
-    try {
-      const d = await dotRes.value.json()
-      const raw = parseFloat(d?.data?.apy ?? d?.apy ?? '')
-      const pct = clamp(normPct(raw), 0, 30)
-      if (pct != null) { rates.native_dot = round2(pct); sources.native_dot = 'live' }
-    } catch { /* fallback */ }
-  }
-
-  // ── 9. Kusama staking APY ──────────────────────────────────────────────────
-  if (ksmRes.status === 'fulfilled' && ksmRes.value.ok) {
-    try {
-      const d = await ksmRes.value.json()
-      const raw = parseFloat(d?.data?.apy ?? d?.apy ?? '')
-      const pct = clamp(normPct(raw), 0, 35)
-      if (pct != null) { rates.native_ksm = round2(pct); sources.native_ksm = 'live' }
-    } catch { /* fallback */ }
-  }
-
-  // ── 10. Cardano staking APY ────────────────────────────────────────────────
-  if (adaRes.status === 'fulfilled' && adaRes.value.ok) {
-    try {
-      const d = await adaRes.value.json()
-      // adapools global.json: { stats: { delegators: { ..., roa: "4.2" } } }
-      const raw = parseFloat(d?.stats?.delegators?.roa ?? d?.roa ?? d?.apy ?? '')
-      const pct = clamp(raw, 0, 15)
-      if (pct != null) { rates.native_ada = round2(pct); sources.native_ada = 'live' }
     } catch { /* fallback */ }
   }
 
@@ -390,44 +359,6 @@ export async function GET() {
   // only ever returned a node version, so it was removed rather than left
   // looking like a live rung that had failed.
 
-  // ── 12. BNB staking ────────────────────────────────────────────────────────
-  if (bnbRes.status === 'fulfilled' && bnbRes.value.ok) {
-    try {
-      const d = await bnbRes.value.json()
-      // Binance.org staking: { data: { stakingAccount: { annualizedYield: "5.3" } } }
-      const raw = parseFloat(d?.data?.annualizedYield ?? d?.annualizedYield ?? d?.apr ?? '')
-      const pct = clamp(normPct(raw), 0, 20)
-      if (pct != null) { rates.native_bnb = round2(pct); sources.native_bnb = 'live' }
-    } catch { /* fallback */ }
-  }
-
-  // ── 13. Polygon stMATIC (Lido) ─────────────────────────────────────────────
-  if (maticRes.status === 'fulfilled' && maticRes.value.ok) {
-    try {
-      const d = await maticRes.value.json()
-      // Lido Polygon stats: { apr: 4.2 } or { stMaticApr: "4.2" }
-      const raw = parseFloat(d?.apr ?? d?.stMaticApr ?? d?.apy ?? '')
-      const pct = clamp(normPct(raw), 0, 20)
-      if (pct != null) {
-        rates.lido_matic   = round2(pct)
-        rates.native_matic = round2(pct + 0.3)   // native is slightly higher
-        sources.lido_matic = 'live'
-        sources.native_matic = 'estimate' // derived offset, not a live reading
-      }
-    } catch { /* fallback */ }
-  }
-
-  // ── 14. TRON staking ───────────────────────────────────────────────────────
-  if (trxRes.status === 'fulfilled' && trxRes.value.ok) {
-    try {
-      const d = await trxRes.value.json()
-      // TronScan: { data: { stakeYield: 4.5 } } or { annualized_rate: 0.045 }
-      const raw = parseFloat(d?.data?.stakeYield ?? d?.annualized_rate ?? d?.apr ?? '')
-      const pct = clamp(normPct(raw), 0, 20)
-      if (pct != null) { rates.native_trx = round2(pct); sources.native_trx = 'live' }
-    } catch { /* fallback */ }
-  }
-
   // ── 15. Injective inflation → APR ──────────────────────────────────────────
   if (injRes.status === 'fulfilled' && injRes.value.ok) {
     try {
@@ -435,16 +366,6 @@ export async function GET() {
       const raw = parseFloat(d?.inflation ?? '')
       const apr = clamp(normPct(raw) / 0.60, 0, 40)  // ~60% bonded ratio
       if (apr != null) { rates.native_inj = round2(apr); sources.native_inj = 'live' }
-    } catch { /* fallback */ }
-  }
-
-  // ── 16. Celestia inflation → APR ───────────────────────────────────────────
-  if (tiaRes.status === 'fulfilled' && tiaRes.value.ok) {
-    try {
-      const d = await tiaRes.value.json()
-      const raw = parseFloat(d?.inflation ?? '')
-      const apr = clamp(normPct(raw) / 0.65, 0, 40)  // ~65% bonded ratio
-      if (apr != null) { rates.native_tia = round2(apr); sources.native_tia = 'live' }
     } catch { /* fallback */ }
   }
 
@@ -507,16 +428,7 @@ export async function GET() {
     { name: 'marinade-sol',       res: marinadeRes, keys: ['marinade_sol'] },
     { name: 'jito-sol',           res: jitoRes,     keys: ['jito_sol'] },
     { name: 'stride-cosmos-lsts', res: strideRes,   keys: ['stride_atom', 'stride_inj', 'stride_tia'] },
-    { name: 'cosmoshub-native',   res: cosmosRes,   keys: ['native_atom'] },
-    { name: 'osmosis-native',     res: osmosisRes,  keys: ['osmo_native'] },
-    { name: 'polkadot-native',    res: dotRes,      keys: ['native_dot'] },
-    { name: 'kusama-native',      res: ksmRes,      keys: ['native_ksm'] },
-    { name: 'cardano-native',     res: adaRes,      keys: ['native_ada'] },
-    { name: 'bnb-native',         res: bnbRes,      keys: ['native_bnb'] },
-    { name: 'lido-matic',         res: maticRes,    keys: ['lido_matic'] },
-    { name: 'tron-native',        res: trxRes,      keys: ['native_trx'] },
     { name: 'injective-native',   res: injRes,      keys: ['native_inj'] },
-    { name: 'celestia-native',    res: tiaRes,      keys: ['native_tia'] },
     { name: 'near-native',        res: nearRes,     keys: ['native_near'] },
     { name: 'defillama-yields',   res: llamaRes,    keys: LLAMA_MAP.map((m) => m.key) },
   ] as const).map(({ name, res, keys }) => {
