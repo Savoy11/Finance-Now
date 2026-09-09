@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { coingeckoBase, coingeckoHeaders } from '@/lib/api/live/coingecko'
 import { recordProviderFetch } from '@/lib/api/live/providers'
+import { describeThrottle } from '@/lib/server/coingeckoThrottle'
 
 export const dynamic = 'force-dynamic'
 
@@ -103,10 +104,14 @@ export async function GET() {
     })
 
     if (!res.ok) {
+      // Carry what the upstream said about its OWN limit, not just the status.
+      // A bare "CoinGecko HTTP 429" is what let four audit pacing models be
+      // tuned against an allowance nobody had read — see coingeckoThrottle.ts.
+      const detail = `CoinGecko HTTP ${res.status}${await describeThrottle(res)}`
       // Recorded before throwing, so a route that is quietly 429ing shows up on
       // the Integrations page instead of only in this request's 502.
-      recordProviderFetch('coingecko', { error: `CoinGecko HTTP ${res.status}` })
-      throw new Error(`CoinGecko HTTP ${res.status}`)
+      recordProviderFetch('coingecko', { error: detail })
+      throw new Error(detail)
     }
 
     const prices: Record<string, { usd: number; usd_24h_change?: number }> = await res.json()

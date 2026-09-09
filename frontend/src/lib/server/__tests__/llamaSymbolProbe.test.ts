@@ -45,8 +45,13 @@ const probeMap = llamaEntries(probeSrc)
 
 describe('DeFiLlama symbol probe mirrors the route', () => {
   it('reads a non-trivial map from both files (guards the parser itself)', () => {
-    // A parser that silently matched nothing would make every test below pass.
-    expect(routeMap.size).toBeGreaterThan(20)
+    // A parser that silently matched nothing would make every test below pass,
+    // so this asserts a FLOOR — deliberately well under the real count, since
+    // the map legitimately shrinks (six keys went on 2026-09-09 when a probe run
+    // showed no pool answers them). Pinning it to the exact size would turn every
+    // justified removal into a test failure and teach the next reader to edit the
+    // number without reading it.
+    expect(routeMap.size).toBeGreaterThan(10)
     expect(probeMap.size).toBe(routeMap.size)
   })
 
