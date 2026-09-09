@@ -34,10 +34,46 @@ function fetchedUrls(src: string): Set<string> {
 const routeUrls = fetchedUrls(routeSrc)
 const probeUrls = fetchedUrls(probeSrc)
 
+describe('staking-rates route internals', () => {
+  /**
+   * The destructured bindings and the fetch list are positional: entry N of
+   * `Promise.allSettled` lands in binding N. Removing a fetch without removing
+   * its binding (or vice versa) silently shifts every later upstream onto the
+   * wrong response — and TypeScript cannot see it, because every entry has the
+   * same `PromiseSettledResult<Response>` type. That exact mistake happened
+   * while trimming the dead rungs on 2026-09-09: the Celestia fetch sat after
+   * Injective, outside the contiguous block being removed, so its binding went
+   * and its fetch stayed. Silent, and wrong in a way no test then covered.
+   */
+  // [\s\S] rather than the `s` (dotAll) flag: this tsconfig targets below es2018,
+  // where that flag is a compile error. vitest transpiles it happily, so only
+  // `tsc`/`next build` catches it — which is why both run before a push.
+  const block = /const \[\n([\s\S]*?)\n {2}\] = await Promise\.allSettled\(\[\n([\s\S]*?)\n {2}\]\)/.exec(routeSrc)
+
+  it('binds exactly as many results as it fetches', () => {
+    expect(block, 'could not locate the allSettled block').toBeTruthy()
+    const bindings = block![1].split('\n').map((l) => l.trim().replace(/,$/, '')).filter(Boolean)
+    const fetches = [...block![2].matchAll(/timedFetch\('([^']+)'/g)].map((m) => m[1])
+    expect(bindings.length).toBe(fetches.length)
+    expect(bindings.length).toBeGreaterThan(0)
+  })
+
+  it('reports on every upstream it binds', () => {
+    // The `upstreams` diagnostic table must cover each binding, or a failing
+    // source becomes invisible again — the thing #156 existed to fix.
+    const bindings = block![1].split('\n').map((l) => l.trim().replace(/,$/, '')).filter(Boolean)
+    const reported = [...routeSrc.matchAll(/\{ name: '[a-z0-9-]+',\s+res: (\w+),/g)].map((m) => m[1])
+    expect([...reported].sort()).toEqual([...bindings].sort())
+  })
+})
+
 describe('staking upstream probe mirrors the route', () => {
   it('probes a non-trivial number of upstreams', () => {
-    // Guards against a regex that silently matches nothing and passes.
-    expect(probeUrls.size).toBeGreaterThanOrEqual(17)
+    // Guards against a regex that silently matches nothing and passes. Not a
+    // fixed count: rungs get removed when a source dies (nine went on
+    // 2026-09-09), and a hardcoded total turns that into a test failure instead
+    // of the intended cleanup.
+    expect(probeUrls.size).toBeGreaterThanOrEqual(3)
   })
 
   it('probes every upstream the route fetches', () => {
@@ -89,7 +125,7 @@ describe('staking upstream probe mirrors the route', () => {
     // eye, or reading one against the other is guesswork.
     const routeNames = [...routeSrc.matchAll(/\{ name: '([a-z0-9-]+)',\s+res:/g)].map((m) => m[1])
     const probeNames = [...probeSrc.matchAll(/\{ name: '([a-z0-9-]+)', url:/g)].map((m) => m[1])
-    expect(routeNames.length).toBeGreaterThanOrEqual(17)
+    expect(routeNames.length).toBeGreaterThanOrEqual(3)
     expect([...probeNames].sort()).toEqual([...routeNames].sort())
   })
 })

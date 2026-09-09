@@ -1,9 +1,16 @@
 #!/usr/bin/env node
-// Which of the 17 staking upstreams still serve a live APR?
-// — RUN THIS ON THE OWNER'S MACHINE. Every host here is blocked at the gateway
-//   from a cloud session (all 17 answered HTTP 403 on 2026-09-09), so a cloud
-//   run produces a uniformly wrong "everything is dead" baseline. Same rule as
-//   the data audits: availability verdicts come from the owner's network.
+// Which of the staking upstreams still serve a live APR?
+// — RUN THIS ON THE OWNER'S MACHINE. Every host here is refused at the gateway
+//   from a cloud session, so a cloud run produces a uniformly wrong "everything
+//   is dead" baseline. Same rule as the data audits: availability verdicts come
+//   from the owner's network. The probe says so itself and exits 2 when it
+//   notices most hosts were blocked locally.
+//
+// The list is 8 as of 2026-09-09, down from 17: a sequential run on the owner's
+// machine found nine rungs genuinely dead (four DNS failures, two now needing a
+// Subscan key, two 404s, one serving a marketing page), and they were removed
+// from the route. This file mirrors what the route actually fetches — the drift
+// test fails if the two disagree.
 //
 // Why this exists. The 2026-09-09 owner-machine audit reported `4/51 live` for
 // /live-data/staking-rates. The route now reports each upstream's outcome, so a
@@ -38,13 +45,15 @@ const out = (s) => { if (!JSON_OUT) process.stdout.write(s) }
 const ROUTE_BUDGET_MS = 6_000
 
 // SEQUENTIAL is the default, and that is the whole correction. The route fires
-// all 17 at once and gives them a shared 6s wall-clock; the 2026-09-09
-// owner-machine audit showed the consequence — upstreams 1-5 answered and 6-17
-// all "timed out" at exactly 6s, in array order. Twelve unrelated hosts on three
-// continents do not fail in array order: that is a client-side queueing limit,
-// not twelve slow servers.
+// every upstream at once under a shared 6s wall-clock; the 2026-09-09 audit showed
+// the consequence — upstreams 1-5 answered and 6-17 all "timed out" at exactly 6s,
+// in array order. Twelve unrelated hosts on three continents do not fail in array
+// order: that was a client-side queueing limit, not twelve slow servers. The
+// sequential run that followed found the cause — four DEAD hosts whose DNS lookups
+// hung ~10s each, occupying Node's 4-thread resolver pool for longer than the whole
+// budget. Removing them was the fix.
 //
-// This probe's first version made the same mistake (Promise.all over all 17), so
+// This probe's first version made the same mistake (Promise.all over every one), so
 // it would have reproduced those false timeouts and reported them as dead hosts —
 // the misattribution it exists to prevent, one layer up. Probing one at a time
 // gives each host an uncontended attempt, so a timeout here means that host really
@@ -52,10 +61,19 @@ const ROUTE_BUDGET_MS = 6_000
 // the difference between them IS the measurement of contention.
 const TIMEOUT_MS = PARALLEL ? ROUTE_BUDGET_MS : 20_000
 const JSONH = { Accept: 'application/json' }
-const POST_EMPTY = { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }
 
 // ─── Parse helpers, mirroring the route ──────────────────────────────────────
 const num = (v) => { const n = parseFloat(v ?? ''); return Number.isFinite(n) ? n : null }
+
+/**
+ * The route's own normalisation: a value under 1 is a fraction, so scale it.
+ * Applied here too, or the probe prints a number the app never shows — the
+ * 2026-09-09 run reported marinade as "0.06" and injective as "0.04" where the
+ * route serves 6% and 4%, which reads as a live-but-wrong rate rather than a
+ * healthy one. A diagnostic that disagrees with the thing it diagnoses is worse
+ * than no diagnostic.
+ */
+const normPct = (raw) => (raw < 1 ? raw * 100 : raw)
 
 function extractNumber(data, ...keys) {
   if (data == null || typeof data !== 'object') return null
@@ -63,7 +81,7 @@ function extractNumber(data, ...keys) {
   return null
 }
 
-// ─── The 17 upstreams ────────────────────────────────────────────────────────
+// ─── The upstreams ───────────────────────────────────────────────────────────
 // `name` matches the key the route reports in its `upstreams` map, so a row
 // here and a row in `npm run audit` are the same upstream. `parse` mirrors the
 // route's own expression: this probe answers "would the SHIPPING code find a
@@ -85,38 +103,27 @@ const UPSTREAMS = [
       return typeof d === 'number' ? d : extractNumber(d, 'value', 'apy')
     } },
   { name: 'stride-cosmos-lsts', url: 'https://edge.stride.zone/api/stake-stats', init: { headers: JSONH },
-    // Three keys ride this one response; report it live only if ALL parse, and
-    // name the ones that did not — a partial is a real state, not a pass.
+    // Shape corrected 2026-09-09: { stats: [ { denom: "ATOM", strideYield, … } ] },
+    // an array keyed by denom rather than the { atom: { apr } } map this read
+    // before. Three keys ride this one response, so report live only if ALL
+    // three parse and name the ones that did not — a partial is a real state.
     parse: (d) => {
-      const got = ['atom', 'inj', 'tia'].filter((k) => num(d?.[k]?.apr) ?? num(d?.[k.toUpperCase()]?.apr))
+      const rows = Array.isArray(d?.stats) ? d.stats : []
+      const got = ['ATOM', 'INJ', 'TIA'].filter((denom) => {
+        const row = rows.find((r) => (r?.denom ?? '').toUpperCase() === denom)
+        const raw = row?.strideYield ?? row?.currentYield
+        return typeof raw === 'number' && !isNaN(raw)
+      })
       return got.length === 3 ? got.length : (got.length ? { partial: got } : null)
     } },
-  { name: 'cosmoshub-native', url: 'https://api-cosmoshub-ia.cosmostation.io/cosmos/mint/v1beta1/inflation', init: { headers: JSONH },
-    parse: (d) => num(d?.inflation) },
-  { name: 'osmosis-native', url: 'https://api-osmosis.cosmostation.io/cosmos/mint/v1beta1/inflation', init: { headers: JSONH },
-    parse: (d) => num(d?.inflation) },
-  { name: 'polkadot-native', url: 'https://polkadot.webapi.subscan.io/api/v2/scan/staking_apy', init: POST_EMPTY,
-    parse: (d) => num(d?.data?.apy) ?? num(d?.apy) },
-  { name: 'kusama-native', url: 'https://kusama.webapi.subscan.io/api/v2/scan/staking_apy', init: POST_EMPTY,
-    parse: (d) => num(d?.data?.apy) ?? num(d?.apy) },
-  { name: 'cardano-native', url: 'https://js.adapools.org/global.json', init: { headers: JSONH },
-    parse: (d) => num(d?.stats?.delegators?.roa) ?? num(d?.roa) ?? num(d?.apy) },
-  { name: 'bnb-native', url: 'https://api.binance.org/v1/staking/asset?assetName=BNB', init: { headers: JSONH },
-    parse: (d) => num(d?.data?.annualizedYield) ?? num(d?.annualizedYield) ?? num(d?.apr) },
-  { name: 'lido-matic', url: 'https://polygon.lido.fi/api/stats', init: { headers: JSONH },
-    parse: (d) => num(d?.apr) ?? num(d?.stMaticApr) ?? num(d?.apy) },
-  { name: 'tron-native', url: 'https://apilist.tronscanapi.com/api/trx/staking-info', init: { headers: JSONH },
-    parse: (d) => num(d?.data?.stakeYield) ?? num(d?.annualized_rate) ?? num(d?.apr) },
   { name: 'injective-native', url: 'https://lcd.injective.network/cosmos/mint/v1beta1/inflation', init: { headers: JSONH },
-    parse: (d) => num(d?.inflation) },
-  { name: 'celestia-native', url: 'https://api-celestia-ia.cosmostation.io/cosmos/mint/v1beta1/inflation', init: { headers: JSONH },
     parse: (d) => num(d?.inflation) },
   { name: 'near-native', url: 'https://api.nearblocks.io/v1/stats', init: { headers: JSONH },
     parse: (d) => num(d?.stats?.staking_return) ?? num(d?.staking_return) ?? num(d?.apy) },
   { name: 'defillama-yields', url: 'https://yields.llama.fi/pools', init: { headers: JSONH },
     // The load-bearing one: it alone backs ~24 of the route's live keys, so it
-    // is worth more than the other 16 put together. Report the pool count, not
-    // a rate — the route matches symbols against this list.
+    // is worth more than every other rung put together. Report the pool count,
+    // not a rate — the route matches symbols against this list.
     parse: (d) => (Array.isArray(d?.data) && d.data.length ? d.data.length : null) },
 ]
 
@@ -142,24 +149,28 @@ async function probe(u) {
     let data
     try { data = JSON.parse(text) } catch {
       return { ...base(u, ms), verdict: 'not-json', status: res.status,
-               detail: 'HTTP 200 but the body is not JSON', excerpt: excerpt(text) }
+               detail: 'HTTP 200 but the body is not JSON', excerpt: excerpt(text, true) }
     }
     let value
     try { value = u.parse(data) } catch (e) {
       return { ...base(u, ms), verdict: 'parse-threw', status: res.status,
-               detail: `parse expression threw: ${e instanceof Error ? e.message : String(e)}`, excerpt: excerpt(text) }
+               detail: `parse expression threw: ${e instanceof Error ? e.message : String(e)}`, excerpt: excerpt(text, true) }
     }
     if (value == null) {
       // The hiding failure: the URL is fine, the field moved. Keep the body.
       return { ...base(u, ms), verdict: 'no-rate', status: res.status,
                detail: 'HTTP 200 but the route\'s parse path finds no number — the FIELD moved, not the endpoint',
-               excerpt: excerpt(text) }
+               excerpt: excerpt(text, true) }
     }
     if (typeof value === 'object' && value.partial) {
       return { ...base(u, ms), verdict: 'partial', status: res.status,
-               detail: `only ${value.partial.join(', ')} parsed of atom, inj, tia`, excerpt: excerpt(text) }
+               detail: `only ${value.partial.join(', ')} parsed of atom, inj, tia`, excerpt: excerpt(text, true) }
     }
-    const reading = u.name === 'defillama-yields' ? `${value} pools` : `${Number(value).toFixed(2)}`
+    const reading = u.name === 'defillama-yields'
+      ? `${value} pools`
+      : u.name === 'stride-cosmos-lsts'
+        ? `${value}/3 denoms`
+        : `${normPct(Number(value)).toFixed(2)}%`
     // Answered, but not inside the window the route allows. Worth separating: the
     // rate exists and the parse works, so no URL or expression needs touching —
     // the route's budget is what would have to move.
@@ -182,7 +193,11 @@ async function probe(u) {
 }
 
 const base = (u, ms) => ({ name: u.name, url: u.url, ms })
-const excerpt = (t) => t.replace(/\s+/g, ' ').slice(0, 300)
+// 300 chars was too short for the one verdict family where the body IS the
+// deliverable: the 2026-09-09 run truncated near-native's response before
+// reaching any yield field, so the fix could not be written from the output that
+// exists to enable it. Error pages stay short — nobody needs 1500 chars of 404.
+const excerpt = (t, long = false) => t.replace(/\s+/g, ' ').slice(0, long ? 1500 : 300)
 
 /**
  * Is this OUR network refusing, rather than the upstream?

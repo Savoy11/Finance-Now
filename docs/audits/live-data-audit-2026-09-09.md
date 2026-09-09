@@ -162,3 +162,99 @@ audit's own request volume. Treat these as suspected collateral of the same
 bottleneck and re-check them on a quiet run before opening anything upstream —
 `risk-scores` taking 12.4s for a route that only proves a removal is the same
 smell.
+
+---
+
+## Sequential probe, same day — the cascade had a cause, and it was four dead hosts
+
+`npm run staking-upstreams` on the owner's machine, one host at a time. This is
+the run the previous two sections were waiting for, and it settles both open
+questions at once.
+
+**Six answered, all comfortably inside the route's 6s budget:**
+
+| Upstream | Time | Reading |
+|---|---|---|
+| lido-eth | 630ms | 2.18% |
+| rocketpool-eth | 606ms | 2.16% |
+| marinade-sol | 1224ms | 6% (`0.06` fraction, scaled by `normPct`) |
+| jito-sol | 453ms | 4.86% |
+| injective-native | 506ms | 4% (`0.04` fraction) |
+| defillama-yields | 418ms | 17,217 pools |
+
+**Not one upstream was slow.** The slowest healthy source answered in 1.2s
+against a 6-second allowance. So the timeout cascade was never about latency.
+
+### What actually caused "4 of 51 live"
+
+Four hosts had no DNS record at all, and three of them took **~10 seconds each**
+to fail:
+
+```
+cosmoshub-native   ~10.7s   api-cosmoshub-ia.cosmostation.io   fetch failed
+osmosis-native     ~10.6s   api-osmosis.cosmostation.io        fetch failed
+celestia-native    ~10.2s   api-celestia-ia.cosmostation.io    fetch failed
+cardano-native      0.25s   js.adapools.org                    fast NXDOMAIN
+```
+
+Node resolves DNS on the libuv threadpool, which has **four threads by default**.
+Four dead hosts, three of them hanging for ten seconds, occupy every thread for
+longer than the route's entire 6-second budget — so the upstreams queued behind
+them aborted **without a socket ever opening**. That is precisely the array-order
+signature: positions 1–5 answered, 6–17 "timed out".
+
+The dead hosts were not merely *among* the failures. They **were** the failure
+mechanism for the other twelve. Removing them is the fix for the cascade.
+
+### The nine rungs removed, each on its own evidence
+
+| Rung | Evidence | Verdict |
+|---|---|---|
+| cosmoshub, osmosis, celestia (Cosmostation LCDs) | DNS failure, three siblings together | Pattern gone, not one host |
+| cardano (adapools) | Fast NXDOMAIN | Host gone |
+| polkadot, kusama (Subscan) | HTTP 403 whose body says *"If you want to use a program to access the API, see support.subscan.io"* | **Now key-gated** — restoring means adding a keyed provider, a policy decision, so deliberately left out rather than left failing |
+| bnb (api.binance.org) | HTTP 404 | BNB Beacon Chain retired |
+| tron (tronscanapi) | HTTP 404, Jetty error page — host alive, path gone | No replacement path verified, so none guessed |
+| lido-matic (polygon.lido.fi/api/stats) | HTTP 200 serving **Lido's marketing HTML**, not JSON | API withdrawn |
+
+Every one of those coins keeps the static fallback it was already serving. None
+of these fetches was producing a rate; they were producing latency.
+
+### Stride: fixed — the shape moved, the endpoint never broke
+
+`edge.stride.zone/api/stake-stats` answered HTTP 200 throughout. It now returns
+
+```json
+{ "stats": [ { "chainId": "cosmoshub-4", "denom": "ATOM",
+               "currentYield": 0.1485, "strideYield": 0.1429, … }, … ] }
+```
+
+— an **array keyed by `denom`**, where the route read a `{ atom: { apr } }` map.
+Parsing now looks up by denom and takes `strideYield` (what a stATOM/stINJ/stTIA
+holder earns after Stride's fee) with `currentYield` as a fallback. This is the
+failure class that hides: a stale parse path and a healthy static estimate are
+indistinguishable from outside the route.
+
+### Still open
+
+- **near-native** — HTTP 200, healthy, 857ms, but the route's parse path finds
+  nothing and the probe's 300-character excerpt cut off before any yield field.
+  **The excerpt limit was the bug**, in the one verdict where the body is the
+  deliverable; it is now 1500 characters for the field-moved family. The rung is
+  kept and one more run should settle it.
+- **Subscan (polkadot/kusama)** — an API key would restore two rates. Owner's call.
+
+### Two flaws this run exposed in the probe itself
+
+1. It printed raw fields, not what the route serves: marinade as `0.06` and
+   injective as `0.04` where the app shows 6% and 4%. A diagnostic that disagrees
+   with the thing it diagnoses is worse than none. It now applies `normPct`.
+2. The 300-character excerpt truncated exactly the case it exists to serve
+   (see near-native above).
+
+### Net effect
+
+The route now fetches **8 upstreams instead of 17**, all confirmed reachable and
+sub-1.3s, with no dead host able to starve the resolver pool. Expect the next
+`npm run audit` to show materially more than 4 live keys — DeFiLlama alone backs
+~24 of them and was in the strangled block.
