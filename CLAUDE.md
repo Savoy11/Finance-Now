@@ -101,11 +101,12 @@ frontend/src/
 │       │                           #   keyless publicnode) for ETH/BNB/Polygon/AVAX; L2s stay
 │       │                           #   estimates — eth_gasPrice omits their L1 data fee
 │       ├── withdraw-fees/route.ts  # Live exchange withdrawal fees (KuCoin/HTX keyless; Bybit probed 403 — authed) — overlay-only, per-row live tags
-│       ├── staking-rates/route.ts  # Live APR from 8 upstreams onto 51 keys; the rest stay
+│       ├── staking-rates/route.ts  # Live APR from 7 upstreams onto 51 keys; the rest stay
 │       │                           #   static estimates. Returns `upstreams` — each one's
 │       │                           #   outcome — because "4/51 live" cannot say WHICH failed.
-│       │                           #   Was 17: nine rungs died and their DNS hangs were
-│       │                           #   starving the rest (2026-09-09 audit)
+│       │                           #   Was 17: ten rungs went in the 2026-09-09 audit — nine
+│       │                           #   dead, whose DNS hangs were starving the rest, plus NEAR,
+│       │                           #   whose endpoint is healthy but carries no yield at all
 │       ├── security-quotes/route.ts # Stock/ETF/fund quotes (FMP→…→Alpha Vantage→reference; ALL KEYED)
 │       ├── security-chart/route.ts  # Price history (Tiingo→FMP; both keyed)
 │       ├── security-ohlcv/route.ts  # Full OHLCV candles (Tiingo→FMP; both keyed)
@@ -669,18 +670,18 @@ prompt problem. Don't tune a prompt to compensate for a degraded feed.
 **Staking upstream triage (owner machine):**
 
 ```bash
-npm run staking-upstreams          # probe the 17 staking sources directly; no dev server
+npm run staking-upstreams          # probe the route's 7 upstreams directly; no dev server
 npm run staking-upstreams -- --json
 ```
 
 `scripts/probe-staking-upstreams.mjs` asks each of `/live-data/staking-rates`'s
 upstreams the same question the route asks, **outside** the route, and groups the
-answers by the cure — because the three cures are mutually exclusive and the route
+answers by the cure — because the cures are mutually exclusive and the route
 cannot tell them apart:
 
 | Verdict | Cure |
 |---|---|
-| `no-rate` / `partial` | endpoint is healthy, **the field moved** — fix the parse path, keep the URL. The probe prints a body excerpt, which is what makes the corrected expression writable from one run |
+| `no-rate` / `partial` | endpoint answered, but no usable number — **read the body excerpt the probe prints**, because two opposite cures land here. Either the field MOVED (reparse, keep the URL) or the endpoint carries no rate AT ALL (drop the rung). NEAR was the second: `api.nearblocks.io/v1/stats` is a healthy network-stats endpoint with no yield field in it, and this row used to assert "the field moved", which sent the reader hunting for something never there |
 | `http-error` / `unreachable` | endpoint gone — find the new URL or drop the rung |
 | `over-budget` | served a usable rate, just slower than the route's 6s — raise the budget, nothing to reparse |
 | `timeout` | in the default SEQUENTIAL mode, that host really is slow; under `--parallel` it means nothing about the host |
@@ -692,7 +693,7 @@ upstreams 1–5 answered and 6–17 "timed out", **in array order** — position
 the outcome, so that was queueing, not host health. The sequential run then found
 *why*: **four dead hosts whose DNS lookups hung ~10s each**, occupying Node's
 4-thread resolver pool for longer than the whole budget. Removing them (nine rungs
-went in total) was the fix — no healthy source was ever slower than 1.3s. The probe's first version fanned
+went in that pass; NEAR made ten across the audit) was the fix — no healthy source was ever slower than 1.3s. The probe's first version fanned
 out the same way and would have reported twelve healthy hosts as dead. `--parallel`
 reproduces the route deliberately; the difference between the two runs is the
 measurement of contention, and parallel mode names the array-order signature when it
