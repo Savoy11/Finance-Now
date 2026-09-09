@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import {
   computeNetworkFees, NETWORK_GAS, FALLBACK_PRICES, type NetworkKey,
+  BTC_TYPICAL_VBYTES, btcSatPerVbyteAssumed,
 } from '../networkFees'
 
 // W4-C9. This module is declared the single source of truth for two API layers
@@ -82,6 +83,42 @@ describe('computeNetworkFees', () => {
     const { fees, btcSatPerVbyte } = await computeNetworkFees()
     expect(btcSatPerVbyte).toBe(12)
     expect(fees.bitcoin.feeNative).toBeCloseTo((12 * 250) / 1e8, 12)
+  })
+
+  it('publishes the fallback assumption separately from the observed rate', async () => {
+    // The point of the split. On a failed live read the OBSERVED rate is null —
+    // nothing was measured — while the ASSUMED rate is still reported, so a caller
+    // showing an `estimate` fee can say what it is priced at rather than presenting
+    // a bare figure. The 2026-09-09 audit's $11.95-vs-$0.20 gap was read as a bug
+    // precisely because that assumption was invisible.
+    vi.stubGlobal('fetch', mockFetch({ prices: priceResponse(ALL_IDS), btc: null }))
+    const { fees, btcSatPerVbyte, btcSatPerVbyteAssumed } = await computeNetworkFees()
+    expect(fees.bitcoin.source).toBe('estimate')
+    expect(btcSatPerVbyte).toBeNull()
+    expect(btcSatPerVbyteAssumed).toBeGreaterThan(0)
+    // It must describe the constant actually being served, not a second guess at it.
+    expect(btcSatPerVbyteAssumed).toBeCloseTo(
+      (NETWORK_GAS.bitcoin.native * 1e8) / BTC_TYPICAL_VBYTES, 2)
+  })
+
+  it('reports the assumption even when the live read succeeds', async () => {
+    // Always present, so a caller never has to branch on its existence to explain
+    // a number — and so the two can be compared on the same run.
+    vi.stubGlobal('fetch', mockFetch({ prices: priceResponse(ALL_IDS), btc: { halfHourFee: 12 } }))
+    const { btcSatPerVbyte, btcSatPerVbyteAssumed } = await computeNetworkFees()
+    expect(btcSatPerVbyte).toBe(12)
+    expect(btcSatPerVbyteAssumed).toBeCloseTo(
+      (NETWORK_GAS.bitcoin.native * 1e8) / BTC_TYPICAL_VBYTES, 2)
+  })
+
+  it('keeps the Bitcoin fallback ABOVE a quiet-mempool rate, deliberately', () => {
+    // Guards the decision recorded in networkFees.ts, which has now been re-raised
+    // as a defect once (2026-09-09). The fallback is only ever served when the live
+    // read FAILED, and fee spikes are exactly when that happens — so it is sized for
+    // a congested mempool on purpose. A future "fix" that lowers it toward a quiet
+    // market would have users underfund withdrawals during congestion. If this
+    // assertion ever needs relaxing, that is a decision to record, not a test to edit.
+    expect(btcSatPerVbyteAssumed()).toBeGreaterThan(10)
   })
 
   it('prefers halfHourFee, falling back to fastestFee', async () => {
