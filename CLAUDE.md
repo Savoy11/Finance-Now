@@ -664,6 +664,37 @@ This matters when judging AI agent output too — agent tools read the same `/li
 the UI does, so an agent giving vague answers off a FALLBACK route is a data problem, not a
 prompt problem. Don't tune a prompt to compensate for a degraded feed.
 
+**Staking upstream triage (owner machine):**
+
+```bash
+npm run staking-upstreams          # probe the 17 staking sources directly; no dev server
+npm run staking-upstreams -- --json
+```
+
+`scripts/probe-staking-upstreams.mjs` asks each of `/live-data/staking-rates`'s 17
+upstreams the same question the route asks, **outside** the route, and groups the
+answers by the cure — because the three cures are mutually exclusive and the route
+cannot tell them apart:
+
+| Verdict | Cure |
+|---|---|
+| `no-rate` / `partial` | endpoint is healthy, **the field moved** — fix the parse path, keep the URL. The probe prints a body excerpt, which is what makes the corrected expression writable from one run |
+| `http-error` / `unreachable` | endpoint gone — find the new URL or drop the rung |
+| `timeout` | reachable but slow; the 6s budget may be the whole fix |
+| `blocked-here` | **our own egress policy refused it** — says nothing about the source |
+
+That last verdict is the point: a sandboxed run 403s on every host, and reporting
+that as "endpoint gone" would be this probe committing the misattribution it exists
+to catch. When half or more of the hosts are blocked locally the probe prints
+"THIS RUN PROVES NOTHING ABOUT THE SOURCES" and exits **2** (inconclusive) rather
+than 1 (sources broken) — a caller must be able to tell "the sources are down"
+from "you ran this in the wrong place".
+
+`lib/server/__tests__/stakingUpstreamProbe.test.ts` fails if the probe's URL list,
+upstream names, or timeout drift from the route's — a mirror is only useful while
+it matches, and a stale one looks authoritative while pointing at a source the app
+no longer uses.
+
 **⚠ Data-availability results are IP-dependent — audits MUST run on the owner's machine.**
 LunarCrush blocks datacenter IPs and the cloud gateway blocks most provider hosts outright, so a
 cloud or CI run produces a systematically wrong baseline of "which sources work." Code reading,
