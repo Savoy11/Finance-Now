@@ -30,9 +30,27 @@
 // Exit 1 = at least one did not. That is a real result, not a harness failure.
 
 const JSON_OUT = process.argv.includes('--json')
+const PARALLEL = process.argv.includes('--parallel')
 const out = (s) => { if (!JSON_OUT) process.stdout.write(s) }
 
-const TIMEOUT_MS = 6_000   // the route's own per-fetch budget — keep in step
+// The route's per-fetch budget. Kept in step with it by the drift test, and used
+// as a THRESHOLD here, not as this probe's own deadline.
+const ROUTE_BUDGET_MS = 6_000
+
+// SEQUENTIAL is the default, and that is the whole correction. The route fires
+// all 17 at once and gives them a shared 6s wall-clock; the 2026-09-09
+// owner-machine audit showed the consequence — upstreams 1-5 answered and 6-17
+// all "timed out" at exactly 6s, in array order. Twelve unrelated hosts on three
+// continents do not fail in array order: that is a client-side queueing limit,
+// not twelve slow servers.
+//
+// This probe's first version made the same mistake (Promise.all over all 17), so
+// it would have reproduced those false timeouts and reported them as dead hosts —
+// the misattribution it exists to prevent, one layer up. Probing one at a time
+// gives each host an uncontended attempt, so a timeout here means that host really
+// is slow. --parallel deliberately reproduces the route's behaviour: run both and
+// the difference between them IS the measurement of contention.
+const TIMEOUT_MS = PARALLEL ? ROUTE_BUDGET_MS : 20_000
 const JSONH = { Accept: 'application/json' }
 const POST_EMPTY = { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }
 
@@ -141,15 +159,24 @@ async function probe(u) {
       return { ...base(u, ms), verdict: 'partial', status: res.status,
                detail: `only ${value.partial.join(', ')} parsed of atom, inj, tia`, excerpt: excerpt(text) }
     }
-    return { ...base(u, ms), verdict: 'live', status: res.status, value,
-             detail: u.name === 'defillama-yields' ? `${value} pools` : `${Number(value).toFixed(2)}` }
+    const reading = u.name === 'defillama-yields' ? `${value} pools` : `${Number(value).toFixed(2)}`
+    // Answered, but not inside the window the route allows. Worth separating: the
+    // rate exists and the parse works, so no URL or expression needs touching —
+    // the route's budget is what would have to move.
+    if (!PARALLEL && ms > ROUTE_BUDGET_MS) {
+      return { ...base(u, ms), verdict: 'over-budget', status: res.status, value,
+               detail: `${reading} — but took ${(ms / 1000).toFixed(1)}s, over the route's ${ROUTE_BUDGET_MS / 1000}s budget` }
+    }
+    return { ...base(u, ms), verdict: 'live', status: res.status, value, detail: reading }
   } catch (e) {
     const ms = Date.now() - started
     const aborted = e instanceof Error && (e.name === 'AbortError' || e.name === 'TimeoutError')
     return { ...base(u, ms),
              verdict: aborted ? 'timeout' : 'unreachable',
              detail: aborted
-               ? `no answer within ${TIMEOUT_MS / 1000}s — reachable but slow; the budget may be the whole fix`
+               ? (PARALLEL
+                   ? `no answer within ${TIMEOUT_MS / 1000}s while 16 other fetches were in flight — NOT evidence about this host; re-run without --parallel`
+                   : `no answer within ${TIMEOUT_MS / 1000}s with nothing else in flight — this host really is unreachably slow`)
                : `${e instanceof Error ? e.message : String(e)} — host gone, DNS failure, or blocked from this network` }
   } finally { clearTimeout(timer) }
 }
@@ -173,21 +200,39 @@ function blockedLocally(status, body) {
 
 const ICON = { live: '🟢', partial: '🟡', 'no-rate': '🟠', 'http-error': '🔴',
                'not-json': '🔴', 'parse-threw': '🔴', timeout: '⏳', unreachable: '🔴',
-               'blocked-here': '🚧' }
+               'blocked-here': '🚧', 'over-budget': '🐢' }
 
 async function main() {
-  out(`\n${'─'.repeat(78)}\n STAKING UPSTREAM PROBE — ${UPSTREAMS.length} sources, ${TIMEOUT_MS / 1000}s budget each\n`)
+  out(`\n${'─'.repeat(78)}\n STAKING UPSTREAM PROBE — ${UPSTREAMS.length} sources, ${TIMEOUT_MS / 1000}s each\n`)
+  out(` Mode: ${PARALLEL
+    ? `PARALLEL — reproducing the route (all at once, shared ${ROUTE_BUDGET_MS / 1000}s). Timeouts here are NOT host verdicts.`
+    : 'SEQUENTIAL — one at a time, so a timeout means that host really is slow.'}\n`)
   out(` Run this on the owner's machine; a cloud run 403s on every host.\n${'─'.repeat(78)}\n\n`)
 
-  const results = await Promise.all(UPSTREAMS.map(probe))
-
-  for (const r of results) {
-    out(`${ICON[r.verdict] ?? '⚪'} ${r.verdict.padEnd(11)} ${String(r.ms ?? '').padStart(5)}ms  ${r.name.padEnd(20)} ${r.detail}\n`)
+  let results
+  if (PARALLEL) {
+    results = await Promise.all(UPSTREAMS.map(probe))
+  } else {
+    // One at a time, printing as we go: the run takes longer than the parallel
+    // version, and a probe that looks hung is a probe nobody waits out.
+    results = []
+    for (const u of UPSTREAMS) {
+      const r = await probe(u)
+      results.push(r)
+      out(`${ICON[r.verdict] ?? '⚪'} ${r.verdict.padEnd(12)} ${String(r.ms ?? '').padStart(6)}ms  ${r.name.padEnd(20)} ${r.detail}\n`)
+    }
+    out(`\n`)
   }
 
-  const live = results.filter((r) => r.verdict === 'live')
+  if (PARALLEL) {
+    for (const r of results) {
+      out(`${ICON[r.verdict] ?? '⚪'} ${r.verdict.padEnd(12)} ${String(r.ms ?? '').padStart(6)}ms  ${r.name.padEnd(20)} ${r.detail}\n`)
+    }
+  }
+
+  const live = results.filter((r) => r.verdict === 'live' || r.verdict === 'over-budget')
   const blocked = results.filter((r) => r.verdict === 'blocked-here')
-  const broken = results.filter((r) => r.verdict !== 'live' && r.verdict !== 'blocked-here')
+  const broken = results.filter((r) => !['live', 'over-budget', 'blocked-here'].includes(r.verdict))
   const judged = results.length - blocked.length
 
   out(`\n${'─'.repeat(78)}\n ${live.length}/${judged} upstreams serving a rate`)
@@ -221,10 +266,31 @@ async function main() {
         + 'If MANY rows land here at once, suspect this network before suspecting the sources.')
   group(['blocked-here'], 'BLOCKED BY THIS NETWORK — not a finding about the source',
         'Our own egress policy refused these. Re-run where they are reachable.')
-  group(['timeout'], 'SLOW — no code change may be needed',
-        'Re-run before concluding anything; a single timeout is not a verdict.')
+  group(['over-budget'], "SLOW BUT WORKING — the route's BUDGET is the fix, not the URL",
+        `These served a usable rate, just not within ${ROUTE_BUDGET_MS / 1000}s. Nothing to reparse or replace: `
+        + 'raise the budget, or stop making them compete for it.')
+  group(['timeout'], PARALLEL
+          ? 'TIMED OUT UNDER CONTENTION — not host verdicts'
+          : 'TOO SLOW EVEN UNCONTENDED — a real host problem',
+        PARALLEL
+          ? 'Re-run without --parallel before concluding anything about these. In the route these same '
+            + 'hosts fail in array order, which is queueing, not host health.'
+          : 'Each of these had the network to itself and still did not answer. This is the host.')
 
-  if (JSON_OUT) process.stdout.write(JSON.stringify({ probedAt: new Date().toISOString(), results }, null, 2) + '\n')
+  // The signature that started all this: a contiguous run of timeouts at the tail.
+  // Position deciding the outcome is queueing; hosts fail independently of order.
+  if (PARALLEL) {
+    const firstTimeout = results.findIndex((r) => r.verdict === 'timeout')
+    const tail = firstTimeout >= 0 && results.slice(firstTimeout).every((r) => r.verdict === 'timeout')
+    if (tail && results.length - firstTimeout >= 3) {
+      out(`\n⚠  ARRAY-ORDER FAILURE: everything from #${firstTimeout + 1} (${results[firstTimeout].name}) `
+        + `onward timed out — ${results.length - firstTimeout} in a row.\n`)
+      out(`   Position decided the outcome, so this is CONTENTION, not host health.\n`)
+      out(`   Re-run without --parallel for per-host truth.\n`)
+    }
+  }
+
+  if (JSON_OUT) process.stdout.write(JSON.stringify({ probedAt: new Date().toISOString(), results, mode: PARALLEL ? 'parallel' : 'sequential' }, null, 2) + '\n')
   // Exit 2 = inconclusive (this network blocked most of it), distinct from
   // exit 1 = upstreams genuinely broken. A caller must be able to tell "the
   // sources are down" from "you ran this in the wrong place".

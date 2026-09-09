@@ -53,13 +53,35 @@ describe('staking upstream probe mirrors the route', () => {
     expect(extra, `probe fetches these but the route does not:\n  ${extra.join('\n  ')}`).toEqual([])
   })
 
-  it('keeps the probe timeout in step with the route budget', () => {
-    // A probe that waits longer than the route reports a source as healthy that
-    // the route will abort on — and a shorter one invents timeouts.
+  it('knows the route budget it is measuring against', () => {
+    // The probe deliberately allows LONGER than the route when running one host at
+    // a time — that is how it learns a host's true latency instead of inheriting
+    // the route's contention. But it must still know the route's number, since
+    // that is the threshold it reports `over-budget` against. Drift there would
+    // silently move the line between "this host is too slow for the route" and
+    // "this host is fine".
     const routeBudget = /const T = ([0-9_]+)/.exec(routeSrc)?.[1]?.replace(/_/g, '')
-    const probeBudget = /const TIMEOUT_MS = ([0-9_]+)/.exec(probeSrc)?.[1]?.replace(/_/g, '')
+    const probeThreshold = /const ROUTE_BUDGET_MS = ([0-9_]+)/.exec(probeSrc)?.[1]?.replace(/_/g, '')
     expect(routeBudget).toBeTruthy()
-    expect(probeBudget).toBe(routeBudget)
+    expect(probeThreshold).toBe(routeBudget)
+  })
+
+  it('probes sequentially by default', () => {
+    // The correction the 2026-09-09 audit forced. The route fires all 17 at once
+    // under a shared budget, and upstreams 1-5 answered while 6-17 "timed out" in
+    // array order — queueing, not host health. A probe that fans out the same way
+    // reproduces those false timeouts and reports them as dead hosts, which is the
+    // misattribution this whole probe exists to prevent. Parallel must stay
+    // opt-in, and reachable only behind the flag.
+    expect(probeSrc).toContain("PARALLEL = process.argv.includes('--parallel')")
+    const fanOut = /await Promise\.all\(UPSTREAMS\.map\(probe\)\)/.test(probeSrc)
+    if (fanOut) {
+      // Allowed, but only inside the --parallel branch.
+      const guarded = /if \(PARALLEL\) \{\s*results = await Promise\.all\(UPSTREAMS\.map\(probe\)\)/.test(probeSrc)
+      expect(guarded, 'Promise.all over all upstreams must sit inside the PARALLEL branch').toBe(true)
+    }
+    // And the default path must actually await one at a time.
+    expect(probeSrc).toMatch(/for \(const u of UPSTREAMS\) \{\s*const r = await probe\(u\)/)
   })
 
   it('names upstreams the same way the route reports them', () => {

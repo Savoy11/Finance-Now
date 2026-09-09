@@ -680,12 +680,22 @@ cannot tell them apart:
 |---|---|
 | `no-rate` / `partial` | endpoint is healthy, **the field moved** — fix the parse path, keep the URL. The probe prints a body excerpt, which is what makes the corrected expression writable from one run |
 | `http-error` / `unreachable` | endpoint gone — find the new URL or drop the rung |
-| `timeout` | reachable but slow; the 6s budget may be the whole fix |
+| `over-budget` | served a usable rate, just slower than the route's 6s — raise the budget, nothing to reparse |
+| `timeout` | in the default SEQUENTIAL mode, that host really is slow; under `--parallel` it means nothing about the host |
 | `blocked-here` | **our own egress policy refused it** — says nothing about the source |
 
-That last verdict is the point: a sandboxed run 403s on every host, and reporting
-that as "endpoint gone" would be this probe committing the misattribution it exists
-to catch. When half or more of the hosts are blocked locally the probe prints
+**It probes SEQUENTIALLY by default, and that is load-bearing.** The route fires all
+17 at once under a *shared* 6s clock, and the 2026-09-09 audit showed the cost:
+upstreams 1–5 answered and 6–17 "timed out", **in array order** — position decided
+the outcome, so that is queueing, not host health. The probe's first version fanned
+out the same way and would have reported twelve healthy hosts as dead. `--parallel`
+reproduces the route deliberately; the difference between the two runs is the
+measurement of contention, and parallel mode names the array-order signature when it
+sees it.
+
+The `blocked-here` verdict is the same principle: a sandboxed run 403s on every host,
+and reporting that as "endpoint gone" would be this probe committing the
+misattribution it exists to catch. When half or more of the hosts are blocked locally the probe prints
 "THIS RUN PROVES NOTHING ABOUT THE SOURCES" and exits **2** (inconclusive) rather
 than 1 (sources broken) — a caller must be able to tell "the sources are down"
 from "you ran this in the wrong place".
