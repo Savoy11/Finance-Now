@@ -62,6 +62,24 @@ updates:
       backend-patch-minor:
         patterns: ["*"]
         update-types: [minor, patch]
+    ignore:
+      # redis 5 -> 8 has now been raised twice and declined twice. #59 was
+      # rebased onto main and CI went green; it was closed anyway, on the
+      # reasoning recorded in docs/TASK-QUEUE.md — a green run on a runtime
+      # client major mostly proves it IMPORTS, not that it BEHAVES. #97 then
+      # raised the identical bump, which is what a closed PR with no ignore
+      # rule does. Recording the decision here is the difference between
+      # deciding once and re-deciding every few weeks.
+      #
+      # MAJORS ONLY, deliberately: 5.x patch and minor updates still arrive
+      # through the group above, so a security fix inside the pinned line is
+      # not suppressed by this. `pyproject.toml` pins ^5.0.0.
+      #
+      # To revisit, delete this entry — the upgrade then wants doing on
+      # purpose, with something exercising the client against a real Redis,
+      # rather than read off a green import.
+      - dependency-name: redis
+        update-types: [version-update:semver-major]
 
   # ── GitHub Actions ────────────────────────────────────────────────────────
   # The CI logs already carry deprecation warnings for actions pinned to Node 20
