@@ -118,8 +118,6 @@ const UPSTREAMS = [
     } },
   { name: 'injective-native', url: 'https://lcd.injective.network/cosmos/mint/v1beta1/inflation', init: { headers: JSONH },
     parse: (d) => num(d?.inflation) },
-  { name: 'near-native', url: 'https://api.nearblocks.io/v1/stats', init: { headers: JSONH },
-    parse: (d) => num(d?.stats?.staking_return) ?? num(d?.staking_return) ?? num(d?.apy) },
   { name: 'defillama-yields', url: 'https://yields.llama.fi/pools', init: { headers: JSONH },
     // The load-bearing one: it alone backs ~24 of the route's live keys, so it
     // is worth more than every other rung put together. Report the pool count,
@@ -158,8 +156,14 @@ async function probe(u) {
     }
     if (value == null) {
       // The hiding failure: the URL is fine, the field moved. Keep the body.
+      // Two different causes land here and they need opposite fixes, so do not
+      // assert one: the field may have MOVED (reparse, keep the URL), or the
+      // endpoint may simply not carry a rate at all (replace or drop the rung).
+      // near-native was the second on 2026-09-09 — a healthy network-stats
+      // endpoint with no yield field in it — and this line previously said "the
+      // FIELD moved", which sent the reader hunting for something never there.
       return { ...base(u, ms), verdict: 'no-rate', status: res.status,
-               detail: 'HTTP 200 but the route\'s parse path finds no number — the FIELD moved, not the endpoint',
+               detail: 'HTTP 200, but no number the route can use — read the body: either the field moved, or this endpoint carries no rate',
                excerpt: excerpt(text, true) }
     }
     if (typeof value === 'object' && value.partial) {
@@ -274,8 +278,9 @@ async function main() {
       if (r.excerpt) out(`    body: ${r.excerpt}\n`)
     }
   }
-  group(['no-rate', 'partial', 'not-json', 'parse-threw'], 'FIELD MOVED — fix the parse path, keep the URL',
-        'The endpoint is healthy. Read the body below and correct the expression in the route.')
+  group(['no-rate', 'partial', 'not-json', 'parse-threw'], 'ANSWERED, BUT NO USABLE RATE — read the body',
+        'The endpoint is healthy. Either the field moved (fix the parse path, keep the URL) or it '
+        + 'carries no rate at all (replace or drop the rung). The body below decides which.')
   group(['http-error', 'unreachable'], 'ENDPOINT GONE — find the new URL, or drop the rung',
         'Do not leave a dead rung in place: it reads as a live source that happens to be failing. '
         + 'If MANY rows land here at once, suspect this network before suspecting the sources.')

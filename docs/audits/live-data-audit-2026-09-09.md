@@ -242,6 +242,8 @@ indistinguishable from outside the route.
   **The excerpt limit was the bug**, in the one verdict where the body is the
   deliverable; it is now 1500 characters for the field-moved family. The rung is
   kept and one more run should settle it.
+  **Settled by the fourth run — see the last section: the rung is removed, not
+  reparsed.** The endpoint carries no yield field at all.
 - **Subscan (polkadot/kusama)** — an API key would restore two rates. Owner's call.
 
 ### Two flaws this run exposed in the probe itself
@@ -279,7 +281,8 @@ Two upstreams remain imperfect, both now precisely identified:
 
 - **`near-native`** — still `reachable but no usable rate (0/1)`. Unchanged and
   expected: the parse path needs the response body, and the widened excerpt only
-  reaches the output on the next `npm run staking-upstreams`.
+  reaches the output on the next `npm run staking-upstreams`. **That run happened
+  — see the last section. The answer was not the one assumed here.**
 - **`defillama-yields`** — `partial (19/25 live)`. **New information**: DeFiLlama
   is healthy and 19 of its 25 `LLAMA_MAP` symbols match a pool; six no longer do.
   A miss there is a one-line map fix, but only once you know which symbol — so the
@@ -352,3 +355,81 @@ transaction they describe, and the BTC figures are written into the do-not-lower
 so the next reader does not re-raise this as I did. A test pins the fallback above a
 quiet-mempool rate, with the reasoning attached: if that ever needs relaxing it is a
 decision to record, not a test to edit.
+
+---
+
+## Fourth owner-machine run — NEAR: the field never moved, because it was never there
+
+`npm run staking-upstreams`, sequential, with the widened 1500-character excerpt
+that the third run's correction added. **7 of 8 upstreams live.** The one exception
+was `near-native`, and the excerpt finally showed why.
+
+### What `api.nearblocks.io/v1/stats` actually returns
+
+HTTP 200, ~850ms, well-formed JSON, and the complete payload is one object inside a
+`stats` array carrying **seventeen** fields:
+
+```
+id, total_supply, circulating_supply, avg_block_time, gas_price, nodes_online,
+near_price, near_btc_price, market_cap, volume, high_24h, high_all, low_24h,
+low_all, change_24, total_txns, tps
+```
+
+Not one of them is a yield. It is a **network-and-price statistics** endpoint —
+supply, block time, node count, market price, 24h range, transaction count, TPS.
+
+That changes the cure completely. Every previous entry in this file assumed a
+*stale parse path*: the endpoint is right, the field moved, correct the expression.
+Here there is no expression to correct. Two things follow, and both are worth
+recording because each was an assumption this run overturned:
+
+1. **The old expression could never have worked, on any past version of the
+   response.** It read `d?.stats?.staking_return`, but `stats` is an **array** —
+   so `d.stats.staking_return` is `undefined` regardless of what the objects inside
+   it contain. This rung has been serving `native_near`'s static fallback since it
+   was written, while presenting as a live source that happened to be failing.
+2. **The APY is not derivable from what is there either.** NEAR's staking return is
+   a function of the *total staked*, and the response gives only total supply and
+   circulating supply. Nothing in those seventeen fields reaches it, so there is no
+   arithmetic that rescues the rung from the same endpoint.
+
+### Decision: removed, on the same evidence standard as the nine
+
+The rung is gone — binding, fetch, parse leg and diagnostic row — with the full
+reasoning left in place as a comment at the removal site so the next reader does not
+re-add it. `native_near` keeps its static estimate, **which is exactly what it was
+already serving**; nothing regresses. The route now fetches **7 upstreams**.
+
+Leaving it in was the worse option, and for the reason recorded against the other
+nine: a dead rung reads as a live source having a bad day. It also cost a real
+fetch on every request for a number it structurally cannot produce.
+
+If a live NEAR rate is wanted later it needs a **different endpoint**, not a
+different field — validators/staking-pool data, or a provider that publishes the
+network APY directly. That is new work with its own terms review, not a repair.
+
+### The probe's own wording was part of the delay
+
+The `no-rate` verdict printed *"the FIELD moved, not the endpoint"*, and its group
+header read *"FIELD MOVED — fix the parse path, keep the URL"*. Both assert one of
+**two** possible causes as though it were established, and it sent the reader
+hunting for a field that had never existed. A diagnostic must not decide the cure
+it is being consulted about.
+
+Reworded so the body — which the probe already prints — is what decides:
+
+> **ANSWERED, BUT NO USABLE RATE — read the body.** The endpoint is healthy. Either
+> the field moved (fix the parse path, keep the URL) or it carries no rate at all
+> (replace or drop the rung). The body below decides which.
+
+Same class of error as the two the probe already guards against: filing local egress
+403s as "endpoint gone", and reporting queueing as host health. In each case the tool
+stated a conclusion its evidence did not support.
+
+### Still open, unchanged
+
+- **Subscan (polkadot/kusama)** — restoring `native_dot` / `native_ksm` means adding
+  a keyed provider. Owner's policy call, deliberately not taken here.
+- **`defillama-yields` partial (19/25)** — six `LLAMA_MAP` symbols no longer match a
+  pool. The verdict now names them, so it is a one-line map fix per symbol once
+  someone checks what each renamed to.

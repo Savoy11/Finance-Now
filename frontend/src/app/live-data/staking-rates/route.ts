@@ -193,7 +193,6 @@ export async function GET() {
     jitoRes,
     strideRes,
     injRes,
-    nearRes,
     llamaRes,
   ] = await Promise.allSettled([
     // 1. Lido stETH 7-day APR SMA
@@ -252,8 +251,15 @@ export async function GET() {
     // 15. Injective inflation (Cosmos LCD)
     timedFetch('https://lcd.injective.network/cosmos/mint/v1beta1/inflation', { headers: { Accept: 'application/json' } }),
     // (16 was Celestia — removed with the other Cosmostation LCDs above.)
-    // 17. NEAR staking APY (NEAR public stats)
-    timedFetch('https://api.nearblocks.io/v1/stats', { headers: { Accept: 'application/json' } }),
+    // (17 was NEAR — removed 2026-09-09. api.nearblocks.io/v1/stats answers HTTP
+    //  200 and is perfectly healthy, but the whole response is NETWORK stats:
+    //  supply, price, block time, nodes, txns, tps — 17 fields, not one of them a
+    //  staking yield. So this was never a stale parse path to repair; the endpoint
+    //  does not carry the number. (The old expression could not have worked in any
+    //  case: `stats` is an ARRAY, so `d.stats.staking_return` is always undefined.)
+    //  Nor is it derivable from what IS there — NEAR's APY needs the total staked,
+    //  and the response gives only total and circulating supply. native_near keeps
+    //  its static fallback. Full body in docs/audits/live-data-audit-2026-09-09.md.)
     // 18. DeFiLlama Yields — live APY for liquid-staking & restaking protocols (keyless)
     timedFetch('https://yields.llama.fi/pools', { headers: { Accept: 'application/json' } }),
   ])
@@ -369,18 +375,6 @@ export async function GET() {
     } catch { /* fallback */ }
   }
 
-  // ── 17. NEAR staking APY (nearblocks stats) ────────────────────────────────
-  if (nearRes.status === 'fulfilled' && nearRes.value.ok) {
-    try {
-      const d = await nearRes.value.json()
-      // nearblocks: { stats: { staking_ratio: "0.65", epoch_reward: "..." } }
-      // or { staking_return: 10.2 }
-      const raw = parseFloat(d?.stats?.staking_return ?? d?.staking_return ?? d?.apy ?? '')
-      const pct = clamp(raw < 1 ? raw * 100 : raw, 0, 25)
-      if (pct != null) { rates.native_near = round2(pct); sources.native_near = 'live' }
-    } catch { /* fallback */ }
-  }
-
   // ── 18. DeFiLlama Yields → liquid-staking / restaking protocol APYs ─────────
   // One keyless fetch covers ~24 protocol rows that otherwise have no live feed.
   // Runs after the protocol-specific blocks above so a DeFiLlama reading upgrades
@@ -429,7 +423,6 @@ export async function GET() {
     { name: 'jito-sol',           res: jitoRes,     keys: ['jito_sol'] },
     { name: 'stride-cosmos-lsts', res: strideRes,   keys: ['stride_atom', 'stride_inj', 'stride_tia'] },
     { name: 'injective-native',   res: injRes,      keys: ['native_inj'] },
-    { name: 'near-native',        res: nearRes,     keys: ['native_near'] },
     { name: 'defillama-yields',   res: llamaRes,    keys: LLAMA_MAP.map((m) => m.key) },
   ] as const).map(({ name, res, keys }) => {
     if (res.status === 'rejected') {
