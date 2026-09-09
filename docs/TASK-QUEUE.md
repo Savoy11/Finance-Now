@@ -2211,7 +2211,7 @@ Rebasing them onto current `main` produced the signal that was missing, and it s
 > | **#52** recharts 3.10.1 | **Merged** — `4fc6e62`, with `ac3e836` (#133) following to make the tooltip call sites version-agnostic. The table's instinct was right: the work was in the pages, not in `tsc`. |
 > | **#45** node 26-alpine | **Closed, superseded** by `936e1a8` (#135), which moved the frontend runtime to Node **24 LTS** in all three places at once — Dockerfile, CI, and `engines` — rather than the Dockerfile alone. |
 > | **#54 / #47** TypeScript 7 | **Closed 2026-09-02**, pending Next.js support for TS 7. Held together as the table required, so the two packages never drifted. |
-> | **#59** redis 8.1.0 | Superseded by **#97**, which is still open. |
+> | **#59** redis 8.1.0 | **Declined, and now recorded as declined (2026-09-09).** #97 raised the identical bump — what a closed PR with no `ignore` rule produces — and was closed as stale: three weeks old, several bases behind, never rebased, while every other open Dependabot PR had been. `.github/dependabot.yml` now ignores redis **majors only**, so 5.x patches and minors still arrive and a security fix in the pinned line is not suppressed. Reopening the question means deleting that entry and doing the upgrade deliberately — against a real Redis, not off a green import. |
 >
 > Also worth recording against the CI note below: **`ci.yml` now runs on pushes to
 > `main`** (`e3d629f`, #134), so the "no post-merge run at all" gap is closed.
