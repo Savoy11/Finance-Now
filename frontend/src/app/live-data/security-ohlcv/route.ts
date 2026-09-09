@@ -53,11 +53,23 @@ async function fetchFmpOhlcv(symbol: string, range: string): Promise<OhlcvCandle
   )
   if (!res.ok) throw new Error(`FMP ${res.status}`)
   // `adjClose` (split+dividend adjusted) is used when present so a split isn't a
-  // cliff and FMP matches Tiingo's adjusted basis. NOTE: whether the
-  // `/stable/historical-price-eod/full` payload carries adjClose varies by plan;
-  // when absent we fall back to raw close (factor 1). If a split stock still
-  // shows a cliff on the FMP path, switch to /stable/historical-price-eod/
-  // dividend-adjusted — verify live with a key (see T11 assessment).
+  // cliff and FMP matches Tiingo's adjusted basis; when absent we fall back to raw
+  // close (factor 1).
+  //
+  // ✅ VERIFIED 2026-09-09 on the owner's machine with a live FMP key: this endpoint
+  //    returns SPLIT-ADJUSTED prices, so no switch to
+  //    /stable/historical-price-eod/dividend-adjusted is needed. Two independent
+  //    checks on NVDA (10-for-1 split, 2024-06-10) over range=5Y, 1254 candles:
+  //
+  //      across the split   122.44 -> 121.00 -> 120.89 -> 121.79 -> 120.91  (no cliff)
+  //      largest 1-day move 1.24x over the whole 5 years (a split would be ~10x)
+  //      Sept 2021 close    22.48, where unadjusted NVDA traded ~$224 — i.e. /10
+  //
+  //    The earlier note said this "varies by plan" and asked for a live check. It
+  //    has now had one, on the free tier. If a split stock DOES show a cliff on a
+  //    different plan, the dividend-adjusted endpoint is still the fix — but do not
+  //    switch pre-emptively: that endpoint also applies dividend adjustment, which
+  //    would silently change the basis of every existing chart.
   const rows = await res.json() as Array<{
     date: string; open: number; high: number; low: number; close: number; volume: number; adjClose?: number
   }>

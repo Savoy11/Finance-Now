@@ -65,6 +65,11 @@ const OUT_CSV = path.join(ROOT, 'fund-fee-worksheet.csv')
 // Override with RR_INDEX_URL=<url> when none of these work — that is faster
 // than editing the script, and the error below tells the reader to do it.
 const INDEX_URLS = process.env.RR_INDEX_URL ? [process.env.RR_INDEX_URL] : [
+  // ✅ Resolved 2026-09-09 on the owner's machine. Note "riskreturn" with NO hyphen
+  //    between risk and return — that one missing character is why all five
+  //    candidates below 404'd. Found by listing the hrefs on
+  //    /data-research/sec-markets-data instead of guessing another spelling.
+  'https://www.sec.gov/data-research/sec-markets-data/mutual-fund-prospectus-riskreturn-summary-data-sets',
   'https://www.sec.gov/dera/data/mutual-fund-prospectus-risk-return-summary-data-sets',
   'https://www.sec.gov/data-research/mutual-fund-prospectus-risk-return-summary-data-sets',
   'https://www.sec.gov/data-research/sec-markets-data/mutual-fund-prospectus-risk-return-summary-data-sets',
@@ -113,6 +118,36 @@ const TAG_CANDIDATES = {
   ],
 }
 
+/**
+ * SEC class-id -> ticker, restricted to the symbols we care about.
+ *
+ * company_tickers_mf.json is the same map lib/server/nport.ts resolves fund series
+ * through, so the fee reconciliation and the holdings path cannot disagree about
+ * which registrant a ticker is. Note the filename: company_tickers_MF.json.
+ * company_tickers_mutual_fund.json — the intuitive spelling — 404s.
+ */
+async function fundClassTickerMap(wantedSymbols) {
+  const url = 'https://www.sec.gov/files/company_tickers_mf.json'
+  const res = await fetch(url, { headers: UA })
+  if (!res.ok) throw new Error(`SEC MF ticker map: HTTP ${res.status} (${url})`)
+  const payload = await res.json()
+  const fields = payload.fields ?? []
+  const iClass = fields.indexOf('classId')
+  const iSymbol = fields.indexOf('symbol')
+  if (iClass < 0 || iSymbol < 0) {
+    throw new Error(
+      `SEC MF ticker map: expected classId and symbol fields, got [${fields.join(
+)}]`
+    )
+  }
+  const map = new Map()
+  for (const row of payload.data ?? []) {
+    const sym = String(row[iSymbol]).toUpperCase()
+    if (wantedSymbols.has(sym)) map.set(String(row[iClass]), sym)
+  }
+  return map
+}
+
 async function newestDatasetUrl() {
   let html = null
   let usedIndex = null
@@ -125,7 +160,12 @@ async function newestDatasetUrl() {
       const body = await res.text()
       // A 200 that carries no archive link is the wrong page, not the right one
       // with no data — keep looking rather than reporting "no datasets found".
-      if (!/_rr\.zip/i.test(body)) continue
+      // Archives are named 2026q2_rr1.zip — with a DIGIT. This probe tested
+      // /_rr\.zip/ until 2026-09-09 and so rejected a page carrying all 63 of
+      // them, reporting "could not find the index" for a page it had just fetched
+      // successfully (HTTP 200). Kept tolerant — rr, rr1, rr2 … — so a renumbering
+      // cannot silently do this again.
+      if (!/_rr\d*\.zip/i.test(body)) continue
       html = body
       usedIndex = url
       resolvedIndexUrl = url
@@ -145,9 +185,9 @@ async function newestDatasetUrl() {
     )
   }
   log(`index: ${usedIndex}`)
-  // Archives are named like 2026q2_rr.zip. Sorted descending so the newest wins
+  // Archives are named like 2026q2_rr1.zip. Sorted descending so the newest wins
   // regardless of the page's own ordering.
-  const links = [...html.matchAll(/href="([^"]*(\d{4})q(\d)_rr\.zip)"/gi)]
+  const links = [...html.matchAll(/href="([^"]*(\d{4})q(\d)_rr\d*\.zip)"/gi)]
     .map((m) => ({ href: m[1], key: `${m[2]}q${m[3]}` }))
     .sort((a, b) => b.key.localeCompare(a.key))
   if (links.length === 0) {
@@ -366,10 +406,19 @@ async function main() {
   const nAdsh = requireCol(num.header, 'num', 'adsh')
   const nTag = requireCol(num.header, 'num', 'tag')
   const nValue = requireCol(num.header, 'num', 'value')
-  // The class ticker is what ties a fee row to a catalog symbol. Its column name
-  // is the least certain part of this script — hence requireCol's error, which
-  // prints the real columns instead of failing obscurely.
-  const nTicker = requireCol(num.header, 'num', 'ticker', 'class_ticker', 'series_ticker')
+  // ⚠ num.tsv carries NO ticker column, and its `class` column is EMPTY on all
+  //   537,808 rows. The share class lives inside `otherdims`, as "Class=C000nnnnnn;".
+  //   Verified 2026-09-09: all 5,917 NetExpensesOverAssets rows carry it, so every
+  //   fee row IS class-specific — which is what makes this safe. Joining on `series`
+  //   instead would collapse AGTHX/AGTFX/CGFAX into one series and put a Class A
+  //   load on a no-load class: precisely the wrong-fund error this script exists to
+  //   avoid.
+  //
+  //   This script assumed a `ticker` column until 2026-09-09 and aborted on every
+  //   run. The assumption was wrong, not the dataset.
+  const nOtherDims = requireCol(num.header, 'num', 'otherdims')
+  const nUom = requireCol(num.header, 'num', 'uom')
+  const CLASS_IN_DIMS = /(?:^|;)Class=(C\d{9})/
 
   // Which candidate matched each field, so the report can say where a number
   // came from rather than presenting it as anonymous truth.
@@ -393,17 +442,32 @@ async function main() {
   const wanted = new Set(catalog.map((f) => f.symbol))
   const catalogEr = new Map(catalog.map((f) => [f.symbol, f.expenseRatioPct]))
 
+  // classId -> ticker, for the catalog symbols only. Same source lib/server/nport.ts
+  // uses to resolve a fund to its series, so the two agree by construction.
+  const classToTicker = await fundClassTickerMap(wanted)
+  const unmapped = [...wanted].filter((t) => ![...classToTicker.values()].includes(t))
+  log(`class-id map: ${classToTicker.size} classes cover ${wanted.size - unmapped.length} of ${wanted.size} catalog symbols`)
+  if (unmapped.length) {
+    // Named, not counted. A fund absent from the MF map is usually not a series
+    // registrant at all (commodity pools such as USO file differently), which is a
+    // different fact from "the SEC published no fee for it".
+    log(`   not series registrants / absent from the MF map (${unmapped.length}): ${unmapped.join(', ')}`)
+  }
+
   // Pass 1 — collect RAW values. Nothing is scaled yet: the unit is a property
   // of the dataset and is decided once, below, from all of them together.
   const byTicker = new Map()
+  const uomsSeen = new Set()
   for (const r of num.rows) {
-    const ticker = r[nTicker]
+    const classId = CLASS_IN_DIMS.exec(r[nOtherDims] ?? '')?.[1]
+    if (!classId) continue
+    const ticker = classToTicker.get(classId)
     if (!ticker || !wanted.has(ticker)) continue
     const entry = byTicker.get(ticker) ?? { adsh: r[nAdsh], raw: {} }
     for (const [field, tag] of Object.entries(resolvedTag)) {
       if (tag && r[nTag] === tag && entry.raw[field] === undefined) {
         const v = rawRate(r[nValue])
-        if (v != null) entry.raw[field] = v
+        if (v != null) { entry.raw[field] = v; uomsSeen.add(String(r[nUom] || '').toLowerCase()) }
       }
     }
     byTicker.set(ticker, entry)
@@ -417,8 +481,56 @@ async function main() {
     const known = catalogEr.get(ticker)
     if (raw != null && known != null) samples.push({ raw, catalogPct: known })
   }
-  const unit = calibrateBasis(samples)
-  log(`unit: ${unit.basis} (median error ${unit.err.toFixed(4)}pp; the alternative reads ${unit.other.toFixed(4)}pp off)`)
+  // ── Unit: taken from the dataset's own `uom`, cross-checked against the catalog ──
+  //
+  // This used to be decided ONLY by calibrating against the catalog, which needed 5
+  // matched funds and aborted below that. But num.tsv declares the unit per row:
+  // `pure` means a decimal fraction (0.0112 = 1.12%), `percent` means it is already
+  // percent. A declaration beats an inference, and it removes the case where a
+  // thin quarter — funds file prospectuses annually, so one archive covers only a
+  // fraction of them — made the unit "undecidable" for data that was never
+  // ambiguous.
+  //
+  // The calibration is KEPT as a cross-check, not deleted: if both are available and
+  // they disagree, that is a real contradiction and the run stops. Neither source is
+  // trusted alone where both exist.
+  const uoms = [...uomsSeen].filter(Boolean)
+  const UOM_MULT = { pure: 100, percent: 1, pct: 1 }
+  if (uoms.length === 0) throw new Error('no uom on any matched fee row — cannot establish the unit')
+  if (uoms.length > 1) {
+    throw new Error(
+      `mixed uom across fee rows [${uoms.join(', ')}] — one scale cannot be applied to all of them. ` +
+      'Scale per row, or filter to a single uom, before trusting any figure.'
+    )
+  }
+  const declaredMult = UOM_MULT[uoms[0]]
+  if (declaredMult == null) {
+    throw new Error(
+      `unrecognised uom "${uoms[0]}" — refusing to guess a scale. Add it to UOM_MULT ` +
+      'once you have confirmed what it means in the SEC readme.'
+    )
+  }
+  const unit = { basis: uoms[0] === 'pure' ? 'decimal' : 'percent', mult: declaredMult }
+  log(`unit: ${unit.basis} — declared by the dataset (uom=${uoms[0]}), x${unit.mult}`)
+
+  let crossCheck = null
+  if (samples.length >= 5) {
+    const cal = calibrateBasis(samples)
+    crossCheck = { samples: samples.length, basis: cal.basis, medianErrorPct: Number(cal.err.toFixed(4)), alternativeErrorPct: Number(cal.other.toFixed(4)) }
+    const agrees = cal.mult === unit.mult
+    log(`   cross-check vs ${samples.length} catalog ratios: ${agrees ? 'agrees' : 'DISAGREES'} ` +
+        `(calibration says ${cal.basis}, median error ${cal.err.toFixed(4)}pp)`)
+    if (!agrees) {
+      throw new Error(
+        `uom says ${unit.basis} but calibration against ${samples.length} catalog ratios says ` +
+        `${cal.basis}. One of them is wrong and a wrong unit is a 100x error on every ` +
+        'row, so this stops here rather than picking a winner.'
+      )
+    }
+  } else {
+    log(`   cross-check skipped: only ${samples.length} catalog ratios matched this quarter ` +
+        '(need 5). The unit is still known — the dataset declares it.')
+  }
 
   // Pass 3 — apply the one decided scale everywhere.
   for (const entry of byTicker.values()) {
@@ -463,7 +575,10 @@ async function main() {
     generatedAt: new Date().toISOString(),
     source: resolvedIndexUrl,
     resolvedTags: resolvedTag,
-    unit: { basis: unit.basis, medianErrorPct: Number(unit.err.toFixed(4)), alternativeErrorPct: Number(unit.other.toFixed(4)) },
+    // The unit is DECLARED by the dataset (uom), not inferred. crossCheck is the
+    // catalog calibration when enough funds matched to run it, and null when the
+    // quarter was too thin — null means "not checked", never "checked and fine".
+    unit: { basis: unit.basis, source: `uom=${uoms[0]}`, multiplier: unit.mult, crossCheck },
     counts: {
       catalog: catalog.length,
       matched: matched.length,
