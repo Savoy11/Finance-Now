@@ -433,3 +433,122 @@ stated a conclusion its evidence did not support.
 - **`defillama-yields` partial (19/25)** — six `LLAMA_MAP` symbols no longer match a
   pool. The verdict now names them, so it is a one-line map fix per symbol once
   someone checks what each renamed to.
+
+---
+
+## Fifth owner-machine run — the NEAR fix is not in it yet, and two items moved
+
+`npm run audit`, run **before** #162 landed on the owner's machine, so
+`near-native: reachable but no usable rate (0/1)` and `6/8 upstreams` are the
+pre-merge state. After a pull that row is gone and the count reads 7. Nothing
+below depends on it.
+
+Headline: **61 REAL · 12 FALLBACK · 3 UNCONFIGURED · 1 FAIL** (was 63/9/1/2).
+
+### What is confirmed working
+
+- **The `social` withheld reason reaches the report verbatim** — *"Reddit withheld
+  — Reddit's robots.txt disallows this app's agent. Configure REDDIT_CLIENT_ID
+  (OAuth)."* That is the #156 change working end to end: the row used to guess
+  "likely rate-limited (429) from this IP" and send the reader after a network
+  fault that does not exist.
+- **`alerts` and `portfolio-history` now pass.** Both 429'd in all three earlier
+  runs. The sliding-window pacing fixed them.
+- **DeFiLlama now names its misses** — `ankr_sol`, `stader_bnb`, `pstake_bnb`,
+  `quicksilver_atom`, `pstake_atom`, `metapool_near`. Six of 25, and the whole
+  point of naming them is that the list above is actionable where "19/25" was not.
+
+### `coin-discovery` still 429s — the pacing fix was right and incomplete
+
+The run spent **40.3s** pacing and `coin-discovery` still failed on
+`page 1: HTTP 429`. Two of the three target routes were cured; this one was not,
+and the reason is in the model, not the numbers.
+
+The window counted **one slot per check**. `coin-list` issues **three** upstream
+page requests inside a single check — `fetchCoinGeckoPages(3, …)`, 250ms apart —
+so the harness believed it had spent 8 requests when it had issued 10. The
+budget was not exceeded by `coin-discovery`; it was already gone when
+`coin-discovery` asked, and `coin-discovery` took the 429 that belonged to its
+neighbour. Verified against the routes rather than inferred: `coin-list`
+hardcodes 3 pages, `coin-discovery` at the audit's default limit of 250 is
+`ceil(250/250)` = 1.
+
+**Fixed with a per-check weight**, and the pacing moved to
+`scripts/lib/coingeckoPacing.mjs` so it is pure and testable with an injectable
+clock. The previous fix was described as "verified against a fake clock over this
+run's actual check order" — accurate, but the verification was ad hoc and left no
+artifact, which is how the third model shipped looking as settled as the two
+before it. Seven tests now pin it, including a replay of this run's exact check
+order that **fails under the shipped model and passes under the weighted one** —
+the discrimination checked deliberately, since a replay asserting only "peak ≤ cap"
+passes under both and proves nothing.
+
+⚠ **It costs run time, and the amount depends on the cap — and the first table
+written here measured the wrong thing.** That table covered all fifteen
+CoinGecko-backed routes and reported 10/min as costing only +3.6s. Re-measured
+over the **eight checks that actually produced the 429**, the picture is not a
+gradient at all:
+
+| Cap | Unweighted | Weighted | Does it throttle the failing sequence? |
+|---|---|---|---|
+| 8/min | 12.6s | 62.0s | **yes** (+49.4s) |
+| 9/min | 12.6s | 60.3s | **yes** (+47.7s) |
+| **10/min (shipped)** | 12.6s | **12.6s** | **no — identical request pattern to the failing run** |
+
+The sequence weighs exactly ten, so a cap of ten fits it precisely and no wait
+ever fires. The choice is close to binary: throttle at ~60s, or don't.
+
+**The owner set 10 on 2026-09-09**, for run speed, with that consequence stated.
+Recorded plainly because the earlier framing — "+3.6s, slightly riskier" —
+understated it, and a wrong number in an audit file is worse than no number: the
+weighting is still what makes the budget *honest*, but at this cap it does not on
+its own prevent a repeat. A test pins exactly that, so nobody later reads "we
+fixed the pacing" and concludes `coin-discovery` is protected. **If it 429s again,
+move the cap first — 8 is the value the evidence supports — not the weighting.**
+
+⚠ **And the per-minute rate may not be the trigger at all.** Real CoinGecko calls
+in that window were about **seven**, not ten: the three `ohlcv` checks were served
+by Binance and spent no CoinGecko budget. Seven requests in a minute should not
+trip a keyless limiter. What *is* unusual is the shape — `coin-list` issues its
+three pages **250ms apart** (`coingeckoPages.ts`, `gapMs = 250`), and a burst that
+tight is the likelier cause than the minute-long average.
+
+That would be a fix in `lib/server/coingeckoPages.ts`, which serves real users and
+not just the harness, so it is **not** being changed on this evidence. It wants one
+owner-machine run to confirm: if `coin-discovery` 429s again at cap 10 while the
+run is nowhere near ten calls a minute, burst is the answer and the audit's cap was
+never the right lever.
+
+### The six DeFiLlama misses now have a probe
+
+Naming them was necessary and not sufficient: "STKBNB matched nothing" does not
+distinguish a **renamed token** from a **delisted pool** from a **moved chain
+label**, and those cures are mutually exclusive — the same gap the upstream probe
+was built to close. `npm run llama-symbols` fetches the pool list once and prints,
+per unmatched key, what DeFiLlama actually carries under three lenses: same project
+staking that asset, same project any asset, similar symbol any project. Nothing
+from the project at all means the rung is gone and should follow NEAR's out.
+
+Reports only, never writes. Exits **2** when DeFiLlama is unreachable rather than
+1 — confirmed here, where the sandbox 403s the host; reporting that as "the
+symbols are wrong" would be this probe committing the misattribution it exists to
+catch. **Needs one owner-machine run to resolve all six.**
+
+### Not defects, re-confirmed this run
+
+- **BTC fee on the static estimate** (`btcFeeSource=estimate`, `network-fees`
+  10.9s, `btc-stats` 10.8s). mempool.space slow again. The constant is
+  deliberately high and documented as such — see the correction in the third run's
+  section. `btcSatPerVbyteAssumed` now publishes the assumption.
+- **Binance.US on the three `ohlcv` rows** — a US geo-block, the steady state for
+  this owner, not a degraded run.
+- **Macro quotes, `security-returns`, `stock-universe`, `stock-outliers`** — all
+  key-gated and honestly reported. The fix is a key, not code.
+- **`fund-holdings` SPY from catalog** — SPY is a UIT and files no N-PORT.
+
+### Still open
+
+- **Subscan (polkadot/kusama)** — a keyed provider would restore `native_dot` /
+  `native_ksm`. Owner's policy call, unchanged.
+- **The six DeFiLlama symbols** — one `npm run llama-symbols` away.
+
