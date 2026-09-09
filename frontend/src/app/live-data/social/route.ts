@@ -23,6 +23,12 @@ export interface SocialSignal {
   upvoteRatio?: number
 }
 
+export interface SocialWithheld {
+  id: string
+  name: string
+  reason: string
+}
+
 export interface AssetSentiment {
   asset: string
   label: string
@@ -127,6 +133,11 @@ export async function GET(req: NextRequest) {
       : 0
   }
 
+  const withheld: SocialWithheld[] = providers.flatMap((p) => {
+    const reason = withheldReason(p)
+    return reason === null ? [] : [{ id: p.id, name: p.name, reason }]
+  })
+
   return NextResponse.json({
     ok: true,
     signals: pagedSignals,
@@ -135,21 +146,54 @@ export async function GET(req: NextRequest) {
     // list every CONFIGURED provider — including ones whose fetch rejected — so
     // the UI credited sources the reader could not find anywhere in the feed.
     providers: providers.filter((p) => contributed.has(p.id)).map((p) => ({ id: p.id, name: p.name })),
+    ...(withheld.length ? { withheld } : {}),
   })
 }
 
 // ─── Dispatcher ───────────────────────────────────────────────────────────────
 
-async function fetchFromProvider(provider: AnyActiveProvider, asset: string, limit: number, extraSubs: string[] = []): Promise<SocialSignal[]> {
-  const key = provider.config.apiKey
+/**
+ * Why a configured provider cannot be read right now, or null if it can be.
+ *
+ * A provider that returns nothing FOR A REASON is not the same as one that had
+ * nothing to report, and an empty array cannot tell the two apart. The audit
+ * harness guessed at the difference and got it wrong: it blamed "Reddit RSS
+ * likely rate-limited from this IP" for what is actually a deliberate robots
+ * decision, sending the reader to look for a network fault that does not exist
+ * and cannot clear on its own. Naming the reason is what makes an empty feed
+ * diagnosable — same argument as the `providers` list below.
+ */
+function withheldReason(provider: AnyActiveProvider): string | null {
   switch (provider.id) {
     // Reddit's robots.txt disallows our agent (observed 2026-08-29). Gated
     // rather than deleted: registering OAuth credentials is the supported way
     // back in, and the entry in sourceTerms.ts names the variable that does it.
-    case 'reddit':    return robotsPermits('https://www.reddit.com/') ? fetchReddit(asset, limit, extraSubs) : []
+    case 'reddit':
+      return robotsPermits('https://www.reddit.com/')
+        ? null
+        : "Reddit's robots.txt disallows this app's agent. Configure REDDIT_CLIENT_ID (OAuth) to read it through the supported path."
+    // Both carry social VOLUME, which is key-gated. Without a key the signal is
+    // absent, not zero — so say so rather than letting it read as "no chatter".
+    case 'lunarcrush':
+    case 'santiment':
+      return provider.config.apiKey
+        ? null
+        : `${provider.name} requires an API key (Integrations → Data Providers). Its social volume is absent, not zero.`
+    default:
+      return null
+  }
+}
+
+async function fetchFromProvider(provider: AnyActiveProvider, asset: string, limit: number, extraSubs: string[] = []): Promise<SocialSignal[]> {
+  if (withheldReason(provider) !== null) return []
+  const key = provider.config.apiKey
+  switch (provider.id) {
+    case 'reddit':     return fetchReddit(asset, limit, extraSubs)
+    // `key` is non-null whenever withheldReason() cleared these; the check is
+    // what narrows the type, not a second policy decision.
     case 'lunarcrush': return key ? fetchLunarCrush(key, asset, limit) : []
     case 'santiment':  return key ? fetchSantiment(key, asset, limit) : []
-    default:          return []
+    default:           return []
   }
 }
 

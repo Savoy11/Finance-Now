@@ -101,7 +101,9 @@ frontend/src/
 │       │                           #   keyless publicnode) for ETH/BNB/Polygon/AVAX; L2s stay
 │       │                           #   estimates — eth_gasPrice omits their L1 data fee
 │       ├── withdraw-fees/route.ts  # Live exchange withdrawal fees (KuCoin/HTX keyless; Bybit probed 403 — authed) — overlay-only, per-row live tags
-│       ├── staking-rates/route.ts  # Live APR from Lido, Marinade, Jito
+│       ├── staking-rates/route.ts  # Live APR from 17 upstreams onto 51 keys; the rest stay
+│       │                           #   static estimates. Returns `upstreams` — each one's
+│       │                           #   outcome — because "4/51 live" cannot say WHICH failed
 │       ├── security-quotes/route.ts # Stock/ETF/fund quotes (FMP→…→Alpha Vantage→reference; ALL KEYED)
 │       ├── security-chart/route.ts  # Price history (Tiingo→FMP; both keyed)
 │       ├── security-ohlcv/route.ts  # Full OHLCV candles (Tiingo→FMP; both keyed)
@@ -663,9 +665,16 @@ the UI does, so an agent giving vague answers off a FALLBACK route is a data pro
 prompt problem. Don't tune a prompt to compensate for a degraded feed.
 
 **⚠ Data-availability results are IP-dependent — audits MUST run on the owner's machine.**
-Binance.com is geo-blocked here (451), and Reddit and LunarCrush block datacenter IPs, so a
+LunarCrush blocks datacenter IPs and the cloud gateway blocks most provider hosts outright, so a
 cloud or CI run produces a systematically wrong baseline of "which sources work." Code reading,
 design, and spec work are fine remotely; "which data sources actually work" is not.
+
+Two caveats that are **not** cloud artifacts, so an owner-machine run does not clear them
+(2026-09-09, `docs/audits/live-data-audit-2026-09-09.md`): **Binance.com's 451** is a US
+geo-block, so for a US owner the Binance.US fallback is the steady state, not a degraded run;
+and **Reddit's absence is our own robots gate**, not a rate limit — it lifts only with
+`REDDIT_CLIENT_ID`. Both were previously filed under "datacenter IP", which sent debugging
+after a network fault that was never there.
 
 ---
 

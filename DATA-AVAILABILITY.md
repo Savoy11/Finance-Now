@@ -133,9 +133,13 @@ what is — and is not — backed by real data, with no fabricated figures prese
 >    `scripts/test-live-data.mjs`, so the doc gap and the harness gap were the same gap.
 >    Macro coverage was added 2026-07-29 (4 checks) and the evening run exercised them.
 >
-> Statuses remain IP-dependent (see CLAUDE.md) — this run is from the owner's network, where
-> Binance.com is geo-blocked and Reddit rate-limits. A datacenter run produces different,
-> systematically worse answers.
+> Statuses remain IP-dependent (see CLAUDE.md) — this run is from the owner's network. A
+> datacenter run produces different, systematically worse answers.
+>
+> But two of the gaps below are **permanent, not IP artifacts**, so a re-run will not clear them
+> (2026-09-09): Binance.com's 451 is a **US geo-block**, so the Binance.US fallback is the steady
+> state for this owner; and Reddit is absent because **its robots.txt disallows our agent** and we
+> honour that — it is not a rate limit, and it lifts only with `REDDIT_CLIENT_ID`.
 
 ## Legend
 
@@ -157,7 +161,7 @@ Several providers geo-block or bot-block, and the results differ by IP. Verified
 
 | Upstream | Result | Consequence |
 |----------|--------|-------------|
-| `api.binance.com` | **451** (geo-blocked) | All crypto OHLCV silently served by Binance.US instead |
+| `api.binance.com` | **451** (US geo-block — permanent, not an IP artifact) | All crypto OHLCV silently served by Binance.US instead |
 | `api.binance.us` | 200 | The de-facto crypto candle source |
 | `fapi.binance.com` (futures) | **451** | `funding-rates` uses OKX instead |
 | `api.okx.com` | 200 | Funding rates + open interest |

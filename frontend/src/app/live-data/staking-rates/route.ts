@@ -6,6 +6,15 @@ export interface StakingRatesResponse {
   ok: boolean
   rates: Partial<Record<string, number>>  // provider key → APR %
   sources: Partial<Record<string, 'live' | 'estimate'>>
+  /**
+   * Per-upstream outcome, keyed by upstream name. Every leg below deliberately
+   * swallows its own failure and keeps the static fallback — right for the DATA,
+   * since one dead endpoint must not 500 the route — but it left the route
+   * undiagnosable: a run reporting "4 of 51 live" cannot distinguish one dead
+   * endpoint from seventeen, and the owner has no way in from the outside.
+   * This says which upstream failed and how.
+   */
+  upstreams: Record<string, string>
   updatedAt: string
 }
 
@@ -188,7 +197,6 @@ export async function GET() {
     dotRes,
     ksmRes,
     adaRes,
-    avaxRes,
     bnbRes,
     maticRes,
     trxRes,
@@ -222,8 +230,9 @@ export async function GET() {
     timedFetch('https://kusama.webapi.subscan.io/api/v2/scan/staking_apy', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }),
     // 10. Cardano staking yield (adapools public)
     timedFetch('https://js.adapools.org/global.json', { headers: { Accept: 'application/json' } }),
-    // 11. Avalanche staking APY (Avalanche public endpoint)
-    timedFetch('https://api.avax.network/ext/info', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'info.getNodeVersion', params: {} }) }),
+    // 11. (was Avalanche) — removed. api.avax.network/ext/info returns a node
+    //     version, never an APY, so the response was fetched and discarded on
+    //     every request. See leg 11 below: AVAX keeps its static fallback.
     // 12. BNB staking APR (BSC staking info)
     timedFetch('https://api.binance.org/v1/staking/asset?assetName=BNB', { headers: { Accept: 'application/json' } }),
     // 13. Polygon staking APR (Lido stMATIC)
@@ -375,8 +384,11 @@ export async function GET() {
     } catch { /* fallback */ }
   }
 
-  // ── 11. Avalanche — info endpoint doesn't give APY; skip, keep fallback ────
-  // AVAX staking APY is stable around 7–9%; no reliable public API without wallet
+  // ── 11. Avalanche — no live source; keeps its static fallback ──────────────
+  // AVAX staking APY is stable around 7–9%; no reliable public API without a
+  // wallet. The api.avax.network probe that used to sit in the fetch list above
+  // only ever returned a node version, so it was removed rather than left
+  // looking like a live rung that had failed.
 
   // ── 12. BNB staking ────────────────────────────────────────────────────────
   if (bnbRes.status === 'fulfilled' && bnbRes.value.ok) {
@@ -483,10 +495,55 @@ export async function GET() {
   // ── Bitcoin yield: Babylon native has no live public API; keep fallback ─────
   // babylon_btc is a nascent protocol with variable TVL-based yield; static fallback is accurate
 
+  // ── Upstream diagnostics ───────────────────────────────────────────────────
+  // `keys` lists only the keys an upstream is meant to make LIVE — never the
+  // ones derived from it by an offset (ankr/coinbase/kraken/binance off Lido,
+  // native_sol, native_matic), which are always estimates by design. So an
+  // upstream reported as reachable-but-unusable really did fail to produce a
+  // reading, rather than merely declining to fabricate neighbours.
+  const upstreams = Object.fromEntries(([
+    { name: 'lido-eth',           res: lidoRes,     keys: ['lido_eth'] },
+    { name: 'rocketpool-eth',     res: rocketRes,   keys: ['rocketpool_eth'] },
+    { name: 'marinade-sol',       res: marinadeRes, keys: ['marinade_sol'] },
+    { name: 'jito-sol',           res: jitoRes,     keys: ['jito_sol'] },
+    { name: 'stride-cosmos-lsts', res: strideRes,   keys: ['stride_atom', 'stride_inj', 'stride_tia'] },
+    { name: 'cosmoshub-native',   res: cosmosRes,   keys: ['native_atom'] },
+    { name: 'osmosis-native',     res: osmosisRes,  keys: ['osmo_native'] },
+    { name: 'polkadot-native',    res: dotRes,      keys: ['native_dot'] },
+    { name: 'kusama-native',      res: ksmRes,      keys: ['native_ksm'] },
+    { name: 'cardano-native',     res: adaRes,      keys: ['native_ada'] },
+    { name: 'bnb-native',         res: bnbRes,      keys: ['native_bnb'] },
+    { name: 'lido-matic',         res: maticRes,    keys: ['lido_matic'] },
+    { name: 'tron-native',        res: trxRes,      keys: ['native_trx'] },
+    { name: 'injective-native',   res: injRes,      keys: ['native_inj'] },
+    { name: 'celestia-native',    res: tiaRes,      keys: ['native_tia'] },
+    { name: 'near-native',        res: nearRes,     keys: ['native_near'] },
+    { name: 'defillama-yields',   res: llamaRes,    keys: LLAMA_MAP.map((m) => m.key) },
+  ] as const).map(({ name, res, keys }) => {
+    if (res.status === 'rejected') {
+      // An aborted fetch is the 6s timeout, not a refusal — distinguishing them
+      // is the difference between "this host is slow from here" and "this host
+      // is gone", and those have opposite fixes.
+      const err: unknown = res.reason
+      const name_ = err instanceof Error ? err.name : ''
+      if (name_ === 'AbortError' || name_ === 'TimeoutError') return [name, `timeout after ${T / 1000}s`]
+      return [name, `unreachable: ${err instanceof Error ? err.message : String(err)}`.slice(0, 120)]
+    }
+    if (!res.value.ok) return [name, `http ${res.value.status}`]
+    const landed = keys.filter((k) => sources[k] === 'live')
+    if (landed.length === keys.length) return [name, `live (${landed.length}/${keys.length})`]
+    if (landed.length > 0) return [name, `partial (${landed.length}/${keys.length} live)`]
+    // HTTP 200 whose body the parser could not turn into a rate: a changed
+    // response shape or a symbol that no longer matches. This is the failure
+    // that used to be indistinguishable from a healthy estimate.
+    return [name, `reachable but no usable rate (0/${keys.length})`]
+  })) as Record<string, string>
+
   return NextResponse.json({
     ok: true,
     rates,
     sources,
+    upstreams,
     updatedAt: new Date().toISOString(),
   } satisfies StakingRatesResponse)
 }

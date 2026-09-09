@@ -285,7 +285,18 @@ const tests = [
     if (notLive.length) {
       return fallback(`${live.length}/${keys.length} live — but advertised-live rates are estimates: ${notLive.map((k) => `${k}=${sources[k]}`).join(', ')}`)
     }
-    return `${live.length}/${keys.length} live APRs`
+    // "4/51 live" on its own is not actionable: most of those 51 are fallback
+    // keys that are estimates BY DESIGN, so the number cannot say whether the
+    // live rungs are healthy. The route reports each upstream's outcome, so
+    // name the ones that failed and how — a dead endpoint, a 6s timeout and a
+    // changed response shape have three different fixes.
+    const up = j.upstreams ?? {}
+    const broken = Object.entries(up).filter(([, v]) => !/^live \(/.test(v))
+    const detail = `${live.length}/${keys.length} live APRs; ${Object.keys(up).length - broken.length}/${Object.keys(up).length} upstreams healthy`
+    if (broken.length) {
+      return fallback(`${detail} — ${broken.map(([k, v]) => `${k}: ${v}`).join(', ')}`)
+    }
+    return detail
   }},
 
   { group: 'crypto/staking', path: '/live-data/staking-discovery', name: 'staking-discovery', check: (j) => {
@@ -306,17 +317,30 @@ const tests = [
     return `${arr.length} articles from ${(j.providers ?? []).length} providers`
   }},
 
-  { group: 'crypto/news', path: '/live-data/social?coin=btc', name: 'social (reddit RSS)', check: (j) => {
+  { group: 'crypto/news', path: '/live-data/social?coin=btc', name: 'social', check: (j) => {
     if (!j.ok) throw new Error(j.error ?? 'not ok')
     const sig = j.signals ?? []
-    if (sig.length === 0) return empty('0 signals — Reddit RSS likely rate-limited (429) from this IP')
-    const platforms = [...new Set(sig.map((s) => s.platform))]
-    // Reddit's JSON API 403s server-side; only the Atom (.rss) feeds work, and
-    // they 429 aggressively. Partial coverage is the norm, not a bug.
-    if (!platforms.includes('reddit')) {
-      return fallback(`${sig.length} signals but no Reddit — RSS feeds rate-limited`)
+    // The route names every provider it declined to read, and why, in `withheld`.
+    // Read that instead of guessing the cause: this row used to report "Reddit
+    // RSS likely rate-limited (429) from this IP" for what is in fact Reddit's
+    // robots gate — a deliberate decision that no amount of re-running clears.
+    // An IP-dependent guess is the one thing an owner-machine audit must not do.
+    const withheld = j.withheld ?? []
+    const why = withheld.map((w) => `${w.name} withheld — ${w.reason}`).join(' | ')
+    if (sig.length === 0) {
+      return withheld.length
+        ? unconfigured(`0 signals; every provider withheld. ${why}`)
+        : empty('0 signals, and no provider reported a reason')
     }
-    return `${sig.length} signals via ${platforms.join(', ')}`
+    const platforms = [...new Set(sig.map((s) => s.platform))]
+    if (!platforms.includes('reddit')) {
+      const reddit = withheld.find((w) => w.id === 'reddit')
+      // Distinguish "we chose not to fetch it" from "we fetched and got nothing".
+      return reddit
+        ? unconfigured(`${sig.length} signals via ${platforms.join(', ')}; ${reddit.name} withheld — ${reddit.reason}`)
+        : fallback(`${sig.length} signals but no Reddit — fetched and returned nothing (RSS feeds 429 aggressively)`)
+    }
+    return `${sig.length} signals via ${platforms.join(', ')}${withheld.length ? ` (${why})` : ''}`
   }},
 
   { group: 'crypto/video', path: '/live-data/videos', name: 'videos', check: (j) => {
