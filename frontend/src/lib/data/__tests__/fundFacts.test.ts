@@ -56,14 +56,50 @@ describe('fund comparison — the catalog has no duration or credit field', () =
 })
 
 describe('fund comparison — an unverified load is flagged, never silently priced', () => {
-  it('a fund whose load rate is unverified reports unverifiedLoad', () => {
-    const withUnverified = FUND_CATALOG.filter((f) => {
+  it('flags an unverified load and refuses to price it', () => {
+    // Tested against a SYNTHETIC fund, not the catalog.
+    //
+    // AGTHX used to be the live example, and on 2026-09-10 its 5.75% front load
+    // was verified from the SEC Risk/Return Summary — leaving the catalog with
+    // ZERO unverified loads. Anchoring this rule to catalog contents would
+    // therefore have made it untestable the moment the data improved, and a
+    // filter over an empty set passes vacuously: the rule would read as covered
+    // while asserting nothing.
+    //
+    // The rule still matters — the next load-bearing fund added will have a
+    // `kind` before anyone reads its prospectus — so it is exercised directly.
+    const unverified = {
+      symbol: 'TEST-UNVERIFIED',
+      name: 'Synthetic load-bearing fund',
+      type: 'mutual' as const,
+      issuer: 'Test Issuer',
+      category: 'us-large-blend' as const,
+      expenseRatioPct: 0.5,
+      aumB: 1,
+      referencePrice: 10,
+      yieldPct: null,
+      inceptionYear: 2000,
+      indexTracked: null,
+      topHoldings: [],
+      website: '',
+      description: '',
+      salesCharge: { kind: 'front' as const },   // exists, rate NOT read
+    }
+    expect(fundSalesCharge(unverified)).toMatchObject({ kind: 'front' })
+    expect(fundSalesCharge(unverified)!.maxPct).toBeUndefined()
+
+    const impact = feeImpact(unverified, DEFAULT_FEE_IMPACT_PARAMS)!
+    expect(impact.unverifiedLoad, 'an unstated rate must be flagged').toBe(true)
+    expect(impact.includesLoad, 'an unstated rate must never enter the maths').toBe(false)
+  })
+
+  it('holds the same rule over whatever the catalog currently contains', () => {
+    // Complements the synthetic case: if a real unverified-load fund is ever
+    // added, it must obey the rule too. Vacuous today by design — the assertion
+    // above is what guarantees the rule is actually exercised.
+    for (const f of FUND_CATALOG) {
       const c = fundSalesCharge(f)
-      return c && c.maxPct == null
-    })
-    // AGTHX is the live example this rule exists for.
-    expect(withUnverified.length).toBeGreaterThan(0)
-    for (const f of withUnverified) {
+      if (!c || c.maxPct != null) continue
       const impact = feeImpact(f, DEFAULT_FEE_IMPACT_PARAMS)!
       expect(impact.unverifiedLoad, `${f.symbol} should flag its unverified load`).toBe(true)
       expect(impact.includesLoad, `${f.symbol} must not price an unverified load`).toBe(false)

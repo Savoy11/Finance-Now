@@ -197,8 +197,27 @@ async function newestDatasetUrl() {
       'the filename pattern before assuming the data is gone.'
     )
   }
+  // RR_QUARTER pins a specific archive. A fund appears ONLY in the quarter it filed
+  // its prospectus, and most file annually — so the newest archive covers roughly a
+  // quarter of the catalog and says nothing about the rest. Without this, a fund that
+  // files in Q4 is unreachable for nine months of the year, which is what left AGTHX
+  // (T-073) unverified after the 2026-09-09 run reconciled only 27 of 126.
+  const pinned = (process.env.RR_QUARTER ?? '').trim().toLowerCase()
+  if (pinned) {
+    const hit = links.find((l) => l.key === pinned)
+    if (!hit) {
+      throw new Error(
+        `RR_QUARTER=${pinned} is not published. Available: ` +
+        `${links.slice(0, 8).map((l) => l.key).join(', ')}` +
+        `${links.length > 8 ? `, +${links.length - 8} older` : ''}`
+      )
+    }
+    log(`dataset: ${hit.key} (pinned via RR_QUARTER)`)
+    return hit.href.startsWith('http') ? hit.href : `https://www.sec.gov${hit.href}`
+  }
+
   const first = links[0].href
-  log(`newest dataset: ${links[0].key}`)
+  log(`newest dataset: ${links[0].key} (${links.length} quarters published; set RR_QUARTER=YYYYqN to pin one)`)
   return first.startsWith('http') ? first : `https://www.sec.gov${first}`
 }
 
@@ -332,7 +351,10 @@ async function main() {
 
   // Cached in a stable location: the archive is large and re-downloading it to
   // re-check a column name is wasteful. Delete the folder to force a fresh pull.
-  const work = path.join(os.tmpdir(), 'fn-rr-cache')
+  // Cache per quarter: without the suffix a pinned run would silently reuse whichever
+  // archive was downloaded first and reconcile the wrong three months.
+  const q = (process.env.RR_QUARTER ?? '').trim().toLowerCase()
+  const work = path.join(os.tmpdir(), q ? `fn-rr-cache-${q}` : 'fn-rr-cache')
   fs.mkdirSync(work, { recursive: true })
   const zip = path.join(work, 'rr.zip')
 

@@ -180,11 +180,55 @@ describe('the AGTHX catalog entry', () => {
     expect(fundTradingRestriction(agthx)).toMatch(/sales load/i)
   })
 
-  it('carries NO invented rate — the prospectus has not been read', () => {
-    // Guards the never-from-memory rule. If someone adds a rate they must also
-    // add source + verifiedAt, which the next test enforces catalog-wide.
+  it('carries the VERIFIED front load, read from the filing on 2026-09-10', () => {
+    // This test used to assert maxPct was UNDEFINED, guarding the
+    // never-from-memory rule while the prospectus was unread. It has now been
+    // read — not from memory, and not from a website: the rate comes from the
+    // SEC's own Risk/Return Summary dataset for 2025q4, tag
+    // MaximumSalesChargeImposedOnPurchasesOverOfferingPrice, on the 485BPOS
+    // that Growth Fund of America files every October (CIK 44201, class
+    // C000025064). `npm run fund-fees` with RR_QUARTER=2025q4 reproduces it.
+    //
+    // The rule it guarded is unchanged and still enforced catalog-wide by the
+    // next test: a stated rate MUST carry source + verifiedAt.
     const agthx = FUND_CATALOG.find((f) => f.symbol === 'AGTHX')!
-    expect(agthx.salesCharge?.maxPct).toBeUndefined()
+    expect(agthx.salesCharge?.maxPct).toBe(5.75)
+    expect(agthx.salesCharge?.source).toMatch(/Risk.Return Summary/i)
+    expect(agthx.salesCharge?.verifiedAt).toBe('2026-09-10')
+  })
+
+  it('now feeds the load into the projection, doubling the 10-year cost', () => {
+    // The point of verifying it. An unverified load is disclosed in words and
+    // EXCLUDED from the maths, so until today the Fee Drag Analyzer showed
+    // AGTHX's cost as the expense ratio alone.
+    //
+    // Measured 2026-09-10 on $10k at 7% vs a 3bps benchmark:
+    //   10y   $1,071 -> $2,137   (2.00x)
+    //   30y  $11,700 -> $15,365  (1.31x)
+    const agthx = FUND_CATALOG.find((f) => f.symbol === 'AGTHX')!
+    const load = agthx.salesCharge!.maxPct!
+    const cost = (years: number, l = 0) => {
+      const pts = computeFeeDrag(10_000, agthx.expenseRatioPct, years, 7, 0.03, l)
+      return pts[pts.length - 1].feesPaid
+    }
+    expect(cost(10, load) / cost(10)).toBeGreaterThan(1.9)
+    expect(cost(10, load) / cost(10)).toBeLessThan(2.1)
+  })
+
+  it('shows a front load mattering MOST over a short horizon', () => {
+    // The counter-intuitive half, and the reason the analyzer models the load
+    // separately rather than folding it into an annual figure: a front load is
+    // charged ONCE, so its share of total cost shrinks as expense-ratio
+    // compounding takes over. It is worst for the investor who sells early —
+    // the opposite of how an expense ratio behaves.
+    const agthx = FUND_CATALOG.find((f) => f.symbol === 'AGTHX')!
+    const load = agthx.salesCharge!.maxPct!
+    const ratio = (years: number) => {
+      const withL = computeFeeDrag(10_000, agthx.expenseRatioPct, years, 7, 0.03, load)
+      const erOnly = computeFeeDrag(10_000, agthx.expenseRatioPct, years, 7, 0.03)
+      return withL[withL.length - 1].feesPaid / erOnly[erOnly.length - 1].feesPaid
+    }
+    expect(ratio(10)).toBeGreaterThan(ratio(30))
   })
 })
 
