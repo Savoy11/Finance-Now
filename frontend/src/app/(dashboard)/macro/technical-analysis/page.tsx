@@ -230,6 +230,7 @@ function ChartTab() {
             </div>
           ) : (
             <LiveUnavailable
+              reason="needs-api-key"
               className="my-12"
               message={`No OHLCV history came back for ${symbol}. Macro contracts chart through the same keyed provider ladder as equities, and coverage of futures, FX pairs and yield indices is narrower than it was before the keyless source was withdrawn on terms grounds — many macro symbols are simply not carried. Front-month futures and thin FX crosses can also gap over holidays.`}
             />

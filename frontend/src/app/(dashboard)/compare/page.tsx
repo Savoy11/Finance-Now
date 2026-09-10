@@ -418,7 +418,7 @@ function CompareInner() {
             connectNulls
           />
         ) : (
-          <LiveUnavailable message="No live history source is reachable for the selected symbols. Crypto history is keyless (CoinGecko); stock, fund and macro history now needs a Tiingo or FMP key, since the keyless source was withdrawn on terms grounds." />
+          <LiveUnavailable reason="needs-api-key" message="No live history source is reachable for the selected symbols. Crypto history is keyless (CoinGecko); stock, fund and macro history now needs a Tiingo or FMP key, since the keyless source was withdrawn on terms grounds." />
         )}
         {!loading && chartData.rows.length > 1 && missing.length > 0 && (
           <p className="mt-3 rounded border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[11px] leading-relaxed text-amber-300">

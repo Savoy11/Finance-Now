@@ -101,6 +101,7 @@ export function PriceChartCard({ symbol, valueFormat = 'usd' }: {
         </>
       ) : (
         <LiveUnavailable
+          reason="needs-api-key"
           message={valueFormat === 'plain'
             ? 'No live history source is reachable. Price history now needs an API key — the keyless source was withdrawn on terms grounds. For macro instruments only an FMP key helps (Tiingo does not carry futures, FX pairs, or yield indices); add one on the Integrations page.'
             : 'No live history source is reachable. Price history now needs an API key — the keyless source was withdrawn on terms grounds. Add a Tiingo or FMP key on the Integrations page.'}

@@ -681,7 +681,7 @@ function NewsTab({ assetId }: { assetId: string }) {
 
   if (noProviders) {
     return (
-      <LiveUnavailable message="No news sources are configured. Add a news source in Integrations to see live news for this asset." />
+      <LiveUnavailable reason="needs-api-key" message="No news sources are configured. Add a news source in Integrations to see live news for this asset." />
     )
   }
 
