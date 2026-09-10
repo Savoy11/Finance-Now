@@ -86,6 +86,14 @@ import type { SectorId } from './equityCatalog'
 //                        fee is its main drawback. Same class of error as USO
 //                        above, roughly twice the size.
 //
+//   CPER  0.65 -> 0.88   WRONG, corrected. Identical to UNG: Management Fees
+//                        0.65% + Other Fund Expenses 0.23% = 0.88% total, and the
+//                        catalog held the management fee. Two of USCF's six funds
+//                        had this; USO, USL, BNO and UGA were already correct.
+//
+//   IBIT  0.25 vs 0.12   LEFT ALONE. 0.25% is the contractual Sponsor's Fee and
+//                        0.12% a temporary waiver. Waivers are revocable, so the
+//                        standing rate is the durable figure to publish.
 //   DBC   0.87 vs 0.85   LEFT ALONE, deliberately.
 //   UDN   0.77 vs 0.75   LEFT ALONE, deliberately.
 //
@@ -486,7 +494,7 @@ export const FUND_CATALOG: FundEntry[] = [
   { symbol: 'UNG',  name: 'United States Natural Gas Fund',   type: 'etf', issuer: 'USCF',     category: 'commodity', expenseRatioPct: 1.17, aumB: 0.5,  referencePrice: 10,  yieldPct: null, inceptionYear: 2007, indexTracked: 'Henry Hub natural gas futures (front-month roll)', topHoldings: [], website: 'https://www.uscfinvestments.com/ung', description: 'The standard natural gas proxy — notoriously high roll cost in contango markets.' },
   { symbol: 'UNL',  name: 'United States 12 Month Natural Gas Fund', type: 'etf', issuer: 'USCF', category: 'commodity', expenseRatioPct: 1.65, aumB: 0.02, referencePrice: 6, yieldPct: null, inceptionYear: 2009, indexTracked: 'Henry Hub natural gas futures (laddered 12-month)', topHoldings: [], website: 'https://www.uscfinvestments.com/unl', description: 'UNG’s 12-month-laddered sibling — smoother roll cost, but a much higher expense ratio and very thin trading.' },
   { symbol: 'UGA',  name: 'United States Gasoline Fund',      type: 'etf', issuer: 'USCF',     category: 'commodity', expenseRatioPct: 1.08, aumB: 0.1,  referencePrice: 122, yieldPct: null, inceptionYear: 2008, indexTracked: 'RBOB gasoline futures (front-month roll)', topHoldings: [], website: 'https://www.uscfinvestments.com/uga', description: 'Single-commodity RBOB gasoline proxy — small, thinly traded fund.' },
-  { symbol: 'CPER', name: 'United States Copper Index Fund',  type: 'etf', issuer: 'USCF',     category: 'commodity', expenseRatioPct: 0.65, aumB: 0.2,  referencePrice: 40,  yieldPct: null, inceptionYear: 2011, indexTracked: 'SummerHaven Copper Index (COMEX futures)', topHoldings: [], website: 'https://www.uscfinvestments.com/cper', description: 'Futures-based copper proxy — the metal, not copper-mining equities.' },
+  { symbol: 'CPER', name: 'United States Copper Index Fund',  type: 'etf', issuer: 'USCF',     category: 'commodity', expenseRatioPct: 0.88, aumB: 0.2,  referencePrice: 40,  yieldPct: null, inceptionYear: 2011, indexTracked: 'SummerHaven Copper Index (COMEX futures)', topHoldings: [], website: 'https://www.uscfinvestments.com/cper', description: 'Futures-based copper proxy — the metal, not copper-mining equities.' },
   { symbol: 'CORN', name: 'Teucrium Corn Fund',                type: 'etf', issuer: 'Teucrium', category: 'commodity', expenseRatioPct: 1.00, aumB: 0.1,  referencePrice: 18,  yieldPct: null, inceptionYear: 2010, indexTracked: 'CBOT corn futures (laddered)', topHoldings: [], website: 'https://teucrium.com/corn', description: 'Single-grain corn proxy — ladders three futures months rather than a single front-month roll.' },
   { symbol: 'WEAT', name: 'Teucrium Wheat Fund',               type: 'etf', issuer: 'Teucrium', category: 'commodity', expenseRatioPct: 1.00, aumB: 0.1,  referencePrice: 25,  yieldPct: null, inceptionYear: 2011, indexTracked: 'CBOT wheat futures (laddered)', topHoldings: [], website: 'https://teucrium.com/weat', description: 'Single-grain wheat proxy, same laddered-futures structure as CORN.' },
   { symbol: 'SOYB', name: 'Teucrium Soybean Fund',             type: 'etf', issuer: 'Teucrium', category: 'commodity', expenseRatioPct: 1.00, aumB: 0.08, referencePrice: 26,  yieldPct: null, inceptionYear: 2011, indexTracked: 'CBOT soybean futures (laddered)', topHoldings: [], website: 'https://teucrium.com/soyb', description: 'Single-commodity soybean proxy, same laddered-futures structure as CORN.' },

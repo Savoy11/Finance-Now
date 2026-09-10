@@ -74,8 +74,14 @@ async function politeFetch(url, init = {}) {
 const FEE_LABELS = [
   { label: 'Total Annual Fund Operating Expenses', re: /Total\s+Annual\s+(?:Fund\s+)?(?:Operating\s+)?Expenses[^0-9%]{0,120}?([0-9]+\.[0-9]{1,2})\s*%/i, structure: "'40-Act fund" },
   { label: 'Total Expenses', re: /Total\s+Expenses[^0-9%]{0,120}?([0-9]+\.[0-9]{1,2})\s*%/i, structure: 'various' },
-  { label: "Sponsor's Fee", re: /Sponsor.{0,3}s\s+Fee[^0-9%]{0,120}?([0-9]+\.[0-9]{1,2})\s*%/i, structure: 'grantor trust' },
-  { label: 'Trustee Fee', re: /Trustee.{0,3}s?\s+Fee[^0-9%]{0,120}?([0-9]+\.[0-9]{1,2})\s*%/i, structure: 'grantor trust' },
+  // ⚠ Allow a qualifier between "Sponsor's" and "fee". Trusts write
+  //   "the Sponsor's ANNUAL fee of 0.10%" and "an annual fee EQUAL TO 0.10%" at
+  //   least as often as the bare "Sponsor's Fee" of a fee table. Requiring
+  //   adjacency left GLDM, SGOL, AAAU, BAR, SIVR and PALL unresolved on the
+  //   2026-09-10 run — six funds reported as "no fee label matched" whose fee was
+  //   stated in plain English a few words further along.
+  { label: "Sponsor's Fee", re: /Sponsor.{0,3}s?\s+(?:\w+\s+){0,2}fees?\b[^0-9%]{0,120}?([0-9]+\.[0-9]{1,2})\s*%/i, structure: 'grantor trust' },
+  { label: 'Trustee Fee', re: /Trustee.{0,3}s?\s+(?:\w+\s+){0,2}fees?\b[^0-9%]{0,120}?([0-9]+\.[0-9]{1,2})\s*%/i, structure: 'grantor trust' },
   { label: 'Management Fee', re: /Management\s+Fees?[^0-9%]{0,120}?([0-9]+\.[0-9]{1,2})\s*%/i, structure: 'commodity pool' },
 ]
 
@@ -108,6 +114,84 @@ async function tickerToCik() {
   return map
 }
 
+/**
+ * The substantive document in a filing, when `primaryDocument` is not it.
+ *
+ * ⚠ EDGAR's `primaryDocument` is frequently a 1-2 KB cover page or supplement,
+ * not the prospectus. On the 2026-09-10 run that alone accounted for most of the
+ * "no fee label matched" rows — SGOL returned 1,192 bytes, IBIT 1,464, CORN 5,165,
+ * none containing a single percentage. Reporting those as "fee not found" blamed
+ * the extractor for fetching the wrong file.
+ *
+ * So a thin primary falls back to the accession's own index and takes the largest
+ * HTML document, which is the prospectus in every case checked. Returns null
+ * rather than guessing when the index cannot be read.
+ */
+async function largestDocInAccession(cik, accNoDashes) {
+  const url = `https://www.sec.gov/Archives/edgar/data/${Number(cik)}/${accNoDashes}/index.json`
+  const res = await politeFetch(url)
+  if (!res.ok) return null
+  const items = (await res.json())?.directory?.item ?? []
+  const html = items
+    .filter((i) => /\.html?$/i.test(i.name) && !/^0*\d+\.htm/i.test(i.name))
+    .map((i) => ({ name: i.name, size: Number(i.size) || 0 }))
+    .sort((a, b) => b.size - a.size)
+  if (!html.length) return null
+  return `https://www.sec.gov/Archives/edgar/data/${Number(cik)}/${accNoDashes}/${html[0].name}`
+}
+
+/** Below this, a "prospectus" is a cover page and the real document is elsewhere. */
+const THIN_DOC_BYTES = 20_000
+
+/** How much of a filing counts as its cover page — where a prospectus names its
+ *  subject. Wide enough for a title page and its preamble, narrow enough to
+ *  exclude a related-series aside (CPER's only mention in USCI's prospectus is at
+ *  character 13,423). */
+const COVER_PAGE_CHARS = 3_000
+
+/**
+ * Candidate filings, newest first — NOT just the newest.
+ *
+ * ⚠ The most recent 424B3 is very often a SUPPLEMENT that incorporates the base
+ * prospectus by reference, and states no fee at all. SGOL's newest is 4,465 bytes
+ * and its whole accession holds nothing larger; the fee is in an earlier filing,
+ * not another file in the same one. Looking only at the newest filing reported
+ * six funds as "fee not found" when the fee was published, just not there.
+ *
+ * So the caller walks back through candidates until one actually states a fee.
+ * Capped, because each candidate costs requests and a fund whose last few
+ * filings are all supplements needs a human rather than more fetching.
+ */
+const MAX_FILING_CANDIDATES = 4
+
+async function candidateFilings(cik) {
+  const res = await politeFetch(`https://data.sec.gov/submissions/CIK${cik}.json`)
+  if (!res.ok) throw new Error(`submissions: HTTP ${res.status}`)
+  const d = await res.json()
+  const f = d.filings?.recent
+  if (!f) return []
+  const out = []
+  for (const formRe of FORMS) {
+    for (let i = 0; i < f.form.length && out.length < MAX_FILING_CANDIDATES; i++) {
+      if (!formRe.test(f.form[i])) continue
+      const acc = f.accessionNumber[i].replace(/-/g, '')
+      const doc = f.primaryDocument[i]
+      if (!doc) continue
+      out.push({
+        form: f.form[i],
+        filed: f.filingDate[i],
+        accession: f.accessionNumber[i],
+        url: `https://www.sec.gov/Archives/edgar/data/${Number(cik)}/${acc}/${doc}`,
+        accDir: acc,
+        cik,
+        registrant: d.name,
+      })
+    }
+    if (out.length >= MAX_FILING_CANDIDATES) break
+  }
+  return out
+}
+
 async function latestFiling(cik) {
   const res = await politeFetch(`https://data.sec.gov/submissions/CIK${cik}.json`)
   if (!res.ok) throw new Error(`submissions: HTTP ${res.status}`)
@@ -125,6 +209,8 @@ async function latestFiling(cik) {
         filed: f.filingDate[i],
         accession: f.accessionNumber[i],
         url: `https://www.sec.gov/Archives/edgar/data/${Number(cik)}/${acc}/${doc}`,
+        accDir: acc,
+        cik,
         registrant: d.name,
       }
     }
@@ -158,7 +244,20 @@ function extractFees(html) {
     const m = re.exec(text)
     if (m) hits.push({ label, structure, pct: Number(m[1]) })
   }
-  return hits
+
+  // ⚠ GROSS vs NET. A sponsor may charge a contractual rate and voluntarily waive
+  //   part of it, and the number a holder actually pays is the reduced one.
+  //   SIVR states a 0.45% Sponsor's Fee and a waiver reducing it to 0.30%; the
+  //   catalog's 0.30 is right, and reporting 0.45 as a DIFFERENCE argued for
+  //   making the app wrong. Waivers are also revocable, so neither figure alone
+  //   tells the whole story — both are surfaced and the row is marked, rather
+  //   than one being chosen here.
+  const waiver = /waive[sd]?|waiver/i.test(text)
+    ? /reduce[sd]?\s+the\s+[^.]{0,60}?fee\s+to\s+([0-9]+\.[0-9]{1,2})\s*%/i.exec(text)
+      ?? /waiv[^.]{0,80}?to\s+([0-9]+\.[0-9]{1,2})\s*%/i.exec(text)
+    : null
+
+  return { hits, waivedTo: waiver ? Number(waiver[1]) : null }
 }
 
 function catalogEntries() {
@@ -166,8 +265,10 @@ function catalogEntries() {
   const block = /export const FUND_CATALOG[\s\S]*?\n\]/.exec(src)
   if (!block) throw new Error('FUND_CATALOG not found')
   const out = []
-  for (const m of block[0].matchAll(/\{\s*symbol:\s*'([A-Z0-9.-]+)'[^}]*?expenseRatioPct:\s*([0-9.]+)/g)) {
-    out.push({ symbol: m[1], catalogPct: Number(m[2]) })
+  // Name as well as symbol: the cover-page check needs it, because many
+  // prospectus covers print the fund's name and never its ticker.
+  for (const m of block[0].matchAll(/\{\s*symbol:\s*'([A-Z0-9.-]+)'\s*,\s*name:\s*'([^']+)'[^}]*?expenseRatioPct:\s*([0-9.]+)/g)) {
+    out.push({ symbol: m[1], name: m[2], catalogPct: Number(m[3]) })
   }
   return out
 }
@@ -182,7 +283,7 @@ const UNREACHABLE = [
 
 async function main() {
   const catalog = catalogEntries()
-  const byCatalog = new Map(catalog.map((c) => [c.symbol, c.catalogPct]))
+  const byCatalog = new Map(catalog.map((c) => [c.symbol, c]))
   const targets = symbolArg ?? UNREACHABLE
 
   log(`catalog: ${catalog.length} funds with an expense ratio`)
@@ -200,26 +301,102 @@ async function main() {
 
   const rows = []
   for (const symbol of targets) {
-    const catalogPct = byCatalog.get(symbol) ?? null
+    const catalogEntry = byCatalog.get(symbol) ?? null
+    const catalogPct = catalogEntry?.catalogPct ?? null
+    const catalogName = catalogEntry?.name ?? null
     const cik = cikMap.get(symbol)
     if (!cik) { rows.push({ symbol, catalogPct, status: 'no-cik' }); log(`  ${symbol.padEnd(6)} no CIK in company_tickers.json`); continue }
 
-    let filing
-    try { filing = await latestFiling(cik) } catch (err) { rows.push({ symbol, catalogPct, cik, status: 'submissions-error', detail: err.message }); log(`  ${symbol.padEnd(6)} submissions error: ${err.message}`); continue }
-    if (!filing) { rows.push({ symbol, catalogPct, cik, status: 'no-prospectus' }); log(`  ${symbol.padEnd(6)} no prospectus-type filing found`); continue }
+    let candidates
+    try { candidates = await candidateFilings(cik) } catch (err) { rows.push({ symbol, catalogPct, cik, status: 'submissions-error', detail: err.message }); log(`  ${symbol.padEnd(6)} submissions error: ${err.message}`); continue }
+    if (!candidates.length) { rows.push({ symbol, catalogPct, cik, status: 'no-prospectus' }); log(`  ${symbol.padEnd(6)} no prospectus-type filing found`); continue }
 
-    let html
-    try {
-      const res = await politeFetch(filing.url)
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      html = await res.text()
-    } catch (err) {
-      rows.push({ symbol, catalogPct, cik, filing, status: 'fetch-error', detail: err.message })
-      log(`  ${symbol.padEnd(6)} could not fetch ${filing.form}: ${err.message}`)
-      continue
+    // Walk back until a filing actually states a fee: the newest is often a
+    // supplement that incorporates the base prospectus by reference.
+    let filing = null, html = null, hits = [], waivedTo = null, lastErr = null, tried = 0, wrongDoc = null
+    for (const cand of candidates) {
+      tried++
+      try {
+        const res = await politeFetch(cand.url)
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        let body = await res.text()
+
+        // A cover page is not a prospectus — try the largest doc in the same
+        // accession before giving up on this filing.
+        if (body.length < THIN_DOC_BYTES) {
+          const alt = await largestDocInAccession(cand.cik, cand.accDir)
+          if (alt && alt !== cand.url) {
+            const res2 = await politeFetch(alt)
+            if (res2.ok) {
+              const b2 = await res2.text()
+              if (b2.length > body.length) { body = b2; cand.url = alt; cand.viaIndex = true }
+            }
+          }
+        }
+
+        // ⚠ CONFIRM THE DOCUMENT IS ABOUT THIS FUND before believing its number.
+        //
+        //   A registrant can file for many series. CPER (Copper) shares CIK
+        //   1479247 with USCI (Commodity Index), and the walk-back landed on
+        //   `i26209_usci-424b3.htm` — whose 1.05% total is USCI's. Reported
+        //   without this check it read as "CPER 0.65 → 1.05", which would have
+        //   put a sibling fund's fee on CPER: exactly the wrong-fund error this
+        //   script's report-never-write split exists to prevent, arriving through
+        //   the front door as a confident recommendation.
+        //
+        //   Mere PRESENCE of the ticker is too weak a test, and measurably so:
+        //   USCI's prospectus mentions CPER 5 times — "Other series of the Trust
+        //   include the United States Copper Index Fund ('CPER')" — against 1,196
+        //   mentions of USCI. A presence check passes and still reads the wrong
+        //   fund's fee.
+        //
+        //   The COVER PAGE is the discriminator. A prospectus names its subject in
+        //   the first breath: USCI appears at character 242 ("PROSPECTUS United
+        //   States Commodity Index Fund"), CPER not until 13,423, buried in a
+        //   related-series aside.
+        //   Accept the TICKER **or** the fund's NAME. Many covers print only the
+        //   name — "SPDR S&P 500 ETF Trust" never says SPY — so a ticker-only
+        //   test rejected SPY, DIA, IBIT and ETHA, every one of which had
+        //   resolved correctly before the guard existed. A false negative is
+        //   safer than reading the wrong fund's fee, but it is still a loss, and
+        //   the name is the discriminator those covers actually carry.
+        const cover = body.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').slice(0, COVER_PAGE_CHARS).toLowerCase()
+        //   Match the name as a CONTIGUOUS PHRASE, not as overlapping words.
+        //   Word overlap cannot separate sibling funds: "United States Copper
+        //   Index Fund" and "United States Commodity Index Fund" share four
+        //   words of five, so an overlap test happily read USCI's 1.05% as
+        //   CPER's. The phrase does separate them, because each cover prints its
+        //   own fund's name in full.
+        const phrase = (catalogName ?? '').toLowerCase().replace(/\s+/g, ' ').trim()
+        const namedOnCover =
+          new RegExp(`\\b${symbol}\\b`, 'i').test(cover) ||
+          (phrase.length >= 8 && cover.includes(phrase))
+        if (!namedOnCover) {
+          wrongDoc = { url: cand.url, form: cand.form, filed: cand.filed }
+          continue
+        }
+
+        const found = extractFees(body)
+        if (found.hits.length) { filing = cand; html = body; hits = found.hits; waivedTo = found.waivedTo; break }
+        if (!filing) { filing = cand; html = body }   // remember the newest for reporting
+      } catch (err) { lastErr = err.message }
     }
 
-    const hits = extractFees(html)
+    if (!filing && wrongDoc) {
+      // Found filings, but none of them mention this ticker — a shared-registrant
+      // case. Say so precisely: "wrong fund's prospectus" is a different problem
+      // from "no filing" and from "fee label not recognised".
+      rows.push({ symbol, catalogPct, cik, status: 'wrong-fund-document', detail: wrongDoc })
+      log(`  ${symbol.padEnd(6)} candidate filings do not name ${symbol} — shared registrant; last tried ${wrongDoc.form} ${wrongDoc.filed}`)
+      continue
+    }
+    if (!filing) {
+      rows.push({ symbol, catalogPct, cik, status: 'fetch-error', detail: lastErr ?? 'unknown' })
+      log(`  ${symbol.padEnd(6)} could not fetch any of ${tried} candidate filings: ${lastErr ?? 'unknown'}`)
+      continue
+    }
+    if (tried > 1 && hits.length) filing.viaWalkback = tried
+
     if (hits.length === 0) {
       rows.push({ symbol, catalogPct, cik, filing, status: 'no-fee-found' })
       log(`  ${symbol.padEnd(6)} ${filing.form} ${filing.filed} — no fee label matched`)
@@ -231,11 +408,16 @@ async function main() {
     // Only competing COMPONENTS with no total need a human.
     const hasTotal = TOTAL_LABELS.has(best.label)
     const ambiguous = !hasTotal && new Set(hits.map((h) => h.pct)).size > 1
-    const delta = catalogPct != null ? Number((best.pct - catalogPct).toFixed(4)) : null
-    rows.push({ symbol, catalogPct, cik, filing, status: ambiguous ? 'ambiguous' : 'ok', hits, filedPct: best.pct, matchedLabel: best.label, delta })
+
+    // Compare against what a holder PAYS. A waived fee makes the contractual rate
+    // the wrong basis for a "differs" verdict.
+    const effectivePct = waivedTo ?? best.pct
+    const delta = catalogPct != null ? Number((effectivePct - catalogPct).toFixed(4)) : null
+    rows.push({ symbol, catalogPct, cik, filing, status: ambiguous ? 'ambiguous' : 'ok', hits, filedPct: best.pct, waivedTo, effectivePct, matchedLabel: best.label, delta })
 
     const flag = delta == null ? '' : Math.abs(delta) >= 0.005 ? `  ⚠ DIFFERS by ${delta > 0 ? '+' : ''}${delta}pp` : '  ✓ agrees'
-    log(`  ${symbol.padEnd(6)} ${String(best.pct).padStart(5)}%  ${best.label.padEnd(38)} ${filing.form} ${filing.filed}${flag}${ambiguous ? '  [AMBIGUOUS — see all labels]' : ''}`)
+    log(`  ${symbol.padEnd(6)} ${String(effectivePct).padStart(5)}%  ${best.label.padEnd(38)} ${filing.form} ${filing.filed}${flag}${ambiguous ? '  [AMBIGUOUS — see all labels]' : ''}`)
+    if (waivedTo != null) log(`         · contractual ${best.pct}%, WAIVED to ${waivedTo}% — waivers are revocable, so record both`)
     if (ambiguous) for (const h of hits) log(`         · ${h.label}: ${h.pct}%  (${h.structure})`)
   }
 
@@ -250,7 +432,11 @@ async function main() {
 
   log('')
   log(`══ ${differing.length} differ from the catalog ══`)
-  for (const r of differing) log(`   ${r.symbol.padEnd(6)} catalog ${r.catalogPct}  →  filed ${r.filedPct}   (${r.matchedLabel}, ${r.filing.form} ${r.filing.filed})`)
+  // Print the EFFECTIVE rate — the one the delta was computed from. Printing the
+  // contractual figure here produced the nonsense line "catalog 0.25 → filed 0.25"
+  // for a waived fund, which reads as a bug in the comparison rather than a
+  // waiver.
+  for (const r of differing) log(`   ${r.symbol.padEnd(6)} catalog ${r.catalogPct}  →  ${r.effectivePct}${r.waivedTo != null ? ` (contractual ${r.filedPct}, waived)` : ''}   (${r.matchedLabel}, ${r.filing.form} ${r.filing.filed})`)
   if (!differing.length) log('   none at or above 0.005pp')
 
   log('')
