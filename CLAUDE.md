@@ -1110,6 +1110,60 @@ and `reviewPlan()`/`buildCurveData()` do, and it is the only reason their edge c
 
 ---
 
+## Counts and lists in copy: derive them, never type them
+
+**If code can compute a number, the string must not contain it.** Every count written
+into copy or an error message is correct exactly once — the day it was written — and
+nothing fails when it drifts. Owner ruling, 2026-09-10, to apply project-wide.
+
+The rule is about whether the figure is DERIVABLE, not about whether it is currently
+right:
+
+```tsx
+// ✗ correct today, silently wrong after the next PR
+description="…across 30 exchanges and 18 networks"
+subtitle="…62 indicators from the shared registry"
+throw new Error(`all RPC endpoints failed (last: ${lastErr})`)
+
+// ✓ cannot go stale, because the data IS the source
+description={`…across ${EXCHANGES.length} exchanges and ${Object.keys(NETWORKS).length} networks`}
+subtitle={`…${ALL_INDICATORS.length} indicators from the shared registry`}
+throw new Error(describeLadderFailure(rpcs.length, attempts, { budgetExhausted }))
+```
+
+**What this caught when it was applied** (all four were shipping):
+
+| Site | Said | Actually |
+|---|---|---|
+| `/transfer-fees` warning | "USDT exists on **10+** networks" | **7** in this app's own table |
+| `/technical-analysis` | "**60+** indicators" | 62 — and inconsistent with the equities page saying 62 |
+| `/equities/technical-analysis` | "**62** indicators" | right, and about to be wrong |
+| `wallet/eth` ladder error | "all RPC endpoints failed" | never said how many, so 1 dead rung and 3 read identically |
+
+That last one is why this is not cosmetic. The message cost **two wrong diagnoses** on
+2026-09-10: "all endpoints failed" reads as a provider outage and the truth was two
+stale hostnames. `describeLadderFailure()` in `lib/server/walletFetch.ts` is the
+reference implementation — it takes `total` from the live list, names every failure in
+order rather than only the last, and reports rungs that were never reached separately
+from rungs that failed.
+
+**Three things are legitimately frozen**, and the difference is worth stating because
+over-applying this rule is its own failure:
+
+1. **A dated historical claim.** "Nine rungs removed 2026-09-09" describes an event.
+   Deriving it would be wrong.
+2. **A fact about an external system.** "The Treasury publishes 13 maturities", "FMP's
+   free tier covers both calendar endpoints" — not ours to compute.
+3. **A rationale that reasons about a specific past size**, as long as it says so.
+   `WALLET_LADDER_BUDGET_MS` used to argue "more than two rungs' worth and less than
+   three" — that silently became wrong when a fourth rung arrived, so it now states
+   the invariant for N rungs instead.
+
+When in doubt: ask whether adding one more item would make the sentence false. If yes,
+derive it.
+
+---
+
 ## Common Patterns
 
 ### Resilient multi-fetch — pick the boundary that matches the shape

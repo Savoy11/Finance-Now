@@ -213,7 +213,7 @@ function TechnicalAnalysisContent() {
         title="Technical Analysis"
         subtitle="Professional-grade charting, indicators, and pattern recognition"
         icon={<Activity size={18} className="text-accent-blue" />}
-        description="A full TA suite combining the best of TradingView, Coinigy, and TrendSpider — candlestick charts with 60+ indicators, automated pattern detection, and strategy backtests. The multi-asset scanner has its own page: Scanner in the sidebar."
+        description={`A full TA suite combining the best of TradingView, Coinigy, and TrendSpider — candlestick charts with ${ALL_INDICATORS.length} indicators, automated pattern detection, and strategy backtests. The multi-asset scanner has its own page: Scanner in the sidebar.`}
         details={[
           { label: 'Indicators', text: 'RSI, MACD, Bollinger Bands, EMA/SMA stack, Stochastic RSI, ATR, OBV, VWAP — toggle any combination on the chart.' },
           { label: 'Signal Summary', text: 'Each indicator votes buy/sell/neutral; aggregate score produces an overall signal (Strong Buy → Strong Sell).' },
