@@ -316,6 +316,7 @@ function EquityBacktestsContent() {
         </>
       ) : (
         <LiveUnavailable
+          reason="needs-api-key"
           message="Backtesting needs at least 50 bars of price history, and no source is reachable. Add a Tiingo or FMP key on the Integrations page — the keyless source was withdrawn on terms grounds."
         />
       )}

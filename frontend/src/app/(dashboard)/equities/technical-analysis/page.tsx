@@ -291,6 +291,7 @@ function ChartTab() {
             </div>
           ) : (
             <LiveUnavailable
+              reason="needs-api-key"
               className="my-12"
               message="No OHLCV source is reachable. Candles now need an API key — the keyless source was withdrawn on terms grounds. Add a Tiingo or FMP key on the Integrations page."
             />
