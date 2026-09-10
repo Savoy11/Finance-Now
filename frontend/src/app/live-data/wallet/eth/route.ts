@@ -3,6 +3,8 @@ import {
   WALLET_FETCH_TIMEOUT_MS,
   WALLET_LADDER_BUDGET_MS,
   walletFetchErrorMessage,
+  describeLadderFailure,
+  type LadderAttempt,
 } from '@/lib/server/walletFetch'
 
 export const dynamic = 'force-dynamic'
@@ -48,6 +50,17 @@ const EVM_RPCS: Record<string, { rpcs: string[]; symbol: string }> = {
   optimism:  { symbol: 'ETH',  rpcs: ['https://optimism-rpc.publicnode.com', 'https://mainnet.optimism.io'] },
 }
 
+/** Host (plus path where it disambiguates, e.g. 1rpc.io/matic) — enough to find the
+ *  entry in EVM_RPCS without printing a full URL into an error string. */
+function endpointLabel(url: string): string {
+  try {
+    const u = new URL(url)
+    return u.pathname && u.pathname !== '/' ? `${u.host}${u.pathname}` : u.host
+  } catch {
+    return url
+  }
+}
+
 async function rpcCall(rpcUrl: string, method: string, params: unknown[]) {
   const res = await fetch(rpcUrl, {
     method: 'POST',
@@ -68,14 +81,19 @@ async function rpcCall(rpcUrl: string, method: string, params: unknown[]) {
 // Runs both calls against one endpoint, so a healthy endpoint always serves a
 // self-consistent pair (balance and txCount from the same node).
 async function evmRpcPair(rpcs: string[], address: string): Promise<{ balanceHex: string; txCountHex: string; rpc: string }> {
-  let lastErr = 'no endpoints configured'
+  // Every rung's failure is kept, not just the last: the PRIMARY endpoint's reason
+  // is the one worth reading, and the old message threw it away.
+  const attempts: LadderAttempt[] = []
+  let budgetExhausted = false
   // Per-request timeouts alone would let three dead endpoints cost three full
   // budgets, so the ladder also refuses to START a rung past the overall
   // deadline. A rung already in flight is allowed to finish on its own timeout.
   const deadline = Date.now() + WALLET_LADDER_BUDGET_MS
   for (const rpc of rpcs) {
     if (Date.now() >= deadline) {
-      lastErr = `ladder budget of ${WALLET_LADDER_BUDGET_MS / 1000}s exhausted after ${lastErr}`
+      // Stop starting rungs, and record that the remainder were never asked —
+      // which is a different claim from "they failed".
+      budgetExhausted = true
       break
     }
     try {
@@ -85,11 +103,11 @@ async function evmRpcPair(rpcs: string[], address: string): Promise<{ balanceHex
       ])
       return { balanceHex, txCountHex, rpc }
     } catch (err) {
-      lastErr = walletFetchErrorMessage(err)
+      attempts.push({ endpoint: endpointLabel(rpc), error: walletFetchErrorMessage(err) })
       // try the next endpoint in the ladder
     }
   }
-  throw new Error(`all RPC endpoints failed (last: ${lastErr})`)
+  throw new Error(describeLadderFailure(rpcs.length, attempts, { budgetExhausted }))
 }
 
 // GET /live-data/wallet/eth?address=0x...&chain=polygon
