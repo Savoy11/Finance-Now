@@ -816,6 +816,38 @@ and **Reddit's absence is our own robots gate**, not a rate limit — it lifts o
 `REDDIT_CLIENT_ID`. Both were previously filed under "datacenter IP", which sent debugging
 after a network fault that was never there.
 
+**⚠ "The owner's machine" is not the same claim as "the owner's IP" — CHECK THE EGRESS
+FIRST (2026-09-10).** A machine sitting behind a VPN measures a proxy IP, which is the
+same systematically-wrong baseline this warning exists to prevent, just from a different
+address. The whole 2026-09-09 audit ran through a Bitdefender WireGuard tunnel
+(`bdvpnservice_2`) egressing from AS62651, flagged `proxy: true`, and its reachability
+rows were wrong in BOTH directions:
+
+```bash
+curl -s https://api.ipify.org                                   # what the world sees
+curl -s "http://ip-api.com/json/<ip>?fields=isp,org,proxy,hosting"
+```
+
+If `proxy` or `hosting` is true, it is not an owner-machine baseline no matter which
+machine ran it.
+
+| Host | Behind the VPN | On the residential IP |
+|---|---|---|
+| `mempool.space` (BTC fees) | TCP dropped on 80 AND 443 — BTC read `estimate`, and every `network-fees` call paid an 11s timeout | **live, 129ms** |
+| `publicnode.com` (keyless EVM RPC) | worked | **refused at the Cloudflare edge**, v4 and v6 alike, >3 min |
+
+Both are IP-scoped and neither host was ever down. Two lessons worth keeping:
+
+1. **A host that answers ICMP but drops TCP is filtering you, not broken.** mempool.space
+   completed a traceroute (hop 14, 104ms) while refusing every connection — which is why
+   "the route is blackholed" and "DNS is hijacked" both looked plausible and both were
+   wrong. Test the layers separately: DNS across three resolvers, then TCP, then TLS.
+2. **The audit can provoke the failure it then reports.** A burst of RPC calls earns a
+   per-IP rate-limit ban, and the next run records "provider down". That is how
+   `publicnode` broke — and it exposed a real gap worth fixing regardless: `wallet eth
+   (polygon)` has no fallback behind publicnode, where mainnet falls through to
+   `eth.drpc.org`.
+
 ---
 
 ## Stale Time Constants (from `src/lib/constants.ts`)
