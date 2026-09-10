@@ -419,12 +419,18 @@ const tests = [
   }},
 
   // ── Portfolio & wallets ─────────────────────────────────────────────────────
-  { group: 'crypto/portfolio', path: '/live-data/portfolio-prices?ids=bitcoin,ethereum,solana', name: 'portfolio-prices', check: (j) => {
+  // paxos-standard (USDP) and havven (SNX) are here on purpose: both are coins the
+  // platform tracks whose CoinGecko id is the project's ORIGINAL name, and both sat
+  // in coinCatalog.ts under their intuitive spelling ('pax-dollar',
+  // 'synthetix-network-token') until 2026-09-09, matching nothing. Nothing validates
+  // those ids, so the failure was silent. Pricing them here makes it loud.
+  { group: 'crypto/portfolio', path: '/live-data/portfolio-prices?ids=bitcoin,ethereum,solana,paxos-standard,havven', name: 'portfolio-prices', check: (j) => {
+    const WANT = 5
     const n = Object.keys(j.prices ?? {}).length
     if (n === 0) throw new Error(`no prices (source=${j.source}, missing=${(j.missing || []).join(',')})`)
-    if (j.source === 'partial') return fallback(`${n}/3 priced, source=partial, missing=${(j.missing || []).join(',')}`)
     if (j.source === 'error') throw new Error('source=error')
-    return `${n}/3 priced (source=${j.source})`
+    if (j.source === 'partial') return fallback(`${n}/${WANT} priced, source=partial, missing=${(j.missing || []).join(',')}`)
+    return `${n}/${WANT} priced (source=${j.source})`
   }},
 
   { group: 'crypto/portfolio', path: '/live-data/portfolio-history?ids=bitcoin&date=2026-06-01', name: 'portfolio-history', check: (j) => {

@@ -1,6 +1,20 @@
 // Coins already tracked in Finance Now — excluded from discovery candidates.
 // Add CoinGecko IDs here whenever a coin is formally added to the platform.
 
+// ⚠ Two ids here look wrong and are not: CoinGecko keys some coins by their
+//   ORIGINAL project name, and the intuitive spelling is not an alias — it 404s.
+//
+//     USDP (Pax Dollar)  -> 'paxos-standard'          NOT 'pax-dollar'
+//     SNX  (Synthetix)   -> 'havven'                  NOT 'synthetix-network-token'
+//
+//   Both intuitive spellings sat here until 2026-09-09 and matched nothing. This
+//   set exists to EXCLUDE already-tracked coins from discovery
+//   (coin-discovery/route.ts), so the effect was that /coin-discovery offered USDP
+//   and SNX as fresh candidates for coins the platform already tracks, and its
+//   `alreadyTracked` count read two low. A wrong id here fails SILENTLY — there is
+//   no id validation on this set, which is why the whole set was probed against
+//   CoinGecko when these two were fixed: 45 of 47 resolved, and only these two did
+//   not.
 export const FN_TRACKED_IDS = new Set([
   // Core 16 (transfer fee calculator + staking)
   'bitcoin', 'ethereum', 'tether', 'usd-coin', 'binancecoin', 'solana',
@@ -8,10 +22,10 @@ export const FN_TRACKED_IDS = new Set([
   'avalanche-2', 'cardano', 'polkadot', 'cosmos',
   // Additional stablecoins tracked
   'frax', 'true-usd', 'paypal-usd', 'first-digital-usd', 'usdd',
-  'gemini-dollar', 'pax-dollar', 'magic-internet-money',
+  'gemini-dollar', 'paxos-standard', 'magic-internet-money',
   // DeFi already in asset registry
   'uniswap', 'aave', 'chainlink', 'maker', 'compound-governance-token',
-  'curve-dao-token', 'synthetix-network-token', 'lido-dao', 'the-graph',
+  'curve-dao-token', 'havven', 'lido-dao', 'the-graph',
   // Other assets in registry
   'bitcoin-cash', 'ethereum-classic', 'monero', 'zcash',
   'hedera-hashgraph', 'near', 'algorand', 'filecoin', 'aptos',
