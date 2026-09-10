@@ -204,7 +204,7 @@ field will treat catalog/reference/estimate values as live readings.
 | `stock-universe` | 79 stocks, `ok: true` | Curated `equityCatalog.ts` fallback — the real universe is thousands | `source: "catalog"` |
 | `stock-outliers` | Sector z-score screener | Screens only those 79 catalog names, so "outlier" means outlier within a hand-picked large-cap set | inherits `stock-universe` |
 | `staking-rates` | **51** APRs, `ok: true` | **27 are live, 24 are static estimates** *(re-measured 2026-09-09; this row read 4 live / 47 estimated, measured 2026-07-29)*. The remaining 24 are **sourceless** — no upstream publishes a rate for them — rather than merely unfetched. Their FALLBACK values were undated until 2026-09-09, and of the 27 that could be checked against a live reading, **22 were ≥25% overstated** (worst: `lombard_btc` 3.2 → 0.17). | `sources: { key: "live" \| "estimate" }`, plus `fallbackProvenance` — whether the estimate was ever checked |
-| `network-fees` | 18 networks with USD fees | **5 of 18 are live** (Bitcoin via mempool.space; ETH / BNB / Polygon / AVAX via keyless `eth_gasPrice`, added 2026-08-21, `01d6bfe`). The other 13 are static gas × live price. **The L2s are estimates on purpose** — `eth_gasPrice` omits their L1 data fee, which is most of the real cost — so the remaining work here is non-EVM chains, not L2s. *(Corrected 2026-09-08: this row said "only Bitcoin", written before the EVM-L1 work.)* | per-network `source: "estimate"`, `btcFeeSource`. ⚠ **2026-09-09: BTC read `estimate` on the owner's machine** because mempool.space was unreachable from that connection (DNS resolved to a non-canonical range; every path timed out while control hosts answered). Count deliberately left at 5 of 18 — that is an environment artifact, not a source failure. See "Environment dependence found by this run" |
+| `network-fees` | 18 networks with USD fees | **5 of 18 are live** (Bitcoin via mempool.space; ETH / BNB / Polygon / AVAX via keyless `eth_gasPrice`, added 2026-08-21, `01d6bfe`). The other 13 are static gas × live price. **The L2s are estimates on purpose** — `eth_gasPrice` omits their L1 data fee, which is most of the real cost — so the remaining work here is non-EVM chains, not L2s. *(Corrected 2026-09-08: this row said "only Bitcoin", written before the EVM-L1 work.)* | per-network `source: "estimate"`, `btcFeeSource`. ⚠ **2026-09-09: BTC read `estimate` on the owner's machine** because mempool.space was unreachable from that connection. Narrowed 2026-09-10 to the **TCP layer**: DNS is correct and identical across three resolvers, but a connect to `103.165.192.x:443` never completes, while control hosts connect in 0.19s. Count deliberately left at 5 of 18 — still unresolved between a regional filter, a broken route and a downed host, and one machine cannot tell those apart. See "Environment dependence found by this run" |
 | `cbdc-data` | 55 countries | Entirely the static table; the live CBDC news feed did not resolve | `source: "fallback"` |
 | `fund-holdings` (SPY) | 5 holdings | Catalog's indicative top holdings. **Expected** — SPY is a unit investment trust and files no N-PORT | `source: "catalog"`, `full: false` |
 | `chart` | OHLCV candles | **Synthesised** — `open==high==low==close`; built from a price-only series | `synthetic: true` (added 2026-07-20) |
@@ -285,9 +285,28 @@ path hangs — `/`, `/api/v1/fees/recommended` and `/api/blocks/tip/height` all 
 at 20s — while control hosts answer normally in the same second (lido 0.83s, CoinGecko
 0.63s). So it is host-specific, not a general network fault.
 
-The resolved addresses sit in `103.165.192.0/24` (APNIC), which is **not** where
-mempool.space normally lives, so DNS interception on this connection is a likelier
-explanation than the host being down.
+**Narrowed to the TCP layer, 2026-09-10 — and the first explanation was wrong.**
+This section originally said DNS interception was the likely cause, because the
+addresses sit in `103.165.192.0/24` (APNIC) rather than the Cloudflare range
+mempool.space was assumed to use. That is disproven:
+
+| Layer | Result |
+|---|---|
+| DNS, system resolver | `103.165.192.202-207` |
+| DNS, Cloudflare `1.1.1.1` | **identical** |
+| DNS, Google `8.8.8.8` | **identical** |
+| **TCP connect to `:443`** | **never completes** — `connect=0.000000s`, dies at the timeout |
+| Control (`api.coingecko.com`) | connects in 0.19s |
+
+Three independent resolvers agreeing means there is no interception and those
+really are mempool.space's addresses. The failure is that **packets to that block
+never establish a connection at all** — not DNS, not TLS, not HTTP.
+
+What that leaves, and none of it is decidable from one machine: the block filters
+this region or this IP, the route to it is blackholed, or those hosts are down.
+A `connect` that never completes cannot tell them apart, which is precisely why
+this still needs a check from a different network — a narrower question than the
+one first recorded here, but the same answer required.
 
 ⚠ **This row is therefore NOT recorded as a source failure.** It is exactly the
 IP-dependence this document warns about at the top: one machine's resolver is not

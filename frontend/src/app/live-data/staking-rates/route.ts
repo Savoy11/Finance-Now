@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import type { GapReasonId } from '@/lib/data/dataGaps'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,6 +27,19 @@ export interface StakingRatesResponse {
     measuredKeys: number
     unmeasuredKeys: number
   }
+  /**
+   * WHY each non-live key is not live, keyed the same way as `sources`.
+   *
+   * `sources[key] === 'estimate'` says a figure is not a reading; it cannot say
+   * whether nothing on earth publishes it, whether a working source just failed,
+   * or whether it is an offset we compute on purpose. Those have opposite
+   * responses, and only this route knows which upstream was responsible — so the
+   * reason is declared here rather than re-derived in the UI, the same reasoning
+   * that put `upstreams` here in #157.
+   *
+   * Live keys are absent from this map, not present with a null.
+   */
+  gaps: Partial<Record<string, GapReasonId>>
   updatedAt: string
 }
 
@@ -178,6 +192,57 @@ const FALLBACK_MEASURED: ReadonlySet<string> = new Set([
   'stader_eth', 'stader_matic', 'stakewise_eth', 'stride_atom', 'stride_inj',
   'stride_tia', 'swell_eth',
 ])
+
+/**
+ * Why a key cannot be live, where the answer is a property of the KEY rather than
+ * of today's fetch.
+ *
+ * Every entry below is a first-hand finding already recorded elsewhere in this
+ * file or in docs/audits/live-data-audit-2026-09-09.md — this map only makes those
+ * findings reachable by the UI, so a reader hovering an `est` chip gets the actual
+ * reason instead of "static estimate".
+ *
+ * A key absent from this map and not live is reported as `upstream-failed`: it HAS
+ * an upstream that is meant to make it live, so a miss is a fault worth chasing.
+ * That default is the useful direction to be wrong in — it over-reports work
+ * rather than silently writing a regression off as a known limitation.
+ */
+const GAP_BY_KEY: Record<string, GapReasonId> = {
+  // ── Offsets and averages we compute on purpose (never live, by design) ──
+  //    Only Lido's number is a reading; these are arithmetic on it.
+  coinbase_eth:     'derived-estimate',
+  kraken_eth:       'derived-estimate',
+  binance_eth:      'derived-estimate',
+  native_sol:       'derived-estimate',
+  native_matic:     'derived-estimate',
+
+  // ── Upstream removed 2026-09-09 because it carries no rate AT ALL ──
+  //    Not "the field moved": these hosts were probed and answer without a yield,
+  //    or no longer resolve. Chasing them again is wasted work.
+  native_atom:      'no-upstream',   // api-cosmoshub-ia.cosmostation.io — DNS gone
+  osmo_native:      'no-upstream',   // api-osmosis.cosmostation.io — DNS gone
+  native_tia:       'no-upstream',   // api-celestia-ia.cosmostation.io — DNS gone
+  native_ada:       'no-upstream',   // js.adapools.org — NXDOMAIN
+  native_bnb:       'no-upstream',   // api.binance.org staking path retired (404)
+  native_trx:       'no-upstream',   // tronscanapi staking-info path gone
+  lido_matic:       'no-upstream',   // polygon.lido.fi serves a marketing page
+  native_near:      'no-upstream',   // nearblocks /stats carries no yield field
+  metapool_near:    'no-upstream',   // DeFiLlama lists meta-pool-eth only
+  ankr_sol:         'no-upstream',   // Ankr has no Solana product in the pool set
+  stader_bnb:       'no-upstream',   // Stader lists ETHX/MATICX only
+  pstake_bnb:       'no-upstream',   // pSTAKE absent from DeFiLlama entirely
+  pstake_atom:      'no-upstream',   // ditto
+  quicksilver_atom: 'no-upstream',   // Quicksilver absent entirely
+
+  // ── Source exists but now requires a key, which is a policy decision ──
+  native_dot:       'needs-api-key', // polkadot.webapi.subscan.io — 403, keyed
+  native_ksm:       'needs-api-key', // kusama.webapi.subscan.io — 403, keyed
+
+  // ── Never had a feed; hand-maintained reference, dated by the catalog ──
+  native_avax:      'curated-estimate',
+  native_cro:       'curated-estimate',
+  babylon_btc:      'curated-estimate',
+}
 
 // ─── DeFiLlama Yields mapping ────────────────────────────────────────────────
 // Maps our internal rate key → the receipt-token symbol(s) DeFiLlama lists for
@@ -550,6 +615,17 @@ export async function GET() {
     return [name, `reachable but no usable rate (0/${keys.length})`]
   })) as Record<string, string>
 
+  // ── Why each non-live key is not live ──────────────────────────────────────
+  // Built from today's `sources`, so a key that normally has an upstream and
+  // missed THIS request reports `upstream-failed` rather than inheriting a
+  // permanent excuse. Only keys whose reason is a property of the key itself come
+  // from GAP_BY_KEY.
+  const gaps: Partial<Record<string, GapReasonId>> = {}
+  for (const key of Object.keys(FALLBACK)) {
+    if (sources[key] === 'live') continue
+    gaps[key] = GAP_BY_KEY[key] ?? 'upstream-failed'
+  }
+
   return NextResponse.json({
     ok: true,
     rates,
@@ -560,6 +636,7 @@ export async function GET() {
       measuredKeys: FALLBACK_MEASURED.size,
       unmeasuredKeys: Object.keys(FALLBACK).length - FALLBACK_MEASURED.size,
     },
+    gaps,
     updatedAt: new Date().toISOString(),
   } satisfies StakingRatesResponse)
 }

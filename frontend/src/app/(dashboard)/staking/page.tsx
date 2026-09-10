@@ -24,6 +24,8 @@ import {
   type StakingProvider, type StakingCoinId, type ProviderCategory,
 } from '@/lib/data/stakingProviders'
 import type { StakingRatesResponse } from '@/app/live-data/staking-rates/route'
+import type { GapReasonId } from '@/lib/data/dataGaps'
+import { DataGapNote } from '@/components/ui/DataGapNote'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -99,12 +101,14 @@ function ProviderCard({
   showAdjacent,
   rates,
   sources,
+  gaps,
 }: {
   provider: StakingProvider
   coinFilter: StakingCoinId | 'all'
   showAdjacent: boolean
   rates: Partial<Record<string, number>>
   sources: Partial<Record<string, 'live' | 'estimate'>>
+  gaps: Partial<Record<string, GapReasonId>>
 }) {
   const [expanded, setExpanded] = useState(false)
   const CategoryIcon = categoryIcon(provider.category)
@@ -129,10 +133,16 @@ function ProviderCard({
   const assetRows = useMemo(
     () =>
       visibleAssets.map(([coinId, asset]) => {
-        const { apr, live } = aprDisplay(asset.staticApr, resolveLiveAprKey(provider, coinId, asset), rates, sources)
-        return { coinId, asset, apr, live }
+        const { apr, live, gap } = aprDisplay(
+          asset.staticApr,
+          resolveLiveAprKey(provider, coinId, asset),
+          rates,
+          sources,
+          gaps,
+        )
+        return { coinId, asset, apr, live, gap }
       }),
-    [visibleAssets, provider, rates, sources],
+    [visibleAssets, provider, rates, sources, gaps],
   )
 
   // A live, non-defunct provider whose every shown rate is a static estimate
@@ -241,7 +251,7 @@ function ProviderCard({
 
       {/* Asset rows */}
       <div className="border-t border-border divide-y divide-border/50">
-        {assetRows.map(({ coinId, asset, apr, live }) => {
+        {assetRows.map(({ coinId, asset, apr, live, gap }) => {
           const info = STAKING_COIN_INFO[coinId]
           const yieldType = resolveYieldType(provider, asset)
           const yieldMeta = YIELD_TYPE_META[yieldType]
@@ -272,12 +282,17 @@ function ProviderCard({
                     </span>
                   )}
                   {!live && !provider.defunct && (
-                    <span
-                      className="ml-1 text-[9px] font-semibold uppercase tracking-wide px-1 py-0.5 rounded border bg-amber-500/10 text-amber-400/90 border-amber-500/25"
-                      title="Static estimate — not a live reading; verify the current rate with the provider"
-                    >
-                      est
-                    </span>
+                    // Replaced a title= chip reading "Static estimate — not a live
+                    // reading". True, and useless: it could not say whether nothing
+                    // publishes this rate, whether a working feed just missed, or
+                    // whether we compute it from Lido on purpose. Those have
+                    // opposite responses, so the marker now carries the route's own
+                    // reason and colours itself by whether anyone should act.
+                    <DataGapNote
+                      reason={gap}
+                      className="ml-1"
+                      detail={`${provider.name} · ${info.symbol}`}
+                    />
                   )}
                   {provider.defunct && (
                     <span className="text-[9px] text-red-400/60 ml-1">ADVERTISED</span>
@@ -542,6 +557,9 @@ function StakingPageInner() {
 
   const rates = ratesData?.rates ?? {}
   const sources = ratesData?.sources ?? {}
+  // Why each non-live key is not live. The route answers this because only it
+  // knows which upstream owned the key — see StakingRatesResponse.gaps.
+  const gaps = ratesData?.gaps ?? {}
   const updatedAt = ratesData?.updatedAt
 
   const liveCount = Object.values(sources).filter(s => s === 'live').length
@@ -731,6 +749,7 @@ function StakingPageInner() {
             showAdjacent={showAdjacent}
             rates={rates}
             sources={sources}
+            gaps={gaps}
           />
         ))}
       </div>

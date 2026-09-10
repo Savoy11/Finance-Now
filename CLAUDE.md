@@ -648,14 +648,21 @@ structured XBRL. It fills the gap `build-fund-facts.mjs` names: N-PORT carries n
 
 It **reports, never writes** — same split as `apply-fee-updates.ts`, because an automated fee
 overwrite is how a correct number lands on the wrong fund, and share classes make that easy
-(AGTHX/AGTFX/CGFAX). Matching is on ticker, never a name or a number, and it never moves
+(AGTHX/AGTFX/CGFAX). Matching is on the SEC CLASS id, resolved to a ticker through the SEC's own
+`company_tickers_mf.json` — never a name or a number — and it never moves
 `FUND_DATA_LAST_VERIFIED`. **Run `--inspect` first**: the tag and column names are candidates until
 someone confirms them against a real archive.
 
-⚠ The decimal-vs-percent unit is **calibrated once against the catalog**, not guessed per value —
-expense-ratio ranges overlap between the two encodings (`0.03` is either 3% or 0.03%, and 0.03% is
-VOO), so a per-value rule produces a silent 100× error on the cheapest funds. An undecidable unit
-aborts the run.
+⚠ The decimal-vs-percent unit is **declared by the dataset, not inferred** (changed 2026-09-09).
+`num.tsv` states `uom` per row: `pure` means a decimal fraction (`0.0112` = 1.12%). That matters
+because the two encodings overlap (`0.03` is either 3% or 0.03%, and 0.03% is VOO), so guessing
+per value produces a silent 100× error on the cheapest funds.
+
+The old rule calibrated against the catalog and needed 5 matched funds, aborting below that — which
+made the unit "undecidable" for data that was never ambiguous, because ONE quarterly archive only
+covers the funds that filed a prospectus that quarter (27 of 126 on the 2026-09-09 run). The
+calibration is **kept as a cross-check**: where both are available and they disagree the run stops
+rather than picking a winner, and a mixed or unrecognised `uom` also stops it instead of guessing.
 
 Both run `scripts/test-live-data.mjs` (the old `scripts/smoke.mjs` was folded into it —
 `smoke` is now just `--quick`).
