@@ -325,3 +325,80 @@ right one, or the wording is unusual. Check the page the probe actually read._
 - [ ] Conditions to add/change: `________`
 
 ---
+
+## ⚠ Added 2026-09-10 — MarketWatch is the priority, and for a reason the worksheet understates
+
+The 2026-09-09 probe run recorded `marketwatch.com` as **`blocked`**. That is the one
+outcome the registry enforces automatically, and the cause is **robots.txt, not the
+paywall**:
+
+    robots.txt disallows / for financenow
+
+**The live inconsistency.** `robotsDisallowed` is set on exactly one entry —
+`reddit.com`, gated in `pinnedFetch` since 2026-08-29 and lifted only by
+`REDDIT_CLIENT_ID`. MarketWatch has no such record, so nothing gates it, and the
+2026-09-09 audit shows `market-news` serving **"10 articles from CNBC, MarketWatch"**.
+So the app is currently fetching a host whose robots.txt disallows its agent, on a
+shipping surface (`/equities/news`, and the markets half of `/headlines`).
+
+That is the same situation Reddit was in before it was gated, and the registry's own
+rule is unambiguous: robots.txt "is an instruction we either honour or don't."
+
+**Why this is a decision and not a fix.** Gating MarketWatch leaves CNBC as the *only*
+equity news provider. That is a product call about a live surface, so it is recorded
+here rather than acted on. The three options:
+
+1. Gate it like Reddit (`robotsDisallowed`, no credential exists to lift it) — honours
+   the file, halves equity news.
+2. Read the robots file properly first: a disallow on `/` does not always cover the
+   feed path, and several publishers permit `/rss` explicitly. **This is the cheap
+   step and it has not been done** — the probe recorded the disallow on `/`, not
+   whether the specific feed URL is excluded.
+3. Decide the RSS feed is published for syndication and that its robots posture does
+   not govern it — defensible for some publishers, but it needs to be a stated
+   decision with the clause quoted, not a default.
+
+**Separately, the paywall (owner, 2026-09-10):** MarketWatch requires a membership
+after a small number of articles. That does not affect what we *fetch* — the feed
+carries headline, link and summary, which is all the recorded conditions permit us to
+show — but it does mean **every article link we render lands the reader on a wall.**
+Worth disclosing at the link rather than discovering by clicking. It also reinforces
+the existing "headline, link and feed summary only" condition: we must not be seen to
+substitute for the article we cannot show.
+
+### The cheap step, done — 2026-09-10
+
+Option 2 above was run instead of left as advice, and it changes the framing: **the
+feed is not on marketwatch.com at all.**
+
+| Host | robots.txt | Do we fetch it? |
+|---|---|---|
+| `feeds.content.dowjones.io` — the URL `market-news` and `macro-news` actually read | **No robots.txt exists.** `/robots.txt` returns HTTP 403 `AccessDenied` (an object store, not a web server) | **Yes** — `mw_topstories` served HTTP 200, 8,259 bytes |
+| `www.marketwatch.com` — the host the `blocked` verdict is about | `User-agent: * / Disallow: /`, with only Google's crawlers exempted | **No** — nothing fetches it |
+
+So the automatic `blocked` verdict fired on a host this app never requests, and the
+host it does request publishes no directive to honour or break. The Reddit parallel
+in the section above is therefore **weaker than it first appeared**: Reddit's
+disallow covered the very path being fetched, and this one does not.
+
+**What actually remains open, and it is a terms question rather than a robots one.**
+The marketwatch.com robots file carries a prose notice, quoted verbatim:
+
+> Collection of content and other data on https://www.marketwatch.com/ through
+> automated means is prohibited unless you have express written permission from Dow
+> Jones & Company, Inc.
+
+It scopes itself to `https://www.marketwatch.com/` — the site, not the feed host — and
+points at the Dow Jones Terms of Use. So the question to answer is narrow and specific:
+
+**Does Dow Jones's ToU govern an RSS feed they publish on a separate host, and does it
+permit the headline/link/summary use already recorded as this entry's conditions?**
+
+That is a reading of https://www.dowjones.com/terms-of-use/ — the document the notice
+itself names, and the one neither entry has been read against. It is not answerable
+from a robots file, and it applies to `dowjones.io` at least as much as to
+`marketwatch.com`.
+
+⚠ Do NOT gate marketwatch.com on the strength of the `blocked` verdict alone. It would
+halve equity news to CNBC and would not stop a single request the app currently makes,
+because the request goes somewhere else.

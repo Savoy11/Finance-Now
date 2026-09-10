@@ -648,14 +648,21 @@ structured XBRL. It fills the gap `build-fund-facts.mjs` names: N-PORT carries n
 
 It **reports, never writes** — same split as `apply-fee-updates.ts`, because an automated fee
 overwrite is how a correct number lands on the wrong fund, and share classes make that easy
-(AGTHX/AGTFX/CGFAX). Matching is on ticker, never a name or a number, and it never moves
+(AGTHX/AGTFX/CGFAX). Matching is on the SEC CLASS id, resolved to a ticker through the SEC's own
+`company_tickers_mf.json` — never a name or a number — and it never moves
 `FUND_DATA_LAST_VERIFIED`. **Run `--inspect` first**: the tag and column names are candidates until
 someone confirms them against a real archive.
 
-⚠ The decimal-vs-percent unit is **calibrated once against the catalog**, not guessed per value —
-expense-ratio ranges overlap between the two encodings (`0.03` is either 3% or 0.03%, and 0.03% is
-VOO), so a per-value rule produces a silent 100× error on the cheapest funds. An undecidable unit
-aborts the run.
+⚠ The decimal-vs-percent unit is **declared by the dataset, not inferred** (changed 2026-09-09).
+`num.tsv` states `uom` per row: `pure` means a decimal fraction (`0.0112` = 1.12%). That matters
+because the two encodings overlap (`0.03` is either 3% or 0.03%, and 0.03% is VOO), so guessing
+per value produces a silent 100× error on the cheapest funds.
+
+The old rule calibrated against the catalog and needed 5 matched funds, aborting below that — which
+made the unit "undecidable" for data that was never ambiguous, because ONE quarterly archive only
+covers the funds that filed a prospectus that quarter (27 of 126 on the 2026-09-09 run). The
+calibration is **kept as a cross-check**: where both are available and they disagree the run stops
+rather than picking a winner, and a mixed or unrecognised `uom` also stops it instead of guessing.
 
 Both run `scripts/test-live-data.mjs` (the old `scripts/smoke.mjs` was folded into it —
 `smoke` is now just `--quick`).
@@ -808,6 +815,38 @@ geo-block, so for a US owner the Binance.US fallback is the steady state, not a 
 and **Reddit's absence is our own robots gate**, not a rate limit — it lifts only with
 `REDDIT_CLIENT_ID`. Both were previously filed under "datacenter IP", which sent debugging
 after a network fault that was never there.
+
+**⚠ "The owner's machine" is not the same claim as "the owner's IP" — CHECK THE EGRESS
+FIRST (2026-09-10).** A machine sitting behind a VPN measures a proxy IP, which is the
+same systematically-wrong baseline this warning exists to prevent, just from a different
+address. The whole 2026-09-09 audit ran through a Bitdefender WireGuard tunnel
+(`bdvpnservice_2`) egressing from AS62651, flagged `proxy: true`, and its reachability
+rows were wrong in BOTH directions:
+
+```bash
+curl -s https://api.ipify.org                                   # what the world sees
+curl -s "http://ip-api.com/json/<ip>?fields=isp,org,proxy,hosting"
+```
+
+If `proxy` or `hosting` is true, it is not an owner-machine baseline no matter which
+machine ran it.
+
+| Host | Behind the VPN | On the residential IP |
+|---|---|---|
+| `mempool.space` (BTC fees) | TCP dropped on 80 AND 443 — BTC read `estimate`, and every `network-fees` call paid an 11s timeout | **live, 129ms** |
+| `publicnode.com` (keyless EVM RPC) | worked | **refused at the Cloudflare edge**, v4 and v6 alike, >3 min |
+
+Both are IP-scoped and neither host was ever down. Two lessons worth keeping:
+
+1. **A host that answers ICMP but drops TCP is filtering you, not broken.** mempool.space
+   completed a traceroute (hop 14, 104ms) while refusing every connection — which is why
+   "the route is blackholed" and "DNS is hijacked" both looked plausible and both were
+   wrong. Test the layers separately: DNS across three resolvers, then TCP, then TLS.
+2. **The audit can provoke the failure it then reports.** A burst of RPC calls earns a
+   per-IP rate-limit ban, and the next run records "provider down". That is how
+   `publicnode` broke — and it exposed a real gap worth fixing regardless: `wallet eth
+   (polygon)` has no fallback behind publicnode, where mainnet falls through to
+   `eth.drpc.org`.
 
 ---
 

@@ -1,6 +1,6 @@
 # Finance Now — Data Availability Report
 
-_Last generated: **2026-09-09**, from a full audit of all `/live-data/*` route handlers
+_Last generated: **2026-09-10**, from a full audit of all `/live-data/*` route handlers
 executed against a running dev server on the development machine. This document is the
 authoritative record of **what data in Finance Now is live, what is partially live, and what has
 no free real-time source**. It exists so that a walk-through of the app surfaces exactly
@@ -204,7 +204,7 @@ field will treat catalog/reference/estimate values as live readings.
 | `stock-universe` | 79 stocks, `ok: true` | Curated `equityCatalog.ts` fallback — the real universe is thousands | `source: "catalog"` |
 | `stock-outliers` | Sector z-score screener | Screens only those 79 catalog names, so "outlier" means outlier within a hand-picked large-cap set | inherits `stock-universe` |
 | `staking-rates` | **51** APRs, `ok: true` | **27 are live, 24 are static estimates** *(re-measured 2026-09-09; this row read 4 live / 47 estimated, measured 2026-07-29)*. The remaining 24 are **sourceless** — no upstream publishes a rate for them — rather than merely unfetched. Their FALLBACK values were undated until 2026-09-09, and of the 27 that could be checked against a live reading, **22 were ≥25% overstated** (worst: `lombard_btc` 3.2 → 0.17). | `sources: { key: "live" \| "estimate" }`, plus `fallbackProvenance` — whether the estimate was ever checked |
-| `network-fees` | 18 networks with USD fees | **5 of 18 are live** (Bitcoin via mempool.space; ETH / BNB / Polygon / AVAX via keyless `eth_gasPrice`, added 2026-08-21, `01d6bfe`). The other 13 are static gas × live price. **The L2s are estimates on purpose** — `eth_gasPrice` omits their L1 data fee, which is most of the real cost — so the remaining work here is non-EVM chains, not L2s. *(Corrected 2026-09-08: this row said "only Bitcoin", written before the EVM-L1 work.)* | per-network `source: "estimate"`, `btcFeeSource`. ⚠ **2026-09-09: BTC read `estimate` on the owner's machine** because mempool.space was unreachable from that connection (DNS resolved to a non-canonical range; every path timed out while control hosts answered). Count deliberately left at 5 of 18 — that is an environment artifact, not a source failure. See "Environment dependence found by this run" |
+| `network-fees` | 18 networks with USD fees | **5 of 18 are live** (Bitcoin via mempool.space; ETH / BNB / Polygon / AVAX via keyless `eth_gasPrice`, added 2026-08-21, `01d6bfe`). The other 13 are static gas × live price. **The L2s are estimates on purpose** — `eth_gasPrice` omits their L1 data fee, which is most of the real cost — so the remaining work here is non-EVM chains, not L2s. *(Corrected 2026-09-08: this row said "only Bitcoin", written before the EVM-L1 work.)* | per-network `source: "estimate"`, `btcFeeSource`. ⚠ **2026-09-09: BTC read `estimate` on the owner's machine** because mempool.space was unreachable from that connection. Narrowed 2026-09-10 to the **TCP layer**: DNS is correct and identical across three resolvers, but a connect to `103.165.192.x:443` never completes, while control hosts connect in 0.19s. Count deliberately left at 5 of 18 — still unresolved between a regional filter, a broken route and a downed host, and one machine cannot tell those apart. See "Environment dependence found by this run" |
 | `cbdc-data` | 55 countries | Entirely the static table; the live CBDC news feed did not resolve | `source: "fallback"` |
 | `fund-holdings` (SPY) | 5 holdings | Catalog's indicative top holdings. **Expected** — SPY is a unit investment trust and files no N-PORT | `source: "catalog"`, `full: false` |
 | `chart` | OHLCV candles | **Synthesised** — `open==high==low==close`; built from a price-only series | `synthetic: true` (added 2026-07-20) |
@@ -217,8 +217,35 @@ silently again. Run `npm run audit:strict` to make them exit non-zero.
 
 ## Run of 2026-09-09 — measured results
 
-`npm run audit`, **owner's machine**, app on localhost:3000, tree at `57bb322`.
+⚠ **This run was measured through a VPN and its IP-dependent rows are wrong.** See
+"Environment dependence" below. It is kept because the key-gated, terms-gated and
+catalog-shaped findings are unaffected and still stand — only the reachability rows
+moved. The corrected run is 2026-09-10, immediately below.
+
+`npm run audit`, owner's machine, app on localhost:3000, tree at `57bb322`.
 **77 checks: 62 REAL · 11 FALLBACK · 3 UNCONFIGURED · 0 EMPTY · 1 FAIL.**
+
+### ✅ Re-run 2026-09-10 with the VPN OFF — the corrected baseline
+
+**77 checks: 62 REAL · 9 FALLBACK · 3 UNCONFIGURED · 0 EMPTY · 3 FAIL.**
+
+| Moved | From | To | Why |
+|---|---|---|---|
+| `network-fees` | 🟡 FALLBACK, 10,936ms | 🟢 **REAL, 129ms** | mempool.space reachable; BTC fee live |
+| `bitcoin fee is live (mempool.space)` | 🟡 FALLBACK `source=estimate` | 🟢 **REAL `source=live`** | same |
+| `wallet eth (polygon)` | 🟢 REAL | 🔴 **FAIL 502** | publicnode refuses the residential IP; no fallback behind it |
+| `wallet tron` | 🟢 REAL | 🔴 **FAIL** | Tronscan HTTP 429, per-IP |
+| `portfolio-history` | 🔴 FAIL | 🔴 FAIL | unchanged — CoinGecko 429, `retry-after=18` |
+
+Net: **two real fixes and two IP-scoped regressions**, in opposite directions. Neither
+host was ever down. The `network-fees` timing alone removed three entries from the
+slow list — it had been paying an 11-second timeout on every call.
+
+⚠ Everything NOT reachability-shaped is identical across the two runs: the same 62
+REAL, the same 3 UNCONFIGURED (`social`, `video-search`, macro quotes), the same
+catalog and paid-plan findings. A VPN changes which hosts answer, not whether a key
+is configured — which is why the 2026-09-09 conclusions about Yahoo, FMP tiers and
+terms gating all still hold.
 
 This is the run the 2026-08-06 Yahoo block was waiting for — see the measured table
 near the top of this file.
@@ -277,23 +304,76 @@ Pacing held the run for **52.5s** (10/min cap, 6000ms derived gap, `coin-list` w
 | `btc-stats` | height 966,190 · hashrate 855 EH/s (10.9s) |
 | `staking-discovery` | 94 pools, APY 0.1–88.7% |
 
-### ⚠ Environment dependence found by this run
+### ✅ Environment dependence — found, diagnosed and RESOLVED (2026-09-10)
 
-**mempool.space is unreachable from this machine**, which is why the BTC fee reads
-`estimate`. Diagnosed rather than assumed: DNS resolves (5 addresses), but **every**
-path hangs — `/`, `/api/v1/fees/recommended` and `/api/blocks/tip/height` all time out
-at 20s — while control hosts answer normally in the same second (lido 0.83s, CoinGecko
-0.63s). So it is host-specific, not a general network fault.
+The BTC fee read `estimate` because mempool.space was unreachable. It took three
+wrong explanations to get to the cause, and each one is worth keeping because each
+looked convincing:
 
-The resolved addresses sit in `103.165.192.0/24` (APNIC), which is **not** where
-mempool.space normally lives, so DNS interception on this connection is a likelier
-explanation than the host being down.
+1. ~~"mempool.space is down or moved."~~ No — traceroute **completes**, reaching the
+   host at hop 14 in 104ms. It answers ICMP fine.
+2. ~~"DNS interception — those addresses are not where it lives."~~ No — the system
+   resolver, Cloudflare `1.1.1.1` and Google `8.8.8.8` all return the same
+   `103.165.192.202-207`, and mempool.space self-hosts with no CDN (its own
+   `*.wiz.biz` nameservers, no CNAME). Those are genuinely its addresses.
+3. ~~"A blackholed route."~~ No — see (1). Packets arrive.
 
-⚠ **This row is therefore NOT recorded as a source failure.** It is exactly the
-IP-dependence this document warns about at the top: one machine's resolver is not
-evidence about an upstream. Re-check from another network before changing
-`network-fees`.
+**The actual cause: all traffic was egressing through a VPN.** The active adapter was
+`bdvpnservice_2` (Bitdefender, WireGuard) and the egress IP was `108.171.102.153` —
+Strong Technology / NetProtect, AS62651, which IP intelligence flags `proxy: true`.
+mempool.space answers ICMP from that address but **silently drops TCP on both 80 and
+443**, the standard signature of a host blocking VPN/proxy ranges. Bitcoin
+infrastructure does this aggressively because of scraping abuse.
 
+With the VPN off, the same checks pass immediately:
+
+| | VPN on | VPN off |
+|---|---|---|
+| Egress IP | `108.171.102.153` (`proxy: true`) | `76.39.172.140` (Spectrum, `proxy: false`) |
+| Apparent location | Colorado | North Carolina (the real one) |
+| mempool.space `:80` / `:443` | both dropped | **both connect** |
+| `/api/v1/fees/recommended` | 20s timeout | **HTTP 200 in 0.40s** |
+| `btcFeeSource` | `estimate` | **`live`** |
+| `network-fees` check | 🟡 FALLBACK, **10,936ms** | 🟢 **REAL, 129ms** |
+
+⚠ **THE BASELINE CAVEAT THIS EXPOSES.** This document tells you to trust an
+owner-machine run because results are IP-dependent. That is right, and it is not
+sufficient: **the owner's machine can itself be behind a VPN**, in which case the run
+measures a datacenter/proxy IP — exactly the systematically-wrong baseline the warning
+exists to prevent, just from a different address. Every IP-dependent verdict recorded
+in the 2026-09-09 run was measured through that proxy.
+
+**Check the egress before trusting a run:**
+
+    curl -s https://api.ipify.org
+    curl -s "http://ip-api.com/json/<that-ip>?fields=isp,org,proxy,hosting"
+
+If `proxy` or `hosting` is true, the run is not an owner-machine baseline no matter
+which machine it ran on.
+
+### ⚠ And the trade-off runs BOTH ways — publicnode (2026-09-10)
+
+Turning the VPN off fixed mempool.space and broke something else. `publicnode.com`
+(the keyless EVM RPC behind `network-fees` and the wallet routes) now **refuses this
+residential IP at the Cloudflare edge** — both `ethereum-rpc` and `polygon-bor-rpc`,
+over IPv4 and IPv6 alike, failing in 40-75ms rather than timing out. It did NOT
+recover after 3+ minutes, and under the VPN it worked, so this is IP-scoped, not an
+outage. Most likely a per-IP rate-limit ban earned by the audit's own RPC burst.
+
+Consequences, one of which is a genuine gap:
+
+| Check | Outcome |
+|---|---|
+| `wallet eth (mainnet)` | 🟢 REAL — the ladder fell through to `eth.drpc.org` |
+| `wallet eth (polygon)` | 🔴 **FAIL 502** — no working fallback behind publicnode |
+| `wallet tron` | 🔴 FAIL — Tronscan HTTP 429, also per-IP |
+
+**Polygon having no fallback where mainnet has one is the real finding here** — the
+VPN merely revealed it. Worth fixing regardless of which IP the app runs from.
+
+⚠ Note the shape of this: the audit can provoke the very failure it then reports. A
+burst of RPC calls earns a rate-limit ban, and the next run records "provider down".
+Neither of these two hosts was ever down.
 ### 🐢 Slow (>3s)
 
 `network count matches across layers` 22.8s · `v1 network-fees` 11.1s · `fund-universe`

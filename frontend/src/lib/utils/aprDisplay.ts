@@ -2,24 +2,53 @@
 // and is it labelled live" decision is testable. A wrong `live` badge here is
 // exactly the misattribution bug the own-key rule exists to prevent.
 
+import type { GapReasonId } from '@/lib/data/dataGaps'
 import {
   DEFAULT_LIVE_APR_KEY,
   type StakingProvider, type StakingCoinId,
 } from '@/lib/data/stakingProviders'
+
+export interface AprDisplay {
+  apr: number
+  live: boolean
+  /**
+   * Why this row is not a live reading. Undefined when `live` is true.
+   *
+   * The route answers this for keys it fetches (`gaps`), but it cannot answer it
+   * for a provider that has no live key at all — that is a fact about our
+   * catalog, not about any upstream — so the two cases are resolved together
+   * here and the row gets one reason either way.
+   */
+  gap?: GapReasonId
+}
 
 export function aprDisplay(
   staticApr: number,
   liveKey: string | undefined,
   rates: Partial<Record<string, number>>,
   sources: Partial<Record<string, 'live' | 'estimate'>>,
-) {
+  /** `gaps` from /live-data/staking-rates. Optional: absent means "unknown why". */
+  gaps?: Partial<Record<string, GapReasonId>>,
+): AprDisplay {
   // Only providers with their OWN live-rate key show a live number/badge.
   // The old coin-level default-key fallback displayed a different provider's
   // rate (e.g. Lido's stETH APR on a CeFi card) as if it were this provider's.
-  if (!liveKey) return { apr: staticApr, live: false }
+  //
+  // No key is its own reason, and a common one: most CeFi desks publish a rate on
+  // a marketing page and nowhere machine-readable, so the catalog carries a dated
+  // figure by hand. That is not a failed fetch and must not read as one.
+  if (!liveKey) return { apr: staticApr, live: false, gap: 'curated-estimate' }
+
   const live = rates[liveKey]
-  if (live != null) return { apr: live, live: sources[liveKey] === 'live' }
-  return { apr: staticApr, live: false }
+  if (live != null) {
+    if (sources[liveKey] === 'live') return { apr: live, live: true }
+    // A number arrived but is not a reading — it is the route's fallback. The
+    // route says why; `upstream-failed` only where it did not, which is the
+    // useful direction to be wrong in (it reports work rather than hiding a
+    // regression behind a known limitation).
+    return { apr: live, live: false, gap: gaps?.[liveKey] ?? 'upstream-failed' }
+  }
+  return { apr: staticApr, live: false, gap: gaps?.[liveKey] ?? 'upstream-failed' }
 }
 
 /**
