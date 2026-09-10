@@ -53,15 +53,42 @@ describe('feeImpact', () => {
     expect(feeImpact(f, { ...P, annualReturnPct: -1 })).toBeNull()
   })
 
-  it('orders the whole catalog by cost identically to expense ratio when no verified loads exist', () => {
-    // Today no rate is verified, so cost must be monotonic in ER — if this ever
-    // fails, either a verified load landed (fine — update this test to say so)
-    // or the maths broke (not fine).
-    const funds = FUND_CATALOG.filter((f) => f.expenseRatioPct != null)
+  // A verified load landed on 2026-09-10 (AGTHX, 5.75% front, read from the SEC
+  // Risk/Return Summary for 2025q4). The previous version of this test asserted
+  // cost order == expense-ratio order across the WHOLE catalog and said, in as
+  // many words, "if this ever fails, either a verified load landed (fine —
+  // update this test to say so) or the maths broke". One landed. This says so.
+  it('still orders by expense ratio for every fund with NO verified load', () => {
+    // The monotonicity claim is still the real guard against broken maths; it
+    // just no longer applies to a fund whose cost includes a one-off charge.
+    const funds = FUND_CATALOG.filter(
+      (f) => f.expenseRatioPct != null && !feeImpact(f, P)!.includesLoad,
+    )
     const byEr = [...funds].sort((a, b) => a.expenseRatioPct - b.expenseRatioPct).map((f) => f.symbol)
     const byCost = [...funds]
       .sort((a, b) => feeImpact(a, P)!.costUsd - feeImpact(b, P)!.costUsd)
       .map((f) => f.symbol)
     expect(byCost).toEqual(byEr)
+  })
+
+  it('ranks a load-bearing fund WORSE by cost than its expense ratio alone implies', () => {
+    // The point of pricing the load: AGTHX's 0.59% ER is unremarkable, and its
+    // true cost to a Class A buyer is not. If the load stopped reaching the
+    // maths, this fund would slide back among its ER peers and nothing else
+    // would complain.
+    const priced = FUND_CATALOG.filter((f) => feeImpact(f, P)!.includesLoad)
+    expect(priced.length, 'no fund prices a load — did a verified rate get dropped?').toBeGreaterThan(0)
+
+    for (const f of priced) {
+      const erRank = [...FUND_CATALOG]
+        .filter((x) => x.expenseRatioPct != null)
+        .sort((a, b) => a.expenseRatioPct - b.expenseRatioPct)
+        .findIndex((x) => x.symbol === f.symbol)
+      const costRank = [...FUND_CATALOG]
+        .filter((x) => x.expenseRatioPct != null)
+        .sort((a, b) => feeImpact(a, P)!.costUsd - feeImpact(b, P)!.costUsd)
+        .findIndex((x) => x.symbol === f.symbol)
+      expect(costRank, `${f.symbol} should rank costlier once its load is priced`).toBeGreaterThan(erRank)
+    }
   })
 })
