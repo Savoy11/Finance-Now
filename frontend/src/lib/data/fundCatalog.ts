@@ -45,11 +45,30 @@ import type { SectorId } from './equityCatalog'
 // make 116 unchecked rows look freshly confirmed — the precise failure the
 // paragraph above describes.
 //
-// KNOWN SUSPECT, deliberately NOT changed: USO carries 0.81 here and a
-// third-party API reports 0.86. USO is a commodity pool with no SEC fee table,
-// so there is no primary source in hand, and the only figure available comes
-// from a provider whose free tier is personal-use — fine as a research signal,
-// not as something to display. Read USO's own prospectus before touching it.
+// ✅ RESOLVED 2026-09-10 — USO is 0.86, not 0.81. The third-party API was right.
+//
+// This entry read "KNOWN SUSPECT, deliberately NOT changed", on the grounds that
+// USO is a commodity pool with no SEC fee table and therefore no primary source
+// in hand. The first half is true and the conclusion was not: a commodity pool
+// files no *structured* Risk/Return dataset, but it still files a PROSPECTUS,
+// and that prospectus carries an ordinary fee table.
+//
+// From USO's 424B3 filed 2026-04-24 (CIK 1327068, accession 0002071876-26-000128),
+// verbatim:
+//
+//     Annual Fund Operating Expenses
+//       Management Fees                          0.45 %
+//       Distribution Fees                        None
+//       Other Fund Expenses                      0.41 %
+//       Total Annual Fund Operating Expenses     0.86 %
+//
+// 0.45 + 0.41 = 0.86 — the components reconcile, so this is not one stray number.
+//
+// The lesson is about the ABSENCE of a source rather than the number: "not in the
+// dataset we usually read" was treated as "not obtainable", and that reasoning
+// held a wrong figure in place for months while the correct one sat in a public
+// filing. The 37 non-'40-Act funds in T-386 are absent from the same dataset for
+// the same reason, and are almost certainly reachable the same way.
 //
 // Full assessment and the per-fund workbook: the 2026-09-01 fund fee review.
 export const FUND_DATA_LAST_VERIFIED = '2026-07-20'
@@ -429,7 +448,7 @@ export const FUND_CATALOG: FundEntry[] = [
   // during that check and are deliberately not listed anywhere.
   { symbol: 'PPLT', name: 'abrdn Physical Platinum Shares ETF', type: 'etf', issuer: 'abrdn',   category: 'commodity', expenseRatioPct: 0.60, aumB: 1.1,  referencePrice: 15,  yieldPct: null, inceptionYear: 2010, indexTracked: 'Platinum bullion (LBMA)', topHoldings: [], website: 'https://www.abrdnplatinum.com/', description: 'Physically backed platinum — the direct proxy for the platinum contract.' },
   { symbol: 'PALL', name: 'abrdn Physical Palladium Shares ETF', type: 'etf', issuer: 'abrdn', category: 'commodity', expenseRatioPct: 0.60, aumB: 0.1,  referencePrice: 23,  yieldPct: null, inceptionYear: 2010, indexTracked: 'Palladium bullion (LBMA)', topHoldings: [], website: 'https://www.abrdnpalladium.com/', description: 'Physically backed palladium — thin, small fund; the only direct proxy for the palladium contract.' },
-  { symbol: 'USO',  name: 'United States Oil Fund',           type: 'etf', issuer: 'USCF',     category: 'commodity', expenseRatioPct: 0.81, aumB: 1.8,  referencePrice: 129, yieldPct: null, inceptionYear: 2006, indexTracked: 'WTI crude oil futures (front-month roll)', topHoldings: [], website: 'https://www.uscfinvestments.com/uso', description: 'The original single-commodity WTI crude proxy — closest tracking to spot, but front-month-only roll cost stings in contango markets. Issues a K-1 tax form.' },
+  { symbol: 'USO',  name: 'United States Oil Fund',           type: 'etf', issuer: 'USCF',     category: 'commodity', expenseRatioPct: 0.86, aumB: 1.8,  referencePrice: 129, yieldPct: null, inceptionYear: 2006, indexTracked: 'WTI crude oil futures (front-month roll)', topHoldings: [], website: 'https://www.uscfinvestments.com/uso', description: 'The original single-commodity WTI crude proxy — closest tracking to spot, but front-month-only roll cost stings in contango markets. Issues a K-1 tax form.' },
   { symbol: 'OILK', name: 'ProShares K-1 Free Crude Oil ETF', type: 'etf', issuer: 'ProShares', category: 'commodity', expenseRatioPct: 0.69, aumB: 0.15, referencePrice: 54,  yieldPct: null, inceptionYear: 2019, indexTracked: 'WTI crude oil futures (diversified roll)', topHoldings: [], website: 'https://www.proshares.com/our-etfs/strategic/oilk', description: 'Same WTI exposure as USO, structured as a registered fund so it issues a 1099 instead of a K-1 at tax time.' },
   { symbol: 'USL',  name: 'United States 12 Month Oil Fund',  type: 'etf', issuer: 'USCF',     category: 'commodity', expenseRatioPct: 1.01, aumB: 0.1,  referencePrice: 51,  yieldPct: null, inceptionYear: 2007, indexTracked: 'WTI crude oil futures (laddered 12-month)', topHoldings: [], website: 'https://www.uscfinvestments.com/usl', description: 'Spreads WTI exposure across 12 futures months instead of just the front month — smoother roll cost, less precise short-term tracking than USO. Issues a K-1.' },
   { symbol: 'BNO',  name: 'United States Brent Oil Fund',     type: 'etf', issuer: 'USCF',     category: 'commodity', expenseRatioPct: 1.15, aumB: 0.15, referencePrice: 51,  yieldPct: null, inceptionYear: 2010, indexTracked: 'Brent crude oil futures (front-month roll)', topHoldings: [], website: 'https://www.uscfinvestments.com/bno', description: 'Single-commodity Brent proxy — the seaborne global benchmark, distinct from WTI.' },
