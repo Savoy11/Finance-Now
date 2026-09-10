@@ -22,6 +22,18 @@ import {
   type CoinId, type TransferPath, type TransferWarning,
   type NetworkFeeMap, type CoinPriceMap, type LiveFeeOverrideMap,
 } from '@/lib/data/transferFees'
+
+/**
+ * How many networks this table actually carries USDT on.
+ *
+ * Derived, not written down: the copy below warns that one asset spans many
+ * address-compatible networks, and a hardcoded "10+" would quietly drift every time
+ * a network is added or an exchange delists a rail. The number a reader is being
+ * asked to worry about should be the number this app can actually route over.
+ */
+const USDT_NETWORK_COUNT = new Set(
+  EXCHANGES.flatMap((ex) => ex.coins.usdt?.networks.map((n) => n.networkId) ?? []),
+).size
 import {
   getTransferTaxNotes, getTaxGuidanceProvenance,
   type TaxNote, type TaxConfidence,
@@ -496,8 +508,9 @@ function WrongNetworkExplainer() {
         <h3 className="text-xs font-bold text-red-300 uppercase tracking-wide">Wrong network = lost funds</h3>
       </div>
       <p className="text-[11px] text-slate-400 leading-relaxed">
-        The most common and devastating crypto transfer mistake. USDT alone exists on
-        10+ networks — all potentially sharing the same address format. Sending USDT-ERC20
+        The most common and devastating crypto transfer mistake. USDT alone exists on{' '}
+        {USDT_NETWORK_COUNT} networks in this table — all potentially sharing the same
+        address format. Sending USDT-ERC20
         to a TRC-20 deposit address typically results in <span className="text-red-400 font-semibold">permanent, unrecoverable loss</span>.
       </p>
       <div className="space-y-1.5">
@@ -698,7 +711,7 @@ function TransferFeesPageInner() {
             <PageHeader
               title="Transfer Fee Calculator"
               subtitle="Find the cheapest route to move crypto between exchanges and wallets"
-              description="The Transfer Fee Calculator compares withdrawal costs across 30 exchanges and 18 networks. It accounts for network gas fees, exchange withdrawal minimums, and multi-hop routes (e.g. sending to an intermediate wallet to avoid unsupported direct transfers)."
+              description={`The Transfer Fee Calculator compares withdrawal costs across ${EXCHANGES.length} exchanges and ${Object.keys(NETWORKS).length} networks. It accounts for network gas fees, exchange withdrawal minimums, and multi-hop routes (e.g. sending to an intermediate wallet to avoid unsupported direct transfers).`}
               details={[
                 { label: 'Live gas prices', text: 'Bitcoin uses live mempool sat/vByte; Ethereum, BNB Chain, Polygon and Avalanche use live eth_gasPrice from a public RPC. Both are a live rate multiplied by an assumed transaction size, so the size is still an estimate. Arbitrum, Optimism and Base are deliberately NOT live — their cost is dominated by an L1 data fee that eth_gasPrice does not report, so a live-looking number would understate it. Remaining networks use static gas amounts at live token prices.' },
                 { label: 'Multi-hop routes', text: 'When a direct exchange-to-exchange path is unavailable, the calculator finds the best two-leg route via your personal wallet.' },

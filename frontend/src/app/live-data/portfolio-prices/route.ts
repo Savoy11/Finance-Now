@@ -65,7 +65,7 @@ export async function GET(req: NextRequest) {
         Object.assign(prices, llama)
         providers.push('defillama')
       }
-    } catch { /* both providers down — reported via source below */ }
+    } catch { /* every provider in the ladder is down — reported via source/provider below, both derived from what actually answered */ }
   }
 
   const missing = ids.filter(id => prices[id] == null)

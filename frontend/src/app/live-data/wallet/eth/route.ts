@@ -3,6 +3,8 @@ import {
   WALLET_FETCH_TIMEOUT_MS,
   WALLET_LADDER_BUDGET_MS,
   walletFetchErrorMessage,
+  describeLadderFailure,
+  type LadderAttempt,
 } from '@/lib/server/walletFetch'
 
 export const dynamic = 'force-dynamic'
@@ -17,14 +19,46 @@ export const dynamic = 'force-dynamic'
 // single endpoint that outage surfaced as a hard 502 on the two most-used
 // chains. Endpoints are tried in order until one answers; only if every
 // endpoint in the ladder fails does the route error.
+// ⚠ Endpoints verified individually on 2026-09-10 (owner machine, no VPN). Two of
+//   publicnode's hostnames were DEAD as first rungs and had to be replaced:
+//
+//     ethereum-rpc.publicnode.com     TLS handshake never completes -> ethereum.publicnode.com ✓
+//     polygon-bor-rpc.publicnode.com  same                          -> polygon-bor.publicnode.com ✓
+//
+//   It is NOT a naming-convention change: bsc-rpc, avalanche-c-chain-rpc,
+//   arbitrum-one-rpc, base-rpc and optimism-rpc all answer 200 and are left alone.
+//   Only those two hosts are broken, and both happened to be first in their ladder.
+//
+//   Ethereum survived because the ladder fell through to eth.drpc.org — it just paid
+//   a wasted request first. Polygon did NOT: its other two rungs (polygon.drpc.org,
+//   polygon-rpc.com) were also failing, so all three were down and /wallets returned
+//   a hard 502 for Polygon. A ladder is only as good as its rungs actually being
+//   alive, and nothing was checking.
+//
+//   ⚠ Reachability is IP-dependent — see the VPN note in README. These were checked
+//   from a residential IP; a failure here is not proof a host is down for everyone.
+//   Re-verify with the loop in docs/runbooks/incident-response.md before deleting a
+//   rung on the strength of one machine.
 const EVM_RPCS: Record<string, { rpcs: string[]; symbol: string }> = {
-  ethereum:  { symbol: 'ETH',  rpcs: ['https://ethereum-rpc.publicnode.com', 'https://eth.drpc.org', 'https://cloudflare-eth.com'] },
-  polygon:   { symbol: 'POL',  rpcs: ['https://polygon-bor-rpc.publicnode.com', 'https://polygon.drpc.org', 'https://polygon-rpc.com'] },
+  ethereum:  { symbol: 'ETH',  rpcs: ['https://ethereum.publicnode.com', 'https://eth.drpc.org', 'https://cloudflare-eth.com'] },
+  // 1rpc.io/matic added 2026-09-10: Polygon had zero working rungs without it.
+  polygon:   { symbol: 'POL',  rpcs: ['https://polygon-bor.publicnode.com', 'https://1rpc.io/matic', 'https://polygon-rpc.com'] },
   bsc:       { symbol: 'BNB',  rpcs: ['https://bsc-rpc.publicnode.com', 'https://bsc-dataseed.binance.org'] },
   avalanche: { symbol: 'AVAX', rpcs: ['https://avalanche-c-chain-rpc.publicnode.com', 'https://api.avax.network/ext/bc/C/rpc'] },
   arbitrum:  { symbol: 'ETH',  rpcs: ['https://arbitrum-one-rpc.publicnode.com', 'https://arb1.arbitrum.io/rpc'] },
   base:      { symbol: 'ETH',  rpcs: ['https://base-rpc.publicnode.com', 'https://mainnet.base.org'] },
   optimism:  { symbol: 'ETH',  rpcs: ['https://optimism-rpc.publicnode.com', 'https://mainnet.optimism.io'] },
+}
+
+/** Host (plus path where it disambiguates, e.g. 1rpc.io/matic) — enough to find the
+ *  entry in EVM_RPCS without printing a full URL into an error string. */
+function endpointLabel(url: string): string {
+  try {
+    const u = new URL(url)
+    return u.pathname && u.pathname !== '/' ? `${u.host}${u.pathname}` : u.host
+  } catch {
+    return url
+  }
 }
 
 async function rpcCall(rpcUrl: string, method: string, params: unknown[]) {
@@ -47,14 +81,19 @@ async function rpcCall(rpcUrl: string, method: string, params: unknown[]) {
 // Runs both calls against one endpoint, so a healthy endpoint always serves a
 // self-consistent pair (balance and txCount from the same node).
 async function evmRpcPair(rpcs: string[], address: string): Promise<{ balanceHex: string; txCountHex: string; rpc: string }> {
-  let lastErr = 'no endpoints configured'
+  // Every rung's failure is kept, not just the last: the PRIMARY endpoint's reason
+  // is the one worth reading, and the old message threw it away.
+  const attempts: LadderAttempt[] = []
+  let budgetExhausted = false
   // Per-request timeouts alone would let three dead endpoints cost three full
   // budgets, so the ladder also refuses to START a rung past the overall
   // deadline. A rung already in flight is allowed to finish on its own timeout.
   const deadline = Date.now() + WALLET_LADDER_BUDGET_MS
   for (const rpc of rpcs) {
     if (Date.now() >= deadline) {
-      lastErr = `ladder budget of ${WALLET_LADDER_BUDGET_MS / 1000}s exhausted after ${lastErr}`
+      // Stop starting rungs, and record that the remainder were never asked —
+      // which is a different claim from "they failed".
+      budgetExhausted = true
       break
     }
     try {
@@ -64,11 +103,11 @@ async function evmRpcPair(rpcs: string[], address: string): Promise<{ balanceHex
       ])
       return { balanceHex, txCountHex, rpc }
     } catch (err) {
-      lastErr = walletFetchErrorMessage(err)
+      attempts.push({ endpoint: endpointLabel(rpc), error: walletFetchErrorMessage(err) })
       // try the next endpoint in the ladder
     }
   }
-  throw new Error(`all RPC endpoints failed (last: ${lastErr})`)
+  throw new Error(describeLadderFailure(rpcs.length, attempts, { budgetExhausted }))
 }
 
 // GET /live-data/wallet/eth?address=0x...&chain=polygon
