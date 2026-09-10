@@ -17,9 +17,30 @@ export const dynamic = 'force-dynamic'
 // single endpoint that outage surfaced as a hard 502 on the two most-used
 // chains. Endpoints are tried in order until one answers; only if every
 // endpoint in the ladder fails does the route error.
+// ⚠ Endpoints verified individually on 2026-09-10 (owner machine, no VPN). Two of
+//   publicnode's hostnames were DEAD as first rungs and had to be replaced:
+//
+//     ethereum-rpc.publicnode.com     TLS handshake never completes -> ethereum.publicnode.com ✓
+//     polygon-bor-rpc.publicnode.com  same                          -> polygon-bor.publicnode.com ✓
+//
+//   It is NOT a naming-convention change: bsc-rpc, avalanche-c-chain-rpc,
+//   arbitrum-one-rpc, base-rpc and optimism-rpc all answer 200 and are left alone.
+//   Only those two hosts are broken, and both happened to be first in their ladder.
+//
+//   Ethereum survived because the ladder fell through to eth.drpc.org — it just paid
+//   a wasted request first. Polygon did NOT: its other two rungs (polygon.drpc.org,
+//   polygon-rpc.com) were also failing, so all three were down and /wallets returned
+//   a hard 502 for Polygon. A ladder is only as good as its rungs actually being
+//   alive, and nothing was checking.
+//
+//   ⚠ Reachability is IP-dependent — see the VPN note in README. These were checked
+//   from a residential IP; a failure here is not proof a host is down for everyone.
+//   Re-verify with the loop in docs/runbooks/incident-response.md before deleting a
+//   rung on the strength of one machine.
 const EVM_RPCS: Record<string, { rpcs: string[]; symbol: string }> = {
-  ethereum:  { symbol: 'ETH',  rpcs: ['https://ethereum-rpc.publicnode.com', 'https://eth.drpc.org', 'https://cloudflare-eth.com'] },
-  polygon:   { symbol: 'POL',  rpcs: ['https://polygon-bor-rpc.publicnode.com', 'https://polygon.drpc.org', 'https://polygon-rpc.com'] },
+  ethereum:  { symbol: 'ETH',  rpcs: ['https://ethereum.publicnode.com', 'https://eth.drpc.org', 'https://cloudflare-eth.com'] },
+  // 1rpc.io/matic added 2026-09-10: Polygon had zero working rungs without it.
+  polygon:   { symbol: 'POL',  rpcs: ['https://polygon-bor.publicnode.com', 'https://1rpc.io/matic', 'https://polygon-rpc.com'] },
   bsc:       { symbol: 'BNB',  rpcs: ['https://bsc-rpc.publicnode.com', 'https://bsc-dataseed.binance.org'] },
   avalanche: { symbol: 'AVAX', rpcs: ['https://avalanche-c-chain-rpc.publicnode.com', 'https://api.avax.network/ext/bc/C/rpc'] },
   arbitrum:  { symbol: 'ETH',  rpcs: ['https://arbitrum-one-rpc.publicnode.com', 'https://arb1.arbitrum.io/rpc'] },

@@ -843,10 +843,20 @@ Both are IP-scoped and neither host was ever down. Two lessons worth keeping:
    "the route is blackholed" and "DNS is hijacked" both looked plausible and both were
    wrong. Test the layers separately: DNS across three resolvers, then TCP, then TLS.
 2. **The audit can provoke the failure it then reports.** A burst of RPC calls earns a
-   per-IP rate-limit ban, and the next run records "provider down". That is how
-   `publicnode` broke — and it exposed a real gap worth fixing regardless: `wallet eth
-   (polygon)` has no fallback behind publicnode, where mainnet falls through to
-   `eth.drpc.org`.
+   per-IP rate-limit ban, and the next run records "provider down".
+
+⚠ **The publicnode failure turned out NOT to be the VPN (corrected 2026-09-10).** Two of
+its hostnames — `ethereum-rpc.publicnode.com` and `polygon-bor-rpc.publicnode.com` —
+fail the TLS handshake outright, while the other five `-rpc` names answer 200. Both
+broken ones sat FIRST in their ladder: Ethereum fell through to `eth.drpc.org`, but
+Polygon had nothing left because its other two rungs were independently down, so
+`/wallets` hard-502'd for it. Fixed by replacing both with their working short form and
+adding `1rpc.io/matic`.
+
+That was a third wrong attribution in one investigation, and the same mistake each time:
+**reading one symptom as one cause.** The route reports "all RPC endpoints failed"
+without saying how many there were, which reads like an outage and was two stale
+hostnames. Test rungs individually before blaming the network.
 
 ---
 

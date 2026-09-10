@@ -233,7 +233,7 @@ moved. The corrected run is 2026-09-10, immediately below.
 |---|---|---|---|
 | `network-fees` | 🟡 FALLBACK, 10,936ms | 🟢 **REAL, 129ms** | mempool.space reachable; BTC fee live |
 | `bitcoin fee is live (mempool.space)` | 🟡 FALLBACK `source=estimate` | 🟢 **REAL `source=live`** | same |
-| `wallet eth (polygon)` | 🟢 REAL | 🔴 **FAIL 502** | publicnode refuses the residential IP; no fallback behind it |
+| `wallet eth (polygon)` | 🟢 REAL | 🔴 **FAIL 502** | all THREE of its rungs were dead at once — corrected below |
 | `wallet tron` | 🟢 REAL | 🔴 **FAIL** | Tronscan HTTP 429, per-IP |
 | `portfolio-history` | 🔴 FAIL | 🔴 FAIL | unchanged — CoinGecko 429, `retry-after=18` |
 
@@ -365,11 +365,34 @@ Consequences, one of which is a genuine gap:
 | Check | Outcome |
 |---|---|
 | `wallet eth (mainnet)` | 🟢 REAL — the ladder fell through to `eth.drpc.org` |
-| `wallet eth (polygon)` | 🔴 **FAIL 502** — no working fallback behind publicnode |
+| `wallet eth (polygon)` | 🔴 **FAIL 502** — all three rungs dead at once (corrected 2026-09-10; it was NOT missing a fallback) |
 | `wallet tron` | 🔴 FAIL — Tronscan HTTP 429, also per-IP |
 
-**Polygon having no fallback where mainnet has one is the real finding here** — the
-VPN merely revealed it. Worth fixing regardless of which IP the app runs from.
+⚠ **CORRECTED 2026-09-10 — the "no fallback" claim here was WRONG.** Polygon always had
+three rungs (`polygon-bor-rpc.publicnode.com`, `polygon.drpc.org`, `polygon-rpc.com`).
+The real fault was worse and less obvious: **all three were failing simultaneously**, so
+the ladder behaved exactly as designed and still had nothing to land on.
+
+Diagnosed by testing each endpoint individually instead of trusting the route's "all RPC
+endpoints failed" message, which never says how many there were:
+
+| Chain | `-rpc` hostname | short hostname |
+|---|---|---|
+| ethereum | ❌ TLS never completes | ✅ `ethereum.publicnode.com` |
+| polygon-bor | ❌ TLS never completes | ✅ `polygon-bor.publicnode.com` |
+| bsc · avalanche · arbitrum · base · optimism | ✅ all 200 | ✅ |
+
+So it is **not** a publicnode naming change — five of the seven `-rpc` hostnames are
+fine. Exactly two are broken, and both happened to sit FIRST in their ladder. Ethereum
+survived by falling through to `eth.drpc.org`, paying one wasted request; Polygon had no
+survivor because its other two rungs were independently down.
+
+Fixed in `wallet/eth/route.ts`: both dead hosts replaced with their verified working
+form, plus `1rpc.io/matic` added to Polygon, which had zero working rungs without it.
+
+**The transferable lesson:** a fallback ladder is only as good as its rungs still being
+alive, and nothing was checking. "All endpoints failed" reads like an outage and was two
+stale hostnames plus coincidence.
 
 ⚠ Note the shape of this: the audit can provoke the very failure it then reports. A
 burst of RPC calls earns a rate-limit ban, and the next run records "provider down".
