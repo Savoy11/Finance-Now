@@ -253,6 +253,20 @@ claim about a deletion made **before 2026-08-05** resolves there, not in `main`'
 fetched. `archive/wave-two-pre-reset` is the same pattern for the wave-2 rollback of
 2026-08-15. Keep every `archive/*` branch through any stale-branch cleanup.
 
+**Retiring a branch means tagging it, not deleting it** (2026-09-11). The remote went
+from 100 branches to 24 by turning every retired branch into an annotated
+`archive/<branch-name>` **tag** and then deleting the branch — `git tag -l 'archive/*'`
+is the inventory, `git checkout -b <name> archive/<name>` is the restore, and
+`git show archive/<name>` prints why and when it was retired. Tags were chosen over
+more `archive/*` **branches** because the branch-list length was the problem being
+solved; the repo had zero tags before this, so that namespace is exactly this and
+nothing else. **54 of the 78 were squash-merged**, meaning their commits are
+unreachable from `main` and `git branch --merged` will call them unmerged forever —
+which is why the rule is one rule, applied without checking whether a branch "looks"
+merged. Tag, verify the tag is on the remote, *then* delete. Record:
+`docs/audits/branch-archive-2026-09-11.md`. The 15 `archive/*` branches were not
+converted and stay as branches.
+
 **Standing rule:** any history-shaping operation — force-pushing or re-rooting a branch,
 deleting branches, archiving a workstream — lands **together with a dated note in
 `docs/`** saying what was done and where the prior state lives. A reset nobody writes
