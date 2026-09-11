@@ -39,7 +39,8 @@
     "llama-symbols": "node scripts/probe-llama-symbols.mjs",
     "fund-fees": "node scripts/build-fund-fees.mjs",
     "fee-reconcile": "tsx scripts/reconcile-transfer-fees.ts",
-    "fee-apply": "tsx scripts/apply-fee-updates.ts"
+    "fee-apply": "tsx scripts/apply-fee-updates.ts",
+    "fund-prospectus-fees": "node scripts/probe-fund-prospectus-fees.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.120.0",
