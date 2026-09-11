@@ -162,7 +162,27 @@ const COVER_PAGE_CHARS = 3_000
  * Capped, because each candidate costs requests and a fund whose last few
  * filings are all supplements needs a human rather than more fetching.
  */
-const MAX_FILING_CANDIDATES = 4
+/**
+ * Per FORM, not overall.
+ *
+ * ⚠ A global cap is consumed by supplements of the SAME form, so the 10-K
+ *   fallback never gets a turn. Teucrium Commodity Trust files a stream of
+ *   424B3 supplements — its four newest are 1-5 KB with no fee table — and a
+ *   global cap of 4 spent every slot on them, then reported CORN/WEAT/SOYB/CANE
+ *   as "fee not found" without ever trying the annual report that states it.
+ *   Budgeting per form guarantees each KIND of filing is attempted.
+ */
+const MAX_PER_FORM = 4
+
+/**
+ * A filing this old is not evidence about today's fee.
+ *
+ * BAR resolved from an S-1 filed 2018-06-05 stating 0.20% against a catalog 0.17%.
+ * Sponsors cut fees to compete, so the likeliest reading is that the catalog is
+ * CURRENT and the filing is stale — the opposite of a catalog error. Reporting it
+ * as a difference would argue for raising a fee to an eight-year-old number.
+ */
+const STALE_FILING_YEARS = 3
 
 async function candidateFilings(cik) {
   const res = await politeFetch(`https://data.sec.gov/submissions/CIK${cik}.json`)
@@ -172,8 +192,10 @@ async function candidateFilings(cik) {
   if (!f) return []
   const out = []
   for (const formRe of FORMS) {
-    for (let i = 0; i < f.form.length && out.length < MAX_FILING_CANDIDATES; i++) {
+    let perForm = 0
+    for (let i = 0; i < f.form.length && perForm < MAX_PER_FORM; i++) {
       if (!formRe.test(f.form[i])) continue
+      perForm++
       const acc = f.accessionNumber[i].replace(/-/g, '')
       const doc = f.primaryDocument[i]
       if (!doc) continue
@@ -187,7 +209,6 @@ async function candidateFilings(cik) {
         registrant: d.name,
       })
     }
-    if (out.length >= MAX_FILING_CANDIDATES) break
   }
   return out
 }
@@ -412,12 +433,27 @@ async function main() {
     // Compare against what a holder PAYS. A waived fee makes the contractual rate
     // the wrong basis for a "differs" verdict.
     const effectivePct = waivedTo ?? best.pct
-    const delta = catalogPct != null ? Number((effectivePct - catalogPct).toFixed(4)) : null
-    rows.push({ symbol, catalogPct, cik, filing, status: ambiguous ? 'ambiguous' : 'ok', hits, filedPct: best.pct, waivedTo, effectivePct, matchedLabel: best.label, delta })
+    const filedYear = Number(String(filing.filed).slice(0, 4))
+    const ageYears = Number.isFinite(filedYear) ? new Date().getFullYear() - filedYear : 0
+    const old = ageYears > STALE_FILING_YEARS
+    const rawDelta = catalogPct != null ? Number((effectivePct - catalogPct).toFixed(4)) : null
+
+    // ⚠ AGE CUTS ONE WAY ONLY, and treating it symmetrically threw away real
+    //   results. A 2022 filing that AGREES with the catalog is corroboration:
+    //   grantor trusts rarely re-file, and GLD/IAU/GLDM/SGOL/AAAU/SLV all match
+    //   their 2022 prospectus exactly. Marking those unresolved discarded six
+    //   confirmations. A stale filing that DISAGREES is the weak case — sponsors
+    //   cut fees to compete, so the likeliest reading is a current catalog and an
+    //   out-of-date document (BAR: 0.20% in 2018 vs 0.17% today).
+    const staleSource = old && rawDelta != null && Math.abs(rawDelta) >= 0.005
+    const delta = staleSource ? null : rawDelta
+    rows.push({ symbol, catalogPct, cik, filing, status: staleSource ? 'stale-source' : ambiguous ? 'ambiguous' : 'ok', hits, filedPct: best.pct, waivedTo, effectivePct, matchedLabel: best.label, delta, staleSource })
 
     const flag = delta == null ? '' : Math.abs(delta) >= 0.005 ? `  ⚠ DIFFERS by ${delta > 0 ? '+' : ''}${delta}pp` : '  ✓ agrees'
     log(`  ${symbol.padEnd(6)} ${String(effectivePct).padStart(5)}%  ${best.label.padEnd(38)} ${filing.form} ${filing.filed}${flag}${ambiguous ? '  [AMBIGUOUS — see all labels]' : ''}`)
     if (waivedTo != null) log(`         · contractual ${best.pct}%, WAIVED to ${waivedTo}% — waivers are revocable, so record both`)
+    if (staleSource) log(`         · filing is ${ageYears}y old and disagrees — too old to contradict the catalog; not counted as a difference`)
+    else if (old) log(`         · corroborated by a ${ageYears}y-old filing (this structure rarely re-files)`)
     if (ambiguous) for (const h of hits) log(`         · ${h.label}: ${h.pct}%  (${h.structure})`)
   }
 
