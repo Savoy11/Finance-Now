@@ -225,9 +225,32 @@ moved. The corrected run is 2026-09-10, immediately below.
 `npm run audit`, owner's machine, app on localhost:3000, tree at `57bb322`.
 **77 checks: 62 REAL · 11 FALLBACK · 3 UNCONFIGURED · 0 EMPTY · 1 FAIL.**
 
-### ✅ Re-run 2026-09-10 with the VPN OFF — the corrected baseline
+### ✅ Re-run 2026-09-10 with the VPN OFF
 
 **77 checks: 62 REAL · 9 FALLBACK · 3 UNCONFIGURED · 0 EMPTY · 3 FAIL.**
+
+⚠ **This was first written up as "the corrected baseline". That framing is wrong, and the
+correction matters for anyone reading these rows.** The VPN is the machine's NORMAL state —
+it was found re-enabled hours later, having reconnected on its own. So a VPN-off run is the
+exception, not the baseline, and **there are two legitimate baselines depending on egress**:
+
+| Row | VPN on (normal) | VPN off |
+|---|---|---|
+| BTC network fee | 🟡 estimate, ~11s per `network-fees` call | 🟢 live, 129ms |
+| `publicnode` EVM RPC | 🟢 all hostnames answer | ❌ the two busiest refuse this IP |
+| Everything key-gated, terms-gated or catalog-shaped | identical | identical |
+
+Neither column is "the truth". A reader asking *"is the BTC fee live?"* needs to know which
+egress the app is running behind, and **the honest answer is that it depends** — which is
+why the check in "Environment dependence" below is to look at the egress first, not to
+trust either table.
+
+⚠ **Do not test reachability through the route.** With the VPN back on, a direct request to
+`mempool.space` timed out at 20s while `/live-data/network-fees` still reported
+`btcFeeSource: live` — a value cached during the VPN-off window and served inside its
+revalidate period. The field is not lying (that reading *was* live) but it answers "where
+did this number come from", not "can we reach the source now". For reachability, probe the
+host directly.
 
 | Moved | From | To | Why |
 |---|---|---|---|

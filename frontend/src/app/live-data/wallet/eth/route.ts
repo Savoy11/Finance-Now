@@ -19,26 +19,37 @@ export const dynamic = 'force-dynamic'
 // single endpoint that outage surfaced as a hard 502 on the two most-used
 // chains. Endpoints are tried in order until one answers; only if every
 // endpoint in the ladder fails does the route error.
-// ⚠ Endpoints verified individually on 2026-09-10 (owner machine, no VPN). Two of
-//   publicnode's hostnames were DEAD as first rungs and had to be replaced:
+// ⚠ Rungs reordered 2026-09-10 after Polygon hard-502'd. The FIX is sound; the
+//   first explanation of it was WRONG, and the correction is the useful part.
 //
-//     ethereum-rpc.publicnode.com     TLS handshake never completes -> ethereum.publicnode.com ✓
-//     polygon-bor-rpc.publicnode.com  same                          -> polygon-bor.publicnode.com ✓
+//   What was claimed: ethereum-rpc.publicnode.com and polygon-bor-rpc.publicnode.com
+//   are DEAD HOSTS, because both failed the TLS handshake outright while the other
+//   five `-rpc` hostnames answered 200.
 //
-//   It is NOT a naming-convention change: bsc-rpc, avalanche-c-chain-rpc,
-//   arbitrum-one-rpc, base-rpc and optimism-rpc all answer 200 and are left alone.
-//   Only those two hosts are broken, and both happened to be first in their ladder.
+//   What is actually true: both answer 200 perfectly well. Re-tested from a
+//   different egress the same day —
 //
-//   Ethereum survived because the ladder fell through to eth.drpc.org — it just paid
-//   a wasted request first. Polygon did NOT: its other two rungs (polygon.drpc.org,
-//   polygon-rpc.com) were also failing, so all three were down and /wallets returned
-//   a hard 502 for Polygon. A ladder is only as good as its rungs actually being
-//   alive, and nothing was checking.
+//     host                             residential IP   via VPN
+//     ethereum-rpc.publicnode.com      TLS fails        200
+//     polygon-bor-rpc.publicnode.com   TLS fails        200
 //
-//   ⚠ Reachability is IP-dependent — see the VPN note in README. These were checked
-//   from a residential IP; a failure here is not proof a host is down for everyone.
-//   Re-verify with the loop in docs/runbooks/incident-response.md before deleting a
-//   rung on the strength of one machine.
+//   They are not dead. They were refusing ONE IP, and they are publicnode's two
+//   busiest endpoints — which is what a per-IP rate-limit ban looks like after
+//   `npm run audit` has just hammered them. The five quieter `-rpc` hosts were
+//   never near a limit, which is why the failure looked host-specific.
+//
+//   The ladder keeps the short hostnames anyway: they answer from BOTH egresses,
+//   so they are strictly the safer first rung. Polygon also keeps 1rpc.io/matic,
+//   added because its other two rungs (polygon.drpc.org, polygon-rpc.com) were
+//   failing at the same time and it had nothing left to land on.
+//
+//   ⚠ THE LESSON, which is worth more than the endpoint list: a host that fails
+//   from one IP is not a dead host, and "I tested it and it failed" is not
+//   evidence about the host. This is the same mistake three times in one day —
+//   mempool.space "down" (VPN-blocked), publicnode "dead" (IP-rate-limited), and
+//   Polygon "missing a fallback" (it had three). Before deleting or replacing a
+//   rung, re-test from a second egress; docs/runbooks/incident-response.md has the
+//   loop.
 const EVM_RPCS: Record<string, { rpcs: string[]; symbol: string }> = {
   ethereum:  { symbol: 'ETH',  rpcs: ['https://ethereum.publicnode.com', 'https://eth.drpc.org', 'https://cloudflare-eth.com'] },
   // 1rpc.io/matic added 2026-09-10: Polygon had zero working rungs without it.

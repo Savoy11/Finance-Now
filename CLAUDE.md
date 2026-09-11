@@ -845,18 +845,36 @@ Both are IP-scoped and neither host was ever down. Two lessons worth keeping:
 2. **The audit can provoke the failure it then reports.** A burst of RPC calls earns a
    per-IP rate-limit ban, and the next run records "provider down".
 
-⚠ **The publicnode failure turned out NOT to be the VPN (corrected 2026-09-10).** Two of
-its hostnames — `ethereum-rpc.publicnode.com` and `polygon-bor-rpc.publicnode.com` —
-fail the TLS handshake outright, while the other five `-rpc` names answer 200. Both
-broken ones sat FIRST in their ladder: Ethereum fell through to `eth.drpc.org`, but
-Polygon had nothing left because its other two rungs were independently down, so
-`/wallets` hard-502'd for it. Fixed by replacing both with their working short form and
-adding `1rpc.io/matic`.
+⚠ **publicnode: the third wrong attribution, and the correction matters more than the
+fix (2026-09-10).** The claim recorded here was that `ethereum-rpc.publicnode.com` and
+`polygon-bor-rpc.publicnode.com` are dead hosts, failing the TLS handshake while the
+other five `-rpc` names answer 200. **They are not dead.** Re-tested the same day from a
+different egress:
 
-That was a third wrong attribution in one investigation, and the same mistake each time:
-**reading one symptom as one cause.** The route reports "all RPC endpoints failed"
-without saying how many there were, which reads like an outage and was two stale
-hostnames. Test rungs individually before blaming the network.
+| host | residential IP | via VPN |
+|---|---|---|
+| `ethereum-rpc.publicnode.com` | TLS fails | **200** |
+| `polygon-bor-rpc.publicnode.com` | TLS fails | **200** |
+
+They were refusing ONE IP, and they are publicnode's two busiest endpoints — which is
+what a per-IP rate-limit ban looks like right after `npm run audit` has hammered them.
+The five quieter `-rpc` hosts were never near a limit, which is exactly why the failure
+looked host-specific rather than IP-specific.
+
+The ladder keeps the short hostnames regardless, because they answer from **both**
+egresses and are therefore the safer first rung.
+
+**Three wrong attributions in one day, all the same error**: mempool.space "down" (it was
+VPN-blocked), publicnode "dead" (IP-rate-limited), Polygon "missing a fallback" (it had
+three). Each time a single observation was read as a property of the world.
+
+Two habits that would have caught all three:
+
+1. **Re-test from a second egress before concluding anything about a host.** "I tested it
+   and it failed" is evidence about the path, not the host.
+2. **Report counts, not conditions.** "All RPC endpoints failed" never said how many there
+   were, so one dead rung and three read identically — see the derive-the-count rule
+   below.
 
 ---
 
