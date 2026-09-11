@@ -19,7 +19,6 @@ count of 60; this proposes 15 more.
 | Item | Claim | Evidence found |
 |---|---|---|
 | T-022 | equities TA page says "daily/weekly stock candles" | no occurrence of "weekly" anywhere in that page |
-| T-062 | — | *(not checked — see below)* |
 | T-072 | setState-in-effect warning in `FundsClient.tsx` | `npx eslint` on the file exits 0 with no output |
 | T-138 | fabricated `updatedAt` on the cbdc fallback | `CBDC_FALLBACK_COMPILED` is imported and returned in **both** fallback branches (lines 410, 429). The `new Date()` at 419 is the LIVE branch, which is correct |
 | T-259 | XRP wallet route has no timeout budget | `signal: AbortSignal.timeout(WALLET_FETCH_TIMEOUT_MS)` present |
