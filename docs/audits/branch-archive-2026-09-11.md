@@ -49,10 +49,14 @@ Each tag is **annotated**, so it carries its own provenance — read it with
 
 ```
 Archived 2026-09-11 from branch claude/t386-prospectus-fees
-2 commit(s) NOT in main (squash-merged or retired) - this tag is the only ref preserving them
-Tip: 7e7a8b53...
+
+Commits not in main: 2 - not reachable from main (squash-merged or retired)
+Also preserved by: refs/pull/174/head (survives branch deletion)
+Tip: 7e7a8b5300c95bb84d9d7ebd35f5bd55ee855a17
 Last commit: 2026-09-10 funds: CPER was also the management fee, and five guards the probe needed
+
 Restore: git checkout -b claude/t386-prospectus-fees archive/claude/t386-prospectus-fees
+Record: docs/audits/branch-archive-2026-09-11.md
 ```
 
 **This was tested, not asserted.** `archive/claude/t386-prospectus-fees` was restored
@@ -84,17 +88,49 @@ Delete both the same way once read; the tags already exist.
   so these are a merge-or-decide question, not a cleanup one. The oldest has been open
   since #98 and two are majors (`numpy 1.26.4 -> 2.4.6`, `pytest 8.4.2 -> 9.1.1`).
 
-## The trap this avoided
+## The squash-merge trap
 
 This repo squash-merges, which rewrites commits. **54 of the 78** retired branches still
-carried commits unreachable from `main` — they are merged in substance but will look
-unmerged to `git branch --merged` forever. A cleanup driven by that flag would have
-looked careful and stranded them permanently; one driven by GitHub's merged-PR list
-would have deleted them with their individual commits unpreserved.
+carried commits unreachable from `main` — merged in substance, but `git branch --merged`
+will call them unmerged forever. A cleanup driven by that flag would have looked careful
+and stranded them; tagging first makes the distinction moot, which is the argument for
+one rule applied without sorting branches by how merged they look.
 
-Tagging first makes the distinction moot: 24 tags are labels on history `main` already
-holds, and 54 are the only surviving reference to their commits. Both are recoverable by
-the same command, which is the point of using one rule.
+## ⚠ How much the tags actually rescued: nothing
+
+Measured after the fact, and it corrects an overstatement this document made in its
+first draft. **Not one of the 78 tags was load-bearing.** Every retired branch was
+already preserved by something else:
+
+| Also preserved by | Count |
+|---|---|
+| A GitHub PR ref (`refs/pull/N/head`) | 45 |
+| An `archive/*` branch | 7 |
+| Both | 26 |
+| **Nothing — the tag was the only ref** | **0** |
+
+`refs/pull/N/head` **survives head-branch deletion**. Verified directly: `claude/queue-sweep`
+was deleted, and `refs/pull/177/head` still resolves to `34a3b02`, the same commit as
+`archive/claude/queue-sweep`. GitHub keeps a PR's head commit permanently, so any branch
+that ever had a PR was never at risk — which is 71 of the 78 here.
+
+That is worth stating plainly because the first version of these tag messages asserted
+"this tag is the only ref preserving them" for 54 branches. It was wrong for 47 of them.
+All 78 tags were rewritten to name what else holds the commits, so a reader can tell a
+convenience copy from a rescue.
+
+**What the tags are actually worth**, which is not nothing:
+
+- **An inventory.** `git tag -l 'archive/*'` lists every retired branch by its original
+  name. Recovering from a PR ref requires knowing the PR number, which nobody remembers.
+- **Provenance.** `git show archive/<name>` states when it was retired, how many commits
+  `main` lacks, and what else preserves it.
+- **They travel.** `git fetch --tags` brings all 78; PR refs are not fetched by default.
+
+**Consequence for the auto-delete setting:** enabling *Automatically delete head
+branches* does **not** create an exception to the tag-everything rule, because a merged
+PR's commits live at `refs/pull/N/head` regardless. The rule earns its keep for branches
+that never had a PR — 7 of the 78 here.
 
 ## Inventory
 

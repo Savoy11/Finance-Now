@@ -267,6 +267,17 @@ merged. Tag, verify the tag is on the remote, *then* delete. Record:
 `docs/audits/branch-archive-2026-09-11.md`. The 15 `archive/*` branches were not
 converted and stay as branches.
 
+⚠ **The tags rescued nothing, and the record says so.** Measured after the sweep:
+**0 of the 78** were the only ref preserving their commits — 71 were already held by
+a GitHub PR ref (`refs/pull/N/head`, which **survives** head-branch deletion) and 7
+by an `archive/*` branch. The first draft of those tag messages claimed the opposite
+for 54 branches; all 78 were rewritten to name what else holds them. The tags are
+still worth keeping — they are the only **inventory** (a PR ref needs a number nobody
+remembers), they carry provenance, and `git fetch --tags` brings them while PR refs
+are not fetched by default. It also means enabling *Automatically delete head
+branches* is safe and creates no exception to the rule: the tag only earns its keep
+for a branch that never had a PR.
+
 **Standing rule:** any history-shaping operation — force-pushing or re-rooting a branch,
 deleting branches, archiving a workstream — lands **together with a dated note in
 `docs/`** saying what was done and where the prior state lives. A reset nobody writes
