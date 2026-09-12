@@ -843,6 +843,26 @@ machine ran it.
 | `mempool.space` (BTC fees) | TCP dropped on 80 AND 443 — BTC read `estimate`, and every `network-fees` call paid an 11s timeout | **live, 129ms** |
 | `publicnode.com` (keyless EVM RPC) | worked | **refused at the Cloudflare edge**, v4 and v6 alike, >3 min |
 
+
+> ⚠ **Re-measured 2026-09-12 on a DIFFERENT VPN, and the mempool.space row above does
+> not generalise.** Through Netprotect / **AS22781** (`proxy:true`), `network-fees`
+> returned `18 networks, 5 live / 13 estimated` and the cross-layer check reported
+> `bitcoin fee is live (mempool.space) source=live` — no TCP drop, no 11s timeout, no
+> `estimate` fallback. The 2026-09-10 observation was made through **Bitdefender
+> WireGuard, AS62651**. So mempool.space was refusing *that exit node*; "behind the VPN"
+> was never the right variable, and the table above should be read as one exit node's
+> behaviour rather than a property of VPNs or of the host.
+>
+> The publicnode row DOES hold up: the short hostnames answered from both a second VPN
+> and a second residential ISP (Charter/AS11426), which is the reason the ladder puts
+> them ahead of the `-rpc` variants. That preference is now measured twice, not argued.
+>
+> Same run, both egresses: **67 checks, exactly one differed** — `wallet tron`, a
+> transient `Tronscan HTTP 429` on the residential IP, reproduced with a single call
+> against Tronscan directly, so not something the audit's own burst provoked. Full
+> record: `docs/audits/live-data-audit-2026-09-12.md`. The VPN also cost **2.56×** in
+> wall time, so a "slow" route on a VPN run may be the tunnel, not the upstream.
+
 Both are IP-scoped and neither host was ever down. Two lessons worth keeping:
 
 1. **A host that answers ICMP but drops TCP is filtering you, not broken.** mempool.space
@@ -874,6 +894,14 @@ egresses and are therefore the safer first rung.
 **Three wrong attributions in one day, all the same error**: mempool.space "down" (it was
 VPN-blocked), publicnode "dead" (IP-rate-limited), Polygon "missing a fallback" (it had
 three). Each time a single observation was read as a property of the world.
+
+⚠ **And the first correction was itself too broad** (2026-09-12). "mempool.space was
+VPN-blocked" replaced a claim about the HOST with a claim about VPNs — still a category
+wider than the evidence. It was one exit node: the host answers fine through a different
+VPN (AS22781). The narrowest true statement is *"AS62651 could not reach mempool.space on
+that date"*. Worth keeping as its own lesson: **correcting an over-broad claim with
+another over-broad claim feels like rigour and is not.** Ask what the narrowest statement
+the evidence supports actually is, then write that one down.
 
 Two habits that would have caught all three:
 
