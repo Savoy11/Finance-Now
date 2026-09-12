@@ -303,6 +303,37 @@ before editing it:
   untrusted code is checked out or run — there is no `actions/checkout` step, and a test
   fails if one appears. **Do not add one.**
 
+**STANDING RULE — no automated deletion of project files, anywhere** (owner, 2026-09-12:
+*"I will not enable or authorize any auto delete functions for any project files related
+to the build"*). This is broader than the branch question above and it is not a
+preference to be traded off against tidiness:
+
+- **No GitHub setting that deletes.** *Automatically delete head branches* stays OFF.
+- **No workflow, script, hook or npm script that removes a tracked file**, including
+  "clean", "reset", "prune" and "stale X" helpers, however well scoped.
+- **Archiving is the substitute, and it never deletes.** `archive-branch.yml` creates a
+  tag and leaves the branch; it contains zero deletion calls.
+- If a task seems to need deletion, it needs the owner in the loop instead. Propose it;
+  do not build it and gate it behind a flag.
+
+**Audited when the rule was set, so "nothing violates this" is measured, not assumed.**
+The whole repo contains exactly **two** deletion operations, and neither touches a
+project file:
+
+| Where | What | Why it is not a violation |
+|---|---|---|
+| `frontend/restart-dev.ps1:11` | `Remove-Item -Recurse -Force ".next"` | Next.js **build output**, gitignored and regenerated on every build. It is also the documented fix for the OneDrive lock that kills the dev server mid-session. Deleting it loses nothing |
+| `lib/api/__tests__/providerStatus.test.ts:31` | `rmSync(dir, …)` | Removes only the `mkdtempSync` directory that same test created, in teardown |
+
+No CI/CD workflow has a delete, prune or cleanup step; no `package.json` script does
+either. **The line is regenerable build output vs. anything tracked in git** — `.next`
+is fine, a tracked file never is. Re-run the audit before adding any deletion:
+
+```bash
+grep -rnE 'rm -rf|Remove-Item|rmSync|unlinkSync|rimraf' -r . | grep -v node_modules
+grep -rniE 'delete|prune|cleanup' .github/workflows/
+```
+
 **Standing rule:** any history-shaping operation — force-pushing or re-rooting a branch,
 deleting branches, archiving a workstream — lands **together with a dated note in
 `docs/`** saying what was done and where the prior state lives. A reset nobody writes
