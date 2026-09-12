@@ -156,7 +156,14 @@ frontend/src/
 │   ├── portfolio-builder/          # PlanMonitor and questionnaire UI
 │   ├── pump-report/                # PumpReportTab (used by /pump-report)
 │   ├── assets/
-│   ├── analytics/
+│   ├── analytics/                  # Reserve UI (reserves.tsx) + standalone charts
+│   │   └── technical/              # The 9 TA panels extracted from technical-analysis/page.tsx
+│   │                               #   (BacktestPanel, KeyLevelsPanel, MarketStructurePanel,
+│   │                               #   MultiTimeframeGrid, PatternsPanel, SignalSummaryPanel,
+│   │                               #   SupportResistancePanel, TechnicalReadPanel,
+│   │                               #   ThesisBuilderPanel). The crypto TA page composes these
+│   │                               #   rather than inlining them — same rule as reserves.tsx:
+│   │                               #   a panel with two copies gets fixed in only one
 │   ├── dashboard/                  # EMPTY — the 6 M8-sweep widgets went first, RiskHeatmap
 │                                   #   followed on 2026-08-18 with the item 4 ranking cut
 │   └── alerts/                     # LiveAlertRow only (TopBar bell)

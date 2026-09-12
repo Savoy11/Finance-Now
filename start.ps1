@@ -84,10 +84,13 @@ function Setup-Env {
     }
 
     @"
-NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+# The legacy Python backend is OPTIONAL and dormant; the app runs live-only without
+# it. This is the ORIGIN ONLY — next.config.mjs's rewrite appends /api/:path itself,
+# so a /api or /api/v1 suffix here yields /api/v1/api/v1 and every legacy call 404s.
+NEXT_PUBLIC_API_URL=http://localhost:8000
 "@ | Set-Content -Path $ENV_FILE -Encoding utf8
 
-    Write-Ok ".env.local created (mock data enabled)"
+    Write-Ok ".env.local created (the app runs live-only; there is no mock data path)"
 }
 
 # ---------------------------------------------------

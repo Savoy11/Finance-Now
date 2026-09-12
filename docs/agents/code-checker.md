@@ -18,8 +18,8 @@ blocklist written but never read, an export that only a production build rejects
 cd frontend
 npm install --no-audit --no-fund
 npx tsc --noEmit        # must be clean
-npx vitest run          # 1311 tests in 88 files as of 2026-09-08; must all pass
-npx eslint .            # 0 errors; ~52 pre-existing warnings
+npx vitest run          # 1437 tests in 102 files as of 2026-09-12; must all pass
+npx eslint .            # 0 errors; 44 pre-existing warnings as of 2026-09-12
 npx next build          # THE check dev mode misses — see C1 below
 ```
 
