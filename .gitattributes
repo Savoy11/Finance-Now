@@ -22,3 +22,14 @@
 *.sh  text eol=lf
 *.bat text eol=crlf
 *.cmd text eol=crlf
+
+# ── start.ps1 needs a UTF-8 BOM, which git cannot pin for you ──
+# Line endings are not the whole story for scripts. Windows PowerShell 5.1 (still
+# the default shell on Windows) reads a BOM-less file as Windows-1252, so the
+# em-dashes in start.ps1 decoded to a trailing U+201D — a character PowerShell
+# accepts as a STRING DELIMITER. The file did not parse at all under 5.1 until a
+# BOM was added on 2026-09-12, which also made its own "please install PowerShell
+# 7" message unreachable. No gitattributes setting adds or preserves a BOM, so the
+# defence is the comment at the top of start.ps1: do not strip it. Verify with
+# [System.Management.Automation.Language.Parser]::ParseFile() under 5.1, not 7 —
+# PowerShell 7 defaults to UTF-8 and will parse it either way.

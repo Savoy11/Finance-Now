@@ -78,20 +78,32 @@ setup_env() {
   step "Checking .env.local..."
 
   ENV_FILE="$FRONTEND_DIR/.env.local"
+  ENV_EXAMPLE="$FRONTEND_DIR/.env.example"
 
   if [ -f "$ENV_FILE" ]; then
     ok ".env.local already exists — skipping"
     return
   fi
 
-  cat > "$ENV_FILE" << 'EOF'
-# The legacy Python backend is OPTIONAL and dormant; the app runs live-only without
-# it. This is the ORIGIN ONLY — next.config.mjs's rewrite appends /api/:path itself,
-# so a /api or /api/v1 suffix here yields /api/v1/api/v1 and every legacy call 404s.
+  # Copy .env.example, the same step README.md and docs/deployment/local-setup.md
+  # tell you to run by hand. This script used to write its own one-line file, so
+  # `./start.sh` and "follow the README" produced DIFFERENT .env.local files — and
+  # the script's version silently omitted every annotated optional key (API keys,
+  # DATABASE_URL, AUTH_SECRET), so features looked absent rather than unconfigured.
+  if [ -f "$ENV_EXAMPLE" ]; then
+    cp "$ENV_EXAMPLE" "$ENV_FILE"
+    ok ".env.local created from .env.example — every variable annotated with what it unlocks"
+  else
+    # Fallback only if the example is missing. NEXT_PUBLIC_API_URL is the ORIGIN
+    # ONLY — next.config.mjs's rewrite appends /api/:path itself, so a /api or
+    # /api/v1 suffix here yields /api/v1/api/v1 and every legacy call 404s.
+    warn ".env.example not found — writing a minimal .env.local instead"
+    cat > "$ENV_FILE" << 'EOF'
+# The legacy Python backend is OPTIONAL and dormant; the app runs live-only without it.
 NEXT_PUBLIC_API_URL=http://localhost:8000
 EOF
-
-  ok ".env.local created (the app runs live-only; there is no mock data path)"
+    ok ".env.local created (minimal; the app runs live-only — there is no mock data path)"
+  fi
 }
 
 # ── 4. Install npm dependencies ───────────────
