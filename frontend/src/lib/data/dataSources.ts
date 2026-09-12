@@ -11,6 +11,11 @@
 // DATA-AVAILABILITY.md — update both when a source changes, then run the audit.
 // ─────────────────────────────────────────────────────────────────────────────
 
+// The gas-chain count is DERIVED, not typed: this string is copied verbatim into
+// docs/DATA-SOURCES.md by the generator, so a hardcoded number goes stale in a
+// doc nobody re-reads. It said "16 chains" while NETWORK_GAS carried 18.
+import { NETWORK_GAS } from './networkFees'
+
 export type SourceStatus =
   | 'live'         // real external provider at request time
   | 'partial'      // some fields live, others static/estimate
@@ -168,7 +173,7 @@ export const DATA_SOURCES: DataSourceEntry[] = [
     notes: 'Generated from live price/peg movement thresholds, not a stored backend.',
   },
   {
-    id: 'network-fees', surface: 'Network / gas fees (16 chains)', module: 'crypto',
+    id: 'network-fees', surface: `Network / gas fees (${Object.keys(NETWORK_GAS).length} chains)`, module: 'crypto',
     route: '/live-data/network-fees', status: 'partial',
     providers: [
       { name: 'mempool.space', host: 'mempool.space', role: 'primary', auth: 'none' },
