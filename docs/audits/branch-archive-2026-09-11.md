@@ -132,6 +132,14 @@ branches* does **not** create an exception to the tag-everything rule, because a
 PR's commits live at `refs/pull/N/head` regardless. The rule earns its keep for branches
 that never had a PR — 7 of the 78 here.
 
+> ⚠ **Superseded the next day.** On 2026-09-12 the owner ruled: *"I dont want to delete
+> any branches, if possible can we enable an auto archive feature"*. Auto-delete stays
+> **off**. The argument above was that deletion is *safe*, which it is — but safe and
+> wanted are different questions and only the second one was the owner's to answer.
+> `.github/workflows/archive-branch.yml` now tags every merged branch automatically and
+> deletes nothing. The 76 branches this document records as deleted were removed before
+> that ruling.
+
 ## Inventory
 
 `in main` = commits already reachable from `main` (true merge; the tag is a label).

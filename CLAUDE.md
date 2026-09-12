@@ -278,6 +278,31 @@ are not fetched by default. It also means enabling *Automatically delete head
 branches* is safe and creates no exception to the rule: the tag only earns its keep
 for a branch that never had a PR.
 
+**Do NOT enable *Automatically delete head branches* — archive instead** (owner,
+2026-09-12: *"I dont want to delete any branches, if possible can we enable an auto
+archive feature"*). This reverses the recommendation in the paragraph above, which was
+argued on safety (deletion loses nothing) and not on preference. Safe and wanted are
+different questions, and the second one is the owner's.
+
+`.github/workflows/archive-branch.yml` is the auto-archive. On every **merged** PR it
+creates the annotated `archive/<branch>` tag and **leaves the branch alone**; the tag
+message says so in as many words, since the tag is what a future reader finds. It also
+takes a `workflow_dispatch` branch name, which is the only way to archive a branch that
+never had a PR — the case where a tag is the sole preservation. Behaviour worth knowing
+before editing it:
+
+- It **never overwrites** an existing tag. A reused branch name archives as
+  `archive/<branch>@<short-sha>`, because clobbering would destroy the record of the
+  earlier work rather than add to it.
+- It **warns rather than fails**. The merge has already happened by the time it runs, so
+  a red X would report failure on landed work and fix nothing. That makes a regression
+  **silent**, which is why `lib/server/__tests__/archiveBranchWorkflow.test.ts` extracts
+  the script from the YAML and executes it against a mocked API instead of eyeballing it.
+- It uses `pull_request_target` because a fork PR gets a **read-only** token under
+  `pull_request` and tag creation would fail. That trigger is only safe while no
+  untrusted code is checked out or run — there is no `actions/checkout` step, and a test
+  fails if one appears. **Do not add one.**
+
 **Standing rule:** any history-shaping operation — force-pushing or re-rooting a branch,
 deleting branches, archiving a workstream — lands **together with a dated note in
 `docs/`** saying what was done and where the prior state lives. A reset nobody writes

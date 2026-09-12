@@ -1,0 +1,169 @@
+name: Archive branch
+
+# Creates an annotated `archive/<branch-name>` tag whenever a PR merges, so every
+# retired branch has a permanent, NAMED reference. It never deletes a branch
+# (owner, 2026-09-12: "I dont want to delete any branches").
+#
+# ── Why this exists when GitHub already keeps the commits ──
+# GitHub preserves every PR's head commit at refs/pull/<N>/head forever, including
+# after the head branch is deleted. Verified 2026-09-11: claude/queue-sweep was
+# deleted and refs/pull/177/head still resolved to 34a3b02. So the COMMITS were
+# never the thing at risk.
+#
+# What a PR ref cannot do is tell you what it holds. Recovering from one means
+# knowing the PR number, which nobody remembers, and `git fetch` does not bring
+# PR refs down by default. This workflow closes exactly that gap:
+#
+#   git tag -l 'archive/*'                        -> inventory, by original name
+#   git checkout -b <name> archive/<name>         -> restore
+#   git show archive/<name>                       -> why, when, and what else holds it
+#   git fetch --tags                              -> brings all of them
+#
+# See docs/audits/branch-archive-2026-09-11.md for the sweep this automates, and
+# CLAUDE.md ("Retiring a branch means tagging it, not deleting it").
+
+on:
+  # pull_request_target, not pull_request, because a PR from a fork gets a
+  # READ-ONLY GITHUB_TOKEN under `pull_request` and tag creation would fail.
+  # pull_request_target runs in the base-repo context with write permission.
+  #
+  # That trigger is dangerous when a workflow checks out and RUNS the PR's code —
+  # this one does neither. There is no actions/checkout step and no PR code is
+  # executed; the script below only calls the GitHub API with values from the
+  # event payload. Keep it that way: do not add a checkout of the head ref here.
+  pull_request_target:
+    types: [closed]
+
+  # Manual archive for a branch that never had a PR — the one case the merge
+  # trigger cannot cover.
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch name to archive (creates the tag; does NOT delete the branch)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  archive:
+    # Only merged PRs. A PR that was closed without merging keeps its branch and
+    # its refs/pull ref, and tagging it would put abandoned work in an inventory
+    # that is meant to mean "this landed".
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create archive tag
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const isDispatch = context.eventName === 'workflow_dispatch'
+            const { owner, repo } = context.repo
+
+            // Resolve the branch name and the commit to tag.
+            let branch, sha, prNumber = null, sourceNote
+            if (isDispatch) {
+              // workflow_dispatch inputs arrive on the event payload. core.getInput()
+              // would read INPUT_BRANCH, which is only set for declared `with:` inputs.
+              branch = context.payload.inputs.branch
+              const ref = await github.rest.git.getRef({
+                owner, repo, ref: `heads/${branch}`,
+              }).catch(() => null)
+              if (!ref) {
+                core.setFailed(`No such branch: ${branch}`)
+                return
+              }
+              sha = ref.data.object.sha
+              sourceNote = 'Archived on request (no PR)'
+            } else {
+              const pr = context.payload.pull_request
+              branch = pr.head.ref
+              sha = pr.head.sha
+              prNumber = pr.number
+              sourceNote = `Merged via PR #${pr.number}: ${pr.title}`
+            }
+
+            // Never archive an archive. These are the pre-reset history anchors
+            // that CLAUDE.md says to keep as branches permanently.
+            if (branch.startsWith('archive/')) {
+              core.info(`Skipping ${branch} — already an archive branch.`)
+              return
+            }
+
+            // A branch named `foo` and a branch named `foo/bar` cannot both become
+            // tags: refs/tags/archive/foo would have to be a file and a directory
+            // at once. Git rejects the second one, so catch it and say why rather
+            // than failing a merge with an opaque 422.
+            const tagName = `archive/${branch}`
+
+            // Is there already a tag for this name? A branch can be recreated and
+            // re-merged after its first archive, and clobbering the old tag would
+            // destroy the record of the earlier work. Disambiguate instead.
+            const existing = await github.rest.git.getRef({
+              owner, repo, ref: `tags/${tagName}`,
+            }).catch(() => null)
+
+            let finalName = tagName
+            if (existing) {
+              // Peel: the ref points at a tag object, which points at the commit.
+              let existingSha = existing.data.object.sha
+              if (existing.data.object.type === 'tag') {
+                const t = await github.rest.git.getTag({ owner, repo, tag_sha: existingSha })
+                existingSha = t.data.object.sha
+              }
+              if (existingSha === sha) {
+                core.info(`${tagName} already points at ${sha.slice(0, 7)} — nothing to do.`)
+                return
+              }
+              finalName = `${tagName}@${sha.slice(0, 7)}`
+              core.info(`${tagName} exists at a different commit; using ${finalName}.`)
+            }
+
+            const message = [
+              `Archived ${new Date().toISOString().slice(0, 10)} from branch ${branch}`,
+              ``,
+              sourceNote,
+              `Tip: ${sha}`,
+              prNumber
+                ? `Also preserved by: refs/pull/${prNumber}/head (survives branch deletion)`
+                : `Also preserved by: nothing else — this tag is the only ref`,
+              ``,
+              `Restore: git checkout -b ${branch} ${finalName}`,
+              `Record: docs/audits/branch-archive-2026-09-11.md`,
+              ``,
+              `The branch was NOT deleted. This tag is an inventory entry, not a rescue.`,
+            ].join('\n')
+
+            try {
+              // Annotated tag: the tag object carries the message, so the record
+              // travels with the ref instead of living only in a doc.
+              const tagObj = await github.rest.git.createTag({
+                owner, repo,
+                tag: finalName,
+                message,
+                object: sha,
+                type: 'commit',
+              })
+              await github.rest.git.createRef({
+                owner, repo,
+                ref: `refs/tags/${finalName}`,
+                sha: tagObj.data.sha,
+              })
+              core.info(`Created ${finalName} -> ${sha.slice(0, 7)}`)
+              await core.summary
+                .addHeading('Branch archived', 3)
+                .addRaw(`\`${finalName}\` now points at \`${sha.slice(0, 7)}\`.\n\n`)
+                .addRaw(`The branch \`${branch}\` was **not** deleted.\n\n`)
+                .addCodeBlock(`git fetch --tags\ngit checkout -b ${branch} ${finalName}`, 'bash')
+                .write()
+            } catch (err) {
+              // A failed archive must never fail a merge that already happened.
+              // Warn loudly; the commits are still at refs/pull/<N>/head.
+              core.warning(
+                `Could not create ${finalName}: ${err.message}. ` +
+                (prNumber
+                  ? `The commits remain at refs/pull/${prNumber}/head.`
+                  : `NOTE: this branch has no PR ref, so nothing else preserves it.`)
+              )
+            }
