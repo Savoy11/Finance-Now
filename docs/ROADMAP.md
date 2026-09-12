@@ -518,6 +518,27 @@ went to `docs/BUSINESS-CHECKLIST.md`, which is worked separately from both produ
       which before any provider work.
 - [ ] **Fine-tune all screeners.** Stock Registry range screener, coin screener/discovery, fund
       screener, TA screener — consistency of filters, defaults, and result quality across them.
+      > **Steward annotation, 2026-09-12 (T-129).** Left unticked on purpose — the
+      > *consistency* pass across the four screeners has not happened, and neither has the
+      > result-quality sweep, which needs the owner's machine. But three pieces already
+      > landed and the item read as untouched:
+      >
+      > - **Crypto Scanner screener** — `lib/data/scannerFilters.ts`, pure with 12 tests.
+      >   Filters (visible coin range, market cap, FDV, 24h volume, 24h change) apply
+      >   **before** the sweep, so filtering cuts OHLCV requests rather than just
+      >   shortening the table. Coins with no market data count as *not tested*, never
+      >   folded into *excluded* — the distinction a screener usually loses.
+      > - **Stock Registry range screener** — live in `EquitiesClient.tsx`, including
+      >   beta, with P/E backfilled from SEC XBRL so the filter is not blind on the ~6,100
+      >   symbols FMP's screener returns without one.
+      > - **Fund screener** — deliberately **narrower**, not unfinished. Return screening
+      >   and sorting are OFF: `security-returns` REFUSES a whole-`?universe=` request
+      >   rather than truncating it, because a screen seeing only the visible page would
+      >   filter as though it had seen every fund. Restoring it needs a source, not a fix.
+      >
+      > So the remaining scope is the cross-screener consistency review plus result
+      > quality — and the fund screener's asymmetry is a constraint to design around, not
+      > an inconsistency to iron out.
 - [x] **Label every data source on screen, per the house policy.** DONE 2026-08-06.
       Surveying first changed what this was: the *coverage* half was already largely done (36
       surfaces carried a `SourceLine`, and all 31 ids in use resolved). The half that wasn't

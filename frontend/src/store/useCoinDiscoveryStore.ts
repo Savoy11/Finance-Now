@@ -21,10 +21,19 @@ export interface AddedCoin {
   addedBy: 'candidate' | 'manual'
   score?: number
   /**
-   * Composite score band. Renamed from `recommendation` on 2026-08-18 (item 5b).
-   * Optional and read defensively: coins saved before the rename carry the old
-   * key in localStorage, and this store is the user's own list — a rename must
-   * not silently blank a field on data they already saved.
+   * ⚠ LEGACY, WRITE-NEVER. Nothing populates this or `score` any more.
+   *
+   * Renamed from `recommendation` on 2026-08-18 (item 5b), and then W3-1 cut the
+   * composite score itself two days later (2026-08-20) — see the header comment on
+   * `live-data/coin-discovery/route.ts`. This comment used to stop at the rename,
+   * which read as though new coins still get a band.
+   *
+   * Both fields are KEPT, and that is deliberate rather than an oversight: coins a
+   * user saved before the cut carry these keys in localStorage, this store is the
+   * user's own list, and dropping them would silently blank data they already have.
+   * RP-6's "no permanently-null fields" rule is about a server-shaped `Asset` that
+   * could render a misleading "N/A"; these are the user's saved records and render
+   * nowhere. Do not delete them, and do not start writing them.
    */
   profileBand?: string
   notes: string

@@ -512,6 +512,26 @@ real range bug.
 > 2 (acceptable), 3 + 6's converter math (D-24), 5 (term structure — NT8), 7's
 > ×10 question (owner machine — D3), 9 (operational, owner kept the scanner).
 
+> **Yahoo-removal annotation, added 2026-09-12 (T-107).** The status note above tracks
+> what was fixed without ever saying why this module is key-gated in the first place, so
+> a reader meets M11's ⚠ and footnote 4 with no cause attached. Both routes back to the
+> same event: **Yahoo Finance was removed on 2026-08-06 on terms grounds, not
+> availability** (`pinnedFetch` refuses `*.yahoo.com` at the socket). It was the only
+> **keyless** rung on `security-ohlcv`, which now runs Tiingo → FMP, both keyed. Two
+> consequences this section already describes symptom-first:
+>
+> - **With no key the entire Macro TA surface dashes** — the route reports
+>   `source: 'none'`. That is the designed honest state, not a fault to debug.
+> - **Tiingo does not carry macro symbols** (`GC=F`, `EURUSD=X`), so only FMP helps here.
+>   That is footnote 4's "mildly misleading shared copy" stated as a cause rather than a
+>   copy nit — the shared `PriceChartCard` string is wrong *because* the provider set
+>   changed under it.
+>
+> Footnote 8 is the reason this matters beyond bookkeeping: a `range=2Y` **vocabulary
+> mismatch** rendered as `LiveUnavailable` blaming post-Yahoo coverage. An unrelated
+> client/server bug wearing the removal's explanation is exactly what an unannotated
+> status doc produces. See `CLAUDE.md` § Source Terms for the full cost table.
+
 1. The overview's "Live" chips are hardcoded strings, and with zero keys the quote
    route returns `ok:true` with empty quotes — so every strip dashes, **no error
    banner fires**, and the header still says "quotes below are live." The key-gated
