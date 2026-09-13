@@ -253,6 +253,87 @@ claim about a deletion made **before 2026-08-05** resolves there, not in `main`'
 fetched. `archive/wave-two-pre-reset` is the same pattern for the wave-2 rollback of
 2026-08-15. Keep every `archive/*` branch through any stale-branch cleanup.
 
+**Retiring a branch means tagging it, not deleting it** (2026-09-11). The remote went
+from 100 branches to 24 by turning every retired branch into an annotated
+`archive/<branch-name>` **tag** and then deleting the branch — `git tag -l 'archive/*'`
+is the inventory, `git checkout -b <name> archive/<name>` is the restore, and
+`git show archive/<name>` prints why and when it was retired. Tags were chosen over
+more `archive/*` **branches** because the branch-list length was the problem being
+solved; the repo had zero tags before this, so that namespace is exactly this and
+nothing else. **54 of the 78 were squash-merged**, meaning their commits are
+unreachable from `main` and `git branch --merged` will call them unmerged forever —
+which is why the rule is one rule, applied without checking whether a branch "looks"
+merged. Tag, verify the tag is on the remote, *then* delete. Record:
+`docs/audits/branch-archive-2026-09-11.md`. The 15 `archive/*` branches were not
+converted and stay as branches.
+
+⚠ **The tags rescued nothing, and the record says so.** Measured after the sweep:
+**0 of the 78** were the only ref preserving their commits — 71 were already held by
+a GitHub PR ref (`refs/pull/N/head`, which **survives** head-branch deletion) and 7
+by an `archive/*` branch. The first draft of those tag messages claimed the opposite
+for 54 branches; all 78 were rewritten to name what else holds them. The tags are
+still worth keeping — they are the only **inventory** (a PR ref needs a number nobody
+remembers), they carry provenance, and `git fetch --tags` brings them while PR refs
+are not fetched by default. It also means enabling *Automatically delete head
+branches* is safe and creates no exception to the rule: the tag only earns its keep
+for a branch that never had a PR.
+
+**Do NOT enable *Automatically delete head branches* — archive instead** (owner,
+2026-09-12: *"I dont want to delete any branches, if possible can we enable an auto
+archive feature"*). This reverses the recommendation in the paragraph above, which was
+argued on safety (deletion loses nothing) and not on preference. Safe and wanted are
+different questions, and the second one is the owner's.
+
+`.github/workflows/archive-branch.yml` is the auto-archive. On every **merged** PR it
+creates the annotated `archive/<branch>` tag and **leaves the branch alone**; the tag
+message says so in as many words, since the tag is what a future reader finds. It also
+takes a `workflow_dispatch` branch name, which is the only way to archive a branch that
+never had a PR — the case where a tag is the sole preservation. Behaviour worth knowing
+before editing it:
+
+- It **never overwrites** an existing tag. A reused branch name archives as
+  `archive/<branch>@<short-sha>`, because clobbering would destroy the record of the
+  earlier work rather than add to it.
+- It **warns rather than fails**. The merge has already happened by the time it runs, so
+  a red X would report failure on landed work and fix nothing. That makes a regression
+  **silent**, which is why `lib/server/__tests__/archiveBranchWorkflow.test.ts` extracts
+  the script from the YAML and executes it against a mocked API instead of eyeballing it.
+- It uses `pull_request_target` because a fork PR gets a **read-only** token under
+  `pull_request` and tag creation would fail. That trigger is only safe while no
+  untrusted code is checked out or run — there is no `actions/checkout` step, and a test
+  fails if one appears. **Do not add one.**
+
+**STANDING RULE — no automated deletion of project files, anywhere** (owner, 2026-09-12:
+*"I will not enable or authorize any auto delete functions for any project files related
+to the build"*). This is broader than the branch question above and it is not a
+preference to be traded off against tidiness:
+
+- **No GitHub setting that deletes.** *Automatically delete head branches* stays OFF.
+- **No workflow, script, hook or npm script that removes a tracked file**, including
+  "clean", "reset", "prune" and "stale X" helpers, however well scoped.
+- **Archiving is the substitute, and it never deletes.** `archive-branch.yml` creates a
+  tag and leaves the branch; it contains zero deletion calls.
+- If a task seems to need deletion, it needs the owner in the loop instead. Propose it;
+  do not build it and gate it behind a flag.
+
+**Audited when the rule was set, so "nothing violates this" is measured, not assumed.**
+The whole repo contains exactly **two** deletion operations, and neither touches a
+project file:
+
+| Where | What | Why it is not a violation |
+|---|---|---|
+| `frontend/restart-dev.ps1:11` | `Remove-Item -Recurse -Force ".next"` | Next.js **build output**, gitignored and regenerated on every build. It is also the documented fix for the OneDrive lock that kills the dev server mid-session. Deleting it loses nothing |
+| `lib/api/__tests__/providerStatus.test.ts:31` | `rmSync(dir, …)` | Removes only the `mkdtempSync` directory that same test created, in teardown |
+
+No CI/CD workflow has a delete, prune or cleanup step; no `package.json` script does
+either. **The line is regenerable build output vs. anything tracked in git** — `.next`
+is fine, a tracked file never is. Re-run the audit before adding any deletion:
+
+```bash
+grep -rnE 'rm -rf|Remove-Item|rmSync|unlinkSync|rimraf' -r . | grep -v node_modules
+grep -rniE 'delete|prune|cleanup' .github/workflows/
+```
+
 **Standing rule:** any history-shaping operation — force-pushing or re-rooting a branch,
 deleting branches, archiving a workstream — lands **together with a dated note in
 `docs/`** saying what was done and where the prior state lives. A reset nobody writes

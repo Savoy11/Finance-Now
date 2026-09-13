@@ -1,5 +1,12 @@
 # Branch cleanup — prepared 2026-09-10 (T-225, T-226)
 
+> ⚠ **SUPERSEDED by `docs/audits/branch-archive-2026-09-11.md`**, which is the
+> record of what was actually done. This document's count of 63 was correct when
+> written and went stale the same day — six more PRs merged after it. The executed
+> sweep also chose a different mechanism: retired branches became **annotated
+> `archive/*` tags** rather than being deleted outright, so nothing in the plan below
+> was carried out as a plain deletion.
+
 The dated note CLAUDE.md's standing rule requires for a history-shaping operation,
 written **before** the deletion rather than after it. Nothing here has been deleted;
 this is the triage and the evidence for it.
