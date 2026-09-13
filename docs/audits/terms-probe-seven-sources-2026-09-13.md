@@ -65,6 +65,23 @@ Independent of any verdict, and definite rather than interpretive:
 That last one is the worst of the four: it returns HTTP 200, so any probe that checks
 only status would score it as "terms reachable". It has never pointed at terms.
 
+> **Resolved same day (3 of 4).** Found via each site's own footer rather than by
+> guessing paths, and each verified HTTP 200:
+>
+> | Entry | Corrected `termsUrl` |
+> |---|---|
+> | `binance.us` | `https://www.binance.us/terms-of-use` |
+> | `oilprice.com` | `https://oilprice.com/terms-and-conditions` |
+> | `bitget.com` | `https://www.bitget.com/terms/legal` |
+>
+> **Tiingo remains unresolved and needs a browser.** `tiingo.com` is an Angular SPA:
+> every valid route returns the identical 20,263-byte shell, so HTTP status cannot
+> distinguish a real route from a guess; the shell contains no terms link; and the main
+> JS bundle has no `terms` route string, so it is lazy-loaded in a chunk. Four guessed
+> paths and five candidate routes were tried. Until someone opens the site and clicks
+> through, Tiingo's terms cannot be read — and it stays `seeded`, because "couldn't read
+> it" is not permission.
+
 These are fixable without any legal judgment — find the live URL, update the entry — and
 until they are fixed nobody can read those four even if they want to. **"Couldn't read
 it" is still not permission**; all four stay `seeded`.

@@ -339,6 +339,12 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     domain: 'tiingo.com',
     name: 'Tiingo',
     verdict: 'conditional',
+    // ⚠ THIS URL 404s (verified 2026-09-13) and no replacement was found. tiingo.com
+    // is an Angular SPA: every valid route returns the same 20,263-byte shell, so
+    // status cannot distinguish routes, the shell contains no terms link, and the
+    // main bundle has no 'terms' route string (it is lazy-loaded in a chunk).
+    // Finding it needs a browser. Until then nobody can read Tiingo's terms, so this
+    // entry stays `seeded` — 'couldn't read it' is not permission.
     termsUrl: 'https://www.tiingo.com/about/terms',
     finding:
       'Commercial market-data API with a free tier for personal use. Keyed access; end-of-day and IEX data carry exchange-derived redistribution limits set by the plan.',
@@ -393,7 +399,8 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     domain: 'binance.us',
     name: 'Binance.US',
     verdict: 'conditional',
-    termsUrl: 'https://www.binance.us/terms',
+    // Was /terms until 2026-09-13 — that 404s. Real URL found via the site footer.
+    termsUrl: 'https://www.binance.us/terms-of-use',
     finding: 'Same documented keyless public market-data endpoints as the global venue, under US terms and weights.',
     conditions: ['Respect the published per-endpoint request weights', 'Report the serving venue — it is a different market than binance.com'],
     reviewedAt: '2026-08-06',
@@ -546,7 +553,9 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     domain: 'bitget.com',
     name: 'Bitget (public market-data API)',
     verdict: 'conditional',
-    termsUrl: 'https://www.bitget.com/api-doc/spot/market/Get-Coin-List',
+    // Was an API DOCUMENTATION page until 2026-09-13, not a terms document — and it
+    // returned HTTP 200, so every probe scored it as 'terms reachable'. It never was.
+    termsUrl: 'https://www.bitget.com/terms/legal',
     finding:
       'Publishes a documented public REST API; the spot public coin list (incl. per-chain withdrawal fees) is documented as unauthenticated. Seeded from the published API documentation — the exchange ToS have not been read for this project, and the endpoint itself is unprobed (see the Bybit removal: a seeded public claim loses to the owner probe).',
     conditions: ['Respect documented rate limits', 'Keyless public endpoints only — no authenticated endpoints (RP-5)'],
@@ -912,7 +921,9 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     domain: 'oilprice.com',
     name: 'OilPrice.com',
     verdict: 'conditional',
-    termsUrl: 'https://oilprice.com/terms-of-use',
+    // Was /terms-of-use until 2026-09-13 — that returns a SOFT 404 (93KB of page
+    // with a 404 status), so a status-blind probe would have scored it reachable.
+    termsUrl: 'https://oilprice.com/terms-and-conditions',
     finding: 'Publishes a public RSS feed and permits syndication of headline/link/summary with attribution and a link back.',
     conditions: ['Headline, link and feed summary only', 'Attribute and link back'],
     reviewedAt: '2026-08-06',
