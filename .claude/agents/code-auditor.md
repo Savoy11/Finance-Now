@@ -111,6 +111,12 @@ and dates in prose that no longer match. Generated files edited by hand — Fina
 - **Ranking vs explanation is the line (short-list item 4, 2026-08-18).** A leaderboard over a
   universe goes; scoring the one asset the reader opened stays. Do not report either half of that
   as an inconsistency to be resolved.
+- **No composite risk score on `/staking` provider cards (RP-3, 2026-08-17).** Cards that
+  describe the six risk dimensions **without** a composite number are the DECIDED state,
+  not a half-built feature. Do not report the missing composite as a gap, and do not report
+  `scoreStakingProvider()` existing with nothing rendering its output as dead code — the
+  function is live for `/api/v1/staking/opportunities`; only the on-card surface was
+  rejected. This is the RP that most often reads as an oversight, which is why it is here.
 - Where a score IS published — the surviving `lib/risk` consumers above — it is 0–100,
   **higher = safer**, per `docs/architecture/risk-scale-spec.md`. Any inverted scale or alternative
   banding is a defect. The `@internal` 1–10 higher-is-riskier helpers in `stakingProviders.ts` are

@@ -564,6 +564,25 @@ Bonds have established primitives (duration, credit quality, convexity) with the
 units and directions. The temptation is to surface them raw, creating a fifth convention.
 **They map to canonical dimensions instead:**
 
+> ⚠ **Superseded by shipped code (2026-09-12).** The draft below is kept for its
+> reasoning, but `lib/risk/profiles/rateInstrument.ts` v1.0.0 ships **three** dimensions,
+> not five, and different weights:
+>
+> | Dimension | Weight | Description (from the profile) |
+> |---|---|---|
+> | Duration | **50%** | Interest-rate sensitivity — scales with maturity |
+> | Structure | **30%** | Yield observation vs margined futures contract |
+> | Credit | **20%** | Issuer quality — treasury, municipal, investment grade, or high yield |
+>
+> **Why it diverged, and it is not an oversight:** every dropped dimension needed an input
+> this app has no source for. Liquidity wanted issue size, bid/ask and days-since-trade;
+> convexity wanted call/sink structure. Those are CUSIP-level bond data, which is licensed
+> — the same reason `/macro/rates` states on-page that it cannot show bond quotes. The
+> shipped profile scores what `ratesCatalog.ts` actually carries. A dimension with no
+> input does not score 50; it makes the whole composite uninterpretable.
+
+**Draft, for the reasoning only — see the box above for what ships:**
+
 | Dimension | Weight (draft) | Primitive → normalization |
 |---|---|---|
 | Credit | 35% | Rating (AAA→D) via `piecewise()` anchors on an ordinal ladder; AAA→~95, BBB−→~55, CCC→~15. Issuer type (sovereign/agency/corp/HY) shifts anchors. |
@@ -586,6 +605,24 @@ Two structural notes:
 
 ### 6.2 Commodities
 
+> ⚠ **Superseded by shipped code (2026-09-12).** `lib/risk/profiles/commodity.ts` v1.0.0
+> ships **three** dimensions, not five:
+>
+> | Dimension | Weight | Description (from the profile) |
+> |---|---|---|
+> | Volatility | **35%** | Annualized volatility and worst drawdown of the supplied price history |
+> | Market Character | **35%** | How this commodity class behaves — demand drivers, squeeze history, limit moves |
+> | Liquidity | **30%** | Front-month depth; thin contracts gap and slip |
+>
+> Same cause as §6.1: storage/carry needs contango and storage-cost data, and
+> concentration needs producer/geographic data — neither has a source here. Note also
+> that **Market Character has no counterpart in the draft at all**, so this is not the
+> draft minus two rows; the shipped profile scores `commodityCatalog.ts`'s category and
+> thin-market flag, which is a different decomposition arrived at from the available
+> inputs rather than from the draft.
+
+**Draft, for the reasoning only — see the box above for what ships:**
+
 | Dimension | Weight (draft) | Inputs |
 |---|---|---|
 | Volatility | 30% | Annualized from daily closes — `annualizedVolatility()` already exists |
@@ -595,6 +632,11 @@ Two structural notes:
 | Cyclicality | 15% | Drawdown depth/frequency — `maxDrawdown()` exists |
 
 ### 6.3 Futures
+
+> **Still a draft — nothing ships.** `lib/risk/profiles/` holds eight profiles and
+> none of them is futures (commodity, cryptoAsset, currency, equity, optionsTrade,
+> rateInstrument, stablecoin, stakingAdapter). Unlike §6.1 and §6.2 above, there is
+> no shipped code for this table to contradict.
 
 Futures are **positions, not assets** — closer in kind to `optionsTrade` than to `equity`.
 Their dominant risk is leverage/margin, which is a property of the position, not the
@@ -776,7 +818,11 @@ changes. This spec triggers:
 6. **What is deliberately not scored** — decentralization, audit risk, peg history,
    counterparty risk for majors (§7.3), with reasons.
 7. **Cross-asset comparability limit** (§6.4, pending P5).
-8. **Bond/commodity/futures profiles** (§6) — as *planned*, marked draft, not shipped.
+8. **Bond/commodity/futures profiles** (§6) — ⚠ **corrected 2026-09-12.** This line said
+   all three were "planned, marked draft, not shipped". Two of them shipped:
+   `rateInstrument.ts` (bonds) and `commodity.ts`, both v1.0.0, both with three
+   dimensions rather than the five drafted. Only **futures** is still unshipped.
+   Describe the two live profiles as shipped methodology, with their real weights.
 9. **Public API scale note** — that `/api/v1/staking/opportunities` serves a legacy 1–10
    inverted scale during the deprecation window, and which field is canonical.
 

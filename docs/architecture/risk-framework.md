@@ -48,7 +48,21 @@ multiplied this. The unified framework fixes the vocabulary before that happens.
 >   published on `/assets` (RP-6, 2026-08-29). See the spec's post-implementation
 >   note. The pump-report's separate 0–10 measure was renamed `suspicionScore` on
 >   2026-09-08 so it can no longer be mistaken for this scale.
-
+> - **Coin discovery — also removed, and in two steps that are easy to conflate**
+>   (added 2026-09-12, T-360). Item 5b (2026-08-18) renamed its four *verdicts*
+>   ("Strong Add / Consider / Monitor / Too Speculative") to score bands, because a
+>   verdict tells the reader what to **do**. Two days later W3-1 (2026-08-20) cut the
+>   **score itself** — owner: *"remove any reference to a score because it may imply a
+>   recommendation. Replace with price, growth, or liquidity."* So `/coin-discovery`
+>   now publishes no score and no band: `CandidateCoin` carries price, growth, volume,
+>   liquidity ratio, market cap and a factual category/utility note, sorted by the
+>   reader over facts, defaulting to the feed's own market-cap order.
+>   ⚠ **Do not read the surviving `AddedCoin.score` / `.profileBand` fields as a fifth
+>   system.** They are write-never, read-defensively legacy keys for coins a user saved
+>   *before* the cut, in the user's own localStorage list — nothing writes them now, and
+>   deleting them would blank data the user already has. That is the deliberate
+>   exception to RP-6's "no permanently-null fields" rule, which applied to a
+>   server-shaped `Asset`, not to a user's saved records.
 ## Research grounding
 
 Institutional multi-asset risk systems (Bloomberg [MAC3](https://professional.bloomberg.com/products/risk/mac3/),

@@ -97,6 +97,12 @@ Discard anything that fails these:
   - **Ranking vs explanation (item 4, 2026-08-18)** — a leaderboard over a universe is out; an
     explanation of the one asset the reader opened is in. Screeners that FILTER are fine; a
     sortable score column over the universe is the thing that was removed
+  - **No composite risk score on `/staking` provider cards (RP-3, 2026-08-17)** — the case
+    that looks permitted and is not. `lib/risk/profiles/stakingAdapter.ts` already scores
+    providers, and the ranking-vs-explanation line above allows explaining one asset, so
+    "surface the score on the cards" reads as a free win. It was proposed as NT7 and
+    rejected: the page describes the six dimensions **without** publishing a composite.
+    Do not re-propose it, including under another name such as a grade or a tier
   - **Yahoo Finance is hard-blocked on terms grounds (2026-08-06)** and refused at the socket.
     Never propose it as a source or a fallback, however convenient
   - **No exchange API-key custody (RP-5, 2026-08-18)** — forbidden outright

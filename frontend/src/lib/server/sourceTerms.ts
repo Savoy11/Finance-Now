@@ -240,11 +240,42 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     verdict: 'conditional',
     termsUrl: 'https://site.financialmodelingprep.com/terms-of-service',
     finding:
-      'Commercial market-data API. Access is granted by the licence attached to the API key the operator holds; the free tier permits personal/development use at a documented request cap. Redistribution beyond the licensed application requires a higher plan.',
+      'Commercial market-data API, READ 2026-09-13 (ToS last updated 2023-08-01). The posted ToS grants ONE licence: section 2.2.1 Personal Use — an individual, for their own personal, non-business, non-commercial purposes, who may not integrate the Data into any tools or applications accessible by any third parties. Section 2.2.2 separately forbids showcasing FMP data on applications designed for utilization by multiple individuals, irrespective of whether such usage is complimentary or paid, absent a specific agreement with FMP. There is NO commercial-use licence section; broader rights come from an Order Form under section 2.1, NOT from a higher subscription tier.',
     conditions: [
       'A valid FMP API key must be configured — no keyless path',
-      'Stay within the plan\'s request cap and redistribution scope',
+      'Stay within the plan\'s request cap (sections 2.5, 2.9)',
+      'Section 2.2.1: solo non-commercial use only under the posted ToS — covers development and testing by one individual',
+      'Section 2.2.2: ANY multi-user deployment needs a specific agreement with FMP. A higher tier does NOT grant it — the clause reads irrespective of whether such usage is complimentary or paid',
     ],
+    // ✅ 2026-09-13: READ. The document was opened and its licensing clauses read
+    // on the owner's machine — verbatim quotes in
+    // docs/audits/terms-review-fmp-2026-09-13.md. `review` below is LEFT at
+    // 'seeded' deliberately: the reading is done, but flipping the flag and
+    // setting the verdict are the owner's acts. A conservative flag is the safe
+    // error here; a wrongly permissive one is not.
+    //
+    // BOTH prior claims were wrong. The finding above used to say redistribution
+    // "requires a higher plan" — the ToS says no such thing, and has no
+    // commercial-use licence section at all. The "Personal Use / Commercial Use"
+    // links on the site are NAVIGATION, between "Pricing" and "Sign In".
+    //
+    // ⚠ THE LIVE QUESTION IS 2.2.2, not the request cap. It forbids showcasing
+    // FMP data on applications "designed for utilization by multiple individuals,
+    // irrespective of whether such usage is complimentary or paid". Finance Now is
+    // squarely that once anyone but the owner can reach it. A free beta is not a
+    // loophole, and neither is upgrading the plan.
+    //
+    // ⚠ Do NOT reflexively flip verdict to 'prohibited'. Here that is enforced by
+    // assertSourceNotProhibited inside pinnedFetch — a socket-level block taking 7
+    // live-data routes down at once (quote ladder, Stock Registry universe,
+    // market-calendar, OHLCV fallback). 'conditional' with the conditions above is
+    // the honest interim while an Order Form is negotiated.
+    //
+    // Section 2.6.2 incorporates an "Acceptable Data Use Policy" by reference and
+    // calls its violation a material breach — that URL 404s on both FMP hosts as
+    // of 2026-09-13. Raise it with them; it is not permission.
+    //
+    // Historical note on why this sat unread — the original 2026-09-02 comment:
     // ⚠ 2026-09-02: UNRESOLVED, and this entry is the reason nobody noticed.
     // The `finding` above asserts the permission is TIER-DEPENDENT — free tier
     // personal/development, redistribution on a higher plan. A 2026-09-01 fund
@@ -267,11 +298,15 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     //
     // Not resolvable from CI: every financialmodelingprep.com host is blocked
     // by the network egress proxy here, and "couldn't read it" is not
-    // permission. Read site.financialmodelingprep.com/terms-of-service on a
-    // machine that can reach it and answer three questions: does any clause
-    // restrict use to personal/non-commercial; does that restriction vary by
-    // plan; and does a separate licence accompany a paid key that overrides
-    // the posted ToS (the trap the Tiingo entry already carries).
+    // permission. ── ANSWERED 2026-09-13 from a residential egress, where the
+    // page returns HTTP 200 in under a second. The 2026-09-09 worksheet's
+    // "terms found at: none found at the usual locations" was an artifact of
+    // running behind AS62651 — the same VPN that made mempool.space look dead.
+    // (1) Yes — 2.2.1 restricts to personal/non-business/non-commercial.
+    // (2) No — it does not vary by plan; 2.2.2 says "irrespective of whether
+    //     such usage is complimentary or paid".
+    // (3) The mechanism exists, but it is an Order Form / "specific agreement"
+    //     (2.1, 2.2.2) — not something a paid key confers.
     reviewedAt: '2026-08-06',
     review: 'seeded',
     confidence: 'medium',
@@ -304,6 +339,12 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     domain: 'tiingo.com',
     name: 'Tiingo',
     verdict: 'conditional',
+    // ⚠ THIS URL 404s (verified 2026-09-13) and no replacement was found. tiingo.com
+    // is an Angular SPA: every valid route returns the same 20,263-byte shell, so
+    // status cannot distinguish routes, the shell contains no terms link, and the
+    // main bundle has no 'terms' route string (it is lazy-loaded in a chunk).
+    // Finding it needs a browser. Until then nobody can read Tiingo's terms, so this
+    // entry stays `seeded` — 'couldn't read it' is not permission.
     termsUrl: 'https://www.tiingo.com/about/terms',
     finding:
       'Commercial market-data API with a free tier for personal use. Keyed access; end-of-day and IEX data carry exchange-derived redistribution limits set by the plan.',
@@ -358,7 +399,8 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     domain: 'binance.us',
     name: 'Binance.US',
     verdict: 'conditional',
-    termsUrl: 'https://www.binance.us/terms',
+    // Was /terms until 2026-09-13 — that 404s. Real URL found via the site footer.
+    termsUrl: 'https://www.binance.us/terms-of-use',
     finding: 'Same documented keyless public market-data endpoints as the global venue, under US terms and weights.',
     conditions: ['Respect the published per-endpoint request weights', 'Report the serving venue — it is a different market than binance.com'],
     reviewedAt: '2026-08-06',
@@ -511,7 +553,9 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     domain: 'bitget.com',
     name: 'Bitget (public market-data API)',
     verdict: 'conditional',
-    termsUrl: 'https://www.bitget.com/api-doc/spot/market/Get-Coin-List',
+    // Was an API DOCUMENTATION page until 2026-09-13, not a terms document — and it
+    // returned HTTP 200, so every probe scored it as 'terms reachable'. It never was.
+    termsUrl: 'https://www.bitget.com/terms/legal',
     finding:
       'Publishes a documented public REST API; the spot public coin list (incl. per-chain withdrawal fees) is documented as unauthenticated. Seeded from the published API documentation — the exchange ToS have not been read for this project, and the endpoint itself is unprobed (see the Bybit removal: a seeded public claim loses to the owner probe).',
     conditions: ['Respect documented rate limits', 'Keyless public endpoints only — no authenticated endpoints (RP-5)'],
@@ -877,7 +921,9 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     domain: 'oilprice.com',
     name: 'OilPrice.com',
     verdict: 'conditional',
-    termsUrl: 'https://oilprice.com/terms-of-use',
+    // Was /terms-of-use until 2026-09-13 — that returns a SOFT 404 (93KB of page
+    // with a 404 status), so a status-blind probe would have scored it reachable.
+    termsUrl: 'https://oilprice.com/terms-and-conditions',
     finding: 'Publishes a public RSS feed and permits syndication of headline/link/summary with attribution and a link back.',
     conditions: ['Headline, link and feed summary only', 'Attribute and link back'],
     reviewedAt: '2026-08-06',

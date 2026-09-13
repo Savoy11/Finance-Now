@@ -121,8 +121,6 @@ npm run lint
 
 ### Frontend (`.env.local`)
 
-| Variable | Default | Description |
-|----------|---------|-------------|
 **None of these are required.** Full annotated list with what each one unlocks:
 `frontend/.env.example`, and `CLAUDE.md` § Environment Variables.
 
