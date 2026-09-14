@@ -16,8 +16,8 @@ Setting any `verdict` or flipping any `review` to `verified` is the owner's act.
 | T-251 | **publicnode** | ✅ | ⚠ **Very broad boilerplate** — needs a judgement |
 | T-243 | **CoinGecko** | ✅ | Consistent with the 2026-08-29 verified reading |
 | T-240 | **YouTube** | ✅ | Different axis — attribution, not personal-vs-commercial |
-| T-242 | **Bitget** | ❌ JS-rendered | Unread — stays `seeded` |
-| T-241 | **Tiingo** | ❌ SPA, no findable terms route | Unread — stays `seeded` |
+| T-242 | **Bitget** | ✅ via browser | ⚠ **Two findings** — non-commercial licence, and the US is a Prohibited Country |
+| T-241 | **Tiingo** | ✅ via browser | ⚠ **The most specific clause read today**, and it implicates our caching |
 
 ## T-249 StockTwits — the clause has a carve-out, and we are inside it
 
@@ -106,16 +106,90 @@ an **attribution-compliance** question: does `/videos` render the YouTube brand
 attribution the Branding Guidelines require? That is a UI check, not a terms reading,
 and it is not done. **Recommend re-scoping T-240 accordingly.**
 
-## Two could not be read
+## T-242 Bitget — read via browser, two findings
 
-| Source | Why |
-|---|---|
-| **Bitget** | `bitget.com/terms/legal` returns 200 but is JS-rendered — 0 substantive lines extract. The registry URL was corrected to this page on 2026-09-13 (it previously pointed at an API *documentation* page that returned 200, so every prior probe scored it "reachable"). Reading it needs a browser |
-| **Tiingo** | An Angular SPA. Every valid route returns the identical 20,263-byte shell, so HTTP status cannot distinguish a real route from a guess; the shell has no terms link and the main bundle no `terms` route string. Nine paths tried across two sessions |
+The registry URL corrected on 2026-09-13 to `bitget.com/terms/legal` turned out to be an
+**index of seventeen legal documents**, not a terms document. The operative one is
+*Terms of Use* at `/terms/legal/360014944032`. Reached by clicking through in a browser;
+the index renders client-side, which is why every fetch returned an empty shell.
 
-Both stay `seeded`. **"Couldn't read it" is not permission** — and in Bitget's case the
-registry now at least points at a real terms page rather than documentation, so the next
-attempt starts from the right URL.
+**The app does call Bitget.** `withdrawFeeAdapters.ts:305` fetches
+`api.bitget.com/api/v2/spot/public/coins`, keylessly, marked `probed: true`.
+
+**Finding 1 — the licence is internal-use.** §10.1:
+
+> Bitget hereby grants to you a non-exclusive license… to use the Bitget IP Rights…
+> solely as necessary to allow you to receive the Services for **non-commercial personal
+> or internal business use**.
+
+Same shape as FMP and Twelve Data. This is now the fourth source on that pattern.
+
+**Finding 2 — ⚠ the United States is a Prohibited Country.** Listed by name in §1's
+definition, alongside Austria, Canada, France, Germany, Hong Kong, Japan and Singapore,
+with US territories enumerated. "Restricted Person" is defined to include anyone who
+"resides or is established… in any of the Prohibited Countries", and §2.8 makes not
+being one an eligibility condition.
+
+**How far that reaches is genuinely unclear, and I am not the one to decide it.** The
+argument that it binds: "Platform" is defined to include access "via website, mobile
+app, **API**", and the preamble says "By accessing the Platform… it is deemed that you
+have… irrevocably agreed to these Terms". The argument that it does not: the eligibility
+and Prohibited-Country clauses attach to registering an **Account** and using
+**Services**, both of which §3.1 gates behind account opening, and we have no account.
+
+The owner is US-resident. This is the first source read where a clause may bar use
+outright rather than restrict its scope, and it deserves a real answer before launch.
+
+## Two could not be read — now resolved
+
+Both were read in a browser after the fetch approach failed. Neither failure was about
+the sites being closed — both were about **client-side rendering**, which a `curl` cannot
+follow and a browser can.
+
+### T-241 Tiingo — `/tos`, the one path nine guesses missed
+
+`tiingo.com` is an Angular SPA: every valid route returns the identical 20,263-byte
+shell, so HTTP status cannot distinguish a real route from a guess, and the main JS
+bundle carries no `terms` route string. Nine URLs were tried across two sessions —
+`/about/terms`, `/terms`, `/about/terms-of-service`, `/about/apiterms` and more. **The
+real path is `/tos`**, which redirects to `app.tiingo.com/tos/`. The footer link renders
+only in a browser. Registry `termsUrl` should be corrected to it.
+
+**§7.3 Use of the Tiingo API** is the most specific clause read from any source today:
+
+> **All data via the API is for internal consumption only.** If you are an individual,
+> you may sign up for an Individual plan; however, if you are representing an
+> organization or business, you must sign up for a Commercial plan. **Redistribution is
+> only available upon special request and permission, and comes with additional fees.**
+>
+> In the event that Tiingo permits you to redistribute any data… you must include… the
+> phrase **"Data sourced by Tiingo"** with a link to https://www.tiingo.com.
+
+⚠ **§1.6(a) Starter Plans is the one to act on, because it is technical and checkable:**
+
+> …you may **not write, save, archive, back up, or otherwise retain Tiingo Data in any
+> persistent or durable storage**. You may process Tiingo Data only **transiently in
+> volatile memory or in a temporary, non-persistent cache**… You must permanently remove
+> the Tiingo Data from that memory or cache **immediately after the calculation or
+> operation is completed**… This prohibition applies to all storage systems… including
+> local devices, databases, object stores, file systems, logs, queues, archives, backups…
+
+**The app caches Tiingo responses to disk.** Both `security-ohlcv` and `security-returns`
+fetch `api.tiingo.com` with Next.js `next: { revalidate: … }` — 900 seconds for returns,
+per-range for OHLCV. Next's fetch cache is a **durable on-disk store** under `.next/cache`,
+not volatile memory. On a Starter plan that appears to be exactly what §1.6(a) forbids.
+
+This is not a launch-only question like the others. It describes what the code does
+**today**, on whatever plan the key belongs to. Two things need establishing, in order:
+**(1)** which Tiingo plan the configured key is on — Starter/Trial or Paid; **(2)** if
+Starter, whether `revalidate` on those two routes should be dropped to `0`. That is a
+two-line change, and it costs upstream requests, which is a trade worth making
+deliberately rather than by default.
+
+§1.6(c) Derived Products is unusually detailed — indicator outputs and aggregate
+backtest statistics are named as *potentially* permitted, while "charts… that display,
+deliver, or permit extraction of Tiingo Data" are named as prohibited. Worth reading in
+full before the TA surfaces are pointed at a public audience.
 
 ## The decision this hands you
 
@@ -127,5 +201,8 @@ attempt starts from the right URL.
    selling that use. Scope is one route behind a hidden page.
 4. **YouTube** — re-scope from personal-vs-commercial to attribution compliance, and
    check what `/videos` renders.
-5. **Bitget, Tiingo** — need a browser. I have browser automation available and can do
-   both in a few minutes if you want them.
+5. **Tiingo caching — the only item here that describes today rather than launch.**
+   Establish the plan; if Starter, decide whether `revalidate` comes off those two routes.
+6. **Bitget's US prohibition** — needs a real answer, not a maintainer's reading.
+7. **Registry URL fix**: Tiingo `termsUrl` → `https://www.tiingo.com/tos`; Bitget →
+   `https://www.bitget.com/terms/legal/360014944032` (the document, not the index).

@@ -339,13 +339,23 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     domain: 'tiingo.com',
     name: 'Tiingo',
     verdict: 'conditional',
-    // ⚠ THIS URL 404s (verified 2026-09-13) and no replacement was found. tiingo.com
-    // is an Angular SPA: every valid route returns the same 20,263-byte shell, so
-    // status cannot distinguish routes, the shell contains no terms link, and the
-    // main bundle has no 'terms' route string (it is lazy-loaded in a chunk).
-    // Finding it needs a browser. Until then nobody can read Tiingo's terms, so this
-    // entry stays `seeded` — 'couldn't read it' is not permission.
-    termsUrl: 'https://www.tiingo.com/about/terms',
+    // ✅ FOUND AND READ 2026-09-14 in a browser (the SPA renders the footer link only
+    // there; nine guessed paths across two sessions all missed /tos).
+    // ⚠ 1.6(a) STARTER PLANS describes what this code does TODAY, not at launch:
+    // "you may not write, save, archive, back up, or otherwise retain Tiingo Data in
+    // any persistent or durable storage ... only transiently in volatile memory or in
+    // a temporary, non-persistent cache". security-ohlcv and security-returns both
+    // fetch api.tiingo.com with Next's `next: { revalidate: N }`, which is a DURABLE
+    // ON-DISK cache under .next/cache. On a Starter plan that is what the clause
+    // forbids. Establish which plan the configured key is on before changing anything;
+    // if Starter, revalidate should go to 0 on those two routes at the cost of more
+    // upstream requests.
+    // 7.3: "All data via the API is for internal consumption only... Redistribution is
+    // only available upon special request and permission, and comes with additional
+    // fees" — the FMP/Twelve Data/Bitget pattern again. If redistribution is ever
+    // licensed, attribution must read "Data sourced by Tiingo" with a link.
+    // Full reading: docs/audits/terms-review-apis-2026-09-14.md
+    termsUrl: 'https://www.tiingo.com/tos',
     finding:
       'Commercial market-data API with a free tier for personal use. Keyed access; end-of-day and IEX data carry exchange-derived redistribution limits set by the plan.',
     conditions: ['Valid API key required', 'Free tier is personal use — no redistribution'],
@@ -572,7 +582,22 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     verdict: 'conditional',
     // Was an API DOCUMENTATION page until 2026-09-13, not a terms document — and it
     // returned HTTP 200, so every probe scored it as 'terms reachable'. It never was.
-    termsUrl: 'https://www.bitget.com/terms/legal',
+    // Then /terms/legal turned out to be an INDEX of 17 documents, client-rendered, so
+    // fetches got an empty shell. This is the operative document, read in a browser
+    // 2026-09-14. Two findings, both in docs/audits/terms-review-apis-2026-09-14.md:
+    //   10.1 licenses use "for non-commercial personal or internal business use" —
+    //        the same internal-use shape as FMP, Twelve Data and Tiingo.
+    //   ⚠ 1  lists the UNITED STATES among Prohibited Countries, and defines a
+    //        Restricted Person as one who resides there. How far that reaches for a
+    //        keyless public market-data call with no Account is genuinely unclear:
+    //        "Platform" is defined to include API access and the preamble binds on
+    //        access, but the Prohibited-Country clauses attach to Accounts and
+    //        Services, which 3.1 gates behind registration. The owner is US-resident.
+    //        This is the first source where a clause may bar use outright rather than
+    //        limit its scope — it needs a real answer, not a maintainer's reading.
+    // The app DOES call this host: withdrawFeeAdapters.ts fetches
+    // api.bitget.com/api/v2/spot/public/coins keylessly.
+    termsUrl: 'https://www.bitget.com/terms/legal/360014944032',
     finding:
       'Publishes a documented public REST API; the spot public coin list (incl. per-chain withdrawal fees) is documented as unauthenticated. Seeded from the published API documentation — the exchange ToS have not been read for this project, and the endpoint itself is unprobed (see the Bybit removal: a seeded public claim loses to the owner probe).',
     conditions: ['Respect documented rate limits', 'Keyless public endpoints only — no authenticated endpoints (RP-5)'],
