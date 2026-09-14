@@ -188,7 +188,17 @@ near zero at launch.
 
 ## 8. Go/no-go milestones
 - [ ] Phase 0 complete (auth + multi-tenant + hosted) — **gate for any marketing**
-- [ ] Risk framework shipped (removes the N/A on the flagship metric)
+- [ ] ~~Risk framework shipped (removes the N/A on the flagship metric)~~ — **OVERTAKEN,
+      annotated 2026-09-14 (T-310, owner decision D15).** Both halves of this milestone are
+      now false, in opposite directions. The framework **did** ship (R1/R2, 2026-07-19):
+      `lib/risk/` is live with eight profiles on a canonical 0–100 higher-is-safer scale. But
+      the "flagship metric" it was meant to un-N/A **was withdrawn** — RP-6 removed every
+      per-coin risk score on 2026-08-29, "Safety Score" no longer exists as a user-facing
+      figure, and D14 (2026-09-14) removed the remaining composite scores from `/api/v1` and
+      MCP. So this cannot be ticked and cannot be failed: the gate measures a metric the
+      product deliberately does not publish. Do not restate it as "risk framework shipped ✅"
+      either — that would imply the user-facing outcome this line was actually gating.
+      `lib/risk/` survives with one live consumer, the options Trade Risk Scorer.
 - [ ] 100 weekly-active free users with >30% week-4 retention on ops tools
 - [ ] First 50 Pro conversions (validates the $10–15 price point)
 - [ ] 5 external consumers of the API/MCP surface (validates the agent bet)

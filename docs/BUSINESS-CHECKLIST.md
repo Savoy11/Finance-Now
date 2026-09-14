@@ -68,11 +68,14 @@ structure, regulatory research, disclosures and tax compliance are decided once,
       Terms of Service, Privacy Policy, "Not investment advice" disclaimer, affiliate/ad
       disclosure ("How we make money"), data-source attribution page, and a contact/complaints
       route.
-- [ ] **Source-labeling policy (both products).** Decide the house rule for how third-party data
-      is labeled wherever it appears: which sources must be named, in what wording, how
-      licence-required attribution is rendered (Wikipedia CC BY-SA, LoC, GDELT, SEC all differ),
-      and how *derived* figures are marked so a computed score is never mistaken for a
-      publisher's number. Write it once here; each product's checklist tracks its own rendering.
+- [x] **Source-labeling policy (both products).** ✅ **DRAFTED 2026-09-14 — awaiting approval.**
+      Written up as `docs/policies/source-labeling.md` rather than inline here, because it ran
+      to a page: the rule ("every number traceable to a named third party or to us, tellable
+      without clicking"), the four labels and when each is required, licence-required wording
+      (CoinGecko API Terms 4.4 verbatim, with a 10px floor a test enforces), how derived figures
+      are marked, how absence is stated, placement, and — deliberately — a table of which rules
+      are machine-checked and which are convention only. Three are convention only; that is the
+      honest gap. Each product's checklist tracks its own rendering.
 - [ ] Placement rules: linked in the footer of every page **and** surfaced at the point of
       relevance (a disclaimer nobody sees does not protect anyone).
 - [ ] Keep one canonical copy per document, shared by both products where the text is identical,
@@ -103,7 +106,60 @@ structure, regulatory research, disclosures and tax compliance are decided once,
       - Legal floor: sections 1–3 of this document closed
       - Operational floor: backups, error monitoring, a support inbox someone reads
       - Quality floor: no known data-corrupting bug; tests green
-- [ ] Explicitly name what is **out** of v1, so scope creep has something to bounce off.
+
+### 5.1 Finance Now — the release bar
+
+**DRAFT 2026-09-14 (T-298, owner decision D15) — awaiting approval.** Two of the five
+floors are measurable today and are filled in with real numbers and the command that
+checks them. Three need the owner and are marked so; a floor nobody can test is a wish.
+
+| Floor | Bar | Status today |
+|---|---|---|
+| **Data honesty** | `npm run audit` on the owner's machine, from a **verified non-VPN egress**, reports **0 FAIL**, and every FALLBACK is explained by design or a missing key — not by an unreachable upstream | ⚠ **Nearly met, 2026-09-12** (`docs/audits/live-data-audit-2026-09-12.md`). The non-VPN run — the one that counts — was **64 REAL / 9 FALLBACK / 1 FAIL**. All 9 fallbacks qualify: by design or key-gated. The 1 FAIL does **not** meet a 0-FAIL bar as written, and is recorded as not-met rather than waved through: it was a Tronscan `429` that reproduced against Tronscan directly, outside the app, so it is a provider rate limit and not our defect — but "someone else's transient" is a judgement, and a bar that accepts judgements is not a bar. **Owner call: re-run to confirm it clears, or amend the bar to allow a documented transient upstream failure.** For reference the VPN run the same evening was 65/9/0, which is why the egress precondition below matters |
+| **Quality** | `npx tsc --noEmit` clean · `npx eslint .` 0 errors · full vitest suite green · `npx next build` succeeds · no known data-corrupting bug | ✅ **Met**: tsc clean, 0 errors / 44 warnings, 1444 tests, build succeeds |
+| **Feature** | The specific list of surfaces that must work, with nothing half-built behind a nav link | ⚠ **OWNER** — needs the list. §5.2 names what is *out*, which is the other half |
+| **Legal** | Sections 1–3 of this document closed | ⚠ **OWNER** — and gated: the FMP reading (2026-09-13) established that public-facing display needs a vendor agreement, not a plan upgrade. Lead time, not a checkout |
+| **Operational** | Backups, error monitoring, a support inbox someone reads | ⚠ **OWNER** — parked under the 2026-09-05 rollout ruling (D1); provisioning is not being done yet by decision |
+
+⚠ **The data-honesty floor has a precondition that is easy to skip.** "Owner's machine"
+is not the same claim as "owner's IP". Check the egress *first* —
+`curl -s https://api.ipify.org` then `ip-api.com/json/<ip>?fields=isp,proxy,hosting` —
+and if `proxy` or `hosting` is true the run does not count, whichever machine made it.
+This has produced four wrong conclusions in this repo, most recently on 2026-09-14 when
+a VPN on AS62651 would have made twenty publisher terms pages read as unreachable.
+
+### 5.2 Finance Now — explicitly out of v1
+
+**DRAFT 2026-09-14 (T-299, owner decision D15) — awaiting approval.** Consolidated from
+`CLAUDE.md`'s feature inventory and `docs/audits/rejected-proposals.md`. This is the
+fence scope creep bounces off: **anything here returning to v1 is a decision, not a
+bug report.**
+
+**Removed — code deleted, recoverable from `archive/*` tags**
+- Risk Scores page (`/risk-scores`) and all per-coin risk scores anywhere — *RP-6, item 4*
+- Budget module and Retirement Planner — *moved to a separate product, 2026-08-20*
+- Risk Case Studies (`/backtests`) — *static educational replay, no user value*
+- Global adoption / CBDC tracker (`/global-adoption`) — *D10, 2026-09-14*
+- The 30d sparkline column and the coin-detail on-chain analytics panels — *D11, 2026-09-14*
+- Exchange API-key custody — *RP-5, security grounds*
+
+**Hidden from rollout — built, kept, deliberately unreachable**
+- Transfer Fee Calculator (`/transfer-fees`) · Wallets (`/wallets`) — *owner, 2026-08-22*
+- Strategy Backtests (`/equities/backtests`) and the crypto/portfolio backtest tabs — *owner, 2026-08-20, "I may revisit back testing"*
+
+**Declined, with a recorded reopen trigger**
+- Options chain browser — *RP-1: no usable keyless source*
+- Score-history persistence — *RP-4*
+- Composite risk scores on `/staking` cards, in `/api/v1`, and in MCP — *RP-3 and D14*
+
+**Deferred to post-launch by decision, not by capacity**
+- SOC 2 — *D5, trigger: first paying customer or first enterprise conversation*
+- Affiliate links and their disclosure — *D7*
+- Reddit OAuth — *D8* · S4 options subproject — *D9* · new risk profiles — *D18*
+- Business entity formation — *D13*
+
+**Gated on external review**
+- Build-by-allocation, S5 contribution modeling, the federal sale-tax estimator — *D4: built, dark until a qualified legal review clears them*
 
 ## 6. Documentation accuracy
 
