@@ -51,13 +51,16 @@ const nextConfig = {
   },
   async redirects() {
     return [
-      // Global page de-routed pending a post-production rework (see T5 triage:
-      // docs/assessments/T5-utility-triage.md). The page and its
-      // /live-data/cbdc-data route are intentionally LEFT IN PLACE — this only
-      // removes user access. The page is ModuleGate-wrapped (crypto), so
-      // deleting this entry re-enables it INSIDE the entitlement gate — but
-      // check the T5 triage first: it was de-routed for data-honesty reasons
-      // (stale static data under a fabricated live timestamp), not for scope.
+      // Global page CUT 2026-09-14 (owner decision D10, T-135 resolved to CUT).
+      // De-routed in the T5 triage for data-honesty reasons — a mislabeled CBDC
+      // tracker on stale static data under a fabricated live timestamp — and the
+      // page, its /live-data/cbdc-data route, cbdcProvenance and their test are now
+      // DELETED, not merely unreachable. INVEST was the alternative and was not
+      // chosen: a real tracker needs a CBDC data feed that does not exist keyless.
+      // The redirect STAYS so existing bookmarks land somewhere rather than 404,
+      // and because re-adding the entry is no longer what would restore the page —
+      // recovery is `git checkout <archive tag> -- <paths>`. Note the CBDC *asset
+      // type* on /assets is a different thing and was deliberately left alone.
       { source: '/global-adoption', destination: '/headlines', permanent: false },
       // Risk Case Studies removed (2026-07): static educational replay with no
       // clear user value — page deleted, deep links land on Headlines.

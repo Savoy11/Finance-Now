@@ -1313,6 +1313,14 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     custodyModel: 'non-custodial',
     founded: 2020,
     website: 'https://wallet.keplr.app',
+    // liquidityRisk 7, not the 5 other self-custody wallets carry — CONFIRMED, not a typo
+    // (owner, 2026-09-14, D17). Keplr is the Cosmos-ecosystem wallet and every chain it
+    // delegates to has a long mandatory unbonding queue: 21 days on Cosmos Hub, Injective
+    // and Celestia, 28 on Polkadot, 14 on Osmosis — see the per-asset assetRisks below,
+    // which push it to 8 for DOT. That is materially worse liquidity than an ETH or SOL
+    // wallet where liquid-staking derivatives exist, so scoring it the same would be the
+    // false equivalence the rubric is meant to avoid. No impermanent-loss axis was added
+    // (T-265 declined): IL is a liquidity-provision risk, not a staking-provider one.
     risks: {
       custodyRisk:      1,
       counterpartyRisk: 1,

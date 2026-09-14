@@ -86,8 +86,8 @@ export function buildLiveAssetDetail(assetId: string, quote: LiveQuote | undefin
   return {
     ...asset,
     latestMarketData: buildLiveMarketData(meta.id, quote),
-    // Strict N/A — no free live source for these.
+    // Strict N/A — no free live source. (analyticsBundle was removed with the CR6 cut,
+    // 2026-09-14: it was hardcoded null here for every asset and nothing could render it.)
     latestReserve: null,
-    analyticsBundle: null,
   }
 }

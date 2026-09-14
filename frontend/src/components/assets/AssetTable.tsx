@@ -7,7 +7,6 @@ import { useState } from 'react'
 import type { Asset } from '@/types/asset'
 import { DataTable, type Column } from '@/components/ui/DataTable'
 import { formatCompact, formatBps, formatPercent, formatScore, formatAddress, formatOrNA, formatCurrency, NA_LABEL } from '@/lib/utils/format'
-import { Sparkline } from '@/components/charts/Sparkline'
 import { getPegDeviationColorClass } from '@/lib/utils/pegFormat'
 import { useAssetStore } from '@/store/useAssetStore'
 import { clsx } from 'clsx'
@@ -137,11 +136,6 @@ export function AssetTable({ assets, loading, total }: AssetTableProps) {
         accessor: (row) => (
           <span className="font-mono text-xs text-text-primary">{formatOrNA(row.marketCap, formatCompact)}</span>
         ),
-      },
-      {
-        key: 'sparkline',
-        header: '30d',
-        accessor: (row) => <Sparkline assetId={row.id} width={80} height={32} pegTarget={row.pegTarget} />,
       },
       {
         // W3-2: growth, sortable — the owner asked to sort by it.

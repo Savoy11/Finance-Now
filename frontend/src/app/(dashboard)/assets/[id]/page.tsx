@@ -39,12 +39,8 @@ const EMBED_CHART_TYPES: { type: ChartType; label: string; desc: string; Icon: L
 ]
 import { clsx } from 'clsx'
 import { useAsset } from '@/hooks/useAssets'
-import { PegDeviationChart } from '@/components/analytics/PegDeviationChart'
 import { ReserveComposition } from '@/components/analytics/ReserveComposition'
 import { ReserveProvenance, normalisePegMechanism } from '@/components/analytics/reserves'
-import { LiquidityDepthChart } from '@/components/analytics/LiquidityDepthChart'
-import { WalletConcentration } from '@/components/analytics/WalletConcentration'
-import { VelocityChart } from '@/components/analytics/VelocityChart'
 import { PriceHistoryChart } from '@/components/analytics/PriceHistoryChart'
 import { MetricCard } from '@/components/ui/MetricCard'
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton'
@@ -778,58 +774,22 @@ function NewsTab({ assetId }: { assetId: string }) {
 }
 
 function AnalyticsTab({ asset }: { asset: NonNullable<ReturnType<typeof useAsset>['data']> }) {
-  const [pegRange, setPegRange] = useState<import('@/types/api').TimeRange>('7d')
-  const { analyticsBundle } = asset
-
+  // CR6 CUT 2026-09-14 (owner decision D11). This tab used to branch on
+  // `asset.analyticsBundle`: null rendered an "on-chain analytics not available" card,
+  // non-null rendered four panels — peg deviation, liquidity depth, wallet concentration
+  // and transfer velocity. The non-null arm was UNREACHABLE: `lib/api/live/overlay.ts`
+  // hardcoded `analyticsBundle: null` for every asset, so the four panels had never
+  // rendered in live mode and no free source existed to make them render.
+  //
+  // Cut rather than kept as a placeholder, for RP-6's reason: a permanent "not available"
+  // card teaches readers that a gap is temporary when it is a decision. The four panel
+  // components and the AnalyticsBundle types went with it; they are recoverable from the
+  // archive tags if a source ever appears.
   return (
     <div className="space-y-6">
-      {/* Full price history — top of analytics */}
       <ErrorBoundary>
         <PriceHistoryChart assetId={asset.id} symbol={asset.symbol} pegTarget={asset.pegTarget} />
       </ErrorBoundary>
-
-      {analyticsBundle === null ? (
-        <div className="rounded-card border border-border bg-bg-card p-8 text-center">
-          <Activity size={24} className="mx-auto text-text-muted" aria-hidden />
-          <p className="mt-3 text-sm font-medium text-text-secondary">On-chain analytics not available</p>
-          <p className="mt-1 text-xs text-text-muted max-w-md mx-auto">
-            Peg history, liquidity depth, wallet concentration, and transfer velocity are
-            derived metrics with no free real-time source, so they are not shown in live mode.
-          </p>
-        </div>
-      ) : (
-      <>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {asset.assetType !== 'layer1' && (
-          <ErrorBoundary>
-            <PegDeviationChart
-              data={analyticsBundle.pegHistory}
-              assetSymbol={asset.symbol}
-              timeRange={pegRange}
-              onTimeRangeChange={setPegRange}
-            />
-          </ErrorBoundary>
-        )}
-
-        <ErrorBoundary>
-          <LiquidityDepthChart
-            data={analyticsBundle.liquidityDepth}
-            currentPrice={asset.price ?? undefined}
-          />
-        </ErrorBoundary>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ErrorBoundary>
-          <WalletConcentration data={analyticsBundle.walletConcentration} />
-        </ErrorBoundary>
-
-        <ErrorBoundary>
-          <VelocityChart data={analyticsBundle.transferVelocity} />
-        </ErrorBoundary>
-      </div>
-      </>
-      )}
     </div>
   )
 }

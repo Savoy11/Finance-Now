@@ -457,12 +457,6 @@ export const DATA_SOURCES: DataSourceEntry[] = [
     notes: 'Allocations, bond ladders, diversification and suitability scores are Finance Now’s own computation (pure engine, vitest-tested) — not provider figures. Live prices enter only for drift-vs-actual monitoring; unpriced positions are excluded, never valued at cost.',
   },
   {
-    id: 'cbdc-data', surface: 'Global adoption / CBDC tracker', module: 'shared',
-    route: '/live-data/cbdc-data', status: 'unavailable',
-    providers: [{ name: 'Static table + central-bank sites', role: 'primary', auth: 'none' }],
-    notes: 'De-routed (T5): mislabeled tracker on stale static data. /global-adoption redirects to /headlines. Kept for reference only.',
-  },
-  {
     id: 'config', surface: 'Integrations connectivity test', module: 'shared',
     route: '/live-data/config', status: 'derived',
     providers: [{ name: 'Every configured provider (crypto + equity + LLM)', role: 'aggregator', auth: 'key' }],
