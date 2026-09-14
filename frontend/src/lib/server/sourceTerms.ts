@@ -429,6 +429,15 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
       'Attribute StockTwits on any surface showing its messages',
       'Display only — do not mirror, store long-term, or re-serve message content',
     ],
+    // ✅ READ 2026-09-14 (docs/audits/terms-review-apis-2026-09-14.md). The terms
+    // prohibit extracting content "by automated means EXCEPT as expressly authorized by
+    // us in writing or through an approved API, widget, developer offering, or other
+    // product rule". We are inside the carve-out, not the prohibition: stock-social
+    // calls api.stocktwits.com/api/2/streams/*, their own API, never the website. That
+    // distinction turns entirely on which host the code calls — keep it that way.
+    // Residual question for an email, not a blocker: "an approved API" may mean one you
+    // hold credentials for. We call it keylessly. review stays 'seeded' — the reading is
+    // done, the verdict is the owner's.
     reviewedAt: '2026-08-06',
     review: 'seeded',
     confidence: 'low',
@@ -445,6 +454,14 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
       'Register OAuth credentials before increasing volume',
       'Expect and accept 403s from datacenter IPs rather than working around them',
     ],
+    // ✅ READ 2026-09-14 (docs/audits/terms-review-apis-2026-09-14.md) — and the document
+    // T-244 named governs a path this app does not take. Reddit's Data API Terms licence
+    // "the Data APIs", with commercial use requiring a separate agreement.
+    // /live-data/social reads twelve public .rss endpoints on reddit.com instead, so
+    // those terms describe the licence we would need IF REDDIT_CLIENT_ID were ever set.
+    // What binds today is robotsDisallowed + the pinnedFetch gate, already the
+    // conservative state. Consequence for the deferred D8 question: lifting the gate
+    // means ACCEPTING the Data API Terms, not merely registering an app.
     reviewedAt: '2026-08-06',
     review: 'seeded',
     confidence: 'low',
@@ -623,6 +640,16 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
       'One request per chain per revalidate window — do not poll',
       'Degrade to the static estimate rather than retrying on failure',
     ],
+    // ⚠ READ 2026-09-14 — the broadest clause found in any source, and it needs an
+    // owner judgement rather than a code change. Verbatim: "you agree not to modify,
+    // copy, frame, scrape, rent, lease, loan, sell, re-use, display, distribute,
+    // transmit, publish, re-publish, distribute or create derivative works based on the
+    // Service or the Service Content commercially and non-commercially". Read literally
+    // that prohibits any use at all, since an RPC provider's product IS answering calls
+    // and every consumer re-uses the response. That cannot be the intent — but it is
+    // what the document says, and narrowing it is not a maintainer's call to make.
+    // Scope: one route (/live-data/wallet/eth), first rung of the EVM ladder, behind a
+    // page hidden from rollout since 2026-08-22.
     reviewedAt: '2026-08-22',
     review: 'seeded',
     confidence: 'low',
