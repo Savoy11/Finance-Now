@@ -88,13 +88,33 @@ async function fetchFmpOhlcv(symbol: string, range: string): Promise<OhlcvCandle
   return adjustCandles(sorted.map((s) => s.raw), sorted.map((s) => s.adjClose))
 }
 
+// ⚠ TIINGO IS FETCHED UNCACHED, AND THAT IS A LICENCE CONSTRAINT, NOT AN OVERSIGHT.
+//
+// Owner decision 2026-09-15: development runs on a Tiingo STARTER plan. Starter's
+// ToS §1.6(a) forbids retaining Tiingo Data "in any persistent or durable storage",
+// permits processing it "only transiently in volatile memory or in a temporary,
+// non-persistent cache", and requires removal "immediately after the calculation or
+// operation is completed" — naming file systems, caches, logs and backups explicitly.
+//
+// Next's fetch `revalidate` writes to the Data Cache under `.next/cache`, which is
+// on disk. So `RANGE_CONFIG[range].revalidate` — correct for FMP above — would be
+// exactly what §1.6(a) prohibits. `revalidate: 0` is the repo's idiom for an
+// uncached fetch (see the wallet routes).
+//
+// The strict reading also rules out an in-process LRU as a substitute: "immediately
+// after the operation is completed" does not leave room for a cross-request TTL,
+// however volatile the memory. Do not reintroduce caching here as an optimisation.
+//
+// COST: every OHLCV request now hits Tiingo. RANGE_CONFIG still governs FMP, so the
+// fallback path is unchanged. If the plan moves to a paid tier without §1.6(a),
+// restore `next: { revalidate: RANGE_CONFIG[range].revalidate }` here and say so.
 async function fetchTiingoOhlcv(symbol: string, range: string): Promise<OhlcvCandle[]> {
   const key = getProviderKey('tiingo')
   if (!key) throw new Error('Tiingo key not configured')
   const start = new Date(Date.now() - RANGE_DAYS[range] * 1.5 * 86_400_000).toISOString().slice(0, 10)
   const res = await fetch(
     `https://api.tiingo.com/tiingo/daily/${encodeURIComponent(symbol.toLowerCase())}/prices?startDate=${start}&token=${key}`,
-    { headers: { Accept: 'application/json' }, next: { revalidate: RANGE_CONFIG[range].revalidate } }
+    { headers: { Accept: 'application/json' }, next: { revalidate: 0 } }
   )
   if (!res.ok) throw new Error(`Tiingo ${res.status}`)
   // Tiingo returns both raw (open/high/low/close/volume) and split+dividend

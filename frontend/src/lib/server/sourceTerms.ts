@@ -390,15 +390,28 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     verdict: 'conditional',
     // ✅ FOUND AND READ 2026-09-14 in a browser (the SPA renders the footer link only
     // there; nine guessed paths across two sessions all missed /tos).
-    // ⚠ 1.6(a) STARTER PLANS describes what this code does TODAY, not at launch:
+    // ⚠ 1.6(a) STARTER PLANS — RESOLVED AND ACTED ON 2026-09-15:
     // "you may not write, save, archive, back up, or otherwise retain Tiingo Data in
     // any persistent or durable storage ... only transiently in volatile memory or in
-    // a temporary, non-persistent cache". security-ohlcv and security-returns both
-    // fetch api.tiingo.com with Next's `next: { revalidate: N }`, which is a DURABLE
-    // ON-DISK cache under .next/cache. On a Starter plan that is what the clause
-    // forbids. Establish which plan the configured key is on before changing anything;
-    // if Starter, revalidate should go to 0 on those two routes at the cost of more
-    // upstream requests.
+    // a temporary, non-persistent cache", removed "immediately after the calculation
+    // or operation is completed".
+    //
+    // OWNER DECISION 2026-09-15: development runs on the STARTER plan. So §1.6(a)
+    // binds, and `security-ohlcv` + `security-returns` now fetch api.tiingo.com with
+    // `next: { revalidate: 0 }` — Next's revalidate persists to .next/cache on disk,
+    // which is the case the clause names. Guarded by
+    // __tests__/tiingoUncached.test.ts, which reads the route sources, because this
+    // is the kind of constraint a later performance pass silently reverses.
+    //
+    // ⚠ At the time this was settled NO TIINGO KEY WAS CONFIGURED (.provider-config
+    // carried `configs.tiingo.enabled: true` and no apiKey; no env var either), so
+    // nothing had been fetched and nothing was in breach. It also means trailing
+    // returns — whose ONLY source is Tiingo — currently serve `source: 'none'`.
+    // Adding the Starter key is what revives them.
+    //
+    // The strict reading also rules out an in-process LRU as a substitute for the
+    // disk cache: "immediately after the operation is completed" leaves no room for
+    // a cross-request TTL, however volatile the memory.
     // 7.3: "All data via the API is for internal consumption only... Redistribution is
     // only available upon special request and permission, and comes with additional
     // fees" — the FMP/Twelve Data/Bitget pattern again. If redistribution is ever

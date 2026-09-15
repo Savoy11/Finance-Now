@@ -54,12 +54,28 @@ function chunk<T>(items: T[], size: number): T[][] {
   return out
 }
 
-/** One year of daily closes for a symbol, or null when Tiingo has no series. */
+/**
+ * One year of daily closes for a symbol, or null when Tiingo has no series.
+ *
+ * ⚠ UNCACHED ON PURPOSE — Tiingo Starter ToS §1.6(a). The plan forbids retaining
+ * Tiingo Data in "any persistent or durable storage" and allows only transient
+ * processing, removed "immediately after the calculation or operation is completed".
+ * Next's fetch `revalidate` persists to `.next/cache` on disk, so the 900s cache
+ * that used to sit here was the prohibited case. Full reasoning and the restore
+ * condition are on `fetchTiingoOhlcv` in live-data/security-ohlcv/route.ts.
+ *
+ * ⚠ THIS ROUTE IS THE EXPENSIVE ONE. Tiingo is its ONLY source (`source: 'tiingo'
+ * | 'none'`) and it fetches PER SYMBOL, so an uncached call costs one upstream
+ * request per symbol per request. The existing caps are what keep that bounded and
+ * they matter more now, not less: `?universe=` is refused outright and `?symbols=`
+ * is capped at 60. Do not raise either to "make returns work" — on Starter that
+ * trades a licence-compliant route for a rate-limit failure.
+ */
 async function fetchTiingoSeries(symbol: string, key: string): Promise<CloseSeries | null> {
   const start = new Date(Date.now() - 400 * 86_400_000).toISOString().slice(0, 10)
   const res = await fetch(
     `https://api.tiingo.com/tiingo/daily/${encodeURIComponent(symbol.toLowerCase())}/prices?startDate=${start}&token=${key}`,
-    { headers: { Accept: 'application/json' }, next: { revalidate: 900 } }
+    { headers: { Accept: 'application/json' }, next: { revalidate: 0 } }
   )
   if (!res.ok) throw new Error(`Tiingo ${res.status}`)
   const rows = await res.json() as Array<{ date: string; close: number; adjClose?: number }>

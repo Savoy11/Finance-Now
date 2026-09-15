@@ -321,9 +321,19 @@ async function testTwelveData(key?: string): Promise<TestResult> {
     : { ok: false, error: data.message ?? 'No quote returned' }
 }
 
+// ⚠ `revalidate: 0` is EXPLICIT here for a licence reason, not a style preference.
+// Tiingo Starter ToS §1.6(a) forbids retaining Tiingo Data in durable storage, and
+// Next's Data Cache is on disk. Next 15 happens to default fetch to uncached — but
+// that default is exactly what changed between Next 14 and 15, so leaving a licence
+// constraint resting on it is a framework upgrade away from a silent breach.
+// Stated, not inherited. See live-data/security-ohlcv/route.ts for the full reading.
+//
+// Note this is the IEX endpoint, a different Tiingo product from the daily prices the
+// other two routes use, with its own exchange-derived limits; it is called only to
+// validate a key from the Integrations page and the quote is never stored.
 async function testTiingo(key?: string): Promise<TestResult> {
   if (!key) return { ok: false, error: 'API key required' }
-  const res = await fetch(`https://api.tiingo.com/iex/?tickers=aapl&token=${key}`, { headers: { Accept: 'application/json' } })
+  const res = await fetch(`https://api.tiingo.com/iex/?tickers=aapl&token=${key}`, { headers: { Accept: 'application/json' }, next: { revalidate: 0 } })
   if (!res.ok) return { ok: false, error: `HTTP ${res.status} — check your key` }
   const data = await res.json() as Array<{ last?: number; tngoLast?: number }>
   const px = data[0]?.last ?? data[0]?.tngoLast
