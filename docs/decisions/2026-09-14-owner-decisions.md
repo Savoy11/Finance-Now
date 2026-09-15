@@ -212,3 +212,29 @@ are executable from here.
 - D20 — run the 11 agents once; collect outputs for the owner to judge
 - D6 — configure the weekly dependabot triage (needs `ANTHROPIC_API_KEY` as a repo secret)
 - The 20 terms readings and the remaining probes above
+
+**Scheduled together — owner, 2026-09-15**
+
+D20 and the market-data licensing research are one working block, at the owner's
+request. They share a prerequisite worth doing first: **D20 needs
+`ANTHROPIC_API_KEY`, and so does D6.** Setting the key up ahead of that block
+reduces it to "run and judge" rather than "configure, then run, then judge".
+
+The licensing work is scoped and its findings are recorded; what remains is
+research, not analysis. Scoping document (private artifact, owner's account):
+<https://claude.ai/artifact/ABpR3UNJe5BQmVGpWZuR3a>
+
+Its headline: **the provider question is a distribution question.** Nothing can
+be priced until it is settled whether the app is self-hosted (users hold their
+own keys — which is what the current architecture already implements), hosted on
+the owner's keys (needs display agreements, from ~$399/mo), or hosted with
+per-user keys (which would reverse RP-5's removal of third-party key custody).
+
+⚠ Carried into that block, from the 2026-09-15 reading of FMP's own guidance:
+**D3's "development now, public-facing at launch" may not be the safe harbour it
+reads as.** FMP states that purpose and sponsoring organisation decide
+commercial use, not deployment stage — "a private prototype can still be
+commercial when it supports an employer, startup, agency… or client". The remedy
+vendors name is an authorised commercial evaluation licence, usually free. That
+is the cheapest item on the whole agenda and it is worth doing whichever
+distribution model wins.
