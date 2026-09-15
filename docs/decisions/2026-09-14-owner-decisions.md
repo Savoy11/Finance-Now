@@ -159,6 +159,18 @@ are executable from here.
 - T-250 — Recurring: re-read source verdicts before the 180-day window (oldest 2026-08-06) and quarterly licence re-chec
 - T-251 — publicnode.com terms — seeded low confidence, needs a read
 - T-252 — Batch-2 withdraw-fee exchange hosts — terms seeded LOW, read each
+  - **✅ CLOSED 2026-09-15.** All five read or resolved. Poloniex §9 licenses its API
+    "solely for the purposes of trading on Poloniex" → verdict `prohibited`, source
+    removed (owner decision, same day). LBank read — binds only on registration, but
+    claims database IP independently. XT.com publishes no reachable terms AND geo-blocks
+    this region outright, so it stays `seeded` with `reviewedAt` unmoved. Record:
+    `docs/audits/terms-review-apis-2026-09-14.md` (addendum, 2026-09-15).
+  - ⚠ **XT's geo-block joins the open Bitget US-prohibition question below** — Bitget's is
+    written, XT's is enforced at the edge. One decision, now covering two sources.
+  - ⚠ **New, unassigned:** establish whether the hand-maintained Poloniex rows in
+    `transferFees.ts` were copied from the now-prohibited API (several are dated
+    2026-08-22, the day of the owner probe) or read from the published fee page. Needed
+    before the next `TRANSFER_FEES_LAST_VERIFIED` bump.
 
 ### Fees / catalogs / hand-maintained data (2)
 

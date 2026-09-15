@@ -165,29 +165,13 @@ export function parseBitgetCoins(json: any): ParsedFeeRow[] {
   return rows
 }
 
-/**
- * Poloniex `GET /currencies?includeMultiChainCurrencies=true` → an array of
- * single-key objects: [{ BTC: {...} }, { USDTTRON: { parentChain: 'USDT', ... } }].
- * Multi-chain children carry the real coin in `parentChain`; the network comes
- * from `blockchain`.
- */
-export function parsePoloniexCurrencies(json: any): ParsedFeeRow[] {
-  const rows: ParsedFeeRow[] = []
-  if (!Array.isArray(json)) return rows
-  for (const item of json) {
-    if (!item || typeof item !== 'object') continue
-    for (const [symbol, info] of Object.entries(item as Record<string, any>)) {
-      if (!info || typeof info !== 'object') continue
-      const coin = normalizeSymbol(symbol) ?? normalizeSymbol(String(info.parentChain ?? ''))
-      const network = normalizeChain(String(info.blockchain ?? ''))
-      const withdrawFee = num(info.withdrawalFee)
-      const withdrawEnabled = info.walletState === undefined ? undefined : info.walletState === 'ENABLED'
-      if (!coin || !network || (withdrawFee === undefined && withdrawEnabled === undefined)) continue
-      rows.push({ exchangeId: 'poloniex', coin, network, withdrawFee, withdrawEnabled })
-    }
-  }
-  return rows
-}
+// ⚠ parsePoloniexCurrencies WAS REMOVED 2026-09-15. Poloniex's User Agreement §9
+// licenses the API "solely for the purposes of trading on Poloniex" — the
+// withdraw-fee overlay was never inside that grant, so the host is `prohibited`
+// in sourceTerms.ts and the source is gone from WITHDRAW_FEE_SOURCES below.
+// The parser is deleted rather than left dormant for the reason Yahoo's fetchers
+// were: an unused parser is an invitation to re-register the source. Re-adding
+// either needs a licence from Poloniex, not a code change.
 
 /** LBank `GET /v2/withdrawConfigs.do` → { result: 'true', data: [{ assetCode, chain, fee, min, canWithDraw }] } */
 export function parseLbankWithdrawConfigs(json: any): ParsedFeeRow[] {
@@ -301,9 +285,18 @@ export const WITHDRAW_FEE_SOURCES: WithdrawFeeSource[] = [
   { exchangeId: 'htx', url: 'https://api.huobi.pro/v2/reference/currencies', parse: parseHtxCurrencies, probed: true },
   // Batch 2 all confirmed on the owner probe 2026-08-22 (HTTP 200, rows parsed):
   // bitget 42, poloniex 31, lbank 51, bitfinex 14, xtcom 41. Combined with
-  // kucoin+htx that is 280 live rows, 123 of which match a curated route.
+  // kucoin+htx that was 280 live rows, 123 of which matched a curated route.
+  //
+  // ⚠ POLONIEX (31 of those rows) WAS REMOVED 2026-09-15 — on TERMS, not on a
+  // probe failure. Its endpoint answers fine; we are simply not licensed to call
+  // it. User Agreement §9 grants use of the API "solely for the purposes of
+  // trading on Poloniex" and bars use of the API or its data "for any other
+  // commercial purpose", and the agreement binds on USE of the Services rather
+  // than on holding an account. poloniex.com is now `prohibited` in
+  // sourceTerms.ts, so pinnedFetch would refuse it at the socket anyway; leaving
+  // the source registered would fail the dataSources terms sweep in
+  // __tests__/sourceTerms.test.ts. Do not re-add it without a licence.
   { exchangeId: 'bitget', url: 'https://api.bitget.com/api/v2/spot/public/coins', parse: parseBitgetCoins, probed: true },
-  { exchangeId: 'poloniex', url: 'https://api.poloniex.com/currencies?includeMultiChainCurrencies=true', parse: parsePoloniexCurrencies, probed: true },
   { exchangeId: 'lbank', url: 'https://api.lbkex.com/v2/withdrawConfigs.do', parse: parseLbankWithdrawConfigs, probed: true },
   { exchangeId: 'bitfinex', url: 'https://api-pub.bitfinex.com/v2/conf/pub:map:currency:tx:fee', parse: parseBitfinexTxFees, probed: true },
   { exchangeId: 'xtcom', url: 'https://sapi.xt.com/v4/public/wallet/support/currency', parse: parseXtSupportCurrency, probed: true },

@@ -5,13 +5,16 @@ import {
   parseKucoinCurrencies,
   parseHtxCurrencies,
   parseBitgetCoins,
-  parsePoloniexCurrencies,
   parseLbankWithdrawConfigs,
   parseBitfinexTxFees,
   parseXtSupportCurrency,
   buildFeeOverrideMap,
+  WITHDRAW_FEE_SOURCES,
   type ParsedFeeRow,
 } from '../withdrawFeeAdapters'
+import * as withdrawFeeAdapters from '../withdrawFeeAdapters'
+import { checkSourceTerms } from '../sourceTerms'
+import { DATA_SOURCES } from '@/lib/data/dataSources'
 import { EXCHANGES, findTransferPaths, type NetworkFeeMap, type CoinPriceMap } from '@/lib/data/transferFees'
 
 describe('normalizeSymbol', () => {
@@ -109,21 +112,39 @@ describe('parseBitgetCoins', () => {
   })
 })
 
-describe('parsePoloniexCurrencies', () => {
-  const payload = [
-    { BTC: { blockchain: 'BTC', withdrawalFee: '0.0005', walletState: 'ENABLED' } },
-    // multi-chain child: coin comes from parentChain, network from blockchain
-    { USDTTRON: { blockchain: 'TRX', withdrawalFee: '1', walletState: 'ENABLED', parentChain: 'USDT' } },
-    { OBSCURE: { blockchain: 'OBS', withdrawalFee: '1' } },
-  ]
-  it('parses direct and multi-chain-child rows', () => {
-    expect(parsePoloniexCurrencies(payload)).toEqual([
-      { exchangeId: 'poloniex', coin: 'btc', network: 'bitcoin', withdrawFee: 0.0005, withdrawEnabled: true },
-      { exchangeId: 'poloniex', coin: 'usdt', network: 'trc20', withdrawFee: 1, withdrawEnabled: true },
-    ])
+// ─────────────────────────────────────────────────────────────────────────────
+// Poloniex stays removed.
+//
+// Removed 2026-09-15 on TERMS, not on a probe failure — the endpoint answers
+// fine, and that is exactly what makes this worth guarding. A source that is
+// gone because it 403s stays gone on its own; a source that is gone because we
+// are not licensed to call it will look, to anyone reading the code later, like
+// a working endpoint someone forgot to wire up. Poloniex's User Agreement §9
+// licenses the API "solely for the purposes of trading on Poloniex".
+//
+// Four independent assertions, because each can regress on its own: the parser
+// could come back without the source, the source without the dataSources entry,
+// or the verdict could be flipped back while the code stays correct.
+// ─────────────────────────────────────────────────────────────────────────────
+describe('Poloniex is removed and stays removed', () => {
+  it('registers no poloniex withdraw-fee source', () => {
+    expect(WITHDRAW_FEE_SOURCES.map((s) => s.exchangeId)).not.toContain('poloniex')
+    expect(WITHDRAW_FEE_SOURCES.filter((s) => /poloniex/i.test(s.url))).toEqual([])
   })
-  it('returns nothing for a non-array payload', () => {
-    expect(parsePoloniexCurrencies({ error: 'x' })).toEqual([])
+
+  it('exports no poloniex parser', () => {
+    expect(Object.keys(withdrawFeeAdapters)).not.toContain('parsePoloniexCurrencies')
+  })
+
+  it('has poloniex.com prohibited in the terms registry', () => {
+    const d = checkSourceTerms('https://api.poloniex.com/currencies', new Date('2026-09-15T00:00:00Z'))
+    expect(d.status).toBe('prohibited')
+    expect(d.allowed).toBe(false)
+  })
+
+  it('declares no poloniex host in dataSources', () => {
+    const hosts = DATA_SOURCES.flatMap((e) => e.providers.map((p) => p.host).filter(Boolean))
+    expect(hosts.filter((h) => /poloniex/i.test(String(h)))).toEqual([])
   })
 })
 
