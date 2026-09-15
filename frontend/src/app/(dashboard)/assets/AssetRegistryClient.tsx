@@ -19,9 +19,11 @@ import { MetricCard } from '@/components/ui/MetricCard'
 import { useAssetsWithStore } from '@/hooks/useAssets'
 import {
   FILTER_FIELDS, FIELD_BY_KEY, UNAVAILABLE_FACTORS,
+  serializeRules, parseRules,
   type FilterRule,
 } from '@/lib/data/coinFilters'
 import { FilterStack } from '@/components/ui/FilterStack'
+import { useScreenerUrl } from '@/lib/hooks/useScreenerUrl'
 import { useAssetStore } from '@/store/useAssetStore'
 import { assetsApi } from '@/lib/api/assets'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
@@ -75,6 +77,42 @@ export function AssetRegistryClient() {
 
   const { data, isLoading, isError, refetch, technicalSweep } = useAssetsWithStore(rules)
   const { filters, setFilters } = useAssetStore()
+
+  // Deep-linkable screener state (D16 / T-283) — /assets?type=layer1&rules=marketCap:gte:1e9
+  //
+  // This page kept its filters in a Zustand store while Equities and Funds moved
+  // to useScreenerUrl, so a filtered coin view was the one screener in the suite
+  // that could not be shared. The store stays: it is what useAssetsWithStore
+  // reads, and the hook syncs it rather than replacing it.
+  //
+  // `tab` is NOT in this map, deliberately. It is already URL-driven with its own
+  // read-once-on-mount semantics above, and useScreenerUrl only touches keys
+  // present in `defaults` — so ?tab=reserves survives untouched, which is what
+  // keeps the retired /reserves redirect working.
+  //
+  // Opening the screener when a link carries rules is intentional: filters that
+  // are applied but collapsed out of sight would make the row count look wrong.
+  useScreenerUrl(
+    {
+      type: filters.assetType,
+      q: filters.search,
+      view: viewMode,
+      rules: serializeRules(rules),
+    },
+    { type: 'all', q: '', view: 'table', rules: '' },
+    (p) => {
+      if (p.type && TYPE_CHIPS.some(c => c.value === p.type)) {
+        setFilters({ assetType: p.type as AssetType | 'all' })
+      }
+      if (p.q) setFilters({ search: p.q })
+      if (p.view === 'grid' || p.view === 'table') setViewMode(p.view)
+      const parsed = parseRules(p.rules)
+      if (parsed.length > 0) {
+        setRules(parsed)
+        setScreenerOpen(true)
+      }
+    },
+  )
 
   // Full monitored universe (unfiltered) for the market-breadth KPIs — bounded
   // to the tracked catalog, so a large pageSize returns everything in one page.

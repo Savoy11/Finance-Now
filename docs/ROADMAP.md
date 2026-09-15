@@ -431,9 +431,16 @@ app** (they differ in attribution and in what some affiliate terms allow; see be
 
 ### Non-negotiable integrity rules (decide these before writing any code)
 
-Finance Now *rates* the providers it would be paid by — `computeOverallRisk()` scores 55 staking
-providers across 6 risk dimensions. That is a real conflict of interest, and the product's
-value dies if scores follow the money.
+Finance Now publishes curated risk data on the providers it would be paid by — six rated
+dimensions across 55 staking providers. That is a real conflict of interest, and the
+product's value dies if the ratings follow the money.
+
+> **Updated 2026-09-14 (D14):** this said "`computeOverallRisk()` scores 55 staking
+> providers". That function was deleted — **no composite staking score is published
+> anywhere** now, so there is no ranking for affiliate status to influence in the first
+> place. The rules below still bind: the six DIMENSIONS are still published, still
+> editorial, and still describe companies that may pay us. Removing the composite
+> narrowed the conflict; it did not end it.
 
 - [x] **Affiliate status never influences ranking, scoring, sorting, or filtering.** ✅ Three layers:
       the scoring functions take a bare `RiskProfile` (six numbers — no provider object in scope);
@@ -504,12 +511,23 @@ went to `docs/BUSINESS-CHECKLIST.md`, which is worked separately from both produ
       contracts through `security-quotes`/`security-chart` (19 commodity contracts, 4 CBOT rate
       futures), so the quote plumbing exists; options chains do not — that needs a provider
       decision (and most options data is paid).
-- [ ] **Bond ladder tool + bond affiliate links.** ⚠ Note before building: Portfolio Builder
-      **already has** a bond ladder (`bondLadder(horizon)` / `consolidateLadder()` in
-      `lib/data/portfolioBuilder.ts`, duration-matched SHY→IEF→BND→TLT). Decide whether this is
-      surfacing that engine as a standalone tool or extending it. Affiliate half extends the
-      affiliate-links section above — same integrity rules (ladder is chosen by duration match,
-      never by who pays).
+- [ ] **Bond ladder tool + bond affiliate links.** **DECIDED 2026-09-14 (owner decision
+      D16): it EXTENDS the Portfolio Builder engine — it is not a standalone tool and must
+      not carry a second ladder implementation.** Portfolio Builder already has the ladder
+      (`bondLadder(horizon)` / `consolidateLadder()` in `lib/data/portfolioBuilder.ts`,
+      duration-matched SHY→IEF→BND→TLT, pure and vitest-tested).
+
+      The decision is *how* to build it, not *when* — this stays an unscheduled backlog
+      item. What D16 forecloses is the tempting shortcut: a standalone tool would duplicate
+      the duration-matching logic, and two ladder implementations drift, which means two
+      different answers to "what should I hold for a 7-year horizon" from one product. Any
+      future surface calls `bondLadder()` and renders its output; a genuinely new
+      requirement extends that function and its tests, where `consolidateLadder()`'s
+      `MIN_RUNG_PCT` rule and the injectable-`now` convention already live.
+
+      Affiliate half extends the affiliate-links section above — same integrity rules
+      (ladder is chosen by duration match, never by who pays), and it remains gated on
+      those rules being ticked.
 - [ ] **Linking brokerage accounts / helping power users process trades.** ⚠ **The largest
       regulatory step in the backlog** — routing or assisting orders is execution, not
       information, and touches broker-dealer territory. Scope it deliberately: read-only

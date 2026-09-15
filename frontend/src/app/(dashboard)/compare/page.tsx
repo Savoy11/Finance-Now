@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useEffect, useMemo, useState, type CSSProperties } from 'react'
+import { Suspense, useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { useQueries, useQuery } from '@tanstack/react-query'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { clsx } from 'clsx'
@@ -61,6 +61,100 @@ for (const o of OPTIONS) if (!OPTION_BY_SYMBOL.has(o.symbol)) OPTION_BY_SYMBOL.s
 // into the URL but silently drop on reload (review finding).
 const OPTION_BY_UPPER = new Map<string, Option>()
 for (const o of OPTIONS) if (!OPTION_BY_UPPER.has(o.symbol.toUpperCase())) OPTION_BY_UPPER.set(o.symbol.toUpperCase(), o)
+
+// ─── Non-catalog tickers (D16 / T-096) ───────────────────────────────────────
+//
+// Compare's universe used to be exactly the four catalogs above, so anything
+// outside them could not be compared at all — while equity/fund detail pages and
+// the Portfolios add-search had already learned to resolve arbitrary tickers.
+// The plumbing was never the obstacle: `security-chart` serves any symbol it can
+// price. The universe list was.
+//
+// Two pieces make an off-catalog symbol work:
+//   1. `searchRemoteOptions` widens the PICKER, reusing the same three keyless
+//      lookups Portfolios uses (#116).
+//   2. `provisionalOption` keeps a DEEP LINK working. A shared
+//      /compare?symbols=TSLA,VOO reaches someone whose page has no idea what
+//      TSLA is; resolving it to a security-chart fetch is right far more often
+//      than dropping it, and when it is wrong the existing `missing` banner says
+//      so by name.
+
+/**
+ * An Option for a symbol no catalog knows.
+ *
+ * Typed as a security rather than crypto on purpose: `fetchPoints` sends crypto
+ * to `/live-data/chart?id=` (a CoinGecko id, which an unknown symbol does not
+ * have) and everything else to `/live-data/security-chart?symbol=`, which
+ * accepts any ticker. So the security path is the only one that can possibly
+ * succeed without more information — and a coin added through the picker carries
+ * its real id, so it never lands here.
+ */
+function provisionalOption(symbol: string): Option {
+  return { symbol, name: symbol, kind: 'stock', cls: 'equity' }
+}
+
+/** Maps an instrument class from the universe routes onto Compare's `kind`. */
+function kindForClass(cls: InstrumentClass): Kind {
+  if (cls === 'crypto') return 'crypto'
+  if (cls === 'etf' || cls === 'mutual') return 'fund'
+  if (cls === 'equity') return 'stock'
+  return 'macro'
+}
+
+/**
+ * Widen the picker beyond the catalogs, reusing the routes the Portfolios
+ * add-search already proved (coins, funds, stocks; all keyless-tolerant).
+ *
+ * Every leg is allSettled and a rejection contributes nothing, so a remote
+ * failure degrades the picker to catalog-only rather than erroring it. Funds are
+ * pushed before stocks because an ETF appears in both directories and first-in
+ * wins the dedupe — it should be labeled a fund, not a stock.
+ */
+async function searchRemoteOptions(q: string): Promise<Option[]> {
+  const [coins, funds, stocks] = await Promise.allSettled([
+    fetch(`/live-data/coin-search?q=${encodeURIComponent(q)}`).then((r) => r.json()) as Promise<{
+      coins?: { cgId: string; symbol: string; name: string }[]
+    }>,
+    fetch(`/live-data/fund-universe?q=${encodeURIComponent(q)}`).then((r) => r.json()) as Promise<{
+      ok?: boolean; entries?: { symbol: string; name: string; type: 'etf' | 'mutual' }[]
+    }>,
+    fetch(`/live-data/stock-universe?q=${encodeURIComponent(q)}`).then((r) => r.json()) as Promise<{
+      ok?: boolean; entries?: { symbol: string; name: string }[]
+    }>,
+  ])
+
+  const out: Option[] = []
+  const seen = new Set<string>()
+  const push = (o: Option) => {
+    const key = o.symbol.toUpperCase()
+    if (!seen.has(key)) { seen.add(key); out.push(o) }
+  }
+  if (coins.status === 'fulfilled') {
+    for (const c of (coins.value.coins ?? []).slice(0, 8)) {
+      push({ symbol: c.symbol.toUpperCase(), name: c.name, kind: 'crypto', cls: 'crypto', id: c.cgId })
+    }
+  }
+  if (funds.status === 'fulfilled' && funds.value.ok) {
+    for (const e of funds.value.entries ?? []) {
+      push({ symbol: e.symbol, name: e.name, kind: 'fund', cls: e.type === 'etf' ? 'etf' : 'mutual' })
+    }
+  }
+  if (stocks.status === 'fulfilled' && stocks.value.ok) {
+    for (const e of stocks.value.entries ?? []) {
+      push({ symbol: e.symbol, name: e.name, kind: kindForClass('equity'), cls: 'equity' })
+    }
+  }
+  return out
+}
+
+function useDebounced(value: string, ms: number): string {
+  const [v, setV] = useState(value)
+  useEffect(() => {
+    const t = setTimeout(() => setV(value), ms)
+    return () => clearTimeout(t)
+  }, [value, ms])
+  return v
+}
 
 const MAX_SYMBOLS = 6
 const DEFAULT_SYMBOLS = ['VOO', 'QQQ']
@@ -142,7 +236,16 @@ const FUNDAMENTAL_ROWS: Array<{ label: string; render: (d: CompanyFactsResponse)
 
 const STAT_LABELS = ['Type', 'Sector', 'Market cap', 'P/E (TTM)', 'Dividend yield', 'Beta (5Y)', 'Expense ratio']
 
-function statRows(symbol: string): Array<[string, string]> {
+/**
+ * Reference-fundamentals column for one symbol.
+ *
+ * `opt` is the RESOLVED option (T-096), so a ticker that is not in any catalog
+ * still gets its Type row filled in from what the picker found. The remaining
+ * rows stay em-dashes because the figures genuinely come from the catalogs —
+ * printing a Type we know while dashing a P/E we do not is the honest split,
+ * and it is why this takes the option rather than looking the symbol up itself.
+ */
+function statRows(symbol: string, opt?: Option): Array<[string, string]> {
   const e = getEquity(symbol)
   if (e) {
     return [
@@ -167,12 +270,14 @@ function statRows(symbol: string): Array<[string, string]> {
       ['Expense ratio', `${f.expenseRatioPct}%`],
     ]
   }
-  const opt = OPTION_BY_SYMBOL.get(symbol)
-  if (opt?.kind === 'crypto' || opt?.kind === 'macro') {
-    const label = opt.kind === 'crypto' ? 'Crypto' : CLASS_PROFILES[opt.cls].label
-    return [['Type', label], ['Sector', '—'], ['Market cap', '—'], ['P/E (TTM)', '—'], ['Dividend yield', '—'], ['Beta (5Y)', '—'], ['Expense ratio', '—']]
-  }
-  return []
+  const o = opt ?? OPTION_BY_SYMBOL.get(symbol)
+  if (!o) return []
+  const label =
+    o.kind === 'crypto' ? 'Crypto'
+    : o.kind === 'fund' ? (o.cls === 'etf' ? 'ETF' : 'Mutual fund')
+    : o.kind === 'stock' ? 'Stock'
+    : CLASS_PROFILES[o.cls].label
+  return [['Type', label], ['Sector', '—'], ['Market cap', '—'], ['P/E (TTM)', '—'], ['Dividend yield', '—'], ['Beta (5Y)', '—'], ['Expense ratio', '—']]
 }
 
 const pct = (v: number, dp = 1) => `${v >= 0 ? '+' : ''}${v.toFixed(dp)}%`
@@ -199,15 +304,24 @@ function CompareInner() {
   const [symbols, setSymbols] = useState<string[]>(() => {
     const raw = searchParams.get('symbols')
     // Case-insensitive resolve to the catalog's canonical casing, deduped.
+    //
+    // A symbol no catalog knows is KEPT (uppercased), not dropped — T-096. It
+    // used to be silently discarded, which made a shared comparison containing
+    // any off-catalog ticker quietly different for the recipient than for the
+    // sender: same URL, fewer lines, no explanation. It now resolves through
+    // `provisionalOption` to a security-chart fetch, and a symbol that genuinely
+    // cannot be priced reaches the `missing` banner, which names it.
     const parsed = raw
       ? Array.from(new Set(
           raw.split(',')
-            .map((s) => OPTION_BY_UPPER.get(s.trim().toUpperCase())?.symbol)
-            .filter((s): s is string => !!s),
+            .map((s) => s.trim())
+            .filter(Boolean)
+            .map((s) => OPTION_BY_UPPER.get(s.toUpperCase())?.symbol ?? s.toUpperCase()),
         )).slice(0, MAX_SYMBOLS)
       : []
     return parsed.length ? parsed : DEFAULT_SYMBOLS
   })
+
   const [range, setRange] = useState<Range>(() => {
     const raw = searchParams.get('range')
     return raw && RANGE_VALUES.includes(raw) ? (raw as Range) : '1y'
@@ -215,6 +329,38 @@ function CompareInner() {
 
   const [benchmark, setBenchmark] = useState<string>(BENCHMARKS[0].symbol)
   const [search, setSearch] = useState('')
+
+  // Options resolved from a live lookup this session, keyed by symbol. Kept in
+  // state rather than a module map so it cannot leak between users in SSR, and
+  // so a coin's CoinGecko `id` survives from the moment it is picked through to
+  // `fetchPoints` — without it a non-catalog coin would fetch as a stock ticker.
+  const [discovered, setDiscovered] = useState<Record<string, Option>>({})
+
+  // One resolver for the whole page. Catalog first, then anything found this
+  // session, then a provisional security. Every former `OPTION_BY_SYMBOL.get()`
+  // call site goes through this, so a discovered symbol behaves like a catalog
+  // one everywhere: chart fetch, class panel, missing banner, fund sections.
+  const resolve = useCallback(
+    (symbol: string): Option =>
+      OPTION_BY_SYMBOL.get(symbol) ?? discovered[symbol] ?? provisionalOption(symbol),
+    [discovered],
+  )
+
+  /**
+   * Add a picked option, remembering it if the catalogs do not already carry it.
+   *
+   * Recording it is the whole point: the search results vanish when the box
+   * clears, and with them a non-catalog coin's CoinGecko `id` and a fund's class.
+   * Without this the symbol would fall back to `provisionalOption` on the very
+   * next render and a coin would be fetched as if it were a stock ticker.
+   */
+  const addOption = useCallback((o: Option) => {
+    setSymbols((prev) => (prev.includes(o.symbol) || prev.length >= MAX_SYMBOLS ? prev : [...prev, o.symbol]))
+    if (!OPTION_BY_SYMBOL.has(o.symbol)) {
+      setDiscovered((prev) => (prev[o.symbol] ? prev : { ...prev, [o.symbol]: o }))
+    }
+    setSearch('')
+  }, [])
 
   // Keep the URL in sync so a comparison is shareable/bookmarkable.
   useEffect(() => {
@@ -224,7 +370,9 @@ function CompareInner() {
     router.replace(`?${params.toString()}`, { scroll: false })
   }, [symbols, range, router])
 
-  const matches = useMemo(() => {
+  // Catalog matches answer instantly and stay first — typing "vo" should show
+  // VOO before a network round trip, not after it.
+  const localMatches = useMemo(() => {
     const q = search.trim().toLowerCase()
     if (!q || symbols.length >= MAX_SYMBOLS) return []
     return OPTIONS
@@ -232,13 +380,46 @@ function CompareInner() {
       .slice(0, 8)
   }, [search, symbols])
 
+  // Remote lookups widen the universe past the catalogs (T-096). Debounced and
+  // gated at 2 characters for the same reason Portfolios is: one letter matches
+  // half the market and the local list already covers the obvious cases.
+  // `retry: false` keeps a dead lookup from re-firing behind every keystroke.
+  const debouncedSearch = useDebounced(search.trim(), 350)
+  const { data: remoteMatches } = useQuery<Option[]>({
+    queryKey: ['compare-add-search', debouncedSearch],
+    queryFn: () => searchRemoteOptions(debouncedSearch),
+    enabled: debouncedSearch.length >= 2 && symbols.length < MAX_SYMBOLS,
+    staleTime: 5 * 60_000,
+    retry: false,
+  })
+
+  // Local first, remote appended, deduped case-insensitively against both the
+  // local list and what is already selected. Comparing on the uppercased symbol
+  // matters: the catalogs carry mixed-case crypto (USDe, lisUSD) that the
+  // universe routes return uppercased, and a case-sensitive dedupe would offer
+  // the same asset twice under two spellings.
+  const matches = useMemo(() => {
+    if (!search.trim() || symbols.length >= MAX_SYMBOLS) return []
+    const seen = new Set<string>([
+      ...localMatches.map((o) => o.symbol.toUpperCase()),
+      ...symbols.map((s) => s.toUpperCase()),
+    ])
+    const extra = (remoteMatches ?? []).filter((o) => {
+      const key = o.symbol.toUpperCase()
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+    return [...localMatches, ...extra].slice(0, 12)
+  }, [search, symbols, localMatches, remoteMatches])
+
   const rangeObj = RANGES.find((r) => r.value === range)!
   const chartQueries = useQueries({
     queries: symbols.map((symbol) => {
-      const opt = OPTION_BY_SYMBOL.get(symbol)
+      const opt = resolve(symbol)
       return {
-        queryKey: ['compare-chart', opt?.kind, opt?.id ?? symbol, range],
-        queryFn: () => (opt ? fetchPoints(opt, rangeObj) : Promise.resolve([] as ChartPoint[])),
+        queryKey: ['compare-chart', opt.kind, opt.id ?? symbol, range],
+        queryFn: () => fetchPoints(opt, rangeObj),
         staleTime: STALE_TIME_LONG,
       }
     }),
@@ -247,10 +428,10 @@ function CompareInner() {
   // Benchmark series for the beta row. The query key is IDENTICAL in shape to a
   // selected symbol's, so when the benchmark is also one of the compared series
   // React Query serves it from the same cache entry instead of fetching twice.
-  const benchOpt = OPTION_BY_SYMBOL.get(benchmark)
+  const benchOpt = resolve(benchmark)
   const benchQuery = useQuery({
-    queryKey: ['compare-chart', benchOpt?.kind, benchOpt?.id ?? benchmark, range],
-    queryFn: () => (benchOpt ? fetchPoints(benchOpt, rangeObj) : Promise.resolve([] as ChartPoint[])),
+    queryKey: ['compare-chart', benchOpt.kind, benchOpt.id ?? benchmark, range],
+    queryFn: () => fetchPoints(benchOpt, rangeObj),
     staleTime: STALE_TIME_LONG,
   })
 
@@ -266,7 +447,7 @@ function CompareInner() {
   // ['company-facts', symbol] key the equity detail page uses, so navigating
   // between the two costs nothing.
   const stockSymbols = useMemo(
-    () => symbols.filter((s) => OPTION_BY_SYMBOL.get(s)?.kind === 'stock'),
+    () => symbols.filter((s) => resolve(s).kind === 'stock'),
     [symbols],
   )
   const factsQueries = useQueries({
@@ -332,7 +513,7 @@ function CompareInner() {
   // Structural cross-class comparison — null for a single-class selection,
   // where there is nothing structural to say.
   const classComparison = useMemo(
-    () => compareAssetClasses(symbols.map((s) => OPTION_BY_SYMBOL.get(s)?.cls).filter((c): c is InstrumentClass => !!c)),
+    () => compareAssetClasses(symbols.map((s) => resolve(s).cls).filter((c): c is InstrumentClass => !!c)),
     [symbols],
   )
 
@@ -349,7 +530,8 @@ function CompareInner() {
           description="Pick 2–6 assets of any type — stocks, ETFs, mutual funds, coins, commodities, currencies, or rate indices. The chart normalizes every series to 100 at the common start date; the stats below are computed from the live price series over the selected window."
           details={[
             { label: 'Performance stats', text: 'Return, volatility, drawdown and Sharpe are derived from the fetched history over the current range.' },
-            { label: 'Fundamentals', text: 'The reference table shows approximate catalog values, labeled per the suite convention.' },
+            { label: 'Fundamentals', text: 'The reference table shows approximate catalog values, labeled per the suite convention. A ticker outside the curated catalogs charts and scores normally — those figures simply come from the catalog, so it shows its type and em-dashes for the rest rather than a guess.' },
+            { label: 'Beyond the catalogs', text: 'Search reaches past the curated lists to any coin CoinGecko carries and any quotable US-listed stock or fund. A symbol with no price history lands in the "no data" notice by name rather than disappearing.' },
           ]}
         />
       </div>
@@ -379,7 +561,7 @@ function CompareInner() {
             {matches.length > 0 && (
               <div className="absolute top-full left-0 mt-1 w-72 rounded-lg border border-border bg-bg-card shadow-xl shadow-black/40 z-20 overflow-hidden">
                 {matches.map((o) => (
-                  <button key={`${o.kind}-${o.symbol}`} onClick={() => { setSymbols([...symbols, o.symbol]); setSearch('') }}
+                  <button key={`${o.kind}-${o.symbol}`} onClick={() => { addOption(o) }}
                     className="w-full flex items-center justify-between px-3 py-2 text-left text-sm text-text-secondary hover:bg-bg-elevated hover:text-text-primary transition-colors">
                     <span className="truncate"><span className="font-mono font-medium">{o.symbol}</span> — {o.name}</span>
                     <span className="text-[10px] text-text-muted ml-2">{CLASS_PROFILES[o.cls].label}</span>
@@ -425,7 +607,7 @@ function CompareInner() {
             <span className="font-medium">Charted {chartData.present.length} of {symbols.length}.</span>{' '}
             No history returned for{' '}
             <span className="font-mono">{missing.join(', ')}</span>
-            {missing.every((s) => OPTION_BY_SYMBOL.get(s)?.kind !== 'crypto')
+            {missing.every((s) => resolve(s).kind !== 'crypto')
               ? ' — stock and fund history needs a Tiingo or FMP key on the Integrations page.'
               : ' — the series is missing or too short to align over this window.'}{' '}
             Everything below is computed over the remaining {chartData.present.length}, so the
@@ -628,13 +810,13 @@ function CompareInner() {
         </div>
       )}
 
-      <FundOverlapSection symbols={symbols.filter((s) => OPTION_BY_SYMBOL.get(s)?.kind === 'fund')} />
+      <FundOverlapSection symbols={symbols.filter((s) => resolve(s).kind === 'fund')} />
 
       {/* Fund facts side by side (S6 / T-069). Sits beside the overlap section
           because the two answer adjacent questions: overlap says whether these
           are the same bet, this says what they cost and hold. Renders nothing
           unless two or more catalogued funds are selected. */}
-      <FundFactsSection symbols={symbols.filter((s) => OPTION_BY_SYMBOL.get(s)?.kind === 'fund')} />
+      <FundFactsSection symbols={symbols.filter((s) => resolve(s).kind === 'fund')} />
 
       {/* Filed fundamentals — stocks only, keyless SEC EDGAR XBRL. Kept in its
           own table rather than merged into the reference stats below, because
@@ -695,7 +877,7 @@ function CompareInner() {
                 <td className="px-4 py-2.5 text-text-muted">{label}</td>
                 {symbols.map((s) => (
                   <td key={s} className="px-4 py-2.5 text-right font-mono tabular-nums text-text-secondary">
-                    {statRows(s)[rowIdx]?.[1] ?? '—'}
+                    {statRows(s, resolve(s))[rowIdx]?.[1] ?? '—'}
                   </td>
                 ))}
               </tr>
