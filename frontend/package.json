@@ -40,7 +40,8 @@
     "fund-fees": "node scripts/build-fund-fees.mjs",
     "fee-reconcile": "tsx scripts/reconcile-transfer-fees.ts",
     "fee-apply": "tsx scripts/apply-fee-updates.ts",
-    "fund-prospectus-fees": "node scripts/probe-fund-prospectus-fees.mjs"
+    "fund-prospectus-fees": "node scripts/probe-fund-prospectus-fees.mjs",
+    "agent-eval": "node scripts/run-agent-eval.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.125.0",
