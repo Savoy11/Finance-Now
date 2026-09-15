@@ -206,3 +206,96 @@ full before the TA surfaces are pointed at a public audience.
 6. **Bitget's US prohibition** — needs a real answer, not a maintainer's reading.
 7. **Registry URL fix**: Tiingo `termsUrl` → `https://www.tiingo.com/tos`; Bitget →
    `https://www.bitget.com/terms/legal/360014944032` (the document, not the index).
+
+
+---
+
+# Addendum — T-252, the withdraw-fee exchange hosts
+
+`withdrawFeeAdapters.ts` fetches five exchange endpoints keylessly for the withdrawal-fee
+overlay. All five were seeded LOW confidence and unread. One is now read in full, one was
+read above, three remain.
+
+## ⚠ A systemic registry defect: four more `termsUrl`s point at API documentation
+
+The same fault found in Bitget on 2026-09-13 is present in every other withdraw-fee
+entry. None of these is a terms document:
+
+| Entry | Registered `termsUrl` | What it actually is |
+|---|---|---|
+| `poloniex.com` | `api-docs.poloniex.com/` | API documentation |
+| `lbkex.com` | `lbank.com/docs/index.html` | API documentation |
+| `bitfinex.com` | `docs.bitfinex.com/reference/rest-public-conf` | API reference page |
+| `xt.com` | `doc.xt.com/` | API documentation |
+
+**Every one returns HTTP 200**, so every probe this project has run scored all four as
+"terms reachable". They never were. This is the failure mode the `seeded` flag cannot
+catch: it records that nobody read the document, not that the link points somewhere that
+is not a document. Five of five withdraw-fee entries had it.
+
+## T-252a Bitfinex — read in full, and the operative document was not the obvious one
+
+Two documents, and the first one sent me to the second:
+
+**API Terms of Service** (updated 2025-01-07) opens with a requirement we do not meet:
+
+> **API Keys Required to Access the Bitfinex API.** In order to use the Bitfinex API, you
+> must first sign up for an Account through the Site.
+
+We call `api-pub.bitfinex.com/v2/conf/pub:map:currency:tx:fee` keylessly, with no account.
+But that same document points elsewhere for what we actually consume — *"your access and
+use of Bitfinex Market Trading Data is subject to the Bitfinex Market Trading Data Terms
+of Use"* — so the API Terms are not the operative document here.
+
+**Market Data Terms of Use** (updated 2022-07-06) are, and they bind differently:
+
+> **By accessing or using the Bitfinex Market Data, you agree to be legally bound** by
+> the terms and conditions of these Market Data Terms.
+
+No account required — access alone binds. That resolves the ambiguity Bitget's terms left
+open, at least for Bitfinex.
+
+> **Permitted Use** means your use of Bitfinex Market Data solely for: (i) **personal
+> and/or internal use**; (ii) **general informational purposes**; or (iii) analysis of
+> prices and markets…
+
+> **Prohibited Use.** Absent prior express written consent… you may not: …
+> (g) **Distribute, redistribute, disseminate, sell, resell, license, or sublicense
+> Bitfinex Market Data to any party for any reason**
+
+Personal and internal use is expressly permitted, and "general informational purposes" is
+arguably wide enough to cover a fee table. Clause (g) is the counterweight, and the
+question it raises is the one every source now raises: whether showing the data to your
+own users is "disseminating to a party".
+
+Also worth noting for any future clause-scan: (b) and (c) prohibit using the data to
+create a **financial benchmark, reference rate, or index**, or to price a financial
+product. Nothing in Finance Now does that, but a "composite fee index" or similar would.
+
+## Three remain unread, and why
+
+Poloniex, LBank and XT.com are all client-rendered, and unlike Bitget and Tiingo they
+resisted the browser too — Poloniex's footer "User Agreement" is a JS-routed control that
+did not navigate on click, and the direct `/terms-of-use/` path 404s. Rather than keep
+poking one turn at a time, they are recorded as unread.
+
+**Their terms are NOT assumed to match the pattern**, even though five of five read so
+far do. That assumption is exactly what the `seeded` flag exists to prevent.
+
+The useful next step for all three is the same and is not a fetch: their API
+documentation pages (the URLs currently in the registry) usually link the operative
+terms from within the docs site itself.
+
+## What the five readings add up to
+
+| Source | Licence shape |
+|---|---|
+| FMP | Personal use only; multi-user display needs a specific agreement, "irrespective of whether such usage is complimentary or paid" |
+| Twelve Data | Internal Use; display to third parties needs a tier, add-on, or separate agreement |
+| Tiingo | "All data via the API is for internal consumption only"; redistribution on request, with fees |
+| Bitget | "non-commercial personal or internal business use" |
+| **Bitfinex** | **"personal and/or internal use"; redistribution to any party for any reason prohibited** |
+
+**Five for five.** The wording differs; the line does not. This is no longer a pattern
+that might not hold — it is the industry's standard posture, and the D3 launch ruling has
+to be measured against all five at once rather than source by source.

@@ -609,6 +609,13 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     domain: 'poloniex.com',
     name: 'Poloniex (public market-data API)',
     verdict: 'conditional',
+    // ⚠ This URL is API DOCUMENTATION, not a terms document — it returns 200, so
+    // every probe scored it "terms reachable". It never was. Unread as of 2026-09-14:
+    // poloniex.com is client-rendered, its footer "User Agreement" is a JS-routed
+    // control that does not navigate on click, and /terms-of-use/ 404s. Do NOT assume
+    // its terms match the internal-use-only shape the other five share, however
+    // consistent that pattern looks — that assumption is what `seeded` exists to
+    // prevent. Next step is the docs site, which usually links the operative terms.
     termsUrl: 'https://api-docs.poloniex.com/',
     finding:
       'Publishes a documented public REST API; the currencies reference (incl. withdrawal fees) is documented as unauthenticated. Seeded from the published API documentation — the exchange ToS have not been read for this project, and the endpoint itself is unprobed (see the Bybit removal: a seeded public claim loses to the owner probe).',
@@ -621,6 +628,10 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     domain: 'lbkex.com',
     name: 'LBank (public market-data API)',
     verdict: 'conditional',
+    // ⚠ API DOCUMENTATION, not terms — returns 200, so probes scored it reachable.
+    // Unread as of 2026-09-14: client-rendered, no terms link extractable. Same
+    // caution as poloniex — the pattern across five read sources is not evidence
+    // about this one.
     termsUrl: 'https://www.lbank.com/docs/index.html',
     finding:
       'Publishes a documented public REST API; withdrawConfigs is documented as an unauthenticated public endpoint. Seeded from the published API documentation — the exchange ToS have not been read for this project, and the endpoint itself is unprobed (see the Bybit removal: a seeded public claim loses to the owner probe).',
@@ -633,7 +644,20 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     domain: 'bitfinex.com',
     name: 'Bitfinex (public conf API)',
     verdict: 'conditional',
-    termsUrl: 'https://docs.bitfinex.com/reference/rest-public-conf',
+    // ✅ READ 2026-09-14. The registered URL was an API REFERENCE page, not terms —
+    // the same defect as Bitget's, and shared by all four withdraw-fee entries.
+    // Two documents matter and the obvious one is not operative: the API Terms of
+    // Service open "In order to use the Bitfinex API, you must first sign up for an
+    // Account", which we do not (we call api-pub keylessly) — but they point onward
+    // to the Market Data Terms for exactly what we consume. Those bind on ACCESS,
+    // not on holding an account: "By accessing or using the Bitfinex Market Data, you
+    // agree to be legally bound". Permitted Use is "personal and/or internal use",
+    // "general informational purposes", or price/market analysis. Prohibited Use (g)
+    // bars distributing or disseminating the data "to any party for any reason"
+    // absent written consent. Also (b) and (c): no financial benchmark, reference
+    // rate or index — nothing here does that, but a composite fee index would.
+    // Full reading: docs/audits/terms-review-apis-2026-09-14.md
+    termsUrl: 'https://www.bitfinex.com/legal/general/market-data/',
     finding:
       'Publishes a documented public REST API; the v2 public conf endpoints (incl. the currency tx-fee map) are documented as unauthenticated. Seeded from the published API documentation — the exchange ToS have not been read for this project, and the endpoint itself is unprobed (see the Bybit removal: a seeded public claim loses to the owner probe).',
     conditions: ['Respect documented rate limits', 'Keyless public endpoints only — no authenticated endpoints (RP-5)'],
@@ -645,6 +669,9 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     domain: 'xt.com',
     name: 'XT.com (public market-data API)',
     verdict: 'conditional',
+    // ⚠ API DOCUMENTATION, not terms — returns 200, so probes scored it reachable.
+    // Unread as of 2026-09-14: client-rendered, no terms link extractable. Same
+    // caution as poloniex.
     termsUrl: 'https://doc.xt.com/',
     finding:
       'Publishes a documented public REST API; the public wallet-support currency endpoint is documented as unauthenticated. Seeded from the published API documentation — the exchange ToS have not been read for this project, and the endpoint itself is unprobed (see the Bybit removal: a seeded public claim loses to the owner probe).',
