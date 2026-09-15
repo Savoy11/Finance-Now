@@ -44,13 +44,23 @@ One environment variable:
 claude mcp add finance-now node /absolute/path/to/mcp-server/dist/index.js
 ```
 
-## Tools (12)
+## Tools (11)
 
 Market data — crypto: `get_coin_prices`, `list_exchanges`,
-`get_network_fees`, `get_staking_opportunities`, `compare_staking_risk`,
+`get_network_fees`, `get_staking_opportunities`,
 `get_crypto_news`. Securities & macro: `get_security_quotes`, `get_security_history`,
 `get_yield_curve`, `get_fx_rates`. Analysis: `score_options_trade` (computes from
 caller-supplied figures — there is no options chain feed, by decision).
+
+⚠ **`compare_staking_risk` was REMOVED** (2026-09-14, owner decision D14) — deleted,
+not withheld like `find_transfer_routes` below. It printed a side-by-side table of
+composite Safety Scores across providers, which is a leaderboard delivered through
+MCP: the surface RP-3 rejected in the app, reaching the same reader by another route.
+Its upstream (`/api/v1/staking/opportunities`) no longer serves `safetyScore`, `band`,
+`riskScore` or `riskLevel` at all, so there is nothing to restore it to. An agent asked
+to compare providers can still read the six risk dimensions from
+`get_staking_opportunities` and explain the differences — without this server
+publishing a ranking.
 
 ⚠ **`find_transfer_routes` is withheld** (2026-08-22, owner decision): the Transfer
 Fee Calculator is kept but held out of the initial rollout while its fee table
@@ -67,8 +77,10 @@ is made.
 
 ## Conventions the tools follow
 
-- Staking results lead with the canonical **Safety Score (0–100, higher = safer)**
-  and its band; the legacy 1–10 risk score is returned but deprecated.
+- Staking results carry the **six curated risk dimensions** (custody, counterparty,
+  contract, slashing, liquidity, regulatory), each 1–10 where **higher = riskier**.
+  They are never combined into an overall score and the rows are ordered by APY, not
+  by risk (D14). The dimensions are reference inputs, not a recommendation.
 - `aprSource` distinguishes `live` (provider-published feed), `derived` (our estimate
   anchored to the Lido feed), and `estimate` (curated catalog).
 - Reference (non-live) security quotes are flagged, never silently mixed with live.

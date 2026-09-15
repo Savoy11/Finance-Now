@@ -181,40 +181,28 @@ export interface StakingProvider {
 }
 
 /**
- * @internal Legacy 1–10 higher-is-RISKIER composite. The canonical suite scale
- * is 0–100 higher-is-safer — new code should score staking via
- * `scoreStakingProvider()` (lib/risk/profiles/stakingAdapter.ts), which wraps
- * these same weights and converts at the boundary. Retained because the public
- * `/api/v1/staking/opportunities` contract still serves this scale (R2 §5.3).
+ * ⚠ `computeOverallRisk()` and `getRiskLevel()` were DELETED on 2026-09-14 (owner
+ * decision D14). Do not reintroduce a composite staking risk score here.
+ *
+ * They ran a legacy 1–10 higher-is-RISKIER scale and survived only because the
+ * public `/api/v1/staking/opportunities` contract served those fields (R2 §5.3).
+ * D14 removed the published scores — from that route, from
+ * `/live-data/staking-discovery`, and from the MCP server — so the helpers lost
+ * every consumer and went with them.
+ *
+ * The rule D14 draws: a COMPOSITE is a single number that ranks providers against
+ * each other, which is the shape that reads as a recommendation. The six raw
+ * dimensions below are the curated inputs and STAY — cards describing them
+ * without a composite are the decided state (RP-3), not a half-built feature.
+ *
+ * `scoreStakingProvider()` (lib/risk/profiles/stakingAdapter.ts) is retained as
+ * the canonical 0–100 higher-is-safer engine, but has no live consumer after
+ * D14; D18 defers new risk profiles until a surface is approved to render one.
  */
-export function computeOverallRisk(risks: RiskProfile): number {
-  return (
-    risks.custodyRisk      * 0.20 +
-    risks.counterpartyRisk * 0.25 +
-    risks.contractRisk     * 0.15 +
-    risks.slashingRisk     * 0.10 +
-    risks.liquidityRisk    * 0.20 +
-    risks.regulatoryRisk   * 0.10
-  )
-}
 
 export function mergedRisks(base: RiskProfile, overrides?: Partial<RiskProfile>): RiskProfile {
   if (!overrides) return base
   return { ...base, ...overrides }
-}
-
-/**
- * @internal Legacy 4-level band for the 1–10 `computeOverallRisk` scale. Note
- * `medium` is LEGACY-ONLY — the canonical 5-band vocabulary
- * (low/moderate/elevated/high/critical, see lib/risk/types.ts RiskBand) has no
- * `medium`. New code should derive bands from the canonical score via
- * `bandForScore()`. Kept for the legacy public-API contract (R2 §5.3).
- */
-export function getRiskLevel(score: number): 'low' | 'medium' | 'high' | 'critical' {
-  if (score <= 3.0) return 'low'
-  if (score <= 5.5) return 'medium'
-  if (score <= 7.5) return 'high'
-  return 'critical'
 }
 
 /**

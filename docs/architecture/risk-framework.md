@@ -34,13 +34,19 @@ multiplied this. The unified framework fixes the vocabulary before that happens.
 > - **Frontend risk utils — resolved (R1/R2).** `lib/utils/risk.ts` is a thin
 >   re-export of `lib/risk/presentation.ts` and `bandForScore()`; it holds no
 >   thresholds of its own. The canonical bands are 80/60/40/20.
-> - **Staking providers — deliberately unresolved, and bounded.**
->   `computeOverallRisk()`/`getRiskLevel()` are marked `@internal` and retained
->   **only** because the public `/api/v1/staking/opportunities` contract still
->   serves those fields (R2 §5.3). No deprecation date, on purpose: removing them
->   is an API break, not a cleanup. New code goes through
->   `scoreStakingProvider()`, which wraps the same weights and converts at the
->   boundary.
+> - **Staking providers — RESOLVED 2026-09-14 by owner decision D14.**
+>   `computeOverallRisk()`/`getRiskLevel()` are **deleted**. They had been retained
+>   only because the public `/api/v1/staking/opportunities` contract served those
+>   fields (R2 §5.3); D14 removed the published fields on editorial grounds — a
+>   composite that ranks providers against each other reads as a recommendation —
+>   so the constraint that kept them alive is gone with them. The API break was
+>   taken deliberately, not as a cleanup.
+>
+>   The six `RiskProfile` dimensions remain and are published as inputs.
+>   `scoreStakingProvider()` is retained as the canonical adapter but has **no live
+>   consumer**; D18 defers new profiles until a surface is approved to render a
+>   score. Note the D14 ruling named only the public API as the helpers' consumer —
+>   `/live-data/staking-discovery` was a second one, and was changed with it.
 > - **Backend scoring engine — dormant.** Its 65/50/30 bands still differ, and
 >   that stays open while the FastAPI backend's future is itself an open question
 >   (ROADMAP.md, Phase 6). Nothing in the shipping app reads them.

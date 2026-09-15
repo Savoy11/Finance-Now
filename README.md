@@ -94,8 +94,10 @@ FMP_API_KEY=...
 ```
 
 `NEXT_PUBLIC_WS_URL` was listed here and no longer exists — the app opens no
-socket (removed in M8). `NEXT_PUBLIC_API_URL` is optional and points at the
-dormant legacy backend; set the **origin only**, with no `/api` suffix.
+socket (removed in M8). **`NEXT_PUBLIC_API_URL` is also no longer read by anything**
+(2026-09-14): the legacy backend is retired, the `/api/*` proxy rewrite that used the
+value is gone, and the `API_BASE_URL` constant that exported it was removed. Setting
+it has no effect. See `backend/FROZEN.md`.
 
 Open [http://localhost:3000](http://localhost:3000). Windows users: `start.bat` at the repo root.
 
@@ -135,12 +137,21 @@ None of this fabricates a number: a blocked source shows a labelled estimate or 
 explicit "not available", the same as any other unreachable provider. It just means
 **"not available" may be about your network rather than the data.**
 
-### Full stack with Docker (optional backend)
+### Full stack with Docker
 
-The FastAPI + TimescaleDB + Redis backend supports auth and agent persistence; it is not required for the live dashboards.
+> ⚠ **The FastAPI backend is RETIRED (owner decision D2, 2026-09-14).** It is frozen
+> in place rather than deleted — see [`backend/FROZEN.md`](backend/FROZEN.md) for what
+> was kept and what reviving it would require. Nothing in the app calls it, no CI job
+> builds or tests it, and it no longer supports auth (that is Auth.js against the app's
+> own `users` table) or agent persistence. The compose file below still defines the
+> service; it was left alone because the same file provides the Postgres the app
+> genuinely uses.
+>
+> **You do not need any of this to run Finance Now.** The dashboards are live-only
+> against `/live-data/*`; the only thing the app needs from this stack is a Postgres
+> reachable at `DATABASE_URL`, for user data.
 
 ```bash
-cp backend/.env.example backend/.env   # backend secrets; edit before starting
 docker compose -f infrastructure/docker/docker-compose.yml up --build
 ```
 
@@ -154,7 +165,7 @@ want the container to pick them up.
 | Service | URL |
 |---|---|
 | Frontend | http://localhost:3000 |
-| Backend API + Swagger | http://localhost:8000 · /docs |
+| ~~Backend API + Swagger~~ | ~~http://localhost:8000 · /docs~~ — **retired**, see `backend/FROZEN.md` |
 | TimescaleDB | localhost:5432 |
 | Redis | localhost:6379 |
 
@@ -166,7 +177,7 @@ want the container to pick them up.
 |---|---|
 | Frontend | Next.js 15 (App Router), TypeScript strict, Tailwind CSS, Recharts + lightweight-charts, Zustand, TanStack Query v5 |
 | AI layer | Multi-provider LLM (BYOK), agent prompts in `src/lib/agents/prompts.ts`, MCP server in `mcp-server/` |
-| Backend (optional) | FastAPI, SQLAlchemy async, Pydantic v2, TimescaleDB, Redis |
+| Backend | ~~FastAPI, SQLAlchemy async, Pydantic v2~~ — **retired 2026-09-14 (D2)**, frozen in `backend/`. Postgres remains, owned by the frontend's drizzle schema |
 | Data providers | CoinGecko, CoinMarketCap, Binance, DefiLlama, mempool.space, NewsAPI, GNews, CoinDesk, Cointelegraph, Decrypt, Bitcoin.com, US Congress |
 | Infrastructure | Docker Compose; Kubernetes/Terraform scaffolding for later scale |
 

@@ -3,6 +3,7 @@ import {
   applyFilterStack, applyRules, activeRules, FILTER_FIELDS, FIELD_BY_KEY, UNAVAILABLE_FACTORS,
   DISCOVERY_FILTER_FIELDS, DISCOVERY_FIELD_BY_KEY,
   needsTechnicalSweep, TECHNICAL_FIELD_KEYS,
+  serializeRules, parseRules,
   type FilterRule, type DiscoveryRow,
 } from '../coinFilters'
 import type { Asset } from '@/types/asset'
@@ -266,5 +267,117 @@ describe('technical fields and the sweep gate', () => {
     const labels = UNAVAILABLE_FACTORS.map(f => f.label)
     expect(labels).not.toContain('RSI')
     expect(labels).not.toContain('Moving averages')
+  })
+})
+
+// ─── URL serialization (D16 / T-283) ─────────────────────────────────────────
+
+describe('serializeRules / parseRules — the screener survives a URL round trip', () => {
+  it('round-trips a stack, preserving field, operator and value', () => {
+    const stack = [rule('marketCap', 'gte', 1_000_000_000), rule('fdvToMcap', 'lte', 2)]
+    const parsed = parseRules(serializeRules(stack))
+    expect(parsed.map(r => [r.field, r.operator, r.value]))
+      .toEqual([['marketCap', 'gte', 1_000_000_000], ['fdvToMcap', 'lte', 2]])
+  })
+
+  it('serializes to a readable, hand-editable form', () => {
+    // A deep link is something people paste into chat and sometimes edit. The
+    // format is part of the contract, so it is pinned.
+    expect(serializeRules([rule('marketCap', 'gte', 1e9)])).toBe('marketCap:gte:1000000000')
+  })
+
+  it('does NOT serialize the rule id', () => {
+    // `id` is local identity for React reconciliation, minted from a module
+    // counter. In a URL it would be meaningless at best and collide with rules
+    // the user adds afterwards at worst.
+    const out = serializeRules([rule('marketCap', 'gte', 1)])
+    expect(out).not.toContain('marketCap-gte-1')
+    expect(out.split(':')).toHaveLength(3)
+  })
+
+  it('gives parsed rules ids distinct from each other', () => {
+    const parsed = parseRules('marketCap:gte:1,marketCap:lte:9')
+    expect(parsed).toHaveLength(2)
+    expect(parsed[0].id).not.toBe(parsed[1].id)
+  })
+
+  it('an untouched screener leaves no trace in the URL', () => {
+    // '' is what useScreenerUrl treats as "omit this param".
+    expect(serializeRules([])).toBe('')
+  })
+
+  it('drops incomplete rules rather than emitting a broken link', () => {
+    // A freshly added rule starts at value 0 with no field value typed yet;
+    // NaN means the user cleared the input.
+    expect(serializeRules([rule('marketCap', 'gte', NaN)])).toBe('')
+    expect(serializeRules([rule('notAField', 'gte', 5)])).toBe('')
+  })
+})
+
+describe('parseRules treats the URL as untrusted input', () => {
+  // The governing rule: a malformed link degrades to a working page. It must
+  // never throw — the screener renders what parsed, and the user can see it.
+  const junk = [
+    null, undefined, '', '   ',
+    'marketCap',                  // no operator or value
+    'marketCap:gte',              // no value
+    'marketCap:gte:1:2',          // too many parts
+    'marketCap:between:5',        // operator the engine does not implement
+    'notAField:gte:5',            // unknown field
+    'marketCap:gte:abc',          // non-numeric
+    'marketCap:gte:',             // empty value
+    'marketCap:gte:   ',          // whitespace value
+    ':::', ',,,', '::',
+  ]
+
+  it('never throws, whatever it is handed', () => {
+    for (const raw of junk) {
+      expect(() => parseRules(raw as string | null | undefined), `threw on ${JSON.stringify(raw)}`).not.toThrow()
+      expect(parseRules(raw as string | null | undefined), `non-empty for ${JSON.stringify(raw)}`).toEqual([])
+    }
+  })
+
+  it('keeps the rules that parsed and drops only the bad ones', () => {
+    // The case that matters: a chat client truncated the tail, or a field was
+    // renamed in a later release. Three working filters beat a blank screener.
+    const parsed = parseRules('marketCap:gte:1000,notAField:gte:5,fdvToMcap:lte:2,junk')
+    expect(parsed.map(r => r.field)).toEqual(['marketCap', 'fdvToMcap'])
+  })
+
+  it('an empty value is dropped, not read as zero', () => {
+    // Number('') is 0 and Number(' ') is 0. Coercing would invent a real
+    // "greater than zero" filter the link never asked for — a silently wrong
+    // result set, which is the failure mode this project treats as worst.
+    expect(parseRules('marketCap:gte:')).toEqual([])
+    expect(parseRules('marketCap:gte:   ')).toEqual([])
+  })
+
+  it('accepts a legitimately zero threshold', () => {
+    // "at least 0" is meaningless as a filter but is not malformed, and the
+    // rule above must not be implemented by truthiness.
+    const parsed = parseRules('priceChange24h:gte:0')
+    expect(parsed).toHaveLength(1)
+    expect(parsed[0].value).toBe(0)
+  })
+
+  it('accepts negative and fractional thresholds', () => {
+    // 24h change below -10%, a real thing to screen for.
+    const parsed = parseRules('priceChange24h:lte:-10.5')
+    expect(parsed[0].value).toBe(-10.5)
+  })
+
+  it('cannot inject a field the engine has no valueOf for', () => {
+    // parseRules validates against the live FIELD_BY_KEY, so a retired field
+    // name in an old bookmark cannot resurrect itself into applyRules.
+    for (const r of parseRules('marketCap:gte:1,ghostField:gte:1')) {
+      expect(FIELD_BY_KEY.has(r.field)).toBe(true)
+    }
+  })
+
+  it('parsed rules are accepted by the engine that consumes them', () => {
+    // Guards the seam: parseRules output must satisfy activeRules, or a valid
+    // deep link would produce rules the screener silently ignores.
+    const parsed = parseRules('marketCap:gte:1000000000')
+    expect(activeRules(parsed)).toHaveLength(1)
   })
 })

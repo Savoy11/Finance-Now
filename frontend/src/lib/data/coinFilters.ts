@@ -169,6 +169,70 @@ export function activeRules<T>(
   return rules.filter(r => fields.has(r.field) && Number.isFinite(r.value))
 }
 
+// ─── URL serialization (D16 / T-283) ─────────────────────────────────────────
+//
+// The Coin Registry screener is deep-linkable, so a stacked filter set has to
+// survive a round trip through a query string. One rule is `field:operator:value`
+// and the stack joins with `,`:
+//
+//   /assets?rules=marketCap:gte:1000000000,fdvToMcap:lte:2
+//
+// `id` is deliberately NOT serialized. It is local identity for React's
+// reconciliation, minted from a module counter in FilterStack — putting it in a
+// URL would either collide with rules the user adds afterwards or leak a
+// meaningless number into a shared link.
+
+let urlRuleSeq = 0
+
+/** One rule → `field:operator:value`. Incomplete rules are dropped by the caller. */
+function serializeRule(r: FilterRule): string {
+  return `${r.field}:${r.operator}:${r.value}`
+}
+
+/**
+ * Rule stack → query-string value. Returns '' for an empty or wholly-incomplete
+ * stack, which `useScreenerUrl` treats as "omit the param" — so an untouched
+ * screener leaves no trace in the URL.
+ */
+export function serializeRules(rules: FilterRule[]): string {
+  return rules.filter(r => FIELD_BY_KEY.has(r.field) && Number.isFinite(r.value))
+    .map(serializeRule)
+    .join(',')
+}
+
+/**
+ * Query-string value → rule stack.
+ *
+ * **Never throws, and drops what it cannot understand rather than failing the
+ * page.** A deep link is untrusted input: it can be hand-edited, truncated by a
+ * chat client that ate the tail, or name a field that was renamed in a later
+ * release. Applying the three rules that parsed is strictly better than a blank
+ * screener, and far better than an exception on mount — the filters are visible
+ * in the UI, so a user can see what did and did not survive.
+ *
+ * Unknown fields and operators are dropped against the live `FIELD_BY_KEY`, so
+ * this cannot resurrect a retired field or inject one the engine has no
+ * `valueOf` for.
+ */
+export function parseRules(raw: string | null | undefined): FilterRule[] {
+  if (!raw) return []
+  const out: FilterRule[] = []
+  for (const chunk of raw.split(',')) {
+    const parts = chunk.split(':')
+    if (parts.length !== 3) continue
+    const [field, operator, rawValue] = parts
+    if (!FIELD_BY_KEY.has(field)) continue
+    if (operator !== 'gte' && operator !== 'lte') continue
+    // Number('') is 0 and Number(' ') is 0 — both would silently become a real
+    // "greater than zero" filter the link never asked for.
+    if (rawValue.trim() === '') continue
+    const value = Number(rawValue)
+    if (!Number.isFinite(value)) continue
+    out.push({ id: `${field}-url${++urlRuleSeq}`, field, operator, value })
+  }
+  return out
+}
+
 /**
  * The screener engine, generic over the row type so a page with a different
  * shape (Coin Discovery's candidates carry no FDV or supply figures) reuses the

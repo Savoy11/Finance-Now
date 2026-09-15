@@ -67,10 +67,10 @@ function AffiliateDisclosure() {
     <div className="rounded-card border border-border bg-bg-card px-4 py-3 space-y-2">
       <p className="text-[11px] leading-relaxed text-text-secondary">
         <strong className="text-text-primary">This is information, not advice.</strong>{' '}
-        Risk profiles and rates here are educational reference data for comparing providers.
-        Nothing on this page is a recommendation to stake with anyone, and a low risk score is
-        not a safety guarantee — Celsius scored well before it froze customer funds, which is
-        why it is still in the catalog.
+        Risk dimensions and rates here are educational reference data. Nothing on this page
+        is a recommendation to stake with anyone, and a low number on any dimension is not a
+        safety guarantee — Celsius rated well on every dimension before it froze customer
+        funds, which is why it is still in the catalog.
       </p>
 
       {sponsored.length > 0 && (
@@ -84,8 +84,9 @@ function AffiliateDisclosure() {
               {' '}Those links are not evenly spread —{' '}
               {biased.map((c) => `${c.sponsored} of ${c.total} ${categoryLabel(c.category)}`).join(', ')}
               {' '}— because referral programs are common among exchanges and rare among liquid-staking
-              protocols. <strong>Ordering here is by risk and rate, never by whether we are paid</strong>,
-              and no paid provider’s warnings or score are softened.{' '}
+              protocols. <strong>Providers appear in a fixed catalog order that is never
+              influenced by whether we are paid</strong> — the list is not ranked, and no paid
+              provider’s warnings or risk dimensions are softened.{' '}
             </>
           )}
           <a href="/how-we-make-money" className="underline hover:text-amber-200">How we make money</a>.
@@ -595,16 +596,21 @@ function StakingPageInner() {
         <div>
           <PageHeader
             title="Staking Opportunities"
-            subtitle="Compare APY, lock-up periods, and custody risk across exchanges, wallets, and liquid staking protocols"
-            description={`Staking Opportunities compares ${STAKING_PROVIDERS.filter(p => !p.defunct).length} active providers across three categories: CeFi exchanges (highest counterparty risk), self-custody wallets, and liquid staking protocols (lowest custody risk).`}
+            subtitle="APY, lock-up periods, custody models and risk dimensions for exchanges, wallets, and liquid staking protocols"
+            description={`Staking Opportunities lists ${STAKING_PROVIDERS.filter(p => !p.defunct).length} active providers across three categories — CeFi exchanges, self-custody wallets, and liquid staking protocols — with the curated risk dimensions recorded for each. The categories carry structurally different risks rather than more or less of one risk, so they are described, not ranked.`}
             details={[
               // D-10 fix: this header used to describe six-dimension risk
-              // scores and a 0–100 composite that never render on this page
-              // (they appear on Staking Discovery and /api/v1), and claimed
-              // Celsius "is included" while this page unconditionally filters
-              // defunct providers. Rendering the scores here is tool candidate
-              // NT7 — an open decision, so the copy now matches the page.
-              { label: 'Risk profiles', text: 'Each provider carries a curated six-dimension risk profile (custody, counterparty, contract, slashing, liquidity, regulatory). The composite renders on the public API only — the per-pool badge was removed from the app on 2026-08-18 (item 4).' },
+              // scores and a 0–100 composite that never render on this page,
+              // and claimed Celsius "is included" while this page
+              // unconditionally filters defunct providers.
+              //
+              // 2026-09-14 (D14): the claim that "the composite renders on the
+              // public API only" is now false — it renders NOWHERE. The
+              // composite was removed from /api/v1/staking/opportunities,
+              // /live-data/staking-discovery and the MCP server, and the
+              // helpers that computed it were deleted. NT7 (rendering scores
+              // here) is closed by that decision, not still open.
+              { label: 'Risk dimensions', text: 'Each provider carries a curated six-dimension risk profile (custody, counterparty, contract, slashing, liquidity, regulatory), each rated 1–10 where higher means riskier. These are reference inputs, not a ranking: they are never combined into an overall score anywhere in the app or its API, and the list is not ordered by them.' },
               { label: 'Live APY', text: 'Liquid-staking & restaking protocols pull live APY from DeFiLlama plus each protocol’s own API (Lido, Rocket Pool, Marinade, Jito, Stride). Self-custody wallets show the live on-chain network rate for native delegation. CeFi exchange rates are static estimates and may differ from current offerings.' },
               { label: 'Defunct providers', text: 'Failed providers are excluded here. Celsius — the educational cautionary example — is behind the "Show defunct platforms" toggle below.' },
             ]}
@@ -761,7 +767,7 @@ function StakingPageInner() {
         Exchange (CeFi) staking rates are static estimates — check each platform directly for current rates.
         Liquid-staking / restaking APRs are fetched live from DeFiLlama and public protocol APIs; self-custody
         wallet rows show the live network base rate for native delegation (gross of validator commission).
-        Risk scores are editorial assessments and do not constitute financial advice. Always do your own research before staking.
+        Risk dimensions are curated editorial assessments, not an overall score, and do not constitute financial advice. Always do your own research before staking.
       </div>
       </>)}
     </div>

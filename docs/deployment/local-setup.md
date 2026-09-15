@@ -14,6 +14,17 @@
 
 ## Quick Start (Docker)
 
+> ⚠ **Updated 2026-09-14 (owner decision D2): the FastAPI backend is RETIRED.**
+> It is frozen in place, not deleted — see [`backend/FROZEN.md`](../../backend/FROZEN.md).
+> The steps below no longer start it, and **the `alembic upgrade head` step was removed
+> deliberately**: those migrations describe the retired backend's own historical view of
+> the database, while the live schema is the frontend's drizzle schema
+> (`frontend/src/lib/db/schema/`). Running alembic against a database the app uses could
+> alter tables drizzle owns.
+>
+> You do not need the full stack to run Finance Now. The dashboards are live-only; the
+> only thing the app needs here is Postgres, for user data.
+
 The fastest way to run the full stack:
 
 ```bash
@@ -21,8 +32,7 @@ The fastest way to run the full stack:
 git clone https://github.com/Savoy11/finance-now.git
 cd finance-now
 
-# 2. Copy environment files
-cp backend/.env.example backend/.env
+# 2. Copy the frontend environment file
 cp frontend/.env.example frontend/.env.local
 
 # 3. Start all services
@@ -31,13 +41,12 @@ docker compose -f infrastructure/docker/docker-compose.yml up -d
 # 4. Wait for services to be healthy (~30 seconds)
 docker compose -f infrastructure/docker/docker-compose.yml ps
 
-# 5. Run database migrations
-docker compose -f infrastructure/docker/docker-compose.yml exec backend \
-  alembic upgrade head
+# 5. Apply the database schema (drizzle, from the frontend — NOT alembic)
+cd frontend && npm run db:push && cd ..
 
 # 6. Access the platform
 open http://localhost:3000      # Frontend dashboard
-open http://localhost:8000/docs # Backend API docs (debug mode)
+# (the backend API at :8000 is retired — backend/FROZEN.md)
 open http://localhost:3001      # Grafana (admin/admin)
 open http://localhost:9090      # Prometheus
 ```

@@ -4,7 +4,8 @@ import { join } from 'node:path'
 import {
   resolveOutboundLink, forRanking, sponsoredProviders, affiliateCoverageByCategory,
 } from '../affiliates'
-import { STAKING_PROVIDERS, computeOverallRisk, type StakingProvider } from '../stakingProviders'
+import { STAKING_PROVIDERS, type StakingProvider } from '../stakingProviders'
+import { scoreStakingProvider } from '../../risk/profiles/stakingAdapter'
 
 const root = join(process.cwd(), 'src')
 const read = (p: string) => readFileSync(join(root, p), 'utf-8')
@@ -81,14 +82,18 @@ describe('integrity rule — affiliate status cannot reach scoring or ranking', 
     // scoring function, so there is no affiliate field it could read. Pinned
     // here so a future refactor cannot quietly widen the signature to take a
     // whole provider "for convenience".
+    //
+    // This used to assert the same thing about computeOverallRisk(), which was
+    // DELETED under D14 (2026-09-14) once nothing published its output.
+    // scoreStakingProvider() is the surviving engine and inherits the rule.
     const risks = base().risks
-    const score = computeOverallRisk(risks)
-    expect(typeof score).toBe('number')
-    expect(computeOverallRisk.length).toBe(1)
+    const score = scoreStakingProvider(risks)
+    expect(typeof score.score).toBe('number')
+    expect(scoreStakingProvider.length).toBe(1)
 
     const paid = base({ affiliateUrl: 'https://example.test/?ref=fn' })
     const unpaid = base()
-    expect(computeOverallRisk(paid.risks)).toBe(computeOverallRisk(unpaid.risks))
+    expect(scoreStakingProvider(paid.risks).score).toBe(scoreStakingProvider(unpaid.risks).score)
   })
 
   it('scoreStakingProvider also takes only a RiskProfile', () => {

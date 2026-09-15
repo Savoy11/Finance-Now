@@ -18,6 +18,25 @@ on:
         description: 'Previous version to rollback to if deploy fails (leave empty to disable auto-rollback)'
         required: false
 
+###############################################################################
+# ⚠ THE BACKEND HALF OF THIS WORKFLOW IS RETIRED (owner decision D2, 2026-09-14)
+#
+# This workflow still builds, pushes and deploys a `backend` image. The FastAPI
+# backend it refers to is retired and frozen — see backend/FROZEN.md.
+#
+# It was deliberately NOT rewritten. This workflow is gated off
+# (STAGING_DEPLOY_ENABLED has never been set) and describes a two-service
+# Kubernetes deployment to AWS infrastructure that has never been provisioned,
+# so there is no running system for it to be wrong about. Editing an unexecuted
+# deployment plan would be guesswork about a topology nobody has built, and the
+# k8s manifests, ECR repositories and service definitions would all have to
+# change together.
+#
+# IF YOU ARE PROVISIONING AWS: read backend/FROZEN.md first, and strip the
+# backend service as part of that work. Enabling this workflow as written would
+# deploy a retired service.
+###############################################################################
+
 concurrency:
   group: cd-production
   cancel-in-progress: false

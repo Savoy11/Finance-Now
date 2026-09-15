@@ -25,175 +25,19 @@ defaults:
 
 jobs:
 
-  # ─── Backend: Lint ─────────────────────────────────────────────────────────
-  backend-lint:
-    name: Backend Lint (ruff + mypy)
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v7
-
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v7
-        with:
-          python-version: '3.11'
-          cache: 'pip'
-
-      - name: Install lint dependencies
-        run: |
-          pip install --upgrade pip
-          pip install ruff==0.1.9 mypy==1.8.0 types-redis types-requests
-
-      - name: Run ruff linter
-        run: |
-          ruff check backend/ --output-format=github
-          ruff format backend/ --check
-
-      - name: Run mypy type checker
-        run: |
-          mypy backend/app \
-            --ignore-missing-imports \
-            --strict \
-            --show-error-codes \
-            --pretty \
-            --no-error-summary \
-            || true  # Non-blocking for now; remove || true to enforce strict typing
-
-  # ─── Backend: Test ─────────────────────────────────────────────────────────
-  backend-test:
-    name: Backend Tests (pytest + coverage)
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    permissions:
-      contents: read
-      pull-requests: write  # coverage comment on the PR
-
-    services:
-      postgres:
-        image: timescale/timescaledb:latest-pg15
-        env:
-          POSTGRES_DB: fn_test
-          POSTGRES_USER: fn
-          POSTGRES_PASSWORD: fn_test_password
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v7
-
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v7
-        with:
-          python-version: '3.11'
-          cache: 'pip'
-
-      - name: Cache Poetry virtualenv
-        uses: actions/cache@v6
-        with:
-          path: |
-            ~/.cache/pypoetry
-            backend/.venv
-          key: ${{ runner.os }}-poetry-${{ hashFiles('backend/poetry.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-poetry-
-
-      - name: Install Poetry
-        run: |
-          pip install poetry==1.7.1
-          cd backend
-          poetry config virtualenvs.in-project true
-          poetry install --with dev
-
-      - name: Run database migrations
-        env:
-          DATABASE_URL: postgresql+asyncpg://fn:fn_test_password@localhost:5432/fn_test
-          REDIS_URL: redis://localhost:6379/0
-          SECRET_KEY: test-secret-key-only-for-ci
-          ENVIRONMENT: test
-        run: |
-          cd backend
-          poetry run alembic upgrade head
-
-      - name: Run pytest with coverage
-        env:
-          DATABASE_URL: postgresql+asyncpg://fn:fn_test_password@localhost:5432/fn_test
-          REDIS_URL: redis://localhost:6379/0
-          SECRET_KEY: test-secret-key-only-for-ci
-          ENVIRONMENT: test
-          COINGECKO_API_KEY: ""
-          DEFILLAMA_API_KEY: ""
-          CHAINLINK_RPC_URL: ""
-        run: |
-          cd backend
-          # No --cov-fail-under here on purpose: the floor is set once, in
-          # backend/pyproject.toml's addopts, so a bare local `pytest` and this
-          # job gate on the same number. They disagreed before (80 vs 45) and a
-          # passing CI run meant nothing locally. Change the floor there.
-          poetry run pytest \
-            --cov=app \
-            --cov-report=xml:coverage.xml \
-            --cov-report=html:htmlcov \
-            --cov-report=term-missing \
-            --junit-xml=test-results.xml \
-            -v \
-            --tb=short \
-            -x \
-            tests/
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v7
-        with:
-          file: backend/coverage.xml
-          flags: backend
-          name: fn-backend
-          fail_ci_if_error: false
-          token: ${{ secrets.CODECOV_TOKEN }}
-
-      - name: Upload test results
-        uses: actions/upload-artifact@v7
-        if: always()
-        with:
-          name: backend-test-results
-          path: |
-            backend/test-results.xml
-            backend/htmlcov/
-          retention-days: 7
-
-      - name: Post coverage comment on PR
-        uses: MishaKav/pytest-coverage-comment@main
-        if: github.event_name == 'pull_request'
-        # Non-fatal: fork PRs get a read-only token regardless of the
-        # permissions block, and a missing comment shouldn't fail CI.
-        continue-on-error: true
-        with:
-          pytest-xml-coverage-path: backend/coverage.xml
-          junitxml-path: backend/test-results.xml
-          title: Backend Test Coverage
-          badge-title: Coverage
-          hide-badge: false
-          # Full per-file table exceeds the 65k comment limit — badge + summary only
-          hide-report: true
-          create-new-comment: false
-          hide-comment: false
-          report-only-changed-files: false
+  # ─── Backend jobs REMOVED 2026-09-14 (owner decision D2) ───────────────
+  #
+  # `backend-lint` (ruff + mypy) and `backend-test` (pytest + coverage, with its
+  # Postgres and Redis services) are gone because the FastAPI backend is retired.
+  #
+  # The directory is FROZEN, not deleted — see backend/FROZEN.md for what was kept,
+  # why, and what reviving it would require. Nothing in the shipping app has called
+  # it since the M8 sweep removed the frontend's axios client.
+  #
+  # If you restore these jobs, you must also re-add them to the ci-success gate's
+  # `needs:` list AND its `check` calls at the bottom of this file. A job that is
+  # needed but never checked makes the gate WAIT for a result it then ignores —
+  # that exact bug shipped here once already (see the note on the gate).
 
   # ─── Frontend: Lint & Type Check ──────────────────────────────────────────
   frontend-check:
@@ -312,7 +156,7 @@ jobs:
     name: Docker Build Test
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    needs: [backend-lint, frontend-check]
+    needs: [frontend-check]
 
     steps:
       - name: Checkout code
@@ -324,22 +168,6 @@ jobs:
           driver-opts: |
             image=moby/buildkit:master
             network=host
-
-      - name: Build backend Docker image
-        uses: docker/build-push-action@v7
-        with:
-          context: ./backend
-          file: ./backend/Dockerfile
-          # Must match the Dockerfile's final stage name — there is no
-          # "production" stage (F-C root cause).
-          target: runtime
-          push: false
-          tags: fn-backend:ci-test
-          cache-from: type=gha,scope=backend
-          cache-to: type=gha,mode=max,scope=backend
-          build-args: |
-            BUILD_DATE=${{ github.run_id }}
-            GIT_COMMIT=${{ github.sha }}
 
       - name: Build frontend Docker image
         uses: docker/build-push-action@v7
@@ -359,12 +187,6 @@ jobs:
           # anyway. This bug was unreachable while the target mismatch failed
           # the build first.
 
-      - name: Run container structure test (backend)
-        uses: plexsystems/container-structure-test-action@v0.3.0
-        with:
-          image: fn-backend:ci-test
-          config: backend/container-structure-test.yml
-        continue-on-error: true
 
   # ─── Security: Dependency Scan ─────────────────────────────────────────────
   security-scan:
@@ -393,20 +215,6 @@ jobs:
         with:
           sarif_file: 'trivy-results.sarif'
           category: trivy
-
-      - name: Python dependency audit
-        run: |
-          pip install safety==3.0.1
-          cd backend
-          pip install poetry==1.7.1
-          poetry export -f requirements.txt --output requirements.txt --without-hashes
-          # Still non-gating, deliberately and separately from the Node step
-          # above: `safety check` is deprecated in favour of `safety scan`, which
-          # requires an authenticated account, and the pinned 3.0.1 emits its own
-          # deprecation warning. Gating on a tool that is on its way out would
-          # break CI on a schedule nobody controls. Revisit when the backend's
-          # future is settled (ROADMAP Phase 6).
-          safety check -r requirements.txt --output text || true
 
       # GATING since 2026-09-08. The `|| true` meant this step reported and then
       # passed regardless, so two HIGH advisories (js-yaml CVE-2026-59870,
@@ -466,8 +274,6 @@ jobs:
     name: CI Success Gate
     runs-on: ubuntu-latest
     needs:
-      - backend-lint
-      - backend-test
       - frontend-check
       - docker-build
       - security-scan
@@ -502,8 +308,6 @@ jobs:
           }
           # Reports every non-success before exiting, rather than stopping at the
           # first — with the old early exit, two broken jobs cost two CI cycles.
-          check backend-lint      "${{ needs.backend-lint.result }}"
-          check backend-test      "${{ needs.backend-test.result }}"
           check frontend-check    "${{ needs.frontend-check.result }}"
           check docker-build      "${{ needs.docker-build.result }}"
           # security-scan and terraform-validate were listed in `needs:` but never

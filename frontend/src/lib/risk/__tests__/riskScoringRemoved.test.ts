@@ -79,7 +79,7 @@ describe('lib/risk survives for its other, separately-decided consumers', () => 
     for (const f of [
       'src/lib/risk/engine.ts',
       'src/lib/risk/profiles/optionsTrade.ts',   // /equities/options
-      'src/lib/risk/profiles/stakingAdapter.ts', // staking provider risk
+      'src/lib/risk/profiles/stakingAdapter.ts', // retained; no live consumer after D14 (D18 defers)
       'src/lib/risk/profiles/equity.ts',
       'src/lib/risk/profiles/commodity.ts',
     ]) {
@@ -110,5 +110,130 @@ describe('no permanently-null risk field renders as a missing one', () => {
     const src = read('src/components/ui/PopoutContent.tsx')
     expect(src).not.toContain("label: 'Avg Safety Score'")
     expect(src).not.toContain("label: 'High / Critical'")
+  })
+})
+
+describe('D14 — no composite staking risk score is published anywhere', () => {
+  /**
+   * Owner decision, 2026-09-14 (D14): remove risk comparisons that could read as
+   * a recommendation. The line the owner drew: "Risk metrics that use traditional
+   * financial formulas can stay and should be visible where appropriate" — so
+   * Sharpe, Sortino, volatility, drawdown and beta are arithmetic and stay, while
+   * this app's own weighted 1–10 / 0–100 staking composite is a judgment and goes.
+   *
+   * WHAT STAYS, and why this file must not over-reach: the six curated risk
+   * DIMENSIONS remain on every surface that carried them. A composite is one
+   * number that ranks providers against each other; the dimensions are the
+   * inputs. Cards describing the dimensions WITHOUT a composite are the decided
+   * state (RP-3, 2026-08-17), not a half-built feature.
+   *
+   * ⚠ The D14 ruling asserted the public API was `computeOverallRisk`'s only
+   * consumer. It was not — `live-data/staking-discovery` imported it too, with
+   * its own `max_risk` filter. Both are covered here, because leaving one would
+   * have made the ruling's own instruction (delete the helpers) impossible.
+   */
+
+  const mcp = () =>
+    fs.readFileSync(path.join(process.cwd(), '..', 'mcp-server', 'src', 'index.ts'), 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/^\s*\/\/.*$/gm, '')
+
+  /**
+   * True if `key` appears as an object property / shorthand on a line of its own.
+   *
+   * Deliberately line-based rather than a RegExp: the `note` field on the v1
+   * route is a long STRING that names every removed field on purpose, and the
+   * comment stripper cannot touch a string. A bare `toContain('safetyScore')`
+   * would therefore fail on documentation while a badly-escaped RegExp would
+   * pass on anything. This matches the one thing that means the field is really
+   * being served — a property in the response literal.
+   */
+  const servesKey = (src: string, key: string) =>
+    src.split(/\r?\n/).some((line) => {
+      const t = line.trim()
+      return t.startsWith(`${key}:`) || t.startsWith(`${key},`) || t === key
+    })
+
+  it('the legacy helpers are gone from stakingProviders.ts', () => {
+    // They survived only because /api/v1 served their output (R2 §5.3). With the
+    // published fields gone they had no consumer left.
+    const src = read('src/lib/data/stakingProviders.ts')
+    expect(src).not.toMatch(/export function computeOverallRisk/)
+    expect(src).not.toMatch(/export function getRiskLevel/)
+    // mergedRisks is NOT part of this removal — it composes the dimensions the
+    // surfaces still publish, and deleting it would break them.
+    expect(src).toMatch(/export function mergedRisks/)
+  })
+
+  it('the public API serves no composite and offers no risk filter', () => {
+    const src = read('src/app/api/v1/staking/opportunities/route.ts')
+    // Response keys, anchored to line starts so the `note` prose — which names
+    // the removed fields on purpose, and is a string the stripper cannot touch —
+    // does not mask a real regression.
+    for (const key of ['safetyScore', 'riskScore', 'riskLevel', 'band']) {
+      expect(servesKey(src, key), `${key} is back on the v1 response`).toBe(false)
+    }
+    expect(src).not.toContain('computeOverallRisk')
+    expect(src).not.toContain('scoreStakingProvider')
+    // The filters, read from the query string rather than merely documented.
+    for (const param of ['max_risk', 'min_safety', 'max_safety']) {
+      expect(src, `${param} filter is back`).not.toContain(`searchParams.get('${param}')`)
+    }
+    // The six dimensions must still be there — this is the half that stays.
+    expect(src).toMatch(/riskBreakdown/)
+    expect(src).toMatch(/counterparty:\s*effectiveRisks\.counterpartyRisk/)
+  })
+
+  it('staking-discovery serves no composite and offers no risk filter', () => {
+    // The consumer the D14 ruling did not name.
+    const src = read('src/app/live-data/staking-discovery/route.ts')
+    for (const key of ['riskScore', 'riskLevel', 'riskCanonical', 'band']) {
+      expect(servesKey(src, key), `${key} is back on the discovery response`).toBe(false)
+    }
+    expect(src).not.toContain('computeOverallRisk')
+    expect(src).not.toContain('scoreStakingProvider')
+    expect(src).not.toContain("searchParams.get('max_risk')")
+    // Still publishes the dimensions it derived from the presets.
+    expect(src).toMatch(/risks:\s+RiskProfile/)
+  })
+
+  it('the MCP server exposes no risk comparison tool', () => {
+    const src = mcp()
+    // RP-3's rejected surface reached the same reader through MCP.
+    expect(src).not.toContain("'compare_staking_risk'")
+    expect(src).not.toContain('safetyScore')
+    expect(src).not.toContain('riskLevel')
+    // get_staking_opportunities survives, without risk filters.
+    expect(src).toContain("'get_staking_opportunities'")
+    expect(src).not.toContain("params.set('max_risk'")
+    expect(src).not.toContain("params.set('min_safety'")
+    expect(src).toContain('riskBreakdown')
+  })
+
+  it('the /staking page ranks nothing in prose', () => {
+    // D14's note: "The list does not sort by risk; only the prose ranks." It did
+    // not sort by rate either — filteredProviders is a filter with no .sort().
+    const src = read('src/app/(dashboard)/staking/page.tsx')
+    for (const claim of [
+      'highest counterparty risk',
+      'lowest custody risk',
+      'Ordering here is by risk',
+    ]) {
+      expect(src, `ranking copy is back: "${claim}"`).not.toContain(claim)
+    }
+    // The affiliate-neutrality promise must survive the rewrite — it is a
+    // disclosure obligation, not decoration.
+    expect(src).toContain('never')
+    expect(src).toMatch(/whether we are paid/)
+  })
+
+  it('guards the guard: the stripper leaves code but removes the tombstones', () => {
+    // Every tombstone above is a comment naming what it removed. If the stripper
+    // broke, the assertions would match those notes and fail for the right
+    // reason — but this pins the direction explicitly.
+    const src = read('src/lib/data/stakingProviders.ts')
+    expect(src).not.toContain('DELETED on 2026-09-14')
+    expect(src).toContain('export const STAKING_PROVIDERS')
+    expect(mcp()).not.toContain('REMOVED 2026-09-14')
   })
 })
