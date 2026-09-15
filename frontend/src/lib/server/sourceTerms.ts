@@ -339,13 +339,23 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     domain: 'tiingo.com',
     name: 'Tiingo',
     verdict: 'conditional',
-    // ⚠ THIS URL 404s (verified 2026-09-13) and no replacement was found. tiingo.com
-    // is an Angular SPA: every valid route returns the same 20,263-byte shell, so
-    // status cannot distinguish routes, the shell contains no terms link, and the
-    // main bundle has no 'terms' route string (it is lazy-loaded in a chunk).
-    // Finding it needs a browser. Until then nobody can read Tiingo's terms, so this
-    // entry stays `seeded` — 'couldn't read it' is not permission.
-    termsUrl: 'https://www.tiingo.com/about/terms',
+    // ✅ FOUND AND READ 2026-09-14 in a browser (the SPA renders the footer link only
+    // there; nine guessed paths across two sessions all missed /tos).
+    // ⚠ 1.6(a) STARTER PLANS describes what this code does TODAY, not at launch:
+    // "you may not write, save, archive, back up, or otherwise retain Tiingo Data in
+    // any persistent or durable storage ... only transiently in volatile memory or in
+    // a temporary, non-persistent cache". security-ohlcv and security-returns both
+    // fetch api.tiingo.com with Next's `next: { revalidate: N }`, which is a DURABLE
+    // ON-DISK cache under .next/cache. On a Starter plan that is what the clause
+    // forbids. Establish which plan the configured key is on before changing anything;
+    // if Starter, revalidate should go to 0 on those two routes at the cost of more
+    // upstream requests.
+    // 7.3: "All data via the API is for internal consumption only... Redistribution is
+    // only available upon special request and permission, and comes with additional
+    // fees" — the FMP/Twelve Data/Bitget pattern again. If redistribution is ever
+    // licensed, attribution must read "Data sourced by Tiingo" with a link.
+    // Full reading: docs/audits/terms-review-apis-2026-09-14.md
+    termsUrl: 'https://www.tiingo.com/tos',
     finding:
       'Commercial market-data API with a free tier for personal use. Keyed access; end-of-day and IEX data carry exchange-derived redistribution limits set by the plan.',
     conditions: ['Valid API key required', 'Free tier is personal use — no redistribution'],
@@ -429,6 +439,15 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
       'Attribute StockTwits on any surface showing its messages',
       'Display only — do not mirror, store long-term, or re-serve message content',
     ],
+    // ✅ READ 2026-09-14 (docs/audits/terms-review-apis-2026-09-14.md). The terms
+    // prohibit extracting content "by automated means EXCEPT as expressly authorized by
+    // us in writing or through an approved API, widget, developer offering, or other
+    // product rule". We are inside the carve-out, not the prohibition: stock-social
+    // calls api.stocktwits.com/api/2/streams/*, their own API, never the website. That
+    // distinction turns entirely on which host the code calls — keep it that way.
+    // Residual question for an email, not a blocker: "an approved API" may mean one you
+    // hold credentials for. We call it keylessly. review stays 'seeded' — the reading is
+    // done, the verdict is the owner's.
     reviewedAt: '2026-08-06',
     review: 'seeded',
     confidence: 'low',
@@ -445,6 +464,14 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
       'Register OAuth credentials before increasing volume',
       'Expect and accept 403s from datacenter IPs rather than working around them',
     ],
+    // ✅ READ 2026-09-14 (docs/audits/terms-review-apis-2026-09-14.md) — and the document
+    // T-244 named governs a path this app does not take. Reddit's Data API Terms licence
+    // "the Data APIs", with commercial use requiring a separate agreement.
+    // /live-data/social reads twelve public .rss endpoints on reddit.com instead, so
+    // those terms describe the licence we would need IF REDDIT_CLIENT_ID were ever set.
+    // What binds today is robotsDisallowed + the pinnedFetch gate, already the
+    // conservative state. Consequence for the deferred D8 question: lifting the gate
+    // means ACCEPTING the Data API Terms, not merely registering an app.
     reviewedAt: '2026-08-06',
     review: 'seeded',
     confidence: 'low',
@@ -555,7 +582,22 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     verdict: 'conditional',
     // Was an API DOCUMENTATION page until 2026-09-13, not a terms document — and it
     // returned HTTP 200, so every probe scored it as 'terms reachable'. It never was.
-    termsUrl: 'https://www.bitget.com/terms/legal',
+    // Then /terms/legal turned out to be an INDEX of 17 documents, client-rendered, so
+    // fetches got an empty shell. This is the operative document, read in a browser
+    // 2026-09-14. Two findings, both in docs/audits/terms-review-apis-2026-09-14.md:
+    //   10.1 licenses use "for non-commercial personal or internal business use" —
+    //        the same internal-use shape as FMP, Twelve Data and Tiingo.
+    //   ⚠ 1  lists the UNITED STATES among Prohibited Countries, and defines a
+    //        Restricted Person as one who resides there. How far that reaches for a
+    //        keyless public market-data call with no Account is genuinely unclear:
+    //        "Platform" is defined to include API access and the preamble binds on
+    //        access, but the Prohibited-Country clauses attach to Accounts and
+    //        Services, which 3.1 gates behind registration. The owner is US-resident.
+    //        This is the first source where a clause may bar use outright rather than
+    //        limit its scope — it needs a real answer, not a maintainer's reading.
+    // The app DOES call this host: withdrawFeeAdapters.ts fetches
+    // api.bitget.com/api/v2/spot/public/coins keylessly.
+    termsUrl: 'https://www.bitget.com/terms/legal/360014944032',
     finding:
       'Publishes a documented public REST API; the spot public coin list (incl. per-chain withdrawal fees) is documented as unauthenticated. Seeded from the published API documentation — the exchange ToS have not been read for this project, and the endpoint itself is unprobed (see the Bybit removal: a seeded public claim loses to the owner probe).',
     conditions: ['Respect documented rate limits', 'Keyless public endpoints only — no authenticated endpoints (RP-5)'],
@@ -567,6 +609,13 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     domain: 'poloniex.com',
     name: 'Poloniex (public market-data API)',
     verdict: 'conditional',
+    // ⚠ This URL is API DOCUMENTATION, not a terms document — it returns 200, so
+    // every probe scored it "terms reachable". It never was. Unread as of 2026-09-14:
+    // poloniex.com is client-rendered, its footer "User Agreement" is a JS-routed
+    // control that does not navigate on click, and /terms-of-use/ 404s. Do NOT assume
+    // its terms match the internal-use-only shape the other five share, however
+    // consistent that pattern looks — that assumption is what `seeded` exists to
+    // prevent. Next step is the docs site, which usually links the operative terms.
     termsUrl: 'https://api-docs.poloniex.com/',
     finding:
       'Publishes a documented public REST API; the currencies reference (incl. withdrawal fees) is documented as unauthenticated. Seeded from the published API documentation — the exchange ToS have not been read for this project, and the endpoint itself is unprobed (see the Bybit removal: a seeded public claim loses to the owner probe).',
@@ -579,6 +628,10 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     domain: 'lbkex.com',
     name: 'LBank (public market-data API)',
     verdict: 'conditional',
+    // ⚠ API DOCUMENTATION, not terms — returns 200, so probes scored it reachable.
+    // Unread as of 2026-09-14: client-rendered, no terms link extractable. Same
+    // caution as poloniex — the pattern across five read sources is not evidence
+    // about this one.
     termsUrl: 'https://www.lbank.com/docs/index.html',
     finding:
       'Publishes a documented public REST API; withdrawConfigs is documented as an unauthenticated public endpoint. Seeded from the published API documentation — the exchange ToS have not been read for this project, and the endpoint itself is unprobed (see the Bybit removal: a seeded public claim loses to the owner probe).',
@@ -591,7 +644,20 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     domain: 'bitfinex.com',
     name: 'Bitfinex (public conf API)',
     verdict: 'conditional',
-    termsUrl: 'https://docs.bitfinex.com/reference/rest-public-conf',
+    // ✅ READ 2026-09-14. The registered URL was an API REFERENCE page, not terms —
+    // the same defect as Bitget's, and shared by all four withdraw-fee entries.
+    // Two documents matter and the obvious one is not operative: the API Terms of
+    // Service open "In order to use the Bitfinex API, you must first sign up for an
+    // Account", which we do not (we call api-pub keylessly) — but they point onward
+    // to the Market Data Terms for exactly what we consume. Those bind on ACCESS,
+    // not on holding an account: "By accessing or using the Bitfinex Market Data, you
+    // agree to be legally bound". Permitted Use is "personal and/or internal use",
+    // "general informational purposes", or price/market analysis. Prohibited Use (g)
+    // bars distributing or disseminating the data "to any party for any reason"
+    // absent written consent. Also (b) and (c): no financial benchmark, reference
+    // rate or index — nothing here does that, but a composite fee index would.
+    // Full reading: docs/audits/terms-review-apis-2026-09-14.md
+    termsUrl: 'https://www.bitfinex.com/legal/general/market-data/',
     finding:
       'Publishes a documented public REST API; the v2 public conf endpoints (incl. the currency tx-fee map) are documented as unauthenticated. Seeded from the published API documentation — the exchange ToS have not been read for this project, and the endpoint itself is unprobed (see the Bybit removal: a seeded public claim loses to the owner probe).',
     conditions: ['Respect documented rate limits', 'Keyless public endpoints only — no authenticated endpoints (RP-5)'],
@@ -603,6 +669,9 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     domain: 'xt.com',
     name: 'XT.com (public market-data API)',
     verdict: 'conditional',
+    // ⚠ API DOCUMENTATION, not terms — returns 200, so probes scored it reachable.
+    // Unread as of 2026-09-14: client-rendered, no terms link extractable. Same
+    // caution as poloniex.
     termsUrl: 'https://doc.xt.com/',
     finding:
       'Publishes a documented public REST API; the public wallet-support currency endpoint is documented as unauthenticated. Seeded from the published API documentation — the exchange ToS have not been read for this project, and the endpoint itself is unprobed (see the Bybit removal: a seeded public claim loses to the owner probe).',
@@ -623,6 +692,16 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
       'One request per chain per revalidate window — do not poll',
       'Degrade to the static estimate rather than retrying on failure',
     ],
+    // ⚠ READ 2026-09-14 — the broadest clause found in any source, and it needs an
+    // owner judgement rather than a code change. Verbatim: "you agree not to modify,
+    // copy, frame, scrape, rent, lease, loan, sell, re-use, display, distribute,
+    // transmit, publish, re-publish, distribute or create derivative works based on the
+    // Service or the Service Content commercially and non-commercially". Read literally
+    // that prohibits any use at all, since an RPC provider's product IS answering calls
+    // and every consumer re-uses the response. That cannot be the intent — but it is
+    // what the document says, and narrowing it is not a maintainer's call to make.
+    // Scope: one route (/live-data/wallet/eth), first rung of the EVM ladder, behind a
+    // page hidden from rollout since 2026-08-22.
     reviewedAt: '2026-08-22',
     review: 'seeded',
     confidence: 'low',

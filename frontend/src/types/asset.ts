@@ -119,46 +119,18 @@ export interface ReserveCompositionItem {
   description: string
 }
 
-export interface PegDataPoint {
-  timestamp: string
-  price: number
-  pegDeviation: number
-  volume: number
-}
 
-export interface AnalyticsBundle {
-  pegHistory: PegDataPoint[]
-  liquidityDepth: LiquidityDepthItem[]
-  walletConcentration: WalletConcentrationData
-  transferVelocity: VelocityDataPoint[]
-}
-
-export interface LiquidityDepthItem {
-  price: number
-  bidDepth: number
-  askDepth: number
-}
-
-export interface WalletConcentrationData {
-  giniCoefficient: number
-  herfindahlIndex: number
-  top10HoldersPercent: number
-  top50HoldersPercent: number
-  totalHolders: number
-}
-
-export interface VelocityDataPoint {
-  date: string
-  transferCount: number
-  transferVolume: number
-  uniqueAddresses: number
-}
+// AnalyticsBundle, LiquidityDepthItem, WalletConcentrationData and VelocityDataPoint were
+// removed 2026-09-14 with the CR6 cut (owner decision D11), along with the four panel
+// components that consumed them. `AssetDetail.analyticsBundle` went too — it was
+// hardcoded null in lib/api/live/overlay.ts for every asset, so the field was
+// permanently null. That is the shape RP-6 deleted `Asset.riskScore`/`riskBand` for:
+// a permanently-null field invites a future surface to render "N/A" as though the data
+// were merely missing rather than deliberately not collected.
 
 export interface AssetDetail extends Asset {
-  // Derived bundles are null in live mode — no free live source (strict N/A).
   latestMarketData: MarketData
   latestReserve: ReserveAttestation | null
-  analyticsBundle: AnalyticsBundle | null
 }
 
 export interface AssetFilters {
