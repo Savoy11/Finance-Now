@@ -92,14 +92,39 @@ describe('NT12 — MCP server metadata matches what it ships', () => {
     // written down as withheld, or the next maintainer restores it blind. A
     // README line naming a tool as withheld therefore satisfies this guard —
     // but ONLY that line, so a genuinely stale mention still fails.
+    //
+    // REMOVED is the fourth state, added 2026-09-14 for compare_staking_risk
+    // (owner decision D14). It differs from withheld in both directions: the
+    // code is gone rather than commented out, and it is NOT coming back, so
+    // there is nothing for a maintainer to restore. Recording it still earns
+    // its place — this repo's standing rule is that a removal lands with a
+    // dated note saying what went and why, and the next reader asking "didn't
+    // this server compare providers?" deserves the answer in the README rather
+    // than in a git log. The exemption is deliberately narrow, matching only
+    // the explicit "was REMOVED" phrasing, so an ordinary stale mention of a
+    // deleted tool still fails exactly as before.
     const readme = read(MCP_README)
     const withheld = new Set(
       Array.from(readme.matchAll(/`([a-z]+_[a-z_]+)`\s+is withheld/g)).map(m => m[1]),
     )
+    const removed = new Set(
+      Array.from(readme.matchAll(/`([a-z]+_[a-z_]+)`\s+was REMOVED/g)).map(m => m[1]),
+    )
     const documented = Array.from(readme.matchAll(/`([a-z]+_[a-z_]+)`/g)).map(m => m[1])
     const phantom = Array.from(new Set(documented))
-      .filter(t => !registeredTools.includes(t) && !withheld.has(t))
+      .filter(t => !registeredTools.includes(t) && !withheld.has(t) && !removed.has(t))
     expect(phantom, `documented in the MCP README but not registered: ${phantom.join(', ')}`).toEqual([])
+  })
+
+  it('a removed tool is genuinely gone from the server (guards the guard)', () => {
+    // Same protection the withheld hatch carries: "was REMOVED" must not become
+    // a way to retire a tool in the docs while the server still registers it.
+    // A tool an agent can call but the README calls gone is the more dangerous
+    // direction of the two, because nobody goes looking for it.
+    const readme = read(MCP_README)
+    const removed = Array.from(readme.matchAll(/`([a-z]+_[a-z_]+)`\s+was REMOVED/g)).map(m => m[1])
+    const stillShipped = removed.filter(t => registeredTools.includes(t))
+    expect(stillShipped, `README calls these removed but the server registers them: ${stillShipped.join(', ')}`).toEqual([])
   })
 
   it('a withheld tool is genuinely absent from the server (guards the guard)', () => {

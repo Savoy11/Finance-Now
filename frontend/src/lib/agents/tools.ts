@@ -91,13 +91,12 @@ const TOOL_REGISTRY: RegisteredTool[] = [
     market: 'crypto',
     tool: {
       name: 'get_staking_opportunities',
-      description: 'Get staking options for a coin with APY, lock-up terms, and risk scores. Filter by category or maximum risk.',
+      description: 'Get staking options for a coin with APY, lock-up terms, custody model, and six curated risk DIMENSIONS (custody, counterparty, contract, slashing, liquidity, regulatory), each 1–10 where higher = riskier. There is no overall risk or safety score and no risk-based filter (owner decision D14, 2026-09-14): the dimensions are reference inputs, not a ranking. Describe them if asked; do not combine them into a score or present the list as ranked.',
       input_schema: {
         type: 'object',
         properties: {
           coin: { type: 'string', description: 'Coin symbol, e.g. "eth"' },
           category: { type: 'string', enum: ['cefi', 'wallet', 'liquid'], description: 'Optional provider category' },
-          max_risk: { type: 'number', description: 'Optional: only return options with overall risk <= this (1-10)' },
         },
         required: ['coin'],
       },
@@ -514,7 +513,8 @@ export async function runTool(
       case 'get_staking_opportunities': {
         const p = new URLSearchParams({ coin: String(input.coin ?? '') })
         if (input.category) p.set('category', String(input.category))
-        if (input.max_risk != null) p.set('max_risk', String(input.max_risk))
+        // No max_risk: the upstream route stopped serving a composite under D14,
+        // so forwarding the param would set a filter the API silently ignores.
         return await getJson(origin, `/api/v1/staking/opportunities?${p.toString()}`)
       }
       case 'get_news': {

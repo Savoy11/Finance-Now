@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { CORS, options } from '@/app/api/_cors'
 import {
-  STAKING_PROVIDERS, computeOverallRisk, mergedRisks, getRiskLevel,
+  STAKING_PROVIDERS, mergedRisks,
   resolveYieldType, YIELD_TYPE_META, getStakingDataProvenance,
   type StakingCoinId, type ProviderCategory,
 } from '@/lib/data/stakingProviders'
-import { scoreStakingProvider } from '@/lib/risk/profiles/stakingAdapter'
 
 export const dynamic = 'force-dynamic'
 export { options as OPTIONS }
@@ -59,20 +58,26 @@ export async function GET(req: NextRequest) {
   // When true (default), return only products that actually stake the queried coin —
   // i.e. exclude governance-token and lending yield. Set to 'true' to include them.
   const includeAdjacent = searchParams.get('include_adjacent') === 'true'
-  const maxRisk       = parseFloat(searchParams.get('max_risk') ?? '10')
-  // Canonical-scale FLOOR on safety (0–100 higher = safer): when set, only
-  // opportunities scoring AT OR ABOVE it are returned. Additive to `max_risk`,
-  // which is left byte-identical in meaning (1–10 higher = riskier). See R2 §5.3.
-  //
-  // NOTE: the spec (§5.3 Phase 5a) drafted this as `max_safety`, but a *floor*
-  // named `max_*` re-creates the exact inverted-filter footgun §5.3 exists to
-  // prevent (an agent reading "max" as a ceiling gets the opposite result,
-  // silently, with a 200). It is named `min_safety` here for that reason; the
-  // legacy `max_safety` spelling is accepted as an alias so no drafted client
-  // breaks, but both mean the same floor.
-  const minSafetyRaw  = searchParams.get('min_safety') ?? searchParams.get('max_safety')
-  const minSafety     = minSafetyRaw != null ? parseFloat(minSafetyRaw) : null
   const includeDefunct = searchParams.get('include_defunct') === 'true'
+
+  // ⚠ BREAKING CHANGE, 2026-09-14 (owner decision D14). This route no longer
+  // publishes a composite risk score, and the `max_risk` / `min_safety` /
+  // `max_safety` filters are GONE — not deprecated, removed.
+  //
+  // A composite is one number that ranks providers against each other, and a
+  // filter over it ("show me everything safer than 7") is a screen the caller
+  // did not compute and cannot audit. That is the shape the owner ruled reads
+  // as a recommendation rather than a description.
+  //
+  // Unknown query params are IGNORED rather than rejected, so an old client
+  // sending `max_risk=5` still gets a 200 — with MORE rows than before, never
+  // fewer. Erroring would break callers hardest at the moment they are least
+  // able to fix it; silently returning a wider set is the safe direction,
+  // because no row is filtered out by a rule the caller can no longer see.
+  //
+  // What REPLACES the filter: `riskBreakdown` still carries all six curated
+  // dimensions per row. A caller who wants a threshold applies its own to those
+  // numbers, which makes the judgment theirs and inspectable.
 
   const { rates: liveRates, derived: derivedKeys } = await fetchLiveRates()
 
@@ -81,9 +86,6 @@ export async function GET(req: NextRequest) {
   for (const provider of STAKING_PROVIDERS) {
     if (provider.defunct && !includeDefunct) continue
     if (categoryParam && provider.category !== categoryParam) continue
-
-    const overallRisk = computeOverallRisk(provider.risks)
-    if (overallRisk > maxRisk) continue
 
     for (const [assetCoinId, asset] of Object.entries(provider.assets) as [StakingCoinId, NonNullable<(typeof provider.assets)[StakingCoinId]>][]) {
       if (!asset) continue
@@ -99,13 +101,6 @@ export async function GET(req: NextRequest) {
       if (!includeAdjacent && !yieldMeta.stakesQueriedAsset && !yieldTypeParam) continue
 
       const effectiveRisks = mergedRisks(provider.risks, asset.assetRisks)
-      const riskScore = computeOverallRisk(effectiveRisks)
-      if (riskScore > maxRisk) continue
-
-      // Canonical 0–100 higher-is-safer composite via the shared, tested adapter.
-      const composite = scoreStakingProvider(effectiveRisks)
-      const safetyScore = parseFloat(composite.score.toFixed(1))
-      if (minSafety != null && safetyScore < minSafety) continue
 
       const liveApr = asset.liveAprKey ? liveRates[asset.liveAprKey] : undefined
       const apr     = liveApr ?? asset.staticApr
@@ -132,14 +127,9 @@ export async function GET(req: NextRequest) {
         receiptToken:    asset.receiptToken ?? null,
         minStakeNative:  asset.minStakeNative,
         custodyModel:    provider.custodyModel,
-        // Canonical 0–100 higher-is-safer score + 5-level band (R2 §5.3 Phase 5a).
-        // Prefer these; the legacy trio below is retained on its own scale.
-        safetyScore,
-        band:            composite.band,
-        // @deprecated LEGACY 1–10 higher-is-RISKIER + 4-level vocabulary. Kept
-        // byte-identical for existing consumers; migrate to safetyScore/band.
-        riskScore:       parseFloat(riskScore.toFixed(2)),
-        riskLevel:       getRiskLevel(riskScore),
+        // The six curated dimensions, each 1–10 higher-is-riskier, exactly as the
+        // catalog records them. No composite is derived from them here (D14) —
+        // these are the inputs, and the weighting is the caller's to choose.
         riskBreakdown: {
           custody:      effectiveRisks.custodyRisk,
           counterparty: effectiveRisks.counterpartyRisk,
@@ -174,8 +164,8 @@ export async function GET(req: NextRequest) {
     opportunities,
     total: opportunities.length,
     yieldTypeCounts,
-    filters: { coin: coinParam ?? 'all', category: categoryParam ?? 'all', yieldType: yieldTypeParam ?? 'all', includeAdjacent, maxRisk, minSafety, includeDefunct },
-    note: 'Each opportunity carries a yieldType (native, liquid, cefi, restaking, governance, lending). By default only products that actually stake the queried coin are returned; governance-token staking and lending yield are excluded unless include_adjacent=true or yield_type is set explicitly. SCORING: prefer safetyScore (0–100, HIGHER = SAFER) with its 5-level band (low/moderate/elevated/high/critical); filter it with min_safety (a 0–100 floor). The legacy riskScore (1–10, HIGHER = RISKIER) with its riskLevel and the max_risk filter remain unchanged for existing consumers but are deprecated. Defunct providers (e.g. Celsius) are excluded by default — use include_defunct=true. FRESHNESS: updatedAt is when this response was generated, which describes the live APRs only (per-row aprSource="live"). Rows with aprSource="derived" are our estimates anchored to the Lido feed, not provider-published rates. Rows with aprSource="estimate", and every risk score, lock-up, and minimum on every row, come from the curated catalog described by referenceData — check referenceData.verifiedAt, not updatedAt, before treating those as current.',
+    filters: { coin: coinParam ?? 'all', category: categoryParam ?? 'all', yieldType: yieldTypeParam ?? 'all', includeAdjacent, includeDefunct },
+    note: 'Each opportunity carries a yieldType (native, liquid, cefi, restaking, governance, lending). By default only products that actually stake the queried coin are returned; governance-token staking and lending yield are excluded unless include_adjacent=true or yield_type is set explicitly. SCORING: this endpoint publishes NO composite risk or safety score, and has no risk-based filter. Removed 2026-09-14: the safetyScore, band, riskScore and riskLevel fields and the max_risk, min_safety and max_safety parameters. A single number ranking providers against each other reads as a recommendation, so the endpoint reports the inputs and leaves the weighting to the caller. Those parameters are now ignored rather than rejected, so an old client still gets a 200 — but with MORE rows than before, because nothing is being filtered out. riskBreakdown carries all six curated dimensions (custody, counterparty, contract, slashing, liquidity, regulatory), each 1–10 where HIGHER = RISKIER; apply your own threshold to those. Defunct providers (e.g. Celsius) are excluded by default — use include_defunct=true. FRESHNESS: updatedAt is when this response was generated, which describes the live APRs only (per-row aprSource="live"). Rows with aprSource="derived" are our estimates anchored to the Lido feed, not provider-published rates. Rows with aprSource="estimate", and every risk dimension, lock-up, and minimum on every row, come from the curated catalog described by referenceData — check referenceData.verifiedAt, not updatedAt, before treating those as current.',
     source: 'Finance Now curated staking catalog + live protocol APR feeds (Lido, Marinade, Jito). Some exchange ETH rates are derived from the Lido feed (aprSource="derived").',
     updatedAt: new Date().toISOString(),
     // Provenance for the curated half of this payload. Without it the fresh

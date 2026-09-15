@@ -304,7 +304,7 @@ OUTPUT FORMAT:
 Return a JSON object structured as:
 {
   "scrapedAt": "<ISO timestamp>",
-  "stakingOpportunities": [ { "provider": "", "coin": "", "apr": 0, "lockDays": 0, "minStake": "", "riskLevel": "low|medium|high", "source": "" } ],
+  "stakingOpportunities": [ { "provider": "", "coin": "", "apr": 0, "lockDays": 0, "minStake": "", "custodyModel": "", "source": "" } ],
   "newListings": [ { "name": "", "ticker": "", "chain": "", "listedDate": "", "exchange": "", "marketCapUsd": 0, "url": "" } ],
   "marketUpdates": [ { "provider": "", "change": "", "effectiveDate": "", "source": "" } ],
   "summary": "<2-3 sentence plain-English summary of key findings>"

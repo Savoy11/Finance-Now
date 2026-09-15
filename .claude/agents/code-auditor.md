@@ -111,16 +111,35 @@ and dates in prose that no longer match. Generated files edited by hand — Fina
 - **Ranking vs explanation is the line (short-list item 4, 2026-08-18).** A leaderboard over a
   universe goes; scoring the one asset the reader opened stays. Do not report either half of that
   as an inconsistency to be resolved.
-- **No composite risk score on `/staking` provider cards (RP-3, 2026-08-17).** Cards that
-  describe the six risk dimensions **without** a composite number are the DECIDED state,
-  not a half-built feature. Do not report the missing composite as a gap, and do not report
-  `scoreStakingProvider()` existing with nothing rendering its output as dead code — the
-  function is live for `/api/v1/staking/opportunities`; only the on-card surface was
-  rejected. This is the RP that most often reads as an oversight, which is why it is here.
-- Where a score IS published — the surviving `lib/risk` consumers above — it is 0–100,
-  **higher = safer**, per `docs/architecture/risk-scale-spec.md`. Any inverted scale or alternative
-  banding is a defect. The `@internal` 1–10 higher-is-riskier helpers in `stakingProviders.ts` are
-  the one sanctioned exception, retained for the public `/api/v1` contract (R2 §5.3).
+- **No composite staking risk score ANYWHERE (RP-3 2026-08-17, extended by D14
+  2026-09-14).** Cards that describe the six risk dimensions **without** a composite
+  number are the DECIDED state, not a half-built feature. Do not report the missing
+  composite as a gap.
+
+  D14 extended this from the provider cards to every surface: `/api/v1/staking/opportunities`,
+  `/live-data/staking-discovery` and the MCP server all stopped publishing
+  `safetyScore` / `band` / `riskScore` / `riskLevel`, the `max_risk` / `min_safety`
+  filters were removed, the `compare_staking_risk` MCP tool was deleted, and the
+  `computeOverallRisk()` / `getRiskLevel()` helpers were deleted with them.
+  `lib/risk/__tests__/riskScoringRemoved.test.ts` guards the end state.
+
+  ⚠ **`scoreStakingProvider()` now has NO live consumer, and that is not dead code to
+  report.** The earlier version of this entry said the function was "live for
+  `/api/v1/staking/opportunities`" — that is no longer true. It is retained
+  deliberately: D18 defers new risk profiles until a surface is approved to render a
+  score, and deleting the engine would pre-empt that decision. Do not report it as
+  unused, and do not wire it into a surface to "fix" the fact that it is.
+
+  This is the RP that most often reads as an oversight, which is why it is here.
+- Where a score IS published — after D14 that is the options Trade Risk Scorer, plus the
+  macro/equity profiles — it is 0–100, **higher = safer**, per
+  `docs/architecture/risk-scale-spec.md`. Any inverted scale or alternative banding is a
+  defect. The 1–10 higher-is-riskier exception that used to be sanctioned in
+  `stakingProviders.ts` no longer exists: those helpers were deleted under D14 and
+  nothing publishes that scale. The six raw `RiskProfile` DIMENSIONS are still 1–10
+  higher-is-riskier, but they are curated inputs rather than a published score, so they
+  are not a scale-direction defect — the API and MCP tool both label their direction
+  explicitly, and that labelling IS the requirement.
 - A score rendered without its coverage figure claims more than the data supports.
 - **Yahoo Finance is hard-blocked on terms grounds (2026-08-06), not availability.** `pinnedFetch`
   refuses `*.yahoo.com` at the socket. Any code path reaching for it — or a doc recommending it as

@@ -242,21 +242,24 @@ server.tool(
 
 // ─── Tool: get_staking_opportunities ─────────────────────────────────────────
 
+// ⚠ 2026-09-14 (owner decision D14): this tool no longer reports a composite
+// Safety Score, risk band or legacy risk score, and the `min_safety`/`max_risk`
+// filters are gone — the upstream route stopped serving all of them. It reports
+// the six curated dimensions instead. If an agent wants a single number it can
+// weight them itself, which keeps that judgment the caller's and inspectable.
+// Do not re-add a composite or a risk-ordered sort here.
+
 server.tool(
   'get_staking_opportunities',
-  'Find staking opportunities for a cryptocurrency across CeFi exchanges (Coinbase, Kraken, Binance…), self-custody wallets (Ledger, MetaMask, Phantom…), and liquid staking protocols (Lido, Rocket Pool, Marinade, Jito…). Each result includes APR/APY (live where available, otherwise estimates), lock-up period, custody model, and the canonical Safety Score (0–100, HIGHER = SAFER, with a low/moderate/elevated/high/critical band) composed from custody, counterparty, smart contract, slashing, liquidity, and regulatory dimensions. The legacy riskScore (1–10, higher = riskier) is also returned but deprecated.',
+  'Find staking opportunities for a cryptocurrency across CeFi exchanges (Coinbase, Kraken, Binance…), self-custody wallets (Ledger, MetaMask, Phantom…), and liquid staking protocols (Lido, Rocket Pool, Marinade, Jito…). Each result includes APR/APY (live where available, otherwise estimates), lock-up period, custody model, and six curated risk DIMENSIONS (custody, counterparty, contract, slashing, liquidity, regulatory), each 1–10 where HIGHER = RISKIER. It deliberately publishes NO composite risk or safety score and offers no risk-based filter: the dimensions are reference inputs, not a ranking, and nothing here is a recommendation to stake with any provider. Results are ordered by APR, not by risk.',
   {
     coin:     z.string().optional().describe('Coin id to filter by. E.g. "eth", "sol", "ada", "dot", "atom". Omit for all stakeable coins.'),
     category: z.enum(['cefi', 'wallet', 'liquid']).optional().describe('cefi = exchange staking (custodial), wallet = self-custody wallet delegation, liquid = liquid staking protocols (stETH, mSOL, etc.)'),
-    min_safety: z.number().min(0).max(100).optional().describe('Minimum canonical Safety Score (0–100, higher = safer). E.g. 70 = only safer options. Preferred filter.'),
-    max_risk: z.number().min(1).max(10).optional().describe('DEPRECATED — use min_safety. Maximum legacy risk score (1–10, higher = riskier). Default: 10 (all).'),
   },
-  async ({ coin, category, min_safety, max_risk }) => {
+  async ({ coin, category }) => {
     const params = new URLSearchParams()
     if (coin)     params.set('coin', coin)
     if (category) params.set('category', category)
-    if (min_safety != null) params.set('min_safety', String(min_safety))
-    if (max_risk) params.set('max_risk', String(max_risk))
 
     const data = await get<{
       opportunities: Array<{
@@ -264,8 +267,7 @@ server.tool(
         coin: string; coinId: string; apr: number; aprSource: string
         lockupDays: number; lockupNote: string | null; liquid: boolean
         receiptToken: string | null; minStakeNative: number
-        custodyModel: string; safetyScore: number; band: string
-        riskScore: number; riskLevel: string
+        custodyModel: string
         riskBreakdown: Record<string, number>; features: string[]
         tvlBillions: number | null; auditCount: number | null
       }>
@@ -276,8 +278,11 @@ server.tool(
       return { content: [{ type: 'text', text: `No staking opportunities found for the given filters.` }] }
     }
 
-    const riskIcon = (level: string) => ({ low: '🟢', medium: '🟡', high: '🟠', critical: '🔴' }[level] ?? '⚪')
+    // Custody model is a structural FACT about who holds the keys, not a verdict
+    // on the provider, so it keeps its icon. The risk-level icon that used to sit
+    // at the start of every row was a colour-coded grade, and went with D14.
     const custodyIcon = (model: string) => ({ custodial: '🏦', 'non-custodial': '🔑', 'smart-contract': '📜' }[model] ?? '')
+    const DIMENSIONS = ['custody', 'counterparty', 'contract', 'slashing', 'liquidity', 'regulatory'] as const
 
     let text = `**Staking Opportunities** (${data.total} results, updated: ${new Date(data.updatedAt).toLocaleTimeString()})\n\n`
 
@@ -290,23 +295,30 @@ server.tool(
     for (const [coinSymbol, opps] of Object.entries(byCoin)) {
       text += `### ${coinSymbol}\n`
       for (const opp of opps) {
-        text += `\n${riskIcon(opp.riskLevel)} **${opp.providerName}** (${opp.category}) ${custodyIcon(opp.custodyModel)}\n`
-        text += `  APY: **${opp.apr.toFixed(2)}%**${opp.aprSource === 'live' ? ' 🔴 live' : ' (estimate)'}`
+        text += `\n**${opp.providerName}** (${opp.category}) ${custodyIcon(opp.custodyModel)}${opp.defunct ? ' — DEFUNCT' : ''}\n`
+        text += `  APY: **${opp.apr.toFixed(2)}%**${opp.aprSource === 'live' ? ' 🔴 live' : opp.aprSource === 'derived' ? ' (derived estimate)' : ' (estimate)'}`
         if (opp.receiptToken) text += ` → ${opp.receiptToken}${opp.liquid ? ' (liquid)' : ''}`
         text += '\n'
         text += `  Lock-up: ${opp.lockupDays === 0 ? 'None' : `${opp.lockupDays} days`}`
         if (opp.minStakeNative > 0) text += ` | Min: ${opp.minStakeNative} ${opp.coinId.toUpperCase()}`
         text += '\n'
-        text += `  Safety: ${opp.safetyScore.toFixed(0)}/100 (${opp.band}, higher = safer) | legacy risk ${opp.riskScore.toFixed(1)}/10`
-        if (opp.tvlBillions) text += ` | TVL: $${opp.tvlBillions}B`
-        if (opp.auditCount)  text += ` | Audits: ${opp.auditCount}`
-        text += '\n'
+        const dims = DIMENSIONS
+          .filter(d => opp.riskBreakdown?.[d] != null)
+          .map(d => `${d} ${opp.riskBreakdown[d]}`)
+          .join(', ')
+        if (dims) text += `  Risk dimensions (1–10, higher = riskier): ${dims}\n`
+        const extras: string[] = []
+        if (opp.tvlBillions) extras.push(`TVL: $${opp.tvlBillions}B`)
+        if (opp.auditCount)  extras.push(`Audits: ${opp.auditCount}`)
+        if (extras.length) text += `  ${extras.join(' | ')}\n`
       }
       text += '\n'
     }
 
     text += `---\n🏦 custodial (exchange holds keys)  🔑 non-custodial (you hold keys)  📜 smart-contract (on-chain code)\n`
-    text += `Risk score: 🟢 low (≤3)  🟡 medium (>3–5.5)  🟠 high (>5.5–7.5)  🔴 critical (>7.5)`
+    text += `Risk dimensions are curated editorial reference data on a 1–10 scale where HIGHER = RISKIER. `
+    text += `They are not combined into an overall score and are not a recommendation — a low number is not a safety guarantee. `
+    text += `Rows are ordered by APY. Confirm current terms with the provider before staking.`
 
     return { content: [{ type: 'text', text }] }
   }
@@ -357,104 +369,31 @@ server.tool(
   }
 )
 
-// ─── Tool: compare_staking_risk ───────────────────────────────────────────────
-
-server.tool(
-  'compare_staking_risk',
-  'Compare the risk profiles of two or more staking providers side by side. Reports the canonical Safety Score '
-  + '(0-100, HIGHER = SAFER) with its 5-level band, plus the legacy 1-10 risk score (HIGHER = RISKIER) for reference — '
-  + 'read the direction before the number, they point opposite ways. Useful for explaining the difference between '
-  + 'custodial exchange staking (e.g. Celsius/Coinbase), self-custody wallet staking (e.g. Ledger), and liquid '
-  + 'staking protocols (e.g. Lido, Rocket Pool).',
-  {
-    providers: z.string().describe('Comma-separated provider ids. E.g. "coinbase,lido,rocketpool,ledger-live". Use list_exchanges or get_staking_opportunities to find valid ids.'),
-    coin:      z.string().optional().describe('Coin to compare for (affects asset-level risk overrides). E.g. "eth"'),
-  },
-  async ({ providers, coin }) => {
-    const ids = providers.split(',').map(p => p.trim().toLowerCase())
-    const params = new URLSearchParams()
-    if (coin) params.set('coin', coin)
-    params.set('include_defunct', 'true')
-
-    const data = await get<{
-      opportunities: Array<{
-        provider: string; providerName: string; category: string; defunct: boolean
-        coin: string; apr: number; aprSource: string; lockupDays: number
-        custodyModel: string; safetyScore: number; band: string
-        riskScore: number; riskLevel: string
-        riskBreakdown: Record<string, number>; liquid: boolean
-        receiptToken: string | null
-      }>
-    }>(`/staking/opportunities?${params}`)
-
-    // Deduplicate: one entry per requested provider (prefer matching coin, else first available)
-    const found: typeof data.opportunities = []
-    for (const id of ids) {
-      const matches = data.opportunities.filter(o => o.provider === id)
-      if (matches.length === 0) { found.push({ provider: id, providerName: id, category: '?', defunct: false, coin: '?', apr: 0, aprSource: 'estimate', lockupDays: 0, custodyModel: '?', safetyScore: 0, band: 'unknown', riskScore: 0, riskLevel: 'unknown', riskBreakdown: {}, liquid: false, receiptToken: null }); continue }
-      const coinMatch = coin ? matches.find(m => m.coin.toLowerCase() === coin.toLowerCase()) : null
-      found.push(coinMatch ?? matches[0])
-    }
-
-    const DIMS = ['custody', 'counterparty', 'contract', 'slashing', 'liquidity', 'regulatory'] as const
-    const padR = (s: string, n: number) => s.padEnd(n)
-    const padL = (s: string, n: number) => s.padStart(n)
-
-    let text = `**Risk Comparison${coin ? ` — ${coin.toUpperCase()}` : ''}**\n\n`
-
-    // Header row
-    const nameWidth = 18
-    text += padR('', nameWidth)
-    for (const p of found) text += padL(p.providerName.slice(0, 12), 14)
-    text += '\n' + '─'.repeat(nameWidth + found.length * 14) + '\n'
-
-    // APY row
-    text += padR('APY', nameWidth)
-    for (const p of found) text += padL(p.apr > 0 ? `${p.apr.toFixed(2)}%` : 'N/A', 14)
-    text += '\n'
-
-    // Lock-up
-    text += padR('Lock-up', nameWidth)
-    for (const p of found) text += padL(p.lockupDays === 0 ? 'None' : `${p.lockupDays}d`, 14)
-    text += '\n'
-
-    // Custody model
-    text += padR('Custody', nameWidth)
-    for (const p of found) text += padL(p.custodyModel.replace('smart-contract', 'on-chain'), 14)
-    text += '\n'
-
-    // Liquid
-    text += padR('Liquid token', nameWidth)
-    for (const p of found) text += padL(p.liquid ? (p.receiptToken ?? 'yes') : 'no', 14)
-    text += '\n'
-
-    text += '─'.repeat(nameWidth + found.length * 14) + '\n'
-
-    // Canonical Safety Score first — the additive R2 fields this consumer
-    // never surfaced (review P2); legacy 1–10 kept, labelled.
-    text += padR('SAFETY ↑=safer', nameWidth)
-    for (const p of found) text += padL(`${p.safetyScore.toFixed(0)}/100 ${p.band}`, 14)
-    text += '\n'
-    text += padR('Legacy ↑=riskier', nameWidth)
-    for (const p of found) text += padL(`${p.riskScore.toFixed(1)}/10`, 14)
-    text += '\n'
-
-    // Risk dimensions
-    for (const dim of DIMS) {
-      text += padR(`  ${dim}`, nameWidth)
-      for (const p of found) text += padL(String(p.riskBreakdown[dim] ?? '?'), 14)
-      text += '\n'
-    }
-
-    text += '\n*Safety Score: 0–100, HIGHER = SAFER (canonical). Legacy risk + dimensions: 1–10, higher = riskier (deprecated).*\n'
-
-    if (found.some(p => p.defunct)) {
-      text += '\n⚠️ **Note:** Defunct providers (e.g. Celsius) are shown for educational comparison only. Do not use them — customer funds remain frozen or partially recovered through bankruptcy.'
-    }
-
-    return { content: [{ type: 'text', text }] }
-  }
-)
+// ─── Tool: compare_staking_risk — REMOVED 2026-09-14 ─────────────────────────
+//
+// Deleted, not hidden, under owner decision D14. Unlike find_transfer_routes
+// above — withheld from a rollout and restorable by un-commenting — this tool's
+// whole output was the thing that was rejected, so there is nothing to restore.
+//
+// It printed a side-by-side table of composite Safety Scores across providers
+// the caller named. That is a leaderboard delivered through MCP: the same
+// surface RP-3 rejected in the app, reaching the same reader by another route.
+// A per-provider score reads as a verdict on which one to pick, and a scored
+// table sorted for comparison reads as a recommendation.
+//
+// The upstream route it called (/api/v1/staking/opportunities) no longer serves
+// safetyScore, band, riskScore or riskLevel at all, so this tool could not be
+// revived as written even if the decision were reversed.
+//
+// What remains available: get_staking_opportunities returns the six curated
+// risk DIMENSIONS per provider (1–10, higher = riskier). An agent asked to
+// compare providers can read those and explain the differences — the
+// explanatory side of the ranking-vs-explanation line — without this tool
+// publishing a ranking on the app's behalf.
+//
+// Do not reintroduce a composite staking score here. See
+// docs/decisions/2026-09-14-owner-decisions.md (D14) and
+// docs/audits/rejected-proposals.md (RP-3).
 
 // ─── Tool: get_security_quotes ────────────────────────────────────────────────
 

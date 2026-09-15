@@ -192,7 +192,7 @@ This is the Bloomberg MAC3 / MSCI BarraOne architecture already cited in
 | 1 | `lib/risk/` | 0–100 | higher = safer | **Canonical.** Becomes the only engine. |
 | 2 | `lib/utils/risk.ts` `RISK_BAND_CONFIG` | 0–100 | higher = safer | **Already canonical-compatible.** Becomes a presentation-only re-export. No numeric conversion needed. |
 | 3 | `coin-discovery` `risk` sub-score | 1–10 | higher = safer | Linear rescale + reframe as a profile. |
-| 4 | `stakingProviders.computeOverallRisk()` | 1–10 | higher = **riskier** | **Polarity inversion.** Adapter exists; public API blocks retirement. |
+| 4 | `stakingProviders.computeOverallRisk()` | 1–10 | higher = **riskier** | ~~**Polarity inversion.** Adapter exists; public API blocks retirement.~~ **RESOLVED 2026-09-14 (D14): scheme deleted.** The public API stopped publishing a composite, so the helpers were removed outright rather than migrated. See the §4.4 and §5.3 notes. |
 
 ### 3.1 Scheme 2 — the twelve consumers, and the actual bug
 
@@ -306,7 +306,7 @@ underlying ratings and their relative ordering are untouched.
 
 | Surface | Scheme | Note |
 |---|---|---|
-| `live-data/staking-discovery/route.ts:107` | **Not independent** — imports `computeOverallRisk` + `getRiskLevel` | Migrates automatically with scheme 4. The brief lists it as independent scoring; it is not. |
+| `live-data/staking-discovery/route.ts:107` | **Not independent** — imports `computeOverallRisk` + `getRiskLevel` | ~~Migrates automatically with scheme 4.~~ **Resolved 2026-09-14 (D14): its composite fields were removed too.** This row is why D14's own ruling was wrong to call the public API the helpers' *only* consumer — the spec had recorded this second one a month earlier. |
 | `live-data/pump-report/investigate/route.ts:31-32` | LLM-emitted `riskScore` 0.0–10.0, higher = riskier, `overallRisk: clean\|suspicious\|flagged\|critical` | Genuinely independent, and genuinely different in kind (§4.5). |
 | `types/asset.ts:2` | Duplicate `RiskBand` union, structurally identical to `lib/risk/types.ts:17` | Two declarations of one type. Collapse. |
 | `backend/app/scoring/` | 0–100 higher = safer, bands 80/65/50/30 | Per `risk-framework.md:17`. Backend is optional/legacy (auth+agent only). **Its band thresholds disagree with the frontend's** (65/50/30 vs 60/40/20). Out of scope for this spec but must not be reactivated without adopting canonical bands. |
@@ -379,6 +379,17 @@ keeps its 1–10 `risk` field in the response **for one release** alongside a ne
 `riskCanonical`, then drops it. The page reads the canonical field.
 
 ### 4.4 Staking consumes the adapter; `medium` is retired
+
+> ⚠ **SUPERSEDED 2026-09-14 by owner decision D14.** This section planned to keep
+> `computeOverallRisk()`/`getRiskLevel()` as internal helpers behind
+> `scoreStakingProvider()`. D14 went further: **no composite staking score is published
+> anywhere**, so both helpers were deleted and the adapter, while retained, has no live
+> consumer. The `medium` label is gone because the scale that defined it is gone — not
+> because `elevated` replaced it on a staking surface.
+>
+> The section is kept as written because the constraint it describes was real and
+> explains why the helpers survived as long as they did. What follows describes the plan
+> as of R2, not the current code.
 
 `computeOverallRisk()` and `getRiskLevel()` stay as internal editorial-model helpers (the
 1–10 dimension ratings in `STAKING_PROVIDERS` are the source data and are not changing),
@@ -493,6 +504,26 @@ cases in §3.3's table.
 | 6.2 | `frontend/src/components/pump-report/PumpReportTab.tsx` | Field rename; ensure no `RiskScoreBadge` reuse. |
 
 ### 5.3 ⚠️ `/api/v1/staking/opportunities` is a PUBLIC CONTRACT — changing it is BREAKING
+
+> ⚠ **CLOSED 2026-09-14 by owner decision D14 — and the break was taken, not avoided.**
+> Everything below analysed how to migrate the composite safely. D14 removed it instead:
+> `safetyScore`, `band`, `riskScore` and `riskLevel` are gone from the response and
+> `max_risk` / `min_safety` / `max_safety` are gone from the parameters, on editorial
+> grounds rather than scale-migration grounds. `compare_staking_risk` was deleted from
+> the MCP server.
+>
+> **§5.3's core warning was honoured, and it is the reason for the chosen failure mode.**
+> The danger it identified was a filter whose meaning inverts silently — a cached
+> `max_risk=4` hitting a safety-scale endpoint and returning the riskiest providers with
+> a 200. The removal avoids that by never reinterpreting the parameter: removed filters
+> are **ignored**, so an old client gets a 200 with strictly MORE rows, never a
+> differently-filtered set. Erroring would break callers hardest when they can least fix
+> it; silently narrowing would be the trap §5.3 names. Widening is the only direction
+> that cannot mislead. `middleware.ts` logs requests still carrying the removed
+> parameters so the widened set stays attributable.
+>
+> Phases 5a/5b below are historical. The end state is: no composite, no risk filter, six
+> labelled dimensions.
 
 **This is the highest-risk item in the plan and it must not be bundled with a UI phase.**
 

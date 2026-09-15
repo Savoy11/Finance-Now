@@ -452,8 +452,41 @@ Central data file for the Staking Opportunities page.
 - **`StakingCoinId`** — 16 stakeable coins: eth, sol, ada, dot, atom, matic, avax, bnb, trx, btc, cro, osmo, ksm, inj, tia, near
 - **`ProviderCategory`** — `'cefi' | 'wallet' | 'liquid'`
 - **`RiskProfile`** — 6 dimensions, each 1–10: `custodyRisk`, `counterpartyRisk`, `contractRisk`, `slashingRisk`, `liquidityRisk`, `regulatoryRisk`
-- **`computeOverallRisk(risks)` and `getRiskLevel(score)` are `@internal` legacy helpers — do not reach for them in new code.** They run a **1–10, higher-is-RISKIER** scale (weights: counterparty 25%, custody 20%, liquidity 20%, contract 15%, slashing 10%, regulatory 10%) with a 4-level band whose `medium` does not exist in the canonical vocabulary at all. They are kept for exactly one reason: the public `/api/v1/staking/opportunities` contract still serves those fields (R2 §5.3). There is deliberately **no deprecation date** (P4, 2026-07-19) — removing them is an API break, not a cleanup.
-  **New code scores staking through `scoreStakingProvider()`** (`lib/risk/profiles/stakingAdapter.ts`), which wraps the same weights and converts at the boundary to the canonical **0–100, higher-is-SAFER** score with the 5-band vocabulary (low/moderate/elevated/high/critical). Two scales pointing opposite ways is precisely the collision the risk-scale spec exists to prevent, so read the direction before you read the number.
+- ⚠ **There is NO composite staking risk score anywhere in this app, its API, or its MCP
+  server (owner decision D14, 2026-09-14). Do not add one.** The six `RiskProfile`
+  dimensions above are published as-is — they are reference INPUTS, not a ranking — and
+  nothing combines them into a single number.
+
+  The distinction the decision draws: *"Risk metrics that use traditional financial
+  formulas can stay and should be visible where appropriate."* Sharpe, Sortino,
+  volatility, drawdown and beta are arithmetic and stay (see `/compare` and the
+  Portfolios weighted-risk figure). A weighted composite over six editorial judgments
+  is not arithmetic — it is one number that ranks providers against each other, which
+  is the shape that reads as a recommendation. Cards describing the dimensions
+  **without** a composite are the decided state (RP-3), not a half-built feature.
+
+  **What was removed**, all on 2026-09-14: `computeOverallRisk()` and `getRiskLevel()`
+  (deleted from `stakingProviders.ts` — a tombstone comment sits where they were);
+  `safetyScore`, `band`, `riskScore`, `riskLevel` and the `max_risk` / `min_safety` /
+  `max_safety` filters from `/api/v1/staking/opportunities`; the same fields plus
+  `riskCanonical` and `max_risk` from `/live-data/staking-discovery`; the
+  `compare_staking_risk` MCP tool; and the `max_risk` argument from the in-app agent
+  tool. Guarded by `lib/risk/__tests__/riskScoringRemoved.test.ts`.
+
+  ⚠ **The ruling said the public API was those helpers' only consumer. It was not** —
+  `/live-data/staking-discovery` imported them too, with its own `max_risk` filter.
+  Both had to go for the helpers to be deletable at all. If you are reading an older
+  doc that names only the API, it is describing half the change.
+
+  **Removed parameters are IGNORED, not rejected.** An old client sending `max_risk=5`
+  still gets a 200 — with MORE rows than before, never fewer, so nothing is filtered
+  out by a rule the caller can no longer see. `middleware.ts` logs those requests so a
+  silently-widened result set stays attributable.
+
+- **`scoreStakingProvider()`** (`lib/risk/profiles/stakingAdapter.ts`) is retained as the
+  canonical **0–100, higher-is-SAFER** engine with the 5-band vocabulary, but has **no
+  live consumer** after D14. D18 defers new risk profiles until a surface is approved to
+  render one, so do not wire it into a page on the assumption it is merely unused.
 - **`STAKING_PROVIDERS`** array — 55 providers (count is dynamic; the page reads `STAKING_PROVIDERS.length`). Representative names:
   - CeFi: Celsius (defunct, cautionary), Coinbase, Kraken, Binance, OKX, Bybit, KuCoin, Crypto.com, Bitget, Gate.io, HTX, Robinhood, Nexo, Gemini, Bitfinex, Bitstamp, MEXC, Upbit
   - Wallet: Ledger Live, MetaMask, Phantom, Trust Wallet, Exodus, Keplr, Solflare, Coinbase Wallet, Atomic Wallet, Trezor Suite
@@ -1152,7 +1185,7 @@ A separate, agent-optimised REST API lives at `/api/v1/`. It is distinct from `/
 | `GET /api/v1/exchanges?tier=1` | All supported exchanges with ids, coins, networks |
 | `GET /api/v1/network-fees` | Gas fees for all **18** networks (BTC live, rest estimated) — `NETWORK_GAS` / `NetworkKey` in `lib/data/networkFees.ts`, which the route derives from. Said 16 until 2026-09-12 |
 | `GET /api/v1/transfer/routes?from=binance&to=coinbase&coin=usdt&amount=1000` | Transfer route finder |
-| `GET /api/v1/staking/opportunities?coin=eth&category=liquid&max_risk=5` | Staking options with risk scores |
+| `GET /api/v1/staking/opportunities?coin=eth&category=liquid` | Staking options with APY, lock-up, custody model and six curated risk dimensions. **No composite score and no risk filter** (D14) — `max_risk`/`min_safety` are ignored if sent |
 | `GET /api/v1/news?coin=btc&sentiment=negative&limit=10` | News with sentiment/category tagging |
 | `GET /api/v1/securities/quotes?symbols=AAPL,VOO,GC=F` | Stock/ETF/fund/macro quotes (max 25; same keyed ladder + reference fallback as the UI, `reference: true` rows labeled) |
 | `GET /api/v1/securities/history?symbol=AAPL&range=1y` | Daily close history for any quotable symbol (1mo–max) |
@@ -1183,8 +1216,7 @@ A standalone Node.js MCP server at `mcp-server/` (repo root) that exposes Financ
 | `list_exchanges` | All supported exchanges with coin/network support |
 | ~~`find_transfer_routes`~~ | ⚪ **WITHHELD 2026-08-22** — Transfer Fees held out of the initial rollout; tool commented out in mcp-server, `/api/v1/transfer/routes` answers 503 |
 | `get_network_fees` | Gas fees for all **18** networks (same `NETWORK_GAS` set as the v1 route) |
-| `get_staking_opportunities` | Staking options filtered by coin, category, max risk |
-| `compare_staking_risk` | Side-by-side risk comparison of staking providers |
+| `get_staking_opportunities` | Staking options filtered by coin and category; reports the six risk dimensions, no composite score (D14) |
 | `get_crypto_news` | Recent news with sentiment, category, and coin tags |
 | `get_security_quotes` | Stock/ETF/fund/macro quotes (reference prices flagged) |
 | `get_security_history` | Daily close history + 52-week range for any quotable symbol |

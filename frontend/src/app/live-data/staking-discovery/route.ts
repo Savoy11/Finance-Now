@@ -3,10 +3,7 @@ import {
   RISK_PRESETS, adjustRiskFromSignals, DEFILLAMA_SLUG_BLOCKLIST,
   ALL_STAKING_SYMBOLS, COIN_SYMBOL_MAP, MATURE_CHAINS,
 } from '@/lib/data/stakingDiscovery'
-import { computeOverallRisk, getRiskLevel } from '@/lib/data/stakingProviders'
 import type { ProviderCategory, RiskProfile } from '@/lib/data/stakingProviders'
-import { scoreStakingProvider } from '@/lib/risk/profiles/stakingAdapter'
-import type { RiskBand } from '@/lib/risk/types'
 
 export const dynamic = 'force-dynamic'
 
@@ -33,29 +30,16 @@ export interface DiscoveredPool {
   custodyModel:    'custodial' | 'non-custodial' | 'smart-contract'
   risks:           RiskProfile
   /**
-   * @deprecated LEGACY 1–10 higher-is-RISKIER composite (computeOverallRisk).
-   * Kept one release for existing consumers; migrate to `safetyScore`.
-   */
-  riskScore:       number
-  /** @deprecated Legacy band for `riskScore`; migrate to `band`. */
-  riskLevel:       ReturnType<typeof getRiskLevel>
-  /** Canonical 0–100 safety score (higher = safer). R2 migration; prefer this. */
-  /**
-   * Canonical safety score for the pool's provider.
+   * The six curated dimensions the presets and signal adjustments produced.
    *
-   * 2026-08-18 (item 4): the Staking Discovery page no longer renders this —
-   * the owner asked to keep the page's discovery function and drop its
-   * suggestion component, and a per-pool safety badge beside an APY column
-   * reads as a verdict on which pool to pick. The field is retained on the
-   * response because scoring a provider the caller named is the explanatory
-   * side of the line the decision drew (same reasoning that keeps the field on
-   * /api/v1/staking/opportunities), and `lib/risk` is the shared engine either
-   * way. Nothing in the UI reads it today — if no consumer adopts it, drop the
-   * field rather than leaving it to drift.
+   * No composite is derived from them. `riskScore`, `riskLevel`, `riskCanonical`
+   * and `band` were REMOVED on 2026-09-14 (owner decision D14), along with the
+   * `max_risk` filter, on the same reasoning as /api/v1/staking/opportunities:
+   * one number ranking pools against each other reads as a verdict on which to
+   * pick. Nothing in the UI ever rendered them — the field comment here already
+   * said so and said to drop them rather than let them drift, which is what D14
+   * settled. Do not reintroduce a composite here.
    */
-  riskCanonical:   number
-  /** Canonical band for `riskCanonical` (low/moderate/elevated/high/critical). */
-  band:            RiskBand
   hasReceiptToken: boolean
   chainMature:     boolean
   source:          DiscoverySource
@@ -151,8 +135,7 @@ function buildPool(
     apyReward?: number | null; auditCount?: number; url?: string | null;
     projectUrl?: string | null; category: ProviderCategory; source: DiscoverySource;
   },
-  maxRisk: number
-): DiscoveredPool | null {
+): DiscoveredPool {
   const chainMature  = MATURE_CHAINS.has(partial.chain)
   const receipt      = hasReceiptToken(partial.symbol)
   const auditCount   = partial.auditCount ?? 0
@@ -161,11 +144,6 @@ function buildPool(
     tvlUsd: partial.tvlUsd, auditCount,
     isSmartContract: partial.category === 'liquid', chainMature, hasReceiptToken: receipt,
   })
-  const riskScore = computeOverallRisk(risks)
-  if (riskScore > maxRisk) return null
-  // Canonical 0–100 higher-is-safer composite via the shared, tested adapter
-  // (same weights as computeOverallRisk, converted at the boundary).
-  const composite = scoreStakingProvider(risks)
   return {
     poolId:          partial.poolId,
     project:         partial.project,
@@ -184,10 +162,6 @@ function buildPool(
     category:        partial.category,
     custodyModel,
     risks,
-    riskScore:       parseFloat(riskScore.toFixed(1)),
-    riskLevel:       getRiskLevel(riskScore),
-    riskCanonical:   parseFloat(composite.score.toFixed(1)),
-    band:            composite.band,
     hasReceiptToken: receipt,
     chainMature,
     source:          partial.source,
@@ -203,7 +177,7 @@ interface DLPool {
   category: string | null; url: string | null;
 }
 
-async function fetchDefiLlama(minTvl: number, minApy: number, maxRisk: number, coinFilter: string | null): Promise<DiscoveredPool[]> {
+async function fetchDefiLlama(minTvl: number, minApy: number, coinFilter: string | null): Promise<DiscoveredPool[]> {
   const json = await getJson<{ data?: DLPool[] }>('https://yields.llama.fi/pools', 1800)
   const raw  = json.data ?? []
   const pools: DiscoveredPool[] = []
@@ -227,8 +201,8 @@ async function fetchDefiLlama(minTvl: number, minApy: number, maxRisk: number, c
       apyBase: p.apyBase, apyReward: p.apyReward,
       auditCount, url: p.url, projectUrl: p.url,
       category, source: 'defillama',
-    }, maxRisk)
-    if (pool) pools.push(pool)
+    })
+    pools.push(pool)
   }
   return pools
 }
@@ -249,7 +223,7 @@ interface YearnVault {
   metadata: { displayName?: string } | null
 }
 
-async function fetchYearn(minTvl: number, minApy: number, maxRisk: number, coinFilter: string | null): Promise<DiscoveredPool[]> {
+async function fetchYearn(minTvl: number, minApy: number, coinFilter: string | null): Promise<DiscoveredPool[]> {
   const vaults = await getJson<YearnVault[]>('https://api.yearn.finance/v1/chains/1/vaults/all', 1800)
   const pools: DiscoveredPool[] = []
 
@@ -276,8 +250,8 @@ async function fetchYearn(minTvl: number, minApy: number, maxRisk: number, coinF
       url:        `https://yearn.finance/vaults/1/${v.address}`,
       projectUrl: 'https://yearn.finance',
       category: 'liquid', source: 'yearn',
-    }, maxRisk)
-    if (pool) pools.push(pool)
+    })
+    pools.push(pool)
   }
   return pools
 }
@@ -303,7 +277,7 @@ interface PendleResponse {
   total:   number
 }
 
-async function fetchPendle(minTvl: number, minApy: number, maxRisk: number, coinFilter: string | null): Promise<DiscoveredPool[]> {
+async function fetchPendle(minTvl: number, minApy: number, coinFilter: string | null): Promise<DiscoveredPool[]> {
   const json = await getJson<PendleResponse>('https://api-v2.pendle.finance/core/v1/sdk/1/markets?limit=100&order_by=liquidity:desc', 1800)
   const markets = json.results ?? []
   const pools: DiscoveredPool[] = []
@@ -336,8 +310,8 @@ async function fetchPendle(minTvl: number, minApy: number, maxRisk: number, coin
       url:        `https://app.pendle.finance/trade/markets/${m.address}`,
       projectUrl: 'https://app.pendle.finance',
       category: 'liquid', source: 'pendle',
-    }, maxRisk)
-    if (pool) pools.push(pool)
+    })
+    pools.push(pool)
   }
   return pools
 }
@@ -371,7 +345,7 @@ const BEEFY_CHAIN_MAP: Record<string, string> = {
   solana: 'Solana', moonbeam: 'Moonbeam', celo: 'Celo', ethereum: 'Ethereum',
 }
 
-async function fetchBeefy(minTvl: number, minApy: number, maxRisk: number, coinFilter: string | null): Promise<DiscoveredPool[]> {
+async function fetchBeefy(minTvl: number, minApy: number, coinFilter: string | null): Promise<DiscoveredPool[]> {
   // Vault list is required (throws through the retry helper); TVL and APY
   // enrichments stay best-effort.
   const [vaults, tvlResult, apyResult] = await Promise.all([
@@ -423,8 +397,8 @@ async function fetchBeefy(minTvl: number, minApy: number, maxRisk: number, coinF
       url:        `https://app.beefy.finance/vault/${v.id}`,
       projectUrl: 'https://app.beefy.finance',
       category: 'liquid', source: 'beefy',
-    }, maxRisk)
-    if (pool) pools.push(pool)
+    })
+    pools.push(pool)
   }
   return pools
 }
@@ -433,16 +407,15 @@ async function fetchBeefy(minTvl: number, minApy: number, maxRisk: number, coinF
 
 export async function GET(req: NextRequest) {
   const coinFilter   = req.nextUrl.searchParams.get('coin')?.toLowerCase() ?? null
-  const maxRisk      = parseFloat(req.nextUrl.searchParams.get('max_risk') ?? '10')
   const minTvl       = parseFloat(req.nextUrl.searchParams.get('min_tvl') ?? '1000000')
   const minApy       = parseFloat(req.nextUrl.searchParams.get('min_apy') ?? '0.1')
   const sourceFilter = req.nextUrl.searchParams.get('source') ?? 'all'
 
   const results = await Promise.allSettled([
-    fetchDefiLlama(minTvl, minApy, maxRisk, coinFilter),
-    fetchYearn(minTvl, minApy, maxRisk, coinFilter),
-    fetchPendle(minTvl, minApy, maxRisk, coinFilter),
-    fetchBeefy(minTvl, minApy, maxRisk, coinFilter),
+    fetchDefiLlama(minTvl, minApy, coinFilter),
+    fetchYearn(minTvl, minApy, coinFilter),
+    fetchPendle(minTvl, minApy, coinFilter),
+    fetchBeefy(minTvl, minApy, coinFilter),
   ])
   const [dlResult, yearnResult, pendleResult, beefyResult] = results
   const anyUpstreamFailed = results.some(r => r.status === 'rejected')
@@ -482,7 +455,7 @@ export async function GET(req: NextRequest) {
     beefy:     beefyPools.length,
   }
 
-  const cacheKey = [coinFilter, maxRisk, minTvl, minApy, sourceFilter].join('|')
+  const cacheKey = [coinFilter, minTvl, minApy, sourceFilter].join('|')
 
   // Upstream outage emptied the result → serve the last healthy payload for
   // this exact filter combination, marked stale. A legitimately empty result
