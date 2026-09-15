@@ -50,36 +50,33 @@ updates:
         patterns: ["*"]
         update-types: [minor, patch]
 
-  # ── Backend (Poetry) ──────────────────────────────────────────────────────
-  # Dependabot's pip ecosystem reads pyproject.toml/poetry.lock.
-  - package-ecosystem: pip
-    directory: /backend
-    schedule:
-      interval: weekly
-      day: monday
-    open-pull-requests-limit: 5
-    groups:
-      backend-patch-minor:
-        patterns: ["*"]
-        update-types: [minor, patch]
-    ignore:
-      # redis 5 -> 8 has now been raised twice and declined twice. #59 was
-      # rebased onto main and CI went green; it was closed anyway, on the
-      # reasoning recorded in docs/TASK-QUEUE.md — a green run on a runtime
-      # client major mostly proves it IMPORTS, not that it BEHAVES. #97 then
-      # raised the identical bump, which is what a closed PR with no ignore
-      # rule does. Recording the decision here is the difference between
-      # deciding once and re-deciding every few weeks.
-      #
-      # MAJORS ONLY, deliberately: 5.x patch and minor updates still arrive
-      # through the group above, so a security fix inside the pinned line is
-      # not suppressed by this. `pyproject.toml` pins ^5.0.0.
-      #
-      # To revisit, delete this entry — the upgrade then wants doing on
-      # purpose, with something exercising the client against a real Redis,
-      # rather than read off a green import.
-      - dependency-name: redis
-        update-types: [version-update:semver-major]
+  # ── Backend (Poetry) — REMOVED 2026-09-15 (owner decision D2) ─────────────
+  #
+  # The pip ecosystem watching /backend is gone because the FastAPI backend is
+  # retired. `backend/` is FROZEN in place, not deleted (backend/FROZEN.md), and
+  # since #192 no CI job lints, tests or builds it — so a dependency bump there
+  # protects nothing, cannot be verified by anything, and lands on a service that
+  # is not running.
+  #
+  # ⚠ Removing the entry is the POINT, not a side effect. #189 and #190 were
+  # closed on 2026-09-15 as moot under D2, and closing a dependabot PR without
+  # also changing the config or adding an ignore is precisely what this file
+  # already records going wrong: redis 5 -> 8 was declined on #59, no rule was
+  # added, and #97 raised the identical bump. Weekly PRs against a frozen
+  # directory would have repeated that indefinitely.
+  #
+  # The redis decision this block used to carry, preserved so retiring the entry
+  # does not quietly discard it: redis 5 -> 8 was declined TWICE on the reasoning
+  # in docs/TASK-QUEUE.md — a green CI run on a runtime client major mostly
+  # proves the library IMPORTS, not that it BEHAVES. If the backend is ever
+  # revived, that upgrade still wants doing deliberately, with something
+  # exercising the client against a real Redis, rather than read off a green
+  # import.
+  #
+  # TO RESTORE: reinstate a `package-ecosystem: pip` block for /backend with the
+  # weekly schedule, the `backend-patch-minor` group, and the redis majors-only
+  # ignore — and restore the backend CI jobs first, or the bumps arrive with
+  # nothing to verify them.
 
   # ── GitHub Actions ────────────────────────────────────────────────────────
   # The CI logs already carry deprecation warnings for actions pinned to Node 20
