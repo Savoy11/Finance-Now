@@ -16,39 +16,27 @@ const nextConfig = {
     domains: ['assets.coingecko.com', 'cryptologos.cc', 'raw.githubusercontent.com'],
     formats: ['image/avif', 'image/webp'],
   },
-  async rewrites() {
-    // The destination below appends `/api/:path`, so the base must be the
-    // backend ORIGIN, not an API path. Several config files and runbooks set
-    // NEXT_PUBLIC_API_URL to `http://localhost:8000/api/v1`, which produced
-    // `http://localhost:8000/api/v1/api/...` — every /api/* path without a
-    // concrete route file 500'd. Harmless while the backend is dormant; it
-    // would bite whoever revives it. Normalising here fixes it for every
-    // deployment at once, rather than depending on each one setting the
-    // variable the way this rule happens to want.
-    const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-    const apiUrl = rawApiUrl.replace(/\/+$/, '').replace(/\/api(\/v\d+)?$/, '')
-    return [
-      {
-        // Proxies leftover /api/* traffic to the legacy backend.
-        //
-        // `/api/auth/` is excluded because Auth.js owns it, and `/api/user/`
-        // because the DB-backed user-data routes (builder plans, portfolios…)
-        // live there. This rewrite runs in the default `afterFiles` phase,
-        // which resolves *after* concrete file routes but *before* dynamic
-        // ones — so /api/auth/signup (a real file) reached its handler while
-        // /api/auth/csrf and /api/auth/callback/* (served by the [...nextauth]
-        // catch-all) were silently proxied to the dormant backend and 500'd.
-        // The same trap catches any dynamic segment: /api/user/builder-plans/
-        // [id] would proxy too. First-party routes with dynamic params MUST
-        // live under an excluded prefix — add new prefixes here, not routes
-        // outside /api/user/ — or add the prefix to the exclusion above, as
-        // `affiliate/` does: its counts are aggregate rather than user-scoped,
-        // so `/api/user/` would have been the wrong namespace for them.
-        source: '/api/:path((?!auth/|user/|affiliate/).*)',
-        destination: `${apiUrl}/api/:path`,
-      },
-    ]
-  },
+  // ─── The /api/* proxy rewrite was REMOVED 2026-09-14 (owner decision D2) ─────
+  //
+  // It forwarded every /api/* path without a concrete route file to the legacy
+  // FastAPI backend at NEXT_PUBLIC_API_URL. That backend is retired and frozen
+  // (backend/FROZEN.md), so the rewrite pointed at a service that is not running
+  // and is not meant to be — an unmatched /api/* path now returns a clean 404
+  // instead of hanging on a dead origin.
+  //
+  // ⚠ THIS LIFTS A REAL CONSTRAINT, and CLAUDE.md carried it as a hard rule.
+  // The rewrite ran in the default `afterFiles` phase, which resolves AFTER
+  // concrete file routes but BEFORE dynamic ones — so any /api/ route with a
+  // dynamic segment lost to it and was silently proxied. That is why first-party
+  // dynamic routes were forced under /api/user/ (plus the auth/ and affiliate/
+  // exclusions the rule had accumulated). It had already cost real bugs:
+  // /api/auth/csrf and /api/auth/callback/* are served by the [...nextauth]
+  // catch-all and were proxied to the dormant backend, where they 500'd.
+  //
+  // New /api/* routes with dynamic params may now live wherever they belong.
+  // If anything is ever proxied from /api/* again, that constraint comes back
+  // with it — restore this comment along with the rewrite.
+
   async redirects() {
     return [
       // Global page de-routed pending a post-production rework (see T5 triage:

@@ -7,11 +7,12 @@ This file is auto-loaded by Claude Code at session start. It gives instant conte
 
 ## What This Is
 
-An institutional-grade financial analytics suite built with Next.js 15 (App Router). It began as a crypto dashboard (risk, reserves, news sentiment, transfer fees, staking) and has grown into an entitlement-gated module suite (see `docs/ROADMAP.md`): a **core** section (headlines, watchlist, portfolios, compare, research, brief) plus **five** optional modules — **Crypto** (the original Finance Now), **Equities** (`/equities`), **Macro Markets** (`/macro`), **ETFs & Funds** (`/funds`), and the premium **Portfolio Builder** (`/portfolio-builder`, its own entitlement). (This said "seven" while listing five; `lib/modules/registry.ts` is the count that matters — `core` plus those five.) Modules are declared in `src/lib/modules/registry.ts`; the sidebar renders from that registry, modules can be toggled in Integrations → Suite Modules, and **every optional module's pages are wrapped in `<ModuleGate>`** so a disabled module is locked by direct URL too, not just hidden from the nav. The frontend runs **live-only** against public data providers via its `/live-data/*` route handlers. User data (portfolios, watchlists, builder plans, wallets) persists to Postgres through `/api/user/*`; module entitlements are **localStorage-only** (`useEntitlementStore` — the `entitlements` table exists in the schema but no route serves it yet, which is the Phase 6 rollout-posture question); an optional legacy Python backend still serves assets/market-data/alerts/risk-scores, but **not** auth — sign-in is Auth.js against the app's own `users` table. Surfaces with no free real-time source show an explicit "not available" notice — there is no mock/demo data path.
+An institutional-grade financial analytics suite built with Next.js 15 (App Router). It began as a crypto dashboard (risk, reserves, news sentiment, transfer fees, staking) and has grown into an entitlement-gated module suite (see `docs/ROADMAP.md`): a **core** section (headlines, watchlist, portfolios, compare, research, brief) plus **five** optional modules — **Crypto** (the original Finance Now), **Equities** (`/equities`), **Macro Markets** (`/macro`), **ETFs & Funds** (`/funds`), and the premium **Portfolio Builder** (`/portfolio-builder`, its own entitlement). (This said "seven" while listing five; `lib/modules/registry.ts` is the count that matters — `core` plus those five.) Modules are declared in `src/lib/modules/registry.ts`; the sidebar renders from that registry, modules can be toggled in Integrations → Suite Modules, and **every optional module's pages are wrapped in `<ModuleGate>`** so a disabled module is locked by direct URL too, not just hidden from the nav. The frontend runs **live-only** against public data providers via its `/live-data/*` route handlers. User data (portfolios, watchlists, builder plans, wallets) persists to Postgres through `/api/user/*`; module entitlements are **localStorage-only** (`useEntitlementStore` — the `entitlements` table exists in the schema but no route serves it yet, which is the Phase 6 rollout-posture question); the legacy Python backend is **retired and frozen** (owner decision D2, 2026-09-14 — `backend/FROZEN.md`): nothing in the app calls it, no CI job builds it, and the `/api/*` proxy rewrite that pointed at it is gone. The claim that it "still serves assets/market-data/alerts/risk-scores" was already stale — the axios client that did so went in the M8 sweep. Sign-in is Auth.js against the app's own `users` table. Surfaces with no free real-time source show an explicit "not available" notice — there is no mock/demo data path.
 
 **Working directory:** the repo root is the `Finance-Now` monorepo (`frontend/`, `backend/`,
 `mcp-server/`, `infrastructure/`, `docs/`); **the Next.js app and all its npm commands live in
-`frontend/`**. (Older docs reference a local `Crypto-Stuff\frontend` checkout path — same app,
+`frontend/`**. `backend/` is **frozen and not part of the build** — read `backend/FROZEN.md`
+before touching anything in it. (Older docs reference a local `Crypto-Stuff\frontend` checkout path — same app,
 pre-monorepo naming.)
 
 **Agent charters:** four maintenance agents are deployed, split along two boundaries
@@ -522,7 +523,16 @@ Pure engine, no API calls, covered by `__tests__/portfolioBuilder.test.ts` (86 t
 - **`actualWeightsFromPortfolio(portfolio, prices)`** — bridges a `/portfolios` portfolio into symbol→weight. Positions with no live price are **excluded, never valued at cost**; `pricedPct` reports coverage so the UI can disclose it.
 - UI: `src/components/portfolio-builder/PlanMonitor.tsx` (expandable per saved plan) supports both a linked portfolio and manual weight entry.
 - **Plans persist to Postgres** (`builder_plans` table — jsonb snapshot of engine output, deliberately not normalized) via `/api/user/builder-plans` (+ `/[id]` PATCH/DELETE). Ownership via `getCurrentUserId()` (local-user mode while the auth wall is off). The page one-time-imports legacy `BUILDER_STORAGE_KEY` localStorage plans (timestamps preserved, key renamed `*:imported` so it can't run twice). `builder_plans.linked_portfolio_id` persists which portfolio the drift monitor compares against (auto-selected on load; portfolios are DB-backed with UUID ids).
-- **⚠ New API routes with dynamic segments MUST live under `/api/user/`** — the `next.config.mjs` rewrite proxies other `/api/*` paths to the legacy backend, and dynamic routes lose to rewrites (see comment in next.config.mjs).
+- ~~**⚠ New API routes with dynamic segments MUST live under `/api/user/`**~~ — **this
+  constraint was LIFTED on 2026-09-14 (D2).** It existed only because a
+  `next.config.mjs` rewrite proxied unmatched `/api/*` paths to the legacy backend and
+  resolved before dynamic routes, so any dynamic segment outside the excluded prefixes
+  was silently forwarded to a dormant service (which is how `/api/auth/csrf` and
+  `/api/auth/callback/*` came to 500). The backend is retired and the rewrite is gone,
+  so a dynamic `/api/*` route may now live wherever it belongs. Existing routes were
+  **not** moved — `/api/user/*` is still the right home for user-scoped data on its own
+  merits. If anything is ever proxied from `/api/*` again, this constraint returns with
+  it.
 
 ### Quote plumbing for both modules (`src/lib/api/live/marketData.ts`)
 **All four equity data surfaces are registry-driven** (same provider system as crypto — `src/lib/api/live/providers.ts`, configured on the Integrations page, persisted to `.provider-config.json`; providers carry `market: 'crypto' | 'equities'` so the two sides never cross). Every surface records per-provider utilization, supports toggling built-ins (order is fixed by the registry — there is no reorder action), and accepts user-added custom feeds (SSRF-validated, auth via header/query/bearer, tolerant JSON field extraction in `src/lib/server/customFeeds.ts`):
@@ -696,13 +706,14 @@ FN_ALLOW_LOCAL_USER=true|false              # (legacy CAEP_ALLOW_LOCAL_USER stil
                                             # ⚠ Setting true in production hands every anonymous
                                             # visitor the same shared account. See lib/auth/session.ts.
 
-# ── Optional legacy backend ──
-NEXT_PUBLIC_API_URL=http://localhost:8000   # Legacy Python backend. Still serves assets/market-data/
-                                            # alerts/risk-scores through the axios client; auth no
-                                            # longer routes here (see lib/auth/).
-                                            # NEXT_PUBLIC_WS_URL is gone — the app opens no socket.
-                                            # The reconnect client it configured was unreachable
-                                            # (LIVE_DATA is hardcoded true) and was removed in M8.
+# ── Legacy backend — RETIRED 2026-09-14 (D2) ──
+# NEXT_PUBLIC_API_URL is no longer read by anything. The backend is frozen
+# (backend/FROZEN.md), the /api/* proxy rewrite is gone, and the API_BASE_URL
+# constant that exported this value was removed — it had no importers, because the
+# axios client that once used it went in the M8 sweep. Setting the variable now has
+# no effect; it is documented here only so nobody re-adds it expecting one.
+# NEXT_PUBLIC_WS_URL is likewise gone — the app opens no socket. The reconnect
+# client it configured was unreachable (LIVE_DATA is hardcoded true), removed in M8.
 NEXT_PUBLIC_SITE_URL=…                      # Absolute base for share links / metadata
 
 # ── AI agents ──
