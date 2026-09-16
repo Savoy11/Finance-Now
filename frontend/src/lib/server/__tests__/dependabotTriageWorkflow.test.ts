@@ -203,7 +203,10 @@ describe('dependabot-triage workflow — spends nothing when there is nothing to
     })
     await compileScript()(github, context, core)
     expect(fn).not.toHaveBeenCalled()
-    expect(log.warn.join(' ')).toContain('ANTHROPIC_API_KEY is not set')
+    // The warning has to name the SECRET, not just the env var — someone hitting
+    // this in a job log needs to know which secret to go and set, and the two
+    // have different names here.
+    expect(log.warn.join(' ')).toContain('FN_TESTING')
     expect(log.warn.join(' ')).not.toContain('FAILED')
   })
 })
