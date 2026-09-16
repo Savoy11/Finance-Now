@@ -213,6 +213,47 @@ are executable from here.
 - D6 — configure the weekly dependabot triage (needs `ANTHROPIC_API_KEY` as a repo secret)
 - The 20 terms readings and the remaining probes above
 
+**Session record — 2026-09-15/16**
+
+Written down because this session opened by recovering five outstanding items
+from a PowerShell session that died mid-task. A list that lives only in a
+terminal is one crash from being gone.
+
+| Recovered item | State |
+|---|---|
+| T-252 — Poloniex / LBank / XT terms | **Closed.** Poloniex `prohibited` and removed; LBank read; XT geo-blocks this region and publishes no reachable terms |
+| Tiingo plan question | **Closed.** Starter is the free tier; all five call sites uncached per §1.6(a); Tiingo then settled as optional and not added |
+| Dependabot alerts + dependency graph | **Closed** 2026-09-16, plus security updates, secret scanning and push protection (half of T-236) |
+| D6 — `ANTHROPIC_API_KEY` secret | **Closed.** Secret set — and the workflow that consumes it did not exist, so it was built |
+| D20 — run the 11 agents | **Built, not run.** `npm run agent-eval` (dry run by default). Needs the key in `frontend/.env.local` and the model decision below |
+
+**GitHub settings changed 2026-09-16:** dependency graph, Dependabot alerts,
+Dependabot security updates, Secret Protection and push protection all enabled.
+Enabling them surfaced **26 open alerts** — 20 in `mcp-server/package-lock.json`,
+3 in `frontend`, 2 in `backend/poetry.lock` — and opened five security PRs, taking
+open PRs from 6 to 11.
+
+⚠ **Alerts still scan `backend/poetry.lock`.** #193 removed the pip ecosystem from
+`dependabot.yml`, which stops the PRs; it cannot stop alerts, because the lockfile
+is still in the tree (frozen, not deleted, per the standing no-deletion rule).
+Expect a permanent trickle of alerts against a directory nothing runs.
+
+**Open, and each waiting on the owner:**
+
+- **Agent model.** All 11 agents default to `claude-sonnet-4-6`. `claude-sonnet-5`
+  is more capable *and* cheaper ($2/$10 per MTok vs $3/$15). Decide BEFORE D20
+  runs — an eval against a model you are about to replace describes nothing useful.
+- **Terms ratification.** 18 documents read on 2026-09-14; the registry still shows
+  4 of 56 `verified`, because both audits say flipping `review` is the owner's act.
+- **Distribution model.** BYOK is the working model; a turn-key edition is scoped
+  alongside it. Both scopings exist as private artifacts on the owner's account.
+- **The coverage matrix** — which providers, in combination, make every value live.
+  Unblocked, needs no key, and it is the input to the BYOK decision because it
+  produces the number of accounts a user would have to open.
+- **`transferFees.ts` Poloniex provenance** — copied from the now-prohibited API,
+  or read from the published fee page? Several rows are dated the day of the owner
+  probe. Establish before the next `TRANSFER_FEES_LAST_VERIFIED` bump.
+
 **Scheduled together — owner, 2026-09-15**
 
 D20 and the market-data licensing research are one working block, at the owner's
