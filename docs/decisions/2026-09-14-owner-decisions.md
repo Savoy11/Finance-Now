@@ -219,6 +219,30 @@ Written down because this session opened by recovering five outstanding items
 from a PowerShell session that died mid-task. A list that lives only in a
 terminal is one crash from being gone.
 
+**The list behind the list.** Before that session died, the work was being driven
+off `finance-now-open-tasks-2026-09-08.json` — a verified task queue generated
+2026-09-07 at `main_sha 2128a18`: 398 tasks merged from 566 raw items, **338
+outstanding** (172 open / 90 parked / 75 blocked / 1 unclear), 162 blocking
+decisions, and 60 items the docs still presented as open that verification found
+done. Every `T-###` in this document, the audits and the queue-verification pass
+refers to that file. **It was never committed**, which is why the ids were
+unfindable in the repo on 2026-09-15; it lives in an upload folder. The five
+recovered items below are a subset of it. Its 338 has not been re-verified
+against current `main` — the 2026-09-10 pass proposed 15 more closures and the
+D1–D20 rulings parked or closed well over a hundred — and its own `known_gaps`
+says 52 verdicts had no tie-break, so the number is a floor, not a count.
+
+| Queue id | Was (2026-09-07) | After this session |
+|---|---|---|
+| T-252 | open, owner-machine | **Closed** |
+| T-241 | open, owner-machine | **Closed** — read, enforced, then Tiingo dropped as optional |
+| T-234 | open, owner-decision | **Closed** — D6; triage workflow built |
+| T-323 | blocked, owner-decision | **Closed as declined** under D6 |
+| T-236 | open, owner-machine | Mostly — secret scanning + push protection on; branch protection already enforced the 09-15 merges |
+| T-001 | open, either | Built (D20 harness); run and assessment pending |
+| T-130 | open, owner-machine | Instrumented — harness records tool calls; the test waits on the run |
+| T-129, T-006, T-102, T-397, T-398 | open | Still open; T-006 is now the prerequisite for the coverage matrix |
+
 | Recovered item | State |
 |---|---|
 | T-252 — Poloniex / LBank / XT terms | **Closed.** Poloniex `prohibited` and removed; LBank read; XT geo-blocks this region and publishes no reachable terms |
