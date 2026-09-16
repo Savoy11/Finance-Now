@@ -232,6 +232,30 @@ against current `main` — the 2026-09-10 pass proposed 15 more closures and the
 D1–D20 rulings parked or closed well over a hundred — and its own `known_gaps`
 says 52 verdicts had no tie-break, so the number is a floor, not a count.
 
+**How many of the 338 are done — determined 2026-09-16.** From this document's own
+ledger above (338 → −77 → −205 → 57), the two verified-closure audits
+(`queue-verification-sweep-2026-09-11.md`, `queue-closure-review-2026-09-13.md`), every
+ruling resolved to ids through the queue's `blocking_decisions` map, and git since
+2026-09-14. "Settled by rulings" is not "completed" — the 205 mixes done, parked,
+declined and answered — so it is split here.
+
+| Tier | Count | Evidence |
+|---|---|---|
+| Completed, independently re-verified | **77** | 62 re-checked file-and-line on 2026-09-13, 0 regressions; 15 closed in #178/#179 |
+| Completed by ruling, landed 2026-09-15 | **35** | D10/D11/D14/D15/D16/D17 (16 named ids) + D2's 19 backend items, via #191–#193. **Never re-verified the 09-13 way** |
+| Completed this session | **4** | T-252, T-241 (from the 57); T-234 (D6 workflow built); T-338 cascade |
+| **Completed** | **116** | **34% of 338** |
+| Read, pending ratification | 14 | Done in fact 2026-09-14; `review` not flipped — owner's act |
+| Closed without doing | 2 | T-136 not chosen; T-323 declined |
+| Decisions answered, items reframed | ~8 | D3 (5), D12 (2), T-290 |
+| Parked by ruling — not done until rollout | ~158 | D1 + cascades, D4, D5, D7, D8, D9, D13, D18, D19. Consistent with the queue's own 165 parked+blocked at generation |
+| Genuinely open | ~41 | The 57 minus what moved; each needs the owner's machine, keys, or a vendor reply |
+
+The ledger's rows sum to 339 (one item double-counted; immaterial). The tiers are not
+equally solid: the 77 were adversarially re-verified, the 35 merged but not re-checked,
+and the 158 depends on cluster boundaries — a widened keyword match returns 72 for D1
+against the ~56 above.
+
 | Queue id | Was (2026-09-07) | After this session |
 |---|---|---|
 | T-252 | open, owner-machine | **Closed** |
