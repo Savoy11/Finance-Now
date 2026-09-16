@@ -70,23 +70,33 @@ jobs:
 
             // ── 2. Scope: patch/minor only (D6) ────────────────────────────
             //
-            // dependabot.yml GROUPS patch and minor updates per ecosystem
-            // (`frontend-patch-minor`, `mcp-patch-minor`, `actions`), so a
-            // grouped PR carries many bumps and has no single version pair to
-            // parse. The head ref is the reliable signal for those. Ungrouped
-            // PRs still carry "from X to Y" in the title, so fall back to a
-            // semver compare.
+            // dependabot.yml groups updates per ecosystem, and a grouped PR
+            // carries many bumps with no single version pair to parse — so the
+            // head ref is the signal for those. Ungrouped PRs carry "from X to
+            // Y" in the title.
+            //
+            // ⚠ ONLY the `*-patch-minor` groups may be trusted as patch/minor.
+            // They alone declare `update-types: [minor, patch]`. The `actions`
+            // group is `patterns: ["*"]` with NO update-types, so it carries
+            // MAJORS — which an earlier version of this code got wrong, and
+            // real data caught: `actions/github-script from 7 to 9` arrived
+            // inside the actions group and was being classified as in-scope
+            // patch/minor. Do not add `/actions-` back to this test.
+            //
+            // ⚠ ACTIONS VERSIONS ARE NOT SEMVER. "from 7 to 9" has no dots, so
+            // a strict X.Y.Z pattern never matches it. The compare below takes
+            // 1-3 components and treats a missing minor as 0.
             //
             // Anything that cannot be classified is treated as OUT of scope.
             // Guessing wrong in that direction costs a missing comment; the
             // other direction silently auto-summarises a major.
             const classifyBump = (pr) => {
               const ref = (pr.head && pr.head.ref) || ''
-              if (/-patch-minor|\/actions-/.test(ref)) return 'group'
-              const m = /from (\d+)\.(\d+)\.(\S+) to (\d+)\.(\d+)\.(\S+)/.exec(pr.title || '')
+              if (/-patch-minor/.test(ref)) return 'group'
+              const m = /from v?(\d+)(?:\.(\d+))?\S* to v?(\d+)(?:\.(\d+))?\S*/.exec(pr.title || '')
               if (!m) return 'unknown'
-              if (m[1] !== m[4]) return 'major'
-              if (m[2] !== m[5]) return 'minor'
+              if (m[1] !== m[3]) return 'major'
+              if ((m[2] || '0') !== (m[4] || '0')) return 'minor'
               return 'patch'
             }
 

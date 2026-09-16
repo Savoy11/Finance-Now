@@ -204,17 +204,56 @@ describe('dependabot-triage workflow — spends nothing when there is nothing to
 })
 
 describe('dependabot-triage workflow — scoping', () => {
-  const cases: Array<[string, string, boolean]> = [
-    ['grouped patch/minor', 'dependabot/npm_and_yarn/frontend/frontend-patch-minor-abc', true],
-    ['grouped mcp',         'dependabot/npm_and_yarn/mcp-server/mcp-patch-minor-def',     true],
-    ['grouped actions',     'dependabot/github_actions/actions-123',                      true],
+  const cases: Array<[string, string, string, boolean]> = [
+    ['grouped patch/minor', 'dependabot/npm_and_yarn/frontend/frontend-patch-minor-abc', 'Bump the group', true],
+    ['grouped mcp',         'dependabot/npm_and_yarn/mcp-server/mcp-patch-minor-def',     'Bump the group', true],
+    ['patch',               'dependabot/npm_and_yarn/mcp-server/fast-uri-3.1.8',          'bump fast-uri from 3.1.4 to 3.1.8', true],
+    ['minor',               'dependabot/npm_and_yarn/mcp-server/qs-6.16.0',               'bump qs from 6.15.2 to 6.16.0', true],
+    ['major',               'dependabot/npm_and_yarn/frontend/zustand-5.0.15',            'bump zustand from 4.5.7 to 5.0.15', false],
   ]
-  it.each(cases)('treats a %s PR as in scope', async (_label, ref, inScope) => {
+  it.each(cases)('treats a %s PR correctly', async (_label, ref, title, inScope) => {
     process.env.ANTHROPIC_API_KEY = 'test-key'
     const { fn } = stubAnthropic([{ number: 20, verdict: 'routine', summary: 'Routine.' }])
-    const { github, context, core } = mockApi({ pulls: [dependabotPr(20, 'Bump the group', ref)] })
+    const { github, context, core } = mockApi({ pulls: [dependabotPr(20, title, ref)] })
     await compileScript()(github, context, core)
     expect(fn.mock.calls.length > 0).toBe(inScope)
+  })
+
+  // ⚠ REGRESSION GUARD, from real data on 2026-09-16.
+  //
+  // The first version of classifyBump treated any `/actions-` head ref as a
+  // patch/minor group, on the belief that dependabot.yml restricted the actions
+  // group the way it restricts `frontend-patch-minor` and `mcp-patch-minor`. It
+  // does not — `actions` is `patterns: ["*"]` with no `update-types`, so it
+  // carries majors. PR "actions/github-script from 7 to 9" was being sent to the
+  // model as routine.
+  //
+  // Two separate faults in one PR: the group assumption, and the fact that
+  // action versions are not semver, so "from 7 to 9" never matched an X.Y.Z
+  // pattern either.
+  it('does not treat a MAJOR actions bump as an in-scope group', async () => {
+    process.env.ANTHROPIC_API_KEY = 'test-key'
+    const { fn } = stubAnthropic([])
+    const { github, context, core } = mockApi({
+      pulls: [dependabotPr(
+        21,
+        'build(deps): bump actions/github-script from 7 to 9 in the actions group across 1 directory',
+        'dependabot/github_actions/actions-4e2b1c'
+      )],
+    })
+    await compileScript()(github, context, core)
+    expect(fn).not.toHaveBeenCalled()
+  })
+
+  it('classifies a non-semver actions PATCH bump as in scope', async () => {
+    // The fix must not over-correct into skipping every actions bump.
+    process.env.ANTHROPIC_API_KEY = 'test-key'
+    const { fn } = stubAnthropic([{ number: 22, verdict: 'routine', summary: 'Routine.' }])
+    const { github, context, core } = mockApi({
+      pulls: [dependabotPr(22, 'bump actions/checkout from 4 to 4', 'dependabot/github_actions/actions-99')],
+    })
+    await compileScript()(github, context, core)
+    expect(fn).toHaveBeenCalledTimes(1)
   })
 
   it('sends every in-scope PR in ONE request, not one each', async () => {
