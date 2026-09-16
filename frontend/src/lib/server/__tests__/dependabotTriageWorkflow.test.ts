@@ -153,12 +153,12 @@ describe('dependabot-triage workflow — structure', () => {
   })
 
   it('reads the key from a secret, never a literal', () => {
-    // The secret is FN_TESTING (owner's naming — it holds a testing-scoped key).
-    // It is mapped onto the standard ANTHROPIC_API_KEY env var so the script and
-    // the app read the same variable name. Assert both halves: a secrets
-    // reference, and the standard env name on the receiving side.
+    // One name in both places — the repository secret and the local key in
+    // frontend/.env.local are both ANTHROPIC_API_KEY, so there is nothing to
+    // remember. The second assertion is the one that matters if the name ever
+    // changes again: whatever it is called, it must come from `secrets.`.
     const step = loadWorkflow().jobs.triage.steps.find((s) => s.env)
-    expect(step?.env?.ANTHROPIC_API_KEY).toBe('${{ secrets.FN_TESTING }}')
+    expect(step?.env?.ANTHROPIC_API_KEY).toBe('${{ secrets.ANTHROPIC_API_KEY }}')
     expect(step?.env?.ANTHROPIC_API_KEY).toMatch(/^\$\{\{\s*secrets\./)
   })
 })
@@ -203,10 +203,11 @@ describe('dependabot-triage workflow — spends nothing when there is nothing to
     })
     await compileScript()(github, context, core)
     expect(fn).not.toHaveBeenCalled()
-    // The warning has to name the SECRET, not just the env var — someone hitting
-    // this in a job log needs to know which secret to go and set, and the two
-    // have different names here.
-    expect(log.warn.join(' ')).toContain('FN_TESTING')
+    // The warning has to name what to go and set, not just say something is
+    // missing — someone hitting this line in a job log should not have to open
+    // the workflow to find out which secret it wants.
+    expect(log.warn.join(' ')).toContain('ANTHROPIC_API_KEY')
+    expect(log.warn.join(' ')).toMatch(/repository secret|Secrets and variables/)
     expect(log.warn.join(' ')).not.toContain('FAILED')
   })
 })
