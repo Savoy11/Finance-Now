@@ -153,8 +153,13 @@ describe('dependabot-triage workflow — structure', () => {
   })
 
   it('reads the key from a secret, never a literal', () => {
+    // The secret is FN_TESTING (owner's naming — it holds a testing-scoped key).
+    // It is mapped onto the standard ANTHROPIC_API_KEY env var so the script and
+    // the app read the same variable name. Assert both halves: a secrets
+    // reference, and the standard env name on the receiving side.
     const step = loadWorkflow().jobs.triage.steps.find((s) => s.env)
-    expect(step?.env?.ANTHROPIC_API_KEY).toBe('${{ secrets.ANTHROPIC_API_KEY }}')
+    expect(step?.env?.ANTHROPIC_API_KEY).toBe('${{ secrets.FN_TESTING }}')
+    expect(step?.env?.ANTHROPIC_API_KEY).toMatch(/^\$\{\{\s*secrets\./)
   })
 })
 

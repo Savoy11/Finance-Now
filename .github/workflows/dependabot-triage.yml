@@ -25,8 +25,17 @@ name: Dependabot triage
 # call. In-scope PRs are sent as ONE request, not one per PR. Effort is `low`,
 # which is the documented setting for routine classification work.
 #
-# Requires the ANTHROPIC_API_KEY repository secret. Without it the job warns and
-# exits 0 — a missing key must not paint the repo red every Tuesday.
+# Requires the FN_TESTING repository secret (owner's naming, 2026-09-16 — it holds
+# a testing-scoped Anthropic key, and the name says so). It is mapped onto the
+# standard ANTHROPIC_API_KEY env var below, so the script and the app read the
+# same variable name regardless of what the secret is called.
+#
+# ⚠ The LOCAL key keeps the standard name. frontend/.env.local must define
+# ANTHROPIC_API_KEY — that is what getProviderKey('anthropic') resolves and what
+# `npm run agent-eval` checks for. Only the GitHub secret is named differently.
+#
+# Without the secret the job warns and exits 0 — a missing key must not paint the
+# repo red every Tuesday.
 
 on:
   # Tuesday 14:00 UTC. dependabot opens its PRs Monday (see .github/dependabot.yml,
@@ -47,7 +56,9 @@ jobs:
       - name: Triage open dependabot PRs
         uses: actions/github-script@v7
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # Secret is FN_TESTING; the env var keeps the standard name so the
+          # script is portable and matches how the app reads the key locally.
+          ANTHROPIC_API_KEY: ${{ secrets.FN_TESTING }}
         with:
           script: |
             const { owner, repo } = context.repo
@@ -143,7 +154,7 @@ jobs:
             if (!key) {
               // Not a failure. The secret may simply not be set yet, and a red X
               // every Tuesday teaches people to ignore this workflow.
-              core.warning('ANTHROPIC_API_KEY is not set — skipping the triage summary. Set it in Settings → Secrets and variables → Actions.')
+              core.warning('No Anthropic key — skipping the triage summary. This job reads the FN_TESTING repository secret (Settings → Secrets and variables → Actions) and maps it onto ANTHROPIC_API_KEY.')
               await core.summary
                 .addHeading('Dependabot triage', 3)
                 .addRaw('`ANTHROPIC_API_KEY` is not configured, so no summary was generated.\n\n')
