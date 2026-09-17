@@ -179,7 +179,16 @@ describe('provenance', () => {
     expect(p.prohibited).toBe(SOURCE_TERMS.filter((e) => e.verdict === 'prohibited').length)
     expect(p.needsReview).toBe(0)
 
-    const later = new Date(NOW.getTime() + (SOURCE_TERMS_REVIEW_AFTER_DAYS + 30) * 86_400_000)
+    // Measure the window from the NEWEST entry, not from NOW. NOW is a fixed
+    // 2026-08-06 fixture and the registry keeps being added to after it — an
+    // entry read on 2026-09-15 is only ~170 days old at NOW+210 and is still
+    // legitimately inside its window. Anchoring on NOW made this assertion
+    // quietly depend on nobody ever reading a document again, which is the
+    // opposite of what the registry is for.
+    const newest = SOURCE_TERMS.reduce((a, b) => (a.reviewedAt >= b.reviewedAt ? a : b))
+    const later = new Date(
+      Date.parse(`${newest.reviewedAt}T12:00:00Z`) + (SOURCE_TERMS_REVIEW_AFTER_DAYS + 30) * 86_400_000
+    )
     expect(getSourceTermsProvenance(later).needsReview).toBe(SOURCE_TERMS.length)
     expect(getSourceTermsProvenance(later).stale).toBe(true)
   })

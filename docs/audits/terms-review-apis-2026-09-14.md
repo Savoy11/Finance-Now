@@ -274,6 +274,11 @@ product. Nothing in Finance Now does that, but a "composite fee index" or simila
 
 ## Three remain unread, and why
 
+> **⚠ SUPERSEDED 2026-09-15 — two of the three are now read, and one of them changed a
+> verdict. Read the "T-252 closed" addendum at the end of this document before relying on
+> anything in this section.** It is kept unedited because the reason the first attempt
+> failed turned out to be wrong in an instructive way.
+
 Poloniex, LBank and XT.com are all client-rendered, and unlike Bitget and Tiingo they
 resisted the browser too — Poloniex's footer "User Agreement" is a JS-routed control that
 did not navigate on click, and the direct `/terms-of-use/` path 404s. Rather than keep
@@ -299,3 +304,220 @@ terms from within the docs site itself.
 **Five for five.** The wording differs; the line does not. This is no longer a pattern
 that might not hold — it is the industry's standard posture, and the D3 launch ruling has
 to be measured against all five at once rather than source by source.
+
+---
+
+# Addendum — T-252 closed, 2026-09-15
+
+Read on the owner's machine, clean residential US egress, VPN off. Two of the three
+remaining hosts are now read; the third is unread for a reason that matters more than the
+reading would have. **T-252 is closed.**
+
+## The method note first, because it explains the previous failure
+
+The 2026-09-14 pass recorded Poloniex's footer "User Agreement" as *"a JS-routed control
+that did not navigate on click"*. That diagnosis was wrong. It is an ordinary
+`<a href="/support/terms">`; the click handler is broken, but the `href` was in the DOM
+the whole time. Enumerating anchors and reading their `href` — rather than driving the UI
+and observing what happens — found Poloniex's document in one step and LBank's in two.
+
+Worth generalising: **when a page is client-rendered, read the DOM, don't drive it.** The
+earlier attempt failed at the interaction layer and recorded the result as a property of
+the document's availability. That is the same category error as the three wrong network
+attributions in CLAUDE.md — one observation read as a property of the world.
+
+## T-252b Poloniex — READ, and it broke the pattern
+
+**Operative document:** `https://www.poloniex.com/support/terms` — Poloniex User
+Agreement, last revised **2026-04-01**. The registry previously pointed at
+`api-docs.poloniex.com`, which is API documentation.
+
+**It binds without an account.** "Services" is defined to include "use the Poloniex
+Application Programming Interface ( "API" )", and acceptance reads:
+
+> By registering for a Poloniex account ( "Account" ) **or using any of the Services**,
+> you agree that you have read, understood and accept all of the terms and conditions
+> contained in this Agreement
+
+Same access-binds shape as Bitfinex's Market Data Terms. Calling `api.poloniex.com`
+keylessly and anonymously is inside its scope.
+
+**§9 API USE is the finding:**
+
+> Subject to your compliance with this Agreement…, Polo hereby grants you a limited,
+> revocable, non-exclusive, non-transferable, non-sublicensable license, to use the API
+> **solely for the purposes of trading on Poloniex**. You agree not to use the API or data
+> provided through the API **for any other commercial purpose**.
+
+**§23 RESTRICTED ACTIVITIES** adds, among the prohibited activities: "use a web crawler or
+similar technique to access our Services or to extract data".
+
+### Why this is `prohibited` and not a tighter `conditional`
+
+The five sources read before it — FMP, Twelve Data, Tiingo, Bitget, Bitfinex — all say
+some version of *internal use only*. That is a **condition on a licence we hold**, which
+is what `conditional` is for, and it is why the FMP entry carries an explicit warning
+against reflexively flipping to `prohibited`.
+
+Poloniex is a different shape. It grants a licence **solely for trading on Poloniex**.
+Finance Now does not trade on Poloniex, so the withdrawal-fee overlay is not a licensed
+use failing a condition — it is **outside the grant entirely**. There is no licence here
+to condition.
+
+The "five for five" conclusion in the main document was right about the five and wrong as
+a forecast. The `seeded` flag existed precisely to stop that forecast becoming a record,
+and on the sixth source it paid for itself.
+
+### What was removed
+
+Owner decision, 2026-09-15: record it as `prohibited`. Consequences, all landed together
+because the registry's design requires it — a prohibited host in `dataSources.ts` fails
+`__tests__/sourceTerms.test.ts`, and `assertSourceNotProhibited` in `pinnedFetch` would
+refuse the call at the socket regardless:
+
+| File | Change |
+|---|---|
+| `lib/server/sourceTerms.ts` | Entry moved to the PROHIBITED block; `verified`, confidence `high`, real `termsUrl` |
+| `lib/data/dataSources.ts` | Poloniex provider removed from the `withdraw-fees` entry |
+| `lib/server/withdrawFeeAdapters.ts` | `parsePoloniexCurrencies` deleted; source removed from `WITHDRAW_FEE_SOURCES` |
+| `__tests__/withdrawFeeAdapters.test.ts` | Parser tests replaced by a four-assertion removal guard |
+
+This is the Yahoo precedent (2026-08-06) applied a second time, and the same reasoning
+applies to the deleted parser: an unused parser is an invitation to re-register the
+source.
+
+**The overlay loses 31 of its ~280 live rows.** Poloniex's endpoint answers fine — that is
+exactly what makes the guard worth having, because a source removed on terms looks, to a
+later reader, like a working endpoint someone forgot to wire up.
+
+> **⚠ OPEN, and deliberately not acted on: the static `transferFees.ts` Poloniex rows.**
+> They were left in place. Several carry the note *"the stored value is a 2026-08-22
+> reading"* — one day after this endpoint was wired up, and `WITHDRAW_FEE_SOURCES`
+> records the owner probe of **2026-08-22** returning 31 Poloniex rows. That is
+> suggestive, not established. Nobody has checked whether those hand-maintained values
+> were copied from the API or read from Poloniex's published fee page, and the two have
+> different answers under §9. **Someone should establish the provenance before the next
+> `TRANSFER_FEES_LAST_VERIFIED` bump.** It is not a deletion decision to make on a
+> suspicion.
+
+## T-252c LBank — READ, and it does not reach us
+
+**Operative document:** `https://www.lbank.com/support/articles/21436496711705` — LBank
+User Service Agreement, dated **2026-07-22**. The footer's "Terms of Use" link points at a
+support *section* listing several articles; this is the operative one inside it. The
+registry previously pointed at `lbank.com/docs/index.html`, which is API documentation.
+
+Two findings that pull in opposite directions.
+
+**1. Its acceptance clause is triggered only by registration.**
+
+> By clicking "Agree and Register" on the LBank registration page and **completing the
+> full registration process** to obtain an LBank account and password, the User is deemed
+> to have fully read, understood, and accepted all terms of this Agreement. This Agreement
+> shall become effective **immediately upon such completion**.
+
+Registration is the only trigger named. We never register. And the agreement contains
+**no API clause at all** — the only occurrence of "API" in the document is a footer
+navigation link.
+
+**2. The IP claim does not depend on the contract.**
+
+> All intellectual property rights in the content on the LBank platform, including but not
+> limited to platform logos, **databases**, website design, text, graphics, software…are
+> owned by LBank. Users shall not reproduce, modify, copy, distribute, or use any of the
+> foregoing materials or content **for commercial purposes**.
+
+> Any authorized browsing, copying, printing, or distribution of content on the LBank
+> platform **must not be used for commercial purposes**, and all usage of such content or
+> any portion thereof must include the applicable copyright notice.
+
+So there is no contractual bar on an anonymous keyless caller, but there is a standing
+ownership claim over the data itself — "databases" is named explicitly — that survives the
+absence of a contract. It lands in the same place as every other read source (fine
+internally, unresolved for public display) by a different route.
+
+Recorded as `conditional` / `verified` / confidence **medium** — medium on a document read
+end-to-end, because the *reading* is solid and the *conclusion* has a genuine interpretive
+seam. A third condition was added naming the database IP claim.
+
+### Three documents, three different binding triggers
+
+Worth stating plainly, because it is the second forecast this exercise has falsified:
+
+| Source | Bound by |
+|---|---|
+| Bitfinex | **Access** — "By accessing or using the Bitfinex Market Data, you agree to be legally bound" |
+| Poloniex | **Use of the Services**, API use named in the definition |
+| LBank | **Completing registration**, and nothing else |
+
+Do not generalise the trigger from one document to the next any more than the licence
+shape.
+
+## T-252d XT.com — UNREAD, and the reason is the finding
+
+`https://www.xt.com/` redirects to `/en/restrict`:
+
+> We have detected that your IP is located in a restricted area for XT services. Due to
+> relevant laws and regulations, **XT does not provide services in your country or
+> region.**
+
+The page offers a "click here to attempt logging in" bypass. **It was not used.**
+
+**No terms document is reachable.** Five approaches, all exhausted:
+
+| # | Approach | Result |
+|---|---|---|
+| 1 | `www.xt.com` footer | Geo-redirect; zero anchors rendered |
+| 2 | `doc.xt.com` (the registered `termsUrl`) | Docusaurus API docs, zero legal links |
+| 3 | `/sitemap/en.xml` | 33,246 URLs; 4,697 non-price; **not one** terms/legal/privacy page |
+| 4 | `/en/accounts/register` | i18n keys only (`register.terms`, `register.agreeTermsAndPolicy`) — URLs resolve client-side from a locale bundle |
+| 5 | 12 conventional paths | `/en/terms`, `/en/legal`, `/en/agreement`, `/en/userAgreement`… all 404 |
+
+`robots.txt` is fully permissive (`User-agent: *` / `Allow: /`) — a machine-readable
+signal, and not a licence.
+
+**Recorded as: entry annotated, verdict `conditional`, review stays `seeded`, confidence
+stays `low`, and `reviewedAt` deliberately LEFT at 2026-08-21.** Bumping the date would
+buy another 180 days of silence from the staleness report on the strength of a search that
+failed — the exact laundering `sourceTerms.ts`'s header exists to prevent.
+
+**The geo-block is the real finding, and it is a decision, not a terms question.** It is a
+second instance of the unresolved Bitget US-prohibition item, and a harder one: Bitget's
+prohibition is written, XT's is *enforced at the edge*. Both belong to the same owner
+decision in `docs/decisions/2026-09-14-owner-decisions.md`.
+
+## The systemic `termsUrl` defect is now fully closed
+
+The 2026-09-14 pass found that all five withdraw-fee entries pointed `termsUrl` at API
+documentation, every one returning HTTP 200, so every probe ever run scored them "terms
+reachable". Final state:
+
+| Entry | Now points at | Status |
+|---|---|---|
+| `bitget.com` | The terms document | Fixed 2026-09-14 |
+| `bitfinex.com` | Market Data Terms | Fixed 2026-09-14 |
+| `poloniex.com` | `/support/terms` | **Fixed 2026-09-15** |
+| `lbkex.com` | The User Service Agreement | **Fixed 2026-09-15** |
+| `xt.com` | Still `doc.xt.com` | **Known-wrong, annotated** — XT publishes nothing to replace it with |
+
+Four of five fixed. The fifth cannot be fixed, which is itself worth recording: the
+registry has **no null state** for "this operator publishes no reachable terms", so a
+known-wrong URL sits there with a comment telling the reader its 200 means nothing.
+Worth considering an explicit `termsUrl: null` with a required reason.
+
+## Six sources read. The tally, corrected
+
+| Source | Licence shape | Binds on |
+|---|---|---|
+| FMP | Personal use only; multi-user display needs a specific agreement | — |
+| Twelve Data | Internal Use; third-party display needs a tier or agreement | — |
+| Tiingo | "internal consumption only"; redistribution on request, with fees | — |
+| Bitget | "non-commercial personal or internal business use" | — |
+| Bitfinex | "personal and/or internal use"; redistribution prohibited | Access |
+| **Poloniex** | **Licence solely for TRADING ON POLONIEX; no other commercial purpose** | Use of Services |
+| **LBank** | No API clause; database IP claim bars commercial reproduction | Registration only |
+
+**Five of five became six of seven.** The internal-use pattern held for five sources and
+then did not. The practical lesson is the one the main document already stated as a
+caution and can now state as a result: *the pattern is not evidence about the next
+source.*

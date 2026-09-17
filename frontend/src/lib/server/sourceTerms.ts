@@ -182,6 +182,55 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     review: 'verified',
     confidence: 'high',
   },
+  {
+    domain: 'poloniex.com',
+    name: 'Poloniex (public market-data API)',
+    verdict: 'prohibited',
+    // ✅ READ 2026-09-15 on the owner's machine. The URL this entry used to
+    // carry (api-docs.poloniex.com) was API DOCUMENTATION and returned 200, so
+    // every probe scored it "terms reachable". It never was. The 2026-09-14 pass
+    // recorded the footer "User Agreement" as a JS-routed control that would not
+    // navigate on click — it is a plain <a href="/support/terms">. Reading the
+    // href instead of driving the UI found the document in one step.
+    //
+    // ⚠ THIS ONE BROKE THE PATTERN. The five sources read before it (FMP, Twelve
+    // Data, Tiingo, Bitget, Bitfinex) all said "internal use only" — a CONDITION
+    // on a licence we hold. Poloniex does not grant that licence at all:
+    //
+    //   §9 API USE — "a limited, revocable, non-exclusive, non-transferable,
+    //   non-sublicensable license, to use the API SOLELY FOR THE PURPOSES OF
+    //   TRADING ON POLONIEX. You agree not to use the API or data provided
+    //   through the API for any other commercial purpose."
+    //
+    // Finance Now does not trade on Poloniex, so the withdraw-fee overlay falls
+    // OUTSIDE the grant rather than failing a condition inside it. That is the
+    // whole reason this is 'prohibited' and not 'conditional' with a tighter
+    // condition. Contrast the FMP entry below, where the live question is §2.2.2
+    // multi-user DISPLAY at launch and 'conditional' is the honest interim —
+    // there, a licence exists to condition; here there is none.
+    //
+    // It binds WITHOUT an account. "Services" is defined to include "use the
+    // Poloniex Application Programming Interface", and acceptance is "By
+    // registering for a Poloniex account OR USING ANY OF THE SERVICES" — the
+    // same access-binds shape Bitfinex's Market Data Terms take.
+    //
+    // §23 RESTRICTED ACTIVITIES separately bars "a web crawler or similar
+    // technique to access our Services or to extract data".
+    //
+    // Consequence: the Poloniex withdraw-fee adapter and its dataSources
+    // provider were removed 2026-09-15, the way Yahoo went on 2026-08-06. The
+    // hand-maintained transferFees.ts rows were LEFT IN PLACE and are a separate
+    // open question — see the audit; several carry 2026-08-22 readings taken one
+    // day after this endpoint was wired up, and nobody has established whether
+    // they were copied from the API or from the published fee page.
+    // Full reading: docs/audits/terms-review-apis-2026-09-14.md
+    termsUrl: 'https://www.poloniex.com/support/terms',
+    finding:
+      'User Agreement, last revised 2026-04-01, read in full on the owner\'s machine 2026-09-15. §9 grants a licence to use the API "solely for the purposes of trading on Poloniex" and forbids using the API or data obtained through it "for any other commercial purpose" — the withdrawal-fee overlay is neither trading on Poloniex nor covered by any other grant in the document. The agreement binds on use of the Services, which expressly includes API use, rather than on holding an account, so an anonymous keyless call to api.poloniex.com is inside its scope. §23 separately prohibits using a web crawler or similar technique to access the Services or to extract data. This is the first of six exchange/provider terms read for this project that does not fit a conditional verdict. Removed as a data source 2026-09-15.',
+    reviewedAt: '2026-09-15',
+    review: 'verified',
+    confidence: 'high',
+  },
 
   // ── CONDITIONAL ────────────────────────────────────────────────────────────
   {
@@ -341,15 +390,28 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     verdict: 'conditional',
     // ✅ FOUND AND READ 2026-09-14 in a browser (the SPA renders the footer link only
     // there; nine guessed paths across two sessions all missed /tos).
-    // ⚠ 1.6(a) STARTER PLANS describes what this code does TODAY, not at launch:
+    // ⚠ 1.6(a) STARTER PLANS — RESOLVED AND ACTED ON 2026-09-15:
     // "you may not write, save, archive, back up, or otherwise retain Tiingo Data in
     // any persistent or durable storage ... only transiently in volatile memory or in
-    // a temporary, non-persistent cache". security-ohlcv and security-returns both
-    // fetch api.tiingo.com with Next's `next: { revalidate: N }`, which is a DURABLE
-    // ON-DISK cache under .next/cache. On a Starter plan that is what the clause
-    // forbids. Establish which plan the configured key is on before changing anything;
-    // if Starter, revalidate should go to 0 on those two routes at the cost of more
-    // upstream requests.
+    // a temporary, non-persistent cache", removed "immediately after the calculation
+    // or operation is completed".
+    //
+    // OWNER DECISION 2026-09-15: development runs on the STARTER plan. So §1.6(a)
+    // binds, and `security-ohlcv` + `security-returns` now fetch api.tiingo.com with
+    // `next: { revalidate: 0 }` — Next's revalidate persists to .next/cache on disk,
+    // which is the case the clause names. Guarded by
+    // __tests__/tiingoUncached.test.ts, which reads the route sources, because this
+    // is the kind of constraint a later performance pass silently reverses.
+    //
+    // ⚠ At the time this was settled NO TIINGO KEY WAS CONFIGURED (.provider-config
+    // carried `configs.tiingo.enabled: true` and no apiKey; no env var either), so
+    // nothing had been fetched and nothing was in breach. It also means trailing
+    // returns — whose ONLY source is Tiingo — currently serve `source: 'none'`.
+    // Adding the Starter key is what revives them.
+    //
+    // The strict reading also rules out an in-process LRU as a substitute for the
+    // disk cache: "immediately after the operation is completed" leaves no room for
+    // a cross-request TTL, however volatile the memory.
     // 7.3: "All data via the API is for internal consumption only... Redistribution is
     // only available upon special request and permission, and comes with additional
     // fees" — the FMP/Twelve Data/Bitget pattern again. If redistribution is ever
@@ -606,39 +668,52 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     confidence: 'low',
   },
   {
-    domain: 'poloniex.com',
-    name: 'Poloniex (public market-data API)',
-    verdict: 'conditional',
-    // ⚠ This URL is API DOCUMENTATION, not a terms document — it returns 200, so
-    // every probe scored it "terms reachable". It never was. Unread as of 2026-09-14:
-    // poloniex.com is client-rendered, its footer "User Agreement" is a JS-routed
-    // control that does not navigate on click, and /terms-of-use/ 404s. Do NOT assume
-    // its terms match the internal-use-only shape the other five share, however
-    // consistent that pattern looks — that assumption is what `seeded` exists to
-    // prevent. Next step is the docs site, which usually links the operative terms.
-    termsUrl: 'https://api-docs.poloniex.com/',
-    finding:
-      'Publishes a documented public REST API; the currencies reference (incl. withdrawal fees) is documented as unauthenticated. Seeded from the published API documentation — the exchange ToS have not been read for this project, and the endpoint itself is unprobed (see the Bybit removal: a seeded public claim loses to the owner probe).',
-    conditions: ['Respect documented rate limits', 'Keyless public endpoints only — no authenticated endpoints (RP-5)'],
-    reviewedAt: '2026-08-21',
-    review: 'seeded',
-    confidence: 'low',
-  },
-  {
     domain: 'lbkex.com',
     name: 'LBank (public market-data API)',
     verdict: 'conditional',
-    // ⚠ API DOCUMENTATION, not terms — returns 200, so probes scored it reachable.
-    // Unread as of 2026-09-14: client-rendered, no terms link extractable. Same
-    // caution as poloniex — the pattern across five read sources is not evidence
-    // about this one.
-    termsUrl: 'https://www.lbank.com/docs/index.html',
+    // ✅ READ 2026-09-15 on the owner's machine. The previous URL was API
+    // DOCUMENTATION, not terms. The footer "Terms of Use" link points at a
+    // support SECTION (a list of articles); the operative document is the User
+    // Service Agreement article inside it, dated 2026-07-22.
+    //
+    // Two findings that pull in opposite directions, which is why confidence is
+    // 'medium' on a document that was read end-to-end:
+    //
+    //  1. BY ITS OWN ACCEPTANCE CLAUSE IT DOES NOT REACH US. "By clicking
+    //     'Agree and Register' on the LBank registration page and completing the
+    //     full registration process to obtain an LBank account and password, the
+    //     User is deemed to have… accepted all terms… This Agreement shall
+    //     become effective immediately upon such completion." Registration is
+    //     the ONLY trigger named. We never register. Contrast Bitfinex (binds on
+    //     access) and Poloniex (binds on use of the Services) — three documents,
+    //     three different trigger shapes. Do not generalise the trigger.
+    //     There is NO API clause anywhere in the agreement.
+    //
+    //  2. THE IP CLAIM DOES NOT DEPEND ON THE CONTRACT. "All intellectual
+    //     property rights in the content on the LBank platform, including but
+    //     not limited to platform logos, DATABASES, website design, text…are
+    //     owned by LBank. Users shall not reproduce, modify, copy, distribute,
+    //     or use any of the foregoing materials or content for commercial
+    //     purposes." And: "Any authorized browsing, copying, printing, or
+    //     distribution of content on the LBank platform must not be used for
+    //     commercial purposes."
+    //
+    // So there is no contractual bar on an anonymous keyless caller, but there
+    // is a standing ownership claim over the data itself that survives the
+    // absence of a contract. That lands in the same place as the other reads —
+    // fine for internal/personal use, unresolved for public display — by a
+    // different route. Full reading: docs/audits/terms-review-apis-2026-09-14.md
+    termsUrl: 'https://www.lbank.com/support/articles/21436496711705',
     finding:
-      'Publishes a documented public REST API; withdrawConfigs is documented as an unauthenticated public endpoint. Seeded from the published API documentation — the exchange ToS have not been read for this project, and the endpoint itself is unprobed (see the Bybit removal: a seeded public claim loses to the owner probe).',
-    conditions: ['Respect documented rate limits', 'Keyless public endpoints only — no authenticated endpoints (RP-5)'],
-    reviewedAt: '2026-08-21',
-    review: 'seeded',
-    confidence: 'low',
+      'LBank User Service Agreement, dated 2026-07-22, read in full on the owner\'s machine 2026-09-15. It contains no API clause at all, and its acceptance clause is triggered only by completing registration ("By clicking \'Agree and Register\'… and completing the full registration process… This Agreement shall become effective immediately upon such completion"), so on its own terms it does not bind an anonymous keyless caller to api.lbkex.com. What does apply regardless of contract is the Intellectual Property section, which claims ownership of "databases" among the platform content and states that users "shall not reproduce, modify, copy, distribute, or use any of the foregoing materials or content for commercial purposes", adding that even authorised copying or distribution "must not be used for commercial purposes". Internal and personal use is untouched; public commercial display is the open question, as with every other source read.',
+    conditions: [
+      'Respect documented rate limits',
+      'Keyless public endpoints only — no authenticated endpoints (RP-5)',
+      'No commercial reproduction or distribution of the data: LBank claims database IP independently of the user agreement, and that claim binds without registration',
+    ],
+    reviewedAt: '2026-09-15',
+    review: 'verified',
+    confidence: 'medium',
   },
   {
     domain: 'bitfinex.com',
@@ -659,7 +734,7 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     // Full reading: docs/audits/terms-review-apis-2026-09-14.md
     termsUrl: 'https://www.bitfinex.com/legal/general/market-data/',
     finding:
-      'Publishes a documented public REST API; the v2 public conf endpoints (incl. the currency tx-fee map) are documented as unauthenticated. Seeded from the published API documentation — the exchange ToS have not been read for this project, and the endpoint itself is unprobed (see the Bybit removal: a seeded public claim loses to the owner probe).',
+      'Market Data Terms of Use (updated 2022-07-06) READ IN FULL on the owner\'s machine 2026-09-14. They are the operative document, not the API Terms of Service: the API Terms require an account we do not hold ("you must first sign up for an Account"), and point onward to the Market Data Terms for what we actually consume. Those bind on ACCESS rather than on holding an account — "By accessing or using the Bitfinex Market Data, you agree to be legally bound". Permitted Use is "personal and/or internal use", "general informational purposes", or price/market analysis; Prohibited Use (g) bars distributing or disseminating the data "to any party for any reason" absent written consent, and (b)/(c) bar building a financial benchmark, reference rate or index. Internal use is expressly permitted; whether showing the data to the app\'s own users is "disseminating to a party" is the open question shared with every other source. `review` remains `seeded` pending owner ratification of the 2026-09-14 readings, NOT because the document is unread.',
     conditions: ['Respect documented rate limits', 'Keyless public endpoints only — no authenticated endpoints (RP-5)'],
     reviewedAt: '2026-08-21',
     review: 'seeded',
@@ -669,13 +744,50 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     domain: 'xt.com',
     name: 'XT.com (public market-data API)',
     verdict: 'conditional',
-    // ⚠ API DOCUMENTATION, not terms — returns 200, so probes scored it reachable.
-    // Unread as of 2026-09-14: client-rendered, no terms link extractable. Same
-    // caution as poloniex.
+    // ⚠ STILL UNREAD, and `reviewedAt` is deliberately LEFT at the 2026-08-21
+    // seed date. The entry text below was rewritten 2026-09-15 with new
+    // first-hand observations, but no terms document was read, and bumping the
+    // date would buy another 180 days of silence from the staleness report on
+    // the strength of a search that FAILED. That is precisely the laundering
+    // this file's header exists to prevent.
+    //
+    // ⚠ XT GEO-BLOCKS THIS REGION OUTRIGHT. Observed 2026-09-15 from the owner's
+    // clean residential US egress, VPN off: https://www.xt.com/ redirects to
+    // /en/restrict — "We have detected that your IP is located in a restricted
+    // area for XT services. Due to relevant laws and regulations, XT does not
+    // provide services in your country or region." The page offers a
+    // "click here to attempt logging in" bypass. It was NOT used.
+    //
+    // This is a harder case than Bitget's US prohibition, which is written but
+    // not enforced at the edge. XT's is enforced. Both feed the same open owner
+    // question; see docs/decisions/2026-09-14-owner-decisions.md.
+    //
+    // NO TERMS DOCUMENT IS REACHABLE. Five approaches, all exhausted 2026-09-15:
+    //   1. www.xt.com footer          → geo-redirect, zero anchors rendered
+    //   2. doc.xt.com (this URL)      → Docusaurus API docs, zero legal links
+    //   3. /sitemap/en.xml            → 33,246 URLs, 4,697 of them non-price,
+    //                                   and NOT ONE terms/legal/privacy page
+    //   4. /en/accounts/register      → i18n keys only (register.terms,
+    //                                   register.agreeTermsAndPolicy); the URLs
+    //                                   resolve client-side from a locale bundle
+    //   5. 12 conventional paths      → /en/terms, /en/legal, /en/agreement,
+    //                                   /en/userAgreement … all 404
+    // robots.txt is fully permissive ("User-agent: * / Allow: /"), which is a
+    // machine-readable signal and not a licence.
+    //
+    // The termsUrl below remains API documentation. It is KNOWN-WRONG and kept
+    // only because XT publishes no document to replace it with — the registry
+    // has no null state for "this operator publishes no reachable terms". Treat
+    // its HTTP 200 as meaningless; that false signal is the exact defect the
+    // 2026-09-14 pass found across all five withdraw-fee entries.
     termsUrl: 'https://doc.xt.com/',
     finding:
-      'Publishes a documented public REST API; the public wallet-support currency endpoint is documented as unauthenticated. Seeded from the published API documentation — the exchange ToS have not been read for this project, and the endpoint itself is unprobed (see the Bybit removal: a seeded public claim loses to the owner probe).',
-    conditions: ['Respect documented rate limits', 'Keyless public endpoints only — no authenticated endpoints (RP-5)'],
+      'Publishes a documented public REST API; the public wallet-support currency endpoint is documented as unauthenticated. Seeded from the published API documentation — the exchange ToS have NOT been read, and as of 2026-09-15 no terms document is reachable at all: XT publishes none in its 33k-URL sitemap, twelve conventional paths 404, and the docs site carries no legal links. Separately and more importantly, XT geo-blocks the owner\'s US residential egress outright ("XT does not provide services in your country or region"), which makes it a second and stronger instance of the unresolved Bitget US-prohibition question rather than a pure terms matter. The endpoint itself remains unprobed (see the Bybit removal: a seeded public claim loses to the owner probe).',
+    conditions: [
+      'Respect documented rate limits',
+      'Keyless public endpoints only — no authenticated endpoints (RP-5)',
+      'UNRESOLVED: XT states it does not provide services in this region — the owner-decision question, not a condition code can enforce',
+    ],
     reviewedAt: '2026-08-21',
     review: 'seeded',
     confidence: 'low',
@@ -686,7 +798,7 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     verdict: 'conditional',
     termsUrl: 'https://www.publicnode.com/',
     finding:
-      'Operates free, keyless public JSON-RPC gateways for ~75 chains, advertised for open public use with no signup or API key. Used here for a single eth_gasPrice read per chain per revalidate window — far inside any reasonable public-endpoint budget. Seeded from the service\'s publicly advertised posture; the terms document has not been read for this project, and the endpoints themselves are unprobed from this environment.',
+      'Operates free, keyless public JSON-RPC gateways for ~75 chains, advertised for open public use with no signup or API key. Used here for a single eth_gasPrice read per chain per revalidate window — far inside any reasonable public-endpoint budget. TERMS READ on the owner\'s machine 2026-09-14, and they are the broadest clause found in any source: the user agrees not to "modify, copy, frame, scrape, rent, lease, loan, sell, re-use, display, distribute, transmit, publish, re-publish, distribute or create derivative works based on the Service or the Service Content commercially and non-commercially". Read literally that prohibits using the service at all, since an RPC provider\'s entire product is answering RPC calls and any consumer necessarily re-uses the response — which cannot be the intent, and is exactly why this is an owner judgement rather than a maintainer\'s reading. Scope limits the exposure: one route (/live-data/wallet/eth), and /wallets is already hidden from rollout. `review` remains `seeded` pending that judgement, NOT because the document is unread.',
     conditions: [
       'Read-only public JSON-RPC methods only',
       'One request per chain per revalidate window — do not poll',

@@ -936,6 +936,43 @@ the probe's map drifts from the route's.
 > pools with no key in the map. Adding them means new keys in the static table and
 > on the staking page — a feature, not this cleanup.
 
+**Agent evaluation (owner machine — D20, needs `ANTHROPIC_API_KEY`):**
+
+```bash
+npm run agent-eval                 # PLAN only — prints what would run, spends nothing
+npm run agent-eval -- --run        # actually runs all 11. This costs money.
+npm run agent-eval -- --run --only equity-research
+```
+
+`scripts/run-agent-eval.mjs` runs each of the 11 agents once on a **fixed** task and
+writes `agent-eval-worksheet.md` with a blank verdict box per agent — the same
+report-never-tune split as the fee scripts, because D20 says the owner judges. It
+never edits a prompt, a model or a temperature.
+
+**The default does nothing on purpose.** Every run bills, and the failure mode for an
+eval harness is being invoked by accident, so reaching the API takes an explicit
+`--run`. Tasks are fixed rather than generated: an eval whose inputs move cannot be
+compared across runs, which is the whole point of having one before a prompt change.
+
+Exit codes follow the probe convention — **2 is inconclusive** (dev server down, no
+key configured), **1** is a real failure. A dev server that is not running says
+nothing about agent quality.
+
+⚠ **Read the worksheet next to a fresh `npm run audit`.** Agent tools read the same
+`/live-data` routes the UI does, so a vague answer off a FALLBACK route is a DATA
+problem and tuning the prompt fixes the wrong layer. The worksheet records which
+tools each agent actually called; **an agent that called none answered from its own
+weights**, which is the specific failure worth catching — the text can read perfectly
+well and still be untethered from this app's data.
+
+⚠ **All 11 agents default to `claude-sonnet-4-6`** (`lib/agents/prompts.ts`), which is
+previous-generation. `claude-sonnet-5` is both more capable and **cheaper** — $2/$10
+per MTok against Sonnet 4.6's $3/$15 — so the upgrade lowers the bill rather than
+raising it. Deliberately NOT changed here: the model list is owner configuration, and
+an eval run against one model tells you nothing about prompts on another. Decide the
+model first, then run the eval, or the results describe a config you are about to
+replace.
+
 **⚠ Data-availability results are IP-dependent — audits MUST run on the owner's machine.**
 LunarCrush blocks datacenter IPs and the cloud gateway blocks most provider hosts outright, so a
 cloud or CI run produces a systematically wrong baseline of "which sources work." Code reading,

@@ -170,8 +170,12 @@ export async function fetchTiingoQuotes(symbols: string[]): Promise<Record<strin
   const quotes: Record<string, SecurityQuote> = {}
   for (const group of chunk(symbols, 50)) {
     const res = await fetch(
+      // ⚠ UNCACHED — Tiingo Starter ToS §1.6(a) forbids retaining Tiingo Data in
+      // durable storage, and Next's `revalidate` persists to `.next/cache` on disk.
+      // This was `revalidate: 60`. See lib/server/sourceTerms.ts (tiingo.com) and
+      // __tests__/tiingoUncached.test.ts, which enforces it across the source tree.
       `https://api.tiingo.com/iex/?tickers=${group.join(',').toLowerCase()}&token=${key}`,
-      { headers: { Accept: 'application/json' }, next: { revalidate: 60 } }
+      { headers: { Accept: 'application/json' }, next: { revalidate: 0 } }
     )
     if (!res.ok) throw new Error(`Tiingo ${res.status}`)
     const rows = await res.json() as Array<{
@@ -496,8 +500,10 @@ export async function fetchTiingoChart(symbol: string, range: ChartRange): Promi
   const key = requireKey('tiingo')
   const start = new Date(Date.now() - RANGE_DAYS[range] * 1.5 * 86_400_000).toISOString().slice(0, 10)
   const res = await fetch(
+    // ⚠ UNCACHED — Tiingo Starter ToS §1.6(a); was `revalidate: 300`. Next's
+    // Data Cache is on disk, which the clause names. See sourceTerms.ts.
     `https://api.tiingo.com/tiingo/daily/${encodeURIComponent(symbol.toLowerCase())}/prices?startDate=${start}&token=${key}`,
-    { headers: { Accept: 'application/json' }, next: { revalidate: 300 } }
+    { headers: { Accept: 'application/json' }, next: { revalidate: 0 } }
   )
   if (!res.ok) throw new Error(`Tiingo chart ${res.status}`)
   const rows = await res.json() as Array<{ date: string; close: number; adjClose?: number }>

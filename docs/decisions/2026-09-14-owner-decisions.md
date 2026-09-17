@@ -159,6 +159,18 @@ are executable from here.
 - T-250 — Recurring: re-read source verdicts before the 180-day window (oldest 2026-08-06) and quarterly licence re-chec
 - T-251 — publicnode.com terms — seeded low confidence, needs a read
 - T-252 — Batch-2 withdraw-fee exchange hosts — terms seeded LOW, read each
+  - **✅ CLOSED 2026-09-15.** All five read or resolved. Poloniex §9 licenses its API
+    "solely for the purposes of trading on Poloniex" → verdict `prohibited`, source
+    removed (owner decision, same day). LBank read — binds only on registration, but
+    claims database IP independently. XT.com publishes no reachable terms AND geo-blocks
+    this region outright, so it stays `seeded` with `reviewedAt` unmoved. Record:
+    `docs/audits/terms-review-apis-2026-09-14.md` (addendum, 2026-09-15).
+  - ⚠ **XT's geo-block joins the open Bitget US-prohibition question below** — Bitget's is
+    written, XT's is enforced at the edge. One decision, now covering two sources.
+  - ⚠ **New, unassigned:** establish whether the hand-maintained Poloniex rows in
+    `transferFees.ts` were copied from the now-prohibited API (several are dated
+    2026-08-22, the day of the owner probe) or read from the published fee page. Needed
+    before the next `TRANSFER_FEES_LAST_VERIFIED` bump.
 
 ### Fees / catalogs / hand-maintained data (2)
 
@@ -200,3 +212,118 @@ are executable from here.
 - D20 — run the 11 agents once; collect outputs for the owner to judge
 - D6 — configure the weekly dependabot triage (needs `ANTHROPIC_API_KEY` as a repo secret)
 - The 20 terms readings and the remaining probes above
+
+**Session record — 2026-09-15/16**
+
+Written down because this session opened by recovering five outstanding items
+from a PowerShell session that died mid-task. A list that lives only in a
+terminal is one crash from being gone.
+
+**The list behind the list.** Before that session died, the work was being driven
+off `finance-now-open-tasks-2026-09-08.json` — a verified task queue generated
+2026-09-07 at `main_sha 2128a18`: 398 tasks merged from 566 raw items, **338
+outstanding** (172 open / 90 parked / 75 blocked / 1 unclear), 162 blocking
+decisions, and 60 items the docs still presented as open that verification found
+done. Every `T-###` in this document, the audits and the queue-verification pass
+refers to that file. **It was never committed**, which is why the ids were
+unfindable in the repo on 2026-09-15; it lives in an upload folder. The five
+recovered items below are a subset of it. Its 338 has not been re-verified
+against current `main` — the 2026-09-10 pass proposed 15 more closures and the
+D1–D20 rulings parked or closed well over a hundred — and its own `known_gaps`
+says 52 verdicts had no tie-break, so the number is a floor, not a count.
+
+**How many of the 338 are done — determined 2026-09-16.** From this document's own
+ledger above (338 → −77 → −205 → 57), the two verified-closure audits
+(`queue-verification-sweep-2026-09-11.md`, `queue-closure-review-2026-09-13.md`), every
+ruling resolved to ids through the queue's `blocking_decisions` map, and git since
+2026-09-14. "Settled by rulings" is not "completed" — the 205 mixes done, parked,
+declined and answered — so it is split here.
+
+| Tier | Count | Evidence |
+|---|---|---|
+| Completed, independently re-verified | **77** | 62 re-checked file-and-line on 2026-09-13, 0 regressions; 15 closed in #178/#179 |
+| Completed by ruling, landed 2026-09-15 | **35** | D10/D11/D14/D15/D16/D17 (16 named ids) + D2's 19 backend items, via #191–#193. **Never re-verified the 09-13 way** |
+| Completed this session | **4** | T-252, T-241 (from the 57); T-234 (D6 workflow built); T-338 cascade |
+| **Completed** | **116** | **34% of 338** |
+| Read, pending ratification | 14 | Done in fact 2026-09-14; `review` not flipped — owner's act |
+| Closed without doing | 2 | T-136 not chosen; T-323 declined |
+| Decisions answered, items reframed | ~8 | D3 (5), D12 (2), T-290 |
+| Parked by ruling — not done until rollout | ~158 | D1 + cascades, D4, D5, D7, D8, D9, D13, D18, D19. Consistent with the queue's own 165 parked+blocked at generation |
+| Genuinely open | ~41 | The 57 minus what moved; each needs the owner's machine, keys, or a vendor reply |
+
+The ledger's rows sum to 339 (one item double-counted; immaterial). The tiers are not
+equally solid: the 77 were adversarially re-verified, the 35 merged but not re-checked,
+and the 158 depends on cluster boundaries — a widened keyword match returns 72 for D1
+against the ~56 above.
+
+| Queue id | Was (2026-09-07) | After this session |
+|---|---|---|
+| T-252 | open, owner-machine | **Closed** |
+| T-241 | open, owner-machine | **Closed** — read, enforced, then Tiingo dropped as optional |
+| T-234 | open, owner-decision | **Closed** — D6; triage workflow built |
+| T-323 | blocked, owner-decision | **Closed as declined** under D6 |
+| T-236 | open, owner-machine | Mostly — secret scanning + push protection on; branch protection already enforced the 09-15 merges |
+| T-001 | open, either | Built (D20 harness); run and assessment pending |
+| T-130 | open, owner-machine | Instrumented — harness records tool calls; the test waits on the run |
+| T-129, T-006, T-102, T-397, T-398 | open | Still open; T-006 is now the prerequisite for the coverage matrix |
+
+| Recovered item | State |
+|---|---|
+| T-252 — Poloniex / LBank / XT terms | **Closed.** Poloniex `prohibited` and removed; LBank read; XT geo-blocks this region and publishes no reachable terms |
+| Tiingo plan question | **Closed.** Starter is the free tier; all five call sites uncached per §1.6(a); Tiingo then settled as optional and not added |
+| Dependabot alerts + dependency graph | **Closed** 2026-09-16, plus security updates, secret scanning and push protection (half of T-236) |
+| D6 — `ANTHROPIC_API_KEY` secret | **Closed.** Secret set — and the workflow that consumes it did not exist, so it was built |
+| D20 — run the 11 agents | **Built, not run.** `npm run agent-eval` (dry run by default). Needs the key in `frontend/.env.local` and the model decision below |
+
+**GitHub settings changed 2026-09-16:** dependency graph, Dependabot alerts,
+Dependabot security updates, Secret Protection and push protection all enabled.
+Enabling them surfaced **26 open alerts** — 20 in `mcp-server/package-lock.json`,
+3 in `frontend`, 2 in `backend/poetry.lock` — and opened five security PRs, taking
+open PRs from 6 to 11.
+
+⚠ **Alerts still scan `backend/poetry.lock`.** #193 removed the pip ecosystem from
+`dependabot.yml`, which stops the PRs; it cannot stop alerts, because the lockfile
+is still in the tree (frozen, not deleted, per the standing no-deletion rule).
+Expect a permanent trickle of alerts against a directory nothing runs.
+
+**Open, and each waiting on the owner:**
+
+- **Agent model.** All 11 agents default to `claude-sonnet-4-6`. `claude-sonnet-5`
+  is more capable *and* cheaper ($2/$10 per MTok vs $3/$15). Decide BEFORE D20
+  runs — an eval against a model you are about to replace describes nothing useful.
+- **Terms ratification.** 18 documents read on 2026-09-14; the registry still shows
+  4 of 56 `verified`, because both audits say flipping `review` is the owner's act.
+- **Distribution model.** BYOK is the working model; a turn-key edition is scoped
+  alongside it. Both scopings exist as private artifacts on the owner's account.
+- **The coverage matrix** — which providers, in combination, make every value live.
+  Unblocked, needs no key, and it is the input to the BYOK decision because it
+  produces the number of accounts a user would have to open.
+- **`transferFees.ts` Poloniex provenance** — copied from the now-prohibited API,
+  or read from the published fee page? Several rows are dated the day of the owner
+  probe. Establish before the next `TRANSFER_FEES_LAST_VERIFIED` bump.
+
+**Scheduled together — owner, 2026-09-15**
+
+D20 and the market-data licensing research are one working block, at the owner's
+request. They share a prerequisite worth doing first: **D20 needs
+`ANTHROPIC_API_KEY`, and so does D6.** Setting the key up ahead of that block
+reduces it to "run and judge" rather than "configure, then run, then judge".
+
+The licensing work is scoped and its findings are recorded; what remains is
+research, not analysis. Scoping document (private artifact, owner's account):
+<https://claude.ai/artifact/ABpR3UNJe5BQmVGpWZuR3a>
+
+Its headline: **the provider question is a distribution question.** Nothing can
+be priced until it is settled whether the app is self-hosted (users hold their
+own keys — which is what the current architecture already implements), hosted on
+the owner's keys (needs display agreements, from ~$399/mo), or hosted with
+per-user keys (which would reverse RP-5's removal of third-party key custody).
+
+⚠ Carried into that block, from the 2026-09-15 reading of FMP's own guidance:
+**D3's "development now, public-facing at launch" may not be the safe harbour it
+reads as.** FMP states that purpose and sponsoring organisation decide
+commercial use, not deployment stage — "a private prototype can still be
+commercial when it supports an employer, startup, agency… or client". The remedy
+vendors name is an authorised commercial evaluation licence, usually free. That
+is the cheapest item on the whole agenda and it is worth doing whichever
+distribution model wins.
