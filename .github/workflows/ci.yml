@@ -221,14 +221,40 @@ jobs:
       # brace-expansion DoS) sat in the tree with a green Security Scan beside
       # them. A check that cannot fail is not a check.
       #
-      # Threshold is `high`, not `moderate`: the four remaining moderates all
-      # come from esbuild via drizzle-kit, a build-time-only tool, and clearing
-      # them needs a breaking drizzle-kit downgrade. Gating on moderate would
-      # make the first action be to disable the gate again.
-      - name: Node.js dependency audit
+      # Threshold RAISED to `moderate` on 2026-09-17, because the reason for
+      # `high` no longer holds. That reason was: the four remaining moderates
+      # came from esbuild via drizzle-kit and clearing them needed a breaking
+      # drizzle-kit downgrade, so gating on moderate would make the first
+      # action be to disable the gate again. They are now cleared WITHOUT the
+      # downgrade — an override scoped to @esbuild-kit/core-utils, which leaves
+      # drizzle-kit's own esbuild alone (see frontend/package.json overrides and
+      # docs/audits/dependency-alerts-2026-09-17.md). Both workspaces audit
+      # clean, so `moderate` costs nothing today and catches the next one.
+      #
+      # Deliberately NOT `low`: the same argument that retired `high` applies
+      # one notch down. A gate that goes red on a single low-severity transitive
+      # advisory is a gate someone disables, and then nothing is checked at all.
+      - name: Node.js dependency audit (frontend)
         run: |
           cd frontend
-          npm audit --audit-level=high
+          npm audit --audit-level=moderate
+
+      # mcp-server was audited by NOTHING until 2026-09-17 — no workflow in this
+      # repo so much as named the directory. That is where 20 of the 26 alerts
+      # in the 2026-09-16 sweep lived, and it is the workspace most likely to
+      # drift: it is built once, rarely rebuilt, and its two direct dependencies
+      # pull everything else transitively, so `npm audit` on the frontend says
+      # nothing whatsoever about it.
+      #
+      # No `npm ci` needed: `npm audit` resolves from package-lock.json alone,
+      # verified against this repo's own pre-fix lockfile — it reported all five
+      # advisories and exited 1 on a bare directory containing nothing but the
+      # two manifests. That also demonstrates this step fires rather than merely
+      # passing quietly: the commit before it was added would have failed it.
+      - name: Node.js dependency audit (mcp-server)
+        run: |
+          cd mcp-server
+          npm audit --audit-level=moderate
 
   # ─── Infrastructure: Terraform Validate ───────────────────────────────────
   terraform-validate:
