@@ -154,13 +154,25 @@ async function preflight() {
 
   // The key can come from .env.local (Next loads it) or the Integrations page,
   // so its absence from this process's env proves nothing. Ask the app instead.
+  // The key can come from .env.local (Next loads it) or the Integrations page,
+  // so its absence from this process's env proves nothing. Ask the app instead.
+  //
+  // ⚠ Asymmetric on purpose. /live-data/config computes hasKey as
+  // `!!config.apiKey` — the Integrations store only, never the environment —
+  // while the agent routes fall back to ANTHROPIC_API_KEY through
+  // getProviderKey. So `true` means configured; anything else means "not in the
+  // store, and .env.local may or may not carry it". That is never grounds to
+  // refuse to run: the first agent settles it in one call, and a preflight that
+  // blocks on it would stop every setup that uses the documented .env.local
+  // path. (Before 2026-09-17 this read cfg.configs.anthropic, a shape the route
+  // has never returned, so it reported "unknown" unconditionally.)
   let keyConfigured = null
   try {
     const res = await fetch(`${BASE}/live-data/config`, { signal: AbortSignal.timeout(8000) })
     if (res.ok) {
       const cfg = await res.json()
-      const anth = cfg?.configs?.anthropic ?? cfg?.anthropic ?? null
-      keyConfigured = anth ? Boolean(anth.hasKey ?? anth.configured ?? anth.enabled) : null
+      const anth = Array.isArray(cfg?.providers) ? cfg.providers.find((p) => p?.id === 'anthropic') : null
+      if (anth) keyConfigured = anth.config?.hasKey === true
     }
   } catch { /* leave unknown */ }
 
@@ -236,7 +248,7 @@ async function main() {
 
   console.log('Preflight')
   console.log(`  dev server           ${serverUp ? 'up' : 'NOT ANSWERING'}`)
-  console.log(`  anthropic key        ${keyConfigured === null ? 'unknown (could not read config)' : keyConfigured ? 'configured' : 'NOT CONFIGURED'}`)
+  console.log(`  anthropic key        ${keyConfigured === true ? 'configured in Integrations' : keyConfigured === false ? 'not in Integrations — .env.local may still supply it' : 'unknown (could not read config)'}`)
   console.log(`  agent model          ${AGENT_MODEL_LABEL} (the default in lib/agents/prompts.ts, for all 11)`)
   console.log('')
 
