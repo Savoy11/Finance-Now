@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { loadAgentConfig } from '@/lib/agents/config'
+import { DEFAULT_ANTHROPIC_MODEL } from '@/lib/agents/prompts'
 import { guardSensitiveRoute } from '@/lib/server/apiGuard'
 import { getProviderKey } from '@/lib/api/live/providers'
 
@@ -141,7 +142,7 @@ export async function POST(req: NextRequest) {
   // Load agent config (respects any overrides saved in AI Agents tab)
   const agentCfg = loadAgentConfig('pump-report-investigator')
   const systemPrompt = agentCfg?.systemPrompt ?? buildSystem(target, targetType)
-  const model        = agentCfg?.model        ?? 'claude-sonnet-4-6'
+  const model        = agentCfg?.model        ?? DEFAULT_ANTHROPIC_MODEL
   const temperature  = agentCfg?.temperature  ?? 0.2
 
   // Inject target into system prompt if it contains a placeholder, else append target context

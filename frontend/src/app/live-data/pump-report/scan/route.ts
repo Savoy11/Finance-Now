@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { guardSensitiveRoute } from '@/lib/server/apiGuard'
 import { getProviderKey } from '@/lib/api/live/providers'
+import { DEFAULT_ANTHROPIC_MODEL } from '@/lib/agents/prompts'
 import { SCAN_TARGET_CAP } from '@/lib/pumpReport/scanLimits'
 
 export const dynamic = 'force-dynamic'
@@ -65,7 +66,7 @@ Risk level guide:
 
   try {
     const response = await client.messages.create({
-      model: 'claude-sonnet-4-6',
+      model: DEFAULT_ANTHROPIC_MODEL,
       max_tokens: 1024,
       system: systemPrompt,
 

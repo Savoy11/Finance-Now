@@ -458,6 +458,17 @@ export interface SecurityChart {
   fiftyTwoWeekHigh: number | null
   fiftyTwoWeekLow: number | null
   currency: string
+  /**
+   * Whether the closes are split/dividend adjusted.
+   *
+   * Travels with the response because the ladder's rungs disagree and always
+   * have: Tiingo serves `adjClose`, FMP and Twelve Data serve raw closes. The
+   * docstring on fetchTiingoChart says a chart and a candlestick of the same
+   * symbol must not disagree across a split — true, and the FMP rung has been
+   * quietly breaking it since it took over. Naming the basis does not fix that,
+   * but it stops the mismatch being invisible to everything downstream.
+   */
+  basis: 'adjusted' | 'unadjusted'
 }
 
 /** Trading days to keep per range — both chart fetchers slice to this. */
@@ -466,13 +477,19 @@ const RANGE_DAYS: Record<ChartRange, number> = {
 }
 
 /** 52-week high/low and previous close from a sorted, ascending close series. */
-function summarize(symbol: string, range: ChartRange, points: ChartPoint[]): SecurityChart {
+function summarize(
+  symbol: string,
+  range: ChartRange,
+  points: ChartPoint[],
+  basis: SecurityChart['basis'],
+): SecurityChart {
   const closes = points.map((p) => p.close)
   const lastYear = closes.slice(-260)
   return {
     symbol: symbol.toUpperCase(),
     range,
     points,
+    basis,
     previousClose: closes.length >= 2 ? closes[closes.length - 2] : null,
     // A 1-month chart genuinely does not contain a 52-week range. Reporting the
     // max of 22 bars as `fiftyTwoWeekHigh` would be a wrong number, not a
@@ -514,7 +531,7 @@ export async function fetchTiingoChart(symbol: string, range: ChartRange): Promi
     .sort((a, b) => a.t - b.t)
     .slice(-RANGE_DAYS[range])
   if (points.length === 0) throw new Error('Tiingo chart: no points')
-  return summarize(symbol, range, points)
+  return summarize(symbol, range, points, 'adjusted')
 }
 
 export async function fetchFmpChart(symbol: string, range: ChartRange): Promise<SecurityChart> {
@@ -533,25 +550,80 @@ export async function fetchFmpChart(symbol: string, range: ChartRange): Promise<
     .sort((a, b) => a.t - b.t)
     .slice(-RANGE_DAYS[range])
   if (points.length === 0) throw new Error('FMP chart: no points')
-  return summarize(symbol, range, points)
+  return summarize(symbol, range, points, 'unadjusted')
 }
 
 /**
- * Price-history ladder: Tiingo → FMP, each rung skipped when it has no key.
+ * Twelve Data end-of-day closes — the rung that covers what FMP will not serve.
+ *
+ * Measured 2026-09-18 against the key already configured: FMP's free tier
+ * answers `historical-price-eod/full` for ordinary equities and SPY, and returns
+ * HTTP 402 — "not available under your current subscription" — for QQQ, VOO and
+ * VTSAX. Twelve Data serves all three. Without this rung those symbols have no
+ * chart at all: the ladder exhausts and the route reports unavailable, which is
+ * every Vanguard ETF and every mutual fund in the Funds module.
+ *
+ * Added under D21 (owner, 2026-09-18): no provider may be load-bearing, and for
+ * price history FMP was.
+ *
+ * ⚠ UNADJUSTED. Twelve Data's `time_series` returns raw OHLC — `datetime, open,
+ * high, low, close, volume` — and `adjust=all` changes nothing in the response.
+ * So this rung cannot honour the adjusted basis fetchTiingoChart documents. That
+ * is not a regression it introduces: the rung above it, FMP, is unadjusted too
+ * and is what serves today. It is why `basis` now travels with the response.
+ */
+export async function fetchTwelveDataChart(symbol: string, range: ChartRange): Promise<SecurityChart> {
+  const key = requireKey('twelve-data')
+  // Free tier caps outputsize at 5000; 'max' asks for more than that.
+  const size = Math.min(RANGE_DAYS[range], 5000)
+  const res = await fetch(
+    `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(symbol)}&interval=1day&outputsize=${size}&apikey=${key}`,
+    { next: { revalidate: 300 } }
+  )
+  if (!res.ok) throw new Error(`Twelve Data chart ${res.status}`)
+  const payload = await res.json() as {
+    status?: string
+    message?: string
+    values?: Array<{ datetime: string; close: string }>
+  }
+  // Twelve Data reports failures inside a 200 body, so status is checked before
+  // `values`. Reading values first would surface "empty result" for what is
+  // really a bad symbol or an exhausted credit budget — the ladder would move on
+  // and the real reason would never reach the log.
+  if (payload.status === 'error') throw new Error(`Twelve Data chart: ${payload.message ?? 'unspecified error'}`)
+  const rows = payload.values ?? []
+  if (rows.length === 0) throw new Error('Twelve Data chart: empty result')
+  const points = rows
+    .map((row) => ({ t: new Date(row.datetime).getTime(), close: parseFloat(row.close) }))
+    .filter((p) => Number.isFinite(p.t) && Number.isFinite(p.close))
+    .sort((a, b) => a.t - b.t)
+    .slice(-RANGE_DAYS[range])
+  if (points.length === 0) throw new Error('Twelve Data chart: no points')
+  return summarize(symbol, range, points, 'unadjusted')
+}
+
+/**
+ * Price-history ladder: Tiingo → FMP → Twelve Data, each rung skipped when it
+ * has no key.
  *
  * Per-leg try/catch rather than allSettled — this is a fallback ladder, and
- * firing both burns the smaller allowance for nothing (CLAUDE.md, "Resilient
- * multi-fetch"). When neither rung has a key this throws, and
+ * firing all three burns the smaller allowances for nothing (CLAUDE.md,
+ * "Resilient multi-fetch"). When no rung has a key this throws, and
  * /live-data/security-chart returns ok:false so the UI shows LiveUnavailable
  * instead of an empty chart that reads as "flat".
+ *
+ * Order is deliberate: Tiingo first because it is the only rung with adjusted
+ * closes, then FMP, then Twelve Data — which exists to catch FMP's 402s on ETFs
+ * and mutual funds, so it belongs after the rung it rescues rather than before.
  */
 export async function fetchSecurityChart(symbol: string, range: ChartRange): Promise<SecurityChart & { source: string }> {
   let lastError: Error = new Error(
-    'No price-history provider is configured. Add a Tiingo or FMP key on the Integrations page.'
+    'No price-history provider is configured. Add a Tiingo, FMP or Twelve Data key on the Integrations page.'
   )
   for (const attempt of [
     { key: 'tiingo', run: () => fetchTiingoChart(symbol, range) },
     { key: 'fmp', run: () => fetchFmpChart(symbol, range) },
+    { key: 'twelve-data', run: () => fetchTwelveDataChart(symbol, range) },
   ]) {
     if (!getProviderKey(attempt.key)) continue
     try {

@@ -310,13 +310,15 @@ const tests = [
     return `${(j.alerts ?? []).length} alerts`
   }},
 
-  { group: 'crypto/market', path: '/live-data/cbdc-data', name: 'cbdc-data', check: (j) => {
-    const arr = j.countries ?? []
-    if (!Array.isArray(arr) || arr.length === 0) throw new Error('no countries')
-    if (j.source === 'fallback') {
-      return fallback(`${arr.length} countries from static table (live CBDC news feed unavailable)`)
-    }
-    return `${arr.length} countries, source=${j.source}`
+  // D10 (owner decision, 2026-09-14): the /global-adoption page and this route
+  // were CUT, and #191 deleted them. The test stayed behind, so every audit since
+  // has carried a red FAIL for a route that is gone on purpose — a permanent
+  // false alarm in the one report whose job is to make real failures obvious.
+  // Kept rather than deleted, as a reinstatement guard, in the same shape as
+  // risk-scores (RP-6) and wallet/exchange-connections (RP-5).
+  { group: 'crypto/market', path: '/live-data/cbdc-data', name: 'cbdc-data (withdrawn D10)', expectStatus: 404, check: (j, s) => {
+    if (s === 404) return 'correctly gone — /global-adoption and this route cut 2026-09-14 (D10)'
+    throw new Error(`expected 404 (route was cut under D10); got ${s} — has the route been reinstated?`)
   }},
 
   // ── Staking ─────────────────────────────────────────────────────────────────
