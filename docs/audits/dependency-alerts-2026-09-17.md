@@ -218,11 +218,23 @@ TypeError: Cannot read properties of null (reading 'edgesOut')
     at #loadPeerSet (@npmcli/arborist/lib/arborist/build-ideal-tree.js:1289)
 ```
 
-That is an npm bug, not a project fault, and it affects `npm install` only.
-`npm ci` under npm 10 consumes the regenerated lockfile without complaint
-(verified), and CI runs Node 24 — which ships npm 11 — so neither CI nor a
-Windows machine on npm 10 is affected. Anyone hitting it locally can use
-`npm ci`, or `npx npm@11 install`.
+That is an npm bug, not a project fault, and the boundary is narrower than it
+first looks — **this note originally said it "affects `npm install` only",
+which reads as a warning to consumers and is wrong.** Measured both sides
+(2026-09-18):
+
+| npm 10.9.7 does this | Result |
+|---|---|
+| RESOLVE the upgrade itself — `package.json` says `^4.1.11`, lockfile still says 3.2.6 | **crashes** |
+| CONSUME the finished lockfile — `npm install` onto an existing vitest-3 tree | **works**, upgrades to 4.1.11 |
+| CONSUME the finished lockfile — `npm ci` from scratch | **works** |
+
+So the crash only happens while *generating* this bump, which is why it was hit
+here and is why the lockfile was regenerated with npm 11. **Nobody pulling the
+finished branch is affected**, on either command, at any npm version — and CI
+runs Node 24, which ships npm 11, regardless. The one case that still needs
+`npx npm@11 install` is changing a dependency that forces npm 10 to re-resolve
+that peer graph from ranges again.
 
 ### The vitest 4 JSX trap
 
