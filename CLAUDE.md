@@ -965,13 +965,16 @@ tools each agent actually called; **an agent that called none answered from its 
 weights**, which is the specific failure worth catching — the text can read perfectly
 well and still be untethered from this app's data.
 
-⚠ **All 11 agents default to `claude-sonnet-4-6`** (`lib/agents/prompts.ts`), which is
-previous-generation. `claude-sonnet-5` is both more capable and **cheaper** — $2/$10
-per MTok against Sonnet 4.6's $3/$15 — so the upgrade lowers the bill rather than
-raising it. Deliberately NOT changed here: the model list is owner configuration, and
-an eval run against one model tells you nothing about prompts on another. Decide the
-model first, then run the eval, or the results describe a config you are about to
-replace.
+⚠ **All 11 agents default to `claude-sonnet-5`**, from the single constant
+`DEFAULT_ANTHROPIC_MODEL` in `lib/agents/prompts.ts` — the agent defaults, the
+Integrations picker's first entry, the three `pump-report` route fallbacks and the eval
+worksheet's header all read it, so the id exists in one place and a swap cannot
+half-land. Owner decision 2026-09-17, taken **before** D20's run on purpose: an eval
+against a model you are about to replace describes a config that will not exist by the
+time anyone reads it. Sonnet 5 is newer than the 4.6 it replaces and **cheaper** — $2/$10
+per MTok against $3/$15 — so the upgrade lowers the bill rather than raising it. The
+picker's Opus option moved to `claude-opus-5` in the same pass. Haiku's dated id is
+deliberately untouched: it works, and it is not what this decision was about.
 
 **⚠ Data-availability results are IP-dependent — audits MUST run on the owner's machine.**
 LunarCrush blocks datacenter IPs and the cloud gateway blocks most provider hosts outright, so a

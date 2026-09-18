@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { loadAgentConfig } from '@/lib/agents/config'
+import { DEFAULT_ANTHROPIC_MODEL } from '@/lib/agents/prompts'
 import { guardSensitiveRoute } from '@/lib/server/apiGuard'
 import { getProviderKey } from '@/lib/api/live/providers'
 
@@ -42,7 +43,7 @@ export async function POST(req: NextRequest) {
   // Load agent config — picks up any overrides saved from the AI Agents tab
   const agentCfg   = loadAgentConfig('pump-report-chat')
   const baseSystem = agentCfg?.systemPrompt ?? ''
-  const model      = agentCfg?.model        ?? 'claude-sonnet-4-6'
+  const model      = agentCfg?.model        ?? DEFAULT_ANTHROPIC_MODEL
   const temperature = agentCfg?.temperature ?? 0.3
 
   const systemWithContext = context
