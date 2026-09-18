@@ -41,7 +41,8 @@
     "fee-reconcile": "tsx scripts/reconcile-transfer-fees.ts",
     "fee-apply": "tsx scripts/apply-fee-updates.ts",
     "fund-prospectus-fees": "node scripts/probe-fund-prospectus-fees.mjs",
-    "agent-eval": "node scripts/run-agent-eval.mjs"
+    "agent-eval": "node scripts/run-agent-eval.mjs",
+    "staking:refresh-fallbacks": "node scripts/refresh-staking-fallbacks.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.125.0",

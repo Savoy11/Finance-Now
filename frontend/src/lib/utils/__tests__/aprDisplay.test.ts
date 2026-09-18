@@ -83,3 +83,37 @@ describe('resolveLiveAprKey', () => {
     expect(resolveLiveAprKey(provider('cefi'), 'sol', undefined)).toBeUndefined()
   })
 })
+
+describe('aprDisplay — an expired measurement shows no number', () => {
+  // Owner decision 2026-09-18: a measured fallback older than 14 days is
+  // withheld by /live-data/staking-rates rather than served. These cover the
+  // display half, and the trap in it.
+
+  it('returns null rather than falling back to the catalog estimate', () => {
+    // The trap: staticApr is the LESS dated of the two values, so falling back
+    // to it would defeat the expiry while looking like a graceful degrade.
+    expect(aprDisplay(4.2, 'lido_eth', {}, {}, { lido_eth: 'estimate-expired' }))
+      .toEqual({ apr: null, live: false, gap: 'estimate-expired' })
+  })
+
+  it('returns null even if a value is somehow still present in rates', () => {
+    // Defence in depth. The route deletes the rate, but the reason is what
+    // carries the decision — a consumer that got both must honour the reason.
+    expect(aprDisplay(4.2, 'lido_eth', { lido_eth: 3.1 }, { lido_eth: 'estimate' }, { lido_eth: 'estimate-expired' }))
+      .toEqual({ apr: null, live: false, gap: 'estimate-expired' })
+  })
+
+  it('never expires a live reading', () => {
+    // An expiry that could swallow a live number would be far worse than the
+    // staleness it prevents.
+    expect(aprDisplay(4.2, 'lido_eth', { lido_eth: 3.1 }, { lido_eth: 'live' }, { lido_eth: 'estimate-expired' }))
+      .toEqual({ apr: 3.1, live: true })
+  })
+
+  it('leaves the undated hand-maintained estimates alone', () => {
+    // The 24 unmeasured keys are out of scope by owner decision: gating a date
+    // they have never had would blank half the catalog.
+    expect(aprDisplay(4.2, undefined, {}, {}, {}))
+      .toEqual({ apr: 4.2, live: false, gap: 'curated-estimate' })
+  })
+})

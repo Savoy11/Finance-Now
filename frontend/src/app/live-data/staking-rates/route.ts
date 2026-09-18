@@ -195,6 +195,38 @@ const FALLBACK: Record<string, number> = {
 const FALLBACK_MEASURED_ON = '2026-09-18'
 
 /**
+ * How long a measured reading stays worth publishing. Owner decision 2026-09-18.
+ *
+ * Chosen from measurement, not taste. Two readings nine days apart (2026-09-09
+ * and 2026-09-18, 27 keys) put 74% within ±10% and 89% within ±25%, with three
+ * keys past 25% — one at +134%. Fourteen days is about one more of those periods:
+ * enough slack to not demand weekly upkeep, short enough that a second period
+ * cannot compound before the value is withheld.
+ *
+ * ⚠ This bounds ONLY the keys in FALLBACK_MEASURED. The other 24 are undated
+ * hand-written figures for desks that publish a rate on a marketing page and
+ * nowhere machine-readable; they report `curated-estimate`, which says exactly
+ * that, and gating them on a date they have never had would blank half the
+ * catalog to solve a problem they do not have. Giving them their own dated
+ * provenance is separate, open work.
+ *
+ * ⚠ It also bites ONLY when an upstream has failed. With all 7 upstreams live,
+ * as on both measurement days, no fallback is served and this changes nothing.
+ * It is a floor under the worst case — an outage on top of a neglected table —
+ * which is the exact combination that published yields up to 20× real in the
+ * 2026-09-09 finding.
+ */
+const FALLBACK_STALE_AFTER_DAYS = 14
+
+/** True when `key`'s stored reading is measured but older than the window. */
+function expiredMeasurement(key: string, now: Date = new Date()): boolean {
+  if (!FALLBACK_MEASURED.has(key)) return false
+  const measured = Date.parse(`${FALLBACK_MEASURED_ON}T00:00:00Z`)
+  if (Number.isNaN(measured)) return false
+  return now.getTime() - measured > FALLBACK_STALE_AFTER_DAYS * 86_400_000
+}
+
+/**
  * Exactly which keys FALLBACK_MEASURED_ON covers — every other key in FALLBACK
  * is an undated legacy estimate. Kept as an explicit list rather than derived
  * at runtime from `sources`, because "was this number ever checked by a human
@@ -643,7 +675,15 @@ export async function GET() {
   const gaps: Partial<Record<string, GapReasonId>> = {}
   for (const key of Object.keys(FALLBACK)) {
     if (sources[key] === 'live') continue
-    gaps[key] = GAP_BY_KEY[key] ?? 'upstream-failed'
+    gaps[key] = expiredMeasurement(key) ? 'estimate-expired' : (GAP_BY_KEY[key] ?? 'upstream-failed')
+  }
+
+  // An expired reading is withheld, not published. Leaving the number in `rates`
+  // and only flagging it in `gaps` would put the decision on every consumer, and
+  // the v1 route and the staking page each resolve their own APR — two places to
+  // forget. Withheld here, both fall through to their own "no live number" path.
+  for (const key of Object.keys(gaps)) {
+    if (gaps[key] === 'estimate-expired') delete rates[key]
   }
 
   return NextResponse.json({

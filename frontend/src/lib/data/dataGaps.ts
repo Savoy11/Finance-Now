@@ -55,6 +55,7 @@ export type GapReasonId =
   | 'robots-gated'
   | 'geo-blocked'
   | 'not-filed'
+  | 'estimate-expired'
 
 export interface GapReason {
   id: GapReasonId
@@ -130,6 +131,17 @@ export const GAP_REASONS: Record<GapReasonId, GapReason> = {
       'Accurate as of its verification date, not as of now.',
     fixability: 'by-design',
     fix: 'Confirm the current figure with the provider before acting on it.',
+  },
+  'estimate-expired': {
+    id: 'estimate-expired',
+    chip: 'old',
+    label: 'Stored reading too old to show',
+    why:
+      'A live source covers this and is not answering, so the app would normally fall ' +
+      'back to its last measured reading — but that reading is older than the window ' +
+      'the value stays meaningful for, so no number is shown instead of a stale one.',
+    fixability: 'transient',
+    fix: 'Re-measure from the owner machine: npm run staking:refresh-fallbacks.',
   },
   'needs-api-key': {
     id: 'needs-api-key',

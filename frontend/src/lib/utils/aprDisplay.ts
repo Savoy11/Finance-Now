@@ -9,7 +9,14 @@ import {
 } from '@/lib/data/stakingProviders'
 
 export interface AprDisplay {
-  apr: number
+  /**
+   * `null` means show no number at all — not zero, and not the catalog's own
+   * estimate. Only `estimate-expired` produces it: the stored reading is older
+   * than the window it stays meaningful for, so withholding it is the point.
+   * Falling back to `staticApr` there would defeat the expiry, because that
+   * value is the *less* dated of the two.
+   */
+  apr: number | null
   live: boolean
   /**
    * Why this row is not a live reading. Undefined when `live` is true.
@@ -40,14 +47,27 @@ export function aprDisplay(
   if (!liveKey) return { apr: staticApr, live: false, gap: 'curated-estimate' }
 
   const live = rates[liveKey]
-  if (live != null) {
-    if (sources[liveKey] === 'live') return { apr: live, live: true }
-    // A number arrived but is not a reading — it is the route's fallback. The
-    // route says why; `upstream-failed` only where it did not, which is the
-    // useful direction to be wrong in (it reports work rather than hiding a
-    // regression behind a known limitation).
-    return { apr: live, live: false, gap: gaps?.[liveKey] ?? 'upstream-failed' }
+  if (live != null && sources[liveKey] === 'live') return { apr: live, live: true }
+
+  // AFTER the live check, deliberately. The route cannot set both today — it
+  // skips `gaps` for live keys — but an expiry that could swallow a live reading
+  // would be worse than the staleness it prevents, and that guarantee should not
+  // rest on another file's control flow.
+  //
+  // Checked before `rates` is read for a value, though, because the route
+  // WITHHOLDS the number it is talking about: there is nothing in `rates` to
+  // notice, and the reason is the only evidence a value was deliberately not
+  // served. Falling through would reach `staticApr` — the less dated of the two
+  // — which defeats the expiry while looking like a graceful degrade.
+  if (gaps?.[liveKey] === 'estimate-expired') {
+    return { apr: null, live: false, gap: 'estimate-expired' }
   }
+
+  // A number arrived but is not a reading — it is the route's fallback. The
+  // route says why; `upstream-failed` only where it did not, which is the
+  // useful direction to be wrong in (it reports work rather than hiding a
+  // regression behind a known limitation).
+  if (live != null) return { apr: live, live: false, gap: gaps?.[liveKey] ?? 'upstream-failed' }
   return { apr: staticApr, live: false, gap: gaps?.[liveKey] ?? 'upstream-failed' }
 }
 
