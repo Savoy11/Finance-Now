@@ -102,6 +102,19 @@ export async function GET(req: NextRequest) {
 
       const effectiveRisks = mergedRisks(provider.risks, asset.assetRisks)
 
+      // ⚠ DIVERGES FROM THE UI, on purpose and pending a ruling.
+      //
+      // Since 2026-09-18 /live-data/staking-rates WITHHOLDS a measured fallback
+      // older than 14 days (gap `estimate-expired`), so `liveApr` is undefined
+      // for those keys and this falls to the catalog's own staticApr. The
+      // expired reading is therefore never published here either — but an
+      // undated catalog estimate is, labelled `estimate`, where the staking page
+      // now renders an em-dash.
+      //
+      // Left this way deliberately: `apr` is non-nullable in the published v1
+      // contract, and narrowing it is the R2 §5.3 class of break that D14 took
+      // only with an explicit owner decision. The divergence is disclosed rather
+      // than hidden, and it is on the owner's list.
       const liveApr = asset.liveAprKey ? liveRates[asset.liveAprKey] : undefined
       const apr     = liveApr ?? asset.staticApr
       // 'derived' = our Lido-anchored estimate for an exchange rate — a live
