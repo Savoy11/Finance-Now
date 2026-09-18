@@ -15,7 +15,7 @@ import {
 import * as withdrawFeeAdapters from '../withdrawFeeAdapters'
 import { checkSourceTerms } from '../sourceTerms'
 import { DATA_SOURCES } from '@/lib/data/dataSources'
-import { EXCHANGES, findTransferPaths, type NetworkFeeMap, type CoinPriceMap } from '@/lib/data/transferFees'
+import { EXCHANGES, SPOT_TRADING_FEES, findTransferPaths, type NetworkFeeMap, type CoinPriceMap } from '@/lib/data/transferFees'
 
 describe('normalizeSymbol', () => {
   it('maps known symbols case-insensitively', () => {
@@ -145,6 +145,29 @@ describe('Poloniex is removed and stays removed', () => {
   it('declares no poloniex host in dataSources', () => {
     const hosts = DATA_SOURCES.flatMap((e) => e.providers.map((p) => p.host).filter(Boolean))
     expect(hosts.filter((h) => /poloniex/i.test(String(h)))).toEqual([])
+  })
+
+  // Added 2026-09-18. The four assertions above guard the SOURCE — the call we
+  // are not licensed to make. They were all green while the curated table still
+  // carried five rows that came OUT of that source: written by the 2026-08-22
+  // reconcile, which read each exchange's own public API, and traced in
+  // docs/audits/poloniex-row-provenance-2026-09-18.md. §9 bars use of the API
+  // "or its data", so stopping the call and keeping the data satisfied half of
+  // it. Owner decision 2026-09-18: remove the exchange outright rather than the
+  // five rows, because the remainder dates from the 2025-06-01 compilation
+  // whose provenance is equally unestablished, and a partially-sourced exchange
+  // in a fee COMPARISON is worse than an absent one.
+
+  it('carries no poloniex entry in the curated withdrawal table', () => {
+    expect(EXCHANGES.map((e) => e.id)).not.toContain('poloniex')
+    expect(EXCHANGES.filter((e) => /poloniex/i.test(e.name))).toEqual([])
+  })
+
+  it('carries no poloniex spot trading fees', () => {
+    // Kept separate: SPOT_TRADING_FEES is a different table with its own
+    // provenance, and removing an exchange from one while leaving it in the
+    // other is the exact half-landing this guard exists to catch.
+    expect(Object.keys(SPOT_TRADING_FEES)).not.toContain('poloniex')
   })
 })
 

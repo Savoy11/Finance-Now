@@ -271,8 +271,17 @@ function ProviderCard({
                 {/* APY */}
                 <div className="flex items-center gap-1 w-28 shrink-0">
                   <TrendingUp size={12} className="text-emerald-400 shrink-0" />
-                  <span className={clsx('text-sm font-bold font-mono', provider.defunct ? 'text-red-400 line-through' : 'text-emerald-400')}>
-                    {provider.defunct ? `${apr.toFixed(1)}%` : `${apr.toFixed(2)}%`}
+                  <span
+                    className={clsx(
+                      'text-sm font-bold font-mono',
+                      apr == null ? 'text-text-tertiary' : provider.defunct ? 'text-red-400 line-through' : 'text-emerald-400',
+                    )}
+                    // An em-dash, not 0% and not the catalog estimate: the stored
+                    // reading expired and withholding it is the whole point. The
+                    // `gap` chip beside this says which, and how to fix it.
+                    title={apr == null ? 'No current reading — the stored value is too old to show' : undefined}
+                  >
+                    {apr == null ? '—' : provider.defunct ? `${apr.toFixed(1)}%` : `${apr.toFixed(2)}%`}
                   </span>
                   {live && !provider.defunct && (
                     <span

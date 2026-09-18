@@ -50,10 +50,10 @@ export interface StakingRatesResponse {
 // ⚠ THIS TABLE IS HALF MEASURED AND HALF LEGACY, AND THE TWO HALVES DO NOT
 //   CARRY THE SAME WEIGHT. Check FALLBACK_MEASURED before trusting a number.
 //
-//   27 of the 51 keys were set on 2026-09-09 from a live reading of this route
-//   on the owner's machine (all 7 upstreams live, defillama-yields 19/19).
-//   Those keys are listed in FALLBACK_MEASURED and dated by
-//   FALLBACK_MEASURED_ON.
+//   27 of the 51 keys are set from a live reading of this route on the owner's
+//   machine — first on 2026-09-09, refreshed 2026-09-18 (both times all 7
+//   upstreams live, defillama-yields 19/19). Those keys are listed in
+//   FALLBACK_MEASURED and dated by FALLBACK_MEASURED_ON.
 //
 //   The other 24 have no upstream and were never measured — they are the
 //   original hand-written estimates, of unknown vintage. FALLBACK_MEASURED_ON
@@ -81,17 +81,37 @@ export interface StakingRatesResponse {
 //     multi-source verification, and staking APRs move daily. That is a real
 //     limit of this refresh, recorded rather than glossed: a dated single
 //     reading still beats an undated estimate that is provably 95% high.
+//
+//   WHAT THE 2026-09-18 REFRESH FOUND (T-397), and it is a finding about the
+//   TABLE rather than about any one row: NINE DAYS of drift moved 19 of the 27
+//   at all, and 3 of them by ≥25% —
+//
+//     puffer_eth    0.92 → 2.15   (+134%)
+//     lombard_btc   0.17 → 0.29    (+71%)
+//     ankr_eth      2.45 → 0.92    (−62%)
+//
+//   Unlike the 2026-09-09 pass, this one is NOT one-directional — 8 rose, 11
+//   fell, 8 did not move at 2dp. That is the difference between correcting a
+//   table that was wrong and re-reading one that is merely old, and it is the
+//   better news of the two: the 09-09 corrections held, and what is left is
+//   ordinary market movement.
+//
+//   The number worth carrying forward is the RATE: a ±134% move in nine days
+//   means a measured fallback is a perishable good, and the staleness that
+//   matters is measured in weeks, not quarters. Anything that reads this table
+//   should prefer `sources[key] === 'live'` and treat a fallback as an
+//   order-of-magnitude answer, which is what the UI's own disclosure says.
 const FALLBACK: Record<string, number> = {
   // ETH liquid staking
-  lido_eth:        2.19,
+  lido_eth:        2.23,
   rocketpool_eth:  2.16,
-  ankr_eth:        2.45,
+  ankr_eth:        0.92,
   coinbase_eth:    3.2,
   kraken_eth:      3.5,
   binance_eth:     3.1,
 
   // Solana
-  marinade_sol:    6.14,
+  marinade_sol:    6.13,
   jito_sol:        4.86,
   native_sol:      6.5,   // generic Solana native staking
 
@@ -140,39 +160,71 @@ const FALLBACK: Record<string, number> = {
 
   // ── Liquid-staking / restaking protocols (live via DeFiLlama Yields) ────────
   // ETH LSTs & restaking
-  frax_eth:         2.7,
-  stakewise_eth:    2.25,
-  stader_eth:       2.31,
-  swell_eth:        0.64,
-  renzo_eth:        2.05,
-  kelp_eth:         2.65,
-  puffer_eth:       0.92,
+  frax_eth:         2.49,
+  stakewise_eth:    2.33,
+  stader_eth:       2.51,
+  swell_eth:        0.56,
+  renzo_eth:        2.22,
+  kelp_eth:         2.41,
+  puffer_eth:       2.15,
   origin_eth:       2.65,
-  bedrock_eth:      2.73,
-  etherfi_eth:      2.54,
+  bedrock_eth:      2.72,
+  etherfi_eth:      2.37,
   // Solana LSTs
-  sanctum_sol:      6.06,
+  sanctum_sol:      5.42,
   ankr_sol:         6.2,
   // Avalanche LSTs
-  benqi_avax:       3.81,
+  benqi_avax:       3.51,
   ankr_avax:        6.32,
   // Polygon / BNB LSTs
-  stader_matic:     2.34,
+  stader_matic:     2.33,
   stader_bnb:       5.0,
   pstake_bnb:       5.5,
-  ankr_bnb:         1.16,
+  ankr_bnb:         0.97,
   // Cosmos LSTs
   quicksilver_atom:13.0,
   pstake_atom:     12.5,
   // Polkadot / Kusama LSTs
-  bifrost_dot:     3.34,
-  bifrost_ksm:     12.03,
+  bifrost_dot:     2.94,
+  bifrost_ksm:     12.04,
   // Bitcoin LST
-  lombard_btc:      0.17,
+  lombard_btc:      0.29,
 }
 
 /** When the FALLBACK_MEASURED keys were read from live upstreams. */
-const FALLBACK_MEASURED_ON = '2026-09-09'
+const FALLBACK_MEASURED_ON = '2026-09-18'
+
+/**
+ * How long a measured reading stays worth publishing. Owner decision 2026-09-18.
+ *
+ * Chosen from measurement, not taste. Two readings nine days apart (2026-09-09
+ * and 2026-09-18, 27 keys) put 74% within ±10% and 89% within ±25%, with three
+ * keys past 25% — one at +134%. Fourteen days is about one more of those periods:
+ * enough slack to not demand weekly upkeep, short enough that a second period
+ * cannot compound before the value is withheld.
+ *
+ * ⚠ This bounds ONLY the keys in FALLBACK_MEASURED. The other 24 are undated
+ * hand-written figures for desks that publish a rate on a marketing page and
+ * nowhere machine-readable; they report `curated-estimate`, which says exactly
+ * that, and gating them on a date they have never had would blank half the
+ * catalog to solve a problem they do not have. Giving them their own dated
+ * provenance is separate, open work.
+ *
+ * ⚠ It also bites ONLY when an upstream has failed. With all 7 upstreams live,
+ * as on both measurement days, no fallback is served and this changes nothing.
+ * It is a floor under the worst case — an outage on top of a neglected table —
+ * which is the exact combination that published yields up to 20× real in the
+ * 2026-09-09 finding.
+ */
+const FALLBACK_STALE_AFTER_DAYS = 14
+
+/** True when `key`'s stored reading is measured but older than the window. */
+function expiredMeasurement(key: string, now: Date = new Date()): boolean {
+  if (!FALLBACK_MEASURED.has(key)) return false
+  const measured = Date.parse(`${FALLBACK_MEASURED_ON}T00:00:00Z`)
+  if (Number.isNaN(measured)) return false
+  return now.getTime() - measured > FALLBACK_STALE_AFTER_DAYS * 86_400_000
+}
 
 /**
  * Exactly which keys FALLBACK_MEASURED_ON covers — every other key in FALLBACK
@@ -623,7 +675,15 @@ export async function GET() {
   const gaps: Partial<Record<string, GapReasonId>> = {}
   for (const key of Object.keys(FALLBACK)) {
     if (sources[key] === 'live') continue
-    gaps[key] = GAP_BY_KEY[key] ?? 'upstream-failed'
+    gaps[key] = expiredMeasurement(key) ? 'estimate-expired' : (GAP_BY_KEY[key] ?? 'upstream-failed')
+  }
+
+  // An expired reading is withheld, not published. Leaving the number in `rates`
+  // and only flagging it in `gaps` would put the decision on every consumer, and
+  // the v1 route and the staking page each resolve their own APR — two places to
+  // forget. Withheld here, both fall through to their own "no live number" path.
+  for (const key of Object.keys(gaps)) {
+    if (gaps[key] === 'estimate-expired') delete rates[key]
   }
 
   return NextResponse.json({

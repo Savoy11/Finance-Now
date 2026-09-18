@@ -125,7 +125,6 @@ export const SPOT_TRADING_FEES: Record<string, SpotTradingFees | null> = {
   azbit:       null,
   toobit:      { makerPct: 0.1, takerPct: 0.1 },
   coinstore:   { makerPct: 0.2, takerPct: 0.2 },
-  poloniex:    { makerPct: 0.145, takerPct: 0.155 },
   bingx:       { makerPct: 0.1, takerPct: 0.1 },
   phemex:      { makerPct: 0.1, takerPct: 0.1 },
   woox:        { makerPct: 0.08, takerPct: 0.1 },
@@ -1558,38 +1557,6 @@ export const EXCHANGES: Exchange[] = [
       ]},
       doge: { networks: [
         { networkId: 'dogecoin', withdrawFee: 5.0,  minWithdraw: 20,  withdrawEnabled: true, depositEnabled: true },
-      ]},
-    },
-  },
-
-  // ─── Poloniex ─────────────────────────────────────────────────────────────
-  {
-    id: 'poloniex', name: 'Poloniex', tier: 2,
-    coins: {
-      btc:  { networks: [
-        { networkId: 'bitcoin',  withdrawFee: 0.000021,  minWithdraw: 0.001, withdrawEnabled: true, depositEnabled: true },
-      ]},
-      eth:  { networks: [
-        { networkId: 'erc20',    withdrawFee: 0.00029903,   minWithdraw: 0.01,  withdrawEnabled: true, depositEnabled: true },
-      ]},
-      usdt: { networks: [
-        { networkId: 'erc20',    withdrawFee: 0.754371, minWithdraw: 50,  withdrawEnabled: true, depositEnabled: true, note: 'Exchange quotes this fee dynamically — the stored value is a 2026-08-22 reading, not a fixed schedule' },
-        { networkId: 'trc20',    withdrawFee: 1.2,  minWithdraw: 10,  withdrawEnabled: true, depositEnabled: true },
-      ]},
-      usdc: { networks: [
-        { networkId: 'erc20',    withdrawFee: 0.753542,  minWithdraw: 20,  withdrawEnabled: true, depositEnabled: true, note: 'Exchange quotes this fee dynamically — the stored value is a 2026-08-22 reading, not a fixed schedule' },
-      ]},
-      xrp:  { networks: [
-        { networkId: 'xrpl',     withdrawFee: 0.2, minWithdraw: 1,   withdrawEnabled: true, depositEnabled: true, note: 'Destination tag required' },
-      ]},
-      trx:  { networks: [
-        { networkId: 'trc20',    withdrawFee: 1.0,  minWithdraw: 10,  withdrawEnabled: true, depositEnabled: true },
-      ]},
-      doge: { networks: [
-        { networkId: 'dogecoin', withdrawFee: 5.0,  minWithdraw: 10,  withdrawEnabled: true, depositEnabled: true },
-      ]},
-      link: { networks: [
-        { networkId: 'erc20',    withdrawFee: 0.06241486,  minWithdraw: 1,   withdrawEnabled: true, depositEnabled: true, note: 'Exchange quotes this fee dynamically — the stored value is a 2026-08-22 reading, not a fixed schedule' },
       ]},
     },
   },
