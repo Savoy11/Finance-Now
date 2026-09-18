@@ -103,8 +103,8 @@ None is a security fix. Each is a genuine major needing its own read.
 |---|---|---|---|
 | #183 | `lucide-react` 1.44→1.45, `eslint-config-next` 16.3.4→16.3.5 | Low — patch/minor only, despite the group name | **Merge.** Not a major at all |
 | #188 | `actions/github-script` 7→9 | Low, and **covered by a test** | **Merge after reading the v8/v9 notes.** See below |
-| #187 | `eslint` 9.39.5→10.10.0 | Low-moderate | **Likely safe.** See below |
-| #186 | `zustand` 4.5→5.0.15 | Moderate — 16 files | **Read first.** See below |
+| #187 | `eslint` 9.39.5→10.10.0 | **Broken — lint does not run** | **Do not merge. Blocked upstream.** See below |
+| #186 | `zustand` 4.5→5.0.15 | Low — verified clean | **Merge.** See below |
 | #185 | `tailwindcss` 3.4→4.3.3 | **High — a rewrite, not an upgrade** | **Do not merge as-is** |
 | #184, #194, #195, #196, #197 | vitest-coverage, hono-node-server, qs, hono, fast-uri | — | **Superseded by #199; close them** |
 
@@ -121,23 +121,67 @@ Note the handoff's own finding: this PR is the one the D6 triage classifier
 mislabelled as in-scope when it is a major. Merging it does not fix that
 classifier bug.
 
-### #187 — `eslint` 9→10
+### #187 — `eslint` 9→10 — TESTED 2026-09-18, DO NOT MERGE
 
-`eslint-config-next@16.3.5` declares `peerDependencies: { eslint: ">=9.0.0" }`,
-so it accepts eslint 10 rather than capping at 9. The repo currently lints with
-**0 errors and 46 warnings**; the risk is that eslint 10 promotes some of those
-warnings or changes rule defaults. Cheap to test: bump, run `npm run lint`,
-compare the warning count against 46.
+**This entry originally read "likely safe". That was a prediction from a peer
+range, and it was wrong.** Bumped and run: eslint 10 does not lint this repo at
+all. It crashes before reporting a single file:
 
-### #186 — `zustand` 4→5
+```
+TypeError: scopeManager.addGlobals is not a function
+    at addDeclaredGlobals (eslint/lib/languages/js/source-code/source-code.js:221)
+```
 
-Sixteen files import zustand — fourteen from the root entry, six from
-`zustand/middleware` (some files use both). v5 drops the deprecated default
-export and tightens the TypeScript signatures; the persist middleware is the
-part most likely to need attention, and this repo leans on it for the
-localStorage-backed stores and their versioned migrations. `tsc --noEmit` will
-catch the type-level breaks, but a persist-shape change would land at runtime
-on saved user data — watch the store migrations specifically.
+The misleading part is the range the original note reasoned from.
+`eslint-config-next@16.3.5` really does declare `eslint: ">=9.0.0"`, which
+*permits* eslint 10 — but the plugins it bundles do not, and npm marks them
+`invalid` on install:
+
+| Bundled plugin | Peer range | Latest published |
+|---|---|---|
+| `eslint-plugin-import` | `^2 ‖ … ‖ ^9` | 2.32.0 — still caps at 9 |
+| `eslint-plugin-jsx-a11y` | `^3 ‖ … ‖ ^9` | 6.10.2 — still caps at 9 |
+| `eslint-plugin-react` | `^3 ‖ … ‖ ^9.7` | still caps at 9 |
+
+So there is **no version combination available today** that lints this repo on
+eslint 10 — not a config fix like the vitest 4 one, and not something bumping
+`eslint-config-next` solves. It is blocked until those three plugins publish
+eslint 10 support upstream. Re-test then; the check is one `npm run lint`.
+
+**A top-level peer range is not evidence that the tree resolves.** That is the
+transferable lesson here, and it is the same shape as the `@vitest/coverage-v8`
+finding above — the declared range and the installable graph disagreed.
+
+### #186 — `zustand` 4→5 — TESTED 2026-09-18, SAFE TO MERGE
+
+**This entry originally said to watch the persist migrations. There are none.**
+`grep` for `version:` or `migrate:` across `src` returns nothing: no zustand
+store in this repo uses persist versioning at all. The "v2 migration" other docs
+mention is `migrateStorageKey()` in `lib/utils/storageMigration.ts` — a
+hand-rolled localStorage key rename for the CAEP → Finance Now change, which
+runs at module scope *before* `create()` and has no relationship to zustand's
+persist machinery. The original warning pointed at a risk that does not exist.
+
+What is actually exposed, and why it is clean:
+
+- **No default import.** All 14 root-entry imports are `import { create } from
+  'zustand'`, so v5's headline removal touches nothing. Six more import
+  `persist` from `zustand/middleware`, which is unchanged.
+- **No unstable selectors.** v5's real runtime break is a selector returning a
+  fresh object or array each render — under `useSyncExternalStore` that loops
+  where v4 tolerated it. Every consumption in this repo is either a single-field
+  selector (`(s) => s.field`) or a bare whole-store `useXStore()`. Neither is
+  affected, which is why `useShallow` is not needed anywhere.
+
+Verified on the bump: `tsc --noEmit` clean, **1,493 tests across 104 files
+pass**, `eslint` unchanged at 0 errors / 46 warnings, `next build` compiles and
+prerenders all 44 pages.
+
+⚠ **One limit worth stating rather than hiding:** the suite is pure-TS and
+renders no React, so none of the above exercises store rehydration in a browser.
+The selector audit is what covers that gap, and it is a read of the code rather
+than a run of it. A click through the persisted surfaces (watchlist, portfolios,
+entitlement toggles) after merging would close it properly.
 
 ### #185 — `tailwindcss` 3→4
 
