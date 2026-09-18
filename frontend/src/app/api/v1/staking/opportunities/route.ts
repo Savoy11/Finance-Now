@@ -5,50 +5,22 @@ import {
   resolveYieldType, YIELD_TYPE_META, getStakingDataProvenance,
   type StakingCoinId, type ProviderCategory,
 } from '@/lib/data/stakingProviders'
+import { collectStakingRates } from '@/lib/server/stakingRates'
+import { aprDisplay, resolveLiveAprKey } from '@/lib/utils/aprDisplay'
 
 export const dynamic = 'force-dynamic'
 export { options as OPTIONS }
 
-const LIVE_APR_SOURCES: Record<string, string> = {
-  lido_eth:       'https://eth-api.lido.fi/v1/protocol/steth/apr/sma',
-  marinade_sol:   'https://api.marinade.finance/msol/apy/1y',
-  jito_sol:       'https://kobe.mainnet.jito.network/api/v1/apy',
-}
-
-async function fetchLiveRates(): Promise<{ rates: Record<string, number>; derived: Set<string> }> {
-  const rates: Record<string, number> = {}
-  const results = await Promise.allSettled(
-    Object.entries(LIVE_APR_SOURCES).map(async ([key, url]) => {
-      const res = await fetch(url, { next: { revalidate: 600 } })
-      if (!res.ok) return
-      const data = await res.json()
-      let apr: number | null = null
-      if (key === 'lido_eth') {
-        const raw = (data as { data?: { aprs?: Array<{ apr: string }> } })?.data?.aprs?.[0]?.apr
-        if (raw) apr = parseFloat(raw) * 100
-      } else {
-        const raw = typeof data === 'number' ? data : (data as { value?: number })?.value
-        if (raw != null) apr = raw < 1 ? raw * 100 : raw
-      }
-      if (apr != null && apr > 0 && apr < 30) rates[key] = Math.round(apr * 100) / 100
-    })
-  )
-  void results
-  // Derive exchange rates from Lido if available. These are OUR estimates
-  // anchored to a live feed, not the providers' own numbers — they must never
-  // be labelled aprSource:'live' on the public contract (review defect D-19),
-  // so the derived keys are tracked separately.
-  const derived = new Set<string>()
-  if (rates.lido_eth) {
-    for (const [key, spread] of [['rocketpool_eth', 0.2], ['coinbase_eth', 0.5], ['kraken_eth', 0.2], ['binance_eth', 0.6]] as const) {
-      if (rates[key] == null) {
-        rates[key] = Math.round((rates.lido_eth - spread) * 100) / 100
-        derived.add(key)
-      }
-    }
-  }
-  return { rates, derived }
-}
+// This route used to carry its own LIVE_APR_SOURCES + fetchLiveRates here:
+// three upstreams against the collector's seven, its own Lido-anchored spreads,
+// and its own sanity bounds. It was deleted on 2026-09-18 rather than repaired,
+// because it was broken in three ways the collector was not (its Lido parse
+// multiplied an already-percentage value by 100 and then failed its own <30
+// guard; that took the four derived exchange keys down with it; and its Jito
+// endpoint was a 404). The measured result was a public API serving catalog
+// estimates for 6 of 7 keys while the UI served live readings.
+//
+// Both surfaces now read collectStakingRates() and resolve through aprDisplay().
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl
@@ -79,7 +51,7 @@ export async function GET(req: NextRequest) {
   // dimensions per row. A caller who wants a threshold applies its own to those
   // numbers, which makes the judgment theirs and inspectable.
 
-  const { rates: liveRates, derived: derivedKeys } = await fetchLiveRates()
+  const { rates, sources, gaps } = await collectStakingRates()
 
   const opportunities: object[] = []
 
@@ -102,25 +74,28 @@ export async function GET(req: NextRequest) {
 
       const effectiveRisks = mergedRisks(provider.risks, asset.assetRisks)
 
-      // ⚠ DIVERGES FROM THE UI, on purpose and pending a ruling.
-      //
-      // Since 2026-09-18 /live-data/staking-rates WITHHOLDS a measured fallback
-      // older than 14 days (gap `estimate-expired`), so `liveApr` is undefined
-      // for those keys and this falls to the catalog's own staticApr. The
-      // expired reading is therefore never published here either — but an
-      // undated catalog estimate is, labelled `estimate`, where the staking page
-      // now renders an em-dash.
-      //
-      // Left this way deliberately: `apr` is non-nullable in the published v1
-      // contract, and narrowing it is the R2 §5.3 class of break that D14 took
-      // only with an explicit owner decision. The divergence is disclosed rather
-      // than hidden, and it is on the owner's list.
-      const liveApr = asset.liveAprKey ? liveRates[asset.liveAprKey] : undefined
-      const apr     = liveApr ?? asset.staticApr
+      // Resolved through the SAME pure function the staking page uses, off the
+      // same collector — see lib/server/stakingRates.ts for why this route no
+      // longer has its own. `aprDisplay` owns the "which number, is it live,
+      // why not" decision; this only translates its answer into the v1 contract.
+      const liveKey = resolveLiveAprKey(provider, assetCoinId, asset)
+      const shown = aprDisplay(asset.staticApr, liveKey, rates, sources, gaps)
+
+      // `apr` is non-nullable in the published v1 contract, and narrowing it is
+      // the R2 §5.3 class of break D14 took only with an explicit ruling. So an
+      // expired reading — where the UI renders an em-dash — keeps the catalog
+      // figure here but says WHY it is one, rather than relabelling it a plain
+      // 'estimate' and erasing the distinction this whole staleness pass drew.
+      const apr = shown.apr ?? asset.staticApr
       // 'derived' = our Lido-anchored estimate for an exchange rate — a live
       // NUMBER but not the provider's own feed. Labelling it 'live' was D-19.
-      const aprSource: 'live' | 'derived' | 'estimate' =
-        liveApr != null ? (asset.liveAprKey && derivedKeys.has(asset.liveAprKey) ? 'derived' : 'live') : 'estimate'
+      // Read off the collector's own gap vocabulary rather than a second list
+      // of key names here, which is the kind of parallel copy that caused this.
+      const aprSource: 'live' | 'derived' | 'estimate' | 'estimate-expired' =
+        shown.live ? 'live'
+          : shown.gap === 'derived-estimate' ? 'derived'
+            : shown.gap === 'estimate-expired' ? 'estimate-expired'
+              : 'estimate'
 
       opportunities.push({
         provider:        provider.id,
