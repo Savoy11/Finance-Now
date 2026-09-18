@@ -38,7 +38,14 @@ of `/live-data/macro-news` the moment it merged.
 
 ---
 
-## Group A — ratify the readings (17 sources)
+## Group A — ratify the readings (18 sources) — ✅ APPLIED 2026-09-18
+
+> **Applied as proposed, with one correction found in the applying.** This list was
+> built from the two audits' `T-` numbers, and that missed **bitfinex.com**, whose own
+> `finding` says the Market Data Terms were *"READ IN FULL on the owner's machine
+> 2026-09-14"* and which was still `seeded`. Membership should have been derived from
+> the registry text — "which entries say they were read but are not ratified" — not from
+> a list of task ids. Bitfinex is included; the count is 18, not 17.
 
 For each: `review: 'seeded'` → `'verified'`, and `reviewedAt` → `'2026-09-14'`. Verdict
 unchanged at `conditional` in every case.
@@ -140,7 +147,33 @@ Branding Guidelines require?* — which is not a terms reading and is not done.
 
 ## If Group A is approved
 
-The edit is mechanical: 17 entries change `review` and `reviewedAt`, three also get
-corrected `finding`/`conditions`/`termsUrl` text, and no verdict moves. The registry
-then reads **21 of 56 verified**, and the remaining 35 `seeded` entries are genuinely
-unread rather than a mix of unread and un-filed.
+The edit is mechanical: 18 entries change `review` and `reviewedAt`, and no verdict
+moves. The registry then reads **22 of 56 verified**, and the remaining 34 `seeded`
+entries are genuinely unread rather than a mix of unread and un-filed.
+
+### What the applying actually found
+
+Two of the three proposed text corrections were **already done** on 2026-09-14 — Reddit's
+`finding` already explains that the Data API Terms govern a path the app does not take,
+and Bitget's `termsUrl` already points at the operative document rather than the index.
+The 09-14 session updated the prose and left only the `review` field behind, which is
+precisely the read-but-unratified state this proposal describes.
+
+What did need correcting was the opposite problem: **prose that the flip turned false.**
+Four entries asserted their own unratified state in text that sits beside the field:
+
+| Entry | Was | Now |
+|---|---|---|
+| stocktwits.com | comment: *"review stays 'seeded' — the reading is done"* | records the 2026-09-18 ratification; the residual "approved API" question still flagged open |
+| publicnode.com | finding: *"`review` remains `seeded` pending that judgement"* | records the ratification; the judgement still outstanding and still the owner's |
+| bitfinex.com | finding: *"`review` remains `seeded` pending owner ratification"* | same |
+| bitget.com | finding: *"the exchange ToS have not been read for this project, and the endpoint itself is unprobed"* | both clauses were false — the ToS were read in a browser on 09-14 and `withdrawFeeAdapters.ts` calls the endpoint keylessly |
+
+Leaving any of those beside a `verified` field would have been the same laundering this
+proposal warned about, pointing the other way.
+
+One test moved with it. `robotsGate.test.ts` asserted `reddit.review === 'seeded'`,
+with a comment explaining that *"the TERMS are still unread"*. That premise expired on
+2026-09-14. The invariant it was really protecting — a robots observation must never
+launder itself into a terms review — is now asserted directly, by requiring the two
+facts to carry different dates.
