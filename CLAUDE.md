@@ -90,7 +90,8 @@ frontend/src/
 │   │   ├── funds/                  # FUNDS MODULE — ETF/mutual fund registry + [symbol] detail
 │   │   ├── portfolio-builder/      # PREMIUM module — own entitlement
 │   │   └── global-adoption/        # De-routed (T5) — redirects to /headlines; page retained
-│   └── live-data/                  # Server-side API proxy routes (no API keys exposed) — 59 routes
+│   └── live-data/                  # Server-side API proxy routes (no API keys exposed) — 58 routes
+│                                   #   (derive: find src/app/live-data -name route.ts | wc -l)
 │       ├── markets/route.ts        # CoinGecko price data
 │       ├── news/route.ts           # Multi-provider crypto news (RSS + JSON feeds)
 │       ├── social/route.ts         # Social sentiment data
@@ -141,7 +142,6 @@ frontend/src/
 │       ├── market-calendar/route.ts, fund-universe/route.ts, coin-list/, coin-search/
 │       ├── btc-stats/, defi-tvl/, fear-greed/, funding-rates/, ohlcv/, assets/
 │                                   #   (first three now feed the crypto TA Market Structure panel — NT11)
-│       └── cbdc-data/route.ts      # Retained for the de-routed /global-adoption page
 │
 ├── components/
 │   ├── layout/
@@ -1136,7 +1136,7 @@ Risk/status color convention used across the app:
 | Watchlist | `/watchlist` | 🟢 Live | Cross-module: coins, stocks, ETFs & funds, and macro instruments in named lists with live prices. **DB-backed** via `/api/user/watchlists` (+`/[id]` PUT/DELETE) through `useWatchlistStore` (optimistic, client-UUID ids, one-time localStorage import that MERGES even into a non-empty account — see store comment). Feed bias (`lib/watchlist/bias.ts`) and the Daily Brief read the store, not localStorage |
 | News | `/news` | 🟢 Live | Multi-provider RSS/JSON; sentiment + asset detection |
 | Social | `/social` | 🟡 Partial | `/live-data/social`. **Live:** Reddit post text/link/author/timestamp (Atom feeds, keyless but robots-gated — see below), and the social VOLUME figures from Santiment (`mentionsCount`) and LunarCrush (`social_volume_24h`, `galaxy_score`), both **key-gated**: with no key those signals are absent, not zero. **Derived:** every sentiment label. Reddit's is a keyword regex over the post text; LunarCrush's is a threshold on galaxy score (≥60 / ≤35) rather than the provider's own `sentiment` field; Santiment's is hardcoded `neutral`. The per-asset `sentimentScore` aggregates those derived labels, so it is derived twice over. **Neither live nor derived:** Reddit `score` is a literal 0 and `upvoteRatio` is never set — Atom carries no vote data, and both are sentinels the pages render only when present. Reddit itself is gated off in `pinnedFetch` unless `REDDIT_CLIENT_ID` is set (its robots.txt disallows this app's agent, 2026-08-29 terms review). |
-| Global | `/global-adoption` | ⚪ De-routed | Access removed (T5) pending a post-production rework — a mislabeled CBDC tracker on stale/duplicated static data with a fabricated live timestamp. Page + `/live-data/cbdc-data` route retained; `/global-adoption` redirects to `/headlines`. See `docs/assessments/T5-utility-triage.md`. |
+| Global | ~~`/global-adoption`~~ | ⚪ **Deleted 2026-09-15 (D10)** | Was de-routed under T5 pending a rework — a mislabeled CBDC tracker on stale/duplicated static data with a fabricated live timestamp. Owner decision **D10** then **cut it outright**: the page and `/live-data/cbdc-data` are both **gone** (PR #191, `b484313`), which also closed T-138 by deletion rather than by fixing the fabricated `updatedAt`. This row said both were "retained" until 2026-09-17. The `/global-adoption` → `/headlines` redirect is deliberately **kept** in `next.config.mjs` so an existing deep link still lands somewhere. See `docs/assessments/T5-utility-triage.md` and `docs/decisions/2026-09-14-owner-decisions.md`. |
 | Transfer Fee Calc | ~~`/transfer-fees`~~ | ⚪ **Hidden from rollout** | Static fee table (`transferFees.ts`) + live token prices; staleness-labeled. **Live withdrawal-fee overlay** (`/live-data/withdraw-fees`, keyless KuCoin/HTX confirmed + 5 unprobed; RP-5 forbids keyed endpoints) — overlay-only, per-row `live` tags. **Withdrawal availability is disclosed as assumed, not checked**: live-reported suspensions render as blocked routes with attribution, and the notice is deliberately NOT gated on fee staleness. `depositEnabled` is the same assumption with no source — a known open gap. Tax-character panel (`lib/data/taxCharacter.ts`) states what kind of event each leg is, with no numbers |
 | Staking | `/staking` | 🟡 Partial | **Two tabs since 2026-08-20 (W3-3):** Providers (curated catalog, live APR where available, defunct toggle) and Live Pools (on-chain opportunities via `/live-data/staking-discovery`). Curated catalog is staleness-labeled (`getStakingDataProvenance()`) |
 | Staking Discovery | ~~`/staking-discovery`~~ | ⚪ Merged | **Merged into `/staking` 2026-08-20 (W3-3, option B)** — its curated directory duplicated the Staking page's provider cards; the live on-chain pool discovery became the **Live Pools tab** on `/staking` (`?tab=pools`, content-preserving redirect). The defunct-platform toggle (Celsius, the cautionary example) moved to the Providers tab. `/live-data/staking-discovery` unchanged |
@@ -1404,7 +1404,7 @@ if (res1.status === 'fulfilled' && res1.value.ok) { /* use it */ }
 // always fall through to static defaults if fetch fails
 ```
 
-**Sequential fallback ladder** (try A, else B, else C — `markets`, `portfolio-prices`, `cbdc-data`) → per-leg
+**Sequential fallback ladder** (try A, else B, else C — `markets`, `portfolio-prices`, `coin-profile`) → per-leg
 try/catch, returning on first success. **Do not "upgrade" these to `allSettled`**: it fires every provider in
 parallel, burning rate limit on exactly the calls the ladder exists to avoid. The 2026-07-22 pass found 7 of 8
 routes flagged for "missing allSettled" were already correct for this reason.

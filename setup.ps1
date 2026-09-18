@@ -164,7 +164,10 @@ function Set-FrontendEnv {
 #   FMP_API_KEY=            # full ETF holdings, stock universe, market calendar
 #   ANTHROPIC_API_KEY=      # AI agents, Research page, Daily Brief
 #   FINNHUB_API_KEY=        # extra equity quote provider
-NEXT_PUBLIC_API_URL=http://localhost:8000
+#
+# NEXT_PUBLIC_API_URL was written here as an active line until 2026-09-17. Owner
+# decision D2 (2026-09-14) retired the FastAPI backend and removed the /api/*
+# proxy rewrite, so nothing reads it and setting it has no effect.
 "@ | Set-Content -Encoding UTF8 $ENV_FILE
     Write-Ok '.env.local created (live data via public APIs; optional keys commented).'
 }

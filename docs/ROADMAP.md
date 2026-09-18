@@ -322,13 +322,29 @@ needs the most careful honest-data framing, not for data availability.
 
 - **Macro Technical Analysis** (2026-07-30, W4-B2) — `/macro/technical-analysis`
   over all 45 instruments on the shared candlestick/indicator engine, no new
-  data route (macro symbols are Yahoo symbols and use the same `security-ohlcv`
-  path as equities). Chart tab: grouped picker, 5 ranges, 6 chart types, 16
-  indicators. Scanner tab: RSI / vs-SMA50 / composite signal over the 29 liquid
+  data route (macro symbols ride the same `security-ohlcv` path as equities).
+  Chart tab: grouped picker, 5 ranges, 6 chart types, 51 indicators.
+  Scanner tab: RSI / vs-SMA50 / composite signal over the 29 liquid
   instruments — the 6 delisted-ETF commodities and the 10 EM/cross FX pairs are
   excluded and the exclusion is stated on-page, since a gappy series ranked
   beside a liquid contract reads as comparable when it isn't. Levels render
   through `formatInstrumentQuote()`, so grains stay ¢/bu and yields stay %.
+
+  > **Corrected 2026-09-17 (T-107).** Two things above were written as-delivered
+  > and had since stopped being true.
+  >
+  > **The indicator count said 16; it is 51.** Derived, not typed: the page calls
+  > `indicatorsFor(false)`, and `ALL_INDICATORS` holds 62 entries of which 11 are
+  > `needsVolume: true`. Macro series carry no volume, so those 11 are withheld
+  > and named on-page. 51 is the honest subset, not a degraded one.
+  >
+  > **"macro symbols are Yahoo symbols" is gone.** Yahoo Finance was removed as a
+  > source on 2026-08-06 on TERMS grounds and is hard-blocked in `pinnedFetch`.
+  > The path is unchanged — macro still rides `security-ohlcv` — but that route's
+  > live rungs are now all keyed, and its macro coverage is expected to be
+  > PARTIAL: Tiingo does not carry symbols like `GC=F` or `EURUSD=X` at all, so
+  > which ones price depends on the keyed provider configured, and an unpriced
+  > instrument renders a dash rather than a fabricated level. All 45 still chart.
 
 - **Macro News** (2026-07-21) — `/macro/news` + `/live-data/macro-news`:
   8 keyless RSS feeds, content-first pillar classifier (off-pillar articles

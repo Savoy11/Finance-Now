@@ -94,13 +94,19 @@ setup_env() {
     cp "$ENV_EXAMPLE" "$ENV_FILE"
     ok ".env.local created from .env.example — every variable annotated with what it unlocks"
   else
-    # Fallback only if the example is missing. NEXT_PUBLIC_API_URL is the ORIGIN
-    # ONLY — next.config.mjs's rewrite appends /api/:path itself, so a /api or
-    # /api/v1 suffix here yields /api/v1/api/v1 and every legacy call 404s.
+    # Fallback only if the example is missing. This used to write
+    # NEXT_PUBLIC_API_URL plus a note about next.config.mjs's rewrite appending
+    # /api/:path — but owner decision D2 (2026-09-14) retired the backend and
+    # REMOVED that rewrite, so the variable is read by nothing and the advice
+    # described a mechanism that no longer exists. Nothing is required to start
+    # the app, so the minimal file sets nothing.
     warn ".env.example not found — writing a minimal .env.local instead"
     cat > "$ENV_FILE" << 'EOF'
-# The legacy Python backend is OPTIONAL and dormant; the app runs live-only without it.
-NEXT_PUBLIC_API_URL=http://localhost:8000
+# Nothing here is required. Finance Now runs live-only against keyless public
+# providers, and any surface with no reachable source says so rather than
+# inventing a figure. Add optional keys (DATABASE_URL, AUTH_SECRET, provider
+# and LLM keys) to unlock specific surfaces — see CLAUDE.md § Environment
+# Variables for which key affects what.
 EOF
     ok ".env.local created (minimal; the app runs live-only — there is no mock data path)"
   fi
