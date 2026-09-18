@@ -973,6 +973,18 @@ an eval run against one model tells you nothing about prompts on another. Decide
 model first, then run the eval, or the results describe a config you are about to
 replace.
 
+
+**⚠ STANDING RULE — paid decisions are deferred; no provider may be load-bearing (D21,
+owner, 2026-09-18).** Anything whose remedy is "buy a plan" is not a defect to chase
+now: record it and move on. The correct state for a surface blocked only by a paid tier
+is an honest empty or a disclosed fallback, never a purchase. The other half is the
+standing requirement: **build so that dropping any one vendor degrades a surface rather
+than removing it.** That is measured, not asserted — `npx tsx scripts/gen-coverage-matrix.ts`
+prints a "Strands if dropped" column per vendor, and those counts are the ones to drive
+to zero. Four surfaces were single-sourced when the rule was made; `security-returns` is
+the only one with no fallback at all. Full reasoning, and the measured provider coverage
+behind it, in `docs/decisions/2026-09-18-owner-decisions.md`.
+
 **⚠ Data-availability results are IP-dependent — audits MUST run on the owner's machine.**
 LunarCrush blocks datacenter IPs and the cloud gateway blocks most provider hosts outright, so a
 cloud or CI run produces a systematically wrong baseline of "which sources work." Code reading,

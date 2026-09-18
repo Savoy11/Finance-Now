@@ -24,7 +24,7 @@ matrix does too. Built from a cloud or CI run it describes that host, not a user
 | …of those, a key would fix | 10 |
 | …of those, no key fixes | 3 |
 | Not covered by any audit probe | 7 |
-| Keyed provider entries behind them | 6 |
+| Keyed provider entries behind them | 7 |
 | **Accounts a user would open for full coverage** | **4** |
 
 The account figure is a greedy set cover, so it is an **upper bound**. 3 of the
@@ -40,17 +40,45 @@ One row per **account**, which is not the same as one row per provider entry —
 the note above. Where a vendor appears under more than one entry, each is listed,
 because they can sit on different plans.
 
-| Account | Reached through | Forced? | Surfaces it lifts | Which |
-|---|---|---|---|---|
-| **FMP** | FMP, FMP company-screener, Equity quote ladder (FMP → Finnhub → Twelve Data → Tiingo → Alpha Vantage) (key/paid) | yes — sole option for 2 | 7 | security-quotes, stock-universe, fund-holdings, macro-quotes, watchlist, compare, portfolio-builder |
-| **LunarCrush** | LunarCrush (key) | no | 1 | social |
-| **Tiingo** | Tiingo, Equity quote ladder (FMP → Finnhub → Twelve Data → Tiingo → Alpha Vantage) (key) | yes — sole option for 1 | 4 | security-returns, watchlist, compare, portfolio-builder |
-| **YouTube Data API** | YouTube Data API (key) | yes — sole option for 1 | 1 | videos |
+| Account | Cost posture | Reached through | Forced? | Lifts | Which |
+|---|---|---|---|---|---|
+| **FMP** | held (free tier) · paid upgrade **deferred** | FMP, FMP company-screener, Equity quote ladder (FMP → Finnhub → Twelve Data → Tiingo → Alpha Vantage) (key/paid) | yes — sole option for 2 | 7 | security-quotes, stock-universe, fund-holdings, macro-quotes, watchlist, compare, portfolio-builder |
+| **LunarCrush** | free signup | LunarCrush (key) | no | 1 | social |
+| **Tiingo** | free signup | Finnhub / Twelve Data / Tiingo / Alpha Vantage, Tiingo, Equity quote ladder (FMP → Finnhub → Twelve Data → Tiingo → Alpha Vantage) (key) | yes — sole option for 1 | 5 | security-quotes, security-returns, watchlist, compare, portfolio-builder |
+| **YouTube Data API** | free signup | YouTube Data API (key) | yes — sole option for 1 | 1 | videos |
+
+## If we walk away from a vendor
+
+Standing rule (owner, 2026-09-18): **decisions that cost money are deferred until
+close to the end of production**, and the app is built so that no single provider is
+load-bearing. This table is how that rule is checked. "Strands" is what would have
+no remaining option at all if that vendor were dropped — the number to drive to zero.
+
+| Vendor | Cost posture | Could serve | Strands if dropped |
+|---|---|---|---|
+| **Alpha Vantage** | free signup | 4 | — none |
+| **FMP** | held (free tier) · paid upgrade **deferred** | 7 | **2**: stock-universe, fund-holdings |
+| **Finnhub** | held — no decision to take | 4 | — none |
+| **LunarCrush** | free signup | 1 | — none |
+| **Santiment** | free signup | 1 | — none |
+| **Tiingo** | free signup | 5 | **1**: security-returns |
+| **Twelve Data** | held — no decision to take | 4 | — none |
+| **YouTube Data API** | free signup | 1 | **1**: videos |
+
+### Single-sourced surfaces — the optionality risk
+
+Exactly one vendor can serve each of these. They are where the rule is not yet
+satisfied: dropping that vendor does not degrade the surface, it removes it.
+
+- **Videos / video search** (`videos`) — only YouTube Data API (free signup)
+- **Trailing returns (1M/3M/YTD/1Y)** (`security-returns`) — only Tiingo (free signup)
+- **Stock Registry universe** (`stock-universe`) — only FMP (held (free tier) · paid upgrade **deferred**)
+- **ETF / fund holdings** (`fund-holdings`) — only FMP (held (free tier) · paid upgrade **deferred**)
 
 ## Degraded surfaces, and what each is waiting on
 
 | | Surface | Module | Now | Waiting on |
-|---|---|---|---|---|
+|---|---|---|---|---|---|
 | 🟡 | Crypto price chart (legacy, internal) | crypto | FALLBACK | **no key fixes this** — keyless providers only |
 | 🟡 | Crypto OHLCV / candlestick charts | crypto | FALLBACK | **no key fixes this** — keyless providers only |
 | 🔑 | Crypto social sentiment | crypto | UNCONFIGURED | Santiment (primary/key), LunarCrush (fallback/key) |

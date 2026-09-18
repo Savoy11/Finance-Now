@@ -66,6 +66,45 @@ if (!auditPath) {
 
 const audit: AuditFile = JSON.parse(fs.readFileSync(auditPath, 'utf-8'))
 const stamp = audit.ranAt.slice(0, 10)
+
+/**
+ * Optional: a saved `/live-data/config` payload, so the matrix can tell a key
+ * already held from one nobody has signed up for.
+ *
+ * Without it every keyed provider reads as an account to open, which is how the
+ * first run reported "4 accounts" while FMP, Finnhub, Twelve Data and
+ * CoinMarketCap were already configured. That is not a rounding error — it is
+ * the difference between a decision to take and a decision already taken.
+ *
+ * The payload carries `hasKey` booleans and no secrets (checked: the only
+ * key-ish field names are requiresKey, keyUrl, hasKey), which is why it can be
+ * committed next to the audit.
+ */
+const configFlag = args.indexOf('--config')
+interface ProviderConfig { id: string; requiresKey?: boolean; config?: { hasKey?: boolean } }
+const providerConfigs: ProviderConfig[] = configFlag >= 0
+  ? (JSON.parse(fs.readFileSync(path.resolve(args[configFlag + 1]), 'utf-8')).providers ?? [])
+  : []
+
+/**
+ * Registry display names and config ids do not always agree. Most match once
+ * normalised ("Twelve Data" → twelvedata ↔ "twelve-data"); the ones that cannot
+ * are aliased explicitly rather than guessed, because a wrong match would claim
+ * a key is held when it is not.
+ */
+const VENDOR_ID_ALIASES: Record<string, string> = {
+  'youtube data api': 'youtube-search',
+}
+const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '')
+function configFor(vendor: string): ProviderConfig | null {
+  const alias = VENDOR_ID_ALIASES[vendor.toLowerCase()]
+  const want = norm(alias ?? vendor)
+  return providerConfigs.find((p) => {
+    const id = norm(p.id)
+    return id === want || (want.length >= 4 && (id.startsWith(want) || want.startsWith(id)))
+  }) ?? null
+}
+const isHeld = (vendor: string) => configFor(vendor)?.config?.hasKey === true
 const OUT = outFlag >= 0
   ? path.resolve(args[outFlag + 1])
   : path.resolve(process.cwd(), '..', 'docs', 'audits', `coverage-matrix-${stamp}.md`)
@@ -234,11 +273,15 @@ function vendorOf(name: string): string {
  * ladder, and a ladder is an OR. Anything else is a single vendor.
  */
 function candidatesOf(p: SourceProvider): string[] {
-  const ladder = p.name.match(/\(([^)]*(?:→|\/|,)[^)]*)\)/)
-  if (ladder) {
-    const parts = ladder[1].split(/→|\/|,/).map((s) => s.trim()).filter(Boolean)
-    if (parts.length > 1) return [...new Set(parts.map(vendorOf))]
-  }
+  // Alternatives are written two ways in this registry, and both mean OR:
+  // inside a parenthetical — "Equity quote ladder (FMP → Finnhub → …)" — or as
+  // the whole name, "Finnhub / Twelve Data / Tiingo / Alpha Vantage". Reading
+  // only the first form left four-vendor ladders standing as one pseudo-vendor,
+  // which then inherited a cost posture from whichever real provider its name
+  // happened to start with.
+  const inner = p.name.match(/\(([^)]*(?:→|\/|,)[^)]*)\)/)?.[1] ?? p.name
+  const parts = inner.split(/→|\/|,/).map((s) => s.trim()).filter(Boolean)
+  if (parts.length > 1) return [...new Set(parts.map(vendorOf))]
   return [vendorOf(p.name)]
 }
 
@@ -288,6 +331,46 @@ function entriesFor(vendor: string): { name: string; auth: string }[] {
 }
 
 const accounts = new Set(chosen)
+
+/**
+ * What opening this account would actually cost, under the standing rule that
+ * paid-service decisions wait until late in production (owner, 2026-09-18).
+ *
+ * A vendor can be two things at once, and collapsing that to one word is what
+ * would hide the decision: FMP's quote endpoints are free and already
+ * configured, while its company-screener needs a paid tier. That row has to say
+ * "held, with a paid upgrade behind it" — not "held", and not "paid".
+ */
+function posture(vendor: string): { label: string; paid: boolean; held: boolean } {
+  const auths = new Set(entriesFor(vendor).map((e) => e.auth))
+  const paid = auths.has('paid')
+  const held = isHeld(vendor)
+  if (held && paid) return { label: 'held (free tier) · paid upgrade **deferred**', paid, held }
+  if (held) return { label: 'held — no decision to take', paid, held }
+  if (paid && auths.has('key')) return { label: 'free signup · paid tier **deferred**', paid, held }
+  if (paid) return { label: '**paid — deferred**', paid, held }
+  return { label: 'free signup', paid, held }
+}
+
+/** Every vendor that could serve any degraded surface, not just the chosen cover. */
+const allCandidates = [...new Set(fixable.flatMap(candidateVendors))].sort()
+
+/** Surfaces this vendor is the ONLY candidate for — what strands if we drop it. */
+function soleFor(vendor: string): Row[] {
+  return fixable.filter((r) => {
+    const c = candidateVendors(r)
+    return c.length === 1 && c[0] === vendor
+  })
+}
+
+/** Degraded surfaces with exactly one possible vendor — the optionality risk. */
+const singleSourced = fixable.filter((r) => candidateVendors(r).length === 1)
+
+/** Degraded surfaces whose every option is paid — blocked by a deferred decision. */
+const paidOnly = fixable.filter((r) => {
+  const c = candidateVendors(r)
+  return c.length > 0 && c.every((v) => posture(v).paid && !posture(v).held)
+})
 
 const unfixable = degraded.filter((r) => r.noKeyHelps)
 
@@ -343,21 +426,58 @@ md.push('One row per **account**, which is not the same as one row per provider 
 md.push('the note above. Where a vendor appears under more than one entry, each is listed,')
 md.push('because they can sit on different plans.')
 md.push('')
-md.push('| Account | Reached through | Forced? | Surfaces it lifts | Which |')
-md.push('|---|---|---|---|---|')
+md.push(`| Account | Cost posture | Reached through | Forced? | Lifts | Which |`)
+md.push(`|---|---|---|---|---|---|`)
 for (const vendor of [...accounts].sort()) {
   const lifts = buys(vendor)
   const onlyHope = lifts.filter((r) => candidateVendors(r).length === 1).length
   const entries = entriesFor(vendor)
   const plans = [...new Set(entries.map((e) => e.auth))].sort().join('/')
   const via = entries.map((e) => esc(e.name)).join(', ')
-  md.push(`| **${esc(vendor)}** | ${via} (${plans}) | ${forced.has(vendor) ? `yes — sole option for ${onlyHope}` : 'no'} | ${lifts.length} | ${lifts.map((r) => esc(r.entry.id)).join(', ')} |`)
+  md.push(`| **${esc(vendor)}** | ${posture(vendor).label} | ${via} (${plans}) | ${forced.has(vendor) ? `yes — sole option for ${onlyHope}` : 'no'} | ${lifts.length} | ${lifts.map((r) => esc(r.entry.id)).join(', ')} |`)
 }
 md.push('')
+md.push('## If we walk away from a vendor')
+md.push('')
+md.push('Standing rule (owner, 2026-09-18): **decisions that cost money are deferred until')
+md.push('close to the end of production**, and the app is built so that no single provider is')
+md.push('load-bearing. This table is how that rule is checked. "Strands" is what would have')
+md.push('no remaining option at all if that vendor were dropped — the number to drive to zero.')
+md.push('')
+md.push('| Vendor | Cost posture | Could serve | Strands if dropped |')
+md.push('|---|---|---|---|')
+for (const vendor of allCandidates) {
+  const stranded = soleFor(vendor)
+  md.push(`| **${esc(vendor)}** | ${posture(vendor).label} | ${buys(vendor).length} | ${stranded.length === 0 ? '— none' : `**${stranded.length}**: ${stranded.map((r) => esc(r.entry.id)).join(', ')}`} |`)
+}
+md.push('')
+if (singleSourced.length > 0) {
+  md.push('### Single-sourced surfaces — the optionality risk')
+  md.push('')
+  md.push('Exactly one vendor can serve each of these. They are where the rule is not yet')
+  md.push('satisfied: dropping that vendor does not degrade the surface, it removes it.')
+  md.push('')
+  for (const r of singleSourced) {
+    const v = candidateVendors(r)[0]
+    md.push(`- **${esc(r.entry.surface)}** (\`${r.entry.id}\`) — only ${esc(v)} (${posture(v).label})`)
+  }
+  md.push('')
+}
+if (paidOnly.length > 0) {
+  md.push('### Blocked only by a deferred paid decision')
+  md.push('')
+  md.push('Every option here costs money and none is held, so under the standing rule these')
+  md.push('stay as they are until late production. They are not defects to chase now.')
+  md.push('')
+  for (const r of paidOnly) {
+    md.push(`- **${esc(r.entry.surface)}** (\`${r.entry.id}\`) — ${candidateVendors(r).map(esc).join(' or ')}`)
+  }
+  md.push('')
+}
 md.push('## Degraded surfaces, and what each is waiting on')
 md.push('')
 md.push('| | Surface | Module | Now | Waiting on |')
-md.push('|---|---|---|---|---|')
+md.push(`|---|---|---|---|---|---|`)
 for (const r of degraded.sort((a, b) => a.entry.module.localeCompare(b.entry.module) || a.entry.id.localeCompare(b.entry.id))) {
   const waiting = r.noKeyHelps
     ? '**no key fixes this** — keyless providers only'
