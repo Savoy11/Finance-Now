@@ -108,10 +108,20 @@ export const PROVIDERS: ProviderOption[] = [
   },
 ]
 
+/**
+ * The model every Claude-backed agent runs on unless the user picks another in
+ * Integrations. Owner decision 2026-09-17, taken as D20's prerequisite: Sonnet 5
+ * replaces Sonnet 4.6 — newer, and cheaper at $2/$10 per MTok against $3/$15.
+ *
+ * It is a constant because the old id was written out in fourteen places and the
+ * eval worksheet reported it from a fifteenth. A swap done by hand half-lands.
+ */
+export const DEFAULT_ANTHROPIC_MODEL = 'claude-sonnet-5'
+
 export const PROVIDER_MODELS: Record<ProviderId, ModelOption[]> = {
   anthropic: [
-    { id: 'claude-sonnet-4-6',         label: 'Claude Sonnet 4.6', hint: 'Recommended — fast, highly capable, includes web search' },
-    { id: 'claude-opus-4-8',           label: 'Claude Opus 4.8',   hint: 'Most capable, best for complex research'                  },
+    { id: DEFAULT_ANTHROPIC_MODEL,     label: 'Claude Sonnet 5',   hint: 'Recommended — fast, highly capable, includes web search' },
+    { id: 'claude-opus-5',             label: 'Claude Opus 5',     hint: 'Most capable, best for complex research'                  },
     { id: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5',  hint: 'Fastest and lowest cost'                                  },
   ],
   openai: [
@@ -177,7 +187,7 @@ export const AGENT_DEFAULTS: AgentDefault[] = [
     description: 'General-purpose assistant with full context of the Finance Now platform. Helps users navigate the app, interpret data, and understand features across both the crypto and equities modules.',
     runtime: 'backend',
     provider: 'anthropic',
-    model: 'claude-sonnet-4-6',
+    model: DEFAULT_ANTHROPIC_MODEL,
     temperature: 0.4,
     toolset: 'all',
     systemPrompt: `You are the Finance Now App Assistant — a knowledgeable, friendly guide embedded directly in the application.
@@ -242,7 +252,7 @@ Tone: clear, concise, helpful. Not overly formal. Avoid jargon unless the user i
     description: 'Deep-dive research and fundamental analysis on crypto assets, sectors, protocols, and market themes. Pulls live platform data and web context; also powers the cross-asset Daily Brief, so it can read equity/fund tools when holdings span markets.',
     runtime: 'backend',
     provider: 'anthropic',
-    model: 'claude-sonnet-4-6',
+    model: DEFAULT_ANTHROPIC_MODEL,
     temperature: 0.3,
     market: 'crypto',
     // 'all' (not 'crypto') because the Daily Brief runs through this agent over
@@ -281,7 +291,7 @@ Tone: analytical, precise, objective. Acknowledge uncertainty where it exists. N
     description: 'Autonomously scrapes the web to keep staking opportunities, new coin listings, and market data current. Identifies new assets and yield sources not yet in the platform.',
     runtime: 'backend',
     provider: 'anthropic',
-    model: 'claude-sonnet-4-6',
+    model: DEFAULT_ANTHROPIC_MODEL,
     temperature: 0.1,
     market: 'crypto',
     toolset: 'crypto',
@@ -323,7 +333,7 @@ RULES:
     description: 'Autonomously searches the web across 8 angles to build an evidence-based fraud risk report for any coin, wallet, or site.',
     runtime: 'backend',
     provider: 'anthropic',
-    model: 'claude-sonnet-4-6',
+    model: DEFAULT_ANTHROPIC_MODEL,
     temperature: 0.2,
     market: 'crypto',
     toolset: 'crypto',
@@ -382,7 +392,7 @@ After the log, output exactly:
     description: 'Interactive fraud intelligence assistant. Answers follow-up questions, digs deeper into findings, and searches for additional evidence on demand.',
     runtime: 'backend',
     provider: 'anthropic',
-    model: 'claude-sonnet-4-6',
+    model: DEFAULT_ANTHROPIC_MODEL,
     temperature: 0.3,
     market: 'crypto',
     toolset: 'crypto',
@@ -405,7 +415,7 @@ Include actual URLs when you find relevant sources.`,
     description: 'Deep-dive fundamental and valuation analysis on any stock, sector, or market theme. Reads live quotes, SEC-filed financials, filings, news, and social sentiment, and searches the web for context.',
     runtime: 'backend',
     provider: 'anthropic',
-    model: 'claude-sonnet-4-6',
+    model: DEFAULT_ANTHROPIC_MODEL,
     temperature: 0.3,
     market: 'equities',
     toolset: 'equities',
@@ -441,7 +451,7 @@ Tone: analytical, precise, objective. Acknowledge uncertainty. Never fabricate f
     description: 'Autonomously scrapes the web for upcoming earnings, analyst rating changes, new listings/IPOs, and index changes — structured output to keep the equities module current.',
     runtime: 'backend',
     provider: 'anthropic',
-    model: 'claude-sonnet-4-6',
+    model: DEFAULT_ANTHROPIC_MODEL,
     temperature: 0.1,
     market: 'equities',
     toolset: 'equities',
@@ -487,7 +497,7 @@ RULES:
     description: 'Autonomously investigates a stock for red flags across accounting quality, litigation, SEC enforcement, short-seller reports, governance, and insider activity — an evidence-based risk report.',
     runtime: 'backend',
     provider: 'anthropic',
-    model: 'claude-sonnet-4-6',
+    model: DEFAULT_ANTHROPIC_MODEL,
     temperature: 0.2,
     market: 'equities',
     toolset: 'equities',
@@ -541,7 +551,7 @@ After the log, output exactly:
     description: 'Scans the entire stock universe for statistical outliers — unusually cheap/expensive, high-yield, or high/low-beta names vs their sector — then explains which are opportunities vs traps.',
     runtime: 'backend',
     provider: 'anthropic',
-    model: 'claude-sonnet-4-6',
+    model: DEFAULT_ANTHROPIC_MODEL,
     temperature: 0.3,
     market: 'equities',
     toolset: 'equities',
@@ -571,7 +581,7 @@ RULES:
     description: 'Deep-dive analysis on commodities, currencies, and bonds/rates — reads live futures/FX quotes, the official treasury yield curve, FX reference rates, and macro news, and searches the web for context.',
     runtime: 'backend',
     provider: 'anthropic',
-    model: 'claude-sonnet-4-6',
+    model: DEFAULT_ANTHROPIC_MODEL,
     temperature: 0.3,
     market: 'macro',
     toolset: 'macro',
@@ -611,7 +621,7 @@ Tone: analytical, precise, objective. Acknowledge uncertainty. Never fabricate f
     description: 'Sweeps all macro instruments — 19 commodity futures, 18 FX pairs + DXY, yields and bond futures — for the biggest moves and regime signals, then explains what is driving them.',
     runtime: 'backend',
     provider: 'anthropic',
-    model: 'claude-sonnet-4-6',
+    model: DEFAULT_ANTHROPIC_MODEL,
     temperature: 0.3,
     market: 'macro',
     toolset: 'macro',
