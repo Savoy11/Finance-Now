@@ -71,13 +71,53 @@ const OUT = outFlag >= 0
   : path.resolve(process.cwd(), '..', 'docs', 'audits', `coverage-matrix-${stamp}.md`)
 
 /** `/live-data/stock-universe?symbol=AAPL` → `/live-data/stock-universe` */
-const bare = (p: string) => p.split('?')[0]
+const bare = (p: string | undefined) => (p ?? '').split('?')[0]
 
-/** Every route an entry owns — its own, plus the siblings folded into it. */
+/**
+ * Not every probe is a route probe. The audit's `cross-layer` group asserts that
+ * two layers agree with each other — a network count, a fee that must match
+ * within 2% — and carries no `path` at all. Those cannot join to a registry
+ * entry and must not be mistaken for a surface with no coverage, so they are
+ * partitioned out here and reported separately.
+ */
+const routeProbes = audit.results.filter((r) => Boolean(r.path))
+const crossLayer = audit.results.filter((r) => !r.path)
+
+/**
+ * Every route an entry owns — and `route` is not always one route.
+ *
+ * Several entries carry prose there, because the field feeds the /data-sources
+ * page and the generated catalog as much as it feeds any checker:
+ *
+ *   "/live-data/security-quotes · security-chart · security-ohlcv"
+ *   "/live-data/news + /live-data/market-news"
+ *   "/live-data/wallet/*"
+ *
+ * That is why six entries first came back "no probe covered" while their probes
+ * sat in the audit all along. Parsed here rather than rewritten in the registry:
+ * the prose is what a reader sees on the page, and reshaping 51 entries to suit
+ * one script is the tail wagging the dog. A bare segment after a separator
+ * inherits the previous route's directory, which is what the prose means.
+ */
 function routesOf(entry: DataSourceEntry): string[] {
-  const own = entry.route ? [entry.route] : []
+  const out: string[] = []
+  let dir = '/live-data'
+  for (const token of (entry.route ?? '').split(/[·+,]|\s+/).map((t) => t.trim()).filter(Boolean)) {
+    if (token.startsWith('/')) {
+      out.push(token)
+      dir = token.slice(0, token.lastIndexOf('/')) || '/live-data'
+    } else if (/^[\w-]+$/.test(token)) {
+      out.push(`${dir}/${token}`)
+    }
+  }
   const covered = (entry.covers ?? []).map((c) => (c.startsWith('/') ? c : `/live-data/${c}`))
-  return [...own, ...covered]
+  return [...out, ...covered]
+}
+
+/** Routes may end in `*`, e.g. `/live-data/wallet/*` covering every chain below it. */
+function routeMatches(routes: string[], probePath: string): boolean {
+  return routes.some((r) =>
+    r.endsWith('/*') ? probePath.startsWith(r.slice(0, -1)) : r === probePath)
 }
 
 function worst(verdicts: Verdict[]): Verdict | null {
@@ -100,56 +140,154 @@ function remedy(entry: DataSourceEntry): { keyed: SourceProvider[]; noKeyHelps: 
   return { keyed, noKeyHelps: keyed.length === 0 }
 }
 
+/**
+ * An upstream that throttled the audit is not a coverage gap.
+ *
+ * A full audit fires ~70 probes in a few minutes, and several share one keyless
+ * upstream — CoinGecko's free tier most of all. It rate-limits itself, and the
+ * route then reports FAIL for a surface that serves live data on the next
+ * request. Counting those as "no key fixes this" would be doubly wrong: it
+ * inflates the product-gap list, and it implies a paid plan is the remedy for a
+ * surface that is already working.
+ *
+ * The signal is the upstream's own 429 and the retry-after it comes with, which
+ * the audit copies into `detail` verbatim; one probe even labels itself
+ * "(transient: re-run)". The heuristic's weakness, stated because it is real: a
+ * surface that is genuinely broken AND mentions 429 lands here too. That is a
+ * narrow miss — a 429 is by definition upstream throttling rather than a missing
+ * key — and a re-run resolves it either way, which is what the doc tells the
+ * reader to do.
+ */
+const RATE_LIMITED = /\b429\b|rate limit|retry-after|\(transient/i
+const throttledProbe = (p: AuditResult) => p.verdict !== 'REAL' && RATE_LIMITED.test(p.detail ?? '')
+
 interface Row {
   entry: DataSourceEntry
   verdict: Verdict | null
   probes: AuditResult[]
   keyed: SourceProvider[]
   noKeyHelps: boolean
+  /** Every failing probe on this row was the upstream throttling the audit. */
+  throttled: boolean
 }
 
 const rows: Row[] = DATA_SOURCES.map((entry) => {
   const routes = routesOf(entry)
-  const probes = audit.results.filter((r) => routes.includes(bare(r.path)))
+  const probes = routeProbes.filter((r) => routeMatches(routes, bare(r.path)))
   const { keyed, noKeyHelps } = remedy(entry)
-  return { entry, verdict: worst(probes.map((p) => p.verdict)), probes, keyed, noKeyHelps }
+  const bad = probes.filter((p) => p.verdict !== 'REAL')
+  return {
+    entry,
+    verdict: worst(probes.map((p) => p.verdict)),
+    probes,
+    keyed,
+    noKeyHelps,
+    throttled: bad.length > 0 && bad.every(throttledProbe),
+  }
 })
 
 const unprobed = rows.filter((r) => r.verdict === null)
 const live = rows.filter((r) => r.verdict === 'REAL')
-const degraded = rows.filter((r) => r.verdict && r.verdict !== 'REAL')
+const throttled = rows.filter((r) => r.verdict && r.verdict !== 'REAL' && r.throttled)
+const degraded = rows.filter((r) => r.verdict && r.verdict !== 'REAL' && !r.throttled)
 
-// ── Set cover ────────────────────────────────────────────────────────────────
-// Which providers, in combination. A surface with exactly one keyed provider
-// forces that account; the rest are a minimum-set-cover over what remains.
-// Greedy, and the comment matters more than the algorithm: greedy set cover is
-// not guaranteed optimal, so this is an UPPER BOUND on the account count. For
-// the handful of providers in play the bound is almost certainly tight, but
+/**
+ * Probes that match no registry entry — the join's other direction.
+ *
+ * Worth surfacing rather than dropping: a probe with no entry is usually a test
+ * outliving the route it tested. The registry is regenerated when a route is
+ * cut; the audit's test list is hand-maintained, so it is the half that goes
+ * stale, and a 404 from a route deleted on purpose reads as a data failure to
+ * anyone scanning the summary.
+ */
+const registryRoutes = DATA_SOURCES.flatMap(routesOf)
+const orphanProbes = routeProbes.filter((r) => !routeMatches(registryRoutes, bare(r.path)))
+
+// ── Accounts, not provider entries ───────────────────────────────────────────
+// The question is how many accounts a user opens, so the cover has to run over
+// vendors. Two things in the registry stand between a provider entry and a
+// vendor, and both would inflate the number if taken at face value:
+//
+//   1. One vendor, several entries. "FMP" and "FMP company-screener" are listed
+//      separately — correctly, they are different endpoints on different plans —
+//      but a user opens ONE FMP account.
+//   2. One entry, several vendors. "Equity quote ladder (FMP → Finnhub → Twelve
+//      Data → Tiingo → Alpha Vantage)" is a single provider entry naming five
+//      vendors in preference order. ANY of them satisfies it, so it must not
+//      force a fifth account when FMP is already in the cover.
+//
+// Both are read from the data rather than a hardcoded list.
+
+/** "FMP company-screener" → "FMP". Prefix at a word boundary, shortest wins. */
+const allProviderNames = [...new Set(DATA_SOURCES.flatMap((e) => e.providers.map((p) => p.name)))]
+function vendorOf(name: string): string {
+  const prefixes = allProviderNames
+    .filter((v) => v !== name && name.startsWith(v + ' '))
+    .sort((a, b) => a.length - b.length)
+  return prefixes[0] ?? name
+}
+
+/**
+ * The vendors that would each, on their own, satisfy this provider entry.
+ *
+ * A parenthetical listing alternatives — separated by →, / or a comma — is a
+ * ladder, and a ladder is an OR. Anything else is a single vendor.
+ */
+function candidatesOf(p: SourceProvider): string[] {
+  const ladder = p.name.match(/\(([^)]*(?:→|\/|,)[^)]*)\)/)
+  if (ladder) {
+    const parts = ladder[1].split(/→|\/|,/).map((s) => s.trim()).filter(Boolean)
+    if (parts.length > 1) return [...new Set(parts.map(vendorOf))]
+  }
+  return [vendorOf(p.name)]
+}
+
+/** Every vendor that could lift this row, flattened across its keyed entries. */
+function candidateVendors(r: Row): string[] {
+  return [...new Set(r.keyed.flatMap(candidatesOf))]
+}
+
+// Greedy set cover over those vendors. The comment matters more than the
+// algorithm: greedy is not guaranteed optimal, so this is an UPPER BOUND. For
+// the handful of vendors in play the bound is almost certainly tight, but
 // "almost certainly" is not "provably", and the number gets quoted.
 const fixable = degraded.filter((r) => r.keyed.length > 0)
 const forced = new Set<string>()
-for (const r of fixable) if (r.keyed.length === 1) forced.add(r.keyed[0].name)
-
-const covered = new Set<Row>()
-for (const r of fixable) if (r.keyed.some((p) => forced.has(p.name))) covered.add(r)
+for (const r of fixable) {
+  const c = candidateVendors(r)
+  if (c.length === 1) forced.add(c[0])
+}
 
 const chosen = new Set(forced)
-let remaining = fixable.filter((r) => !covered.has(r))
+let remaining = fixable.filter((r) => !candidateVendors(r).some((v) => chosen.has(v)))
 while (remaining.length > 0) {
   const tally = new Map<string, number>()
   for (const r of remaining) {
-    for (const p of r.keyed) tally.set(p.name, (tally.get(p.name) ?? 0) + 1)
+    for (const v of candidateVendors(r)) tally.set(v, (tally.get(v) ?? 0) + 1)
   }
   const best = [...tally.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0]
   if (!best) break
   chosen.add(best[0])
-  remaining = remaining.filter((r) => !r.keyed.some((p) => p.name === best[0]))
+  remaining = remaining.filter((r) => !candidateVendors(r).includes(best[0]))
 }
 
-/** Every surface a given provider would lift, for the "what it buys" column. */
-function buys(name: string): Row[] {
-  return fixable.filter((r) => r.keyed.some((p) => p.name === name))
+/** Every surface a given vendor would lift, for the "what it buys" column. */
+function buys(vendor: string): Row[] {
+  return fixable.filter((r) => candidateVendors(r).includes(vendor))
 }
+
+/** The registry entries through which a vendor appears, with their plan tiers. */
+function entriesFor(vendor: string): { name: string; auth: string }[] {
+  const seen = new Map<string, string>()
+  for (const e of DATA_SOURCES) {
+    for (const p of e.providers) {
+      if (candidatesOf(p).includes(vendor)) seen.set(p.name, p.auth)
+    }
+  }
+  return [...seen].map(([name, auth]) => ({ name, auth }))
+}
+
+const accounts = new Set(chosen)
 
 const unfixable = degraded.filter((r) => r.noKeyHelps)
 
@@ -172,7 +310,8 @@ md.push('which providers *could* serve a surface and what each costs, and a live
 md.push('which knows what actually came back.')
 md.push('')
 md.push(`Audit: \`${audit.base}\` · mode **${audit.mode}** · run ${audit.ranAt}`)
-md.push(`· ${audit.results.length} probes · registry: ${DATA_SOURCES.length} surfaces`)
+md.push(`· ${routeProbes.length} route probes (+${crossLayer.length} cross-layer, which assert agreement`)
+md.push(`between layers rather than hitting a route) · registry: ${DATA_SOURCES.length} surfaces`)
 md.push('')
 md.push('⚠ **IP-dependent.** The audit\'s verdicts depend on the egress it ran from, so this')
 md.push('matrix does too. Built from a cloud or CI run it describes that host, not a user.')
@@ -183,14 +322,16 @@ md.push(`| | |`)
 md.push(`|---|---|`)
 md.push(`| Surfaces in the registry | ${DATA_SOURCES.length} |`)
 md.push(`| Live now, no key needed | **${live.length}** |`)
+md.push(`| Upstream throttled the audit — not a gap | ${throttled.length} |`)
 md.push(`| Degraded — not serving the intended source | **${degraded.length}** |`)
 md.push(`| …of those, a key would fix | ${fixable.length} |`)
 md.push(`| …of those, no key fixes | ${unfixable.length} |`)
 md.push(`| Not covered by any audit probe | ${unprobed.length} |`)
-md.push(`| **Accounts a user would open for full coverage** | **${chosen.size}** |`)
+md.push(`| Keyed provider entries behind them | ${new Set([...accounts].flatMap((v) => entriesFor(v).map((e) => e.name))).size} |`)
+md.push(`| **Accounts a user would open for full coverage** | **${accounts.size}** |`)
 md.push('')
 md.push(`The account figure is a greedy set cover, so it is an **upper bound**. ${forced.size} of the`)
-md.push(`${chosen.size} ${forced.size === 1 ? 'is' : 'are'} forced — the only keyed provider for some surface — and the`)
+md.push(`${accounts.size} ${forced.size === 1 ? "is" : "are"} forced — the only vendor that can serve some surface — and the`)
 md.push('remainder were chosen most-surfaces-first. It counts accounts, not money: several have a')
 md.push('free tier, and the registry records `paid` separately from `key` for exactly that')
 md.push('reason. It also counts only what a key can buy — the unfixable rows below are a')
@@ -198,12 +339,19 @@ md.push('product gap, and no number of accounts closes them.')
 md.push('')
 md.push('## The accounts')
 md.push('')
-md.push('| Provider | Forced? | Surfaces it lifts | Which |')
-md.push('|---|---|---|---|')
-for (const name of [...chosen].sort()) {
-  const lifts = buys(name)
-  const onlyHope = lifts.filter((r) => r.keyed.length === 1).length
-  md.push(`| **${esc(name)}** | ${forced.has(name) ? `yes — sole source for ${onlyHope}` : 'no'} | ${lifts.length} | ${lifts.map((r) => esc(r.entry.id)).join(', ')} |`)
+md.push('One row per **account**, which is not the same as one row per provider entry — see')
+md.push('the note above. Where a vendor appears under more than one entry, each is listed,')
+md.push('because they can sit on different plans.')
+md.push('')
+md.push('| Account | Reached through | Forced? | Surfaces it lifts | Which |')
+md.push('|---|---|---|---|---|')
+for (const vendor of [...accounts].sort()) {
+  const lifts = buys(vendor)
+  const onlyHope = lifts.filter((r) => candidateVendors(r).length === 1).length
+  const entries = entriesFor(vendor)
+  const plans = [...new Set(entries.map((e) => e.auth))].sort().join('/')
+  const via = entries.map((e) => esc(e.name)).join(', ')
+  md.push(`| **${esc(vendor)}** | ${via} (${plans}) | ${forced.has(vendor) ? `yes — sole option for ${onlyHope}` : 'no'} | ${lifts.length} | ${lifts.map((r) => esc(r.entry.id)).join(', ')} |`)
 }
 md.push('')
 md.push('## Degraded surfaces, and what each is waiting on')
@@ -234,6 +382,23 @@ if (unfixable.length > 0) {
   }
   md.push('')
 }
+if (throttled.length > 0) {
+  md.push('## Throttled, not missing')
+  md.push('')
+  md.push('Every failing probe on these surfaces was the upstream rate-limiting the audit —')
+  md.push('a full run fires dozens of probes in minutes and several share one keyless')
+  md.push('provider. They are excluded from the counts above and from the account cover,')
+  md.push('because a paid plan is not the remedy for a surface that is already working.')
+  md.push('**Re-probe before treating any of these as a gap.**')
+  md.push('')
+  for (const r of throttled) {
+    md.push(`- **${r.entry.surface}** (\`${r.entry.id}\`, ${r.verdict})`)
+    for (const p of r.probes.filter((p) => p.verdict !== 'REAL')) {
+      md.push(`  - \`${p.path}\` → ${p.verdict} — ${esc((p.detail ?? '').slice(0, 160))}`)
+    }
+  }
+  md.push('')
+}
 if (unprobed.length > 0) {
   md.push('## Registry surfaces no probe covered')
   md.push('')
@@ -244,6 +409,20 @@ if (unprobed.length > 0) {
   md.push('')
   for (const r of unprobed) {
     md.push(`- \`${r.entry.id}\` — ${r.entry.surface} (${r.entry.route ?? 'no route'}, status \`${r.entry.status}\`)`)
+  }
+  md.push('')
+}
+if (orphanProbes.length > 0) {
+  md.push('## Probes that match no registry entry')
+  md.push('')
+  md.push('The join\'s other direction, and usually a test outliving the route it tested. The')
+  md.push('registry is regenerated when a route is cut; the audit\'s test list is hand-maintained,')
+  md.push('so it is the half that goes stale — and a 404 from a route deleted on purpose reads')
+  md.push('as a data failure to anyone scanning the summary. These contribute nothing to the')
+  md.push('account count either way.')
+  md.push('')
+  for (const p of orphanProbes) {
+    md.push(`- ${ICON[p.verdict]} \`${p.path}\` (${p.name}) → **${p.verdict}**${p.detail ? ` — ${esc(p.detail)}` : ''}`)
   }
   md.push('')
 }
@@ -259,5 +438,5 @@ fs.mkdirSync(path.dirname(OUT), { recursive: true })
 fs.writeFileSync(OUT, md.join('\n'), 'utf-8')
 
 console.log(`Coverage matrix → ${OUT}`)
-console.log(`  ${live.length} live · ${degraded.length} degraded (${fixable.length} key-fixable, ${unfixable.length} not) · ${unprobed.length} unprobed`)
-console.log(`  accounts for full coverage: ${chosen.size} (${[...chosen].sort().join(', ')})`)
+console.log(`  ${live.length} live · ${degraded.length} degraded (${fixable.length} key-fixable, ${unfixable.length} not) · ${throttled.length} throttled · ${unprobed.length} unprobed`)
+console.log(`  accounts for full coverage: ${accounts.size} (${[...accounts].sort().join(", ")})`)
