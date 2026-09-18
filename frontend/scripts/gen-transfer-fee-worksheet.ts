@@ -97,7 +97,6 @@ const FEE_PAGES: Record<string, string> = {
   upbit: 'https://upbit.com/service_center/guide',
   robinhood: 'https://robinhood.com/us/en/support/articles/crypto-fees/',
   hyperliquid: 'https://hyperliquid.gitbook.io/hyperliquid-docs',
-  poloniex: 'https://poloniex.com/fee-schedule',
   bingx: 'https://bingx.com/en-us/rate/',
   phemex: 'https://phemex.com/fees-conditions',
   woox: 'https://woox.io/en/fees',
