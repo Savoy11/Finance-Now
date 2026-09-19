@@ -8,7 +8,7 @@
   "open_pr": 147
  },
  "how_to_read": {
-  "status": "open = actionable now; blocked = waits on blocking_decision; parked = owner deliberately deferred (do not start unprompted); unclear = verifiers could not settle it — check the sources first",
+  "status": "open = actionable now; blocked = waits on blocking_decision; parked = owner deliberately deferred (do not start unprompted); unclear = verifiers could not settle it — check the sources first; closed = annotated shut after generation, see the item's `closure` block for the reason, the date and whether it was verified first-hand",
   "owner_role": "remote-dev = a cloud session can do it; owner-machine = needs the owner network/keys/local files; owner-decision = a human must decide; either = whoever gets there",
   "closed_but_still_listed_as_open_in_docs": "items the docs present as open that verification found done/superseded/rejected — candidates for steward annotations (propose → owner approves → apply)",
   "standing_rules": [
@@ -54,10 +54,11 @@
  },
  "counts": {
   "total_verified": 398,
-  "outstanding": 338,
+  "outstanding": 323,
   "by_status": {
-   "open": 172,
-   "blocked": 75,
+   "open": 159,
+   "closed": 15,
+   "blocked": 73,
    "unclear": 1,
    "parked": 90
   },
@@ -67,7 +68,8 @@
    "owner-decision": 136,
    "owner-machine": 83
   },
-  "closed_but_listed_open_in_docs": 60
+  "closed_but_listed_open_in_docs": 60,
+  "closed_by_annotation": 15
  },
  "blocking_decisions": [
   {
@@ -2680,7 +2682,7 @@
   {
    "id": "T-338",
    "title": "Make npm audit and safety check gate the CI Security Scan job",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "either",
    "category": "ops-infra",
@@ -2695,7 +2697,14 @@
      "lines": "256-262",
      "quote": "The first two are `|| true`, so they report without gating; **only Trivy actually fails the build.** Removing those `|| true`s is the follow-up, and it is not free — `npm audit` currently reports 23 dev-tooling advisories that have no non-breaking fix, so it would fail CI on day one."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-19",
+    "basis": "owner-record",
+    "reason": "The npm half has been gating since 2026-09-08 with 0 high advisories; the `safety check` half is Python backend tooling and closes under D2 (backend retired).",
+    "evidence": "docs/decisions/2026-09-14-owner-decisions.md"
+   }
   },
   {
    "id": "T-369",
@@ -3190,7 +3199,7 @@
   {
    "id": "T-234",
    "title": "Set up a recurring weekly dependabot triage (current queue: #97, #98, #128, #132)",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "process",
@@ -3216,7 +3225,14 @@
      "lines": "6",
      "quote": "Four Dependabot PRs open (#97 redis, #98 pytest, #128 frontend patch-minor group, #132 faker) — untriaged."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-19",
+    "basis": "owner-record",
+    "reason": "Closed under D6 — the weekly dependabot triage workflow was built (.github/workflows/dependabot-triage.yml).",
+    "evidence": "docs/decisions/2026-09-14-owner-decisions.md"
+   }
   },
   {
    "id": "T-245",
@@ -3693,7 +3709,7 @@
   {
    "id": "T-003",
    "title": "Root-cause staking 4/51 live-rate coverage on the owner's machine",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "data-verification",
@@ -3722,7 +3738,14 @@
      "lines": "7-13, 40-44, 112-114",
      "quote": "**Run the live harness:** `npm run dev`, then `node scripts/test-live-data.mjs` and read the `staking-rates` response's `sources` map — count how many keys are actually `live` vs `estimate` from your IP."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-19",
+    "basis": "verified-here",
+    "reason": "Coverage is 27/51 with all 7 upstreams healthy. The 4/51 reading predates the 2026-09-09 fix, and the per-upstream diagnostic this item asked for already ships in the response body.",
+    "evidence": "docs/audits/queue-sweep-2026-09-18.md"
+   }
   },
   {
    "id": "T-005",
@@ -3826,7 +3849,12 @@
      "lines": "23",
      "quote": "Re-run `npm run audit` — expected 2 FAIL, both transient CoinGecko 429."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-09-19",
+    "note": "PART DONE 2026-09-18: `npm run audit` ran twice from the owner machine (clean run 0 FAIL, 66 REAL) and its JSON is committed at docs/audits/live-data-audit-2026-09-18.json. NOT done: regenerating DATA-AVAILABILITY.md from it. That is all that remains.",
+    "evidence": "docs/audits/queue-sweep-2026-09-18.md"
+   }
   },
   {
    "id": "T-007",
@@ -4025,7 +4053,7 @@
   {
    "id": "T-073",
    "title": "Verify AGTHX's sales-load rate from the prospectus, wire maxPct, and update the cost-order sentinel test",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "data-verification",
@@ -4059,12 +4087,19 @@
      "lines": "28",
      "quote": "AGTHX front-end sales load rate unverified (`SalesCharge.maxPct` undefined; needs prospectus source + verifiedAt). When verified: wire maxPct; the feeImpact monotonicity sentinel test will then fail by design and should be updated."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-19",
+    "basis": "verified-here",
+    "reason": "fundCatalog.ts carries salesCharge { kind: front, maxPct: 5.75 } citing the 485BPOS filed 2025-10-31 (CIK 44201), verifiedAt 2026-09-10.",
+    "evidence": "docs/audits/queue-sweep-2026-09-18.md"
+   }
   },
   {
    "id": "T-089",
    "title": "Verify curve-sourced Treasury yields render live on /macro/rates (D3 follow-up)",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "data-verification",
@@ -4089,7 +4124,14 @@
      "lines": "2026-09-03",
      "quote": "The sandbox cannot reach treasury.gov, so the live value on screen is unverified here — the mapping logic is covered by the unit tests."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-19",
+    "basis": "verified-here",
+    "reason": "/live-data/treasury-yield-curve returns REAL — 13 maturities, 2s10s 0.27, 3m10y 0.82, shape normal.",
+    "evidence": "docs/audits/queue-sweep-2026-09-18.md"
+   }
   },
   {
    "id": "T-090",
@@ -4542,7 +4584,7 @@
   {
    "id": "T-241",
    "title": "Tiingo — obtain and read the plan's layered licence",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "terms-review",
@@ -4565,7 +4607,14 @@
      "lines": "2026-09-02",
      "quote": "Three unresolved (YouTube read the wrong document, Tiingo is layered under a licence nobody has read, Bitget outright) and four read against the right document (Twelve Data, Finnhub, Binance.US, OilPrice). Nothing here is a verdict and no entry is flipped to verified."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-19",
+    "basis": "owner-record",
+    "reason": "Closed 2026-09-15. Tiingo Starter read; all five call sites made uncached per §1.6(a); Tiingo then settled as optional and not added.",
+    "evidence": "docs/decisions/2026-09-14-owner-decisions.md"
+   }
   },
   {
    "id": "T-242",
@@ -4720,7 +4769,7 @@
   {
    "id": "T-252",
    "title": "Batch-2 withdraw-fee exchange hosts — terms seeded LOW, read each",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "terms-review",
@@ -4739,7 +4788,14 @@
      "lines": "2026-08-21",
      "quote": "sourceTerms entries seeded at LOW confidence; dataSources + S3 charter updated."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-19",
+    "basis": "owner-record",
+    "reason": "Closed 2026-09-15. Poloniex read (§9 prohibits, source removed), LBank read, XT.com publishes no reachable terms and geo-blocks the region.",
+    "evidence": "docs/decisions/2026-09-14-owner-decisions.md"
+   }
   },
   {
    "id": "T-266",
@@ -4790,7 +4846,7 @@
   {
    "id": "T-272",
    "title": "Confirm FMP historical-price-eod/full carries adjClose",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "data-verification",
@@ -4807,7 +4863,14 @@
      "lines": "81-83",
      "quote": "**FMP `adjClose` confirmation.** Whether `/stable/historical-price-eod/full` carries `adjClose` varies by plan; if a split stock still shows a cliff on the FMP path, switch to `/stable/historical-price-eod/dividend-adjusted`. Needs an FMP key to verify."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-19",
+    "basis": "verified-here",
+    "reason": "FMP /stable/historical-price-eod/full carries no adjClose — fields are symbol, date, open, high, low, close, volume, change, changePercent, vwap. Probed with the configured key. The dividend-adjusted sibling does carry it but 402s on QQQ/VOO/VTSAX, so that path is paid and deferred under D21.",
+    "evidence": "docs/audits/queue-sweep-2026-09-18.md"
+   }
   },
   {
    "id": "T-282",
@@ -4834,7 +4897,7 @@
   {
    "id": "T-305",
    "title": "Live spot-check that USDP and SNX price in portfolios",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "data-verification",
@@ -4849,7 +4912,14 @@
      "lines": "135-138",
      "quote": "Both fixed — worth one live spot-check that USDP/SNX prices now populate."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-19",
+    "basis": "verified-here",
+    "reason": "Both price live: {\"havven\":0.219961,\"paxos-standard\":0.996965,\"missing\":[]}. COINGECKO_IDS already maps snx to the legacy id havven.",
+    "evidence": "docs/audits/queue-sweep-2026-09-18.md"
+   }
   },
   {
    "id": "T-367",
@@ -4896,7 +4966,7 @@
   {
    "id": "T-385",
    "title": "Settle USO's expense ratio (0.81 vs 0.86) against its prospectus",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "data-verification",
@@ -4918,7 +4988,14 @@
      "lines": "48-52",
      "quote": "KNOWN SUSPECT, deliberately NOT changed: USO carries 0.81 here and a third-party API reports 0.86."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-19",
+    "basis": "verified-here",
+    "reason": "fundCatalog.ts USO expenseRatioPct is 0.86.",
+    "evidence": "docs/audits/queue-sweep-2026-09-18.md"
+   }
   },
   {
    "id": "T-386",
@@ -4946,7 +5023,12 @@
      "lines": "41-46, 55",
      "quote": "AUM, yield, inception, index and holdings were not re-verified on any row, and the 37 funds that are not '40 Act registrants (SPY, DIA, the bullion and commodity trusts, the CurrencyShares) file no fee table at all, so their expense ratios remain exactly as unverified as before."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-09-19",
+    "note": "PART DONE: #174 read the 37 non-'40-Act expense ratios from their prospectuses, so the stated blocker is cleared. NOT done: FUND_DATA_LAST_VERIFIED is still 2026-07-20. Moving it is now a judgement about whether the unchecked catalog fields were covered too — an owner call, not remaining work.",
+    "evidence": "docs/audits/queue-sweep-2026-09-18.md"
+   }
   },
   {
    "id": "T-394",
@@ -4973,7 +5055,7 @@
   {
    "id": "T-397",
    "title": "Refresh stale staking FALLBACK values, starting with jito_sol 7.5 (real ~5.32%)",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "data-verification",
@@ -4991,12 +5073,19 @@
      "lines": "45-51, 112-114",
      "quote": "At least one entry is known-stale: **`jito_sol: 7.5`** — T1 measured the real jitoSOL rate at **5.32%** (the endpoint `kobe.mainnet.jito.network/api/v1/apy` had moved/404'd)."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-19",
+    "basis": "verified-here",
+    "reason": "Refreshed 2026-09-18 from a live reading, all 7 upstreams live: 19 of the 27 measured keys rewritten, 3 of them by more than 25%.",
+    "evidence": "docs/audits/queue-sweep-2026-09-18.md"
+   }
   },
   {
    "id": "T-398",
    "title": "Dead/moved staking endpoint sweep (Rocket Pool, Binance Chain, adapools, Subscan, Cosmostation)",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "data-verification",
@@ -5014,7 +5103,14 @@
      "lines": "52-58, 112-114",
      "quote": "Several endpoints are plausibly dead or moved and can only be confirmed live: `api.rocketpool.net/api/apr`, `api.binance.org/v1/staking/asset` (Binance Chain/BeaconChain was sunset), `js.adapools.org/global.json`, the Subscan `staking_apy` POSTs, and the Cosmostation/`*-ia` LCD hosts."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-19",
+    "basis": "verified-here",
+    "reason": "Already swept: the three Cosmostation LCDs and js.adapools.org are annotated no-upstream with the DNS finding, api.binance.org staking retired (404), both Subscan endpoints needs-api-key (403). The 7 URLs the collector fetches are the 7 that answered.",
+    "evidence": "docs/audits/queue-sweep-2026-09-18.md"
+   }
   },
   {
    "id": "T-102",
@@ -5068,7 +5164,7 @@
   {
    "id": "T-159",
    "title": "Delete any pre-2026-08-18 .exchange-credentials.json on hosts by hand (RP-5)",
-   "status": "open",
+   "status": "closed",
    "confidence": "medium",
    "owner_role": "owner-machine",
    "category": "security",
@@ -5090,7 +5186,14 @@
      "lines": "25",
      "quote": "Check whether a pre-2026-08-18 `.exchange-credentials.json` exists on the host and delete it by hand (RP-5)."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-19",
+    "basis": "verified-here",
+    "reason": "No .exchange-credentials.json anywhere under the home tree or the repo. LIMIT: the item also names deployment hosts, which the owner machine cannot reach.",
+    "evidence": "docs/audits/queue-sweep-2026-09-18.md"
+   }
   },
   {
    "id": "T-236",
@@ -5769,7 +5872,7 @@
   {
    "id": "T-071",
    "title": "Merge draft PR #147 — fund fee-impact screener (S6 item 3)",
-   "status": "blocked",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "pr",
@@ -5798,7 +5901,14 @@
      "lines": "5",
      "quote": "PR #147 \"funds: fee-impact screener on the registry (S6 item 3)\" — open draft, head 58521d1, all 9 checks green, awaiting the owner's \"merge\". Merge convention: owner says \"merge\", then squash-merge, delete branch NOT required"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "blocked",
+    "closed_on": "2026-09-19",
+    "basis": "owner-record",
+    "reason": "Found already done during the 2026-09-14 pass — PR #147 is merged.",
+    "evidence": "docs/decisions/2026-09-14-owner-decisions.md"
+   }
   },
   {
    "id": "T-079",
@@ -6715,7 +6825,7 @@
   {
    "id": "T-323",
    "title": "Decide whether to automate the code-auditor via scheduled GitHub Actions",
-   "status": "blocked",
+   "status": "closed",
    "confidence": "medium",
    "owner_role": "owner-decision",
    "category": "ops-infra",
@@ -6730,7 +6840,14 @@
      "lines": "135-143",
      "quote": "**Scheduled.** Since you already use GitHub Actions with an Anthropic API key, the code-auditor suits unattended runs well — have it write the report and open a pull request containing only `docs/audits/`, so findings arrive as a reviewable diff."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "blocked",
+    "closed_on": "2026-09-19",
+    "basis": "owner-record",
+    "reason": "Closed as DECLINED under D6: scheduled agents are scoped to dependabot triage only.",
+    "evidence": "docs/decisions/2026-09-14-owner-decisions.md"
+   }
   },
   {
    "id": "T-355",
@@ -33807,5 +33924,19 @@
   "52 of 398 tasks had the two verifier lenses disagree and no tie-break ran (usage limit); the classify-lens verdict was kept — see detail[id].method == 'disagreed-no-tiebreak'.",
   "The three completeness-critic passes did not run (usage limit), so items missed by all 20 readers would not have been caught.",
   "Verification is a code/doc reading from a cloud session; anything IP-dependent (which data sources actually work) is still owner-machine only."
- ]
+ ],
+ "annotations": {
+  "note": "This file is a SNAPSHOT of 2026-09-07 that has been annotated since. `generated_at` and `main_sha` still describe the generation; every later change is an item-level `closure` or `progress` block carrying its own date and citation, so the snapshot and the annotations stay separable.",
+  "passes": [
+   {
+    "on": "2026-09-19",
+    "what": "9 items closed after first-hand verification, 6 closed on an owner record, 2 annotated with partial progress",
+    "basis_key": "closure.basis = verified-here means checked against the repo or the running app in that session; owner-record means an earlier session closed it and the owner recorded it, and it was NOT re-verified",
+    "evidence": [
+     "docs/audits/queue-sweep-2026-09-18.md",
+     "docs/decisions/2026-09-14-owner-decisions.md"
+    ]
+   }
+  ]
+ }
 }

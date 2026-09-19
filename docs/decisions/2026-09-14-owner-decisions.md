@@ -99,6 +99,14 @@ step, and this file is its citation.
 
 ## The 57 that remain
 
+> ⚠ **This list is as of 2026-09-14 and is no longer current.** Nine of it were
+> verified closed on 2026-09-18/19 — T-003, T-073, T-089, T-159, T-272, T-305, T-385,
+> T-397, T-398 — and T-006 and T-386 are part done. The live state is the `status` and
+> `closure` fields in `docs/audits/task-queue-2026-09-07.json`, with the evidence in
+> `docs/audits/queue-sweep-2026-09-18.md`. Left standing rather than edited: this is a
+> record of what was true when the rulings were made, and rewriting it would destroy
+> that. Read it for the reasoning, not for the queue.
+
 Every one is `owner-machine` in the file's own classification — it needs the owner's
 egress, keys, or local files. **That is not the same as "the owner must do it."** The
 session that produced this document runs on the owner's machine with a clean residential
