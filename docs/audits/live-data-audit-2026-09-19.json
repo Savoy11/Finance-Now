@@ -1,0 +1,624 @@
+{
+  "base": "http://localhost:3000",
+  "mode": "full",
+  "ranAt": "2026-09-19T18:42:22.983Z",
+  "counts": {
+    "real": 65,
+    "fallback": 7,
+    "unconfigured": 3,
+    "empty": 0,
+    "fail": 2
+  },
+  "results": [
+    {
+      "name": "markets",
+      "group": "crypto/market",
+      "path": "/live-data/markets",
+      "verdict": "REAL",
+      "detail": "78 assets, source=coingecko, BTC=$81,631",
+      "ms": 2314
+    },
+    {
+      "name": "ohlcv btc 1Y",
+      "group": "crypto/market",
+      "path": "/live-data/ohlcv?id=btc&range=1Y",
+      "verdict": "FALLBACK",
+      "detail": "365 candles — Binance.com geo-blocked, served by Binance.US (different venue/prices)",
+      "ms": 3160
+    },
+    {
+      "name": "ohlcv xrp 6M (regression)",
+      "group": "crypto/market",
+      "path": "/live-data/ohlcv?id=xrp&range=6M",
+      "verdict": "FALLBACK",
+      "detail": "180 candles via Binance.US",
+      "ms": 284
+    },
+    {
+      "name": "ohlcv eth MAX",
+      "group": "crypto/market",
+      "path": "/live-data/ohlcv?id=eth&range=MAX",
+      "verdict": "FALLBACK",
+      "detail": "365 candles via Binance.US",
+      "ms": 983
+    },
+    {
+      "name": "chart (synthetic OHLC proxy)",
+      "group": "crypto/market",
+      "path": "/live-data/chart?id=btc&days=30",
+      "verdict": "FALLBACK",
+      "detail": "721 price points, correctly marked synthetic:true (not real OHLC)",
+      "ms": 1222
+    },
+    {
+      "name": "coin-list",
+      "group": "crypto/market",
+      "path": "/live-data/coin-list",
+      "verdict": "REAL",
+      "detail": "745 coins, source=coingecko",
+      "ms": 1684
+    },
+    {
+      "name": "coin-search",
+      "group": "crypto/market",
+      "path": "/live-data/coin-search?q=bitcoin",
+      "verdict": "FAIL",
+      "detail": "HTTP 404, non-JSON body",
+      "ms": 8498
+    },
+    {
+      "name": "coin-discovery",
+      "group": "crypto/market",
+      "path": "/live-data/coin-discovery",
+      "verdict": "REAL",
+      "detail": "208 candidates",
+      "ms": 1886
+    },
+    {
+      "name": "assets/list",
+      "group": "crypto/market",
+      "path": "/live-data/assets/list",
+      "verdict": "REAL",
+      "detail": "75 assets (static catalog by design)",
+      "ms": 1190
+    },
+    {
+      "name": "fear-greed",
+      "group": "crypto/market",
+      "path": "/live-data/fear-greed",
+      "verdict": "REAL",
+      "detail": "index=56",
+      "ms": 770
+    },
+    {
+      "name": "funding-rates",
+      "group": "crypto/market",
+      "path": "/live-data/funding-rates",
+      "verdict": "REAL",
+      "detail": "10 instruments via OKX",
+      "ms": 842
+    },
+    {
+      "name": "defi-tvl",
+      "group": "crypto/market",
+      "path": "/live-data/defi-tvl",
+      "verdict": "REAL",
+      "detail": "TVL=$86.5B, 50 protocols",
+      "ms": 2529
+    },
+    {
+      "name": "btc-stats",
+      "group": "crypto/market",
+      "path": "/live-data/btc-stats",
+      "verdict": "REAL",
+      "detail": "height=967539, hashrate=931 EH/s",
+      "ms": 721
+    },
+    {
+      "name": "network-fees",
+      "group": "crypto/market",
+      "path": "/live-data/network-fees",
+      "verdict": "REAL",
+      "detail": "18 networks, 5 live / 13 estimated (by design)",
+      "ms": 1408
+    },
+    {
+      "name": "reserves",
+      "group": "crypto/market",
+      "path": "/live-data/reserves",
+      "verdict": "REAL",
+      "detail": "9 stablecoins",
+      "ms": 843
+    },
+    {
+      "name": "risk-scores (withdrawn RP-6)",
+      "group": "crypto/market",
+      "path": "/live-data/risk-scores",
+      "verdict": "REAL",
+      "detail": "correctly gone — removed 2026-08-29 (RP-6)",
+      "ms": 162
+    },
+    {
+      "name": "alerts",
+      "group": "crypto/market",
+      "path": "/live-data/alerts",
+      "verdict": "REAL",
+      "detail": "8 alerts",
+      "ms": 2297
+    },
+    {
+      "name": "cbdc-data (withdrawn D10)",
+      "group": "crypto/market",
+      "path": "/live-data/cbdc-data",
+      "verdict": "REAL",
+      "detail": "correctly gone — /global-adoption and this route cut 2026-09-14 (D10)",
+      "ms": 88
+    },
+    {
+      "name": "staking-rates",
+      "group": "crypto/staking",
+      "path": "/live-data/staking-rates",
+      "verdict": "REAL",
+      "detail": "27/51 live APRs; 7/7 upstreams healthy",
+      "ms": 3940
+    },
+    {
+      "name": "staking-discovery",
+      "group": "crypto/staking",
+      "path": "/live-data/staking-discovery",
+      "verdict": "REAL",
+      "detail": "94 pools, APY 0.1–60.7%",
+      "ms": 2238
+    },
+    {
+      "name": "news",
+      "group": "crypto/news",
+      "path": "/live-data/news?coin=btc&limit=10",
+      "verdict": "REAL",
+      "detail": "10 articles from 4 providers",
+      "ms": 1768
+    },
+    {
+      "name": "social",
+      "group": "crypto/news",
+      "path": "/live-data/social?coin=btc",
+      "verdict": "UNCONFIGURED",
+      "detail": "0 signals; every provider withheld. Reddit withheld — Reddit's robots.txt disallows this app's agent. Configure REDDIT_CLIENT_ID (OAuth) to read it through the supported path.",
+      "ms": 1276
+    },
+    {
+      "name": "videos",
+      "group": "crypto/video",
+      "path": "/live-data/videos",
+      "verdict": "REAL",
+      "detail": "60 videos",
+      "ms": 3380
+    },
+    {
+      "name": "video-search",
+      "group": "crypto/video",
+      "path": "/live-data/video-search?q=bitcoin",
+      "verdict": "UNCONFIGURED",
+      "detail": "no YouTube API key configured (honestly reported)",
+      "ms": 1383
+    },
+    {
+      "name": "portfolio-prices",
+      "group": "crypto/portfolio",
+      "path": "/live-data/portfolio-prices?ids=bitcoin,ethereum,solana,paxos-standard,havven",
+      "verdict": "REAL",
+      "detail": "5/5 priced (source=live)",
+      "ms": 620
+    },
+    {
+      "name": "portfolio-history",
+      "group": "crypto/portfolio",
+      "path": "/live-data/portfolio-history?ids=bitcoin&date=2026-06-01",
+      "verdict": "REAL",
+      "detail": "1 coin priced on 2026-06-01 (source=live)",
+      "ms": 3329
+    },
+    {
+      "name": "portfolio-history (missing params → 400)",
+      "group": "crypto/portfolio",
+      "path": "/live-data/portfolio-history",
+      "verdict": "REAL",
+      "detail": "correctly rejected",
+      "ms": 39
+    },
+    {
+      "name": "wallet btc",
+      "group": "crypto/wallet",
+      "path": "/live-data/wallet/btc?address=1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa",
+      "verdict": "REAL",
+      "detail": "balance=57.47406851 BTC",
+      "ms": 1755
+    },
+    {
+      "name": "wallet eth (mainnet)",
+      "group": "crypto/wallet",
+      "path": "/live-data/wallet/eth?address=0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+      "verdict": "REAL",
+      "detail": "6.7126 ETH, 5956 txs, via https://ethereum.publicnode.com",
+      "ms": 666
+    },
+    {
+      "name": "wallet eth (polygon)",
+      "group": "crypto/wallet",
+      "path": "/live-data/wallet/eth?address=0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045&chain=polygon",
+      "verdict": "REAL",
+      "detail": "592.72 POL, via https://polygon-bor.publicnode.com",
+      "ms": 236
+    },
+    {
+      "name": "wallet sol",
+      "group": "crypto/wallet",
+      "path": "/live-data/wallet/sol?address=9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM",
+      "verdict": "REAL",
+      "detail": "balance=9943925.60713467 SOL",
+      "ms": 622
+    },
+    {
+      "name": "wallet tron",
+      "group": "crypto/wallet",
+      "path": "/live-data/wallet/tron?address=TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t",
+      "verdict": "FAIL",
+      "detail": "HTTP 502: Tronscan HTTP 429",
+      "ms": 738
+    },
+    {
+      "name": "wallet xrp",
+      "group": "crypto/wallet",
+      "path": "/live-data/wallet/xrp?address=rEb8TK3gBgk5auZkwc6sHnwrGVJH8DuaLh",
+      "verdict": "REAL",
+      "detail": "balance=99.999 XRP",
+      "ms": 1211
+    },
+    {
+      "name": "wallet exchange-connections (withdrawn RP-5)",
+      "group": "crypto/wallet",
+      "path": "/live-data/wallet/exchange-connections",
+      "verdict": "REAL",
+      "detail": "correctly gone — exchange key custody removed 2026-08-18 (RP-5)",
+      "ms": 161
+    },
+    {
+      "name": "pump-report metrics",
+      "group": "crypto/pump",
+      "path": "/live-data/pump-report/metrics",
+      "verdict": "REAL",
+      "detail": "20 metrics",
+      "ms": 1007
+    },
+    {
+      "name": "security-quotes (provider ladder)",
+      "group": "equities",
+      "path": "/live-data/security-quotes?symbols=AAPL,MSFT,BRK-B",
+      "verdict": "REAL",
+      "detail": "3/3 live via finnhub, AAPL=$336.13",
+      "ms": 5435
+    },
+    {
+      "name": "security-ohlcv",
+      "group": "equities",
+      "path": "/live-data/security-ohlcv?symbol=AAPL&range=6M",
+      "verdict": "REAL",
+      "detail": "135 candles via tiingo",
+      "ms": 2624
+    },
+    {
+      "name": "security-chart",
+      "group": "equities",
+      "path": "/live-data/security-chart?symbol=AAPL&range=6mo",
+      "verdict": "REAL",
+      "detail": "130 close points (close-only by design)",
+      "ms": 1501
+    },
+    {
+      "name": "security-chart (wrong range vocab → 400)",
+      "group": "equities",
+      "path": "/live-data/security-chart?symbol=AAPL&range=6M",
+      "verdict": "REAL",
+      "detail": "correctly rejected (use 6mo not 6M)",
+      "ms": 42
+    },
+    {
+      "name": "security-returns",
+      "group": "equities",
+      "path": "/live-data/security-returns?symbols=AAPL,MSFT",
+      "verdict": "REAL",
+      "detail": "2 symbols via tiingo",
+      "ms": 845
+    },
+    {
+      "name": "stock-universe",
+      "group": "equities",
+      "path": "/live-data/stock-universe",
+      "verdict": "FALLBACK",
+      "detail": "79 stocks from curated catalog — FMP company-screener needs a PAID plan (real universe ≈ thousands)",
+      "ms": 715
+    },
+    {
+      "name": "stock-universe (single lookup)",
+      "group": "equities",
+      "path": "/live-data/stock-universe?symbol=AAPL",
+      "verdict": "REAL",
+      "detail": "Apple · technology",
+      "ms": 36
+    },
+    {
+      "name": "stock-outliers (screener)",
+      "group": "equities",
+      "path": "/live-data/stock-outliers?min_mcap=2",
+      "verdict": "FALLBACK",
+      "detail": "only 66 evaluated across 7 sectors — screening the curated catalog, not the real universe",
+      "ms": 660
+    },
+    {
+      "name": "market-news",
+      "group": "equities",
+      "path": "/live-data/market-news?limit=10",
+      "verdict": "REAL",
+      "detail": "10 articles from CNBC, MarketWatch",
+      "ms": 932
+    },
+    {
+      "name": "stock-social",
+      "group": "equities",
+      "path": "/live-data/stock-social?limit=80",
+      "verdict": "REAL",
+      "detail": "30 signals (stocktwits=30)",
+      "ms": 838
+    },
+    {
+      "name": "sec-filings",
+      "group": "equities",
+      "path": "/live-data/sec-filings?symbol=AAPL&form=8-K&limit=5",
+      "verdict": "REAL",
+      "detail": "5 filings, latest 2026-09-01",
+      "ms": 905
+    },
+    {
+      "name": "company-facts (SEC XBRL)",
+      "group": "equities",
+      "path": "/live-data/company-facts?symbol=AAPL",
+      "verdict": "REAL",
+      "detail": "rev=$416B, netMargin=26.9%",
+      "ms": 832
+    },
+    {
+      "name": "company-profile (SEC+wiki)",
+      "group": "equities",
+      "path": "/live-data/company-profile?symbol=AAPL&name=Apple",
+      "verdict": "REAL",
+      "detail": "Electronic Computers · wiki=yes",
+      "ms": 2589
+    },
+    {
+      "name": "market-calendar",
+      "group": "equities",
+      "path": "/live-data/market-calendar",
+      "verdict": "REAL",
+      "detail": "3 earnings, 0 economic",
+      "ms": 1849
+    },
+    {
+      "name": "fund-universe",
+      "group": "funds",
+      "path": "/live-data/fund-universe",
+      "verdict": "REAL",
+      "detail": "126 catalog + 29009 discovered funds, source=live",
+      "ms": 13261
+    },
+    {
+      "name": "fund-holdings (VOO, N-PORT filer)",
+      "group": "funds",
+      "path": "/live-data/fund-holdings?symbol=VOO",
+      "verdict": "REAL",
+      "detail": "513 holdings via sec, asOf=2026-06-30",
+      "ms": 3130
+    },
+    {
+      "name": "fund-holdings (SPY, UIT — catalog expected)",
+      "group": "funds",
+      "path": "/live-data/fund-holdings?symbol=SPY",
+      "verdict": "FALLBACK",
+      "detail": "5 indicative holdings from catalog — expected: SPY is a UIT and files no N-PORT",
+      "ms": 155
+    },
+    {
+      "name": "fund-holdings-history (SPY)",
+      "group": "funds",
+      "path": "/live-data/fund-holdings-history?symbol=SPY",
+      "verdict": "REAL",
+      "detail": "0 quarter-over-quarter changes",
+      "ms": 649
+    },
+    {
+      "name": "macro-news (8 RSS feeds)",
+      "group": "macro",
+      "path": "/live-data/macro-news?limit=20",
+      "verdict": "REAL",
+      "detail": "20 articles across 3 pillars (commodities, bonds, currencies)",
+      "ms": 3135
+    },
+    {
+      "name": "fx-rates (ECB official tier)",
+      "group": "macro",
+      "path": "/live-data/fx-rates",
+      "verdict": "REAL",
+      "detail": "30 currencies, date=2026-09-18, source=frankfurter-ecb",
+      "ms": 2720
+    },
+    {
+      "name": "fx-rates-extended (community tier)",
+      "group": "macro",
+      "path": "/live-data/fx-rates-extended",
+      "verdict": "REAL",
+      "detail": "126 extended currencies, date=2026-09-19",
+      "ms": 691
+    },
+    {
+      "name": "treasury-yield-curve (treasury.gov)",
+      "group": "macro",
+      "path": "/live-data/treasury-yield-curve",
+      "verdict": "REAL",
+      "detail": "13 maturities, 2s10s=0.25, 3m10y=0.87, shape=flat",
+      "ms": 1931
+    },
+    {
+      "name": "macro quotes (gold / EURUSD / 10y future)",
+      "group": "macro",
+      "path": "/live-data/security-quotes?symbols=GC%3DF%2CEURUSD%3DX%2CZN%3DF",
+      "verdict": "UNCONFIGURED",
+      "detail": "no keyed provider served any macro quote (source=reference; missing: GC=F, EURUSD=X, ZN=F)",
+      "ms": 892
+    },
+    {
+      "name": "config (no key leakage)",
+      "group": "infra",
+      "path": "/live-data/config",
+      "verdict": "REAL",
+      "detail": "59 providers, no keys leaked",
+      "ms": 3290
+    },
+    {
+      "name": "config (llm providers)",
+      "group": "infra",
+      "path": "/live-data/config",
+      "verdict": "REAL",
+      "detail": "10 llm providers, no keys leaked",
+      "ms": 41
+    },
+    {
+      "name": "v1 discovery",
+      "group": "api/v1",
+      "path": "/api/v1/",
+      "verdict": "REAL",
+      "detail": "11 endpoints, CORS ok",
+      "ms": 679
+    },
+    {
+      "name": "v1 prices",
+      "group": "api/v1",
+      "path": "/api/v1/prices?coins=btc,eth",
+      "verdict": "REAL",
+      "detail": "2 coins",
+      "ms": 926
+    },
+    {
+      "name": "v1 exchanges",
+      "group": "api/v1",
+      "path": "/api/v1/exchanges",
+      "verdict": "REAL",
+      "detail": "29 exchanges",
+      "ms": 601
+    },
+    {
+      "name": "v1 network-fees",
+      "group": "api/v1",
+      "path": "/api/v1/network-fees",
+      "verdict": "REAL",
+      "detail": "18 networks",
+      "ms": 1794
+    },
+    {
+      "name": "v1 staking (taxonomy)",
+      "group": "api/v1",
+      "path": "/api/v1/staking/opportunities?coin=eth",
+      "verdict": "REAL",
+      "detail": "35 ETH options, APR 0.6–3.5%",
+      "ms": 3207
+    },
+    {
+      "name": "v1 staking (include_adjacent)",
+      "group": "api/v1",
+      "path": "/api/v1/staking/opportunities?coin=eth&include_adjacent=true",
+      "verdict": "REAL",
+      "detail": "3 adjacent yield products surfaced",
+      "ms": 2319
+    },
+    {
+      "name": "v1 news",
+      "group": "api/v1",
+      "path": "/api/v1/news?coin=btc&limit=5",
+      "verdict": "REAL",
+      "detail": "5 articles",
+      "ms": 4325
+    },
+    {
+      "name": "v1 transfer routes (withheld)",
+      "group": "api/v1",
+      "path": "/api/v1/transfer/routes?from=binance&to=coinbase&coin=usdt&amount=1000",
+      "verdict": "REAL",
+      "detail": "correctly withheld — Transfer Fees held from rollout 2026-08-22",
+      "ms": 1639
+    },
+    {
+      "name": "v1 transfer (withheld before param check)",
+      "group": "api/v1",
+      "path": "/api/v1/transfer/routes",
+      "verdict": "REAL",
+      "detail": "correctly withheld — 503 precedes parameter validation",
+      "ms": 176
+    },
+    {
+      "name": "v1 openapi",
+      "group": "api/v1",
+      "path": "/api/v1/openapi.json",
+      "verdict": "REAL",
+      "detail": "openapi 3.0.3, 11 paths",
+      "ms": 640
+    },
+    {
+      "name": "agent prompts list",
+      "group": "agents",
+      "path": "/api/agents/prompts",
+      "verdict": "REAL",
+      "detail": "11 agents, CORS ok",
+      "ms": 2670
+    },
+    {
+      "name": "network count matches across layers",
+      "group": "cross-layer",
+      "verdict": "REAL",
+      "detail": "18 networks both layers",
+      "ms": 4789
+    },
+    {
+      "name": "erc20 feeUsd agrees across layers (≤2%)",
+      "group": "cross-layer",
+      "verdict": "REAL",
+      "detail": "live=0.0176 v1=0.0176",
+      "ms": 0
+    },
+    {
+      "name": "erc20 feeNative identical (static gas, no drift)",
+      "group": "cross-layer",
+      "verdict": "REAL",
+      "detail": "live=0.000006644247415 v1=0.000006644247415",
+      "ms": 0
+    },
+    {
+      "name": "bitcoin feeUsd agrees across layers (≤2%)",
+      "group": "cross-layer",
+      "verdict": "REAL",
+      "detail": "live=0.611 v1=0.611",
+      "ms": 0
+    },
+    {
+      "name": "bitcoin feeNative identical (static gas, no drift)",
+      "group": "cross-layer",
+      "verdict": "REAL",
+      "detail": "live=0.0000075 v1=0.0000075",
+      "ms": 0
+    },
+    {
+      "name": "bitcoin fee is live (mempool.space)",
+      "group": "cross-layer",
+      "verdict": "REAL",
+      "detail": "source=live",
+      "ms": 0
+    }
+  ]
+}
