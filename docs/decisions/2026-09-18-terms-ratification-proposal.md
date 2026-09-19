@@ -38,7 +38,7 @@ of `/live-data/macro-news` the moment it merged.
 
 ---
 
-## Group A — ratify the readings (18 sources) — ✅ APPLIED 2026-09-18
+## Group A — ratify the readings (14 sources) — ✅ APPLIED 2026-09-18, 4 REVERTED 2026-09-19
 
 > **Applied as proposed, with one correction found in the applying.** This list was
 > built from the two audits' `T-` numbers, and that missed **bitfinex.com**, whose own
@@ -147,8 +147,8 @@ Branding Guidelines require?* — which is not a terms reading and is not done.
 
 ## If Group A is approved
 
-The edit is mechanical: 18 entries change `review` and `reviewedAt`, and no verdict
-moves. The registry then reads **22 of 56 verified**, and the remaining 34 `seeded`
+The edit is mechanical: 14 entries change `review` and `reviewedAt`, and no verdict
+moves. The registry then reads **18 of 56 verified**, and the remaining 38 `seeded`
 entries are genuinely unread rather than a mix of unread and un-filed.
 
 ### What the applying actually found
@@ -177,3 +177,21 @@ with a comment explaining that *"the TERMS are still unread"*. That premise expi
 2026-09-14. The invariant it was really protecting — a robots observation must never
 launder itself into a terms review — is now asserted directly, by requiring the two
 facts to carry different dates.
+
+### Correction, 2026-09-19 — four of the ratifications were wrong
+
+The Group A list was built from the news audit's coverage line ("Covers T-141 through
+T-150") rather than from its findings. The findings say, under a heading that could not
+be clearer — *"Two publishers could not be read at all"* — that CoinDesk returned `429`
+on its terms page and MarketWatch `401`, that the Dow Jones feed host publishes no
+reachable terms, and: *"Both stay `seeded`."* Investing.com appears in the audit only
+where its feeds were probed; no terms clause is recorded for it anywhere.
+
+So `review: 'verified'` — *has anyone actually read this* — was false for
+**coindesk.com, marketwatch.com, dowjones.io and investing.com**. Reverted to `seeded`
+with the original 2026-08-06 date, each carrying a comment saying what happened on
+09-14 and why the 09-18 flip was a mistake. The registry reads **18 of 56 verified**.
+
+The ratification sheet shows all four marked *ratify* on 2026-09-16 — but a click
+cannot make an unread document read. Those rows need an email (CoinDesk, Dow Jones) or a
+reading with a record (Investing.com) before the field can honestly move.

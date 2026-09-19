@@ -1027,8 +1027,11 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     termsUrl: 'https://www.coindesk.com/terms',
     finding: 'Publishes a public RSS feed. Syndication of headline/link/summary with attribution and a link back is the intended use; full-text reproduction is not.',
     conditions: ['Headline, link and feed summary only', 'Attribute and link back to the origin article'],
-    reviewedAt: '2026-09-14',
-    review: 'verified',
+    // ⚠ NOT READ 2026-09-14 — /terms and the homepage both 429, twice, 20s apart, from a clean residential egress, while the RSS feed returned 200 from the same IP in the same minute. The audit says: "Couldn't read it" is not permission. Needs an email, not another fetch.
+    // Ratified 'verified' by mistake on 2026-09-18 and reverted 2026-09-19; the
+    // original 2026-08-06 seeded date is restored because nothing newer was read.
+    reviewedAt: '2026-08-06',
+    review: 'seeded',
     confidence: 'medium',
   },
   {
@@ -1072,8 +1075,11 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     finding:
       'feeds.content.dowjones.io serves MarketWatch\'s public top-stories RSS. Dow Jones publishes it for syndication; the terms are personal, non-commercial use with attribution, and expressly not bulk reproduction of article text.',
     conditions: ['Headline, link and feed summary only', 'Attribute MarketWatch and link back', 'Personal, non-commercial use'],
-    reviewedAt: '2026-09-14',
-    review: 'verified',
+    // ⚠ NOT READ 2026-09-14 — this is the feed host the app calls; its robots.txt returns 403 and it publishes no reachable terms document. Needs an email.
+    // Ratified 'verified' by mistake on 2026-09-18 and reverted 2026-09-19; the
+    // original 2026-08-06 seeded date is restored because nothing newer was read.
+    reviewedAt: '2026-08-06',
+    review: 'seeded',
     confidence: 'medium',
   },
   {
@@ -1083,8 +1089,11 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     termsUrl: 'https://www.marketwatch.com/terms-of-use',
     finding: 'Same terms as the Dow Jones feed host — syndication of headline/link/summary, personal and non-commercial, with attribution.',
     conditions: ['Headline, link and feed summary only', 'Attribute and link back', 'Personal, non-commercial use'],
-    reviewedAt: '2026-09-14',
-    review: 'verified',
+    // ⚠ NOT READ 2026-09-14 — 401 on the homepage. The host the app actually fetches is feeds.content.dowjones.io (see dowjones.io). Needs an email.
+    // Ratified 'verified' by mistake on 2026-09-18 and reverted 2026-09-19; the
+    // original 2026-08-06 seeded date is restored because nothing newer was read.
+    reviewedAt: '2026-08-06',
+    review: 'seeded',
     confidence: 'medium',
   },
   {
@@ -1105,8 +1114,11 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     termsUrl: 'https://www.investing.com/about-us/terms-and-conditions',
     finding: 'Publishes per-desk RSS feeds for syndication. Terms permit personal, non-commercial use of the feed with attribution; scraping the site itself is prohibited separately.',
     conditions: ['RSS feed only — never scrape the HTML site', 'Headline, link and summary only, with attribution'],
-    reviewedAt: '2026-09-14',
-    review: 'verified',
+    // ⚠ NOT CONFIRMED READ 2026-09-14 — the audit records only that its three feeds returned 200; no terms clause is quoted or characterised anywhere in it. Possibly opened, no record. Ratify only once a reading is on the record.
+    // Ratified 'verified' by mistake on 2026-09-18 and reverted 2026-09-19; the
+    // original 2026-08-06 seeded date is restored because nothing newer was read.
+    reviewedAt: '2026-08-06',
+    review: 'seeded',
     confidence: 'medium',
   },
   {
