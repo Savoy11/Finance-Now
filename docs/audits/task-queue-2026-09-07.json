@@ -1267,7 +1267,20 @@
      "lines": "38, 50",
      "quote": "Either way, the fabricated `updatedAt` on static data should not remain."
     }
-   ]
+   ],
+   "proposed_closure": {
+    "status_was": "open",
+    "proposed_on": "2026-09-19",
+    "verdict": "moot",
+    "basis": "verified-here",
+    "pending_owner_approval": true,
+    "reason": "The fabricated `updatedAt` this item tracked lived in frontend/src/app/live-data/cbdc-data/route.ts, which was DELETED on 2026-09-14 (D10) along with /global-adoption. `git ls-files 'src/app/live-data/cbdc-data/*'` returns nothing; only an empty untracked directory remains. There is no code left to fix.",
+    "evidence": [
+     "docs/audits/data-availability-steward-proposal-2026-09-19.md",
+     "docs/audits/live-data-audit-2026-09-19.json"
+    ],
+    "branch": "docs/data-availability-2026-09-19"
+   }
   },
   {
    "id": "T-156",
@@ -1396,7 +1409,20 @@
      "lines": "177, 264, 426 (vs DATA-SOURCES.md 38, 57)",
      "quote": "Live EVM gas providers remain the next step to flip more 🟡 chains to 🟢."
     }
-   ]
+   ],
+   "proposed_closure": {
+    "status_was": "open",
+    "proposed_on": "2026-09-19",
+    "verdict": "close",
+    "basis": "verified-here",
+    "pending_owner_approval": true,
+    "reason": "Its quoted text — 'Live EVM gas providers remain the next step to flip more 🟡 chains to 🟢' — was still present VERBATIM in action item 6, four weeks after 01d6bfe (2026-08-21) took that step. Rewritten to '5 of 18 networks 🟢 (BTC + ETH/BNB/Polygon/AVAX via keyless eth_gasPrice); the 13 L2s stay 🟡 on purpose because eth_gasPrice omits their L1 data fee'. NOTE: the item's cited lines (177, 264, 426) are 2026-09-07 positions and point at unrelated content today; the quoted TEXT is what located the residue.",
+    "evidence": [
+     "docs/audits/data-availability-steward-proposal-2026-09-19.md",
+     "docs/audits/live-data-audit-2026-09-19.json"
+    ],
+    "branch": "docs/data-availability-2026-09-19"
+   }
   },
   {
    "id": "T-168",
@@ -1418,7 +1444,20 @@
      "lines": "230-232, 285 (vs DATA-SOURCES.md 58)",
      "quote": "| Exchange connections | 🟢 Live | local credential store | Empty until the user configures one. |"
     }
-   ]
+   ],
+   "proposed_closure": {
+    "status_was": "open",
+    "proposed_on": "2026-09-19",
+    "verdict": "close",
+    "basis": "verified-here",
+    "pending_owner_approval": true,
+    "reason": "The quoted row ('| Exchange connections | 🟢 Live | local credential store |') was already ⚪ Removed by the 2026-09-08 pass. The residue this item existed for survived elsewhere: a bare `wallet/exchange` reference in the route-conventions audit, now marked deleted 2026-08-18 (RP-5). Also corrected a claim nobody had challenged — the row credited the wallet store's v2 migration with dropping persisted `exchanges`, but that migration lived ONE DAY (added 24ee839 2026-08-18, removed by NT3 6ae77dc 2026-08-19 with the whole persist wrapper).",
+    "evidence": [
+     "docs/audits/data-availability-steward-proposal-2026-09-19.md",
+     "docs/audits/live-data-audit-2026-09-19.json"
+    ],
+    "branch": "docs/data-availability-2026-09-19"
+   }
   },
   {
    "id": "T-169",
@@ -1441,7 +1480,20 @@
      "lines": "261",
      "quote": "| Risk scores | 🟢 Derived | DefiLlama + CoinGecko + curated disclosures + news | Live-computed composites via `src/lib/risk`. Pillars without data show N/A and drop coverage/confidence. |"
     }
-   ]
+   ],
+   "proposed_closure": {
+    "status_was": "open",
+    "proposed_on": "2026-09-19",
+    "verdict": "close",
+    "basis": "verified-here",
+    "pending_owner_approval": true,
+    "reason": "The quoted row ('| Risk scores | 🟢 Derived | ...') was already ⚪ Removed by the 2026-09-08 pass. Residue: the replacement row still listed 'staking-provider risk' among the live consumers of lib/risk/, which D14 struck on 2026-09-14 — computeOverallRisk()/getRiskLevel() deleted, composite gone from the v1 route, staking-discovery and the MCP server. Corrected: scoreStakingProvider() survives as the canonical engine with NO live consumer.",
+    "evidence": [
+     "docs/audits/data-availability-steward-proposal-2026-09-19.md",
+     "docs/audits/live-data-audit-2026-09-19.json"
+    ],
+    "branch": "docs/data-availability-2026-09-19"
+   }
   },
   {
    "id": "T-170",
@@ -1461,7 +1513,20 @@
      "lines": "298 (vs 433-438)",
      "quote": "**Known issue:** signals merge by recency, and StockTwits posts are minutes old vs Reddit's hours/days, so at `limit ≤ 30` StockTwits fills every slot and Reddit is starved (0 at limit 20, 10 at 40, 45 at 80)."
     }
-   ]
+   ],
+   "proposed_closure": {
+    "status_was": "open",
+    "proposed_on": "2026-09-19",
+    "verdict": "close",
+    "basis": "verified-here",
+    "pending_owner_approval": true,
+    "reason": "The quoted 'Known issue: Reddit is starved' text was already gone. Residual staleness in THREE other places, all corrected: (1) Reddit was bucketed under 'blocked by IP, cannot be fixed by paying anyone' when it is 🔑 gated by our OWN robots decision, lifted by REDDIT_CLIENT_ID plus accepting Reddit's Data API Terms; (2) the stock-social latency row still said '~6 s, Reddit RSS frequently hits the 429 path' when the 429 path is no longer walked at all (~0.8 s, StockTwits only); (3) action item 10's '20/0 → 10/10' fix measurement now reads 20/0 again under the gate — same shape as the starvation, but declared rather than hidden.",
+    "evidence": [
+     "docs/audits/data-availability-steward-proposal-2026-09-19.md",
+     "docs/audits/live-data-audit-2026-09-19.json"
+    ],
+    "branch": "docs/data-availability-2026-09-19"
+   }
   },
   {
    "id": "T-181",
@@ -2307,7 +2372,12 @@
      "lines": "234-239, 273, 391",
      "quote": "`staking-discovery` **21.8s** · `fund-universe` **12.4s** (28,988 funds) · `staking-rates` **6.7s** · `defi-tvl` **3.2s**. The first two are the standing pagination/performance items"
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-09-19",
+    "note": "MEASURED 2026-09-19, not yet closed. The audit records staking-discovery at 2,238 ms / 94 pools — against the ~18 s this item was raised on — so the 2026-09-08 per-upstream 6 s bound is working. NOT closing it, because three direct re-probes the same day ran 7.6 s, 7.7 s and 9.6 s, so the fast audit figure is not reproducible on demand. A SEPARATE defect surfaced while measuring: Yearn, Pendle and Beefy contribute ZERO pools (api.yearn.finance does not resolve, the Pendle endpoint 404s on the exact URL the route sends, Beefy answers 200 and lands nothing), and two of the three probes returned 0 pools total with ok:true and no stale flag — the last-good cache at route.ts:463-468 only covers a warm identical filter key.",
+    "evidence": "docs/audits/data-availability-steward-proposal-2026-09-19.md"
+   }
   },
   {
    "id": "T-173",
@@ -2414,7 +2484,20 @@
      "lines": "116-117",
      "quote": "**DATA-AVAILABILITY action items 9, 15, 17, 18** — paid FMP decision, staking live coverage (4/51), CoinGecko harness pacing, macro quote check."
     }
-   ]
+   ],
+   "proposed_closure": {
+    "status_was": "open",
+    "proposed_on": "2026-09-19",
+    "verdict": "close",
+    "basis": "verified-here",
+    "pending_owner_approval": true,
+    "reason": "Answered and exceeded. 27 of 51 keys live (was 4 of 51), 7/7 upstreams healthy, defillama-yields 19/19 — measured on the owner's machine 2026-09-09 and re-confirmed 2026-09-19 (AS11426, proxy:false). The diagnosis in the original item was wrong: this was never 'PR #37 grew the catalog, not the live sources'. Four dead hosts were hanging DNS ~10s each on libuv's 4-thread resolver pool, starving the route's shared 6s budget so healthy upstreams aborted in array order (#157–#165). The remaining 24 are NOT all sourceless: 14 no-upstream, 5 derived-estimate, 3 curated-estimate, 2 needs-api-key.",
+    "evidence": [
+     "docs/audits/data-availability-steward-proposal-2026-09-19.md",
+     "docs/audits/live-data-audit-2026-09-19.json"
+    ],
+    "branch": "docs/data-availability-2026-09-19"
+   }
   },
   {
    "id": "T-070",
@@ -2540,7 +2623,20 @@
      "lines": "116-117",
      "quote": "**DATA-AVAILABILITY action items 9, 15, 17, 18** — paid FMP decision, staking live coverage (4/51), CoinGecko harness pacing, macro quote check."
     }
-   ]
+   ],
+   "proposed_closure": {
+    "status_was": "open",
+    "proposed_on": "2026-09-19",
+    "verdict": "close",
+    "basis": "verified-here",
+    "pending_owner_approval": true,
+    "reason": "The check exists and has run four times. docs/audits/live-data-audit-2026-09-19.json carries `macro quotes (gold / EURUSD / 10y future)` in group `macro`, verdict UNCONFIGURED, detail 'no keyed provider served any macro quote (source=reference; missing: GC=F, EURUSD=X, ZN=F)'. Recorded 🔑 UNCONFIGURED on 2026-09-09, the 09-10 re-run, and the 09-18 and 09-19 audits. The macro section preamble said 'only the shared quote path is still inferred rather than observed' — contradicting action item 18 in the same file — and now says five checks cover the module.",
+    "evidence": [
+     "docs/audits/data-availability-steward-proposal-2026-09-19.md",
+     "docs/audits/live-data-audit-2026-09-19.json"
+    ],
+    "branch": "docs/data-availability-2026-09-19"
+   }
   },
   {
    "id": "T-164",
@@ -2573,7 +2669,20 @@
      "lines": "116-117",
      "quote": "**DATA-AVAILABILITY action items 9, 15, 17, 18** — paid FMP decision, staking live coverage (4/51), CoinGecko harness pacing, macro quote check."
     }
-   ]
+   ],
+   "proposed_closure": {
+    "status_was": "open",
+    "proposed_on": "2026-09-19",
+    "verdict": "close",
+    "basis": "verified-here",
+    "pending_owner_approval": true,
+    "reason": "Cleared and verified. The 2026-09-19 run has coin-discovery, alerts AND portfolio-history all REAL with NO CoinGecko 429 anywhere in the run. The pacing landed as item 17b (weighted per check, minimum gap derived as window/cap rather than fixed). That run's only two failures are unrelated: coin-search (404 while Next recompiled — 200 on a direct probe seconds later) and wallet/tron (Tronscan 429, reproduced against Tronscan directly so not provoked by the audit's burst). CAVEAT KEPT: the upstream allowance is still unread — 10/min is the harness's self-imposed floor, not a measured limit.",
+    "evidence": [
+     "docs/audits/data-availability-steward-proposal-2026-09-19.md",
+     "docs/audits/live-data-audit-2026-09-19.json"
+    ],
+    "branch": "docs/data-availability-2026-09-19"
+   }
   },
   {
    "id": "T-301",
@@ -2677,7 +2786,12 @@
      "lines": "134-143",
      "quote": "Sweep the checklist inventory (the charter's table) for entries whose status no longer matches the tree. Verify every suspicion IN SOURCE, following the call path a request takes — never conclude from commit messages, summaries, or docs."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-09-19",
+    "note": "PART DONE 2026-09-19: the DATA-AVAILABILITY.md portion of the batched steward proposal is complete and on branch docs/data-availability-2026-09-19 — 74 corrections, a new 'Run of 2026-09-19' section, and 11 proposed queue closures. NOT done: the TASK-QUEUE and P3-plan portions of the sweep this item also asks for.",
+    "evidence": "docs/audits/data-availability-steward-proposal-2026-09-19.md"
+   }
   },
   {
    "id": "T-338",
@@ -2852,7 +2966,20 @@
      "lines": "79-80, 322, 467-468",
      "quote": "North Korean won and Syrian pound are both effectively unquoted in open markets, so this is the source being accurate rather than broken — but the allowlist could drop them."
     }
-   ]
+   ],
+   "proposed_closure": {
+    "status_was": "open",
+    "proposed_on": "2026-09-19",
+    "verdict": "moot",
+    "basis": "verified-here",
+    "pending_owner_approval": true,
+    "reason": "The decision no longer has a subject. /live-data/fx-rates-extended now prices 126 of 126 allowlisted currencies with `missing: []` (2026-09-19; REAL on the 09-18 run too) — KPW and SYP became quotable upstream, so the route classifies REAL without dropping anything. The 2026-09-08 reasoning for keeping them is retained in the document because it still governs the next code that goes unquoted.",
+    "evidence": [
+     "docs/audits/data-availability-steward-proposal-2026-09-19.md",
+     "docs/audits/live-data-audit-2026-09-19.json"
+    ],
+    "branch": "docs/data-availability-2026-09-19"
+   }
   },
   {
    "id": "T-308",
@@ -3854,6 +3981,19 @@
     "noted_on": "2026-09-19",
     "note": "PART DONE 2026-09-18: `npm run audit` ran twice from the owner machine (clean run 0 FAIL, 66 REAL) and its JSON is committed at docs/audits/live-data-audit-2026-09-18.json. NOT done: regenerating DATA-AVAILABILITY.md from it. That is all that remains.",
     "evidence": "docs/audits/queue-sweep-2026-09-18.md"
+   },
+   "proposed_closure": {
+    "status_was": "open",
+    "proposed_on": "2026-09-19",
+    "verdict": "close",
+    "basis": "verified-here",
+    "pending_owner_approval": true,
+    "reason": "This item's remaining half — 'regenerate DATA-AVAILABILITY.md from the output', per its own 2026-09-19 progress note — is what this pass did. 74 corrections applied against the 2026-09-19 audit (77 probes: 65 REAL, 7 FALLBACK, 3 UNCONFIGURED, 0 EMPTY, 2 FAIL) plus a new 'Run of 2026-09-19' section. The 2026-08-06 predicted-vs-measured table is annotated with dated addenda rather than rewritten, because its middle column RECORDS a forecast and editing it would make the document misreport its own prediction.",
+    "evidence": [
+     "docs/audits/data-availability-steward-proposal-2026-09-19.md",
+     "docs/audits/live-data-audit-2026-09-19.json"
+    ],
+    "branch": "docs/data-availability-2026-09-19"
    }
   },
   {
@@ -3888,7 +4028,20 @@
      "lines": "118",
      "quote": "**Item 11** — fund-universe payload fix shipped 2026-07-30, pending owner re-measurement."
     }
-   ]
+   ],
+   "proposed_closure": {
+    "status_was": "open",
+    "proposed_on": "2026-09-19",
+    "verdict": "close",
+    "basis": "verified-here",
+    "pending_owner_approval": true,
+    "reason": "Measured and recorded. /live-data/fund-universe now returns 2,274,590 bytes (2.27 MB) against the 14 MB this item was raised on — an 84% cut, confirming the 2026-07-30 slimming worked. Recorded in three places that had all been carrying 'pending re-measurement' since July: the Funds table, the Performance outliers table and action item 11. Also corrected item 11's claim that `entries` carries 118 catalog rows; it is 126.",
+    "evidence": [
+     "docs/audits/data-availability-steward-proposal-2026-09-19.md",
+     "docs/audits/live-data-audit-2026-09-19.json"
+    ],
+    "branch": "docs/data-availability-2026-09-19"
+   }
   },
   {
    "id": "T-031",
@@ -33935,6 +34088,16 @@
     "evidence": [
      "docs/audits/queue-sweep-2026-09-18.md",
      "docs/decisions/2026-09-14-owner-decisions.md"
+    ]
+   },
+   {
+    "on": "2026-09-19",
+    "what": "11 closures PROPOSED (9 close, 2 moot) and 2 items annotated with progress, from the DATA-AVAILABILITY.md checklist-steward pass",
+    "basis_key": "proposed_closure.pending_owner_approval = true means the evidence is recorded but the owner has NOT approved the close. Merging the branch is the approval; a follow-up pass promotes proposed_closure to closure.",
+    "caveat": "The line numbers cited by T-167/168/169/170 had all drifted — they reference the 2026-09-07 snapshot and point at unrelated content in the document today. Their QUOTED TEXT is what located the real residue, and in every case it sat somewhere other than the citation said. Treat a line number in any other entry of this snapshot the same way.",
+    "evidence": [
+     "docs/audits/data-availability-steward-proposal-2026-09-19.md",
+     "docs/audits/live-data-audit-2026-09-19.json"
     ]
    }
   ]
