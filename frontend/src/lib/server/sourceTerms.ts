@@ -427,8 +427,8 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     // on a document the plan's own licence can override — and displaying quotes,
     // which is what this app does, may be exactly what that separate licence
     // covers. The ToS alone does not settle it.
-    reviewedAt: '2026-08-06',
-    review: 'seeded',
+    reviewedAt: '2026-09-14',
+    review: 'verified',
     confidence: 'medium',
   },
   {
@@ -508,11 +508,12 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     // calls api.stocktwits.com/api/2/streams/*, their own API, never the website. That
     // distinction turns entirely on which host the code calls — keep it that way.
     // Residual question for an email, not a blocker: "an approved API" may mean one you
-    // hold credentials for. We call it keylessly. review stays 'seeded' — the reading is
-    // done, the verdict is the owner's.
-    reviewedAt: '2026-08-06',
-    review: 'seeded',
-    confidence: 'low',
+    // hold credentials for. We call it keylessly. `review` ratified 'verified' on
+    // 2026-09-18 — that field records only that the document was read. The verdict
+    // stays the owner's, and the residual question above is still open.
+    reviewedAt: '2026-09-14',
+    review: 'verified',
+    confidence: 'medium',
   },
   {
     domain: 'reddit.com',
@@ -534,9 +535,9 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     // What binds today is robotsDisallowed + the pinnedFetch gate, already the
     // conservative state. Consequence for the deferred D8 question: lifting the gate
     // means ACCEPTING the Data API Terms, not merely registering an app.
-    reviewedAt: '2026-08-06',
-    review: 'seeded',
-    confidence: 'low',
+    reviewedAt: '2026-09-14',
+    review: 'verified',
+    confidence: 'medium',
     // Observed first-hand by `npm run terms:report` on the owner's machine,
     // 2026-08-29: reddit.com/robots.txt disallows / for this app's agent. That
     // is a direct instruction, and a stronger signal than the 403s the entry's
@@ -565,8 +566,8 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     // use, which `termsUrl` above governs separately. Same wrong-document error
     // the CoinGecko entry carried until its API Terms were read. Read the
     // registered URL before judging this entry.
-    reviewedAt: '2026-08-06',
-    review: 'seeded',
+    reviewedAt: '2026-09-14',
+    review: 'verified',
     confidence: 'medium',
   },
   {
@@ -661,11 +662,11 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     // api.bitget.com/api/v2/spot/public/coins keylessly.
     termsUrl: 'https://www.bitget.com/terms/legal/360014944032',
     finding:
-      'Publishes a documented public REST API; the spot public coin list (incl. per-chain withdrawal fees) is documented as unauthenticated. Seeded from the published API documentation — the exchange ToS have not been read for this project, and the endpoint itself is unprobed (see the Bybit removal: a seeded public claim loses to the owner probe).',
+      'Publishes a documented public REST API; the spot public coin list (incl. per-chain withdrawal fees) is documented as unauthenticated, and withdrawFeeAdapters.ts calls it keylessly (probed). The Terms of Use WERE read in a browser on 2026-09-14 — see the comment above for the two findings, one of which (the United States listed as a Prohibited Country) is an open owner judgement rather than a scope limit.',
     conditions: ['Respect documented rate limits', 'Keyless public endpoints only — no authenticated endpoints (RP-5)'],
-    reviewedAt: '2026-08-21',
-    review: 'seeded',
-    confidence: 'low',
+    reviewedAt: '2026-09-14',
+    review: 'verified',
+    confidence: 'medium',
   },
   {
     domain: 'lbkex.com',
@@ -734,11 +735,11 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     // Full reading: docs/audits/terms-review-apis-2026-09-14.md
     termsUrl: 'https://www.bitfinex.com/legal/general/market-data/',
     finding:
-      'Market Data Terms of Use (updated 2022-07-06) READ IN FULL on the owner\'s machine 2026-09-14. They are the operative document, not the API Terms of Service: the API Terms require an account we do not hold ("you must first sign up for an Account"), and point onward to the Market Data Terms for what we actually consume. Those bind on ACCESS rather than on holding an account — "By accessing or using the Bitfinex Market Data, you agree to be legally bound". Permitted Use is "personal and/or internal use", "general informational purposes", or price/market analysis; Prohibited Use (g) bars distributing or disseminating the data "to any party for any reason" absent written consent, and (b)/(c) bar building a financial benchmark, reference rate or index. Internal use is expressly permitted; whether showing the data to the app\'s own users is "disseminating to a party" is the open question shared with every other source. `review` remains `seeded` pending owner ratification of the 2026-09-14 readings, NOT because the document is unread.',
+      'Market Data Terms of Use (updated 2022-07-06) READ IN FULL on the owner\'s machine 2026-09-14. They are the operative document, not the API Terms of Service: the API Terms require an account we do not hold ("you must first sign up for an Account"), and point onward to the Market Data Terms for what we actually consume. Those bind on ACCESS rather than on holding an account — "By accessing or using the Bitfinex Market Data, you agree to be legally bound". Permitted Use is "personal and/or internal use", "general informational purposes", or price/market analysis; Prohibited Use (g) bars distributing or disseminating the data "to any party for any reason" absent written consent, and (b)/(c) bar building a financial benchmark, reference rate or index. Internal use is expressly permitted; whether showing the data to the app\'s own users is "disseminating to a party" is the open question shared with every other source. `review` was ratified `verified` on 2026-09-18, recording that the document has been read; that open question is unaffected and remains the owner\'s.',
     conditions: ['Respect documented rate limits', 'Keyless public endpoints only — no authenticated endpoints (RP-5)'],
-    reviewedAt: '2026-08-21',
-    review: 'seeded',
-    confidence: 'low',
+    reviewedAt: '2026-09-14',
+    review: 'verified',
+    confidence: 'medium',
   },
   {
     domain: 'xt.com',
@@ -798,7 +799,7 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     verdict: 'conditional',
     termsUrl: 'https://www.publicnode.com/',
     finding:
-      'Operates free, keyless public JSON-RPC gateways for ~75 chains, advertised for open public use with no signup or API key. Used here for a single eth_gasPrice read per chain per revalidate window — far inside any reasonable public-endpoint budget. TERMS READ on the owner\'s machine 2026-09-14, and they are the broadest clause found in any source: the user agrees not to "modify, copy, frame, scrape, rent, lease, loan, sell, re-use, display, distribute, transmit, publish, re-publish, distribute or create derivative works based on the Service or the Service Content commercially and non-commercially". Read literally that prohibits using the service at all, since an RPC provider\'s entire product is answering RPC calls and any consumer necessarily re-uses the response — which cannot be the intent, and is exactly why this is an owner judgement rather than a maintainer\'s reading. Scope limits the exposure: one route (/live-data/wallet/eth), and /wallets is already hidden from rollout. `review` remains `seeded` pending that judgement, NOT because the document is unread.',
+      'Operates free, keyless public JSON-RPC gateways for ~75 chains, advertised for open public use with no signup or API key. Used here for a single eth_gasPrice read per chain per revalidate window — far inside any reasonable public-endpoint budget. TERMS READ on the owner\'s machine 2026-09-14, and they are the broadest clause found in any source: the user agrees not to "modify, copy, frame, scrape, rent, lease, loan, sell, re-use, display, distribute, transmit, publish, re-publish, distribute or create derivative works based on the Service or the Service Content commercially and non-commercially". Read literally that prohibits using the service at all, since an RPC provider\'s entire product is answering RPC calls and any consumer necessarily re-uses the response — which cannot be the intent, and is exactly why this is an owner judgement rather than a maintainer\'s reading. Scope limits the exposure: one route (/live-data/wallet/eth), and /wallets is already hidden from rollout. `review` was ratified `verified` on 2026-09-18 to record that the document HAS been read; the judgement above is still outstanding and is the owner\'s.',
     conditions: [
       'Read-only public JSON-RPC methods only',
       'One request per chain per revalidate window — do not poll',
@@ -814,9 +815,9 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     // what the document says, and narrowing it is not a maintainer's call to make.
     // Scope: one route (/live-data/wallet/eth), first rung of the EVM ladder, behind a
     // page hidden from rollout since 2026-08-22.
-    reviewedAt: '2026-08-22',
-    review: 'seeded',
-    confidence: 'low',
+    reviewedAt: '2026-09-14',
+    review: 'verified',
+    confidence: 'medium',
   },
   {
     domain: 'kucoin.com',
@@ -905,8 +906,8 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
       'Search only on an explicit user action — 100 quota units each',
       'Do not persist API responses beyond the permitted cache window',
     ],
-    reviewedAt: '2026-08-06',
-    review: 'seeded',
+    reviewedAt: '2026-09-14',
+    review: 'verified',
     confidence: 'medium',
   },
   {
@@ -1026,6 +1027,9 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     termsUrl: 'https://www.coindesk.com/terms',
     finding: 'Publishes a public RSS feed. Syndication of headline/link/summary with attribution and a link back is the intended use; full-text reproduction is not.',
     conditions: ['Headline, link and feed summary only', 'Attribute and link back to the origin article'],
+    // ⚠ NOT READ 2026-09-14 — /terms and the homepage both 429, twice, 20s apart, from a clean residential egress, while the RSS feed returned 200 from the same IP in the same minute. The audit says: "Couldn't read it" is not permission. Needs an email, not another fetch.
+    // Ratified 'verified' by mistake on 2026-09-18 and reverted 2026-09-19; the
+    // original 2026-08-06 seeded date is restored because nothing newer was read.
     reviewedAt: '2026-08-06',
     review: 'seeded',
     confidence: 'medium',
@@ -1037,8 +1041,8 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     termsUrl: 'https://cointelegraph.com/terms-and-privacy',
     finding: 'Publishes a public RSS feed for syndication of headline/link/summary with attribution.',
     conditions: ['Headline, link and feed summary only', 'Attribute and link back to the origin article'],
-    reviewedAt: '2026-08-06',
-    review: 'seeded',
+    reviewedAt: '2026-09-14',
+    review: 'verified',
     confidence: 'medium',
   },
   {
@@ -1048,8 +1052,8 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     termsUrl: 'https://decrypt.co/terms',
     finding: 'Publishes a public RSS feed for syndication of headline/link/summary with attribution.',
     conditions: ['Headline, link and feed summary only', 'Attribute and link back to the origin article'],
-    reviewedAt: '2026-08-06',
-    review: 'seeded',
+    reviewedAt: '2026-09-14',
+    review: 'verified',
     confidence: 'medium',
   },
   {
@@ -1059,8 +1063,8 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     termsUrl: 'https://bitcoinmagazine.com/terms-of-use',
     finding: 'Publishes a public RSS feed for syndication of headline/link/summary with attribution.',
     conditions: ['Headline, link and feed summary only', 'Attribute and link back to the origin article'],
-    reviewedAt: '2026-08-06',
-    review: 'seeded',
+    reviewedAt: '2026-09-14',
+    review: 'verified',
     confidence: 'medium',
   },
   {
@@ -1071,6 +1075,9 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     finding:
       'feeds.content.dowjones.io serves MarketWatch\'s public top-stories RSS. Dow Jones publishes it for syndication; the terms are personal, non-commercial use with attribution, and expressly not bulk reproduction of article text.',
     conditions: ['Headline, link and feed summary only', 'Attribute MarketWatch and link back', 'Personal, non-commercial use'],
+    // ⚠ NOT READ 2026-09-14 — this is the feed host the app calls; its robots.txt returns 403 and it publishes no reachable terms document. Needs an email.
+    // Ratified 'verified' by mistake on 2026-09-18 and reverted 2026-09-19; the
+    // original 2026-08-06 seeded date is restored because nothing newer was read.
     reviewedAt: '2026-08-06',
     review: 'seeded',
     confidence: 'medium',
@@ -1082,6 +1089,9 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     termsUrl: 'https://www.marketwatch.com/terms-of-use',
     finding: 'Same terms as the Dow Jones feed host — syndication of headline/link/summary, personal and non-commercial, with attribution.',
     conditions: ['Headline, link and feed summary only', 'Attribute and link back', 'Personal, non-commercial use'],
+    // ⚠ NOT READ 2026-09-14 — 401 on the homepage. The host the app actually fetches is feeds.content.dowjones.io (see dowjones.io). Needs an email.
+    // Ratified 'verified' by mistake on 2026-09-18 and reverted 2026-09-19; the
+    // original 2026-08-06 seeded date is restored because nothing newer was read.
     reviewedAt: '2026-08-06',
     review: 'seeded',
     confidence: 'medium',
@@ -1093,8 +1103,8 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     termsUrl: 'https://www.nbcuniversal.com/terms',
     finding: 'Publishes public RSS feeds per desk for syndication of headline/link/summary with attribution and a link back.',
     conditions: ['Headline, link and feed summary only', 'Attribute CNBC and link back'],
-    reviewedAt: '2026-08-06',
-    review: 'seeded',
+    reviewedAt: '2026-09-14',
+    review: 'verified',
     confidence: 'medium',
   },
   {
@@ -1104,6 +1114,9 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     termsUrl: 'https://www.investing.com/about-us/terms-and-conditions',
     finding: 'Publishes per-desk RSS feeds for syndication. Terms permit personal, non-commercial use of the feed with attribution; scraping the site itself is prohibited separately.',
     conditions: ['RSS feed only — never scrape the HTML site', 'Headline, link and summary only, with attribution'],
+    // ⚠ NOT CONFIRMED READ 2026-09-14 — the audit records only that its three feeds returned 200; no terms clause is quoted or characterised anywhere in it. Possibly opened, no record. Ratify only once a reading is on the record.
+    // Ratified 'verified' by mistake on 2026-09-18 and reverted 2026-09-19; the
+    // original 2026-08-06 seeded date is restored because nothing newer was read.
     reviewedAt: '2026-08-06',
     review: 'seeded',
     confidence: 'medium',
@@ -1117,8 +1130,8 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     termsUrl: 'https://oilprice.com/terms-and-conditions',
     finding: 'Publishes a public RSS feed and permits syndication of headline/link/summary with attribution and a link back.',
     conditions: ['Headline, link and feed summary only', 'Attribute and link back'],
-    reviewedAt: '2026-08-06',
-    review: 'seeded',
+    reviewedAt: '2026-09-14',
+    review: 'verified',
     confidence: 'medium',
   },
   {
@@ -1128,8 +1141,8 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     termsUrl: 'https://www.fxstreet.com/about/terms-of-service',
     finding: 'Publishes a public RSS feed for syndication with attribution and a link back to the origin article.',
     conditions: ['Headline, link and feed summary only', 'Attribute and link back'],
-    reviewedAt: '2026-08-06',
-    review: 'seeded',
+    reviewedAt: '2026-09-14',
+    review: 'verified',
     confidence: 'medium',
   },
 ]

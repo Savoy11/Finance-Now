@@ -27,7 +27,7 @@
 const JSON_ARG = process.argv.includes('--json')
 const URL_POOLS = 'https://yields.llama.fi/pools'
 
-// MIRRORS LLAMA_MAP in src/app/live-data/staking-rates/route.ts. A guard test
+// MIRRORS LLAMA_MAP in src/lib/server/stakingRates.ts. A guard test
 // fails if the two drift, because a stale mirror looks authoritative while
 // pointing at symbols the route no longer asks for.
 const LLAMA_MAP = [

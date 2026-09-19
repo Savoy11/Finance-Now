@@ -69,7 +69,16 @@ export async function GET(req: NextRequest) {
   try {
     const res = await fetch(
       `https://www.alphavantage.co/query?function=IPO_CALENDAR&apikey=${encodeURIComponent(key)}`,
-      { headers: { Accept: 'text/csv' }, next: { revalidate: REVALIDATE_SECONDS } },
+      // ⚠ NO Accept HEADER. This endpoint returns CSV by default and answers 200
+      // to `*/*` or to no Accept at all — but it rejects `Accept: text/csv`, the
+      // one value that describes exactly what it sends, with a 406. Measured
+      // 2026-09-19 with a live key, all three variants back to back.
+      //
+      // That header sat here from the day the route was written, so T-384 read
+      // as "needs a free Alpha Vantage key" for weeks when a key would never
+      // have helped. The route reported `configured: true, reason: upstream`
+      // throughout, which was honest and still pointed at the wrong half.
+      { next: { revalidate: REVALIDATE_SECONDS } },
     )
     // A non-2xx is an upstream failure. It is reported as such rather than as an
     // empty calendar: "no IPOs scheduled" is a claim about the market, and this

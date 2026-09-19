@@ -70,10 +70,16 @@ describe('the registry records the observation as first-hand', () => {
     const reddit = SOURCE_TERMS.find((e) => e.domain === 'reddit.com')!
     expect(reddit.robotsDisallowed?.observedAt).toBe('2026-08-29')
     expect(reddit.robotsDisallowed?.liftedBy).toBe('REDDIT_CLIENT_ID')
-    // The TERMS are still unread — the probe could not fetch the Data API
-    // Terms document. Recording the robots fact must not launder that into a
-    // full review, which is the exact failure the `seeded` state exists for.
-    expect(reddit.review).toBe('seeded')
+    // The invariant is that these are TWO facts with two dates: a robots
+    // observation must never launder itself into a terms review, which is the
+    // failure the `seeded` state exists for.
+    //
+    // This used to assert `review === 'seeded'`, which expressed that while the
+    // Data API Terms happened to be unread. They were read on 2026-09-14
+    // (docs/audits/terms-review-apis-2026-09-14.md) and ratified 2026-09-18, so
+    // that assertion had become a stale snapshot rather than the invariant.
+    // Dating them separately is the part that must keep holding.
+    expect(reddit.reviewedAt).not.toBe(reddit.robotsDisallowed?.observedAt)
   })
 })
 

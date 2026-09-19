@@ -16,7 +16,7 @@ import { join } from 'node:path'
  */
 
 const root = join(__dirname, '..', '..', '..', '..')
-const routeSrc = readFileSync(join(root, 'src/app/live-data/staking-rates/route.ts'), 'utf8')
+const routeSrc = readFileSync(join(root, 'src/lib/server/stakingRates.ts'), 'utf8')
 const probeSrc = readFileSync(join(root, 'scripts/probe-llama-symbols.mjs'), 'utf8')
 
 /**
