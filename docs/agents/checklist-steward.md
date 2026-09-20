@@ -29,6 +29,25 @@ failure structurally rare.
 | `docs/audits/rejected-proposals.md` | Standing rejection ledger | Same split: you may add a dated status to an existing row and correct a cross-reference; you may not add, remove, or reword a verdict or its reason. New rejections come from the owner, via `opportunity-scout` FILE mode or a decision session |
 | `docs/FEATURE-ADDITIONS.md` | Additions log + "deliberately not added" list | Append-only in spirit; the not-added list is where you check for items overtaken by events |
 | `docs/MARKET-ASSESSMENT.md` | Market analysis | Carries caveats from the 2026-07-29 pass; extend caveats rather than editing conclusions |
+| `CLAUDE.md` | **The project guide — auto-loaded into every session** | The highest-traffic document in the repo and, until 2026-09-20, unowned. Its directory tree and its counts are machine-checked by `npm run docs:check`; everything else is yours. A wrong line here misdirects every agent that starts work |
+| `README.md` | First-contact description + feature-status table | The table is dated ("Verified against the running application, July 2026"). Re-date it only when the whole table is actually re-verified — otherwise annotate the row |
+| `DATA-SOURCES.md` | **Generated — never hand-edit** | Fix `frontend/src/lib/data/dataSources.ts` and run `npm run data-sources`. CI fails if the committed copy differs. A correction made here instead of in the registry is erased by the next regeneration |
+| `docs/architecture/*.md` | Design docs, mixed currency | Several predate the retired backend (D2). **Never rewrite a design rationale — add a dated banner when the tree contradicts it.** `risk-scale-spec.md` is the contract and wins over `risk-framework.md` where they disagree |
+| `docs/deployment/*.md` · `docs/runbooks/*.md` | Operational, for infrastructure never provisioned | Commands here target AWS/EKS that does not exist, and some are **actively harmful** if run (a `local-setup.md` step pointed `alembic` at a database drizzle owns). Verify against `.github/workflows/`, `infrastructure/` and `backend/FROZEN.md`; banner, do not delete — `runbooks/backup-restore.md` is the format to copy |
+| `docs/policies/*.md` · `docs/decisions/*.md` | Owner rulings | **You never edit a decision.** You may append a dated pointer when a decision has been superseded or applied, and you must move an item out of an "open, waiting on the owner" list once it has been decided — leaving it there invites a session to re-prepare work already done |
+| `docs/agents/*.md` | The charters, including this one | Self-maintaining by necessity: a charter naming stale counts teaches the agent reading it to repeat them. The baseline block in `code-checker.md` is the one place a volatile count is allowed, because it is explicitly dated and is a baseline rather than an invariant |
+
+> **Eight rows added 2026-09-20, and the gap they close is the finding that mattered
+> most in the 2026-09-19 accuracy sweep.** That sweep corrected 66 claims across 18
+> working documents. Every document that had drifted *worst* — `architecture/overview.md`
+> describing the retired two-service system as current, the Kubernetes runbooks,
+> `deployment/local-setup.md` instructing a command that damages the app's database —
+> was a document this table did not list, and therefore one no agent was ever told to
+> keep true. So was `CLAUDE.md`, which is auto-loaded into every session.
+>
+> The lesson generalises: **an unowned document does not drift more slowly than an owned
+> one, it just drifts unobserved.** When a new family of documents appears, add a row
+> here in the same change — not after the next sweep finds it.
 
 **Cross-file consistency is part of the job.** One piece of work usually has status
 entries in two or three ledgers (e.g. F2 lives in TASK-QUEUE follow-ups, DATA-AVAILABILITY

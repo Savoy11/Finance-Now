@@ -135,6 +135,27 @@ jobs:
           git diff --exit-code -I'^_Last generated' DATA-SOURCES.md \
             || { echo "::error::DATA-SOURCES.md is stale — run 'npm run data-sources' and commit the result"; exit 1; }
 
+      # Counts typed into prose, and CLAUDE.md's directory tree.
+      #
+      # CLAUDE.md's own rule is "if code can compute a number, the string must not
+      # contain it" — but that can only be FOLLOWED in code, where the count is
+      # interpolated. Markdown has no render step, so the numbers get typed, and a
+      # typed number is correct exactly once. The 2026-09-19 sweep found ten such
+      # counts stale across CLAUDE.md, README.md, ROADMAP.md and source-terms.md,
+      # each true on the day it was written, none caught by anything.
+      #
+      # This is the same shape as the DATA-SOURCES.md gate above, applied to counts
+      # that live in prose rather than in a generated table. It also checks that every
+      # file listed in CLAUDE.md's directory tree exists — that tree is a claim about
+      # the present, which is why a deleted page survived in it for a month.
+      #
+      # A pattern that matches NOTHING fails too. A regex-keyed guard otherwise dies
+      # silently the moment someone rewords the sentence it watches.
+      - name: Documented counts ↔ tree
+        run: |
+          cd frontend
+          npm run docs:check
+
       - name: Build Next.js application
         env:
           NEXT_PUBLIC_API_URL: http://localhost:8000
