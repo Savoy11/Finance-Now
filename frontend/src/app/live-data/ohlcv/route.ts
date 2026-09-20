@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { coingeckoIdFor } from '@/lib/api/live/coingeckoIds'
 import { coingeckoBase, coingeckoHeaders } from '@/lib/api/live/coingecko'
+import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 
 // OHLCV proxy — Binance is primary, CoinGecko is fallback.
 // Query params:
@@ -153,7 +154,7 @@ async function fetchBinance(id: string, cfg: RangeConfig): Promise<{ candles: Oh
   let lastStatus = 0
   for (const host of BINANCE_HOSTS) {
     try {
-      const r = await fetch(host + path, { next: { revalidate: cfg.revalidate } })
+      const r = await fetch(host + path, { next: { revalidate: cfg.revalidate }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) })
       if (r.ok) { res = r; servedBy = host; break }
       lastStatus = r.status // 451 (geo-block), 400 (symbol not on this host), etc. → try next host
     } catch {
@@ -182,11 +183,11 @@ async function fetchCoinGecko(id: string, cfg: RangeConfig): Promise<OhlcvCandle
   const [ohlcRes, volRes] = await Promise.all([
     fetch(`${coingeckoBase()}/coins/${cgId}/ohlc?vs_currency=usd&days=${cfg.cgDays}`, {
       headers: CG_HEADERS(),
-      next: { revalidate: cfg.revalidate },
+      next: { revalidate: cfg.revalidate }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS),
     }),
     fetch(`${coingeckoBase()}/coins/${cgId}/market_chart?vs_currency=usd&days=${cfg.cgDays}`, {
       headers: CG_HEADERS(),
-      next: { revalidate: cfg.revalidate },
+      next: { revalidate: cfg.revalidate }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS),
     }),
   ])
 

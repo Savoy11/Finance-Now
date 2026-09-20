@@ -19,6 +19,7 @@ import { parseFeedItems } from '@/lib/server/feedParse'
 // the Integrations page can toggle sources and shows per-feed utilization.
 
 import { classifyPillar, type MacroPillar } from '@/lib/server/macroPillar'
+import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 
 export const dynamic = 'force-dynamic'
 
@@ -194,7 +195,7 @@ export async function GET(request: NextRequest) {
     defaultPillar: feed.defaultPillar,
     run: async () => {
       const res = await fetch(feed.url, {
-        next: { revalidate: 300 },
+        next: { revalidate: 300 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS),
         headers: { 'User-Agent': 'Mozilla/5.0 (compatible; FinanceNow/1.0)', Accept: 'application/rss+xml, application/xml, text/xml' },
       })
       if (!res.ok) throw new Error(`${feed.source} ${res.status}`)

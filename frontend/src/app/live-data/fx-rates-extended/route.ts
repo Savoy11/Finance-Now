@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { recordProviderFetch } from '@/lib/api/live/providers'
+import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 
 // Extended-tier daily FX rates via the community-maintained
 // fawazahmed0/currency-api (keyless, CDN-distributed, updates daily).
@@ -84,7 +85,7 @@ export async function GET(): Promise<NextResponse<FxRatesExtendedResponse>> {
   try {
     const res = await fetch(
       'https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json',
-      { next: { revalidate: 1800 }, headers: { Accept: 'application/json' } },
+      { next: { revalidate: 1800 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS), headers: { Accept: 'application/json' } },
     )
     if (!res.ok) throw new Error(`currency-api ${res.status}`)
     const data: { date?: string; usd?: Record<string, number> } = await res.json()

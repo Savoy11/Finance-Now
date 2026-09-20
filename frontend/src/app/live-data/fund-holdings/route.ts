@@ -3,6 +3,7 @@ import { getProviderKey } from '@/lib/api/live/providers'
 import { getFund } from '@/lib/data/fundCatalog'
 import { resolveFundSeries, listNportFilings, fetchNportReport } from '@/lib/server/nport'
 import { computeAssetMix } from '@/lib/utils/assetMix'
+import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 
 // Full underlying-investment breakdown for ETFs and mutual funds.
 //   GET /live-data/fund-holdings?symbol=SPY
@@ -184,7 +185,7 @@ async function fetchFmpHoldings(symbol: string): Promise<FmpHoldingsResult> {
   ]
   for (const url of urls) {
     try {
-      const res = await fetch(url, { next: { revalidate: 3600 } })
+      const res = await fetch(url, { next: { revalidate: 3600 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) })
       if (!res.ok) continue
       const rows = await res.json()
       if (!Array.isArray(rows) || rows.length === 0) continue
@@ -202,7 +203,7 @@ async function fetchFmpSectorWeights(symbol: string): Promise<SectorWeight[]> {
   ]
   for (const url of urls) {
     try {
-      const res = await fetch(url, { next: { revalidate: 3600 } })
+      const res = await fetch(url, { next: { revalidate: 3600 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) })
       if (!res.ok) continue
       const rows = await res.json()
       if (!Array.isArray(rows) || rows.length === 0) continue

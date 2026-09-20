@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { EDGAR_HEADERS, resolveCik } from '@/lib/server/edgar'
+import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 import {
   computeRatios,
   deriveFreeCashFlow,
@@ -139,7 +140,7 @@ export async function GET(req: NextRequest) {
 
     const res = await fetch(`https://data.sec.gov/api/xbrl/companyfacts/CIK${cik}.json`, {
       headers: EDGAR_HEADERS,
-      next: { revalidate: 21_600 }, // fundamentals change only when a new report is filed
+      next: { revalidate: 21_600 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS), // fundamentals change only when a new report is filed
     })
     if (!res.ok) return fail(503, `SEC company facts: HTTP ${res.status}`)
     const data = await res.json() as { facts?: { 'us-gaap'?: ConceptMap; dei?: ConceptMap } }

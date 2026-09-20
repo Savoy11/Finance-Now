@@ -5,6 +5,7 @@ import { fetchCustomUrl, findArray, pickDate, pickNumber, pickString, type Activ
 import { blendByProvider } from '@/lib/server/socialBlend'
 import { robotsPermits } from '@/lib/server/sourceTerms'
 import { computeSentimentSummaries, type SentimentSummary } from '@/lib/server/socialSentiment'
+import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 
 // Social signals for the equities module. REGISTRY-DRIVEN: Reddit Finance and
 // StockTwits are toggleable built-ins on the Integrations page, and user-added
@@ -124,7 +125,7 @@ async function fetchSubreddit(sub: string, symbol?: string): Promise<StockSocial
     : `https://www.reddit.com/r/${sub}/hot.rss?limit=15`
   const res = await fetch(url, {
     headers: { ...UA, Accept: 'application/atom+xml, application/rss+xml, application/xml, text/xml' },
-    next: { revalidate: 300 },
+    next: { revalidate: 300 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS),
   })
   if (!res.ok) throw new Error(`Reddit r/${sub} ${res.status}`)
   const xml = await res.text()
@@ -173,7 +174,7 @@ async function fetchStocktwits(symbol?: string): Promise<StockSocialSignal[]> {
   const url = symbol
     ? `https://api.stocktwits.com/api/2/streams/symbol/${encodeURIComponent(symbol)}.json`
     : 'https://api.stocktwits.com/api/2/streams/trending.json'
-  const res = await fetch(url, { headers: UA, next: { revalidate: 300 } })
+  const res = await fetch(url, { headers: UA, next: { revalidate: 300 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) })
   if (!res.ok) throw new Error(`StockTwits ${res.status}`)
   const payload = await res.json() as { messages?: StocktwitsMessage[] }
   return (payload.messages ?? []).map((msg) => {

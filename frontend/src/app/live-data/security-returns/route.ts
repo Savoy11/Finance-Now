@@ -3,6 +3,7 @@ import { ALL_FUND_SYMBOLS } from '@/lib/data/fundCatalog'
 import { ALL_EQUITY_SYMBOLS } from '@/lib/data/equityCatalog'
 import { getProviderKey, recordProviderFetch } from '@/lib/api/live/providers'
 import { computeReturns, type CloseSeries, type SecurityReturns } from '@/lib/utils/returns'
+import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 
 export type { SecurityReturns }
 
@@ -75,7 +76,7 @@ async function fetchTiingoSeries(symbol: string, key: string): Promise<CloseSeri
   const start = new Date(Date.now() - 400 * 86_400_000).toISOString().slice(0, 10)
   const res = await fetch(
     `https://api.tiingo.com/tiingo/daily/${encodeURIComponent(symbol.toLowerCase())}/prices?startDate=${start}&token=${key}`,
-    { headers: { Accept: 'application/json' }, next: { revalidate: 0 } }
+    { headers: { Accept: 'application/json' }, next: { revalidate: 0 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) }
   )
   if (!res.ok) throw new Error(`Tiingo ${res.status}`)
   const rows = await res.json() as Array<{ date: string; close: number; adjClose?: number }>

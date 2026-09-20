@@ -4,6 +4,7 @@ import { FUND_CATALOG } from '@/lib/data/fundCatalog'
 import { getEquityProviders, recordProviderFetch, type AnyActiveProvider } from '@/lib/api/live/providers'
 import { fetchCustomUrl, findArray, pickDate, pickString, type ActiveCustom } from '@/lib/server/customFeeds'
 import { parseFeedItems } from '@/lib/server/feedParse'
+import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 
 // Server-side proxy for stock-market news (equities & funds modules).
 //   GET /live-data/market-news                → general market headlines
@@ -184,7 +185,7 @@ export async function GET(request: NextRequest) {
   const fetchBuiltin = (url: string, source: string) => async () => {
     const res = await fetch(url, {
       headers: { 'User-Agent': 'Mozilla/5.0 (compatible; FinanceNow/1.0)', Accept: 'application/rss+xml, application/xml, text/xml' },
-      next: { revalidate: 300 },
+      next: { revalidate: 300 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS),
     })
     if (!res.ok) throw new Error(`${source} ${res.status}`)
     return parseRss(await res.text(), source)

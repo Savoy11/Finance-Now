@@ -50,6 +50,26 @@ export default [
     //      1  react-hooks/purity
     //      1  react-hooks/preserve-manual-memoization
     //
+    // ── RE-MEASURED 2026-09-20: 66 → 43 on these rules. (46 warnings in total;
+    // the other three are 2 exhaustive-deps and 1 import/no-anonymous-default.)
+    //
+    //     21  react-hooks/set-state-in-effect          (was 27)
+    //      9  react-hooks/static-components            (was 26)
+    //      7  react-hooks/refs                         (was  6)  ← UP
+    //      3  react-hooks/immutability                 (was  3)
+    //      1  react-hooks/use-memo                     (was  2)
+    //      1  react-hooks/purity                       (was  1)
+    //      1  react-hooks/preserve-manual-memoization  (was  1)
+    //
+    // `refs` going UP is the reason to re-measure rather than assume. A baseline
+    // that is only ever quoted downward has stopped being a measurement.
+    //
+    // The 21 remaining set-state-in-effect sites sit in 16 files; the clusters
+    // are settings/page.tsx (3), agent-config/page.tsx (2), CommandPalette.tsx
+    // (2) and Sidebar.tsx (2). MultiTimeframeGrid.tsx was one of them and is not
+    // any more — its fix (key the state on the asset, derive the reset during
+    // render) is the pattern the rest of these want.
+    //
     // None of these is a security finding, and none was reported by the config
     // this replaced — they are a new, stricter policy arriving with the upgrade.
     // Fixing 66 call sites is a real refactor with real behaviour risk, and it
