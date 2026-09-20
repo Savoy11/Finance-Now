@@ -253,14 +253,23 @@ each verified to fail against the pre-fix code.
 - [ ] Enable RDS automated backups (7-day retention minimum)
 - [ ] Verify TLS certificate auto-renewal
 - [ ] Enable CloudTrail for AWS API audit logging
-- [x] Run `pip audit` and `npm audit` in CI — done, with a caveat worth knowing:
-      the Security Scan job runs `npm audit --audit-level=high`, `safety check`
-      (the pip-audit equivalent) **and** a Trivy filesystem scan. The first two
-      are `|| true`, so they report without gating; **only Trivy actually fails
-      the build.** Removing those `|| true`s is the follow-up, and it is not free
-      — `npm audit` currently reports 23 dev-tooling advisories that have no
-      non-breaking fix, so it would fail CI on day one.
+- [x] Run `npm audit` in CI — **GATING since 2026-09-08** (`ci.yml`, no `|| true`):
+      a HIGH advisory in `frontend` fails the Security Scan job. Threshold is `high`,
+      not `moderate`, because the remaining moderates are esbuild-via-drizzle-kit,
+      build-time only, and clearing them needs a breaking downgrade.
+      *(Corrected 2026-09-19: this item said the step was `|| true` and non-gating,
+      and that `safety check` runs. Both were true when written and neither is now.)*
+      **Two known holes, both live:**
+      1. **Scope is `frontend` only** — the step runs `cd frontend`, so
+         `mcp-server/package-lock.json` is covered by nothing but Dependabot alerts.
+         That is how six HIGH advisories accumulated there (fixed 2026-09-19, #207).
+      2. `pip audit` / `safety check` no longer runs anywhere — it went with the
+         backend jobs under D2 (#192). `backend/poetry.lock` is still in the tree, so
+         Dependabot keeps raising alerts against it while nothing in CI scans it.
+         Three remain open by choice (1 critical, 2 high), all on retired code.
 - [x] Configure Dependabot for weekly dependency updates — `.github/dependabot.yml`
-      covers npm (frontend + mcp-server), pip (backend), GitHub Actions, and the
-      frontend Docker base image.
+      covers npm (frontend + mcp-server), GitHub Actions, and the frontend Docker
+      base image. *(Corrected 2026-09-19: the `pip` ecosystem watching `/backend` was
+      **removed** on 2026-09-15 under D2 — a bump there protects nothing and can be
+      verified by nothing. See the reasoning block in `.github/dependabot.yml`.)*
 - [ ] Perform penetration test before production launch

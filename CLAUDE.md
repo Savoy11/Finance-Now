@@ -76,7 +76,8 @@ frontend/src/
 │   │   ├── wallets/page.tsx
 │   │   ├── transfer-fees/page.tsx  # Transfer Fee Calculator
 │   │   ├── staking/page.tsx        # Staking Opportunities
-│   │   ├── staking-discovery/page.tsx
+│   │   │  # (no staking-discovery/ — merged into staking/ as ?tab=pools, 2026-08-20;
+│   │   │  #  /staking-discovery redirects, next.config.mjs)
 │   │   ├── coin-discovery/page.tsx
 │   │   ├── technical-analysis/page.tsx
 │   │   ├── scanner/page.tsx        # Crypto Scanner — 7 setup detectors over the universe
@@ -90,7 +91,7 @@ frontend/src/
 │   │   ├── funds/                  # FUNDS MODULE — ETF/mutual fund registry + [symbol] detail
 │   │   ├── portfolio-builder/      # PREMIUM module — own entitlement
 │   │   └── global-adoption/        # De-routed (T5) — redirects to /headlines; page retained
-│   └── live-data/                  # Server-side API proxy routes (no API keys exposed) — 59 routes
+│   └── live-data/                  # Server-side API proxy routes (no API keys exposed) — 58 routes
 │       ├── markets/route.ts        # CoinGecko price data
 │       ├── news/route.ts           # Multi-provider crypto news (RSS + JSON feeds)
 │       ├── social/route.ts         # Social sentiment data
@@ -102,14 +103,17 @@ frontend/src/
 │       │                           #   keyless publicnode) for ETH/BNB/Polygon/AVAX; L2s stay
 │       │                           #   estimates — eth_gasPrice omits their L1 data fee
 │       ├── withdraw-fees/route.ts  # Live exchange withdrawal fees (KuCoin/HTX keyless; Bybit probed 403 — authed) — overlay-only, per-row live tags
-│       ├── staking-rates/route.ts  # Live APR from 7 upstreams onto 51 keys; the rest stay
+│       ├── staking-rates/route.ts  # HTTP face of lib/server/stakingRates.ts — the collector moved
+│       │                           #   there 2026-09-18 (landed in 516220f, 2026-09-19) so that
+│       │                           #   /api/v1/staking/opportunities reads the SAME one. Live APR
+│       │                           #   from 7 upstreams onto 51 keys; the rest stay
 │       │                           #   static estimates. Returns `upstreams` — each one's
 │       │                           #   outcome — because "4/51 live" cannot say WHICH failed.
 │       │                           #   Was 17: ten rungs went in the 2026-09-09 audit — nine
 │       │                           #   dead, whose DNS hangs were starving the rest, plus NEAR,
 │       │                           #   whose endpoint is healthy but carries no yield at all
 │       ├── security-quotes/route.ts # Stock/ETF/fund quotes (FMP→…→Alpha Vantage→reference; ALL KEYED)
-│       ├── security-chart/route.ts  # Price history (Tiingo→FMP; both keyed)
+│       ├── security-chart/route.ts  # Price history (Tiingo→FMP→Twelve Data; all keyed)
 │       ├── security-ohlcv/route.ts  # Full OHLCV candles (Tiingo→FMP; both keyed)
 │       ├── source-terms/route.ts    # Terms registry + live robots/terms probe
 │       ├── market-news/route.ts     # Stock-market RSS news: sentiment, category, ticker tags
@@ -567,7 +571,7 @@ site nobody has reviewed. Full design: `docs/architecture/source-terms.md`.
 >
 > | Surface | Now |
 > |---|---|
-> | Quotes, charts, OHLCV/TA/backtests (stocks, funds, macro) | **Key-gated.** FMP/Finnhub/Twelve Data/Tiingo/Alpha Vantage for quotes, Tiingo→FMP for history. No key ⇒ catalog `ref` prices for stocks/funds, an honest dash for macro |
+> | Quotes, charts, OHLCV/TA/backtests (stocks, funds, macro) | **Key-gated.** FMP/Finnhub/Twelve Data/Tiingo/Alpha Vantage for quotes, Tiingo→FMP→Twelve Data for history. No key ⇒ catalog `ref` prices for stocks/funds, an honest dash for macro |
 > | **Macro instrument quotes** (`GC=F`, `EURUSD=X`) | **Hit hardest.** Tiingo does not carry them, so coverage depends on the keyed provider configured and is expected to be partial |
 > | **Treasury yield indices** (`^IRX`/`^FVX`/`^TNX`/`^TYX`) | **No longer affected (2026-09-03, D3).** No free provider quotes them at all — FMP paywalls them, Finnhub returns nothing, Twelve Data 404s, Alpha Vantage answers empty — so they were moved off the quote ladder onto the official treasury.gov par curve: keyless, plain percent, daily |
 > | **Futures term structure** (`/live-data/futures-curve`) | **No source at all.** Nothing reachable quotes a dated contract month. The route resolves the months and returns `ok:false` with the reason; `TermStructureCard` prints it. Front-month prices are unaffected |
@@ -579,14 +583,19 @@ site nobody has reviewed. Full design: `docs/architecture/source-terms.md`.
 > The fix for any of the key-gated rows is a free API key on the Integrations page — **not
 > a substitute scraper.**
 
-> ⚠ **54 of 56 registry entries are `seeded`, not `verified` — check `review` before
+> ⚠ **38 of 56 registry entries are `seeded`, not `verified` — check `review` before
 > trusting one.** The registry was authored in an environment whose network policy
 > blocked every publisher and provider host at the gateway, so not one terms document
 > could be opened. The entries are honest starting positions drawn from each
 > provider's publicly documented posture (published API docs, documented free tiers,
-> openly advertised RSS feeds) — they are **not readings**. Two entries are
-> `verified`: **Cboe** (P2-O1 audit, 2026-08-05) and **CoinGecko** (the
-> 2026-08-29 probe run) — both read on the owner's machine.
+> openly advertised RSS feeds) — they are **not readings**. **Eighteen** entries
+> are `verified` as of 2026-09-19: **Cboe** (P2-O1 audit, 2026-08-05) and
+> **CoinGecko** (the 2026-08-29 probe run) were the first two, and sixteen more
+> were **read** on a clean egress on 2026-09-14/15
+> (`docs/audits/terms-review-apis-2026-09-14.md`,
+> `docs/audits/terms-review-news-2026-09-14.md`) — all on the owner's machine.
+> Reading is not ratifying: those sixteen stayed `seeded` until the owner flipped
+> them, two on 2026-09-16 (`bcd4490`) and fourteen on 2026-09-19 (`516220f`).
 >
 > A seeded `approved`/`conditional` means *nobody has objected yet*, not *cleared*.
 > Seeded entries still serve data — breaking the app over a documentation gap is the
@@ -616,6 +625,9 @@ site nobody has reviewed. Full design: `docs/architecture/source-terms.md`.
 > One item stays open: the **personal-vs-commercial question**, which decides
 > **eight** more sources (Finnhub, Twelve Data, Tiingo, Binance.US, YouTube,
 > OilPrice, Bitget — and **FMP**, added 2026-09-02) and is the owner's to answer.
+> **Update 2026-09-19:** four of those eight were read on a clean egress on
+> 2026-09-14 and are now `verified` — Tiingo, YouTube, OilPrice and Bitget.
+> Finnhub, Twelve Data, Binance.US and FMP's entry are still `seeded`.
 >
 > **FMP is the load-bearing one, and it was missed until now.** Its entry is
 > `seeded`, and its finding asserts the permission is *tier-dependent* (free =
@@ -625,6 +637,17 @@ site nobody has reviewed. Full design: `docs/architecture/source-terms.md`.
 > seeded finding read as already settled by plan tier, so it never joined the
 > queue. An assumption wearing the confidence of a resolved entry is precisely
 > what `seeded` exists to expose.
+>
+> **Read 2026-09-13 — and the entry is still `seeded`.** The document was opened
+> on the owner's machine (`docs/audits/terms-review-fmp-2026-09-13.md`) and its
+> verbatim clauses are now the entry's `finding`. It answers the paragraph above
+> and contradicts both sides of it: §2.2.1 grants personal, non-business,
+> non-commercial use only, and §2.2.2 bars any multi-user deployment
+> "irrespective of whether such usage is complimentary or paid" — so the
+> permission is **not** tier-dependent, and broader rights come from an Order
+> Form under §2.1, not a higher plan. What is still open is the registry itself:
+> the entry's `review` is `'seeded'` and its `reviewedAt` `'2026-08-06'`, so a
+> reading that happened is not recorded as one.
 >
 > It matters because FMP is not a marginal source. It is the first rung of the
 > quote ladder, the **only** source for the Stock Registry universe and for

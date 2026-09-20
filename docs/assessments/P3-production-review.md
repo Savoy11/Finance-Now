@@ -21,7 +21,7 @@ measurement say so and defer to Wave 2, where the owner is present.
 `docs/TASK-QUEUE.md` Phase 3 preamble + known seeds, `src/lib/modules/registry.ts`,
 the vitest inventory (44 test files), and the page/route/store source for each feature
 below. `docs/audits/rejected-proposals.md` — required reading per the ground rules —
-**does not exist** (see Appendix C).
+**does not exist** (see Appendix A6). *(Annotation 2026-09-19: the pointer said "Appendix C", which has never carried this item — it is A6 in Appendix A, and is marked RESOLVED there. The ledger was created 2026-08-15 in `7cc9934` and exists today; the statement above stands as the record of 2026-08-12.)*
 
 > **Provenance of the findings (added 2026-08-16, at the owner's request).** This
 > document was assembled by one lead plus five parallel read-only sweep agents, and
@@ -346,8 +346,8 @@ found on any page. SourceLine present on all pages** (ids verified in
 | E9 | Sector peers table (top-8 by mkt cap, live quotes; curated catalog only) | `/equities/[symbol]` | `security-quotes` | ✅ | ➖ | ✅ | READY |
 | E10 | Per-ticker news (general wires filtered to articles naming the company — deliberate, post-Yahoo) | `/equities/[symbol]`, `/equities/news` | `market-news` | ✅ | ➖ | ✅ | READY |
 | E11 | Market News page: 50-article feed, category/sentiment/Breaking tags, symbol + keyword filters, watchlist bias (tested) | `/equities/news` | `market-news` (keyless) | ✅ | ✅ bias/feedParse/pubDate | ✅ | READY |
-| E12 | Stock Social: Reddit + StockTwits feed with per-provider attribution | `/equities/social` | `stock-social` (keyless) | ✅ | ✅ socialBlend | ✅ | READY⁴ |
-| E13 | Sentiment Overview: per-symbol score + pos/neg split, method disclosed on-page. *(Corrected 2026-09-08: the `sentimentScore` FIELD is **−1..+1** — `(pos − neg) / total`, pinned by `socialSentiment.test.ts` — and the UI multiplies it by 100 for display. This row said the score itself was −100..+100.)* | `/equities/social` | `social/route.ts:125`; rendered `×100` at `equities/social/page.tsx:52` | ✅ | ⚠⁴ | ✅ | NEEDS-FIX⁴ |
+| E12 | Stock Social: Reddit + StockTwits feed with per-provider attribution *(2026-09-19: Reddit has been off by default since 2026-08-29 — `robotsPermits` gates it behind OAuth credentials (`stock-social/route.ts:247-248`) and the route returns a `withheld` entry naming the reason instead; a live probe of `/live-data/stock-social?limit=40` returned 30 StockTwits signals, 0 Reddit. The row records the 2026-08-12 shape.)* | `/equities/social` | `stock-social` (keyless) | ✅ | ✅ socialBlend | ✅ | READY⁴ |
+| E13 | Sentiment Overview: per-symbol score + pos/neg split, method disclosed on-page. *(Corrected 2026-09-08: the `sentimentScore` FIELD is **−1..+1** — `(pos − neg) / total`, pinned by `socialSentiment.test.ts` — and the UI multiplies it by 100 for display. This row said the score itself was −100..+100.)* | `/equities/social` | `socialSentiment.ts:54` — the extracted helper, called at `stock-social/route.ts:312` (its only caller; the crypto `social/route.ts` still computes its summaries inline at :131-133); rendered `×100` at `equities/social/page.tsx:51` *(pointers corrected 2026-09-19: the 2026-09-08 note cited the crypto `social/route.ts`, but `/equities/social` is served by `/live-data/stock-social`, which delegates to `lib/server/socialSentiment.ts`; the render line was off by one)* | ✅ | ⚠⁴ | ✅ | NEEDS-FIX⁴ |
 | E14 | Equity TA: universe combobox (free-text passthrough), candlestick chart, 6 ranges, shared indicator registry + drawing tools | `/equities/technical-analysis` | `security-ohlcv` (keyed) | ✅ | ✅ indicators ×3 + ohlcvAdjust | ⚠⁵ | NEEDS-FIX⁵ |
 | E15 | TA Signal Summary + pattern detection (top 5, confidence %) | `/equities/technical-analysis` | `computeSignalSummary` / `detectPatterns` | ✅ | ⚠⁶ | ✅ | READY⁶ |
 | E16 | TA Screener tab: 24 fixed large-caps, RSI(14) / vs SMA50 / composite | `/equities/technical-analysis` | 24× `security-ohlcv` | ✅ | ⚠⁶ | ✅ | READY⁶ |
@@ -378,6 +378,13 @@ found on any page. SourceLine present on all pages** (ids verified in
    pattern, which is tested, sits right next to it).
 4. The sentiment *score* (a number users act on) is untested — `socialBlend.test.ts`
    covers provider blending only. Small extraction + test.
+   *(Closed 2026-08-16 under D-24; re-verified 2026-09-19: the score was extracted to
+   `lib/server/socialSentiment.ts` and is pinned by `socialSentiment.test.ts` — 8 tests,
+   all passing, including an explicit −1…+1 bound. E13's ⚠⁴ and NEEDS-FIX⁴ — and the ⁴
+   carried by E12's READY — are the 2026-08-12 reading and no longer describe the tree;
+   the notes sweep above still lists 4 as "still open" because it was written before
+   D-24 closed in the same pass. The summary line below still counts a
+   "sentiment-score test gap" for the same reason.)*
 5. Copy defect: the page subtitle still says **"18 indicators"**; the shared registry
    renders ~63 (the 18 predates the shared-engine migration; the code comment documents
    the migration, the subtitle wasn't updated). CLAUDE.md's feature inventory carries

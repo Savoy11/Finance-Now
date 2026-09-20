@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document provides detailed sequence diagrams and narrative descriptions for every major data flow in the Finance Now platform. It is intended for backend engineers, data engineers, and incident responders who need to understand how data moves through the system.
+This document provides detailed sequence diagrams — ⚠ **HISTORICAL, see the banner below** — and narrative descriptions for every major data flow in the Finance Now platform. It is intended for backend engineers, data engineers, and incident responders who need to understand how data moves through the system.
 
 ---
 

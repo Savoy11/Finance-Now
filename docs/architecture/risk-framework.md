@@ -47,7 +47,12 @@ multiplied this. The unified framework fixes the vocabulary before that happens.
 >   consumer**; D18 defers new profiles until a surface is approved to render a
 >   score. Note the D14 ruling named only the public API as the helpers' consumer —
 >   `/live-data/staking-discovery` was a second one, and was changed with it.
-> - **Backend scoring engine — dormant.** Its 65/50/30 bands still differ, and
+> - **Backend scoring engine — RESOLVED 2026-09-14 by owner decision D2.** The FastAPI
+backend is retired and frozen (`backend/FROZEN.md`); nothing in the shipping app reads
+it and no CI job builds it, so the divergence below is no longer a live inconsistency.
+It is **recorded rather than reconciled** — FROZEN.md makes adopting the canonical
+80/60/40/20 bands a precondition of any revival, so it cannot be reopened silently.
+*(Superseded text, kept for the record:)* **Backend scoring engine — dormant.** Its 65/50/30 bands still differ, and
 >   that stays open while the FastAPI backend's future is itself an open question
 >   (ROADMAP.md, Phase 6). Nothing in the shipping app reads them.
 > - **A fourth system was removed rather than reconciled**: the per-coin composite

@@ -1063,7 +1063,7 @@ export default function PortfoliosPage() {
                   // since the /api/user/portfolios migration) and a stale "live
                   // mode" (LIVE_DATA is hardcoded true; there is no other mode).
                   { label: 'Live pricing', text: 'Valuations use live prices — CoinGecko for crypto, the keyed quote ladder for stocks and funds. Positions without a live price are excluded from totals, never valued at cost.' },
-                  { label: 'Risk metrics', text: 'Weighted risk averages each holding\'s canonical Safety Score by allocation; concentration warnings flag single-position weight. Sharpe and drawdown are not computed here — see Compare for window statistics.' },
+                  { label: 'Risk metrics', text: 'Weighted risk averages each holding\'s curated risk tier (1–10, higher = riskier) by allocation, renormalised over the share of the portfolio that has a tier — the coverage percentage says how much. It is NOT the canonical 0–100 Safety Score, which is not published per asset (RP-6); concentration warnings flag single-position weight. Sharpe and drawdown are not computed here — see Compare for window statistics.' },
                   { label: 'Persistence', text: 'Portfolios are saved to your account database via /api/user/portfolios. A one-time import migrated any legacy localStorage portfolios.' },
                 ]}
               />
