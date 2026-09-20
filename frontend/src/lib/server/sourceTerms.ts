@@ -388,8 +388,61 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     verdict: 'conditional',
     termsUrl: 'https://finnhub.io/terms-of-service',
     finding:
-      'Commercial market-data API with a registered free tier for personal and non-commercial use. Access is by API key; the free tier is explicitly not for commercial redistribution.',
-    conditions: ['Valid API key required', 'Free tier is personal / non-commercial only'],
+      'Commercial market-data API. READ 2026-09-20 (the document carries NO date, and reserves the ' +
+      'right to change without notice). The operative clause is under “Redistribution Rights and ' +
+      'Personal Use”: “You hereby agree to not redistribute or share access to data or derived ' +
+      'results from the data obtained from Finnhub with anyone or any 3rd party without written ' +
+      'approval from Finnhub.” It reaches further than “redistribute” suggests — “derived results” ' +
+      'and “anyone” mean a chart computed from the data, shown to one other person, is covered. The ' +
+      'same section sets the default scope of every plan: “All plan listed on Finnhub website is ' +
+      'strictly for personal use unless explicitly stated otherwise”, and “Personal plan can’t be ' +
+      'used by any business even internally without a written approval”. Three separate ' +
+      'disqualifiers end personal-plan eligibility, any one alone: being a registered securities ' +
+      'professional, using the data for a business or registering under a business name, or ' +
+      'deducting the subscription as a business expense.',
+    conditions: [
+      'Valid API key required — no keyless path',
+      'Stay under 30 API calls/second in aggregate; stacking plans does NOT raise the limit',
+      'Personal use only: the account must not be registered to a business, used by a business even internally, or expensed as a business cost — any one alone ends eligibility',
+      'Redistribution — including DERIVED results — to anyone requires prior written approval from Finnhub. A multi-user deployment is barred by default and no tier lifts it',
+      'On subscription end or lapse, delete all stored Finnhub data: “All data must be deleted should your subscription to that data ends.” Covers caches, DB rows and committed test fixtures',
+      'No Finnhub trademark or logo as branding — the Terms grant no right to any mark',
+    ],
+    // ✅ 2026-09-20: READ, from a structure-preserving capture on the owner's machine.
+    // All 13 quoted clauses were grep-verified verbatim against the source by an
+    // adversarial check, including the document's own ungrammatical "You are
+    // securities professional". `review` is LEFT at 'seeded' deliberately: the
+    // reading is done, flipping the flag is the owner's act — same posture as FMP.
+    //
+    // ⚠ THIS IS THE SAME SHAPE AS FMP §2.2.2, INDEPENDENTLY ARRIVED AT. Both say a
+    // multi-user deployment needs WRITTEN APPROVAL, and that buying a higher tier does
+    // not confer it. Two of the eight sources on the personal-vs-commercial question
+    // now read the same way, which makes it a pattern rather than one vendor's quirk.
+    //
+    // ⚠ NO SAFE HARBOUR, and the conditions above must not be read as one. Termination
+    // is at Finnhub's "sole discretion" without prior notice, so Finnhub judges
+    // compliance unilaterally. The conditions reduce exposure; they do not license it.
+    //
+    // Three things this document does NOT settle, all of which argue for keeping the
+    // entry conservative:
+    //   1. Whether a tier exists that "explicitly stated otherwise" and grants
+    //      commercial rights. The escape hatch is written into the clause, but no plan
+    //      in the ToS names such rights. Its absence here is NOT evidence none exists.
+    //   2. The boundary of "derived results" — the term is never defined.
+    //   3. Two documents incorporated by reference are absent: "Page 23-24 of UTP plan
+    //      data policies" (which carries the operative Non-Professional test) and the
+    //      Subscriber Agreement form. The real test lives there, not here.
+    //
+    // ⚠ Its own broad reading cuts inward too: "share access to data ... with anyone or
+    // any 3rd party" arguably reaches the hosting provider, CDN, and log/error-reporting
+    // services of any deployment. Unresolved, and worth raising in any written request.
+    //
+    // ⚠ Do NOT reflexively flip verdict to 'prohibited'. As with FMP, that is enforced
+    // by assertSourceNotProhibited inside pinnedFetch — a socket-level block. Finnhub is
+    // a rung of the equity quote ladder. 'conditional' with the conditions above is the
+    // honest interim while written approval is sought.
+    //
+    // Full reading and the adversarial verification: docs/audits/terms-review-finnhub-2026-09-20.md
     reviewedAt: '2026-08-06',
     review: 'seeded',
     confidence: 'medium',
