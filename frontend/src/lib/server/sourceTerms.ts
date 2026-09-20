@@ -378,9 +378,16 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     //     such usage is complimentary or paid".
     // (3) The mechanism exists, but it is an Order Form / "specific agreement"
     //     (2.1, 2.2.2) — not something a paid key confers.
-    reviewedAt: '2026-08-06',
-    review: 'seeded',
-    confidence: 'medium',
+    //
+    // ✅ RATIFIED 2026-09-20 (owner). `review` → 'verified', dated to the reading
+    // itself (2026-09-13), not to the ratification — the field records when the
+    // document was read. Verdict stays 'conditional': §2.2.1 affirmatively
+    // contemplates personal use, so this is not a flat prohibition, and the
+    // conditions above carry the multi-user bar. Ratifying records that the
+    // document was genuinely read. It clears nothing.
+    reviewedAt: '2026-09-13',
+    review: 'verified',
+    confidence: 'high',
   },
   {
     domain: 'finnhub.io',
@@ -443,8 +450,15 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     // honest interim while written approval is sought.
     //
     // Full reading and the adversarial verification: docs/audits/terms-review-finnhub-2026-09-20.md
-    reviewedAt: '2026-08-06',
-    review: 'seeded',
+    //
+    // ✅ RATIFIED 2026-09-20 (owner). Verdict stays 'conditional'.
+    // ⚠ confidence is 'medium', not 'high', and the gap is deliberate: the document
+    // carries NO DATE and reserves the right to change without notice, and two
+    // documents it incorporates by reference — UTP plan data policies pp.23-24 and the
+    // Subscriber Agreement — are unread. The reading is solid; what it covers is not
+    // the whole instrument.
+    reviewedAt: '2026-09-20',
+    review: 'verified',
     confidence: 'medium',
   },
   {
@@ -502,8 +516,14 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     // capped commercial risk.
     //
     // Full reading: docs/audits/terms-review-twelvedata-binanceus-2026-09-20.md
-    reviewedAt: '2026-08-06',
-    review: 'seeded',
+    //
+    // ✅ RATIFIED 2026-09-20 (owner). Verdict stays 'conditional'.
+    // ⚠ confidence stays 'medium' because the reading did NOT settle the question it
+    // most needed to: "Internal Use" is defined as internal BUSINESS purposes, and
+    // whether an unpaid personal project qualifies is unresolved. 'verified' here means
+    // the document was read, not that this app is inside the licence.
+    reviewedAt: '2026-09-20',
+    review: 'verified',
     confidence: 'medium',
   },
   {
@@ -646,8 +666,15 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     // breach", while BAM's own liability is capped at $10,000.
     //
     // Full reading: docs/audits/terms-review-twelvedata-binanceus-2026-09-20.md
-    reviewedAt: '2026-08-06',
-    review: 'seeded',
+    //
+    // ✅ RATIFIED 2026-09-20 (owner) — with the contest above standing. This is the one
+    // entry where 'verified' and the verdict pull in different directions, so read them
+    // as answering different questions: the `review` field asserts the document was
+    // READ, and confidence 'medium' carries the doubt about what it means. The owner
+    // ratified knowing limb (3) is unanswered and that three incorporated documents
+    // (Disclosures, Privacy Policy, Trading Rules) are unread.
+    reviewedAt: '2026-09-20',
+    review: 'verified',
     confidence: 'medium',
   },
   {

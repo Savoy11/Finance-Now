@@ -99,6 +99,13 @@ const FACTS: Fact[] = [
     source: "SOURCE_TERMS where review === 'verified'",
     asserts: [
       { file: 'docs/architecture/source-terms.md', pattern: /\*\*(\d+) are `verified`\*\*/ },
+      // CLAUDE.md was NOT watched for this until 2026-09-20, and the reason is worth
+      // keeping. The count was written there as the WORD "Eighteen". A numeric pattern
+      // cannot match a spelled-out number, so the most-read document in the repo carried
+      // an unwatchable count of the registry's own trustworthiness — while its `seeded`
+      // twin, two lines above it, was guarded the whole time. Write counts as numerals
+      // in any prose this file watches.
+      { file: 'CLAUDE.md', pattern: /\*\*(\d+) entries are\s*>?\s*`verified`\*\*/ },
     ],
   },
   {

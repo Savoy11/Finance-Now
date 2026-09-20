@@ -20,8 +20,8 @@ Integrations page.
 > ⚠ **Most of the registry is still `seeded`, and that is a deliberate,
 > visible state — not a claim of review.** It was authored in an environment whose
 > network policy blocked every publisher and provider host at the gateway, so no
-> terms document could be opened. **38 of 56 entries** are still starting positions
-> drawn from documented posture. **18 are `verified`** — the document was actually
+> terms document could be opened. **34 of 56 entries** are still starting positions
+> drawn from documented posture. **22 are `verified`** — the document was actually
 > opened and read. Four sit outside the big batch: **Cboe** (P2-O1, 2026-08-05),
 > **CoinGecko** (the first real probe run, 2026-08-29 — see
 > `docs/audits/terms-review-2026-08-29.md`), and **Poloniex** and **LBank** (both
