@@ -4,6 +4,7 @@ import { FUND_CATALOG, FUND_CATEGORY_INFO } from '@/lib/data/fundCatalog'
 import { COMMODITY_CATALOG, COMMODITY_CATEGORY_INFO } from '@/lib/data/commodityCatalog'
 import { CURRENCY_CATALOG, CURRENCY_CATEGORY_INFO } from '@/lib/data/currencyCatalog'
 import { RATES_CATALOG, RATES_CATEGORY_INFO } from '@/lib/data/ratesCatalog'
+import { ohlcvSourceLabel } from '@/lib/utils/ohlcvSource'
 
 // ─── Agent tool registry ──────────────────────────────────────────────────────
 //
@@ -530,7 +531,7 @@ export async function runTool(
         const coin = String(input.coin ?? '')
         const range = String(input.range ?? '1Y')
         const data = (await getJson(origin, `/live-data/ohlcv?id=${encodeURIComponent(coin)}&range=${encodeURIComponent(range)}`)) as {
-          ok?: boolean; candles?: { time: number; open: number; high: number; low: number; close: number }[]; source?: string
+          ok?: boolean; candles?: { time: number; open: number; high: number; low: number; close: number }[]; source?: string; venue?: string
         }
         const candles = data.candles ?? []
         if (!data.ok || candles.length === 0) return { error: 'no candle data available', coin, range }
@@ -540,7 +541,14 @@ export async function runTool(
         const changePct = ((last.close - first.open) / first.open) * 100
         // Return a compact summary — never dump hundreds of candles into context.
         return {
-          coin, range, source: data.source, candleCount: candles.length,
+          // `source` is the provider-FAMILY key ('binance'), not the venue that
+          // answered. api.binance.com is 451 from here, so these candles are
+          // really Binance.US — a different venue with its own liquidity and
+          // prices. Passing the family key on is the "caller ignores the
+          // provenance field" failure DATA-AVAILABILITY.md lists for this route,
+          // so report the venue label the TA badge shows.
+          coin, range, source: ohlcvSourceLabel(data.source, data.venue) ?? data.source,
+          candleCount: candles.length,
           firstClose: first.close, lastClose: last.close,
           periodHigh: high, periodLow: low,
           changePct: Number(changePct.toFixed(2)),

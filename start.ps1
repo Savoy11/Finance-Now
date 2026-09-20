@@ -111,9 +111,14 @@ function Setup-Env {
         Copy-Item -Path $ENV_EXAMPLE -Destination $ENV_FILE
         Write-Ok ".env.local created from .env.example — every variable annotated with what it unlocks"
     } else {
-        # Fallback only if the example is missing. NEXT_PUBLIC_API_URL is the ORIGIN
-        # ONLY — next.config.mjs's rewrite appends /api/:path itself, so a /api or
-        # /api/v1 suffix here yields /api/v1/api/v1 and every legacy call 404s.
+        # Fallback only if the example is missing. NEXT_PUBLIC_API_URL is inert
+        # since 2026-09-14 (owner decision D2): the /api/* proxy rewrite that
+        # consumed it was removed from next.config.mjs and the API_BASE_URL
+        # constant was deleted, so nothing reads it and the value below has no
+        # effect. Written only so this minimal file matches .env.example. If a
+        # proxy to a backend ever returns, this must be the ORIGIN only — a /api
+        # or /api/v1 suffix plus an appended /api/:path is what produced
+        # /api/v1/api/v1/... .
         Write-Warn ".env.example not found — writing a minimal .env.local instead"
         @"
 # The legacy Python backend is OPTIONAL and dormant; the app runs live-only without it.

@@ -45,7 +45,6 @@ export async function GET(req: NextRequest) {
       updatedAt: Date.now(),
     })
   } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Unknown error'
-    return NextResponse.json({ ok: false, error: msg }, { status: 502 })
+    return NextResponse.json({ ok: false, error: walletFetchErrorMessage(err) }, { status: 502 })
   }
 }
