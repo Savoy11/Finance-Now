@@ -19,7 +19,7 @@ import { join } from 'node:path'
  */
 const root = join(__dirname, '..', '..', '..', '..')
 const routeSrc = readFileSync(
-  join(root, 'src/app/live-data/staking-rates/route.ts'),
+  join(root, 'src/lib/server/stakingRates.ts'),
   'utf8',
 ).replace(/\r\n/g, '\n')
 

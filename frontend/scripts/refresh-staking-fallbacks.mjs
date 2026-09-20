@@ -28,7 +28,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
-const ROUTE_FILE = path.resolve(process.cwd(), 'src/app/live-data/staking-rates/route.ts')
+const ROUTE_FILE = path.resolve(process.cwd(), 'src/lib/server/stakingRates.ts')
 const BASE = process.env.BASE_URL ?? process.env.FN_BASE_URL ?? 'http://localhost:3000'
 
 const args = process.argv.slice(2)

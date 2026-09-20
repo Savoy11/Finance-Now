@@ -39,7 +39,7 @@ function readSrc(rel: string): string {
   return readFileSync(join(root, rel), 'utf8').replace(/\r\n/g, '\n')
 }
 
-const routeSrc = readSrc('src/app/live-data/staking-rates/route.ts')
+const routeSrc = readSrc('src/lib/server/stakingRates.ts')
 const probeSrc = readSrc('scripts/probe-staking-upstreams.mjs')
 
 /** Every https:// URL that is actually fetched, ignoring ones inside comments. */
