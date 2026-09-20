@@ -1,5 +1,5 @@
 /**
- * Generates docs/DATA-SOURCES.md from the canonical registry in
+ * Generates DATA-SOURCES.md (repo root) from the canonical registry in
  * src/lib/data/dataSources.ts, and (with --verify) cross-checks the registry
  * against the hosts actually fetched in each /live-data route.
  *

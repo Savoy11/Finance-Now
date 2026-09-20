@@ -124,7 +124,7 @@ across the ledgers and the tree) plus the corrections applied on 2026-09-08.
 - **Item 11** — the fund-universe payload shipped compact on 2026-07-30 and still
   awaits a re-measurement. Note pagination was **rejected**, not deferred: the
   registry screens client-side.
-- **The terms queue.** 54 of 56 registry entries are `seeded`. Two are `verified`
+- **The terms queue.** **38 of 56** registry entries are `seeded`; **18 are `verified`** — Cboe and CoinGecko plus the 2026-09-14 readings the owner ratified in #205 (merged 2026-09-19; four were reverted the same day as unread). Verdicts were NOT ratified and remain the owner's, including the RSS-vs-site-ToU ruling that settles nine sources. Updated 2026-09-19. *(Superseded:)* Two are `verified`
   (Cboe, CoinGecko). The **news publishers** are the priority — the only keyless
   content sources — and the **personal-vs-commercial question** decides eight more,
   FMP among them, which is load-bearing across 7 live-data routes.

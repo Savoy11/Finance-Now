@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Finance Now DATA SOURCE REGISTRY — single source of truth for "where does this data
 // come from?". Consumed by three things so nothing drifts:
-//   1. scripts/gen-data-sources.ts  → generates docs/DATA-SOURCES.md
+//   1. scripts/gen-data-sources.ts  → generates DATA-SOURCES.md (repo root)
 //   2. /data-sources page           → in-app, human-readable catalog
 //   3. <SourceLine route="…"/>      → per-page provenance badge (getSource())
 //
@@ -12,7 +12,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 // The gas-chain count is DERIVED, not typed: this string is copied verbatim into
-// docs/DATA-SOURCES.md by the generator, so a hardcoded number goes stale in a
+// DATA-SOURCES.md at the repo root by the generator, so a hardcoded number goes stale in a
 // doc nobody re-reads. It said "16 chains" while NETWORK_GAS carried 18.
 import { NETWORK_GAS } from './networkFees'
 
@@ -89,7 +89,7 @@ const DEFILLAMA = (host: string): SourceProvider => ({ name: 'DefiLlama', host, 
 // entries below — until 2026-08-06, when it was removed as a data source on
 // terms grounds (lib/server/sourceTerms.ts hard-blocks *.yahoo.com). What
 // replaced it, per surface, is spelled out in each entry's notes; several
-// surfaces have no keyless source any more, and two have no source at all.
+// surfaces have no keyless source any more, and one has no source at all.
 const TIINGO: SourceProvider = { name: 'Tiingo', host: 'api.tiingo.com', url: 'https://www.tiingo.com/documentation/general/overview', role: 'primary', auth: 'key' }
 const FMP: SourceProvider = { name: 'FMP', host: 'financialmodelingprep.com', url: 'https://site.financialmodelingprep.com/developer/docs', role: 'fallback', auth: 'key' }
 
@@ -195,7 +195,7 @@ export const DATA_SOURCES: DataSourceEntry[] = [
       { name: 'XT.com', host: 'sapi.xt.com', url: 'https://doc.xt.com/', role: 'primary', auth: 'none' },
     ],
     cadence: '15m revalidate', staticData: ['lib/data/transferFees.ts (the table being overlaid)'],
-    notes: 'Keyless public endpoints only (RP-5: no exchange API-key custody). Overlay-only — live rows update fees on routes the curated table already carries, never add routes. Rows are labeled live per-hop; the other 28 exchanges stay static with the staleness banner. Owner probe 2026-08-21: KuCoin + HTX confirmed live; Bybit removed (its endpoint 403s — authenticated, not public). Batch 2 (Bitget, Poloniex, LBank, Bitfinex, XT.com) added same day, NOT yet probed — remove any that fail like Bybit did. Poloniex removed 2026-09-15 on TERMS, not on a probe: its User Agreement §9 licenses the API "solely for the purposes of trading on Poloniex", so the overlay was never inside the grant — see sourceTerms.ts, where the host is now prohibited. XT.com remains listed but geo-blocks the owner\'s region outright and publishes no reachable terms; it is an open owner decision alongside Bitget\'s US prohibition. Also feeds withdrawal AVAILABILITY: a live-reported suspension blocks the route with attribution, while static rows are disclosed as assumed-open (availabilityExchangeIds is narrower than the live-fee source list — Bitfinex reports fees with no status field). Shared with /api/v1/transfer/routes via lib/server/withdrawFeeOverlay.ts.',
+    notes: 'Keyless public endpoints only (RP-5: no exchange API-key custody). Overlay-only — live rows update fees on routes the curated table already carries, never add routes. Rows are labeled live per-hop; the other 23 exchanges stay static with the staleness banner. Owner probe 2026-08-21: KuCoin + HTX confirmed live; Bybit removed (its endpoint 403s — authenticated, not public). Batch 2 (Bitget, Poloniex, LBank, Bitfinex, XT.com) was added the same day and PROBED 2026-08-22: all five answered keyless with rows parsed (bitget 42, poloniex 31, lbank 51, bitfinex 14, xtcom 41 — 280 live rows with KuCoin+HTX, 123 matching a curated route). Every entry in WITHDRAW_FEE_SOURCES now carries probed: true. Poloniex removed 2026-09-15 on TERMS, not on a probe: its User Agreement §9 licenses the API "solely for the purposes of trading on Poloniex", so the overlay was never inside the grant — see sourceTerms.ts, where the host is now prohibited. XT.com remains listed but geo-blocks the owner\'s region outright and publishes no reachable terms; it is an open owner decision alongside Bitget\'s US prohibition. Also feeds withdrawal AVAILABILITY: a live-reported suspension blocks the route with attribution, while static rows are disclosed as assumed-open (availabilityExchangeIds is narrower than the live-fee source list — Bitfinex reports fees with no status field). Shared with /api/v1/transfer/routes via lib/server/withdrawFeeOverlay.ts.',
   },
   {
     id: 'staking-rates', surface: 'Staking APR/APY', module: 'crypto',
@@ -207,9 +207,9 @@ export const DATA_SOURCES: DataSourceEntry[] = [
       { name: 'Marinade', host: 'api.marinade.finance', role: 'primary', auth: 'none' },
       { name: 'Jito', host: 'kobe.mainnet.jito.network', role: 'primary', auth: 'none' },
       { name: 'Stride', host: 'edge.stride.zone', role: 'primary', auth: 'none' },
-      { name: 'Cosmostation / Subscan / chain LCDs', role: 'primary', auth: 'none' },
+      { name: 'Injective LCD (chain inflation)', role: 'primary', auth: 'none' },
     ],
-    cadence: '20m client poll · 18 parallel upstreams', staticData: ['lib/data/stakingProviders.ts (risk profiles, fallback APRs)'],
+    cadence: '20m client poll · 7 parallel upstreams', staticData: ['lib/data/stakingProviders.ts (risk profiles, fallback APRs)'],
     notes: 'Liquid-staking/restaking protocols + native network rates are live (DefiLlama + protocol APIs + chain inflation). CeFi exchange rates are static estimates. Each rate carries sources[key] = "live" | "estimate".',
   },
   {
@@ -344,7 +344,7 @@ export const DATA_SOURCES: DataSourceEntry[] = [
     route: '/live-data/fund-universe', status: 'live',
     providers: [{ ...SEC_EDGAR, name: 'SEC', host: 'www.sec.gov' }, { name: 'NASDAQ Trader', host: 'www.nasdaqtrader.com', role: 'primary', auth: 'none' }],
     cadence: 'daily-cached',
-    notes: 'Discovered funds ship as compact {symbol,name} rows (2026-07-30, audit follow-up F3). PAGINATION WAS CONSIDERED AND REJECTED in item 11, not deferred: the registry screens client-side, so a page-at-a-time API would filter as though it had seen the whole universe when it had seen fifty rows. The earlier ~11s / 14MB figure predates the compact shape and is not a current measurement — payload size is pending a re-measure on the owner’s machine.',
+    notes: 'Discovered funds ship as compact {symbol,name} rows (2026-07-30, audit follow-up F3). PAGINATION WAS CONSIDERED AND REJECTED in item 11, not deferred: the registry screens client-side, so a page-at-a-time API would filter as though it had seen the whole universe when it had seen fifty rows. The earlier ~11s / 14MB figure predates the compact shape and is not a current measurement — payload re-measured on the owner’s machine 2026-09-19: 2,274,590 bytes (2.27 MB), carrying 29,009 discovered funds (5,593 ETFs + 23,416 mutual funds).',
   },
   {
     id: 'fund-holdings', surface: 'ETF / fund holdings', module: 'funds',
@@ -367,7 +367,7 @@ export const DATA_SOURCES: DataSourceEntry[] = [
     notes: 'ECB’s complete published set of ~30 reference currencies.',
   },
   {
-    id: 'fx-rates-extended', surface: 'FX rates (extended tier, +127)', module: 'macro',
+    id: 'fx-rates-extended', surface: 'FX rates (extended tier, +126)', module: 'macro',
     route: '/live-data/fx-rates-extended', status: 'live',
     providers: [{ name: 'currency-api (community)', host: 'cdn.jsdelivr.net', url: 'https://github.com/fawazahmed0/currency-api', role: 'primary', auth: 'none' }],
     notes: 'Community-sourced, not ECB — the UI shows a distinct disclosure and never blends the two tiers without attribution.',
@@ -420,9 +420,10 @@ export const DATA_SOURCES: DataSourceEntry[] = [
       TIINGO,
       FMP,
       COINGECKO,
+      { name: 'Twelve Data', host: 'api.twelvedata.com', url: 'https://twelvedata.com/docs', role: 'fallback', auth: 'key' },
       { name: 'Finance Now computation (alignment, stats, correlation)', role: 'derived', auth: 'none' },
     ],
-    notes: 'Price series are provider data (Tiingo or FMP for stocks/funds, CoinGecko closes for crypto); the growth-of-100 normalization, window statistics, and correlation matrix are computed by Finance Now, not published figures. Comparing a stock against a macro instrument may now come back one-sided — the equity leg is keyed and the macro leg often uncovered since the Yahoo removal.',
+    notes: 'Price series are provider data (Tiingo, FMP or Twelve Data for stocks/funds — the third rung added 2026-09-18 to catch FMP’s 402s on ETFs and mutual funds; CoinGecko closes for crypto); the growth-of-100 normalization, window statistics, and correlation matrix are computed by Finance Now, not published figures. Comparing a stock against a macro instrument may now come back one-sided — the equity leg is keyed and the macro leg often uncovered since the Yahoo removal.',
   },
   {
     id: 'brief', surface: 'AI Daily Brief', module: 'shared',

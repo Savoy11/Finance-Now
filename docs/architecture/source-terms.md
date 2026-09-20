@@ -17,17 +17,29 @@ Integrations page.
 > to make that reading explicit, dated, enforced, and re-checkable — not to be right
 > about the law on its own.
 
-> ⚠ **The registry ships almost entirely `seeded`, and that is a deliberate,
+> ⚠ **Most of the registry is still `seeded`, and that is a deliberate,
 > visible state — not a claim of review.** It was authored in an environment whose
 > network policy blocked every publisher and provider host at the gateway, so no
-> terms document could be opened. **54 of 56 entries** are starting positions drawn
-> from documented posture. Two are `verified`, both read on the owner's machine:
-> **Cboe** (P2-O1, 2026-08-05) and **CoinGecko** (the first real probe run,
-> 2026-08-29 — see `docs/audits/terms-review-2026-08-29.md`).
+> terms document could be opened. **38 of 56 entries** are still starting positions
+> drawn from documented posture. **18 are `verified`** — the document was actually
+> opened and read. Four sit outside the big batch: **Cboe** (P2-O1, 2026-08-05),
+> **CoinGecko** (the first real probe run, 2026-08-29 — see
+> `docs/audits/terms-review-2026-08-29.md`), and **Poloniex** and **LBank** (both
+> read on the owner's machine 2026-09-15). The other fourteen were read on
+> 2026-09-14 from a verified clean residential egress
+> (`docs/audits/terms-review-news-2026-09-14.md`,
+> `docs/audits/terms-review-apis-2026-09-14.md`) and ratified on 2026-09-18 under
+> `docs/decisions/2026-09-18-terms-ratification-proposal.md` — which also records
+> four of those ratifications **reverted** to `seeded` on 2026-09-19, because the
+> audits did not support them.
 >
-> By verdict, the 56 are 14 `approved`, 40 `conditional`, 2 `prohibited`.
-> *(Counts refreshed 2026-09-08; this section said 47 of 48 with Cboe the only
-> verified entry, written 2026-08-06.)*
+> By verdict, the 56 are 14 `approved`, 39 `conditional`, 3 `prohibited` — Yahoo,
+> Cboe and, since 2026-09-15, **Poloniex**, whose §9 grants an API licence solely
+> for the purpose of trading on Poloniex, which this app does not do.
+> *(Counts refreshed 2026-09-19. They read 54 of 56 seeded / 2 verified and
+> 14 `approved` / 40 `conditional` / 2 `prohibited` when refreshed 2026-09-08 —
+> each correct on its own date — and 47 of 48 with Cboe the only verified entry,
+> written 2026-08-06.)*
 >
 > The first cut of this file had no `review` field at all, and gave every entry a
 > `verifiedAt` date — which made 47 assumptions look like 47 readings. That is the
@@ -77,7 +89,15 @@ is a machine-readable instruction we either honour or do not**; a terms verdict 
 *our interpretation* of a legal document. Folding the first into the second would
 launder a first-hand observation into looking like a completed review — an entry can
 legitimately be `seeded` on its terms while carrying a dated, verified robots
-reading, which is exactly Reddit's state after the 2026-08-29 probe.
+reading, which is exactly Reddit's state after the 2026-08-29 probe. *(Reddit's
+terms were themselves read on 2026-09-14 and ratified 2026-09-18, so its entry now
+carries `review: 'verified'`, `reviewedAt: '2026-09-14'` **beside**
+`robotsDisallowed.observedAt: '2026-08-29'`. The separation is now visible in the
+dates rather than in the review state —
+`lib/server/__tests__/robotsGate.test.ts` asserts the two must differ, having
+dropped its old `review === 'seeded'` assertion as a stale snapshot. The principle
+is unchanged: a still-`seeded` entry may carry a verified robots reading. Noted
+2026-09-19.)*
 
 When present, `assertRobotsPermits` (inside `pinnedFetch`) refuses the fetch unless
 the named credential is configured — the credential being the thing that moves the
@@ -227,7 +247,19 @@ policy rather than a licence attached to a key. Four questions settle each one:
    change, not a note.
 4. Is **attribution** required, and in what form? Record it as a `conditions` entry.
 
-The open queue is `docs/audits/terms-review-news-2026-08-07.md`.
+The open queue is `docs/audits/terms-review-news-2026-08-07.md` — a worksheet that
+read nothing, generated behind a gateway that blocked all ten hosts.
+**Superseded for six of its ten hosts by `docs/audits/terms-review-news-2026-09-14.md`**,
+read from a verified clean residential egress: cointelegraph.com, decrypt.co,
+bitcoinmagazine.com, cnbc.com, oilprice.com and fxstreet.com are now `verified`.
+Four still carry no reading on record — **coindesk.com** (terms page returned `429`),
+**marketwatch.com** (`401`), **dowjones.io** (the feed host publishes no reachable
+terms) and **investing.com** (only its feeds were probed; the registry's own note
+reads "possibly opened, no record"). All four were briefly flipped to `verified` on
+2026-09-18 and reverted to `seeded` on 2026-09-19 — a ratification cannot supply a
+reading nobody recorded; see the correction at the end of
+`docs/decisions/2026-09-18-terms-ratification-proposal.md`. CoinDesk and Dow Jones
+need an email rather than a fetch. *(Updated 2026-09-19.)*
 
 ### What the first real probe run settled (2026-08-29)
 
@@ -253,6 +285,31 @@ assessment asserts personal use on every tier. Neither is a reading, and the see
 finding read as already settled, so it never joined the queue. That is precisely what
 `seeded` exists to expose.
 
+> **Update 2026-09-19 — five of those eight have since been read, and the two
+> sentences above about FMP's *seeded finding* are superseded.** FMP's load-bearing
+> role in the code is unchanged; what has changed is what the registry says about its
+> terms. The paragraph is kept because it records why the question was filed.
+>
+> - **FMP's ToS was read on 2026-09-13** (`docs/audits/terms-review-fmp-2026-09-13.md`).
+>   The tier-dependent claim was **disproved** — the posted ToS has no commercial-use
+>   licence section at all. The entry's `finding` and `conditions` were rewritten to
+>   §2.2.1 (one individual, non-commercial) and §2.2.2 (any multi-user deployment needs
+>   a specific agreement with FMP, "irrespective of whether such usage is complimentary
+>   or paid"). `review` is still `'seeded'` on purpose: the reading is done, but the
+>   flag and the verdict are the owner's acts.
+> - **YouTube is no longer part of this question.** The 2026-09-14 reading found the
+>   obligations are attribution and Brand Features; the probe had flagged the *consumer*
+>   site terms, which do not govern Data API v3 use. The open item became a UI check —
+>   see B4 in `docs/decisions/2026-09-18-terms-ratification-proposal.md`.
+> - **Tiingo, OilPrice and Bitget are now `verified`** (read 2026-09-14). Tiingo §7.3
+>   and Bitget §10.1 land on the same internal-use shape as FMP, so they stay inside the
+>   question; Bitget adds a separate and harder one — the United States is named a
+>   Prohibited Country. OilPrice moves to a different question entirely: B1, whether a
+>   publisher's website ToU governs its public RSS feed — still open, and still the
+>   owner's to rule on.
+> - **Finnhub, Twelve Data and Binance.US remain `seeded` and unread**, and the
+>   personal-vs-commercial question is still open for them.
+
 ## Maintenance
 
 - **Adding a source:** read the terms, add an entry with `review: 'verified'`, run
@@ -263,10 +320,18 @@ finding read as already settled, so it never joined the queue. That is precisely
   `GET /live-data/source-terms` returns the whole registry. Both are surfaced on the
   **/data-sources** page, prohibited entries first — they explain missing functionality
   elsewhere in the app, so burying them under thirty approvals would defeat the point.
-- **Changing a verdict:** read the document yourself and update `verifiedAt`. Never
+- **Changing a verdict:** read the document yourself and update `reviewedAt`. (The
+  field is `reviewedAt`. `verifiedAt` is the pre-`review` draft's name for it — see
+  the header note — and appears nowhere in `sourceTerms.ts` outside comments about
+  that draft.) Never
   downgrade a verdict on the strength of a CI probe.
 
 Entries also carry a `confidence` field, orthogonal to `review`: `review` says whether
 anyone read the document, `confidence` says how clear-cut the answer is once you have.
-The `low` ones (Reddit, StockTwits) are where public terms are least explicit about
-third-party display use.
+There is exactly one `low` entry now: **xt.com**, where no terms document is
+reachable at all — XT publishes none in its 33k-URL sitemap, twelve conventional
+paths 404, and the site geo-blocks this region outright. *(Reddit and StockTwits
+were the only `low` entries when this line was written on 2026-08-06; six more had
+joined them by 2026-09-08, and the 2026-09-14/15 readings and the 2026-09-18
+ratification moved the other seven — Poloniex to `high`, the remaining six to
+`medium`. Updated 2026-09-19.)*

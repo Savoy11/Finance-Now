@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The Finance Now (Finance Now) is a full-stack, cloud-native analytics platform designed to ingest real-time and historical data from multiple blockchain and market data sources, compute composite risk and opportunity scores across an asset universe, and deliver insights to analysts and traders via a low-latency REST API and WebSocket streaming interface.
+The Finance Now (Finance Now) WAS designed as a full-stack, cloud-native analytics platform designed to ingest real-time and historical data from multiple blockchain and market data sources, compute composite risk and opportunity scores across an asset universe, and deliver insights to analysts and traders via a low-latency REST API and WebSocket streaming interface.
 
 This document describes the architecture decisions, component interactions, and operational characteristics of the platform at the level of detail required for engineering teams, platform operators, and technical reviewers.
 

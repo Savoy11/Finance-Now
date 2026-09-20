@@ -47,6 +47,36 @@ assistant surface for AI agents.
 - **Crypto first, stocks later** → Equities module comes after the
   personal-finance pillars are usable.
 
+> **Update (2026-09-19) — two of these four decisions no longer describe the
+> tree. They are kept as written because they record what was decided in
+> 2026-07.**
+>
+> - **"No deployment work yet"** stopped being true on 2026-08-08, when commit
+>   fdea9b8 landed a provisionable AWS path: `docs/deployment/aws-provisioning.md`
+>   (with `kubernetes-deployment.md` refreshed alongside it), a Terraform
+>   bootstrap module under `infrastructure/terraform/bootstrap/`, expanded
+>   `eks.tf`/`iam.tf`, and changes to all three CI/CD workflows. Nothing has
+>   been provisioned from it — the CD workflows are gated off and their own
+>   header records AWS infrastructure "that has never been provisioned" — and
+>   local-first is still how the app is run day to day, with Postgres in
+>   `infrastructure/docker/docker-compose.yml`. What changed is that a runnable
+>   deploy path exists, not that anything is deployed.
+> - **"Equities after the personal-finance pillars"** never held for a day. The
+>   Equities module shipped in commit 41ae7b7 on 2026-07-07 at 12:12 UTC — 35
+>   minutes after 77d6a23 (11:37 UTC) wrote these decisions — together with
+>   ETFs & Funds; Macro Markets followed on 2026-07-21. The first
+>   personal-finance pillar, Phase 2 Budget, did not ship until 2026-07-30, ran
+>   three weeks, and was removed on 2026-08-20; Phase 3 Plan has never been
+>   started. The Phase 4 note above is dated 2026-08-12 because that is when
+>   the shipping was recorded here, not when it happened. The rule was never
+>   followed and nothing replaced it.
+>
+> Of the other two: multi-tenant from day one still holds (every user table is
+> `user_id`-scoped off `schema/auth.ts`). "Manual entry + CSV import first,
+> bank sync deferred" is now moot rather than current — bank sync is still
+> deferred, but the module that would have consumed either was removed on
+> 2026-08-20, leaving only `schema/budget.ts` and the 0003 migration.
+
 ---
 
 ## Architecture: one app, entitlement-gated modules (Option A)
@@ -311,7 +341,12 @@ needs the most careful honest-data framing, not for data availability.
 ### Status (2026-07-21): all three areas SHIPPED
 - **Commodities** — `commodityCatalog.ts` (19 verified contracts, 5 categories,
   `quoteBasis` so grains render ¢/bu not fake dollars), registry + detail pages.
-- **Currencies** — `currencyCatalog.ts` (18 pairs + DXY), `/live-data/fx-rates`
+- **Currencies** — `currencyCatalog.ts` (18 entries — 17 pairs plus DXY;
+  corrected 2026-09-19: "18 pairs + DXY" implies 19 and was already wrong on
+  its own date — the catalog has held 18 entries since aa45d8d, the commit
+  that both created it and wrote this line. The same DXY double-count appears
+  in the instruments-layer note below, where it inflated the total to "46
+  macro instruments" until the 2026-09-08 pass corrected it), `/live-data/fx-rates`
   (frankfurter.dev ECB daily reference, keyless), registry + converter + detail.
 - **Bonds & Rates** — `ratesCatalog.ts` (4 yield indices + 4 CBOT futures),
   `/live-data/treasury-yield-curve` (treasury.gov official 13-maturity par
@@ -329,6 +364,25 @@ needs the most careful honest-data framing, not for data availability.
   excluded and the exclusion is stated on-page, since a gappy series ranked
   beside a liquid contract reads as comparable when it isn't. Levels render
   through `formatInstrumentQuote()`, so grains stay ¢/bu and yields stay %.
+
+  > **Update (2026-09-19).** The counts above are the 2026-07-30 shipping state
+  > and are left as written; three of them have since moved.
+  >
+  > - **4 ranges, not 5.** The 2Y button was removed on 2026-08-15 as review
+  >   defect D-2 — the client offered a range the route 400'd on, and the
+  >   failure rendered as a provider-coverage notice. `RANGES` is now
+  >   `['3M', '6M', '1Y', '5Y']`.
+  > - **~51 indicators, not 16.** The page dropped its local 16-entry list for
+  >   the shared registry: `indicatorsFor(false)` = 62 entries in
+  >   `ALL_INDICATORS` minus the 11 volume-derived ones that FX pairs and yield
+  >   indices cannot carry (and which the page names on-screen rather than
+  >   silently omitting).
+  > - **The Scanner is no longer a tab.** It was promoted to its own nav page
+  >   at `/macro/scanner` on 2026-08-19 (one scanner per section). Its universe
+  >   is unchanged — the same 29 liquid instruments, the same 6 delisted-ETF
+  >   commodities and 10 EM/cross FX pairs excluded and stated on-page.
+  >
+  > Unchanged: all 45 instruments chart, 6 chart types, the grouped picker.
 
 - **Macro News** (2026-07-21) — `/macro/news` + `/live-data/macro-news`:
   8 keyless RSS feeds, content-first pillar classifier (off-pillar articles

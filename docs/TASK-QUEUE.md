@@ -2048,7 +2048,7 @@ subproject owns.
 | S1-2 | same file, same lines | Range labels "5 Years (weekly)" / "Max (monthly)" are now false copy — same class as D-12/D-13/D-15 |
 | S1-3 | same | Strategies silently changed meaning: SMA 10/40 on the 5Y view was 10 and 40 **weeks**, is now 10 and 40 **days** over five years of dailies. MAX now pulls up to 10,000 daily bars where it once pulled ~40 monthly |
 | S1-4 | `equities/backtests/page.tsx:317-321` | Empty state blames a missing Tiingo/FMP key for what may be a valid-key short-history case. The route already distinguishes them (`source:'none'` + `no_provider_configured` vs `fetch_failed`); the page doesn't read the distinction. Same misdirection pattern as M-note-8 |
-| S1-5 | `equities/technical-analysis/page.tsx:504` | Spillover from the same commit — still describes "daily/weekly stock candles" |
+| S1-5 | `equities/technical-analysis/page.tsx:504` | Spillover from the same commit — still describes "daily/weekly stock candles" — **RESOLVED 2026-09-08 in `046ae69`**: the line moved to 401 and now reads "daily stock candles"; re-verified 2026-09-19 at HEAD `ea4c976` (0 case-insensitive hits for "weekly" in that file) |
 | S1-6 | Portfolios Backtest tab | Growth summary + return-by-holding math computed in-component, untested (part of D-24) |
 | S1-7 | Crypto TA | `patternProjection`, `detectSetups`, `computeRiskReward` untested while emitting dollar levels users trade against (CR-note-11, part of D-24) |
 
