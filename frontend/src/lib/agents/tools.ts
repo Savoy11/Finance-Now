@@ -541,13 +541,19 @@ export async function runTool(
         const changePct = ((last.close - first.open) / first.open) * 100
         // Return a compact summary — never dump hundreds of candles into context.
         return {
-          // `source` is the provider-FAMILY key ('binance'), not the venue that
-          // answered. api.binance.com is 451 from here, so these candles are
-          // really Binance.US — a different venue with its own liquidity and
-          // prices. Passing the family key on is the "caller ignores the
-          // provenance field" failure DATA-AVAILABILITY.md lists for this route,
-          // so report the venue label the TA badge shows.
-          coin, range, source: ohlcvSourceLabel(data.source, data.venue) ?? data.source,
+          // `source` is the provider-FAMILY key ('binance'); `venue` is which
+          // host actually answered. api.binance.com is 451 from here, so these
+          // candles are really Binance.US — a different venue with its own
+          // liquidity and therefore its own prices, and an agent citing
+          // "Binance" for them makes a claim the data does not support.
+          //
+          // Reported as TWO fields rather than by overwriting `source` with the
+          // label: get_stock_price_history also emits `source`, so putting a
+          // display label in one and a provider key in the other would give the
+          // model one field name with two vocabularies.
+          coin, range,
+          source: data.source,
+          venue: ohlcvSourceLabel(data.source, data.venue),
           candleCount: candles.length,
           firstClose: first.close, lastClose: last.close,
           periodHigh: high, periodLow: low,

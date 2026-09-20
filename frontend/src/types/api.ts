@@ -20,6 +20,19 @@ export interface PaginatedResponse<T> {
   untested?: number
   /** field key → how many rows lacked it, so the caption can name a reason. */
   missingByField?: Record<string, number>
+  /**
+   * Which upstream actually served these rows, when the list came from a
+   * provider ladder that can fall back. `/live-data/markets` walks
+   * CoinGecko → Binance → CoinMarketCap and suffixes `-fallback` when the first
+   * choice did not answer.
+   *
+   * Carried here because dropping it is how a page ends up naming a provider in
+   * prose: until 2026-09-20 the Coins header read "live prices via CoinGecko"
+   * unconditionally, because that was the only provider name available to it —
+   * the real one died at this boundary. Optional; lists that do not come from a
+   * ladder omit it.
+   */
+  source?: string
 }
 
 export interface ApiError {

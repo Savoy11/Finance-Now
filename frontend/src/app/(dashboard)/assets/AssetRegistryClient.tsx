@@ -32,6 +32,7 @@ import { SourceLine } from '@/components/ui/SourceLine'
 import { formatCompact } from '@/lib/utils/format'
 import { LIVE_DATA, STALE_TIME_SHORT } from '@/lib/constants'
 import type { AssetType, Blockchain } from '@/types/asset'
+import { marketsSourceLabel } from '@/lib/utils/marketsSource'
 
 type ViewMode = 'table' | 'grid'
 type Tab = 'coins' | 'reserves' | 'cycle'
@@ -148,11 +149,11 @@ export function AssetRegistryClient() {
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         <PageHeader
           title="Coins"
-          subtitle={isLoading ? 'Loading…' : `${data?.total ?? 0} coins monitored · live prices via CoinGecko`}
+          subtitle={isLoading ? 'Loading…' : `${data?.total ?? 0} coins monitored · live prices via ${marketsSourceLabel(data?.source)}`}
           icon={<CoinsIcon size={20} aria-hidden />}
           description="The Coin Registry tracks every monitored crypto asset with live prices and market data. The Reserve Monitor tab shows stablecoin collateralization; the Cycle Context tab shows where past-cycle metrics currently read — descriptive history, not a signal."
           details={[
-            { label: 'Data source', text: 'Prices refresh via CoinGecko every 30 seconds; reserve data pulls from DefiLlama.' },
+            { label: 'Data source', text: `Prices refresh via ${marketsSourceLabel(data?.source)} every 30 seconds; reserve data pulls from DefiLlama. The ladder is CoinGecko → Binance → CoinMarketCap; this names the rung that answered.` },
             { label: 'Coin types', text: 'Fiat-backed & algorithmic stablecoins, Layer-1 networks, DeFi and tokenized assets, and CBDCs.' },
           ]}
         />
