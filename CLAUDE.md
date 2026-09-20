@@ -658,6 +658,18 @@ site nobody has reviewed. Full design: `docs/architecture/source-terms.md`.
 > problem on shipping surfaces rather than a future decision. See the dated note
 > on the entry in `sourceTerms.ts` for the three questions to answer.
 
+> **`docs/LEGAL-REVIEW.md` is the standing note for all of this** (opened 2026-09-20). The
+> legal questions in this project are spread across ~65 queue items, several audits and a
+> drafts folder, and nothing said what they add up to. It groups them, names the keystone
+> (**T-151 — is Finance Now personal/internal or commercial?**), and records the four
+> provider enquiries drafted on 2026-09-20 in `docs/licensing/` — **none of which have been
+> sent**. Read it before reopening any licensing question.
+>
+> ⚠ Its headline finding: FMP, Finnhub, Twelve Data and Binance.US were all read on the
+> owner's machine and **all four bar a deployment other people can reach**, with no tier
+> curing it. Three name a route (Order Form / written approval / Redistribution Add-On);
+> Binance.US names none. That is not a pricing question, so D21 does not defer it.
+
 **To close it:** `npm run terms:report -- --seeded` (or `--news`) from a machine
 > that can reach these sites writes a review worksheet — current verdict, what the
 > probe saw, a link to the document, and a conclusion box per host. Read the
