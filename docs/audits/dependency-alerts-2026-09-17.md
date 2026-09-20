@@ -1,8 +1,16 @@
 # Dependency alert sweep — 2026-09-17
 
 Worked the 26 Dependabot alerts the 2026-09-16 session handoff named as unblocked.
-All 26 are cleared in PR #199. This file records what the remaining open PRs are,
-what each would cost, and which of them PR #199 supersedes.
+All 26 are cleared: the 6 in `frontend` by PR #199, the 20 in `mcp-server` by
+PR #207 (merged 2026-09-20, independently and by a different mechanism — see the
+two dated notes below). This file records what the remaining open PRs are, what
+each would cost, and which of them are superseded.
+
+> **This header read "All 26 are cleared in PR #199" until 2026-09-20.** That
+> was true of the work, not of the diff: #207 landed the `mcp-server` half while
+> #199 was in draft, and #199 then dropped its own `mcp-server` changes rather
+> than fight a lockfile it no longer improved. The alerts are the same 26 and
+> they are all closed; only the attribution changed.
 
 **Measured on a cloud session.** Nothing here depends on network reachability or
 the owner's IP, so the usual owner-machine caveat does not apply — these are
@@ -32,6 +40,23 @@ and `mcp-server` has only two direct dependencies, so nothing can be fixed by
 bumping what the manifest actually declares. Declarative `overrides` are the only
 honest instrument.
 
+> ⚠ **That last sentence expired on 2026-09-20, and the overrides were removed.**
+> It was true when written and it is not now. PR #207 cleared the same five
+> packages **lockfile-only**, and the reason that works is upstream: the fixed
+> versions all fall inside the ranges the SDK already declares. Measured on
+> 2026-09-20 — a fresh `npm install --package-lock-only` from main's manifest,
+> with **no `overrides` block at all**, resolves to
+> `@hono/node-server@2.1.1`, `fast-uri@3.1.8`, `hono@4.13.8`,
+> `ip-address@10.7.2`, `qs@6.16.0` and reports **0 vulnerabilities**.
+>
+> So the overrides stopped buying security and only pinned. They were dropped
+> when main merged into this branch. The lesson is narrower than "don't use
+> overrides": an override is the right instrument while the fixed version is
+> **outside** what the parent declares, and it becomes dead weight the moment
+> the parent's range covers it. Nothing fails when that flips, which is why it
+> has to be re-measured rather than assumed — this note exists because the
+> original claim would otherwise have read as settled.
+
 ---
 
 ## Three defects in the open Dependabot PRs
@@ -51,6 +76,18 @@ It proposes `@hono/node-server` 1.19.14 → **2.1.1**. The advisory
 (`GHSA-frvp-7c67-39w9`) is fixed in **1.19.15**, and **1.19.17** exists on the
 1.x line. The major buys nothing the patch does not, and costs an API review of
 a package the MCP SDK — not this repo — consumes.
+
+> **Overtaken 2026-09-20, and worth reading as a correction rather than a
+> retraction.** The reasoning above is still right about the *advisory* — 1.19.15
+> fixes it and the major adds nothing security-wise. What it got wrong is
+> treating 2.x as an imposition. The SDK declares
+> `"@hono/node-server": "^1.19.9 || ^2.0.5"`, so **both lines are supported by
+> the consumer**, and 2.1.1 is simply what npm picks when left alone. main's
+> lockfile (#207) carries 2.1.1; this branch's override held 1.19.17; the two
+> lockfiles differed in that one entry and nothing else. Pinning *below* what an
+> unaided `npm install` produces is its own maintenance cost, so the override
+> went and 2.1.1 stands. Verified: `mcp-server` installs from that lockfile,
+> `tsc` builds, and the entrypoint loads.
 
 ### #184 declares a combination that cannot resolve
 
@@ -106,7 +143,8 @@ None is a security fix. Each is a genuine major needing its own read.
 | #187 | `eslint` 9.39.5→10.10.0 | **Broken — lint does not run** | **Do not merge. Blocked upstream.** See below |
 | #186 | `zustand` 4.5→5.0.15 | Low — verified clean | **Merge.** See below |
 | #185 | `tailwindcss` 3.4→4.3.3 | **High — a rewrite, not an upgrade** | **Do not merge as-is** |
-| #184, #194, #195, #196, #197 | vitest-coverage, hono-node-server, qs, hono, fast-uri | — | **Superseded by #199; close them** |
+| #184 | `@vitest/coverage-v8` 3→5 alone | Cannot resolve | **Superseded by #199** (which moves runner and provider together to 4.1.11); close it |
+| #194, #195, #196, #197 | hono-node-server, qs, hono, fast-uri | — | **Superseded by #207**, merged 2026-09-20, which cleared all four in `mcp-server`'s lockfile. This row credited #199 until 2026-09-20; #199 no longer touches `mcp-server` at all. Close them |
 
 ### #188 — `actions/github-script` 7→9
 
@@ -197,8 +235,20 @@ bump — and there is no security pressure forcing it.
 
 ## What PR #199 changed
 
-`mcp-server` 5 → 0 vulnerable packages, `frontend` 7 → 0. Every override stays
-inside its existing major, so no API surface moves.
+**`frontend` 7 → 0 vulnerable packages.** Every override stays inside its
+existing major, so no API surface moves.
+
+> **Scope narrowed 2026-09-20.** This read "`mcp-server` 5 → 0 vulnerable
+> packages, `frontend` 7 → 0" until PR #207 landed the `mcp-server` half
+> independently. On merging main in, this branch dropped its `mcp-server`
+> overrides and took main's lockfile wholesale, so **`mcp-server` is no longer
+> part of this PR's diff** — see the two notes above for why the overrides were
+> not worth keeping once a plain resolve came back clean. Both workspaces still
+> audit clean; only the credit moved.
+>
+> What remains here: the `frontend` overrides, the vitest 3 → 4 bump with its
+> JSX fix, the CI audit threshold (`high` → `moderate`), and the documentation
+> corrections.
 
 Verified on the branch: the full suite passes (same file and test counts as the
 baseline on `main`), `tsc --noEmit` clean, eslint 0 errors with the warning
