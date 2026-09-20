@@ -453,8 +453,55 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     verdict: 'conditional',
     termsUrl: 'https://twelvedata.com/terms',
     finding:
-      'Commercial market-data API. Keyed access under the plan\'s licence; the free tier carries a hard credit budget (8 credits/min) and is for non-commercial use.',
-    conditions: ['Valid API key required', 'Respect the plan credit budget'],
+      'Commercial market-data API. READ 2026-09-20 (Terms of Use, “Last updated: January 1, 2026”, ' +
+      'Twelve Data Pte. Ltd., Singapore). ⚠ The agreement binds an ANONYMOUS FETCHER, not just an ' +
+      'account holder: assent is by use — “BY PURCHASING, ACCESSING, DOWNLOADING, OR USING THE ' +
+      'TWELVE DATA PLATFORM … YOU … AGREE TO BE BOUND”, and “Platform” is defined to include “the ' +
+      'APIs (REST and WebSocket)”. The default licence is INTERNAL USE ONLY, defined as “use solely ' +
+      'for Customer’s internal business purposes and not for redistribution or external commercial ' +
+      'purposes”. §2.2 is an ENUMERATED grant (“Customer is granted a limited, non-exclusive license ' +
+      'to:” followed by a closed list), so anything not listed is ungranted — absence of a ' +
+      'prohibition does not create a right. “Redistribution” is defined broadly as “any publication, ' +
+      'distribution, or provision of Data to third parties”, with no carve-out for non-commercial, ' +
+      'small-scale or free provision, and §2.2(e) permits it — expressly including EXTERNAL DISPLAY ' +
+      '— “only if and as expressly authorized by a Redistribution Rights Add-On or separate written ' +
+      'agreement”.',
+    conditions: [
+      'Valid API key required',
+      'Respect the plan credit budget',
+      '§2.1/§2.2(a): the licence covers Internal Use only. Every cache, table and log holding Data must exist for the maintainer’s own use',
+      '§2.2(e): ANY external display or redistribution needs a Redistribution Rights Add-On or a separate written agreement — and carries attribution requirements set outside this document',
+      '§2.3(e): never remove, alter or obscure proprietary notices or labels — binds at EVERY tier, including today',
+      '§2.3(l) + §5.6(b): Free Tier and Free Trial data may not be used for commercial purposes',
+      '§2.3(f)/(k): no derivative financial products, and no combining Data with other sources to build a competing product, without written permission',
+      '§2.3(g): caching is capped by timeframes set in the Documentation (twelvedata.com/docs) — NOT in the terms, and currently unverified against this app’s TTLs',
+      '§12.5 + §16.2: on termination, delete all Data within 30 days, with certification if requested — store it so it can be enumerated and destroyed',
+      '§8.3: Twelve Data may modify, suspend or remove any Data or endpoint at any time without notice or liability — nothing here may be load-bearing (D21)',
+    ],
+    // ✅ 2026-09-20: READ, from a structure-preserving capture on the owner's machine.
+    // All quotes verified verbatim AND contiguous by an adversarial pass. `review` stays
+    // 'seeded' — the flip is the owner's act, same posture as FMP and Finnhub.
+    //
+    // ⚠ THE FIRST READING OF THIS DOCUMENT WAS THROWN AWAY, and the reason is a warning
+    // for anyone re-reading it. The HTML had been flattened to a single line, so headings,
+    // lead-ins and numbered sub-clauses ran together; quotes matched the capture
+    // byte-for-byte while misrepresenting the document's structure. In a numbered
+    // agreement the structure IS the meaning. Capture with block structure preserved.
+    //
+    // ⚠ TWO THINGS THE DOCUMENT DOES NOT SETTLE, both recorded rather than argued away:
+    //   1. "Internal Use" means "internal BUSINESS purposes". Whether an unpaid personal
+    //      project is an internal BUSINESS purpose is genuinely unclear, and the app may
+    //      sit outside the only permitted-use category even TODAY, solo. Nobody has
+    //      resolved this; do not assume the solo case is safe merely because it is small.
+    //   2. §2.3(g) defers cache limits to the Documentation, which is a separate document
+    //      and unread. This app's TTLs are unverified against the binding limit.
+    //
+    // ⚠ UNCAPPED PERSONAL EXPOSURE. §9.1(c) makes "Unauthorized use or redistribution of
+    // Data" an express indemnity trigger and §10.3(a) lifts the §10 liability limits from
+    // Customer indemnity obligations. Getting the redistribution question wrong is not a
+    // capped commercial risk.
+    //
+    // Full reading: docs/audits/terms-review-twelvedata-binanceus-2026-09-20.md
     reviewedAt: '2026-08-06',
     review: 'seeded',
     confidence: 'medium',
@@ -548,8 +595,57 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     verdict: 'conditional',
     // Was /terms until 2026-09-13 — that 404s. Real URL found via the site footer.
     termsUrl: 'https://www.binance.us/terms-of-use',
-    finding: 'Same documented keyless public market-data endpoints as the global venue, under US terms and weights.',
-    conditions: ['Respect the published per-endpoint request weights', 'Report the serving venue — it is a different market than binance.com'],
+    finding:
+      'Same documented keyless public market-data endpoints as the global venue, under US terms and ' +
+      'weights. READ 2026-09-20 (Terms of Use, last updated 2026-06-05, BAM Trading Services Inc.). ' +
+      'The only permission in the document is the Intellectual Property licence, granted “for your ' +
+      'non-commercial personal or internal business uses”, and it is a grant that is then NARROWED: ' +
+      'it “does not permit (1) the resale of the Materials; (2) the distribution, public ' +
+      'performance, or public display of any Materials; (3) the modification or derivative uses of ' +
+      'the Materials; and (4) the use of the Materials other than for their intended purposes.” ' +
+      '“Materials” expressly covers “information, data, text, code … contained on our Sites or such ' +
+      'other mode of access (including through the BAM APIs)”, so market data is Materials. The ' +
+      'Covenants lead-in — “You covenant and agree that you shall not:” — carries NO account ' +
+      'predicate, so its bars bind a keyless fetcher today: (2) no “robot, spider, other automatic ' +
+      'device, or manual process to monitor or copy our Website without our prior written ' +
+      'permission”, and (6) no “action that imposes an unreasonable or disproportionately large load ' +
+      'on our infrastructure”.',
+    conditions: [
+      'Respect the published per-endpoint request weights',
+      'Report the serving venue — it is a different market than binance.com',
+      'Solo, non-public use only. The IP licence does not permit distribution or public display of Materials, and is “personal to you” and non-sublicensable',
+      'Covenants (6): stay well under any load that could read as “unreasonable or disproportionately large” — this binds with no account',
+      'Do not treat the Prohibited Use list as exhaustive — its own lead-in says the types listed “are representative, but not exhaustive”',
+      'Market data is served “as is … for informational purposes only, without representation or warranty” and may come from third-party sources — label it accordingly in the UI',
+      'No Binance.US name or logo without written permission; the Trademarks clause grants no licence to “use, copy, or imitate” a mark',
+      'Introducing an account or API key changes the analysis — the account-gated obligations then attach and this reading must be redone',
+    ],
+    // ✅ 2026-09-20: READ, structure-preserving capture, owner's machine. Quotes verified
+    // verbatim AND contiguous adversarially. `review` stays 'seeded' — owner's act.
+    //
+    // ⚠ THE VERDICT IS GENUINELY CONTESTED, AND THAT IS RECORDED RATHER THAN RESOLVED.
+    // The adversarial pass challenged 'conditional' on limb (3): the licence does not
+    // permit "the modification or derivative uses of the Materials", and Finance Now is
+    // an ANALYTICS app whose whole purpose is computing indicators from price data. On a
+    // strict reading, the core use may sit outside the grant even solo. It is left at
+    // 'conditional' because 'prohibited' is a pinnedFetch SOCKET BLOCK and Binance.US is
+    // the steady-state crypto price source for a US egress (binance.com 451s on US IPs,
+    // see CLAUDE.md) — not because the challenge was answered. It was not.
+    //
+    // ⚠ THIS IS THE ONLY ONE OF THE FOUR WITH NO STATED ROUTE THROUGH. FMP names an Order
+    // Form, Finnhub names written approval, Twelve Data names a Redistribution Rights
+    // Add-On. This document names no mechanism for multi-user permission at all, so
+    // "negotiate terms before launch" has no address to write to here. Worth knowing
+    // before the app depends on it.
+    //
+    // ⚠ THREE INCORPORATED DOCUMENTS ARE UNREAD: Disclosures, the Privacy Policy "and
+    // other policies mentioned therein", and Trading Rules. Their absence bounds this
+    // reading; it is not clearance.
+    //
+    // Asymmetric risk: the user indemnity is UNCAPPED and triggers on "breach or alleged
+    // breach", while BAM's own liability is capped at $10,000.
+    //
+    // Full reading: docs/audits/terms-review-twelvedata-binanceus-2026-09-20.md
     reviewedAt: '2026-08-06',
     review: 'seeded',
     confidence: 'medium',
