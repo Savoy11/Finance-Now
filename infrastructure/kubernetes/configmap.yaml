@@ -55,9 +55,15 @@ metadata:
     component: config
 data:
   NEXT_PUBLIC_ENV: "production"
-  # The backend ORIGIN, with no /api or /api/v1 suffix: the Next rewrite
-  # appends /api/:path itself, so a suffix here produced /api/v1/api/...
-  # (next.config.mjs now strips one defensively, but set it correctly).
+  # Legacy backend origin. RETIRED 2026-09-14 (owner decision D2): the /api/*
+  # proxy rewrite that consumed this was removed from next.config.mjs, and the
+  # API_BASE_URL constant that exported it is gone, so NOTHING reads this value
+  # and setting it has no effect (CLAUDE.md, README.md, backend/FROZEN.md).
+  # The defensive suffix-stripping a previous version of this comment pointed at
+  # went with the rewrite and does not exist. Kept as a bare origin, not deleted,
+  # so a redeploy does not look like it silently lost a setting. If a proxy to a
+  # backend ever returns: ORIGIN only, no /api or /api/v1 suffix — a suffix plus
+  # an appended /api/:path is what produced /api/v1/api/... .
   NEXT_PUBLIC_API_URL: "https://financenow.example.com"
   NEXT_TELEMETRY_DISABLED: "1"
 ---
