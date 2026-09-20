@@ -18,15 +18,15 @@ blocklist written but never read, an export that only a production build rejects
 cd frontend
 npm install --no-audit --no-fund
 npx tsc --noEmit        # must be clean
-npx vitest run          # 1437 tests in 102 files as of 2026-09-12; must all pass
-npx eslint .            # 0 errors; 44 pre-existing warnings as of 2026-09-12
+npx vitest run          # 1515 tests in 107 files as of 2026-09-19; must all pass
+npx eslint .            # 0 errors; 46 pre-existing warnings as of 2026-09-19
 npx next build          # THE check dev mode misses — see C1 below
 ```
 
 - **`next build` is load-bearing.** Finding C1 (2026-07-27): a helper exported from a
   route file passed tsc, vitest, and dev mode, and broke only the production build. Any
   review that skips the build can miss an unshippable app.
-- **Lint warnings: diff instances, not counts.** The ~52 warnings are pre-existing
+- **Lint warnings: diff instances, not counts.** The 46 warnings are pre-existing
   (react-hooks rules). Judge a change by whether it *adds* instances — line numbers shift,
   so compare rule+context, or stash and compare.
 - **`npm run audit` results are IP-dependent.** From a datacenter/container, most

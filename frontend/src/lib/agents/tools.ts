@@ -340,7 +340,7 @@ const TOOL_REGISTRY: RegisteredTool[] = [
     market: 'macro',
     tool: {
       name: 'search_macro_instruments',
-      description: 'Search the macro catalogs — 19 commodity futures, 18 FX pairs + dollar index, and 8 treasury yield indices/bond futures — by name, symbol, or category. Returns the market symbol (usable with get_macro_quote / get_macro_price_history), quote convention, and ETF proxies. Use FIRST to find the right symbol. NOTE: macro quote coverage depends on the API key configured — an unpriced instrument returns no quote rather than a guess, and you must say so instead of estimating.',
+      description: `Search the macro catalogs — ${COMMODITY_CATALOG.length} commodity futures, ${CURRENCY_CATALOG.length} FX entries (pairs plus the dollar index), and ${RATES_CATALOG.length} treasury yield indices/bond futures — ${COMMODITY_CATALOG.length + CURRENCY_CATALOG.length + RATES_CATALOG.length} instruments in total — by name, symbol, or category. Returns the market symbol (usable with get_macro_quote / get_macro_price_history), quote convention, and ETF proxies. Use FIRST to find the right symbol. NOTE: macro quote coverage depends on the API key configured — an unpriced instrument returns no quote rather than a guess, and you must say so instead of estimating.`,
       input_schema: {
         type: 'object',
         properties: {

@@ -1,17 +1,28 @@
 # Opportunity proposals — 2026-07-30
 
 **Commit:** `14d6d76f5208c12a990d55dd439fb3301d861092` (branch `chore/improvement-agents`) · **Reviewed:** `README.md`, `docs/TASK-QUEUE.md` (incl. Phase 2 + Wave-0 follow-ups), `docs/ROADMAP.md` (Macro Markets spec + owner backlog), `docs/FEATURE-ADDITIONS.md` ("deliberately NOT added yet"), `docs/MARKET-ASSESSMENT.md` headings, `docs/PRELIMINARY-FINDINGS-2026-07-30.md`, `frontend/src/lib/modules/registry.ts`, `frontend/src/app/live-data/fund-holdings/route.ts`, `frontend/src/app/(dashboard)/funds/[symbol]/*`, `frontend/src/app/(dashboard)/equities/technical-analysis/page.tsx`, `frontend/src/app/(dashboard)/macro/` · **Proposals:** 2
-> **Note (2026-09-08):** commit `14d6d76` predates the **2026-08-05 re-root of
-> `main`** and is **not reachable from `main`** — `git show 14d6d76` fails on a
-> fresh clone. It survives only on the archive branches; fetch
-> `archive/pre-reset-main` (or the relevant `archive/pre-reset/*` tip) first.
-> See CLAUDE.md § "How Changes Land" and
-> `docs/audits/git-repo-audit-2026-08-23.md`.
+> **Note (2026-09-08) — RETRACTED 2026-09-19: the claim was already false when written.**
+> The retracted text said `14d6d76` predates a "2026-08-05 re-root of `main`", is "not
+> reachable from `main`", and that `git show 14d6d76` "fails on a fresh clone". Re-verified
+> 2026-09-19 against `origin` (`git ls-remote origin refs/heads/main` → `516220f`):
+> `git merge-base --is-ancestor 14d6d76 main` exits **0**, `git branch -a --contains 14d6d76`
+> lists `main` and `origin/main` (67 branch refs, plus 68 `archive/*` tags), and `main` has a
+> single root commit — `bbbd5e5` "Initial commit", 2026-05-23 — across 473 commits. There is
+> no re-root in `main`'s history: every `origin/main` reflog update from 2026-06-28 to
+> 2026-09-19 is a fast-forward, including both entries on 2026-08-05 itself. A full
+> `git clone` resolves `14d6d76`; no `archive/*` branch has to be fetched first.
+> The upstream error is `docs/audits/git-repo-audit-2026-08-23.md`, which calls `8bb8983` the
+> "root commit of `main`" (it is a merge with two parents, reaching 290 commits) and says this
+> commit "survives on exactly three orphaned branches"; CLAUDE.md § "How Changes Land" repeats
+> it. Both still need correcting — this note does not fix them.
 
 > Smoke-test run — scope was deliberately capped at 2 proposals, not a full survey.
-> _(Superseded 2026-08-15: the ledger was created during P3-W2.)_
 > `docs/audits/rejected-proposals.md` does not exist yet (only `docs/audits/.gitkeep`), and
-> `docs/proposals/` did not exist before this file. Nothing was previously rejected, so the
+> `docs/proposals/` did not exist before this file.
+> _(Superseded 2026-08-15: `docs/audits/rejected-proposals.md` was created that day in commit
+> `7cc9934`, "P3-W2: owner short-list intake — Compare + fundamentals fixes, Retirement module,
+> doc governance (#86)". Both paths exist as of 2026-09-19. The capped-scope sentence above is
+> unaffected — it describes the 2026-07-30 run and still stands.)_ Nothing was previously rejected, so the
 > rejection filter passed vacuously; both items were still checked against `TASK-QUEUE.md`,
 > `ROADMAP.md` and the decided policies in `CLAUDE.md`.
 
@@ -26,6 +37,13 @@ reason for anything rejected. Then run the scout in FILE mode.
 ## 1. Fund look-through: what you actually own across your funds · proposed `P1` · target section: `docs/TASK-QUEUE.md` → "Phase 2 — Queued, not yet scoped"
 
 **Status:** APPROVED — owner, 2026-07-30 (in session, both proposals approved together; filed into docs/TASK-QUEUE.md the same day)
+> **Delivered — verified 2026-09-19.** Shipped 2026-07-30 as W4-B1 in commit `ff995e3`
+> "feat(look-through): what you actually own underneath your funds", an ancestor of `main`.
+> On `main` today: `frontend/src/lib/data/lookThrough.ts`,
+> `frontend/src/components/portfolio/PortfolioLookThrough.tsx` and
+> `frontend/src/components/markets/FundOverlapSection.tsx`, with tests at
+> `frontend/src/lib/data/__tests__/lookThrough.test.ts`. The gap described below — `grep` for
+> "overlap"/"look-through" returning zero product matches — was real at `14d6d76` and is closed.
 
 **What:** Multiply the weighted holdings we already fetch per fund by a user's portfolio
 weights, and surface the result as (a) a true underlying-issuer exposure list, (b) a pairwise
@@ -73,6 +91,13 @@ source ladder) is already built and shipped. · *Practicality:* Good — one hon
 ## 2. Macro technical-analysis page (close the third-module TA gap) · proposed `P2` · target section: `docs/TASK-QUEUE.md` → "Phase 2 — Queued, not yet scoped"
 
 **Status:** APPROVED — owner, 2026-07-30 (in session, both proposals approved together; filed into docs/TASK-QUEUE.md the same day)
+> **Delivered — verified 2026-09-19.** Shipped 2026-07-30 as W4-B2 in commit `cda4597`
+> "feat(macro): technical-analysis page over the 45 macro instruments", an ancestor of `main`.
+> On `main` today: `frontend/src/app/(dashboard)/macro/technical-analysis/page.tsx`, with the
+> nav entry at `frontend/src/lib/modules/registry.ts:242`
+> (`{ href: '/macro/technical-analysis', label: 'Macro TA', icon: Activity }`). The "no TA
+> entry" asymmetry described below was real at `14d6d76` — that tree has no
+> `macro/technical-analysis` path — and is closed.
 
 **What:** A `/macro/technical-analysis` page parameterised over the 45 macro instruments,
 reusing the shared candlestick/indicator engine, with a nav entry in the macro module.
@@ -139,3 +164,8 @@ provider, no policy surface.
 *One closing defect note, not a proposal:* `docs/ROADMAP.md`'s 2026-07-21 status block states
 every item in "What must be built" is SHIPPED, but the macro TA page in item 2 was never built —
 a documentation-accuracy issue for `code-auditor`.
+
+> _(Resolved 2026-07-30, verified 2026-09-19: the page was built the same day this report was
+> filed, in commit `cda4597` (W4-B2) at 17:07 UTC, so ROADMAP's SHIPPED claim became true rather
+> than being corrected. The defect was genuine at the commit audited here —
+> `git ls-tree -r --name-only 14d6d76 | grep macro/technical-analysis` is empty.)_

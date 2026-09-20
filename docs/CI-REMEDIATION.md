@@ -15,12 +15,30 @@ diagnose problems that no longer exist. Status below re-verified 2026-07-28.
 
 | Job | Status | Notes |
 |-----|--------|-------|
-| Frontend Check (ESLint + TS + Build) | 🟢 green | |
-| Backend Lint (ruff + mypy) | 🟢 green | ~250 ruff findings resolved in PR #22 |
-| Security Scan / Trivy | 🟢 green | |
-| Backend Tests (pytest + coverage) | 🟢 green | suite runs; 82 tests collected. Was F-A |
+> **Updated 2026-09-19.** `backend-lint` and `backend-test` were **removed** from
+> `ci.yml` on 2026-09-14 (owner decision D2), along with the backend Docker image
+> build and the `safety` Python audit — see the comment block at
+> `.github/workflows/ci.yml:27`. Their rows are kept below the live table as the
+> record of the F-A remediation, not as current job status. This document's own lede
+> argues that over-reporting breakage sends people to diagnose problems that no longer
+> exist; reporting a job that does not exist as green is the same error inverted.
+
+**Jobs `ci.yml` actually defines today:**
+
+| Job | Status | Notes |
+|-----|--------|-------|
+| Frontend Check (ESLint + TS + Tests + Build) | 🟢 green | |
+| Security Scan (Trivy + npm audit) | 🟢 green | `npm audit --audit-level=high` has been **gating** since 2026-09-08 |
 | Terraform Validate | 🟢 green | dependency cycle broken. Was F-B |
-| Docker Build Test | 🟢 green | CI targets match the real stage names. Was F-C |
+| Docker Build Test (frontend image only) | 🟢 green | CI targets match the real stage names. Was F-C |
+| ci-success | 🟢 green | aggregate gate |
+
+**Removed 2026-09-14 (D2) — historical record:**
+
+| Job | Status when removed | Notes |
+|-----|--------|-------|
+| ~~Backend Lint (ruff + mypy)~~ | 🟢 green | ~250 ruff findings resolved in PR #22 |
+| ~~Backend Tests (pytest + coverage)~~ | 🟢 green | suite runs; 82 tests collected. Was F-A |
 
 ---
 

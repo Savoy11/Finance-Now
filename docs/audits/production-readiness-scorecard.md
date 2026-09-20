@@ -1,7 +1,81 @@
 # Finance Now — Production Readiness Scorecard
+
+> **Scope correction, 2026-09-20.** This scorecard's scope line reads "Full-stack
+> (backend API, scoring engine, data pipelines, infrastructure, frontend)", and sixteen
+> of its eighteen findings cite that backend's source by path. (The two that do not:
+> #15 cites only the docker/k8s manifests, and #5 names two config settings and no file.
+> #9 cites both — the manifests *and* `rate_limiter.py:88` / `auth.py:240`.) **That
+> backend was retired on 2026-09-14** — owner decision D2,
+> `docs/decisions/2026-09-14-owner-decisions.md:37`. It is **frozen, not deleted**
+> (`backend/FROZEN.md`), so every file cited below still exists, and — after the three
+> corrections listed at the end of this banner — still reads as described. But nothing
+> in the shipping app calls it, and `.github/workflows/ci.yml` no longer builds or tests
+> it (`backend-lint` and `backend-test` were removed the same day; see the comment at
+> `ci.yml:28`).
+>
+> **Retired and never-built are different states, and this document contains one of
+> each.** The backend was built and it ran; a decision stopped it. The AWS
+> infrastructure the roadmaps below assume was **never provisioned** — and "never
+> provisioned" covers two different things here, which is worth separating because both
+> are checkable:
+>
+> - **Written, never applied.** `infrastructure/kubernetes/` (backend, frontend,
+>   postgres, redis, ingress, configmap, secrets), `infrastructure/terraform/`
+>   (`eks.tf`, `rds.tf`, `elasticache.tf`, `vpc.tf`, `iam.tf`, and the WAF Web ACL at
+>   `main.tf:314`, wired to the ALB at `kubernetes/ingress.yaml:41`), and both CD
+>   workflows. RDS encryption at rest — the Phase 1 "TDE" row — is here too
+>   (`rds.tf:175–176`). All of it is complete, on disk, and has never run: the deploy
+>   has never once succeeded. `cd-staging.yml:24` records that `STAGING_DEPLOY_ENABLED`
+>   has never been set; the gate at `cd-staging.yml:87` reads
+>   `vars.STAGING_DEPLOY_ENABLED == 'true' || github.event_name == 'workflow_dispatch'`,
+>   so automatic staging deploys are off while a manual dispatch would still run. Before
+>   that gate, CD to staging failed on every push to `main` from 2026-07-18 — 90 runs,
+>   zero successes, against infrastructure that did not exist
+>   (`docs/deployment/aws-provisioning.md`).
+> - **Never written at all.** CloudTrail and GuardDuty (Phase 2) and multi-region
+>   (Series A) have no manifest anywhere: neither `cloudtrail` nor `guardduty` appears
+>   under `infrastructure/`, and `infrastructure/terraform/variables.tf:26` declares one
+>   `aws_region`, "Primary AWS region for all resources", with no secondary region in
+>   the tree. These are unticked checkboxes and have never been more — which is what the
+>   roadmap row below already says ("single-region manifests").
+>
+> Calling any of it "retired" would invent a history for a cluster nobody stood up, and
+> erase the backend's.
+>
+> **This matters because a scorecard is read as evidence of what ships.** "Security &
+> Auth 91" is the figure that gets copied into a security questionnaire, and the SOC 2
+> phases below are read as a live plan — and both describe a service that no longer
+> runs and a cluster nobody has built.
+>
+> **Nothing here is re-scored or re-verified.** The stale flags stay flagged and the
+> 2026-07-29 verification stands: this is a dated audit record, and its worth is that it
+> says what was found on the day it was found. The rule is the steward charter's —
+> historical records are annotated, never edited
+> (`docs/agents/checklist-steward.md:75`, `:197`), and for this file specifically,
+> Verification-column changes need file:line proof and scores flagged stale stay flagged
+> until re-scored (`:24`).
+>
+> **Spot-checked against the frozen tree on 2026-09-20.** The cited lines resolve, with
+> three corrections applied in place and each dated where it appears: #17's line
+> reference (`config.py:67–73` → `107–113`), the SSL/TLS roadmap row's path and line
+> (`docker-compose.yml:199` → `infrastructure/docker/docker-compose.yml:201`), and
+> deferred risk D's evidence sentence, which was unscoped rather than wrong. One
+> imprecision is left as found rather than quietly corrected: #9's `auth.py:240` is
+> `exp = payload.get("exp")`, inside `_revoke_jti`; the TTL'd write it stands for is
+> `auth.py:245`.
+>
+> **Reading the citations:** every path below is under `backend/app/`, and the bare
+> filenames are not all in one directory. `main.py`, `config.py` and `dependencies.py`
+> sit at `backend/app/` itself — note that `config.py` is **not** under `core/`.
+> `auth.py` is `backend/app/api/v1/auth.py`; `security.py`, `rate_limiter.py` and
+> `middleware.py` are under `backend/app/core/`; `manager.py` is
+> `backend/app/streaming/manager.py`; `api_key.py` is `backend/app/models/api_key.py`;
+> `002_scoring_fixes.py` is `backend/app/db/migrations/versions/002_scoring_fixes.py`.
+> Citations that already carry a directory (`scoring/`, `pipelines/`, `analytics/`,
+> `models/`, `db/`, `core/`, `streaming/`) take the same `backend/app/` prefix.
 **Audit Date:** 2026-06-14 (as CAEP)  
 **Auditor:** Principal Architecture Review  
-**Scope:** Full-stack (backend API, scoring engine, data pipelines, infrastructure, frontend)
+**Scope:** Full-stack (backend API, scoring engine, data pipelines, infrastructure, frontend) — **the backend, scoring engine and pipelines audited here were retired on 2026-09-14 (D2), and the AWS infrastructure was never provisioned; see the banner above.**
 
 > **Verified against the tree on 2026-07-29.** Every "✅ Fixed" claim below was
 > re-checked in source rather than taken on trust. **14 of 18 hold. Three were
@@ -73,7 +147,7 @@ file and line that proves or disproves it.
 | 14 | 🟡 BUG | `calculate_percentile` declared async unnecessarily | ✅ Fixed | ✅ Holds — `scoring/engine.py:274` is a plain `def` |
 | 15 | 🟡 INFRA | `timescale/timescaledb:latest` not reproducible | ✅ Fixed (pinned 2.14.2-pg15) | ❌ **False.** All three manifests still read `latest-pg15` — still not reproducible, and 2.14.2 was never applied. Pinned to `2.28.3-pg15` on 2026-07-29 (same digest `latest-pg15` resolves to today, so behaviourally a no-op) |
 | 16 | 🟡 INFRA | No `pool_pre_ping` on DB engine | ✅ Fixed | ✅ Holds — `db/session.py:48` |
-| 17 | 🟡 SECURITY | Wildcard CORS allow-headers | ✅ Fixed (explicit header list) | ✅ Holds — `config.py:67–73`, five named headers |
+| 17 | 🟡 SECURITY | Wildcard CORS allow-headers | ✅ Fixed (explicit header list) | ✅ Holds — `config.py:107–113`, five named headers (cited as `67–73` on 2026-07-29; re-checked 2026-09-20) |
 | 18 | 🟡 METRIC | `REQUEST_IN_PROGRESS` wrong Prometheus type (Counter) | ✅ Fixed (Gauge) | ✅ Holds — `core/middleware.py:39`, with matching `.inc()`/`.dec()` |
 
 ### Blocklist durability — resolved 2026-07-29
@@ -116,7 +190,7 @@ All six re-confirmed as still open on 2026-07-29 — none has been quietly close
 | A | 🟠 | WebSocket `ConnectionManager` in-memory — won't scale past 1 pod | Use Redis Pub/Sub as backplane (Q3 sprint) | Yes — no pub/sub anywhere in `streaming/manager.py` |
 | B | 🟠 | `mfa_secret` stored in plaintext | Add AES-256 column encryption via `pgcrypto` (Q3 sprint) | Yes — `models/user.py:49` is a bare `String(64)` |
 | C | 🟡 | No audit log integrity protection (tamper-evident) | Implement WORM append-only log table with trigger (Q4) | Yes — `models/audit_log.py` exists, no trigger in any migration |
-| D | 🟡 | No data retention policy enforced in code | Add TimescaleDB retention policies (Q3 sprint) | Yes — no `retention` reference in the tree |
+| D | 🟡 | No data retention policy enforced in code | Add TimescaleDB retention policies (Q3 sprint) | Yes — no retention policy anywhere in `backend/`: `retention` does not appear in that tree at all, and none of the four migrations (`backend/app/db/migrations/versions/001`–`004`) calls `add_retention_policy`. The policy is designed but unimplemented — `docs/architecture/data-flow.md:306` specifies `SELECT add_retention_policy('price_history', INTERVAL '90 days')`. Scoped and re-checked 2026-09-20; cited as "no `retention` reference in the tree" on 2026-07-29, which holds for `backend/` but not for the repository — `infrastructure/` has eleven `retention` hits (Prometheus TSDB at `docker/docker-compose.yml:153`, Terraform backup and log windows), none of them data retention |
 | E | 🟡 | API docs disabled in production | Deploy separate internal `/docs` route behind auth (Q3) | Yes — `main.py:59–61` gate all three on `DEBUG`; no authed alternative |
 | F | 🟡 | No API usage metering for billing | Add metering counter to API key middleware (Q4) | Yes — `api_key.py:31` mentions `rate_limit_override` in a comment only |
 
@@ -131,7 +205,7 @@ implemented:
 | Checked in source | Result |
 |---|---|
 | Encrypt `mfa_secret` at column level | Not done — plaintext `String(64)` |
-| SSL/TLS enforced everywhere (`sslmode=require`) | Not done — the only `sslmode` in the tree is `sslmode=disable` (`docker-compose.yml:199`, metrics exporter) |
+| SSL/TLS enforced everywhere (`sslmode=require`) | Not done — the only `sslmode` in any config in the tree is `sslmode=disable` (`infrastructure/docker/docker-compose.yml:201`, metrics exporter — cited as `docker-compose.yml:199` on 2026-07-29; path and line re-checked 2026-09-20). `docs/architecture/security.md:100` asserts `sslmode=require`; no configuration implements it |
 | WORM audit log (append-only, trigger-enforced) | Not done — no trigger in any migration |
 | SSO / SAML 2.0 / OIDC | Not done — no SAML or OIDC reference anywhere |
 | Per-API-key IP allowlist | Not done |

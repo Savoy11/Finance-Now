@@ -44,19 +44,19 @@ Plus a **Daily Brief** generated from your holdings, live prices, and headlines.
 
 ## Feature Status (honest)
 
-Verified against the running application, July 2026. **Rows corrected 2026-09-08** against `CLAUDE.md`'s feature inventory and `DATA-AVAILABILITY.md` — the July table had gone stale on six of them, three in ways that overstated what ships.
+Verified against the running application, July 2026. **Rows corrected 2026-09-08** against `CLAUDE.md`'s feature inventory and `DATA-AVAILABILITY.md` — the July table had gone stale on six of them, three in ways that overstated what ships. **Re-checked 2026-09-19 (T-381)** against the source tree and a running dev server: the exchange count and `lib/risk/`'s live consumers had drifted since they were written, while the news-provider count, the provider list and the staking-rate wiring figure were wrong when written rather than merely stale — all five are corrected below. That was a source-level check, not a fresh walk of every surface in the UI — the July provenance still stands for rows nobody has re-opened since.
 
 | Feature | State |
 |---|---|
 | Live market data | 🟢 108 crypto assets via CoinGecko + CoinMarketCap + Binance, 3-way fallback |
 | Reserve Transparency Monitor | 🟢 Live DefiLlama supply + attestation metadata for 9 stablecoins |
-| Transfer Fee Calculator | ⚪ **Hidden from the initial rollout (2026-08-22)** — kept, not deleted; `/transfer-fees` redirects. 30 exchanges × 22 coins × 18 networks from a staleness-labelled static table, plus a live withdrawal-fee overlay and live BTC/EVM-L1 gas |
-| Staking Explorer | 🟡 55 providers with a custody-risk taxonomy, plus a live on-chain pools tab. Live-APR **wiring** covers 33 distinct rate keys — native endpoints (Lido, Rocket Pool, Marinade, Jito, Stride, and per-chain natives) plus a keyless DeFiLlama Yields rung mapping 25 more. That audit has now been run (2026-09-10): **27 of 51 rates are live**, up from 4 of 51. The old ratio was not stale docs and not dead upstreams — four dead hosts were hanging DNS for ~10s each and starving the route's shared budget, so healthy sources aborted before they could answer. Removing them fixed it. The remaining 24 have no upstream publishing a rate at all; each is labelled a static estimate and now says WHY on hover |
+| Transfer Fee Calculator | ⚪ **Hidden from the initial rollout (2026-08-22)** — kept, not deleted; `/transfer-fees` redirects. 29 exchanges × 22 coins × 18 networks from a staleness-labelled static table, plus a live withdrawal-fee overlay and live BTC/EVM-L1 gas |
+| Staking Explorer | 🟡 55 providers with a custody-risk taxonomy, plus a live on-chain pools tab. Live-APR **wiring** covers 27 distinct rate keys — 8 from native endpoints (Lido, Rocket Pool, Marinade, Jito, Stride's three Cosmos LSTs, Injective native) plus 19 from a keyless DeFiLlama Yields rung (`LLAMA_MAP` in `lib/server/stakingRates.ts`). Both rungs were cut back on 2026-09-09: nine dead native rungs and the NEAR rung came out, and six DeFiLlama keys that matched no pool went with them. The earlier figure's 25 was right on the date it was written (2026-09-08); its 33 was not — the native side wired 18 keys then, not 8. That audit has now been run (2026-09-10): **27 of 51 rates are live**, up from 4 of 51. The old ratio was not stale docs and not dead upstreams — four dead hosts were hanging DNS for ~10s each and starving the route's shared budget, so healthy sources aborted before they could answer. Removing them fixed it. The remaining 24 have no upstream publishing a rate at all; each is labelled a static estimate and now says WHY on hover |
 | Technical Analysis | 🟢 Live OHLCV, 62 indicators (shared registry), patterns, drawing tools, and a separate Scanner page per section. **The backtester is hidden** (2026-08-20, owner: "I may revisit back testing") — every engine and panel is retained in place |
-| News & Analysis | 🟢 7 providers with sentiment + asset tagging, incl. US Congress bill tracker |
+| News & Analysis | 🟢 8 crypto news providers with sentiment + asset tagging: 4 keyless publisher RSS feeds (CoinDesk, Cointelegraph, Decrypt, Bitcoin Magazine) and 4 keyed aggregators (CryptoPanic, Messari, NewsAPI, GNews). There is **no built-in US Congress feed** — `/live-data/news` only rewrites `api.congress.gov` bill URLs into congress.gov links when a *user-added* custom JSON feed supplies them |
 | Equities & Funds | 🟡 **Key-gated since the Yahoo removal (2026-08-06).** Every live quote rung needs an API key; with none configured, stocks and funds show catalog reference prices behind an amber `ref` tag rather than a fabricated number. Screener fundamentals are reference data; P/E is backfilled free from SEC XBRL |
 | AI agents + Daily Brief | 🟢 Working with any configured provider key |
-| Safety Score (per-coin composite risk) | ⚪ **Removed 2026-08-29 (RP-6).** No per-coin risk score is published anywhere: a risk figure on an asset the reader is viewing may be read as a recommendation, which is a regulated activity. The scoring framework in `lib/risk/` remains and still powers the options Trade Risk Scorer, staking-provider risk and the macro/equity profiles — see `docs/architecture/risk-scale-spec.md` |
+| Safety Score (per-coin composite risk) | ⚪ **Removed 2026-08-29 (RP-6).** No per-coin risk score is published anywhere: a risk figure on an asset the reader is viewing may be read as a recommendation, which is a regulated activity. The scoring framework in `lib/risk/` remains and still powers the options Trade Risk Scorer and the macro instrument risk tiers (commodity / currency / rate). **Staking-provider risk is no longer one of them (D14, 2026-09-14)** — the composite was removed and `scoreStakingProvider()` is retained with no production consumer. `scoreEquity()` has none either, and never had one: equity instruments take their tier from a local `equityRiskTier(beta)` helper in `lib/data/instruments.ts` — see `docs/architecture/risk-scale-spec.md` |
 | Authentication / multi-tenancy | 🟡 Login scaffolded, deliberately disabled during single-user development |
 
 ---
@@ -110,12 +110,14 @@ particular does it aggressively. The block is usually silent: the connection is 
 rather than refused with an error, so the app waits out a timeout and falls back to a
 labelled estimate exactly as it would if the provider were offline.
 
-This is not hypothetical. On 2026-09-10, with a commercial VPN active:
+This is not hypothetical. On 2026-09-10, through **one** commercial VPN exit node (Bitdefender WireGuard, AS62651) — see the correction below the table:
 
 | | VPN on | VPN off |
 |---|---|---|
 | Bitcoin network fee (mempool.space) | fell back to an estimate | **live** |
 | Time to load the fee page | **~11 seconds** (waiting out a timeout) | **0.13 seconds** |
+
+⚠ **Re-measured 2026-09-12 through a *different* VPN, and the mempool.space row above does not generalise.** Through Netprotect / **AS22781**, `network-fees` reported `bitcoin fee is live (mempool.space) source=live` — no TCP drop, no 11-second timeout, no estimate fallback. The 2026-09-10 run above went through Bitdefender WireGuard / **AS62651**, so the narrowest statement the evidence supports is that *AS62651 could not reach mempool.space on that date* — which end dropped the connection was never established, and it is a property of neither VPNs nor mempool.space. The table stands as the dated measurement it is. Record: `docs/audits/live-data-audit-2026-09-12.md`.
 
 ⚠ **It can also cut the other way.** Turning that VPN off fixed Bitcoin fees and cost
 us a different provider, which rate-limits per IP and had been absorbing our requests
@@ -178,7 +180,7 @@ want the container to pick them up.
 | Frontend | Next.js 15 (App Router), TypeScript strict, Tailwind CSS, Recharts + lightweight-charts, Zustand, TanStack Query v5 |
 | AI layer | Multi-provider LLM (BYOK), agent prompts in `src/lib/agents/prompts.ts`, MCP server in `mcp-server/` |
 | Backend | ~~FastAPI, SQLAlchemy async, Pydantic v2~~ — **retired 2026-09-14 (D2)**, frozen in `backend/`. Postgres remains, owned by the frontend's drizzle schema |
-| Data providers | CoinGecko, CoinMarketCap, Binance, DefiLlama, mempool.space, NewsAPI, GNews, CoinDesk, Cointelegraph, Decrypt, Bitcoin.com, US Congress |
+| Data providers | CoinGecko, CoinMarketCap, Binance, DefiLlama, mempool.space, NewsAPI, GNews, CoinDesk, Cointelegraph, Decrypt, Bitcoin Magazine, SEC EDGAR, treasury.gov |
 | Infrastructure | Docker Compose; Kubernetes/Terraform scaffolding for later scale |
 
 ---

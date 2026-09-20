@@ -21,7 +21,7 @@ import { IndicatorPicker } from '@/components/charts/IndicatorPicker'
 import { DrawingToolbar } from '@/components/charts/DrawingToolbar'
 import type { LucideIcon } from 'lucide-react'
 import {
-  rsi, sma, computeSignalSummary, detectPatterns,
+  computeSignalSummary, detectPatterns,
   type Signal, type DetectedPattern,
 } from '@/lib/utils/indicators'
 import { EQUITY_CATALOG, SECTOR_INFO } from '@/lib/data/equityCatalog'
@@ -401,7 +401,7 @@ function EquityTaContent() {
         description="The same TA engine as the crypto module — indicator registry, signal aggregation, and pattern detection — running on daily stock candles from Tiingo (FMP fallback). Both need an API key."
         details={[
           { label: 'Signals', text: 'The summary aggregates RSI, MACD, moving-average posture, and stochastic into buy/neutral/sell counts. Informational only.' },
-          { label: 'Drawings', text: 'Trendlines, horizontal rays, rectangles, and Fibonacci retracements — click two points on the chart.' },
+          { label: 'Drawings', text: 'Trendlines, rectangles, Fibonacci retracements, and the Measure tool — click two points on the chart; horizontal rays take a single click.' },
         ]}
       />
 

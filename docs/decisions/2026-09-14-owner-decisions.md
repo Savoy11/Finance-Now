@@ -299,7 +299,14 @@ Expect a permanent trickle of alerts against a directory nothing runs.
 - **Agent model.** All 11 agents default to `claude-sonnet-4-6`. `claude-sonnet-5`
   is more capable *and* cheaper ($2/$10 per MTok vs $3/$15). Decide BEFORE D20
   runs — an eval against a model you are about to replace describes nothing useful.
-- **Terms ratification.** 18 documents read on 2026-09-14; the registry still shows
+- ~~**Terms ratification.**~~ **DECIDED and applied 2026-09-19 (#205).** Owner approved
+Group A: `review` flipped seeded → verified on the entries whose own text records a
+2026-09-14 reading, verdicts untouched. Four were reverted the same day (coindesk,
+marketwatch, dowjones.io, investing.com — two unreadable from a clean egress, one with
+no recorded reading). Registry now reads **18 of 56 verified, 38 seeded**. **Group B —
+the verdicts, including the RSS-vs-site-ToU ruling that settles nine sources,
+publicnode's literal-reading problem and Bitget's US-Prohibited-Country finding — is
+still open and still yours.** *(Superseded text:)* **Terms ratification.** 18 documents read on 2026-09-14; the registry still shows
   4 of 56 `verified`, because both audits say flipping `review` is the owner's act.
 - **Distribution model.** BYOK is the working model; a turn-key edition is scoped
   alongside it. Both scopings exist as private artifacts on the owner's account.

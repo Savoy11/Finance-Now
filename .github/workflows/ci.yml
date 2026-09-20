@@ -135,6 +135,27 @@ jobs:
           git diff --exit-code -I'^_Last generated' DATA-SOURCES.md \
             || { echo "::error::DATA-SOURCES.md is stale — run 'npm run data-sources' and commit the result"; exit 1; }
 
+      # Counts typed into prose, and CLAUDE.md's directory tree.
+      #
+      # CLAUDE.md's own rule is "if code can compute a number, the string must not
+      # contain it" — but that can only be FOLLOWED in code, where the count is
+      # interpolated. Markdown has no render step, so the numbers get typed, and a
+      # typed number is correct exactly once. The 2026-09-19 sweep found ten such
+      # counts stale across CLAUDE.md, README.md, ROADMAP.md and source-terms.md,
+      # each true on the day it was written, none caught by anything.
+      #
+      # This is the same shape as the DATA-SOURCES.md gate above, applied to counts
+      # that live in prose rather than in a generated table. It also checks that every
+      # file listed in CLAUDE.md's directory tree exists — that tree is a claim about
+      # the present, which is why a deleted page survived in it for a month.
+      #
+      # A pattern that matches NOTHING fails too. A regex-keyed guard otherwise dies
+      # silently the moment someone rewords the sentence it watches.
+      - name: Documented counts ↔ tree
+        run: |
+          cd frontend
+          npm run docs:check
+
       - name: Build Next.js application
         env:
           NEXT_PUBLIC_API_URL: http://localhost:8000
@@ -221,40 +242,38 @@ jobs:
       # brace-expansion DoS) sat in the tree with a green Security Scan beside
       # them. A check that cannot fail is not a check.
       #
-      # Threshold RAISED to `moderate` on 2026-09-17, because the reason for
-      # `high` no longer holds. That reason was: the four remaining moderates
-      # came from esbuild via drizzle-kit and clearing them needed a breaking
-      # drizzle-kit downgrade, so gating on moderate would make the first
-      # action be to disable the gate again. They are now cleared WITHOUT the
-      # downgrade — an override scoped to @esbuild-kit/core-utils, which leaves
-      # drizzle-kit's own esbuild alone (see frontend/package.json overrides and
-      # docs/audits/dependency-alerts-2026-09-17.md). Both workspaces audit
-      # clean, so `moderate` costs nothing today and catches the next one.
+      # Threshold is `moderate`, RAISED from `high` on 2026-09-20 because the
+      # reason for `high` no longer holds. That reason was: the four remaining
+      # moderates all come from esbuild via drizzle-kit, a build-time-only tool,
+      # and clearing them needs a breaking drizzle-kit downgrade — so gating on
+      # moderate would make the first action be to disable the gate again. They
+      # are now cleared WITHOUT the downgrade, by an override scoped to
+      # @esbuild-kit/core-utils that leaves drizzle-kit's own esbuild alone (see
+      # frontend/package.json overrides and docs/audits/dependency-alerts-2026-09-17.md).
+      # Both workspaces audit clean at moderate, so it costs nothing today and
+      # catches the next one a notch earlier.
       #
-      # Deliberately NOT `low`: the same argument that retired `high` applies
-      # one notch down. A gate that goes red on a single low-severity transitive
+      # Deliberately NOT `low`: the same argument that retired `high` applies one
+      # notch down. A gate that goes red on a single low-severity transitive
       # advisory is a gate someone disables, and then nothing is checked at all.
-      - name: Node.js dependency audit (frontend)
+      #
+      # ⚠ SCOPE WAS `frontend` ONLY UNTIL 2026-09-20, AND THAT GAP WAS EXPLOITED BY
+      # NOTHING BUT TIME. mcp-server accumulated SIX HIGH advisories — ip-address
+      # SSRF (Address4 decodes leading-zero octets as decimal while resolvers read
+      # them as octal) and five fast-uri host-confusion/SSRF CVEs — and this step
+      # never looked at them, because it ran `cd frontend` and stopped there. They
+      # were caught by a Dependabot alert and fixed in #207; nothing in CI would
+      # have found them. mcp-server is live code: it is the MCP server the owner
+      # runs locally against their own data.
+      #
+      # `--package-lock-only` resolves the tree from mcp-server/package-lock.json
+      # without an `npm ci`, so this adds a few seconds rather than an install.
+      - name: Node.js dependency audit
         run: |
           cd frontend
           npm audit --audit-level=moderate
-
-      # mcp-server was audited by NOTHING until 2026-09-17 — no workflow in this
-      # repo so much as named the directory. That is where 20 of the 26 alerts
-      # in the 2026-09-16 sweep lived, and it is the workspace most likely to
-      # drift: it is built once, rarely rebuilt, and its two direct dependencies
-      # pull everything else transitively, so `npm audit` on the frontend says
-      # nothing whatsoever about it.
-      #
-      # No `npm ci` needed: `npm audit` resolves from package-lock.json alone,
-      # verified against this repo's own pre-fix lockfile — it reported all five
-      # advisories and exited 1 on a bare directory containing nothing but the
-      # two manifests. That also demonstrates this step fires rather than merely
-      # passing quietly: the commit before it was added would have failed it.
-      - name: Node.js dependency audit (mcp-server)
-        run: |
-          cd mcp-server
-          npm audit --audit-level=moderate
+          cd ../mcp-server
+          npm audit --audit-level=moderate --package-lock-only
 
   # ─── Infrastructure: Terraform Validate ───────────────────────────────────
   terraform-validate:

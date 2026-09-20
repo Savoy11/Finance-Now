@@ -36,7 +36,10 @@ cd finance-now
 cp frontend/.env.example frontend/.env.local
 
 # 3. Start all services
-docker compose -f infrastructure/docker/docker-compose.yml up -d
+docker compose -f infrastructure/docker/docker-compose.yml up -d postgres
+# ⚠ Do NOT run a bare `up -d`. docker-compose.yml still declares a `backend` service
+# with no `profiles:` guard, so it would build and start the retired FastAPI image
+# on :8000 (D2 — backend/FROZEN.md).
 
 # 4. Wait for services to be healthy (~30 seconds)
 docker compose -f infrastructure/docker/docker-compose.yml ps
@@ -73,8 +76,13 @@ cp .env.example .env
 # Start external services (Postgres + Redis only)
 docker compose -f ../infrastructure/docker/docker-compose.yml up -d postgres redis
 
-# Run migrations
-poetry run alembic upgrade head
+# Run migrations — ⚠ DO NOT. Retired 2026-09-14 (D2); see backend/FROZEN.md.
+# The app's schema is owned by drizzle (frontend/src/lib/db/schema/). Running
+# alembic against a database the app uses can alter tables drizzle owns. The
+# banner at the top of this file says this step was removed — it was not, until
+# 2026-09-19. Kept commented rather than deleted so the frozen service's own
+# setup stays legible:
+#   poetry run alembic upgrade head
 
 # Start the API server (hot-reload)
 poetry run uvicorn app.main:app --reload --port 8000

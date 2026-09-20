@@ -1057,7 +1057,7 @@
   {
    "id": "T-022",
    "title": "S1-5 — equities TA page still says 'daily/weekly stock candles' (live surface)",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "bug",
@@ -1075,7 +1075,18 @@
      "lines": "2024",
      "quote": "| S1-5 | `equities/technical-analysis/page.tsx:504` | Spillover from the same commit — still describes \"daily/weekly stock candles\" |"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-20",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "ALREADY DONE — the 'daily/weekly stock candles' string is gone from the equities TA page. The queue's cited line (504) had drifted, which is what made this look open. Two swept defects fixed in the same file: the Drawings help text omitted the Measure tool and mis-described horizontal rays as two-click, and `rsi`/`sma` were imported and never called. The TASK-QUEUE S1-5 row this item derives from is annotated RESOLVED.",
+    "approved_by": "owner, by merging #206 / #208 (merged 2026-09-20) — \"Merge 206, 208, 209 in order\"",
+    "evidence": [
+     "docs/audits/doc-accuracy-sweep-2026-09-19.md"
+    ]
+   }
   },
   {
    "id": "T-069",
@@ -1154,7 +1165,7 @@
   {
    "id": "T-101",
    "title": "Correct P3 review E13 row: stock-social score is −1..+1",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "docs",
@@ -1173,7 +1184,18 @@
      "lines": "350, 1087-1089",
      "quote": "the stock-social sentiment score is −1..+1, not the −100..+100 this review's E13 row described — the review was wrong, not the code."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-20",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "ALREADY DONE — the E13 row already reads −1..+1. Two swept defects in the same review document were fixed instead: a cross-reference pointing at 'Appendix C' for an item that has only ever been in Appendix A6 (wrong when written), and a Stock Social row that needed a dated annotation because Reddit has been robots-gated off by default since 2026-08-29.",
+    "approved_by": "owner, by merging #206 / #208 (merged 2026-09-20) — \"Merge 206, 208, 209 in order\"",
+    "evidence": [
+     "docs/audits/doc-accuracy-sweep-2026-09-19.md"
+    ]
+   }
   },
   {
    "id": "T-104",
@@ -1201,7 +1223,7 @@
   {
    "id": "T-107",
    "title": "Refresh stale ROADMAP.md annotations against later decisions",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "docs",
@@ -1225,12 +1247,23 @@
      "lines": "14-18, 109-118, 129-136, 157-167, 295, 429-432, 462-466",
      "quote": "Progress (2026-07-30): **shipped as the `budget` suite module** (`/budget` + `/budget/transactions`, ModuleGated, own sidebar section)."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-20",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "The four passages this item names were ALREADY annotated with dated blocks, and each annotation was re-verified correct against the tree (NT3 wallets→Postgres, Budget removal with its deliberate schema retention, NT5 agent invocation, Yahoo removal). One unannotated overtaken passage was found by sweeping and given a dated Update block. A verifier refuted a second proposed annotation because it asserted a false timeline — equities shipped 2026-07-07, not at the date the annotation implied.",
+    "approved_by": "owner, by merging #206 / #208 (merged 2026-09-20) — \"Merge 206, 208, 209 in order\"",
+    "evidence": [
+     "docs/audits/doc-accuracy-sweep-2026-09-19.md"
+    ]
+   }
   },
   {
    "id": "T-108",
    "title": "Reconcile macro instrument count (45 vs 46) in the roadmap",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "docs",
@@ -1245,12 +1278,23 @@
      "lines": "296, 326-327",
      "quote": "Instruments layer: all 46 macro instruments (19 commodities, 18 FX + DXY, 8 rates) are `sec:`-keyed entries in `instruments.ts`"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-20",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "The '46 macro instruments' string no longer exists — already corrected to 45 on 2026-09-08, and that correction's arithmetic was independently re-derived here (19 commodities + 18 currencies + 8 rates, with DXY INSIDE the 18 as the catalog's last element, cross-checked against MACRO_INSTRUMENTS and the 29-instrument scanner universe). What survived is the phrasing that PRODUCED the error: ROADMAP.md still said 'currencyCatalog.ts (18 pairs + DXY)', which implies 19. Corrected, with the note that it was already wrong on its own date. ⚠ PASSED ON, NOT FIXED: the same double-count is live in SOURCE at frontend/src/lib/agents/tools.ts:343, where the search_macro_instruments tool description says '18 FX pairs + dollar index' — an agent reading it totals 46.",
+    "approved_by": "owner, by merging #206 / #208 (merged 2026-09-20) — \"Merge 206, 208, 209 in order\"",
+    "evidence": [
+     "docs/audits/doc-accuracy-sweep-2026-09-19.md"
+    ]
+   }
   },
   {
    "id": "T-138",
    "title": "Remove fabricated updatedAt on the static cbdc-data fallback",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "bug",
@@ -1267,7 +1311,19 @@
      "lines": "38, 50",
      "quote": "Either way, the fabricated `updatedAt` on static data should not remain."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-20",
+    "basis": "verified-here",
+    "verdict": "moot",
+    "reason": "The fabricated `updatedAt` this item tracked lived in frontend/src/app/live-data/cbdc-data/route.ts, which was DELETED on 2026-09-14 (D10) along with /global-adoption. `git ls-files 'src/app/live-data/cbdc-data/*'` returns nothing; only an empty untracked directory remains. There is no code left to fix.",
+    "approved_by": "owner, by merging #206 / #208 (merged 2026-09-20) — \"Merge 206, 208, 209 in order\"",
+    "evidence": [
+     "docs/audits/data-availability-steward-proposal-2026-09-19.md",
+     "docs/audits/live-data-audit-2026-09-19.json"
+    ]
+   }
   },
   {
    "id": "T-156",
@@ -1292,7 +1348,7 @@
   {
    "id": "T-158",
    "title": "Reconcile the fund stock/bond/cash asset-mix note (CLAUDE.md:440 and dataSources.ts:348 vs NT9)",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "docs",
@@ -1314,12 +1370,23 @@
      "lines": "102, 106 (and DATA-AVAILABILITY.md 41)",
      "quote": "SECTOR WEIGHTS now need an FMP key (N-PORT carries no GICS classification), and the stock/bond/cash ASSET MIX has no source at all — that section no longer renders."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-20",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "ALREADY DONE — and proposing the edit would have RE-INTRODUCED the false claim. The 'asset mix has no source' text the queue quotes no longer exists anywhere in CLAUDE.md; the file already records NT9 correctly in two places (the tree entry and the Yahoo-removal table), both verified against lib/utils/assetMix.ts, which exists, exports computeAssetMix, maps N-PORT Item C.4.a codes, is imported by the fund-holdings route and has its own test file. Same for dataSources.ts. No edit made.",
+    "approved_by": "owner, by merging #206 / #208 (merged 2026-09-20) — \"Merge 206, 208, 209 in order\"",
+    "evidence": [
+     "docs/audits/doc-accuracy-sweep-2026-09-19.md"
+    ]
+   }
   },
   {
    "id": "T-162",
    "title": "Sweep stale wording in CLAUDE.md (module count, Crypto-Stuff paths, 'only Cboe verified', /staking-discovery)",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "docs",
@@ -1334,12 +1401,23 @@
      "lines": "10, 14-15, 358, 451-452, 851, 883, 894",
      "quote": "A standalone Node.js MCP server at `Crypto-Stuff/mcp-server/` that exposes Finance Now tools to Claude and any MCP-compatible AI agent."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-20",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "Four sub-claims. (a) 'seven' modules and (b) the Crypto-Stuff path were ALREADY corrected in place and needed nothing. (c) The 'only Cboe verified' wording was already gone but both NUMBERS had drifted again — and in the opposite direction from the queue's assumption: 516220f (#205, 2026-09-19) took the registry from 4 verified to 18, one day after CLAUDE.md's last commit. Corrected to 38 of 56 seeded / 18 verified. (d) The prose about /staking-discovery was right, but CLAUDE.md's DIRECTORY TREE still listed staking-discovery/page.tsx — a file that no longer exists (the directory is empty). Replaced with a note pointing at the 2026-08-20 merge and the redirect. Five further CLAUDE.md drifts were swept and fixed in the same pass, incl. '59 routes' → 58 and the security-chart ladder missing its Twelve Data rung (#202).",
+    "approved_by": "owner, by merging #206 / #208 (merged 2026-09-20) — \"Merge 206, 208, 209 in order\"",
+    "evidence": [
+     "docs/audits/doc-accuracy-sweep-2026-09-19.md"
+    ]
+   }
   },
   {
    "id": "T-165",
    "title": "Update dataSources.ts macro-quotes note for D3 and regenerate DATA-SOURCES.md",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "docs",
@@ -1356,12 +1434,23 @@
      "lines": "118, 125 (and DATA-AVAILABILITY.md 43 vs 324)",
      "quote": "Futures, FX pairs, and yield indices still price through the equity quote/chart routes (no separate plumbing). ⚠ This is the surface the Yahoo removal hit hardest: symbols like GC=F, EURUSD=X and ^TNX were quoted keylessly and are NOT covered by Tiingo"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-20",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "ALREADY DONE for the claim as written — the macro-quotes note already reflects D3. Swept and fixed adjacent drift in the same file instead: staking cadence '18 parallel upstreams' → 7, three deleted upstream names (Cosmostation/Subscan/chain LCDs → Injective LCD), 'FX rates (extended tier, +127)' → +126, 'two have no source at all' → one, and the compare entry was missing its Twelve Data rung.",
+    "approved_by": "owner, by merging #206 / #208 (merged 2026-09-20) — \"Merge 206, 208, 209 in order\"",
+    "evidence": [
+     "docs/audits/doc-accuracy-sweep-2026-09-19.md"
+    ]
+   }
   },
   {
    "id": "T-166",
    "title": "Fix dataSources.ts fund-universe note — pagination was rejected in item 11",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "docs",
@@ -1376,12 +1465,23 @@
      "lines": "101, 105 (vs DATA-AVAILABILITY.md 442-450)",
      "quote": "**Fund universe** — 28,977 entries in one payload — pagination is a tracked follow-up."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-20",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "ALREADY DONE for the pagination claim. What was still stale is the other half: 'payload size is pending a re-measure on the owner's machine' — it was re-measured 2026-09-19 at 2,274,590 bytes (2.27 MB) carrying 29,009 discovered funds. Recorded. A verifier refuted the surveyor's proposed timing figure (five runs spanned 11.3–13.3 s, so a single number would have been invented) and it was dropped rather than published.",
+    "approved_by": "owner, by merging #206 / #208 (merged 2026-09-20) — \"Merge 206, 208, 209 in order\"",
+    "evidence": [
+     "docs/audits/doc-accuracy-sweep-2026-09-19.md"
+    ]
+   }
   },
   {
    "id": "T-167",
    "title": "Reconcile network-fee rows in DATA-AVAILABILITY (only BTC live vs four EVM L1s live)",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "docs",
@@ -1396,12 +1496,24 @@
      "lines": "177, 264, 426 (vs DATA-SOURCES.md 38, 57)",
      "quote": "Live EVM gas providers remain the next step to flip more 🟡 chains to 🟢."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-20",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "Its quoted text — 'Live EVM gas providers remain the next step to flip more 🟡 chains to 🟢' — was still present VERBATIM in action item 6, four weeks after 01d6bfe (2026-08-21) took that step. Rewritten to '5 of 18 networks 🟢 (BTC + ETH/BNB/Polygon/AVAX via keyless eth_gasPrice); the 13 L2s stay 🟡 on purpose because eth_gasPrice omits their L1 data fee'. NOTE: the item's cited lines (177, 264, 426) are 2026-09-07 positions and point at unrelated content today; the quoted TEXT is what located the residue.",
+    "approved_by": "owner, by merging #206 / #208 (merged 2026-09-20) — \"Merge 206, 208, 209 in order\"",
+    "evidence": [
+     "docs/audits/data-availability-steward-proposal-2026-09-19.md",
+     "docs/audits/live-data-audit-2026-09-19.json"
+    ]
+   }
   },
   {
    "id": "T-168",
    "title": "Retire 'Exchange connections Live' rows from DATA-AVAILABILITY (RP-5)",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "docs",
@@ -1418,12 +1530,24 @@
      "lines": "230-232, 285 (vs DATA-SOURCES.md 58)",
      "quote": "| Exchange connections | 🟢 Live | local credential store | Empty until the user configures one. |"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-20",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "The quoted row ('| Exchange connections | 🟢 Live | local credential store |') was already ⚪ Removed by the 2026-09-08 pass. The residue this item existed for survived elsewhere: a bare `wallet/exchange` reference in the route-conventions audit, now marked deleted 2026-08-18 (RP-5). Also corrected a claim nobody had challenged — the row credited the wallet store's v2 migration with dropping persisted `exchanges`, but that migration lived ONE DAY (added 24ee839 2026-08-18, removed by NT3 6ae77dc 2026-08-19 with the whole persist wrapper).",
+    "approved_by": "owner, by merging #206 / #208 (merged 2026-09-20) — \"Merge 206, 208, 209 in order\"",
+    "evidence": [
+     "docs/audits/data-availability-steward-proposal-2026-09-19.md",
+     "docs/audits/live-data-audit-2026-09-19.json"
+    ]
+   }
   },
   {
    "id": "T-169",
    "title": "Strike the 'Risk scores Derived' row from DATA-AVAILABILITY (RP-6)",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "docs",
@@ -1441,12 +1565,24 @@
      "lines": "261",
      "quote": "| Risk scores | 🟢 Derived | DefiLlama + CoinGecko + curated disclosures + news | Live-computed composites via `src/lib/risk`. Pillars without data show N/A and drop coverage/confidence. |"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-20",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "The quoted row ('| Risk scores | 🟢 Derived | ...') was already ⚪ Removed by the 2026-09-08 pass. Residue: the replacement row still listed 'staking-provider risk' among the live consumers of lib/risk/, which D14 struck on 2026-09-14 — computeOverallRisk()/getRiskLevel() deleted, composite gone from the v1 route, staking-discovery and the MCP server. Corrected: scoreStakingProvider() survives as the canonical engine with NO live consumer.",
+    "approved_by": "owner, by merging #206 / #208 (merged 2026-09-20) — \"Merge 206, 208, 209 in order\"",
+    "evidence": [
+     "docs/audits/data-availability-steward-proposal-2026-09-19.md",
+     "docs/audits/live-data-audit-2026-09-19.json"
+    ]
+   }
   },
   {
    "id": "T-170",
    "title": "Fix Stock social row still calling Reddit starvation a known issue",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "docs",
@@ -1461,7 +1597,19 @@
      "lines": "298 (vs 433-438)",
      "quote": "**Known issue:** signals merge by recency, and StockTwits posts are minutes old vs Reddit's hours/days, so at `limit ≤ 30` StockTwits fills every slot and Reddit is starved (0 at limit 20, 10 at 40, 45 at 80)."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-20",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "The quoted 'Known issue: Reddit is starved' text was already gone. Residual staleness in THREE other places, all corrected: (1) Reddit was bucketed under 'blocked by IP, cannot be fixed by paying anyone' when it is 🔑 gated by our OWN robots decision, lifted by REDDIT_CLIENT_ID plus accepting Reddit's Data API Terms; (2) the stock-social latency row still said '~6 s, Reddit RSS frequently hits the 429 path' when the 429 path is no longer walked at all (~0.8 s, StockTwits only); (3) action item 10's '20/0 → 10/10' fix measurement now reads 20/0 again under the gate — same shape as the starvation, but declared rather than hidden.",
+    "approved_by": "owner, by merging #206 / #208 (merged 2026-09-20) — \"Merge 206, 208, 209 in order\"",
+    "evidence": [
+     "docs/audits/data-availability-steward-proposal-2026-09-19.md",
+     "docs/audits/live-data-audit-2026-09-19.json"
+    ]
+   }
   },
   {
    "id": "T-181",
@@ -1486,7 +1634,7 @@
   {
    "id": "T-239",
    "title": "Annotate the 2026-07-30 audit's commit citation (unreachable from main)",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "docs",
@@ -1504,12 +1652,23 @@
      "lines": "110-113, 260-265",
      "quote": "That commit is unreachable from `main` — it survives on exactly three orphaned branches. The repo's own audit trail currently cites history that `main` no longer contains."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-20",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "CLOSED, BUT THE ITEM'S PREMISE WAS FALSE — this is the opposite of what it asked for. T-239 asked to add an annotation REINFORCING a 2026-09-08 note that says commit 14d6d76 predates a '2026-08-05 re-root of main' and is unreachable from main. The note is wrong, and was wrong the day it was written: `git merge-base --is-ancestor 14d6d76 main` returns 0, the repo has a single root (bbbd5e5, 2026-05-23) across 473 commits, and 14d6d76 was already reachable from origin/main as it stood on 2026-09-08. Both copies of the note (audit + proposals, added together in 046ae69) were therefore RETRACTED rather than annotated. A verifier caught that the first retraction draft misattributed the upstream audit's 'three orphaned branches' line to the wrong commit, and that was corrected before applying.",
+    "approved_by": "owner, by merging #206 / #208 (merged 2026-09-20) — \"Merge 206, 208, 209 in order\"",
+    "evidence": [
+     "docs/audits/doc-accuracy-sweep-2026-09-19.md"
+    ]
+   }
   },
   {
    "id": "T-248",
    "title": "Update source-terms.md — registry counts and fields drifted since 2026-08-06",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "docs",
@@ -1526,7 +1685,18 @@
      "lines": "20-30",
      "quote": "47 of 48 entries are starting positions drawn from\n> documented posture; only Cboe is `verified` (P2-O1, owner's machine, 2026-08-05)."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-20",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "DONE. Registry counts corrected from '54 of 56 … two verified' to 38 seeded / 18 verified, confirmed three independent ways (grep over sourceTerms.ts, an awk dump of domain/review triples, and a live probe of /live-data/source-terms returning total 56, verified 18, seeded 38, prohibited 3). Seven edits in total, including one real bug: the doc instructed maintainers to update a field called `verifiedAt`, which does not exist and never has — the field is `reviewedAt`. A verifier also refuted the surveyor's claim that four news sources are 'still genuinely unread', which holds for three of the four but not the fourth.",
+    "approved_by": "owner, by merging #206 / #208 (merged 2026-09-20) — \"Merge 206, 208, 209 in order\"",
+    "evidence": [
+     "docs/audits/doc-accuracy-sweep-2026-09-19.md"
+    ]
+   }
   },
   {
    "id": "T-256",
@@ -1780,7 +1950,12 @@
      "lines": "110-114",
      "quote": "**Review all project documents** so they accurately describe what each product actually is and does — both repos have docs written at different stages, and stale claims in a public repo are a liability once there are customers."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-09-19",
+    "note": "PART DONE 2026-09-19. A 21-agent accuracy sweep covered 8 working documents (CLAUDE.md, ROADMAP.md, dataSources.ts/DATA-SOURCES.md, source-terms.md, P3-production-review.md, the 2026-07-30 audit+proposals pair, README.md, the equities TA page): 52 corrections applied, 21 of 52 proposed replacements REFUTED by an adversarial pass before they could land. Two completeness critics then swept the documents nobody was assigned and found 22 further gaps, 14 of which were fixed here. NOT DONE, and now the highest-value remainder: docs/architecture/overview.md describes the retired two-service system as current throughout (only a banner was added); docs/runbooks/scaling.md and its sibling document operating a Kubernetes deployment that never existed; docs/MARKET-ASSESSMENT.md's own stale-claim banner has itself expired; docs/audits/production-readiness-scorecard.md scopes a retired backend. ROOT CAUSE identified: docs/agents/checklist-steward.md's inventory table has no row for the architecture, deployment, runbook, policy or decision families, so every document that drifted worst is one no agent was told to keep true.",
+    "evidence": "docs/audits/doc-accuracy-sweep-2026-09-19.md"
+   }
   },
   {
    "id": "T-302",
@@ -2162,7 +2337,7 @@
   {
    "id": "T-381",
    "title": "Refresh the README feature-status table (dated July 2026)",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "docs",
@@ -2181,7 +2356,18 @@
      "lines": "43-58, 74-87, 15-19",
      "quote": "Verified against the running application, July 2026."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-20",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "ALREADY DONE for the five drifts the queue names. Eight further README drifts were swept and fixed: 'Bitcoin.com' is listed as a data provider and is not one (zero hits in the tree), the news-provider count was wrong, '30 exchanges' → 29 (Poloniex removed 2026-09-15 on TERMS, not availability), and the live-APR wiring figure. A verifier caught that '33 distinct rate keys … 25 more' was CORRECT ON ITS OWN DATE (2026-09-08) — it is now 27 (8 native + 19 DeFiLlama) — so it was corrected with the date rather than silently overwritten.",
+    "approved_by": "owner, by merging #206 / #208 (merged 2026-09-20) — \"Merge 206, 208, 209 in order\"",
+    "evidence": [
+     "docs/audits/doc-accuracy-sweep-2026-09-19.md"
+    ]
+   }
   },
   {
    "id": "T-382",
@@ -2307,7 +2493,12 @@
      "lines": "234-239, 273, 391",
      "quote": "`staking-discovery` **21.8s** · `fund-universe` **12.4s** (28,988 funds) · `staking-rates` **6.7s** · `defi-tvl` **3.2s**. The first two are the standing pagination/performance items"
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-09-19",
+    "note": "MEASURED 2026-09-19, not yet closed. The audit records staking-discovery at 2,238 ms / 94 pools — against the ~18 s this item was raised on — so the 2026-09-08 per-upstream 6 s bound is working. NOT closing it, because three direct re-probes the same day ran 7.6 s, 7.7 s and 9.6 s, so the fast audit figure is not reproducible on demand. A SEPARATE defect surfaced while measuring: Yearn, Pendle and Beefy contribute ZERO pools (api.yearn.finance does not resolve, the Pendle endpoint 404s on the exact URL the route sends, Beefy answers 200 and lands nothing), and two of the three probes returned 0 pools total with ok:true and no stale flag — the last-good cache at route.ts:463-468 only covers a warm identical filter key.",
+    "evidence": "docs/audits/data-availability-steward-proposal-2026-09-19.md"
+   }
   },
   {
    "id": "T-173",
@@ -2385,7 +2576,7 @@
   {
    "id": "T-004",
    "title": "Raise live staking APR coverage above 4 of 51 (DATA-AVAILABILITY item 15)",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "either",
    "category": "feature",
@@ -2414,7 +2605,19 @@
      "lines": "116-117",
      "quote": "**DATA-AVAILABILITY action items 9, 15, 17, 18** — paid FMP decision, staking live coverage (4/51), CoinGecko harness pacing, macro quote check."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-20",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "Answered and exceeded. 27 of 51 keys live (was 4 of 51), 7/7 upstreams healthy, defillama-yields 19/19 — measured on the owner's machine 2026-09-09 and re-confirmed 2026-09-19 (AS11426, proxy:false). The diagnosis in the original item was wrong: this was never 'PR #37 grew the catalog, not the live sources'. Four dead hosts were hanging DNS ~10s each on libuv's 4-thread resolver pool, starving the route's shared 6s budget so healthy upstreams aborted in array order (#157–#165). The remaining 24 are NOT all sourceless: 14 no-upstream, 5 derived-estimate, 3 curated-estimate, 2 needs-api-key.",
+    "approved_by": "owner, by merging #206 / #208 (merged 2026-09-20) — \"Merge 206, 208, 209 in order\"",
+    "evidence": [
+     "docs/audits/data-availability-steward-proposal-2026-09-19.md",
+     "docs/audits/live-data-audit-2026-09-19.json"
+    ]
+   }
   },
   {
    "id": "T-070",
@@ -2517,7 +2720,7 @@
   {
    "id": "T-163",
    "title": "DATA-AVAILABILITY item 18 — add a macro quote check to the audit harness",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "either",
    "category": "ops-infra",
@@ -2540,12 +2743,24 @@
      "lines": "116-117",
      "quote": "**DATA-AVAILABILITY action items 9, 15, 17, 18** — paid FMP decision, staking live coverage (4/51), CoinGecko harness pacing, macro quote check."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-20",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "The check exists and has run four times. docs/audits/live-data-audit-2026-09-19.json carries `macro quotes (gold / EURUSD / 10y future)` in group `macro`, verdict UNCONFIGURED, detail 'no keyed provider served any macro quote (source=reference; missing: GC=F, EURUSD=X, ZN=F)'. Recorded 🔑 UNCONFIGURED on 2026-09-09, the 09-10 re-run, and the 09-18 and 09-19 audits. The macro section preamble said 'only the shared quote path is still inferred rather than observed' — contradicting action item 18 in the same file — and now says five checks cover the module.",
+    "approved_by": "owner, by merging #206 / #208 (merged 2026-09-20) — \"Merge 206, 208, 209 in order\"",
+    "evidence": [
+     "docs/audits/data-availability-steward-proposal-2026-09-19.md",
+     "docs/audits/live-data-audit-2026-09-19.json"
+    ]
+   }
   },
   {
    "id": "T-164",
    "title": "DATA-AVAILABILITY item 17 — clear the CoinGecko rate-limit artifact from the harness",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "either",
    "category": "ops-infra",
@@ -2573,7 +2788,19 @@
      "lines": "116-117",
      "quote": "**DATA-AVAILABILITY action items 9, 15, 17, 18** — paid FMP decision, staking live coverage (4/51), CoinGecko harness pacing, macro quote check."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-20",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "Cleared and verified. The 2026-09-19 run has coin-discovery, alerts AND portfolio-history all REAL with NO CoinGecko 429 anywhere in the run. The pacing landed as item 17b (weighted per check, minimum gap derived as window/cap rather than fixed). That run's only two failures are unrelated: coin-search (404 while Next recompiled — 200 on a direct probe seconds later) and wallet/tron (Tronscan 429, reproduced against Tronscan directly so not provoked by the audit's burst). CAVEAT KEPT: the upstream allowance is still unread — 10/min is the harness's self-imposed floor, not a measured limit.",
+    "approved_by": "owner, by merging #206 / #208 (merged 2026-09-20) — \"Merge 206, 208, 209 in order\"",
+    "evidence": [
+     "docs/audits/data-availability-steward-proposal-2026-09-19.md",
+     "docs/audits/live-data-audit-2026-09-19.json"
+    ]
+   }
   },
   {
    "id": "T-301",
@@ -2677,7 +2904,12 @@
      "lines": "134-143",
      "quote": "Sweep the checklist inventory (the charter's table) for entries whose status no longer matches the tree. Verify every suspicion IN SOURCE, following the call path a request takes — never conclude from commit messages, summaries, or docs."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-09-19",
+    "note": "PART DONE 2026-09-19: the DATA-AVAILABILITY.md portion of the batched steward proposal is complete and on branch docs/data-availability-2026-09-19 — 74 corrections, a new 'Run of 2026-09-19' section, and 11 proposed queue closures. NOT done: the TASK-QUEUE and P3-plan portions of the sweep this item also asks for.",
+    "evidence": "docs/audits/data-availability-steward-proposal-2026-09-19.md"
+   }
   },
   {
    "id": "T-338",
@@ -2837,7 +3069,7 @@
   {
    "id": "T-171",
    "title": "Optionally drop KPW and SYP from the fx-rates-extended allowlist",
-   "status": "open",
+   "status": "closed",
    "confidence": "medium",
    "owner_role": "either",
    "category": "feature",
@@ -2852,7 +3084,19 @@
      "lines": "79-80, 322, 467-468",
      "quote": "North Korean won and Syrian pound are both effectively unquoted in open markets, so this is the source being accurate rather than broken — but the allowlist could drop them."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-20",
+    "basis": "verified-here",
+    "verdict": "moot",
+    "reason": "The decision no longer has a subject. /live-data/fx-rates-extended now prices 126 of 126 allowlisted currencies with `missing: []` (2026-09-19; REAL on the 09-18 run too) — KPW and SYP became quotable upstream, so the route classifies REAL without dropping anything. The 2026-09-08 reasoning for keeping them is retained in the document because it still governs the next code that goes unquoted.",
+    "approved_by": "owner, by merging #206 / #208 (merged 2026-09-20) — \"Merge 206, 208, 209 in order\"",
+    "evidence": [
+     "docs/audits/data-availability-steward-proposal-2026-09-19.md",
+     "docs/audits/live-data-audit-2026-09-19.json"
+    ]
+   }
   },
   {
    "id": "T-308",
@@ -3798,7 +4042,7 @@
   {
    "id": "T-006",
    "title": "Owner-machine `npm run audit` to regenerate DATA-AVAILABILITY.md post-Yahoo",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "data-verification",
@@ -3854,12 +4098,24 @@
     "noted_on": "2026-09-19",
     "note": "PART DONE 2026-09-18: `npm run audit` ran twice from the owner machine (clean run 0 FAIL, 66 REAL) and its JSON is committed at docs/audits/live-data-audit-2026-09-18.json. NOT done: regenerating DATA-AVAILABILITY.md from it. That is all that remains.",
     "evidence": "docs/audits/queue-sweep-2026-09-18.md"
+   },
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-20",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "This item's remaining half — 'regenerate DATA-AVAILABILITY.md from the output', per its own 2026-09-19 progress note — is what this pass did. 74 corrections applied against the 2026-09-19 audit (77 probes: 65 REAL, 7 FALLBACK, 3 UNCONFIGURED, 0 EMPTY, 2 FAIL) plus a new 'Run of 2026-09-19' section. The 2026-08-06 predicted-vs-measured table is annotated with dated addenda rather than rewritten, because its middle column RECORDS a forecast and editing it would make the document misreport its own prediction.",
+    "approved_by": "owner, by merging #206 / #208 (merged 2026-09-20) — \"Merge 206, 208, 209 in order\"",
+    "evidence": [
+     "docs/audits/data-availability-steward-proposal-2026-09-19.md",
+     "docs/audits/live-data-audit-2026-09-19.json"
+    ]
    }
   },
   {
    "id": "T-007",
    "title": "Re-measure fund-universe payload size after the 2026-07-30 slimming (item 11)",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "data-verification",
@@ -3888,7 +4144,19 @@
      "lines": "118",
      "quote": "**Item 11** — fund-universe payload fix shipped 2026-07-30, pending owner re-measurement."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-20",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "Measured and recorded. /live-data/fund-universe now returns 2,274,590 bytes (2.27 MB) against the 14 MB this item was raised on — an 84% cut, confirming the 2026-07-30 slimming worked. Recorded in three places that had all been carrying 'pending re-measurement' since July: the Funds table, the Performance outliers table and action item 11. Also corrected item 11's claim that `entries` carries 118 catalog rows; it is 126.",
+    "approved_by": "owner, by merging #206 / #208 (merged 2026-09-20) — \"Merge 206, 208, 209 in order\"",
+    "evidence": [
+     "docs/audits/data-availability-steward-proposal-2026-09-19.md",
+     "docs/audits/live-data-audit-2026-09-19.json"
+    ]
+   }
   },
   {
    "id": "T-031",
@@ -4944,7 +5212,7 @@
   {
    "id": "T-384",
    "title": "Verify the IPO calendar (#145) at /equities/calendar with a free Alpha Vantage key",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "data-verification",
@@ -4961,7 +5229,18 @@
      "lines": "22",
      "quote": "Verify the IPO calendar (PR #145) at /equities/calendar with a free Alpha Vantage key."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-20",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "Closed by #205, merged 2026-09-19 — the PR title says so and the same PR annotated 15 other items, but this one was missed. NOT a key problem, which is what its next_action still tells the reader to go try: the route sent `Accept: text/csv`, which Alpha Vantage's IPO_CALENDAR 406s while answering `*/*` with that very CSV. Measured three variants back to back against a live key (text/csv → 406, */* → 200, no Accept → 200). Header removed; probed 2026-09-19: ok=true, source=alpha-vantage, 2 upcoming listings. Guarded by frontend/src/lib/server/__tests__/ipoCalendarAccept.test.ts, a source scan deliberately broader than the one string (application/csv and text/plain 406 the same way) which also pins the 6h revalidate, because Alpha Vantage's 25 req/day free tier is a terms condition rather than a quota.",
+    "approved_by": "owner, by merging #205 — \"Merge 206, 208, 209 in order\"",
+    "evidence": [
+     "docs/audits/doc-accuracy-sweep-2026-09-19.md"
+    ]
+   }
   },
   {
    "id": "T-385",
@@ -33935,6 +34214,34 @@
     "evidence": [
      "docs/audits/queue-sweep-2026-09-18.md",
      "docs/decisions/2026-09-14-owner-decisions.md"
+    ]
+   },
+   {
+    "on": "2026-09-19",
+    "what": "11 closures PROPOSED (9 close, 2 moot) and 2 items annotated with progress, from the DATA-AVAILABILITY.md checklist-steward pass",
+    "basis_key": "proposed_closure.pending_owner_approval = true means the evidence is recorded but the owner has NOT approved the close. Merging the branch is the approval; a follow-up pass promotes proposed_closure to closure.",
+    "caveat": "The line numbers cited by T-167/168/169/170 had all drifted — they reference the 2026-09-07 snapshot and point at unrelated content in the document today. Their QUOTED TEXT is what located the real residue, and in every case it sat somewhere other than the citation said. Treat a line number in any other entry of this snapshot the same way.",
+    "evidence": [
+     "docs/audits/data-availability-steward-proposal-2026-09-19.md",
+     "docs/audits/live-data-audit-2026-09-19.json"
+    ]
+   },
+   {
+    "on": "2026-09-19",
+    "what": "12 closures PROPOSED from the documentation-accuracy sweep (1 recording already-merged #205 work, 11 applied on branch), plus progress on the T-300 umbrella",
+    "basis_key": "proposed_closure.pending_owner_approval = true means the evidence is recorded but the owner has not approved the close. For all but T-384 the work also lives on an unmerged branch.",
+    "caveat": "SEVEN of the eleven items were ALREADY DONE when checked, and one (T-239) asked for an annotation reinforcing a claim that was FALSE when written — it was retracted instead. Of 52 findings, only 13 came from queue items; 39 were swept by the agents. Treat this queue as a poor map of current drift: its line numbers are a 2026-09-07 snapshot and its claims age faster than the documents do.",
+    "evidence": [
+     "docs/audits/doc-accuracy-sweep-2026-09-19.md"
+    ]
+   },
+   {
+    "on": "2026-09-20",
+    "what": "23 proposed closures PROMOTED to closures and their statuses set to closed",
+    "basis_key": "The owner approved these by merging #206, #208 and #209 on 2026-09-20. proposed_closure blocks carried pending_owner_approval:true; that flag was itself the stale claim once the merge happened, which is the drift this queue exists to avoid.",
+    "evidence": [
+     "docs/audits/data-availability-steward-proposal-2026-09-19.md",
+     "docs/audits/doc-accuracy-sweep-2026-09-19.md"
     ]
    }
   ]

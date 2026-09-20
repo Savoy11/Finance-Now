@@ -76,7 +76,8 @@ frontend/src/
 │   │   ├── wallets/page.tsx
 │   │   ├── transfer-fees/page.tsx  # Transfer Fee Calculator
 │   │   ├── staking/page.tsx        # Staking Opportunities
-│   │   ├── staking-discovery/page.tsx
+│   │   │  # (no staking-discovery/ — merged into staking/ as ?tab=pools, 2026-08-20;
+│   │   │  #  /staking-discovery redirects, next.config.mjs)
 │   │   ├── coin-discovery/page.tsx
 │   │   ├── technical-analysis/page.tsx
 │   │   ├── scanner/page.tsx        # Crypto Scanner — 7 setup detectors over the universe
@@ -103,14 +104,17 @@ frontend/src/
 │       │                           #   keyless publicnode) for ETH/BNB/Polygon/AVAX; L2s stay
 │       │                           #   estimates — eth_gasPrice omits their L1 data fee
 │       ├── withdraw-fees/route.ts  # Live exchange withdrawal fees (KuCoin/HTX keyless; Bybit probed 403 — authed) — overlay-only, per-row live tags
-│       ├── staking-rates/route.ts  # Live APR from 7 upstreams onto 51 keys; the rest stay
+│       ├── staking-rates/route.ts  # HTTP face of lib/server/stakingRates.ts — the collector moved
+│       │                           #   there 2026-09-18 (landed in 516220f, 2026-09-19) so that
+│       │                           #   /api/v1/staking/opportunities reads the SAME one. Live APR
+│       │                           #   from 7 upstreams onto 51 keys; the rest stay
 │       │                           #   static estimates. Returns `upstreams` — each one's
 │       │                           #   outcome — because "4/51 live" cannot say WHICH failed.
 │       │                           #   Was 17: ten rungs went in the 2026-09-09 audit — nine
 │       │                           #   dead, whose DNS hangs were starving the rest, plus NEAR,
 │       │                           #   whose endpoint is healthy but carries no yield at all
 │       ├── security-quotes/route.ts # Stock/ETF/fund quotes (FMP→…→Alpha Vantage→reference; ALL KEYED)
-│       ├── security-chart/route.ts  # Price history (Tiingo→FMP; both keyed)
+│       ├── security-chart/route.ts  # Price history (Tiingo→FMP→Twelve Data; all keyed)
 │       ├── security-ohlcv/route.ts  # Full OHLCV candles (Tiingo→FMP; both keyed)
 │       ├── source-terms/route.ts    # Terms registry + live robots/terms probe
 │       ├── market-news/route.ts     # Stock-market RSS news: sentiment, category, ticker tags
@@ -140,8 +144,10 @@ frontend/src/
 │       ├── pump-report/            # Pump-report scan + chat (own agent loop)
 │       ├── videos/, video-search/, video-analyze/
 │       ├── market-calendar/route.ts, fund-universe/route.ts, coin-list/, coin-search/
-│       ├── btc-stats/, defi-tvl/, fear-greed/, funding-rates/, ohlcv/, assets/
+│       └── btc-stats/, defi-tvl/, fear-greed/, funding-rates/, ohlcv/, assets/
 │                                   #   (first three now feed the crypto TA Market Structure panel — NT11)
+│                                   #   (no cbdc-data/ — route cut 2026-09-14 (D10) along with
+│                                   #    /global-adoption; the page redirect remains)
 │
 ├── components/
 │   ├── layout/
@@ -439,7 +445,7 @@ Central data file for the Transfer Fee Calculator.
 
 - **`CoinId`** union — 22 coins: btc, eth, usdt, usdc, bnb, sol, dai, xrp, ltc, trx, doge, matic, avax, ada, dot, atom, link, ton, shib, uni, near, arb
 - **`NetworkId`** union — 18 networks: erc20, trc20, bep20, solana, polygon, arbitrum, base, optimism, avalanche, bitcoin, xrpl, litecoin, dogecoin, cardano, polkadot, cosmos, ton_network, near_network
-- **`EXCHANGES`** array — 30 exchanges (Binance through Hyperliquid), each with per-coin/per-network `withdrawFee`, `minWithdraw`, `withdrawEnabled`, `depositEnabled`, optional `note`. Data is hand-maintained with provenance: `TRANSFER_FEES_LAST_VERIFIED` + `getTransferFeeProvenance()` drive a staleness banner (stale after 120 days).
+- **`EXCHANGES`** array — 29 exchanges (Binance through Hyperliquid; Poloniex was removed 2026-09-15 on TERMS — its User Agreement §9 licenses the API solely for trading on Poloniex), each with per-coin/per-network `withdrawFee`, `minWithdraw`, `withdrawEnabled`, `depositEnabled`, optional `note`. Data is hand-maintained with provenance: `TRANSFER_FEES_LAST_VERIFIED` + `getTransferFeeProvenance()` drive a staleness banner (stale after 120 days).
 - **`findTransferPaths()`** — path-finding algorithm: direct routes first, then multi-hop via personal wallet, sorted by totalFeeUsd
 - **`PERSONAL_WALLET_ID = 'wallet'`** — the "My Wallet" option in the From/To selectors
 - **`EVM_NETWORKS`** — array of all EVM-compatible network IDs (address collision danger)
@@ -567,7 +573,7 @@ site nobody has reviewed. Full design: `docs/architecture/source-terms.md`.
 >
 > | Surface | Now |
 > |---|---|
-> | Quotes, charts, OHLCV/TA/backtests (stocks, funds, macro) | **Key-gated.** FMP/Finnhub/Twelve Data/Tiingo/Alpha Vantage for quotes, Tiingo→FMP for history. No key ⇒ catalog `ref` prices for stocks/funds, an honest dash for macro |
+> | Quotes, charts, OHLCV/TA/backtests (stocks, funds, macro) | **Key-gated.** FMP/Finnhub/Twelve Data/Tiingo/Alpha Vantage for quotes, Tiingo→FMP→Twelve Data for history. No key ⇒ catalog `ref` prices for stocks/funds, an honest dash for macro |
 > | **Macro instrument quotes** (`GC=F`, `EURUSD=X`) | **Hit hardest.** Tiingo does not carry them, so coverage depends on the keyed provider configured and is expected to be partial |
 > | **Treasury yield indices** (`^IRX`/`^FVX`/`^TNX`/`^TYX`) | **No longer affected (2026-09-03, D3).** No free provider quotes them at all — FMP paywalls them, Finnhub returns nothing, Twelve Data 404s, Alpha Vantage answers empty — so they were moved off the quote ladder onto the official treasury.gov par curve: keyless, plain percent, daily |
 > | **Futures term structure** (`/live-data/futures-curve`) | **No source at all.** Nothing reachable quotes a dated contract month. The route resolves the months and returns `ok:false` with the reason; `TermStructureCard` prints it. Front-month prices are unaffected |
@@ -579,14 +585,19 @@ site nobody has reviewed. Full design: `docs/architecture/source-terms.md`.
 > The fix for any of the key-gated rows is a free API key on the Integrations page — **not
 > a substitute scraper.**
 
-> ⚠ **54 of 56 registry entries are `seeded`, not `verified` — check `review` before
+> ⚠ **38 of 56 registry entries are `seeded`, not `verified` — check `review` before
 > trusting one.** The registry was authored in an environment whose network policy
 > blocked every publisher and provider host at the gateway, so not one terms document
 > could be opened. The entries are honest starting positions drawn from each
 > provider's publicly documented posture (published API docs, documented free tiers,
-> openly advertised RSS feeds) — they are **not readings**. Two entries are
-> `verified`: **Cboe** (P2-O1 audit, 2026-08-05) and **CoinGecko** (the
-> 2026-08-29 probe run) — both read on the owner's machine.
+> openly advertised RSS feeds) — they are **not readings**. **Eighteen** entries
+> are `verified` as of 2026-09-19: **Cboe** (P2-O1 audit, 2026-08-05) and
+> **CoinGecko** (the 2026-08-29 probe run) were the first two, and sixteen more
+> were **read** on a clean egress on 2026-09-14/15
+> (`docs/audits/terms-review-apis-2026-09-14.md`,
+> `docs/audits/terms-review-news-2026-09-14.md`) — all on the owner's machine.
+> Reading is not ratifying: those sixteen stayed `seeded` until the owner flipped
+> them, two on 2026-09-16 (`bcd4490`) and fourteen on 2026-09-19 (`516220f`).
 >
 > A seeded `approved`/`conditional` means *nobody has objected yet*, not *cleared*.
 > Seeded entries still serve data — breaking the app over a documentation gap is the
@@ -616,6 +627,9 @@ site nobody has reviewed. Full design: `docs/architecture/source-terms.md`.
 > One item stays open: the **personal-vs-commercial question**, which decides
 > **eight** more sources (Finnhub, Twelve Data, Tiingo, Binance.US, YouTube,
 > OilPrice, Bitget — and **FMP**, added 2026-09-02) and is the owner's to answer.
+> **Update 2026-09-19:** four of those eight were read on a clean egress on
+> 2026-09-14 and are now `verified` — Tiingo, YouTube, OilPrice and Bitget.
+> Finnhub, Twelve Data, Binance.US and FMP's entry are still `seeded`.
 >
 > **FMP is the load-bearing one, and it was missed until now.** Its entry is
 > `seeded`, and its finding asserts the permission is *tier-dependent* (free =
@@ -625,6 +639,17 @@ site nobody has reviewed. Full design: `docs/architecture/source-terms.md`.
 > seeded finding read as already settled by plan tier, so it never joined the
 > queue. An assumption wearing the confidence of a resolved entry is precisely
 > what `seeded` exists to expose.
+>
+> **Read 2026-09-13 — and the entry is still `seeded`.** The document was opened
+> on the owner's machine (`docs/audits/terms-review-fmp-2026-09-13.md`) and its
+> verbatim clauses are now the entry's `finding`. It answers the paragraph above
+> and contradicts both sides of it: §2.2.1 grants personal, non-business,
+> non-commercial use only, and §2.2.2 bars any multi-user deployment
+> "irrespective of whether such usage is complimentary or paid" — so the
+> permission is **not** tier-dependent, and broader rights come from an Order
+> Form under §2.1, not a higher plan. What is still open is the registry itself:
+> the entry's `review` is `'seeded'` and its `reviewedAt` `'2026-08-06'`, so a
+> reading that happened is not recorded as one.
 >
 > It matters because FMP is not a marginal source. It is the first rung of the
 > quote ladder, the **only** source for the Stock Registry universe and for
@@ -1136,7 +1161,7 @@ Risk/status color convention used across the app:
 | Watchlist | `/watchlist` | 🟢 Live | Cross-module: coins, stocks, ETFs & funds, and macro instruments in named lists with live prices. **DB-backed** via `/api/user/watchlists` (+`/[id]` PUT/DELETE) through `useWatchlistStore` (optimistic, client-UUID ids, one-time localStorage import that MERGES even into a non-empty account — see store comment). Feed bias (`lib/watchlist/bias.ts`) and the Daily Brief read the store, not localStorage |
 | News | `/news` | 🟢 Live | Multi-provider RSS/JSON; sentiment + asset detection |
 | Social | `/social` | 🟡 Partial | `/live-data/social`. **Live:** Reddit post text/link/author/timestamp (Atom feeds, keyless but robots-gated — see below), and the social VOLUME figures from Santiment (`mentionsCount`) and LunarCrush (`social_volume_24h`, `galaxy_score`), both **key-gated**: with no key those signals are absent, not zero. **Derived:** every sentiment label. Reddit's is a keyword regex over the post text; LunarCrush's is a threshold on galaxy score (≥60 / ≤35) rather than the provider's own `sentiment` field; Santiment's is hardcoded `neutral`. The per-asset `sentimentScore` aggregates those derived labels, so it is derived twice over. **Neither live nor derived:** Reddit `score` is a literal 0 and `upvoteRatio` is never set — Atom carries no vote data, and both are sentinels the pages render only when present. Reddit itself is gated off in `pinnedFetch` unless `REDDIT_CLIENT_ID` is set (its robots.txt disallows this app's agent, 2026-08-29 terms review). |
-| Global | ~~`/global-adoption`~~ | ⚪ **Deleted 2026-09-15 (D10)** | Was de-routed under T5 pending a rework — a mislabeled CBDC tracker on stale/duplicated static data with a fabricated live timestamp. Owner decision **D10** then **cut it outright**: the page and `/live-data/cbdc-data` are both **gone** (PR #191, `b484313`), which also closed T-138 by deletion rather than by fixing the fabricated `updatedAt`. This row said both were "retained" until 2026-09-17. The `/global-adoption` → `/headlines` redirect is deliberately **kept** in `next.config.mjs` so an existing deep link still lands somewhere. See `docs/assessments/T5-utility-triage.md` and `docs/decisions/2026-09-14-owner-decisions.md`. |
+| Global | ~~`/global-adoption`~~ | ⚪ **Deleted 2026-09-14 (D10)** | Was de-routed under T5 pending a rework — a mislabeled CBDC tracker on stale/duplicated static data with a fabricated live timestamp. Owner decision **D10** then **cut it outright**: the page and `/live-data/cbdc-data` are both **gone** (PR #191, `b484313`), which also closed T-138 by deletion rather than by fixing the fabricated `updatedAt`. This row said both were "retained" until 2026-09-17, and said the deletion landed on 2026-09-15 until 2026-09-20 — `b484313` is dated 2026-09-14. The `/global-adoption` → `/headlines` redirect is deliberately **kept** in `next.config.mjs` so an existing deep link still lands somewhere. See `docs/assessments/T5-utility-triage.md` and `docs/decisions/2026-09-14-owner-decisions.md`. |
 | Transfer Fee Calc | ~~`/transfer-fees`~~ | ⚪ **Hidden from rollout** | Static fee table (`transferFees.ts`) + live token prices; staleness-labeled. **Live withdrawal-fee overlay** (`/live-data/withdraw-fees`, keyless KuCoin/HTX confirmed + 5 unprobed; RP-5 forbids keyed endpoints) — overlay-only, per-row `live` tags. **Withdrawal availability is disclosed as assumed, not checked**: live-reported suspensions render as blocked routes with attribution, and the notice is deliberately NOT gated on fee staleness. `depositEnabled` is the same assumption with no source — a known open gap. Tax-character panel (`lib/data/taxCharacter.ts`) states what kind of event each leg is, with no numbers |
 | Staking | `/staking` | 🟡 Partial | **Two tabs since 2026-08-20 (W3-3):** Providers (curated catalog, live APR where available, defunct toggle) and Live Pools (on-chain opportunities via `/live-data/staking-discovery`). Curated catalog is staleness-labeled (`getStakingDataProvenance()`) |
 | Staking Discovery | ~~`/staking-discovery`~~ | ⚪ Merged | **Merged into `/staking` 2026-08-20 (W3-3, option B)** — its curated directory duplicated the Staking page's provider cards; the live on-chain pool discovery became the **Live Pools tab** on `/staking` (`?tab=pools`, content-preserving redirect). The defunct-platform toggle (Celsius, the cautionary example) moved to the Providers tab. `/live-data/staking-discovery` unchanged |

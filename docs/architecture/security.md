@@ -253,14 +253,50 @@ each verified to fail against the pre-fix code.
 - [ ] Enable RDS automated backups (7-day retention minimum)
 - [ ] Verify TLS certificate auto-renewal
 - [ ] Enable CloudTrail for AWS API audit logging
-- [x] Run `pip audit` and `npm audit` in CI — done, with a caveat worth knowing:
-      the Security Scan job runs `npm audit --audit-level=high`, `safety check`
-      (the pip-audit equivalent) **and** a Trivy filesystem scan. The first two
-      are `|| true`, so they report without gating; **only Trivy actually fails
-      the build.** Removing those `|| true`s is the follow-up, and it is not free
-      — `npm audit` currently reports 23 dev-tooling advisories that have no
-      non-breaking fix, so it would fail CI on day one.
+- [x] Run `npm audit` in CI — **GATING since 2026-09-08** (`ci.yml`, no `|| true`):
+      a HIGH advisory in `frontend` fails the Security Scan job. Threshold is `high`,
+      not `moderate`, because the remaining moderates are esbuild-via-drizzle-kit,
+      build-time only, and clearing them needs a breaking downgrade.
+      *(Corrected 2026-09-19: this item said the step was `|| true` and non-gating,
+      and that `safety check` runs. Both were true when written and neither is now.)*
+      **One known hole, and one closed 2026-09-20:**
+      1. ~~**Scope is `frontend` only.**~~ **CLOSED 2026-09-20.** The step now also runs
+         `npm audit --audit-level=high --package-lock-only` in `mcp-server`. It was
+         `frontend`-only until then, which is how **six HIGH advisories** accumulated
+         there unseen — `ip-address` SSRF and five `fast-uri` host-confusion/SSRF CVEs,
+         found by a Dependabot alert and fixed in #207, not by anything in CI.
+         `--package-lock-only` resolves the tree from the lockfile, so this costs
+         seconds rather than an `npm ci`.
+      2. `pip audit` / `safety check` no longer runs anywhere — it went with the
+         backend jobs under D2 (#192). `backend/poetry.lock` is still in the tree and
+         **nothing in CI scans it. That is deliberate**: it is retired, frozen code
+         that no CI builds, nothing calls, and that was never deployed —
+         `cd-staging` failed 90 runs out of 90 against infrastructure that was never
+         provisioned. Scanning it would gate the build on code that cannot run.
+
+      **⚠ ALL DEPENDABOT ALERTS WERE DISMISSED BY THE OWNER ON 2026-09-20 — 7 open
+      to 0, 28 closed.** Four were the `backend/poetry.lock` ones above; three were
+      dev-only npm moderates (vitest ×2 path traversal via a mock redirect, esbuild
+      dev-server request leak — and the flagged esbuild is 0.18.20 nested under
+      `drizzle-kit`, while the production-tree copy is 0.28.1, outside the advisory
+      range).
+
+      **Dismissal changes what GitHub displays. It does NOT change what `npm audit`
+      reports**, because `npm audit` resolves the lockfile and never consults the
+      alert list. Measured immediately afterwards: `frontend` still reports 7
+      moderates, `mcp-server` still reports 0. So the CI gate above is unaffected and
+      still does real work — and with the alert feed now silent, **it is the only
+      thing watching these two lockfiles.** That is the argument for the `high`
+      threshold being a real line rather than a formality: if a HIGH lands in either
+      package tomorrow, this step is what catches it.
+
+      A dismissal is also per-alert, not per-path: a NEW advisory against anything in
+      `backend/poetry.lock` will open a fresh alert. The durable fix, if that becomes
+      noise, is taking `backend/` off the default branch — it is already preserved on
+      the `archive/*` refs — which is a bigger decision than this file should assume.
 - [x] Configure Dependabot for weekly dependency updates — `.github/dependabot.yml`
-      covers npm (frontend + mcp-server), pip (backend), GitHub Actions, and the
-      frontend Docker base image.
+      covers npm (frontend + mcp-server), GitHub Actions, and the frontend Docker
+      base image. *(Corrected 2026-09-19: the `pip` ecosystem watching `/backend` was
+      **removed** on 2026-09-15 under D2 — a bump there protects nothing and can be
+      verified by nothing. See the reasoning block in `.github/dependabot.yml`.)*
 - [ ] Perform penetration test before production launch
