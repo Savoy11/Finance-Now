@@ -438,6 +438,34 @@ const { data } = useQuery({
 >
 > Date the table by when it was **compiled as a whole**, never by its most recent
 > partial edit — re-verifying 8 rows of 55 does not refresh the other 47.
+>
+> **`npm run staleness:check` reports which windows are about to close**, and runs in CI
+> beside `docs:check`. It exists because the rule above has a blind spot: all this
+> machinery tells a *reader* the data is old, and nothing told a *maintainer* a clock was
+> about to fire. Measured 2026-09-20: `transferFees` was **355 days past** its window with
+> a green repo, and the staking catalog's was caught 7 days out only because someone
+> happened to read the file.
+>
+> ⚠ **It does not fail on "stale" — it fails on staleness nobody decided on.** Going red
+> the day a window closes would offer whoever is on shift a four-second fix (bump the
+> date), which is the fabricated freshness this whole section exists to prevent. Letting a
+> notice fire is often the right call; it just has to be *chosen*. Record it with a
+> `// STALENESS-ACK: <date> — <why>` comment in the contiguous comment block above the
+> anchor constant. An ack dated before its anchor is void, so it cannot be inherited when
+> the table is re-compiled.
+>
+> Clocks are **discovered**, never listed — zero found, an unresolvable anchor, or an
+> ambiguous one each exit 1 rather than reporting a clean sweep of nothing. Seven exist
+> as of 2026-09-20; run it rather than trusting that number.
+>
+> **Two live acknowledgements**, both worth reading before adding a third:
+> `transferFees` (stale, held out of rollout, nothing published — verified, not assumed)
+> and `stakingProviders` (owner, 2026-09-20: let the 2026-09-27 notice fire rather than
+> rush 330 editorial risk judgments to beat a date).
+>
+> ⚠ **Not every clock is a disclosure clock.** `stakingRates.ts`'s 14-day
+> `FALLBACK_STALE_AFTER_DAYS` **withholds** the rate (`delete rates[key]` → a dash);
+> the `*_LAST_VERIFIED` windows only change what a notice says. Do not unify them.
 
 ### `src/lib/data/transferFees.ts`
 Central data file for the Transfer Fee Calculator.
