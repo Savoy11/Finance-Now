@@ -4779,7 +4779,7 @@
   {
    "id": "T-225",
    "title": "Delete the 34 orphaned + ~9 squash-merged branches (archive refs exist)",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "ops-infra",
@@ -4797,12 +4797,25 @@
      "lines": "267-273, 140-146",
      "quote": "The 34 orphaned branches are safe to delete wholesale; the ~9 squash-merged session branches after a glance at each PR's merged/closed state; keep **every `archive/*` branch**, `main`, dependabot's heads, and #89's branch until that PR is decided."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-20",
+    "basis": "superseded-by-owner-decision",
+    "verdict": "close",
+    "reason": "SUPERSEDED, not done. The owner reversed branch deletion on 2026-09-12; retiring a branch now means tagging it. The 78-branch sweep of 2026-09-11 archived every retired branch as an annotated archive/<name> tag. This item survived because its SOURCE — git-repo-audit-2026-08-23.md — was never annotated, so the sweep kept reading a live \"Archive first, then delete\" disposition out of it. The audit's safety argument was correct and still lost: measurement afterwards showed 0 of 78 branches were the only ref holding their commits, so deletion would indeed have lost nothing. Safe and wanted are different questions.",
+    "approved_by": "owner, 2026-09-12: \"I dont want to delete any branches, if possible can we enable an auto archive feature\", and the standing rule against automated deletion of project files. Recorded in CLAUDE.md.",
+    "evidence": [
+     "docs/audits/git-repo-audit-2026-08-23.md (annotated SUPERSEDED 2026-09-20 at both cited locations)",
+     "docs/audits/branch-archive-2026-09-11.md",
+     ".github/workflows/archive-branch.yml"
+    ]
+   }
   },
   {
    "id": "T-226",
    "title": "Enable GitHub 'Automatically delete head branches'",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "ops-infra",
@@ -4819,7 +4832,20 @@
      "lines": "273-277, 148-153",
      "quote": "Then stop the regrowth at the source: enable **Settings → General → \"Automatically delete head branches\"**, so every future session branch is removed the moment its PR merges."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-20",
+    "basis": "superseded-by-owner-decision",
+    "verdict": "close",
+    "reason": "SUPERSEDED and REVERSED. CLAUDE.md now states the opposite in as many words: \"Do NOT enable Automatically delete head branches — archive instead\" (owner, 2026-09-12). The regrowth problem this item addressed is solved by .github/workflows/archive-branch.yml, which tags every merged PR head and leaves the branch in place. Acting on this item would have violated a standing rule.",
+    "approved_by": "owner, 2026-09-12: \"I dont want to delete any branches, if possible can we enable an auto archive feature\", and the standing rule against automated deletion of project files. Recorded in CLAUDE.md.",
+    "evidence": [
+     "docs/audits/git-repo-audit-2026-08-23.md (annotated SUPERSEDED 2026-09-20 at both cited locations)",
+     "docs/audits/branch-archive-2026-09-11.md",
+     ".github/workflows/archive-branch.yml"
+    ]
+   }
   },
   {
    "id": "T-240",
@@ -34242,6 +34268,16 @@
     "evidence": [
      "docs/audits/data-availability-steward-proposal-2026-09-19.md",
      "docs/audits/doc-accuracy-sweep-2026-09-19.md"
+    ]
+   },
+   {
+    "on": "2026-09-20",
+    "what": "T-225 and T-226 closed as SUPERSEDED — branch deletion and the auto-delete setting",
+    "basis_key": "Both traced to git-repo-audit-2026-08-23.md, which still carried live \"delete\" instructions three weeks after the owner reversed them on 2026-09-12. The items read open/unblocked/owner-machine/small with a next_action beginning \"Owner: GitHub →\", so anyone working the list would have carried out an instruction a standing rule forbids. The source document is now annotated at both cited locations, which is the durable half of this fix — closing the items without annotating the source would have let the next sweep regenerate them.",
+    "evidence": [
+     "docs/audits/git-repo-audit-2026-08-23.md (annotated SUPERSEDED 2026-09-20 at both cited locations)",
+     "docs/audits/branch-archive-2026-09-11.md",
+     ".github/workflows/archive-branch.yml"
     ]
    }
   ]
