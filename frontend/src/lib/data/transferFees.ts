@@ -11,6 +11,16 @@
 // corrected in place with `re-verified 2026-07` notes. The date below is
 // deliberately NOT bumped: it describes the table as a whole, and the ~520
 // long-tail entries were not re-checked, so the staleness banner must stay on.
+//
+// STALENESS-ACK: 2026-09-20 — let it stay stale; the notice has no reader.
+// This records an existing decision rather than making a new one. The page is held out
+// of the rollout (owner, 2026-08-22) and `/api/v1/transfer/routes` answers 503, so no
+// stale fee figure reaches anyone. Measured that day rather than assumed: /transfer-fees
+// redirects (307), the routes endpoint 503s, and /api/v1/exchanges — the one surface
+// still reading this file over HTTP — publishes only structure (id, name, tier, coins,
+// networks) and no fee numbers.
+// ⚠ Re-verify the table AS A WHOLE before the page returns. The partial 2026-07-20 pass
+// above is explicitly not a refresh, and this ack is not permission to treat it as one.
 export const TRANSFER_FEES_LAST_VERIFIED = '2025-06-01'
 
 // Days after which the hand-maintained withdrawal fees are considered stale.
