@@ -224,7 +224,22 @@ function main() {
   // Floored to UTC midnight, so "in N days" counts CALENDAR days to the firing date
   // rather than hours-until. Measuring from the current hour reports 6 for a date seven
   // calendar days out, which reads as an off-by-one next to the date printed beside it.
-  const rawNow = process.env.STALENESS_NOW ? utc(process.env.STALENESS_NOW) : Date.now()
+  // Time travel, for checking what a clock does before it does it:
+  //
+  //     npm run staleness:check -- --now=2026-09-28      (any shell)
+  //
+  // ⚠ THE FLAG IS THE DOCUMENTED FORM BECAUSE THIS REPO IS MAINTAINED FROM POWERSHELL.
+  // `STALENESS_NOW=2026-09-28 npx tsx …` is a POSIX env-var prefix; PowerShell parses it
+  // as a command name and fails with "is not recognized as the name of a cmdlet". The
+  // env var is kept for CI, which is Linux, but a maintenance tool whose only escape
+  // hatch needs a different shell than the maintainer's is a tool nobody reaches for.
+  const nowArg = process.argv.slice(2).find((a) => a.startsWith('--now='))?.slice('--now='.length)
+  const nowRaw = nowArg ?? process.env.STALENESS_NOW
+  if (nowRaw !== undefined && Number.isNaN(utc(nowRaw))) {
+    console.error(`\n✗ staleness:check: --now/STALENESS_NOW must be YYYY-MM-DD, got "${nowRaw}".\n`)
+    process.exit(1)
+  }
+  const rawNow = nowRaw ? utc(nowRaw) : Date.now()
   const now = Math.floor(rawNow / DAY_MS) * DAY_MS
   const today = new Date(now).toISOString().slice(0, 10)
 

@@ -347,6 +347,19 @@ grep -rnE 'rm -rf|Remove-Item|rmSync|unlinkSync|rimraf' -r . | grep -v node_modu
 grep -rniE 'delete|prune|cleanup' .github/workflows/
 ```
 
+⚠ **`grep` does not exist in PowerShell, and this repo is maintained from PowerShell.**
+An audit that enforces a standing rule has to run in the shell of the person enforcing
+it, or it is a control on paper. The equivalent, verified 2026-09-20 to return the same
+two benign hits (`restart-dev.ps1:11`, `providerStatus.test.ts:31`) plus `package-lock`
+dependency metadata:
+
+```powershell
+Get-ChildItem -Recurse -File -Include *.ts,*.tsx,*.mjs,*.js,*.ps1,*.json,*.yml |
+  Where-Object { $_.FullName -notmatch '\\node_modules\\|\\\.next\\|\\coverage\\' } |
+  Select-String -Pattern 'rm -rf|Remove-Item|rmSync|unlinkSync|rimraf'
+Select-String -Path .github/workflows/*.yml -Pattern 'delete|prune|cleanup'
+```
+
 **Standing rule:** any history-shaping operation — force-pushing or re-rooting a branch,
 deleting branches, archiving a workstream — lands **together with a dated note in
 `docs/`** saying what was done and where the prior state lives. A reset nobody writes
@@ -457,6 +470,11 @@ const { data } = useQuery({
 > Clocks are **discovered**, never listed — zero found, an unresolvable anchor, or an
 > ambiguous one each exit 1 rather than reporting a clean sweep of nothing. Seven exist
 > as of 2026-09-20; run it rather than trusting that number.
+>
+> To see what a clock will do *before* it does it:
+> `npm run staleness:check -- --now=2026-09-28`. The flag is the documented form rather
+> than the `STALENESS_NOW` env var because a `VAR=x cmd` prefix is POSIX-only and this
+> repo is maintained from PowerShell; the env var is kept for CI, which is Linux.
 >
 > **Two live acknowledgements**, both worth reading before adding a third:
 > `transferFees` (stale, held out of rollout, nothing published — verified, not assumed)
@@ -1062,6 +1080,23 @@ rows were wrong in BOTH directions:
 ```bash
 curl -s https://api.ipify.org                                   # what the world sees
 curl -s "http://ip-api.com/json/<ip>?fields=isp,org,proxy,hosting"
+```
+
+⚠ **DO NOT RUN THAT IN POWERSHELL — `curl` is an ALIAS for `Invoke-WebRequest` there**,
+and this repo is maintained from PowerShell. It does not fail cleanly: `-s` binds as a
+parameter and swallows the URL, so the line dies with *"missing mandatory parameters:
+Uri"* rather than "command not found". A check that misfires while looking like a check
+is worse than no check — and this one is the gate deciding whether an entire
+data-availability audit is valid. Use the real binary (`C:\Windows\System32\curl.exe`,
+present on Windows 10+) or the native cmdlet; both verified 2026-09-20:
+
+```powershell
+$ip = curl.exe -s https://api.ipify.org                          # note the .exe
+curl.exe -s "http://ip-api.com/json/$ip`?fields=isp,org,proxy,hosting"
+
+# or with no curl at all
+$ip = Invoke-RestMethod https://api.ipify.org
+Invoke-RestMethod "http://ip-api.com/json/$ip`?fields=isp,org,proxy,hosting"
 ```
 
 If `proxy` or `hosting` is true, it is not an owner-machine baseline no matter which
