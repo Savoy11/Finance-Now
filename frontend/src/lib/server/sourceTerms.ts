@@ -348,9 +348,31 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     // Not resolvable from CI: every financialmodelingprep.com host is blocked
     // by the network egress proxy here, and "couldn't read it" is not
     // permission. ── ANSWERED 2026-09-13 from a residential egress, where the
-    // page returns HTTP 200 in under a second. The 2026-09-09 worksheet's
-    // "terms found at: none found at the usual locations" was an artifact of
-    // running behind AS62651 — the same VPN that made mempool.space look dead.
+    // page returns HTTP 200 in under a second.
+    //
+    // ⚠ CORRECTED 2026-09-20 — THE CAUSE WAS THE USER-AGENT, NOT THE EGRESS.
+    // This comment used to say the 2026-09-09 worksheet's "terms found at: none
+    // found at the usual locations" was an artifact of running behind AS62651,
+    // the VPN that made mempool.space look dead. Measured from a clean
+    // residential connection (Spectrum, proxy:false, hosting:false), same host,
+    // same second, varying ONLY the request header:
+    //
+    //     no User-Agent                      403   919 bytes
+    //     PROBE_USER_AGENT (FinanceNow/1.0)  403   919 bytes
+    //     curl/8.0                           403   919 bytes
+    //     a browser UA                       200   83,325 bytes
+    //
+    // So site.financialmodelingprep.com filters by user-agent, and the egress was
+    // never the variable. This is the same misattribution CLAUDE.md already
+    // records three instances of — a single observation read as a property of the
+    // world — and it was made here twice.
+    //
+    // PRACTICAL CONSEQUENCE, which is why this is worth the space: `npm run
+    // terms:report` will report FMP unreadable from EVERY network, forever,
+    // because the probe sends PROBE_USER_AGENT. The cure is to open the page in a
+    // browser, not to re-run from somewhere else. Do not spoof a browser UA for
+    // DATA fetches — the app's honest agent is what robots.txt checking is built
+    // on — this is only about a human reading a public legal page.
     // (1) Yes — 2.2.1 restricts to personal/non-business/non-commercial.
     // (2) No — it does not vary by plan; 2.2.2 says "irrespective of whether
     //     such usage is complimentary or paid".
