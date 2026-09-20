@@ -1,8 +1,22 @@
 # Finance Now Architecture Overview
 
+> **Correction, 2026-09-20.** This document describes a four-tier platform — a FastAPI backend on `:8000` serving `/api/` and `/ws/`, Celery workers, TimescaleDB, and Kubernetes 1.29 on AWS EKS — and, apart from its opening sentence, states it in the present tense. **That is not what ships as of 2026-09-20.** The shipping application is the **Next.js 15 app in `frontend/` alone**: its 58 `/live-data/*` route handlers call providers directly from the server (`live-data/markets/route.ts` fetches `api.binance.com` and `pro-api.coinmarketcap.com` itself), Auth.js signs in against the app's own `users` table (`frontend/src/lib/auth/config.ts`), and Postgres holds user data through drizzle (`frontend/src/lib/db/schema/`). On this date nothing under `frontend/src` names port 8000, nothing there opens a WebSocket, and `frontend/next.config.mjs` has no rewrites at all.
+>
+> **Four different things are wrong below, and they are not the same kind of wrong:**
+>
+> - **Retired — built, ran, stopped by a decision.** The FastAPI backend. `backend/app/` still holds its routers, pipelines, `scoring/`, `streaming/` and `api/v1/websocket.py`, and `db/migrations/versions/001_initial.py` creates twelve tables with four `create_hypertable(...)` calls, so TimescaleDB was genuinely part of the schema. **Owner decision D2, 2026-09-14 — retire, keep the DB schema (drizzle)** (`docs/decisions/2026-09-14-owner-decisions.md:37`); it was frozen rather than deleted under the owner's 2026-09-11 no-delete rule, as `backend/FROZEN.md` records. The REST API, the WebSocket interface and TimescaleDB are all this: real, and inert since that date.
+>
+> - **Designed and committed, never provisioned.** Kubernetes and EKS, and with them the ALB, the WAF, Aurora, ElastiCache, Nginx and the Prometheus/Grafana/Alertmanager stack. (ALB and WAF are in the diagram; Aurora appears only in Scaling Characteristics and the Failure Modes table; ElastiCache and the WAF's Terraform live outside this page.) The files are real — **thirteen** manifests under `infrastructure/kubernetes/`, a full Terraform root module whose `eks_cluster_version` defaults to `"1.29"` (`variables.tf:117`, which is where the version in the table below comes from), monitoring config under `infrastructure/monitoring/`, and Nginx as an `fn-nginx-config` ConfigMap plus a service in both `infrastructure/docker/` compose files. But no cluster was ever created: as of 2026-09-20 there is no `.tfstate` anywhere in the tree, `backend/FROZEN.md` states "AWS was never provisioned", and `docs/deployment/aws-provisioning.md` (written 2026-08-07) records `CD — Deploy to Staging` failing on all 90 runs since 2026-07-18 against infrastructure that did not exist.
+>
+> - **Designed on paper, never written in code. Celery.** There is no Celery dependency, worker, beat schedule or broker: `grep -rni celery backend` returns zero files, and `backend/pyproject.toml` carries `apscheduler = "^3.10.4"` instead. What the backend actually ran was in-process **APScheduler** (`backend/app/pipelines/scheduler.py`, `AsyncIOScheduler` + `IntervalTrigger`). Celery was not a fiction invented by this page, though, and a contributor will find it: on 2026-09-20 `infrastructure/terraform/eks.tf:238` still declares a spot node group "for non-critical batch workloads (Celery workers)", `infrastructure/monitoring/prometheus/prometheus.yml:141` still scrapes `celery-flower:5555` as `service: celery, component: worker`, `rules/fn-alerts.yml:252` still tells an operator to check Celery worker health, and `docs/architecture/data-flow.md` still narrates Celery Beat dispatching tasks. It belongs beside Kubernetes: chosen, committed as configuration, never implemented and never run.
+>
+> - **Wrong even for the backend that did exist.** `FastAPI 0.109` was never the pin — `backend/pyproject.toml` has held `^0.110.0`, then `^0.140.13`, and on 2026-09-20 `>=0.140.13,<0.142.0`; Python 3.11 is correct. `price_history` and `asset_scores` are not tables in either schema (the migration creates `market_data` and `risk_scores`), and they recur in the Data Flow section below. And the cadences below never matched the scheduler: `scheduler.py` registered three jobs — market data every 5 minutes, on-chain every 15 minutes, risk scores hourly — not every 60 seconds and every 5 minutes, and it never scheduled alert evaluation at all.
+>
+> **The design rationale is kept, not rewritten** — the Decision Log at the end records what was chosen and why, the Celery row included, and it stands as written. Only statements of fact are corrected, each carrying 2026-09-20 and the file and line that settles it, so the next reader can re-check rather than trust this note. (The opening sentence's "WAS designed as" is an undated in-place edit made the same day in commit `ed54f11`; this banner is what dates it.) That matters more here than in most documents: this is the first file a new contributor opens in `docs/architecture/` and the only one claiming to describe the system as a whole, so read as current it sends them to build against a frozen service, a queue nobody ever implemented, and a cluster nobody ever created.
+
 ## Introduction
 
-The Finance Now (Finance Now) WAS designed as a full-stack, cloud-native analytics platform designed to ingest real-time and historical data from multiple blockchain and market data sources, compute composite risk and opportunity scores across an asset universe, and deliver insights to analysts and traders via a low-latency REST API and WebSocket streaming interface.
+Finance Now — called CAEP, the Crypto Asset Evaluation Platform, when this was written — WAS designed as a full-stack, cloud-native analytics platform designed to ingest real-time and historical data from multiple blockchain and market data sources, compute composite risk and opportunity scores across an asset universe, and deliver insights to analysts and traders via a low-latency REST API and WebSocket streaming interface.
 
 This document describes the architecture decisions, component interactions, and operational characteristics of the platform at the level of detail required for engineering teams, platform operators, and technical reviewers.
 
@@ -21,10 +35,21 @@ Finance Now operates as a read-heavy analytical system with write-intensive back
 
 ## Technology Stack
 
+> **Not the running stack (2026-09-20).** Only **Next.js 15** ships (`frontend/package.json`
+> pins `next` 15.5.25). FastAPI, TimescaleDB and Redis belong to the backend retired by
+> **D2, 2026-09-14** (`backend/FROZEN.md`). Kubernetes/EKS, Terraform, Nginx and
+> Prometheus/Grafana/Alertmanager are committed configuration that was never applied —
+> thirteen manifests under `infrastructure/kubernetes/`, a Terraform root module,
+> monitoring config under `infrastructure/monitoring/`, and Nginx as both an
+> `fn-nginx-config` ConfigMap and a service in each `infrastructure/docker/` compose file —
+> and on this date there is no `.tfstate` anywhere in the tree and no AWS account was ever
+> provisioned, so there is no cluster for any of it to run on. The Task Queue row is a
+> different case again; see its own note.
+
 | Layer | Technology | Rationale |
 |---|---|---|
-| Backend API | FastAPI 0.109 (Python 3.11) | Native async support, excellent type annotations, auto-generated OpenAPI docs |
-| Task Queue | Celery 5.3 + Redis Broker | Reliable distributed task execution; beat scheduler for periodic jobs |
+| Backend API | ~~FastAPI 0.109~~ — **retired, D2 2026-09-14** (`backend/FROZEN.md`). The version was never `0.109` either: `backend/pyproject.toml` pins `fastapi = ">=0.140.13,<0.142.0"`. Python 3.11 is correct | Native async support, excellent type annotations, auto-generated OpenAPI docs |
+| Task Queue | ~~Celery 5.3 + Redis Broker~~ — **designed, never written in code.** No Celery dependency, worker, beat schedule or broker exists: `grep -rni celery backend` returns zero files, and `backend/pyproject.toml` has `apscheduler = "^3.10.4"` instead. The backend ran its pipelines on in-process **APScheduler** (`backend/app/pipelines/scheduler.py`), retired with the rest at **D2, 2026-09-14**. It was not imaginary, though, and a contributor will find traces: as of 2026-09-20 `infrastructure/terraform/eks.tf:238` still declares a spot node group "for non-critical batch workloads (Celery workers)" and `infrastructure/monitoring/prometheus/prometheus.yml:141` still scrapes `celery-flower:5555`. Committed as configuration; never implemented; never run | Reliable distributed task execution; beat scheduler for periodic jobs |
 | Time-Series DB | TimescaleDB 2.x on PostgreSQL 15 | Columnar compression, time-series indexes, compatibility with SQLAlchemy ORM |
 | Cache / Pub-Sub | Redis 7 | Sub-millisecond latency for pricing cache; pub/sub for WebSocket fan-out |
 | Frontend | Next.js 15 (React, TypeScript) | Server-side rendering, App Router, built-in API routes for BFF patterns |
@@ -36,6 +61,16 @@ Finance Now operates as a read-heavy analytical system with write-intensive back
 ---
 
 ## Component Architecture
+
+> **As designed, not as deployed (2026-09-20).** Nothing above the data stores runs: no
+> ALB, no WAF, no Nginx in front of anything, and no FastAPI process on `:8000` serving
+> `/api/` or `/ws/`. The Next.js app is the entire server tier and reaches providers
+> itself. Two labels in the PostgreSQL box are wrong as well — `price_history` and
+> `asset_scores` are tables in neither schema. The backend's migration creates twelve
+> tables, among them `market_data` and `risk_scores`; `frontend/src/lib/db/schema/` has
+> neither name. Both recur in the Data Flow section below, in the lines reading
+> `INSERT INTO price_history`, `SELECT price_history` and `UPSERT asset_scores`; they are
+> wrong there too.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -84,6 +119,22 @@ Finance Now operates as a read-heavy analytical system with write-intensive back
 ---
 
 ## Data Flow Descriptions
+
+> **History, and not accurate history (2026-09-20).** These four flows describe pipelines
+> that were real — `coingecko.py`, `defillama.py`, `chainlink.py`, `onchain.py` and
+> `scoring/engine.py` all exist under `backend/app/` — but three things below were never
+> true of them. **Celery Beat never drove them:** the backend scheduled work with in-process
+> APScheduler (`backend/app/pipelines/scheduler.py`, `AsyncIOScheduler` +
+> `IntervalTrigger`); Celery was committed as infrastructure config
+> (`infrastructure/terraform/eks.tf`, the Prometheus scrape job) but never written in code.
+> **The cadences are wrong:** `scheduler.py` registered three jobs — market data every
+> **5 minutes**, on-chain every **15 minutes**, risk scores **hourly**
+> (`backend/app/config.py`) — not every 60 seconds and every 5 minutes. **Alert evaluation
+> was never scheduled at all:** there is no alert job in `scheduler.py` and no alert
+> pipeline module. And none of it runs now — the backend is frozen (D2, 2026-09-14), the
+> shipping app fetches on request inside its `/live-data/*` handlers and opens no socket.
+> The latency and cache-hit figures below belong to that retired service; nothing in the
+> current app produces them.
 
 ### 1. Price Ingestion Flow
 
