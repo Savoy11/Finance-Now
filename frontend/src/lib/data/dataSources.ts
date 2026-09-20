@@ -289,8 +289,8 @@ export const DATA_SOURCES: DataSourceEntry[] = [
   {
     id: 'market-news', surface: 'Stock market news', module: 'equities',
     route: '/live-data/market-news', status: 'partial',
-    providers: [{ name: 'MarketWatch / CNBC RSS', role: 'primary', auth: 'none' }],
-    notes: 'General market wires only. The one free PER-TICKER feed was Yahoo’s and went on terms grounds, so symbol news is now these wires filtered to articles that actually name the company — an empty result is the honest answer when they haven’t covered it.',
+    providers: [{ name: 'CNBC RSS', role: 'primary', auth: 'none' }],
+    notes: 'ONE general market wire. Two feeds have now gone on terms grounds, not availability: Yahoo’s per-ticker RSS (2026-08-06) and MarketWatch (2026-09-20 — Dow Jones ToU §9.4.1 bars automated ingestion "whether directly or through an intermediary" without prior written consent). Symbol news is CNBC filtered to articles that actually name the company, and an empty result is the honest answer when they haven’t covered it. ⚠ This surface is now single-sourced: losing CNBC would empty it rather than thin it.',
   },
   {
     id: 'stock-social', surface: 'Stock social sentiment', module: 'equities',

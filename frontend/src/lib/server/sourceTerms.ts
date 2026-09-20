@@ -1223,13 +1223,52 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     name: 'CoinDesk',
     verdict: 'conditional',
     termsUrl: 'https://www.coindesk.com/terms',
-    finding: 'Publishes a public RSS feed. Syndication of headline/link/summary with attribution and a link back is the intended use; full-text reproduction is not.',
-    conditions: ['Headline, link and feed summary only', 'Attribute and link back to the origin article'],
-    // ⚠ NOT READ 2026-09-14 — /terms and the homepage both 429, twice, 20s apart, from a clean residential egress, while the RSS feed returned 200 from the same IP in the same minute. The audit says: "Couldn't read it" is not permission. Needs an email, not another fetch.
-    // Ratified 'verified' by mistake on 2026-09-18 and reverted 2026-09-19; the
-    // original 2026-08-06 seeded date is restored because nothing newer was read.
-    reviewedAt: '2026-08-06',
-    review: 'seeded',
+    finding:
+      'READ 2026-09-20 (Terms Of Use, Effective Date 2025-11-14). ⚠ THE DOCUMENT NEVER MENTIONS A ' +
+      'FEED: “rss”, “syndicat” and “feed” return ZERO hits across 300 lines, so there is no ' +
+      'syndication policy in it and none is linked from it. What it does say, under Copyright, ' +
+      'Trademark and Ownership: “you are only authorized to view, play, print and download ' +
+      'documents, audio and video found on our Services for personal, informational, and ' +
+      'non-commercial purposes only. You may not use, copy, reproduce, republish, upload, post, ' +
+      'transmit, distribute, or modify the Content or the Company’s trademarks in any way … without ' +
+      'Company’s prior written consent.” Attribution is SILENT, and the silence cuts the wrong way: ' +
+      'the Advertising Rights clause reserves “attribution, links, promotional and distribution ' +
+      'rights” to CoinDesk as rights it sells.',
+    conditions: [
+      '⚠ NO DISPLAY PERMISSION IS GRANTED. The Terms permit viewing/printing/downloading for personal, non-commercial purposes and bar republication without prior written consent — they do not grant headline-and-link, and they do not grant headline-plus-summary',
+      'Do not remove copyright, trademark or other proprietary notices from the material',
+      'Do not use the CoinDesk mark as a hyperlink — the Terms bar it without prior written approval',
+      'Personal, non-commercial use only',
+    ],
+    // ✅ READ 2026-09-20 from a structure-preserving capture; every quote verified verbatim
+    // AND contiguous by an adversarial pass, which sustained the reading.
+    //
+    // ⚠ THE PRIOR FINDING WAS INVENTED. It asserted that “syndication of
+    // headline/link/summary with attribution and a link back is the intended use”, with
+    // matching conditions. The document grants none of that. It was written from
+    // documented posture and read for six weeks as though someone had checked it — the
+    // exact failure the seeded/verified split exists to expose. (This entry was also
+    // ratified 'verified' by mistake on 2026-09-18 and reverted on 2026-09-19.)
+    //
+    // ⚠ WHY THIS IS STILL `conditional` AND NOT `prohibited` — owner decision 2026-09-20,
+    // and it is a judgement about EVIDENCE, not about convenience. The reading proposed
+    // `prohibited` and the adversarial check sustained it. What it could not settle is
+    // SCOPE: unlike Dow Jones, no clause here binds by content rather than host, and the
+    // document never reaches feeds at all. Two readings stay open — the feed is inside the
+    // expansively defined “Services”, or a ToS that never mentions feeds does not reach
+    // one the publisher deliberately publishes. The text closes neither.
+    //
+    // `whatMayBeDisplayed` is recorded as UNCLEAR rather than headline-and-link-only. That
+    // distinction is the point: recording the latter would read a grant of headline display
+    // into a document that grants none.
+    //
+    // robots.txt PERMITS the feed path (/arc/outboundfeeds/rss/ is absent from its targeted
+    // Disallow list, observed 2026-09-20). That is a robots observation, not a terms
+    // verdict, and it does not resolve the question above.
+    //
+    // Full reading: docs/audits/terms-review-news-2026-09-20.md
+    reviewedAt: '2026-09-20',
+    review: 'verified',
     confidence: 'medium',
   },
   {
@@ -1268,31 +1307,95 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
   {
     domain: 'dowjones.io',
     name: 'Dow Jones (MarketWatch feed delivery)',
-    verdict: 'conditional',
-    termsUrl: 'https://www.marketwatch.com/terms-of-use',
+    verdict: 'prohibited',
+    // CORRECTED 2026-09-20. The old URL (marketwatch.com/terms-of-use) returns a
+    // "Page Not Found" page — it had been recorded for both entries since 2026-08-06
+    // and never resolved. marketwatch.com's own robots.txt names the live document.
+    termsUrl: 'https://www.dowjones.com/terms-of-use/',
     finding:
-      'feeds.content.dowjones.io serves MarketWatch\'s public top-stories RSS. Dow Jones publishes it for syndication; the terms are personal, non-commercial use with attribution, and expressly not bulk reproduction of article text.',
-    conditions: ['Headline, link and feed summary only', 'Attribute MarketWatch and link back', 'Personal, non-commercial use'],
-    // ⚠ NOT READ 2026-09-14 — this is the feed host the app calls; its robots.txt returns 403 and it publishes no reachable terms document. Needs an email.
-    // Ratified 'verified' by mistake on 2026-09-18 and reverted 2026-09-19; the
-    // original 2026-08-06 seeded date is restored because nothing newer was read.
-    reviewedAt: '2026-08-06',
-    review: 'seeded',
-    confidence: 'medium',
+      'READ 2026-09-20 (Dow Jones Terms of Use, Effective Date 2026-06-30). §9.1: “The Services ' +
+      'are for your individual, personal and non-commercial use only. Thus, you may not access or ' +
+      'use the Content, including without limitation, any Content made available through one of our ' +
+      'RSS feeds, in any commercial product or service, without our express written consent.” ' +
+      '§9.4.1: “You shall not access, view, retrieve, refresh, reload, scrape, text or data mine, ' +
+      'index, process, store, harvest, or otherwise ingest the Services or any Content, whether ' +
+      'directly or through an intermediary, using any automated means, webcrawler, spider, script, ' +
+      'site search/retrieval application, extension, bot, browser automation tool, API client, AI ' +
+      'agent or assistant, or other manual or automated device, tool, process, software or other ' +
+      'means, without our prior written consent.” A server-side RSS fetcher is squarely inside that.',
+    // ⚠ NO CONDITIONS, because a prohibited verdict is not conditional on anything.
+    //
+    // ⚠ THE PRIOR FINDING WAS INVENTED, AND THAT IS THE LESSON HERE. Until today this
+    // entry asserted the terms were “personal, non-commercial use with attribution”, with
+    // conditions “Headline, link and feed summary only / Attribute MarketWatch and link
+    // back”. The document grants NONE of that. There is no headline-and-link permission,
+    // no summary permission and no attribution regime — it is a flat bar on automated
+    // ingestion absent prior written consent. That finding was written from documented
+    // posture and read, for six weeks, as though someone had checked it. This entry was
+    // also ratified 'verified' by mistake on 2026-09-18 and reverted on 2026-09-19.
+    //
+    // ⚠ THE HOST DISTINCTION DOES NOT SAVE IT, and that distinction is this entry's whole
+    // history. www.marketwatch.com/robots.txt is “User-agent: * / Disallow: /” plus a
+    // notice requiring express written permission — but the app fetched
+    // feeds.content.dowjones.io, a DIFFERENT origin with no robots.txt (403 AccessDenied,
+    // an S3 missing-key error) serving 200 publicly. robots.txt is per-origin, so that
+    // argument was sound as far as robots goes. It does not survive the Terms: §9.1 binds
+    // by CONTENT (“any Content made available through one of our RSS feeds”), not by host,
+    // and §9.4.1 says “whether directly or through an intermediary”.
+    //
+    // WHAT REMAINS OPEN, narrowly: the document never states that mw_topstories and
+    // mw_bulletins ARE “one of our RSS feeds”. That is an inference from MarketWatch
+    // branding on a dowjones.io domain — strong, but an inference. It is the only doubt,
+    // and it is not enough to keep fetching on.
+    //
+    // CONSEQUENCE, and it is a code change rather than a label: the fetchers were REMOVED
+    // in the same commit (market-news, macro-news, the provider registry, the config
+    // liveness probe). sourceTerms.test.ts fails while a prohibited host remains in
+    // DATA_SOURCES, which is the guard forcing the code to match the verdict instead of
+    // letting a label drift. Equity news falls back to CNBC alone; macro news keeps 7 of 8
+    // feeds. Both degrade rather than break, which is what D21 asks for.
+    //
+    // REVERSIBLE BY ONE THING ONLY: prior written consent from Dow Jones. Drafted at
+    // docs/licensing/2026-09-20-provider-enquiries.md. Full reading:
+    // docs/audits/terms-review-news-2026-09-20.md
+    reviewedAt: '2026-09-20',
+    review: 'verified',
+    confidence: 'high',
   },
   {
     domain: 'marketwatch.com',
     name: 'MarketWatch',
-    verdict: 'conditional',
-    termsUrl: 'https://www.marketwatch.com/terms-of-use',
-    finding: 'Same terms as the Dow Jones feed host — syndication of headline/link/summary, personal and non-commercial, with attribution.',
-    conditions: ['Headline, link and feed summary only', 'Attribute and link back', 'Personal, non-commercial use'],
-    // ⚠ NOT READ 2026-09-14 — 401 on the homepage. The host the app actually fetches is feeds.content.dowjones.io (see dowjones.io). Needs an email.
-    // Ratified 'verified' by mistake on 2026-09-18 and reverted 2026-09-19; the
-    // original 2026-08-06 seeded date is restored because nothing newer was read.
-    reviewedAt: '2026-08-06',
-    review: 'seeded',
-    confidence: 'medium',
+    verdict: 'prohibited',
+    termsUrl: 'https://www.dowjones.com/terms-of-use/',
+    finding:
+      'READ 2026-09-20 via the operative Dow Jones Terms of Use (Effective Date 2026-06-30) — see ' +
+      'the dowjones.io entry for the quoted clauses. MarketWatch is a Dow Jones property and the ' +
+      'same §9.1 and §9.4.1 govern it. Its own robots.txt is additionally explicit: “Collection of ' +
+      'content and other data on https://www.marketwatch.com/ through automated means is prohibited ' +
+      'unless you have express written permission from Dow Jones & Company, Inc.”, followed by ' +
+      '“User-agent: * / Disallow: /” with an allowlist of named search-engine bots only.',
+    // The website is a stricter case than the feed host, not a laxer one: robots.txt bars
+    // it outright, and the host 403s every user-agent tried (project UA, curl, and a
+    // browser UA alike — so unlike FMP this is not UA filtering).
+    //
+    // `robotsDisallowed` is recorded separately from the verdict on purpose: robots.txt is
+    // an instruction we either honour or do not, while a terms verdict is an
+    // interpretation. Recording one must not launder the other into looking reviewed —
+    // same split applied to Reddit on 2026-08-29.
+    robotsDisallowed: {
+      observedAt: '2026-09-20',
+      note:
+        'robots.txt reads “User-agent: * / Disallow: /” with an allowlist of named search-engine ' +
+        'bots (googlebot, bingbot, yandex, duckduckbot and similar), and opens with a notice that ' +
+        'automated collection is prohibited without express written permission from Dow Jones & ' +
+        'Company, Inc. Observed first-hand from the owner’s residential connection. Separately, the ' +
+        'host returned 403 to every user-agent tried — the project UA, curl’s default and a browser ' +
+        'UA alike — so this is not user-agent filtering the way FMP’s is.',
+    },
+    // Full reading: docs/audits/terms-review-news-2026-09-20.md
+    reviewedAt: '2026-09-20',
+    review: 'verified',
+    confidence: 'high',
   },
   {
     domain: 'cnbc.com',
@@ -1310,13 +1413,47 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     name: 'Investing.com',
     verdict: 'conditional',
     termsUrl: 'https://www.investing.com/about-us/terms-and-conditions',
-    finding: 'Publishes per-desk RSS feeds for syndication. Terms permit personal, non-commercial use of the feed with attribution; scraping the site itself is prohibited separately.',
-    conditions: ['RSS feed only — never scrape the HTML site', 'Headline, link and summary only, with attribution'],
-    // ⚠ NOT CONFIRMED READ 2026-09-14 — the audit records only that its three feeds returned 200; no terms clause is quoted or characterised anywhere in it. Possibly opened, no record. Ratify only once a reading is on the record.
-    // Ratified 'verified' by mistake on 2026-09-18 and reverted 2026-09-19; the
-    // original 2026-08-06 seeded date is restored because nothing newer was read.
-    reviewedAt: '2026-08-06',
-    review: 'seeded',
+    finding:
+      'READ 2026-09-20. The Terms and Conditions are a 21-page PDF at ' +
+      'cdn.investing.com/about-us/terms_and_conditions.pdf (the HTML page embeds it; the CDN 403s ' +
+      'any request without a Referer). ⚠ THE DOCUMENT NEVER MENTIONS RSS OR SYNDICATION. Limitations ' +
+      'on Use (c): “You are expressly forbidden from employing any automated system or software to ' +
+      'extract data for content from this website for any purpose. This includes, but is not limited ' +
+      'to, scraping, data mining, robot or spider programs, and other automatic devices, tools, or ' +
+      'processes to access, extract, download, or copy any data or information from the website.” ' +
+      '§20 adds that reproducing or distributing protected material needs “the prior written consent ' +
+      'of Fusion Media (on a case by case basis)”.',
+    conditions: [
+      '⚠ NO DISPLAY PERMISSION IS GRANTED, and automated extraction is expressly forbidden — the prior condition claiming “headline, link and summary with attribution” was invented, not read',
+      'RSS feed paths only — the site HTML is squarely inside the Limitations on Use (c) bar, and robots.txt disallows /content, /charts_xml and similar',
+      'Reproducing or distributing protected material requires prior written consent of Fusion Media',
+    ],
+    // ✅ READ 2026-09-20 on the owner's machine.
+    //
+    // ⚠ THIS ENTRY CARRIES A REAL, UNRESOLVED TENSION, and it must not be collapsed by
+    // quoting one side. Investing.com PUBLISHES the RSS feeds this app reads, and its
+    // robots.txt PERMITS /rss/ (observed 2026-09-20 — the Disallow list names /content,
+    // /charts_xml, /admin and similar, not /rss/). Publishing a feed and allowing it in
+    // robots is an invitation to automated consumption. The ToS forbids automated
+    // extraction "for any purpose" in general terms. Both are true at once, and this
+    // document does not reconcile them because it never mentions feeds.
+    //
+    // ⚠ Kept `conditional` on that basis (owner, 2026-09-20), NOT because the clause is
+    // weak. Compare Dow Jones, now `prohibited`: there an express RSS clause binds by
+    // content and names intermediaries, so there is no tension to resolve.
+    //
+    // ⚠ FIDELITY CAVEAT on the quotes above. There is no poppler on the owner's machine,
+    // so they come from a PDF text extractor written for this reading. It is readable but
+    // choppy — justified text emerges word-per-line in places. RE-CHECK ANY QUOTE AGAINST
+    // THE PDF PAGE before using it in correspondence with Fusion Media.
+    //
+    // Blast radius if this later goes prohibited: 3 of 8 macro-news feeds. Every pillar
+    // keeps a non-Investing source (commodities → OilPrice, bonds → CNBC Economy, forex →
+    // FXStreet), so it degrades rather than removes. D21-compliant.
+    //
+    // Full reading: docs/audits/terms-review-news-2026-09-20.md
+    reviewedAt: '2026-09-20',
+    review: 'verified',
     confidence: 'medium',
   },
   {

@@ -209,7 +209,9 @@ async function testProvider(provider: { id: string; isCustom?: boolean; url?: st
     case 'yt-the-defiant':    return testYouTubeChannel('UCL0J4MLEdLP0-UyLu0hCktg', 'The Defiant')
     case 'yt-crypto-banter':  return testYouTubeChannel('UCN9Nj4tjXbVTLYWN0EKly_Q', 'Crypto Banter')
     case 'youtube-search':    return testYouTubeSearch(key)
-    case 'marketwatch':   return testRssFeed('https://feeds.content.dowjones.io/public/rss/mw_topstories', 'MarketWatch')
+    // 'marketwatch' / 'marketwatch-macro' liveness probes removed 2026-09-20 ON TERMS
+    // (dowjones.io is `prohibited`). Probing a prohibited host is still fetching it, and
+    // pinnedFetch would refuse at the socket anyway.
     case 'cnbc':          return testRssFeed('https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=100003114', 'CNBC')
     case 'reddit-stocks': return testRedditStocks()
     case 'stocktwits':    return testStocktwits()

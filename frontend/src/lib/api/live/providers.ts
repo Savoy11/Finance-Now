@@ -316,18 +316,13 @@ export const BUILTIN_PROVIDERS: BuiltinProviderDef[] = [
   // that is deliberate. Do not reintroduce it without a terms verdict change.
 
   // ── Equity news (market: 'equities') ── all active feeds run in parallel
-  {
-    id: 'marketwatch',
-    name: 'MarketWatch',
-    category: 'news',
-    market: 'equities',
-    description: 'Dow Jones-owned market coverage — top stories RSS feed.',
-    features: ['Top stories', 'Macro coverage', 'No key needed'],
-    requiresKey: false,
-    freeTierLabel: 'Keyless — already active',
-    keyUrl: 'https://www.marketwatch.com',
-    priority: 1,
-  },
+  //
+  // ⚠ `marketwatch` was removed 2026-09-20 ON TERMS, not availability — the feed
+  // still serves 200. Dow Jones Terms of Use §9.4.1 bars automated ingestion
+  // "whether directly or through an intermediary … without our prior written
+  // consent"; dowjones.io is now `prohibited`, a pinnedFetch socket block. CNBC is
+  // the only built-in equity news feed that remains. Do not reintroduce it without
+  // a terms verdict change — same rule as Yahoo above.
   {
     id: 'cnbc',
     name: 'CNBC',
@@ -446,18 +441,10 @@ export const BUILTIN_PROVIDERS: BuiltinProviderDef[] = [
     keyUrl: 'https://www.fxstreet.com',
     priority: 5,
   },
-  {
-    id: 'marketwatch-macro',
-    name: 'MarketWatch (macro filter)',
-    category: 'news',
-    market: 'macro',
-    description: 'MarketWatch bulletins, kept only when an article classifies into a macro pillar.',
-    features: ['General wire', 'Classifier-gated', 'No key needed'],
-    requiresKey: false,
-    freeTierLabel: 'Keyless — already active',
-    keyUrl: 'https://www.marketwatch.com',
-    priority: 6,
-  },
+  // ⚠ `marketwatch-macro` (mw_bulletins) removed 2026-09-20 ON TERMS — see the
+  // equity `marketwatch` note above and lib/server/sourceTerms.ts (dowjones.io is
+  // `prohibited`). The macro roster keeps seven feeds and every pillar retains a
+  // dedicated source, so this thins the general pool rather than removing a pillar.
   {
     id: 'cnbc-macro',
     name: 'CNBC (macro filter)',

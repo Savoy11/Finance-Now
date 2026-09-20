@@ -186,6 +186,111 @@ it would make Binance.US a source to design away from rather than negotiate with
 
 ---
 
+## 5. Dow Jones / MarketWatch — the one that would restore a removed feed
+
+⚠ **This is the only enquiry where the feed has already been withdrawn.** `dowjones.io`
+and `marketwatch.com` were set to `prohibited` on 2026-09-20 and the fetchers removed, so
+this request is not about avoiding a future problem — it is the sole route back.
+
+> **Subject:** Written consent for RSS feed use in a personal finance application
+>
+> Hello,
+>
+> I maintain a multi-asset financial analytics web application. Until this week it read
+> MarketWatch headlines from the public RSS feeds at
+> `feeds.content.dowjones.io/public/rss/mw_topstories` and `…/mw_bulletins`, server-side and
+> at low volume, displaying each item's headline, link and feed summary. It is a solo
+> development project and is not publicly accessible.
+>
+> On reading the Dow Jones Terms of Use (Effective 30 June 2026) I concluded that use was
+> not permitted, and I have removed those feeds from the application. §9.4.1 bars ingesting
+> Content "whether directly or through an intermediary, using any automated means … API
+> client, AI agent or assistant … without our prior written consent", and §9.1 addresses
+> "any Content made available through one of our RSS feeds" directly. Three questions:
+>
+> 1. Is that reading correct — that a server-side reader of the public MarketWatch RSS
+>    feeds requires prior written consent, even displaying only headline, link and the
+>    feed's own summary, and even for a single-user non-commercial deployment?
+> 2. If so, what is the process for requesting that consent, and is there a licence
+>    intended for small applications of this kind?
+> 3. Are the `mw_topstories` and `mw_bulletins` feeds on `feeds.content.dowjones.io` among
+>    the "our RSS feeds" §9.1 refers to? The Terms do not identify which feeds are in scope,
+>    and that host publishes no terms of its own.
+>
+> I would rather ask than assume, which is why the feeds are already switched off.
+>
+> Thank you,
+
+*Note: question 3 is the one genuine gap in the reading. It is worth asking plainly even if
+the answer restores nothing.*
+
+---
+
+## 6. CoinDesk — is there a feed policy at all?
+
+> **Subject:** Is there an RSS/syndication policy separate from the Terms of Use?
+>
+> Hello,
+>
+> I maintain a multi-asset financial analytics web application that reads your public RSS
+> feed at `www.coindesk.com/arc/outboundfeeds/rss/` server-side, displaying each item's
+> headline, link and the feed's own summary with a link back to the original article. It is
+> a solo development project and is not publicly accessible.
+>
+> I have read the Terms of Use (Effective 14 November 2025) and want to get this right.
+> Three questions:
+>
+> 1. Is there an RSS or syndication policy separate from the Terms of Use? The Terms do not
+>    mention feeds — "RSS", "syndication" and "feed" do not appear in the document — so I
+>    cannot tell whether they are intended to govern the feed at all.
+> 2. If the Terms do govern it: the Copyright, Trademark and Ownership section authorises
+>    viewing, printing and downloading "for personal, informational, and non-commercial
+>    purposes only" and bars republishing "without Company's prior written consent". Does
+>    displaying a headline, a link and the feed's own summary count as republishing?
+> 3. If some display is permitted, what attribution do you require, and in what form? The
+>    Terms are silent on attribution, and separately reserve "attribution, links,
+>    promotional and distribution rights" to CoinDesk, so I would rather be told than guess.
+>
+> Thank you,
+
+---
+
+## 7. Investing.com — a question about an apparent contradiction
+
+> **Subject:** RSS feeds and the automated-access clause in the Terms and Conditions
+>
+> Hello,
+>
+> I maintain a multi-asset financial analytics web application that reads three of your
+> public RSS feeds server-side (`/rss/news_11.rss`, `/rss/bonds_Fundamental.rss`,
+> `/rss/news_1.rss`), displaying each item's headline, link and the feed's own summary with
+> attribution and a link back. It is a solo development project and is not publicly
+> accessible.
+>
+> I have read the Terms and Conditions and want to resolve what looks like a conflict.
+> Limitations on Use (c) states that customers are "expressly forbidden from employing any
+> automated system or software to extract data for content from this website for any
+> purpose", naming robot and spider programs among others. At the same time, Investing.com
+> publishes these RSS feeds, and `investing.com/robots.txt` permits `/rss/` while
+> disallowing other paths. Publishing a feed and allowing it in robots.txt reads as an
+> invitation to automated consumption. Three questions:
+>
+> 1. Is reading the published RSS feeds within Limitations on Use (c), or is that clause
+>    aimed at scraping the HTML site rather than at the feeds you publish?
+> 2. If feed use is permitted, what display and attribution conditions apply — headline and
+>    link only, or headline plus the feed's summary?
+> 3. Is there a separate syndication or feed policy? The Terms and Conditions do not mention
+>    RSS anywhere.
+>
+> Thank you,
+
+*Note: this one asks the publisher to resolve a tension in their own documents, so the reply
+is likely to be more useful than a yes/no. If the answer is that (c) governs the feeds, that
+makes Investing.com a source to design away from — and the blast radius is already measured:
+3 of 8 macro-news feeds, with every pillar retaining a non-Investing source.*
+
+---
+
 ## After the replies
 
 Whatever comes back is **evidence, not ratification**. Record it the way the readings were

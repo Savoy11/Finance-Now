@@ -584,12 +584,12 @@ site nobody has reviewed. Full design: `docs/architecture/source-terms.md`.
 > The fix for any of the key-gated rows is a free API key on the Integrations page — **not
 > a substitute scraper.**
 
-> ⚠ **34 of 56 registry entries are `seeded`, not `verified` — check `review` before
+> ⚠ **30 of 56 registry entries are `seeded`, not `verified` — check `review` before
 > trusting one.** The registry was authored in an environment whose network policy
 > blocked every publisher and provider host at the gateway, so not one terms document
 > could be opened. The entries are honest starting positions drawn from each
 > provider's publicly documented posture (published API docs, documented free tiers,
-> openly advertised RSS feeds) — they are **not readings**. **22 entries are
+> openly advertised RSS feeds) — they are **not readings**. **26 entries are
 > `verified`** as of 2026-09-20 (the count was spelled out as a word here until then,
 > which is why no guard could watch it — see `docs:check`): **Cboe** (P2-O1 audit, 2026-08-05) and
 > **CoinGecko** (the 2026-08-29 probe run) were the first two, and sixteen more

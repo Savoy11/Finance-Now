@@ -20,8 +20,8 @@ Integrations page.
 > ⚠ **Most of the registry is still `seeded`, and that is a deliberate,
 > visible state — not a claim of review.** It was authored in an environment whose
 > network policy blocked every publisher and provider host at the gateway, so no
-> terms document could be opened. **34 of 56 entries** are still starting positions
-> drawn from documented posture. **22 are `verified`** — the document was actually
+> terms document could be opened. **30 of 56 entries** are still starting positions
+> drawn from documented posture. **26 are `verified`** — the document was actually
 > opened and read. Four sit outside the big batch: **Cboe** (P2-O1, 2026-08-05),
 > **CoinGecko** (the first real probe run, 2026-08-29 — see
 > `docs/audits/terms-review-2026-08-29.md`), and **Poloniex** and **LBank** (both
@@ -33,9 +33,17 @@ Integrations page.
 > four of those ratifications **reverted** to `seeded` on 2026-09-19, because the
 > audits did not support them.
 >
-> By verdict, the 56 are 14 `approved`, 39 `conditional`, 3 `prohibited` — Yahoo,
-> Cboe and, since 2026-09-15, **Poloniex**, whose §9 grants an API licence solely
-> for the purpose of trading on Poloniex, which this app does not do.
+> By verdict, the 56 are 14 `approved`, 37 `conditional`, **5 `prohibited`** — Yahoo,
+> Cboe, **Poloniex** (since 2026-09-15, whose §9 grants an API licence solely for the
+> purpose of trading on Poloniex, which this app does not do), and since **2026-09-20**
+> **`dowjones.io` and `marketwatch.com`**. The last two are the first prohibition to
+> remove a *working* feed rather than a broken one: Dow Jones's Terms of Use §9.4.1
+> bars ingesting Content "whether directly or through an intermediary, using any
+> automated means … API client, AI agent or assistant … without our prior written
+> consent", and §9.1 names "any Content made available through one of our RSS feeds".
+> The fetchers were removed in the same commit, because `sourceTerms.test.ts` fails
+> while a prohibited host remains in `DATA_SOURCES` — the guard forcing the code to
+> match the verdict. See `docs/audits/terms-review-news-2026-09-20.md`.
 > *(Counts refreshed 2026-09-19. They read 54 of 56 seeded / 2 verified and
 > 14 `approved` / 40 `conditional` / 2 `prohibited` when refreshed 2026-09-08 —
 > each correct on its own date — and 47 of 48 with Cboe the only verified entry,
