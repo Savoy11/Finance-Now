@@ -268,12 +268,32 @@ each verified to fail against the pre-fix code.
          `--package-lock-only` resolves the tree from the lockfile, so this costs
          seconds rather than an `npm ci`.
       2. `pip audit` / `safety check` no longer runs anywhere — it went with the
-         backend jobs under D2 (#192). `backend/poetry.lock` is still in the tree, so
-         Dependabot keeps raising alerts against it while nothing in CI scans it.
-         **This is deliberate and stays open:** the four alerts there (1 critical,
-         2 high, 1 moderate) are on retired, frozen code that no CI builds, nothing
-         calls, and that was never deployed — `cd-staging` failed 90 runs out of 90.
-         Scanning it would gate the build on code that cannot run.
+         backend jobs under D2 (#192). `backend/poetry.lock` is still in the tree and
+         **nothing in CI scans it. That is deliberate**: it is retired, frozen code
+         that no CI builds, nothing calls, and that was never deployed —
+         `cd-staging` failed 90 runs out of 90 against infrastructure that was never
+         provisioned. Scanning it would gate the build on code that cannot run.
+
+      **⚠ ALL DEPENDABOT ALERTS WERE DISMISSED BY THE OWNER ON 2026-09-20 — 7 open
+      to 0, 28 closed.** Four were the `backend/poetry.lock` ones above; three were
+      dev-only npm moderates (vitest ×2 path traversal via a mock redirect, esbuild
+      dev-server request leak — and the flagged esbuild is 0.18.20 nested under
+      `drizzle-kit`, while the production-tree copy is 0.28.1, outside the advisory
+      range).
+
+      **Dismissal changes what GitHub displays. It does NOT change what `npm audit`
+      reports**, because `npm audit` resolves the lockfile and never consults the
+      alert list. Measured immediately afterwards: `frontend` still reports 7
+      moderates, `mcp-server` still reports 0. So the CI gate above is unaffected and
+      still does real work — and with the alert feed now silent, **it is the only
+      thing watching these two lockfiles.** That is the argument for the `high`
+      threshold being a real line rather than a formality: if a HIGH lands in either
+      package tomorrow, this step is what catches it.
+
+      A dismissal is also per-alert, not per-path: a NEW advisory against anything in
+      `backend/poetry.lock` will open a fresh alert. The durable fix, if that becomes
+      noise, is taking `backend/` off the default branch — it is already preserved on
+      the `archive/*` refs — which is a bigger decision than this file should assume.
 - [x] Configure Dependabot for weekly dependency updates — `.github/dependabot.yml`
       covers npm (frontend + mcp-server), GitHub Actions, and the frontend Docker
       base image. *(Corrected 2026-09-19: the `pip` ecosystem watching `/backend` was
