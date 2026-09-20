@@ -50,7 +50,7 @@ async function fetchFmpOhlcv(symbol: string, range: string): Promise<OhlcvCandle
   if (!FMP_KEY) throw new Error('FMP key not configured')
   const res = await fetch(
     `https://financialmodelingprep.com/stable/historical-price-eod/full?symbol=${encodeURIComponent(symbol)}&apikey=${FMP_KEY}`,
-    { next: { revalidate: RANGE_CONFIG[range].revalidate } }
+    { next: { revalidate: RANGE_CONFIG[range].revalidate }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) }
   )
   if (!res.ok) throw new Error(`FMP ${res.status}`)
   // `adjClose` (split+dividend adjusted) is used when present so a split isn't a

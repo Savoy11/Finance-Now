@@ -51,12 +51,31 @@ describe('every route that fetches an upstream bounds how long it waits', () => 
   })
 
   it('has no route making an unbounded outbound call', () => {
-    const unbounded = fetching.filter((f) => !/AbortSignal\.timeout/.test(read(f)))
+    // ⚠ COUNTED PER CALL SITE, NOT PER FILE, and that distinction is the whole
+    // guard. The first version of this test asked only whether the file
+    // contained `AbortSignal.timeout` anywhere. Mutation-testing it showed it
+    // was blind: deleting one of markets/route.ts's three timeouts left two
+    // matches and the file still passed.
+    //
+    // That is the identical mistake DATA-AVAILABILITY.md records against the
+    // `revalidate` convention — a file-level grep reported config/route.ts as
+    // compliant on the strength of one call site out of seventeen. Writing it
+    // down did not stop it being repeated hours later, so it is encoded here
+    // instead of documented.
+    const unbounded = fetching
+      .map((f) => {
+        const src = read(f)
+        const calls = (src.match(/\bfetch\(/g) ?? []).length
+        const bounded = (src.match(/AbortSignal\.timeout/g) ?? []).length
+        return { f, calls, bounded }
+      })
+      .filter((r) => r.bounded < r.calls)
+      .map((r) => `${r.f} — ${r.calls} fetch call(s), ${r.bounded} bounded`)
 
     expect(
       unbounded,
-      'These route files call fetch() with no timeout. Node will wait forever on ' +
-      'an upstream that accepts the connection and never answers, and the surface ' +
+      'These routes call fetch() more often than they bound it. Node waits forever ' +
+      'on an upstream that accepts the connection and never answers, and the surface ' +
       'shows a spinner instead of an honest failure. Add ' +
       '`signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS)` alongside the ' +
       'existing `next: { revalidate }` — NOT via pinnedFetch, which would disable ' +
