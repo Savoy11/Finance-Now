@@ -3,6 +3,7 @@ import { robotsPermits } from '@/lib/server/sourceTerms'
 import { ASSET_LIST } from '@/lib/data/assetList'
 import { getSocialProviders, recordProviderFetch, type AnyActiveProvider } from '@/lib/api/live/providers'
 import { blendByProvider } from '@/lib/server/socialBlend'
+import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 
 export const dynamic = 'force-dynamic'
 
@@ -317,7 +318,7 @@ async function fetchReddit(assetFilter: string, limit: number, extraSubs: string
 async function fetchRedditRss(feedUrl: string, assetFilter: string, limit: number): Promise<SocialSignal[]> {
   const res = await fetch(feedUrl, {
     headers: { 'User-Agent': 'FinanceNow/1.0', Accept: 'application/rss+xml, application/xml, text/xml' },
-    next: { revalidate: 300 },
+    next: { revalidate: 300 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS),
   })
   if (!res.ok) throw new Error(`Reddit RSS HTTP ${res.status} for ${feedUrl}`)
   const xml = await res.text()
@@ -395,7 +396,7 @@ async function fetchLunarCrush(apiKey: string, assetFilter: string, limit: numbe
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
       'Accept-Language': 'en-US,en;q=0.9',
     },
-    next: { revalidate: 300 },
+    next: { revalidate: 300 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS),
   })
   if (!res.ok) throw new Error(`LunarCrush HTTP ${res.status}${res.status === 403 ? ' (Cloudflare bot block)' : ''}`)
   const data = await res.json()
@@ -445,7 +446,7 @@ async function fetchSantiment(apiKey: string, assetFilter: string, _limit: numbe
       Authorization: `Apikey ${apiKey}`,
     },
     body: JSON.stringify({ query }),
-    next: { revalidate: 300 },
+    next: { revalidate: 300 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS),
   })
   if (!res.ok) throw new Error(`Santiment HTTP ${res.status}`)
   const data = await res.json()

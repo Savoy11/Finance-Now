@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { CoinListEntry, CoinListResponse } from '@/lib/types/coinList'
 import { fetchCoinGeckoPages } from '@/lib/server/coingeckoPages'
+import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 
 export type { CoinListEntry, CoinListResponse }
 
@@ -39,7 +40,7 @@ async function fetchBinanceSymbols(): Promise<string[]> {
   try {
     const res = await fetch('https://api.binance.us/api/v3/exchangeInfo', {
       headers: { Accept: 'application/json' },
-      next: { revalidate: 600 },
+      next: { revalidate: 600 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS),
     })
     if (!res.ok) return []
     const data = await res.json() as { symbols: Array<{ baseAsset: string }> }

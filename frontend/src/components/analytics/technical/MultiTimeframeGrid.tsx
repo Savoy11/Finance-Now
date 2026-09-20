@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { clsx } from 'clsx'
 import { computeSignalSummary, type OhlcvCandle, type SignalSummary } from '@/lib/utils/indicators'
-import { confluenceLabel } from '@/lib/utils/confluence'
+import { confluenceLabel, CONFLUENCE_MIN_LOADED } from '@/lib/utils/confluence'
 import { SignalBadge } from '@/components/charts/SignalBadge'
 
 // ─── Multi-Timeframe Confluence Grid ──────────────────────────────────────────
@@ -77,6 +77,28 @@ export function MultiTimeframeGrid({ assetId }: { assetId: string }) {
 
   const confluence = confluenceLabel(loaded.length, bullish, bearish)
 
+  // WHY THE CHIP CAN BE ABSENT, said out loud.
+  //
+  // confluenceLabel returns null below CONFLUENCE_MIN_LOADED, and the chip is
+  // rendered conditionally — so for an asset the OHLCV ladder cannot serve, the
+  // panel simply showed nothing. That is honest (far better than a verdict
+  // computed from no data) but it is not informative: the reader cannot tell a
+  // coin with no exchange pair from one whose request is still in flight.
+  //
+  // 36 of the 80 assets selectable on this page have no Binance pair —
+  // SUPPORTED_IDS is built from COINGECKO_IDS (80) while the route's
+  // BINANCE_SYMBOL map has 47 — so this is the common case, not an edge one.
+  //
+  // Same rule the futures-curve route follows: when there is no data, return the
+  // REASON rather than an empty space (`/live-data/futures-curve` answers
+  // ok:false with its reason and TermStructureCard prints it).
+  const stillLoading = rows.some(r => r.loading)
+  const absence = confluence || stillLoading
+    ? null
+    : loaded.length === 0
+      ? 'No candles for this asset on any timeframe — no exchange pair on the OHLCV ladder'
+      : `Only ${loaded.length} of ${TF_ROWS.length} timeframes returned candles — ${CONFLUENCE_MIN_LOADED} are needed for a confluence read`
+
   // Plain-English per-timeframe agreement, e.g. "1D bullish · 4H overbought · 1H weakening"
   function tfPhrase(summary: SignalSummary): { word: string; color: string } {
     const rsiSig = summary.signals.find(s => s.name.startsWith('RSI'))
@@ -105,6 +127,9 @@ export function MultiTimeframeGrid({ assetId }: { assetId: string }) {
           <span className={clsx('text-[11px] font-medium', confluence.color)}>
             {confluence.text}
           </span>
+        )}
+        {absence && (
+          <span className="text-[11px] font-medium text-text-muted">{absence}</span>
         )}
       </div>
 

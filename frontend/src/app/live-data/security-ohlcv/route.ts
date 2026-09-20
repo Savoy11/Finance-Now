@@ -3,6 +3,7 @@ import type { OhlcvCandle } from '@/lib/utils/indicators'
 import { getEquityOhlcvProviders, getProviderKey, recordProviderFetch } from '@/lib/api/live/providers'
 import { fetchCustomUrl, findArray, pickNumber, type ActiveCustom } from '@/lib/server/customFeeds'
 import { adjustCandles } from '@/lib/utils/ohlcvAdjust'
+import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 
 // OHLCV proxy for equities / ETFs / mutual funds — feeds the TA and backtest
 // pages. REGISTRY-DRIVEN ladder (getEquityOhlcvProviders): user-added custom
@@ -49,7 +50,7 @@ async function fetchFmpOhlcv(symbol: string, range: string): Promise<OhlcvCandle
   if (!FMP_KEY) throw new Error('FMP key not configured')
   const res = await fetch(
     `https://financialmodelingprep.com/stable/historical-price-eod/full?symbol=${encodeURIComponent(symbol)}&apikey=${FMP_KEY}`,
-    { next: { revalidate: RANGE_CONFIG[range].revalidate } }
+    { next: { revalidate: RANGE_CONFIG[range].revalidate }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) }
   )
   if (!res.ok) throw new Error(`FMP ${res.status}`)
   // `adjClose` (split+dividend adjusted) is used when present so a split isn't a
@@ -114,7 +115,7 @@ async function fetchTiingoOhlcv(symbol: string, range: string): Promise<OhlcvCan
   const start = new Date(Date.now() - RANGE_DAYS[range] * 1.5 * 86_400_000).toISOString().slice(0, 10)
   const res = await fetch(
     `https://api.tiingo.com/tiingo/daily/${encodeURIComponent(symbol.toLowerCase())}/prices?startDate=${start}&token=${key}`,
-    { headers: { Accept: 'application/json' }, next: { revalidate: 0 } }
+    { headers: { Accept: 'application/json' }, next: { revalidate: 0 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) }
   )
   if (!res.ok) throw new Error(`Tiingo ${res.status}`)
   // Tiingo returns both raw (open/high/low/close/volume) and split+dividend

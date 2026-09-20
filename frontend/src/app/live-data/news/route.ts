@@ -4,6 +4,7 @@ import { ASSET_LIST } from '@/lib/data/assetList'
 import { pinnedFetch } from '@/lib/server/pinnedFetch'
 import { parseFeedItems } from '@/lib/server/feedParse'
 import { decodeEntities } from '@/lib/utils/html'
+import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 
 export const dynamic = 'force-dynamic'
 
@@ -376,6 +377,9 @@ async function fetchBuiltinRss(providerId: string, limit: number): Promise<LiveN
       'User-Agent': 'Mozilla/5.0 (compatible; FinanceNow/1.0; +https://github.com/Savoy11/Finance-Now)',
       Accept: 'application/rss+xml, application/atom+xml, application/xml, text/xml, */*',
     },
+    // Deliberately tighter than EXTERNAL_FETCH_TIMEOUT_MS: a publisher feed that
+    // has not answered in 10 s is not going to, and this route fans out across
+    // several of them.
     signal: AbortSignal.timeout(10_000),
     next: { revalidate: 300 },
   })
@@ -429,7 +433,7 @@ async function fetchCustomProvider(
   // address rather than the name — M3. It throws instead of returning an
   // error string, which the caller already handles per provider.
   //
-  // Pinning costs the `next: { revalidate: 120 }` this call used to carry:
+  // Pinning costs the `next: { revalidate: 120 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS)` this call used to carry:
   // Next's fetch cache doesn't cover requests with a custom dispatcher. Custom
   // news providers now hit upstream per request.
   const res = await pinnedFetch(finalUrl, { headers })
@@ -574,7 +578,7 @@ async function fetchCryptoPanic(apiKey: string | undefined, assetFilter: string,
   if (!apiKey) return []
   const currencyParam = assetFilter !== 'all' ? `&currencies=${assetFilter.toUpperCase()}` : ''
   const url = `https://cryptopanic.com/api/v1/posts/?auth_token=${apiKey}&public=true&limit=${Math.min(limit, 20)}${currencyParam}`
-  const res = await fetch(url, { headers: { Accept: 'application/json' }, next: { revalidate: 120 } })
+  const res = await fetch(url, { headers: { Accept: 'application/json' }, next: { revalidate: 120 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) })
   if (!res.ok) throw new Error(`CryptoPanic HTTP ${res.status}`)
   const data = await res.json()
 
@@ -614,7 +618,7 @@ async function fetchCryptoPanic(apiKey: string | undefined, assetFilter: string,
 async function fetchMessari(apiKey: string, assetFilter: string, limit: number): Promise<LiveNewsArticle[]> {
   const assetPath = assetFilter !== 'all' ? `/assets/${assetFilter}` : ''
   const url = `https://data.messari.io/api/v1${assetPath}/news?limit=${Math.min(limit, 25)}`
-  const res = await fetch(url, { headers: { 'x-messari-api-key': apiKey, Accept: 'application/json' }, next: { revalidate: 120 } })
+  const res = await fetch(url, { headers: { 'x-messari-api-key': apiKey, Accept: 'application/json' }, next: { revalidate: 120 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) })
   if (!res.ok) throw new Error(`Messari HTTP ${res.status}`)
   const data = await res.json()
 
@@ -649,7 +653,7 @@ async function fetchNewsAPI(apiKey: string, assetFilter: string, limit: number, 
     ? (assetFilter !== 'all' ? `${assetFilter} ${search}` : search)
     : base
   const url = `https://newsapi.org/v2/everything?q=${encodeURIComponent(query)}&sortBy=publishedAt&pageSize=${Math.min(limit, 20)}&apiKey=${apiKey}`
-  const res = await fetch(url, { headers: { Accept: 'application/json' }, next: { revalidate: 120 } })
+  const res = await fetch(url, { headers: { Accept: 'application/json' }, next: { revalidate: 120 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) })
   if (!res.ok) throw new Error(`NewsAPI HTTP ${res.status}`)
   const data = await res.json()
 
@@ -709,7 +713,7 @@ async function fetchGNews(apiKey: string, assetFilter: string, limit: number, se
     : base
 
   const url = `https://gnews.io/api/v4/search?q=${encodeURIComponent(q)}&lang=en&max=${Math.min(limit, 10)}&sortby=publishedAt&apikey=${apiKey}`
-  const res = await fetch(url, { headers: { Accept: 'application/json' }, next: { revalidate: 120 } })
+  const res = await fetch(url, { headers: { Accept: 'application/json' }, next: { revalidate: 120 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) })
   if (!res.ok) throw new Error(`GNews HTTP ${res.status}`)
   const data = await res.json()
 

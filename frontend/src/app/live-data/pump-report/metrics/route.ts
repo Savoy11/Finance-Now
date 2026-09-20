@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { coingeckoBase } from '@/lib/api/live/coingecko'
+import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 
 export const dynamic = 'force-dynamic'
 
@@ -113,7 +114,7 @@ export async function GET() {
   try {
     const res = await fetch(
       `${cgBase}/coins/markets?vs_currency=usd&ids=${ids}&order=market_cap_desc&per_page=100&page=1`,
-      { headers, next: { revalidate: 120 } }
+      { headers, next: { revalidate: 120 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) }
     )
     if (res.ok) {
       const arr = await res.json() as Array<{ id: string } & typeof cgData[string]>

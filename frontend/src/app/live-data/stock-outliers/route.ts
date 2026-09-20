@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getProviderKey } from '@/lib/api/live/providers'
 import { SECTOR_INFO, type SectorId } from '@/lib/data/equityCatalog'
 import type { StockUniverseResponse } from '@/app/live-data/stock-universe/route'
+import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 
 // Cross-sectional outlier detection over the stock universe.
 //   GET /live-data/stock-outliers?min_mcap=2
@@ -75,7 +76,7 @@ export async function GET(req: NextRequest) {
 
   let uni: StockUniverseResponse
   try {
-    const res = await fetch(`${origin}/live-data/stock-universe`, { next: { revalidate: 3600 } })
+    const res = await fetch(`${origin}/live-data/stock-universe`, { next: { revalidate: 3600 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) })
     uni = await res.json() as StockUniverseResponse
   } catch {
     return NextResponse.json(empty({ ok: false, note: 'universe unavailable' }), { status: 503 })

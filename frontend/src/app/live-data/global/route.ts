@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 
 // Global crypto market aggregates — CoinGecko /global (keyless; the host
 // already carries a terms verdict in lib/server/sourceTerms.ts, this is a new
@@ -22,7 +23,7 @@ export async function GET(): Promise<NextResponse> {
   try {
     const res = await fetch('https://api.coingecko.com/api/v3/global', {
       headers: { Accept: 'application/json' },
-      next: { revalidate: 600 },
+      next: { revalidate: 600 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS),
     })
     if (!res.ok) throw new Error(`CoinGecko ${res.status}`)
     const j = await res.json() as {

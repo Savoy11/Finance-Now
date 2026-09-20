@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { EQUITY_BY_SYMBOL } from '@/lib/data/equityCatalog'
 import { getProviderKey } from '@/lib/api/live/providers'
+import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 
 // Earnings + economic calendar for the equities module. Requires FMP_API_KEY
 // (free tier covers both endpoints); returns ok:false without a key so the UI
@@ -67,8 +68,8 @@ export async function GET(req: NextRequest) {
   // a paid endpoint (402 on free) — Promise.allSettled lets it fail silently.
   const stable = 'https://financialmodelingprep.com/stable'
   const [earningsRes, econRes] = await Promise.allSettled([
-    fetch(`${stable}/earnings-calendar?from=${from}&to=${to}&apikey=${FMP_KEY}`, { next: { revalidate: 3600 } }),
-    fetch(`${stable}/economic-calendar?from=${from}&to=${to}&apikey=${FMP_KEY}`, { next: { revalidate: 3600 } }),
+    fetch(`${stable}/earnings-calendar?from=${from}&to=${to}&apikey=${FMP_KEY}`, { next: { revalidate: 3600 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) }),
+    fetch(`${stable}/economic-calendar?from=${from}&to=${to}&apikey=${FMP_KEY}`, { next: { revalidate: 3600 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) }),
   ])
 
   const earnings: EarningsEvent[] = []
