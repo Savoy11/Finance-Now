@@ -134,10 +134,29 @@ export function discoverFrom(sources: Source[]): { clocks: Clock[]; problems: st
 
       const [, anchorName, anchorDate] = anchors[0]
 
-      // Look for an acknowledgement in the comment block immediately above the anchor.
+      // Look for an acknowledgement in the CONTIGUOUS comment block immediately above
+      // the anchor.
+      //
+      // Contiguity, not character distance, is what ties an ack to its anchor. The first
+      // cut of this used a fixed lookback window and the first real acknowledgement
+      // written against it was too long to fit — so the rule silently punished the
+      // thoroughness it exists to encourage, and reported the table as undecided. An ack
+      // may be as long as the decision needs; what it may not be is inherited from an
+      // unrelated block further up the file, and a break in the comment block is the
+      // honest boundary for that.
       const anchorIdx = text.indexOf(anchors[0][0])
-      const preceding = text.slice(Math.max(0, anchorIdx - 1200), anchorIdx)
-      const ackMatch = [...preceding.matchAll(/STALENESS-ACK:\s*(\d{4}-\d{2}-\d{2})\s*[—-]\s*([^\n]*)/g)].pop()
+      const before = text.slice(0, anchorIdx).split('\n')
+      if (before.length > 0 && before[before.length - 1] === '') before.pop()
+
+      const block: string[] = []
+      for (let i = before.length - 1; i >= 0; i--) {
+        if (/^\s*(\/\/|\*|\/\*)/.test(before[i])) block.unshift(before[i])
+        else break // a blank line or any code ends the block, and so ends the association
+      }
+
+      const ackMatch = [
+        ...block.join('\n').matchAll(/STALENESS-ACK:\s*(\d{4}-\d{2}-\d{2})\s*[—-]\s*([^\n]*)/g),
+      ].pop()
 
       clocks.push({
         file: rel,

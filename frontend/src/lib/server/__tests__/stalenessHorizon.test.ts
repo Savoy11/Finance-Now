@@ -110,16 +110,30 @@ describe('discovery', () => {
     })
   })
 
-  // ── MUTATION: an ack far above the anchor, past the lookback, must NOT be picked up,
-  //    or an unrelated comment elsewhere in a long file could silence a real clock.
-  it('does not attach an ack that is nowhere near the anchor', () => {
+  // ── MUTATION: an ack belonging to a DIFFERENT declaration must not be inherited.
+  //    The boundary is a break in the comment block, not a character distance — the
+  //    first version of this guard used distance and rejected a long, well-written ack
+  //    while still being fooled by a nearby unrelated one.
+  it('does not inherit an ack from a block that belongs to something else', () => {
     const { clocks } = discoverFrom([
       src(
         'a.ts',
-        `// STALENESS-ACK: 2026-09-20 — about something else entirely.\n${'// filler\n'.repeat(200)}export const THING_LAST_VERIFIED = '2026-06-28'\nexport const THING_STALE_AFTER_DAYS = 90\n`,
+        `// STALENESS-ACK: 2026-09-20 — this one is about SOMETHING_ELSE.\nexport const SOMETHING_ELSE = 1\n\nexport const THING_LAST_VERIFIED = '2026-06-28'\nexport const THING_STALE_AFTER_DAYS = 90\n`,
       ),
     ])
     expect(clocks[0].ack).toBeNull()
+  })
+
+  // ── The case the distance rule got wrong: a genuinely long acknowledgement.
+  it('accepts an ack however long, so long as its comment block reaches the anchor', () => {
+    const long = Array.from({ length: 40 }, (_, i) => `// reasoning line ${i}`).join('\n')
+    const { clocks } = discoverFrom([
+      src(
+        'a.ts',
+        `// STALENESS-ACK: 2026-09-20 — chosen, not missed.\n//\n${long}\nexport const THING_LAST_VERIFIED = '2026-06-28'\nexport const THING_STALE_AFTER_DAYS = 90\n`,
+      ),
+    ])
+    expect(clocks[0].ack).toEqual({ date: '2026-09-20', note: 'chosen, not missed.' })
   })
 })
 
