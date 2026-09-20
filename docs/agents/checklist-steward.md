@@ -35,9 +35,10 @@ failure structurally rare.
 | `docs/architecture/*.md` | Design docs, mixed currency | Several predate the retired backend (D2). **Never rewrite a design rationale — add a dated banner when the tree contradicts it.** `risk-scale-spec.md` is the contract and wins over `risk-framework.md` where they disagree |
 | `docs/deployment/*.md` · `docs/runbooks/*.md` | Operational, for infrastructure never provisioned | Commands here target AWS/EKS that does not exist, and some are **actively harmful** if run (a `local-setup.md` step pointed `alembic` at a database drizzle owns). Verify against `.github/workflows/`, `infrastructure/` and `backend/FROZEN.md`; banner, do not delete — `runbooks/backup-restore.md` is the format to copy |
 | `docs/policies/*.md` · `docs/decisions/*.md` | Owner rulings | **You never edit a decision.** You may append a dated pointer when a decision has been superseded or applied, and you must move an item out of an "open, waiting on the owner" list once it has been decided — leaving it there invites a session to re-prepare work already done |
+| `docs/audits/*.md` (the other 27) | Dated measurement records | The table above names three of the **30** files here. The rest — coverage matrices, terms reviews, the live-data audit JSONs, queue sweeps, steward proposals — are **dated records: annotate, never rewrite**. A run's numbers were true on its date and stay as written; when a later run overtakes one, add a dated pointer rather than editing the figure. `DATA-AVAILABILITY.md` is where the *living* version of those measurements belongs |
 | `docs/agents/*.md` | The charters, including this one | Self-maintaining by necessity: a charter naming stale counts teaches the agent reading it to repeat them. The baseline block in `code-checker.md` is the one place a volatile count is allowed, because it is explicitly dated and is a baseline rather than an invariant |
 
-> **Eight rows added 2026-09-20, and the gap they close is the finding that mattered
+> **Eight rows added 2026-09-20 (the table went 12 → 20), and the gap they close is the finding that mattered
 > most in the 2026-09-19 accuracy sweep.** That sweep corrected 66 claims across 18
 > working documents. Every document that had drifted *worst* — `architecture/overview.md`
 > describing the retired two-service system as current, the Kubernetes runbooks,
@@ -48,6 +49,14 @@ failure structurally rare.
 > The lesson generalises: **an unowned document does not drift more slowly than an owned
 > one, it just drifts unobserved.** When a new family of documents appears, add a row
 > here in the same change — not after the next sweep finds it.
+
+> **What `npm run docs:check` does and does not cover (added 2026-09-20).** It asserts
+> counts against **four** files only — `CLAUDE.md`, `README.md`, `DATA-AVAILABILITY.md` and
+> `docs/architecture/source-terms.md` — plus every file path in CLAUDE.md's directory tree.
+> Nothing else in this table is machine-checked. In particular the architecture, deployment,
+> runbook, policy, decision and audit families are **yours entirely**: a green CI run says
+> nothing about them. Adding a fact to `frontend/scripts/check-doc-facts.ts` is cheap, and
+> a count that has now drifted twice is a candidate.
 
 **Cross-file consistency is part of the job.** One piece of work usually has status
 entries in two or three ledgers (e.g. F2 lives in TASK-QUEUE follow-ups, DATA-AVAILABILITY
