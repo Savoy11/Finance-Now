@@ -259,14 +259,21 @@ each verified to fail against the pre-fix code.
       build-time only, and clearing them needs a breaking downgrade.
       *(Corrected 2026-09-19: this item said the step was `|| true` and non-gating,
       and that `safety check` runs. Both were true when written and neither is now.)*
-      **Two known holes, both live:**
-      1. **Scope is `frontend` only** — the step runs `cd frontend`, so
-         `mcp-server/package-lock.json` is covered by nothing but Dependabot alerts.
-         That is how six HIGH advisories accumulated there (fixed 2026-09-19, #207).
+      **One known hole, and one closed 2026-09-20:**
+      1. ~~**Scope is `frontend` only.**~~ **CLOSED 2026-09-20.** The step now also runs
+         `npm audit --audit-level=high --package-lock-only` in `mcp-server`. It was
+         `frontend`-only until then, which is how **six HIGH advisories** accumulated
+         there unseen — `ip-address` SSRF and five `fast-uri` host-confusion/SSRF CVEs,
+         found by a Dependabot alert and fixed in #207, not by anything in CI.
+         `--package-lock-only` resolves the tree from the lockfile, so this costs
+         seconds rather than an `npm ci`.
       2. `pip audit` / `safety check` no longer runs anywhere — it went with the
          backend jobs under D2 (#192). `backend/poetry.lock` is still in the tree, so
          Dependabot keeps raising alerts against it while nothing in CI scans it.
-         Three remain open by choice (1 critical, 2 high), all on retired code.
+         **This is deliberate and stays open:** the four alerts there (1 critical,
+         2 high, 1 moderate) are on retired, frozen code that no CI builds, nothing
+         calls, and that was never deployed — `cd-staging` failed 90 runs out of 90.
+         Scanning it would gate the build on code that cannot run.
 - [x] Configure Dependabot for weekly dependency updates — `.github/dependabot.yml`
       covers npm (frontend + mcp-server), GitHub Actions, and the frontend Docker
       base image. *(Corrected 2026-09-19: the `pip` ecosystem watching `/backend` was

@@ -246,10 +246,23 @@ jobs:
       # come from esbuild via drizzle-kit, a build-time-only tool, and clearing
       # them needs a breaking drizzle-kit downgrade. Gating on moderate would
       # make the first action be to disable the gate again.
+      # ⚠ SCOPE WAS `frontend` ONLY UNTIL 2026-09-20, AND THAT GAP WAS EXPLOITED BY
+      # NOTHING BUT TIME. mcp-server accumulated SIX HIGH advisories — ip-address
+      # SSRF (Address4 decodes leading-zero octets as decimal while resolvers read
+      # them as octal) and five fast-uri host-confusion/SSRF CVEs — and this step
+      # never looked at them, because it ran `cd frontend` and stopped there. They
+      # were caught by a Dependabot alert and fixed in #207; nothing in CI would
+      # have found them. mcp-server is live code: it is the MCP server the owner
+      # runs locally against their own data.
+      #
+      # `--package-lock-only` resolves the tree from mcp-server/package-lock.json
+      # without an `npm ci`, so this adds a few seconds rather than an install.
       - name: Node.js dependency audit
         run: |
           cd frontend
           npm audit --audit-level=high
+          cd ../mcp-server
+          npm audit --audit-level=high --package-lock-only
 
   # ─── Infrastructure: Terraform Validate ───────────────────────────────────
   terraform-validate:
