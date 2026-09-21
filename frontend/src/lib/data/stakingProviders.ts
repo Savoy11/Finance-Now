@@ -17,6 +17,30 @@
 // protocols. None of those re-verified the other ~47 providers' risk profiles,
 // and claiming they did is exactly the fabricated-freshness problem this
 // machinery exists to prevent. Bump it only after a full pass over the catalog.
+//
+// STALENESS-ACK: 2026-09-20 — owner: let the notice fire on 2026-09-27. Chosen, not missed.
+//
+// What it covers, measured against the live API on 2026-09-20 rather than estimated:
+// 172 published rows over 51 providers, of which 132 (77%) publish a CURATED apr from
+// `staticApr` and all 172 carry the six curated risk dimensions, lock-ups and minimums.
+// So this one date governs nearly everything on /staking — which is the argument FOR
+// letting it fire, not against. "Low confidence" will be true: nobody has re-verified
+// the catalog as a whole in 90 days, and the page should say so.
+//
+// What firing does, and does not: the ProvenanceNotice heading changes, its chip goes
+// rose, and referenceData.confidence becomes 'low' on /api/v1/staking/opportunities.
+// NO rate is withheld and nothing degrades. Contrast stakingRates.ts, whose 14-day
+// window deletes the rate outright — that one is a functional gate, this one is
+// disclosure. Do not "fix" this by copying that behaviour here.
+//
+// Why not just re-verify: the six dimensions are editorial judgments published as
+// reference INPUTS (D14), not arithmetic — 330 of them across 55 providers. That is the
+// owner's call to make, and a rushed pass to beat a date is how a wrong risk figure gets
+// published with a fresh timestamp on it.
+//
+// ⚠ This ack covers the 2026-06-28 compile and nothing else. Re-verifying part of the
+// catalog still must not move the date, and `npm run staleness:check` voids this line
+// automatically if the anchor above ever moves past it.
 export const STAKING_DATA_LAST_VERIFIED = '2026-06-28'
 
 // Days after which the curated provider data is considered stale.
