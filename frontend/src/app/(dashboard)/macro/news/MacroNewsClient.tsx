@@ -159,7 +159,7 @@ export function MacroNewsClient() {
       )}
 
       <p className="text-[11px] text-text-muted text-center leading-relaxed">
-        Sources: Investing.com (commodities / forex / bonds), OilPrice, FXStreet, MarketWatch, CNBC — all keyless
+        Sources: Investing.com (commodities / forex / bonds), OilPrice, FXStreet, CNBC — all keyless
         RSS. Sentiment is keyword-based and indicative, not a trading signal.
       </p>
     </div>

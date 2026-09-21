@@ -348,17 +348,46 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     // Not resolvable from CI: every financialmodelingprep.com host is blocked
     // by the network egress proxy here, and "couldn't read it" is not
     // permission. ── ANSWERED 2026-09-13 from a residential egress, where the
-    // page returns HTTP 200 in under a second. The 2026-09-09 worksheet's
-    // "terms found at: none found at the usual locations" was an artifact of
-    // running behind AS62651 — the same VPN that made mempool.space look dead.
+    // page returns HTTP 200 in under a second.
+    //
+    // ⚠ CORRECTED 2026-09-20 — THE CAUSE WAS THE USER-AGENT, NOT THE EGRESS.
+    // This comment used to say the 2026-09-09 worksheet's "terms found at: none
+    // found at the usual locations" was an artifact of running behind AS62651,
+    // the VPN that made mempool.space look dead. Measured from a clean
+    // residential connection (Spectrum, proxy:false, hosting:false), same host,
+    // same second, varying ONLY the request header:
+    //
+    //     no User-Agent                      403   919 bytes
+    //     PROBE_USER_AGENT (FinanceNow/1.0)  403   919 bytes
+    //     curl/8.0                           403   919 bytes
+    //     a browser UA                       200   83,325 bytes
+    //
+    // So site.financialmodelingprep.com filters by user-agent, and the egress was
+    // never the variable. This is the same misattribution CLAUDE.md already
+    // records three instances of — a single observation read as a property of the
+    // world — and it was made here twice.
+    //
+    // PRACTICAL CONSEQUENCE, which is why this is worth the space: `npm run
+    // terms:report` will report FMP unreadable from EVERY network, forever,
+    // because the probe sends PROBE_USER_AGENT. The cure is to open the page in a
+    // browser, not to re-run from somewhere else. Do not spoof a browser UA for
+    // DATA fetches — the app's honest agent is what robots.txt checking is built
+    // on — this is only about a human reading a public legal page.
     // (1) Yes — 2.2.1 restricts to personal/non-business/non-commercial.
     // (2) No — it does not vary by plan; 2.2.2 says "irrespective of whether
     //     such usage is complimentary or paid".
     // (3) The mechanism exists, but it is an Order Form / "specific agreement"
     //     (2.1, 2.2.2) — not something a paid key confers.
-    reviewedAt: '2026-08-06',
-    review: 'seeded',
-    confidence: 'medium',
+    //
+    // ✅ RATIFIED 2026-09-20 (owner). `review` → 'verified', dated to the reading
+    // itself (2026-09-13), not to the ratification — the field records when the
+    // document was read. Verdict stays 'conditional': §2.2.1 affirmatively
+    // contemplates personal use, so this is not a flat prohibition, and the
+    // conditions above carry the multi-user bar. Ratifying records that the
+    // document was genuinely read. It clears nothing.
+    reviewedAt: '2026-09-13',
+    review: 'verified',
+    confidence: 'high',
   },
   {
     domain: 'finnhub.io',
@@ -366,10 +395,70 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     verdict: 'conditional',
     termsUrl: 'https://finnhub.io/terms-of-service',
     finding:
-      'Commercial market-data API with a registered free tier for personal and non-commercial use. Access is by API key; the free tier is explicitly not for commercial redistribution.',
-    conditions: ['Valid API key required', 'Free tier is personal / non-commercial only'],
-    reviewedAt: '2026-08-06',
-    review: 'seeded',
+      'Commercial market-data API. READ 2026-09-20 (the document carries NO date, and reserves the ' +
+      'right to change without notice). The operative clause is under “Redistribution Rights and ' +
+      'Personal Use”: “You hereby agree to not redistribute or share access to data or derived ' +
+      'results from the data obtained from Finnhub with anyone or any 3rd party without written ' +
+      'approval from Finnhub.” It reaches further than “redistribute” suggests — “derived results” ' +
+      'and “anyone” mean a chart computed from the data, shown to one other person, is covered. The ' +
+      'same section sets the default scope of every plan: “All plan listed on Finnhub website is ' +
+      'strictly for personal use unless explicitly stated otherwise”, and “Personal plan can’t be ' +
+      'used by any business even internally without a written approval”. Three separate ' +
+      'disqualifiers end personal-plan eligibility, any one alone: being a registered securities ' +
+      'professional, using the data for a business or registering under a business name, or ' +
+      'deducting the subscription as a business expense.',
+    conditions: [
+      'Valid API key required — no keyless path',
+      'Stay under 30 API calls/second in aggregate; stacking plans does NOT raise the limit',
+      'Personal use only: the account must not be registered to a business, used by a business even internally, or expensed as a business cost — any one alone ends eligibility',
+      'Redistribution — including DERIVED results — to anyone requires prior written approval from Finnhub. A multi-user deployment is barred by default and no tier lifts it',
+      'On subscription end or lapse, delete all stored Finnhub data: “All data must be deleted should your subscription to that data ends.” Covers caches, DB rows and committed test fixtures',
+      'No Finnhub trademark or logo as branding — the Terms grant no right to any mark',
+    ],
+    // ✅ 2026-09-20: READ, from a structure-preserving capture on the owner's machine.
+    // All 13 quoted clauses were grep-verified verbatim against the source by an
+    // adversarial check, including the document's own ungrammatical "You are
+    // securities professional". `review` is LEFT at 'seeded' deliberately: the
+    // reading is done, flipping the flag is the owner's act — same posture as FMP.
+    //
+    // ⚠ THIS IS THE SAME SHAPE AS FMP §2.2.2, INDEPENDENTLY ARRIVED AT. Both say a
+    // multi-user deployment needs WRITTEN APPROVAL, and that buying a higher tier does
+    // not confer it. Two of the eight sources on the personal-vs-commercial question
+    // now read the same way, which makes it a pattern rather than one vendor's quirk.
+    //
+    // ⚠ NO SAFE HARBOUR, and the conditions above must not be read as one. Termination
+    // is at Finnhub's "sole discretion" without prior notice, so Finnhub judges
+    // compliance unilaterally. The conditions reduce exposure; they do not license it.
+    //
+    // Three things this document does NOT settle, all of which argue for keeping the
+    // entry conservative:
+    //   1. Whether a tier exists that "explicitly stated otherwise" and grants
+    //      commercial rights. The escape hatch is written into the clause, but no plan
+    //      in the ToS names such rights. Its absence here is NOT evidence none exists.
+    //   2. The boundary of "derived results" — the term is never defined.
+    //   3. Two documents incorporated by reference are absent: "Page 23-24 of UTP plan
+    //      data policies" (which carries the operative Non-Professional test) and the
+    //      Subscriber Agreement form. The real test lives there, not here.
+    //
+    // ⚠ Its own broad reading cuts inward too: "share access to data ... with anyone or
+    // any 3rd party" arguably reaches the hosting provider, CDN, and log/error-reporting
+    // services of any deployment. Unresolved, and worth raising in any written request.
+    //
+    // ⚠ Do NOT reflexively flip verdict to 'prohibited'. As with FMP, that is enforced
+    // by assertSourceNotProhibited inside pinnedFetch — a socket-level block. Finnhub is
+    // a rung of the equity quote ladder. 'conditional' with the conditions above is the
+    // honest interim while written approval is sought.
+    //
+    // Full reading and the adversarial verification: docs/audits/terms-review-finnhub-2026-09-20.md
+    //
+    // ✅ RATIFIED 2026-09-20 (owner). Verdict stays 'conditional'.
+    // ⚠ confidence is 'medium', not 'high', and the gap is deliberate: the document
+    // carries NO DATE and reserves the right to change without notice, and two
+    // documents it incorporates by reference — UTP plan data policies pp.23-24 and the
+    // Subscriber Agreement — are unread. The reading is solid; what it covers is not
+    // the whole instrument.
+    reviewedAt: '2026-09-20',
+    review: 'verified',
     confidence: 'medium',
   },
   {
@@ -378,10 +467,63 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     verdict: 'conditional',
     termsUrl: 'https://twelvedata.com/terms',
     finding:
-      'Commercial market-data API. Keyed access under the plan\'s licence; the free tier carries a hard credit budget (8 credits/min) and is for non-commercial use.',
-    conditions: ['Valid API key required', 'Respect the plan credit budget'],
-    reviewedAt: '2026-08-06',
-    review: 'seeded',
+      'Commercial market-data API. READ 2026-09-20 (Terms of Use, “Last updated: January 1, 2026”, ' +
+      'Twelve Data Pte. Ltd., Singapore). ⚠ The agreement binds an ANONYMOUS FETCHER, not just an ' +
+      'account holder: assent is by use — “BY PURCHASING, ACCESSING, DOWNLOADING, OR USING THE ' +
+      'TWELVE DATA PLATFORM … YOU … AGREE TO BE BOUND”, and “Platform” is defined to include “the ' +
+      'APIs (REST and WebSocket)”. The default licence is INTERNAL USE ONLY, defined as “use solely ' +
+      'for Customer’s internal business purposes and not for redistribution or external commercial ' +
+      'purposes”. §2.2 is an ENUMERATED grant (“Customer is granted a limited, non-exclusive license ' +
+      'to:” followed by a closed list), so anything not listed is ungranted — absence of a ' +
+      'prohibition does not create a right. “Redistribution” is defined broadly as “any publication, ' +
+      'distribution, or provision of Data to third parties”, with no carve-out for non-commercial, ' +
+      'small-scale or free provision, and §2.2(e) permits it — expressly including EXTERNAL DISPLAY ' +
+      '— “only if and as expressly authorized by a Redistribution Rights Add-On or separate written ' +
+      'agreement”.',
+    conditions: [
+      'Valid API key required',
+      'Respect the plan credit budget',
+      '§2.1/§2.2(a): the licence covers Internal Use only. Every cache, table and log holding Data must exist for the maintainer’s own use',
+      '§2.2(e): ANY external display or redistribution needs a Redistribution Rights Add-On or a separate written agreement — and carries attribution requirements set outside this document',
+      '§2.3(e): never remove, alter or obscure proprietary notices or labels — binds at EVERY tier, including today',
+      '§2.3(l) + §5.6(b): Free Tier and Free Trial data may not be used for commercial purposes',
+      '§2.3(f)/(k): no derivative financial products, and no combining Data with other sources to build a competing product, without written permission',
+      '§2.3(g): caching is capped by timeframes set in the Documentation (twelvedata.com/docs) — NOT in the terms, and currently unverified against this app’s TTLs',
+      '§12.5 + §16.2: on termination, delete all Data within 30 days, with certification if requested — store it so it can be enumerated and destroyed',
+      '§8.3: Twelve Data may modify, suspend or remove any Data or endpoint at any time without notice or liability — nothing here may be load-bearing (D21)',
+    ],
+    // ✅ 2026-09-20: READ, from a structure-preserving capture on the owner's machine.
+    // All quotes verified verbatim AND contiguous by an adversarial pass. `review` stays
+    // 'seeded' — the flip is the owner's act, same posture as FMP and Finnhub.
+    //
+    // ⚠ THE FIRST READING OF THIS DOCUMENT WAS THROWN AWAY, and the reason is a warning
+    // for anyone re-reading it. The HTML had been flattened to a single line, so headings,
+    // lead-ins and numbered sub-clauses ran together; quotes matched the capture
+    // byte-for-byte while misrepresenting the document's structure. In a numbered
+    // agreement the structure IS the meaning. Capture with block structure preserved.
+    //
+    // ⚠ TWO THINGS THE DOCUMENT DOES NOT SETTLE, both recorded rather than argued away:
+    //   1. "Internal Use" means "internal BUSINESS purposes". Whether an unpaid personal
+    //      project is an internal BUSINESS purpose is genuinely unclear, and the app may
+    //      sit outside the only permitted-use category even TODAY, solo. Nobody has
+    //      resolved this; do not assume the solo case is safe merely because it is small.
+    //   2. §2.3(g) defers cache limits to the Documentation, which is a separate document
+    //      and unread. This app's TTLs are unverified against the binding limit.
+    //
+    // ⚠ UNCAPPED PERSONAL EXPOSURE. §9.1(c) makes "Unauthorized use or redistribution of
+    // Data" an express indemnity trigger and §10.3(a) lifts the §10 liability limits from
+    // Customer indemnity obligations. Getting the redistribution question wrong is not a
+    // capped commercial risk.
+    //
+    // Full reading: docs/audits/terms-review-twelvedata-binanceus-2026-09-20.md
+    //
+    // ✅ RATIFIED 2026-09-20 (owner). Verdict stays 'conditional'.
+    // ⚠ confidence stays 'medium' because the reading did NOT settle the question it
+    // most needed to: "Internal Use" is defined as internal BUSINESS purposes, and
+    // whether an unpaid personal project qualifies is unresolved. 'verified' here means
+    // the document was read, not that this app is inside the licence.
+    reviewedAt: '2026-09-20',
+    review: 'verified',
     confidence: 'medium',
   },
   {
@@ -473,10 +615,66 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     verdict: 'conditional',
     // Was /terms until 2026-09-13 — that 404s. Real URL found via the site footer.
     termsUrl: 'https://www.binance.us/terms-of-use',
-    finding: 'Same documented keyless public market-data endpoints as the global venue, under US terms and weights.',
-    conditions: ['Respect the published per-endpoint request weights', 'Report the serving venue — it is a different market than binance.com'],
-    reviewedAt: '2026-08-06',
-    review: 'seeded',
+    finding:
+      'Same documented keyless public market-data endpoints as the global venue, under US terms and ' +
+      'weights. READ 2026-09-20 (Terms of Use, last updated 2026-06-05, BAM Trading Services Inc.). ' +
+      'The only permission in the document is the Intellectual Property licence, granted “for your ' +
+      'non-commercial personal or internal business uses”, and it is a grant that is then NARROWED: ' +
+      'it “does not permit (1) the resale of the Materials; (2) the distribution, public ' +
+      'performance, or public display of any Materials; (3) the modification or derivative uses of ' +
+      'the Materials; and (4) the use of the Materials other than for their intended purposes.” ' +
+      '“Materials” expressly covers “information, data, text, code … contained on our Sites or such ' +
+      'other mode of access (including through the BAM APIs)”, so market data is Materials. The ' +
+      'Covenants lead-in — “You covenant and agree that you shall not:” — carries NO account ' +
+      'predicate, so its bars bind a keyless fetcher today: (2) no “robot, spider, other automatic ' +
+      'device, or manual process to monitor or copy our Website without our prior written ' +
+      'permission”, and (6) no “action that imposes an unreasonable or disproportionately large load ' +
+      'on our infrastructure”.',
+    conditions: [
+      'Respect the published per-endpoint request weights',
+      'Report the serving venue — it is a different market than binance.com',
+      'Solo, non-public use only. The IP licence does not permit distribution or public display of Materials, and is “personal to you” and non-sublicensable',
+      'Covenants (6): stay well under any load that could read as “unreasonable or disproportionately large” — this binds with no account',
+      'Do not treat the Prohibited Use list as exhaustive — its own lead-in says the types listed “are representative, but not exhaustive”',
+      'Market data is served “as is … for informational purposes only, without representation or warranty” and may come from third-party sources — label it accordingly in the UI',
+      'No Binance.US name or logo without written permission; the Trademarks clause grants no licence to “use, copy, or imitate” a mark',
+      'Introducing an account or API key changes the analysis — the account-gated obligations then attach and this reading must be redone',
+    ],
+    // ✅ 2026-09-20: READ, structure-preserving capture, owner's machine. Quotes verified
+    // verbatim AND contiguous adversarially. `review` stays 'seeded' — owner's act.
+    //
+    // ⚠ THE VERDICT IS GENUINELY CONTESTED, AND THAT IS RECORDED RATHER THAN RESOLVED.
+    // The adversarial pass challenged 'conditional' on limb (3): the licence does not
+    // permit "the modification or derivative uses of the Materials", and Finance Now is
+    // an ANALYTICS app whose whole purpose is computing indicators from price data. On a
+    // strict reading, the core use may sit outside the grant even solo. It is left at
+    // 'conditional' because 'prohibited' is a pinnedFetch SOCKET BLOCK and Binance.US is
+    // the steady-state crypto price source for a US egress (binance.com 451s on US IPs,
+    // see CLAUDE.md) — not because the challenge was answered. It was not.
+    //
+    // ⚠ THIS IS THE ONLY ONE OF THE FOUR WITH NO STATED ROUTE THROUGH. FMP names an Order
+    // Form, Finnhub names written approval, Twelve Data names a Redistribution Rights
+    // Add-On. This document names no mechanism for multi-user permission at all, so
+    // "negotiate terms before launch" has no address to write to here. Worth knowing
+    // before the app depends on it.
+    //
+    // ⚠ THREE INCORPORATED DOCUMENTS ARE UNREAD: Disclosures, the Privacy Policy "and
+    // other policies mentioned therein", and Trading Rules. Their absence bounds this
+    // reading; it is not clearance.
+    //
+    // Asymmetric risk: the user indemnity is UNCAPPED and triggers on "breach or alleged
+    // breach", while BAM's own liability is capped at $10,000.
+    //
+    // Full reading: docs/audits/terms-review-twelvedata-binanceus-2026-09-20.md
+    //
+    // ✅ RATIFIED 2026-09-20 (owner) — with the contest above standing. This is the one
+    // entry where 'verified' and the verdict pull in different directions, so read them
+    // as answering different questions: the `review` field asserts the document was
+    // READ, and confidence 'medium' carries the doubt about what it means. The owner
+    // ratified knowing limb (3) is unanswered and that three incorporated documents
+    // (Disclosures, Privacy Policy, Trading Rules) are unread.
+    reviewedAt: '2026-09-20',
+    review: 'verified',
     confidence: 'medium',
   },
   {
@@ -1025,13 +1223,52 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     name: 'CoinDesk',
     verdict: 'conditional',
     termsUrl: 'https://www.coindesk.com/terms',
-    finding: 'Publishes a public RSS feed. Syndication of headline/link/summary with attribution and a link back is the intended use; full-text reproduction is not.',
-    conditions: ['Headline, link and feed summary only', 'Attribute and link back to the origin article'],
-    // ⚠ NOT READ 2026-09-14 — /terms and the homepage both 429, twice, 20s apart, from a clean residential egress, while the RSS feed returned 200 from the same IP in the same minute. The audit says: "Couldn't read it" is not permission. Needs an email, not another fetch.
-    // Ratified 'verified' by mistake on 2026-09-18 and reverted 2026-09-19; the
-    // original 2026-08-06 seeded date is restored because nothing newer was read.
-    reviewedAt: '2026-08-06',
-    review: 'seeded',
+    finding:
+      'READ 2026-09-20 (Terms Of Use, Effective Date 2025-11-14). ⚠ THE DOCUMENT NEVER MENTIONS A ' +
+      'FEED: “rss”, “syndicat” and “feed” return ZERO hits across 300 lines, so there is no ' +
+      'syndication policy in it and none is linked from it. What it does say, under Copyright, ' +
+      'Trademark and Ownership: “you are only authorized to view, play, print and download ' +
+      'documents, audio and video found on our Services for personal, informational, and ' +
+      'non-commercial purposes only. You may not use, copy, reproduce, republish, upload, post, ' +
+      'transmit, distribute, or modify the Content or the Company’s trademarks in any way … without ' +
+      'Company’s prior written consent.” Attribution is SILENT, and the silence cuts the wrong way: ' +
+      'the Advertising Rights clause reserves “attribution, links, promotional and distribution ' +
+      'rights” to CoinDesk as rights it sells.',
+    conditions: [
+      '⚠ NO DISPLAY PERMISSION IS GRANTED. The Terms permit viewing/printing/downloading for personal, non-commercial purposes and bar republication without prior written consent — they do not grant headline-and-link, and they do not grant headline-plus-summary',
+      'Do not remove copyright, trademark or other proprietary notices from the material',
+      'Do not use the CoinDesk mark as a hyperlink — the Terms bar it without prior written approval',
+      'Personal, non-commercial use only',
+    ],
+    // ✅ READ 2026-09-20 from a structure-preserving capture; every quote verified verbatim
+    // AND contiguous by an adversarial pass, which sustained the reading.
+    //
+    // ⚠ THE PRIOR FINDING WAS INVENTED. It asserted that “syndication of
+    // headline/link/summary with attribution and a link back is the intended use”, with
+    // matching conditions. The document grants none of that. It was written from
+    // documented posture and read for six weeks as though someone had checked it — the
+    // exact failure the seeded/verified split exists to expose. (This entry was also
+    // ratified 'verified' by mistake on 2026-09-18 and reverted on 2026-09-19.)
+    //
+    // ⚠ WHY THIS IS STILL `conditional` AND NOT `prohibited` — owner decision 2026-09-20,
+    // and it is a judgement about EVIDENCE, not about convenience. The reading proposed
+    // `prohibited` and the adversarial check sustained it. What it could not settle is
+    // SCOPE: unlike Dow Jones, no clause here binds by content rather than host, and the
+    // document never reaches feeds at all. Two readings stay open — the feed is inside the
+    // expansively defined “Services”, or a ToS that never mentions feeds does not reach
+    // one the publisher deliberately publishes. The text closes neither.
+    //
+    // `whatMayBeDisplayed` is recorded as UNCLEAR rather than headline-and-link-only. That
+    // distinction is the point: recording the latter would read a grant of headline display
+    // into a document that grants none.
+    //
+    // robots.txt PERMITS the feed path (/arc/outboundfeeds/rss/ is absent from its targeted
+    // Disallow list, observed 2026-09-20). That is a robots observation, not a terms
+    // verdict, and it does not resolve the question above.
+    //
+    // Full reading: docs/audits/terms-review-news-2026-09-20.md
+    reviewedAt: '2026-09-20',
+    review: 'verified',
     confidence: 'medium',
   },
   {
@@ -1070,31 +1307,95 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
   {
     domain: 'dowjones.io',
     name: 'Dow Jones (MarketWatch feed delivery)',
-    verdict: 'conditional',
-    termsUrl: 'https://www.marketwatch.com/terms-of-use',
+    verdict: 'prohibited',
+    // CORRECTED 2026-09-20. The old URL (marketwatch.com/terms-of-use) returns a
+    // "Page Not Found" page — it had been recorded for both entries since 2026-08-06
+    // and never resolved. marketwatch.com's own robots.txt names the live document.
+    termsUrl: 'https://www.dowjones.com/terms-of-use/',
     finding:
-      'feeds.content.dowjones.io serves MarketWatch\'s public top-stories RSS. Dow Jones publishes it for syndication; the terms are personal, non-commercial use with attribution, and expressly not bulk reproduction of article text.',
-    conditions: ['Headline, link and feed summary only', 'Attribute MarketWatch and link back', 'Personal, non-commercial use'],
-    // ⚠ NOT READ 2026-09-14 — this is the feed host the app calls; its robots.txt returns 403 and it publishes no reachable terms document. Needs an email.
-    // Ratified 'verified' by mistake on 2026-09-18 and reverted 2026-09-19; the
-    // original 2026-08-06 seeded date is restored because nothing newer was read.
-    reviewedAt: '2026-08-06',
-    review: 'seeded',
-    confidence: 'medium',
+      'READ 2026-09-20 (Dow Jones Terms of Use, Effective Date 2026-06-30). §9.1: “The Services ' +
+      'are for your individual, personal and non-commercial use only. Thus, you may not access or ' +
+      'use the Content, including without limitation, any Content made available through one of our ' +
+      'RSS feeds, in any commercial product or service, without our express written consent.” ' +
+      '§9.4.1: “You shall not access, view, retrieve, refresh, reload, scrape, text or data mine, ' +
+      'index, process, store, harvest, or otherwise ingest the Services or any Content, whether ' +
+      'directly or through an intermediary, using any automated means, webcrawler, spider, script, ' +
+      'site search/retrieval application, extension, bot, browser automation tool, API client, AI ' +
+      'agent or assistant, or other manual or automated device, tool, process, software or other ' +
+      'means, without our prior written consent.” A server-side RSS fetcher is squarely inside that.',
+    // ⚠ NO CONDITIONS, because a prohibited verdict is not conditional on anything.
+    //
+    // ⚠ THE PRIOR FINDING WAS INVENTED, AND THAT IS THE LESSON HERE. Until today this
+    // entry asserted the terms were “personal, non-commercial use with attribution”, with
+    // conditions “Headline, link and feed summary only / Attribute MarketWatch and link
+    // back”. The document grants NONE of that. There is no headline-and-link permission,
+    // no summary permission and no attribution regime — it is a flat bar on automated
+    // ingestion absent prior written consent. That finding was written from documented
+    // posture and read, for six weeks, as though someone had checked it. This entry was
+    // also ratified 'verified' by mistake on 2026-09-18 and reverted on 2026-09-19.
+    //
+    // ⚠ THE HOST DISTINCTION DOES NOT SAVE IT, and that distinction is this entry's whole
+    // history. www.marketwatch.com/robots.txt is “User-agent: * / Disallow: /” plus a
+    // notice requiring express written permission — but the app fetched
+    // feeds.content.dowjones.io, a DIFFERENT origin with no robots.txt (403 AccessDenied,
+    // an S3 missing-key error) serving 200 publicly. robots.txt is per-origin, so that
+    // argument was sound as far as robots goes. It does not survive the Terms: §9.1 binds
+    // by CONTENT (“any Content made available through one of our RSS feeds”), not by host,
+    // and §9.4.1 says “whether directly or through an intermediary”.
+    //
+    // WHAT REMAINS OPEN, narrowly: the document never states that mw_topstories and
+    // mw_bulletins ARE “one of our RSS feeds”. That is an inference from MarketWatch
+    // branding on a dowjones.io domain — strong, but an inference. It is the only doubt,
+    // and it is not enough to keep fetching on.
+    //
+    // CONSEQUENCE, and it is a code change rather than a label: the fetchers were REMOVED
+    // in the same commit (market-news, macro-news, the provider registry, the config
+    // liveness probe). sourceTerms.test.ts fails while a prohibited host remains in
+    // DATA_SOURCES, which is the guard forcing the code to match the verdict instead of
+    // letting a label drift. Equity news falls back to CNBC alone; macro news keeps 7 of 8
+    // feeds. Both degrade rather than break, which is what D21 asks for.
+    //
+    // REVERSIBLE BY ONE THING ONLY: prior written consent from Dow Jones. Drafted at
+    // docs/licensing/2026-09-20-provider-enquiries.md. Full reading:
+    // docs/audits/terms-review-news-2026-09-20.md
+    reviewedAt: '2026-09-20',
+    review: 'verified',
+    confidence: 'high',
   },
   {
     domain: 'marketwatch.com',
     name: 'MarketWatch',
-    verdict: 'conditional',
-    termsUrl: 'https://www.marketwatch.com/terms-of-use',
-    finding: 'Same terms as the Dow Jones feed host — syndication of headline/link/summary, personal and non-commercial, with attribution.',
-    conditions: ['Headline, link and feed summary only', 'Attribute and link back', 'Personal, non-commercial use'],
-    // ⚠ NOT READ 2026-09-14 — 401 on the homepage. The host the app actually fetches is feeds.content.dowjones.io (see dowjones.io). Needs an email.
-    // Ratified 'verified' by mistake on 2026-09-18 and reverted 2026-09-19; the
-    // original 2026-08-06 seeded date is restored because nothing newer was read.
-    reviewedAt: '2026-08-06',
-    review: 'seeded',
-    confidence: 'medium',
+    verdict: 'prohibited',
+    termsUrl: 'https://www.dowjones.com/terms-of-use/',
+    finding:
+      'READ 2026-09-20 via the operative Dow Jones Terms of Use (Effective Date 2026-06-30) — see ' +
+      'the dowjones.io entry for the quoted clauses. MarketWatch is a Dow Jones property and the ' +
+      'same §9.1 and §9.4.1 govern it. Its own robots.txt is additionally explicit: “Collection of ' +
+      'content and other data on https://www.marketwatch.com/ through automated means is prohibited ' +
+      'unless you have express written permission from Dow Jones & Company, Inc.”, followed by ' +
+      '“User-agent: * / Disallow: /” with an allowlist of named search-engine bots only.',
+    // The website is a stricter case than the feed host, not a laxer one: robots.txt bars
+    // it outright, and the host 403s every user-agent tried (project UA, curl, and a
+    // browser UA alike — so unlike FMP this is not UA filtering).
+    //
+    // `robotsDisallowed` is recorded separately from the verdict on purpose: robots.txt is
+    // an instruction we either honour or do not, while a terms verdict is an
+    // interpretation. Recording one must not launder the other into looking reviewed —
+    // same split applied to Reddit on 2026-08-29.
+    robotsDisallowed: {
+      observedAt: '2026-09-20',
+      note:
+        'robots.txt reads “User-agent: * / Disallow: /” with an allowlist of named search-engine ' +
+        'bots (googlebot, bingbot, yandex, duckduckbot and similar), and opens with a notice that ' +
+        'automated collection is prohibited without express written permission from Dow Jones & ' +
+        'Company, Inc. Observed first-hand from the owner’s residential connection. Separately, the ' +
+        'host returned 403 to every user-agent tried — the project UA, curl’s default and a browser ' +
+        'UA alike — so this is not user-agent filtering the way FMP’s is.',
+    },
+    // Full reading: docs/audits/terms-review-news-2026-09-20.md
+    reviewedAt: '2026-09-20',
+    review: 'verified',
+    confidence: 'high',
   },
   {
     domain: 'cnbc.com',
@@ -1112,13 +1413,47 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     name: 'Investing.com',
     verdict: 'conditional',
     termsUrl: 'https://www.investing.com/about-us/terms-and-conditions',
-    finding: 'Publishes per-desk RSS feeds for syndication. Terms permit personal, non-commercial use of the feed with attribution; scraping the site itself is prohibited separately.',
-    conditions: ['RSS feed only — never scrape the HTML site', 'Headline, link and summary only, with attribution'],
-    // ⚠ NOT CONFIRMED READ 2026-09-14 — the audit records only that its three feeds returned 200; no terms clause is quoted or characterised anywhere in it. Possibly opened, no record. Ratify only once a reading is on the record.
-    // Ratified 'verified' by mistake on 2026-09-18 and reverted 2026-09-19; the
-    // original 2026-08-06 seeded date is restored because nothing newer was read.
-    reviewedAt: '2026-08-06',
-    review: 'seeded',
+    finding:
+      'READ 2026-09-20. The Terms and Conditions are a 21-page PDF at ' +
+      'cdn.investing.com/about-us/terms_and_conditions.pdf (the HTML page embeds it; the CDN 403s ' +
+      'any request without a Referer). ⚠ THE DOCUMENT NEVER MENTIONS RSS OR SYNDICATION. Limitations ' +
+      'on Use (c): “You are expressly forbidden from employing any automated system or software to ' +
+      'extract data for content from this website for any purpose. This includes, but is not limited ' +
+      'to, scraping, data mining, robot or spider programs, and other automatic devices, tools, or ' +
+      'processes to access, extract, download, or copy any data or information from the website.” ' +
+      '§20 adds that reproducing or distributing protected material needs “the prior written consent ' +
+      'of Fusion Media (on a case by case basis)”.',
+    conditions: [
+      '⚠ NO DISPLAY PERMISSION IS GRANTED, and automated extraction is expressly forbidden — the prior condition claiming “headline, link and summary with attribution” was invented, not read',
+      'RSS feed paths only — the site HTML is squarely inside the Limitations on Use (c) bar, and robots.txt disallows /content, /charts_xml and similar',
+      'Reproducing or distributing protected material requires prior written consent of Fusion Media',
+    ],
+    // ✅ READ 2026-09-20 on the owner's machine.
+    //
+    // ⚠ THIS ENTRY CARRIES A REAL, UNRESOLVED TENSION, and it must not be collapsed by
+    // quoting one side. Investing.com PUBLISHES the RSS feeds this app reads, and its
+    // robots.txt PERMITS /rss/ (observed 2026-09-20 — the Disallow list names /content,
+    // /charts_xml, /admin and similar, not /rss/). Publishing a feed and allowing it in
+    // robots is an invitation to automated consumption. The ToS forbids automated
+    // extraction "for any purpose" in general terms. Both are true at once, and this
+    // document does not reconcile them because it never mentions feeds.
+    //
+    // ⚠ Kept `conditional` on that basis (owner, 2026-09-20), NOT because the clause is
+    // weak. Compare Dow Jones, now `prohibited`: there an express RSS clause binds by
+    // content and names intermediaries, so there is no tension to resolve.
+    //
+    // ⚠ FIDELITY CAVEAT on the quotes above. There is no poppler on the owner's machine,
+    // so they come from a PDF text extractor written for this reading. It is readable but
+    // choppy — justified text emerges word-per-line in places. RE-CHECK ANY QUOTE AGAINST
+    // THE PDF PAGE before using it in correspondence with Fusion Media.
+    //
+    // Blast radius if this later goes prohibited: 3 of 8 macro-news feeds. Every pillar
+    // keeps a non-Investing source (commodities → OilPrice, bonds → CNBC Economy, forex →
+    // FXStreet), so it degrades rather than removes. D21-compliant.
+    //
+    // Full reading: docs/audits/terms-review-news-2026-09-20.md
+    reviewedAt: '2026-09-20',
+    review: 'verified',
     confidence: 'medium',
   },
   {

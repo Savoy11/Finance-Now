@@ -134,6 +134,37 @@ place such a rule actually reaches every future writer.
 
 ### F2 · P1 — 61 stale-heavy branches, and the stale ones include the only complete copy of the pre-reset record
 
+> ### ⚠ SUPERSEDED 2026-09-12 — EVERY "delete" DISPOSITION BELOW IS REVERSED
+>
+> **Do not act on the Disposition column, and do not act on step 2 further down.** The
+> owner set a standing rule three weeks after this audit was written:
+>
+> > *"I dont want to delete any branches, if possible can we enable an auto archive
+> > feature"* — owner, 2026-09-12
+>
+> and, more broadly: **no automated deletion of project files, anywhere.** CLAUDE.md
+> records both, including that *"Automatically delete head branches" stays OFF*. This
+> document was never updated to match, so it still reads as live instruction.
+>
+> **What replaced it.** `.github/workflows/archive-branch.yml` creates an annotated
+> `archive/<branch>` tag on every merged PR and **leaves the branch alone**. Retiring a
+> branch now means tagging it, not deleting it. The 78-branch sweep of 2026-09-11 is
+> recorded in `docs/audits/branch-archive-2026-09-11.md`.
+>
+> **This audit's own argument was sound and still lost, which is the part worth keeping.**
+> It reasoned from safety — deletion loses nothing, because PR refs and archive tags hold
+> the commits — and the measurement afterwards proved that: **0 of the 78** branches were
+> the only ref preserving their work. The owner's decision was not a correction of the
+> facts. It was a preference, and safe and wanted are different questions. *"Safe to
+> delete"* is not *"delete it"*.
+>
+> **Why this annotation exists rather than an edit.** The 2026-09-07 queue sweep reads this
+> file and produced two items from it — *"Delete the 34 orphaned + ~9 squash-merged
+> branches"* and *"Enable GitHub 'Automatically delete head branches'"* — both still listed
+> `open / unblocked / owner-machine / small` with a `next_action` beginning *"Owner: GitHub
+> →"*. Anyone working that list would have carried out an instruction a standing rule
+> forbids. Treat both as **closed, superseded**, not as pending work.
+
 **Evidence.** `git ls-remote --heads origin` = 62 branches. Classification by
 merge-base-with-main over all 61 non-main heads:
 
@@ -263,6 +294,12 @@ from F1; the `/backtests` row now points at `archive/pre-reset-main`; the equiva
 `TASK-QUEUE.md` and the T5 assessment are corrected as **dated annotations** (the historical
 prompt and assessment text stay verbatim, per the checklist-steward charter). Merging #111
 closes F1's open items.
+
+> ⚠ **STEP 2 IS SUPERSEDED — see the banner under F2 above.** Owner, 2026-09-12: branches
+> are archived, never deleted, and *"Automatically delete head branches"* stays **OFF**.
+> `.github/workflows/archive-branch.yml` tags every merged PR's head and leaves the branch
+> in place. The paragraph below is kept as the record of what was recommended on
+> 2026-08-23 and why; it is **not** an instruction.
 
 **2. Delete branches — unblocked now that step 1's archive refs exist.** The 34 orphaned
 branches are safe to delete wholesale; the ~9 squash-merged session branches after a glance at

@@ -30,6 +30,36 @@ property of a source.** The rule already written in `CLAUDE.md` — *"couldn't r
 not permission"* — did its job: the entry stayed `seeded` rather than drifting to
 cleared. The gap was that nobody re-ran it from a second egress.
 
+> ### ⚠ Correction, 2026-09-20 — the paragraph above misdiagnosed its own example
+>
+> The cause was the **User-Agent**, not the egress. Measured from a clean residential
+> connection (Spectrum, `proxy:false`, `hosting:false`) — same host, same second, varying
+> only the request header:
+>
+> | request | result |
+> |---|---|
+> | no User-Agent | `403`, 919 bytes |
+> | `PROBE_USER_AGENT` (`FinanceNow/1.0 …`) | `403`, 919 bytes |
+> | `curl/8.0` | `403`, 919 bytes |
+> | a browser UA | **`200`, 83,325 bytes** |
+>
+> `site.financialmodelingprep.com` filters by user-agent. The VPN was never the variable,
+> and the 2026-09-13 success was almost certainly a browser fetch rather than a change of
+> network. The paragraph above names this exact failure mode — a transport failure
+> recorded as a property of a source — and then commits a variant of it, swapping one
+> transport-layer cause for another without testing between them. **Counting the instances
+> is not the same as ruling one out.**
+>
+> Two things follow. The reading itself is unaffected: the clauses below were read from
+> the real document and none of this touches them. But **`npm run terms:report` will report
+> FMP unreadable from every network, forever**, because the probe sends
+> `PROBE_USER_AGENT` — so item 4's "this one took about ten minutes from a working egress"
+> understates it for any host that filters agents. The cure there is a browser, not a
+> different network.
+>
+> Not a licence to spoof a browser UA for **data** fetches: the app's honest agent is what
+> its robots.txt compliance is built on. This is about a human reading a public legal page.
+
 Document metadata: **"Terms of Service - FMP API", last updated 1 August 2023.**
 
 ## The clauses

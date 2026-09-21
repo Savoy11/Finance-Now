@@ -235,10 +235,15 @@ describe('every declared data-source host has a terms verdict', () => {
 // leaving to the generic host sweep above.
 // ─────────────────────────────────────────────────────────────────────────────
 describe('news publishers', () => {
-  // The hosts behind the nine feeds in news/, market-news/ and macro-news/.
+  // The hosts behind the feeds still fetched by news/, market-news/ and macro-news/.
+  //
+  // ⚠ feeds.content.dowjones.io (MarketWatch) was in this list until 2026-09-20 and is
+  // now PROHIBITED on terms grounds — Dow Jones ToU §9.1/§9.4.1. It moved to the
+  // expectation below rather than simply being deleted, because "we stopped fetching it"
+  // and "it must stay unfetchable" are different claims and only the second is a guard.
   const NEWS_HOSTS = [
     'www.coindesk.com', 'cointelegraph.com', 'decrypt.co', 'bitcoinmagazine.com',
-    'feeds.content.dowjones.io', 'search.cnbc.com',
+    'search.cnbc.com',
     'www.investing.com', 'oilprice.com', 'www.fxstreet.com',
   ]
 
@@ -249,15 +254,37 @@ describe('news publishers', () => {
   })
 
   it.each(NEWS_HOSTS)('%s records what may be displayed, not just that it is allowed', (host) => {
-    // The condition that actually constrains the code. Publisher RSS terms
-    // routinely permit headline + link + feed summary and nothing more, and the
-    // route shows a summary — so "allowed" without this recorded is a verdict
-    // that cannot be checked against the implementation.
+    // The condition that actually constrains the code. The route renders each item's
+    // feed summary, so "allowed" without a recorded display rule is a verdict that
+    // cannot be checked against the implementation.
+    //
+    // ⚠ This test used to say publisher RSS terms "routinely permit headline + link +
+    // feed summary and nothing more". The 2026-09-20 readings refuted that as a general
+    // assumption: CoinDesk's Terms never mention a feed at all and bar republication
+    // outright, and Dow Jones's bar automated ingestion entirely. So what is required
+    // here is that the entry SAYS something checkable about display — which includes
+    // saying that nothing is permitted. An entry recording a prohibition satisfies the
+    // rule; an entry silent on display does not.
     const entry = checkSourceTerms(`https://${host}/`, NOW).entry!
     expect(entry.verdict, `${host} should be conditional, not blanket-approved`).toBe('conditional')
     expect(
-      entry.conditions?.some((c) => /headline|summary|link|attribut/i.test(c)),
+      entry.conditions?.some((c) => /headline|summary|link|attribut|display|republish|reproduc/i.test(c)),
       `${host} has no condition describing what may be displayed`
     ).toBe(true)
+  })
+
+  // ⚠ THE OTHER HALF OF THE SAME GUARANTEE. Removing a feed from the routes stops it
+  // being fetched today; only this keeps it unfetchable. Dow Jones was withdrawn on
+  // 2026-09-20 on TERMS, not availability — the feed still serves 200 — so a future
+  // maintainer looking for an equity news source will find a working endpoint and no
+  // reason not to use it unless the refusal is asserted somewhere.
+  it.each([
+    'feeds.content.dowjones.io',
+    'www.marketwatch.com',
+    'marketwatch.com',
+  ])('%s is PROHIBITED and must stay unfetchable', (host) => {
+    const d = checkSourceTerms(`https://${host}/`, NOW)
+    expect(d.entry?.verdict, `${host} must be prohibited — Dow Jones ToU §9.1/§9.4.1`).toBe('prohibited')
+    expect(d.allowed, `${host} must not be allowed`).toBe(false)
   })
 })

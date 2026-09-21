@@ -44,7 +44,12 @@ describe('assertRobotsPermits', () => {
     for (const url of [
       'https://api.coingecko.com/api/v3/global',
       'https://data.sec.gov/api/xbrl/frames',
-      'https://feeds.content.dowjones.io/public/rss/mw_topstories',
+      // Was feeds.content.dowjones.io/public/rss/mw_topstories until 2026-09-20.
+      // Still technically valid here — that host has no robots observation, so this
+      // gate does not fire on it — but it is now `prohibited` on TERMS grounds, and a
+      // prohibited host reading as "should not be gated" invites exactly the wrong
+      // conclusion. The two gates are independent, and the fixture should not blur them.
+      'https://search.cnbc.com/rs/search/combinedcms/view.xml',
     ]) {
       expect(robotsPermits(url, noEnv), `${url} should not be gated`).toBe(true)
     }

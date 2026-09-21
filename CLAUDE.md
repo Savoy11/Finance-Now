@@ -630,13 +630,14 @@ site nobody has reviewed. Full design: `docs/architecture/source-terms.md`.
 > The fix for any of the key-gated rows is a free API key on the Integrations page — **not
 > a substitute scraper.**
 
-> ⚠ **38 of 56 registry entries are `seeded`, not `verified` — check `review` before
+> ⚠ **30 of 56 registry entries are `seeded`, not `verified` — check `review` before
 > trusting one.** The registry was authored in an environment whose network policy
 > blocked every publisher and provider host at the gateway, so not one terms document
 > could be opened. The entries are honest starting positions drawn from each
 > provider's publicly documented posture (published API docs, documented free tiers,
-> openly advertised RSS feeds) — they are **not readings**. **Eighteen** entries
-> are `verified` as of 2026-09-19: **Cboe** (P2-O1 audit, 2026-08-05) and
+> openly advertised RSS feeds) — they are **not readings**. **26 entries are
+> `verified`** as of 2026-09-20 (the count was spelled out as a word here until then,
+> which is why no guard could watch it — see `docs:check`): **Cboe** (P2-O1 audit, 2026-08-05) and
 > **CoinGecko** (the 2026-08-29 probe run) were the first two, and sixteen more
 > were **read** on a clean egress on 2026-09-14/15
 > (`docs/audits/terms-review-apis-2026-09-14.md`,
@@ -702,6 +703,18 @@ site nobody has reviewed. Full design: `docs/architecture/source-terms.md`.
 > across 20 files. If "personal use on every tier" is right, that is a live
 > problem on shipping surfaces rather than a future decision. See the dated note
 > on the entry in `sourceTerms.ts` for the three questions to answer.
+
+> **`docs/LEGAL-REVIEW.md` is the standing note for all of this** (opened 2026-09-20). The
+> legal questions in this project are spread across ~65 queue items, several audits and a
+> drafts folder, and nothing said what they add up to. It groups them, names the keystone
+> (**T-151 — is Finance Now personal/internal or commercial?**), and records the four
+> provider enquiries drafted on 2026-09-20 in `docs/licensing/` — **none of which have been
+> sent**. Read it before reopening any licensing question.
+>
+> ⚠ Its headline finding: FMP, Finnhub, Twelve Data and Binance.US were all read on the
+> owner's machine and **all four bar a deployment other people can reach**, with no tier
+> curing it. Three name a route (Order Form / written approval / Redistribution Add-On);
+> Binance.US names none. That is not a pricing question, so D21 does not defer it.
 
 **To close it:** `npm run terms:report -- --seeded` (or `--news`) from a machine
 > that can reach these sites writes a review worksheet — current verdict, what the

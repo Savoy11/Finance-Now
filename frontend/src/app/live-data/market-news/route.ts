@@ -11,7 +11,7 @@ import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 //   GET /live-data/market-news?symbol=AAPL    → per-ticker headlines
 //   GET /live-data/market-news?limit=20
 //
-// REGISTRY-DRIVEN: built-in feeds (MarketWatch, CNBC) can
+// REGISTRY-DRIVEN: the built-in feed (CNBC) can
 // be toggled on the Integrations page, and user-added custom sources
 // (rss / atom / json-news, market: 'equities') run alongside them. All active
 // sources fetch in parallel via Promise.allSettled — any subset may fail
@@ -52,11 +52,22 @@ export interface MarketNewsResponse {
 //
 // ⚠ `yahoo-news` was here until 2026-08-06, and with it the ONLY free
 // per-ticker RSS feed (feeds.finance.yahoo.com/rss/2.0/headline?s=SYM). It was
-// removed on terms grounds — see lib/server/sourceTerms.ts. Both survivors are
-// general market wires, which is what changed symbol mode below from "fetch
-// this ticker's feed" to "read the general wires and keep what mentions it".
+// removed on terms grounds — see lib/server/sourceTerms.ts. What survived is a
+// general market wire, which is what changed symbol mode below from "fetch this
+// ticker's feed" to "read the general wire and keep what mentions it".
+// (This said "Both survivors are general market wires" until 2026-09-20, when
+// MarketWatch went the same way and left one. A typed count, correct on the day.)
+// ⚠ `marketwatch` was removed on 2026-09-20, ON TERMS, leaving CNBC as the only
+// built-in. Dow Jones's Terms of Use (Effective 2026-06-30) §9.4.1 bars ingesting
+// Content "whether directly or through an intermediary, using any automated means …
+// script … API client, AI agent or assistant … without our prior written consent",
+// and §9.1 names "any Content made available through one of our RSS feeds"
+// expressly. The feed host feeds.content.dowjones.io is a separate origin with no
+// robots.txt, which is why this looked clear for six weeks — but §9.1 binds by
+// CONTENT, not by host. dowjones.io is now `prohibited` in the registry, which is a
+// pinnedFetch socket block; removing the feed here is what makes the code match it.
+// Restoring it requires prior written consent, not a code change.
 const BUILTIN_FEEDS: Record<string, { url: string; source: string }> = {
-  'marketwatch': { url: 'https://feeds.content.dowjones.io/public/rss/mw_topstories', source: 'MarketWatch' },
   'cnbc':        { url: 'https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=100003114', source: 'CNBC' },
 }
 
