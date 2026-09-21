@@ -4,6 +4,7 @@ import { FUND_CATALOG } from '@/lib/data/fundCatalog'
 import { getEquityProviders, recordProviderFetch, type AnyActiveProvider } from '@/lib/api/live/providers'
 import { fetchCustomUrl, findArray, pickDate, pickString, type ActiveCustom } from '@/lib/server/customFeeds'
 import { parseFeedItems } from '@/lib/server/feedParse'
+import { assertSourceNotProhibited } from '@/lib/server/sourceTerms'
 import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 
 // Server-side proxy for stock-market news (equities & funds modules).
@@ -64,9 +65,17 @@ export interface MarketNewsResponse {
 // and §9.1 names "any Content made available through one of our RSS feeds"
 // expressly. The feed host feeds.content.dowjones.io is a separate origin with no
 // robots.txt, which is why this looked clear for six weeks — but §9.1 binds by
-// CONTENT, not by host. dowjones.io is now `prohibited` in the registry, which is a
-// pinnedFetch socket block; removing the feed here is what makes the code match it.
+// CONTENT, not by host. dowjones.io is now `prohibited` in the registry, and
+// removing the feed here is what makes the code match that.
 // Restoring it requires prior written consent, not a code change.
+//
+// ⚠ CORRECTED 2026-09-20, hours after it was written. This note originally called
+// the `prohibited` verdict "a pinnedFetch socket block". It was not one HERE: this
+// route used an unwrapped global fetch, so nothing enforced the verdict at the socket, and
+// CLAUDE.md's claim that assertSourceNotProhibited "binds every request forever"
+// holds only for the routes that actually route through pinnedFetch — 39 of the
+// live-data routes do not. The gate is now called directly, above `fetchBuiltin`,
+// so the sentence is true by construction rather than by assumption.
 const BUILTIN_FEEDS: Record<string, { url: string; source: string }> = {
   'cnbc':        { url: 'https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=100003114', source: 'CNBC' },
 }
@@ -194,6 +203,13 @@ export async function GET(request: NextRequest) {
   type Task = { providerId: string; run: () => Promise<Omit<MarketArticle, 'sentiment' | 'category' | 'relatedSymbols' | 'isBreaking'>[]> }
   const tasks: Task[] = []
   const fetchBuiltin = (url: string, source: string) => async () => {
+    // ⚠ TERMS GATE FOR A BUILT-IN FEED — see the fuller note in macro-news/route.ts.
+    // Custom sources reach pinnedFetch, which calls this internally; built-ins did
+    // not, so a `prohibited` verdict did not stop this route fetching the host.
+    // Called directly rather than by adopting pinnedFetch, because pinnedFetch's
+    // custom dispatcher opts the request out of Next's Data Cache and would kill
+    // the `revalidate` below. Pure registry lookup, no network.
+    assertSourceNotProhibited(url)
     const res = await fetch(url, {
       headers: { 'User-Agent': 'Mozilla/5.0 (compatible; FinanceNow/1.0)', Accept: 'application/rss+xml, application/xml, text/xml' },
       next: { revalidate: 300 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS),

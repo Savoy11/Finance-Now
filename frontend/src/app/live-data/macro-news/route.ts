@@ -20,6 +20,7 @@ import { parseFeedItems } from '@/lib/server/feedParse'
 
 import { classifyPillar, type MacroPillar } from '@/lib/server/macroPillar'
 import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
+import { assertSourceNotProhibited } from '@/lib/server/sourceTerms'
 
 export const dynamic = 'force-dynamic'
 
@@ -197,6 +198,27 @@ export async function GET(request: NextRequest) {
     providerId: feed.providerId,
     defaultPillar: feed.defaultPillar,
     run: async () => {
+      // ⚠ TERMS GATE FOR A BUILT-IN FEED. Custom user-added sources go through
+      // pinnedFetch, which calls this internally — built-ins never did, so a
+      // `prohibited` verdict did not actually stop this route fetching the host.
+      // That mattered from 2026-09-20, when dowjones.io became the first
+      // prohibition to withdraw a *working* feed: without this line, re-adding
+      // mw_bulletins above would have refetched a prohibited host and only a test
+      // would have objected.
+      //
+      // ⚠ CALLED DIRECTLY RATHER THAN BY SWITCHING TO pinnedFetch, and that is the
+      // whole point. pinnedFetch uses a custom undici dispatcher, which opts the
+      // request out of Next's Data Cache — `next: { revalidate }` below would
+      // silently stop working and every page load would hit the publisher. For a
+      // news feed that means MORE load on the very publishers whose terms this
+      // gate exists to respect. See the warning in lib/server/fetchBudget.ts.
+      // assertSourceNotProhibited is pure and synchronous: a registry lookup, no
+      // network, so it costs nothing and keeps the cache.
+      //
+      // It throws, and that is handled: these tasks run under Promise.allSettled
+      // below, so a prohibited feed is recorded as a per-provider error and the
+      // other feeds still serve.
+      assertSourceNotProhibited(feed.url)
       const res = await fetch(feed.url, {
         next: { revalidate: 300 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS),
         headers: { 'User-Agent': 'Mozilla/5.0 (compatible; FinanceNow/1.0)', Accept: 'application/rss+xml, application/xml, text/xml' },

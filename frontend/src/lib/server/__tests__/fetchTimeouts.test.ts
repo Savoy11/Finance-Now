@@ -4,6 +4,22 @@ import { execSync } from 'node:child_process'
 import { join } from 'node:path'
 
 /**
+ * Drop whole-line `//` comments so prose is not counted as code.
+ *
+ * Hoisted out of the assertion below so it can be tested in its own right. It is a
+ * DEFENSIVE measure — nothing in the tree currently trips the false positive it
+ * prevents, because the comment that exposed it was also reworded. A defensive
+ * mechanism with no test is indistinguishable from a decorative one, and mutation
+ * testing proved exactly that: neutering it changed no result.
+ */
+export function stripWholeLineComments(s: string): string {
+  return s
+    .split('\n')
+    .map((l) => (/^\s*\/\//.test(l) ? '' : l))
+    .join('\n')
+}
+
+/**
  * Guard: every route handler that reaches an upstream must bound how long it
  * will wait.
  *
@@ -50,6 +66,39 @@ describe('every route that fetches an upstream bounds how long it waits', () => 
     expect(fetching.length).toBeGreaterThan(30)
   })
 
+  // ── The stripper's own test. Without this, mutation testing showed it could be
+  //    deleted outright with no test failing anywhere.
+  describe('stripWholeLineComments', () => {
+    it('drops prose that would otherwise be counted as a call site', () => {
+      const src = ['// this route used a bare fetch() before 2026-09-20', 'await fetch(url, { signal: AbortSignal.timeout(1) })'].join('\n')
+      const out = stripWholeLineComments(src)
+      expect((out.match(/\bfetch\(/g) ?? []).length).toBe(1)
+      expect((out.match(/AbortSignal\.timeout/g) ?? []).length).toBe(1)
+    })
+
+    it('leaves real code alone, including trailing comments on a code line', () => {
+      const src = 'await fetch(url) // and a note mentioning fetch( here'
+      // A trailing comment is NOT stripped — narrowness is deliberate. It would be
+      // caught as a second call site, which is a false positive this does not solve
+      // and must not be "fixed" with a regex that cannot see string literals.
+      expect(stripWholeLineComments(src)).toBe(src)
+    })
+
+    // ⚠ THE REGRESSION THIS EXISTS TO PREVENT. The first version of the stripper also
+    // removed /* … */ blocks. news/route.ts carries the Accept header `…text/xml, */*`,
+    // whose `*/` closed a block comment opened far earlier and swallowed real code —
+    // including an AbortSignal.timeout — making the guard report a bounded route as
+    // unbounded. A regex that cannot see string literals must not delete code.
+    it('never removes code, even when a string literal contains a comment terminator', () => {
+      const src = [
+        "  Accept: 'application/rss+xml, text/xml, */*',",
+        '  signal: AbortSignal.timeout(10_000),',
+      ].join('\n')
+      expect(stripWholeLineComments(src)).toBe(src)
+      expect((stripWholeLineComments(src).match(/AbortSignal\.timeout/g) ?? []).length).toBe(1)
+    })
+  })
+
   it('has no route making an unbounded outbound call', () => {
     // ⚠ COUNTED PER CALL SITE, NOT PER FILE, and that distinction is the whole
     // guard. The first version of this test asked only whether the file
@@ -62,9 +111,30 @@ describe('every route that fetches an upstream bounds how long it waits', () => 
     // compliant on the strength of one call site out of seventeen. Writing it
     // down did not stop it being repeated hours later, so it is encoded here
     // instead of documented.
+    // ⚠ WHOLE-LINE COMMENTS ARE DROPPED BEFORE COUNTING, and the narrowness is the
+    // point. On 2026-09-20 this guard failed market-news/route.ts because a COMMENT
+    // explaining that route's history contained the words "a bare fetch()" — the
+    // guard read the prose as a call site and demanded a timeout for it. A guard
+    // that does that produces false positives forever, and the workaround people
+    // reach for is to stop writing the clear sentence, which makes the code worse to
+    // make the test easier.
+    //
+    // ⚠ THE FIRST ATTEMPT AT THIS FIX WAS WORSE THAN THE BUG. It also stripped
+    // /* … */ blocks with `\/\*[\s\S]*?\*\//g`, which is unsafe in a file containing
+    // string literals: news/route.ts has the Accept header `…text/xml, */*`, and that
+    // `*/` closed a block comment opened hundreds of lines earlier, swallowing real
+    // code — including the `AbortSignal.timeout(10_000)` on the feed fetch. The guard
+    // then reported a genuinely bounded route as unbounded. A regex that does not
+    // understand strings must not be allowed to delete code.
+    //
+    // So this only drops lines whose first non-whitespace is `//`. Those cannot be
+    // inside a string literal on that line, cannot span lines, and cannot execute.
+    // It fixes the prose false-positive and can do nothing else.
+    const stripComments = stripWholeLineComments
+
     const unbounded = fetching
       .map((f) => {
-        const src = read(f)
+        const src = stripComments(read(f))
         const calls = (src.match(/\bfetch\(/g) ?? []).length
         const bounded = (src.match(/AbortSignal\.timeout/g) ?? []).length
         return { f, calls, bounded }
