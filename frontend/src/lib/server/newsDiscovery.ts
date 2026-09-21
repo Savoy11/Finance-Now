@@ -110,7 +110,27 @@ export interface DiscoveryResult {
   articles: DiscoveredArticle[]
   /** Domains excluded from this run, so the UI can say what "lesser known" meant. */
   excluded: string[]
+  /**
+   * Searches actually billed. Reported rather than assumed: the first live run spent
+   * 9 against a nominal cap of 4, because `max_uses` is per REQUEST and the retry loop
+   * issues several. Surfacing the real number is what made that visible.
+   */
   searchesUsed: number
+  /** Why the model stopped. Present so a zero-article answer is diagnosable. */
+  stopReason?: string | null
+  /**
+   * How many rows the search returned before this app filtered them, and how many it
+   * dropped as majors or malformed.
+   *
+   * ⚠ WITHOUT THESE, AN EMPTY LIST HAS TWO INDISTINGUISHABLE CAUSES: the search found
+   * no small-outlet coverage, or it found plenty and every row was a major that the
+   * re-applied block list removed. Those need different responses — the first is a
+   * real answer, the second means the tool's own `blocked_domains` is not doing its
+   * job and the feature is quietly broken. The first live run returned zero and there
+   * was no way to tell which had happened.
+   */
+  returned?: number
+  filtered?: number
   error?: string
 }
 
@@ -270,13 +290,26 @@ export async function discoverArticles(opts: DiscoverOptions): Promise<Discovery
   ]
 
   let searchesUsed = 0
+  let lastStop: string | null = null
   try {
     for (let i = 0; i < 6; i++) {
+      // ⚠ `max_uses` IS PER REQUEST, NOT PER CONVERSATION. A pause_turn loop issues
+      // several requests, and each one arrives with a FRESH budget — so a nominal cap
+      // of 4 billed 9 searches on the first live run, and could have billed 24. The
+      // budget is therefore carried across iterations by hand, and the loop stops when
+      // it is spent. A cost control that does not control is worse than none, because
+      // it is the one nobody re-checks.
+      const remaining = maxUses - searchesUsed
+      if (remaining <= 0) break
+
       const response = await client.messages.create({
         model: opts.model ?? DEFAULT_ANTHROPIC_MODEL,
-        max_tokens: 3000,
+        // Generous, because the reply carries search results as well as the JSON. The
+        // first live run returned nothing partly because there was no room left to
+        // write the array after nine searches' worth of content.
+        max_tokens: 8000,
         system,
-        tools,
+        tools: [{ ...tools[0], max_uses: remaining }],
         messages,
       })
 
@@ -285,20 +318,55 @@ export async function discoverArticles(opts: DiscoverOptions): Promise<Discovery
       }
 
       messages.push({ role: 'assistant', content: response.content })
+      lastStop = response.stop_reason as string | null
 
-      // Anthropic pauses long server-tool turns; resume by looping (same as runner.ts).
-      if ((response.stop_reason as string) === 'pause_turn') continue
+      // Keep going while the model is still working. `pause_turn` is Anthropic pausing
+      // a long server-tool turn; `tool_use` means it wants another round. Returning on
+      // either yields an empty answer after a full round of billed searches — which is
+      // exactly what the first live run did.
+      if (lastStop === 'pause_turn' || lastStop === 'tool_use') continue
 
       const text = response.content
         .filter((b): b is Anthropic.TextBlock => b.type === 'text')
         .map((b) => b.text)
         .join('\n')
 
-      const articles = parseDiscovered(extractJsonArray(text), blocked)
-      return { ...base, ok: true, articles, searchesUsed }
+      const parsed = extractJsonArray(text)
+      const articles = parseDiscovered(parsed, blocked)
+
+      // An empty list is a legitimate answer, but "the model replied with no parseable
+      // array" is not the same thing and must not be dressed up as one. Say which.
+      if (parsed === null && text.trim()) {
+        return {
+          ...base,
+          ok: false,
+          searchesUsed,
+          stopReason: lastStop,
+          error: 'the search returned no parseable result',
+        }
+      }
+      const returned = Array.isArray(parsed) ? parsed.length : 0
+      return {
+        ...base,
+        ok: true,
+        articles,
+        searchesUsed,
+        stopReason: lastStop,
+        returned,
+        filtered: returned - articles.length,
+      }
     }
-    return { ...base, ok: false, searchesUsed, error: 'search did not converge within the iteration cap' }
+    return {
+      ...base,
+      ok: false,
+      searchesUsed,
+      stopReason: lastStop,
+      error:
+        searchesUsed >= maxUses
+          ? `search budget spent (${maxUses}) before an answer was assembled`
+          : 'search did not converge within the iteration cap',
+    }
   } catch (e) {
-    return { ...base, ok: false, searchesUsed, error: e instanceof Error ? e.message : String(e) }
+    return { ...base, ok: false, searchesUsed, stopReason: lastStop, error: e instanceof Error ? e.message : String(e) }
   }
 }

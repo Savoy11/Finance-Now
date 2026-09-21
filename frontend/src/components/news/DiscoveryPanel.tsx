@@ -121,11 +121,29 @@ export function DiscoveryPanel({ module, placeholder }: Props) {
         </div>
       )}
 
+      {/* An empty list has two very different causes, and the counts distinguish them.
+          Saying "nothing found" when in fact everything was filtered out would hide a
+          broken filter behind a plausible sentence. */}
       {result?.ok && result.articles.length === 0 && (
-        <p className="py-8 text-center text-sm text-text-muted">
-          Nothing found from outlets outside the ones already in the feed. That is a real
-          answer, not an error — an empty result beats padding it with coverage you already have.
-        </p>
+        <div className="py-8 text-center text-sm text-text-muted">
+          {(result.filtered ?? 0) > 0 ? (
+            <p>
+              The search returned {result.returned} article{result.returned === 1 ? '' : 's'}, but all
+              of them were from outlets already in your feed or from major wires, so none are shown.
+              Try a narrower topic.
+            </p>
+          ) : (
+            <>
+              <p>Nothing found from outlets outside the ones already in the feed.</p>
+              {!query.trim() && (
+                <p className="mt-1.5 text-xs">
+                  A specific topic works much better than a blank search — try a protocol, a
+                  ticker or a theme.
+                </p>
+              )}
+            </>
+          )}
+        </div>
       )}
 
       {result?.ok && result.articles.length > 0 && (
@@ -133,8 +151,11 @@ export function DiscoveryPanel({ module, placeholder }: Props) {
           <p className="text-xs text-text-muted">
             {result.articles.length} article{result.articles.length === 1 ? '' : 's'} from{' '}
             {new Set(result.articles.map((a) => a.sourceHost)).size} outlet
-            {new Set(result.articles.map((a) => a.sourceHost)).size === 1 ? '' : 's'} · {result.searchesUsed}{' '}
-            search{result.searchesUsed === 1 ? '' : 'es'} used · {result.excluded.length} domains excluded
+            {new Set(result.articles.map((a) => a.sourceHost)).size === 1 ? '' : 's'}
+            {(result.filtered ?? 0) > 0 && ` · ${result.filtered} filtered out as already-covered`}
+            {' · '}
+            {result.searchesUsed} search{result.searchesUsed === 1 ? '' : 'es'} used ·{' '}
+            {result.excluded.length} domains excluded
           </p>
           <ul className="flex flex-col gap-3">
             {result.articles.map((a) => (

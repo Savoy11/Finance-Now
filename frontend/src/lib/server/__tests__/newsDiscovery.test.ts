@@ -170,6 +170,36 @@ describe('parseDiscovered', () => {
   })
 })
 
+// ⚠ THE COST GUARD, and it is a SOURCE SCAN for the same reason fetchTimeouts is: the
+//    constraint is a property of how the request is WRITTEN, and a mocked client would
+//    exercise whatever budget the mock invents rather than the one that reaches
+//    Anthropic.
+//
+//    The bug this pins was found on the first live run and cost real money.
+//    `max_uses` is enforced PER REQUEST. discoverArticles loops on pause_turn/tool_use,
+//    so every iteration arrived with a fresh budget: a nominal cap of 4 billed 9
+//    searches and could have billed 24. The fix carries the spend across iterations and
+//    passes what is LEFT. Anyone "simplifying" that back to the constant reintroduces
+//    an uncapped bill, silently, because nothing else would fail.
+describe('the search budget is carried across retries, not reset per request', () => {
+  const src = readFileSync(join(__dirname, '..', 'newsDiscovery.ts'), 'utf8')
+
+  it('passes the REMAINING budget to each request, never the raw cap', () => {
+    expect(src).toMatch(/const remaining = maxUses - searchesUsed/)
+    expect(src).toMatch(/max_uses:\s*remaining/)
+  })
+
+  it('stops looping once the budget is spent', () => {
+    expect(src).toMatch(/if \(remaining <= 0\) break/)
+  })
+
+  it('keeps working while the model is still working, rather than returning empty', () => {
+    // Returning on `tool_use` yielded zero articles after a full round of billed
+    // searches on the first live run.
+    expect(src).toMatch(/lastStop === 'pause_turn' \|\| lastStop === 'tool_use'/)
+  })
+})
+
 describe('extractJsonArray', () => {
   it('reads a bare array', () => {
     expect(extractJsonArray('[{"a":1}]')).toEqual([{ a: 1 }])
