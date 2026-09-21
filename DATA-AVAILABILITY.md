@@ -799,7 +799,7 @@ Project convention (CLAUDE.md): every `/live-data` route needs `export const dyn
 results** on any multi-fetch. (CLAUDE.md dropped the blunter "`Promise.allSettled` for any
 multi-fetch" wording in `23654fc`, 2026-07-22 — it adopted the conclusion reached below.)
 
-- ✅ **`force-dynamic`** — all **58** route files comply (`chart` was the sole exception; fixed 2026-07-20).
+- ✅ **`force-dynamic`** — all **59** route files comply (`chart` was the sole exception; fixed 2026-07-20). The 59th is `news-discovery`, added 2026-09-20.
   Count and compliance re-verified **statically** on 2026-09-19 (`git ls-files 'src/app/live-data/**/route.ts'`
   vs `grep -l "export const dynamic"`, 58/58). This one line needs no running server, so it is current
   even though the availability statuses above are not. The count moved 56 → 58 as routes landed; ⚪ `cbdc-data`

@@ -1401,10 +1401,61 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     domain: 'cnbc.com',
     name: 'CNBC',
     verdict: 'conditional',
-    termsUrl: 'https://www.nbcuniversal.com/terms',
-    finding: 'Publishes public RSS feeds per desk for syndication of headline/link/summary with attribution and a link back.',
-    conditions: ['Headline, link and feed summary only', 'Attribute CNBC and link back'],
-    reviewedAt: '2026-09-14',
+    // CORRECTED 2026-09-20: nbcuniversal.com/terms returns the NBCUniversal CORPORATE
+    // site — 27 KB of nav with no terms language at all (zero hits for RSS, automated,
+    // robot or scrape). The operative document is CNBC's own.
+    termsUrl: 'https://www.cnbc.com/nbcuniversal-terms-of-service/',
+    finding:
+      'READ 2026-09-20 on the owner’s machine (clean residential egress). ⚠ THE TERMS AND THE ' +
+      'ROBOTS FILE DISAGREE, and the disagreement is this entry. TERMS: the document’s ' +
+      'anti-automation language — “You may not scrape, repackage, reproduce, republish, ' +
+      'recirculate … or otherwise share with others for profit or commercial gain” — appears ' +
+      'THREE times and every one sits inside Supplemental Terms for a PAID product (CNBC+, ' +
+      'Investing Club, CNBC Pro), each introduced by a licence grant scoped to that service. ' +
+      'No general clause bars automated access to the free site, and the free public RSS feeds ' +
+      'are not addressed anywhere. ROBOTS: search.cnbc.com — the host this app actually fetches ' +
+      '— disallows this agent outright (see robotsDisallowed).',
+    conditions: [
+      'Headline, link and feed summary only — a convention this app applies, NOT a permission the document grants; the terms are silent on feed display',
+      'Attribute CNBC and link back',
+      '⚠ Do not touch CNBC+, Investing Club or CNBC Pro content: those carry express scrape/republish bars in their Supplemental Terms',
+    ],
+    // ⚠ robots.txt is recorded SEPARATELY from the verdict, because they answer
+    // different questions — an instruction we either honour or do not, versus our
+    // interpretation of a legal document. Same split applied to Reddit (2026-08-29) and
+    // marketwatch.com (2026-09-20). Folding one into the other would launder a
+    // first-hand observation into looking like a completed terms reading.
+    robotsDisallowed: {
+      observedAt: '2026-09-20',
+      note:
+        'search.cnbc.com/robots.txt is 383 bytes in total and contains exactly two groups: ' +
+        '“User-agent: Amazonbot / Disallow: / / Allow: /rs/search/news/view.rss?partnerId=amznalx01”, ' +
+        'then “User-agent: * / Disallow: /”. This app fetches ' +
+        'search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01, which is inside the ' +
+        'disallowed “/” and is NOT the one path carved out for Amazonbot. Observed first-hand ' +
+        'from a clean residential egress. www.cnbc.com/robots.txt separately names GPTBot, ' +
+        'ClaudeBot, anthropic-ai, CCBot, PerplexityBot and others in its own directives.',
+    },
+    // ⚠ THE PRIOR ENTRY CLAIMED A READING THAT NEVER HAPPENED. It was marked
+    // review:'verified', reviewedAt:'2026-09-14' — but no audit anywhere quotes an NBCU
+    // or CNBC clause, and the 2026-09-14 news audit mentions CNBC only inside a
+    // feed-URL inventory table. The queue still carries T-147, “CNBC (NBCUniversal)
+    // terms — read, conclude, verify”, as OPEN, with a next_action of “Read
+    // nbcuniversal.com/terms … flip the cnbc.com entry to verified via PR”. The entry
+    // was flipped without the reading the queue was still asking for, and its finding
+    // was the same invented syndication template that transferFees, CoinDesk,
+    // Investing.com and both MarketWatch entries carried. `verified` is now TRUE
+    // because the document has actually been opened, not because the flag was re-set.
+    //
+    // ⚠ THIS IS NOW THE ONLY EQUITY NEWS SOURCE, which is why the robots finding is a
+    // decision rather than a note. MarketWatch was withdrawn on 2026-09-20 leaving CNBC
+    // alone on /live-data/market-news; CNBC also supplies 2 of the 7 remaining
+    // macro-news feeds. Honouring robots here empties equity news rather than thinning
+    // it — the first time that trade-off has come up in this registry. Owner decision
+    // pending; nothing has been withdrawn on this basis.
+    //
+    // Full reading: docs/audits/terms-review-cnbc-2026-09-20.md
+    reviewedAt: '2026-09-20',
     review: 'verified',
     confidence: 'medium',
   },

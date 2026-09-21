@@ -40,18 +40,38 @@ describe('assertRobotsPermits', () => {
     expect(robotsPermits('https://www.reddit.com/', env({ REDDIT_CLIENT_ID: '' }))).toBe(false)
   })
 
+  // ⚠ HOSTS ARE DERIVED, NOT NAMED, AND THIS TEST IS WHY. It used to list literal
+  // hosts as examples of "not gated". Both hand-picked ones went stale inside a
+  // month: feeds.content.dowjones.io became `prohibited` on 2026-09-20, and its
+  // replacement — search.cnbc.com — acquired a `robotsDisallowed` entry the SAME DAY,
+  // failing this test. Any host can become gated later, so naming one asserts a fact
+  // about the registry's current contents while pretending to assert a property of
+  // the gate. Deriving the sample keeps the claim — "the gate is opt-in, so a host
+  // with no robots observation passes" — true by construction.
   it('permits every host with no robots observation — this gate is opt-in', () => {
-    for (const url of [
-      'https://api.coingecko.com/api/v3/global',
-      'https://data.sec.gov/api/xbrl/frames',
-      // Was feeds.content.dowjones.io/public/rss/mw_topstories until 2026-09-20.
-      // Still technically valid here — that host has no robots observation, so this
-      // gate does not fire on it — but it is now `prohibited` on TERMS grounds, and a
-      // prohibited host reading as "should not be gated" invites exactly the wrong
-      // conclusion. The two gates are independent, and the fixture should not blur them.
-      'https://search.cnbc.com/rs/search/combinedcms/view.xml',
-    ]) {
-      expect(robotsPermits(url, noEnv), `${url} should not be gated`).toBe(true)
+    const ungated = SOURCE_TERMS.filter((e) => !e.robotsDisallowed).slice(0, 5)
+    expect(ungated.length, 'no ungated entries found — the sample proves nothing').toBeGreaterThan(0)
+
+    for (const entry of ungated) {
+      const url = `https://${entry.domain}/`
+      expect(robotsPermits(url, noEnv), `${entry.domain} has no robots observation and should not be gated`).toBe(true)
+    }
+  })
+
+  it('gates every host that DOES carry a robots observation', () => {
+    // The other direction. Without it, a gate that permitted everything would satisfy
+    // the test above perfectly.
+    const gated = SOURCE_TERMS.filter((e) => e.robotsDisallowed)
+    expect(gated.length, 'no gated entries — this gate would be untested').toBeGreaterThan(0)
+
+    for (const entry of gated) {
+      // An entry whose block is lifted by a credential is permitted once that
+      // credential is present, so only the credential-free case is asserted here.
+      if (entry.robotsDisallowed?.liftedBy) continue
+      expect(
+        robotsPermits(`https://${entry.domain}/`, noEnv),
+        `${entry.domain} carries robotsDisallowed and must be gated`,
+      ).toBe(false)
     }
   })
 
