@@ -56,8 +56,8 @@
   "total_verified": 398,
   "outstanding": 346,
   "by_status": {
-   "open": 99,
-   "closed": 83,
+   "open": 92,
+   "closed": 90,
    "blocked": 73,
    "unclear": 1,
    "parked": 90
@@ -69,7 +69,7 @@
    "owner-machine": 83
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 83,
+  "closed_by_annotation": 90,
   "counts_recomputed_on": "2026-09-21",
   "counts_note": "by_status and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status."
  },
@@ -2484,7 +2484,7 @@
   {
    "id": "T-354",
    "title": "Update spec §6.2 — commodity.ts now exists (P2-R3)",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "docs",
@@ -2502,7 +2502,19 @@
      "lines": "333, 570-578",
      "quote": "├── commodity.ts       ← planned (§6)"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-21",
+    "basis": "verified-here",
+    "verdict": "already-done",
+    "reason": "PREMISE FALSE — the work was already done, on 2026-09-08, and no edit was made. The item says spec §4/§6.2 still list commodity/currency/rateInstrument as PLANNED. They do not: §4's diagram marks all three 'BUILT (P2-R3)', a dated 'Post-implementation state (2026-09-08)' block directly below already carries every claim this item asks for (the three shipped; the per-coin path removed by RP-6; coinScreen deferred), and §6.2 carries a separate 2026-09-12 supersession banner with commodity.ts v1.0.0's real dimensions and weights. Adding a second note dated 2026-09-21 would have duplicated a dated record while looking freshly checked, and rewriting the existing one is forbidden. Ground truth confirmed in frontend/src/lib/risk/profiles/, which holds exactly the eight profiles. The two surviving 'planned' strings in the file are genuine: fund.ts and /api/v1/risk/*.",
+    "approved_by": "owner, 2026-09-21 — \"begin working through the backlog\"",
+    "evidence": [
+     "docs/architecture/risk-scale-spec.md — §4 diagram and its 2026-09-08 post-implementation block",
+     "frontend/src/lib/risk/profiles/ — commodity.ts:27, currency.ts:26, rateInstrument.ts:25"
+    ]
+   }
   },
   {
    "id": "T-360",
@@ -2524,7 +2536,22 @@
      "lines": "766-768",
      "quote": "`docs/architecture/risk-framework.md` — cross-reference this spec; correct the §Why table, which lists three inconsistent systems and misses coin-discovery and pump-report."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-09-21",
+    "note": "SECOND PASS DONE, ITEM NOT CLOSED. Of the four asks: (1) the cross-reference ALREADY EXISTED and is stronger than the one requested — the blockquote under the status line says the spec is canonical and wins on disagreement — so nothing was added beyond a note saying so; (2) the §Why table was NOT replaced, deliberately, see below; (3) the §Architecture tree listed 3 of the 8 profile files and now lists all eight with their real exported symbols, named rather than counted (stakingAdapter.ts exports STAKING_PROVIDER_RISK_PROFILE, not the name its filename suggests); (4) the roadmap entries were annotated with a dated mapping table. Also fixed in passing: the §Architecture __tests__ line carried a typed '(44 tests)', wrong by about 2.4x — the figure was removed rather than refreshed, so it cannot go stale again.",
+    "remaining_work": "⚠ THIS ITEM'S OWN next_action CONFLICTS WITH A STANDING RULE, and the owner should settle it before anyone closes this. It says to REPLACE the §Why table with a dated note. That table is the dated problem statement this framework was written against, and it is the only surviving record of what the three inconsistent risk systems looked like before R1/R2; both 'dated records are annotated, never rewritten' and the no-deletion rule point away from replacing it. A dated block recording all four facts was added beside it instead. Decide: accept annotation-beside as satisfying the ask, or rule that the table should go. Two further gaps: roadmap items 4 (bond profile) and 5 (crypto token profile) have NO queue item among the four this task names (T-358→1, T-357→2, T-353→3, T-356→6), so neither was annotated rather than inventing a mapping; and the §Why annotation block has a real formatting defect — five lines of the backend bullet lost their '> ' prefix, so D2's text and the superseded 'dormant' text run together as one paragraph. It renders via markdown lazy continuation, but repairing it means editing a dated record, which is the owner's call.",
+    "corrections": [
+     "The item's premise is one revision behind the document it asks to edit: it calls the Python backend DORMANT, while risk-framework.md already records it as RETIRED AND FROZEN by owner decision D2 (2026-09-14), with the older 'dormant' sentence kept beneath as superseded text. Writing the next_action verbatim would have reverted a correction.",
+     "The backend band thresholds are 80/65/50/30, not the 65/50/30 the item states — it is the middle three rungs that disagree with the canonical 60/40/20.",
+     "T-360 had already had a first pass on 2026-09-12: the §Why annotation block carries a bullet stamped '(added 2026-09-12, T-360)'. The item reads as untouched in the 2026-09-07 snapshot.",
+     "The queue's line citations into this file have drifted by roughly 100 lines (T-358 cites :118-119, T-353 cites :122; that text now sits near :225-245). Every match in this pass was made on the quoted sentence, not the line number."
+    ],
+    "evidence": [
+     "docs/architecture/risk-framework.md — the 2026-09-21 annotation blocks",
+     "frontend/src/lib/risk/profiles/ — the eight profile files and their exports"
+    ]
+   }
   },
   {
    "id": "T-361",
@@ -2637,7 +2664,7 @@
   {
    "id": "T-375",
    "title": "Provide frontend/.env.example or drop the copy step",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "docs",
@@ -2652,7 +2679,19 @@
      "lines": "24-26",
      "quote": "cp frontend/.env.example frontend/.env.local  # Create if not present"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-21",
+    "basis": "verified-here",
+    "verdict": "already-done",
+    "reason": "PREMISE FALSE — the file exists and is committed. The item says frontend/.env.example does not exist. It does: 4,854 bytes, dated 2026-09-20 (after the 2026-09-07 queue snapshot), TRACKED by git (`git ls-files` matches it) and not ignored — .gitignore:25 says in as many words 'keep .env.example, ignore secrets'. Its content is the CLAUDE.md environment reference with every value blank or commented, and it opens by stating that nothing in it is required to start the app. Confirmed tracked rather than merely present on disk, because a local-only file would not satisfy this item for anyone cloning the repo.",
+    "approved_by": "owner, 2026-09-21 — \"begin working through the backlog\"",
+    "evidence": [
+     "frontend/.env.example",
+     ".gitignore:25-30"
+    ]
+   }
   },
   {
    "id": "T-377",
@@ -3352,7 +3391,16 @@
      "lines": "3, 22-25, 115, 148-166",
      "quote": "Use fortnightly, after a competitor review, or when deciding what to build next. Does not look for bugs — that is the code-auditor's job."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-09-21",
+    "note": "STILL OPEN — do not close on the 2026-09-21 activity. What ran on 2026-09-21 was opportunity-scout FILE mode, not the PROPOSE pass this item asks for: 8 items (T-399..T-406) were inserted into the queue with explicit owner approval, each surfaced by a checklist-steward sweep with no existing ledger entry. That is the second half of the scout workflow, reached by a different route.",
+    "remaining_work": "The PROPOSE pass itself is unrun: no docs/proposals/ file was written, and the owner has marked nothing APPROVED/REJECTED/DEFERRED in the scout's own format. Run the scout in PROPOSE mode and write the dated proposals file. Two inputs it must read first, per the charter's rule that the two TASK-QUEUE writers read each other before writing: the 8 items filed on 2026-09-21, so it does not re-propose them; and docs/audits/rejected-proposals.md, so it does not re-propose anything already refused (RP-2, RP-3, RP-5, RP-6 are live). Note the item cites origin/main 2128a18, which is stale — run against current main.",
+    "evidence": [
+     "docs/audits/task-queue-2026-09-07.json — T-399..T-406, each carrying an `opened` block dated 2026-09-21",
+     ".claude/agents/opportunity-scout.md:148-166"
+    ]
+   }
   },
   {
    "id": "T-327",
@@ -3405,9 +3453,14 @@
     }
    ],
    "progress": {
-    "noted_on": "2026-09-19",
-    "note": "PART DONE 2026-09-19: the DATA-AVAILABILITY.md portion of the batched steward proposal is complete and on branch docs/data-availability-2026-09-19 — 74 corrections, a new 'Run of 2026-09-19' section, and 11 proposed queue closures. NOT done: the TASK-QUEUE and P3-plan portions of the sweep this item also asks for.",
-    "evidence": "docs/audits/data-availability-steward-proposal-2026-09-19.md"
+    "noted_on": "2026-09-21",
+    "note": "SUBSTANTIALLY DONE, NOT CLOSED. Two checklist-steward sweeps ran on 2026-09-21 and produced batched, owner-approved proposals: docs/audits/steward-sweep-2026-09-21.md (36 rows) and docs/audits/steward-sweep-2-2026-09-21.md (23 verdicts). Together they closed 43 items, filed 8 new ones, and recomputed counts.by_status, which had drifted to open:159/closed:15 against an actual 134/40. The headline finding was that queue-closure-review-2026-09-13.md re-verified 62 items, recommended \"approve all 62\", and the ledger write never happened.",
+    "remaining_work": "This item names FOUR status surfaces and the sweeps covered two. DONE: TASK-QUEUE (the queue JSON — 43 closures, 2 progress blocks, 8 new items) and P3-production-review (note 6 annotated for T-104). NOT DONE: (a) DATA-AVAILABILITY.md — per docs/agents/checklist-steward.md its per-row STATUSES are never hand-edited, so the scope there is its action-items list only; (b) CLAUDE.md's status surfaces — the Feature Inventory and per-module tables were not swept, and sweep 2 found at least one live drift into them (risk-scale-spec.md:310 vs the shipped suspicionScore field, filed as T-406). Close this only when those two are swept or explicitly descoped.",
+    "evidence": [
+     "docs/audits/steward-sweep-2026-09-21.md",
+     "docs/audits/steward-sweep-2-2026-09-21.md",
+     "docs/audits/task-queue-2026-09-07.json — annotations.passes entries dated 2026-09-21"
+    ]
    }
   },
   {
@@ -10182,7 +10235,7 @@
   {
    "id": "T-400",
    "title": "cd-staging.yml still builds with the /api suffix T-333 removed everywhere else",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "ops-infra",
@@ -10209,6 +10262,18 @@
     "on": "2026-09-21",
     "by": "checklist-steward sweep (opportunity-scout FILE mode), owner-approved 2026-09-21",
     "why": "Surfaced by a re-verification sweep with no existing ledger entry anywhere. Filed rather than folded into a neighbouring item, because an unattributed defect riding inside another ticket is how these stayed invisible."
+   },
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-21",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "FIXED. .github/workflows/cd-staging.yml build-args now passes NEXT_PUBLIC_API_URL=https://staging.financenow.example.com — the trailing /api removed — with a four-line comment above it pointing at the rule on the NEXT_PUBLIC_API_URL key in infrastructure/kubernetes/configmap.yaml and saying not to re-add the suffix. The staging gate at :87 and its rationale comment were left untouched. Verified by parsing the edited workflow with js-yaml.",
+    "approved_by": "owner, 2026-09-21 — \"begin working through the backlog\"",
+    "evidence": [
+     ".github/workflows/cd-staging.yml:181-190",
+     "infrastructure/kubernetes/configmap.yaml:64-66"
+    ]
    }
   },
   {
@@ -10246,7 +10311,7 @@
   {
    "id": "T-402",
    "title": "Dead confluenceLabel import on the crypto TA page",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "bug",
@@ -10269,6 +10334,17 @@
     "on": "2026-09-21",
     "by": "checklist-steward sweep (opportunity-scout FILE mode), owner-approved 2026-09-21",
     "why": "Surfaced by a re-verification sweep with no existing ledger entry anywhere. Filed rather than folded into a neighbouring item, because an unattributed defect riding inside another ticket is how these stayed invisible."
+   },
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-21",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "FIXED. Removed the sole-binding import line `import { confluenceLabel } from '@/lib/utils/confluence'` from frontend/src/app/(dashboard)/technical-analysis/page.tsx. The symbol was genuinely unused in that file — the real call lives in components/analytics/technical/MultiTimeframeGrid.tsx, where the T-270 extraction moved it. `npx tsc --noEmit` clean afterwards. Worth recording: lint never flagged this, before or after — the warning count is 46 either side — which is why a dead import survived the extraction unnoticed.",
+    "approved_by": "owner, 2026-09-21 — \"begin working through the backlog\"",
+    "evidence": [
+     "frontend/src/app/(dashboard)/technical-analysis/page.tsx:31 (removed)"
+    ]
    }
   },
   {
@@ -10306,7 +10382,7 @@
   {
    "id": "T-404",
    "title": "opportunity-scout.md risk-score bullet never got the D14 rescoping its twin did",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "docs",
@@ -10333,12 +10409,24 @@
     "on": "2026-09-21",
     "by": "checklist-steward sweep (opportunity-scout FILE mode), owner-approved 2026-09-21",
     "why": "Surfaced by a re-verification sweep with no existing ledger entry anywhere. Filed rather than folded into a neighbouring item, because an unattributed defect riding inside another ticket is how these stayed invisible."
+   },
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-21",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "FIXED. .claude/agents/opportunity-scout.md — the unscoped bullet \"Risk scores are 0-100, higher = safer\" is now scoped to where a score is still published after D14 (the options Trade Risk Scorer and the macro/equity profiles), in the scout's own proposal-screening voice. It also closes the misreading the old line invited: it states explicitly that the bullet is not licence to propose a score on a surface that has none, and that the six staking RiskProfile dimensions stay 1-10 higher-is-riskier because they are curated INPUTS rather than a published score. code-auditor.md was not touched.",
+    "approved_by": "owner, 2026-09-21 — \"begin working through the backlog\"",
+    "evidence": [
+     ".claude/agents/opportunity-scout.md:116-124",
+     ".claude/agents/code-auditor.md:134-141 (the twin it was matched against)"
+    ]
    }
   },
   {
    "id": "T-405",
    "title": "affiliates.ts docblock justifies the file by a function D14 deleted",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "docs",
@@ -10365,12 +10453,24 @@
     "on": "2026-09-21",
     "by": "checklist-steward sweep (opportunity-scout FILE mode), owner-approved 2026-09-21",
     "why": "Surfaced by a re-verification sweep with no existing ledger entry anywhere. Filed rather than folded into a neighbouring item, because an unattributed defect riding inside another ticket is how these stayed invisible."
+   },
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-21",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "FIXED, and the rationale was rebuilt rather than amputated. frontend/src/lib/data/affiliates.ts's 'Why this module exists' docblock no longer rests on computeOverallRisk(), which D14 deleted. The conflict of interest it describes is real without a composite — the six published RiskProfile dimensions are reference INPUTS and inputs steer a choice — so the docblock now says that, and states that no composite exists or may be reintroduced. The 'three layers' section was corrected in step: layer 1 named two functions, one of which is gone, and now names only scoreStakingProvider(). The typed count '55 staking providers' was dropped rather than refreshed, per the derive-counts rule.",
+    "approved_by": "owner, 2026-09-21 — \"begin working through the backlog\"",
+    "evidence": [
+     "frontend/src/lib/data/affiliates.ts:6-30",
+     "frontend/src/lib/data/stakingProviders.ts:206-225 (the tombstone)"
+    ]
    }
   },
   {
    "id": "T-406",
    "title": "risk-scale-spec.md still describes pump-report emitting riskScore 0.0-10.0, and reads as Phase 6 outstanding",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "docs",
@@ -10397,6 +10497,18 @@
     "on": "2026-09-21",
     "by": "checklist-steward sweep (opportunity-scout FILE mode), owner-approved 2026-09-21",
     "why": "Surfaced by a re-verification sweep with no existing ledger entry anywhere. Filed rather than folded into a neighbouring item, because an unattributed defect riding inside another ticket is how these stayed invisible."
+   },
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-21",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "FIXED, both halves, by annotation rather than rewrite. (a) risk-scale-spec.md §3.4's pump-report row now reads suspicionScore with strikethrough on riskScore, 'higher = more suspicious', the drifted :31-32 anchor replaced by the real :32/:45, and a dated note saying the row said riskScore until 2026-09-21. (b) A dated block under the Scope line plus a SHIPPED marker above the §5 Phase 6 table now make the header and the table agree: R2 shipped phases 1-5, Phase 6 shipped separately on 2026-09-08. The dated R2 status line itself was left as written. Verified against route.ts:45 (the interface field) and :86 (the JSON schema in the prompt), and PumpReportTab.tsx:118/:471.",
+    "approved_by": "owner, 2026-09-21 — \"begin working through the backlog\"",
+    "evidence": [
+     "docs/architecture/risk-scale-spec.md:8-14, 318, 509-517",
+     "frontend/src/app/live-data/pump-report/investigate/route.ts:45,86"
+    ]
    }
   }
  ],
@@ -35119,6 +35231,15 @@
     "evidence": [
      "docs/audits/steward-sweep-2-2026-09-21.md — 23 verdicts, 24 contradictions, 29 stale citations",
      "docs/audits/queue-closure-review-2026-09-13.md"
+    ]
+   },
+   {
+    "on": "2026-09-21",
+    "what": "Backlog batch: worked 8 unblocked queue items across 5 agents with strict per-agent file ownership. 5 fixed (T-400, T-402, T-404, T-405, T-406), 2 closed as already-done with false premises (T-354, T-375), 1 left open with a second-pass progress block (T-360).",
+    "basis_key": "Agents were told the queue is a 2026-09-07 snapshot whose line numbers have measurably drifted, and that a false premise means NO edit — a wrong correction is worse than a stale sentence because it looks freshly checked. Three of eight items came back premise-false on exactly that basis.",
+    "caveat": "T-360 is NOT closed: its next_action asks to REPLACE a dated table, which the standing annotate-never-rewrite rule forbids, and its premise calls the Python backend 'dormant' when the target document already records it as frozen under D2 — following it verbatim would have reverted a correction. The owner decides whether annotation-beside satisfies the ask.",
+    "evidence": [
+     "1538 tests in 110 files, tsc clean, docs:check, staleness:check, lint 0 errors / 46 warnings (the unchanged pre-existing baseline)"
     ]
    }
   ]
