@@ -29,6 +29,14 @@ npx next build          # THE check dev mode misses — see C1 below
 - **Lint warnings: diff instances, not counts.** The 46 warnings are pre-existing
   (react-hooks rules). Judge a change by whether it *adds* instances — line numbers shift,
   so compare rule+context, or stash and compare.
+- **The figures above are DATED READINGS, not live values — re-measure before relying on
+  them.** They stood as "412 tests / ~67 warnings" with no date at all until 2026-09-19,
+  which is the exact failure this note prevents: an undated count reads as current forever
+  and nothing fails when it drifts. They are already drifting — a file count taken on
+  2026-09-21 found **112** test files against the 107 recorded two days earlier, and no
+  suite run has since said what that did to the 1515. Read them as of their date, run the
+  commands yourself for the real numbers, and never carry a figure forward under a fresh
+  date.
 - **`npm run audit` results are IP-dependent.** From a datacenter/container, most
   market-data hosts are unreachable (proxy 403s, Binance 451, Reddit blocks) — a FAIL
   column collected there is void. Code reading is environment-independent; availability
@@ -75,6 +83,15 @@ npx next build          # THE check dev mode misses — see C1 below
 - A 200 carrying fallback data is the failure mode that misdirects debugging. When
   reviewing data-layer changes, check what the response *claims* about itself, not just
   that it returns.
+- **Yahoo Finance is hard-blocked on TERMS grounds, not availability (2026-08-06).**
+  `pinnedFetch` refuses `*.yahoo.com` at the socket, so a diff that adds a fetcher does not
+  bring it back — it just fails somewhere less obvious. Any code path reaching for it, and
+  any doc or comment recommending it as a fallback, is a 🟠 finding. This one is easy to get
+  backwards because Yahoo was the only **keyless** rung on the equity/fund/macro quote,
+  chart and OHLCV paths: the degradations it left behind — key-gated quotes, no futures
+  term structure, no per-ticker news, macro symbols rendering a dash — are the decided
+  state, not gaps to close with a scraper. The fix for any of them is a free API key on the
+  Integrations page.
 
 **Security**
 - Sensitive routes (agents, provider config writes, video-analyze POST, the
@@ -145,6 +162,18 @@ as a question with your reasoning — do not change it.
 | A relentless uptrend reports `overall: 'neutral'` in the TA signal summary | The panel working, not a bug: trend indicators say buy while mean-reversion oscillators correctly say overbought, averaging inside the ±0.5 neutral band. The buy/sell counts beside it carry the disagreement. Widening the bands would suppress the overbought half — pinned with a note in `signalSummary.test.ts` |
 | `cd-staging` deploy jobs are gated on `vars.STAGING_DEPLOY_ENABLED` | Owner decision 2026-09-08. The workflow had failed ~90 pushes since 2026-07-18 on an unset `AWS_ACCOUNT_ID`, making `main`'s red X permanent and therefore meaningless. Gated on a repository variable so provisioning re-enables it with no PR |
 
+### Added 2026-09-21 (staking-risk decisions the registry never carried)
+
+RP-6 above covers the *per-coin* score. The staking side was decided separately and was
+missing from this table entirely, which is why the composite kept being re-raised as an
+unfinished feature.
+
+| Looks like | Actually |
+|------------|----------|
+| Staking provider cards list six risk dimensions and no overall number | **RP-3 (2026-08-17), extended by D14 (2026-09-14).** There is NO composite staking risk score anywhere in the app, its v1 API or the MCP server. The six `RiskProfile` dimensions are published as-is because they are reference *inputs*; a weighted composite over six editorial judgments is one number ranking providers against each other, which is the shape that reads as a recommendation. Arithmetic risk metrics (Sharpe, Sortino, volatility, drawdown, beta) are unaffected and stay. Cards without a composite are the DECIDED state — do not report the absence as a gap, and do not add one |
+| `/api/v1/staking/opportunities` and `/live-data/staking-discovery` ignore `max_risk` / `min_safety` | Same decision (D14). Those filters, plus `safetyScore` / `band` / `riskScore` / `riskLevel`, the `compare_staking_risk` MCP tool and the `computeOverallRisk()` / `getRiskLevel()` helpers were all deleted. **Removed params are IGNORED, not rejected** — an old client sending `max_risk=5` gets a 200 with MORE rows, never fewer, so nothing is silently filtered by a rule the caller can no longer see. `middleware.ts` logs them. Guarded by `lib/risk/__tests__/riskScoringRemoved.test.ts` |
+| `scoreStakingProvider()` has no caller | Retained on purpose, **not dead code**. An earlier version of this note said it was "live for `/api/v1/staking/opportunities`" — that stopped being true at D14. D18 defers new risk profiles until a surface is approved to render a score, and deleting the engine would pre-empt that decision. Do not flag it as unused, and do not wire it into a surface to make the fact go away |
+
 When a review establishes a *new* deliberate decision, propose adding it to this table —
 that's how it stays cheaper than re-litigating.
 
@@ -162,6 +191,14 @@ that's how it stays cheaper than re-litigating.
 - Distinguish "wrong" from "different venue/tier": OHLCV comes from Binance.US not
   Binance.com; trailing P/E won't match a broker's forward figure. Real divergences are
   not bugs.
+- **Free-tier sources only until near release — a paid tier is SEQUENCING, not a defect
+  (D21, owner, 2026-09-18).** Anything whose remedy is "buy a plan" gets recorded and left
+  alone; the correct state for a surface blocked only by a paid tier is an honest empty or
+  a disclosed fallback, never a purchase. Rank such a finding 🟢 info and say which plan
+  would cure it. The other half of D21 **is** enforceable here: no single vendor may be
+  load-bearing, so a diff that makes one the only path to a surface is a real finding —
+  `npx tsx scripts/gen-coverage-matrix.ts` prints the "Strands if dropped" count per
+  vendor, and dropping a vendor should degrade a surface, not remove it.
 
 ## Deployable prompt
 
@@ -186,6 +223,13 @@ For the diff or branch under review:
 4. Report findings ranked by severity. Do not edit shared engines during a page-scoped
    review — report instead. Do not conclude a data source is broken from a datacenter
    environment; availability is IP-dependent and only owner-machine runs count.
+5. Hold the standing sourcing and risk-scoring policy: Yahoo Finance is hard-blocked on
+   TERMS grounds (any path reaching for it is a finding, and the degradations it caused
+   are deliberate); no per-coin risk score and no composite staking risk score is
+   published anywhere (RP-6, RP-3/D14 — the line is ranking vs explanation, so do not
+   "restore consistency" in either direction); exchange API-key custody is forbidden
+   outright, not guarded (RP-5); and a surface blocked only by a paid tier is sequencing
+   under D21, not a defect.
 
 If something in the do-not-fix registry seems genuinely wrong, raise it as a question
 with reasoning — never change it unilaterally.
