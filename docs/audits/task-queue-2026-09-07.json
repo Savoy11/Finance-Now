@@ -54,10 +54,10 @@
  },
  "counts": {
   "total_verified": 398,
-  "outstanding": 323,
+  "outstanding": 346,
   "by_status": {
-   "open": 112,
-   "closed": 62,
+   "open": 99,
+   "closed": 83,
    "blocked": 73,
    "unclear": 1,
    "parked": 90
@@ -69,7 +69,7 @@
    "owner-machine": 83
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 62,
+  "closed_by_annotation": 83,
   "counts_recomputed_on": "2026-09-21",
   "counts_note": "by_status and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status."
  },
@@ -1093,7 +1093,7 @@
   {
    "id": "T-069",
    "title": "S6 — fund comparison view (side-by-side facts)",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "feature",
@@ -1115,7 +1115,18 @@
      "lines": "18",
      "quote": "Remaining: item 1 fund comparison view (side-by-side fees/yield/duration/credit/holdings-overlap — \"Compare has the pieces\")"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-21",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "The fund comparison view exists and is wired end to end. `components/markets/FundFactsSection.tsx` (208 lines, header comment at :12 cites \"S6, T-069\") renders a side-by-side facts table with Type, Issuer, Category, Strategy, Tracks, Expense ratio, Sales charge, fee cost in dollars, Yield (TTM) at :114, AUM at :115, Inception at :117 and Trading restriction at :122. It is mounted on /compare at compare/page.tsx:819, filtered to `resolve(s).kind === 'fund'`, beside the existing holdings-overlap section, and imported at :33. It reuses `feeImpact`/`feeCostDisplay` from lib/data/feeImpact.ts rather than recomputing, and is guarded by lib/data/__tests__/fundFacts.test.ts. The one element of the original ask that is NOT delivered — bond duration/credit tier — is deliberate and stated in the component itself (:23-30): `FundEntry` carries neither field, so the table prints `indexTracked` verbatim and says outright that no duration figure exists rather than deriving one from a fund name. docs/TASK-QUEUE.md:1989-2010 already carries a dated Status block recording this as shipped 2026-09-08; only the queue JSON still reads \"open\".",
+    "approved_by": "owner, 2026-09-21 — approved the checklist-steward sweep 2 batch (docs/audits/steward-sweep-2-2026-09-21.md)",
+    "evidence": [
+     "frontend/src/app/(dashboard)/compare/page.tsx:819"
+    ]
+   }
   },
   {
    "id": "T-072",
@@ -1791,7 +1802,7 @@
   {
    "id": "T-257",
    "title": "Run the overdue full code-auditor baseline pass (fortnightly; last 2026-07-30)",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "process",
@@ -1818,7 +1829,18 @@
      "lines": "3, 72-80, 139-140",
      "quote": "Use fortnightly, before a release, and after any large merge. Does not propose new features — that is the opportunity-scout's job."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-21",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "The pass ran and its report is in the tree. docs/audits/2026-09-08-audit.md:1-6 records exactly the check set the next_action specified — `npx tsc --noEmit`, `npx vitest run`, `npx eslint .`, `npx next build`, `gen-data-sources --verify`, `npm audit`, `git log` — with `npm run audit`/`smoke` skipped for the recorded IP-skew reason. It is a full baseline rather than another smoke test: five findings (1 P1, 4 P2) plus an 'Examined and clean' section at :268 that covers precisely the areas 2026-07-30-audit.md:156 listed as untouched (RP-5/RP-6 policy scan, the risk-scale sweep across the staking surface, route invariants, provenance dates, the Yahoo block). It ran at f4c850f on branch `claude/outstanding-tasks-l86xjw` rather than the origin/main `2128a18` the next_action named, and the report's own note at :8-13 records that and shows no frontend source differed. This closes the overdue instance only — `.claude/agents/code-auditor.md:3` makes the pass fortnightly, so the next instance (due ~2026-09-22, after the D2/D14 merges) is a new item, not this one.",
+    "approved_by": "owner, 2026-09-21 — approved the checklist-steward sweep 2 batch (docs/audits/steward-sweep-2-2026-09-21.md)",
+    "evidence": [
+     "docs/audits/2026-09-08-audit.md:1-6"
+    ]
+   }
   },
   {
    "id": "T-259",
@@ -2000,7 +2022,7 @@
   {
    "id": "T-270",
    "title": "Extract the crypto TA page's inline panels to components",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "process",
@@ -2017,7 +2039,18 @@
      "lines": "75-80",
      "quote": "These would move cleanly to `components/analytics/technical/`. A refactor of that size is out of scope for an accuracy audit and should be its own task."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-21",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "The refactor is complete and done the way the item asked. frontend/src/components/analytics/technical/ now exists and holds all nine panels: BacktestPanel, KeyLevelsPanel, MarketStructurePanel, MultiTimeframeGrid, PatternsPanel, SignalSummaryPanel, SupportResistancePanel, TechnicalReadPanel, ThesisBuilderPanel. The page imports eight of them at page.tsx:86-93 and composes them at :397-428; it is now 437 lines, down from the 1,266 the item measured (and 1,791 in the T10 audit). BacktestPanel's hidden-but-recoverable constraint was honoured rather than ignored — page.tsx:82-84 explains it moved with the others but is deliberately NOT imported because it has no routed consumer, and the file is retained at components/analytics/technical/BacktestPanel.tsx. One trivial residue, not a reason to keep the item open and already flagged by the parallel sweep (docs/audits/steward-sweep-2026-09-21.md:1467): `confluenceLabel` is still imported at page.tsx:31 and used nowhere in that file — the real call moved into MultiTimeframeGrid.tsx.",
+    "approved_by": "owner, 2026-09-21 — approved the checklist-steward sweep 2 batch (docs/audits/steward-sweep-2-2026-09-21.md)",
+    "evidence": [
+     "frontend/src/app/(dashboard)/technical-analysis/page.tsx:86"
+    ]
+   }
   },
   {
    "id": "T-273",
@@ -2130,7 +2163,7 @@
   {
    "id": "T-302",
    "title": "Raise the backend coverage floor above 45% with new tests",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "ops-infra",
@@ -2147,7 +2180,18 @@
      "lines": "77-82",
      "quote": "`ci.yml` runs pytest with `--cov-fail-under=45` against a measured ~51%. The inline comment is explicit that this is measured reality rather than a target, and that raising it should come with new tests instead of a broken gate. That work is still outstanding."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-21",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "The ask was: raise the floor above 45% with new tests. backend/pyproject.toml:87 now declares `--cov-fail-under=55`, and the comment block at :70-86 records the raise 45→55 on 2026-09-08 'on the back of 47 new tests over app/scoring'. The tests exist and I counted them rather than trusting the comment: backend/tests/test_scoring/test_components.py has 25 `def test_` and test_normalizer.py has 22 — 47 exactly. docs/CI-REMEDIATION.md:100-117 records the same close ('Closed the way the entry asked for: with tests, not by moving a number') and that the floor is declared once, with ci.yml deliberately not overriding it. The item's next_action also names running pytest to re-measure; that is owner-machine work I did not and may not run, but the deliverable it gates — a raised floor backed by tests — is in the tree. Worth the owner knowing: since D2 (2026-09-14) the backend is frozen and ci.yml has no backend-test job (jobs are frontend-check, docker-build, security-scan, terraform-validate, ci-success), so this floor now gates only a local bare `pytest`; any FURTHER raising is moot under D2, not merely done.",
+    "approved_by": "owner, 2026-09-21 — approved the checklist-steward sweep 2 batch (docs/audits/steward-sweep-2-2026-09-21.md)",
+    "evidence": [
+     "backend/pyproject.toml:87"
+    ]
+   }
   },
   {
    "id": "T-326",
@@ -2371,7 +2415,7 @@
   {
    "id": "T-346",
    "title": "Phase 6 — relabel pump-report riskScore → suspicionScore",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "feature",
@@ -2388,7 +2432,18 @@
      "lines": "471-476",
      "quote": "| 6.1 | `frontend/src/app/live-data/pump-report/investigate/route.ts` | `riskScore` → `suspicionScore`; prompt updated (`:72-73`). |"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-21",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "The rename shipped in full, including the guard test the item asked for. The route declares `suspicionScore: number` (investigate/route.ts:45) and the prompt asks the model for `\"suspicionScore\": <0.0-10.0>` (:86); the doc comment at :34-38 records why (\"Named `suspicionScore`, not `riskScore` ... a 0-10 higher-is-worse scale collided with that\"). PumpReportTab.tsx reads `report.suspicionScore` at :118 and serialises it into the chat context at :471. A dedicated guard test exists at frontend/src/app/live-data/pump-report/__tests__/suspicionScore.test.ts — it asserts the prompt and interface use suspicionScore, that PumpReportTab reads it, and at :45-50 that no live `riskScore:` key or `.riskScore` read survives anywhere on the pump-report surface (comments explaining the rename are allowed). A repo grep of live-data/pump-report/ and components/pump-report/ finds `riskScore` only in those explanatory comments and test assertions. Independently corroborated by docs/audits/2026-09-08-audit.md:300.",
+    "approved_by": "owner, 2026-09-21 — approved the checklist-steward sweep 2 batch (docs/audits/steward-sweep-2-2026-09-21.md)",
+    "evidence": [
+     "frontend/src/app/live-data/pump-report/investigate/route.ts:45"
+    ]
+   }
   },
   {
    "id": "T-350",
@@ -2474,7 +2529,7 @@
   {
    "id": "T-361",
    "title": "Update CLAUDE.md stakingProviders section for @internal computeOverallRisk/getRiskLevel",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "docs",
@@ -2491,7 +2546,19 @@
      "lines": "770",
      "quote": "`CLAUDE.md` — `stakingProviders.ts` section, once `computeOverallRisk` is internal-only."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-21",
+    "basis": "verified-here",
+    "verdict": "superseded",
+    "reason": "The item asks CLAUDE.md to describe computeOverallRisk()/getRiskLevel() as `@internal` legacy helpers kept for the /api/v1/staking/opportunities legacy fields. Owner decision D14 (docs/decisions/2026-09-14-owner-decisions.md:210) instead ordered those helpers REMOVED along with the published composite fields, and the tree confirms it: stakingProviders.ts:207-225 is a tombstone comment where they were, no definition survives anywhere under frontend/src (the only hits are that tombstone, comments in affiliates.ts, normalize.ts and stakingAdapter.ts, and the guard assertions in lib/risk/__tests__/riskScoringRemoved.test.ts:161-162,176,193 that fail if either is reintroduced). Writing the requested text into CLAUDE.md would publish a false claim. CLAUDE.md:520 already documents the deletion, and :538 records scoreStakingProvider() as retained with no live consumer — which is the accurate version of what this item wanted said.",
+    "approved_by": "owner, 2026-09-21 — approved the checklist-steward sweep 2 batch (docs/audits/steward-sweep-2-2026-09-21.md)",
+    "evidence": [
+     "frontend/src/lib/data/stakingProviders.ts:207-225"
+    ],
+    "superseded_by": "D14 — docs/decisions/2026-09-14-owner-decisions.md:210 (scope table row at :67, confirmed-item-by-item section from :71)"
+   }
   },
   {
    "id": "T-370",
@@ -2590,7 +2657,7 @@
   {
    "id": "T-377",
    "title": "Correct the Aurora cluster identifier across runbooks",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "docs",
@@ -2605,7 +2672,18 @@
      "lines": "17-19, 36-40, 55-58",
      "quote": "--db-cluster-identifier fn-cluster \\"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-21",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "The literal `fn-cluster` is gone from every runbook. A repo-wide grep for `fn-cluster` (md/tf/yml/yaml) returns only two hits, both inside dated audit records describing the fix (queue-verification-sweep-2026-09-11.md:126 and queue-closure-review-2026-09-13.md:116) — zero in the runbooks themselves. All three named files now use the Terraform-derived identifier: docs/runbooks/backup-restore.md:37 `--db-cluster-identifier fn-staging-aurora` and :80 `--source-db-cluster-identifier fn-staging-aurora`; docs/runbooks/incident-response.md:196 `describe-db-clusters --db-cluster-identifier fn-staging-aurora` and :202 `failover-db-cluster --db-cluster-identifier fn-staging-aurora`; docs/runbooks/scaling.md:104 `--db-cluster-identifier fn-staging-aurora`. That matches the source of truth the item cites, infrastructure/terraform/rds.tf:156 `cluster_identifier = \"${local.name_prefix}-aurora\"`. incident-response.md:185-187 goes further and documents the derivation explicitly, including that the plan was never applied, so a reader knows the identifier is a prediction rather than an observed resource.",
+    "approved_by": "owner, 2026-09-21 — approved the checklist-steward sweep 2 batch (docs/audits/steward-sweep-2-2026-09-21.md)",
+    "evidence": [
+     "docs/runbooks/backup-restore.md:37"
+    ]
+   }
   },
   {
    "id": "T-380",
@@ -2680,7 +2758,7 @@
   {
    "id": "T-382",
    "title": "Provide infrastructure/docker/.env.example or fix README Docker instructions",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "docs",
@@ -2695,12 +2773,23 @@
      "lines": "91-98",
      "quote": "cp infrastructure/docker/.env.example infrastructure/docker/.env   # fill in secrets"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-21",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "The broken instruction is gone and the gap is documented rather than papered over. README.md:156-164 now reads: `docker compose -f infrastructure/docker/docker-compose.yml up --build`, followed by 'The compose file supplies its own defaults for every variable it reads (`${VAR:-default}`), so it starts without an env file. There is deliberately no `infrastructure/docker/.env.example` — this line used to tell you to copy one that has never existed.' That claim checks out against the compose file itself: infrastructure/docker/docker-compose.yml:18-20 interpolates `${COINGECKO_API_KEY:-}`, `${DEFILLAMA_API_KEY:-}` and `${CHAINLINK_RPC_URL:-https://eth-mainnet.public.blastapi.io}` — all with defaults, so no env file is required, which resolves the refute block's worry that the missing example was a genuine gap. `ls infrastructure/docker` shows only docker-compose.yml, docker-compose.prod.yml and nginx/; the repo's only .env.example files are backend/.env.example and frontend/.env.example. README.md:81 now points at the frontend one, and docs/deployment/local-setup.md:36 copies `frontend/.env.example`, so the two documents agree.",
+    "approved_by": "owner, 2026-09-21 — approved the checklist-steward sweep 2 batch (docs/audits/steward-sweep-2-2026-09-21.md)",
+    "evidence": [
+     "README.md:160-164"
+    ]
+   }
   },
   {
    "id": "T-388",
    "title": "Fix the setState-in-effect ESLint warning on the crypto technical-analysis page",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "bug",
@@ -2717,12 +2806,23 @@
      "lines": "2026-08-31",
      "quote": "The one ESLint warning (setState in an effect, technical-analysis page) is pre-existing and unrelated."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-21",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "Both warnings are structurally gone, and each fix names the rule it removes. The old page.tsx:361 warning (MultiTimeframeGrid calling setRows synchronously at the top of an effect) is fixed in the extracted component: state is keyed on the asset with a lazy initialiser (MultiTimeframeGrid.tsx:50-53) and the comment at :44-49 says so explicitly — \"State is KEYED on the asset rather than reset by a synchronous setState at the top of the effect ... it cost a cascading render every time (react-hooks/set-state-in-effect). Deriving the reset makes both go away.\" Its remaining useEffect (:55-71) only calls setState inside async callbacks, which the rule does not flag. The old page.tsx:770-773 warning (setStrategyKey in an effect) is fixed exactly as next_action prescribed: BacktestPanel.tsx imports only `useState, useMemo` (:11), has no useEffect at all, and derives `defaultKey` via useMemo at :67-72 with `const activeKey = strategyKey ?? defaultKey` at :73. Across the whole technical/ folder MultiTimeframeGrid is the only file with a useEffect, and technical-analysis/page.tsx's single remaining effect (:168-178) sets state only inside a mousedown handler. Caveat: I did not execute eslint (a steward proposes and this sweep forbids running suites), so this is verified from source rather than from a lint run.",
+    "approved_by": "owner, 2026-09-21 — approved the checklist-steward sweep 2 batch (docs/audits/steward-sweep-2-2026-09-21.md)",
+    "evidence": [
+     "frontend/src/components/analytics/technical/MultiTimeframeGrid.tsx:44"
+    ]
+   }
   },
   {
    "id": "T-391",
    "title": "Build a realised-volatility factor for the Coins screener",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "feature",
@@ -2737,12 +2837,23 @@
      "lines": "129-141",
      "quote": "{ label: 'Volatility', needs: 'a realised-volatility calculation over the candle sweep — not yet built' },"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-21",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "Built exactly as the next_action prescribed, including the honest-shrink step. `realisedVol30dPct: number | null` is on TechnicalRow (sweep.ts:42-50), computed by `realisedVolatilityPct()` (sweep.ts:78) as the annualised stdev of daily log returns and populated in `computeTechnicals` (sweep.ts:135); a 30-close minimum returns null rather than a fabricated 0. The FILTER_FIELD exists in the `technical` group at coinFilters.ts:109-112 with a hint that names the 365-day annualisation and states plainly that it is \"a description of how much the price HAS moved, not a forecast and not a risk score\" — which keeps it clear of RP-6/D14. The Volatility line is GONE from UNAVAILABLE_FACTORS, which now holds only 'On-chain metrics' (coinFilters.ts:138-144), with a comment recording that realised volatility moved out on 2026-09-08. The path is connected, not just declared: AssetRegistryClient.tsx:21,325 renders `FILTER_FIELDS`; useAssets.ts:112 runs `useTechnicalSweep` over the whole tracked universe only when a technical rule is active and threads `sweep.data` into the query params. Tests exist at lib/technicals/__tests__/sweep.test.ts:105-112 and lib/data/__tests__/coinFilters.test.ts:230,237 (the latter pins the exact set of technical field keys).",
+    "approved_by": "owner, 2026-09-21 — approved the checklist-steward sweep 2 batch (docs/audits/steward-sweep-2-2026-09-21.md)",
+    "evidence": [
+     "frontend/src/lib/data/coinFilters.ts:109-112"
+    ]
+   }
   },
   {
    "id": "T-118",
    "title": "Staking affiliate hook — affiliateUrl/affiliateProgram + shared rel=sponsored link component",
-   "status": "open",
+   "status": "closed",
    "confidence": "medium",
    "owner_role": "remote-dev",
    "category": "feature",
@@ -2759,7 +2870,18 @@
      "lines": "379-381, 385-387, 391",
      "quote": "Hook: `StakingProvider.website?` already exists (`src/lib/data/stakingProviders.ts`); add `affiliateUrl?` + `affiliateProgram?` and render through one shared component so disclosure can't be forgotten on a new surface."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-21",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "Every element of the ask is in the tree. `affiliateUrl?` and `affiliateProgram?` sit beside `website?` on StakingProvider (stakingProviders.ts:189, 200, 202), with a declaration comment stating website is never overwritten and that the field must be read only through `resolveOutboundLink()`. The shared component is components/ui/SponsoredLink.tsx: :67 emits `rel={link.sponsored ? 'sponsored noopener noreferrer' : 'noopener noreferrer'}` and :74 renders a visible **Paid link** tag from the same value that chose the URL. lib/data/affiliates.ts carries the structural guard — `RankableProvider = Omit<StakingProvider,'affiliateUrl'|'affiliateProgram'>` (:40), a defunct-provider refusal in `resolveOutboundLink` (:80-83, stronger than asked: Celsius can never be monetised), and computed coverage-bias reporting (:107-121). /staking links out only through SponsoredLink (staking/page.tsx:16-17, 180, 222). lib/data/__tests__/affiliates.test.ts:60-73 pins that `affiliateUrl` is unset for every provider, so nothing is monetised yet, exactly as the item required; :118-137 is the source-scan backstop and :138-146 forbids a bare anchor. docs/ROADMAP.md:447-479 carries the dated status block. One wrinkle, and it does not reopen the item: the next_action asked for a test proving `computeOverallRisk` cannot read the affiliate fields — D14 (2026-09-14) DELETED that function, so the surviving test pins `scoreStakingProvider(risks: RiskProfile)` instead (affiliates.test.ts:81-100, which says so in as many words). The rule was preserved through the deletion, not lost with it.",
+    "approved_by": "owner, 2026-09-21 — approved the checklist-steward sweep 2 batch (docs/audits/steward-sweep-2-2026-09-21.md)",
+    "evidence": [
+     "frontend/src/lib/data/stakingProviders.ts:200-202"
+    ]
+   }
   },
   {
    "id": "T-121",
@@ -2803,15 +2925,18 @@
     }
    ],
    "progress": {
-    "noted_on": "2026-09-19",
-    "note": "MEASURED 2026-09-19, not yet closed. The audit records staking-discovery at 2,238 ms / 94 pools — against the ~18 s this item was raised on — so the 2026-09-08 per-upstream 6 s bound is working. NOT closing it, because three direct re-probes the same day ran 7.6 s, 7.7 s and 9.6 s, so the fast audit figure is not reproducible on demand. A SEPARATE defect surfaced while measuring: Yearn, Pendle and Beefy contribute ZERO pools (api.yearn.finance does not resolve, the Pendle endpoint 404s on the exact URL the route sends, Beefy answers 200 and lands nothing), and two of the three probes returned 0 pools total with ok:true and no stale flag — the last-good cache at route.ts:463-468 only covers a warm identical filter key.",
-    "evidence": "docs/audits/data-availability-steward-proposal-2026-09-19.md"
+    "noted_on": "2026-09-21",
+    "note": "STILL OPEN, re-verified against the current tree by a checklist-steward sweep — but the next_action above is partly stale and must not be worked verbatim. The first cure the next_action proposed HAS landed — route.ts:77 sets `UPSTREAM_TIMEOUT_MS = 6_000` and :98 applies `AbortSignal.timeout(UPSTREAM_TIMEOUT_MS)` per fetch, with :80-87 explaining that a timeout is deliberately not retried. But the item is not closable. The second cure (serve last-good immediately, refresh in background) is NOT implemented: route.ts:457-467 keys last-good on `coinFilter|minTvl|minApy|sourceFilter` and returns it only when `pools.length === 0 && anyUpstreamFailed` and the entry is warm, so a cold or differently-filtered request that lands nothing returns `ok: true` with zero pools and no `stale` flag — exactly the hole the 2026-09-19 progress note recorded, still at the same lines. And the latency claim is measurement-derived, so it is not mine to settle: the only fast figure is 2,238 ms / 94 pools in docs/audits/live-data-audit-2026-09-19.json, against 7.6/7.7/9.6 s on same-day re-probes, and DATA-AVAILABILITY.md:843 itself records both. Nothing in the tree has changed on this route since that note.",
+    "remaining_work": "Restated against today's tree, the original next_action is half-stale — do NOT re-do the 6 s budget, it is at route.ts:77/98. What is actually left, in the order it should be taken: (1) SPLIT OUT THE DEAD UPSTREAMS. Three of the four sources contribute zero pools — route.ts:227 still fetches `api.yearn.finance/v1/chains/1/vaults/all` (does not resolve), :281 still fetches `api-v2.pendle.finance/core/v1/sdk/1/markets?limit=100&order_by=liquidity:desc` (404s on that exact URL), and Beefy answers 200 landing nothing. That is a correctness defect, not a latency one, it has no ledger item of its own (T-172 is the only queue entry mentioning any of the three), and it should become one rather than riding a perf item. (2) FIX THE COLD-START HOLE at route.ts:457-467: last-good is per-exact-filter-key and only consulted when a fetch failed, so a zero-pool response can ship as `ok: true` with no `stale` flag. (3) ONLY THEN the latency question, and only on the owner's machine: one `npm run audit` plus repeated direct probes, because the single 2,238 ms reading is not reproducible on demand and a single fast sample is not a measurement. Note the ~18-22 s figure in the item's title is superseded by DATA-AVAILABILITY.md:843 (~2.2 s re-measured 2026-09-19) — reopening against 18 s would chase a number that no longer describes the route.",
+    "evidence": [
+     "frontend/src/app/live-data/staking-discovery/route.ts:457-467"
+    ]
    }
   },
   {
    "id": "T-173",
    "title": "alerts route hardcodes CoinGecko, bypassing the registry and pinnedFetch",
-   "status": "open",
+   "status": "closed",
    "confidence": "medium",
    "owner_role": "remote-dev",
    "category": "ops-infra",
@@ -2826,7 +2951,18 @@
      "lines": "90-91, 204-206",
      "quote": "the route hardcodes its CoinGecko URL, with no provider registry and no `pinnedFetch` involvement."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-21",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "The item's title has two halves and both are settled — one by fix, one by a recorded deliberate decision. The hardcode and the registry bypass are fixed: alerts/route.ts:2 imports `coingeckoBase, coingeckoHeaders` from lib/api/live/coingecko, builds the URL at :100 with `${coingeckoBase()}` and sends `coingeckoHeaders()` at :103, and records utilization on both the error and success paths (:114, :189). The comment at :95-99 states what changed: \"This route used to bypass both: pointing the app at a proxy or a Pro endpoint silently missed it, and it was billed against the free-tier limit even on a paid plan.\" That is the same path markets/route.ts uses (markets/route.ts:3-4, 37-38). The pinnedFetch half was deliberately NOT done, with reasoning recorded at lib/api/live/coingecko.ts:14-21: pinnedFetch attaches a custom dispatcher that takes the request out of Next's fetch cache, and every CoinGecko call site depends on `next: { revalidate }` to stay inside the rate limit — so routing through it would trade a terms gate on an already terms-verified host for multiplied request volume. Worth flagging: that decision lives only in a code comment; there is no entry for it in docs/decisions/ or docs/audits/rejected-proposals.md.",
+    "approved_by": "owner, 2026-09-21 — approved the checklist-steward sweep 2 batch (docs/audits/steward-sweep-2-2026-09-21.md)",
+    "evidence": [
+     "frontend/src/app/live-data/alerts/route.ts:100"
+    ]
+   }
   },
   {
    "id": "T-352",
@@ -2957,7 +3093,7 @@
   {
    "id": "T-074",
    "title": "Visually verify the /funds Fee impact columns in a running app",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "either",
    "category": "data-verification",
@@ -2975,12 +3111,23 @@
      "lines": "10",
      "quote": "`/funds` renders with the new tab present. The fee columns are client-state behind a click, so their arithmetic is verified by the unit tests rather than a curl — stated, not glossed."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-21",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "This is the least certain of my five closes, and I want the annotation to say so rather than hide it. The blocker is cleared — #147 merged 2026-09-08 (docs/TASK-QUEUE.md:1991-1994; docs/decisions/2026-09-14-owner-decisions.md:51) and lib/data/feeImpact.ts is now on main with the 'fees' ColumnTab live in FundsClient.tsx:28, 666, 682, 844-870. The visual pass itself is recorded FIRST-HAND in the tree, and it is not merely a claim: feeImpact.ts:89-101 describes a defect that only a rendered page could surface — VOO and IVV charge exactly the 0.03% benchmark, so the naive sign rule printed \"−$0\" in warning amber on the two cheapest funds in the catalog — and states \"Found by looking at the rendered page (T-074); no unit test on the arithmetic could have caught it, because the arithmetic was right.\" The artifact of that pass is `feeCostDisplay()` (:105-111), consumed by the registry at FundsClient.tsx:849 and 856-860. That covers the VOO spot-check the next_action names. The AGTHX spot-check has no first-hand record, AND its expected appearance has since changed: T-073 verified AGTHX's 5.75% front load on 2026-09-10 (fundCatalog.ts:547, with SEC source and verifiedAt), so the row now renders 'incl. load' with the load priced into the figure (FundsClient.tsx:866-869; feeImpact.test.ts:36-46, 56-73) — not the '+load — true cost is higher than shown' flag the next_action predicted. I close on the item's purpose being met and a real defect fixed, and I name the unrecorded half in the annotation so nobody reads this as a full two-row sign-off.",
+    "approved_by": "owner, 2026-09-21 — approved the checklist-steward sweep 2 batch (docs/audits/steward-sweep-2-2026-09-21.md)",
+    "evidence": [
+     "frontend/src/lib/data/feeImpact.ts:94-96"
+    ]
+   }
   },
   {
    "id": "T-081",
    "title": "Fix the permanent red X on main — set AWS_ACCOUNT_ID or gate cd-staging.yml",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "either",
    "category": "ops-infra",
@@ -3000,12 +3147,23 @@
      "lines": "155-162, 167-168",
      "quote": "| `AWS_ACCOUNT_ID` | **Required.** Every AWS step in both CD workflows | `aws sts get-caller-identity` |"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-21",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "Option (b) of next_action landed verbatim in the current tree. `.github/workflows/cd-staging.yml:87` reads `if: ${{ vars.STAGING_DEPLOY_ENABLED == 'true' || github.event_name == 'workflow_dispatch' }}` on the `build-and-push` job, preceded by a 19-line rationale comment at :68-86 that names the ~90 failed pushes since 2026-07-18. The rest of the pipeline follows it: `deploy-staging` has `needs: build-and-push` (:201) so it skips too, `smoke-tests` needs `deploy-staging` (:323), and `notify` is guarded by `always() && needs.build-and-push.result != 'skipped'` (:380) so a skipped run posts nothing. The `push: branches: [main]` trigger is still at :4-5 — deliberately, since the gate is a job-level `if:`, not a trigger removal — and the AWS_ACCOUNT_ID preflight still fails by name on a manual dispatch, which is the documented design (:84-86). Cross-checked against two other ledgers that agree: docs/TASK-QUEUE.md:2236-2250 (dated status block, 2026-09-08) and docs/audits/production-readiness-scorecard.md:28-31, which cites the same line 87. I could not observe GitHub Actions run history (no network, no git), so 'no red X since' rests on the workflow file rather than on observed runs — but the gate itself is the deliverable the item asked for.",
+    "approved_by": "owner, 2026-09-21 — approved the checklist-steward sweep 2 batch (docs/audits/steward-sweep-2-2026-09-21.md)",
+    "evidence": [
+     ".github/workflows/cd-staging.yml:87"
+    ]
+   }
   },
   {
    "id": "T-103",
    "title": "Decide the fate of the orphaned pump-report/scan route",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "either",
    "category": "decision",
@@ -3023,7 +3181,18 @@
      "lines": "316-319, 767",
      "quote": "`pump-report/scan` is an agent path and is not covered by this decision"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-21",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "The decision was made and the chosen option was built — the route was wired, which was the item's own default recommendation. frontend/src/components/pump-report/ScanAllPanel.tsx POSTs to /live-data/pump-report/scan at :40 and renders a \"Scan all addresses\" action at :68, and the panel is mounted on the live page at frontend/src/app/(dashboard)/pump-report/page.tsx:158 (`<ScanAllPanel targets={targets} />`), fed by the same `targets` memo the deep investigation uses (:47-63). The panel's header comment at :11-21 records the ruling: \"It went into the P3 review as an orphan (2026-09-08 owner decision: wire it up rather than delete it), and this panel is that wiring.\" The route still exists and exports ScanTarget/ScanFinding/ScanResponse (scan/route.ts:10, 16, 25) with a target cap surfaced rather than swallowed (:31-33). So the route is no longer orphaned and ScanTarget is no longer a type-only import — the two facts the item rested on.",
+    "approved_by": "owner, 2026-09-21 — approved the checklist-steward sweep 2 batch (docs/audits/steward-sweep-2-2026-09-21.md)",
+    "evidence": [
+     "frontend/src/components/pump-report/ScanAllPanel.tsx:40"
+    ]
+   }
   },
   {
    "id": "T-163",
@@ -3133,7 +3302,7 @@
   {
    "id": "T-304",
    "title": "Migrate the Terraform EKS module v19 → v20",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "either",
    "category": "ops-infra",
@@ -3150,7 +3319,18 @@
      "lines": "90-95",
      "quote": "`infrastructure/terraform/eks.tf:7` pins `terraform-aws-modules/eks/aws` at `~> 19.21` to match the existing `aws_auth_*` arguments. Migrating to v20 (`authentication_mode` + `access_entries`) remains a separate, deliberate follow-up — unchanged since PR #22."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-21",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "The migration is done in the tree. `infrastructure/terraform/eks.tf:7` now reads `version = \"~> 20.37\"` (the `~> 19.21` pin the item names is gone), `:111` sets `authentication_mode = \"API\"`, and `:121-138` declares an `access_entries` map whose `cicd_deploy` entry references `aws_iam_role.cicd_deploy.arn` with `kubernetes_groups = [\"fn-deployers\"]`. A grep for `manage_aws_auth_configmap` / `aws_auth_roles` / `aws_auth_users` in that file returns only the comment at :94 recording that v20 removed them. The rationale for choosing `API` over `API_AND_CONFIG_MAP` (an unprovisioned cluster has no ConfigMap to preserve) is documented at :91-108. The write-up next_action asked for exists — docs/CI-REMEDIATION.md:120-155, '### eks module pinned to v19 — RESOLVED', which also records that `terraform validate` was run against the real module v20.37.2 with aws 5.95 and was confirmed capable of failing, that `terraform fmt -check -recursive` is clean, and that no `plan` was run because that needs AWS credentials. Two deviations from next_action, both benign: the doc landed in CI-REMEDIATION.md rather than docs/deployment/aws-provisioning.md (which carries no mention of the migration), and `terraform plan` is genuinely not runnable while AWS is unprovisioned.",
+    "approved_by": "owner, 2026-09-21 — approved the checklist-steward sweep 2 batch (docs/audits/steward-sweep-2-2026-09-21.md)",
+    "evidence": [
+     "infrastructure/terraform/eks.tf:7"
+    ]
+   }
   },
   {
    "id": "T-322",
@@ -3177,7 +3357,7 @@
   {
    "id": "T-327",
    "title": "Refresh the steward charter's known-open snapshot (dated 2026-07-30)",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "either",
    "category": "docs",
@@ -3192,7 +3372,18 @@
      "lines": "112-121",
      "quote": "## Known open items (state as of 2026-07-30 — verify before relying on this)"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-21",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "The item exists because the charter's known-open block was dated 2026-07-30. docs/agents/checklist-steward.md:140 now reads '## Known open items (state as of 2026-09-08 — verify before relying on this)', and :142-143 states it was refreshed from the 2026-09-07 outstanding-task sweep plus the 2026-09-08 corrections — which is the replacement block the next_action asked to be drafted and approved. It is live in the tree, so it cleared the propose→approve→apply path, and it has been maintained since (the terms bullet at :155 carries a dated 2026-09-19 update with the superseded text struck rather than deleted). Note the block is itself 13 days old today; that is normal ageing of a dated snapshot, not the drift this item was raised on.",
+    "approved_by": "owner, 2026-09-21 — approved the checklist-steward sweep 2 batch (docs/audits/steward-sweep-2-2026-09-21.md)",
+    "evidence": [
+     "docs/agents/checklist-steward.md:140"
+    ]
+   }
   },
   {
    "id": "T-328",
@@ -3264,12 +3455,20 @@
      "lines": "14-17, 196-197",
      "quote": "It was never a regression; the workflows were committed complete against infrastructure that was never provisioned, and the failure was invisible because nobody checks post-merge push runs."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-09-21",
+    "note": "STILL OPEN, re-verified against the current tree by a checklist-steward sweep — but the next_action above is partly stale and must not be worked verbatim. Two of the three deliverables are verifiably done, the third — the one the title actually names — has no record anywhere in the tree. Done: (1) the workflow gate, `.github/workflows/cd-staging.yml:87`, so main's push runs are no longer permanently red; (2) the CI status badge for main, README.md:3, `.../workflows/ci.yml/badge.svg?branch=main` linking to `?query=branch%3Amain`; and the signal it reports is real, since `.github/workflows/ci.yml:7-12` includes main in `on.push.branches` with a comment explaining that the PR gate checks the merge preview rather than what lands. NOT done: the recurring check itself. Nothing in the repo adopts or records a habit, routine or automation for glancing at post-merge push runs — `.github/workflows/` has exactly one `schedule:` trigger and it is dependabot-triage.yml:41-42 (weekly Dependabot sweep, unrelated); `.claude/` holds no commands or routines; and a grep of docs/ for 'post-merge' / 'push run' finds only docs/deployment/aws-provisioning.md:17 and :196-197 (the original finding, still worded exactly as the item quotes it) and three TASK-QUEUE lines about #134. The TASK-QUEUE status block at :2236-2250 records the red-X fix — that is T-081's subject — and says nothing about adopting a recurring check, so the 'record the decision in TASK-QUEUE via the steward' half is also unwritten. The item's stated_status in the queue detail was 'proposed', i.e. it was awaiting owner adoption, and no owner adoption is recorded. Closing it would tick a box for a habit nobody has agreed to.",
+    "remaining_work": "Only the process half. (a) The owner decides whether to adopt anything beyond the badge — a habit of checking Actions on main after each merge, a scheduled routine, or an explicit 'the badge is the check, nothing further' ruling; the badge at README.md:3 is a reasonable basis for that last answer, since it surfaces main's post-merge CI on the front page. (b) Whichever is chosen, the steward records it as a dated status block in docs/TASK-QUEUE.md — the existing block at :2236-2250 covers only the red X and is not a substitute. The item's own next_action is partly stale: its two code/doc asks (gate cd-staging, add a main CI badge) are already satisfied at cd-staging.yml:87 and README.md:3, so a steward should propose a `progress` block recording those two as done rather than re-requesting them.",
+    "evidence": [
+     ".github/workflows/ci.yml:7-12"
+    ]
+   }
   },
   {
    "id": "T-376",
    "title": "Provision the hourly pg_dump CronJob and fn-backups bucket, or remove from the runbook",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "either",
    "category": "ops-infra",
@@ -3284,12 +3483,23 @@
      "lines": "5-11, 22-30, 43-51",
      "quote": "| PostgreSQL (manual) | `pg_dump` via cronjob | Hourly | 24 hours |"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-21",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "Option (a) was taken. docs/runbooks/backup-restore.md:3-13 carries a dated banner ('Correction, 2026-09-08') stating the hourly pg_dump CronJob and the s3://fn-backups bucket never existed, that Aurora automated backups + PITR are the only mechanism this deployment has, and that the owner chose remove-rather-than-provision. The strategy table at :24-29 now reads '| PostgreSQL (RDS Aurora) | Automated snapshots + PITR | Daily (continuous for PITR) | rds_backup_retention_days, default 7 |' and '| PostgreSQL (self-hosted k8s) | Ad-hoc pg_dump only — **no scheduled backup exists** | On demand | Operator-managed |'. The dump procedure at :41-56 is relabelled ad-hoc, points at local disk, and :53-56 explains why there is deliberately no `aws s3 cp` step. The banner at :15-20 also resolves the two-Postgres-worlds confusion the item's refute block named. The other half of the verdict — that (b) was NOT done — also holds: a grep for `CronJob` and `pg_dump` across infrastructure/ and .github/ returns nothing, and no Terraform resource creates an fn-backups bucket, which is consistent with removing the claim rather than building the thing.",
+    "approved_by": "owner, 2026-09-21 — approved the checklist-steward sweep 2 batch (docs/audits/steward-sweep-2-2026-09-21.md)",
+    "evidence": [
+     "docs/runbooks/backup-restore.md:26-27"
+    ]
+   }
   },
   {
    "id": "T-100",
    "title": "D-24 pinned #4 — rule on minor TA edge cases (fibRetracement([]), buildTechnicalRead([]), flat-series)",
-   "status": "open",
+   "status": "closed",
    "confidence": "medium",
    "owner_role": "either",
    "category": "decision",
@@ -3307,7 +3517,18 @@
      "lines": "1071-1072, 1084-1087",
      "quote": "Minor, pinned or noted: `fibRetracement([])` returns non-finite values (all callers guard length first); `buildTechnicalRead([])` throws (unreachable from the page); a perfectly flat series triggers the volatility-compression setup"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-21",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "All three pinned edge cases are hardened in source, exactly as next_action prescribed, and the code names the ruling. fibRetracement now early-returns null on an empty slice (frontend/src/lib/utils/indicators.ts:1140) and on non-finite bounds (:1145). buildTechnicalRead returns EMPTY_TECHNICAL_READ on candles.length===0 (:1705) with the comment \"Returning an explicit empty read says 'nothing to read' rather than inventing a neutral verdict out of arithmetic on nothing (D-24 #4, owner-approved 2026-09-08)\". detectSetups requires a non-zero band width before volatility_compression fires — `if (cur > 0 && cur <= min * 1.1)` at frontend/src/lib/utils/scanSetups.ts:82, with the same D-24 #4 owner-approval comment. The pinning tests were flipped to assert the guard rather than document the behaviour: priceTargets.test.ts:77 `expect(fibRetracement([])).toBeNull()`, :82 same for a NaN series, :276 buildTechnicalRead([]) returns the empty read, :376 a 60-bar flat series does NOT produce volatility_compression. So both halves of the item — the decision and the hardening — landed.",
+    "approved_by": "owner, 2026-09-21 — approved the checklist-steward sweep 2 batch (docs/audits/steward-sweep-2-2026-09-21.md)",
+    "evidence": [
+     "frontend/src/lib/utils/indicators.ts:1705"
+    ]
+   }
   },
   {
    "id": "T-119",
@@ -3334,7 +3555,7 @@
   {
    "id": "T-126",
    "title": "Keep informational framing if paid links sit near risk scores",
-   "status": "open",
+   "status": "closed",
    "confidence": "medium",
    "owner_role": "either",
    "category": "process",
@@ -3352,7 +3573,18 @@
      "lines": "408-409",
      "quote": "Keep the informational framing already in the risk register — a paid link next to a risk score edges closer to \"recommendation\"; disclaimers must stay prominent."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-21",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "The item's own completion criterion was \"carry into T-118's PR acceptance criteria … tick ROADMAP once that PR lands\". T-118's PR landed 2026-09-08 and every clause landed with it. On /staking the not-advice framing is a block comment naming T-126 explicitly (page.tsx:681-688) followed by `<AffiliateDisclosure />` at :689, ABOVE `<NetworkAprReference />` (:692) and the provider grid; the disclosure text at :69-72 reads \"This is information, not advice\" and points at Celsius rating well on every dimension before it froze funds. Affiliate rows carry a per-link visible tag (SponsoredLink.tsx:74), and the coverage-bias paragraph (:77-93) is COMPUTED from the catalog and states that ordering is a fixed catalog order never influenced by payment. A test enforces the placement rather than leaving it to review: lib/data/__tests__/affiliates.test.ts:163-168 asserts the not-advice string is present and that `<AffiliateDisclosure />` appears before `<NetworkAprReference />`, with the comment \"Above the provider grid, not below it (T-126)\". The one act the item names that HAS NOT happened is the ledger tick itself — docs/ROADMAP.md:543-544 still reads `- [ ]`. That is precisely what this proposal supplies, so the item closes with the tick rather than staying open pending it.",
+    "approved_by": "owner, 2026-09-21 — approved the checklist-steward sweep 2 batch (docs/audits/steward-sweep-2-2026-09-21.md)",
+    "evidence": [
+     "frontend/src/app/(dashboard)/staking/page.tsx:689"
+    ]
+   }
   },
   {
    "id": "T-129",
@@ -3409,7 +3641,7 @@
   {
    "id": "T-308",
    "title": "Add per-page YTD/52-week returns columns to the Stock Registry (needs a bulk source for universe-wide)",
-   "status": "open",
+   "status": "closed",
    "confidence": "medium",
    "owner_role": "either",
    "category": "feature",
@@ -3431,7 +3663,18 @@
      "lines": "2026-09-04",
      "quote": "The one still open (registry screener metrics) is now HARDER than written: post-Yahoo, security-returns is keyed, capped at 60 symbols, and refuses whole-universe requests on purpose, so a returns column per page is fine but a universe screener is not."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-21",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "The half the item calls actionable is built, exactly as the next_action specified. EquitiesClient.tsx imports `SecurityReturnsResponse` (:18), declares `ytdPct`/1Y on its row type (:55-56), queries `/live-data/security-returns?symbols=` for the visible page only (:218-233 — with a comment explaining that `?universe=` is refused rather than truncated), maps results onto rows (:237-245), renders YTD and 1Y headers at :391-395 and cells at :438, and prints a footer at :479-483 saying returns cover the visible page only and are not sortable or screenable, plus an amber note when no Tiingo/FMP key is configured. Sorting and screening are deliberately off — the same reason fund return screening is off. The universe-wide half remains refused by the route itself (security-returns/route.ts:99-110 returns an explicit reason; MAX_SYMBOLS=60 at :39) and is now parked under D21 (docs/decisions/2026-09-18-owner-decisions.md:7-25), which names `security-returns` as the single-sourced surface with no fallback and explicitly defers the paid remedy. The next_action's own instruction for that half was \"leave parked\", so nothing actionable remains under this item. docs/FEATURE-ADDITIONS.md already carries a dated 2026-09-08 update saying the possible half is built; the queue JSON is the only ledger still reading open.",
+    "approved_by": "owner, 2026-09-21 — approved the checklist-steward sweep 2 batch (docs/audits/steward-sweep-2-2026-09-21.md)",
+    "evidence": [
+     "frontend/src/app/(dashboard)/equities/EquitiesClient.tsx:227-228"
+    ]
+   }
   },
   {
    "id": "T-353",
@@ -9898,6 +10141,263 @@
      "quote": "Single-owner and pre-production, this is an accepted risk — if it happens, merge the two rows by hand (`UPDATE ... SET user_id = <original-id>` on the owned tables, then delete the stray user)."
     }
    ]
+  },
+  {
+   "id": "T-399",
+   "title": "Three of the four staking-discovery upstreams contribute zero pools",
+   "status": "open",
+   "confidence": "high",
+   "owner_role": "owner-machine",
+   "category": "bug",
+   "effort": "medium",
+   "blocking_decision": null,
+   "related_ids": [
+    "T-172"
+   ],
+   "summary": "Found inside T-172 while re-verifying it as a latency item. This is a correctness defect, not a performance one, and it had no entry of its own — T-172 was the only queue row mentioning any of the three hosts, which is how a dead upstream stayed invisible behind a perf ticket.",
+   "next_action": "On the owner's machine (these are reachability findings and must not be judged from a container — see CLAUDE.md on IP-dependent results), probe each of the three directly and decide per host whether the URL moved or the source is gone: api.yearn.finance/v1/chains/1/vaults/all (does not resolve) at route.ts:227; api-v2.pendle.finance/core/v1/sdk/1/markets?limit=100&order_by=liquidity:desc (404s on that exact URL) at route.ts:281; and Beefy, which answers 200 but lands no pools. Apply the same evidence standard the staking-rates audit used: a rung whose endpoint carries no data AT ALL is dropped, a rung whose field moved is reparsed. Do not fold this back into T-172.",
+   "sources": [
+    {
+     "file": "frontend/src/app/live-data/staking-discovery/route.ts",
+     "lines": "227",
+     "quote": "api.yearn.finance/v1/chains/1/vaults/all"
+    },
+    {
+     "file": "frontend/src/app/live-data/staking-discovery/route.ts",
+     "lines": "281",
+     "quote": "api-v2.pendle.finance/core/v1/sdk/1/markets"
+    },
+    {
+     "file": "docs/audits/steward-sweep-2-2026-09-21.md",
+     "lines": "-",
+     "quote": "Three of the four sources contribute zero pools."
+    }
+   ],
+   "opened": {
+    "on": "2026-09-21",
+    "by": "checklist-steward sweep (opportunity-scout FILE mode), owner-approved 2026-09-21",
+    "why": "Surfaced by a re-verification sweep with no existing ledger entry anywhere. Filed rather than folded into a neighbouring item, because an unattributed defect riding inside another ticket is how these stayed invisible."
+   }
+  },
+  {
+   "id": "T-400",
+   "title": "cd-staging.yml still builds with the /api suffix T-333 removed everywhere else",
+   "status": "open",
+   "confidence": "high",
+   "owner_role": "remote-dev",
+   "category": "ops-infra",
+   "effort": "small",
+   "blocking_decision": null,
+   "related_ids": [
+    "T-333"
+   ],
+   "summary": "T-333 fixed the doubled /api/v1/api path in docs/deployment/local-setup.md and infrastructure/kubernetes/configmap.yaml. A third file it never cited carries the same defect. Inert today — D2 removed the /api/* rewrite and nothing reads NEXT_PUBLIC_API_URL — but it is the trap re-armed for whoever restores a proxy.",
+   "next_action": "Change .github/workflows/cd-staging.yml:185 from NEXT_PUBLIC_API_URL=https://staging.financenow.example.com/api to the bare origin, matching the rule stated at infrastructure/kubernetes/configmap.yaml:64-66 (\"ORIGIN only, no /api or /api/v1 suffix\").",
+   "sources": [
+    {
+     "file": ".github/workflows/cd-staging.yml",
+     "lines": "185",
+     "quote": "NEXT_PUBLIC_API_URL=https://staging.financenow.example.com/api"
+    },
+    {
+     "file": "infrastructure/kubernetes/configmap.yaml",
+     "lines": "64-66",
+     "quote": "ORIGIN only, no /api or /api/v1 suffix"
+    }
+   ],
+   "opened": {
+    "on": "2026-09-21",
+    "by": "checklist-steward sweep (opportunity-scout FILE mode), owner-approved 2026-09-21",
+    "why": "Surfaced by a re-verification sweep with no existing ledger entry anywhere. Filed rather than folded into a neighbouring item, because an unattributed defect riding inside another ticket is how these stayed invisible."
+   }
+  },
+  {
+   "id": "T-401",
+   "title": "security-returns silently falls back to unadjusted closes — D21 recorded this as undecided",
+   "status": "open",
+   "confidence": "high",
+   "owner_role": "owner-decision",
+   "category": "decision",
+   "effort": "small",
+   "blocking_decision": "T-401 — owner decision required",
+   "related_ids": [
+    "T-273"
+   ],
+   "summary": "docs/decisions/2026-09-18-owner-decisions.md:71-77 records as explicitly NOT decided whether trailing returns may be served on unadjusted closes. The route already answers the question in code: row.adjClose ?? row.close takes the unadjusted value whenever the provider omits adjClose, with nothing disclosing that it happened. A decision recorded as open while the code has quietly taken one side is the shape this queue exists to catch.",
+   "next_action": "Owner decides: (a) accept unadjusted closes as a fallback and disclose it per-row the way reference prices already carry a `ref` tag; (b) refuse the fallback and return an honest gap when adjClose is absent; or (c) ratify the current silent behaviour explicitly, which at least stops the decision record and the code disagreeing. A code comment recording the open question was added at route.ts:89 on 2026-09-21 so the next reader does not mistake it for a settled choice.",
+   "sources": [
+    {
+     "file": "frontend/src/app/live-data/security-returns/route.ts",
+     "lines": "89",
+     "quote": "row.adjClose ?? row.close"
+    },
+    {
+     "file": "docs/decisions/2026-09-18-owner-decisions.md",
+     "lines": "71-77",
+     "quote": "recorded as explicitly NOT decided"
+    }
+   ],
+   "opened": {
+    "on": "2026-09-21",
+    "by": "checklist-steward sweep (opportunity-scout FILE mode), owner-approved 2026-09-21",
+    "why": "Surfaced by a re-verification sweep with no existing ledger entry anywhere. Filed rather than folded into a neighbouring item, because an unattributed defect riding inside another ticket is how these stayed invisible."
+   }
+  },
+  {
+   "id": "T-402",
+   "title": "Dead confluenceLabel import on the crypto TA page",
+   "status": "open",
+   "confidence": "high",
+   "owner_role": "remote-dev",
+   "category": "bug",
+   "effort": "small",
+   "blocking_decision": null,
+   "related_ids": [
+    "T-270",
+    "T-269"
+   ],
+   "summary": "The real call moved into MultiTimeframeGrid.tsx during the T-270 panel extraction and the import was left behind. Harmless, unreferenced by any ledger, and exactly the kind of residue that accumulates because it is too small to file.",
+   "next_action": "Remove the unused `confluenceLabel` import at frontend/src/app/(dashboard)/technical-analysis/page.tsx:31. The only other occurrence in that file is the JSX comment at :405.",
+   "sources": [
+    {
+     "file": "frontend/src/app/(dashboard)/technical-analysis/page.tsx",
+     "lines": "31",
+     "quote": "imports confluenceLabel from '@/lib/utils/confluence', used nowhere in the file"
+    }
+   ],
+   "opened": {
+    "on": "2026-09-21",
+    "by": "checklist-steward sweep (opportunity-scout FILE mode), owner-approved 2026-09-21",
+    "why": "Surfaced by a re-verification sweep with no existing ledger entry anywhere. Filed rather than folded into a neighbouring item, because an unattributed defect riding inside another ticket is how these stayed invisible."
+   }
+  },
+  {
+   "id": "T-403",
+   "title": "CI never runs test:coverage, so the number is recorded on no run",
+   "status": "open",
+   "confidence": "high",
+   "owner_role": "owner-decision",
+   "category": "process",
+   "effort": "small",
+   "blocking_decision": "T-403 — owner decision required",
+   "related_ids": [
+    "T-256"
+   ],
+   "summary": "T-256 asked only for the script and is closed on that. frontend/package.json:20 defines test:coverage and @vitest/coverage-v8 is installed, but no file under .github/workflows/ references it. docs/audits/2026-07-30-audit.md:122 raised coverage as a check that could not be run, and from that audit's point of view it still cannot be read from a CI run.",
+   "next_action": "Owner decides whether coverage should be recorded per-run. If yes, add a non-gating coverage step to ci.yml — non-gating on purpose, since vitest.config.ts:20-41 deliberately sets no thresholds and the reasoning there (a gate blocks a fix for arriving without a test while saying nothing about whether the covered lines carry a user-facing number) applies equally to CI.",
+   "sources": [
+    {
+     "file": "frontend/package.json",
+     "lines": "20",
+     "quote": "\"test:coverage\": \"vitest run --coverage\""
+    },
+    {
+     "file": "docs/audits/2026-07-30-audit.md",
+     "lines": "122",
+     "quote": "Test coverage — not recorded."
+    }
+   ],
+   "opened": {
+    "on": "2026-09-21",
+    "by": "checklist-steward sweep (opportunity-scout FILE mode), owner-approved 2026-09-21",
+    "why": "Surfaced by a re-verification sweep with no existing ledger entry anywhere. Filed rather than folded into a neighbouring item, because an unattributed defect riding inside another ticket is how these stayed invisible."
+   }
+  },
+  {
+   "id": "T-404",
+   "title": "opportunity-scout.md risk-score bullet never got the D14 rescoping its twin did",
+   "status": "open",
+   "confidence": "high",
+   "owner_role": "remote-dev",
+   "category": "docs",
+   "effort": "small",
+   "blocking_decision": null,
+   "related_ids": [
+    "T-326"
+   ],
+   "summary": ".claude/agents/opportunity-scout.md:119 still carries the unscoped line \"Risk scores are 0-100, higher = safer.\" Its twin in code-auditor.md was rescoped after D14 to name the surfaces where a score IS published. The scout's line is not wrong — the canonical scale is unchanged — but it is the same under-scoping T-326 asked be fixed in the auditor, and no item covered this copy.",
+   "next_action": "Rescope .claude/agents/opportunity-scout.md:119 to match .claude/agents/code-auditor.md:134-141, naming the surfaces that still publish a score after D14 (the options Trade Risk Scorer, plus the macro/equity profiles) rather than stating the scale unconditionally.",
+   "sources": [
+    {
+     "file": ".claude/agents/opportunity-scout.md",
+     "lines": "119",
+     "quote": "Risk scores are 0-100, higher = safer."
+    },
+    {
+     "file": ".claude/agents/code-auditor.md",
+     "lines": "134-141",
+     "quote": "Where a score IS published — after D14 that is the options Trade Risk Scorer, plus the macro/equity profiles"
+    }
+   ],
+   "opened": {
+    "on": "2026-09-21",
+    "by": "checklist-steward sweep (opportunity-scout FILE mode), owner-approved 2026-09-21",
+    "why": "Surfaced by a re-verification sweep with no existing ledger entry anywhere. Filed rather than folded into a neighbouring item, because an unattributed defect riding inside another ticket is how these stayed invisible."
+   }
+  },
+  {
+   "id": "T-405",
+   "title": "affiliates.ts docblock justifies the file by a function D14 deleted",
+   "status": "open",
+   "confidence": "high",
+   "owner_role": "remote-dev",
+   "category": "docs",
+   "effort": "small",
+   "blocking_decision": null,
+   "related_ids": [
+    "T-361"
+   ],
+   "summary": "frontend/src/lib/data/affiliates.ts:9-11 states, in the docblock explaining WHY the file exists, that computeOverallRisk() rates 55 staking providers across six risk dimensions. That function was deleted by D14 on 2026-09-14; stakingProviders.ts:206-214 is its tombstone. A rationale resting on a deleted function invites someone to restore the function.",
+   "next_action": "Rewrite the affiliates.ts docblock so its rationale rests on what exists: the six published RiskProfile dimensions as reference inputs, with no composite (D14/RP-3). Do not reintroduce any composite; lib/risk/__tests__/riskScoringRemoved.test.ts guards it.",
+   "sources": [
+    {
+     "file": "frontend/src/lib/data/affiliates.ts",
+     "lines": "9-11",
+     "quote": "computeOverallRisk() rates 55 staking providers across six risk dimensions"
+    },
+    {
+     "file": "frontend/src/lib/data/stakingProviders.ts",
+     "lines": "206-214",
+     "quote": "tombstone where computeOverallRisk()/getRiskLevel() were"
+    }
+   ],
+   "opened": {
+    "on": "2026-09-21",
+    "by": "checklist-steward sweep (opportunity-scout FILE mode), owner-approved 2026-09-21",
+    "why": "Surfaced by a re-verification sweep with no existing ledger entry anywhere. Filed rather than folded into a neighbouring item, because an unattributed defect riding inside another ticket is how these stayed invisible."
+   }
+  },
+  {
+   "id": "T-406",
+   "title": "risk-scale-spec.md still describes pump-report emitting riskScore 0.0-10.0, and reads as Phase 6 outstanding",
+   "status": "open",
+   "confidence": "high",
+   "owner_role": "remote-dev",
+   "category": "docs",
+   "effort": "small",
+   "blocking_decision": null,
+   "related_ids": [
+    "T-346"
+   ],
+   "summary": "Two related drifts in the spec that is the contract for this scale. §3.4 at :310 describes /live-data/pump-report/investigate as emitting an LLM-emitted riskScore 0.0-10.0; the field has been suspicionScore since Phase 6 shipped (investigate/route.ts:45, 86). And the header at :3 says \"RATIFIED AND IMPLEMENTED — R2 shipped this migration (phases 1-5)\" while the Phase 6 table carries no status marker, so the document reads as Phase 6 outstanding when the code and its guard test say otherwise.",
+   "next_action": "Update risk-scale-spec.md:310 to suspicionScore citing investigate/route.ts:45,86, and mark the Phase 6 table shipped so the header and the table agree. Annotate rather than rewrite any dated block, per the steward charter.",
+   "sources": [
+    {
+     "file": "docs/architecture/risk-scale-spec.md",
+     "lines": "310",
+     "quote": "LLM-emitted riskScore 0.0-10.0"
+    },
+    {
+     "file": "frontend/src/app/live-data/pump-report/investigate/route.ts",
+     "lines": "45,86",
+     "quote": "suspicionScore"
+    }
+   ],
+   "opened": {
+    "on": "2026-09-21",
+    "by": "checklist-steward sweep (opportunity-scout FILE mode), owner-approved 2026-09-21",
+    "why": "Surfaced by a re-verification sweep with no existing ledger entry anywhere. Filed rather than folded into a neighbouring item, because an unattributed defect riding inside another ticket is how these stayed invisible."
+   }
   }
  ],
  "closed_but_still_listed_as_open_in_docs": [
@@ -34604,6 +35104,20 @@
      "docs/audits/steward-sweep-2026-09-21.md — the full batched proposal: 36 rows, each with current text, proposed text and a file:line re-read in this pass",
      "docs/audits/queue-verification-2026-09-10.md",
      "docs/audits/queue-verification-sweep-2026-09-11.md",
+     "docs/audits/queue-closure-review-2026-09-13.md"
+    ]
+   },
+   {
+    "on": "2026-09-21",
+    "what": "Sweep 2 of 2026-09-21: re-verified the 23 items left over from queue-closure-review-2026-09-13.md's never-applied \"approve all 62\". 21 closed (T-361 as superseded), 2 left open with restated work (T-172, T-369), and 8 new items filed for gaps no ledger owned (T-399..T-406).",
+    "basis_key": "Every verdict was re-derived from the current tree. The 2026-09-13 review was explicitly NOT used as evidence: it was measured against main@55a4b52, and T-361 shows the cost — it was recorded \"evidence intact\" on 2026-09-13 and owner decision D14 deleted the very helpers it concerns the following day.",
+    "caveat": "T-172 and T-369 remain open and their next_action text is partly stale — both carry a progress block saying which half already landed, so neither is re-worked from the top. T-172 in particular should NOT be reopened against its own title: the \"~18-22 s\" figure is superseded by DATA-AVAILABILITY.md:843 (~2.2 s, re-measured 2026-09-19), and the real remaining defect is the three dead upstreams, now filed separately as T-399.",
+    "corrections": [
+     "T-361 asked for CLAUDE.md to document computeOverallRisk()/getRiskLevel() as @internal legacy helpers. D14 DELETED them. Following the item would have written a false claim into CLAUDE.md, and lib/risk/__tests__/riskScoringRemoved.test.ts:161-162 would have failed the build for it. Closed as superseded.",
+     "The \"37 unswept items\" figure in the 2026-09-21 sweep-1 pass entry was one agent counting from its own six-item vantage point. The real remainder after sweep 1 was 23, all covered here."
+    ],
+    "evidence": [
+     "docs/audits/steward-sweep-2-2026-09-21.md — 23 verdicts, 24 contradictions, 29 stale citations",
      "docs/audits/queue-closure-review-2026-09-13.md"
     ]
    }
