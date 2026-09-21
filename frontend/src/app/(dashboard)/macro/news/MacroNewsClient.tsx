@@ -7,6 +7,11 @@ import { clsx } from 'clsx'
 import { Banknote, Gem, Newspaper, Percent, RefreshCw, TrendingDown, TrendingUp, Zap } from 'lucide-react'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { SourceLine } from '@/components/ui/SourceLine'
+import { DiscoveryPanel } from '@/components/news/DiscoveryPanel'
+
+/** Feed = sources this app fetches and holds terms verdicts for. Discover = a web
+ *  search over outlets it carries neither. Separate tabs on purpose. */
+type MacroNewsTab = 'feed' | 'discover'
 import { timeAgo } from '@/lib/utils/format'
 import { STALE_TIME_MEDIUM } from '@/lib/constants'
 import type { MacroNewsArticle, MacroNewsResponse, MacroPillar, MacroSentiment } from '@/app/live-data/macro-news/route'
@@ -73,6 +78,7 @@ function ArticleRow({ article }: { article: MacroNewsArticle }) {
 
 export function MacroNewsClient() {
   const [pillar, setPillar] = useState<MacroPillar | 'all'>('all')
+  const [tab, setTab] = useState<MacroNewsTab>('feed')
   const [sentiment, setSentiment] = useState<MacroSentiment | 'all'>('all')
 
   const { data, isLoading, isError, refetch, isRefetching } = useQuery<MacroNewsResponse>({
@@ -114,6 +120,29 @@ export function MacroNewsClient() {
 
       {/* Data provenance */}
       <SourceLine id="macro-news" />
+
+      {/* Feed vs discovery — two different postures, so two tabs. The feed is fetched
+          by this app from sources with a dated terms verdict; discovery is a web search
+          over outlets it carries neither. Merging them would erase that. */}
+      <div className="flex gap-1 bg-bg-elevated p-1 rounded-lg w-fit">
+        {([['feed', 'Feed'], ['discover', 'Discover sources']] as [MacroNewsTab, string][]).map(([t, label]) => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={clsx('px-4 py-1.5 rounded-md text-sm font-medium transition-colors',
+              tab === t ? 'bg-bg-card text-text-primary shadow-sm' : 'text-text-muted hover:text-text-secondary')}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'discover' && (
+        <DiscoveryPanel module="macro" placeholder="A commodity, currency pair, central bank or rate theme — or leave blank" />
+      )}
+
+      {tab === 'feed' && (
+      <div className="space-y-6">
 
       <div className="flex flex-wrap items-center gap-2">
         <button onClick={() => setPillar('all')}
@@ -162,6 +191,8 @@ export function MacroNewsClient() {
         Sources: Investing.com (commodities / forex / bonds), OilPrice, FXStreet, CNBC — all keyless
         RSS. Sentiment is keyword-based and indicative, not a trading signal.
       </p>
+      </div>
+      )}
     </div>
   )
 }

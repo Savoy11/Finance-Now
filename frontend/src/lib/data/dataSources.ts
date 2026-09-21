@@ -287,6 +287,17 @@ export const DATA_SOURCES: DataSourceEntry[] = [
     notes: 'One request per symbol now (the batched source was withdrawn), so the route serves up to 60 named symbols and REFUSES whole-universe requests rather than silently truncating. Screening and sorting funds by trailing return is off as a result; the Returns columns are still live for the visible page.',
   },
   {
+    id: 'news-discovery', surface: 'Source discovery (all news pages)', module: 'shared',
+    route: '/live-data/news-discovery', status: 'partial',
+    // ⚠ NO `host` HERE, AND THAT IS THE POINT. This app fetches no publisher for this
+    // surface — retrieval happens inside Anthropic's server-side web_search tool and
+    // the app receives titles, URLs and snippets. Declaring a publisher host would be
+    // false, and declaring api.anthropic.com would put an LLM provider in a registry
+    // that describes market-data sources.
+    providers: [{ name: 'Anthropic web_search (server-side)', role: 'primary', auth: 'key' }],
+    notes: 'Finds coverage from outlets the app does NOT carry, so the roster can grow faster than terms reviews allow. Results are UNVETTED: no terms verdict exists for these outlets, nothing is fetched or republished, and headlines link out. Promotion to a real feed still goes through Integrations → add custom feed, which runs probeSiteTerms and the 403/409 gate. ⚠ Costs money per search, so it is user-triggered only and capped at 4 searches per request. ⚠ OPEN QUESTION for the owner: the source-terms registry governs "may we take this data" and has no entry for retrieval-via-LLM-provider — this surface reaches third-party content through infrastructure the registry treats as out of scope.',
+  },
+  {
     id: 'market-news', surface: 'Stock market news', module: 'equities',
     route: '/live-data/market-news', status: 'partial',
     providers: [{ name: 'CNBC RSS', role: 'primary', auth: 'none' }],

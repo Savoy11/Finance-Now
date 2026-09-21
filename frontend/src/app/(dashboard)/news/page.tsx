@@ -19,6 +19,11 @@ import { useWatchlistBias } from '@/lib/watchlist/useWatchlistBias'
 import { applyBias, shouldAugmentFetch, fetchTerms } from '@/lib/watchlist/bias'
 import { resolveNewsProviders } from '@/lib/tier'
 import { timeAgoCompact } from '@/lib/utils/format'
+import { DiscoveryPanel } from '@/components/news/DiscoveryPanel'
+
+/** Feed = sources this app fetches and has terms verdicts for. Discover = a web
+ *  search over outlets it carries neither. Kept as separate tabs on purpose. */
+type NewsTab = 'feed' | 'discover'
 
 // ─── Shared types ─────────────────────────────────────────────────────────────
 
@@ -200,6 +205,7 @@ function NewsPageInner() {
   const [sentimentFilter, setSentimentFilter] = useState<'all' | 'positive' | 'neutral' | 'negative'>('all')
   const [keywordInput, setKeywordInput] = useState('')
   const [keywords, setKeywords] = useState<string[]>([])
+  const [tab, setTab] = useState<NewsTab>('feed')
   const { assets: assetList } = useAssetList()
 
   const addKeyword = useCallback(() => {
@@ -334,6 +340,31 @@ function NewsPageInner() {
 
       {/* Data provenance */}
       <SourceLine id="news" />
+
+      {/* Feed vs discovery. Two different postures, so they get two tabs rather than
+          one merged list: the feed is fetched by this app from sources with a dated
+          terms verdict, discovery is a web search over outlets it does NOT carry and
+          has NOT reviewed. Showing them together would erase that distinction. */}
+      <div className="flex gap-1 bg-bg-elevated p-1 rounded-lg w-fit">
+        {([['feed', 'Feed'], ['discover', 'Discover sources']] as [NewsTab, string][]).map(([t, label]) => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={clsx('px-4 py-1.5 rounded-md text-sm font-medium transition-colors',
+              tab === t ? 'bg-bg-card text-text-primary shadow-sm' : 'text-text-muted hover:text-text-secondary')}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'discover' && <DiscoveryPanel module="crypto" placeholder="A protocol, token or theme — or leave blank for what is notable now" />}
+
+      {/* The feed. Wrapped in one element rather than conditioned per-section so the
+          tab cannot half-render, and given the parent's own flex-col/gap so the
+          layout is unchanged from before the tabs existed. */}
+      {tab === 'feed' && (
+      <div className="flex flex-col gap-6">
 
       {/* No providers configured */}
       {noProviders && (
@@ -534,6 +565,8 @@ function NewsPageInner() {
           <Newspaper size={36} className="mb-3 opacity-30" aria-hidden />
           <p className="text-sm">No stories match the current filters</p>
         </div>
+      )}
+      </div>
       )}
     </div>
   )

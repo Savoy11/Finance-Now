@@ -11,6 +11,12 @@ import { useWatchlistBias } from '@/lib/watchlist/useWatchlistBias'
 import { applyBias, shouldAugmentFetch } from '@/lib/watchlist/bias'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { SourceLine } from '@/components/ui/SourceLine'
+import { DiscoveryPanel } from '@/components/news/DiscoveryPanel'
+
+/** Feed = the source this app fetches and holds a terms verdict for. Discover = a web
+ *  search over outlets it carries neither. Separate tabs on purpose — and this feed is
+ *  down to ONE source since the 2026-09-20 MarketWatch withdrawal. */
+type EquityNewsTab = 'feed' | 'discover'
 import { EQUITY_CATALOG } from '@/lib/data/equityCatalog'
 import { FUND_CATALOG } from '@/lib/data/fundCatalog'
 import type { MarketArticle, MarketNewsCategory, MarketNewsResponse } from '@/app/live-data/market-news/route'
@@ -297,6 +303,7 @@ function EquityNewsContent() {
   const [sentimentFilter, setSentimentFilter] = useState<'all' | 'positive' | 'neutral' | 'negative'>('all')
   const [keywordInput, setKeywordInput] = useState('')
   const [keywords, setKeywords] = useState<string[]>([])
+  const [tab, setTab] = useState<EquityNewsTab>('feed')
 
   const watchlist = useWatchlistBias()
   const biasStrength = useFeedBiasStore((s) => s.getStrength('market-news'))
@@ -389,6 +396,31 @@ function EquityNewsContent() {
 
       {/* Data provenance */}
       <SourceLine id="market-news" />
+
+      {/* Feed vs discovery. Sharper here than on the other two pages: since
+          MarketWatch was withdrawn on terms grounds (2026-09-20) this feed is a
+          SINGLE source, and discovery is how the roster grows again. The tabs stay
+          separate because the feed is fetched by this app from a vetted source and
+          discovery is a web search over outlets it carries neither. */}
+      <div className="flex gap-1 bg-bg-elevated p-1 rounded-lg w-fit">
+        {([['feed', 'Feed'], ['discover', 'Discover sources']] as [EquityNewsTab, string][]).map(([t, label]) => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={clsx('px-4 py-1.5 rounded-md text-sm font-medium transition-colors',
+              tab === t ? 'bg-bg-card text-text-primary shadow-sm' : 'text-text-muted hover:text-text-secondary')}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'discover' && (
+        <DiscoveryPanel module="equities" placeholder="A ticker, sector or company theme — or leave blank for what is notable now" />
+      )}
+
+      {tab === 'feed' && (
+      <div className="flex flex-col gap-6">
 
       {/* Filters */}
       <div className="flex flex-col gap-3">
@@ -516,6 +548,8 @@ function EquityNewsContent() {
           <Newspaper size={36} className="mb-3 opacity-30" aria-hidden />
           <p className="text-sm">No stories match the current filters — feeds may be unreachable.</p>
         </div>
+      )}
+      </div>
       )}
     </div>
   )
