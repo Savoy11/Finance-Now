@@ -716,6 +716,18 @@ site nobody has reviewed. Full design: `docs/architecture/source-terms.md`.
 > curing it. Three name a route (Order Form / written approval / Redistribution Add-On);
 > Binance.US names none. That is not a pricing question, so D21 does not defer it.
 
+> **Tokenized securities** — `docs/assessments/tokenized-securities-2026-09-21.md` is the
+> dated record (regulation by jurisdiction, live products, data sources, the tree's gaps,
+> an adaptation plan, owner decisions). Read it before touching anything that classifies a
+> token, prices a stock, or states trading hours. Three things it establishes that are easy
+> to get wrong: **a tokenized share is a *representation* of an existing instrument, not a
+> coin and not a new asset class** (the same Tesla share can carry several prices, hours,
+> rights and eligibility rules at once); **USDY in the coin registry is a tokenized Treasury
+> note filed as a stablecoin**, whose yield accrual the catalog records as a 282 bps depeg;
+> and the SEC's 2026-09-17 innovation exemption relieves venues and liquidity providers,
+> **not information services**, so the app's analytics-only posture holds while it labels
+> truthfully. `docs/LEGAL-REVIEW.md` §3.G carries the open legal questions.
+
 **To close it:** `npm run terms:report -- --seeded` (or `--news`) from a machine
 > that can reach these sites writes a review worksheet — current verdict, what the
 > probe saw, a link to the document, and a conclusion box per host. Read the

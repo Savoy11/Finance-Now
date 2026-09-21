@@ -99,6 +99,34 @@ ranking. Nothing here ships before B and C.
 2026-09-05 "not ready for rollout" ruling and the hosting decision. Deliberately parked —
 listed so it is not rediscovered as new.
 
+**G. Tokenized securities** (opened 2026-09-21). Full record:
+`docs/assessments/tokenized-securities-2026-09-21.md`. The SEC's five-year "innovation
+exemption" for on-chain trading of tokenized listed US stocks took effect on 2026-09-17;
+Nasdaq's and NYSE's same-CUSIP tokenized trading rules were approved in March–April 2026;
+Dinari sells tokenized US stocks to US persons, while Kraken, Coinbase, Robinhood and Ondo
+sell them only outside the US. None of it touches an information service — the exemption
+relieves venues and liquidity providers, not publishers — so the app's posture holds **as
+long as it stays analytics-only and labels truthfully**. Five questions are open, none
+answered:
+
+1. Whether showing a security the viewer cannot lawfully buy, with an eligibility label,
+   creates any obligation for a public deployment (rides on T-151).
+2. Whether on-chain price data for a security is "market data" in the licensed sense — it
+   is not exchange data, but each venue's and feed operator's terms govern redistribution,
+   including the trade feeds the exemption compels venues to publish.
+3. Whether a premium/discount figure between a token and its underlying stays on the
+   explanation side of RP-3 (working answer: yes — it is arithmetic on two published
+   prices, the D14 line — if labelled derived and never framed as cheap/expensive).
+4. Affiliate placements (E above) for products that exclude US persons — proposed rule:
+   none, ever.
+5. Anything called "trading" — order routing, buy buttons, key custody — is a
+   broker-dealer / introducing-broker question, barred today by RP-5 and unresolved by
+   T-151. Not proposed.
+
+The app already carries one tokenized security misfiled as a stablecoin (Ondo USDY, coin
+registry); that is an engineering item in the assessment, listed here only because the
+misfile is also a disclosure defect.
+
 ---
 
 ## 4. When to revisit
@@ -116,6 +144,10 @@ This note is not on a timer, because the triggers are events rather than dates:
 4. **On the source-terms staleness window.** Verdicts go stale at 180 days. The oldest
    entries date to 2026-08-06, so the first wave falls due **2027-02-02** — 135 days from
    this note. T-250 already tracks it.
+5. **On the tokenized-securities dates** in the assessment's §3.3: DTC's pilot rollout
+   (October 2026, reported), Nasdaq's 23-hour trading launch (2026-12-06, reported), the
+   GENIUS Act taking effect (2027-01-18), and the innovation exemption's expiry
+   (2031-09-17). Each changes what a truthful label has to say, not whether one is owed.
 
 ⚠ `npm run staleness:check` does **not** watch any of this. It watches curated *data*
 tables (`*_LAST_VERIFIED`), not terms verdicts or legal workstreams. Extending it to the
@@ -135,3 +167,13 @@ guard has this covered.
   a browser, not a different connection.
 - Established that both large "terms review" worksheets in `docs/audits/` are *unfilled
   generated checklists*, not readings. One is now in `docs/audits/archive/` saying so.
+
+---
+
+## 6. What changed on 2026-09-21
+
+- Opened §3.G (tokenized securities) and revisit trigger 5, on the strength of
+  `docs/assessments/tokenized-securities-2026-09-21.md`. Research only; no code changed;
+  no vendor contacted; nothing sent. The assessment's primary documents were **not opened**
+  from the session that wrote it (sandbox egress), which its banner says in as many words —
+  read the SEC order and any venue terms on the owner's machine before acting on a clause.
