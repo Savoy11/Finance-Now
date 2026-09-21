@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { coinDescription, firstUrl } from '@/lib/utils/coinDescription'
 import { cmcConfigured, fetchCmcProfiles, keylessFallbackAllowed } from '@/lib/server/cmcProfiles'
+import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 
 // One coin's project profile — official website, what the project is, and its
 // category tags. CoinGecko /coins/{id}, keyless.
@@ -65,7 +66,7 @@ async function fetchFromCoinGecko(id: string): Promise<CoinProfileResponse> {
   const url = `https://api.coingecko.com/api/v3/coins/${encodeURIComponent(id)}`
     + '?localization=false&tickers=false&market_data=false'
     + '&community_data=false&developer_data=false&sparkline=false'
-  const res = await fetch(url, { headers: { Accept: 'application/json' }, next: { revalidate: 86_400 } })
+  const res = await fetch(url, { headers: { Accept: 'application/json' }, next: { revalidate: 86_400 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) })
   if (!res.ok) throw new Error(`CoinGecko ${res.status}`)
   const j = await res.json() as {
     links?: { homepage?: unknown; whitepaper?: unknown }

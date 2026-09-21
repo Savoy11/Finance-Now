@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getProviderKey } from '@/lib/api/live/providers'
 import { parseIpoCalendar, type IpoEvent } from '@/lib/data/ipoCalendar'
+import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 
 // Upcoming IPOs for the equities module — Alpha Vantage IPO_CALENDAR, which
 // returns listings expected over roughly the next three months.
@@ -78,7 +79,7 @@ export async function GET(req: NextRequest) {
       // as "needs a free Alpha Vantage key" for weeks when a key would never
       // have helped. The route reported `configured: true, reason: upstream`
       // throughout, which was honest and still pointed at the wrong half.
-      { next: { revalidate: REVALIDATE_SECONDS } },
+      { next: { revalidate: REVALIDATE_SECONDS }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) },
     )
     // A non-2xx is an upstream failure. It is reported as such rather than as an
     // empty calendar: "no IPOs scheduled" is a claim about the market, and this

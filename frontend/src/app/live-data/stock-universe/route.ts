@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getProviderKey } from '@/lib/api/live/providers'
 import { EQUITY_CATALOG, EQUITY_BY_SYMBOL, mapSectorName, type SectorId } from '@/lib/data/equityCatalog'
 import { fetchEpsBySymbol, computePeRatio } from '@/lib/server/secFundamentals'
+import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 
 // The equities universe for the Stock Registry.
 //   GET /live-data/stock-universe            → full universe (daily-refreshed)
@@ -139,7 +140,7 @@ async function fetchFmpUniverse(key: string): Promise<UniverseEntry[]> {
   const url =
     'https://financialmodelingprep.com/stable/company-screener' +
     `?limit=${MAX_UNIVERSE}&isEtf=false&isFund=false&isActivelyTrading=true&apikey=${key}`
-  const res = await fetch(url, { headers: { Accept: 'application/json' }, next: { revalidate: 86_400 } })
+  const res = await fetch(url, { headers: { Accept: 'application/json' }, next: { revalidate: 86_400 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) })
   if (!res.ok) throw new Error(`FMP screener ${res.status}${res.status === 402 ? ' (paid endpoint — the broad universe needs an FMP paid plan)' : ''}`)
   const rows = await res.json() as FmpScreenerRow[]
   if (!Array.isArray(rows) || rows.length === 0) throw new Error('FMP screener returned no rows')
@@ -195,7 +196,7 @@ export async function GET(req: NextRequest) {
       try {
         // FMP /stable profile — works on the free tier (single symbol).
         const res = await fetch(`https://financialmodelingprep.com/stable/profile?symbol=${encodeURIComponent(symbolParam)}&apikey=${key}`, {
-          headers: { Accept: 'application/json' }, next: { revalidate: 86_400 },
+          headers: { Accept: 'application/json' }, next: { revalidate: 86_400 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS),
         })
         if (res.ok) {
           const rows = await res.json() as Array<{ symbol: string; companyName: string; sector: string; industry: string; marketCap: number; price: number; beta: number; lastDividend: number; exchange: string; website: string }>

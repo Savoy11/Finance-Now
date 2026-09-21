@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { EDGAR_HEADERS, resolveCik } from '@/lib/server/edgar'
+import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 
 export const dynamic = 'force-dynamic'
 
@@ -54,7 +55,7 @@ async function fetchWikiSummary(name: string): Promise<WikiSummary | null> {
   try {
     const searchRes = await fetch(
       `https://en.wikipedia.org/w/rest.php/v1/search/title?q=${encodeURIComponent(name)}&limit=1`,
-      { headers: WIKI_HEADERS, next: { revalidate: 86_400 } }
+      { headers: WIKI_HEADERS, next: { revalidate: 86_400 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) }
     )
     if (!searchRes.ok) return null
     const search = await searchRes.json() as { pages?: Array<{ key: string }> }
@@ -63,7 +64,7 @@ async function fetchWikiSummary(name: string): Promise<WikiSummary | null> {
 
     const sumRes = await fetch(
       `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(key)}`,
-      { headers: WIKI_HEADERS, next: { revalidate: 86_400 } }
+      { headers: WIKI_HEADERS, next: { revalidate: 86_400 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) }
     )
     if (!sumRes.ok) return null
     const sum = await sumRes.json() as {
@@ -104,7 +105,7 @@ export async function GET(req: NextRequest) {
     const [subRes, wiki] = await Promise.all([
       fetch(`https://data.sec.gov/submissions/CIK${cik}.json`, {
         headers: EDGAR_HEADERS,
-        next: { revalidate: 900 },
+        next: { revalidate: 900 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS),
       }),
       fetchWikiSummary(name || resolved.company),
     ])

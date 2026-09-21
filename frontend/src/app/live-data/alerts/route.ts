@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { coingeckoBase, coingeckoHeaders } from '@/lib/api/live/coingecko'
 import { recordProviderFetch } from '@/lib/api/live/providers'
 import { describeThrottle } from '@/lib/server/coingeckoThrottle'
+import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 
 export const dynamic = 'force-dynamic'
 
@@ -100,7 +101,7 @@ export async function GET() {
 
     const res = await fetch(url, {
       headers: coingeckoHeaders(),
-      next: { revalidate: 60 },  // 1-minute server cache to stay within rate limits
+      next: { revalidate: 60 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS),  // 1-minute server cache to stay within rate limits
     })
 
     if (!res.ok) {

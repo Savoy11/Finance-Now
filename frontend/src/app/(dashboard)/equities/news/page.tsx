@@ -367,7 +367,7 @@ function EquityNewsContent() {
           <PageHeader
             title="Market News"
             subtitle="Earnings, analyst actions, macro, and market stories with ticker tagging"
-            description="Aggregates stock-market headlines from MarketWatch and CNBC RSS feeds. Each article is classified by category, scored for sentiment from headline keywords, and tagged with catalog tickers it mentions."
+            description="Aggregates stock-market headlines from the CNBC RSS feed. Each article is classified by category, scored for sentiment from headline keywords, and tagged with catalog tickers it mentions."
             details={[
               { label: 'Ticker detection', text: 'Company-name matching plus $CASHTAG / uppercase ticker matching against the equity catalog. Ticker chips link to the stock detail page.' },
               { label: 'Symbol search', text: 'Search any stock, ETF, or mutual fund — catalog names match on company/fund name and ticker; a ticker outside the catalogs matches on explicit mention ($SYM or the bare symbol) only, since there is no name to look for. Finance Now has no per-ticker news feed — the only free one was withdrawn on terms grounds — so a symbol with no coverage today returns nothing rather than general market stories relabelled as its own.' },

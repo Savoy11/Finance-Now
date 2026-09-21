@@ -82,31 +82,36 @@ Exercised against the real database, not just type-checked:
 ### One real bug this caught
 
 > **Superseded 2026-09-14 (owner decision D2) — kept as the record of a real
-> bug, not as current architecture.** Everything in this subsection is written
-> in the present tense about a `/api/*` proxy rewrite that **no longer exists**:
-> the legacy backend is frozen (`backend/FROZEN.md`) and the rewrite was removed
-> from `next.config.mjs`, which also retired the constraint that dynamic `/api/*`
-> routes had to live under `/api/user/`. The Auth.js exclusion and the
-> suffix-stripping described below are both gone with it, because the thing they
-> were guarding is gone. Read this as *why those routes once 500'd*.
+> bug, not as current architecture.** Everything in this subsection describes a
+> `/api/*` proxy rewrite that **no longer exists**: the legacy backend is frozen
+> (`backend/FROZEN.md`) and the rewrite was removed from `next.config.mjs`,
+> which also retired the constraint that dynamic `/api/*` routes had to live
+> under `/api/user/`. The Auth.js exclusion and the suffix-stripping described
+> below are both gone with it, because the thing they were guarding is gone.
+> Read this as *why those routes once 500'd*.
 
-`next.config.mjs` proxies `/api/*` to the legacy backend. Next.js rewrites run
+`next.config.mjs` proxied `/api/*` to the legacy backend. Next.js rewrites run
 in the `afterFiles` phase — **after** concrete file routes but **before**
 dynamic ones. So `/api/auth/signup` (a literal file) reached its handler while
 `/api/auth/csrf` and `/api/auth/callback/*` (served by the `[...nextauth]`
 catch-all) were proxied to a backend that isn't running, and 500'd. Login was
 completely broken while signup appeared to work.
 
-Fixed by excluding Auth.js paths: `source: '/api/:path((?!auth/).*)'`.
+Fixed 2026-09-08 by excluding Auth.js paths: `source: '/api/:path((?!auth/).*)'`.
 
-> **Fixed 2026-09-08.** `NEXT_PUBLIC_API_URL` was often set to
-> `http://localhost:8000/api/v1` while the destination appends `/api/:path`,
+> **Superseded 2026-09-14 (owner decision D2).** The entire `/api/*` rewrite was
+> removed — see the comment block at the top of `next.config.mjs`. Nothing proxies
+> `/api/*` any more, so neither the `source` exclusion above nor the base-path
+> stripping described below exists in the code today. Both are kept as history.
+
+> **Fixed 2026-09-08, moot since 2026-09-14.** `NEXT_PUBLIC_API_URL` was often set
+> to `http://localhost:8000/api/v1` while the destination appended `/api/:path`,
 > producing a doubled `http://localhost:8000/api/v1/api/...` — any `/api/*` path
-> without a concrete route file 500'd. `next.config.mjs` now strips a trailing
-> `/api` or `/api/vN` from the configured base, so the fix applies to every
-> deployment rather than depending on each one setting the variable the way this
-> rule happens to want. The docs and the k8s ConfigMap were corrected to the bare
-> origin as well.
+> without a concrete route file 500'd. The 2026-09-08 fix made `next.config.mjs`
+> strip a trailing `/api` or `/api/vN` from the configured base, and the docs and
+> the k8s ConfigMap were corrected to the bare origin at the same time. That
+> stripping code was deleted along with the rewrite on 2026-09-14 (D2), and the
+> variable is now read by nothing — no value of it can double a path today.
 
 ---
 

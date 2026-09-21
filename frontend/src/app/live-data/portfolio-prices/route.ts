@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,7 +14,7 @@ export interface PortfolioPricesResponse {
 async function fetchCoinGeckoPrices(ids: string[]): Promise<Record<string, number>> {
   const res = await fetch(
     `https://api.coingecko.com/api/v3/simple/price?ids=${ids.join(',')}&vs_currencies=usd`,
-    { headers: { Accept: 'application/json' }, next: { revalidate: 60 } }
+    { headers: { Accept: 'application/json' }, next: { revalidate: 60 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) }
   )
   if (!res.ok) throw new Error(`CoinGecko ${res.status}`)
   const data = await res.json() as Record<string, { usd: number }>
@@ -30,7 +31,7 @@ async function fetchDefiLlamaPrices(ids: string[]): Promise<Record<string, numbe
   const keys = ids.map(id => `coingecko:${id}`).join(',')
   const res = await fetch(
     `https://coins.llama.fi/prices/current/${keys}`,
-    { headers: { Accept: 'application/json' }, next: { revalidate: 60 } }
+    { headers: { Accept: 'application/json' }, next: { revalidate: 60 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) }
   )
   if (!res.ok) throw new Error(`DefiLlama ${res.status}`)
   const data = await res.json() as { coins: Record<string, { price: number }> }

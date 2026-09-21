@@ -172,7 +172,10 @@ export const assetsApi = {
     // Throwing lets React Query's isError branch show the error card + retry.
     if (!result.ok) throw new Error('Market data is unreachable — no live prices are available right now.')
     const assets = buildLiveAssets(result.quotes)
-    return applyParams(assets, params)
+    // Carry the serving rung through to the page. applyParams only sorts and
+    // paginates, so without this the provenance dies at this boundary and the
+    // page has nothing to name but a guess.
+    return { ...applyParams(assets, params), source: result.source }
   },
 
   getAsset: async (id: string): Promise<AssetDetail> => {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { coingeckoIdFor } from '@/lib/api/live/coingeckoIds'
 import { normalizeDaysParam } from '@/lib/utils/chartParams'
 import { coingeckoBase } from '@/lib/api/live/coingecko'
+import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 
 // Server-side proxy for CoinGecko market_chart history. Maps the platform's
 // internal asset id to a CoinGecko coin id, fetches daily price/volume series,
@@ -60,7 +61,7 @@ export async function GET(request: NextRequest) {
   try {
     const res = await fetch(`${coingeckoBase()}/coins/${cgId}/market_chart?${params.toString()}`, {
       headers,
-      next: { revalidate: 300 },
+      next: { revalidate: 300 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS),
     })
 
     if (!res.ok) {

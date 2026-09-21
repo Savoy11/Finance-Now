@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { ATTESTATION_META, COMPOSITION_MAP, META_AS_OF, MONITORED_STABLECOINS, getStablecoinMetaProvenance } from '@/lib/data/stablecoinMeta'
+import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 
 export const dynamic = 'force-dynamic'
 
@@ -43,7 +44,7 @@ export async function GET() {
   try {
     const res = await fetch('https://stablecoins.llama.fi/stablecoins?includePrices=true', {
       headers: { Accept: 'application/json' },
-      next: { revalidate: 300 },
+      next: { revalidate: 300 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS),
     })
     if (!res.ok) throw new Error(`DefiLlama HTTP ${res.status}`)
     const data = await res.json()

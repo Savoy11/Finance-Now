@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 
 export const dynamic = 'force-dynamic'
 
@@ -9,7 +10,7 @@ export async function GET(req: NextRequest) {
   try {
     const res = await fetch(
       `https://api.coingecko.com/api/v3/search?query=${encodeURIComponent(query)}`,
-      { headers: { Accept: 'application/json' }, next: { revalidate: 60 } }
+      { headers: { Accept: 'application/json' }, next: { revalidate: 60 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) }
     )
     if (!res.ok) return NextResponse.json({ coins: [] })
 

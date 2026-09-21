@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 
 // Alternative.me Fear & Greed Index — completely free, no API key ever needed.
 // Also fetches historical values for sparkline display.
@@ -31,7 +32,7 @@ export async function GET(): Promise<NextResponse> {
   try {
     const res = await fetch('https://api.alternative.me/fng/?limit=365&format=json', {
       headers: { Accept: 'application/json' },
-      next: { revalidate: 3600 },
+      next: { revalidate: 3600 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS),
     })
 
     if (!res.ok) throw new Error(`upstream ${res.status}`)

@@ -13,6 +13,9 @@ async function solRpc(method: string, params: unknown[]) {
     next: { revalidate: 0 },
     signal: AbortSignal.timeout(WALLET_FETCH_TIMEOUT_MS),
   })
+  // btc, tron and xrp all label a non-OK response; sol went straight to
+  // res.json(), so an HTML error page surfaced as a JSON parse failure.
+  if (!res.ok) throw new Error(`Solana RPC HTTP ${res.status}`)
   const data = await res.json()
   if (data.error) throw new Error(data.error.message)
   return data.result
@@ -45,7 +48,6 @@ export async function GET(req: NextRequest) {
       updatedAt: Date.now(),
     })
   } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Unknown error'
-    return NextResponse.json({ ok: false, error: msg }, { status: 502 })
+    return NextResponse.json({ ok: false, error: walletFetchErrorMessage(err) }, { status: 502 })
   }
 }

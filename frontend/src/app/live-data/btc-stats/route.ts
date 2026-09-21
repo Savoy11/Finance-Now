@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { normaliseHashrate } from '@/lib/server/btcHashrate'
+import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 
 // Bitcoin network statistics from multiple free sources:
 // - Blockchain.info: hashrate (GH/s — see lib/server/btcHashrate.ts), difficulty,
@@ -41,10 +42,10 @@ function nextHalvingBlock(currentHeight: number): number {
 
 export async function GET(): Promise<NextResponse> {
   const [statsRes, mempoolFeesRes, mempoolInfoRes, blockHeightRes] = await Promise.allSettled([
-    fetch('https://blockchain.info/stats?format=json', { next: { revalidate: 300 } }),
-    fetch('https://mempool.space/api/v1/fees/recommended', { next: { revalidate: 60 } }),
-    fetch('https://mempool.space/api/mempool', { next: { revalidate: 60 } }),
-    fetch('https://blockchain.info/q/getblockcount', { next: { revalidate: 60 } }),
+    fetch('https://blockchain.info/stats?format=json', { next: { revalidate: 300 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) }),
+    fetch('https://mempool.space/api/v1/fees/recommended', { next: { revalidate: 60 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) }),
+    fetch('https://mempool.space/api/mempool', { next: { revalidate: 60 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) }),
+    fetch('https://blockchain.info/q/getblockcount', { next: { revalidate: 60 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) }),
   ])
 
   let hashrateTHs: number | null = null

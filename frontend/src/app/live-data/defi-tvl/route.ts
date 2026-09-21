@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 
 // DefiLlama extended data — protocol TVL rankings, chain TVL, DEX volumes, fee revenue.
 // All completely free, no API key needed.
@@ -36,10 +37,10 @@ export interface DefiTvlData {
 
 export async function GET(): Promise<NextResponse> {
   const [protocolsRes, chainsRes, dexRes, feesRes] = await Promise.allSettled([
-    fetch('https://api.llama.fi/protocols', { next: { revalidate: 300 } }),
-    fetch('https://api.llama.fi/v2/chains', { next: { revalidate: 300 } }),
-    fetch('https://api.llama.fi/overview/dexs?excludeTotalDataChart=true&excludeTotalDataChartBreakdown=true&dataType=dailyVolume', { next: { revalidate: 300 } }),
-    fetch('https://api.llama.fi/overview/fees?excludeTotalDataChart=true&excludeTotalDataChartBreakdown=true&dataType=dailyFees', { next: { revalidate: 300 } }),
+    fetch('https://api.llama.fi/protocols', { next: { revalidate: 300 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) }),
+    fetch('https://api.llama.fi/v2/chains', { next: { revalidate: 300 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) }),
+    fetch('https://api.llama.fi/overview/dexs?excludeTotalDataChart=true&excludeTotalDataChartBreakdown=true&dataType=dailyVolume', { next: { revalidate: 300 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) }),
+    fetch('https://api.llama.fi/overview/fees?excludeTotalDataChart=true&excludeTotalDataChartBreakdown=true&dataType=dailyFees', { next: { revalidate: 300 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) }),
   ])
 
   let protocols: Protocol[] = []

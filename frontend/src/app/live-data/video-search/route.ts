@@ -3,6 +3,7 @@ import { getProviderKey, recordProviderFetch } from '@/lib/api/live/providers'
 import { guardQuotaRoute } from '@/lib/server/apiGuard'
 import { decodeEntities } from '@/lib/utils/html'
 import type { VideoItem } from '../videos/route'
+import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 
 // Whole-of-YouTube keyword search, backing the Videos page's "Search YouTube"
 // action.
@@ -179,7 +180,7 @@ export async function GET(request: NextRequest) {
   try {
     const res = await fetch(url, {
       headers: { Accept: 'application/json' },
-      next: { revalidate: 3600 }, // one search per query per hour — quota is scarce
+      next: { revalidate: 3600 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS), // one search per query per hour — quota is scarce
     })
 
     if (!res.ok) {

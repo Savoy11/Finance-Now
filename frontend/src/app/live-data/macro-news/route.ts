@@ -19,6 +19,7 @@ import { parseFeedItems } from '@/lib/server/feedParse'
 // the Integrations page can toggle sources and shows per-feed utilization.
 
 import { classifyPillar, type MacroPillar } from '@/lib/server/macroPillar'
+import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 
 export const dynamic = 'force-dynamic'
 
@@ -65,7 +66,10 @@ const FEEDS: Array<{ providerId: string; url: string; source: string; defaultPil
   // General feeds: kept only when an article classifies into a pillar.
   // CNBC Economy is here mainly to feed the bonds pillar — the dedicated
   // Investing.com bonds feed publishes op-eds every few weeks, not news.
-  { providerId: 'marketwatch-macro', url: 'https://feeds.content.dowjones.io/public/rss/mw_bulletins', source: 'MarketWatch', defaultPillar: null },
+  // ⚠ `marketwatch-macro` (mw_bulletins) removed 2026-09-20 ON TERMS — Dow Jones
+  // Terms of Use §9.1/§9.4.1; dowjones.io is now `prohibited`. See market-news for
+  // the reasoning. Seven feeds remain and every pillar keeps a dedicated source, so
+  // this degrades the general pool rather than removing a pillar.
   { providerId: 'cnbc-macro',        url: 'https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=10000664', source: 'CNBC', defaultPillar: null },
   { providerId: 'cnbc-economy',      url: 'https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=20910258', source: 'CNBC Economy', defaultPillar: null },
 ]
@@ -194,7 +198,7 @@ export async function GET(request: NextRequest) {
     defaultPillar: feed.defaultPillar,
     run: async () => {
       const res = await fetch(feed.url, {
-        next: { revalidate: 300 },
+        next: { revalidate: 300 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS),
         headers: { 'User-Agent': 'Mozilla/5.0 (compatible; FinanceNow/1.0)', Accept: 'application/rss+xml, application/xml, text/xml' },
       })
       if (!res.ok) throw new Error(`${feed.source} ${res.status}`)

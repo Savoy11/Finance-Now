@@ -4,6 +4,7 @@ import { validatePublicHttpUrl } from '@/lib/server/urlSafety'
 import { pinnedFetch } from '@/lib/server/pinnedFetch'
 import { guardQuotaRoute } from '@/lib/server/apiGuard'
 import { decodeEntities, stripTags } from '@/lib/utils/html'
+import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 
 // Server-side proxy for the Videos feed.
 //   GET /live-data/videos                  → every enabled channel, both markets
@@ -202,7 +203,7 @@ async function fetchProvider(provider: AnyActiveProvider, market: ProviderMarket
     // nothing about those URLs is attacker-influenced.
     const res = feed.userSupplied
       ? await pinnedFetch(feed.url, { headers })
-      : await fetch(feed.url, { headers, next: { revalidate: 600 } })
+      : await fetch(feed.url, { headers, next: { revalidate: 600 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) })
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
     const items = parseChannelFeed(await res.text(), provider, market)
     recordProviderFetch(provider.id, { count: items.length })

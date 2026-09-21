@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { ALL_COINGECKO_IDS, ASSET_ID_BY_COINGECKO, COINGECKO_IDS } from '@/lib/api/live/coingeckoIds'
 import { getProviderKey, recordProviderFetch } from '@/lib/api/live/providers'
 import { coingeckoBase, coingeckoHeaders } from '@/lib/api/live/coingecko'
+import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 
 // Server-side proxy for market data.
 // Supports multiple sources via ?source= query param:
@@ -35,7 +36,7 @@ async function fetchCoinGecko(): Promise<Record<string, unknown>> {
   })
   const res = await fetch(`${coingeckoBase()}/coins/markets?${params}`, {
     headers: coingeckoHeaders(),
-    next: { revalidate: 60 },
+    next: { revalidate: 60 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS),
   })
   if (!res.ok) throw new Error(`CoinGecko ${res.status}`)
 
@@ -80,7 +81,7 @@ async function fetchBinance(): Promise<Record<string, unknown>> {
   const symbols = Object.keys(BINANCE_SYMBOL_MAP)
   const res = await fetch(
     `https://api.binance.com/api/v3/ticker/24hr?symbols=${JSON.stringify(symbols)}`,
-    { next: { revalidate: 30 } }
+    { next: { revalidate: 30 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) }
   )
   if (!res.ok) throw new Error(`Binance ${res.status}`)
 
@@ -114,7 +115,7 @@ async function fetchCoinMarketCap(): Promise<Record<string, unknown>> {
   const url = `https://pro-api.coinmarketcap.com/v2/cryptocurrency/quotes/latest?symbol=${symbols}&skip_invalid=true&aux=circulating_supply`
   const res = await fetch(url, {
     headers: { 'X-CMC_PRO_API_KEY': key, Accept: 'application/json' },
-    next: { revalidate: 60 },
+    next: { revalidate: 60 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS),
   })
   if (!res.ok) throw new Error(`CoinMarketCap ${res.status}`)
 

@@ -4,6 +4,7 @@ import { FUND_CATALOG, FUND_CATEGORY_INFO } from '@/lib/data/fundCatalog'
 import { COMMODITY_CATALOG, COMMODITY_CATEGORY_INFO } from '@/lib/data/commodityCatalog'
 import { CURRENCY_CATALOG, CURRENCY_CATEGORY_INFO } from '@/lib/data/currencyCatalog'
 import { RATES_CATALOG, RATES_CATEGORY_INFO } from '@/lib/data/ratesCatalog'
+import { ohlcvSourceLabel } from '@/lib/utils/ohlcvSource'
 
 // ─── Agent tool registry ──────────────────────────────────────────────────────
 //
@@ -530,7 +531,7 @@ export async function runTool(
         const coin = String(input.coin ?? '')
         const range = String(input.range ?? '1Y')
         const data = (await getJson(origin, `/live-data/ohlcv?id=${encodeURIComponent(coin)}&range=${encodeURIComponent(range)}`)) as {
-          ok?: boolean; candles?: { time: number; open: number; high: number; low: number; close: number }[]; source?: string
+          ok?: boolean; candles?: { time: number; open: number; high: number; low: number; close: number }[]; source?: string; venue?: string
         }
         const candles = data.candles ?? []
         if (!data.ok || candles.length === 0) return { error: 'no candle data available', coin, range }
@@ -540,7 +541,20 @@ export async function runTool(
         const changePct = ((last.close - first.open) / first.open) * 100
         // Return a compact summary — never dump hundreds of candles into context.
         return {
-          coin, range, source: data.source, candleCount: candles.length,
+          // `source` is the provider-FAMILY key ('binance'); `venue` is which
+          // host actually answered. api.binance.com is 451 from here, so these
+          // candles are really Binance.US — a different venue with its own
+          // liquidity and therefore its own prices, and an agent citing
+          // "Binance" for them makes a claim the data does not support.
+          //
+          // Reported as TWO fields rather than by overwriting `source` with the
+          // label: get_stock_price_history also emits `source`, so putting a
+          // display label in one and a provider key in the other would give the
+          // model one field name with two vocabularies.
+          coin, range,
+          source: data.source,
+          venue: ohlcvSourceLabel(data.source, data.venue),
+          candleCount: candles.length,
           firstClose: first.close, lastClose: last.close,
           periodHigh: high, periodLow: low,
           changePct: Number(changePct.toFixed(2)),

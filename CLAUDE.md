@@ -348,6 +348,19 @@ grep -rnE 'rm -rf|Remove-Item|rmSync|unlinkSync|rimraf' -r . | grep -v node_modu
 grep -rniE 'delete|prune|cleanup' .github/workflows/
 ```
 
+⚠ **`grep` does not exist in PowerShell, and this repo is maintained from PowerShell.**
+An audit that enforces a standing rule has to run in the shell of the person enforcing
+it, or it is a control on paper. The equivalent, verified 2026-09-20 to return the same
+two benign hits (`restart-dev.ps1:11`, `providerStatus.test.ts:31`) plus `package-lock`
+dependency metadata:
+
+```powershell
+Get-ChildItem -Recurse -File -Include *.ts,*.tsx,*.mjs,*.js,*.ps1,*.json,*.yml |
+  Where-Object { $_.FullName -notmatch '\\node_modules\\|\\\.next\\|\\coverage\\' } |
+  Select-String -Pattern 'rm -rf|Remove-Item|rmSync|unlinkSync|rimraf'
+Select-String -Path .github/workflows/*.yml -Pattern 'delete|prune|cleanup'
+```
+
 **Standing rule:** any history-shaping operation — force-pushing or re-rooting a branch,
 deleting branches, archiving a workstream — lands **together with a dated note in
 `docs/`** saying what was done and where the prior state lives. A reset nobody writes
@@ -439,6 +452,39 @@ const { data } = useQuery({
 >
 > Date the table by when it was **compiled as a whole**, never by its most recent
 > partial edit — re-verifying 8 rows of 55 does not refresh the other 47.
+>
+> **`npm run staleness:check` reports which windows are about to close**, and runs in CI
+> beside `docs:check`. It exists because the rule above has a blind spot: all this
+> machinery tells a *reader* the data is old, and nothing told a *maintainer* a clock was
+> about to fire. Measured 2026-09-20: `transferFees` was **355 days past** its window with
+> a green repo, and the staking catalog's was caught 7 days out only because someone
+> happened to read the file.
+>
+> ⚠ **It does not fail on "stale" — it fails on staleness nobody decided on.** Going red
+> the day a window closes would offer whoever is on shift a four-second fix (bump the
+> date), which is the fabricated freshness this whole section exists to prevent. Letting a
+> notice fire is often the right call; it just has to be *chosen*. Record it with a
+> `// STALENESS-ACK: <date> — <why>` comment in the contiguous comment block above the
+> anchor constant. An ack dated before its anchor is void, so it cannot be inherited when
+> the table is re-compiled.
+>
+> Clocks are **discovered**, never listed — zero found, an unresolvable anchor, or an
+> ambiguous one each exit 1 rather than reporting a clean sweep of nothing. Seven exist
+> as of 2026-09-20; run it rather than trusting that number.
+>
+> To see what a clock will do *before* it does it:
+> `npm run staleness:check -- --now=2026-09-28`. The flag is the documented form rather
+> than the `STALENESS_NOW` env var because a `VAR=x cmd` prefix is POSIX-only and this
+> repo is maintained from PowerShell; the env var is kept for CI, which is Linux.
+>
+> **Two live acknowledgements**, both worth reading before adding a third:
+> `transferFees` (stale, held out of rollout, nothing published — verified, not assumed)
+> and `stakingProviders` (owner, 2026-09-20: let the 2026-09-27 notice fire rather than
+> rush 330 editorial risk judgments to beat a date).
+>
+> ⚠ **Not every clock is a disclosure clock.** `stakingRates.ts`'s 14-day
+> `FALLBACK_STALE_AFTER_DAYS` **withholds** the rate (`delete rates[key]` → a dash);
+> the `*_LAST_VERIFIED` windows only change what a notice says. Do not unify them.
 
 ### `src/lib/data/transferFees.ts`
 Central data file for the Transfer Fee Calculator.
@@ -585,13 +631,14 @@ site nobody has reviewed. Full design: `docs/architecture/source-terms.md`.
 > The fix for any of the key-gated rows is a free API key on the Integrations page — **not
 > a substitute scraper.**
 
-> ⚠ **38 of 56 registry entries are `seeded`, not `verified` — check `review` before
+> ⚠ **30 of 56 registry entries are `seeded`, not `verified` — check `review` before
 > trusting one.** The registry was authored in an environment whose network policy
 > blocked every publisher and provider host at the gateway, so not one terms document
 > could be opened. The entries are honest starting positions drawn from each
 > provider's publicly documented posture (published API docs, documented free tiers,
-> openly advertised RSS feeds) — they are **not readings**. **Eighteen** entries
-> are `verified` as of 2026-09-19: **Cboe** (P2-O1 audit, 2026-08-05) and
+> openly advertised RSS feeds) — they are **not readings**. **26 entries are
+> `verified`** as of 2026-09-20 (the count was spelled out as a word here until then,
+> which is why no guard could watch it — see `docs:check`): **Cboe** (P2-O1 audit, 2026-08-05) and
 > **CoinGecko** (the 2026-08-29 probe run) were the first two, and sixteen more
 > were **read** on a clean egress on 2026-09-14/15
 > (`docs/audits/terms-review-apis-2026-09-14.md`,
@@ -657,6 +704,18 @@ site nobody has reviewed. Full design: `docs/architecture/source-terms.md`.
 > across 20 files. If "personal use on every tier" is right, that is a live
 > problem on shipping surfaces rather than a future decision. See the dated note
 > on the entry in `sourceTerms.ts` for the three questions to answer.
+
+> **`docs/LEGAL-REVIEW.md` is the standing note for all of this** (opened 2026-09-20). The
+> legal questions in this project are spread across ~65 queue items, several audits and a
+> drafts folder, and nothing said what they add up to. It groups them, names the keystone
+> (**T-151 — is Finance Now personal/internal or commercial?**), and records the four
+> provider enquiries drafted on 2026-09-20 in `docs/licensing/` — **none of which have been
+> sent**. Read it before reopening any licensing question.
+>
+> ⚠ Its headline finding: FMP, Finnhub, Twelve Data and Binance.US were all read on the
+> owner's machine and **all four bar a deployment other people can reach**, with no tier
+> curing it. Three name a route (Order Form / written approval / Redistribution Add-On);
+> Binance.US names none. That is not a pricing question, so D21 does not defer it.
 
 **To close it:** `npm run terms:report -- --seeded` (or `--news`) from a machine
 > that can reach these sites writes a review worksheet — current verdict, what the
@@ -1035,6 +1094,23 @@ rows were wrong in BOTH directions:
 ```bash
 curl -s https://api.ipify.org                                   # what the world sees
 curl -s "http://ip-api.com/json/<ip>?fields=isp,org,proxy,hosting"
+```
+
+⚠ **DO NOT RUN THAT IN POWERSHELL — `curl` is an ALIAS for `Invoke-WebRequest` there**,
+and this repo is maintained from PowerShell. It does not fail cleanly: `-s` binds as a
+parameter and swallows the URL, so the line dies with *"missing mandatory parameters:
+Uri"* rather than "command not found". A check that misfires while looking like a check
+is worse than no check — and this one is the gate deciding whether an entire
+data-availability audit is valid. Use the real binary (`C:\Windows\System32\curl.exe`,
+present on Windows 10+) or the native cmdlet; both verified 2026-09-20:
+
+```powershell
+$ip = curl.exe -s https://api.ipify.org                          # note the .exe
+curl.exe -s "http://ip-api.com/json/$ip`?fields=isp,org,proxy,hosting"
+
+# or with no curl at all
+$ip = Invoke-RestMethod https://api.ipify.org
+Invoke-RestMethod "http://ip-api.com/json/$ip`?fields=isp,org,proxy,hosting"
 ```
 
 If `proxy` or `hosting` is true, it is not an owner-machine baseline no matter which

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getProviderKey } from '@/lib/api/live/providers'
 import { resolveFundSeries, listNportFilings, fetchNportReport, type NportFilingRef } from '@/lib/server/nport'
 import { diffHoldings, type DisclosedHolding, type HoldingsChangeRow, type HoldingsChangeSummary } from '@/lib/utils/holdingsDiff'
+import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 
 export type { ChangeAction, HoldingsChangeRow, HoldingsChangeSummary } from '@/lib/utils/holdingsDiff'
 
@@ -52,7 +53,7 @@ export interface FundHoldingsHistoryResponse {
 async function fetchDisclosureDates(symbol: string): Promise<DisclosurePeriod[]> {
   const res = await fetch(
     `https://financialmodelingprep.com/stable/funds/disclosure-dates?symbol=${encodeURIComponent(symbol)}&apikey=${fmpKey()}`,
-    { next: { revalidate: 21_600 } }
+    { next: { revalidate: 21_600 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) }
   )
   if (!res.ok) return []
   const rows = await res.json()
@@ -89,7 +90,7 @@ function normalizeName(name: string): string {
 async function fetchDisclosure(symbol: string, period: DisclosurePeriod): Promise<Map<string, DisclosedHolding>> {
   const res = await fetch(
     `https://financialmodelingprep.com/stable/funds/disclosure?symbol=${encodeURIComponent(symbol)}&year=${period.year}&quarter=${period.quarter}&apikey=${fmpKey()}`,
-    { next: { revalidate: 21_600 } }
+    { next: { revalidate: 21_600 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) }
   )
   const holdings = new Map<string, DisclosedHolding>()
   if (!res.ok) return holdings

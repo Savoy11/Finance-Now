@@ -156,6 +156,27 @@ jobs:
           cd frontend
           npm run docs:check
 
+      # Curated-data review windows. Every hand-maintained table carries a
+      # *_LAST_VERIFIED anchor and a *_STALE_AFTER_DAYS window, and the app renders the
+      # result — but nothing read those dates except the page displaying them, so a clock
+      # firing was invisible to maintainers. transferFees sat 355 days past its window
+      # with a green repo; the staking catalog's was caught 7 days out only because
+      # someone happened to read the file.
+      #
+      # ⚠ IT DOES NOT FAIL ON "STALE". Going red the day a window passes would offer
+      # whoever is on shift a four-second fix — bump the date — which is the fabricated
+      # freshness the provenance blocks exist to prevent. It fails on staleness NOBODY
+      # DECIDED ON. Clearing it is one STALENESS-ACK line beside the constant, and an ack
+      # predating its anchor is void so it cannot be inherited across a re-compile.
+      #
+      # This step can therefore go red on a day nobody pushed. That is deliberate: the
+      # alternative is a signal nobody is forced to look at, which is what the 355 days
+      # above already measured.
+      - name: Curated-data staleness horizon
+        run: |
+          cd frontend
+          npm run staleness:check
+
       - name: Build Next.js application
         env:
           NEXT_PUBLIC_API_URL: http://localhost:8000

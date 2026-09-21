@@ -112,11 +112,21 @@ function Setup-Env {
         Write-Ok ".env.local created from .env.example — every variable annotated with what it unlocks"
     } else {
         # Fallback only if the example is missing. This used to write
-        # NEXT_PUBLIC_API_URL plus a note about next.config.mjs's rewrite
-        # appending /api/:path — but owner decision D2 (2026-09-14) retired the
-        # backend and REMOVED that rewrite, so the variable is read by nothing
-        # and the advice described a mechanism that no longer exists. Nothing is
-        # required to start the app, so the minimal file sets nothing.
+        # NEXT_PUBLIC_API_URL plus a note about next.config.mjs's rewrite appending
+        # /api/:path — but owner decision D2 (2026-09-14) retired the backend and
+        # REMOVED that rewrite, so the variable is read by nothing and the advice
+        # described a mechanism that no longer exists. Nothing is required to start
+        # the app, so the minimal file sets nothing.
+        #
+        # #216 fixed this differently on main: it kept the variable as an ACTIVE
+        # line and corrected only the comment, "written only so this minimal file
+        # matches .env.example". That justification does not hold — .env.example
+        # COMMENTS the variable out, so an active line here is the one thing that
+        # does not match it. Dropping the line is what matches.
+        #
+        # Keeping #216's one durable fact: if a proxy to a backend ever returns,
+        # the value must be the ORIGIN only. A /api or /api/v1 suffix here, plus
+        # the rewrite appending /api/:path, is what produced /api/v1/api/v1/... .
         Write-Warn ".env.example not found — writing a minimal .env.local instead"
         @"
 # Nothing here is required. Finance Now runs live-only against keyless public

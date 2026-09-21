@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { EDGAR_HEADERS, resolveCik } from '@/lib/server/edgar'
+import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 
 export const dynamic = 'force-dynamic'
 
@@ -123,7 +124,7 @@ export async function GET(req: NextRequest) {
 
     const res = await fetch(`https://data.sec.gov/submissions/CIK${cik}.json`, {
       headers: EDGAR_HEADERS,
-      next: { revalidate: 900 },
+      next: { revalidate: 900 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS),
     })
     if (!res.ok) return fail(503, `SEC submissions feed: HTTP ${res.status}`)
     const data = await res.json() as {
@@ -153,7 +154,7 @@ export async function GET(req: NextRequest) {
       try {
         const archiveRes = await fetch(`https://data.sec.gov/submissions/${file.name}`, {
           headers: EDGAR_HEADERS,
-          next: { revalidate: 86_400 },
+          next: { revalidate: 86_400 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS),
         })
         if (!archiveRes.ok) break
         const block = await archiveRes.json() as FilingBlock
