@@ -32,11 +32,20 @@ npx next build          # THE check dev mode misses — see C1 below
 - **The figures above are DATED READINGS, not live values — re-measure before relying on
   them.** They stood as "412 tests / ~67 warnings" with no date at all until 2026-09-19,
   which is the exact failure this note prevents: an undated count reads as current forever
-  and nothing fails when it drifts. They are already drifting — a file count taken on
-  2026-09-21 found **112** test files against the 107 recorded two days earlier, and no
-  suite run has since said what that did to the 1515. Read them as of their date, run the
+  and nothing fails when it drifts. They are already drifting — `npx vitest run` in
+  `frontend/` on 2026-09-21 reports **110 test files / 1538 tests, all passing**, against
+  the 107 files / 1515 tests recorded two days earlier. Read them as of their date, run the
   commands yourself for the real numbers, and never carry a figure forward under a fresh
   date.
+
+  ⚠ **Count test files the way vitest does, or you will get three different answers.**
+  An earlier version of this bullet said **112**, which is none of them. `vitest.config.ts`
+  sets `include: ['src/**/*.{test,spec}.{ts,tsx}']` resolved from `frontend/`, so 110 is
+  the number that corresponds to the suite. A `find` from the repo root returns **118** —
+  the extra 8 live in a scratch checkout under `.claude/worktrees/` that vitest never
+  runs. A bullet whose whole job is to stop unreproducible counts being carried forward
+  is the worst possible place to carry one, which is why the method is now written down
+  beside the figure.
 - **`npm run audit` results are IP-dependent.** From a datacenter/container, most
   market-data hosts are unreachable (proxy 403s, Binance 451, Reddit blocks) — a FAIL
   column collected there is void. Code reading is environment-independent; availability

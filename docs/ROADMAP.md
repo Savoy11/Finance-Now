@@ -163,6 +163,19 @@ Each phase leaves the app fully working and usable day-to-day.
 **Done when:** you can register, log in, and the sidebar renders from the
 module registry.
 
+> **Note (2026-09-21) — the auth bullet describes an approach that was not taken.**
+> `useAuthStore` was **deleted**, not made session-aware: M2 (`5e1c32a`) consolidated
+> authentication onto Auth.js, and `frontend/src` contains no reference to the store
+> today. `SessionProvider` wraps the tree at `frontend/src/app/providers.tsx:65`, and
+> the session is read through `next-auth/react`'s `useSession()` and
+> `getCurrentUserId()` (`lib/auth/session.ts`). See `docs/architecture/auth.md:21-25`
+> and its Goal B step 2.
+>
+> This annotates the bullet only. **Phase 0 is NOT being marked done here** — its
+> "Done when" includes "log in", and the login wall is deliberately OFF
+> (`REQUIRE_AUTH = false`, `LOGIN_DISABLED = true`), so that condition is unmet by
+> owner decision rather than by omission.
+
 ### Phase 1 — Invest on real data
 > Progress (2026-07-21): **Portfolio Builder plans AND portfolios are
 > DB-backed** — `builder_plans` (migration 0001) + `portfolios`/`holdings`

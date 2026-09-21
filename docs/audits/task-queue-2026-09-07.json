@@ -56,8 +56,8 @@
   "total_verified": 398,
   "outstanding": 323,
   "by_status": {
-   "open": 159,
-   "closed": 15,
+   "open": 112,
+   "closed": 62,
    "blocked": 73,
    "unclear": 1,
    "parked": 90
@@ -69,7 +69,9 @@
    "owner-machine": 83
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 15
+  "closed_by_annotation": 62,
+  "counts_recomputed_on": "2026-09-21",
+  "counts_note": "by_status and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status."
  },
  "blocking_decisions": [
   {
@@ -1118,7 +1120,7 @@
   {
    "id": "T-072",
    "title": "Fix the surviving setState-in-effect lint warning in FundsClient.tsx",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "bug",
@@ -1136,12 +1138,25 @@
      "lines": "10",
      "quote": "File warning count **9 → 1**; the survivor (`setState` in an effect) predates this PR, is a different pattern, and is not smuggled into this diff."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-21",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "ALREADY DONE — the effect is gone, not merely silenced. FundsClient.tsx:3 imports only { useMemo, useState }; the file contains no useEffect call at all, so the react-hooks/set-state-in-effect rule has nothing to fire on. Pagination is now DERIVED from a filter/sort signature: pageState holds { sig, page } (:191), filterSig is rebuilt each render (:365), page = pageState.sig === filterSig ? pageState.page : 0 (:366), and setPage re-stamps the signature (:367). The comment at :186-190 records why the effect was removed rather than rewritten (it reset a render late, painting an empty table for one frame). CAVEAT: `npm run lint` was not run in this pass, so the item's literal acceptance line ('0 warnings for the file') is unverified for OTHER rules; the setState-in-effect warning specifically is structurally impossible now.",
+    "approved_by": "owner, 2026-09-21 — approved the checklist-steward sweep batch (docs/audits/steward-sweep-2026-09-21.md)",
+    "evidence": [
+     "frontend/src/app/(dashboard)/funds/FundsClient.tsx:3 (no useEffect import)",
+     "frontend/src/app/(dashboard)/funds/FundsClient.tsx:186-191 (comment + pageState)",
+     "frontend/src/app/(dashboard)/funds/FundsClient.tsx:365-367 (derived page reset)"
+    ]
+   }
   },
   {
    "id": "T-080",
    "title": "Annotate the held-majors table — #50/#52 merged, #45 superseded by Node 24 bump",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "process",
@@ -1160,7 +1175,19 @@
      "lines": "2158-2160, 2174",
      "quote": "- **#45, #50, #52** — still unrebased, still unverified."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-21",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "DONE, and in the charter's format. docs/TASK-QUEUE.md:2203 carries '> **Status: ✅ resolved — annotation added 2026-09-08.**' immediately after the 'What CI said once these were rebased' block, with an outcome table at :2208-2212 recording #50 merged (02ec56f), #52 merged (4fc6e62 with ac3e836/#133), #45 closed-superseded by 936e1a8 (#135, Node 24 LTS across Dockerfile + CI + engines), #54/#47 closed 2026-09-02, and #59 declined. The original table and the CI notes above it are left verbatim, which is what the charter requires of a historical record. It also absorbs the two siblings that were filed pointing at it: T-078 and T-082 both carry next_action text saying 'fold into the T-080 steward annotation', and both are satisfied — #54/#47 at :2211 and ci.yml-on-push-to-main (#134, e3d629f) at :2216-2217. Both already read status 'done' in closed_but_still_listed_as_open_in_docs, so no sibling update is needed.",
+    "approved_by": "owner, 2026-09-21 — approved the checklist-steward sweep batch (docs/audits/steward-sweep-2026-09-21.md)",
+    "evidence": [
+     "docs/TASK-QUEUE.md:2203-2217",
+     "docs/audits/task-queue-2026-09-07.json closed_but_still_listed_as_open_in_docs → T-078, T-082 (status: done)"
+    ]
+   }
   },
   {
    "id": "T-101",
@@ -1200,7 +1227,7 @@
   {
    "id": "T-104",
    "title": "E-note-6 — correctness-of-aggregation test for TA signal-summary vote weighting",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "process",
@@ -1218,7 +1245,21 @@
      "lines": "352, 365, 385-387, 1093",
      "quote": "Signal-summary vote weighting and pattern detection have degenerate-input tests only; underlying indicator math is heavily tested. Correctness-of-aggregation test is a nice-to-have, not a blocker."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-21",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "DONE, with one deliberate and documented deviation from next_action's wording. The file exists at the path next_action named — frontend/src/lib/utils/__tests__/signalSummary.test.ts, 147 lines, header naming E-note-6 — and vitest.config.ts:18 (`include: ['src/**/*.{test,spec}.{ts,tsx}']`) picks it up. DEVIATION: next_action asked for assertions 'against hand-computed expectations'. The test does not hand-compute the ~25 indicator values; its header (:5-15) says why — that would test the indicator library rather than the fold — and instead recomputes the reported numbers from the signal list the same call produced. That is not a tautology, because the test encodes the fold's RULES independently of the implementation and would fail if the implementation changed: :68-75 hard-codes the weight map and the load-bearing NON-NEUTRAL denominator that indicators.ts:1417-1423 uses; :58-65 recomputes buy/sell with the strong variants folded in; :81-88 hard-codes the +-1.5 / +-0.5 band boundaries against indicators.ts:1429-1432. It also pins live behaviour that a widened band would break (an uptrend correctly reporting 'neutral' at score < 0.5, :117-129) and a flat series reporting no conviction (:140-146). Both the uptrend and downtrend mirrors requested by next_action are present (:40-41). The suite was NOT run (instructed not to), so this closes the item on the test EXISTING and being structurally able to fail, not on a green run.",
+    "approved_by": "owner, 2026-09-21 — approved the checklist-steward sweep batch (docs/audits/steward-sweep-2026-09-21.md)",
+    "evidence": [
+     "frontend/src/lib/utils/__tests__/signalSummary.test.ts:1-147",
+     "frontend/src/lib/utils/indicators.ts:1417-1432 (the fold this pins)",
+     "frontend/vitest.config.ts:18",
+     "docs/assessments/P3-production-review.md:392-394 (annotated 2026-09-21 in the same batch)"
+    ]
+   }
   },
   {
    "id": "T-107",
@@ -1328,7 +1369,7 @@
   {
    "id": "T-156",
    "title": "Verify which /social signals are live vs derived",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "data-verification",
@@ -1343,7 +1384,22 @@
      "lines": "716",
      "quote": "| Social | `/social` | 🟡 Partial | `/live-data/social` — verify which signals are live vs derived |"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-21",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "DONE. frontend/src/lib/data/dataSources.ts:239 now states the live/derived split AND separates the three derived sentiment labels instead of calling all of them a keyword classifier — the note says so in as many words ('this note used to call all of them a keyword classifier over the post text, which is true only of Reddit and quietly vouched for the other two'). Each claim checked against the route, not the note: Reddit's label is two regexes over the post's own text (live-data/social/route.ts:345-348, comment at :339-343); LunarCrush's is a galaxy-score threshold >=60 positive / <=35 negative (:408-410) and NOT the provider's own `sentiment` field, which the route does receive and print in the body line (:417) but never classifies on; Santiment's is hardcoded 'neutral' on every point (:462); Reddit `score` is a literal 0 sentinel and `upvoteRatio` is never set (:358-364). The generator was run — DATA-SOURCES.md:62 carries the regenerated copy verbatim, so the committed copy matches the registry. Siblings already agree and need no change: CLAUDE.md:1238 and DATA-AVAILABILITY.md:47 + :688. NOTE ON THIS ITEM'S OWN CITATION: its source quotes CLAUDE.md:716 as reading '/live-data/social — verify which signals are live vs derived'. That text exists nowhere in CLAUDE.md today; the row is at :1238. Another instance of the line-number drift this snapshot's annotations caveat already warns about.",
+    "approved_by": "owner, 2026-09-21 — approved the checklist-steward sweep batch (docs/audits/steward-sweep-2026-09-21.md)",
+    "evidence": [
+     "frontend/src/lib/data/dataSources.ts:239",
+     "frontend/src/app/live-data/social/route.ts:345-348, :358-364, :408-410, :417, :462",
+     "DATA-SOURCES.md:62 (generated copy in sync)",
+     "CLAUDE.md:1238",
+     "DATA-AVAILABILITY.md:47, :688"
+    ]
+   }
   },
   {
    "id": "T-158",
@@ -1701,7 +1757,7 @@
   {
    "id": "T-256",
    "title": "Add a test:coverage script",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "process",
@@ -1716,7 +1772,21 @@
      "lines": "108",
      "quote": "**Test coverage** — not recorded. `npm test` is `vitest run` with no `--coverage` flag, so the run reports pass/fail only. There is no `test:coverage` script in `package.json`."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-21",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "DONE, and more completely than next_action asked. frontend/package.json:20 carries `\"test:coverage\": \"vitest run --coverage\"` and :83 `\"@vitest/coverage-v8\": \"^3.2.6\"` in devDependencies; the package is actually installed (frontend/node_modules/@vitest/coverage-v8/package.json present), so the script can run rather than merely existing. Beyond the ask, frontend/vitest.config.ts:20-41 configures it: provider v8, text+html reporters, and an `include` scoped to the five lib layers the repo's testing convention targets (data, risk, utils, server, technicals) with a comment explaining that measuring pages and route handlers would bury the signal under JSX nobody intends to unit-test. It sets NO thresholds, deliberately, with the reasoning written in place (:37-40) — a failing threshold would block a fix for arriving without a test while saying nothing about whether the covered lines carry a user-facing number. Not run in this pass (instructed not to). Separately, and NOT part of this item: `test:coverage` appears in no workflow under .github/workflows/, so coverage is reportable on demand but is not produced by CI.",
+    "approved_by": "owner, 2026-09-21 — approved the checklist-steward sweep batch (docs/audits/steward-sweep-2026-09-21.md)",
+    "evidence": [
+     "frontend/package.json:20, :83",
+     "frontend/vitest.config.ts:20-41",
+     "frontend/node_modules/@vitest/coverage-v8/package.json (installed)",
+     "docs/audits/2026-07-30-audit.md:122 (annotated 2026-09-21 in the same batch)"
+    ]
+   }
   },
   {
    "id": "T-257",
@@ -1753,7 +1823,7 @@
   {
    "id": "T-259",
    "title": "Tighten the XRP wallet route's timeout budget",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "bug",
@@ -1768,12 +1838,26 @@
      "lines": "223",
      "quote": "One perf note: the XRP wallet route burned 10.2s on an unreachable upstream — its timeout budget is generous; consider tightening."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-21",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "ALREADY DONE, and for all five wallet routes rather than XRP alone — which is what the item's own next_action asked for. lib/server/walletFetch.ts:14 exports WALLET_FETCH_TIMEOUT_MS = 5_000. Each of wallet/btc, /eth, /sol, /tron and /xrp makes exactly one upstream fetch and each passes signal: AbortSignal.timeout(WALLET_FETCH_TIMEOUT_MS) on it (XRP at live-data/wallet/xrp/route.ts:33). The structured envelope on abort is also wired, not just the signal: xrp/route.ts:64 returns { ok: false, error: walletFetchErrorMessage(err) } with status 502, and walletFetch.ts:43-46 turns the runtime-varying DOMException into 'Upstream did not respond within 5s'. The helper's own comment (:3-13) cites the 2026-07-27 app-audit 10.2s observation this item derives from.",
+    "approved_by": "owner, 2026-09-21 — approved the checklist-steward sweep batch (docs/audits/steward-sweep-2026-09-21.md)",
+    "evidence": [
+     "frontend/src/lib/server/walletFetch.ts:14",
+     "frontend/src/lib/server/walletFetch.ts:43-46",
+     "frontend/src/app/live-data/wallet/xrp/route.ts:33, :64",
+     "frontend/src/app/live-data/wallet/{btc,eth,sol,tron}/route.ts — one AbortSignal.timeout each, one fetch each"
+    ]
+   }
   },
   {
    "id": "T-262",
    "title": "Remove dead computeSegmentOptions() from transferFees.ts",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "bug",
@@ -1790,12 +1874,24 @@
      "lines": "120",
      "quote": "Also noted: `computeSegmentOptions()` is dead code (its custom-route-builder consumer is gone)."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-21",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "ALREADY DONE — computeSegmentOptions and the SegmentOption type are absent from frontend/src entirely. A repo-wide search finds the name only in prose: docs/assessments/T8-transfer-fees-audit.md:120, docs/audits/queue-verification-2026-09-10.md:25 and this queue file. transferFees.ts is now 2,166 lines — shorter than the 2,207 the item's summary cites — and its last export is findTransferPaths() at :1907.",
+    "approved_by": "owner, 2026-09-21 — approved the checklist-steward sweep batch (docs/audits/steward-sweep-2026-09-21.md)",
+    "evidence": [
+     "frontend/src/lib/data/transferFees.ts:1907 (last export; file ends at 2166 with no computeSegmentOptions)",
+     "repo-wide search for computeSegmentOptions / SegmentOption — zero hits under frontend/src"
+    ]
+   }
   },
   {
    "id": "T-267",
    "title": "Crypto TA DataBadge says 'Binance' — use the route's venue field",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "bug",
@@ -1812,12 +1908,27 @@
      "lines": "63-68",
      "quote": "**Provenance label reads \"Binance\" for what is really Binance.US.** The chart's `DataBadge` shows `Binance OHLCV` because the route reports `source: 'binance'`."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-21",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "ALREADY DONE, and the whole path is connected end to end rather than merely present. PRODUCER: live-data/ohlcv/route.ts:253-254 returns source: 'binance' AND venue: host.includes('binance.us') ? 'binance-us' : 'binance-com'. CONSUMER: technical-analysis/page.tsx:32 imports ohlcvSourceLabel, :191 calls ohlcvSourceLabel(data?.source, data?.venue), and :389-390 feeds the result into the DataBadge as `${ohlcvSource} OHLCV`. MAPPING: lib/utils/ohlcvSource.ts:12-22 returns 'Binance.US' for venue 'binance-us', unit-tested at lib/utils/__tests__/ohlcvSource.test.ts:6-7. The same helper is reused by the agent tool at lib/agents/tools.ts:556, so the API surface inherits the fix. The item's second half also holds: neither the /scanner nor the /technical-analysis page contains a hardcoded 'Binance' string.",
+    "approved_by": "owner, 2026-09-21 — approved the checklist-steward sweep batch (docs/audits/steward-sweep-2026-09-21.md)",
+    "evidence": [
+     "frontend/src/app/live-data/ohlcv/route.ts:253-254",
+     "frontend/src/app/(dashboard)/technical-analysis/page.tsx:191, :389-390",
+     "frontend/src/lib/utils/ohlcvSource.ts:12-22",
+     "frontend/src/lib/utils/__tests__/ohlcvSource.test.ts:6-7",
+     "frontend/src/lib/agents/tools.ts:556"
+    ]
+   }
   },
   {
    "id": "T-268",
    "title": "Fix the ohlcv route comment for the 1H range",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "docs",
@@ -1834,12 +1945,25 @@
      "lines": "69-70",
      "quote": "**`1H` range serves 30-minute bars** (`ohlcv` route `cgDays:'1' → slice(-168)`), and the route comment (\"last week of 30m bars\") is ~half a week off. Route-level, cosmetic."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-21",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "ALREADY DONE, and the replacement comment is accurate against the config it annotates — checked, not assumed. live-data/ohlcv/route.ts:107-112 now reads: 'Cap only. CoinGecko's /ohlc?days=1 returns 30-minute candles covering one day — about 48 bars — so this slice never actually trims. It is a ceiling against a provider that starts serving more, not a window: 168 x 30m would be 3.5 days, not the week an earlier comment here claimed. (The Binance rung is unaffected; it asks for 168 x 1h bars directly.)'. Cross-checked against RANGES['1H'] at :48 — { cgDays: '1', resample: 'none', candleSize: '30m', binanceInterval: '1h', binanceLimit: 168 } — and against the line the comment sits above, :113 `if (cfg.cgDays === '1') return candles.slice(-168)`. Both halves of the comment's arithmetic hold. Docs-only item; nothing else to do.",
+    "approved_by": "owner, 2026-09-21 — approved the checklist-steward sweep batch (docs/audits/steward-sweep-2026-09-21.md)",
+    "evidence": [
+     "frontend/src/app/live-data/ohlcv/route.ts:107-112 (the reworded comment)",
+     "frontend/src/app/live-data/ohlcv/route.ts:48 (RANGES['1H'])",
+     "frontend/src/app/live-data/ohlcv/route.ts:113 (the slice it annotates)"
+    ]
+   }
   },
   {
    "id": "T-269",
    "title": "Make multi-timeframe confluence thresholds proportional",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "bug",
@@ -1856,7 +1980,22 @@
      "lines": "71-73",
      "quote": "**Confluence thresholds** (`bullish >= 4 / >= 3`) are absolute rather than proportional to the number of timeframes that loaded — slightly conservative when few TFs return, harmless at full load."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-21",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "DONE, and the connected path — not just the pieces — was followed. The function was extracted to a pure module exactly as next_action asked: frontend/src/lib/utils/confluence.ts:17-20 defines CONFLUENCE_STRONG_RATIO = 0.75, CONFLUENCE_MODERATE_RATIO = 0.6 and CONFLUENCE_MIN_LOADED = 3, and :36-46 bands on bullish/loadedCount rather than on an absolute count. The caller is live: components/analytics/technical/MultiTimeframeGrid.tsx:78 calls confluenceLabel(loaded.length, bullish, bearish) where `loaded` (:74) is the timeframes that actually answered, and that panel is rendered by app/(dashboard)/technical-analysis/page.tsx:406. The unit test next_action asked for exists and pins both readings the absolute form got backwards: a unanimous 3/3 is 'strong' and 4/6 is 'moderate' (lib/utils/__tests__/confluence.test.ts:17-24), picked up by vitest.config.ts:18 include. The suite was NOT run in this pass (instructed not to); this is a source reading.",
+    "approved_by": "owner, 2026-09-21 — approved the checklist-steward sweep batch (docs/audits/steward-sweep-2026-09-21.md)",
+    "evidence": [
+     "frontend/src/lib/utils/confluence.ts:17-20, :36-46",
+     "frontend/src/components/analytics/technical/MultiTimeframeGrid.tsx:74-78",
+     "frontend/src/app/(dashboard)/technical-analysis/page.tsx:406",
+     "frontend/src/lib/utils/__tests__/confluence.test.ts:17-24",
+     "docs/assessments/T10-crypto-ta-audit.md:71-73 (annotated 2026-09-21 in the same batch)"
+    ]
+   }
   },
   {
    "id": "T-270",
@@ -1883,7 +2022,7 @@
   {
    "id": "T-273",
    "title": "Adjust volume across splits in adjustCandles",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "bug",
@@ -1900,12 +2039,26 @@
      "lines": "72-75",
      "quote": "**Volume is left unadjusted across splits.** `adjustCandles` rescales price only; a split still steps volume (e.g. ×4 more shares post-split)."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-21",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "DONE, all three halves of next_action. (1) frontend/src/lib/utils/ohlcvAdjust.ts:46 — `const volume = Number.isFinite(c.volume) ? c.volume / f : c.volume`, i.e. the inverse of the price factor f = adj / close, so a 4:1 split that quarters price quadruples share volume instead of leaving a 4x cliff. Non-finite volume passes through, so a provider that omits it cannot become NaN. (2) The reasoning and its known limit are stated in the module docblock (:16-29): adjClose folds dividends in with splits and cannot be separated from this input, so the correction also picks up a smooth dividend drift of roughly a yield per year — a few percent tilt against the 4x step it removes. That is a disclosed limitation, not a silent one. (3) The test exists: __tests__/ohlcvAdjust.test.ts:68-107, including the exact 4:1 case next_action named (:69-87, asserting the pre/post-split volume ratio sits inside 0.9-1.1 where it was 4). Connected path confirmed — the only caller is app/live-data/security-ohlcv/route.ts:89, which is the route every equity/fund/macro TA, backtest and candlestick surface reads. Suite NOT run (instructed not to); source reading only.",
+    "approved_by": "owner, 2026-09-21 — approved the checklist-steward sweep batch (docs/audits/steward-sweep-2026-09-21.md)",
+    "evidence": [
+     "frontend/src/lib/utils/ohlcvAdjust.ts:46, docblock :16-29",
+     "frontend/src/app/live-data/security-ohlcv/route.ts:89",
+     "frontend/src/lib/utils/__tests__/ohlcvAdjust.test.ts:68-107",
+     "docs/assessments/T11-equity-ta-audit.md:72-75 (annotated 2026-09-21 in the same batch)"
+    ]
+   }
   },
   {
    "id": "T-277",
    "title": "5b — finish MCP canonical-field adoption and bump the MCP version",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "feature",
@@ -1930,7 +2083,24 @@
      "lines": "509-511",
      "quote": "Phase 5b. Update `mcp-server/` to request and display the canonical fields. Bump the MCP server version. Tool descriptions must state the direction explicitly. Ship this only after 5a is deployed."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-21",
+    "basis": "verified-here",
+    "verdict": "superseded",
+    "reason": "SUPERSEDED by owner decision D14 (2026-09-14) — and one half of it had already LANDED, which is why 'not reproducible' would be the wrong wording. Confirmed absent first-hand: `compare_staking_risk` is deleted from mcp-server/src/index.ts, with a 25-line tombstone in its place at :372-396 saying it was deleted rather than hidden, that its whole output — a side-by-side table of composite Safety Scores — was the thing rejected, and that the upstream route no longer serves the fields it needed. The upstream confirms it: frontend/src/app/api/v1/staking/opportunities/route.ts:156 states 'Removed 2026-09-14: the safetyScore, band, riskScore and riskLevel fields and the max_risk, min_safety and max_safety parameters', and the surviving MCP tool get_staking_opportunities (index.ts:252-324) requests and prints only the six 1-10 dimensions, never a composite. Guarded, and the guard can fail: frontend/src/lib/risk/__tests__/riskScoringRemoved.test.ts:200-211 strips comments before asserting (so the tombstone cannot satisfy it) and asserts positives alongside the absences. WHAT DID LAND: the version bump half of next_action is done and stands — mcp-server/package.json:3 and mcp-server/src/index.ts:64 both read 1.1.0, shipped 2026-09-08 per docs/assessments/R2-phases-3-5.md:67-81. So the item is not empty; it is half-completed and half-overtaken. Nothing further should be built: the canonical fields this item existed to adopt no longer exist to adopt, and CLAUDE.md records that no composite staking risk score exists anywhere in the app, its API or its MCP server.",
+    "approved_by": "owner, 2026-09-21 — approved the checklist-steward sweep batch (docs/audits/steward-sweep-2026-09-21.md)",
+    "evidence": [
+     "mcp-server/src/index.ts:372-396 (tombstone — tool absent)",
+     "mcp-server/package.json:3 and mcp-server/src/index.ts:64 (version 1.1.0, the half that landed)",
+     "frontend/src/app/api/v1/staking/opportunities/route.ts:156",
+     "frontend/src/lib/risk/__tests__/riskScoringRemoved.test.ts:200-211",
+     "docs/decisions/2026-09-14-owner-decisions.md:67, :77, :210",
+     "docs/architecture/risk-scale-spec.md:508-526 (already annotated)",
+     "docs/assessments/R2-phases-3-5.md:49 (annotated 2026-09-21 in the same batch)"
+    ]
+   }
   },
   {
    "id": "T-300",
@@ -1982,7 +2152,7 @@
   {
    "id": "T-326",
    "title": "Bring both agents' policy lists up to date with decisions since 2026-07-30",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "docs",
@@ -2001,12 +2171,26 @@
      "lines": "160-161",
      "quote": "**New policy decided?** Add it to the policy list in both files the same day. An agent auditing against yesterday's rules is worse than none."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-21",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "DONE in both files this item actually names. 'Both files' here means the two .claude/agents definitions (per docs/IMPROVEMENT-AGENT-SETUP.md:160 and the item's own summary 'code-auditor.md and opportunity-scout.md'), NOT docs/agents/code-checker.md. .claude/agents/code-auditor.md carries RP-6 (:104), item 4 (:111), RP-3-as-extended-by-D14 with the scoreStakingProvider() correction (:114-141), Yahoo hard-block (:144), RP-5 (:148) and free-tier-only (:150); the 'risk scores 0-100' bullet the next_action asked to rescope now reads 'Where a score IS published — after D14 that is the options Trade Risk Scorer, plus the macro/equity profiles' (:134-141). .claude/agents/opportunity-scout.md carries RP-6 (:93), item 4 (:97), RP-3 (:100), Yahoo (:106), RP-5 (:108) and free-tier-only (:109). The RP-3 bullet that the 2026-09-11 sweep named as the single remaining gap is present in both. Tree check behind the RP-3/D14 claim: scoreStakingProvider() has no production caller — grep over frontend/src finds it only in lib/risk/profiles/stakingAdapter.ts:61 and two test files — and /api/v1/staking/opportunities/route.ts:156 states in its own response note that it publishes no composite score.",
+    "approved_by": "owner, 2026-09-21 — approved the checklist-steward sweep batch (docs/audits/steward-sweep-2026-09-21.md)",
+    "evidence": [
+     ".claude/agents/code-auditor.md:104-151",
+     ".claude/agents/opportunity-scout.md:93-110",
+     "frontend/src/lib/risk/profiles/stakingAdapter.ts:61 (only definition; no production caller)",
+     "frontend/src/app/api/v1/staking/opportunities/route.ts:156"
+    ]
+   }
   },
   {
    "id": "T-330",
    "title": "Refresh the code-checker baseline figures (412 tests / ~67 warnings)",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "docs",
@@ -2021,12 +2205,24 @@
      "lines": "17-24, 29-31",
      "quote": "npx vitest run          # 412 tests as of 2026-07-30; must all pass"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-21",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "DONE — all three deliverables. (1) code-checker.md:21 reads 'npx vitest run # 1515 tests in 107 files as of 2026-09-19'; (2) :22 reads 'npx eslint . # 0 errors; 46 pre-existing warnings as of 2026-09-19' and :29 agrees; (3) the stale prebuilt-CSS invariant is gone — :113-117 now reads 'Tailwind compiles at build time (aa35239)' with its own dated correction marker. The undated '412 / ~67' figures the item was filed against are absent. NOT verified here and deliberately not touched: the 1515 and the 46 themselves — re-measuring those means running the suite, which this pass did not do.",
+    "approved_by": "owner, 2026-09-21 — approved the checklist-steward sweep batch (docs/audits/steward-sweep-2026-09-21.md)",
+    "evidence": [
+     "docs/agents/code-checker.md:21-22, 29, 113-117",
+     "frontend/vitest.config.ts:19"
+    ]
+   }
   },
   {
    "id": "T-331",
    "title": "Fix the checker's security invariant listing 'exchange creds' as a guarded route",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "docs",
@@ -2043,12 +2239,25 @@
      "lines": "80-81",
      "quote": "Sensitive routes (agents, provider config writes, exchange creds, video-analyze POST) call `guardSensitiveRoute` first."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-21",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "DONE. code-checker.md:97-98 now reads 'Sensitive routes (agents, provider config writes, video-analyze POST, the pump-report scan/investigate/chat routes) call guardSensitiveRoute first' — 'exchange creds' is gone — and :99-104 carries the replacement bullet 'Exchange API-key custody is forbidden, not guarded (RP-5, 2026-08-18)', which states that a diff reintroducing exchange-key storage is a red finding regardless of how well it is guarded. Verified against the tree, not the charter: frontend/src/app/live-data/wallet/ has no exchange route.ts (the exchange/ and exchange-connections/ directories survive but are EMPTY, so no handler is compiled), and the only remaining references to the credential store anywhere in frontend/src are historical comments at (dashboard)/wallets/page.tsx:311-316 and lib/api/live/providers.ts:822.",
+    "approved_by": "owner, 2026-09-21 — approved the checklist-steward sweep batch (docs/audits/steward-sweep-2026-09-21.md)",
+    "evidence": [
+     "docs/agents/code-checker.md:97-104",
+     "frontend/src/app/(dashboard)/wallets/page.tsx:311-316",
+     "docs/audits/rejected-proposals.md:43 (RP-5)"
+    ]
+   }
   },
   {
    "id": "T-332",
    "title": "Bring the do-not-fix registry up to date with decisions since 2026-08-08",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "docs",
@@ -2067,12 +2276,25 @@
      "lines": "95-125",
      "quote": "When a review establishes a *new* deliberate decision, propose adding it to this table — that's how it stays cheaper than re-litigating."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-21",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "DONE. code-checker.md:150 opens a sub-table '### Added 2026-09-08 (decisions since 2026-08-08)' carrying every row the next_action asked for: RP-6 (:154), short-list item 4 ranking-vs-explanation (:155), D3 ratesCatalog-bypasses-security-quotes (:156), RP-5 exchange linking absent from Wallets (:157), the hidden-feature redirects (:158) and the removed StatusBar market status (:159). The guard test the rows cite exists on disk (frontend/src/lib/risk/__tests__/riskScoringRemoved.test.ts, 11329 bytes). One wording note for the record: the rows cite the decisions by RP id rather than by the rejected-proposals.md path the next_action names; the ids resolve at docs/audits/rejected-proposals.md:41 (RP-3), :43 (RP-5), :44 (RP-6).",
+    "approved_by": "owner, 2026-09-21 — approved the checklist-steward sweep batch (docs/audits/steward-sweep-2026-09-21.md)",
+    "evidence": [
+     "docs/agents/code-checker.md:150-159",
+     "frontend/src/lib/risk/__tests__/riskScoringRemoved.test.ts (exists)",
+     "docs/audits/rejected-proposals.md:41,43,44"
+    ]
+   }
   },
   {
    "id": "T-333",
    "title": "Fix doubled /api/v1/api path in the legacy-backend rewrite",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "bug",
@@ -2087,12 +2309,27 @@
      "lines": "88-92",
      "quote": "**Still outstanding in that rule:** `NEXT_PUBLIC_API_URL` is `http://localhost:8000/api/v1`, and the destination appends `/api/:path`, producing a doubled `http://localhost:8000/api/v1/api/...`. Any `/api/*` path without a concrete route file 500s. Harmless while the backend is dormant, but it will bite whoever revives it."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-21",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "ALREADY DONE, and the defect is now unreachable rather than merely corrected. All four next_action targets are satisfied: docs/deployment/local-setup.md:149 documents NEXT_PUBLIC_API_URL as 'No longer read by anything'; infrastructure/kubernetes/configmap.yaml:67 is the bare origin, with the rule spelled out at :64-66 ('ORIGIN only, no /api or /api/v1 suffix'); docs/architecture/auth.md:98-105 marks the doubling fixed 2026-09-08 and moot since D2. The optional next.config.mjs hardening is moot: the whole /api/* rewrite was REMOVED (frontend/next.config.mjs:19-37) and API_BASE_URL deleted (frontend/src/lib/constants.ts:5), so nothing reads the variable and no value of it can double a path. RESIDUE, outside this item's scope and unticketed: .github/workflows/cd-staging.yml:185 still builds with NEXT_PUBLIC_API_URL=https://staging.financenow.example.com/api - the exact /api suffix the configmap comment forbids. Inert today, a trap if a proxy ever returns.",
+    "approved_by": "owner, 2026-09-21 — approved the checklist-steward sweep batch (docs/audits/steward-sweep-2026-09-21.md)",
+    "evidence": [
+     "docs/deployment/local-setup.md:149",
+     "infrastructure/kubernetes/configmap.yaml:58-67",
+     "frontend/next.config.mjs:19-37",
+     "frontend/src/lib/constants.ts:5",
+     "docs/architecture/auth.md:93-105"
+    ]
+   }
   },
   {
    "id": "T-334",
    "title": "Refresh auth.md — useAuthStore no longer exists, SessionProvider already added",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "docs",
@@ -2115,7 +2352,21 @@
      "lines": "103-105",
      "quote": "2. **Add `SessionProvider`** to `src/app/providers.tsx` and make `useAuthStore` read from `useSession()` rather than holding its own tokens — or delete the store entirely, since Auth.js already owns this state."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-21",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "ALREADY DONE, and the tree confirms both halves rather than the doc asserting them. The switches table (docs/architecture/auth.md:13-19) is introduced as 'Two switches' and carries only REQUIRE_AUTH and LOGIN_DISABLED; the dated note at :21-25 records the removed useAuthStore row and why a table naming an absent file is harmful. Goal B step 2 is struck and marked DONE (5e1c32a) at :116-122, explicitly noting the store was DELETED rather than rewired, with steps 1, 3, 4 and 5 left deferred - so the owner's 'do not re-enable without asking' deferral is intact. Verified in the tree, not from the doc: frontend/src contains no reference to useAuthStore at all, and SessionProvider is imported at frontend/src/app/providers.tsx:5 and actually wraps the tree at :65-86. SIBLING STILL STALE: docs/ROADMAP.md:158-159 still plans a 'session-aware useAuthStore' - a separate proposal annotates it.",
+    "approved_by": "owner, 2026-09-21 — approved the checklist-steward sweep batch (docs/audits/steward-sweep-2026-09-21.md)",
+    "evidence": [
+     "frontend/src/app/providers.tsx:5,65,86",
+     "frontend/src (zero useAuthStore references)",
+     "docs/architecture/auth.md:13-25",
+     "docs/architecture/auth.md:116-122"
+    ]
+   }
   },
   {
    "id": "T-346",
@@ -2142,7 +2393,7 @@
   {
    "id": "T-350",
    "title": "Move getPegDeviationColorClass() out of lib/utils/risk.ts",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "feature",
@@ -2159,7 +2410,21 @@
      "lines": "350-351",
      "quote": "`getPegDeviationColorClass()` (`utils/risk.ts:135-141`) is unrelated to the band system (it thresholds basis points) and moves to a formatting module."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-21",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "ALREADY DONE, including the import updates the item asked for. The function is declared at lib/utils/pegFormat.ts:22 and ALL THREE consumers import it from there: app/(dashboard)/assets/[id]/page.tsx:50, components/assets/AssetCard.tsx:7, components/assets/AssetTable.tsx:10 — no consumer still reaches through lib/utils/risk.ts. risk.ts holds no such function; :10-13 is a note recording the move and its reasoning. A dedicated test file exists at lib/utils/__tests__/pegFormat.test.ts. SIBLING ALREADY CLEAN: docs/architecture/risk-scale-spec.md carries the move in its 2026-09-08 post-implementation block at :355-357, so its design text at :367 is already covered and needs no annotation.",
+    "approved_by": "owner, 2026-09-21 — approved the checklist-steward sweep batch (docs/audits/steward-sweep-2026-09-21.md)",
+    "evidence": [
+     "frontend/src/lib/utils/pegFormat.ts:22",
+     "frontend/src/lib/utils/risk.ts:10-13 (note only)",
+     "frontend/src/app/(dashboard)/assets/[id]/page.tsx:50; components/assets/AssetCard.tsx:7; components/assets/AssetTable.tsx:10",
+     "docs/architecture/risk-scale-spec.md:355-357 (sibling already annotated)"
+    ]
+   }
   },
   {
    "id": "T-354",
@@ -2231,7 +2496,7 @@
   {
    "id": "T-370",
    "title": "Remove the inert NEXT_PUBLIC_WS_URL build arg from cd-staging.yml",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "ops-infra",
@@ -2248,12 +2513,27 @@
      "lines": "219-222",
      "quote": "**Not fixed, flagged instead:** `cd-staging.yml` still passes a `NEXT_PUBLIC_WS_URL` build arg, but the app opens no socket and that variable was removed in the M8 sweep (`CLAUDE.md`, Environment Variables). It is inert rather than wrong, and removing it belongs with a frontend change, not this one."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-21",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "ALREADY DONE. NEXT_PUBLIC_WS_URL is absent from all five files next_action names, and from cd-production.yml as well: cd-staging.yml:184-186 passes only NEXT_PUBLIC_API_URL and NEXT_TELEMETRY_DISABLED; ci.yml:181-184 the same two plus NEXT_PUBLIC_ENV; docker-compose.yml:50-52 and docker-compose.prod.yml:45-47 carry only API_URL and ENV; configmap.yaml:57-68 carries only ENV, API_URL and TELEMETRY. A whole-tree search finds the name only in prose that records its removal. SIBLING STILL STALE: this item's own source, docs/deployment/aws-provisioning.md:219-222, still asserts cd-staging.yml 'still passes a NEXT_PUBLIC_WS_URL build arg' - a separate proposal banners it.",
+    "approved_by": "owner, 2026-09-21 — approved the checklist-steward sweep batch (docs/audits/steward-sweep-2026-09-21.md)",
+    "evidence": [
+     ".github/workflows/cd-staging.yml:184-186",
+     ".github/workflows/ci.yml:181-184",
+     "infrastructure/docker/docker-compose.yml:50-52",
+     "infrastructure/docker/docker-compose.prod.yml:45-47",
+     "infrastructure/kubernetes/configmap.yaml:57-68"
+    ]
+   }
   },
   {
    "id": "T-374",
    "title": "Fix stale local-setup.md env instructions (NEXT_PUBLIC_USE_MOCK, NEXT_PUBLIC_WS_URL)",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "docs",
@@ -2270,7 +2550,22 @@
      "lines": "82-87, 124-130, 143",
      "quote": "**Frontend auth redirect loop**: Ensure `NEXT_PUBLIC_USE_MOCK=true` in `.env.local` for local development without backend."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-21",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "ALREADY DONE, including the residue the 2026-09-11 sweep filed this as PARTIAL for. The frontend env table (docs/deployment/local-setup.md:144-151) is rewritten from CLAUDE.md and lists DATABASE_URL, AUTH_SECRET, FN_ALLOW_LOCAL_USER, NEXT_PUBLIC_API_URL (marked read by nothing), ANTHROPIC_API_KEY and FMP_API_KEY; both dead variables are recorded as removed in the dated note at :153-156. The USE_MOCK troubleshooting line is gone - :170 now reads 'Frontend auth redirect loop: Not reachable at present'. Both bootstrap scripts were fixed the better way: they copy frontend/.env.example (start.sh:93-95, start.ps1:110-112) and their minimal fallback writes the BARE origin NEXT_PUBLIC_API_URL=http://localhost:8000 (start.sh:108, start.ps1:125), so the 'doubled /api/v1 suffix in both start scripts' residue is cured too, as are the 'mock data enabled' echoes (both now say 'there is no mock data path'). The 09-11 PARTIAL verdict is overtaken, not wrong on its date.",
+    "approved_by": "owner, 2026-09-21 — approved the checklist-steward sweep batch (docs/audits/steward-sweep-2026-09-21.md)",
+    "evidence": [
+     "docs/deployment/local-setup.md:144-156",
+     "docs/deployment/local-setup.md:170",
+     "start.sh:93-112",
+     "start.ps1:109-128",
+     "frontend/.env.example (present)"
+    ]
+   }
   },
   {
    "id": "T-375",
@@ -2315,7 +2610,7 @@
   {
    "id": "T-380",
    "title": "Update README suite table — Budgeting & Planning no longer planned",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "docs",
@@ -2332,7 +2627,20 @@
      "lines": "7, 20",
      "quote": "| Budgeting & Planning | Accounts, budgets, net worth, goals | ⚪ Planned |"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-21",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "ALREADY DONE on all three targets. README.md:9 drops the 'on the roadmap' clause and names only the four shipped modules plus Portfolio Builder. README.md:22 replaces the planned row with a struck one: '~~Budgeting & Planning~~ | ... | Moved to a separate product, 2026-08-20' plus the retained-DB-tables note and the RP-2 reopen-trigger pointer. docs/ROADMAP.md was handled correctly as a record rather than rewritten - line 18 ('Budget & Plan ... New') is kept verbatim as the original framing and the dated block at :20-34 carries the status, including the retained tables and the Retirement Planner going with it. Sibling ledger note: the README's own suite-table sibling, T-381, was closed on 2026-09-20 by the same doc-accuracy sweep; this item was left open only because nobody wrote its closure block.",
+    "approved_by": "owner, 2026-09-21 — approved the checklist-steward sweep batch (docs/audits/steward-sweep-2026-09-21.md)",
+    "evidence": [
+     "README.md:9",
+     "README.md:22",
+     "docs/ROADMAP.md:20-34"
+    ]
+   }
   },
   {
    "id": "T-381",
@@ -34278,6 +34586,25 @@
      "docs/audits/git-repo-audit-2026-08-23.md (annotated SUPERSEDED 2026-09-20 at both cited locations)",
      "docs/audits/branch-archive-2026-09-11.md",
      ".github/workflows/archive-branch.yml"
+    ]
+   },
+   {
+    "on": "2026-09-21",
+    "what": "22 items CLOSED by a checklist-steward sweep (T-333, T-370, T-374, T-380, T-334, T-072, T-259, T-262, T-267, T-268, T-350, T-156, T-269, T-273, T-104, T-256, T-277, T-331, T-332, T-080, T-326, T-330), each re-verified first-hand against the current tree, plus 12 dated annotations on the assessments, audits and roadmap entries that originated them",
+    "basis_key": "Every closure carries basis \"verified-here\": a steward re-read the cited code in this tree during this pass. None was closed from a prior pass's summary, a commit message or a memo. approved_by names the owner's approval of the batch. T-277 closed with verdict \"supersede\", not \"close\" — the work was made impossible or pointless by a later decision rather than done.",
+    "caveat": "These items were ALREADY recorded as verified-closed by the 2026-09-10, 09-11 and 09-13 passes, and not one of those closures ever reached this file's `status` fields. 43 of the 62 items that queue-closure-review-2026-09-13.md re-verified against main@55a4b52 — under the recommendation \"Approve all 62\" — still read \"status\": \"open\" here on 2026-09-21. This sweep closes 20 of them; a second sweep the same day covers the remaining 23. The 62-item approval was never applied at all: the 19 items that WERE closed got there on 2026-09-20 through the unrelated doc-accuracy and DATA-AVAILABILITY passes (#206/#208/#209), so the overlap is coincidence, not partial application. The lesson is structural — a verification document, an approval recommendation and the ledger write were three separate acts with nothing connecting them, and nothing failed when the third never happened.",
+    "corrections": [
+     "T-326's scope is the two .claude/agents policy lists (code-auditor.md and opportunity-scout.md), NOT docs/agents/code-checker.md, which is a third charter carrying its own items (T-330/T-331/T-332). An earlier 2026-09-21 pass recorded T-326 against code-checker.md and reported opportunity-scout.md as a stale second list; both .claude/agents files had in fact been current since 2026-09-13/14, so that remaining gap did not exist. The closure here rests on the .claude/agents files.",
+     "The DATED-READINGS bullet added to docs/agents/code-checker.md on 2026-09-21 cited 112 test files. That number is reproducible from nothing: vitest's own include (src/**/*.{test,spec}.{ts,tsx}, resolved from frontend/) gives 110, and a repo-root sweep gives 118 because .claude/worktrees/ holds a scratch checkout vitest never runs. Corrected in the same change, with the counting method now written beside the figure. Measured 2026-09-21: 110 files, 1538 tests, all passing — which also settles that bullet's claim that no suite run had reported the effect.",
+     "T-277 was reported not-reproducible. D14 did delete the compare_staking_risk tool (mcp-server/src/index.ts:372-396, tombstoned), but the other half of its next_action — the 1.1.0 version bump — landed on 2026-09-08 and still stands (mcp-server/package.json:3, index.ts:64). The verdict is SUPERSEDED: \"not reproducible\" would erase a change that happened, and \"done\" would claim work D14 made impossible.",
+     "T-259's timeout bound was attributed to a 2026-09-20 change covering 89 outbound fetches. It is older and narrower: frontend/src/lib/server/walletFetch.ts credits the 2026-07-27 app audit, and queue-verification-2026-09-10.md already found AbortSignal.timeout in place on 2026-09-10, ten days before the date claimed.",
+     "counts.by_status had drifted to open:159/closed:15 against an actual 134/40. annotations.note protects generated_at and main_sha as snapshot facts but never covered counts, so they read as current while being two weeks stale. They are now recomputed, and carry a note saying they must be."
+    ],
+    "evidence": [
+     "docs/audits/steward-sweep-2026-09-21.md — the full batched proposal: 36 rows, each with current text, proposed text and a file:line re-read in this pass",
+     "docs/audits/queue-verification-2026-09-10.md",
+     "docs/audits/queue-verification-sweep-2026-09-11.md",
+     "docs/audits/queue-closure-review-2026-09-13.md"
     ]
    }
   ]
