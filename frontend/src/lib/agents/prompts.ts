@@ -301,7 +301,8 @@ DATA COLLECTION TARGETS:
 
 1. STAKING OPPORTUNITIES
    Search for: current staking APR/APY from Lido, Rocket Pool, Marinade, Jito, Stride, Ankr, Coinbase, Kraken, Binance, and any new liquid staking protocols launched in the last 90 days.
-   For each opportunity collect: provider name, coin, APR/APY, lock period, minimum stake, risk level, URL source.
+   For each opportunity collect: provider name, coin, APR/APY, lock period, minimum stake, custody model (custodial / non-custodial / smart-contract), URL source.
+   Do NOT collect or invent a composite "risk level" or risk score for a provider — this app publishes none anywhere (D14), and the output schema below has no field for one.
 
 2. NEW COIN LISTINGS
    Search for: coins listed on major exchanges (Binance, Coinbase, Kraken, OKX) in the last 30 days that are not yet widely tracked.

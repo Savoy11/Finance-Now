@@ -2942,7 +2942,21 @@
      "lines": "392-393",
      "quote": "Track click-through per provider so the value is measurable, without shipping user-identifying analytics."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-09-21",
+    "note": "PARTIAL — and the verification found two defects in work that already existed, which is the reason not to close it. DONE: the counter exists (lib/server/affiliateClicks.ts), POST /api/affiliate/clicks is wired from components/ui/SponsoredLink.tsx:45, and only ids present in STAKING_PROVIDERS are accepted so the file cannot be filled with junk. FIXED THIS PASS: (1) the module wrote a full toISOString() into `updatedAt` on every click, making it a per-click timestamp at millisecond precision — the exact correlation handle the design exists to withhold. Dates are now day-precision (`YYYY-MM-DD`) on write AND truncated on read, so a file from an older build loses the precision too. (2) GET /api/affiliate/clicks was UNGATED — per-provider click-through is a revenue signal and anyone who could reach the app could read it. It now uses guardSensitiveRoute (localhost-only unless FN_ADMIN_TOKEN is set); POST is deliberately left open, because gating it would stop counting the real clicks this route exists for.",
+    "remaining_work": "TWO DELIVERABLES THE ITEM NAMES ARE STILL ABSENT. (a) There is NO owner-facing VIEW. The item says the counts should be 'surfaced on an owner-only view'; the gated GET endpoint is the only surface, so reading it means curl or a browser hitting the JSON. Decide whether a real view is wanted or whether the endpoint suffices — and if the endpoint suffices, say so on the item rather than leaving it looking unfinished. (b) The 'release-gate no-tracking search' the item says to verify DOES NOT EXIST: no such check appears in docs/ROADMAP.md or docs/BUSINESS-CHECKLIST.md, and lib/data/__tests__/affiliates.test.ts guards ranking integrity and disclosure, not the absence of analytics libraries. Either build that search as a test, or strike the clause — an item asking someone to re-run a check that was never written will fail verification forever.",
+    "corrections": [
+     "The route's own GET response carried the line 'No user, session, IP, cookie or per-click timestamp is recorded.' That was FALSE until 2026-09-21 — a per-click timestamp was being recorded, at millisecond precision. The claim is now true and is pinned by lib/server/__tests__/affiliateClicks.test.ts, which was mutation-checked: reverting either the write-side or the read-side truncation fails a named behavioural test, not a compile error.",
+     "Worth keeping in mind for any future guard here: only the assertion that inspects the RAW WRITTEN BYTES catches a write-side regression. Because the reader truncates too, a test that goes through readAffiliateClicks() passes happily while full timestamps are being written to disk."
+    ],
+    "evidence": [
+     "frontend/src/lib/server/affiliateClicks.ts:53-60, 70-71, 93-96",
+     "frontend/src/lib/server/__tests__/affiliateClicks.test.ts (5 tests, both mutations confirmed caught)",
+     "frontend/src/app/api/affiliate/clicks/route.ts — GET gated, POST deliberately not"
+    ]
+   }
   },
   {
    "id": "T-172",
@@ -3054,7 +3068,20 @@
      "lines": "119-120",
      "quote": "**T6/T7** — completion unrecorded (no assessment docs); either re-run or write the assessment before anything relies on them."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-09-21",
+    "note": "SUBSTANTIALLY DONE. The item's premise is false on its first half: it says no docs/assessments/T6-*.md exists. docs/assessments/T6-agent-prompts.md has existed since 2026-09-08 and already records what was verified offline plus the owner-machine `npm run audit` precondition the item asks for. It was ANNOTATED with a dated 2026-09-21 re-verification block rather than rewritten. All three prompt-accuracy claims were re-read against source and were already correct: RP-5 (no prompt offers exchange API-key linking, and promptRoutes.test.ts asserts both the absence of the old wording and the presence of the RP-5 replacement), RP-6 (the Crypto block carries an explicit no-per-coin-risk-score paragraph), and ROLLOUT-HIDE (Transfer Fees, Wallets and all three backtest surfaces are each named WITH their withdrawal on the same line).",
+    "remaining_work": "The OUTPUT half of T6 is still open, on the precondition the assessment itself states: `npm run audit` on the owner's machine with provider keys, read beside `npm run agent-eval -- --run`, so that a vague answer coming off a FALLBACK route is not misfiled as a prompt problem. Nothing in this pass evaluated agent output — it verified prompt TEXT only.",
+    "corrections": [
+     "ONE REAL DEFECT FOUND AND FIXED, outside the three claims. data-scraper's staking collection list asked the agent to collect a 'risk level' per opportunity. Its own JSON schema, field-for-field in the same order, carries `custodyModel` in that position (prompts.ts:318) — the rename came with D14 and landed in the schema but not in the prose. So the agent was being told to gather a composite provider risk judgement that the app publishes nowhere and that had no field to go in. The line now names the custody model with its three documented values and says plainly that no composite risk level is to be collected or invented.",
+     "Same shape as the riskScore/suspicionScore drift this assessment already records: an agent instructed to produce a value its consumer no longer accepts."
+    ],
+    "evidence": [
+     "docs/assessments/T6-agent-prompts.md — the 2026-09-21 annotation block",
+     "frontend/src/lib/agents/prompts.ts:304-305 (the fix) and :318 (the schema it now matches)"
+    ]
+   }
   },
   {
    "id": "T-004",
@@ -3657,7 +3684,21 @@
      "lines": "445-446",
      "quote": "**Fine-tune all screeners.** Stock Registry range screener, coin screener/discovery, fund screener, TA screener — consistency of filters, defaults, and result quality across them."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-09-21",
+    "note": "STEWARD HALF DONE. docs/ROADMAP.md's screener entry carries a new dated block, 'Steward annotation, 2026-09-21 (T-129, second pass)', recording what has already landed so the remaining scope is understood to be result quality alone. The entry text, its unticked checkbox and an earlier 2026-09-12 annotation were all left untouched. Each of the five claimed-landed pieces was verified in the tree: W3-5 (full ranges + payers toggle on /equities) is live and deep-linked; the fee-impact work is live but is a COLUMN plus a null-safe sort, not a filter, and is recorded that way rather than repeating the item's wording; all three section scanners exist and are in the nav registry.",
+    "remaining_work": "The result-quality half is untouched and is owner-gated: it needs `npm run audit` on the owner's machine with provider keys, then driving /equities, /funds, /assets, /coin-discovery and the three scanner pages to record findings BEFORE changing any defaults. Also left open by the verification: whether W3-2's min-liquidity input should come back — see the correction below.",
+    "corrections": [
+     "The audit this item cites is MISFILED in its own citation. It names docs/audits/screener-consistency-2026-07-30.md, which does not exist; the document is at docs/assessments/screener-consistency-2026-07-30.md. That wrong path is almost certainly why the earlier 2026-09-12 annotation concluded the consistency pass had not happened. It did happen, on 2026-07-30.",
+     "W3-2 IS THE PARTS-INVENTORY PATTERN IN MINIATURE, and docs/TASK-QUEUE.md:1627 reads as fully delivered. The min-liquidity filter code, the derived sort key, its tests and a rendered sortable column all exist, and the SORT works end to end — but the filter INPUT was removed along with the /assets screener bar on 2026-08-22, so that filter can never be switched on from the UI. The code documents this at AssetRegistryClient.tsx:137-141. Restoring the inputs is UI-only (the store fields and applyParams support already exist) but it is a product decision, not a bug fix."
+    ],
+    "evidence": [
+     "docs/ROADMAP.md — the 2026-09-21 steward annotation",
+     "docs/assessments/screener-consistency-2026-07-30.md (the real path)",
+     "frontend/src/app/(dashboard)/assets/AssetRegistryClient.tsx:137-141"
+    ]
+   }
   },
   {
    "id": "T-171",
@@ -35240,6 +35281,15 @@
     "caveat": "T-360 is NOT closed: its next_action asks to REPLACE a dated table, which the standing annotate-never-rewrite rule forbids, and its premise calls the Python backend 'dormant' when the target document already records it as frozen under D2 — following it verbatim would have reverted a correction. The owner decides whether annotation-beside satisfies the ask.",
     "evidence": [
      "1538 tests in 110 files, tsc clean, docs:check, staleness:check, lint 0 errors / 46 warnings (the unchanged pre-existing baseline)"
+    ]
+   },
+   {
+    "on": "2026-09-21",
+    "what": "Backlog tranche: 5 agents dispatched over 6 items; 4 hit an account session limit mid-run and only one reported. T-129, T-001 and T-121 carry progress blocks. T-119, T-301 and T-070 were NOT worked and remain untouched.",
+    "basis_key": "Every verdict here was re-derived from the tree. The four interrupted agents had already WRITTEN edits before dying, so those edits arrived with no reasoning and no verification behind them and were reviewed by hand before being kept — one of them turned out to be half-finished in exactly the way the brief warned against.",
+    "caveat": "THE INTERRUPTED-AGENT HAZARD IS THE LESSON. The affiliate agent added toDay()/asDay() helpers and a docblock asserting day-precision dates, then died before wiring either one into read() or recordAffiliateClick(). The file was left WORSE than it started: previously the comment was silent about precision, afterwards it claimed a privacy property the code did not have. A background agent that fails is not a no-op — check the working tree, not just the report.",
+    "evidence": [
+     "1543 tests in 111 test files (up 5 — the new affiliateClicks guards), tsc clean, docs:check, staleness:check, lint 0 errors / 46 warnings"
     ]
    }
   ]
