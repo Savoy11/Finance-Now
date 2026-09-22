@@ -56,8 +56,8 @@
   "total_verified": 398,
   "outstanding": 346,
   "by_status": {
-   "open": 89,
-   "closed": 93,
+   "open": 88,
+   "closed": 94,
    "blocked": 73,
    "unclear": 1,
    "parked": 90
@@ -69,7 +69,7 @@
    "owner-machine": 83
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 93,
+  "closed_by_annotation": 94,
   "counts_recomputed_on": "2026-09-22",
   "counts_note": "by_status and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status."
  },
@@ -2519,7 +2519,7 @@
   {
    "id": "T-360",
    "title": "Update risk-framework.md — cross-reference the spec, fix §Why table",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "docs",
@@ -2550,6 +2550,31 @@
     "evidence": [
      "docs/architecture/risk-framework.md — the 2026-09-21 annotation blocks",
      "frontend/src/lib/risk/profiles/ — the eight profile files and their exports"
+    ]
+   },
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-22",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "DONE across two passes, with the item's central conflict settled by the owner rather than by an agent. All four asks are satisfied: (1) the cross-reference already existed and is stronger than the one requested — the blockquote under the status line says the spec is canonical and wins on disagreement; (2) the §Why table is ANNOTATED, not replaced — see the ruling below; (3) the §Architecture tree listed 3 of the 8 profile files and now lists all eight with their real exported symbols, named rather than counted; (4) the roadmap entries carry a dated mapping table. Also fixed in passing: a typed '(44 tests)' in §Architecture, wrong by about 2.4x, removed rather than refreshed so it cannot go stale again.",
+    "owner_ruling": {
+     "on": "2026-09-22",
+     "question": "The item's next_action says to REPLACE the §Why table with a dated note. The standing rules say dated records are annotated, never rewritten. Which wins?",
+     "answer": "ANNOTATE.",
+     "rationale": "The table is the dated problem statement this framework was written against, and the only surviving record of what the three inconsistent risk systems looked like before R1/R2. Replacing it would leave every annotation beneath as an answer to a question no reader can see. It is a historical record, not a status board — so the fix for 'it reads as unresolved' is a better annotation, not a deletion.",
+     "applied_as": "A dated 2026-09-22 block inserted ABOVE the existing annotation stack, titled so the answer arrives first rather than four annotations deep. Every prior block (2026-09-08, 09-12, 09-14, 09-21) is left exactly as written."
+    },
+    "also_fixed": "A rendering defect inside the dated 2026-09-14 block: five lines of the backend bullet had lost their '> ' prefix, so markdown lazy continuation merged the D2 text with the text it supersedes into one paragraph — putting the '(Superseded text, kept for the record)' marker inline and letting 'Backend scoring engine — dormant' read as the current state when D2 had frozen it. Owner approved the repair (2026-09-22) on the grounds that restoring a prefix changes no words and makes existing text render as its author intended. The superseded passage is now its own quoted paragraph and says explicitly that it is not current.",
+    "corrections_carried_forward": [
+     "The item's own premise was one revision behind the document it asked to edit: it calls the Python backend DORMANT, while risk-framework.md already recorded it as RETIRED AND FROZEN under D2. Writing the next_action verbatim would have reverted a correction.",
+     "The backend band thresholds are 80/65/50/30, not the 65/50/30 the item states — it is the middle three rungs that disagree with the canonical 60/40/20.",
+     "Two of the four outcomes were DELETIONS rather than migrations (D14 for the staking composite, RP-6 for the per-coin score). The new annotation says so in as many words, because a reader who takes \"unify the vocabulary\" as the standing goal will read an unresolved row as work to do — and by 2026-09 the owner had twice decided the right number of published scores is none.",
+     "T-360 had already had a first pass on 2026-09-12; the item read as untouched in the 2026-09-07 snapshot."
+    ],
+    "evidence": [
+     "docs/architecture/risk-framework.md — the 2026-09-22 answer-first block, and the repaired 2026-09-14 blockquote",
+     "frontend/src/lib/risk/profiles/ — the eight profiles named in §Architecture"
     ]
    }
   },
@@ -35382,6 +35407,15 @@
     "evidence": [
      "docs/proposals/2026-09-22-proposals.md",
      "docs/audits/steward-sweep-3-2026-09-22.md"
+    ]
+   },
+   {
+    "on": "2026-09-22",
+    "what": "T-360 closed on an owner ruling: the §Why table in risk-framework.md is ANNOTATED, not replaced. A rendering defect in a dated block was repaired with owner approval.",
+    "basis_key": "This is the first closure in this sweep series resting on basis 'owner-ruling' rather than 'verified-here'. The item's instruction and a standing rule pointed in opposite directions, which is not an agent's call to make — the steward's job was to surface the conflict with both cases stated, not to pick.",
+    "caveat": "The precedent worth keeping: when a queue item's next_action conflicts with a standing rule, the item does NOT automatically lose. It went to the owner and could have gone either way. What an agent must not do is quietly follow the item, or quietly follow the rule, and record either as routine.",
+    "evidence": [
+     "docs/architecture/risk-framework.md"
     ]
    }
   ]

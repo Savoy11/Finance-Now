@@ -37,6 +37,29 @@ Same product, three scales, two polarities, two band vocabularies, and threshold
 that disagree even where the vocabulary matches. Every new asset class would have
 multiplied this. The unified framework fixes the vocabulary before that happens.
 
+> ### Answer first: all three are resolved. None of the table above is live.
+>
+> *Added 2026-09-22 (queue item T-360). The dated blocks below are prior passes and are
+> kept exactly as written; this one exists so the answer is not four annotations deep.*
+>
+> | The table's system | Where it ended up |
+> |---|---|
+> | Frontend risk utils | Canonical **80/60/40/20**, higher = safer. `lib/utils/risk.ts` is now a thin re-export holding no thresholds of its own (R1/R2) |
+> | Staking providers | The composite was **deleted**, not migrated — `computeOverallRisk()`/`getRiskLevel()` are gone (D14, 2026-09-14). The six dimensions remain and are published as INPUTS, 1–10 higher = riskier, with nothing combining them |
+> | Backend scoring engine | **Frozen, not reconciled** (D2, 2026-09-14). Its 65/50/30 bands still differ; `backend/FROZEN.md` makes adopting the canonical bands a precondition of any revival, so it cannot be reopened silently |
+>
+> **A fourth system was removed rather than reconciled** and never appeared in the table:
+> the per-coin composite on `/assets` (RP-6, 2026-08-29). Two of the four outcomes were
+> DELETIONS — which is the thing this document is easiest to misread about. Unifying a
+> vocabulary was the goal in 2026-07; by 2026-09 the owner had decided twice that the
+> right number of scores is none. Do not read an unresolved row above as work to do.
+>
+> **Why the table is still here.** T-360 asked for it to be REPLACED by a dated note.
+> Owner ruling, 2026-09-22: **annotate**. It is the dated problem statement this whole
+> framework was written against, and the only surviving record of what the three systems
+> looked like before R1/R2 — delete it and every annotation beneath becomes an answer to
+> a question nobody can see. It is a historical record, not a status board.
+
 > **Where those three stand now (2026-09-08).** The table above is the problem
 > statement, kept as written.
 >
@@ -57,12 +80,14 @@ multiplied this. The unified framework fixes the vocabulary before that happens.
 >   score. Note the D14 ruling named only the public API as the helpers' consumer —
 >   `/live-data/staking-discovery` was a second one, and was changed with it.
 > - **Backend scoring engine — RESOLVED 2026-09-14 by owner decision D2.** The FastAPI
-backend is retired and frozen (`backend/FROZEN.md`); nothing in the shipping app reads
-it and no CI job builds it, so the divergence below is no longer a live inconsistency.
-It is **recorded rather than reconciled** — FROZEN.md makes adopting the canonical
-80/60/40/20 bands a precondition of any revival, so it cannot be reopened silently.
-*(Superseded text, kept for the record:)* **Backend scoring engine — dormant.** Its 65/50/30 bands still differ, and
->   that stays open while the FastAPI backend's future is itself an open question
+>   backend is retired and frozen (`backend/FROZEN.md`); nothing in the shipping app reads
+>   it and no CI job builds it, so the divergence below is no longer a live inconsistency.
+>   It is **recorded rather than reconciled** — FROZEN.md makes adopting the canonical
+>   80/60/40/20 bands a precondition of any revival, so it cannot be reopened silently.
+>
+>   *(Superseded text, kept for the record — this describes the state before D2 and is
+>   NOT current:)* **Backend scoring engine — dormant.** Its 65/50/30 bands still differ,
+>   and that stays open while the FastAPI backend's future is itself an open question
 >   (ROADMAP.md, Phase 6). Nothing in the shipping app reads them.
 > - **A fourth system was removed rather than reconciled**: the per-coin composite
 >   published on `/assets` (RP-6, 2026-08-29). See the spec's post-implementation
