@@ -56,8 +56,8 @@
   "total_verified": 398,
   "outstanding": 346,
   "by_status": {
-   "open": 91,
-   "closed": 91,
+   "open": 89,
+   "closed": 93,
    "blocked": 73,
    "unclear": 1,
    "parked": 90
@@ -69,8 +69,8 @@
    "owner-machine": 83
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 91,
-  "counts_recomputed_on": "2026-09-21",
+  "closed_by_annotation": 93,
+  "counts_recomputed_on": "2026-09-22",
   "counts_note": "by_status and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status."
  },
  "blocking_decisions": [
@@ -2944,17 +2944,20 @@
     }
    ],
    "progress": {
-    "noted_on": "2026-09-21",
-    "note": "PARTIAL — and the verification found two defects in work that already existed, which is the reason not to close it. DONE: the counter exists (lib/server/affiliateClicks.ts), POST /api/affiliate/clicks is wired from components/ui/SponsoredLink.tsx:45, and only ids present in STAKING_PROVIDERS are accepted so the file cannot be filled with junk. FIXED THIS PASS: (1) the module wrote a full toISOString() into `updatedAt` on every click, making it a per-click timestamp at millisecond precision — the exact correlation handle the design exists to withhold. Dates are now day-precision (`YYYY-MM-DD`) on write AND truncated on read, so a file from an older build loses the precision too. (2) GET /api/affiliate/clicks was UNGATED — per-provider click-through is a revenue signal and anyone who could reach the app could read it. It now uses guardSensitiveRoute (localhost-only unless FN_ADMIN_TOKEN is set); POST is deliberately left open, because gating it would stop counting the real clicks this route exists for.",
-    "remaining_work": "TWO DELIVERABLES THE ITEM NAMES ARE STILL ABSENT. (a) There is NO owner-facing VIEW. The item says the counts should be 'surfaced on an owner-only view'; the gated GET endpoint is the only surface, so reading it means curl or a browser hitting the JSON. Decide whether a real view is wanted or whether the endpoint suffices — and if the endpoint suffices, say so on the item rather than leaving it looking unfinished. (b) The 'release-gate no-tracking search' the item says to verify DOES NOT EXIST: no such check appears in docs/ROADMAP.md or docs/BUSINESS-CHECKLIST.md, and lib/data/__tests__/affiliates.test.ts guards ranking integrity and disclosure, not the absence of analytics libraries. Either build that search as a test, or strike the clause — an item asking someone to re-run a check that was never written will fail verification forever.",
-    "corrections": [
-     "The route's own GET response carried the line 'No user, session, IP, cookie or per-click timestamp is recorded.' That was FALSE until 2026-09-21 — a per-click timestamp was being recorded, at millisecond precision. The claim is now true and is pinned by lib/server/__tests__/affiliateClicks.test.ts, which was mutation-checked: reverting either the write-side or the read-side truncation fails a named behavioural test, not a compile error.",
-     "Worth keeping in mind for any future guard here: only the assertion that inspects the RAW WRITTEN BYTES catches a write-side regression. Because the reader truncates too, a test that goes through readAffiliateClicks() passes happily while full timestamps are being written to disk."
+    "noted_on": "2026-09-22",
+    "note": "THE VIEW NOW EXISTS — the item is down to one clause, and that clause asks for something that was never built. Delivered across 2026-09-21/22: the counter (lib/server/affiliateClicks.ts), the POST wired from components/ui/SponsoredLink.tsx, only catalog ids accepted, day-precision dates on write AND on read, the GET gated by guardSensitiveRoute, and now components/settings/AffiliateClicksPanel.tsx — an owner-only panel on /settings listing clicks per provider with a total, the counting-since day and the last-click day.",
+    "remaining_work": "ONE CLAUSE, AND IT IS AN OWNER DECISION, NOT A TASK. The item says to \"verify the release-gate no-tracking search still passes\". No such search exists: nothing in docs/ROADMAP.md or docs/BUSINESS-CHECKLIST.md defines it, and lib/data/__tests__/affiliates.test.ts guards ranking integrity and disclosure rather than the absence of analytics. It was deliberately NOT invented here — deciding what a no-tracking release gate checks (installed dependencies? script tags? outbound hosts?) is policy, and a half-robust gate is worse than none because it grants confidence it has not earned. Either define and build it, or strike the clause; until one of those happens this item cannot be verified closed by anyone.",
+    "design_notes": [
+     "The panel renders NOTHING when the endpoint denies it, which is deliberate and is NOT the C-note-10 failure the Integrations page fixed. There, a denial hid the page's whole purpose and had to be surfaced; here the denial IS the answer, and the settings page already shows its own access error from /live-data/config, which fails the same way for the same viewer.",
+     "toClickRows() KEEPS a count whose provider id is no longer in the catalog, rendering it with a null name rather than dropping it. The counter file outlives the catalog — a provider can be retired while its recorded clicks stay on disk — and dropping unnameable rows would make them stop summing to the total printed beside them. Mutation-checked: adding the obvious `.filter(r => r.name !== null)` tidy-up fails two named tests, one reporting 5 where 14 were recorded.",
+     "Fetching goes through React Query rather than useEffect + setState. That is the documented client convention (CLAUDE.md, Tech Stack) and it keeps the component out of the react-hooks/set-state-in-effect warning set — the first draft used an effect and took the repo from its long-standing 46 warnings to 47, which the review invariants say is the thing to judge a change by. retry:false, because the expected failure is a 401/403 that will not change on a retry.",
+     "PLACEMENT IS A DECISION THE OWNER CAN REVERSE CHEAPLY: /settings was chosen because it is already owner-oriented and already gated at page level. The alternative was /how-we-make-money, where the subject context lives — but that is a public disclosure page, and having every visitor's browser request a gated endpoint to be told no is noise for nothing."
     ],
     "evidence": [
-     "frontend/src/lib/server/affiliateClicks.ts:53-60, 70-71, 93-96",
-     "frontend/src/lib/server/__tests__/affiliateClicks.test.ts (5 tests, both mutations confirmed caught)",
-     "frontend/src/app/api/affiliate/clicks/route.ts — GET gated, POST deliberately not"
+     "frontend/src/components/settings/AffiliateClicksPanel.tsx",
+     "frontend/src/components/settings/__tests__/affiliateClicksPanel.test.ts (6 tests, mutation-checked)",
+     "frontend/src/app/(dashboard)/settings/page.tsx — import and render site",
+     "frontend/src/app/api/affiliate/clicks/route.ts — GET gated, POST deliberately open"
     ]
    }
   },
@@ -3428,7 +3431,7 @@
   {
    "id": "T-322",
    "title": "Run the overdue opportunity-scout PROPOSE pass",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "either",
    "category": "process",
@@ -3453,6 +3456,20 @@
     "evidence": [
      "docs/audits/task-queue-2026-09-07.json — T-399..T-406, each carrying an `opened` block dated 2026-09-21",
      ".claude/agents/opportunity-scout.md:148-166"
+    ]
+   },
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-22",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "DONE — the PROPOSE pass ran and its deliverable exists: docs/proposals/2026-09-22-proposals.md, four proposals, each PENDING and unmarked because the APPROVED/REJECTED/DEFERRED marking is the owner's act. Both charter inputs were read before proposing, per the rule that the two TASK-QUEUE writers read each other: the full RP-1..RP-6 ledger (no reopen trigger has fired, stated explicitly in the document) and all 346 queue items including the eight T-399..T-406 filed on 2026-09-21, so nothing already carried was re-proposed. Nothing proposed needs a licence, key or paid tier, so D21's SEQUENCING clause did not have to be invoked.",
+    "approved_by": "owner, 2026-09-22 — \"keep going\" on the backlog",
+    "note_on_scope": "The item cited 'origin/main 2128a18' as the target commit; that is stale and the pass ran against the current tree instead.",
+    "evidence": [
+     "docs/proposals/2026-09-22-proposals.md",
+     ".claude/agents/opportunity-scout.md",
+     "docs/audits/rejected-proposals.md"
     ]
    }
   },
@@ -3490,7 +3507,7 @@
   {
    "id": "T-328",
    "title": "Run a checklist-steward sweep and batched proposal",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "either",
    "category": "process",
@@ -3514,6 +3531,20 @@
      "docs/audits/steward-sweep-2026-09-21.md",
      "docs/audits/steward-sweep-2-2026-09-21.md",
      "docs/audits/task-queue-2026-09-07.json — annotations.passes entries dated 2026-09-21"
+    ]
+   },
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-22",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "DONE — all four status surfaces this item names are now swept, across three dated proposals. TASK-QUEUE and P3-production-review were covered on 2026-09-21 (docs/audits/steward-sweep-2026-09-21.md, 36 rows; steward-sweep-2-2026-09-21.md, 23 verdicts), which between them closed 43 items, filed 8 and recomputed counts.by_status from a stale open:159/closed:15 against an actual 134/40. DATA-AVAILABILITY.md's action-items list and CLAUDE.md's status tables were covered on 2026-09-22 (docs/audits/steward-sweep-3-2026-09-22.md). DATA-AVAILABILITY's statuses were NOT touched — the charter forbids hand-editing them — so the scope there was its action items, of which 17 of 19 are correct as written.",
+    "approved_by": "owner, 2026-09-22 — \"keep going\" on the backlog",
+    "headline_finding": "The sweeps' finding was the ledger itself, not the items. queue-closure-review-2026-09-13.md re-verified 62 items, concluded '62 of 62 evidence intact', recommended 'Approve all 62' — and the write never happened; 43 still read open eight days later. A verification document, an approval recommendation and the ledger write were three separate acts with nothing connecting them, and nothing failed when the third never occurred.",
+    "evidence": [
+     "docs/audits/steward-sweep-2026-09-21.md",
+     "docs/audits/steward-sweep-2-2026-09-21.md",
+     "docs/audits/steward-sweep-3-2026-09-22.md"
     ]
    }
   },
@@ -35341,6 +35372,16 @@
     "caveat": "T-119 and T-070 are NOT closable by anyone working remotely. T-119 needs owner-written disclosure copy (BUSINESS-CHECKLIST §3) and the item itself forbids inventing it; T-070 needs sec.gov and a quote provider from the owner's machine before a single row may be appended to fundCatalog.ts.",
     "evidence": [
      "1543 tests in 111 files, tsc clean, docs:check, staleness:check, lint 0 errors / 46 warnings"
+    ]
+   },
+   {
+    "on": "2026-09-22",
+    "what": "T-322 (opportunity-scout PROPOSE pass) and T-328 (checklist-steward sweep) both closed on their delivered documents. T-121 gained the owner-only view it asked for. Two new proposal documents were produced and NOTHING in CLAUDE.md, DATA-AVAILABILITY.md or this ledger was edited by the agents that wrote them.",
+    "basis_key": "Both agents were restricted to writing one new document each, because both items touch the repo's most load-bearing files and the steward protocol is propose -> owner approves -> apply. The proposals are unruled and unapplied.",
+    "caveat": "steward-sweep-3 found 14 table-level defects in CLAUDE.md plus 3 stale Source-Terms prose claims, clustering into four causes rather than fourteen slips. One cluster is unpropagated work from 2026-09-21: the MarketWatch / Dow Jones terms removal landed in code and in sourceTerms.ts but never reached CLAUDE.md, which still lists both as live built-in news providers. CLAUDE.md is what every future session reads first, so a wrong row there misleads by default.",
+    "evidence": [
+     "docs/proposals/2026-09-22-proposals.md",
+     "docs/audits/steward-sweep-3-2026-09-22.md"
     ]
    }
   ]

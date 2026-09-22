@@ -38,6 +38,7 @@ import { useFeedBiasStore, BIAS_FEEDS } from '@/store/useFeedBiasStore'
 import { useWatchlistBias } from '@/lib/watchlist/useWatchlistBias'
 import { BIAS_STRENGTHS } from '@/lib/watchlist/bias'
 import { migrateStorageKey } from '@/lib/utils/storageMigration'
+import { AffiliateClicksPanel } from '@/components/settings/AffiliateClicksPanel'
 
 // One-time key migration for the Finance Now rename — runs before any read below.
 migrateStorageKey('caep-custom-subreddits', 'fn-custom-subreddits')
@@ -1332,6 +1333,11 @@ export default function SettingsPage() {
           {/* Suite modules */}
           <ModulesPanel />
           <WatchlistBiasPanel />
+
+          {/* Owner-only. Renders nothing at all for a viewer the gated endpoint
+              denies — see the component docblock for why that is the right
+              behaviour here and not the C-note-10 failure the banner above fixes. */}
+          <AffiliateClicksPanel />
 
           {/* Crypto market data */}
           <section>
