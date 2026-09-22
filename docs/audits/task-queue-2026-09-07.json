@@ -56,8 +56,8 @@
   "total_verified": 398,
   "outstanding": 346,
   "by_status": {
-   "open": 92,
-   "closed": 90,
+   "open": 91,
+   "closed": 91,
    "blocked": 73,
    "unclear": 1,
    "parked": 90
@@ -69,7 +69,7 @@
    "owner-machine": 83
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 90,
+  "closed_by_annotation": 91,
   "counts_recomputed_on": "2026-09-21",
   "counts_note": "by_status and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status."
  },
@@ -3154,7 +3154,20 @@
      "lines": "18",
      "quote": "item 2 catalog growth with provenance discipline"
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-09-21",
+    "note": "REMOTE HALF DELIVERED. docs/proposals/2026-09-21-fund-catalog-candidates.md proposes catalog additions across the three gap areas the item names (sector, bond, international), each row carrying issuer, category, the ER believed to apply AND where that figure came from, whether a sales load exists, and what is unverified. It opens with an unmissable block stating that NOT ONE figure or ticker in it is verified and that every row needs owner-machine probing for BOTH quotable and actively trading (a 5-day history, not a cached price). fundCatalog.ts was not touched and must not be until that probing happens.",
+    "remaining_work": "The owner half, unchanged: find the SEC 'Mutual Fund Prospectus Risk/Return Summary Data Sets' index URL and run `RR_INDEX_URL=<url> npm run fund-fees -- --inspect` on the owner's machine, then probe each proposed ticker before any row is appended. The proposal is UNRULED — it carries no APPROVED/REJECTED/DEFERRED marking, matching docs/proposals/2026-09-08-proposals.md.",
+    "corrections": [
+     "The strongest evidence of a sector gap was in code rather than the catalog: portfolioBuilder.ts:222 types SECTOR_ETF as Partial<Record<SectorId, string>> — the type itself admits not every GICS sector is covered, and seven of eleven are mapped. That is NOT a bug and was nearly reported as one: the UI hard-codes TILTABLE_SECTORS to exactly the seven that have a fund, so no user is ever offered a tilt that would silently do nothing.",
+     "An inference was available and refused. The six Select Sector SPDR siblings all sit at 0.09, which makes 0.09 very tempting for the missing four. The catalog's own provenance banner records UNG (0.60 -> 1.17) and CPER (0.65 -> 0.88) as cases where that reasoning produced a wrong published fee, so every proposed ER is marked unverified instead.",
+     "Flagged, not acted on: fundRiskLevel() maps category 'bond' to 'conservative' with no discrimination, and the catalog already strains it — HYG (high yield) and EMB (EM sovereign) both band Conservative today. Two proposed candidates would strain it further. That is a modelling decision, not a catalog one."
+    ],
+    "evidence": [
+     "docs/proposals/2026-09-21-fund-catalog-candidates.md"
+    ]
+   }
   },
   {
    "id": "T-074",
@@ -3348,7 +3361,7 @@
   {
    "id": "T-301",
    "title": "Accuracy pass over user-facing copy (marketing, README, in-app help)",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "either",
    "category": "docs",
@@ -3363,7 +3376,21 @@
      "lines": "115-116",
      "quote": "Same pass over anything user-facing: marketing copy, README, in-app help — no claim that overstates what ships."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-21",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "DONE, and it was genuinely open — eight overstatements in README.md, each settled against CLAUDE.md's Feature Inventory or docs/audits/rejected-proposals.md rather than against the item's own line numbers, which had drifted. (1) The lede called the product an \"investment evaluator\" that \"evaluates crypto assets\"; after RP-6 the app renders no verdict on any asset, so the verb promised a judgement it deliberately does not make — now \"research tool\"/\"covers\", reusing the vocabulary the README's own disclaimer already used. (2) The advertised asset classes were \"stablecoins, Layer 1s, tokenized assets, and CBDCs\"; the catalog is exactly stablecoin 46 / layer1 52 / defi 10 = 108, so two of the four were NEVER present, and the one CBDC surface was deleted on 2026-09-14 (D10). (3) \"individually licensable modules\" implied a billing path that does not exist — entitlements are localStorage-only. (4) The Suite table advertised \"fees\" as shipped while the Feature Status table two sections down records Transfer Fees as hidden from the rollout. (5-7) \"live quotes\" was promised on three key-gated modules; since the Yahoo removal every live rung needs a key. (8) \"3-way fallback\" read as three interchangeable rungs — only CoinGecko is keyless and catalog-wide, CoinMarketCap needs a key and Binance quotes 16 pairs. Also corrected: \"the backtester is hidden\" (singular) when three separate surfaces went dark on 2026-08-20. A dated provenance paragraph was ADDED beneath the existing July / 09-08 / 09-19 ones rather than editing them, so a reader cannot mistake these corrections for part of an earlier pass.",
+    "approved_by": "owner, 2026-09-21 — \"begin working through the backlog\"",
+    "evidence": [
+     "README.md:5-9 (lede), :17-20 (Suite table), :49 (new dated provenance), :52, :57",
+     "frontend/src/lib/data/assetCatalog.ts — 108 entries, no tokenized/cbdc assetType",
+     "frontend/src/app/live-data/markets/route.ts — BINANCE_SYMBOL_MAP, 16 pairs"
+    ],
+    "also_verified": "The settings page was read in full against the same overstatement list and is CLEAN — no risk/safety-score vocabulary, no rankings, no exchange-account linking, no real-time promise on a key-gated surface, no typed counts. One stale CODE comment was corrected there (it named three suite modules when the panel renders all five from OPTIONAL_MODULES); no user-facing string changed."
+   }
   },
   {
    "id": "T-304",
@@ -3630,7 +3657,22 @@
      "lines": "377-378",
      "quote": "**Per-link disclosure in the UI** (FTC requires clear and conspicuous), plus a plain \"How we make money\" page. Mark affiliate rows visibly, not in a footer nobody reads."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-09-21",
+    "note": "BUILT AND VERIFIED — the remaining gap is owner copy, which this item explicitly says not to invent. The per-link half is done properly: components/ui/SponsoredLink.tsx renders a VISIBLE \"Paid link\" tag beside the link rather than a footer (the FTC clear-and-conspicuous standard), applies rel=\"sponsored\" only when a link is actually paid so the signal keeps meaning something, and derives the tag from the same value that selects the URL — so a link cannot be sponsored while the tag says otherwise. The 'How we make money' route exists, is reachable, and scaffolds the four outstanding disclosure sections as explicit OwnerCopyRequired placeholders that state what belongs there instead of attempting it. Its live sections are computed from the catalog, so they cannot go stale.",
+    "remaining_work": "Owner copy for the four placeholders on /how-we-make-money, per docs/BUSINESS-CHECKLIST.md §3: the formal affiliate/advertising disclosure naming the entity that receives commission; which referral programs have been joined and what their terms permit (several restrict desktop/in-app placement, and cookie attribution usually fails in an embedded webview); jurisdiction-specific handling (UK FCA financial-promotion rules reach crypto referrals, and some jurisdictions restrict crypto affiliate marketing outright); and a contact route for complaints about paid placement. Nothing is live in a harmful state meanwhile — no provider has an affiliateUrl set, so the page reports zero coverage and the placeholders describe an arrangement that does not yet exist.",
+    "corrections": [
+     "FOUR DISCLOSURE STRINGS PROMISED SOMETHING THAT DOES NOT EXIST, and were fixed. The per-link tooltip (both branches) told the reader a paid link \"does not affect this provider's RISK SCORE\", and the page said the same twice more. D14 removed every composite staking risk score; the six RiskProfile dimensions are published as they are. Reassuring a reader about a number the app does not publish is wrong on its face.",
+     "Worse than inaccurate in one place: the page claimed the providers it could be paid by \"are systematically not the ones that SCORE BEST\". Nothing scores best — that sentence asserts a ranking, which is the exact shape RP-3 forbids, inside the document whose job is to explain the integrity rules. All four now describe the published dimensions and ordering, both of which lib/data/__tests__/affiliates.test.ts already enforces.",
+     "Deliberately NOT built: a guard test scanning user-facing copy for risk-score language. Text-scanning guards misfired three times in this session, each caught by explanatory prose rather than a real regression — the comment documenting this very fix would trip one. The behaviour is already structurally guarded; the copy is downstream of a decision, and D14 is in the do-not-fix registry where a reviewer will meet it."
+    ],
+    "evidence": [
+     "frontend/src/components/ui/SponsoredLink.tsx:60-104",
+     "frontend/src/app/(dashboard)/how-we-make-money/page.tsx:25-37 (the placeholder component), :102-133",
+     "frontend/src/lib/data/__tests__/affiliates.test.ts — the ranking/scoring isolation guards"
+    ]
+   }
   },
   {
    "id": "T-126",
@@ -35290,6 +35332,15 @@
     "caveat": "THE INTERRUPTED-AGENT HAZARD IS THE LESSON. The affiliate agent added toDay()/asDay() helpers and a docblock asserting day-precision dates, then died before wiring either one into read() or recordAffiliateClick(). The file was left WORSE than it started: previously the comment was silent about precision, afterwards it claimed a privacy property the code did not have. A background agent that fails is not a no-op — check the working tree, not just the report.",
     "evidence": [
      "1543 tests in 111 test files (up 5 — the new affiliateClicks guards), tsc clean, docs:check, staleness:check, lint 0 errors / 46 warnings"
+    ]
+   },
+   {
+    "on": "2026-09-21",
+    "what": "Backlog tranche, retry of the three items an account session limit interrupted. T-301 CLOSED (eight real README overstatements). T-119 and T-070 carry progress blocks — both are built as far as a remote pass can take them, and both now wait on the owner.",
+    "basis_key": "Every claim was settled against CLAUDE.md's Feature Inventory or the RP ledger and re-checked in the tree. Two numbers were verified independently before being published in user-facing copy: BINANCE_SYMBOL_MAP carries exactly 16 pairs, and assetCatalog.ts is exactly stablecoin 46 / layer1 52 / defi 10 = 108.",
+    "caveat": "T-119 and T-070 are NOT closable by anyone working remotely. T-119 needs owner-written disclosure copy (BUSINESS-CHECKLIST §3) and the item itself forbids inventing it; T-070 needs sec.gov and a quote provider from the owner's machine before a single row may be appended to fundCatalog.ts.",
+    "evidence": [
+     "1543 tests in 111 files, tsc clean, docs:check, staleness:check, lint 0 errors / 46 warnings"
     ]
    }
   ]

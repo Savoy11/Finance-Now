@@ -44,8 +44,11 @@ migrateStorageKey('caep-custom-subreddits', 'fn-custom-subreddits')
 
 
 // ─── Suite modules panel ──────────────────────────────────────────────────────
-// Toggles which suite modules (Crypto, Equities, ETFs & Funds) appear in the
-// sidebar. Backed by the entitlement store — becomes license-driven when
+// Toggles which suite modules appear in the sidebar. The list is NOT typed here
+// — it renders `OPTIONAL_MODULES` from lib/modules/registry.ts, so a module
+// added or removed there shows up without touching this file. (It used to name
+// three of them in this comment and had already gone stale.) Backed by the
+// entitlement store, which is a local setting — it becomes licence-driven when
 // billing lands (docs/ROADMAP.md, Phase 6).
 
 function ModulesPanel() {
