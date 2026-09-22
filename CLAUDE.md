@@ -130,7 +130,8 @@ frontend/src/
 │       ├── fx-rates/route.ts        # Daily ECB reference FX (frankfurter.dev, keyless) — Macro currency converter, official tier
 │       ├── fx-rates-extended/route.ts # +127 more currencies (community currency-api, keyless) — converter's labeled extended tier
 │       ├── treasury-yield-curve/route.ts # Official 13-maturity daily par curve (treasury.gov XML, keyless) + spreads/shape
-│       ├── macro-news/route.ts     # 8 keyless RSS feeds + content-first pillar classifier
+│       ├── macro-news/route.ts     # 7 keyless RSS feeds + content-first pillar classifier
+│                                   #   (was 8 — marketwatch-macro removed 2026-09-20 ON TERMS)
 │       ├── staking-discovery/route.ts, coin-discovery/route.ts
 │       ├── coin-profile/route.ts    # CoinMarketCap → keyless CoinGecko ladder; backs the
 │       │                            #   "About this project" panel on /coin-discovery
@@ -589,8 +590,8 @@ Pure engine, no API calls, covered by `__tests__/portfolioBuilder.test.ts` (86 t
 **All four equity data surfaces are registry-driven** (same provider system as crypto — `src/lib/api/live/providers.ts`, configured on the Integrations page, persisted to `.provider-config.json`; providers carry `market: 'crypto' | 'equities'` so the two sides never cross). Every surface records per-provider utilization, supports toggling built-ins (order is fixed by the registry — there is no reorder action), and accepts user-added custom feeds (SSRF-validated, auth via header/query/bearer, tolerant JSON field extraction in `src/lib/server/customFeeds.ts`):
 
 - **Quotes** (`fetchSecurityQuotes` → `getEquityQuoteProviders()`): custom `json-quote` feeds first, then FMP → Finnhub → Twelve Data → Tiingo → Alpha Vantage → catalog reference prices. **Every live rung is keyed** since the Yahoo removal (2026-08-06) — see below. `{symbol}` (per-symbol) or `{symbols}` (batch) placeholders. **Stooq used to be the last live rung and is gone** — it 404s on every variant (confirmed in the 2026-07-19 audit) and has been removed from the registry and the quote path; catalog reference is the real last resort. The only remnant is the legacy `'stooq'` value in `PRICE_SOURCES` (db/schema/instruments.ts), which is inert. Don't re-add it as a fallback.
-- **News** (`/live-data/market-news` → `getEquityProviders('news')`): built-ins MarketWatch / CNBC plus custom `rss`/`atom`/`json-news` feeds, all active sources merged in parallel. **There is no per-ticker feed** — Yahoo's was the only free one. Symbol mode reads the same general wires and filters to articles that actually name the company, and does **not** force-tag the requested symbol onto unrelated stories.
-- **Social** (`/live-data/stock-social` → `getEquityProviders('social')`): built-ins Reddit Finance / StockTwits plus custom `json-social` feeds. (Reddit 403s from datacenter IPs without OAuth — expect StockTwits-only in server/CI environments.)
+- **News** (`/live-data/market-news` → `getEquityProviders('news')`): **CNBC is the only built-in**, plus custom `rss`/`atom`/`json-news` feeds, all active sources merged in parallel. ⚠ **MarketWatch was removed 2026-09-20 ON TERMS, not availability** — the feed still serves 200. Dow Jones's Terms of Use §9.4.1 bars automated ingestion "without our prior written consent" and §9.1 names RSS content expressly, so `dowjones.io` and `marketwatch.com` are now `prohibited` in the registry — a `pinnedFetch` socket block, the same class as Yahoo. **Do not reintroduce it**: restoring it needs written consent, not a code change. Equity news is single-sourced on CNBC as a result, which is a known D21 optionality gap rather than a comfortable state. **There is no per-ticker feed** — Yahoo's was the only free one. Symbol mode reads the same general wires and filters to articles that actually name the company, and does **not** force-tag the requested symbol onto unrelated stories.
+- **Social** (`/live-data/stock-social` → `getEquityProviders('social')`): built-ins Reddit Finance / StockTwits plus custom `json-social` feeds. ⚠ **Reddit's absence is OUR OWN robots gate, not a datacenter-IP block** — this line said the latter, which sends a reader chasing a network fault that is not there. Its robots.txt disallows this app's agent (2026-08-29 terms review), so `pinnedFetch` refuses `reddit.com` unconditionally unless `REDDIT_CLIENT_ID` is set: **that applies on the owner's machine too**, and expecting StockTwits-only is right everywhere, not just in CI. Reddit does separately 403 datacenter IPs and rate-limit its `.rss` feeds, but neither is what you are seeing while the gate is closed.
 - **OHLCV / TA / backtests** (`/live-data/security-ohlcv` → `getEquityOhlcvProviders()`): custom `json-ohlcv` feeds first, then Tiingo → FMP. Both keyed; with neither the route reports `source: 'none'` and the TA/backtest/candlestick surfaces show their no-live-source state.
 
 UI labels non-live prices with a small amber `ref` tag; KPIs needing live data show "requires live quotes" instead of fabricated values.
@@ -645,6 +646,14 @@ site nobody has reviewed. Full design: `docs/architecture/source-terms.md`.
 > Reading is not ratifying: those sixteen stayed `seeded` until the owner flipped
 > them, two on 2026-09-16 (`bcd4490`) and fourteen on 2026-09-19 (`516220f`).
 >
+> **Eight more followed, and they are what makes 2 + 16 add up to 26:** FMP on
+> 2026-09-13, then on 2026-09-20 Finnhub, Twelve Data, Binance.US, CoinDesk,
+> Investing.com, and the two Dow Jones properties — `dowjones.io` and
+> `marketwatch.com`, both read to a **`prohibited`** verdict, which is a reading
+> like any other and is why a rising `verified` count is not by itself good news.
+> Readings: `docs/audits/terms-review-finnhub-2026-09-20.md`,
+> `terms-review-twelvedata-binanceus-2026-09-20.md`, `terms-review-news-2026-09-20.md`.
+>
 > A seeded `approved`/`conditional` means *nobody has objected yet*, not *cleared*.
 > Seeded entries still serve data — breaking the app over a documentation gap is the
 > wrong failure, same reasoning as staleness — but they are counted, badged on
@@ -675,7 +684,16 @@ site nobody has reviewed. Full design: `docs/architecture/source-terms.md`.
 > OilPrice, Bitget — and **FMP**, added 2026-09-02) and is the owner's to answer.
 > **Update 2026-09-19:** four of those eight were read on a clean egress on
 > 2026-09-14 and are now `verified` — Tiingo, YouTube, OilPrice and Bitget.
-> Finnhub, Twelve Data, Binance.US and FMP's entry are still `seeded`.
+> ~~Finnhub, Twelve Data, Binance.US and FMP's entry are still `seeded`.~~
+> **Overtaken 2026-09-22: all four are now `verified`.** FMP flipped on 2026-09-13
+> (`sourceTerms.ts:287`), and Finnhub, Twelve Data and Binance.US on 2026-09-20
+> (`:393`, `:465`, `:613`), against the readings in
+> `docs/audits/terms-review-finnhub-2026-09-20.md` and
+> `terms-review-twelvedata-binanceus-2026-09-20.md`. ⚠ **This does NOT answer the
+> personal-vs-commercial question.** `docs/LEGAL-REVIEW.md` records that all four bar a
+> deployment other people can reach, with no tier curing it, and that is the owner's to
+> resolve (T-151). `verified` means the document was read — never that the permission
+> it grants is adequate.
 >
 > **FMP is the load-bearing one, and it was missed until now.** Its entry is
 > `seeded`, and its finding asserts the permission is *tier-dependent* (free =
@@ -686,16 +704,19 @@ site nobody has reviewed. Full design: `docs/architecture/source-terms.md`.
 > queue. An assumption wearing the confidence of a resolved entry is precisely
 > what `seeded` exists to expose.
 >
-> **Read 2026-09-13 — and the entry is still `seeded`.** The document was opened
+> **Read 2026-09-13, and recorded as read since then.** The document was opened
 > on the owner's machine (`docs/audits/terms-review-fmp-2026-09-13.md`) and its
 > verbatim clauses are now the entry's `finding`. It answers the paragraph above
 > and contradicts both sides of it: §2.2.1 grants personal, non-business,
 > non-commercial use only, and §2.2.2 bars any multi-user deployment
 > "irrespective of whether such usage is complimentary or paid" — so the
 > permission is **not** tier-dependent, and broader rights come from an Order
-> Form under §2.1, not a higher plan. What is still open is the registry itself:
-> the entry's `review` is `'seeded'` and its `reviewedAt` `'2026-08-06'`, so a
-> reading that happened is not recorded as one.
+> Form under §2.1, not a higher plan. **The registry now matches the reading:**
+> `sourceTerms.ts:287` carries `review: 'verified'`, `reviewedAt: '2026-09-13'`,
+> with those verbatim clauses as its `finding`. What remains open is not the
+> RECORD but the PERMISSION — personal, non-business use only, with broader
+> rights available solely by Order Form. That is T-151's keystone question; see
+> `docs/LEGAL-REVIEW.md`.
 >
 > It matters because FMP is not a marginal source. It is the first rung of the
 > quote ladder, the **only** source for the Stock Registry universe and for
@@ -730,6 +751,15 @@ site nobody has reviewed. Full design: `docs/architecture/source-terms.md`.
   and link only", "personal use"). Most of the registry. The conditions are the
   maintainer's obligation, not something code enforces; writing them down is the point.
 - `prohibited` — hard-blocked, no override, anywhere.
+
+> **The prohibited set is five, and two of them are recent.** `yahoo.com` (2026-08-06,
+> terms), `cboe.com` (P2-O1 audit, 2026-08-05), `poloniex.com` (2026-09-15, User Agreement
+> §9), and — added **2026-09-20** — `dowjones.io` and `marketwatch.com` (Dow Jones Terms of
+> Use §9.1/§9.4.1: RSS content is named expressly and automated ingestion needs prior
+> written consent). All five are `pinnedFetch` socket blocks and none has an override, so
+> re-adding a fetcher does not bring one back — it just fails somewhere less obvious.
+> Yahoo is described at length above; the other four were only ever recorded in
+> `sourceTerms.ts`, which is why this list exists.
 
 **Two assertion forms, and the split is the design:**
 - `assertSourceNotProhibited` (used by `pinnedFetch`) — only `prohibited` fails. A
@@ -1286,14 +1316,14 @@ One module (`macro` entitlement), three areas. Owner spec + status: `docs/ROADMA
 | Feature | Route | Status | Source / Notes |
 |---------|-------|--------|----------------|
 | Macro Overview | `/macro` | 🟢 Live | Landing page; live quote strips per area |
-| Macro News | `/macro/news` | 🟢 Live | `/live-data/macro-news` — 8 keyless RSS feeds (Investing.com commodities/bonds/forex, OilPrice, FXStreet, MarketWatch, CNBC ×2). **Content-first pillar classifier** (strong-currency terms → commodities → bonds → weak-currency; general-feed articles matching no pillar are dropped). 14-day staleness cutoff; future `pubDate`s clamped (Investing.com omits TZ); balanced merge guarantees each pillar ≤¼ of slots so slow bonds feeds aren't crowded out; detected instruments link to macro detail pages |
+| Macro News | `/macro/news` | 🟢 Live | `/live-data/macro-news` — 7 keyless RSS feeds (Investing.com commodities/bonds/forex, OilPrice, FXStreet, CNBC ×2). **MarketWatch's `mw_bulletins` feed was removed 2026-09-20 ON TERMS** (Dow Jones ToU — `dowjones.io` is `prohibited`); every pillar still keeps a dedicated source, so this thinned the general pool rather than removing a pillar. **Content-first pillar classifier** (strong-currency terms → commodities → bonds → weak-currency; general-feed articles matching no pillar are dropped). 14-day staleness cutoff; future `pubDate`s clamped (Investing.com omits TZ); balanced merge guarantees each pillar ≤¼ of slots so slow bonds feeds aren't crowded out; detected instruments link to macro detail pages |
 | Commodities | `/macro/commodities`, `/[slug]` | 🟢 Live | `commodityCatalog.ts` — 19 verified front-month contracts, 5 categories. `quoteBasis: 'usd'\|'cents'` renders each market's convention (472.75¢/bu, never "$472"). Detail: chart + facts + ETF proxies → /funds. **`etfProxies` are genuine single-commodity exposure**, not the broad-basket DBC these used to point to. Deep, multi-issuer lineups for the liquid metals/energy markets (gold: GLD/IAU/GLDM/SGOL/AAAU/BAR/OUNZ; silver: SLV/SIVR/PSLV; WTI: USO/OILK/USL; nat gas: UNG/UNL) — each variant genuinely differs (expense ratio, K-1 vs 1099 tax form, front-month vs laddered roll, physical-redemption feature), all added to `fundCatalog.ts` and verified both quotable AND actively trading (5-day history, not just a cached price) before inclusion. Copper/grain/platinum/palladium get one verified proxy each (CPER/CORN/WEAT/SOYB/CANE/PPLT/PALL) — genuinely thinner markets, not an under-researched gap; broad-basket funds (DBB, COPX-style miner ETFs) are deliberately excluded even as a single option since that's the exact overstated-specificity problem this fix corrected. Heating oil, coffee, cocoa, cotton, live cattle, and lean hogs are **deliberately empty** — their single-commodity ETFs/ETNs (UHN, JO, NIB, BAL, COW) were confirmed delisted (last trade 2019–2023) 2026-07-21; don't backfill with a basket fund to avoid a blank list |
 | Currencies | `/macro/currencies`, `/[slug]` | 🟢 Live | `currencyCatalog.ts` — 17 pairs + DXY (18 entries), per-pair `precision`. **`etfProxies`** (new `FundCategoryId: 'currency'` in `fundCatalog.ts`): the 6 USD majors get their CurrencyShares trust (FXE/FXB/FXY/FXF/FXC/FXA — holds currency deposits, direct exposure); Dollar Index gets UUP/UDN/USDU (long/short/alt-index). Deliberately empty for every EM pair and every cross — EM single-currency funds (FXM/BZF/CYB/ICN/SZR) confirmed delisted, crosses have never had a dedicated fund (only vs-USD trusts exist), NZD/KRW never had one. **Converter is two-tier**: 30 ECB currencies (`/live-data/fx-rates`, frankfurter.dev — verified to be ECB's *complete* published set, not a subset) plus 127 more via `/live-data/fx-rates-extended` (community `fawazahmed0/currency-api`, keyless, hand-verified allowlist excluding crypto tickers/precious-metal ounce codes/IMF SDR/defunct pre-euro currencies from that feed's ~340 raw codes). Grouped by `<optgroup>` in the UI; any conversion touching an extended-tier currency shows a distinct disclosure (community-sourced, not ECB) instead of the "official" ECB copy — the two tiers are never blended without attribution |
 | Bonds & Rates | `/macro/rates`, `/[slug]` | 🟢 Live | `ratesCatalog.ts` — 4 CBOE yield indices + 4 CBOT futures. **The four YIELD entries no longer use the quote ladder (2026-09-03, D3):** they read the official treasury.gov par curve via `lib/data/ratesFromCurve.ts` — keyless, plain percent, and published **daily**, so surfaces label them as a daily reading with no intraday change. The probe that forced this (`npm run rates-providers`) found no free provider quotes `^IRX`/`^FVX`/`^TNX`/`^TYX`: FMP paywalls them (HTTP 402), Finnhub returns nothing, Twelve Data 404s the symbol, Alpha Vantage returns an empty quote, Tiingo has no index space. Only the FUTURES still hit `security-quotes`. Curve chart from `/live-data/treasury-yield-curve` = **official** treasury.gov 13-maturity daily par curve (keyless XML, regex-parsed, 4h revalidate) + 2s10s/3m10y spreads + shape. Overview-page bond ETF shelf → /funds. **CUSIP-level bond quotes are licensed data — intentionally absent, stated on-page.** The overview shelf gained international and municipal rows (items 11/13); municipal fund detail pages carry a **tax-equivalent-yield calculator** (`lib/utils/taxEquivalentYield.ts`, pure + 10 tests) — a muni's headline yield is not comparable to a taxable fund's, and TEY is the arithmetic that makes it so. Detail pages carry a per-instrument **"Duration-Matched Funds"** section (`etfProxies`, distinct from the commodity/currency "ETF Proxies" naming since nobody buys "the 10-year yield" directly — the match is by maturity band, not asset identity): 13-week yield → SGOV/BIL (0-3mo bills); 5-year yield + 5yr future → IEI (3-7Y, added to fill the SHY↔IEF duration gap); 10-year yield + 10yr future → IEF; 30-year yield + 30yr future → TLT; 2yr future → SHY. General credit/inflation/aggregate funds (LQD/HYG/TIP/BND/AGG) stay overview-only since they don't map to a specific curve point |
 | Macro Scanner | `/macro/scanner` | 🟢 Derived | The section's one scanner (items 6/7), moved off the TA page. RSI 14 / vs-SMA50 / composite over the **29 liquid** macro instruments; the 6 delisted-ETF commodities and 10 EM/cross FX pairs stay excluded and the exclusion is stated on-page |
 | Macro TA | `/macro/technical-analysis` | 🟢 Derived | Shared candlestick/indicator engine over all 45 macro instruments — **no new data route**, macro symbols ride the same `security-ohlcv` path as equities. ⚠ That path is keyed and its macro coverage is narrower since the Yahoo removal — many macro symbols simply aren't carried by the remaining providers, and unpriced renders a dash. Chart tab (grouped picker, 5 ranges, 6 chart types, **51** indicators, patterns). **51, not the registry's 62**, and the gap is deliberate: the page calls `indicatorsFor(false)` because macro series carry no volume, so the **11** volume-derived indicators are withheld and named on-page rather than rendered against a missing input. This row said 16 until 2026-09-12 + Scanner tab (RSI 14 / vs-SMA50 / composite signal). **Scanner covers 29 of 45**: the 6 delisted-ETF commodities and the 10 EM/cross FX pairs are excluded because their series gap enough that a ranked RSI beside a liquid contract reads as comparable when it isn't — the exclusion is stated on-page and all 45 still chart. Levels go through `formatInstrumentQuote()`, so grains stay ¢/bu and yields stay % |
 
-`PriceChartCard` takes `valueFormat: 'usd' | 'plain'` (default `'usd'`, existing pages unchanged) — use `'plain'` for FX, yields, and cents-quoted contracts so axes aren't $-mislabeled. **Cross-cutting integration shipped 2026-07-21**: `market: 'macro'` exists across the provider registry (11 built-in rows; macro routes are registry-driven with utilization), tier categories, Integrations sections, and agents (`macro-research`/`macro-screener`, toolset `'macro'`); all 45 macro instruments (19 commodities + 18 currencies + 8 rates) are `sec:`-keyed entries in `instruments.ts` (classes `commodity`/`currency`/`rate`, `detailPath` slug routing) so watchlists/portfolios/Compare can hold them.
+`PriceChartCard` takes `valueFormat: 'usd' | 'plain'` (default `'usd'`, existing pages unchanged) — use `'plain'` for FX, yields, and cents-quoted contracts so axes aren't $-mislabeled. **Cross-cutting integration shipped 2026-07-21**: `market: 'macro'` exists across the provider registry (10 built-in rows — was 11 until `marketwatch-macro` was removed on terms, 2026-09-20; macro routes are registry-driven with utilization), tier categories, Integrations sections, and agents (`macro-research`/`macro-screener`, toolset `'macro'`); all 45 macro instruments (19 commodities + 18 currencies + 8 rates) are `sec:`-keyed entries in `instruments.ts` (classes `commodity`/`currency`/`rate`, `detailPath` slug routing) so watchlists/portfolios/Compare can hold them.
 
 ### ETFs & Funds module (`/funds`)
 | Feature | Route | Status | Source / Notes |
