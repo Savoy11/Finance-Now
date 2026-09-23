@@ -291,6 +291,7 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     finding:
       'Commercial market-data API, READ 2026-09-13 (ToS last updated 2023-08-01). The posted ToS grants ONE licence: section 2.2.1 Personal Use — an individual, for their own personal, non-business, non-commercial purposes, who may not integrate the Data into any tools or applications accessible by any third parties. Section 2.2.2 separately forbids showcasing FMP data on applications designed for utilization by multiple individuals, irrespective of whether such usage is complimentary or paid, absent a specific agreement with FMP. There is NO commercial-use licence section; broader rights come from an Order Form under section 2.1, NOT from a higher subscription tier.',
     conditions: [
+      '⚠ SINGLE-USER ONLY — satisfied TODAY, blocking AT RELEASE (D22, 2026-09-23). Nobody but the owner can load a page today, so this licence is currently met. The FIRST NON-OWNER PAGE LOAD — a private beta, a demo link, a shared staging URL — puts the app outside it. To operate beyond that: ask for an Order Form / specific agreement under §2.1 — §2.2.2 bars multi-user deployment "irrespective of whether such usage is complimentary or paid", so no plan upgrade substitutes. See docs/decisions/2026-09-23-owner-decisions.md.',
       'A valid FMP API key must be configured — no keyless path',
       'Stay within the plan\'s request cap (sections 2.5, 2.9)',
       'Section 2.2.1: solo non-commercial use only under the posted ToS — covers development and testing by one individual',
@@ -408,6 +409,7 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
       'professional, using the data for a business or registering under a business name, or ' +
       'deducting the subscription as a business expense.',
     conditions: [
+      '⚠ SINGLE-USER ONLY — satisfied TODAY, blocking AT RELEASE (D22, 2026-09-23). Nobody but the owner can load a page today, so this licence is currently met. The FIRST NON-OWNER PAGE LOAD — a private beta, a demo link, a shared staging URL — puts the app outside it. To operate beyond that: ask for written approval — the Redistribution Rights and Personal Use section reaches "derived results" shown to "anyone", so a chart shown to one other person is covered. See docs/decisions/2026-09-23-owner-decisions.md.',
       'Valid API key required — no keyless path',
       'Stay under 30 API calls/second in aggregate; stacking plans does NOT raise the limit',
       'Personal use only: the account must not be registered to a business, used by a business even internally, or expensed as a business cost — any one alone ends eligibility',
@@ -481,6 +483,7 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
       '— “only if and as expressly authorized by a Redistribution Rights Add-On or separate written ' +
       'agreement”.',
     conditions: [
+      '⚠ SINGLE-USER ONLY — satisfied TODAY, blocking AT RELEASE (D22, 2026-09-23). Nobody but the owner can load a page today, so this licence is currently met. The FIRST NON-OWNER PAGE LOAD — a private beta, a demo link, a shared staging URL — puts the app outside it. To operate beyond that: ask for the Redistribution Rights Add-On or a written agreement (§2.2(e)). See docs/decisions/2026-09-23-owner-decisions.md.',
       'Valid API key required',
       'Respect the plan credit budget',
       '§2.1/§2.2(a): the licence covers Internal Use only. Every cache, table and log holding Data must exist for the maintainer’s own use',
@@ -631,6 +634,7 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
       'permission”, and (6) no “action that imposes an unreasonable or disproportionately large load ' +
       'on our infrastructure”.',
     conditions: [
+      '⚠ SINGLE-USER ONLY — satisfied TODAY, blocking AT RELEASE (D22, 2026-09-23). Nobody but the owner can load a page today, so this licence is currently met. The FIRST NON-OWNER PAGE LOAD — a private beta, a demo link, a shared staging URL — puts the app outside it. To operate beyond that: ⚠ NO ROUTE IS STATED in the terms — the longest-lead of the four. Whether an undocumented route exists is something only Binance.US can answer, and the reading cannot distinguish "undocumented" from "none". See docs/decisions/2026-09-23-owner-decisions.md.',
       'Respect the published per-endpoint request weights',
       'Report the serving venue — it is a different market than binance.com',
       'Solo, non-public use only. The IP licence does not permit distribution or public display of Materials, and is “personal to you” and non-sublicensable',

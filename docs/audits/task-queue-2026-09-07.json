@@ -56,8 +56,8 @@
   "total_verified": 398,
   "outstanding": 346,
   "by_status": {
-   "open": 87,
-   "closed": 95,
+   "open": 85,
+   "closed": 97,
    "blocked": 73,
    "unclear": 1,
    "parked": 90
@@ -69,8 +69,8 @@
    "owner-machine": 83
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 95,
-  "counts_recomputed_on": "2026-09-22",
+  "closed_by_annotation": 97,
+  "counts_recomputed_on": "2026-09-23",
   "counts_note": "by_status and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status."
  },
  "blocking_decisions": [
@@ -4102,7 +4102,7 @@
   {
    "id": "T-151",
    "title": "Owner decision: is Finance Now personal/internal or commercial? (decides 8 sources)",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "decision",
@@ -4124,7 +4124,31 @@
      "lines": "95-112",
      "quote": "Personal / non-commercial clauses were flagged on **Finnhub, Twelve Data, Tiingo, Binance.US, YouTube, OilPrice and Bitget** — seven sources whose verdicts all turn on this one answer."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-23",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "ANSWERED by owner decision D22 (docs/decisions/2026-09-23-owner-decisions.md). Owner, verbatim: \"The goal will be commercial; currently it is personal but we are building with the goal of it being public.\" This item's own next_action anticipated exactly this shape — it asked whether commercial status is \"true now or only at release\" — and the answer is ONLY AT RELEASE.",
+    "the_test_it_answers": "docs/LEGAL-REVIEW.md §2 states it narrowly: the question is not whether the product is monetised, it is \"whether anyone other than the owner will be able to load a page, because that is the line every one of these documents draws.\"",
+    "resolves_to": {
+     "today": "INSIDE every one of the four licences, verified in the tree rather than assumed from intent: STAGING_DEPLOY_ENABLED has never been set, production deploy is workflow_dispatch only, and there is no .tfstate anywhere. Nobody but the owner can load a page, so nothing is owed today and no verdict needed flipping.",
+     "at_release": "OUTSIDE all four, with no tier that cures it. FMP §2.2.2 bars multi-user deployment 'irrespective of whether such usage is complimentary or paid'; Finnhub requires written approval; Twelve Data §2.2(e) requires a Redistribution Rights Add-On; Binance.US names NO route at all.",
+     "trigger": "⚠ THE FIRST NON-OWNER PAGE LOAD. Not a launch date, not monetisation, not incorporation. A private beta, a demo link, a shared staging URL and a screenshare all cross the same line while feeling nothing like 'going commercial'."
+    },
+    "what_was_recorded": [
+     "docs/decisions/2026-09-23-owner-decisions.md — D22 in full, including what it deliberately does NOT decide (monetisation, timeline, the news publishers, legal sufficiency).",
+     "docs/LEGAL-REVIEW.md §2 — an ANSWERED banner above the keystone section; the section itself is left as written because it is the reasoning the answer was given against.",
+     "frontend/src/lib/server/sourceTerms.ts — a D22 condition on each of the four entries. The VERDICTS DID NOT CHANGE and should not have: 'conditional' already means 'permitted while conditions hold', and the condition is single-user. Flipping them to 'prohibited' today would socket-block four providers the app is currently entitled to use."
+    ],
+    "approved_by": "owner, 2026-09-23",
+    "evidence": [
+     "docs/decisions/2026-09-23-owner-decisions.md",
+     "docs/LEGAL-REVIEW.md",
+     "frontend/src/lib/server/sourceTerms.ts"
+    ]
+   }
   },
   {
    "id": "T-231",
@@ -5445,7 +5469,7 @@
   {
    "id": "T-152",
    "title": "FMP terms — read site.financialmodelingprep.com/terms-of-service and answer the three questions",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "terms-review",
@@ -5479,7 +5503,19 @@
      "lines": "29",
      "quote": "FMP terms posture (tier-dependent vs personal-on-every-tier) unresolved — load-bearing source (7 live-data routes)."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-23",
+    "basis": "verified-here",
+    "verdict": "already-done",
+    "reason": "PREMISE FALSE — the reading happened on 2026-09-13 and is recorded at docs/audits/terms-review-fmp-2026-09-13.md, with the entry at sourceTerms.ts carrying review: 'verified', reviewedAt: '2026-09-13'. All three questions this item lists are answered there: (1) is there a personal-only clause — YES, §2.2.1 grants personal, non-business, non-commercial use only; (2) does it vary by plan — NO, §2.2.2 bars multi-user deployment 'irrespective of whether such usage is complimentary or paid'; (3) is there a separate paid-key licence — broader rights come from an Order Form under §2.1, not from a higher tier.",
+    "approved_by": "closed alongside D22, 2026-09-23",
+    "evidence": [
+     "docs/audits/terms-review-fmp-2026-09-13.md",
+     "frontend/src/lib/server/sourceTerms.ts — financialmodelingprep.com entry"
+    ]
+   }
   },
   {
    "id": "T-155",
@@ -7950,7 +7986,7 @@
    "owner_role": "owner-machine",
    "category": "terms-review",
    "effort": "small",
-   "blocking_decision": "Is Finance Now personal/internal, or commercial?",
+   "blocking_decision": null,
    "related_ids": [],
    "summary": "Also in the personal-vs-commercial set.",
    "next_action": "Wait for the T-151 answer; then on the owner's machine re-read https://oilprice.com/terms-of-use to decide whether the Disclaimers clause reaches RSS syndication, and flip to verified with the resulting verdict.",
@@ -7960,7 +7996,14 @@
      "lines": "271-296",
      "quote": "| Summary | OilPrice.com: permitted subject to 2 condition(s) — Headline, link and feed summary only; Attribute and link back. ⚠ Seeded entry — the terms document has not been read for this project; treat as a working assumption, not a clearance. |"
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-09-23",
+    "note": "UNBLOCKED by D22 (2026-09-23). Still needs the owner's machine: re-read https://oilprice.com/terms-of-use and decide whether the Disclaimers clause reaches RSS syndication, then flip the entry to verified with the resulting verdict. D22 sharpens the question rather than answering it — OilPrice is a keyless content source, so the relevant test is whether a PUBLIC deployment may syndicate its RSS, not whether the owner may read it today.",
+    "evidence": [
+     "docs/decisions/2026-09-23-owner-decisions.md"
+    ]
+   }
   },
   {
    "id": "T-153",
@@ -7970,7 +8013,7 @@
    "owner_role": "owner-machine",
    "category": "terms-review",
    "effort": "small",
-   "blocking_decision": "Is Finance Now personal/internal, or commercial?",
+   "blocking_decision": null,
    "related_ids": [],
    "summary": "Confirmed probed against the right documents on 2026-08-30.",
    "next_action": "Once T-151 is answered, edit the four entries in frontend/src/lib/server/sourceTerms.ts: set the verdict implied by the answer (conditional with the clause quoted, or prohibited), review: 'verified', reviewedAt: <date>, and open a PR; if 'commercial', also plan replacement/removal of Finnhub (bluntest redistribution clause).",
@@ -7980,7 +8023,14 @@
      "lines": "160-174, 191-193",
      "quote": "of the seven, **three are unresolved** (YouTube by the wrong document, Tiingo by the layered licence, Bitget outright) and **four were read against the right document** (Twelve Data, Finnhub, Binance.US, OilPrice)."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-09-23",
+    "note": "UNBLOCKED by D22 (2026-09-23). The blocking question is answered. ⚠ But the action this item describes has largely been OVERTAKEN: it asks to 'set the verdict implied by the answer (conditional ... or prohibited)', and the answer implies NEITHER change — all four entries are already 'conditional' and already 'verified', which is correct under D22 because the licences are satisfied while the app stays single-user. What was actually needed, and is done, is making the CONDITION explicit: each of the four now carries a D22 condition naming the single-user constraint, the first-non-owner-page-load trigger, and that provider's own route to a multi-user licence. What remains for this item is OilPrice, which is T-149's subject.",
+    "evidence": [
+     "docs/decisions/2026-09-23-owner-decisions.md"
+    ]
+   }
   },
   {
    "id": "T-368",
@@ -35482,6 +35532,15 @@
     "caveat": "The widening is a PRODUCT judgement, not a data fix: it asserts that wstETH and its siblings belong under `eth` in this app's coin vocabulary. Its boundary — liquid-staking derivatives in, synthetics like alETH and msETH out — is pinned by test rather than comment, because 'everything ending in ETH' is the tempting and wrong version.",
     "evidence": [
      "docs/proposals/2026-09-22-decision-options.md"
+    ]
+   },
+   {
+    "on": "2026-09-23",
+    "what": "T-151 — the keystone — closed on owner decision D22. T-152 closed as premise-false. T-153 and T-149 unblocked.",
+    "basis_key": "D22 is a TRAJECTORY answer, not a binary one: personal today, commercial by intent. The item's next_action had explicitly allowed for that shape ('true now or only at release'), which is why it resolves cleanly rather than ambiguously.",
+    "caveat": "The most misreadable thing about D22 is that it sounds like good news. Today nothing is owed — but the trigger is the FIRST NON-OWNER PAGE LOAD, not a launch date and not monetisation, and the seven drafted provider enquiries in docs/licensing/2026-09-20-provider-enquiries.md are now LAUNCH-BLOCKING and still unsent. Binance.US is the longest-lead of the four because it names no route at all; the reading cannot distinguish 'undocumented route' from 'no route', and only Binance.US can.",
+    "evidence": [
+     "docs/decisions/2026-09-23-owner-decisions.md"
     ]
    }
   ]
