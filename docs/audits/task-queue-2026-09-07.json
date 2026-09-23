@@ -56,9 +56,9 @@
   "total_verified": 398,
   "outstanding": 346,
   "by_status": {
-   "open": 85,
+   "open": 88,
    "closed": 97,
-   "blocked": 73,
+   "blocked": 70,
    "unclear": 1,
    "parked": 90
   },
@@ -7132,12 +7132,12 @@
   {
    "id": "T-154",
    "title": "FMP rollout-scope decision on market-calendar and stock-universe if the reading is restrictive",
-   "status": "blocked",
+   "status": "open",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "decision",
    "effort": "unknown",
-   "blocking_decision": "FMP terms reading (T-152): is free-tier use restricted to personal/non-commercial, and does it vary by plan?",
+   "blocking_decision": null,
    "related_ids": [],
    "summary": "/equities/calendar would go dark; stock-universe collapses to the curated catalog.",
    "next_action": "No action until T-152 returns a restrictive reading; then the owner decides whether /equities/calendar goes dark and the Stock Registry ships on the curated catalog, or a paid FMP plan is bought at release (consistent with the 'free-tier until near release' constraint).",
@@ -7147,7 +7147,16 @@
      "lines": "234-252, 272-273",
      "quote": "So the honest summary is: **two surfaces die or collapse, the rest degrade.**\nThat is a rollout-scope question, not a cleanup task."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-09-23",
+    "note": "UNBLOCKED, and this is the sharper of the two. The blocker was \"FMP terms reading (T-152): is free-tier use restricted to personal/non-commercial, and does it vary by plan?\" That reading happened on 2026-09-13 (docs/audits/terms-review-fmp-2026-09-13.md) and T-152 closed today. ⚠ It did not come back permissive. §2.2.1 grants personal, non-business, non-commercial use only, and §2.2.2 bars multi-user deployment \"irrespective of whether such usage is complimentary or paid\". This item's own title is \"…if the reading is restrictive\" — so its condition is MET and the decision it describes is now owed rather than contingent. Two things keep it from being urgent today. Under D22 State 1 nobody but the owner can load a page, so the free tier is within licence AS THE APP STANDS and /equities/calendar does NOT need to go dark now. And D21 defers the paid half. What is NOT deferred is the design half: whether the Stock Registry ships on the 79-name curated catalog and the calendar goes dark, or an Order Form is obtained. §2.2.2 means a plan upgrade is not one of the options — broader rights come from an Order Form under §2.1, which is enquiry #1 in docs/licensing/2026-09-20-provider-enquiries.md and is unsent.",
+    "evidence": [
+     "docs/audits/terms-review-fmp-2026-09-13.md",
+     "docs/decisions/2026-09-23-owner-decisions.md",
+     "docs/licensing/2026-09-20-provider-enquiries.md"
+    ]
+   }
   },
   {
    "id": "T-195",
@@ -7981,7 +7990,7 @@
   {
    "id": "T-149",
    "title": "OilPrice.com terms — read, conclude, verify",
-   "status": "blocked",
+   "status": "open",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "terms-review",
@@ -7999,7 +8008,7 @@
    ],
    "progress": {
     "noted_on": "2026-09-23",
-    "note": "UNBLOCKED by D22 (2026-09-23). Still needs the owner's machine: re-read https://oilprice.com/terms-of-use and decide whether the Disclaimers clause reaches RSS syndication, then flip the entry to verified with the resulting verdict. D22 sharpens the question rather than answering it — OilPrice is a keyless content source, so the relevant test is whether a PUBLIC deployment may syndicate its RSS, not whether the owner may read it today.",
+    "note": "UNBLOCKED by D22 (2026-09-23). Still needs the owner's machine: re-read https://oilprice.com/terms-of-use and decide whether the Disclaimers clause reaches RSS syndication, then flip the entry to verified with the resulting verdict. D22 sharpens the question rather than answering it — OilPrice is a keyless content source, so the relevant test is whether a PUBLIC deployment may syndicate its RSS, not whether the owner may read it today. ── STATUS CORRECTED 2026-09-23: this item was left at status \"blocked\" with blocking_decision: null by the same D22 pass that unblocked it — a half-update. It is open, and has been since D22 was recorded.",
     "evidence": [
      "docs/decisions/2026-09-23-owner-decisions.md"
     ]
@@ -8008,7 +8017,7 @@
   {
    "id": "T-153",
    "title": "Twelve Data, Finnhub, Binance.US, OilPrice — apply the personal-vs-commercial answer and flip to verified",
-   "status": "blocked",
+   "status": "open",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "terms-review",
@@ -8026,7 +8035,7 @@
    ],
    "progress": {
     "noted_on": "2026-09-23",
-    "note": "UNBLOCKED by D22 (2026-09-23). The blocking question is answered. ⚠ But the action this item describes has largely been OVERTAKEN: it asks to 'set the verdict implied by the answer (conditional ... or prohibited)', and the answer implies NEITHER change — all four entries are already 'conditional' and already 'verified', which is correct under D22 because the licences are satisfied while the app stays single-user. What was actually needed, and is done, is making the CONDITION explicit: each of the four now carries a D22 condition naming the single-user constraint, the first-non-owner-page-load trigger, and that provider's own route to a multi-user licence. What remains for this item is OilPrice, which is T-149's subject.",
+    "note": "UNBLOCKED by D22 (2026-09-23). The blocking question is answered. ⚠ But the action this item describes has largely been OVERTAKEN: it asks to 'set the verdict implied by the answer (conditional ... or prohibited)', and the answer implies NEITHER change — all four entries are already 'conditional' and already 'verified', which is correct under D22 because the licences are satisfied while the app stays single-user. What was actually needed, and is done, is making the CONDITION explicit: each of the four now carries a D22 condition naming the single-user constraint, the first-non-owner-page-load trigger, and that provider's own route to a multi-user licence. What remains for this item is OilPrice, which is T-149's subject. ── STATUS CORRECTED 2026-09-23: this item was left at status \"blocked\" with blocking_decision: null by the same D22 pass that unblocked it — a half-update. It is open, and has been since D22 was recorded.",
     "evidence": [
      "docs/decisions/2026-09-23-owner-decisions.md"
     ]
@@ -8082,7 +8091,7 @@
    "owner_role": "owner-machine",
    "category": "terms-review",
    "effort": "medium",
-   "blocking_decision": "T-118 (staking affiliate pattern) shipped, and an owner-machine terms read confirming brokerage programs permit placement in a research context",
+   "blocking_decision": "An owner-machine terms read confirming brokerage referral programs permit placement in a research/comparison context. (The other half of this blocker — \"T-118 (staking affiliate pattern) shipped\" — was SATISFIED 2026-09-21 when T-118 closed; rewritten 2026-09-23 so the remaining half is not obscured by a clause that is already met.)",
    "related_ids": [
     "P2"
    ],
@@ -8094,7 +8103,14 @@
      "lines": "401",
      "quote": "Equities/Funds modules — brokerage referrals, if the terms allow a research context."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-09-23",
+    "note": "HALF-UNBLOCKED. T-118 shipped the staking affiliate pattern (closed 2026-09-21), so the shared component this item extends now exists. The remaining blocker is unchanged and is owner-machine work: reading the candidate brokerage programs' terms on a machine that reaches them. ⚠ D22 makes that read harder rather than easier, and the item should not be picked up without noticing why: an affiliate placement is a commercial arrangement on a surface that, under D22, is intended to become publicly reachable. A programme's terms have to be read against the deployment that will exist at release, not the single-user app today. It also sits behind LEGAL-REVIEW §3.B and §3.C (entity formation and the disclosure set) — group E there says plainly that nothing in this cluster ships before those.",
+    "evidence": [
+     "docs/LEGAL-REVIEW.md"
+    ]
+   }
   },
   {
    "id": "T-363",
@@ -35541,6 +35557,23 @@
     "caveat": "The most misreadable thing about D22 is that it sounds like good news. Today nothing is owed — but the trigger is the FIRST NON-OWNER PAGE LOAD, not a launch date and not monetisation, and the seven drafted provider enquiries in docs/licensing/2026-09-20-provider-enquiries.md are now LAUNCH-BLOCKING and still unsent. Binance.US is the longest-lead of the four because it names no route at all; the reading cannot distinguish 'undocumented route' from 'no route', and only Binance.US can.",
     "evidence": [
      "docs/decisions/2026-09-23-owner-decisions.md"
+    ]
+   },
+   {
+    "on": "2026-09-23",
+    "what": "Swept all 73 blocked items for anything D22 freed. Result: 3 items moved (T-149, T-153, T-154), 1 half-cleared (T-124), and the large decision-blocked cluster is UNTOUCHED by D22 — deliberately.",
+    "method": "Grouped every blocked item by its blocking_decision text. 71 distinct blockers across 73 items, so this was never a \"one decision frees many\" shape. Reframed to the question worth asking: has any blocker been resolved by ANYTHING since it was written? Cross-referenced blocker text against (a) closed item ids and (b) recorded decision ids.",
+    "what_moved": [
+     "T-149 + T-153 — status \"blocked\" with blocking_decision: null. Not a discovery: the D22 pass earlier today nulled the blocker and failed to move the status. Corrected to open.",
+     "T-154 — blocker cited T-152, which closed today. ⚠ The FMP reading came back RESTRICTIVE, so this item's \"if the reading is restrictive\" condition is met and its decision is owed, not contingent.",
+     "T-124 — compound blocker, first clause satisfied by T-118 closing 2026-09-21. Blocker rewritten to the remaining owner-machine terms read; status stays blocked."
+    ],
+    "the_negative_result": "⚠ 14 blockers name a decision id (D1, D2, D5, RP-2 through RP-6). NONE is freed by D22, and two of them are worth stating explicitly because they look like they should be. T-192 (billing model: per-module licences vs tiered bundles) is NOT freed — D22's own \"what it deliberately does NOT decide\" section names monetisation first: answering T-151 never required it. Commercial-by-intent is not a pricing model. T-093 (D5 — hard-guard or remove MCP run_audit before any external distribution) is NOT freed either, but D22 changes its temperature: it was conditional on external distribution ever happening, and D22 establishes that as the stated goal. The question is now live with a trigger attached rather than hypothetical. The remaining cluster — T-200, T-204, T-205, T-208, T-209, T-213 — is all one blocker wearing six hats: WHICH HOSTING PATH SHIPS (AWS/Terraform vs Vercel+Neon vs VPS). That is the single highest-leverage unmade decision in the blocked set, and D22 does not touch it. T-012, T-123, T-220 and T-357 are RP-3/RP-5/RP-6 boundary questions on risk figures and affiliate surfaces, all untouched.",
+    "two_are_not_decision_blocked_at_all": "T-092 and T-396 are steward annotations sitting in propose→approve→apply, waiting on a yes or no rather than on a decision anyone has to make. T-092: annotate NT10/RP-4 as superseded by RP-6. T-396: annotate P3-production-review.md item 14b and TASK-QUEUE.md §P3-W2 item 14 as superseded by the 2026-08-20 cut. Both are one word from the owner and neither needs any of the above.",
+    "caveat": "The honest summary of this sweep is that D22 freed almost nothing, and two of the three items that moved were my own bookkeeping error from the pass that recorded it. The keystone decision unblocked the four items its own next_action predicted and nothing else — which is what a keystone that was scoped correctly looks like, not a disappointment.",
+    "evidence": [
+     "docs/decisions/2026-09-23-owner-decisions.md",
+     "docs/LEGAL-REVIEW.md"
     ]
    }
   ]
