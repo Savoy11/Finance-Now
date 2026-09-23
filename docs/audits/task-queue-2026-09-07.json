@@ -8050,9 +8050,9 @@
    ],
    "progress": {
     "noted_on": "2026-09-23",
-    "note": "UNBLOCKED by D22 (2026-09-23). Still needs the owner's machine: re-read https://oilprice.com/terms-of-use and decide whether the Disclaimers clause reaches RSS syndication, then flip the entry to verified with the resulting verdict. D22 sharpens the question rather than answering it — OilPrice is a keyless content source, so the relevant test is whether a PUBLIC deployment may syndicate its RSS, not whether the owner may read it today. ── STATUS CORRECTED 2026-09-23: this item was left at status \"blocked\" with blocking_decision: null by the same D22 pass that unblocked it — a half-update. It is open, and has been since D22 was recorded.",
+    "note": "CORRECTION, same day. The note I wrote on this item during the D22 pass said it \"still needs the owner's machine: re-read https://oilprice.com/terms-of-use and decide whether the Disclaimers clause reaches RSS syndication\". That was wrong twice over, and I checked the ledger instead of the registry before writing it. (1) THE READING ALREADY HAPPENED. sourceTerms.ts carries oilprice.com as review: 'verified', reviewedAt: '2026-09-14', verdict 'conditional', with the finding \"Publishes a public RSS feed and permits syndication of headline/link/summary with attribution and a link back\" and conditions [\"Headline, link and feed summary only\", \"Attribute and link back\"]. That is the syndication question answered, not deferred. (2) THE URL I NAMED IS DEAD. The entry's own comment records that /terms-of-use has returned a SOFT 404 since 2026-09-13 — 93KB of page body under a 404 status, which is why a status-blind probe scored it reachable. The live document is /terms-and-conditions. Anyone following my note would have re-read a 404 and concluded the terms were unreachable. What remains for this item is a steward's verdict on whether it is satisfied — the registry work is done, and OilPrice permitting SUMMARIES (not headline-and-link only) means it is not one of the publishers T-247 would force a code change for.",
     "evidence": [
-     "docs/decisions/2026-09-23-owner-decisions.md"
+     "frontend/src/lib/server/sourceTerms.ts — oilprice.com entry"
     ]
    }
   },
@@ -35629,6 +35629,17 @@
      "docs/audits/rejected-proposals.md",
      "docs/assessments/P3-production-review.md",
      "docs/TASK-QUEUE.md"
+    ]
+   },
+   {
+    "on": "2026-09-23",
+    "what": "Corrected my own progress note on T-149, and recorded a finding that reaches well past it: a block of open terms-reading items describes work the registry shows as already done.",
+    "the_error": "During the D22 pass I wrote that T-149 \"still needs the owner's machine\" to read OilPrice's terms, and named https://oilprice.com/terms-of-use. The entry has been verified since 2026-09-14, and that URL has been a soft 404 since 2026-09-13 — a fact recorded in the entry's own comment. I read the ledger item and not the registry it describes.",
+    "the_wider_finding": "Checked all 15 open items that name a host in the source-terms registry. EVERY ONE of those hosts is now review: 'verified' — T-141 CoinDesk, T-142 Cointelegraph, T-143 Decrypt, T-144 Bitcoin Magazine, T-145 dowjones.io, T-146 MarketWatch, T-147 CNBC, T-148 Investing.com, T-149 OilPrice, T-150 FXStreet, T-240 YouTube, T-242 Bitget, T-244 Reddit, T-249 StockTwits, T-251 publicnode. Several item titles still describe their entry as \"seeded\" or \"low-confidence seeded\", which has not been true since 2026-09-14 or 2026-09-20. This is the SAME SHAPE as this queue's headline failure: queue-closure-review-2026-09-13.md verified 62 items, recommended approving all 62, and the ledger write never happened. Verification, approval and the write are three separate acts and nothing connects them.",
+    "what_is_NOT_claimed": "That all 15 are closeable. At least two ask for something narrower than \"is the entry verified\": T-243 wants the rest of CoinGecko's API Terms beyond Scope of Use, and T-244 wants the Reddit DATA API Terms specifically, which is a different document from the site terms a 2026-09-14 reading would have covered. Each needs reading against what it actually asks before any verdict. The finding is that the cluster is far more done than 15 open rows suggest, not that it is finished.",
+    "registry_state_measured_today": "56 entries, 26 verified, 30 seeded. CLAUDE.md's stated 26/30 of 56 is accurate — no drift. The 30 still seeded are infrastructure and API hosts; the news publishers, which CLAUDE.md calls the priority, are ALL verified.",
+    "evidence": [
+     "frontend/src/lib/server/sourceTerms.ts"
     ]
    }
   ]
