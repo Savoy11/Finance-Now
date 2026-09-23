@@ -39,6 +39,31 @@ still the owner's disclosure to make.
 
 ## 2. The keystone question
 
+> ## ✅ ANSWERED 2026-09-23 — D22
+>
+> **Owner: *"The goal will be commercial; currently it is personal but we are building with
+> the goal of it being public."*** See `docs/decisions/2026-09-23-owner-decisions.md`.
+>
+> Measured against the test this section states below, that resolves into two states:
+>
+> - **Today — inside every one of the four licences.** Verified in the tree, not assumed:
+>   `STAGING_DEPLOY_ENABLED` has never been set, production deploy is `workflow_dispatch`
+>   only, and there is no `.tfstate` anywhere. Nobody but the owner can load a page, so
+>   nothing is owed today.
+> - **At release — outside all four, and no tier cures it.** The table below is unchanged
+>   and is now a launch checklist rather than an open question.
+>
+> ⚠ **The trigger is the FIRST NON-OWNER PAGE LOAD** — not a launch date, not monetisation,
+> not incorporation. A private beta, a demo link and a shared staging URL all cross it while
+> feeling nothing like "going commercial".
+>
+> Two consequences worth carrying forward: the seven enquiries in
+> `docs/licensing/2026-09-20-provider-enquiries.md` are now **launch-blocking and still
+> unsent**, and **Binance.US is the longest-lead of the four** because it is the only one
+> naming no route at all.
+>
+> The section below is left as written — it is the reasoning the answer was given against.
+
 **T-151 — "Is Finance Now personal/internal or commercial?"** Everything below bends around
 it, and as of 2026-09-20 it is better informed than it has ever been but still unanswered.
 

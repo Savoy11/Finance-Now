@@ -56,9 +56,9 @@
   "total_verified": 398,
   "outstanding": 346,
   "by_status": {
-   "open": 87,
-   "closed": 95,
-   "blocked": 73,
+   "open": 73,
+   "closed": 115,
+   "blocked": 67,
    "unclear": 1,
    "parked": 90
   },
@@ -69,8 +69,8 @@
    "owner-machine": 83
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 95,
-  "counts_recomputed_on": "2026-09-22",
+  "closed_by_annotation": 115,
+  "counts_recomputed_on": "2026-09-23",
   "counts_note": "by_status and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status."
  },
  "blocking_decisions": [
@@ -4102,7 +4102,7 @@
   {
    "id": "T-151",
    "title": "Owner decision: is Finance Now personal/internal or commercial? (decides 8 sources)",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "decision",
@@ -4124,7 +4124,31 @@
      "lines": "95-112",
      "quote": "Personal / non-commercial clauses were flagged on **Finnhub, Twelve Data, Tiingo, Binance.US, YouTube, OilPrice and Bitget** — seven sources whose verdicts all turn on this one answer."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-23",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "ANSWERED by owner decision D22 (docs/decisions/2026-09-23-owner-decisions.md). Owner, verbatim: \"The goal will be commercial; currently it is personal but we are building with the goal of it being public.\" This item's own next_action anticipated exactly this shape — it asked whether commercial status is \"true now or only at release\" — and the answer is ONLY AT RELEASE.",
+    "the_test_it_answers": "docs/LEGAL-REVIEW.md §2 states it narrowly: the question is not whether the product is monetised, it is \"whether anyone other than the owner will be able to load a page, because that is the line every one of these documents draws.\"",
+    "resolves_to": {
+     "today": "INSIDE every one of the four licences, verified in the tree rather than assumed from intent: STAGING_DEPLOY_ENABLED has never been set, production deploy is workflow_dispatch only, and there is no .tfstate anywhere. Nobody but the owner can load a page, so nothing is owed today and no verdict needed flipping.",
+     "at_release": "OUTSIDE all four, with no tier that cures it. FMP §2.2.2 bars multi-user deployment 'irrespective of whether such usage is complimentary or paid'; Finnhub requires written approval; Twelve Data §2.2(e) requires a Redistribution Rights Add-On; Binance.US names NO route at all.",
+     "trigger": "⚠ THE FIRST NON-OWNER PAGE LOAD. Not a launch date, not monetisation, not incorporation. A private beta, a demo link, a shared staging URL and a screenshare all cross the same line while feeling nothing like 'going commercial'."
+    },
+    "what_was_recorded": [
+     "docs/decisions/2026-09-23-owner-decisions.md — D22 in full, including what it deliberately does NOT decide (monetisation, timeline, the news publishers, legal sufficiency).",
+     "docs/LEGAL-REVIEW.md §2 — an ANSWERED banner above the keystone section; the section itself is left as written because it is the reasoning the answer was given against.",
+     "frontend/src/lib/server/sourceTerms.ts — a D22 condition on each of the four entries. The VERDICTS DID NOT CHANGE and should not have: 'conditional' already means 'permitted while conditions hold', and the condition is single-user. Flipping them to 'prohibited' today would socket-block four providers the app is currently entitled to use."
+    ],
+    "approved_by": "owner, 2026-09-23",
+    "evidence": [
+     "docs/decisions/2026-09-23-owner-decisions.md",
+     "docs/LEGAL-REVIEW.md",
+     "frontend/src/lib/server/sourceTerms.ts"
+    ]
+   }
   },
   {
    "id": "T-231",
@@ -4736,7 +4760,7 @@
   },
   {
    "id": "T-005",
-   "title": "Verify the 54 seeded source-terms registry entries on the owner's machine",
+   "title": "Verify the 30 remaining seeded source-terms registry entries on the owner's machine",
    "status": "open",
    "confidence": "high",
    "owner_role": "owner-machine",
@@ -4780,7 +4804,14 @@
      "lines": "24",
      "quote": "Terms reads: `npm run terms:report -- --news` first (news publishers are the priority), then `--seeded` incl. FMP (personal-vs-commercial question decides 8 sources: Finnhub, Twelve Data, Tiingo, Binance.US, YouTube, OilPrice, Bitget, FMP)."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-09-23",
+    "note": "PREMISE STALE, WORK REAL. The title said 54 seeded; measured today the registry is 56 entries, 26 verified, 30 seeded. CLAUDE.md's stated 26/30 of 56 is accurate — no drift there. The composition has also changed in a way the item does not reflect: the NEWS PUBLISHERS, which CLAUDE.md calls the priority, are now ALL verified. The 30 that remain are infrastructure and API hosts — sec.gov, llama.fi, alphavantage.co, coinmarketcap.com, binance.com, okx.com, wikipedia.org, home.treasury.gov, frankfurter.dev, mempool.space, kucoin.com, lido.fi, marinade.finance, jito.network, cryptopanic.com, messari.io, lunarcrush.com, santiment.net, rocketpool.net, beefy.finance, yearn.finance, pendle.finance and others. Different character of risk: these are mostly keyless public APIs whose exposure is a rate-limit or an attribution line rather than a syndication licence, which is why the publishers went first and why this remainder is lower-urgency without being optional.",
+    "evidence": [
+     "frontend/src/lib/server/sourceTerms.ts"
+    ]
+   }
   },
   {
    "id": "T-006",
@@ -5240,7 +5271,7 @@
   {
    "id": "T-140",
    "title": "Re-run the news-publisher terms probe from the owner's machine (priority queue)",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "terms-review",
@@ -5260,12 +5291,24 @@
      "lines": "3-17",
      "quote": "**Re-run it from a machine that can reach these sites:**\n> `npm run terms:report -- --news --out docs/audits/terms-review-news-<date>.md`"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-23",
+    "basis": "verified-here",
+    "verdict": "already-done",
+    "reason": "The priority queue this item names is COMPLETE. Every news publisher in the registry is now review: 'verified' — the 2026-09-14 batch (Cointelegraph, Decrypt, Bitcoin Magazine, CNBC, OilPrice, FXStreet) and the 2026-09-20 batch (CoinDesk, Investing.com, dowjones.io, MarketWatch). Readings are recorded at docs/audits/terms-review-news-2026-09-14.md and docs/audits/terms-review-news-2026-09-20.md.",
+    "swept_by": "terms-cluster sweep 2026-09-23 — checked each item against the REGISTRY rather than against the ledger, after T-149 showed the two had diverged",
+    "evidence": [
+     "docs/audits/terms-review-news-2026-09-14.md",
+     "docs/audits/terms-review-news-2026-09-20.md"
+    ]
+   }
   },
   {
    "id": "T-141",
    "title": "CoinDesk terms — read, conclude, verify",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "terms-review",
@@ -5280,12 +5323,24 @@
      "lines": "37-62",
      "quote": "| Summary | CoinDesk: permitted subject to 2 condition(s) — Headline, link and feed summary only; Attribute and link back to the origin article. ⚠ Seeded entry — the terms document has not been read for this project; treat as a working assumption, not a clearance. |"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-23",
+    "basis": "verified-here",
+    "verdict": "already-done",
+    "reason": "READ 2026-09-20 from a structure-preserving capture, every quote verified verbatim and contiguous by an adversarial pass. ⚠ And the reading OVERTURNED the entry: the prior finding asserting \"syndication of headline/link/summary with attribution\" was INVENTED, and the Terms grant no display permission at all. That is the seeded/verified split doing exactly its job — this item closing is not \"nothing to see here\", it is a wrong record corrected. Verdict stayed 'conditional' on a deliberate owner scope judgement (the document never mentions feeds), not on convenience.",
+    "swept_by": "terms-cluster sweep 2026-09-23 — checked each item against the REGISTRY rather than against the ledger, after T-149 showed the two had diverged",
+    "evidence": [
+     "frontend/src/lib/server/sourceTerms.ts",
+     "docs/audits/terms-review-news-2026-09-20.md"
+    ]
+   }
   },
   {
    "id": "T-142",
    "title": "Cointelegraph terms — read, conclude, verify",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "terms-review",
@@ -5300,12 +5355,24 @@
      "lines": "66-91",
      "quote": "| Summary | Cointelegraph: permitted subject to 2 condition(s) — Headline, link and feed summary only; Attribute and link back to the origin article. ⚠ Seeded entry — the terms document has not been read for this project; treat as a working assumption, not a clearance. |"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-23",
+    "basis": "verified-here",
+    "verdict": "already-done",
+    "reason": "READ 2026-09-14. Public RSS feed, syndication of headline/link/summary with attribution. verified, conditional.",
+    "swept_by": "terms-cluster sweep 2026-09-23 — checked each item against the REGISTRY rather than against the ledger, after T-149 showed the two had diverged",
+    "evidence": [
+     "frontend/src/lib/server/sourceTerms.ts",
+     "docs/audits/terms-review-news-2026-09-14.md"
+    ]
+   }
   },
   {
    "id": "T-143",
    "title": "Decrypt terms — read, conclude, verify",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "terms-review",
@@ -5320,12 +5387,24 @@
      "lines": "95-120",
      "quote": "| Summary | Decrypt: permitted subject to 2 condition(s) — Headline, link and feed summary only; Attribute and link back to the origin article. ⚠ Seeded entry — the terms document has not been read for this project; treat as a working assumption, not a clearance. |"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-23",
+    "basis": "verified-here",
+    "verdict": "already-done",
+    "reason": "READ 2026-09-14. Public RSS feed, syndication of headline/link/summary with attribution. verified, conditional.",
+    "swept_by": "terms-cluster sweep 2026-09-23 — checked each item against the REGISTRY rather than against the ledger, after T-149 showed the two had diverged",
+    "evidence": [
+     "frontend/src/lib/server/sourceTerms.ts",
+     "docs/audits/terms-review-news-2026-09-14.md"
+    ]
+   }
   },
   {
    "id": "T-144",
    "title": "Bitcoin Magazine terms — read, conclude, verify",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "terms-review",
@@ -5340,12 +5419,24 @@
      "lines": "124-149",
      "quote": "| Summary | Bitcoin Magazine: permitted subject to 2 condition(s) — Headline, link and feed summary only; Attribute and link back to the origin article. ⚠ Seeded entry — the terms document has not been read for this project; treat as a working assumption, not a clearance. |"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-23",
+    "basis": "verified-here",
+    "verdict": "already-done",
+    "reason": "READ 2026-09-14. Public RSS feed, syndication of headline/link/summary with attribution. verified, conditional.",
+    "swept_by": "terms-cluster sweep 2026-09-23 — checked each item against the REGISTRY rather than against the ledger, after T-149 showed the two had diverged",
+    "evidence": [
+     "frontend/src/lib/server/sourceTerms.ts",
+     "docs/audits/terms-review-news-2026-09-14.md"
+    ]
+   }
   },
   {
    "id": "T-145",
    "title": "Dow Jones feed host (dowjones.io) — read MarketWatch terms, verify",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "terms-review",
@@ -5360,12 +5451,24 @@
      "lines": "153-179",
      "quote": "| Summary | Dow Jones (MarketWatch feed delivery): permitted subject to 3 condition(s) — Headline, link and feed summary only; Attribute MarketWatch and link back; Personal, non-commercial use. ⚠ Seeded entry — the terms document has not been read for this project; treat as a working assumption, not a clearance. |"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-23",
+    "basis": "verified-here",
+    "verdict": "already-done",
+    "reason": "READ 2026-09-20 together with T-146, same document as the item anticipated. dowjones.io is review: 'verified', verdict 'prohibited' — Dow Jones ToU §9.1 names RSS content expressly and §9.4.1 bars automated ingestion without prior written consent. Now a pinnedFetch socket block.",
+    "swept_by": "terms-cluster sweep 2026-09-23 — checked each item against the REGISTRY rather than against the ledger, after T-149 showed the two had diverged",
+    "evidence": [
+     "frontend/src/lib/server/sourceTerms.ts",
+     "docs/audits/terms-review-news-2026-09-20.md"
+    ]
+   }
   },
   {
    "id": "T-146",
    "title": "MarketWatch terms — read, conclude, verify",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "terms-review",
@@ -5380,12 +5483,24 @@
      "lines": "183-209",
      "quote": "| Summary | MarketWatch: permitted subject to 3 condition(s) — Headline, link and feed summary only; Attribute and link back; Personal, non-commercial use. ⚠ Seeded entry — the terms document has not been read for this project; treat as a working assumption, not a clearance. |"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-23",
+    "basis": "verified-here",
+    "verdict": "already-done",
+    "reason": "READ 2026-09-20. Both dowjones.io and marketwatch.com flipped in one pass exactly as the item asked. Both 'prohibited'; the mw_bulletins feed was removed from macro-news ON TERMS, not availability — the feed still serves 200.",
+    "swept_by": "terms-cluster sweep 2026-09-23 — checked each item against the REGISTRY rather than against the ledger, after T-149 showed the two had diverged",
+    "evidence": [
+     "frontend/src/lib/server/sourceTerms.ts",
+     "docs/audits/terms-review-news-2026-09-20.md"
+    ]
+   }
   },
   {
    "id": "T-147",
    "title": "CNBC (NBCUniversal) terms — read, conclude, verify",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "terms-review",
@@ -5400,12 +5515,24 @@
      "lines": "213-238",
      "quote": "| Summary | CNBC: permitted subject to 2 condition(s) — Headline, link and feed summary only; Attribute CNBC and link back. ⚠ Seeded entry — the terms document has not been read for this project; treat as a working assumption, not a clearance. |"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-23",
+    "basis": "verified-here",
+    "verdict": "already-done",
+    "reason": "READ 2026-09-14. Public per-desk RSS feeds, headline/link/summary with attribution and a link back. verified, conditional.",
+    "swept_by": "terms-cluster sweep 2026-09-23 — checked each item against the REGISTRY rather than against the ledger, after T-149 showed the two had diverged",
+    "evidence": [
+     "frontend/src/lib/server/sourceTerms.ts",
+     "docs/audits/terms-review-news-2026-09-14.md"
+    ]
+   }
   },
   {
    "id": "T-148",
    "title": "Investing.com terms — read, conclude, verify",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "terms-review",
@@ -5420,12 +5547,24 @@
      "lines": "242-267",
      "quote": "| Summary | Investing.com: permitted subject to 2 condition(s) — RSS feed only — never scrape the HTML site; Headline, link and summary only, with attribution. ⚠ Seeded entry — the terms document has not been read for this project; treat as a working assumption, not a clearance. |"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-23",
+    "basis": "verified-here",
+    "verdict": "already-done",
+    "reason": "READ 2026-09-20 — the Terms are a 21-page PDF the HTML page embeds. ⚠ The item PREDICTED the wrong outcome: it said \"the finding already asserts a personal/non-commercial feed clause, so if confirmed this host joins the T-151 set\". It was not confirmed. The document never mentions RSS or syndication; what it has is Limitations on Use (c) barring automated extraction, and the prior \"headline, link and summary with attribution\" condition was invented rather than read. So Investing.com does NOT join the T-151 personal-vs-commercial set — it raises a different question, recorded on the entry as an unresolved tension between a published feed that robots.txt permits and a general extraction bar.",
+    "swept_by": "terms-cluster sweep 2026-09-23 — checked each item against the REGISTRY rather than against the ledger, after T-149 showed the two had diverged",
+    "evidence": [
+     "frontend/src/lib/server/sourceTerms.ts",
+     "docs/audits/terms-review-news-2026-09-20.md"
+    ]
+   }
   },
   {
    "id": "T-150",
    "title": "FXStreet terms — read, conclude, verify",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "terms-review",
@@ -5440,12 +5579,24 @@
      "lines": "300-325",
      "quote": "| Summary | FXStreet: permitted subject to 2 condition(s) — Headline, link and feed summary only; Attribute and link back. ⚠ Seeded entry — the terms document has not been read for this project; treat as a working assumption, not a clearance. |"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-23",
+    "basis": "verified-here",
+    "verdict": "already-done",
+    "reason": "READ 2026-09-14. Public RSS feed, syndication with attribution and a link back. verified, conditional.",
+    "swept_by": "terms-cluster sweep 2026-09-23 — checked each item against the REGISTRY rather than against the ledger, after T-149 showed the two had diverged",
+    "evidence": [
+     "frontend/src/lib/server/sourceTerms.ts",
+     "docs/audits/terms-review-news-2026-09-14.md"
+    ]
+   }
   },
   {
    "id": "T-152",
    "title": "FMP terms — read site.financialmodelingprep.com/terms-of-service and answer the three questions",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "terms-review",
@@ -5479,7 +5630,19 @@
      "lines": "29",
      "quote": "FMP terms posture (tier-dependent vs personal-on-every-tier) unresolved — load-bearing source (7 live-data routes)."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-23",
+    "basis": "verified-here",
+    "verdict": "already-done",
+    "reason": "PREMISE FALSE — the reading happened on 2026-09-13 and is recorded at docs/audits/terms-review-fmp-2026-09-13.md, with the entry at sourceTerms.ts carrying review: 'verified', reviewedAt: '2026-09-13'. All three questions this item lists are answered there: (1) is there a personal-only clause — YES, §2.2.1 grants personal, non-business, non-commercial use only; (2) does it vary by plan — NO, §2.2.2 bars multi-user deployment 'irrespective of whether such usage is complimentary or paid'; (3) is there a separate paid-key licence — broader rights come from an Order Form under §2.1, not from a higher tier.",
+    "approved_by": "closed alongside D22, 2026-09-23",
+    "evidence": [
+     "docs/audits/terms-review-fmp-2026-09-13.md",
+     "frontend/src/lib/server/sourceTerms.ts — financialmodelingprep.com entry"
+    ]
+   }
   },
   {
    "id": "T-155",
@@ -5593,7 +5756,7 @@
   {
    "id": "T-240",
    "title": "YouTube — read the API Services ToS, not the consumer site terms",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "terms-review",
@@ -5616,7 +5779,18 @@
      "lines": "2026-09-02",
      "quote": "Three unresolved (YouTube read the wrong document, Tiingo is layered under a licence nobody has read, Bitget outright) and four read against the right document (Twelve Data, Finnhub, Binance.US, OilPrice). Nothing here is a verdict and no entry is flipped to verified."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-23",
+    "basis": "verified-here",
+    "verdict": "already-done",
+    "reason": "SATISFIED, and satisfied in the specific way the item insisted on: termsUrl on BOTH youtube.com and googleapis.com is https://developers.google.com/youtube/terms/api-services-terms-of-service — the API Services ToS, not the consumer site terms, which is the entire point of the item. Findings describe the keyed, quota-metered Data API v3 (100 units per search against 10,000/day), the player-embedding requirement and the caching window.",
+    "swept_by": "terms-cluster sweep 2026-09-23 — checked each item against the REGISTRY rather than against the ledger, after T-149 showed the two had diverged",
+    "evidence": [
+     "frontend/src/lib/server/sourceTerms.ts"
+    ]
+   }
   },
   {
    "id": "T-241",
@@ -5656,7 +5830,7 @@
   {
    "id": "T-242",
    "title": "Bitget — identify and read the operative terms document",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "terms-review",
@@ -5680,7 +5854,18 @@
      "lines": "2026-09-02",
      "quote": "Three unresolved (YouTube read the wrong document, Tiingo is layered under a licence nobody has read, Bitget outright) and four read against the right document (Twelve Data, Finnhub, Binance.US, OilPrice). Nothing here is a verdict and no entry is flipped to verified."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-23",
+    "basis": "verified-here",
+    "verdict": "already-done",
+    "reason": "SATISFIED. The operative document was located and termsUrl set to it — https://www.bitget.com/terms/legal/360014944032, a specific legal document rather than a landing page. The finding records the Terms of Use were read in a browser, and the RP-5 keyless-only condition is kept as the item required.",
+    "swept_by": "terms-cluster sweep 2026-09-23 — checked each item against the REGISTRY rather than against the ledger, after T-149 showed the two had diverged",
+    "evidence": [
+     "frontend/src/lib/server/sourceTerms.ts"
+    ]
+   }
   },
   {
    "id": "T-243",
@@ -5712,7 +5897,7 @@
   {
    "id": "T-244",
    "title": "Reddit — read the Data API Terms (entry stays seeded)",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "terms-review",
@@ -5734,12 +5919,24 @@
      "lines": "2026-08-29",
      "quote": "The probe could not fetch Reddit's Data API Terms, so that entry stays `seeded` on its terms while carrying a verified robots reading"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-23",
+    "basis": "verified-here",
+    "verdict": "already-done",
+    "reason": "SATISFIED, with the right document: termsUrl is https://redditinc.com/policies/data-api-terms — the Data API Terms the item named, not the site terms. Finding records that programmatic access requires registered OAuth credentials and that unauthenticated datacenter requests are refused BY DESIGN rather than by accident. ⚠ This item's own title still says \"(entry stays seeded)\", which has not been true since 2026-09-14. T-245 (whether to register OAuth and set REDDIT_CLIENT_ID) was gated on this and is now unblocked in substance.",
+    "swept_by": "terms-cluster sweep 2026-09-23 — checked each item against the REGISTRY rather than against the ledger, after T-149 showed the two had diverged",
+    "evidence": [
+     "frontend/src/lib/server/sourceTerms.ts",
+     "docs/audits/terms-review-news-2026-09-14.md"
+    ]
+   }
   },
   {
    "id": "T-249",
    "title": "StockTwits — read terms (low-confidence seeded; only social source served)",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "terms-review",
@@ -5754,7 +5951,19 @@
      "lines": "217-220",
      "quote": "The `low` ones (Reddit, StockTwits) are where public terms are least explicit about\nthird-party display use."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-23",
+    "basis": "verified-here",
+    "verdict": "already-done",
+    "reason": "READ 2026-09-14. verified, conditional, with attribution and display-only conditions recorded. ⚠ ONE RESIDUAL, recorded rather than waved past: the item asked for \"terms AND any API terms at api.stocktwits.com\". The finding covers the public symbol-stream endpoints and the site terms, but does not state whether a SEPARATE api.stocktwits.com terms document was looked for and found absent, or simply not sought. Closing on the site-terms reading, which is the operative document for display; if a distinct API terms document surfaces, reopen rather than assume this covered it.",
+    "swept_by": "terms-cluster sweep 2026-09-23 — checked each item against the REGISTRY rather than against the ledger, after T-149 showed the two had diverged",
+    "evidence": [
+     "frontend/src/lib/server/sourceTerms.ts",
+     "docs/audits/terms-review-news-2026-09-14.md"
+    ]
+   }
   },
   {
    "id": "T-250",
@@ -5783,10 +5992,10 @@
   },
   {
    "id": "T-251",
-   "title": "publicnode.com terms — seeded low confidence, needs a read",
+   "title": "publicnode.com — owner judgement on the broadest terms clause in the registry",
    "status": "open",
    "confidence": "high",
-   "owner_role": "owner-machine",
+   "owner_role": "owner-decision",
    "category": "terms-review",
    "effort": "small",
    "blocking_decision": null,
@@ -5794,14 +6003,21 @@
     "S3"
    ],
    "summary": "Keyless EVM gas RPC host.",
-   "next_action": "Owner: find PublicNode/Allnodes' terms or acceptable-use page (publicnode.com / allnodes.com), confirm free public RPC use with the app's one-read-per-revalidate pattern is permitted, set termsUrl to that document and flip to verified.",
+   "next_action": "Owner decides whether to keep reading publicnode.com's prohibition narrowly. The terms WERE read on 2026-09-14 and are quoted verbatim on the entry: the user agrees not to \"modify, copy, frame, scrape, rent, lease, loan, sell, re-use, display, distribute, transmit, publish, re-publish, distribute or create derivative works based on the Service or the Service Content commercially and non-commercially\". Read literally that bars using the service at all, since an RPC provider's product IS answering calls and every consumer re-uses the response — which cannot be the intent, and narrowing it is not a maintainer's call. Scope bounds the exposure: one route (/live-data/wallet/eth), and /wallets is already hidden from rollout. Separately and smaller: termsUrl points at https://www.publicnode.com/ — the HOMEPAGE, not the document the finding quotes. A verified entry should link the document that was read.",
    "sources": [
     {
      "file": "git:01d6bfe",
      "lines": "2026-08-22",
      "quote": "publicnode.com registered in sourceTerms (seeded, low confidence, conditions recorded); dataSources notes updated; npm run gas-probe added for the owner-machine availability verdict."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-09-23",
+    "note": "RE-SCOPED, not closed. The item was filed as owner-MACHINE work (\"seeded low confidence, needs a read\"), and on both counts it is stale: the entry is verified and the document has been read. What is left is an owner DECISION, which is a different kind of work and a different queue. The entry says so itself: \"review was ratified verified on 2026-09-18 to record that the document HAS been read; the judgement above is still outstanding and is the owner's.\" An item that keeps asking for a read that happened hides a decision that has been waiting nine days.",
+    "evidence": [
+     "frontend/src/lib/server/sourceTerms.ts"
+    ]
+   }
   },
   {
    "id": "T-252",
@@ -6485,22 +6701,31 @@
   {
    "id": "T-247",
    "title": "Conditional: stop rendering feed summaries if any publisher permits headline-and-link only",
-   "status": "blocked",
+   "status": "open",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "feature",
    "effort": "medium",
-   "blocking_decision": "Owner-machine news-publisher terms reads (`npm run terms:report -- --news`) — does any of the ten publishers permit headline-and-link only?",
+   "blocking_decision": null,
    "related_ids": [],
    "summary": "Code change to news/market-news/macro-news routes.",
-   "next_action": "Wait for the news terms worksheet to be re-run and read on the owner's machine; if any publisher is headline-and-link-only, add a per-source 'summaryAllowed' flag to the registry and blank summary for that source in news/market-news/macro-news routes.",
+   "next_action": "RE-SCOPE FIRST, then build. The original trigger — \"if any publisher is headline-and-link-only, blank the summary for that source\" — is not met by any publisher, and will not be: the 2026-09-20 readings produced a state the item's model had no slot for. CoinDesk and Investing.com grant NO DISPLAY PERMISSION AT ALL (stricter than headline-and-link-only), each kept 'conditional' by a deliberate owner scope judgement rather than by a permissive clause. Every other publisher explicitly permits headline/link/SUMMARY. So the per-source flag this item proposes is still the right mechanism, but its trigger is now \"the owner resolves either scope question toward prohibited\", not \"a publisher is headline-and-link-only\". Build it when that happens, or build it now as the switch that makes resolving it cheap.",
    "sources": [
     {
      "file": "docs/architecture/source-terms.md",
      "lines": "197-199",
      "quote": "What may be **displayed** — headline and link only, or headline + summary? The\n   route renders the feed summary, so a headline-and-link-only policy is a code\n   change, not a note."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-09-23",
+    "note": "UNBLOCKED — its blocker was \"wait for the news terms worksheet to be re-run and read on the owner's machine\", and that happened on 2026-09-14 and 2026-09-20. But the answer does not fit the question. ⚠ TWO ACTIVE FEEDS ARE AFFECTED and both currently render summaries: coindesk-rss in /live-data/news (route.ts:358) and three Investing.com feeds in /live-data/macro-news, with summaries sliced to 280 chars. This is NOT reported as a defect — the owner decided on 2026-09-20 to keep both conditional, knowing the readings proposed prohibited, because the scope question is genuinely open (neither document mentions feeds, and both publishers publish the feeds and permit them in robots.txt). It is recorded so that resolving the scope question has a known blast radius instead of a rediscovery. ⚠ SEPARATE, SMALL, AND REAL: the CoinDesk entry's comment says \"`whatMayBeDisplayed` is recorded as UNCLEAR rather than headline-and-link-only\" — but whatMayBeDisplayed IS NOT A FIELD on SourceTermsEntry (the interface carries domain, name, verdict, termsUrl, finding, conditions?, review, reviewedAt, confidence, robotsDisallowed?). The distinction the comment calls \"the point\" is therefore recorded in prose only, and the one place a reader would look for it machine-readably has nothing in it. If this item builds a per-source display flag, that flag is where UNCLEAR belongs.",
+    "evidence": [
+     "frontend/src/lib/server/sourceTerms.ts",
+     "frontend/src/app/live-data/news/route.ts",
+     "frontend/src/app/live-data/macro-news/route.ts"
+    ]
+   }
   },
   {
    "id": "T-204",
@@ -6995,12 +7220,12 @@
   {
    "id": "T-092",
    "title": "Apply annotation: NT10 superseded by RP-6 (pending owner approval)",
-   "status": "blocked",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "docs",
    "effort": "small",
-   "blocking_decision": "Owner approval of the proposed 'NT10/RP-4 superseded by RP-6' annotation (steward protocol: propose → approve → apply)",
+   "blocking_decision": null,
    "related_ids": [
     "NT10",
     "RP-6"
@@ -7013,7 +7238,29 @@
      "lines": "8,11",
      "quote": "NT10 superseded by RP-6 (per-coin risk score removed everywhere 2026-08-29)."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "blocked",
+    "closed_on": "2026-09-23",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "APPROVED and APPLIED. Owner, 2026-09-23: \"yes, apply both annotations\". The approved wording — \"Superseded by RP-6, 2026-08-29 — no score exists whose history could be persisted\" — is now at all four locations the item named.",
+    "applied_at": [
+     "docs/audits/rejected-proposals.md — RP-4 row, reopen-trigger column (was line 42)",
+     "docs/assessments/P3-production-review.md — NT10 decision row (item cited :782, actual :819)",
+     "docs/assessments/P3-production-review.md — the deferred-with-unblocker list (cited :899, actual :936)",
+     "docs/assessments/P3-production-review.md — the D-6 note (cited :1009, actual :1046)"
+    ],
+    "verified_before_applying": "The approved wording asserts no score exists, and RP-6's own row reads 'Removed (partial)' and says the Composite Risk panel STAYS — which would have made the annotation false. It is not: the same row carries an 'AMENDED SAME DAY — the panel goes too' clause further in, and the tree agrees. `lib/risk/__tests__/riskScoringRemoved.test.ts` is green at 15 tests pinning the deletions, `HistoricalScoreChart` survives only as a path string inside that guard, and `(dashboard)/risk-scores` and `live-data/risk-scores` are empty directories.",
+    "one_thing_the_annotation_had_to_add": "The approved sentence supersedes RP-4's reopen trigger without naming a successor, which would leave the row a dead end — a rejected-for-now item whose only route back can no longer fire. Each location therefore also names RP-6's trigger (a regulatory review concluding an explanatory per-coin figure is publishable) as the one that governs now, and the order it implies: the panel and its route come back from git history first, and only then is NT10 a live question again.",
+    "line_numbers_had_drifted": "All four cited line numbers were stale by exactly +37 lines. Located by content, never by number — a line-numbered annotation applied blind would have landed in the middle of unrelated rows.",
+    "approved_by": "owner, 2026-09-23",
+    "evidence": [
+     "docs/audits/rejected-proposals.md",
+     "docs/assessments/P3-production-review.md",
+     "frontend/src/lib/risk/__tests__/riskScoringRemoved.test.ts"
+    ]
+   }
   },
   {
    "id": "T-093",
@@ -7096,12 +7343,12 @@
   {
    "id": "T-154",
    "title": "FMP rollout-scope decision on market-calendar and stock-universe if the reading is restrictive",
-   "status": "blocked",
+   "status": "open",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "decision",
    "effort": "unknown",
-   "blocking_decision": "FMP terms reading (T-152): is free-tier use restricted to personal/non-commercial, and does it vary by plan?",
+   "blocking_decision": null,
    "related_ids": [],
    "summary": "/equities/calendar would go dark; stock-universe collapses to the curated catalog.",
    "next_action": "No action until T-152 returns a restrictive reading; then the owner decides whether /equities/calendar goes dark and the Stock Registry ships on the curated catalog, or a paid FMP plan is bought at release (consistent with the 'free-tier until near release' constraint).",
@@ -7111,7 +7358,16 @@
      "lines": "234-252, 272-273",
      "quote": "So the honest summary is: **two surfaces die or collapse, the rest degrade.**\nThat is a rollout-scope question, not a cleanup task."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-09-23",
+    "note": "UNBLOCKED, and this is the sharper of the two. The blocker was \"FMP terms reading (T-152): is free-tier use restricted to personal/non-commercial, and does it vary by plan?\" That reading happened on 2026-09-13 (docs/audits/terms-review-fmp-2026-09-13.md) and T-152 closed today. ⚠ It did not come back permissive. §2.2.1 grants personal, non-business, non-commercial use only, and §2.2.2 bars multi-user deployment \"irrespective of whether such usage is complimentary or paid\". This item's own title is \"…if the reading is restrictive\" — so its condition is MET and the decision it describes is now owed rather than contingent. Two things keep it from being urgent today. Under D22 State 1 nobody but the owner can load a page, so the free tier is within licence AS THE APP STANDS and /equities/calendar does NOT need to go dark now. And D21 defers the paid half. What is NOT deferred is the design half: whether the Stock Registry ships on the 79-name curated catalog and the calendar goes dark, or an Order Form is obtained. §2.2.2 means a plan upgrade is not one of the options — broader rights come from an Order Form under §2.1, which is enquiry #1 in docs/licensing/2026-09-20-provider-enquiries.md and is unsent.",
+    "evidence": [
+     "docs/audits/terms-review-fmp-2026-09-13.md",
+     "docs/decisions/2026-09-23-owner-decisions.md",
+     "docs/licensing/2026-09-20-provider-enquiries.md"
+    ]
+   }
   },
   {
    "id": "T-195",
@@ -7605,12 +7861,12 @@
   {
    "id": "T-396",
    "title": "Apply annotation: item 14b superseded by the 2026-08-20 cut (pending owner approval)",
-   "status": "blocked",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "docs",
    "effort": "small",
-   "blocking_decision": "Approve annotating docs/assessments/P3-production-review.md line 937 (item 14b) and docs/TASK-QUEUE.md §'P3-W2 item 14' (line 2070) as: 'SUPERSEDED 2026-08-20 — CUT chosen by the owner (RP-2 reopen trigger fired): Budget and Retirement pages, routes and libs deleted; DB tables and imported bank history retained in lib/db/schema/budget.ts.'",
+   "blocking_decision": null,
    "related_ids": [
     "item 14b"
    ],
@@ -7622,7 +7878,27 @@
      "lines": "8,10",
      "quote": "Item 14b's \"awaiting explicit call\" is superseded by the 2026-08-20 CUT (budget/retirement pages deleted, `lib/db/schema/budget.ts` retained)."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "blocked",
+    "closed_on": "2026-09-23",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "APPROVED and APPLIED. Owner, 2026-09-23: \"yes, apply both annotations\". The approved wording — \"SUPERSEDED 2026-08-20 — CUT chosen by the owner (RP-2 reopen trigger fired): Budget and Retirement pages, routes and libs deleted; DB tables and imported bank history retained in lib/db/schema/budget.ts.\" — is now a dated blockquote at both locations.",
+    "applied_at": [
+     "docs/assessments/P3-production-review.md — the 14b row that still read \"Awaiting an explicit call\" (item cited :937, actual :974)",
+     "docs/TASK-QUEUE.md — §\"P3-W2 item 14 — Budget removal: NOT actioned, awaiting an explicit call\" (cited :2070, actual :2097)"
+    ],
+    "two_writer_rule_discharged": "The item's next_action requires the steward to read docs/audits/rejected-proposals.md RP-2 first. Done: RP-2 records the same reversal from the decision side — the 2026-08-17 rejection stands as written, its reopen trigger FIRED on 2026-08-20 on the owner's words (\"remove the budget and retirement tools. We will build this out in a completely different tool\"), and the DB tables were retained deliberately so no DROP migration can fire. The two records now agree instead of one saying the question is open.",
+    "what_was_actually_stale": "Both locations claimed the removal was awaiting a decision that had already been made and executed three days later. That is the worst shape for a status line: not a wrong fact, a live-sounding open question that sends a reader to re-decide something already shipped.",
+    "annotated_not_rewritten": "Both original passages are kept in full — struck through where they state the stale status, with the superseding note dated beside them and a line saying plainly that what follows is the reasoning the reversal overtook, not a claim that was wrong when written. Same treatment RP-2 already gives itself.",
+    "approved_by": "owner, 2026-09-23",
+    "evidence": [
+     "docs/assessments/P3-production-review.md",
+     "docs/TASK-QUEUE.md",
+     "docs/audits/rejected-proposals.md"
+    ]
+   }
   },
   {
    "id": "T-026",
@@ -7945,12 +8221,12 @@
   {
    "id": "T-149",
    "title": "OilPrice.com terms — read, conclude, verify",
-   "status": "blocked",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "terms-review",
    "effort": "small",
-   "blocking_decision": "Is Finance Now personal/internal, or commercial?",
+   "blocking_decision": null,
    "related_ids": [],
    "summary": "Also in the personal-vs-commercial set.",
    "next_action": "Wait for the T-151 answer; then on the owner's machine re-read https://oilprice.com/terms-of-use to decide whether the Disclaimers clause reaches RSS syndication, and flip to verified with the resulting verdict.",
@@ -7960,17 +8236,36 @@
      "lines": "271-296",
      "quote": "| Summary | OilPrice.com: permitted subject to 2 condition(s) — Headline, link and feed summary only; Attribute and link back. ⚠ Seeded entry — the terms document has not been read for this project; treat as a working assumption, not a clearance. |"
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-09-23",
+    "note": "CORRECTION, same day. The note I wrote on this item during the D22 pass said it \"still needs the owner's machine: re-read https://oilprice.com/terms-of-use and decide whether the Disclaimers clause reaches RSS syndication\". That was wrong twice over, and I checked the ledger instead of the registry before writing it. (1) THE READING ALREADY HAPPENED. sourceTerms.ts carries oilprice.com as review: 'verified', reviewedAt: '2026-09-14', verdict 'conditional', with the finding \"Publishes a public RSS feed and permits syndication of headline/link/summary with attribution and a link back\" and conditions [\"Headline, link and feed summary only\", \"Attribute and link back\"]. That is the syndication question answered, not deferred. (2) THE URL I NAMED IS DEAD. The entry's own comment records that /terms-of-use has returned a SOFT 404 since 2026-09-13 — 93KB of page body under a 404 status, which is why a status-blind probe scored it reachable. The live document is /terms-and-conditions. Anyone following my note would have re-read a 404 and concluded the terms were unreachable. What remains for this item is a steward's verdict on whether it is satisfied — the registry work is done, and OilPrice permitting SUMMARIES (not headline-and-link only) means it is not one of the publishers T-247 would force a code change for.",
+    "evidence": [
+     "frontend/src/lib/server/sourceTerms.ts — oilprice.com entry"
+    ]
+   },
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-23",
+    "basis": "verified-here",
+    "verdict": "already-done",
+    "reason": "READ 2026-09-14. Permits syndication of headline/link/summary with attribution and a link back. ⚠ See this item's own 2026-09-23 progress note: I asserted earlier the same day that this still needed reading, and pointed at /terms-of-use — a soft 404 since 2026-09-13. The live document is /terms-and-conditions and the entry records both facts.",
+    "swept_by": "terms-cluster sweep 2026-09-23 — checked each item against the REGISTRY rather than against the ledger, after T-149 showed the two had diverged",
+    "evidence": [
+     "frontend/src/lib/server/sourceTerms.ts",
+     "docs/audits/terms-review-news-2026-09-14.md"
+    ]
+   }
   },
   {
    "id": "T-153",
    "title": "Twelve Data, Finnhub, Binance.US, OilPrice — apply the personal-vs-commercial answer and flip to verified",
-   "status": "blocked",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "terms-review",
    "effort": "small",
-   "blocking_decision": "Is Finance Now personal/internal, or commercial?",
+   "blocking_decision": null,
    "related_ids": [],
    "summary": "Confirmed probed against the right documents on 2026-08-30.",
    "next_action": "Once T-151 is answered, edit the four entries in frontend/src/lib/server/sourceTerms.ts: set the verdict implied by the answer (conditional with the clause quoted, or prohibited), review: 'verified', reviewedAt: <date>, and open a PR; if 'commercial', also plan replacement/removal of Finnhub (bluntest redistribution clause).",
@@ -7980,7 +8275,25 @@
      "lines": "160-174, 191-193",
      "quote": "of the seven, **three are unresolved** (YouTube by the wrong document, Tiingo by the layered licence, Bitget outright) and **four were read against the right document** (Twelve Data, Finnhub, Binance.US, OilPrice)."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-09-23",
+    "note": "UNBLOCKED by D22 (2026-09-23). The blocking question is answered. ⚠ But the action this item describes has largely been OVERTAKEN: it asks to 'set the verdict implied by the answer (conditional ... or prohibited)', and the answer implies NEITHER change — all four entries are already 'conditional' and already 'verified', which is correct under D22 because the licences are satisfied while the app stays single-user. What was actually needed, and is done, is making the CONDITION explicit: each of the four now carries a D22 condition naming the single-user constraint, the first-non-owner-page-load trigger, and that provider's own route to a multi-user licence. What remains for this item is OilPrice, which is T-149's subject. ── STATUS CORRECTED 2026-09-23: this item was left at status \"blocked\" with blocking_decision: null by the same D22 pass that unblocked it — a half-update. It is open, and has been since D22 was recorded.",
+    "evidence": [
+     "docs/decisions/2026-09-23-owner-decisions.md"
+    ]
+   },
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-23",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "APPLIED. Three of the four named entries — Twelve Data, Finnhub, Binance.US — received an explicit D22 condition earlier today naming the single-user constraint, the first-non-owner-page-load trigger, and each provider's own route to a multi-user licence. The fourth, OilPrice, needed nothing and that is a finding rather than an omission: it is a keyless content source whose reading records no personal-vs-commercial restriction at all — \"permits syndication of headline/link/summary with attribution and a link back\". There is no clause for the D22 answer to act on. ⚠ The item asked to \"set the verdict implied by the answer (conditional … or prohibited)\". The answer implied NEITHER change: all four were already conditional and already verified, which is correct under D22 because the licences are satisfied while the app stays single-user. What was actually owed was making the CONDITION explicit, and that is what was done.",
+    "evidence": [
+     "frontend/src/lib/server/sourceTerms.ts",
+     "docs/decisions/2026-09-23-owner-decisions.md"
+    ]
+   }
   },
   {
    "id": "T-368",
@@ -8032,7 +8345,7 @@
    "owner_role": "owner-machine",
    "category": "terms-review",
    "effort": "medium",
-   "blocking_decision": "T-118 (staking affiliate pattern) shipped, and an owner-machine terms read confirming brokerage programs permit placement in a research context",
+   "blocking_decision": "An owner-machine terms read confirming brokerage referral programs permit placement in a research/comparison context. (The other half of this blocker — \"T-118 (staking affiliate pattern) shipped\" — was SATISFIED 2026-09-21 when T-118 closed; rewritten 2026-09-23 so the remaining half is not obscured by a clause that is already met.)",
    "related_ids": [
     "P2"
    ],
@@ -8044,7 +8357,14 @@
      "lines": "401",
      "quote": "Equities/Funds modules — brokerage referrals, if the terms allow a research context."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-09-23",
+    "note": "HALF-UNBLOCKED. T-118 shipped the staking affiliate pattern (closed 2026-09-21), so the shared component this item extends now exists. The remaining blocker is unchanged and is owner-machine work: reading the candidate brokerage programs' terms on a machine that reaches them. ⚠ D22 makes that read harder rather than easier, and the item should not be picked up without noticing why: an affiliate placement is a commercial arrangement on a surface that, under D22, is intended to become publicly reachable. A programme's terms have to be read against the deployment that will exist at release, not the single-user app today. It also sits behind LEGAL-REVIEW §3.B and §3.C (entity formation and the disclosure set) — group E there says plainly that nothing in this cluster ships before those.",
+    "evidence": [
+     "docs/LEGAL-REVIEW.md"
+    ]
+   }
   },
   {
    "id": "T-363",
@@ -35482,6 +35802,70 @@
     "caveat": "The widening is a PRODUCT judgement, not a data fix: it asserts that wstETH and its siblings belong under `eth` in this app's coin vocabulary. Its boundary — liquid-staking derivatives in, synthetics like alETH and msETH out — is pinned by test rather than comment, because 'everything ending in ETH' is the tempting and wrong version.",
     "evidence": [
      "docs/proposals/2026-09-22-decision-options.md"
+    ]
+   },
+   {
+    "on": "2026-09-23",
+    "what": "T-151 — the keystone — closed on owner decision D22. T-152 closed as premise-false. T-153 and T-149 unblocked.",
+    "basis_key": "D22 is a TRAJECTORY answer, not a binary one: personal today, commercial by intent. The item's next_action had explicitly allowed for that shape ('true now or only at release'), which is why it resolves cleanly rather than ambiguously.",
+    "caveat": "The most misreadable thing about D22 is that it sounds like good news. Today nothing is owed — but the trigger is the FIRST NON-OWNER PAGE LOAD, not a launch date and not monetisation, and the seven drafted provider enquiries in docs/licensing/2026-09-20-provider-enquiries.md are now LAUNCH-BLOCKING and still unsent. Binance.US is the longest-lead of the four because it names no route at all; the reading cannot distinguish 'undocumented route' from 'no route', and only Binance.US can.",
+    "evidence": [
+     "docs/decisions/2026-09-23-owner-decisions.md"
+    ]
+   },
+   {
+    "on": "2026-09-23",
+    "what": "Swept all 73 blocked items for anything D22 freed. Result: 3 items moved (T-149, T-153, T-154), 1 half-cleared (T-124), and the large decision-blocked cluster is UNTOUCHED by D22 — deliberately.",
+    "method": "Grouped every blocked item by its blocking_decision text. 71 distinct blockers across 73 items, so this was never a \"one decision frees many\" shape. Reframed to the question worth asking: has any blocker been resolved by ANYTHING since it was written? Cross-referenced blocker text against (a) closed item ids and (b) recorded decision ids.",
+    "what_moved": [
+     "T-149 + T-153 — status \"blocked\" with blocking_decision: null. Not a discovery: the D22 pass earlier today nulled the blocker and failed to move the status. Corrected to open.",
+     "T-154 — blocker cited T-152, which closed today. ⚠ The FMP reading came back RESTRICTIVE, so this item's \"if the reading is restrictive\" condition is met and its decision is owed, not contingent.",
+     "T-124 — compound blocker, first clause satisfied by T-118 closing 2026-09-21. Blocker rewritten to the remaining owner-machine terms read; status stays blocked."
+    ],
+    "the_negative_result": "⚠ 14 blockers name a decision id (D1, D2, D5, RP-2 through RP-6). NONE is freed by D22, and two of them are worth stating explicitly because they look like they should be. T-192 (billing model: per-module licences vs tiered bundles) is NOT freed — D22's own \"what it deliberately does NOT decide\" section names monetisation first: answering T-151 never required it. Commercial-by-intent is not a pricing model. T-093 (D5 — hard-guard or remove MCP run_audit before any external distribution) is NOT freed either, but D22 changes its temperature: it was conditional on external distribution ever happening, and D22 establishes that as the stated goal. The question is now live with a trigger attached rather than hypothetical. The remaining cluster — T-200, T-204, T-205, T-208, T-209, T-213 — is all one blocker wearing six hats: WHICH HOSTING PATH SHIPS (AWS/Terraform vs Vercel+Neon vs VPS). That is the single highest-leverage unmade decision in the blocked set, and D22 does not touch it. T-012, T-123, T-220 and T-357 are RP-3/RP-5/RP-6 boundary questions on risk figures and affiliate surfaces, all untouched.",
+    "two_are_not_decision_blocked_at_all": "T-092 and T-396 are steward annotations sitting in propose→approve→apply, waiting on a yes or no rather than on a decision anyone has to make. T-092: annotate NT10/RP-4 as superseded by RP-6. T-396: annotate P3-production-review.md item 14b and TASK-QUEUE.md §P3-W2 item 14 as superseded by the 2026-08-20 cut. Both are one word from the owner and neither needs any of the above.",
+    "caveat": "The honest summary of this sweep is that D22 freed almost nothing, and two of the three items that moved were my own bookkeeping error from the pass that recorded it. The keystone decision unblocked the four items its own next_action predicted and nothing else — which is what a keystone that was scoped correctly looks like, not a disappointment.",
+    "evidence": [
+     "docs/decisions/2026-09-23-owner-decisions.md",
+     "docs/LEGAL-REVIEW.md"
+    ]
+   },
+   {
+    "on": "2026-09-23",
+    "what": "Applied the two approved steward annotations: T-092 (NT10/RP-4 superseded by RP-6) and T-396 (P3-W2 item 14b superseded by the 2026-08-20 cut). Both closed.",
+    "protocol": "propose → approve → apply, completed. Owner approval 2026-09-23: \"yes, apply both annotations\".",
+    "worth_carrying_forward": "Every one of the six cited line numbers had drifted — +37 in P3-production-review.md, +27 in TASK-QUEUE.md — so a proposal that sits long enough to be approved has outlived its own coordinates. Each was relocated by content and the apply script aborted unless all six anchors matched exactly once. A line-numbered annotation applied blind lands in unrelated rows and looks authoritative there.",
+    "and_one_near_miss": "T-092's approved wording asserts that no score exists whose history could be persisted. RP-6's row opens with 'Removed (partial)' and states the Composite Risk panel stays, which would have made the annotation false — it is only the same row's later 'AMENDED SAME DAY — the panel goes too' clause that makes it true. Verified against the tree before writing rather than against the first line of the record.",
+    "still_pending": "T-395 is a third annotation of the same shape and was NOT approved — T-396's own next_action says the two should go to the owner together, so it is surfaced rather than assumed covered.",
+    "evidence": [
+     "docs/audits/rejected-proposals.md",
+     "docs/assessments/P3-production-review.md",
+     "docs/TASK-QUEUE.md"
+    ]
+   },
+   {
+    "on": "2026-09-23",
+    "what": "Corrected my own progress note on T-149, and recorded a finding that reaches well past it: a block of open terms-reading items describes work the registry shows as already done.",
+    "the_error": "During the D22 pass I wrote that T-149 \"still needs the owner's machine\" to read OilPrice's terms, and named https://oilprice.com/terms-of-use. The entry has been verified since 2026-09-14, and that URL has been a soft 404 since 2026-09-13 — a fact recorded in the entry's own comment. I read the ledger item and not the registry it describes.",
+    "the_wider_finding": "Checked all 15 open items that name a host in the source-terms registry. EVERY ONE of those hosts is now review: 'verified' — T-141 CoinDesk, T-142 Cointelegraph, T-143 Decrypt, T-144 Bitcoin Magazine, T-145 dowjones.io, T-146 MarketWatch, T-147 CNBC, T-148 Investing.com, T-149 OilPrice, T-150 FXStreet, T-240 YouTube, T-242 Bitget, T-244 Reddit, T-249 StockTwits, T-251 publicnode. Several item titles still describe their entry as \"seeded\" or \"low-confidence seeded\", which has not been true since 2026-09-14 or 2026-09-20. This is the SAME SHAPE as this queue's headline failure: queue-closure-review-2026-09-13.md verified 62 items, recommended approving all 62, and the ledger write never happened. Verification, approval and the write are three separate acts and nothing connects them.",
+    "what_is_NOT_claimed": "That all 15 are closeable. At least two ask for something narrower than \"is the entry verified\": T-243 wants the rest of CoinGecko's API Terms beyond Scope of Use, and T-244 wants the Reddit DATA API Terms specifically, which is a different document from the site terms a 2026-09-14 reading would have covered. Each needs reading against what it actually asks before any verdict. The finding is that the cluster is far more done than 15 open rows suggest, not that it is finished.",
+    "registry_state_measured_today": "56 entries, 26 verified, 30 seeded. CLAUDE.md's stated 26/30 of 56 is accurate — no drift. The 30 still seeded are infrastructure and API hosts; the news publishers, which CLAUDE.md calls the priority, are ALL verified.",
+    "evidence": [
+     "frontend/src/lib/server/sourceTerms.ts"
+    ]
+   },
+   {
+    "on": "2026-09-23",
+    "what": "Terms-cluster sweep. 16 items closed as already-done, 2 re-scoped, 2 confirmed genuinely open, 1 premise corrected.",
+    "why_it_was_run": "Correcting my own wrong note on T-149 showed the ledger and the registry had diverged. Every item was then checked against the REGISTRY and the routes, never against the ledger row describing them.",
+    "the_pattern_again": "Sixteen items described work that was finished — the readings happened on 2026-09-14 and 2026-09-20, the entries were flipped, the audit documents were written, and no ledger row learned about any of it. Third instance in this queue: the 2026-09-13 closure review verified 62 items and never wrote; the D22 pass this morning nulled two blockers and left the statuses; this. Verification, approval and the write are three separate acts with nothing connecting them.",
+    "not_everything_verified_meant_done": "Six items asked for a SPECIFIC document, so 'the entry is verified' did not settle them and each was checked individually. Four held up — YouTube's termsUrl is the API Services ToS and not the consumer terms, Bitget's is a specific legal document, Reddit's is the Data API Terms. Two did not: T-243's finding still ends with the exact sentence the item exists to remove ('Scope of Use was read in full; the remainder of the document was not'), and T-251's reading is done but left an owner judgement the item never mentions.",
+    "two_readings_overturned_their_own_entries": "T-141 (CoinDesk) and T-148 (Investing.com) both closed on readings that CONTRADICTED the prior finding. Each had asserted \"syndication of headline/link/summary with attribution\"; neither document grants it, and both prior conditions were invented rather than read. Those two items closing is a wrong record corrected, not a formality — and T-148 specifically predicted it would join the T-151 personal-vs-commercial set, which the reading disproved.",
+    "one_defect_found": "The CoinDesk entry's comment states that `whatMayBeDisplayed` is recorded as UNCLEAR, calling the distinction 'the point'. There is no such field on SourceTermsEntry. The claim is true in prose and absent from the data — the registry's own failure mode, in a new costume. Filed against T-247, which is where the flag belongs.",
+    "evidence": [
+     "frontend/src/lib/server/sourceTerms.ts",
+     "docs/audits/terms-review-news-2026-09-14.md",
+     "docs/audits/terms-review-news-2026-09-20.md"
     ]
    }
   ]

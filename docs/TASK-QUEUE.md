@@ -2094,7 +2094,15 @@ test · the three surfaces' copy states what they actually compute · the engine
 decision is recorded either way · portfolios + crypto price-target math is pure and tested ·
 the T12 live cross-check is discharged on the owner's machine and dated.
 
-### P3-W2 item 14 — Budget removal: NOT actioned, awaiting an explicit call
+### P3-W2 item 14 — Budget removal: ~~NOT actioned, awaiting an explicit call~~ ACTIONED 2026-08-20
+
+> **SUPERSEDED 2026-08-20 — CUT chosen by the owner (RP-2 reopen trigger fired): Budget and Retirement pages, routes and libs deleted; DB tables and imported bank history retained in `lib/db/schema/budget.ts`.**
+>
+> Annotated 2026-09-23 on owner approval (T-396). The 2026-08-15 status below is
+> left exactly as written — it is the reasoning the reversal overtook, not a claim
+> that was wrong when made. RP-2 records the same reversal from the decision side:
+> the rejection was correct for its moment, and what changed is the premise (Budget
+> superseded by a different tool), not the reasoning.
 
 > **Status, 2026-08-15.** Item 14 of the owner's short list reads "remove the
 > budget tracker and use old retirement planner excel sheet to build retirement
