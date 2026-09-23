@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { clsx } from 'clsx'
@@ -880,6 +880,20 @@ export function FundsClient() {
                             <div key={i} className={clsx('col-span-1 text-right font-mono tabular-nums text-xs',
                               r == null ? 'text-text-muted' : r >= 0 ? 'text-emerald-400' : 'text-red-400')}>
                               {r == null ? '—' : formatPercent(r, 1)}
+                              {/* T-401: unadjusted closes distort a window containing a split or
+                                  distribution. FUNDS ARE THE CASE THAT MATTERS — for a mutual fund
+                                  distributions are the return, so an unadjusted figure here is not
+                                  slightly off, it is missing the point of the instrument. Served
+                                  with a marker rather than withheld, because no free held provider
+                                  has adjusted closes across funds. */}
+                              {displayReturns(row.symbol)?.adjusted === false && r != null && (
+                                <span
+                                  className="ml-0.5 align-super text-[9px] font-semibold text-amber-400"
+                                  title="Computed from unadjusted closes — this provider did not supply an adjusted price for every day in the window. For a fund, distributions are a large part of total return, so treat this figure as a floor rather than a measurement."
+                                >
+                                  unadj
+                                </span>
+                              )}
                             </div>
                           ))
                         )}

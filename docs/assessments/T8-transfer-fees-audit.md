@@ -119,6 +119,13 @@ Per-exchange fee spot-check against current published schedules; and, if approve
 
 Also noted: `computeSegmentOptions()` is dead code (its custom-route-builder consumer is gone).
 
+> **⚠ OUTCOME (added 2026-09-21) — `computeSegmentOptions()` has since been deleted.**
+> It and its `SegmentOption` type are absent from `frontend/src` entirely;
+> `transferFees.ts` is now 2,166 lines (the item that tracked this cited `:2207`)
+> and its last export is `findTransferPaths()` at `:1907`. The line above is left
+> as written — it records what was found on the audit date. Tracked as queue item
+> T-262.
+
 ### Live fee spot-check (the pass the first audit deferred)
 
 Exchange APIs (KuCoin/HTX/Binance) 403 datacenter IPs, so verification went through currently

@@ -257,18 +257,34 @@ async function fetchYearn(minTvl: number, minApy: number, coinFilter: string | n
 }
 
 // ─── Pendle Finance ───────────────────────────────────────────────────────────
-// Endpoint: https://api-v2.pendle.finance/core/v1/sdk/1/markets
+// Endpoint: https://api-v2.pendle.finance/core/v1/1/markets
 // Yield tokenization markets — PT/YT on staked assets like wstETH, rETH, etc.
 
+// ⚠ REPOINTED 2026-09-22 (T-399). The old `/core/v1/sdk/1/markets` path 404s; the host
+// was never down. Three things moved with it, and only the first is visible in a diff:
+//   1. the path lost its `/sdk` segment;
+//   2. `?order_by=liquidity:desc` is now REJECTED with HTTP 400 and had to go;
+//   3. `totalLiquidity` (a number) became `liquidity` — AN OBJECT, `{ usd, acc }`.
+//
+// (3) is the one worth pausing on. A rename-only fix compiles and then silently compares
+// an object to a number: `(m.liquidity ?? 0) < minTvl` evaluates `NaN < 1000000`, which is
+// `false`, so every market would PASS the liquidity gate. A filter that quietly stops
+// filtering. It was caught by measuring the live payload, not by reading the diff.
+//
+// `isWhitelisted` also split into three flags. `isWhitelistedPro` is used because it is
+// the closest analogue to the old single flag — measured 2026-09-22, Pro admitted 100 of
+// 100 sampled markets, LimitOrder 95, and Simple a curated 10. Note the choice currently
+// changes nothing downstream: all three resolved to ZERO pools before COIN_SYMBOL_MAP was
+// widened, and the widening is what actually unblocks this rung.
 interface PendleMarket {
   address:         string
   name:            string
-  totalLiquidity:  number
+  liquidity:       { usd?: number; acc?: number } | null
   impliedApy:      number
   underlyingAsset: { symbol: string; address: string } | null
   pt:              { symbol: string } | null
   yt:              { symbol: string; impliedApy?: number } | null
-  isWhitelisted:   boolean
+  isWhitelistedPro: boolean
   expiry:          string | null
 }
 
@@ -278,13 +294,14 @@ interface PendleResponse {
 }
 
 async function fetchPendle(minTvl: number, minApy: number, coinFilter: string | null): Promise<DiscoveredPool[]> {
-  const json = await getJson<PendleResponse>('https://api-v2.pendle.finance/core/v1/sdk/1/markets?limit=100&order_by=liquidity:desc', 1800)
+  const json = await getJson<PendleResponse>('https://api-v2.pendle.finance/core/v1/1/markets?limit=100', 1800)
   const markets = json.results ?? []
   const pools: DiscoveredPool[] = []
 
   for (const m of markets) {
-    if (!m.isWhitelisted) continue
-    if ((m.totalLiquidity ?? 0) < minTvl) continue
+    if (!m.isWhitelistedPro) continue
+    // `.usd` — see the interface note: this field is an object, not a number.
+    if ((m.liquidity?.usd ?? 0) < minTvl) continue
 
     // Use implied APY (annualized yield) expressed as percentage
     const apy = (m.impliedApy ?? 0) * 100
@@ -304,7 +321,7 @@ async function fetchPendle(minTvl: number, minApy: number, coinFilter: string | 
       opportunityName: m.name,
       symbol:          underlying,
       chain:           'Ethereum',
-      coinId, tvlUsd: m.totalLiquidity, apy,
+      coinId, tvlUsd: m.liquidity?.usd ?? 0, apy,
       apyBase: apy, apyReward: null,
       auditCount: 2,
       url:        `https://app.pendle.finance/trade/markets/${m.address}`,

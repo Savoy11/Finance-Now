@@ -220,3 +220,18 @@ application code.
 `NEXT_PUBLIC_WS_URL` build arg, but the app opens no socket and that variable was removed
 in the M8 sweep (`CLAUDE.md`, Environment Variables). It is inert rather than wrong, and
 removing it belongs with a frontend change, not this one.
+
+> **Overtaken 2026-09-21 — this one WAS fixed.** `cd-staging.yml` no longer passes a
+> `NEXT_PUBLIC_WS_URL` build arg: `cd-staging.yml:184-186` passes only
+> `NEXT_PUBLIC_API_URL` and `NEXT_TELEMETRY_DISABLED`. The variable is absent from
+> `ci.yml`, `cd-production.yml`, both `infrastructure/docker/docker-compose*.yml`
+> and `infrastructure/kubernetes/configmap.yaml` as well (queue item T-370). The
+> paragraph above is kept as the record of what this runbook's own pass deferred.
+>
+> ⚠ A different suffix defect is still live in the same block: `cd-staging.yml:185`
+> builds with `NEXT_PUBLIC_API_URL=https://staging.financenow.example.com/api`. The
+> ConfigMap comment (`infrastructure/kubernetes/configmap.yaml:64-66`) states the rule
+> — **origin only, no `/api` or `/api/v1` suffix**, because a suffix plus an appended
+> `/api/:path` is what produced `/api/v1/api/...`. Inert today (D2 removed the rewrite
+> and nothing reads the variable), but it is the trap re-armed for whoever restores a
+> proxy.

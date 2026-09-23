@@ -203,6 +203,31 @@ Client → Nginx → FastAPI Router
 
 ## Scaling Characteristics
 
+> **Correction, 2026-09-22.** Nothing in this section describes how the shipping
+> application scales. It describes a FastAPI service behind a Kubernetes HPA, in front of
+> Aurora and ElastiCache — and none of those four things runs. The backend is frozen
+> (D2, 2026-09-14, `backend/FROZEN.md`); the AWS side was never provisioned, there is no
+> `.tfstate` anywhere in the tree, and `.github/workflows/cd-staging.yml:87` still gates
+> every automatic deploy behind an unset `STAGING_DEPLOY_ENABLED`. The HPA numbers below
+> are real as *configuration* and were never applied to a cluster —
+> `infrastructure/kubernetes/backend/hpa.yaml:18-19` (3→20) and `:27`/`:34` (70% / 80%).
+>
+> **Redis is not part of the shipping app at all.** No file under `frontend/src` names it;
+> Auth.js issues a **JWT** session rather than using a server-side session store
+> (`frontend/src/lib/auth/config.ts:24`), and route-handler responses are cached by Next's
+> own `next: { revalidate: N }`. So "stateless because sessions are in Redis", the pub/sub
+> WebSocket fan-out and the `allkeys-lru` degradation story have nothing left to describe —
+> and the app opens no WebSocket in any case.
+>
+> **The Database Connection Pooling figures were wrong for the backend too**, which is
+> worth knowing before anyone reuses the arithmetic: `backend/app/db/session.py:44-48` sets
+> `max_overflow` from `DATABASE_MAX_OVERFLOW`, whose default is **10**
+> (`backend/app/config.py:65`) and not 40, and hardcodes `pool_recycle=1800`, not 3600. The
+> real per-pod ceiling was 30, so the derived 180 and 1200 totals never held at any pod
+> count. **Today the ceiling is one number in one file:** `max: 10` in
+> `frontend/src/lib/db/index.ts:37`, one `postgres-js` pool per app instance, stashed on
+> `globalThis` to survive hot reload.
+
 ### Horizontal Scaling
 
 The FastAPI backend is stateless (sessions stored in Redis, no local state). It can be scaled horizontally without coordination. The Kubernetes HPA scales from 3 to 20 replicas based on CPU (>70%) and memory (>80%) utilization.
@@ -229,6 +254,26 @@ With 3 backend pods, the maximum sustained connection count to PostgreSQL is app
 
 ## Failure Modes and Resilience
 
+> **Correction, 2026-09-22.** **This table names seven mitigations and the app has none of
+> them.** That matters more here than anywhere else on this page: a failure-modes table is
+> read during an incident, when there is no time to discover it is describing 2026-07.
+>
+> **Six of the seven rows are about components that do not run.** Redis, Aurora, EKS nodes,
+> the ALB and Celery workers are all covered above — Redis and the ALB appear nowhere in
+> `frontend/src`, Aurora and EKS were never provisioned, and Celery was never written in
+> code at all. The Chainlink row is the sixth: the backend had a `chainlink.py` client and
+> is frozen, and the only "chainlink" left in the shipping app is CoinGecko's **coin id for
+> the LINK token** (`frontend/src/lib/api/live/coingeckoIds.ts:88`), not an oracle price
+> feed. There is no oracle to go stale and no fallback to make.
+>
+> **The CoinGecko row is the one with a live counterpart, and it is wrong in the detail a
+> reader would act on: no stale-data alert fires after 3 minutes, or at all.**
+> `/live-data/alerts` generates exactly two alert types, `depeg` and `price_move`
+> (`frontend/src/app/live-data/alerts/route.ts:12`), and the comment above that line records
+> why the others are gone — they "were never implemented — removed so the contract is
+> honest". What an upstream failure actually produces today is a per-route fallback or a
+> disclosed "not available" state, recorded per surface in `DATA-AVAILABILITY.md`.
+
 | Component | Failure Mode | Mitigation |
 |---|---|---|
 | CoinGecko API down | Price data becomes stale | Fallback to cached prices; stale-data alert fires after 3 minutes |
@@ -242,6 +287,27 @@ With 3 backend pods, the maximum sustained connection count to PostgreSQL is app
 ---
 
 ## API Design Principles
+
+> **Correction, 2026-09-22.** **Five of these six conventions describe the retired FastAPI
+> API and are followed nowhere in the shipping app** — and this is the section most likely
+> to be acted on, because unlike the rest of the page it names a surface that is *not*
+> retired. `/api/v1/` is live and shipping (`frontend/src/app/api/v1/`), so a contributor
+> reading this as the house style would build a route against rules nothing else obeys.
+>
+> Searched across all of `frontend/src` on 2026-09-22: **`Idempotency-Key`, `cursor`,
+> `filter[...]` and RFC 7807 / `application/problem+json` occur zero times each, in any
+> file.** The real error shape is a flat `{ error: "<message>" }` with a plain status —
+> `frontend/src/app/api/v1/prices/route.ts:32` is representative — plus a `details[]` array
+> on the one validating endpoint, `POST /api/v1/options/score`, which returns every problem
+> found rather than the first (`api/v1/openapi.json/route.ts:209,220`). List endpoints take
+> flat query parameters (`?coins=`, `?tier=`, `?coin=&category=`) and a `limit`, never a
+> cursor. **There is no rate limiting on `/api/v1/` at all**: no route under it has a 429
+> path. Per-IP limits do exist in `frontend/src/lib/server/apiGuard.ts`, but they guard the
+> agent, config and pump-report surfaces — not this API, and not by authenticated-vs-anonymous.
+>
+> **Versioning is the one that holds.** The API really is at `/api/v1/`, and the OpenAPI 3.0
+> spec really is served at `/api/v1/openapi.json`. Treat the other five lines as a design
+> intent that was never implemented on either service, not as a contract to match.
 
 The REST API follows these conventions:
 - **Versioning**: URI-based (`/api/v1/`). Breaking changes increment the version.

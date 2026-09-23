@@ -9,11 +9,17 @@ import type { LiveQuote } from './liveClient'
 // with no free live source stay null so the UI renders "N/A" instead of
 // fabricated numbers.
 //
-// riskScore/riskBand are NO LONGER nulled here: a real live composite exists at
-// /live-data/risk-scores, joined onto assets at the hook layer (see
-// lib/api/live/riskScores.ts). The catalog already exports riskScore/riskBand as
-// null (the fabricated literals were deleted in R2 Phase 1), so unscored assets
-// remain null and honest until the composite is joined.
+// ⚠ Corrected 2026-09-21. This comment used to read: "riskScore/riskBand are NO
+// LONGER nulled here: a real live composite exists at /live-data/risk-scores,
+// joined onto assets at the hook layer (see lib/api/live/riskScores.ts)." Every
+// part of that is now false, and it pointed the wrong way — a reader would take
+// it as licence to restore a composite. RP-6 (2026-08-29) deleted the route, the
+// client module, the hook, the badge, AND the `Asset.riskScore` / `riskBand`
+// fields themselves (see types/asset.ts:54): a permanently-null field invites a
+// future "N/A" that reads as MISSING rather than WITHHELD, and the withholding is
+// the decision. So there is nothing here to null — no per-coin risk figure exists
+// on this type to overlay, and none may be reintroduced.
+// Guarded by lib/risk/__tests__/riskScoringRemoved.test.ts.
 
 // Returns a copy of the catalog asset with all live market numerics nulled.
 // This is the base for both the "no live data" case and the overlay case.

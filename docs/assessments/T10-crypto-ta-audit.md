@@ -60,6 +60,17 @@ change would be gratuitous.
 
 ## Minor observations (not bugs; no action taken here)
 
+> **⚠ OUTCOME (added 2026-09-21) — the first two observations below have since been
+> fixed. The text is left exactly as written.** The `DataBadge` no longer says
+> "Binance" for Binance.US: `/live-data/ohlcv` now emits a `venue` field
+> (`frontend/src/app/live-data/ohlcv/route.ts:253-254`) and the page derives the
+> label from it via `ohlcvSourceLabel(data?.source, data?.venue)`
+> (`technical-analysis/page.tsx:191`; badge at `:389-390`; mapping and tests in
+> `lib/utils/ohlcvSource.ts:12-22`). The `1H` route comment was reworded
+> (`ohlcv/route.ts:107-112`) and now states the real window — the `slice(-168)` is a
+> cap that never trims, not "last week of 30m bars". Tracked as queue items T-267
+> and T-268. The third bullet (confluence thresholds) is handled separately below.
+
 - **Provenance label reads "Binance" for what is really Binance.US.** The chart's `DataBadge`
   shows `Binance OHLCV` because the route reports `source: 'binance'`. Per T1 this is a
   *deliberate* choice (the TA page switches on `source`); the truthful `venue` field lives in
@@ -71,6 +82,18 @@ change would be gratuitous.
 - **Confluence thresholds** (`bullish >= 4 / >= 3`) are absolute rather than proportional to
   the number of timeframes that loaded — slightly conservative when few TFs return, harmless
   at full load.
+
+  > **Status: ✅ fixed — annotation added 2026-09-21 (queue item T-269).** The thresholds
+  > are proportional now, and the function was extracted so it could be tested.
+  > `frontend/src/lib/utils/confluence.ts:17-20` defines `CONFLUENCE_STRONG_RATIO = 0.75`,
+  > `CONFLUENCE_MODERATE_RATIO = 0.6` and `CONFLUENCE_MIN_LOADED = 3`; `:36-46` bands on
+  > `bullish / loadedCount`. The live caller is
+  > `components/analytics/technical/MultiTimeframeGrid.tsx:78`, passing the count of
+  > timeframes that actually answered (`:74`), and that panel is rendered by
+  > `app/(dashboard)/technical-analysis/page.tsx:406`. This observation called the absolute
+  > form "harmless at full load"; it was not — 4 of 6 (67%) read *strong* while a unanimous
+  > 3 of 3 read *moderate*, so the weaker agreement got the stronger word. Both are now
+  > pinned as tests (`lib/utils/__tests__/confluence.test.ts:17-24`).
 
 ## Extraction opportunities (noted per the task; deliberately NOT done — this is an accuracy audit)
 At 1,791 lines the page inlines ~10 self-contained components (`ScannerPanel`,

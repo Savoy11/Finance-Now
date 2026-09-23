@@ -6,21 +6,27 @@ import type { StakingProvider } from './stakingProviders'
  *
  * ── Why this module exists ────────────────────────────────────────────────
  *
- * Finance Now scores the providers it would be paid by: `computeOverallRisk()`
- * rates 55 staking providers across six risk dimensions. That is a real
- * conflict of interest, and the product's value dies if the scores follow the
- * money. The ROADMAP's integrity rules therefore require enforcement that is
- * STRUCTURAL rather than a promise, and this file is where that lives.
+ * Finance Now publishes curated risk judgments about the providers it would be
+ * paid by: every entry in `STAKING_PROVIDERS` carries a `RiskProfile` — six
+ * editorial dimensions, published as-is — and those dimensions are the reference
+ * INPUTS a reader weighs when choosing between providers. Nothing combines them
+ * into a single number (owner decision D14: there is no composite staking risk
+ * score anywhere, and none may be reintroduced here or elsewhere).
+ *
+ * Inputs steer a choice even without a composite on top of them. Being paid by
+ * the thing being described is therefore a real conflict of interest, and the
+ * product's value dies if the published dimensions follow the money. The
+ * ROADMAP's integrity rules require enforcement that is STRUCTURAL rather than a
+ * promise, and this file is where that lives.
  *
  * ── How the guarantee is actually made ────────────────────────────────────
  *
  * Three layers, because a single one of them is only a convention:
  *
- * 1. **The scoring functions never see a provider.** `computeOverallRisk()` and
- *    `scoreStakingProvider()` both take a bare `RiskProfile` — six numbers —
- *    not a `StakingProvider`. There is no field for them to read. That was
- *    already true and is now pinned by a test so a future refactor cannot
- *    quietly widen the signature.
+ * 1. **The scoring function never sees a provider.** `scoreStakingProvider()`
+ *    takes a bare `RiskProfile` — six numbers — not a `StakingProvider`. There
+ *    is no field for it to read. That was already true and is now pinned by a
+ *    test so a future refactor cannot quietly widen the signature.
  * 2. **Ranking code takes {@link RankableProvider}**, a type that OMITS the
  *    affiliate fields. Anything that sorts, filters or ranks providers accepts
  *    that type, so reading `affiliateUrl` inside a comparator is a compile

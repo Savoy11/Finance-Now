@@ -45,6 +45,15 @@ T-346 initially looked wrong — 12 surviving `riskScore` references — until r
 showed every one is either a comment explaining the rename or a test asserting the key is
 **absent**. The naive grep was the unreliable step, not the verdict.
 
+> **Pointer added 2026-09-21 — one of those four has since been overtaken.** The T-277
+> row (line 111) cites `index.ts:364-368` for `compare_staking_risk`'s reworded
+> description. That tool was **deleted** three days after this sweep, under owner
+> decision D14 (2026-09-14); a tombstone now occupies
+> `mcp-server/src/index.ts:372-396`. The other half of the row — version **1.1.0** in
+> `mcp-server/package.json:3` and `mcp-server/src/index.ts:64` — still holds. Nothing
+> above is corrected; this only stops a reader following the citation to a tool that no
+> longer exists.
+
 ## Overturned — claimed closed, still open
 
 **T-001** — Half of the task is explicitly not done, per its own cited evidence. docs/assessments/T6-agent-prompts.md:95-97 states verbatim: "Until that happens, T6 is **half done**: the prompts are verified accurate against the app; their answers are unevaluated," and :93-94 records the blocking precondition: "**Precondition for the output half of T6:** `cd frontend && npm run audit` on the owner's machine …
@@ -73,6 +82,18 @@ showed every one is either a comment explaining the rename or a test asserting t
 | T-360 | PARTIAL | Roughly 90% landed. Only the coin-discovery half of the §Why gap named by the spec is unwritten. |
 | T-374 | PARTIAL | Named-variable scope is clean everywhere; the residue is the two 'mock data enabled' echoes, the doubled /api/v1 suffix in both start scripts, and a stray empty markdown table. |
 | T-375 | PARTIAL | Headline deliverable (the file + a working README copy step) is done; the start.sh/start.ps1 sub-item of next_action is not. |
+
+> **Annotation — 2026-09-21 (checklist steward). The T-326 row above is overtaken.**
+> Its named remainder was *"the only gap is the explicit RP-3 bullet — one line in each
+> file"*. Both files now carry it: `.claude/agents/opportunity-scout.md:100-105` and
+> `.claude/agents/code-auditor.md:114-133`, the latter also carrying D14's extension of
+> RP-3 to every surface and the correction of the "scoreStakingProvider() is live" claim.
+> The row is left as written; this block is the current state.
+>
+> Also for a reader diffing this document against the tree: the **T-330** row in
+> "Verified closed (47)" below quotes `code-checker.md` as reading "1311 tests in 88
+> files". It has not said that since 2026-09-19. Read every figure in this document as a
+> 2026-09-11 reading.
 
 ## Verified closed (47)
 

@@ -436,16 +436,35 @@ const RAW_CATALOG: Omit<Asset, 'riskScore' | 'riskBand'>[] = [
     id: 'usdy',
     symbol: 'USDY',
     name: 'Ondo US Dollar Yield',
+    // ⚠ USDY HAS NO PEG, AND MEASURING IT AGAINST ONE WAS BACKWARDS.
+    //
+    // It is a tokenised short-term US Treasury note, not a stablecoin: yield
+    // accrues INTO the token price, so trading above $1.00 and rising is the
+    // product working. Until 2026-09-22 this entry carried pegTarget 1.0 and
+    // pegDeviationBps 282.0, and since PEG_LOOSE_BPS is 50 that rendered
+    // text-red-400 — the danger colour — on the Coin Registry's peg column, the
+    // asset card and the detail page. A correctly functioning instrument was
+    // displayed as severely broken, and the healthier it got the worse it looked.
+    //
+    // The peg fields are therefore null/absent, which is the same shape the 60
+    // other non-pegged entries already use: getPegDeviationColorClass(null)
+    // returns the muted class and the column reads N/A. That is honest — this
+    // asset has no peg to deviate from.
+    //
+    // assetType is deliberately LEFT as 'stablecoin'. It is wrong — the type
+    // already permits 'tokenized' and nothing uses it — but reclassifying moves
+    // catalog counts and the registry's type chips, and it is §7B of
+    // docs/assessments/tokenized-securities-2026-09-21.md, which carries eight
+    // owner decisions. Stopping the false red flag does not require pre-empting
+    // that, and the two should not ride in together.
     assetType: 'stablecoin',
     blockchain: 'ethereum',
     contractAddress: '0x96f6ef951840721adbf46ac996b59e0235cb985c',
     isActive: true,
     marketCap: 565_000_000,
     price: 1.0282,
-    pegTarget: 1.0,
-    pegDeviation: 0.0282,
-    pegDeviationBps: 282.0,
-    reserveRatio: 1.028,
+    pegDeviation: null,
+    reserveRatio: null,
     volume24h: 18_000_000,
     priceChange24h: 0.01,
     createdAt: '2024-01-01T00:00:00Z',

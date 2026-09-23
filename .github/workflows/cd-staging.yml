@@ -181,8 +181,13 @@ jobs:
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
+          # NEXT_PUBLIC_API_URL is an ORIGIN — no /api or /api/v1 suffix. The suffix
+          # plus an appended /api/:path is what produced /api/v1/api/... ; the rule
+          # and its history live on the NEXT_PUBLIC_API_URL key in
+          # infrastructure/kubernetes/configmap.yaml (fn-frontend-config).
+          # Do not re-add the suffix here.
           build-args: |
-            NEXT_PUBLIC_API_URL=https://staging.financenow.example.com/api
+            NEXT_PUBLIC_API_URL=https://staging.financenow.example.com
             NEXT_TELEMETRY_DISABLED=1
 
       - name: Scan images with Trivy

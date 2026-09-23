@@ -163,6 +163,19 @@ Each phase leaves the app fully working and usable day-to-day.
 **Done when:** you can register, log in, and the sidebar renders from the
 module registry.
 
+> **Note (2026-09-21) — the auth bullet describes an approach that was not taken.**
+> `useAuthStore` was **deleted**, not made session-aware: M2 (`5e1c32a`) consolidated
+> authentication onto Auth.js, and `frontend/src` contains no reference to the store
+> today. `SessionProvider` wraps the tree at `frontend/src/app/providers.tsx:65`, and
+> the session is read through `next-auth/react`'s `useSession()` and
+> `getCurrentUserId()` (`lib/auth/session.ts`). See `docs/architecture/auth.md:21-25`
+> and its Goal B step 2.
+>
+> This annotates the bullet only. **Phase 0 is NOT being marked done here** — its
+> "Done when" includes "log in", and the login wall is deliberately OFF
+> (`REQUIRE_AUTH = false`, `LOGIN_DISABLED = true`), so that condition is unmet by
+> owner decision rather than by omission.
+
 ### Phase 1 — Invest on real data
 > Progress (2026-07-21): **Portfolio Builder plans AND portfolios are
 > DB-backed** — `builder_plans` (migration 0001) + `portfolios`/`holdings`
@@ -619,6 +632,61 @@ went to `docs/BUSINESS-CHECKLIST.md`, which is worked separately from both produ
       > So the remaining scope is the cross-screener consistency review plus result
       > quality — and the fund screener's asymmetry is a constraint to design around, not
       > an inconsistency to iron out.
+
+      > **Steward annotation, 2026-09-21 (T-129, second pass).** Still unticked, and still
+      > not a claim that the item is done. The note above stands, with one correction and
+      > four additions — the *consistency* pass it says has not happened DID happen; it was
+      > filed under `docs/assessments/`, not `docs/audits/`, which is why a search for it
+      > came up empty. With that, the remaining scope narrows to **result quality alone**,
+      > which is owner-gated (it needs live provider keys on the owner's machine).
+      >
+      > - **Cross-screener consistency pass — 2026-07-30**,
+      >   `docs/assessments/screener-consistency-2026-07-30.md`. It settled, as already
+      >   consistent: null semantics in range filters (a null value is excluded while a
+      >   range on that dimension is active — same observable behaviour in Stock and Fund
+      >   registries), clear/reset affordances, empty-result copy, pagination reset, and
+      >   filter persistence (none durable, on purpose). The one gap it found was URL
+      >   deep-linking, fixed with the shared hook
+      >   `frontend/src/lib/hooks/useScreenerUrl.ts`. It also recorded as *by design* that
+      >   the two TA screeners differ (crypto sweeps every tracked asset; equity TA is
+      >   bounded by a fan-out budget) and that coin discovery is a scored-candidate
+      >   surface, not a range screener — so those are not consistency debts either.
+      > - **Coins joined the deep-link convention after that pass.** The assessment
+      >   deliberately left `/assets` on its Zustand store; it now calls the same hook —
+      >   `frontend/src/app/(dashboard)/assets/AssetRegistryClient.tsx:96`, with `?tab=`
+      >   left untouched — alongside `EquitiesClient.tsx:124` and `FundsClient.tsx:205`.
+      >   All three registries are deep-linkable.
+      > - **W3-2 (`/assets`, DONE 2026-08-20) — half of it is unreachable.** The derived
+      >   liquidity sort key and the null-safe min-liquidity filter are live in
+      >   `frontend/src/lib/api/assets.ts` (sort branch :69, filter :113 — rows missing
+      >   volume or market cap are EXCLUDED while the filter is active), and the sortable
+      >   "Liq %" column renders through
+      >   `frontend/src/components/assets/AssetTable.tsx:152` →
+      >   `AssetRegistryClient.tsx:350`. ⚠ But the min-liquidity INPUT can no longer be
+      >   set: the screener bar was removed 2026-08-22, so `minMarketCap` /
+      >   `minLiquidityPct` sit at their no-op defaults — see the comment at
+      >   `AssetRegistryClient.tsx:137`. Treat W3-2's filter half as parked (a UI change
+      >   restores it), not as delivered.
+      > - **W3-5 (`/equities`, DONE 2026-08-20) — live.** Price $, Yield %, Beta, Mkt cap
+      >   and P/E are all full ranges, plus the dividend-payers-only toggle:
+      >   `EquitiesClient.tsx:121`–`:195`, deep-linked via the hook at `:124`.
+      > - **Fee impact on `/funds` — live, and it is a column + sort, not a filter.**
+      >   `frontend/src/lib/data/feeImpact.ts` (pure, tested) compounds a fund's expense
+      >   ratio into dollars against the index benchmark; the Fees column tab, the
+      >   assumptions inputs (principal / horizon / gross return) and the sortable cost
+      >   column are `FundsClient.tsx:682`, `:687`–`:705` and `:729`, with the null
+      >   contract honoured at `:345` (unknown fees never sort as free). There is no
+      >   fee-cost RANGE filter — the fund ranges are expense, AUM, age, price and yield
+      >   (`FundsClient.tsx:320`–`:324`). The item cites commit `9eb2be2` for this; the
+      >   commit was NOT checked (git is out of reach from this container), the feature
+      >   was verified in the tree instead.
+      > - **Items 6/7, one scanner per section — all three exist and are in the nav.**
+      >   `/scanner`, `/equities/scanner` and `/macro/scanner` are pages under
+      >   `frontend/src/app/(dashboard)/`, registered at
+      >   `frontend/src/lib/modules/registry.ts:205`, `:218` and `:243`.
+      >
+      > Remaining: the result-quality sweep (owner-gated), plus one small unblocked
+      > decision — whether W3-2's min-liquidity input comes back to `/assets`.
 - [x] **Label every data source on screen, per the house policy.** DONE 2026-08-06.
       Surveying first changed what this was: the *coverage* half was already largely done (36
       surfaces carried a `SourceLine`, and all 31 ids in use resolved). The half that wasn't

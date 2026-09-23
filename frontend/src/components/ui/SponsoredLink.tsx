@@ -86,10 +86,17 @@ export function SponsoredTag({ program, className }: { program?: string; classNa
   return (
     <a
       href="/how-we-make-money"
+      // ⚠ Both branches said "does not affect this provider's RISK SCORE" until
+      // 2026-09-21. There is no risk score: D14 removed every composite, and the
+      // six RiskProfile dimensions are published as they are. A disclosure that
+      // reassures the reader about a number the app does not publish is both
+      // wrong and, by implying a ranking exists, pointed at RP-3. The promise is
+      // now made about the things that do exist — and both are enforced by
+      // lib/data/__tests__/affiliates.test.ts, not merely asserted here.
       title={
         program
-          ? `We may earn a commission if you sign up through this link (${program}). It costs you nothing and does not affect this provider's risk score or its position in any list.`
-          : 'We may earn a commission if you sign up through this link. It costs you nothing and does not affect this provider’s risk score or its position in any list.'
+          ? `We may earn a commission if you sign up through this link (${program}). It costs you nothing, and it does not affect this provider's published risk dimensions or where it appears in any list.`
+          : 'We may earn a commission if you sign up through this link. It costs you nothing, and it does not affect this provider’s published risk dimensions or where it appears in any list.'
       }
       className={clsx(
         'shrink-0 rounded border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5',

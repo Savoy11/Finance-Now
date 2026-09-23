@@ -116,7 +116,12 @@ Discard anything that fails these:
   - News Charts only: end-of-day pricing — real-time data triggers exchange licensing there.
     Finance Now is deliberately live-only real-time (`LIVE_DATA` is hardcoded true); do not
     discard a Finance Now proposal for depending on live data
-  - Risk scores are 0–100, higher = safer
+  - **Where a score IS still published, it is 0–100, higher = safer**
+    (`docs/architecture/risk-scale-spec.md`). After D14 that is the options Trade Risk
+    Scorer and the macro/equity profiles — nowhere else. Do not propose a different scale
+    or banding for those, and do not read this line as licence to propose a score on a
+    surface that has none: the six staking `RiskProfile` dimensions stay 1–10
+    higher-is-riskier because they are curated inputs, not a published score
 - **Does it need a licence, a key or a paid tier?** Say so plainly and estimate the recurring
   cost. A proposal with a hidden monthly bill is a bad proposal.
 - **Can you say what it is worth?** If you cannot articulate who benefits and how, it is a

@@ -2,11 +2,11 @@
 
 [![CI](https://github.com/Savoy11/Finance-Now/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Savoy11/Finance-Now/actions/workflows/ci.yml?query=branch%3Amain)
 
-**An AI-enhanced investment evaluator, and the flagship module of a growing suite of financial analysis tools.**
+**An AI-enhanced investment research tool, and the flagship module of a growing suite of financial analysis tools.**
 
-Finance Now evaluates crypto assets — stablecoins, Layer 1s, tokenized assets, and CBDCs — by combining live multi-provider market data, reserve transparency monitoring, regulatory news intelligence, and a configurable AI agent layer into a single Bloomberg-terminal-style workspace. It is built on a strict data-honesty principle: **every number is attributed to its source, estimates are labeled as estimates, and derived metrics with no reliable data source show "not available" rather than fabricated values.**
+Finance Now covers crypto assets — stablecoins, Layer 1s and DeFi tokens — by combining live multi-provider market data, reserve transparency monitoring, regulatory news intelligence, and a configurable AI agent layer into a single Bloomberg-terminal-style workspace. It is built on a strict data-honesty principle: **every number is attributed to its source, estimates are labeled as estimates, and derived metrics with no reliable data source show "not available" rather than fabricated values.** It publishes **no per-asset risk score, safety band, ranking or recommendation** — see the Safety Score row under Feature Status for why.
 
-Finance Now is one module in a larger suite. The same shell hosts entitlement-gated modules for Equities, Macro Markets, ETFs & Funds, and a Portfolio Builder — one application, one auth layer, individually licensable modules. See [`docs/ROADMAP.md`](docs/ROADMAP.md).
+Finance Now is one module in a larger suite. The same shell hosts entitlement-gated modules for Equities, Macro Markets, ETFs & Funds, and a Portfolio Builder — one application, one auth layer, modules that toggle independently. Entitlements are a local setting today, not a licence check; billing is a later phase. See [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 ---
 
@@ -14,10 +14,10 @@ Finance Now is one module in a larger suite. The same shell hosts entitlement-ga
 
 | Module | Scope | Status |
 |---|---|---|
-| **Crypto (Finance Now)** | 108 catalogued assets: reserves, peg tracking, fees, staking, TA, news, scanner | 🟢 Active — flagship |
-| **Equities** | 79 large-caps across 11 sectors: live quotes, breadth, screener, TA, news, calendar | 🟢 Active |
-| **ETFs & Funds** | Fund registry (126: 114 ETFs + 12 mutual funds) and per-symbol detail | 🟢 Active |
-| **Macro Markets** | Commodities, currencies, bonds/rates: 45 instruments, official yield curve, two-tier FX converter | 🟢 Active |
+| **Crypto (Finance Now)** | 108 catalogued assets: reserves, peg tracking, staking, TA, news, scanner. (Transfer Fees is built but **hidden from the rollout** — see Feature Status) | 🟢 Active — flagship |
+| **Equities** | Curated 79 large-caps across 11 sectors, or the full FMP screener universe with a key: quotes (**key-gated**), breadth, screener, TA, news, calendar | 🟢 Active |
+| **ETFs & Funds** | Fund registry (126: 114 ETFs + 12 mutual funds) and per-symbol detail; quotes **key-gated**, catalog reference otherwise | 🟢 Active |
+| **Macro Markets** | Commodities, currencies, bonds/rates: 45 instruments, keyless official yield curve, two-tier FX converter. Futures/FX quotes ride the **key-gated** equity ladder; unpriced symbols render a dash | 🟢 Active |
 | **Portfolio Builder** | Cross-module portfolio construction | 🟡 Early |
 | ~~Budgeting & Planning~~ | Accounts, budgets, net worth, goals | ⚪ **Moved to a separate product, 2026-08-20.** Owner decision — personal-finance tooling is being built elsewhere. The pages, routes and `lib/budget/` are deleted; the DB tables are deliberately RETAINED so no migration drops imported bank history. Reverses RP-2 via its recorded reopen trigger |
 
@@ -46,13 +46,15 @@ Plus a **Daily Brief** generated from your holdings, live prices, and headlines.
 
 Verified against the running application, July 2026. **Rows corrected 2026-09-08** against `CLAUDE.md`'s feature inventory and `DATA-AVAILABILITY.md` — the July table had gone stale on six of them, three in ways that overstated what ships. **Re-checked 2026-09-19 (T-381)** against the source tree and a running dev server: the exchange count and `lib/risk/`'s live consumers had drifted since they were written, while the news-provider count, the provider list and the staking-rate wiring figure were wrong when written rather than merely stale — all five are corrected below. That was a source-level check, not a fresh walk of every surface in the UI — the July provenance still stands for rows nobody has re-opened since.
 
+**Copy-accuracy pass 2026-09-21 (T-301).** This pass judged user-facing *claims*, not data status, against `CLAUDE.md`'s Feature Inventory and `docs/audits/rejected-proposals.md`. Two rows changed and neither was a status change: **Live market data** said "CoinGecko + CoinMarketCap + Binance, 3-way fallback" as though the three were interchangeable (they are not — only CoinGecko is keyless and catalog-wide), and **Technical Analysis** said "the backtester" singular when three separate surfaces were hidden on 2026-08-20. Everything above this line is the record of earlier passes and is left as written.
+
 | Feature | State |
 |---|---|
-| Live market data | 🟢 108 crypto assets via CoinGecko + CoinMarketCap + Binance, 3-way fallback |
+| Live market data | 🟢 108 crypto assets from CoinGecko — keyless and the only rung that carries the whole catalog. The other two legs of the 3-way fallback are narrower, not equivalent: **CoinMarketCap needs a key**, and **Binance quotes 16 major pairs** (`BINANCE_SYMBOL_MAP` in `/live-data/markets`). With CoinGecko unreachable and no CMC key, most of the 108 have no live price and say so |
 | Reserve Transparency Monitor | 🟢 Live DefiLlama supply + attestation metadata for 9 stablecoins |
 | Transfer Fee Calculator | ⚪ **Hidden from the initial rollout (2026-08-22)** — kept, not deleted; `/transfer-fees` redirects. 29 exchanges × 22 coins × 18 networks from a staleness-labelled static table, plus a live withdrawal-fee overlay and live BTC/EVM-L1 gas |
 | Staking Explorer | 🟡 55 providers with a custody-risk taxonomy, plus a live on-chain pools tab. Live-APR **wiring** covers 27 distinct rate keys — 8 from native endpoints (Lido, Rocket Pool, Marinade, Jito, Stride's three Cosmos LSTs, Injective native) plus 19 from a keyless DeFiLlama Yields rung (`LLAMA_MAP` in `lib/server/stakingRates.ts`). Both rungs were cut back on 2026-09-09: nine dead native rungs and the NEAR rung came out, and six DeFiLlama keys that matched no pool went with them. The earlier figure's 25 was right on the date it was written (2026-09-08); its 33 was not — the native side wired 18 keys then, not 8. That audit has now been run (2026-09-10): **27 of 51 rates are live**, up from 4 of 51. The old ratio was not stale docs and not dead upstreams — four dead hosts were hanging DNS for ~10s each and starving the route's shared budget, so healthy sources aborted before they could answer. Removing them fixed it. The remaining 24 have no upstream publishing a rate at all; each is labelled a static estimate and now says WHY on hover |
-| Technical Analysis | 🟢 Live OHLCV, 62 indicators (shared registry), patterns, drawing tools, and a separate Scanner page per section. **The backtester is hidden** (2026-08-20, owner: "I may revisit back testing") — every engine and panel is retained in place |
+| Technical Analysis | 🟢 Live OHLCV, 62 indicators (shared registry), patterns, drawing tools, and a separate Scanner page per section. **All three backtest surfaces are hidden** (2026-08-20, owner: "I may revisit back testing") — this page's Backtest tab, the Portfolios Backtest tab, and `/equities/backtests` (which redirects to `/equities`). Every engine and panel is retained in place |
 | News & Analysis | 🟢 8 crypto news providers with sentiment + asset tagging: 4 keyless publisher RSS feeds (CoinDesk, Cointelegraph, Decrypt, Bitcoin Magazine) and 4 keyed aggregators (CryptoPanic, Messari, NewsAPI, GNews). There is **no built-in US Congress feed** — `/live-data/news` only rewrites `api.congress.gov` bill URLs into congress.gov links when a *user-added* custom JSON feed supplies them |
 | Equities & Funds | 🟡 **Key-gated since the Yahoo removal (2026-08-06).** Every live quote rung needs an API key; with none configured, stocks and funds show catalog reference prices behind an amber `ref` tag rather than a fabricated number. Screener fundamentals are reference data; P/E is backfilled free from SEC XBRL |
 | AI agents + Daily Brief | 🟢 Working with any configured provider key |
