@@ -816,7 +816,7 @@ end of this appendix.
 | **NT6** | `macro-screener` panel on `/macro` | **FOLDED into the 6/7 scanner work — not approved separately** | Superseded the same day it was answered: Macro now gets a top-level Scanner nav entry (item 6/7), so building a `/macro` mirror of `OutlierScanPanel` would build the thing that decision replaces. The agent stays whitelisted and deep-linkable until the scanner ships. **Not a rejection** — the capability is approved, under a different roof |
 | **NT8** | Futures term-structure provider (keyed) | **DEFER — sourcing, with 12b and D2** | Engine is tested and kept alive; only the source is missing, and P2-O1 already left this as a sourcing call. Goes into the enterprise-key conversation. Meanwhile `TermStructureCard` prints the route's honest `ok:false` reason, which is the correct failure state — no substitute scraper, per the standing terms rule |
 | **NT9** | Fund asset-mix derived from N-PORT position categories | **APPROVED** | Best value-per-effort item left on the list: revives the dead allocation donut (F-note-4) from data the app **already fetches**, keylessly. No new host, so no new terms verdict, no key, no provider eval. Restores the stock/bond/cash mix that lost its source in the Yahoo removal |
-| **NT10** | Score-history persistence (risk-spec P6) — the only honest path to a real Risk History tab (CR8) | **REJECTED for now — tab stays removed** | Interacts with the item 4 cut. On principle it would survive: a score history for a coin the user opened is explanation, not ranking. But it is medium-cost infrastructure (storage + scheduled capture) in service of a surface whose case was just narrowed, and deciding it mid-cut is the worst moment to judge it. Recorded as RP-4. **Reopen trigger: the item 4 removals have landed and the explanatory/ranking line is settled in practice** |
+| **NT10** | Score-history persistence (risk-spec P6) — the only honest path to a real Risk History tab (CR8) | **REJECTED for now — tab stays removed** | Interacts with the item 4 cut. On principle it would survive: a score history for a coin the user opened is explanation, not ranking. But it is medium-cost infrastructure (storage + scheduled capture) in service of a surface whose case was just narrowed, and deciding it mid-cut is the worst moment to judge it. Recorded as RP-4. ~~**Reopen trigger: the item 4 removals have landed and the explanatory/ranking line is settled in practice**~~ **Superseded by RP-6, 2026-08-29 — no score exists whose history could be persisted** — the item 4 removals did land, but RP-6 then removed the per-coin score itself, so this trigger cannot fire on its own terms. See `docs/audits/rejected-proposals.md` RP-4 and RP-6. Annotated 2026-09-23 on owner approval (T-092) |
 
 ### D5 — why "dev-machine only" is the operative constraint
 
@@ -933,7 +933,7 @@ its first decision).
 
 D1 and D2 (owner's planning session: paid-vs-free, then hosting and the enterprise key) ·
 12b (fund return screening — same key conversation) · NT8 (futures term structure — same) ·
-NT10 (score history — reopens once the item 4 removals land).
+NT10 (score history — ~~reopens once the item 4 removals land~~ **Superseded by RP-6, 2026-08-29 — no score exists whose history could be persisted;** RP-6's trigger governs it now — annotated 2026-09-23, T-092).
 
 **Nothing in this appendix is undecided.** Every row is decided, deferred with a named
 unblocker, or on the owner-machine checklist above.
@@ -971,7 +971,7 @@ catalog coins can never receive a Safety Score, recorded nowhere (CR2 and CR5 bo
 | 6, 7 | ✅ **DECIDED 2026-08-17** (Appendix E) — Promote every scanner out of its TA page into a per-section nav entry | **Owner still deciding** whether equities gets one combined scanner or several, and whether a "scanner" merges technical setups, the registry's fundamental screener and the AI Outlier Scan. That answer generalizes to the other sections. Note the maturity gap: crypto has 7 setup detectors, 3 timeframes and auto-refresh; equities has 24 hardcoded large-caps | Crypto (CR17), Equities (E14-E16), Macro (M11, M12) |
 | 11, 13 | ✅ **DECIDED 2026-08-17** (Appendix E) — Corporate, high-yield, international and municipal bond coverage | Confirmed gap, not yet built. Today the catalog carries LQD and HYG only — no international (BNDX/IAGG/BWX/EMB/VWOB), no muni (MUB/VTEB/TFI), no muni row in `BOND_ETF_SHELF`, no muni tier in `RateCreditQuality`, and no tax-equivalent-yield concept, which is the whole point of holding munis | Funds (F1, F7) + Macro (M9) |
 | 12b | ⏸ **DEFERRED 2026-08-17** (Appendix E) — Restore return screening on the fund registry | **Settled as a purchasing decision, not an engineering one** — see the sourcing revisit in the Funds section. FMP's `/stable/stock-price-change` is the right endpoint; batching is paid-gated | Funds (F4) |
-| 14b | ✅ **DECIDED 2026-08-17** — rejected, see RP-2 — Remove the Budget module | **Awaiting an explicit call** — contradicts NT1, destroys imported bank history irreversibly where HIDE would not, and the new planner wants Budget's actuals as its expense input. Full reasoning in the TASK-QUEUE entry | Budget walkthrough (B1-B11) + NT1 |
+| 14b | ✅ **DECIDED 2026-08-17** — rejected, see RP-2 — Remove the Budget module | **SUPERSEDED 2026-08-20 — CUT chosen by the owner (RP-2 reopen trigger fired): Budget and Retirement pages, routes and libs deleted; DB tables and imported bank history retained in `lib/db/schema/budget.ts`.** Annotated 2026-09-23 on owner approval (T-396). ~~**Awaiting an explicit call**~~ — the call was made three days after this row was written; what follows is the reasoning the reversal overtook, kept as written: — contradicts NT1, destroys imported bank history irreversibly where HIDE would not, and the new planner wants Budget's actuals as its expense input. Full reasoning in the TASK-QUEUE entry | Budget walkthrough (B1-B11) + NT1 |
 | 16 | ✅ **DECIDED 2026-08-17** (Appendix E) — Portfolio Builder: user-set percentages per industry / sector / market cap, with sub-division inside each asset class | Owner confirmed **setting**, not reporting, and additive — the risk-based builder stays. This is a second engine, not an edit: `BuilderInputs` has no target-weight field and every weight is derived. Owner also flagged a legality question of his own | Portfolio Builder walkthrough (PB1-PB6) |
 | 18b | ✅ **DECIDED 2026-08-17** (Appendix E) — Make this document a maintained, protected reference | Scaffolding done. Still needs: a narrow carve-out in `checklist-steward.md:27` (which currently forbids maintaining assessments), and a decision on what "protected" means — CODEOWNERS, branch protection, or a doc-vs-code CI guard | Process, W3 entry conditions |
 | 2b | ✅ **DECIDED 2026-08-17** (Appendix E) — Beta vs a benchmark on Compare | Asked for in T3, never delivered; still absent. Needs a benchmark-series fetch and a choice of benchmark | Core walkthrough (C9) |
@@ -1044,7 +1044,12 @@ adjacent decided item: an options *chain browser* is closed by owner decision
 > vocabulary of `security-ohlcv` itself belongs to subproject P3-W2-S1, which
 > may reintroduce 2Y with real data. D-6 took the review's prescribed HIDE: the
 > Risk History tab is removed from the coin detail page until NT10
-> (score-history persistence) makes it real; the chart component is retained.
+> (score-history persistence) makes it real; ~~the chart component is retained~~.
+> **Superseded by RP-6, 2026-08-29 — no score exists whose history could be persisted** — RP-6 (2026-08-29) removed the per-coin score, and
+> `HistoricalScoreChart` was deleted with it, so the chart component is NOT
+> retained and the tab has no source to become real from. Recoverable from git
+> history under RP-6's own reopen trigger. Annotated 2026-09-23 on owner
+> approval (T-092).
 > D-8 wrapped the retained page in `ModuleGate` AND added `/global-adoption` to
 > the crypto module's `routePrefixes`, so deleting the redirect now re-enables
 > the page inside the entitlement, not around it.
