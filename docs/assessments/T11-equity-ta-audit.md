@@ -74,6 +74,22 @@ Verified: `tsc` clean · `eslint` clean · `vitest` (5 new / suite green) · `np
   crash, so this is the right priority; volume-based indicators (VWAP, volume panel) see a step
   at the split date. Minor; documented.
 
+  > **Status: ✅ fixed — annotation added 2026-09-21 (queue item T-273).** `adjustCandles`
+  > now scales volume by the inverse of the price factor:
+  > `frontend/src/lib/utils/ohlcvAdjust.ts:46` —
+  > `const volume = Number.isFinite(c.volume) ? c.volume / f : c.volume` (`f = adjClose /
+  > close`). A 4:1 split therefore leaves share volume continuous instead of stepping ×4,
+  > pinned at `__tests__/ohlcvAdjust.test.ts:69-87`. The fix reaches every surface through
+  > the single caller, `app/live-data/security-ohlcv/route.ts:89`. One limitation is stated
+  > rather than hidden (module docblock `:16-29`): `adjClose` folds dividends in with
+  > splits and they cannot be separated from this input, so the volume correction also
+  > carries a smooth drift of roughly a dividend yield per year on older bars — a few
+  > percent tilt, against the ×4 step it removes. A smooth tilt fires no signal; the step
+  > did. Volume passing through untouched when it is not a finite number is deliberate.
+  >
+  > The VWAP observation directly above is **not** settled by this — it is a separate
+  > point about daily bars, and it still stands.
+
 ## Deferred (needs a normal network / a key)
 
 - Live cross-check of 2–3 symbols (incl. a recent-split name like NVDA) against a charting

@@ -28,7 +28,6 @@ import {
 } from '@/lib/utils/indicators'
 import { detectSetups, type SetupKey, type DetectedSetup } from '@/lib/utils/scanSetups'
 import { DataBadge } from '@/components/ui/DataBadge'
-import { confluenceLabel } from '@/lib/utils/confluence'
 import { ohlcvSourceLabel } from '@/lib/utils/ohlcvSource'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { SignalBadge } from '@/components/charts/SignalBadge'

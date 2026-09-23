@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { readAffiliateClicks, recordAffiliateClick } from '@/lib/server/affiliateClicks'
 import { STAKING_PROVIDERS } from '@/lib/data/stakingProviders'
+import { guardSensitiveRoute } from '@/lib/server/apiGuard'
 
 export const dynamic = 'force-dynamic'
 
@@ -40,7 +41,25 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ ok: true, recorded })
 }
 
-export async function GET() {
+/**
+ * ⚠ GET is GATED, POST is NOT, and the asymmetry is the design.
+ *
+ * POST is fired by a reader clicking an affiliate link on a public page, so
+ * gating it would simply stop counting real clicks — the thing this route
+ * exists to do. It is already narrow: only ids present in the catalog are
+ * accepted, and the body carries nothing else.
+ *
+ * GET is the "owner-only view" the ROADMAP asks for (queue item T-121). The
+ * counts are not personal data, but they ARE commercially sensitive — per
+ * provider click-through is a revenue signal, and it was readable by anyone who
+ * could reach the app until 2026-09-21. `guardSensitiveRoute` is the repo's
+ * existing mechanism: localhost-only unless FN_ADMIN_TOKEN is configured and
+ * presented (see lib/server/apiGuard.ts).
+ */
+export async function GET(req: NextRequest) {
+  const denied = guardSensitiveRoute(req, 'affiliate-clicks', 30)
+  if (denied) return denied
+
   const file = readAffiliateClicks()
   const total = Object.values(file.counts).reduce((a, b) => a + b, 0)
   return NextResponse.json({

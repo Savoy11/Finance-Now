@@ -1,5 +1,68 @@
 # Incident Response Runbooks
 
+> ## ⚠ Correction, 2026-09-22 — the one runbook here that still works does not run in this repo's shell
+>
+> The 2026-09-20 banner below is right that **"Upstream Data Source Unreachable"** is the
+> exception: first-hand, current, and about the system that actually runs. That also makes
+> it the **only runbook on this page anyone will ever follow** — and its first two steps do
+> not execute on the machine this repo is maintained from.
+>
+> Verified first-hand on 2026-09-22, Windows PowerShell 5.1.26100.9444:
+>
+> - **Step 1, `curl -s https://api.ipify.org`** → `Cannot process command because of one
+>   or more missing mandatory parameters: Uri.` `curl` resolves to `Invoke-WebRequest`
+>   (`Get-Alias curl`), so `-s` binds as a parameter and swallows the URL. Same for the
+>   `ip-api.com` line beneath it.
+> - **Step 2, the TCP probe** (`timeout 6 bash -c "exec 3<>/dev/tcp/…" && echo CONNECTED`)
+>   → **parse error, the line never runs at all:** `The token '&&' is not a valid statement
+>   separator in this version`, and the same for `'||'`. `/dev/tcp` is additionally a bash
+>   builtin, and Windows `timeout.exe` takes `/t`.
+> - **Step 2, the control check** (`curl -s -o /dev/null -w "%{http_code}\n" …`) → the same
+>   alias problem, plus `/dev/null`.
+>
+> **This is the worst possible place for it to happen.** Step 1 is the gate — the runbook
+> itself calls the VPN check "the single most common cause" and says it "costs 30 seconds
+> to rule out" — and every later step is read in light of its answer. A responder who
+> pastes it gets an error *while already chasing a network fault*, so the check fails in
+> the costume of the thing it was checking for. This runbook's own closing warning, that a
+> verdict from one machine is not a verdict about the source, applies to the runbook.
+>
+> **Working equivalents, verified on this machine.** `curl.exe` is present at
+> `C:\WINDOWS\system32\curl.exe`; the `.exe` is what bypasses the alias. `nslookup` and
+> `tracert` in Step 2 are fine exactly as written.
+>
+> ```powershell
+> $ip = curl.exe -s https://api.ipify.org        # or: Invoke-RestMethod https://api.ipify.org
+> curl.exe -s "http://ip-api.com/json/$ip`?fields=isp,org,as,proxy,hosting"
+>
+> Test-NetConnection -ComputerName <host> -Port 443   # the TCP layer, no bash needed
+> Test-NetConnection -ComputerName <host> -Port 80
+>
+> (Invoke-WebRequest -Uri https://api.coingecko.com/api/v3/ping).StatusCode   # control
+> ```
+>
+> The bash commands are **left in place below**, marked inline and dated. They are correct
+> for bash, which is where this runbook was written, and a responder on a Linux box should
+> use them.
+>
+> **Two citations no longer resolve** — both claims are still true, the line numbers moved:
+> the PagerDuty box in the architecture diagram is at **`docs/architecture/overview.md:114`**,
+> not `:79`; and `/api/v1/prices`'s 16-ticker `ALL_COINS` list is at
+> **`prices/route.ts:8`**, not `:7`.
+>
+> **Everything else below was re-checked against the tree and holds**, including the parts
+> a responder would otherwise re-derive: `live-data/alerts/route.ts` watches exactly **14**
+> stablecoins, `/api/v1/prices` covers **USDT, USDC and DAI** of them, and the other eleven
+> named are right; `frontend/src/app/api/v1/` holds exactly the nine directories listed and
+> **no market-data route**; `apiGuard.ts:72` (`FN_ADMIN_TOKEN`); `variables.tf:278`
+> (PagerDuty key, default `""`); `alertmanager.yml:123` (`routing_key_file`);
+> `rds.tf:156` and `main.tf:132` (where `fn-staging-aurora` comes from);
+> `checklist-steward.md:36`; `cd-production.yml` carries no `STAGING_DEPLOY_ENABLED` gate
+> and does fail preflight on a missing `AWS_ACCOUNT_ID` (`cd-production.yml:84`). **All
+> four Prometheus thresholds in the escalation-matrix comparison verify exactly** —
+> `HighDatabaseConnections` 80%, `RedisHighMemoryUsage` 80%, `RiskScoringEngineStale` 600s,
+> `PriceDataStale` 180s.
+
 > **Correction, 2026-09-20.** Three of the four runbooks below are written for a
 > Kubernetes cluster on AWS, an Aurora database and an on-call analyst. **As of
 > 2026-09-20 none of those exist.** EKS, Aurora and the `fn` namespace were designed
@@ -272,6 +335,14 @@ Do NOT change code before completing Step 1. On 2026-09-10 three plausible expla
 cause was a VPN.
 
 **Step 1 — Check what the internet sees you as**
+
+> ⚠ **2026-09-22: these two lines do not run in PowerShell**, which is the shell this repo
+> is maintained from — `curl` is an alias for `Invoke-WebRequest` and `-s` swallows the
+> URL, so they die with *"missing mandatory parameters: Uri"* rather than failing as a
+> network error. That is the failure this whole runbook exists to tell apart. The
+> PowerShell form (`curl.exe`, note the extension) is in the banner at the top of this
+> page. Below is the bash form, which is correct on Linux.
+
 ```bash
 curl -s https://api.ipify.org
 curl -s "http://ip-api.com/json/<that-ip>?fields=isp,org,as,proxy,hosting"
@@ -281,6 +352,12 @@ those ranges silently. **Turn it off and retry before anything else** — this i
 single most common cause and costs 30 seconds to rule out.
 
 **Step 2 — Test each layer, in order. They fail differently.**
+
+> ⚠ **2026-09-22: bash only.** `nslookup` and `tracert` are fine anywhere. The TCP probe
+> and the control check are not: `&&` and `||` are parse errors in Windows PowerShell 5.1,
+> so the TCP line never executes, and `/dev/tcp` and `/dev/null` do not exist there. Use
+> `Test-NetConnection -Port 443` for the TCP layer — see the banner at the top.
+
 ```bash
 # DNS — compare three resolvers. Agreement rules out interception.
 nslookup <host>

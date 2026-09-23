@@ -88,11 +88,12 @@ export default function HowWeMakeMoneyPage() {
               ))}
             </ul>
             <p className="text-[11px] leading-relaxed text-text-muted">
-              That spread is uneven on purpose-of-fact rather than by choice: referral programs are
-              common among exchanges and rare among liquid-staking protocols. Since exchanges also
-              carry the highest counterparty risk in our own scoring, the providers we could be paid
-              by are systematically <em>not</em> the ones that score best — stated here because the
-              bias runs against you, not in your favour.
+              That spread is uneven as a matter of fact rather than by choice: referral programs are
+              common among exchanges and rare among liquid-staking protocols. Exchanges also carry
+              the highest custody and counterparty figures among the six risk dimensions we publish,
+              so the providers we could be paid by are systematically the ones our own published
+              figures treat most cautiously — stated here because the bias runs against you, not in
+              your favour.
             </p>
           </div>
         )}
@@ -106,9 +107,11 @@ export default function HowWeMakeMoneyPage() {
         </p>
         <ul className="space-y-2 text-xs leading-relaxed text-text-secondary">
           <li>
-            <strong className="text-text-primary">It cannot change a risk score.</strong> The scoring
-            functions take six risk numbers and never receive the provider object at all, so there is
-            no affiliate field for them to read.
+            <strong className="text-text-primary">It cannot change a risk judgement.</strong> Each
+            provider carries six risk dimensions, published as they are — there is deliberately no
+            single overall score anywhere in the app to move. The functions that work on those
+            dimensions take the six numbers and never receive the provider object at all, so there
+            is no affiliate field for them to read.
           </li>
           <li>
             <strong className="text-text-primary">It cannot change ordering or filtering.</strong>{' '}
@@ -117,8 +120,8 @@ export default function HowWeMakeMoneyPage() {
           </li>
           <li>
             <strong className="text-text-primary">It cannot soften a warning.</strong> A high risk
-            score, a staleness notice and a defunct badge render identically whether or not we are
-            paid. Defunct providers get no outbound link at all, paid or otherwise.
+            dimension, a staleness notice and a defunct badge render identically whether or not we
+            are paid. Defunct providers get no outbound link at all, paid or otherwise.
           </li>
           <li>
             <strong className="text-text-primary">It cannot replace the honest URL.</strong> A

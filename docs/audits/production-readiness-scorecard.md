@@ -106,9 +106,48 @@ wired up and for a `/metrics` guard that was bypassable; Infrastructure for
 image pinning and a Redis eviction fix that were not in effect. Treat 89 as
 unverified until the score is recomputed.
 
+> **Scope banner, 2026-09-22.** Both figures are composites over the Dimension Scores
+> table below, and **95 of that table's 100 weight points score components that no longer
+> ship** — see the banner on that table for the row-by-row split. Neither number is
+> re-scored here. What is recorded is what they are made of, because a composite carries
+> no trace of its own composition and "89 / 100" travels without the table.
+
 ---
 
 ## Dimension Scores
+
+> **Scope banner, 2026-09-22 — which rows score a retired component.** The FastAPI
+> backend was retired and frozen on 2026-09-14 (owner decision D2,
+> `docs/decisions/2026-09-14-owner-decisions.md:37`; record: `backend/FROZEN.md`), and
+> the AWS infrastructure the Infrastructure row partly rests on was never provisioned.
+> **Eight of the nine rows below score that backend, its manifests, or that
+> infrastructure — 95 of the 100 weight points:** Security & Auth (20), Data Integrity
+> (15), Scalability (15), Quant Methodology (15), Infrastructure (10), Observability
+> (10), API Design (5) and **Testing (5)**. Only **Frontend/UX (5)** scores something
+> that ships, and that row is already flagged stale.
+>
+> Those rows are **out of scope, not wrong**, and they are kept rather than struck:
+> deleting them would leave the composite above with no visible composition, which is
+> the failure this banner exists to prevent.
+>
+> Two are worth naming individually, because neither reads as backend-scoped:
+>
+> - **Testing (5%)** reads as a whole-repo figure and is not one — its floor is the
+>   *backend's* pytest coverage gate. That file now reads **55**
+>   (`backend/pyproject.toml:87`), raised from 45 on 2026-09-08 per its own comment at
+>   `:76`, and **no CI job enforces it any more**: `.github/workflows/ci.yml` runs
+>   `frontend-check`, `docker-build` (frontend image only, `ci.yml:214`), `security-scan`,
+>   `terraform-validate` and `ci-success`, the backend jobs having been removed the day
+>   of D2 (`ci.yml:28`). That number is recorded here and deliberately **not**
+>   substituted into the row: the row is flagged **Stale** and stays flagged until it is
+>   re-scored.
+> - **Infrastructure (10%)** mixes the frozen backend's `db/session.py` with docker/k8s
+>   manifests for a cluster that has never been applied — two different kinds of
+>   not-shipping inside one score.
+>
+> **Nothing here is re-scored or re-weighted.** Re-scoring is a fresh assessment, not a
+> maintenance pass, and quietly refreshing a figure would erase the signal that it needs
+> redoing. The quarterly review owns it (see the closing note).
 
 | Dimension | Pre-Audit | Post-Audit | Weight | Notes |
 |-----------|-----------|------------|--------|-------|
@@ -183,6 +222,16 @@ attempted here.
 
 ## Remaining Known Risks (Deferred)
 
+> **Scope banner, 2026-09-22.** All six are properties of the retired backend — every
+> "Still open?" cell resolves to a `backend/app/` path, and A's mitigation (a Redis
+> pub/sub backplane for `streaming/manager.py`) is the same component the Scalability
+> row above scores. "Still open" remains literally true and now means something
+> different: they are open in a service nobody runs, and the Q3/Q4 sprint mitigations
+> are plans for work that D2 ended on 2026-09-14
+> (`docs/decisions/2026-09-14-owner-decisions.md:37`). Kept, not struck — if the backend
+> is ever revived this is the list that comes back with it, and `backend/FROZEN.md`
+> records what reviving it would require.
+
 All six re-confirmed as still open on 2026-07-29 — none has been quietly closed.
 
 | # | Severity | Issue | Mitigation | Still open? |
@@ -232,6 +281,25 @@ cannot be verified from the repository.
 
 ## SOC 2 Readiness Roadmap
 
+> **Scope banner, 2026-09-22.** Two things changed under this roadmap after it was
+> written, and neither is visible in a checkbox.
+>
+> **SOC 2 itself was deferred by the owner on 2026-09-14** — decision D5, *"Not now —
+> revisit post-launch,"* with the trigger recorded as the first paying customer or the
+> first enterprise conversation (`docs/decisions/2026-09-14-owner-decisions.md:45`). The
+> "9 months / 18 months" target below runs from the 2026-06-14 audit date and is not a
+> live clock.
+>
+> **And the controls are scoped to components that do not ship.** Phase 1's column
+> encryption, WORM audit log and `sslmode=require` are backend/database changes to a
+> service retired by D2; its RDS TDE, and all of Phase 2's WAF, CloudTrail and GuardDuty,
+> are AWS controls for infrastructure that has never been provisioned (the banner at the
+> top of this file separates *written-never-applied* from *never-written-at-all* for
+> exactly these). Phases 3 and 4 are auditor process and are unaffected by either.
+>
+> Everything stays unticked and nothing is struck: unticked is the accurate state under
+> a deferral as much as under a plan.
+
 **Target:** SOC 2 Type I within 9 months; Type II within 18 months
 
 ### Phase 1 — Foundation (Months 1–3)
@@ -271,6 +339,17 @@ cannot be verified from the repository.
 
 ## Enterprise Sales Readiness Roadmap
 
+> **Scope banner, 2026-09-22.** Every item under **Technical Requirements** below is a
+> feature of the retired backend or of the unprovisioned cluster: SSO/SAML, per-API-key
+> IP allowlisting, plan-based rate-limit tiers, audit-log export and custom alerting
+> webhooks all name that service's auth, middleware and API-key model (`api_key.py`,
+> `rate_limiter.py`, `core/middleware.py` — all under `backend/app/`, frozen by D2,
+> `docs/decisions/2026-09-14-owner-decisions.md:37`); "data residency" and "dedicated
+> environments" name Terraform workspaces and namespaces in a cluster nobody has stood
+> up. The **Commercial** and **Operational** sections are untouched by D2 — they were
+> never repo-verifiable in the first place, which the roadmap-checkbox section above
+> already records. Nothing here is ticked, struck or re-scoped.
+
 **Target:** Enterprise-ready for Tier 1 financial institution pilots in 6 months
 
 ### Technical Requirements
@@ -301,6 +380,18 @@ cannot be verified from the repository.
 
 ## Series A Readiness Roadmap
 
+> **Scope banner, 2026-09-22.** **Six of the nine Technical Proof Points** are scoped to
+> components that do not ship. The four asset monitoring pipelines live in the frozen
+> tree (`backend/app/pipelines/chainlink.py`, `coingecko.py`, `defillama.py`,
+> `onchain.py` — alongside the `base.py` and `scheduler.py` the wording note above
+> correctly excludes from the count); scoring-model validation and the WebSocket
+> backplane are backend work; and multi-region, 99.9% demonstrated uptime and the
+> 1,000-RPS p95 load test all require infrastructure that has never been provisioned.
+> A seventh, **SOC 2 Type I**, is deferred rather than out of scope — see the banner on
+> the SOC 2 roadmap above. The **Business Proof Points** and the **Investor Narrative**
+> are unaffected: they are commercial claims, and the narrative is dated history
+> (written under the CAEP name, as it says) that stands as written.
+
 **Target:** Series A raise in 12–18 months at $15–30M pre-money
 
 ### Technical Proof Points Needed
@@ -330,6 +421,42 @@ The pitch (written when the product was named CAEP) centers on:
 4. **Expansion optionality** — CBDC analytics, tokenized RWA monitoring, ETF-grade reporting are natural upsells.
 
 ---
+
+> **Scope check, 2026-09-22 — looked for, not found.** Three classes of drift were
+> searched for across this file and none is present. Recorded so the next reader does
+> not repeat the search:
+>
+> - **Removed surfaces.** No row mentions Budget, Retirement, the Risk Scores page or
+>   Global Adoption. This audit predates all four removals and never reached the
+>   frontend at that granularity — its one frontend row is a single stale score.
+> - **Hidden-from-rollout surfaces.** No row mentions Transfer Fees, Wallets, or any of
+>   the three backtest surfaces.
+> - **Paid-tier blockers (D21).** No row's remedy is "buy a plan" in D21's sense — a
+>   *shipping surface* blocked only by a paid provider tier
+>   (`docs/decisions/2026-09-18-owner-decisions.md:7`, owner 2026-09-18). The near
+>   misses are a different thing in each case: "Plan-based rate limit tiers" and "API
+>   usage metering for billing" are plans this product would **sell**, not buy; and
+>   "Engage SOC 2 auditor", "Insurance" and "Penetration test report" are procurement,
+>   already covered by the roadmap-checkbox section's note that the commercial items
+>   cannot be verified from the repository. **D21 does not apply to this document**, and
+>   nothing here should be relabelled as sequencing on its authority.
+
+> **Left for the quarterly review (T-181, due ~2026-10-29) — noted 2026-09-22.**
+> Deliberately not done in this pass, because each is a fresh measurement or a decision
+> rather than a maintenance edit:
+>
+> 1. **Re-scoring anything.** Frontend/UX and Testing stay flagged **Stale**, and the
+>    74 → 89 composites stay exactly as recorded, unverified flag and all.
+> 2. **Deciding what this document becomes.** A readiness scorecard weighted 95% to a
+>    retired backend can be re-scoped to the frontend, replaced, or kept as a closed
+>    dated record — that is an owner decision, not something a banner can settle.
+> 3. **Re-verifying the eighteen "✅ Fixed" rows.** The tree they cite is frozen and was
+>    spot-checked on 2026-09-20; the 2026-07-29 verification is the record and stands.
+>    No Verification-column entry was changed in this pass.
+> 4. **Re-counting the 58 roadmap checkboxes**, and re-running the ten source checks
+>    beneath them. Those are measurements against a frozen tree, and re-asserting them
+>    without re-running them would be the exact parts-inventory error recorded at the
+>    top of this file.
 
 *This document should be reviewed and updated quarterly. Last verified against
 the tree: 2026-07-29 — claim-by-claim, not by re-reading the previous summary.

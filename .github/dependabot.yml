@@ -1,4 +1,32 @@
-# Dependabot — weekly dependency updates.
+# Dependabot — monthly dependency updates.
+#
+# ── Cadence changed weekly -> monthly, 2026-09-22 (owner request) ────────────
+#
+# The argument is this file's own: "Ungrouped, this repo would open ~15 PRs a
+# week across four ecosystems and they would be ignored, which is worse than not
+# running it." Grouping fixed the volume; the CADENCE reproduced the problem more
+# slowly. Measured on 2026-09-22: ten open dependabot PRs, the oldest six of them
+# raised 2026-09-14 and still unread eight days later — including four majors
+# (tailwindcss 3->4, eslint 9->10, zustand 4->5, @vitest/coverage-v8 3->5) that
+# the ungrouping exists specifically to make someone read.
+#
+# ⚠ THIS DOES NOT SLOW SECURITY FIXES, and that is the only objection worth
+# answering. `schedule` governs VERSION updates only. Dependabot SECURITY updates
+# are driven by repository alerts and ignore this file's `updates:` blocks
+# entirely — which is demonstrable here rather than theoretical: #213 (cryptography
+# 49 -> 50, changelog opening "SECURITY ISSUE") was raised on 2026-09-20, six days
+# AFTER the pip ecosystem watching /backend was removed on 2026-09-14 (#193). The
+# removal worked exactly as intended for version updates and never applied to the
+# security path.
+#
+# `day:` is dropped because it is a weekly-only key; monthly runs on the 1st.
+# That decouples the batch from the Monday/Tuesday pairing the triage workflow
+# was built around — harmless, because dependabot-triage.yml runs weekly and
+# exits before any Anthropic call when there is nothing open, so it simply finds
+# the batch within a week of it landing. Its Tuesday cadence is owner decision D6
+# and is deliberately NOT changed here.
+#
+# To go back: restore `interval: weekly` + `day: monday` on all four ecosystems.
 #
 # Added 2026-07-28, closing the last unticked item in docs/architecture/security.md
 # that was actionable from the repo. The week that preceded it is the argument for
@@ -18,8 +46,7 @@ updates:
   - package-ecosystem: npm
     directory: /frontend
     schedule:
-      interval: weekly
-      day: monday
+      interval: monthly
     open-pull-requests-limit: 5
     groups:
       frontend-patch-minor:
@@ -42,8 +69,7 @@ updates:
   - package-ecosystem: npm
     directory: /mcp-server
     schedule:
-      interval: weekly
-      day: monday
+      interval: monthly
     open-pull-requests-limit: 3
     groups:
       mcp-patch-minor:
@@ -84,8 +110,7 @@ updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
-      day: monday
+      interval: monthly
     open-pull-requests-limit: 3
     groups:
       actions:
@@ -95,6 +120,5 @@ updates:
   - package-ecosystem: docker
     directory: /frontend
     schedule:
-      interval: weekly
-      day: monday
+      interval: monthly
     open-pull-requests-limit: 2

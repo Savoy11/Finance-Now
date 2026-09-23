@@ -86,6 +86,15 @@ async function fetchTiingoSeries(symbol: string, key: string): Promise<CloseSeri
   const timestamps: number[] = []
   for (const row of [...rows].sort((a, b) => Date.parse(a.date) - Date.parse(b.date))) {
     // Adjusted closes, so a split or a distribution isn't read as a return.
+    //
+    // ⚠ OPEN DECISION (T-401) — the `?? row.close` fallback is NOT a settled choice.
+    // docs/decisions/2026-09-18-owner-decisions.md:71-77 records whether trailing
+    // returns may be served on UNADJUSTED closes as explicitly not decided, and this
+    // line quietly answers it: when a provider omits `adjClose`, the unadjusted value
+    // is used and nothing downstream discloses that it happened — so a 4:1 split reads
+    // as a -75% return with no marker. Do not read the fallback as ratified because it
+    // is here. Compare `adjustCandles` (lib/utils/ohlcvAdjust.ts), which states its own
+    // dividend/split limitation in its docblock rather than leaving it implicit.
     const close = row.adjClose ?? row.close
     const ms = Date.parse(row.date)
     if (!Number.isFinite(close) || Number.isNaN(ms)) continue

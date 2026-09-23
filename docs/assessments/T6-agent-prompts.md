@@ -124,3 +124,43 @@ asserts that counts stated in the assistant's prompt match the catalogs. Removin
 Transfer Fees line dropped the exchange/coin/network counts and the test failed
 immediately. Those counts are kept on the hidden-surface line — the data is real and
 maintained, which is precisely why the page is hidden rather than deleted.
+
+---
+
+## Annotation — 2026-09-21 re-verification (does not amend anything above)
+
+A queue sweep asserted that this file does not exist and that `prompts.ts` still
+describes the pre-RP-5/RP-6/rollout-hide app. Both halves of that were re-checked
+against source; the record above is left exactly as written on 2026-09-08.
+
+**The three claims, re-read against the shipping app:**
+
+| Claim | State in `prompts.ts` | Evidence |
+|---|---|---|
+| RP-5 — exchange API-key linking removed | Correct. The app-assistant's Wallets line states the removal and the date, and ends "Never tell a user they can connect an exchange API key; the app does not accept one anywhere". No other prompt mentions exchange keys | `promptRoutes.test.ts` asserts both the absence of "read-only exchange API" and the presence of the RP-5 wording |
+| RP-6 — no per-coin risk score published | Correct. The Crypto block carries an explicit NO PER-COIN RISK SCORE paragraph naming RP-6, refusing to estimate one, and listing the risk scoring that *does* exist (options Trade Risk Scorer, staking-provider dimensions, macro/equity profiles). The only other `riskScore` in the file is `equity-diligence`'s output field, which states its direction and disclaims the canonical Safety Score | Read against the Feature Inventory's Coins and Risk Scores rows |
+| ROLLOUT-HIDE — hidden surfaces | Correct. Transfer Fees, Wallets, the crypto TA Backtest tab, `/equities/backtests` and the Portfolios Backtest tab are each named **with** their withdrawal on the same line | `promptRoutes.test.ts` re-run: every literal redirect in `next.config.mjs` that a prompt names is marked withdrawn on its own line |
+
+No prompt text was changed for any of the three. The agent tests under
+`lib/agents/__tests__/` pass unmodified.
+
+**One defect found and fixed, outside those three.** `data-scraper`'s staking
+collection list asked for a *risk level* per opportunity. Its own JSON schema,
+field-for-field in the same order, carries `custodyModel` there instead — the
+rename that came with D14, landed in the schema and not in the prose. That is the
+same shape as the `riskScore` → `suspicionScore` drift recorded above: an agent
+instructed to gather a value with nowhere to put it, and in this case a composite
+provider risk judgement the app deliberately publishes nowhere. The line now names
+the custody model with its three documented values and says plainly that no
+composite risk level is to be collected or invented.
+
+**The output half of T6 is still open, on the same precondition** stated above:
+`npm run audit` on the owner's machine with provider keys set, read beside
+`npm run agent-eval -- --run`, so a vague answer off a FALLBACK route is not
+misfiled as a prompt problem. Nothing in this annotation evaluates agent output.
+
+**Not fixed, because the file is outside this pass's scope:**
+`app/(dashboard)/agent-config/page.tsx` tells the reader the Data Scraper "has no
+invocation trigger yet and never runs". NT5 gave it one — it is in the Research
+page's per-market agent picker and on the research route's whitelist — so that
+copy has been wrong since 2026-08-18.

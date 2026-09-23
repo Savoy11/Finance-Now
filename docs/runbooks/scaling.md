@@ -1,5 +1,63 @@
 # Scaling Runbook
 
+> ## ⚠ Correction, 2026-09-22 — read this before running anything below
+>
+> **The one command on this page that can spend money is `terraform apply`, and it is not
+> scoped to Redis.** "Redis Scaling" ends with
+> `terraform apply -target=aws_elasticache_replication_group.fn`. `-target` narrows an
+> apply to a resource **and everything it depends on**, and here that chain is not small.
+> `elasticache.tf:121` needs `aws_elasticache_parameter_group.fn` (`elasticache.tf:9`),
+> `aws_elasticache_subnet_group.fn` (`elasticache.tf:98`, whose `subnet_ids` are
+> `module.vpc.database_subnets`) and `aws_security_group.redis` (`vpc.tf:160`, whose
+> `vpc_id` is `module.vpc.vpc_id`). So it pulls in the **entire VPC module** — NAT
+> gateways included (`vpc.tf:21-23`) — plus `aws_kms_key.fn`, `aws_sns_topic.alerts`, two
+> CloudWatch log groups, and a multi-AZ `cache.r6g.large` replication group
+> (`variables.tf:225`). With no state to diff against, that is a **first apply of the
+> whole environment**, not a resize.
+>
+> The 2026-09-20 banner does say this — in the Redis section, in prose, above the code
+> block. It belongs here instead, because a scaling runbook is opened under load and the
+> reader scrolls to the command.
+>
+> **What stops it today, and why that is not reassurance.** `terraform init` fails first:
+> `main.tf:50` puts state in the S3 bucket `fn-terraform-state`, which has never been
+> created. The day someone runs `infrastructure/terraform/bootstrap` — which exists, and
+> whose whole job is to create that bucket — this block stops erroring and starts
+> building. Nothing on this page changes on that day, so nothing warns the next reader.
+>
+> **Nothing else here can do damage.** The `kubectl` and `aws rds` commands name a
+> cluster and an Aurora cluster that do not exist and error out. Checked against the
+> tree, not assumed.
+>
+> ### Citations below that no longer resolve
+>
+> All four claims are still **true** — only the line numbers drifted. The pattern is
+> worth knowing: every citation into `infrastructure/` and `.github/workflows/` is still
+> exact, while every citation into another **document** has moved, because those
+> documents gained banners in the 2026-09-19/20 sweep. Cite code by line; cite a document
+> by section.
+>
+> | Cited below | Actually |
+> |---|---|
+> | `cd-staging.yml:256` applies `hpa.yaml` | `:256` applies the backend **deployment**; `hpa.yaml` is applied at **`:261`** |
+> | staging applies the tree at `:235-266` | the apply block runs **`:237`–`:290`** — it also applies postgres, redis and the ingress |
+> | `data-flow.md:306` and `:296` | `add_retention_policy` is at **`:374`**, the 90-day row at **`:364`**. `:306` matches a stale copy under `.claude/worktrees/`, not the live file |
+> | `production-readiness-scorecard.md:150` and `:234` | the "no production deployment" statement is at **`:273`** and **`:399`** |
+> | `rds.tf:57` = 500 | `:57` is the `name` line; the value `500` is at **`:58`** |
+>
+> **Re-checked and correct:** `cd-production.yml:274` (`hpa.yaml`), `elasticache.tf:121`,
+> `rds.tf:162`, `eks.tf:394`, `statefulset.yaml:81`, `redis/deployment.yaml:56`,
+> `variables.tf:225`, `main.tf:50`, `main.tf:132` — and **every** HPA value in the section
+> below (min 3, max 20, CPU 70%, memory 80%, both the Pods and External metrics, 60s
+> scale-up / 300s scale-down, and `fn-backend-pdb` `minAvailable: 2`), against
+> `infrastructure/kubernetes/backend/hpa.yaml`.
+>
+> **One thing the 2026-09-20 banner overstates.** "Staging is gated off behind
+> `STAGING_DEPLOY_ENABLED`" holds for automatic pushes only. `cd-staging.yml:87` reads
+> `vars.STAGING_DEPLOY_ENABLED == 'true' || github.event_name == 'workflow_dispatch'`, and
+> the comment above it says as much: a manual run always proceeds. The variable being
+> unset is not a lock.
+
 > **Correction, 2026-09-20.** This runbook reads as the operating manual for a running
 > cluster: `kubectl` against namespace `fn`, `aws rds` against `fn-staging-aurora`,
 > `terraform apply` against a live ElastiCache group. **As of 2026-09-20, no cluster,
@@ -120,6 +178,11 @@ omits `key`, so a bare `terraform init` here fails and the key must be passed pe
 environment. And as of 2026-09-20 nothing has ever been applied from this directory:
 with no state, `-target` does not narrow the work to one replication group — the first
 apply stands up the environment.
+
+> ⚠ **2026-09-22:** see the banner at the top of this page for what `-target` actually
+> drags in here — the whole VPC module and NAT gateways among it. This is the only
+> command on the page that can create billable AWS resources.
+
 ```bash
 cd infrastructure/terraform
 terraform init -reconfigure -backend-config="key=staging/terraform.tfstate"

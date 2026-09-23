@@ -5,6 +5,14 @@
 **Supersedes:** the "Canonical conventions" section of `docs/architecture/risk-framework.md` (which it ratifies and extends, not contradicts)
 **Scope:** `frontend/` — every surface that displays, filters, sorts, or serves a risk number
 
+> **Status: ✅ fixed — annotation added 2026-09-21 (queue item T-406).** The status line
+> above records R2's phases 1–5 and stops there, and the §5 Phase 6 table carried no
+> marker, so the document read as *"Phase 6 outstanding"*. It is not. **Phase 6 shipped
+> 2026-09-08**, after R2 and separately from it: `live-data/pump-report/investigate/route.ts`
+> emits `suspicionScore` (the interface field, and the JSON schema in the prompt), and
+> `PumpReportTab.tsx` reads `report.suspicionScore`. The dated R2 line is left as written;
+> this note and the marker on §5's Phase 6 table are the correction.
+
 ---
 
 ## 0. Two corrections to the framing
@@ -307,7 +315,7 @@ underlying ratings and their relative ordering are untouched.
 | Surface | Scheme | Note |
 |---|---|---|
 | `live-data/staking-discovery/route.ts:107` | **Not independent** — imports `computeOverallRisk` + `getRiskLevel` | ~~Migrates automatically with scheme 4.~~ **Resolved 2026-09-14 (D14): its composite fields were removed too.** This row is why D14's own ruling was wrong to call the public API the helpers' *only* consumer — the spec had recorded this second one a month earlier. |
-| `live-data/pump-report/investigate/route.ts:31-32` | LLM-emitted `riskScore` 0.0–10.0, higher = riskier, `overallRisk: clean\|suspicious\|flagged\|critical` | Genuinely independent, and genuinely different in kind (§4.5). |
+| `live-data/pump-report/investigate/route.ts` (`:32`, `:45`) | LLM-emitted ~~`riskScore`~~ **`suspicionScore`** 0.0–10.0, higher = more suspicious, `overallRisk: clean\|suspicious\|flagged\|critical` | Genuinely independent, and genuinely different in kind (§4.5). **Renamed 2026-09-08 when Phase 6 shipped (§5 Phase 6); the row said `riskScore` until 2026-09-21.** The field's own doc comment now carries the reason. |
 | `types/asset.ts:2` | Duplicate `RiskBand` union, structurally identical to `lib/risk/types.ts:17` | Two declarations of one type. Collapse. |
 | `backend/app/scoring/` | 0–100 higher = safer, bands 80/65/50/30 | Per `risk-framework.md:17`. Backend is optional/legacy (auth+agent only). **Its band thresholds disagree with the frontend's** (65/50/30 vs 60/40/20). Out of scope for this spec but must not be reactivated without adopting canonical bands. |
 
@@ -497,6 +505,15 @@ cases in §3.3's table.
 ### Phase 5 — Public API (breaking; gated — see §5.3)
 
 ### Phase 6 — Pump report relabel
+
+> **✅ SHIPPED 2026-09-08 — marker added 2026-09-21 (queue item T-406).** Both rows below
+> are done. The route's interface field, and the JSON schema the prompt asks the model to
+> fill, both read `suspicionScore`; the field carries a doc comment explaining why `risk`
+> was the wrong word for it (it measures evidence of fraud about a target, not an asset's
+> risk — which RP-6 forbids publishing). `PumpReportTab.tsx` reads `report.suspicionScore`,
+> and the 6.2 "no `RiskScoreBadge` reuse" condition cannot regress because RP-6 deleted
+> that component outright — `lib/risk/__tests__/riskScoringRemoved.test.ts` asserts it
+> stays deleted. Line references below are as-drafted and have since moved.
 
 | # | File | Change |
 |---|---|---|

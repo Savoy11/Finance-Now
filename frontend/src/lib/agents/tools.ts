@@ -392,7 +392,16 @@ const TOOL_REGISTRY: RegisteredTool[] = [
     market: 'macro',
     tool: {
       name: 'get_fx_rates',
-      description: 'Get daily USD-based FX reference rates: 30 currencies from the ECB (official tier) and, when include_extended is true, 127 more community-sourced currencies (labeled non-official). For intraday pair quotes use get_macro_quote instead.',
+      // ⚠ 126 is TYPED here, against the derive-don't-type rule, and the reason is a
+      // boundary rather than laziness: the allowlist is `EXTENDED_CURRENCIES` inside
+      // app/live-data/fx-rates-extended/route.ts, unexported, and this file imports only
+      // from lib/ — pulling a value out of a route would drag route code into the agent
+      // bundle. The real fix is to move the allowlist into lib/data/ beside the other
+      // catalogs, after which this interpolates like the macro tool two entries above.
+      // Corrected 2026-09-22: it said 127 until then. It has been 126 since 'bgn' was
+      // removed on 2026-07-22, when Bulgaria adopted the euro — and an agent reads this
+      // number out to a user.
+      description: 'Get daily USD-based FX reference rates: 30 currencies from the ECB (official tier) and, when include_extended is true, 126 more community-sourced currencies (labeled non-official). For intraday pair quotes use get_macro_quote instead.',
       input_schema: {
         type: 'object',
         properties: {

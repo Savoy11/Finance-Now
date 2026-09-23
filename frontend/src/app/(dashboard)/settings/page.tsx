@@ -38,14 +38,18 @@ import { useFeedBiasStore, BIAS_FEEDS } from '@/store/useFeedBiasStore'
 import { useWatchlistBias } from '@/lib/watchlist/useWatchlistBias'
 import { BIAS_STRENGTHS } from '@/lib/watchlist/bias'
 import { migrateStorageKey } from '@/lib/utils/storageMigration'
+import { AffiliateClicksPanel } from '@/components/settings/AffiliateClicksPanel'
 
 // One-time key migration for the Finance Now rename — runs before any read below.
 migrateStorageKey('caep-custom-subreddits', 'fn-custom-subreddits')
 
 
 // ─── Suite modules panel ──────────────────────────────────────────────────────
-// Toggles which suite modules (Crypto, Equities, ETFs & Funds) appear in the
-// sidebar. Backed by the entitlement store — becomes license-driven when
+// Toggles which suite modules appear in the sidebar. The list is NOT typed here
+// — it renders `OPTIONAL_MODULES` from lib/modules/registry.ts, so a module
+// added or removed there shows up without touching this file. (It used to name
+// three of them in this comment and had already gone stale.) Backed by the
+// entitlement store, which is a local setting — it becomes licence-driven when
 // billing lands (docs/ROADMAP.md, Phase 6).
 
 function ModulesPanel() {
@@ -1329,6 +1333,11 @@ export default function SettingsPage() {
           {/* Suite modules */}
           <ModulesPanel />
           <WatchlistBiasPanel />
+
+          {/* Owner-only. Renders nothing at all for a viewer the gated endpoint
+              denies — see the component docblock for why that is the right
+              behaviour here and not the C-note-10 failure the banner above fixes. */}
+          <AffiliateClicksPanel />
 
           {/* Crypto market data */}
           <section>

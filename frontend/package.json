@@ -36,6 +36,7 @@
     "rates-probe": "tsx scripts/probe-rates-scale.mjs",
     "rates-providers": "tsx scripts/probe-rates-providers.mjs",
     "staking-upstreams": "node scripts/probe-staking-upstreams.mjs",
+    "discovery-upstreams": "tsx scripts/probe-discovery-upstreams.mjs",
     "llama-symbols": "node scripts/probe-llama-symbols.mjs",
     "fund-fees": "node scripts/build-fund-fees.mjs",
     "fee-reconcile": "tsx scripts/reconcile-transfer-fees.ts",

@@ -392,6 +392,16 @@ found on any page. SourceLine present on all pages** (ids verified in
 6. Signal-summary vote weighting and pattern detection have degenerate-input tests
    only; underlying indicator math is heavily tested. Correctness-of-aggregation test
    is a nice-to-have, not a blocker.
+   *(Closed 2026-09-21 — queue item T-104. `lib/utils/__tests__/signalSummary.test.ts`
+   (147 lines) now pins the AGGREGATION rather than the indicator math: the weight map
+   and the non-neutral denominator at `:68-75`, the strong-variant fold at `:58-65`, and
+   the ±1.5/±0.5 band boundaries at `:81-88`, each hard-coded against
+   `indicators.ts:1417-1432`. It also pins two live behaviours worth keeping: a 0.5%/bar
+   advance correctly reports **neutral** because the trend indicators and the
+   mean-reversion oscillators disagree (`:117-129`), and a flat series reports no
+   conviction (`:140-146`). Pattern detection's own tests are unchanged and are not part
+   of this closure. The dated 2026-08-16 sweep block at `:360-366` still lists 6 as
+   "still open" and is left as written — same treatment note 4 records for itself.)*
 7. Backtests' symbol select is the 79-name curated catalog while TA charts any ticker —
    an inconsistency worth a Wave 2 decision (bounded select may be deliberate). Fee
    tiers are undocumented in CLAUDE.md — Appendix A.

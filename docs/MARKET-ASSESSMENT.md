@@ -79,6 +79,29 @@
 > document edit. Per `docs/agents/checklist-steward.md`, this file's caveats are
 > **extended rather than its conclusions edited** — the market and competitor analysis below
 > is untouched and remains a dated July 2026 snapshot.
+>
+> ---
+>
+> **Extension, 2026-09-22 — this banner's own freshness, re-checked.** The 2026-09-19
+> accuracy sweep deferred this file with one line: *"its own stale-claim banner has itself
+> expired"* (`docs/audits/doc-accuracy-sweep-2026-09-19.md:122`). The 2026-09-20 update
+> above **is** that extension and closes that item. Its tree measurements were re-derived
+> today and every one still holds: `Safety Score` → **15** hits under `frontend/src/` and
+> still none of them publishing a score; `COINGECKO_IDS` → **80**
+> (`frontend/src/lib/api/live/coingeckoIds.ts`); the registry catalog → **108**
+> (`frontend/src/lib/data/assetCatalog.ts`); `MONITORED_STABLECOINS` → **9**
+> (`frontend/src/lib/data/stablecoinMeta.ts:53`); **30** assets on the alert feed
+> (`frontend/src/app/live-data/alerts/route.ts:30–92`); **8** risk profiles
+> (`frontend/src/lib/risk/profiles/`). Nothing in the 2026-09-20 note needs correcting, and
+> a reader arriving from the sweep's deferred list can treat item 3 as done.
+>
+> **What this pass adds is a second kind of stale claim, one the banner above does not
+> cover: surfaces §2 lists as shipping that no user or agent can currently reach.** Three
+> rows of §2, §4's "wedge", §5's positioning sentence and §6 Phase 1's acquisition hook all
+> rest on the Transfer Fee Calculator, which has been **held out of the initial rollout
+> since 2026-08-22** (owner). It is hidden, not removed — a sequencing state, and under D21
+> not a defect. Annotated in place at each site with file:line; no market, competitor or
+> pricing judgement is touched.
 
 _Prepared 2026-07-01. Grounded in a hands-on audit of the running product (live API tests
 across all 78 supported coins, per-provider data-flow attribution, and page-by-page feature
@@ -121,6 +144,36 @@ hosting) is completed first.**
 | Agent surface | 🟢 REST `/api/v1` + OpenAPI + MCP server |
 | Integrations transparency | 🟢 Per-provider utilization indicator ("serving N items / failing / not consumed") |
 
+> ⚠ **Annotated 2026-09-22 — three rows above describe surfaces currently held out of the
+> rollout.** "Verified live this session" was July 2026 and was true then. These are
+> **hidden, not removed**: every page, engine, route and test is retained in place and each
+> site carries its restore steps, so this is a sequencing decision rather than a capability
+> the product lost. But a reader planning a launch from this table would be planning around
+> things nobody can open today.
+>
+> - **Transfer-route fee optimizer** — dark on all four of its surfaces since 2026-08-22
+>   (owner: *"I don't want it to be a part of the larger suite"*). `/transfer-fees` and its
+>   nav entry redirect to `/headlines` (`frontend/next.config.mjs:60`),
+>   `/api/v1/transfer/routes` answers 503 with a reason
+>   (`frontend/src/app/api/v1/transfer/routes/route.ts:35`), and both the agent tool and the
+>   MCP tool are commented out (`frontend/src/lib/agents/tools.ts:69`,
+>   `mcp-server/src/index.ts:118`). Reasoning and restore steps:
+>   `frontend/src/lib/modules/registry.ts:183`. Separately, "decision-grade" rests on a
+>   hand-maintained table last verified **2025-06-01** against a 120-day window
+>   (`frontend/src/lib/data/transferFees.ts:24,27`) — **478 days old on 2026-09-22** — with
+>   an explicit owner acknowledgement to leave it stale precisely because nothing publishes
+>   it while the surface is dark (`:15`).
+> - **Portfolios / wallets** — Portfolios is live and DB-backed; the wallets half is not
+>   reachable. `/wallets` redirects to `/headlines` (`frontend/next.config.mjs:66`,
+>   `frontend/src/lib/modules/registry.ts:166`). `/api/user/wallets` is deliberately left
+>   up, so saved addresses survive the hide.
+> - **Technical Analysis suite → "backtester"** — the Backtest tab is hidden
+>   (`frontend/src/app/(dashboard)/technical-analysis/page.tsx:101`), as are the other two
+>   backtest surfaces (`/equities/backtests` redirects, `frontend/next.config.mjs:101`).
+>   Engines and panels are retained; `DATA-AVAILABILITY.md:753` classes crypto backtests
+>   🔴 Not available. The rest of that row — chart types, indicators, pattern detector,
+>   Measure tool — is unaffected.
+
 ### What is not sellable yet
 | Gap | Why it blocks selling |
 |---|---|
@@ -158,6 +211,16 @@ squeezing the middle: winners are either free-with-scale or cheap-and-focused.
 1. **Transfer-route optimizer with safety rails.** Ranked multi-network routes with fee
    breakdowns, ETAs, and EVM address-collision warnings. Free comparators do pieces of
    this; none pair it with warnings + staking + portfolio context. **This is the wedge.**
+   — **Annotated 2026-09-22: the wedge is intact as an asset and unreachable as a
+   product.** Transfer Fees has been held out of the initial rollout since 2026-08-22
+   (owner: *"I don't want it to be a part of the larger suite"* —
+   `frontend/src/lib/modules/registry.ts:183`), and all four of its surfaces are dark; the
+   §2 note above lists them with file:line. Nothing is deleted and each site documents its
+   restore, so this does not refute the analysis — the differentiator still exists in the
+   tree. What it does mean is that **§5's positioning sentence and §6 Phase 1's acquisition
+   hook both lead with a surface nobody can currently open**, and that the fee table behind
+   it is 478 days past a 120-day verification window. Whether to un-hide it is the owner's
+   call; this note only records that the claim is not shipping today.
 2. **Staking risk taxonomy.** 6-dimension per-provider risk scoring (custody, counterparty,
    contract, slashing, liquidity, regulatory) is more granular than Staking Rewards' public
    surface.
@@ -219,7 +282,14 @@ near zero at launch.
 
 ### Phase 1 — Wedge launch (months 3–9)
 - Ship free tier around the **transfer-fee optimizer** as the acquisition hook (it's
-  inherently shareable: "I saved $40 moving USDT")
+  inherently shareable: "I saved $40 moving USDT") — **annotated 2026-09-22: this line
+  presumes the surface is shippable today, and it is not.** Transfer Fees is hidden from
+  the initial rollout (`frontend/next.config.mjs:60`,
+  `frontend/src/lib/modules/registry.ts:183`) and its fee table was last verified
+  2025-06-01 against a 120-day window (`frontend/src/lib/data/transferFees.ts:24,27`).
+  Un-hiding the surface and re-verifying that table are **prerequisites** to this bullet,
+  not steps inside it — the hide is an owner rollout decision, so the first one is not an
+  agent's to make.
 - Content/SEO: route-cost pages per exchange-pair rank well and are cheap to generate
   from existing data
 - Success gate: retention on the ops tools, not raw signups

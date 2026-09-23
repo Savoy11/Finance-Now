@@ -48,6 +48,28 @@ Verified: `tsc` clean · `eslint` clean · `vitest` 118 pass · `npm run build` 
 
 ## Phase 5 — Public API (`/api/v1/staking/opportunities`)
 
+> ⚠ **OVERTAKEN 2026-09-14 by owner decision D14 — annotation added 2026-09-21 (queue
+> item T-277). Everything in this Phase 5 section describes fields and a tool that no
+> longer exist.** `safetyScore`, `band`, `riskScore` and `riskLevel` were removed from
+> `/api/v1/staking/opportunities`, along with the `max_risk` / `min_safety` /
+> `max_safety` parameters — see the route's own `note` at
+> `frontend/src/app/api/v1/staking/opportunities/route.ts:156`. `compare_staking_risk`
+> was **deleted** from the MCP server; a tombstone sits where it was
+> (`mcp-server/src/index.ts:372-396`), and the guard is
+> `frontend/src/lib/risk/__tests__/riskScoringRemoved.test.ts:200-211`.
+>
+> **So 5a is reversed and 5b's first half is void.** The one part of 5b that still
+> stands is the version bump: `mcp-server/package.json:3` and
+> `mcp-server/src/index.ts:64` read **1.1.0**, as recorded below. The surviving tool,
+> `get_staking_opportunities`, publishes the six curated 1–10 dimensions and no
+> composite (`mcp-server/src/index.ts:252-324`).
+>
+> Removal was on **editorial** grounds, not scale-migration grounds: a single number
+> ranking providers against each other reads as a recommendation (RP-3). The scale work
+> recorded here was correct and is simply no longer load-bearing — do not restart it.
+> See `docs/decisions/2026-09-14-owner-decisions.md` (D14) and
+> `docs/architecture/risk-scale-spec.md:508-526`.
+
 - **5a (additive, non-breaking) — DONE.** Each opportunity now carries `safetyScore`
   (0–100 higher = safer) + `band` (5-level), via `scoreStakingProvider()`. Legacy
   `riskScore`/`riskLevel`/`max_risk` left byte-identical and marked deprecated in the
