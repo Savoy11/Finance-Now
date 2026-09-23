@@ -82,19 +82,57 @@ export const DEFILLAMA_SLUG_BLOCKLIST = new Set([
   'coinbase', 'binance',
 ])
 
-// ─── Finance Now stakeable coin symbols → DefiLlama symbol patterns ─────────────────
-// DefiLlama uses symbol names like "ETH", "stETH", "WETH", etc.
-// We map our coin IDs to the underlying asset symbol to filter relevant pools.
+// ─── Finance Now stakeable coin symbols → upstream symbol patterns ──────────────────
+//
+// Used two different ways by /live-data/staking-discovery, and the difference matters:
+//   · `ALL_STAKING_SYMBOLS.has(base)` — EXACT membership, gating the DefiLlama rung.
+//   · `symbolToCoinId()` — `base.startsWith(s)`, resolving every rung's asset to a coin.
+// So an entry has to be the literal symbol, not a fragment.
+//
+// ── Widened 2026-09-22 to include liquid-staking derivatives (T-399) ────────────
+//
+// It held nine base symbols and nothing else, which made it the binding constraint on
+// three of the four upstreams — not the upstreams themselves, which is what T-399 was
+// filed as. Measured on 2026-09-22 against live payloads:
+//   · Pendle  — 28 markets cleared liquidity/APY/expiry and **0** resolved to a coin.
+//               Its universe is wstETH and yield-bearing stables; `"WSTETH"` starts with
+//               neither `ETH` nor `WETH`, so even the obviously-Ethereum market failed.
+//   · Beefy   — 76 single-asset vaults → 8 resolved.
+//   · DefiLlama — WSTETH alone accounts for 71 pools over $1m that were being discarded.
+//
+// ⚠ NOT EVERYTHING ENDING IN "ETH" BELONGS HERE, and the exclusions are the load-bearing
+// part of this list. A liquid-staking or restaking token REPRESENTS A STAKED POSITION in
+// the underlying coin, which is what this surface is for. A synthetic that merely tracks
+// the price does not, and filing one under `eth` would present a debt or synth position
+// as a staking opportunity. Excluded deliberately, each seen in the live data:
+//   · ALETH   — Alchemix synthetic, minted against collateral. Not staked ETH.
+//   · MSETH   — Metronome synth. Same reason.
+//   · TETH, GETH, VBETH, SAVETH, STEAKETH, LIQUIDETH — vault or wrapper tokens that could
+//     not be confidently classified from the payload alone. Left out rather than guessed;
+//     an unresolved symbol costs a missed pool, a wrong one misattributes a yield.
+// BTC derivatives (WBTC 81, CBBTC 45, TBTC, LBTC …) are absent for a simpler reason:
+// there is no `btc` key in this map at all, so they are out of scope rather than excluded.
+//
+// Adding a symbol here widens BOTH the DefiLlama intake and the coin resolution, so a new
+// entry should be a token someone would call "staked <coin>" without qualification.
 
 export const COIN_SYMBOL_MAP: Record<string, string[]> = {
-  eth:   ['ETH', 'WETH'],
-  sol:   ['SOL', 'WSOL'],
+  // Order matters: `symbolToCoinId` returns the first coin whose list prefix-matches.
+  eth: [
+    'ETH', 'WETH',
+    // Liquid staking
+    'WSTETH', 'STETH', 'RETH', 'CBETH', 'OSETH', 'LSETH', 'FRXETH', 'SFRXETH',
+    'OETH', 'METH', 'WBETH', 'CDCETH',
+    // Liquid restaking
+    'WEETH', 'EZETH', 'RSETH', 'RSWETH', 'SWETH', 'PUFETH', 'UNIETH',
+  ],
+  sol:   ['SOL', 'WSOL', 'JITOSOL', 'MSOL', 'BSOL', 'JUPSOL'],
   ada:   ['ADA'],
   dot:   ['DOT'],
   atom:  ['ATOM'],
   matic: ['MATIC', 'POL'],
-  avax:  ['AVAX'],
-  bnb:   ['BNB', 'WBNB'],
+  avax:  ['AVAX', 'SAVAX'],
+  bnb:   ['BNB', 'WBNB', 'SLISBNB'],
   trx:   ['TRX'],
 }
 

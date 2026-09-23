@@ -32,12 +32,28 @@ const COLS = 'grid grid-cols-[minmax(0,2.4fr)_1.2fr_1fr_0.8fr_1.1fr_0.7fr_0.7fr_
  * A missing return renders a dash, never 0%. Without a provider key the route
  * reports `source: 'none'` and every value is null — "we could not fetch this"
  * and "this stock returned nothing" must not look the same.
+ *
+ * `adjusted === false` carries the same spirit one step further: the figure was
+ * computed on UNADJUSTED closes because the provider omitted `adjClose`, so a
+ * split or distribution inside the window distorts it — a 4:1 split reads as
+ * -75%. T-401 (2026-09-22) decided to serve these rather than go dark, on the
+ * condition that they SAY SO, and this marker is that condition. `undefined`
+ * means no fallback occurred, so nothing is rendered.
  */
-function ReturnCell({ value }: { value: number | null }) {
+function ReturnCell({ value, adjusted }: { value: number | null; adjusted?: boolean }) {
+  const unadjusted = adjusted === false && value != null
   return (
     <div className={clsx('text-right font-mono tabular-nums text-xs',
       value == null ? 'text-text-muted' : value >= 0 ? 'text-emerald-400' : 'text-red-400')}>
       {value == null ? '—' : formatPercent(value, 1)}
+      {unadjusted && (
+        <span
+          className="ml-0.5 align-super text-[9px] font-semibold text-amber-400"
+          title="Computed from unadjusted closes — this provider did not supply an adjusted price for every day in the window, so a split or distribution inside it distorts this figure."
+        >
+          unadj
+        </span>
+      )}
     </div>
   )
 }
@@ -55,6 +71,8 @@ interface Row extends UniverseEntry {
   /** Trailing returns, page-scoped and key-gated. Null when unavailable — never 0. */
   ytdPct: number | null
   y1Pct: number | null
+  /** false when these came from unadjusted closes — see ReturnCell. */
+  returnsAdjusted?: boolean
 }
 
 const SORT_BASIS_HINT: Partial<Record<SortKey, string>> = {
@@ -244,6 +262,7 @@ export function EquitiesClient() {
       marketCapIsRef: q?.marketCap == null,
       ytdPct: r?.ytd ?? null,
       y1Pct: r?.y1 ?? null,
+      returnsAdjusted: r?.adjusted,
       live,
     }
   })
@@ -435,8 +454,8 @@ export function EquitiesClient() {
                     <div className="text-right font-mono tabular-nums text-xs text-text-secondary">{row.peRatio ?? '—'}</div>
                     <div className="text-right font-mono tabular-nums text-xs text-text-secondary">{row.dividendYieldPct != null ? `${row.dividendYieldPct.toFixed(1)}%` : '—'}</div>
                     <div className="text-right font-mono tabular-nums text-xs text-text-secondary">{row.beta ? row.beta.toFixed(2) : '—'}</div>
-                    <ReturnCell value={row.ytdPct} />
-                    <ReturnCell value={row.y1Pct} />
+                    <ReturnCell value={row.ytdPct} adjusted={row.returnsAdjusted} />
+                    <ReturnCell value={row.y1Pct} adjusted={row.returnsAdjusted} />
                   </Link>
                 )
               })}
