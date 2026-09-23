@@ -56,8 +56,8 @@
   "total_verified": 398,
   "outstanding": 346,
   "by_status": {
-   "open": 88,
-   "closed": 94,
+   "open": 87,
+   "closed": 95,
    "blocked": 73,
    "unclear": 1,
    "parked": 90
@@ -69,7 +69,7 @@
    "owner-machine": 83
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 94,
+  "closed_by_annotation": 95,
   "counts_recomputed_on": "2026-09-22",
   "counts_note": "by_status and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status."
  },
@@ -10372,23 +10372,16 @@
    },
    "progress": {
     "noted_on": "2026-09-22",
-    "note": "DIAGNOSIS COMPLETE ON A CLEAN EGRESS, AND THE ITEM'S PREMISE IS REVERSED: not one of the three is a dead source. The run was made from the owner's machine with the VPN down — egress measured Spectrum, proxy:false, hosting:false (it had been Netprotect proxy:true on the 2026-09-21 attempt, whose reachability verdicts were discarded as void). `npm run discovery-upstreams` walks each upstream through the route's own filter chain; DefiLlama is the control and returned 97 pools.",
-    "per_host": {
-     "yearn": "THE HOST MOVED. `api.yearn.finance` has NO DNS RECORD — a 74ms ENOTFOUND, which is conclusive on a clean residential egress. But the project is alive: `yearn.finance` resolves, and so does `ydaemon.yearn.fi`, which is Yearn's current API. `https://ydaemon.yearn.fi/1/vaults/all` answers HTTP 200 with a 524KB payload. So the cure is a new URL, NOT removal — dropping this rung would have deleted a working source, which is what the item's framing invited. ⚠ BLOCKED ON TERMS, NOT ON CODE: ydaemon.yearn.fi is a NEW HOST and the source-terms registry has no entry for it. sourceTerms.test.ts walks every host in dataSources.ts and fails the suite on an unregistered one, so this cannot be wired until someone reads Yearn's terms and adds a dated verdict. That is the designed behaviour, not an obstacle to route around.",
-     "pendle": "THE PATH MOVED, AND TWO FIELDS WITH IT. The host resolves and is healthy; only the old path is gone. `/core/v1/sdk/1/markets` returns 404 and `/core/v1/1/markets` returns 200 — the `/sdk` segment was dropped. The response shape still matches what the route reads (`{ total, limit, skip, results }` → `json.results`). Three changes are needed, so this is a reparse rather than a URL swap: (1) the path loses `/sdk`; (2) `?order_by=liquidity:desc` is REJECTED with 400 and must go — `?limit=100` and `?is_active=true&limit=100` both return 200; (3) two fields the route reads were renamed or split — `totalLiquidity` is now `liquidity`, and `isWhitelisted` has become three flags: `isWhitelistedPro`, `isWhitelistedSimple` and `isWhitelistedLimitOrder`. No new host, so no terms entry is required.",
-     "beefy": "NOT A DEAD SOURCE, confirmed on both the VPN and the clean run with identical funnels. Beefy is healthy and so are both its enrichment endpoints (/tvl 42 keys, /apy/breakdown 6,265). The funnel: 4,042 vaults → 554 active → 76 single-asset → 8 whose asset resolves against our 9-coin COIN_SYMBOL_MAP → 0 clearing the $1,000,000 min_tvl default. With `--min-tvl=0` the same source yields 7 pools, all WETH vaults on newer chains (Monad, Base) and small precisely because they are new. So 'Beefy contributes zero pools' is OUR threshold plus OUR narrow coin map."
-    },
-    "remaining_work": "THREE DECISIONS, none of them a reachability question any more. (1) YEARN — read Yearn's terms for ydaemon.yearn.fi and add a source-terms entry, then repoint the fetcher. Until that entry exists the change cannot land, by design. (2) PENDLE — repoint to /core/v1/1/markets, drop the order_by param, and remap totalLiquidity → liquidity. The whitelist flag is a PRODUCT judgement and should not be picked by an agent: the old single `isWhitelisted` is now three, and choosing `isWhitelistedSimple` over `isWhitelistedPro` changes which Pendle markets this app surfaces. (3) BEEFY — decide whether min_tvl = $1,000,000 is right for a DISCOVERY surface. It is defensible, a sub-$1M pool is thin; but it currently excludes every Beefy candidate, and the route gives no signal that a source returned items which were all filtered locally.",
+    "note": "TWO OF THREE FIXED. Option B of the drafted set was chosen: widen COIN_SYMBOL_MAP first, because it — not the upstreams — was the binding constraint. (1) THE COIN MAP now carries liquid-staking and restaking derivatives for eth, sol, avax and bnb. Measured effect on the working rung: DefiLlama went from 97 to 157 pools, the new survivors being exactly STETH, WBETH, WEETH, RETH and JITOSOL. (2) PENDLE is repointed and LIVE for the first time — it had been returning nothing at all. Three changes were needed, not one: the path lost its `/sdk` segment, `?order_by=liquidity:desc` is now rejected with HTTP 400, and `totalLiquidity` became `liquidity`, AN OBJECT `{ usd, acc }`. It yields 1 pool today, which is correct rather than disappointing — Pendle's chain-1 universe is dominated by yield-bearing stables this app does not cover.",
+    "remaining_work": "(1) YEARN is still unwired and still blocked on TERMS, not code: its API moved to ydaemon.yearn.fi (/1/vaults/all answers 200 with 524KB), which is a NEW HOST with no source-terms entry. sourceTerms.test.ts fails the suite on an unregistered host — the gate working as designed. Someone must read Yearn's terms and add a dated verdict before the fetcher can be repointed. (2) BEEFY is still empty, and the coin-map widening barely moved it: 8 resolved became 9, and all 9 are still cut by the $1,000,000 min_tvl default. That was flagged as a separate question in the options document and was NOT part of the ruling, so min_tvl is untouched. It remains open: is $1m the right bar for a DISCOVERY surface, and should the route signal when a source returned items that were all filtered locally?",
     "corrections": [
-     "A HYPOTHESIS OF MINE WAS WRONG AND THE PROBE DISPROVED IT. Before probing I reasoned that Beefy's `.catch(() => null)` on /tvl and /apy/breakdown made an optional enrichment silently load-bearing — if either failed, every vault would score 0 and be filtered out. Mechanically sound and false: both endpoints answered on both runs. A reachability-only probe would have reported 'Beefy: 200 OK' and let that wrong theory ship.",
-     "The 2026-09-21 run reported Yearn as UND_ERR_CONNECT_TIMEOUT after 10.7s. On the clean egress it is ENOTFOUND in 74ms. Same verdict family, completely different evidence — the VPN had been turning a missing DNS record into a connection timeout, which is exactly the kind of substituted symptom that produces a wrong cure."
+     "The `liquidity` shape change was NOT in the earlier diagnosis, which called it a rename. A rename-only fix compiles and then silently compares an object to a number: `(m.liquidity ?? 0) < minTvl` evaluates `NaN < 1000000`, which is false, so every market would PASS the liquidity gate — a filter that quietly stops filtering. Caught by measuring the live payload rather than by reading the diff.",
+     "The filed question — which of the three whitelist flags replaces `isWhitelisted` — turned out to have no consequence. Measured before the widening, Pro admitted 28 markets past liquidity/APY/expiry, LimitOrder 27 and Simple 1, and ALL THREE resolved to zero pools afterwards. `isWhitelistedPro` was chosen as the closest analogue to the old single flag; revisit only if the coin map grows further."
     ],
     "evidence": [
-     "Probe run 2026-09-22, clean egress (Spectrum, proxy:false, hosting:false)",
-     "DNS: api.yearn.finance NO RECORD; yearn.finance and ydaemon.yearn.fi both resolve",
-     "https://ydaemon.yearn.fi/1/vaults/all → HTTP 200, 524KB",
-     "https://api-v2.pendle.finance/core/v1/sdk/1/markets → 404; /core/v1/1/markets → 200",
-     "frontend/scripts/probe-discovery-upstreams.mjs"
+     "frontend/src/lib/data/stakingDiscovery.ts — the widened map, with the exclusions documented",
+     "frontend/src/lib/data/__tests__/stakingCoinMap.test.ts — 26 tests; the synthetic exclusions and the prefix-clash guard are both mutation-checked",
+     "frontend/src/app/live-data/staking-discovery/route.ts — Pendle repointed"
     ]
    }
   },
@@ -10439,7 +10432,7 @@
   {
    "id": "T-401",
    "title": "security-returns silently falls back to unadjusted closes — D21 recorded this as undecided",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "decision",
@@ -10466,6 +10459,31 @@
     "on": "2026-09-21",
     "by": "checklist-steward sweep (opportunity-scout FILE mode), owner-approved 2026-09-21",
     "why": "Surfaced by a re-verification sweep with no existing ledger entry anywhere. Filed rather than folded into a neighbouring item, because an unattributed defect riding inside another ticket is how these stayed invisible."
+   },
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-22",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "DECIDED AND IMPLEMENTED — Option A of the drafted set: keep the fallback, and make every figure computed through it say so. The defect was never the fallback itself, it was that the fallback was SILENT. docs/decisions/2026-09-18-owner-decisions.md recorded this question as open 'so it is not decided by default', and a `??` had decided it by default. `security-returns/route.ts` now tracks whether any close in the window lacked `adjClose`, `CloseSeries` and `SecurityReturns` carry an `adjusted` flag, and both consuming surfaces render an amber `unadj` marker with an explanatory title on any figure computed that way.",
+    "owner_ruling": {
+     "on": "2026-09-22",
+     "chose": "Option A — disclose per row",
+     "rejected": "Option B (refuse the fallback and show a gap) is the closer reading of this repo's 'not available rather than fabricated' rule, and was NOT chosen for a measured reason: the same decision record notes there is no free, held provider with adjusted closes across funds, so refusing would have emptied the funds Returns column rather than improved it. Option C (ratify silently) was rejected because it preserves the actual defect."
+    },
+    "implementation_notes": [
+     "`adjusted` is STICKY-FALSE: one unadjusted close inside the window distorts every return computed across it, so a partially-adjusted series is not partially trustworthy.",
+     "`undefined` is distinct from `false` and stays distinct — absent means no fallback occurred and there is nothing to disclose. computeReturns omits the key rather than defaulting it to true, because defaulting would manufacture a reassurance nobody made. Pinned by a test.",
+     "The funds marker carries different copy from the equities one on purpose. D21 says 'for mutual funds distributions are the point', so for a fund an unadjusted figure is not slightly off — it is missing the instrument. Its title tells the reader to treat the number as a floor rather than a measurement."
+    ],
+    "still_worth_doing": "Count how many held-provider symbols actually lack `adjClose`. If it is a handful, Option B costs almost nothing and is the better answer; if it is most of the funds catalog, the real question is a Tiingo or paid-tier decision rather than a disclosure one. That is an owner-machine run with keys, and it would turn this from a judgement into arithmetic.",
+    "evidence": [
+     "frontend/src/app/live-data/security-returns/route.ts — sticky adjusted flag at the fallback site",
+     "frontend/src/lib/utils/returns.ts — CloseSeries.adjusted, SecurityReturns.adjusted",
+     "frontend/src/app/(dashboard)/equities/EquitiesClient.tsx — ReturnCell marker",
+     "frontend/src/app/(dashboard)/funds/FundsClient.tsx — funds-specific marker copy",
+     "frontend/src/lib/utils/__tests__/returns.test.ts — 4 tests: carried verbatim, never inferred, never alters a figure"
+    ]
    }
   },
   {
@@ -35455,6 +35473,15 @@
     "caveat": "Yearn cannot be repointed until ydaemon.yearn.fi has a source-terms entry — sourceTerms.test.ts fails the suite on an unregistered host, which is the gate working as designed. Pendle needs a product judgement: its single isWhitelisted flag is now three, and the choice changes which markets the app surfaces.",
     "evidence": [
      "frontend/scripts/probe-discovery-upstreams.mjs"
+    ]
+   },
+   {
+    "on": "2026-09-22",
+    "what": "T-401 closed on an owner ruling (disclose, do not withhold). T-399 two-thirds fixed: the coin map was widened and Pendle repointed and is live; Yearn remains blocked on a terms entry and Beefy on the $1m default.",
+    "basis_key": "Both rulings came from docs/proposals/2026-09-22-decision-options.md, where each option was written with its counter-argument. T-401's rejected option (refuse the fallback) is the more principled reading of this repo's own rule and was declined on a measured constraint, not a preference — that reasoning is recorded on the closure so it is not silently re-litigated.",
+    "caveat": "The widening is a PRODUCT judgement, not a data fix: it asserts that wstETH and its siblings belong under `eth` in this app's coin vocabulary. Its boundary — liquid-staking derivatives in, synthetics like alETH and msETH out — is pinned by test rather than comment, because 'everything ending in ETH' is the tempting and wrong version.",
+    "evidence": [
+     "docs/proposals/2026-09-22-decision-options.md"
     ]
    }
   ]

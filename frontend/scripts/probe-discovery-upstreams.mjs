@@ -111,12 +111,12 @@ const UPSTREAMS = [
   {
     name: 'pendle',
     label: 'Pendle',
-    url: 'https://api-v2.pendle.finance/core/v1/sdk/1/markets?limit=100&order_by=liquidity:desc',
-    note: 'Reported as 404 on this exact URL. A 404 with a healthy host usually means the path moved.',
+    url: 'https://api-v2.pendle.finance/core/v1/1/markets?limit=100',
+    note: 'Repointed 2026-09-22 (T-399): the old /core/v1/sdk/1/markets path 404s, order_by is now rejected with 400, and `liquidity` became an object.',
     pick: (j) => j?.results ?? null,
     stages: [
-      ['isWhitelisted', (m) => !!m.isWhitelisted],
-      [`totalLiquidity >= ${MIN_TVL}`, (m) => (m.totalLiquidity ?? 0) >= MIN_TVL],
+      ['isWhitelistedPro', (m) => !!m.isWhitelistedPro],
+      [`liquidity.usd >= ${MIN_TVL}`, (m) => (m.liquidity?.usd ?? 0) >= MIN_TVL],
       [`impliedApy*100 >= ${MIN_APY}`, (m) => ((m.impliedApy ?? 0) * 100) >= MIN_APY],
       ['coin id resolves', (m) => !!symbolToCoinId(m.underlyingAsset?.symbol ?? m.pt?.symbol ?? '')],
       ['not expired', (m) => !(m.expiry && new Date(m.expiry) < new Date())],

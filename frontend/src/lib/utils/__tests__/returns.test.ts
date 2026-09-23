@@ -130,3 +130,48 @@ describe('computeReturns — degenerate prices', () => {
     expect(r.y1).toBe(0)
   })
 })
+
+/**
+ * T-401 (2026-09-22). `/live-data/security-returns` falls back to the unadjusted
+ * close when a provider omits `adjClose`, and until this change said nothing about
+ * it — so a 4:1 split read as a -75% return with no marker.
+ *
+ * The owner decision was to keep serving them and DISCLOSE, rather than go dark:
+ * there is no free, held provider with adjusted closes across funds, so refusing
+ * would have emptied the funds Returns column instead of improving it.
+ *
+ * That makes the flag load-bearing. `computeReturns` must carry it VERBATIM and
+ * must never infer it — a figure that cannot say how it was computed is exactly
+ * what this item was about.
+ */
+describe('computeReturns carries the adjusted flag without inventing it', () => {
+  it('passes `adjusted: false` straight through', () => {
+    const s = { ...series(300, () => 100), adjusted: false }
+    expect(computeReturns(s, 2026).adjusted).toBe(false)
+  })
+
+  it('passes `adjusted: true` straight through', () => {
+    const s = { ...series(300, () => 100), adjusted: true }
+    expect(computeReturns(s, 2026).adjusted).toBe(true)
+  })
+
+  it('omits the key entirely when the series does not state it', () => {
+    // Absent must stay absent rather than defaulting to true. A series with no
+    // opinion about adjustment is not the same as one asserting it was adjusted,
+    // and defaulting would manufacture a reassurance nobody made.
+    const r = computeReturns(series(300, () => 100), 2026)
+    expect('adjusted' in r).toBe(false)
+  })
+
+  it('does not let the flag change the numbers', () => {
+    // The disclosure is metadata. If it ever altered a figure, the marker would
+    // be describing something other than the number beside it.
+    const base = series(300, (i) => 100 + i)
+    const flagged = computeReturns({ ...base, adjusted: false }, 2026)
+    const plain = computeReturns(base, 2026)
+    expect(flagged.m1).toBe(plain.m1)
+    expect(flagged.m3).toBe(plain.m3)
+    expect(flagged.ytd).toBe(plain.ytd)
+    expect(flagged.y1).toBe(plain.y1)
+  })
+})

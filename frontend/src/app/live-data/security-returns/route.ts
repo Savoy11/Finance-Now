@@ -84,24 +84,32 @@ async function fetchTiingoSeries(symbol: string, key: string): Promise<CloseSeri
 
   const closes: number[] = []
   const timestamps: number[] = []
+  let adjusted = true
   for (const row of [...rows].sort((a, b) => Date.parse(a.date) - Date.parse(b.date))) {
     // Adjusted closes, so a split or a distribution isn't read as a return.
     //
-    // ⚠ OPEN DECISION (T-401) — the `?? row.close` fallback is NOT a settled choice.
-    // docs/decisions/2026-09-18-owner-decisions.md:71-77 records whether trailing
-    // returns may be served on UNADJUSTED closes as explicitly not decided, and this
-    // line quietly answers it: when a provider omits `adjClose`, the unadjusted value
-    // is used and nothing downstream discloses that it happened — so a 4:1 split reads
-    // as a -75% return with no marker. Do not read the fallback as ratified because it
-    // is here. Compare `adjustCandles` (lib/utils/ohlcvAdjust.ts), which states its own
-    // dividend/split limitation in its docblock rather than leaving it implicit.
+    // ⚠ DECIDED 2026-09-22 (T-401): the fallback STAYS, and every figure computed
+    // through it now says so. It had been silent, which was the actual defect —
+    // docs/decisions/2026-09-18-owner-decisions.md recorded this as open "so it is
+    // not decided by default", and a `??` had decided it by default.
+    //
+    // The stricter option — refuse to serve unadjusted returns at all — is the
+    // closer reading of this repo's "not available rather than fabricated" rule,
+    // and it was not chosen for a measured reason: that same decision record notes
+    // there is no free, held provider with adjusted closes across funds, so
+    // refusing would empty the funds Returns column rather than improve it.
+    //
+    // `adjusted` is sticky-false: ONE unadjusted close inside the window distorts
+    // every return computed across it, so a partially-adjusted series is not
+    // partially trustworthy.
+    if (row.adjClose == null) adjusted = false
     const close = row.adjClose ?? row.close
     const ms = Date.parse(row.date)
     if (!Number.isFinite(close) || Number.isNaN(ms)) continue
     closes.push(close)
     timestamps.push(Math.floor(ms / 1000))
   }
-  return closes.length > 0 ? { closes, timestamps } : null
+  return closes.length > 0 ? { closes, timestamps, adjusted } : null
 }
 
 export async function GET(request: NextRequest) {
