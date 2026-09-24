@@ -54,25 +54,25 @@
  },
  "counts": {
   "total_verified": 398,
-  "outstanding": 348,
+  "outstanding": 349,
   "by_status": {
    "open": 64,
    "closed": 126,
-   "blocked": 67,
+   "blocked": 68,
    "unclear": 1,
    "parked": 90
   },
   "by_owner_role": {
    "remote-dev": 84,
    "either": 41,
-   "owner-decision": 140,
+   "owner-decision": 141,
    "owner-machine": 83
   },
   "closed_but_listed_open_in_docs": 60,
   "closed_by_annotation": 126,
   "counts_recomputed_on": "2026-09-24",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
-  "total": 348
+  "total": 349
  },
  "blocking_decisions": [
   {
@@ -6541,10 +6541,10 @@
    ],
    "progress": {
     "noted_on": "2026-09-24",
-    "note": "MACHINE HALF DONE AND APPLIED; EDITORIAL HALF PENDING. Built `npm run staking-worksheet` (scripts/gen-staking-catalog-worksheet.ts, mirror-tested): it pre-fills live APR beside every static estimate, DefiLlama protocol TVL beside tvlBillions for 20 observed slugs (CeFi deliberately unmapped), and website reachability, and leaves the six risk dimensions, lock-ups, minimums and audit counts blank beside their current values. First run on the owner's machine over clean egress: 55 providers, 187 asset rows, live APR on 29, TVL 20/20. Owner approved (2026-09-24, \"1. Yes 2. Yes\") applying the two machine-verified columns: tvlBillions re-read from DefiLlama on 20 providers — 13 of 20 had been off by 50% or more, restaking-peak figures never revised (Renzo 2.5 → 0.13 B, Puffer 1.5 → 0.03, Swell 1.2 → 0.03) — and staticApr on 28 live-fed rows reset to that day's reading (the ETH LST set had been 40–90% above live; Lombard's live 0 skipped as no-rate). Applied keyed on provider id + coin with a current-value guard; a provenance comment sits above the array. STAKING_DATA_LAST_VERIFIED did NOT move: the six risk dimensions on 55 providers are the editorial pass still to be done with the owner, provider by provider, and re-verifying part of a table does not refresh the rest. The 2026-09-20 STALENESS-ACK stands — the notice fires 2026-09-27 as decided. Four DefiLlama slug candidates (origin-protocol, quicksilver, pstake, bifrost) await the owner's confirmation.",
+    "note": "EDITORIAL PASS PAUSED at round 1 (5 of 55 providers), pending T-409. Round 1 landed on owner approval: liquidityRisk +2 and counterpartyRisk +1 on Renzo, Puffer, Swell, Ankr and Stride, plus Renzo's tagline. In the same breath the owner said the risk assessment itself \"may sound like a recommendation\" and should be considered for removal — which is RP-6's reasoning applied to the six dimensions D14 kept. Continuing 50 providers of six judgments each while that is open would be 300 judgments that may be deleted; so the editorial half waits on T-409, and the FACTUAL half of this item (TVL, APR, lock-ups, minimums, audits, websites) proceeds regardless — the first two of those are already applied. Machine half status unchanged: worksheet tool built and mirror-tested; 20 TVL and 28 static-APR corrections applied; date unmoved; four DefiLlama slug candidates awaiting confirmation.",
     "evidence": [
-     "frontend/scripts/gen-staking-catalog-worksheet.ts",
-     "frontend/src/lib/data/stakingProviders.ts"
+     "frontend/src/lib/data/stakingProviders.ts",
+     "frontend/scripts/gen-staking-catalog-worksheet.ts"
     ]
    }
   },
@@ -11400,6 +11400,47 @@
      "frontend/src/lib/server/sourceTerms.ts",
      "docs/decisions/2026-09-23-owner-decisions.md"
     ]
+   }
+  },
+  {
+   "id": "T-409",
+   "title": "Owner: remove the six per-provider staking risk dimensions from every surface, on the RP-6 reasoning?",
+   "status": "blocked",
+   "confidence": "high",
+   "owner_role": "owner-decision",
+   "category": "decision",
+   "effort": "medium",
+   "blocking_decision": "Owner, 2026-09-24, mid-way through T-394's first editorial round: \"we should consider removing this risk assessment as it may sound like a recommendation.\" A consideration, not yet a decision.",
+   "related_ids": [
+    "T-394",
+    "T-357",
+    "T-012",
+    "T-265",
+    "T-349"
+   ],
+   "summary": "The staking catalog carries six editorial 1–10 risk scores per provider (custody, counterparty, contract, slashing, liquidity, regulatory). D14 (2026-09-14) removed every COMPOSITE of them and every risk-based filter, and kept the six dimensions deliberately: \"reference INPUTS, not a ranking … cards describing the dimensions without a composite are the decided state (RP-3)\". The owner now questions whether the dimensions themselves read as a recommendation — the same reasoning RP-6 (2026-08-29) applied to per-coin risk scores, which were removed outright. BLAST RADIUS, measured 2026-09-24: (1) ⚠ /staking does NOT render the six — verified 2026-09-24: no read of provider.risks in the page or any component, and the page description says the dimensions are \"recorded for each\", which is true of the data and not of the display. So a human meets these numbers only through the API and the MCP tool, i.e. through an AI agent narrating them — which is where a 1–10 reading most easily turns into advice; (2) /api/v1/staking/opportunities, which returns them as `risks: {custody, counterparty, contract, slashing, liquidity, regulatory}` and whose OpenAPI description states them; (3) the MCP tool get_staking_opportunities, whose description promises \"six curated risk DIMENSIONS\" and prints them per result; (4) /live-data/staking-discovery, which reads provider.risks; (5) lib/risk/profiles/stakingAdapter.ts — scoreStakingProvider() consumes them but has NO live consumer since D14 (CLAUDE.md), so it goes dark rather than breaks; (6) lib/data/affiliates.ts and SponsoredLink.tsx reference the type only. The `RiskProfile` type is also used by `assetRisks` overrides on individual asset rows. WHAT IT SAVES: T-394's editorial pass — 55 providers × 6 dimensions = 330 judgments, the bulk of that item — becomes moot; only the factual fields (TVL, APR, lock-ups, minimums, audits, websites) would remain to re-verify, and those the worksheet already pre-fills. WHAT IT COSTS: the staking page's only qualitative differentiator between providers; and a contract change on the public API and MCP tool, which under the D14 pattern is handled by IGNORING, not rejecting — a removed field simply stops appearing. REFRAMED by that finding: this is less about the staking page and more about what the public API and the agents say.",
+   "next_action": "Owner decides: keep the six dimensions as D14 left them (reference inputs, no composite), or remove them everywhere on the RP-6 reasoning. If REMOVE: a dev PR deletes `risks`/`assetRisks` from the catalog and type, the render on /staking, the `risks` object from /api/v1/staking/opportunities and its OpenAPI text, the dimension lines and description clause from the MCP tool, and the read in staking-discovery; scoreStakingProvider() is deleted with them (no consumer); a guard test like riskScoringRemoved.test.ts pins the removal; rejected-proposals.md records it as the RP-6 line extended to editorial dimensions; CLAUDE.md's D14 paragraph is annotated, not rewritten. If KEEP: T-394's editorial pass resumes at provider 6 of 55. Either way the answer is recorded as an owner decision (D26) — the previous decision on exactly this surface was recorded as D14 and this reverses half of it.",
+   "sources": [
+    {
+     "file": "CLAUDE.md",
+     "lines": "~535-560",
+     "quote": "The six RiskProfile dimensions above are published as-is — they are reference INPUTS, not a ranking"
+    },
+    {
+     "file": "frontend/src/app/api/v1/staking/opportunities/route.ts",
+     "lines": "75, 122",
+     "quote": "custody: effectiveRisks.custodyRisk"
+    },
+    {
+     "file": "mcp-server/src/index.ts",
+     "lines": "254, 309",
+     "quote": "six curated risk DIMENSIONS (custody, counterparty, contract, slashing, liquidity, regulatory), each 1–10"
+    }
+   ],
+   "opened": {
+    "on": "2026-09-24",
+    "by": "checklist-steward, from the owner's words during T-394 round 1",
+    "why": "A consideration voiced mid-task needs a home before the task it interrupts continues, or it is lost and the task does wasted work."
    }
   }
  ],
@@ -36371,6 +36412,14 @@
     "what": "T-394 machine half: worksheet tool built; 20 TVL and 28 static APR corrections applied on owner approval; date unmoved; editorial pass pending.",
     "evidence": [
      "frontend/src/lib/data/stakingProviders.ts"
+    ]
+   },
+   {
+    "on": "2026-09-24",
+    "what": "T-409 filed (owner considering removing the six staking risk dimensions); T-394 editorial pass paused behind it after round 1.",
+    "why_paused": "The dimensions are 330 of the item's ~400 judgments. If they go, the pass is a different and much smaller item. Pausing costs nothing; continuing could cost 300 judgments.",
+    "evidence": [
+     "docs/audits/task-queue-2026-09-07.json"
     ]
    }
   ]
