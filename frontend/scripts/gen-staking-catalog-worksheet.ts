@@ -90,7 +90,10 @@ async function fetchJson<T>(url: string, ms: number): Promise<T | null> {
 async function siteStatus(url: string): Promise<string> {
   try {
     let res = await fetch(url, { method: 'HEAD', redirect: 'follow', signal: AbortSignal.timeout(8_000), headers: { 'user-agent': 'Mozilla/5.0' } })
-    if (res.status === 405 || res.status === 403) res = await fetch(url, { method: 'GET', redirect: 'follow', signal: AbortSignal.timeout(8_000), headers: { 'user-agent': 'Mozilla/5.0' } })
+    // HEAD is not what a browser sends, and some sites answer it differently from GET —
+    // crypto.com/staking returned 404 to HEAD and 200 to GET on the first run. Retry as
+    // GET on anything but a plain 200 before recording a status.
+    if (res.status !== 200) res = await fetch(url, { method: 'GET', redirect: 'follow', signal: AbortSignal.timeout(8_000), headers: { 'user-agent': 'Mozilla/5.0' } })
     return String(res.status)
   } catch (e) {
     return `unreachable (${(e as Error).name})`

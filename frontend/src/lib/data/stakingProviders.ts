@@ -279,6 +279,13 @@ export const RISK_DIMENSION_LABELS: Record<keyof RiskProfile, { label: string; d
 // STAKING PROVIDERS
 // ─────────────────────────────────────────────────────────────────────────────
 
+// PARTIAL PASS 2026-09-24 (T-394, owner-approved from `npm run staking-worksheet`):
+// tvlBillions on 20 liquid providers re-read from DefiLlama, and staticApr on
+// 28 live-fed rows reset to that day's live reading (a live 0 was skipped as
+// no-rate). The six risk dimensions, lock-ups, minimums and audit counts were NOT
+// touched — they are the editorial pass still to come — which is why
+// STAKING_DATA_LAST_VERIFIED above did not move. Re-verifying part of a table does not
+// refresh the rest.
 export const STAKING_PROVIDERS: StakingProvider[] = [
 
   // ════════════════════════════════════════════════════════════════════════════
@@ -494,7 +501,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
       regulatoryRisk:   2,
     },
     assets: {
-      eth:  { coinId: 'eth',  staticApr: 3.8,  minStakeNative: 0,    lockupDays: 0,  receiptToken: 'stETH', liquid: true,  liveAprKey: 'lido_eth',  features: ['Via Lido integration — stETH received', 'Keys stay on hardware wallet', 'No minimum ETH required'] },
+      eth:  { coinId: 'eth',  staticApr: 2.25,  minStakeNative: 0,    lockupDays: 0,  receiptToken: 'stETH', liquid: true,  liveAprKey: 'lido_eth',  features: ['Via Lido integration — stETH received', 'Keys stay on hardware wallet', 'No minimum ETH required'] },
       sol:  { coinId: 'sol',  staticApr: 6.5,  minStakeNative: 0.01, lockupDays: 3,  liquid: false, features: ['Native Solana delegation', 'You choose validator', '~2–3 day unstake cooldown'] },
       ada:  { coinId: 'ada',  staticApr: 4.5,  minStakeNative: 5,    lockupDays: 0,  liquid: false, features: ['No lockup — Cardano native delegation', 'ADA never leaves your wallet', 'Rewards every epoch (~5 days)'], assetRisks: { slashingRisk: 1, liquidityRisk: 1 } },
       dot:  { coinId: 'dot',  staticApr: 13.0, minStakeNative: 10,   lockupDays: 28, lockupNote: '28-day Polkadot unbonding — plan carefully', liquid: false, features: ['Direct nomination', '28-day unbonding period', 'Slashing enabled on Polkadot'], assetRisks: { slashingRisk: 5, liquidityRisk: 8 } },
@@ -522,7 +529,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
       regulatoryRisk:   3,
     },
     assets: {
-      eth:  { coinId: 'eth',  staticApr: 3.8,  minStakeNative: 0, lockupDays: 0,  receiptToken: 'stETH/rETH', liquid: true,  liveAprKey: 'lido_eth',  features: ['Choose Lido (stETH) or Rocket Pool (rETH)', 'Fully non-custodial', 'MetaMask earns referral fee (~10% of protocol rewards)', 'No minimum'] },
+      eth:  { coinId: 'eth',  staticApr: 2.25,  minStakeNative: 0, lockupDays: 0,  receiptToken: 'stETH/rETH', liquid: true,  liveAprKey: 'lido_eth',  features: ['Choose Lido (stETH) or Rocket Pool (rETH)', 'Fully non-custodial', 'MetaMask earns referral fee (~10% of protocol rewards)', 'No minimum'] },
       matic:{ coinId: 'matic',staticApr: 4.5,  minStakeNative: 1, lockupDays: 9,  liquid: false, features: ['Polygon network staking', '~9-day unbonding'] },
     },
   },
@@ -631,7 +638,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     custodyModel: 'smart-contract',
     founded: 2020,
     website: 'https://stake.lido.fi',
-    tvlBillions: 30.0,
+    tvlBillions: 26.39,
     auditCount: 12,
     risks: {
       custodyRisk:      3,
@@ -644,7 +651,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     assets: {
       eth: {
         coinId: 'eth',
-        staticApr: 3.8,
+        staticApr: 2.25,
         minStakeNative: 0,
         lockupDays: 0,
         receiptToken: 'stETH',
@@ -683,7 +690,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     custodyModel: 'smart-contract',
     founded: 2016,
     website: 'https://stake.rocketpool.net',
-    tvlBillions: 4.5,
+    tvlBillions: 1.39,
     auditCount: 7,
     risks: {
       custodyRisk:      2,
@@ -696,7 +703,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     assets: {
       eth: {
         coinId: 'eth',
-        staticApr: 3.6,
+        staticApr: 2.13,
         minStakeNative: 0.01,
         lockupDays: 0,
         receiptToken: 'rETH',
@@ -724,7 +731,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     custodyModel: 'smart-contract',
     founded: 2021,
     website: 'https://app.marinade.finance/stake',
-    tvlBillions: 0.9,
+    tvlBillions: 0.27,
     auditCount: 4,
     risks: {
       custodyRisk:      2,
@@ -737,7 +744,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     assets: {
       sol: {
         coinId: 'sol',
-        staticApr: 7.0,
+        staticApr: 6.05,
         minStakeNative: 0.01,
         lockupDays: 0,
         receiptToken: 'mSOL',
@@ -764,7 +771,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     custodyModel: 'smart-contract',
     founded: 2022,
     website: 'https://www.jito.network/staking/',
-    tvlBillions: 2.2,
+    tvlBillions: 1.21,
     auditCount: 3,
     risks: {
       custodyRisk:      2,
@@ -777,7 +784,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     assets: {
       sol: {
         coinId: 'sol',
-        staticApr: 7.5,
+        staticApr: 4.98,
         minStakeNative: 0.01,
         lockupDays: 0,
         receiptToken: 'jitoSOL',
@@ -803,7 +810,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     custodyModel: 'smart-contract',
     founded: 2022,
     website: 'https://app.stride.zone',
-    tvlBillions: 0.25,
+    tvlBillions: 0.01,
     auditCount: 3,
     risks: {
       custodyRisk:      2,
@@ -816,7 +823,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     assets: {
       atom: {
         coinId: 'atom',
-        staticApr: 14.0,
+        staticApr: 14.3,
         minStakeNative: 0.1,
         lockupDays: 0,
         receiptToken: 'stATOM',
@@ -834,7 +841,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
       },
       inj: {
         coinId: 'inj',
-        staticApr: 13.0,
+        staticApr: 7.16,
         minStakeNative: 0.1,
         lockupDays: 0,
         receiptToken: 'stINJ',
@@ -851,7 +858,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
       },
       tia: {
         coinId: 'tia',
-        staticApr: 16.0,
+        staticApr: 4.52,
         minStakeNative: 0.1,
         lockupDays: 0,
         receiptToken: 'stTIA',
@@ -878,7 +885,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     custodyModel: 'smart-contract',
     founded: 2021,
     website: 'https://staking.benqi.fi/stake',
-    tvlBillions: 0.35,
+    tvlBillions: 0.24,
     auditCount: 3,
     risks: {
       custodyRisk:      2,
@@ -891,7 +898,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     assets: {
       avax: {
         coinId: 'avax',
-        staticApr: 6.5,
+        staticApr: 4.14,
         minStakeNative: 0.1,
         lockupDays: 0,
         receiptToken: 'sAVAX',
@@ -919,7 +926,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     custodyModel: 'smart-contract',
     founded: 2023,
     website: 'https://app.ether.fi',
-    tvlBillions: 7.5,
+    tvlBillions: 5.16,
     auditCount: 6,
     risks: {
       custodyRisk:      2,
@@ -932,7 +939,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     assets: {
       eth: {
         coinId: 'eth',
-        staticApr: 4.8,
+        staticApr: 2.34,
         minStakeNative: 0,
         lockupDays: 0,
         receiptToken: 'eETH',
@@ -1345,7 +1352,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
       atom: { coinId: 'atom', staticApr: 14.0, minStakeNative: 0.1, lockupDays: 21, lockupNote: '21-day Cosmos Hub unbonding', liquid: false, features: ['Direct on-chain delegation', 'You choose validator', '21-day unbonding', 'Slashing for double-signing and downtime', 'Governance participation included'], assetRisks: { slashingRisk: 5, liquidityRisk: 7 } },
       osmo: { coinId: 'osmo', staticApr: 10.0, minStakeNative: 1,   lockupDays: 14, lockupNote: '14-day Osmosis unbonding', liquid: false, features: ['Superfluid staking — stake while providing liquidity', '14-day unbonding on Osmosis', 'Governance voting power'], assetRisks: { slashingRisk: 4, liquidityRisk: 6 } },
       dot:  { coinId: 'dot',  staticApr: 13.0, minStakeNative: 10,  lockupDays: 28, lockupNote: '28-day Polkadot unbonding', liquid: false, features: ['Via Polkadot.js integration', '28-day unbonding', 'Manual nomination selection'], assetRisks: { slashingRisk: 5, liquidityRisk: 8 } },
-      inj:  { coinId: 'inj',  staticApr: 14.5, minStakeNative: 0.1, lockupDays: 21, lockupNote: '21-day Injective unbonding', liquid: false, features: ['Native Injective delegation', 'You choose validator', '21-day unbonding', 'Slashing enabled'], assetRisks: { slashingRisk: 5, liquidityRisk: 7 } },
+      inj:  { coinId: 'inj',  staticApr: 7.33, minStakeNative: 0.1, lockupDays: 21, lockupNote: '21-day Injective unbonding', liquid: false, features: ['Native Injective delegation', 'You choose validator', '21-day unbonding', 'Slashing enabled'], assetRisks: { slashingRisk: 5, liquidityRisk: 7 } },
       tia:  { coinId: 'tia',  staticApr: 18.0, minStakeNative: 0.1, lockupDays: 21, lockupNote: '21-day Celestia unbonding', liquid: false, features: ['Native Celestia delegation', 'You choose validator', '21-day unbonding', 'High inflation-driven APY'], assetRisks: { slashingRisk: 5, liquidityRisk: 7 } },
     },
   },
@@ -1459,7 +1466,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     custodyModel: 'smart-contract',
     founded: 2021,
     website: 'https://app.frax.finance',
-    tvlBillions: 0.6,
+    tvlBillions: 0.14,
     auditCount: 5,
     risks: {
       custodyRisk:      2,
@@ -1472,7 +1479,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     assets: {
       eth: {
         coinId: 'eth',
-        staticApr: 4.5,
+        staticApr: 2.58,
         minStakeNative: 0,
         lockupDays: 0,
         receiptToken: 'sfrxETH',
@@ -1500,7 +1507,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     custodyModel: 'smart-contract',
     founded: 2021,
     website: 'https://app.stakewise.io',
-    tvlBillions: 0.35,
+    tvlBillions: 1.01,
     auditCount: 4,
     risks: {
       custodyRisk:      2,
@@ -1513,7 +1520,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     assets: {
       eth: {
         coinId: 'eth',
-        staticApr: 3.7,
+        staticApr: 2.33,
         minStakeNative: 0,
         lockupDays: 0,
         receiptToken: 'osETH',
@@ -1540,7 +1547,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     custodyModel: 'smart-contract',
     founded: 2021,
     website: 'https://www.staderlabs.com/eth/stake/',
-    tvlBillions: 0.8,
+    tvlBillions: 0.27,
     auditCount: 6,
     risks: {
       custodyRisk:      2,
@@ -1551,8 +1558,8 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
       regulatoryRisk:   2,
     },
     assets: {
-      eth:  { coinId: 'eth',  staticApr: 3.9,  minStakeNative: 0, lockupDays: 0, receiptToken: 'ETHx',   liquid: true, liveAprKey: 'stader_eth',   features: ['ETHx — liquid receipt for Ethereum staking', 'Permissioned + community node operators', 'Instant exit via Curve ETHx pool', '6 audits'], assetRisks: { contractRisk: 5 } },
-      matic:{ coinId: 'matic',staticApr: 4.5,  minStakeNative: 1, lockupDays: 0, receiptToken: 'MaticX', liquid: true, liveAprKey: 'stader_matic', features: ['MaticX — largest Polygon liquid staking token', 'Used as collateral on Aave, Compound', 'Instant exit via AMM'], assetRisks: { contractRisk: 4 } },
+      eth:  { coinId: 'eth',  staticApr: 2.26,  minStakeNative: 0, lockupDays: 0, receiptToken: 'ETHx',   liquid: true, liveAprKey: 'stader_eth',   features: ['ETHx — liquid receipt for Ethereum staking', 'Permissioned + community node operators', 'Instant exit via Curve ETHx pool', '6 audits'], assetRisks: { contractRisk: 5 } },
+      matic:{ coinId: 'matic',staticApr: 2.34,  minStakeNative: 1, lockupDays: 0, receiptToken: 'MaticX', liquid: true, liveAprKey: 'stader_matic', features: ['MaticX — largest Polygon liquid staking token', 'Used as collateral on Aave, Compound', 'Instant exit via AMM'], assetRisks: { contractRisk: 4 } },
       bnb:  { coinId: 'bnb',  staticApr: 5.0,  minStakeNative: 0, lockupDays: 0, receiptToken: 'BNBx',   liquid: true, liveAprKey: 'stader_bnb',   features: ['BNBx — liquid BNB staking, bypasses 7-day unbonding', 'Available on BNB Chain DeFi'], assetRisks: { contractRisk: 4 } },
     },
   },
@@ -1567,7 +1574,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     custodyModel: 'smart-contract',
     founded: 2022,
     website: 'https://app.swellnetwork.io',
-    tvlBillions: 1.2,
+    tvlBillions: 0.03,
     auditCount: 4,
     risks: {
       custodyRisk:      2,
@@ -1580,7 +1587,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     assets: {
       eth: {
         coinId: 'eth',
-        staticApr: 4.2,
+        staticApr: 0.56,
         minStakeNative: 0,
         lockupDays: 0,
         receiptToken: 'rswETH',
@@ -1609,7 +1616,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     custodyModel: 'smart-contract',
     founded: 2023,
     website: 'https://app.renzoprotocol.com',
-    tvlBillions: 2.5,
+    tvlBillions: 0.13,
     auditCount: 4,
     risks: {
       custodyRisk:      2,
@@ -1622,7 +1629,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     assets: {
       eth: {
         coinId: 'eth',
-        staticApr: 4.5,
+        staticApr: 2.24,
         minStakeNative: 0,
         lockupDays: 0,
         receiptToken: 'ezETH',
@@ -1651,7 +1658,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     custodyModel: 'smart-contract',
     founded: 2023,
     website: 'https://kelpdao.xyz',
-    tvlBillions: 1.2,
+    tvlBillions: 1.15,
     auditCount: 3,
     risks: {
       custodyRisk:      2,
@@ -1664,7 +1671,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     assets: {
       eth: {
         coinId: 'eth',
-        staticApr: 4.3,
+        staticApr: 2.37,
         minStakeNative: 0,
         lockupDays: 0,
         receiptToken: 'rsETH',
@@ -1692,7 +1699,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     custodyModel: 'smart-contract',
     founded: 2023,
     website: 'https://app.puffer.fi',
-    tvlBillions: 1.5,
+    tvlBillions: 0.03,
     auditCount: 4,
     risks: {
       custodyRisk:      2,
@@ -1705,7 +1712,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     assets: {
       eth: {
         coinId: 'eth',
-        staticApr: 4.0,
+        staticApr: 2.27,
         minStakeNative: 0,
         lockupDays: 0,
         receiptToken: 'pufETH',
@@ -1746,7 +1753,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     assets: {
       eth: {
         coinId: 'eth',
-        staticApr: 4.2,
+        staticApr: 2.65,
         minStakeNative: 0,
         lockupDays: 0,
         receiptToken: 'OETH',
@@ -1775,7 +1782,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     custodyModel: 'smart-contract',
     founded: 2022,
     website: 'https://app.bedrock.technology/unibtc',
-    tvlBillions: 0.5,
+    tvlBillions: 0.38,
     auditCount: 3,
     risks: {
       custodyRisk:      2,
@@ -1786,7 +1793,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
       regulatoryRisk:   3,
     },
     assets: {
-      eth: { coinId: 'eth', staticApr: 4.1, minStakeNative: 0, lockupDays: 0, receiptToken: 'uniETH', liquid: true, liveAprKey: 'bedrock_eth', features: ['uniETH — liquid ETH staking with EigenLayer restaking', 'Instant exit via uniETH/ETH Curve pool', '3 audits'], assetRisks: { contractRisk: 6 } },
+      eth: { coinId: 'eth', staticApr: 2.44, minStakeNative: 0, lockupDays: 0, receiptToken: 'uniETH', liquid: true, liveAprKey: 'bedrock_eth', features: ['uniETH — liquid ETH staking with EigenLayer restaking', 'Instant exit via uniETH/ETH Curve pool', '3 audits'], assetRisks: { contractRisk: 6 } },
       btc: { coinId: 'btc', staticApr: 3.5, minStakeNative: 0.001, lockupDays: 0, receiptToken: 'uniBTC', liquid: true, features: ['uniBTC — BTC liquid restaking via Babylon protocol', 'Earn BTC yield by restaking through EVM wrapper', 'Nascent product — elevated smart contract risk'], assetRisks: { contractRisk: 8, slashingRisk: 5 } },
     },
   },
@@ -1804,7 +1811,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     custodyModel: 'smart-contract',
     founded: 2023,
     website: 'https://app.sanctum.so',
-    tvlBillions: 0.8,
+    tvlBillions: 1.89,
     auditCount: 3,
     risks: {
       custodyRisk:      2,
@@ -1817,7 +1824,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     assets: {
       sol: {
         coinId: 'sol',
-        staticApr: 7.8,
+        staticApr: 5.63,
         minStakeNative: 0.01,
         lockupDays: 0,
         receiptToken: 'INF',
@@ -1914,8 +1921,8 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
       regulatoryRisk:   2,
     },
     assets: {
-      dot: { coinId: 'dot', staticApr: 12.0, minStakeNative: 1, lockupDays: 0, receiptToken: 'vDOT', liquid: true, liveAprKey: 'bifrost_dot', features: ['vDOT — bypasses 28-day Polkadot unbonding period', 'Instant exit via vDOT/DOT pool on Bifrost DEX', '3 audits', 'Polkadot parachain — fully on-chain governance'], assetRisks: { contractRisk: 5, slashingRisk: 5 } },
-      ksm: { coinId: 'ksm', staticApr: 14.0, minStakeNative: 0.1, lockupDays: 0, receiptToken: 'vKSM', liquid: true, liveAprKey: 'bifrost_ksm', features: ['vKSM — bypasses 7-day Kusama unbonding', 'Higher yield than DOT (canary network premiums)', 'Liquid exit via Bifrost DEX'], assetRisks: { contractRisk: 5, slashingRisk: 5, liquidityRisk: 4 } },
+      dot: { coinId: 'dot', staticApr: 3.03, minStakeNative: 1, lockupDays: 0, receiptToken: 'vDOT', liquid: true, liveAprKey: 'bifrost_dot', features: ['vDOT — bypasses 28-day Polkadot unbonding period', 'Instant exit via vDOT/DOT pool on Bifrost DEX', '3 audits', 'Polkadot parachain — fully on-chain governance'], assetRisks: { contractRisk: 5, slashingRisk: 5 } },
+      ksm: { coinId: 'ksm', staticApr: 6.41, minStakeNative: 0.1, lockupDays: 0, receiptToken: 'vKSM', liquid: true, liveAprKey: 'bifrost_ksm', features: ['vKSM — bypasses 7-day Kusama unbonding', 'Higher yield than DOT (canary network premiums)', 'Liquid exit via Bifrost DEX'], assetRisks: { contractRisk: 5, slashingRisk: 5, liquidityRisk: 4 } },
     },
   },
 
@@ -1933,7 +1940,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     custodyModel: 'smart-contract',
     founded: 2022,
     website: 'https://btcstaking.babylonlabs.io',
-    tvlBillions: 4.0,
+    tvlBillions: 3.41,
     auditCount: 4,
     risks: {
       custodyRisk:      2,
@@ -1975,7 +1982,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     custodyModel: 'smart-contract',
     founded: 2024,
     website: 'https://www.lombard.finance/app/stake',
-    tvlBillions: 1.5,
+    tvlBillions: 0.71,
     auditCount: 3,
     risks: {
       custodyRisk:      3,
@@ -2101,7 +2108,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     custodyModel: 'smart-contract',
     founded: 2017,
     website: 'https://www.ankr.com/staking-crypto/',
-    tvlBillions: 0.5,
+    tvlBillions: 0.03,
     auditCount: 5,
     risks: {
       custodyRisk:      2,
@@ -2112,9 +2119,9 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
       regulatoryRisk:   3,
     },
     assets: {
-      eth:  { coinId: 'eth',  staticApr: 3.7,  minStakeNative: 0.5,  lockupDays: 0, receiptToken: 'ankrETH', liquid: true,  liveAprKey: 'ankr_eth',  features: ['ankrETH non-rebasing token', 'Lower DeFi liquidity vs Lido/Rocket Pool', '5 security audits'] },
-      bnb:  { coinId: 'bnb',  staticApr: 5.5,  minStakeNative: 0.1,  lockupDays: 0, receiptToken: 'ankrBNB', liquid: true,  liveAprKey: 'ankr_bnb',  features: ['ankrBNB liquid BNB staking', 'Bypass 7-day BNB unbonding'] },
-      avax: { coinId: 'avax', staticApr: 6.0,  minStakeNative: 1,    lockupDays: 0, receiptToken: 'ankrAVAX',liquid: true,  liveAprKey: 'ankr_avax', features: ['ankrAVAX — alternative to Benqi sAVAX', 'No 25 AVAX minimum'] },
+      eth:  { coinId: 'eth',  staticApr: 2.47,  minStakeNative: 0.5,  lockupDays: 0, receiptToken: 'ankrETH', liquid: true,  liveAprKey: 'ankr_eth',  features: ['ankrETH non-rebasing token', 'Lower DeFi liquidity vs Lido/Rocket Pool', '5 security audits'] },
+      bnb:  { coinId: 'bnb',  staticApr: 1,  minStakeNative: 0.1,  lockupDays: 0, receiptToken: 'ankrBNB', liquid: true,  liveAprKey: 'ankr_bnb',  features: ['ankrBNB liquid BNB staking', 'Bypass 7-day BNB unbonding'] },
+      avax: { coinId: 'avax', staticApr: 6.32,  minStakeNative: 1,    lockupDays: 0, receiptToken: 'ankrAVAX',liquid: true,  liveAprKey: 'ankr_avax', features: ['ankrAVAX — alternative to Benqi sAVAX', 'No 25 AVAX minimum'] },
       sol:  { coinId: 'sol',  staticApr: 6.2,  minStakeNative: 0.01, lockupDays: 0, receiptToken: 'ankrSOL', liquid: true,  liveAprKey: 'ankr_sol',  features: ['ankrSOL liquid Solana staking', 'Lower liquidity than Marinade/Jito'] },
     },
   },
@@ -2132,7 +2139,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     custodyModel: 'smart-contract',
     founded: 2021,
     website: 'https://www.metapool.app/stake',
-    tvlBillions: 0.08,
+    tvlBillions: 0.12,
     auditCount: 2,
     risks: {
       custodyRisk:      2,

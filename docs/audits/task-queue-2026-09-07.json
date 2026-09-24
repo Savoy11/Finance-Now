@@ -6538,7 +6538,15 @@
      "lines": "13-20",
      "quote": "None of those re-verified the other ~47 providers' risk profiles, and claiming they did is exactly the fabricated-freshness problem this machinery exists to prevent. Bump it only after a full pass over the catalog."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-09-24",
+    "note": "MACHINE HALF DONE AND APPLIED; EDITORIAL HALF PENDING. Built `npm run staking-worksheet` (scripts/gen-staking-catalog-worksheet.ts, mirror-tested): it pre-fills live APR beside every static estimate, DefiLlama protocol TVL beside tvlBillions for 20 observed slugs (CeFi deliberately unmapped), and website reachability, and leaves the six risk dimensions, lock-ups, minimums and audit counts blank beside their current values. First run on the owner's machine over clean egress: 55 providers, 187 asset rows, live APR on 29, TVL 20/20. Owner approved (2026-09-24, \"1. Yes 2. Yes\") applying the two machine-verified columns: tvlBillions re-read from DefiLlama on 20 providers — 13 of 20 had been off by 50% or more, restaking-peak figures never revised (Renzo 2.5 → 0.13 B, Puffer 1.5 → 0.03, Swell 1.2 → 0.03) — and staticApr on 28 live-fed rows reset to that day's reading (the ETH LST set had been 40–90% above live; Lombard's live 0 skipped as no-rate). Applied keyed on provider id + coin with a current-value guard; a provenance comment sits above the array. STAKING_DATA_LAST_VERIFIED did NOT move: the six risk dimensions on 55 providers are the editorial pass still to be done with the owner, provider by provider, and re-verifying part of a table does not refresh the rest. The 2026-09-20 STALENESS-ACK stands — the notice fires 2026-09-27 as decided. Four DefiLlama slug candidates (origin-protocol, quicksilver, pstake, bifrost) await the owner's confirmation.",
+    "evidence": [
+     "frontend/scripts/gen-staking-catalog-worksheet.ts",
+     "frontend/src/lib/data/stakingProviders.ts"
+    ]
+   }
   },
   {
    "id": "T-397",
@@ -36356,6 +36364,13 @@
     "what": "Transfer fees: 20 live-verified withdrawal-fee updates applied; two zero proposals held for T-056; worksheets generated for the 447-row manual pass (T-031/T-036).",
     "evidence": [
      "frontend/src/lib/data/transferFees.ts"
+    ]
+   },
+   {
+    "on": "2026-09-24",
+    "what": "T-394 machine half: worksheet tool built; 20 TVL and 28 static APR corrections applied on owner approval; date unmoved; editorial pass pending.",
+    "evidence": [
+     "frontend/src/lib/data/stakingProviders.ts"
     ]
    }
   ]
