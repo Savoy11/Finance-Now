@@ -5110,7 +5110,16 @@
      "lines": "8-14",
      "quote": "The date below is deliberately NOT bumped: it describes the table as a whole, and the ~520 long-tail entries were not re-checked, so the staleness banner must stay on."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-09-24",
+    "note": "MACHINE HALF RE-RUN on the owner's machine over clean egress; MANUAL HALF PREPARED. `npm run fee-reconcile`: 106 of 534 rows reconcile against live keyless exchange APIs — 65 confirmed, 22 changed, 8 dynamic, 11 suspended. 20 of the 22 changes were applied via `npm run fee-apply` (keyed on exchange/coin/network, current-value guard passed); the two `→ 0` proposals — Bitfinex DOT/Polkadot and Bitget USDC/BEP-20 — were deliberately held back because they are T-056's subject, the two zero-fee rows a prior pass already held for hand verification. `npm run fee-worksheet`: 447 entries still need a human across 29 exchanges, core-45 called out first; transfer-fee-worksheet.csv and .md are generated and gitignored, ready to fill. TRANSFER_FEES_LAST_VERIFIED stays 2025-06-01 (480 days) — only a completed pass over every exchange moves it, and the page is held out of rollout with the staleness acknowledged.",
+    "evidence": [
+     "frontend/src/lib/data/transferFees.ts",
+     "frontend/scripts/reconcile-transfer-fees.ts",
+     "frontend/scripts/apply-fee-updates.ts"
+    ]
+   }
   },
   {
    "id": "T-036",
@@ -5142,7 +5151,14 @@
      "lines": "286-300",
      "quote": "Seeded from published schedules, confidence pinned LOW until verified. Check the spot fee schedule page while you have each exchange open for withdrawals."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-09-24",
+    "note": "WORKSHEET GENERATED (with T-031's): transfer-fee-worksheet.csv carries the Spot trading fees section with Observed maker/taker columns blank, ready to fill from each exchange's fee schedule page. Nothing here is automatable — the schedules are HTML pages behind terms this app has not been granted to scrape — so the item stays open on its original terms.",
+    "evidence": [
+     "frontend/scripts/gen-transfer-fee-worksheet.ts"
+    ]
+   }
   },
   {
    "id": "T-055",
@@ -5204,7 +5220,14 @@
      "lines": "2026-08-22",
      "quote": "HELD BACK: two rows proposing a fee of exactly zero (Bitfinex DOT, Bitget USDC/BEP-20). … Those need a spot-check against the exchanges' own pages first."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-09-24",
+    "note": "RE-SURFACED, STILL HELD. The 2026-09-24 machine reconcile read both rows as 0 again from the exchanges' public APIs (Bitfinex DOT/Polkadot 0.1 → 0; Bitget USDC/BEP-20 1 → 0, min 9.9977). Two independent reads agreeing on 0 is stronger evidence than one — but a zero withdrawal fee is the row a user is most likely to act on and the row an API is most likely to report as 0 when it means \"unknown\", so the hand check this item asks for still stands. Not applied.",
+    "evidence": [
+     "frontend/scripts/reconcile-transfer-fees.ts"
+    ]
+   }
   },
   {
    "id": "T-073",
@@ -6487,9 +6510,12 @@
     }
    ],
    "progress": {
-    "noted_on": "2026-09-19",
-    "note": "PART DONE: #174 read the 37 non-'40-Act expense ratios from their prospectuses, so the stated blocker is cleared. NOT done: FUND_DATA_LAST_VERIFIED is still 2026-07-20. Moving it is now a judgement about whether the unchecked catalog fields were covered too — an owner call, not remaining work.",
-    "evidence": "docs/audits/queue-sweep-2026-09-18.md"
+    "noted_on": "2026-09-24",
+    "note": "RECONCILIATION RUN on the owner's machine over clean egress (Spectrum, proxy:false, hosting:false): `npm run fund-fees -- --inspect` then `npm run fund-fees`. Unit declared by the dataset (uom=pure, decimal). Of 126 catalog rows the quarter's Risk/Return archive matched 4 — GDX 0.51, AGG 0.03, MUB 0.05, DODGX 0.51 — and all four AGREE with the catalog to the basis point (differing: 0). 99 rows are not in this quarter's archive and 23 have no expense value in it; that is the archive's coverage, not a catalog problem, and the script's own note says one quarterly archive only covers funds that filed a prospectus that quarter. What this settles: nothing the archive could see disagrees with the catalog. What it cannot settle: the other 122 rows, and the unchecked AUM/yield/inception fields. FUND_DATA_LAST_VERIFIED (2026-07-20, 55 days from its window) is NOT moved — the 2026-09-19 note already made that the owner's judgement, and this run adds four agreeing data points to it, not a whole-table pass.",
+    "evidence": [
+     "frontend/fund-fee-reconcile.json (generated, untracked)",
+     "frontend/scripts/build-fund-fees.mjs"
+    ]
    }
   },
   {
@@ -36313,6 +36339,23 @@
     "what": "T-251 closed on D25; T-407 narrowed to three sources.",
     "evidence": [
      "docs/decisions/2026-09-24-owner-decisions.md"
+    ]
+   },
+   {
+    "on": "2026-09-24",
+    "what": "Staleness cluster, first pass on the owner's machine: the stakingRates FALLBACK table re-measured and rewritten (the one clock that WITHHOLDS data, due 2026-10-03); the fund-fee reconciliation run for T-386; the transfer-fee worksheets generated for T-031/T-036.",
+    "staking_fallbacks": "`npm run staking:refresh-fallbacks -- --write` from clean egress with all 7 upstreams live and 27/51 keys live. 20 of the 27 measured keys moved; FALLBACK_MEASURED_ON → 2026-09-24. Three moved by more than 25%: ankr_eth 0.92 → 2.47 (+168% — the route's own history shows this key at 2.45 on 09-09 and 0.92 on 09-18, so it is a volatile DefiLlama pool reading, not a parse error), bifrost_ksm 12.04 → 6.41, and ⚠ lombard_btc 0.29 → 0. The zero is what DefiLlama reports for the LBTC pool as a LIVE value; the script treats a live 0 as a number and wrote it. Flagged for the owner rather than hand-edited: overriding a measurement with a remembered value is the fabricated-freshness failure the measured/unmeasured split exists to prevent. If a 0 fallback is judged misleading, the cure is in the route (treat 0 as no-rate) or in the measured set, not in the table.",
+    "why_this_clock_first": "stakingProviders fires 2026-09-27 but the owner decided on 2026-09-20 to let that notice fire — it changes a disclosure, not the data. stakingRates' 14-day FALLBACK_STALE_AFTER_DAYS WITHHOLDS the rate (dash) when it fires, so it is the only clock in the cluster whose expiry removes a number from the page. transferFees is stale by 359 days and acknowledged (page held out of rollout).",
+    "evidence": [
+     "frontend/src/lib/server/stakingRates.ts",
+     "frontend/scripts/refresh-staking-fallbacks.mjs"
+    ]
+   },
+   {
+    "on": "2026-09-24",
+    "what": "Transfer fees: 20 live-verified withdrawal-fee updates applied; two zero proposals held for T-056; worksheets generated for the 447-row manual pass (T-031/T-036).",
+    "evidence": [
+     "frontend/src/lib/data/transferFees.ts"
     ]
    }
   ]
