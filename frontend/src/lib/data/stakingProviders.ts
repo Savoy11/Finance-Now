@@ -286,6 +286,10 @@ export const RISK_DIMENSION_LABELS: Record<keyof RiskProfile, { label: string; d
 // touched — they are the editorial pass still to come — which is why
 // STAKING_DATA_LAST_VERIFIED above did not move. Re-verifying part of a table does not
 // refresh the rest.
+// EDITORIAL ROUND 1, 2026-09-24 (owner-approved): liquidityRisk +2 and counterpartyRisk +1
+// on renzo, puffer, swell, ankr, stride — the five that shrank 95–98% by TVL. A protocol
+// that small has thinner receipt-token exits and a smaller treasury; contract, slashing,
+// custody and regulatory risk are not moved by TVL and were left alone. Date still unmoved.
 export const STAKING_PROVIDERS: StakingProvider[] = [
 
   // ════════════════════════════════════════════════════════════════════════════
@@ -814,10 +818,10 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     auditCount: 3,
     risks: {
       custodyRisk:      2,
-      counterpartyRisk: 2,
+      counterpartyRisk: 3,
       contractRisk:     5,
       slashingRisk:     5,
-      liquidityRisk:    2,
+      liquidityRisk:    4,
       regulatoryRisk:   2,
     },
     assets: {
@@ -1578,10 +1582,10 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     auditCount: 4,
     risks: {
       custodyRisk:      2,
-      counterpartyRisk: 2,
+      counterpartyRisk: 3,
       contractRisk:     6,
       slashingRisk:     5,
-      liquidityRisk:    2,
+      liquidityRisk:    4,
       regulatoryRisk:   3,
     },
     assets: {
@@ -1611,7 +1615,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     name: 'Renzo Protocol',
     category: 'liquid',
     defaultYieldType: 'restaking',
-    tagline: 'ezETH — one of the largest EigenLayer restaking protocols by TVL',
+    tagline: 'ezETH — EigenLayer liquid restaking',
     description: 'Renzo is a liquid restaking protocol on top of EigenLayer, issuing ezETH as the liquid receipt token. Users deposit ETH (or LSTs like stETH) and receive ezETH, which earns Ethereum staking rewards plus EigenLayer restaking rewards from multiple Active Validator Services (AVSs). Renzo reached $3B+ TVL in early 2024 driven by EigenLayer points farming.',
     custodyModel: 'smart-contract',
     founded: 2023,
@@ -1620,10 +1624,10 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     auditCount: 4,
     risks: {
       custodyRisk:      2,
-      counterpartyRisk: 3,
+      counterpartyRisk: 4,
       contractRisk:     7,
       slashingRisk:     6,
-      liquidityRisk:    3,
+      liquidityRisk:    5,
       regulatoryRisk:   3,
     },
     assets: {
@@ -1703,10 +1707,10 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     auditCount: 4,
     risks: {
       custodyRisk:      2,
-      counterpartyRisk: 2,
+      counterpartyRisk: 3,
       contractRisk:     6,
       slashingRisk:     3,
-      liquidityRisk:    2,
+      liquidityRisk:    4,
       regulatoryRisk:   3,
     },
     assets: {
@@ -2112,10 +2116,10 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     auditCount: 5,
     risks: {
       custodyRisk:      2,
-      counterpartyRisk: 3,
+      counterpartyRisk: 4,
       contractRisk:     5,
       slashingRisk:     3,
-      liquidityRisk:    3,
+      liquidityRisk:    5,
       regulatoryRisk:   3,
     },
     assets: {
