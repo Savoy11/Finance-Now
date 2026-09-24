@@ -501,6 +501,20 @@ const { data } = useQuery({
 > ⚠ **Not every clock is a disclosure clock.** `stakingRates.ts`'s 14-day
 > `FALLBACK_STALE_AFTER_DAYS` **withholds** the rate (`delete rates[key]` → a dash);
 > the `*_LAST_VERIFIED` windows only change what a notice says. Do not unify them.
+>
+> **`npm run queue:check` does for the task-queue ledger what `docs:check` does for this
+> file** (added 2026-09-23, runs in CI beside both). `docs/audits/task-queue-2026-09-07.json`
+> describes itself — header counts, closure blocks, blockers — and three times in one month
+> that description was false while every guard stayed green: a closure review verified 62
+> items and never wrote; a decision pass nulled two blockers and left them `blocked`; sixteen
+> terms items described readings finished days earlier. Twelve checks in
+> `scripts/lib/queueLedgerChecks.mjs`; it **fails** only on facts the ledger states about
+> itself that are false, and **warns** where a human must judge (a blocker citing a now-closed
+> item may be half-satisfied; an open item naming a verified host may want more than the
+> entry has — T-243 does). Every check is driven red by a named mutation in
+> `lib/server/__tests__/queueLedgerCheck.test.ts`, because a guard only ever seen green
+> proves nothing. `node scripts/check-queue-ledger.mjs --html <out>` also renders the ledger
+> as a page — the published Finance Now Ledger artifact is that output, never hand-edited.
 
 ### `src/lib/data/transferFees.ts`
 Central data file for the Transfer Fee Calculator.
