@@ -54,24 +54,25 @@
  },
  "counts": {
   "total_verified": 398,
-  "outstanding": 346,
+  "outstanding": 348,
   "by_status": {
-   "open": 73,
+   "open": 75,
    "closed": 115,
    "blocked": 67,
    "unclear": 1,
    "parked": 90
   },
   "by_owner_role": {
-   "remote-dev": 79,
-   "either": 40,
-   "owner-decision": 136,
+   "remote-dev": 84,
+   "either": 41,
+   "owner-decision": 140,
    "owner-machine": 83
   },
   "closed_but_listed_open_in_docs": 60,
   "closed_by_annotation": 115,
   "counts_recomputed_on": "2026-09-23",
-  "counts_note": "by_status and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status."
+  "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
+  "total": 348
  },
  "blocking_decisions": [
   {
@@ -11007,6 +11008,82 @@
      "docs/architecture/risk-scale-spec.md:8-14, 318, 509-517",
      "frontend/src/app/live-data/pump-report/investigate/route.ts:45,86"
     ]
+   }
+  },
+  {
+   "id": "T-407",
+   "title": "Revisit the four sources kept conditional on an unresolved judgement (CoinDesk, Investing.com, publicnode, Bitget)",
+   "status": "open",
+   "confidence": "high",
+   "owner_role": "owner-decision",
+   "category": "legal",
+   "effort": "medium",
+   "blocking_decision": null,
+   "related_ids": [
+    "T-141",
+    "T-148",
+    "T-247",
+    "T-251",
+    "T-242",
+    "T-151"
+   ],
+   "summary": "Four registry entries are `conditional` in a sense the word does not carry anywhere else in the registry. Normally `conditional` means permitted while conditions hold, and the conditions are obligations to honour. In these four it means WE ARE PROCEEDING ON A QUESTION THE DOCUMENT DOES NOT ANSWER — the plain text does not permit what the app does, and the entry is conditional because of an owner judgement about SCOPE. Same word, two different claims, and the registry has no field that separates them. CoinDesk: no display permission; \"rss\"/\"syndicat\"/\"feed\" return zero hits in 300 lines. Investing.com: no display permission and automated extraction expressly forbidden, yet it publishes the feeds and robots.txt permits /rss/. publicnode: bars re-use \"commercially and non-commercially\", which read literally prohibits consuming an RPC provider at all. Bitget: §1 lists the UNITED STATES among Prohibited Countries while the owner is US-resident. Three of the four were the owner's deliberate 2026-09-20 calls made with the readings in hand. This item exists so those calls stay visible rather than ageing into apparent settledness.",
+   "next_action": "NOT a re-read — all four documents have been read carefully and will not say anything different next time. What is owed is a decision on each, and they do not all need the same one. (1) CoinDesk and Investing.com turn on ONE shared question: does a terms document that never mentions feeds govern a feed the publisher deliberately publishes and permits in robots.txt? Answer it once and both resolve; it is a question for a professional, not another careful reading. (2) publicnode needs only a judgement on whether to keep reading an absurdly broad clause narrowly — exposure is one route on a page already hidden from rollout. Also fix its termsUrl, which points at the homepage rather than the document its finding quotes. (3) ⚠ BITGET DOES NOT WAIT FOR EITHER. It is the only source where a clause may bar use OUTRIGHT rather than limit scope, and the owner is US-resident. Everything else here is about what may be SHOWN; this is about whether the app may call the host at all, today. If any resolves toward prohibited, T-247 is the mechanism — a per-source display flag — and the blast radius is recorded on each entry.",
+   "sources": [
+    {
+     "file": "frontend/src/lib/server/sourceTerms.ts",
+     "lines": "coindesk.com / investing.com / publicnode.com / bitget.com entries",
+     "quote": "OWNER-FLAGGED 2026-09-23 — REVISIT PENDING, DO NOT TREAT AS SETTLED"
+    },
+    {
+     "file": "docs/LEGAL-REVIEW.md",
+     "lines": "§7",
+     "quote": "Sources kept conditional on an unresolved judgement"
+    }
+   ],
+   "opened": {
+    "on": "2026-09-23",
+    "by": "terms-cluster sweep, owner-directed",
+    "why": "Owner, 2026-09-23: \"I have some concerns around coindesk which will require some additional research, for now annotate and we will revisit this and any similar cases.\" Scanning the registry for \"similar cases\" found three more, and a D22 gap alongside them."
+   }
+  },
+  {
+   "id": "T-408",
+   "title": "Apply the D22 condition to Tiingo and Bitget — the two of the eight that T-153 never covered",
+   "status": "open",
+   "confidence": "high",
+   "owner_role": "either",
+   "category": "legal",
+   "effort": "small",
+   "blocking_decision": null,
+   "related_ids": [
+    "T-151",
+    "T-153",
+    "T-407"
+   ],
+   "summary": "D22 (2026-09-23) answered the personal-vs-commercial question for the EIGHT sources CLAUDE.md names: FMP, Finnhub, Twelve Data, Tiingo, Binance.US, YouTube, OilPrice and Bitget. An explicit D22 condition was written onto FOUR, because T-153 — the item carrying the work — was scoped by NAMING four of them. Of the other four, two correctly need nothing: OilPrice records no personal-use restriction at all, and YouTube's \"personal, non-commercial use\" clause comes from the CONSUMER site terms, which its entry already records as not describing Data API v3 use. Two are real gaps. Tiingo's condition reads \"Free tier is personal use — no redistribution\"; Bitget's §10.1 licenses use \"for non-commercial personal or internal business use\" — the same shape as FMP. Both are exactly what D22 speaks to, and NO OPEN ITEM COVERED EITHER. ⚠ The transferable lesson is narrower than \"T-153 was wrong\": an item scoped by NAMING MEMBERS silently stops covering a set that is DEFINED ELSEWHERE, and nothing fails when the two drift apart. T-153 named four; the set has eight; the gap was invisible from either end.",
+   "next_action": "Add a D22 condition to the tiingo.com and bitget.com entries in the same form as the four applied on 2026-09-23: the single-user constraint, the first-non-owner-page-load trigger, and that source's own route to broader rights. Tiingo carries a second unresolved point that belongs in its condition rather than being smoothed over — its ToS says a licence accompanying the Software \"shall take precedence\", and that display or redistribution needs a SEPARATE licence, so this entry rests on a document the plan's own licence can override. Bitget's D22 condition is the SMALLER of its two problems and must not be allowed to look like the whole answer — see T-407 for the Prohibited-Countries question, which is about whether the host may be called at all.",
+   "sources": [
+    {
+     "file": "frontend/src/lib/server/sourceTerms.ts",
+     "lines": "tiingo.com entry",
+     "quote": "'Valid API key required', 'Free tier is personal use — no redistribution'"
+    },
+    {
+     "file": "frontend/src/lib/server/sourceTerms.ts",
+     "lines": "bitget.com entry",
+     "quote": "10.1 licenses use \"for non-commercial personal or internal business use\""
+    },
+    {
+     "file": "docs/decisions/2026-09-23-owner-decisions.md",
+     "lines": "D22",
+     "quote": "It unblocks T-153, T-149 and T-152"
+    }
+   ],
+   "opened": {
+    "on": "2026-09-23",
+    "by": "terms-cluster sweep, owner-directed",
+    "why": "Owner, 2026-09-23: \"I have some concerns around coindesk which will require some additional research, for now annotate and we will revisit this and any similar cases.\" Scanning the registry for \"similar cases\" found three more, and a D22 gap alongside them."
    }
   }
  ],
@@ -35866,6 +35943,20 @@
      "frontend/src/lib/server/sourceTerms.ts",
      "docs/audits/terms-review-news-2026-09-14.md",
      "docs/audits/terms-review-news-2026-09-20.md"
+    ]
+   },
+   {
+    "on": "2026-09-23",
+    "what": "Annotated the four sources kept conditional on an unresolved judgement, per the owner's instruction, and filed T-407 (revisit) and T-408 (the D22 gap found while doing it).",
+    "owner_instruction": "\"I have some concerns around coindesk which will require some additional research, for now annotate and we will revisit this and any similar cases.\"",
+    "how_similar_cases_were_found": "By scanning the registry for the SHAPE rather than listing what I remembered: entries whose text carries a prohibited-leaning or unresolved-judgement signal (no display permission / the reading proposed prohibited / owner judgement outstanding / cannot be the intent / invented, not read). Five hit; dowjones.io is already prohibited and therefore resolved, leaving four.",
+    "the_distinction_that_matters": "In these four, `conditional` means \"proceeding on an unresolved question\". On the other twenty-odd conditional entries it means \"permitted while conditions hold\" and the conditions are obligations. The registry has no field separating those two claims, so the distinction lives in prose — which is why each entry now carries the flag rather than relying on anyone reading LEGAL-REVIEW first.",
+    "bitget_is_not_like_the_others": "⚠ Three of the four are questions about what may be DISPLAYED and bite at the first non-owner page load. Bitget is a question about whether the app may CALL THE HOST AT ALL: §1 lists the United States among Prohibited Countries and the owner is US-resident. It is filed under the same item but explicitly does not wait for the same trigger.",
+    "the_d22_gap": "Found while annotating, not sought: Tiingo and Bitget belong to the eight-source set D22 answered and received no D22 condition, because T-153 was scoped by naming four of the eight. OilPrice and YouTube correctly need none — checked rather than assumed, and YouTube in particular is a false positive whose personal-use clause its own entry debunks. T-408 covers the two real gaps.",
+    "also_corrected": "LEGAL-REVIEW §3.A had gone stale in three ways from this session's own work — the registry counts (22/34 -> 26/30), \"the remaining cluster is the news publishers\" (that cluster is now closed), and T-247's characterisation (its premise did not survive the readings). Annotated in place rather than rewritten, since the paragraph is dated and is the reasoning §7 was reached from.",
+    "evidence": [
+     "frontend/src/lib/server/sourceTerms.ts",
+     "docs/LEGAL-REVIEW.md"
     ]
    }
   ]
