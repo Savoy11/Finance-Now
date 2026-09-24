@@ -866,6 +866,28 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     finding:
       'Publishes a documented public REST API; the spot public coin list (incl. per-chain withdrawal fees) is documented as unauthenticated, and withdrawFeeAdapters.ts calls it keylessly (probed). The Terms of Use WERE read in a browser on 2026-09-14 — see the comment above for the two findings, one of which (the United States listed as a Prohibited Country) is an open owner judgement rather than a scope limit.',
     conditions: ['Respect documented rate limits', 'Keyless public endpoints only — no authenticated endpoints (RP-5)'],
+    // ══ ⚠ OWNER-FLAGGED 2026-09-23 — REVISIT PENDING, DO NOT TREAT AS SETTLED ══
+    // Owner: "I have some concerns around coindesk which will require some additional
+    // research, for now annotate and we will revisit this and any similar cases."
+    //
+    // This entry is one of FOUR in the same class — coindesk.com, investing.com,
+    // publicnode.com and bitget.com — where the document's plain text does not permit
+    // what the app does, and the entry is `conditional` because of an owner judgement
+    // about SCOPE, not because a clause allows it. `conditional` here means "proceeding
+    // on an unresolved question", which is NOT what it means on the other 20-odd
+    // conditional entries, where conditions are simply obligations to honour.
+    // Grouped and reasoned in docs/LEGAL-REVIEW.md §7. Tracked as T-407.
+    // THIS ONE IS THE SHARPEST OF THE FOUR, on a question the others do not raise:
+    // §1 lists the UNITED STATES among Prohibited Countries and defines a Restricted
+    // Person as one who resides there. THE OWNER IS US-RESIDENT. This is the only source
+    // where a clause may bar use OUTRIGHT rather than limit its scope.
+    // ⚠ AND IT IS ALSO A D22 GAP. §10.1 licenses use "for non-commercial personal or
+    // internal business use" — the same shape as FMP, Twelve Data and Tiingo — so it
+    // belongs to the eight-source personal-vs-commercial set D22 answered. It did NOT
+    // receive a D22 condition on 2026-09-23 because T-153 was scoped to only four of the
+    // eight. Tiingo has the same gap ("Free tier is personal use — no redistribution").
+    // Neither is covered by any open item; T-408 now covers both.
+    //
     reviewedAt: '2026-09-14',
     review: 'verified',
     confidence: 'medium',
@@ -1017,6 +1039,24 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     // what the document says, and narrowing it is not a maintainer's call to make.
     // Scope: one route (/live-data/wallet/eth), first rung of the EVM ladder, behind a
     // page hidden from rollout since 2026-08-22.
+    // ══ ⚠ OWNER-FLAGGED 2026-09-23 — REVISIT PENDING, DO NOT TREAT AS SETTLED ══
+    // Owner: "I have some concerns around coindesk which will require some additional
+    // research, for now annotate and we will revisit this and any similar cases."
+    //
+    // This entry is one of FOUR in the same class — coindesk.com, investing.com,
+    // publicnode.com and bitget.com — where the document's plain text does not permit
+    // what the app does, and the entry is `conditional` because of an owner judgement
+    // about SCOPE, not because a clause allows it. `conditional` here means "proceeding
+    // on an unresolved question", which is NOT what it means on the other 20-odd
+    // conditional entries, where conditions are simply obligations to honour.
+    // Grouped and reasoned in docs/LEGAL-REVIEW.md §7. Tracked as T-407.
+    // THIS ONE: the broadest clause in the registry — barring re-use "commercially and
+    // non-commercially", which read literally prohibits consuming an RPC provider at all,
+    // since answering calls IS the product. `review: verified` records only that the
+    // document was READ; the judgement has been outstanding since 2026-09-18.
+    // ⚠ SMALLER AND FIXABLE: termsUrl points at the HOMEPAGE, not the document the
+    // finding quotes. A verified entry should link what was read.
+    //
     reviewedAt: '2026-09-14',
     review: 'verified',
     confidence: 'medium',
@@ -1271,6 +1311,23 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     // verdict, and it does not resolve the question above.
     //
     // Full reading: docs/audits/terms-review-news-2026-09-20.md
+    // ══ ⚠ OWNER-FLAGGED 2026-09-23 — REVISIT PENDING, DO NOT TREAT AS SETTLED ══
+    // Owner: "I have some concerns around coindesk which will require some additional
+    // research, for now annotate and we will revisit this and any similar cases."
+    //
+    // This entry is one of FOUR in the same class — coindesk.com, investing.com,
+    // publicnode.com and bitget.com — where the document's plain text does not permit
+    // what the app does, and the entry is `conditional` because of an owner judgement
+    // about SCOPE, not because a clause allows it. `conditional` here means "proceeding
+    // on an unresolved question", which is NOT what it means on the other 20-odd
+    // conditional entries, where conditions are simply obligations to honour.
+    // Grouped and reasoned in docs/LEGAL-REVIEW.md §7. Tracked as T-407.
+    // THIS ONE: the reading proposed `prohibited` and an adversarial pass sustained it.
+    // Scope is what is unresolved — the ToU never mentions feeds, so either the feed is
+    // inside the expansively defined "Services", or a document that never reaches feeds
+    // does not govern one the publisher deliberately publishes. Live: `coindesk-rss` in
+    // /live-data/news renders headline + a 280-char summary today.
+    //
     reviewedAt: '2026-09-20',
     review: 'verified',
     confidence: 'medium',
@@ -1456,6 +1513,25 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     // FXStreet), so it degrades rather than removes. D21-compliant.
     //
     // Full reading: docs/audits/terms-review-news-2026-09-20.md
+    // ══ ⚠ OWNER-FLAGGED 2026-09-23 — REVISIT PENDING, DO NOT TREAT AS SETTLED ══
+    // Owner: "I have some concerns around coindesk which will require some additional
+    // research, for now annotate and we will revisit this and any similar cases."
+    //
+    // This entry is one of FOUR in the same class — coindesk.com, investing.com,
+    // publicnode.com and bitget.com — where the document's plain text does not permit
+    // what the app does, and the entry is `conditional` because of an owner judgement
+    // about SCOPE, not because a clause allows it. `conditional` here means "proceeding
+    // on an unresolved question", which is NOT what it means on the other 20-odd
+    // conditional entries, where conditions are simply obligations to honour.
+    // Grouped and reasoned in docs/LEGAL-REVIEW.md §7. Tracked as T-407.
+    // THIS ONE: no display permission, and automated extraction expressly forbidden —
+    // yet Investing.com publishes the feeds this app reads and robots.txt permits /rss/.
+    // Both true at once; the document never mentions feeds, so it reconciles neither.
+    // Live: 3 of the macro-news feeds. Every pillar keeps a non-Investing source, so a
+    // prohibited outcome degrades rather than removes (D21-compliant).
+    // ⚠ The quotes come from a hand-written PDF extractor, not poppler — RE-CHECK ANY
+    // QUOTE against the PDF page before using it in correspondence with Fusion Media.
+    //
     reviewedAt: '2026-09-20',
     review: 'verified',
     confidence: 'medium',
