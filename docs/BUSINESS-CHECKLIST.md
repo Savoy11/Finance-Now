@@ -109,7 +109,12 @@ structure, regulatory research, disclosures and tax compliance are decided once,
 
 ### 5.1 Finance Now — the release bar
 
-**DRAFT 2026-09-14 (T-298, owner decision D15) — awaiting approval.** Two of the five
+~~**DRAFT 2026-09-14 (T-298, owner decision D15) — awaiting approval.**~~ ✅ **ADOPTED AS THE
+RELEASE GATE 2026-09-24 (D23)** — owner: *"Ill let then stand as they are."* Adopted **as it
+stands**: two floors met, the data-honesty FAIL not met and not waived, the Feature floor
+structurally approved but its list still the owner's to supply (T-298 is now that gap alone).
+Record: `docs/decisions/2026-09-24-owner-decisions.md`. Mirrored at `docs/TASK-QUEUE.md` §P3-W3.
+The draft note that follows is left as written. Two of the five
 floors are measurable today and are filled in with real numbers and the command that
 checks them. Three need the owner and are marked so; a floor nobody can test is a wish.
 
@@ -130,7 +135,9 @@ a VPN on AS62651 would have made twenty publisher terms pages read as unreachabl
 
 ### 5.2 Finance Now — explicitly out of v1
 
-**DRAFT 2026-09-14 (T-299, owner decision D15) — awaiting approval.** Consolidated from
+~~**DRAFT 2026-09-14 (T-299, owner decision D15) — awaiting approval.**~~ ✅ **APPROVED AS
+WRITTEN 2026-09-24 (D23)** — owner: *"Ill let then stand as they are."* T-299 closed. Record:
+`docs/decisions/2026-09-24-owner-decisions.md`. Consolidated from
 `CLAUDE.md`'s feature inventory and `docs/audits/rejected-proposals.md`. This is the
 fence scope creep bounces off: **anything here returning to v1 is a decision, not a
 bug report.**
