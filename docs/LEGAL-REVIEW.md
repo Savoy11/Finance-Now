@@ -101,6 +101,21 @@ rests on a syndication policy rather than an API licence. T-247 is the sharp one
 publisher permits headline-and-link only, the app must stop rendering feed summaries — a
 code change, not a note.
 
+> **⚠ UPDATED 2026-09-23 — all three claims above have been overtaken.** Left as written
+> because the paragraph is dated and is the reasoning §7 was reached from.
+>
+> - **The registry is 26 `verified` / 30 `seeded` of 56**, measured on 2026-09-23.
+> - **The news-publisher cluster is CLOSED.** T-140–T-150 are all read, verified and
+>   closed; so are T-240, T-242, T-244 and T-249. What remains seeded is infrastructure
+>   and API hosts, a different character of risk — mostly a rate limit or an attribution
+>   line rather than a syndication licence. **T-243 (CoinGecko) is the one to watch**: its
+>   finding still ends "the remainder of the document was not [read]", it is the app's
+>   most-used keyless source, and at `reviewedAt: 2026-08-29` it is the registry's oldest
+>   entry.
+> - **T-247's premise did not survive the readings.** No publisher is headline-and-link-only
+>   and none will be. Instead, two grant **no display permission at all** — a state the
+>   item's model had no slot for. It is re-scoped and the four affected sources are §7.
+
 **B. Entity formation.** T-284 to T-288, plus T-295 and T-297. One entity or two, LLC and
 whether S-Corp election is worth the payroll overhead, registered agent, EIN, operating
 agreement, bank account, annual filings calendar. Sequential — T-287 and T-288 are blocked
@@ -173,6 +188,14 @@ This note is not on a timer, because the triggers are events rather than dates:
    (October 2026, reported), Nasdaq's 23-hour trading launch (2026-12-06, reported), the
    GENIUS Act taking effect (2027-01-18), and the innovation exemption's expiry
    (2031-09-17). Each changes what a truthful label has to say, not whether one is owed.
+6. **On the four sources in §7** (added 2026-09-23). Not a date and not a re-read — those
+   documents have been read and will not say anything different next time. The trigger is
+   whichever comes first: taking professional advice (CoinDesk and Investing.com turn on
+   one shared question a lawyer can answer once for both), or trigger 1 above, since three
+   of the four are questions about what may be *displayed* and bite when a second person
+   can load a page. **Bitget is the exception and does not wait for either** — its §1
+   Prohibited-Countries clause names the United States while the owner is US-resident, and
+   that is a question about whether the app may call the host at all, today.
 
 ⚠ `npm run staleness:check` does **not** watch any of this. It watches curated *data*
 tables (`*_LAST_VERIFIED`), not terms verdicts or legal workstreams. Extending it to the
@@ -202,3 +225,70 @@ guard has this covered.
   no vendor contacted; nothing sent. The assessment's primary documents were **not opened**
   from the session that wrote it (sandbox egress), which its banner says in as many words —
   read the SEC order and any venue terms on the owner's machine before acting on a clause.
+
+---
+
+## 7. Sources kept `conditional` on an unresolved judgement (opened 2026-09-23)
+
+**Owner, 2026-09-23:** *"I have some concerns around coindesk which will require some
+additional research, for now annotate and we will revisit this and any similar cases."*
+
+Chasing "similar cases" through the registry turned up **four**, and they are a genuinely
+different animal from the other conditional entries. Everywhere else, `conditional` means
+*permitted while conditions hold* and the conditions are obligations to honour —
+attribution, a rate limit, a link back. In these four it means **we are proceeding on a
+question the document does not answer.** Same word, different claim, and the registry has
+no field that distinguishes them.
+
+| Source | What the document actually says | Why it is not `prohibited` | Live surface |
+|---|---|---|---|
+| **CoinDesk** | No display permission. View/print/download for personal, non-commercial use; republication needs prior written consent. "rss", "syndicat", "feed" return **zero hits** in 300 lines | Reading proposed `prohibited` and an adversarial pass sustained it; **scope** could not be settled — either the feed is inside the expansive "Services", or a ToU that never reaches feeds does not govern one the publisher deliberately publishes | `coindesk-rss` → `/live-data/news`, headline + 280-char summary |
+| **Investing.com** | No display permission; Limitations on Use (c) expressly forbids automated extraction "for any purpose" | It **publishes** the feeds this app reads and robots.txt permits `/rss/`. Publishing a feed and allowing it in robots is an invitation; the ToS bars extraction in general terms. Both true, and the document reconciles neither | 3 of the macro-news feeds |
+| **publicnode.com** | Bars re-use "commercially **and non-commercially**" — the broadest clause in the registry | Read literally it prohibits consuming an RPC provider at all, since answering calls *is* the product. That cannot be the intent, and narrowing it is not a maintainer's call | `/live-data/wallet/eth`; `/wallets` already hidden from rollout |
+| **Bitget** | §1 lists the **UNITED STATES** among Prohibited Countries; a Restricted Person is one who resides there. §10.1 licenses "non-commercial personal or internal business use" | The Prohibited-Country clauses attach to **Accounts and Services**, which §3.1 gates behind registration — and this is a keyless call with no account. "Platform" is defined to include API access. Unclear, not obviously either way | `withdrawFeeAdapters.ts` → `api.bitget.com`, keyless |
+
+### ⚠ Bitget is the sharpest, and for a reason the other three do not raise
+
+It is **the only source where a clause may bar use outright rather than limit its scope**,
+and **the owner is US-resident**. Everything else in this document is a question about what
+may be *shown*; this is a question about whether the app may *call the host at all*.
+
+### ⚠ A D22 gap, found while annotating this section
+
+D22 (2026-09-23) answered the personal-vs-commercial question for the **eight** sources
+CLAUDE.md names: FMP, Finnhub, Twelve Data, Tiingo, Binance.US, YouTube, OilPrice and
+Bitget. An explicit D22 condition was written onto **four** of them, because T-153 — the
+item that carried the work — was scoped to four by name. Of the remaining four:
+
+- **OilPrice** correctly needs none. Its reading records no personal-use restriction at
+  all: "permits syndication of headline/link/summary with attribution and a link back."
+- **YouTube** correctly needs none. Its "personal, non-commercial use" clause came from the
+  **consumer site terms**, and the entry already records that this does not describe Data
+  API v3 use, which `termsUrl` governs separately.
+- **Tiingo** and **Bitget** are real gaps. Tiingo's condition reads "Free tier is personal
+  use — no redistribution"; Bitget's §10.1 licenses "non-commercial personal or internal
+  business use". Both are the shape D22 speaks to, and **no open item covered either** —
+  they fell in the gap between T-153's four and the set's eight.
+
+**T-408** now covers both. The lesson is narrower than "T-153 was wrong": an item scoped by
+*naming members* silently stops covering a set that is defined elsewhere, and nothing fails
+when the two drift apart.
+
+### What "revisit" means here
+
+Not a re-read — all four documents have been read, carefully, and re-reading them will not
+produce a different text. What is owed is a **decision on each**, and they do not all need
+the same one:
+
+1. **CoinDesk and Investing.com** turn on one shared question: *does a terms document that
+   never mentions feeds govern a feed the publisher deliberately publishes and permits in
+   robots.txt?* Answer it once and both resolve. It is a question for a professional, not
+   for another careful reading.
+2. **publicnode** needs only a judgement on whether to keep reading an absurdly broad
+   clause narrowly. Exposure is one route on a hidden page.
+3. **Bitget** needs its own answer, because the question is different in kind.
+
+Until then the annotation on each entry is the control, and `T-407` is the tracking item.
+**Nothing here is an emergency and nothing here should be quietly closed.** Three of the
+four were the owner's deliberate 2026-09-20 calls made *with* the readings in hand; this
+section exists so those calls stay visible rather than ageing into apparent settledness.
