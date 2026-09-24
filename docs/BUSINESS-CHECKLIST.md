@@ -122,7 +122,7 @@ checks them. Three need the owner and are marked so; a floor nobody can test is 
 |---|---|---|
 | **Data honesty** | `npm run audit` on the owner's machine, from a **verified non-VPN egress**, reports **0 FAIL**, and every FALLBACK is explained by design or a missing key — not by an unreachable upstream | ⚠ **Nearly met, 2026-09-12** (`docs/audits/live-data-audit-2026-09-12.md`). The non-VPN run — the one that counts — was **64 REAL / 9 FALLBACK / 1 FAIL**. All 9 fallbacks qualify: by design or key-gated. The 1 FAIL does **not** meet a 0-FAIL bar as written, and is recorded as not-met rather than waved through: it was a Tronscan `429` that reproduced against Tronscan directly, outside the app, so it is a provider rate limit and not our defect — but "someone else's transient" is a judgement, and a bar that accepts judgements is not a bar. **Owner call: re-run to confirm it clears, or amend the bar to allow a documented transient upstream failure.** For reference the VPN run the same evening was 65/9/0, which is why the egress precondition below matters |
 | **Quality** | `npx tsc --noEmit` clean · `npx eslint .` 0 errors · full vitest suite green · `npx next build` succeeds · no known data-corrupting bug | ✅ **Met — re-measured 2026-09-24**: tsc clean, 0 errors / 46 warnings, 117 files / 1613 tests, build succeeds in CI on every PR (`CI Success Gate` is a required check since 2026-09-23). The 2026-09-14 figures were 44 warnings / 1444 tests; the warning count is the React-compiler lint baseline and has not moved by intent |
-| **Feature** | The specific list of surfaces that must work, with nothing half-built behind a nav link | ⚠ **OWNER** — needs the list. §5.2 names what is *out*, which is the other half |
+| **Feature** | The specific list of surfaces that must work, with nothing half-built behind a nav link | ✅ **FILLED 2026-09-24 (D24)** — the list is §5.1.1 **in full**; owner: *"Keep all."* Each 🟡 surface counts as working *in its disclosed degraded state*. **Provisional**: the owner will review this after the worklist is finished and may change it — until then, this is the floor. ~~⚠ OWNER — needs the list.~~ §5.2 names what is *out*, which is the other half |
 | **Legal** | Sections 1–3 of this document closed | ⚠ **OWNER** — and gated: the FMP reading (2026-09-13) established that public-facing display needs a vendor agreement, not a plan upgrade. Lead time, not a checkout |
 | **Operational** | Backups, error monitoring, a support inbox someone reads | ⚠ **OWNER** — parked under the 2026-09-05 rollout ruling (D1); provisioning is not being done yet by decision |
 
@@ -133,7 +133,10 @@ and if `proxy` or `hosting` is true the run does not count, whichever machine ma
 This has produced four wrong conclusions in this repo, most recently on 2026-09-14 when
 a VPN on AS62651 would have made twenty publisher terms pages read as unreachable.
 
-#### 5.1.1 Feature floor — candidate list (DRAFT 2026-09-24, T-298 — owner strikes from it)
+#### 5.1.1 Feature floor — ~~candidate list (DRAFT 2026-09-24, T-298 — owner strikes from it)~~ ADOPTED IN FULL 2026-09-24 (D24)
+
+> **Owner, 2026-09-24:** *"Keep all, once we finish the worklist I will review this and we may make changes."* Nothing was struck. The list below is the Feature floor as adopted; the "how it was built" note is kept because it defines what "must work" means for a 🟡 line. **Provisional** — a post-worklist review is expected and any change to it is a decision, recorded here.
+
 
 **How this list was built, so the owner knows what a strike means.** Every surface below is
 either 🟢 Live or 🟡 Partial in `DATA-AVAILABILITY.md` (run of 2026-09-19) and is **not** on the

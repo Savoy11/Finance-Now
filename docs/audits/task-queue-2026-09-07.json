@@ -56,8 +56,8 @@
   "total_verified": 398,
   "outstanding": 348,
   "by_status": {
-   "open": 67,
-   "closed": 123,
+   "open": 64,
+   "closed": 126,
    "blocked": 67,
    "unclear": 1,
    "parked": 90
@@ -69,7 +69,7 @@
    "owner-machine": 83
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 123,
+  "closed_by_annotation": 126,
   "counts_recomputed_on": "2026-09-24",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 348
@@ -4574,7 +4574,7 @@
   {
    "id": "T-298",
    "title": "Supply the Feature floor of the release bar — the list of surfaces that must work at v1",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "decision",
@@ -4600,6 +4600,20 @@
     "note": "CANDIDATE LIST DRAFTED for the owner to strike from — docs/BUSINESS-CHECKLIST.md §5.1.1. Built from DATA-AVAILABILITY.md (run of 2026-09-19) and CLAUDE.md's Feature Inventory: every 🟢/🟡 surface not on the §5.2 fence, with the accepted degraded state named for each 🟡 so \"must work\" means \"works in its disclosed state\". Striking a line means not required at v1; it does not move a surface onto the fence. Writing the struck list INTO the Feature row is the owner's act, same as the rest of the bar.",
     "evidence": [
      "docs/BUSINESS-CHECKLIST.md"
+    ]
+   },
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-24",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "FILLED by owner decision D24 — \"Keep all, once we finish the worklist I will review this and we may make changes.\" The Feature floor is docs/BUSINESS-CHECKLIST.md §5.1.1 in full, each 🟡 surface counting as working in its disclosed degraded state. With D23 (bar adopted, mirrored into TASK-QUEUE §P3-W3) and D24 (Feature floor filled) the five-floor bar the item asked for is defined. Provisional: the owner's post-worklist review may change the list, and any change is a decision, not an edit.",
+    "what_this_does_not_say": "That the bar is MET. D23's per-floor table stands: Data honesty had 1 FAIL not waived, Legal is gated on D22's launch set, Operational is parked under D1.",
+    "approved_by": "owner, 2026-09-24",
+    "evidence": [
+     "docs/decisions/2026-09-24-owner-decisions.md",
+     "docs/BUSINESS-CHECKLIST.md",
+     "docs/TASK-QUEUE.md"
     ]
    }
   },
@@ -6132,7 +6146,7 @@
   {
    "id": "T-251",
    "title": "publicnode.com — owner judgement on the broadest terms clause in the registry",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "terms-review",
@@ -6155,6 +6169,19 @@
     "note": "RE-SCOPED, not closed. The item was filed as owner-MACHINE work (\"seeded low confidence, needs a read\"), and on both counts it is stale: the entry is verified and the document has been read. What is left is an owner DECISION, which is a different kind of work and a different queue. The entry says so itself: \"review was ratified verified on 2026-09-18 to record that the document HAS been read; the judgement above is still outstanding and is the owner's.\" An item that keeps asking for a read that happened hides a decision that has been waiting nine days.",
     "evidence": [
      "frontend/src/lib/server/sourceTerms.ts"
+    ]
+   },
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-24",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "DECIDED by owner decision D25 — \"Keep the narrow reading for saftey.\" The clause is read as a bar on redistributing or re-serving PublicNode's service, not on answering a call; the entry stays conditional with its three conditions, and the judgement is recorded on the entry, in LEGAL-REVIEW §7 and in docs/decisions/2026-09-24-owner-decisions.md. Exposure: one route on a hidden page plus keyless gas for four chains with a labelled-estimate fallback.",
+    "approved_by": "owner, 2026-09-24",
+    "evidence": [
+     "docs/decisions/2026-09-24-owner-decisions.md",
+     "frontend/src/lib/server/sourceTerms.ts",
+     "docs/LEGAL-REVIEW.md"
     ]
    }
   },
@@ -11071,12 +11098,12 @@
   {
    "id": "T-403",
    "title": "CI never runs test:coverage, so the number is recorded on no run",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "process",
    "effort": "small",
-   "blocking_decision": "T-403 — owner decision required",
+   "blocking_decision": null,
    "related_ids": [
     "T-256"
    ],
@@ -11098,6 +11125,19 @@
     "on": "2026-09-21",
     "by": "checklist-steward sweep (opportunity-scout FILE mode), owner-approved 2026-09-21",
     "why": "Surfaced by a re-verification sweep with no existing ledger entry anywhere. Filed rather than folded into a neighbouring item, because an unattributed defect riding inside another ticket is how these stayed invisible."
+   },
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-24",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "Owner, 2026-09-24: \"Yes to the CI run.\" ci.yml's frontend test step now runs `npm run test:coverage` with text-summary + json-summary reporters, so the tests run ONCE with coverage rather than twice. This changes nothing about what gates: vitest.config.ts sets no thresholds on purpose, so the step can still only fail on a failing test. A separate NON-GATING step (if: always(), continue-on-error) writes a four-row table to the run's step summary and uploads coverage-summary.json as a 30-day artifact, so the number is measured on every run and the trend is readable.",
+    "what_was_not_done": "No threshold. The item's own reasoning and the config's comment agree: a gate would block a fix for arriving without a test while saying nothing about whether the tested lines carry a user-facing number.",
+    "approved_by": "owner, 2026-09-24",
+    "evidence": [
+     ".github/workflows/ci.yml",
+     "frontend/vitest.config.ts"
+    ]
    }
   },
   {
@@ -11234,7 +11274,7 @@
   },
   {
    "id": "T-407",
-   "title": "Revisit the four sources kept conditional on an unresolved judgement (CoinDesk, Investing.com, publicnode, Bitget)",
+   "title": "Revisit the three sources kept conditional on an unresolved judgement (CoinDesk, Investing.com, Bitget)",
    "status": "open",
    "confidence": "high",
    "owner_role": "owner-decision",
@@ -11267,6 +11307,13 @@
     "on": "2026-09-23",
     "by": "terms-cluster sweep, owner-directed",
     "why": "Owner, 2026-09-23: \"I have some concerns around coindesk which will require some additional research, for now annotate and we will revisit this and any similar cases.\" Scanning the registry for \"similar cases\" found three more, and a D22 gap alongside them."
+   },
+   "progress": {
+    "noted_on": "2026-09-24",
+    "note": "NARROWED from four to three: publicnode was decided under D25 (narrow reading kept). CoinDesk and Investing.com still turn on the one shared question (does a terms document that never mentions feeds govern a feed the publisher publishes and permits in robots.txt?); Bitget still turns on §1 Prohibited Countries naming the United States, and does not wait for the others.",
+    "evidence": [
+     "docs/decisions/2026-09-24-owner-decisions.md"
+    ]
    }
   },
   {
@@ -36245,6 +36292,27 @@
     "evidence": [
      "https://github.com/Savoy11/Finance-Now/pull/98",
      "https://github.com/Savoy11/Finance-Now/pull/151"
+    ]
+   },
+   {
+    "on": "2026-09-24",
+    "what": "T-298 closed on D24 — the Feature floor is §5.1.1 in full, provisionally.",
+    "evidence": [
+     "docs/decisions/2026-09-24-owner-decisions.md"
+    ]
+   },
+   {
+    "on": "2026-09-24",
+    "what": "T-403 closed — coverage measured on every CI run, non-gating.",
+    "evidence": [
+     ".github/workflows/ci.yml"
+    ]
+   },
+   {
+    "on": "2026-09-24",
+    "what": "T-251 closed on D25; T-407 narrowed to three sources.",
+    "evidence": [
+     "docs/decisions/2026-09-24-owner-decisions.md"
     ]
    }
   ]

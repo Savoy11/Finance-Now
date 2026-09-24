@@ -46,3 +46,45 @@ here so the approval cannot later be read as "the bar is met".
   waives it. The cure is a re-run from clean egress, not a sentence.
 - Anything the fence *defers* (§5.2's last two groups): those items keep their own
   decisions and reopen triggers.
+
+## D24 — The Feature floor is the §5.1.1 list in full, provisionally (closes T-298)
+
+**Owner, 2026-09-24, verbatim:** *"Keep all, once we finish the worklist I will review this and
+we may make changes."* — in answer to the candidate list drafted under T-298 earlier the same
+day, which the owner was asked to strike from.
+
+**What is decided.** Every surface in `docs/BUSINESS-CHECKLIST.md` §5.1.1 must work at v1, each
+🟡 surface *in its disclosed degraded state* (the list names that state per line). With this the
+release bar has all five floors defined: Data honesty and Quality measurable, Feature listed,
+Legal gated on D22's launch set, Operational parked under D1. Whether the bar is **met** is a
+separate question and is not changed by D24 — see D23's per-floor table.
+
+**What is provisional, and why that is written down.** The owner has said a review follows the
+worklist. A floor that may move is still a floor — the alternative was leaving it empty for the
+duration — but any change to it is a **decision** and lands here as D2x, not as an edit to the
+list. Until then, striking or adding a surface is not a maintainer's call.
+
+**T-298 closes.** Its remaining scope was exactly this list.
+
+## D25 — publicnode: keep the narrow reading (answers T-251)
+
+**Owner, 2026-09-24, verbatim:** *"Keep the narrow reading for saftey"* — on the broadest
+clause in the registry, which the user "agrees not to modify, copy, frame, scrape, rent, lease,
+loan, sell, re-use, display, distribute, transmit, publish, re-publish, distribute or create
+derivative works based on the Service or the Service Content commercially and non-commercially".
+
+**What is decided.** The clause is read as a bar on redistributing or re-serving PublicNode's
+service — not as a bar on the one thing an RPC provider exists for, answering a call — because
+the literal reading forbids any use at all and cannot be the intent. The entry stays
+`conditional` with its three conditions (read-only public JSON-RPC methods only; one request per
+chain per revalidate window; degrade to the static estimate rather than retry).
+
+**What bounds the exposure, and why "for safety" is the right word.** publicnode is called by
+exactly one route, `/live-data/wallet/eth`, on a page (`/wallets`) already hidden from rollout;
+and it is the keyless `eth_gasPrice` source for four EVM chains on `network-fees`, where the
+fallback is the labelled static estimate. If the narrow reading is ever wrong, the cost is a
+dash and an estimate, not a breach with a user in front of it.
+
+**What D25 does not decide.** The other three sources in LEGAL-REVIEW §7 — CoinDesk,
+Investing.com, Bitget — are untouched; T-407 continues for those three. And it does not make
+the entry `approved`: a judgement about scope is recorded as a judgement.
