@@ -56,8 +56,8 @@
   "total_verified": 398,
   "outstanding": 348,
   "by_status": {
-   "open": 73,
-   "closed": 117,
+   "open": 71,
+   "closed": 119,
    "blocked": 67,
    "unclear": 1,
    "parked": 90
@@ -69,7 +69,7 @@
    "owner-machine": 83
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 117,
+  "closed_by_annotation": 119,
   "counts_recomputed_on": "2026-09-24",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 348
@@ -2951,7 +2951,7 @@
   {
    "id": "T-121",
    "title": "Track affiliate click-through per provider without user-identifying analytics",
-   "status": "open",
+   "status": "closed",
    "confidence": "medium",
    "owner_role": "remote-dev",
    "category": "feature",
@@ -2984,6 +2984,17 @@
      "frontend/src/components/settings/__tests__/affiliateClicksPanel.test.ts (6 tests, mutation-checked)",
      "frontend/src/app/(dashboard)/settings/page.tsx — import and render site",
      "frontend/src/app/api/affiliate/clicks/route.ts — GET gated, POST deliberately open"
+    ]
+   },
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-24",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "The last clause — \"verify the release-gate no-tracking search still passes\" — named a search that had never been defined. It is now a test: frontend/src/lib/server/__tests__/affiliateNoTracking.test.ts reads the three files on the click path (the counter module, the POST/GET route, SponsoredLink) as source and fails on any identifier that could join a count to a person — client IP, cookies, user agent, session, user id, client fingerprint or storage, a full timestamp, a millisecond clock, a third-party analytics call. Anti-vacuity: each file must be real code, the POST body is asserted to be { providerId } and nothing else, the stored shape is asserted to be exactly counts/since/updatedAt, and the forbidden list is shown to bite by injecting an x-forwarded-for read into a copy of the source. Every other deliverable was already in the tree since 2026-09-21/22 (see the 2026-09-22 progress note).",
+    "evidence": [
+     "frontend/src/lib/server/__tests__/affiliateNoTracking.test.ts",
+     "frontend/src/lib/server/affiliateClicks.ts"
     ]
    }
   },
@@ -3629,11 +3640,10 @@
     }
    ],
    "progress": {
-    "noted_on": "2026-09-21",
-    "note": "STILL OPEN, re-verified against the current tree by a checklist-steward sweep — but the next_action above is partly stale and must not be worked verbatim. Two of the three deliverables are verifiably done, the third — the one the title actually names — has no record anywhere in the tree. Done: (1) the workflow gate, `.github/workflows/cd-staging.yml:87`, so main's push runs are no longer permanently red; (2) the CI status badge for main, README.md:3, `.../workflows/ci.yml/badge.svg?branch=main` linking to `?query=branch%3Amain`; and the signal it reports is real, since `.github/workflows/ci.yml:7-12` includes main in `on.push.branches` with a comment explaining that the PR gate checks the merge preview rather than what lands. NOT done: the recurring check itself. Nothing in the repo adopts or records a habit, routine or automation for glancing at post-merge push runs — `.github/workflows/` has exactly one `schedule:` trigger and it is dependabot-triage.yml:41-42 (weekly Dependabot sweep, unrelated); `.claude/` holds no commands or routines; and a grep of docs/ for 'post-merge' / 'push run' finds only docs/deployment/aws-provisioning.md:17 and :196-197 (the original finding, still worded exactly as the item quotes it) and three TASK-QUEUE lines about #134. The TASK-QUEUE status block at :2236-2250 records the red-X fix — that is T-081's subject — and says nothing about adopting a recurring check, so the 'record the decision in TASK-QUEUE via the steward' half is also unwritten. The item's stated_status in the queue detail was 'proposed', i.e. it was awaiting owner adoption, and no owner adoption is recorded. Closing it would tick a box for a habit nobody has agreed to.",
-    "remaining_work": "Only the process half. (a) The owner decides whether to adopt anything beyond the badge — a habit of checking Actions on main after each merge, a scheduled routine, or an explicit 'the badge is the check, nothing further' ruling; the badge at README.md:3 is a reasonable basis for that last answer, since it surfaces main's post-merge CI on the front page. (b) Whichever is chosen, the steward records it as a dated status block in docs/TASK-QUEUE.md — the existing block at :2236-2250 covers only the red X and is not a substitute. The item's own next_action is partly stale: its two code/doc asks (gate cd-staging, add a main CI badge) are already satisfied at cd-staging.yml:87 and README.md:3, so a steward should propose a `progress` block recording those two as done rather than re-requesting them.",
+    "noted_on": "2026-09-24",
+    "note": "THE RECURRING CHECK NOW EXISTS AS A WORKFLOW, PENDING OWNER ADOPTION via the PR that carries it. .github/workflows/main-health.yml runs daily at 13:00 UTC (and on dispatch), looks up the most recent COMPLETED ci.yml push run on main with one read-only API call, and fails if that run did not succeed — which makes GitHub email the owner. No checkout, contents:read + actions:read only; it cannot make main red, only report that it is. Chosen over \"a habit or a Routine\" because a habit has no record and no failure mode, and a cloud Routine is a paid surface D21 defers. The item's \"record the decision in TASK-QUEUE via the steward\" half closes when the owner merges the PR; this note is the steward's record of the proposal. If the owner declines the workflow, the item stays open on the original terms.",
     "evidence": [
-     ".github/workflows/ci.yml:7-12"
+     ".github/workflows/main-health.yml"
     ]
    }
   },
@@ -6589,7 +6599,7 @@
   {
    "id": "T-236",
    "title": "Branch protection on main + secret-scanning push protection",
-   "status": "open",
+   "status": "closed",
    "confidence": "medium",
    "owner_role": "owner-machine",
    "category": "ops-infra",
@@ -6608,7 +6618,19 @@
      "lines": "309-313, 182-198, 286-307",
      "quote": "Branch protection on `main`: require a pull request before merging (a solo owner can still self-approve; the gate is against the accidental case), optionally require the `ci-success` check. While in Settings, enable secret-scanning **push protection**"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-24",
+    "basis": "verified-here",
+    "verdict": "already-done",
+    "reason": "THE SETTING WAS ALREADY IN PLACE. GET /repos/Savoy11/Finance-Now/rules/branches/main returns a ruleset requiring a pull request and the \"CI Success Gate\" status check, plus deletion and non_fast_forward blocks; security_and_analysis reports secret_scanning and secret_scanning_push_protection both enabled. First observed enforcing 2026-09-23, when a direct push reported \"Bypassed rule violations … Changes must be made through a pull request\". The paperwork the item asked for is now done: a dated STATUS note on .github/CODEOWNERS and a ✅ line under step 4 of docs/audits/git-repo-audit-2026-08-23.md.",
+    "deliberately_not_done": "Two of the item's clauses were NOT executed and the record says why. (1) \"Automatically delete head branches\" — overridden by the owner's 2026-09-12 standing rule against any automated deletion; archive-branch.yml tags instead. (2) \"flip CODEOWNERS' header line\" — the header says CODEOWNERS is routing, not a gate, and that is STILL TRUE: require_code_owner_review is false on the ruleset. Flipping it is T-102, an owner decision, and writing \"gate\" above a non-gate would be the seeded/verified failure in a new place.",
+    "evidence": [
+     ".github/CODEOWNERS",
+     "docs/audits/git-repo-audit-2026-08-23.md"
+    ]
+   }
   },
   {
    "id": "T-238",
@@ -36131,6 +36153,16 @@
     "evidence": [
      "frontend/src/lib/server/sourceTerms.ts",
      "docs/audits/terms-review-coingecko-2026-09-24.md"
+    ]
+   },
+   {
+    "on": "2026-09-24",
+    "what": "Round 2 from the resume list: T-236 closed (already in place; paperwork done, two clauses deliberately not done), T-121 closed (the no-tracking search defined as a test), T-369 built as a workflow pending adoption.",
+    "worth_carrying_forward": "T-236 asked for a GitHub setting that was already on. The item did not know, because nothing in the repo can see GitHub settings — which is the same shape as the ledger not knowing the registry: two sources of truth, no cross-check. The audit note now cites the API response so a future reader can re-run the check rather than trust the tick. And two of its clauses were declined with reasons rather than silently skipped: \"auto-delete head branches\" is overridden by a standing rule, and \"flip the CODEOWNERS header\" would have written \"gate\" above something that is still not one.",
+    "evidence": [
+     ".github/CODEOWNERS",
+     "frontend/src/lib/server/__tests__/affiliateNoTracking.test.ts",
+     ".github/workflows/main-health.yml"
     ]
    }
   ]
