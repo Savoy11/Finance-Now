@@ -26,8 +26,12 @@ const FILES = [
 const FORBIDDEN: Array<[RegExp, string]> = [
   [/x-forwarded-for|x-real-ip|req\.ip\b|\.ip\b/i, 'client IP'],
   [/\bcookies?\(|\.cookies\b|document\.cookie/i, 'cookies'],
-  [/user-?agent/i, 'user agent'],
-  [/\bsessionId|\bsession\b|getServerSession|useSession/i, 'session'],
+  // Code-shaped on purpose: the route's own disclosure string says "No user, session,
+  // IP, cookie … is recorded", and a bare-word match would fail the guard on the
+  // sentence that states the property. A header name, a member access or a call
+  // is what actually reads one.
+  [/['"]user-agent['"]|\.userAgent\b/i, 'user agent'],
+  [/\bsessionId\b|getServerSession|useSession|\.session\b|\bsession\s*\(/i, 'session'],
   [/\buserId\b|getCurrentUserId|requireUserId/i, 'user id'],
   [/fingerprint|localStorage|sessionStorage|navigator\./i, 'client fingerprint or storage'],
   [/\.toISOString\(\)(?!\.slice\(0, 10\))/, 'a full timestamp — only YYYY-MM-DD may be written'],
