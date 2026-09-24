@@ -54,7 +54,7 @@
  },
  "counts": {
   "total_verified": 398,
-  "outstanding": 346,
+  "outstanding": 348,
   "by_status": {
    "open": 75,
    "closed": 115,
@@ -63,15 +63,15 @@
    "parked": 90
   },
   "by_owner_role": {
-   "remote-dev": 79,
-   "either": 40,
-   "owner-decision": 136,
+   "remote-dev": 84,
+   "either": 41,
+   "owner-decision": 140,
    "owner-machine": 83
   },
   "closed_but_listed_open_in_docs": 60,
   "closed_by_annotation": 115,
   "counts_recomputed_on": "2026-09-23",
-  "counts_note": "by_status and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status.",
+  "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 348
  },
  "blocking_decisions": [
