@@ -56,8 +56,8 @@
   "total_verified": 398,
   "outstanding": 348,
   "by_status": {
-   "open": 75,
-   "closed": 115,
+   "open": 73,
+   "closed": 117,
    "blocked": 67,
    "unclear": 1,
    "parked": 90
@@ -69,8 +69,8 @@
    "owner-machine": 83
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 115,
-  "counts_recomputed_on": "2026-09-23",
+  "closed_by_annotation": 117,
+  "counts_recomputed_on": "2026-09-24",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 348
  },
@@ -4434,7 +4434,14 @@
      "lines": "67-70",
      "quote": "**Develop the required disclosure documents and decide where they're posted.** At minimum: Terms of Service, Privacy Policy, \"Not investment advice\" disclaimer, affiliate/ad disclosure (\"How we make money\"), data-source attribution page, and a contact/complaints route."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-09-24",
+    "note": "NEW CONCRETE INPUT from the CoinGecko API Terms read in full (T-243, docs/audits/terms-review-coingecko-2026-09-24.md §2). §7 makes six specific clauses of the app's own user agreement and privacy policy CONTRACTUALLY REQUIRED the moment anyone outside the owner's entity can use it: (a) identify the CoinGecko API as CoinGecko's property; (b) bind users to terms no less protective of CoinGecko than the API Terms; (c) exclude and disclaim all CoinGecko liability; (d) assume full responsibility for offering the API; (e) a privacy policy no less stringent than CoinGecko's; (f) sole responsibility for all disclaimers and warnings about data accuracy, limitations and crypto-market volatility. This is the first source whose terms dictate the CONTENT of the app's disclosures rather than merely requiring that some exist. Expect the same shape from the other API providers when their remainders are read; check FMP, Finnhub and Twelve Data's readings for an equivalent clause before drafting.",
+    "evidence": [
+     "docs/audits/terms-review-coingecko-2026-09-24.md"
+    ]
+   }
   },
   {
    "id": "T-292",
@@ -5919,7 +5926,7 @@
   {
    "id": "T-243",
    "title": "CoinGecko — read the rest of the API Terms beyond Scope of Use",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "terms-review",
@@ -5941,7 +5948,22 @@
      "lines": "2026-08-29",
      "quote": "The finding states that Scope of Use was read in full and the remainder was not - the seeded/verified discipline applies to how much of a document was read, not just whether it was opened."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-24",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "READ IN FULL on the owner's machine over verified clean egress (Spectrum, proxy:false, hosting:false), Latest Version 5 Sept 2025. Sections 5–14 recorded verbatim in docs/audits/terms-review-coingecko-2026-09-24.md. Six conditions appended to the entry, the \"remainder was not\" sentence replaced, reviewedAt 2026-08-29 → 2026-09-24. Verdict unchanged: conditional.",
+    "the_finding_that_matters": "⚠ §7 — the moment the app is offered to anyone outside the owner's entity, CoinGecko contractually REQUIRES a binding user agreement and privacy policy carrying six specific terms (7(a)–(f)). Satisfied today under D22 State 1; launch-blocking at the first non-owner page load. This is the first place a PROVIDER dictates the content of the app's own terms rather than merely requiring some, and it was on record nowhere. T-291 is annotated with it.",
+    "what_it_confirmed": "§11.4 says in the document's own words what the entry had reasoned: the API Terms take precedence over the Website Terms for API use, and an Executed Agreement over both. §11.2's Excluded Countries list was opened and read — 22 countries plus three regions of Ukraine; the United States is not on it.",
+    "what_it_did_not_change": "confidence stays high — the document is unambiguous about what it requires; the one interpretive point (§6.3 \"derive from\") is recorded as a reading rather than resolved.",
+    "approved_by": "owner directed 2026-09-24 (\"start on T-408 and T-243\"); the entry change lands via PR for review",
+    "evidence": [
+     "docs/audits/terms-review-coingecko-2026-09-24.md",
+     "frontend/src/lib/server/sourceTerms.ts"
+    ]
+   }
   },
   {
    "id": "T-244",
@@ -11170,7 +11192,7 @@
   {
    "id": "T-408",
    "title": "Apply the D22 condition to Tiingo and Bitget — the two of the eight that T-153 never covered",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "either",
    "category": "legal",
@@ -11204,6 +11226,19 @@
     "on": "2026-09-23",
     "by": "terms-cluster sweep, owner-directed",
     "why": "Owner, 2026-09-23: \"I have some concerns around coindesk which will require some additional research, for now annotate and we will revisit this and any similar cases.\" Scanning the registry for \"similar cases\" found three more, and a D22 gap alongside them."
+   },
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-24",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "APPLIED. tiingo.com and bitget.com each carry a D22 condition in the same form as the four applied on 2026-09-23 — the single-user constraint, the first-non-owner-page-load trigger, and that source's own route. Tiingo's route is §7.3 (redistribution \"only available upon special request and permission, and comes with additional fees\"), with the pointer that the PLAN LICENCE takes precedence over the ToS and is the document to obtain. Bitget's clauses read name no route; the condition says so, and says in as many words that it is the SMALLER of Bitget's two problems — §1's Prohibited-Countries clause (T-407) is about whether the host may be called at all.",
+    "the_lesson_kept": "T-153 was scoped by naming four members of an eight-member set defined elsewhere, and nothing failed when they drifted apart. The eight are now all accounted for: four with D22 conditions on 2026-09-23, two here, OilPrice and YouTube verified as correctly needing none.",
+    "approved_by": "owner directed 2026-09-24 (\"start on T-408 and T-243\"); the entry changes land via PR for review",
+    "evidence": [
+     "frontend/src/lib/server/sourceTerms.ts",
+     "docs/decisions/2026-09-23-owner-decisions.md"
+    ]
    }
   }
  ],
@@ -36086,6 +36121,16 @@
     "c7": "T-124's blocker had been rewritten to the remaining clause but kept the satisfied clause in a parenthetical, so it still named T-118. The blocker field states what blocks NOW; the history now lives in progress.note. The check was right and the data was wrong, which is the correct way round.",
     "evidence": [
      "frontend/scripts/lib/queueLedgerChecks.mjs"
+    ]
+   },
+   {
+    "on": "2026-09-24",
+    "what": "T-408 and T-243 closed. The eight-source D22 set is fully accounted for, and CoinGecko — the app's most-used keyless source — is read in full for the first time.",
+    "the_new_thing": "CoinGecko §7. A provider contractually requiring six specific clauses in the app's own user agreement and privacy policy at launch. Recorded on the entry, in the audit document, and as a progress note on T-291.",
+    "egress": "Verified clean before reading (Spectrum, proxy:false, hosting:false), per CLAUDE.md — the reading counts.",
+    "evidence": [
+     "frontend/src/lib/server/sourceTerms.ts",
+     "docs/audits/terms-review-coingecko-2026-09-24.md"
     ]
    }
   ]

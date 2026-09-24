@@ -80,7 +80,10 @@ describe('the registry records the reading, not an assumption', () => {
   it('CoinGecko is verified against the API terms, not the site terms', () => {
     const cg = SOURCE_TERMS.find((e) => e.domain === 'coingecko.com')!
     expect(cg.review).toBe('verified')
-    expect(cg.reviewedAt).toBe('2026-08-29')
+    // First read 2026-08-29 (Scope of Use), read in full 2026-09-24. A re-read must be
+    // free to move this forward; what must never happen is the date moving BACK, which
+    // is what a regenerated seeded entry would look like. ISO dates compare lexically.
+    expect(cg.reviewedAt >= '2026-08-29', `reviewedAt ${cg.reviewedAt} predates the first reading`).toBe(true)
     // The document matters: the site ToU is what the probe read and what
     // produced the false "non-commercial only" alarm.
     expect(cg.termsUrl).toContain('api_terms')

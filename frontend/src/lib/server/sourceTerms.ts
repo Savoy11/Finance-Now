@@ -258,7 +258,8 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     // SITE content (screenshots) and does not describe API use at all.
     termsUrl: 'https://www.coingecko.com/en/api_terms',
     finding:
-      'API Terms clause 4.1.6 read on 2026-08-29 (Scope of Use section, owner\'s machine): "You are entitled to charge for your services and products that incorporate or integrates our CoinGecko API. However, you are not permitted to sell, rent, lease, sub-license, re-distribute or syndicate access to the CoinGecko API or part thereof." Commercial use of a product BUILT ON the API is therefore permitted; what is barred is reselling API access itself, which this app does not do. Clause 4 prescribes the attribution message verbatim. Clause 4.1.2 incorporates the Website Terms by reference, but the API grant is the specific one governing API reads — the site ToU\'s Personal Use clause is about republishing site content. Scope of Use was read in full; the remainder of the document was not.',
+      'API Terms clause 4.1.6 read on 2026-08-29 (Scope of Use section, owner\'s machine): "You are entitled to charge for your services and products that incorporate or integrates our CoinGecko API. However, you are not permitted to sell, rent, lease, sub-license, re-distribute or syndicate access to the CoinGecko API or part thereof." Commercial use of a product BUILT ON the API is therefore permitted; what is barred is reselling API access itself, which this app does not do. Clause 4 prescribes the attribution message verbatim. Clause 4.1.2 incorporates the Website Terms by reference, but the API grant is the specific one governing API reads — the site ToU\'s Personal Use clause is about republishing site content. Scope of Use was read in full on 2026-08-29. ' +
+      'READ IN FULL 2026-09-24 (Latest Version 5 Sept 2025) on the owner\'s machine over clean egress — Sections 5–14 are recorded verbatim in docs/audits/terms-review-coingecko-2026-09-24.md and add the conditions below. §11.4 confirms this entry\'s reasoning in the document\'s own words: in any conflict "the terms of this API Terms … will take precedent in relation to your use of our CoinGecko API", and an Executed Agreement takes precedence over all.',
     conditions: [
       'Display "Powered by CoinGecko" prominently, in a legible font no smaller than 10px (clause 4) — the wording is prescribed, not paraphrasable',
       'Do not resell, sub-license, redistribute or syndicate API access (clause 4.1.6)',
@@ -266,8 +267,21 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
       'Never use the data in or to target advertising (clause 4.1.7.3)',
       'Do not imply CoinGecko endorsement; follow the Brand Attribution Guide (clause 4.5)',
       'No public statements about CoinGecko or its products without prior written consent (clause 4.1.7.6)',
+      // ── Sections 5–14, read 2026-09-24 (T-243) ──
+      '§6 — cache Data no longer than 24 hours, apply strong encryption to anything stored, and do not "duplicate, reproduce, copy, store, derive from or translate" the Data beyond what the API Terms expressly permit (6.1.1, 6.1.2, 6.3). Every CoinGecko route revalidates in seconds-to-minutes and nothing persists Data past the fetch cache; "derive from" is read as a bar on building a copied dataset, not on an Application computing with the feed §3 licenses — recorded as a reading, not a certainty',
+      '⚠ §7 — THE MOMENT THE APP IS OFFERED TO ANYONE OUTSIDE THE OWNER\'S ENTITY, a binding user agreement AND privacy policy are contractually REQUIRED, carrying six specific terms (7(a)–(f)): identify the CoinGecko API as CoinGecko\'s property; bind users to terms no less protective of CoinGecko; exclude and disclaim all CoinGecko liability; assume full responsibility for offering the API; a privacy policy no less stringent than CoinGecko\'s; and sole responsibility for all disclaimers and warnings about data accuracy, limitations and crypto-market volatility. Satisfied TODAY (single-user, D22 State 1); LAUNCH-BLOCKING at the first non-owner page load. A concrete input to T-291 that was not on record before 2026-09-24',
+      '§8 — report any compromise of the app\'s systems to CoinGecko immediately via a support ticket; CoinGecko may then terminate access in its sole discretion',
+      '§10.4 — on termination, promptly and permanently delete all stored Data and certify the deletion in writing if asked; the cache must be purgeable on demand',
+      '§11.2 — not sanctioned, and not resident or domiciled in an Excluded Country. List read 2026-09-24: 22 countries plus three regions of Ukraine, and the United States is NOT on it. CoinGecko may amend the list without notice; re-check on any change of domicile',
+      '§13 — Singapore law and the exclusive jurisdiction of Singapore courts. §12.3 caps CoinGecko\'s liability at six months\' fees, or S$100 on a free plan; §12.5 has the app indemnify CoinGecko against third-party claims arising from its users\' use of the Products',
     ],
-    reviewedAt: '2026-08-29',
+    // ⚠ §3.2 and §10.3, read 2026-09-24: the contract itself says "you will not rely on any
+    // function, behaviour, capability" and that CoinGecko may "suspend or discontinue" the
+    // API "without notice or reasons". CoinGecko is load-bearing for the crypto module
+    // (markets, alerts, portfolio-history, coin-list, global, the keyless coin-profile
+    // rung). D21 already forbids that; this makes the counterparty's own position on it
+    // explicit. `npx tsx scripts/gen-coverage-matrix.ts` is the measurement.
+    reviewedAt: '2026-09-24',
     review: 'verified',
     confidence: 'high',
   },
@@ -565,7 +579,9 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     termsUrl: 'https://www.tiingo.com/tos',
     finding:
       'Commercial market-data API with a free tier for personal use. Keyed access; end-of-day and IEX data carry exchange-derived redistribution limits set by the plan.',
-    conditions: ['Valid API key required', 'Free tier is personal use — no redistribution'],
+    conditions: [
+      '⚠ SINGLE-USER ONLY — satisfied TODAY, blocking AT RELEASE (D22, 2026-09-23; applied 2026-09-24 under T-408). Nobody but the owner can load a page today, so this licence is currently met. The FIRST NON-OWNER PAGE LOAD — a private beta, a demo link, a shared staging URL — puts the app outside it. To operate beyond that: §7.3 — "All data via the API is for internal consumption only... Redistribution is only available upon special request and permission, and comes with additional fees" — so ask Tiingo for redistribution permission. ⚠ And read the PLAN LICENCE, not only the ToS: the ToS says a licence accompanying the Software "shall take precedence" in any conflict and that display or data redistribution requires a SEPARATE licence, so the document that governs a public deployment is the one that comes with the plan. If licensed, attribution must read "Data sourced by Tiingo" with a link. See docs/decisions/2026-09-23-owner-decisions.md.',
+      'Valid API key required', 'Free tier is personal use — no redistribution'],
     // ⚠ 2026-08-30: Tiingo's ToS says a licence accompanying the Software
     // "shall take precedence" over the Terms in any conflict, and that display
     // or data redistribution requires a SEPARATE licence. So this entry rests
@@ -865,7 +881,9 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     termsUrl: 'https://www.bitget.com/terms/legal/360014944032',
     finding:
       'Publishes a documented public REST API; the spot public coin list (incl. per-chain withdrawal fees) is documented as unauthenticated, and withdrawFeeAdapters.ts calls it keylessly (probed). The Terms of Use WERE read in a browser on 2026-09-14 — see the comment above for the two findings, one of which (the United States listed as a Prohibited Country) is an open owner judgement rather than a scope limit.',
-    conditions: ['Respect documented rate limits', 'Keyless public endpoints only — no authenticated endpoints (RP-5)'],
+    conditions: [
+      '⚠ SINGLE-USER ONLY — satisfied TODAY, blocking AT RELEASE (D22, 2026-09-23; applied 2026-09-24 under T-408). Nobody but the owner can load a page today, so this licence is currently met. The FIRST NON-OWNER PAGE LOAD — a private beta, a demo link, a shared staging URL — puts the app outside it. To operate beyond that: §10.1 licenses use "for non-commercial personal or internal business use" and the clauses read (docs/audits/terms-review-apis-2026-09-14.md) name no route to broader rights — ask Bitget directly and treat it as long-lead, the Binance.US shape. ⚠ THIS IS THE SMALLER OF BITGET\'S TWO PROBLEMS: §1 lists the United States among Prohibited Countries while the owner is US-resident, which is about whether the host may be called AT ALL, today, and is tracked under T-407 — do not read this condition as the whole answer. See docs/decisions/2026-09-23-owner-decisions.md.',
+      'Respect documented rate limits', 'Keyless public endpoints only — no authenticated endpoints (RP-5)'],
     // ══ ⚠ OWNER-FLAGGED 2026-09-23 — REVISIT PENDING, DO NOT TREAT AS SETTLED ══
     // Owner: "I have some concerns around coindesk which will require some additional
     // research, for now annotate and we will revisit this and any similar cases."
