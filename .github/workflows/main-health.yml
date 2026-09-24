@@ -1,0 +1,52 @@
+name: main health — post-merge push run
+
+# T-369. A deploy failed 90 times on main before anyone noticed, because a red
+# check on main is invisible when nobody looks at main. The PR gate checks the
+# merge PREVIEW; ci.yml re-runs on push to main so what actually landed is
+# verified — but that run's result reaches no one unless someone opens Actions.
+#
+# This is the "recurring check" the item asks the owner to adopt, as a workflow
+# rather than a habit, because a habit has no record and no failure mode. Once a
+# day it looks up the most recent COMPLETED ci.yml run on main and fails if that
+# run did not succeed. GitHub emails the repository owner when a scheduled
+# workflow fails, so a red main becomes a notification rather than a discovery.
+#
+# It reads and never writes: no checkout, contents:read only, one API call. It
+# cannot make main red — it can only report that main already is.
+
+on:
+  schedule:
+    # 13:00 UTC daily. After the Tuesday dependabot sweep (14:00) would be too
+    # late to catch that day's PRs; before it is fine — this reports on main's
+    # last push, whichever day it landed.
+    - cron: '0 13 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  check:
+    name: Latest push run on main succeeded
+    runs-on: ubuntu-latest
+    steps:
+      - name: Look up the most recent completed ci.yml push run on main
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          run=$(gh api "repos/$REPO/actions/workflows/ci.yml/runs?branch=main&event=push&status=completed&per_page=1" \
+            --jq '.workflow_runs[0] | "\(.conclusion) \(.head_sha[0:7]) \(.updated_at) \(.html_url)"')
+          if [ -z "$run" ]; then
+            echo "::error::No completed push run of ci.yml on main was found — nothing to check, which is itself a finding"
+            exit 1
+          fi
+          set -- $run
+          conclusion=$1; sha=$2; when=$3; url=$4
+          echo "latest push run on main: $conclusion at $sha ($when) — $url"
+          if [ "$conclusion" != "success" ]; then
+            echo "::error::main's latest push run ($sha) concluded '$conclusion' — $url"
+            exit 1
+          fi

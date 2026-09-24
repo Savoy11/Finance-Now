@@ -2134,6 +2134,14 @@ accepted in writing). Nothing else in Phase 3 is blocked on this.
 
 ### P3-W3 — Final rollout gate
 
+> **ENTRY CONDITION (mirrored 2026-09-24 under D23, per T-298).** This section opens only
+> when `docs/BUSINESS-CHECKLIST.md` §5.1 — the Finance Now release bar — is **met**, and
+> §5.2 — the out-of-v1 fence — has not been crossed without a recorded decision. As adopted
+> the bar reads: Data honesty **not yet met** (last run 64/9/1, the FAIL not waived) ·
+> Quality **met** · Feature **list not yet supplied** (owner) · Legal gated on D22's launch set
+> · Operational parked under D1. The bar is the gate; this note is only the pointer to it.
+
+
 > Depends on P3-W2 complete: every feature row carries a decision, every OPEN marker
 > resolved or explicitly accepted by the owner.
 
