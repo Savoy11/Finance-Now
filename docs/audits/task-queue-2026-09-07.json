@@ -3598,7 +3598,15 @@
     "closed_on": "2026-09-19",
     "basis": "owner-record",
     "reason": "The npm half has been gating since 2026-09-08 with 0 high advisories; the `safety check` half is Python backend tooling and closes under D2 (backend retired).",
-    "evidence": "docs/decisions/2026-09-14-owner-decisions.md"
+    "evidence": [
+     "docs/decisions/2026-09-14-owner-decisions.md"
+    ],
+    "verdict": "close",
+    "verdict_classified": {
+     "on": "2026-09-23",
+     "from": "the recorded reason, during the ledger integrity pass — not re-verified",
+     "because": "npm half gating since 2026-09-08; Python half closes under D2"
+    }
    }
   },
   {
@@ -4243,7 +4251,15 @@
     "closed_on": "2026-09-19",
     "basis": "owner-record",
     "reason": "Closed under D6 — the weekly dependabot triage workflow was built (.github/workflows/dependabot-triage.yml).",
-    "evidence": "docs/decisions/2026-09-14-owner-decisions.md"
+    "evidence": [
+     "docs/decisions/2026-09-14-owner-decisions.md"
+    ],
+    "verdict": "close",
+    "verdict_classified": {
+     "on": "2026-09-23",
+     "from": "the recorded reason, during the ledger integrity pass — not re-verified",
+     "because": "the workflow was built"
+    }
    }
   },
   {
@@ -4756,7 +4772,15 @@
     "closed_on": "2026-09-19",
     "basis": "verified-here",
     "reason": "Coverage is 27/51 with all 7 upstreams healthy. The 4/51 reading predates the 2026-09-09 fix, and the per-upstream diagnostic this item asked for already ships in the response body.",
-    "evidence": "docs/audits/queue-sweep-2026-09-18.md"
+    "evidence": [
+     "docs/audits/queue-sweep-2026-09-18.md"
+    ],
+    "verdict": "already-done",
+    "verdict_classified": {
+     "on": "2026-09-23",
+     "from": "the recorded reason, during the ledger integrity pass — not re-verified",
+     "because": "\"the per-upstream diagnostic this item asked for already\" exists"
+    }
    }
   },
   {
@@ -5136,7 +5160,15 @@
     "closed_on": "2026-09-19",
     "basis": "verified-here",
     "reason": "fundCatalog.ts carries salesCharge { kind: front, maxPct: 5.75 } citing the 485BPOS filed 2025-10-31 (CIK 44201), verifiedAt 2026-09-10.",
-    "evidence": "docs/audits/queue-sweep-2026-09-18.md"
+    "evidence": [
+     "docs/audits/queue-sweep-2026-09-18.md"
+    ],
+    "verdict": "already-done",
+    "verdict_classified": {
+     "on": "2026-09-23",
+     "from": "the recorded reason, during the ledger integrity pass — not re-verified",
+     "because": "salesCharge present, verifiedAt 2026-09-10 — nine days before closure"
+    }
    }
   },
   {
@@ -5173,7 +5205,15 @@
     "closed_on": "2026-09-19",
     "basis": "verified-here",
     "reason": "/live-data/treasury-yield-curve returns REAL — 13 maturities, 2s10s 0.27, 3m10y 0.82, shape normal.",
-    "evidence": "docs/audits/queue-sweep-2026-09-18.md"
+    "evidence": [
+     "docs/audits/queue-sweep-2026-09-18.md"
+    ],
+    "verdict": "already-done",
+    "verdict_classified": {
+     "on": "2026-09-23",
+     "from": "the recorded reason, during the ledger integrity pass — not re-verified",
+     "because": "route returns REAL on inspection"
+    }
    }
   },
   {
@@ -5825,7 +5865,15 @@
     "closed_on": "2026-09-19",
     "basis": "owner-record",
     "reason": "Closed 2026-09-15. Tiingo Starter read; all five call sites made uncached per §1.6(a); Tiingo then settled as optional and not added.",
-    "evidence": "docs/decisions/2026-09-14-owner-decisions.md"
+    "evidence": [
+     "docs/decisions/2026-09-14-owner-decisions.md"
+    ],
+    "verdict": "close",
+    "verdict_classified": {
+     "on": "2026-09-23",
+     "from": "the recorded reason, during the ledger integrity pass — not re-verified",
+     "because": "read, call sites changed, Tiingo settled as optional"
+    }
    }
   },
   {
@@ -6048,7 +6096,15 @@
     "closed_on": "2026-09-19",
     "basis": "owner-record",
     "reason": "Closed 2026-09-15. Poloniex read (§9 prohibits, source removed), LBank read, XT.com publishes no reachable terms and geo-blocks the region.",
-    "evidence": "docs/decisions/2026-09-14-owner-decisions.md"
+    "evidence": [
+     "docs/decisions/2026-09-14-owner-decisions.md"
+    ],
+    "verdict": "close",
+    "verdict_classified": {
+     "on": "2026-09-23",
+     "from": "the recorded reason, during the ledger integrity pass — not re-verified",
+     "because": "three exchanges read, one removed"
+    }
    }
   },
   {
@@ -6123,7 +6179,15 @@
     "closed_on": "2026-09-19",
     "basis": "verified-here",
     "reason": "FMP /stable/historical-price-eod/full carries no adjClose — fields are symbol, date, open, high, low, close, volume, change, changePercent, vwap. Probed with the configured key. The dividend-adjusted sibling does carry it but 402s on QQQ/VOO/VTSAX, so that path is paid and deferred under D21.",
-    "evidence": "docs/audits/queue-sweep-2026-09-18.md"
+    "evidence": [
+     "docs/audits/queue-sweep-2026-09-18.md"
+    ],
+    "verdict": "close",
+    "verdict_classified": {
+     "on": "2026-09-23",
+     "from": "the recorded reason, during the ledger integrity pass — not re-verified",
+     "because": "investigation answered: FMP carries no adjClose"
+    }
    }
   },
   {
@@ -6172,7 +6236,15 @@
     "closed_on": "2026-09-19",
     "basis": "verified-here",
     "reason": "Both price live: {\"havven\":0.219961,\"paxos-standard\":0.996965,\"missing\":[]}. COINGECKO_IDS already maps snx to the legacy id havven.",
-    "evidence": "docs/audits/queue-sweep-2026-09-18.md"
+    "evidence": [
+     "docs/audits/queue-sweep-2026-09-18.md"
+    ],
+    "verdict": "already-done",
+    "verdict_classified": {
+     "on": "2026-09-23",
+     "from": "the recorded reason, during the ledger integrity pass — not re-verified",
+     "because": "COINGECKO_IDS already mapped snx to havven"
+    }
    }
   },
   {
@@ -6259,7 +6331,15 @@
     "closed_on": "2026-09-19",
     "basis": "verified-here",
     "reason": "fundCatalog.ts USO expenseRatioPct is 0.86.",
-    "evidence": "docs/audits/queue-sweep-2026-09-18.md"
+    "evidence": [
+     "docs/audits/queue-sweep-2026-09-18.md"
+    ],
+    "verdict": "already-done",
+    "verdict_classified": {
+     "on": "2026-09-23",
+     "from": "the recorded reason, during the ledger integrity pass — not re-verified",
+     "because": "value already present in fundCatalog.ts"
+    }
    }
   },
   {
@@ -6344,7 +6424,15 @@
     "closed_on": "2026-09-19",
     "basis": "verified-here",
     "reason": "Refreshed 2026-09-18 from a live reading, all 7 upstreams live: 19 of the 27 measured keys rewritten, 3 of them by more than 25%.",
-    "evidence": "docs/audits/queue-sweep-2026-09-18.md"
+    "evidence": [
+     "docs/audits/queue-sweep-2026-09-18.md"
+    ],
+    "verdict": "close",
+    "verdict_classified": {
+     "on": "2026-09-23",
+     "from": "the recorded reason, during the ledger integrity pass — not re-verified",
+     "because": "refreshed from a live reading"
+    }
    }
   },
   {
@@ -6374,7 +6462,15 @@
     "closed_on": "2026-09-19",
     "basis": "verified-here",
     "reason": "Already swept: the three Cosmostation LCDs and js.adapools.org are annotated no-upstream with the DNS finding, api.binance.org staking retired (404), both Subscan endpoints needs-api-key (403). The 7 URLs the collector fetches are the 7 that answered.",
-    "evidence": "docs/audits/queue-sweep-2026-09-18.md"
+    "evidence": [
+     "docs/audits/queue-sweep-2026-09-18.md"
+    ],
+    "verdict": "already-done",
+    "verdict_classified": {
+     "on": "2026-09-23",
+     "from": "the recorded reason, during the ledger integrity pass — not re-verified",
+     "because": "\"Already swept\""
+    }
    }
   },
   {
@@ -6457,7 +6553,15 @@
     "closed_on": "2026-09-19",
     "basis": "verified-here",
     "reason": "No .exchange-credentials.json anywhere under the home tree or the repo. LIMIT: the item also names deployment hosts, which the owner machine cannot reach.",
-    "evidence": "docs/audits/queue-sweep-2026-09-18.md"
+    "evidence": [
+     "docs/audits/queue-sweep-2026-09-18.md"
+    ],
+    "verdict": "close",
+    "verdict_classified": {
+     "on": "2026-09-23",
+     "from": "the recorded reason, during the ledger integrity pass — not re-verified",
+     "because": "verified absent, with a stated limit on deployment hosts"
+    }
    }
   },
   {
@@ -7181,7 +7285,15 @@
     "closed_on": "2026-09-19",
     "basis": "owner-record",
     "reason": "Found already done during the 2026-09-14 pass — PR #147 is merged.",
-    "evidence": "docs/decisions/2026-09-14-owner-decisions.md"
+    "evidence": [
+     "docs/decisions/2026-09-14-owner-decisions.md"
+    ],
+    "verdict": "already-done",
+    "verdict_classified": {
+     "on": "2026-09-23",
+     "from": "the recorded reason, during the ledger integrity pass — not re-verified",
+     "because": "\"Found already done\" — PR #147 merged"
+    }
    }
   },
   {
@@ -8171,7 +8283,15 @@
     "closed_on": "2026-09-19",
     "basis": "owner-record",
     "reason": "Closed as DECLINED under D6: scheduled agents are scoped to dependabot triage only.",
-    "evidence": "docs/decisions/2026-09-14-owner-decisions.md"
+    "evidence": [
+     "docs/decisions/2026-09-14-owner-decisions.md"
+    ],
+    "verdict": "superseded",
+    "verdict_classified": {
+     "on": "2026-09-23",
+     "from": "the recorded reason, during the ledger integrity pass — not re-verified",
+     "because": "DECLINED under owner decision D6"
+    }
    }
   },
   {
@@ -8346,7 +8466,7 @@
    "owner_role": "owner-machine",
    "category": "terms-review",
    "effort": "medium",
-   "blocking_decision": "An owner-machine terms read confirming brokerage referral programs permit placement in a research/comparison context. (The other half of this blocker — \"T-118 (staking affiliate pattern) shipped\" — was SATISFIED 2026-09-21 when T-118 closed; rewritten 2026-09-23 so the remaining half is not obscured by a clause that is already met.)",
+   "blocking_decision": "An owner-machine terms read confirming brokerage referral programs permit placement in a research/comparison context.",
    "related_ids": [
     "P2"
    ],
@@ -8361,7 +8481,7 @@
    ],
    "progress": {
     "noted_on": "2026-09-23",
-    "note": "HALF-UNBLOCKED. T-118 shipped the staking affiliate pattern (closed 2026-09-21), so the shared component this item extends now exists. The remaining blocker is unchanged and is owner-machine work: reading the candidate brokerage programs' terms on a machine that reaches them. ⚠ D22 makes that read harder rather than easier, and the item should not be picked up without noticing why: an affiliate placement is a commercial arrangement on a surface that, under D22, is intended to become publicly reachable. A programme's terms have to be read against the deployment that will exist at release, not the single-user app today. It also sits behind LEGAL-REVIEW §3.B and §3.C (entity formation and the disclosure set) — group E there says plainly that nothing in this cluster ships before those.",
+    "note": "HALF-UNBLOCKED. The blocker was compound — \"T-118 (staking affiliate pattern) shipped, AND an owner-machine terms read…\" — and its first clause was SATISFIED 2026-09-21 when T-118 closed, so the shared component this item extends now exists. On 2026-09-23 the blocker was rewritten to the remaining clause alone; it briefly kept the satisfied clause in a parenthetical, which the C7 integrity check correctly flagged as a blocker citing a closed item, so the history moved here where it belongs. ⚠ D22 makes the remaining read harder rather than easier, and the item should not be picked up without noticing why: an affiliate placement is a commercial arrangement on a surface that, under D22, is intended to become publicly reachable. A programme's terms have to be read against the deployment that will exist at release, not the single-user app today. It also sits behind LEGAL-REVIEW §3.B and §3.C (entity formation and the disclosure set) — group E there says plainly that nothing in this cluster ships before those.",
     "evidence": [
      "docs/LEGAL-REVIEW.md"
     ]
@@ -35957,6 +36077,15 @@
     "evidence": [
      "frontend/src/lib/server/sourceTerms.ts",
      "docs/LEGAL-REVIEW.md"
+    ]
+   },
+   {
+    "on": "2026-09-23",
+    "what": "Cleared the two warning checks from the ledger integrity pass: C5 (15 closures without a verdict, evidence as a bare string) and C7 (T-124 blocker citing a closed item).",
+    "c5": "All fifteen are 2026-09-19 closures written before the verdict vocabulary existed. Each reason states its outcome in plain words, so a verdict was CLASSIFIED from the recorded text — close ×7, already-done ×7, superseded ×1 (T-323, declined under D6) — and each carries a verdict_classified block saying exactly that, so it can never be mistaken for a re-verification. Evidence strings were wrapped into single-element arrays, which is lossless.",
+    "c7": "T-124's blocker had been rewritten to the remaining clause but kept the satisfied clause in a parenthetical, so it still named T-118. The blocker field states what blocks NOW; the history now lives in progress.note. The check was right and the data was wrong, which is the correct way round.",
+    "evidence": [
+     "frontend/scripts/lib/queueLedgerChecks.mjs"
     ]
    }
   ]

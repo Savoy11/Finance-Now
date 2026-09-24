@@ -156,6 +156,21 @@ jobs:
           cd frontend
           npm run docs:check
 
+      # The task-queue ledger describing itself. Three times in September 2026 work was
+      # finished and the ledger never learned — a closure review verified 62 items and
+      # wrote nothing; a decision pass nulled two blockers and left them `blocked`;
+      # sixteen terms items described readings finished days earlier. Verification,
+      # approval and the write are separate acts and nothing connected them. This is
+      # the connection for the shapes that are mechanical: header counts that disagree
+      # with the items, a closed item with no closure, a blocked item with no blocker,
+      # a closure whose evidence file is gone. It fails only on those; a blocker citing
+      # a now-closed item or an open item naming an already-verified host is printed
+      # as a warning for a human, because either can be legitimately open.
+      - name: Task-queue ledger integrity
+        run: |
+          cd frontend
+          npm run queue:check
+
       # Curated-data review windows. Every hand-maintained table carries a
       # *_LAST_VERIFIED anchor and a *_STALE_AFTER_DAYS window, and the app renders the
       # result — but nothing read those dates except the page displaying them, so a clock
