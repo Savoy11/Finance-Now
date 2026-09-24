@@ -1039,7 +1039,7 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     domain: 'publicnode.com',
     name: 'PublicNode (Allnodes) — free public RPC gateways',
     verdict: 'conditional',
-    termsUrl: 'https://www.publicnode.com/',
+    termsUrl: 'https://www.publicnode.com/terms', // the document (confirmed to carry the quoted clause, 2026-09-24); was the homepage
     finding:
       'Operates free, keyless public JSON-RPC gateways for ~75 chains, advertised for open public use with no signup or API key. Used here for a single eth_gasPrice read per chain per revalidate window — far inside any reasonable public-endpoint budget. TERMS READ on the owner\'s machine 2026-09-14, and they are the broadest clause found in any source: the user agrees not to "modify, copy, frame, scrape, rent, lease, loan, sell, re-use, display, distribute, transmit, publish, re-publish, distribute or create derivative works based on the Service or the Service Content commercially and non-commercially". Read literally that prohibits using the service at all, since an RPC provider\'s entire product is answering RPC calls and any consumer necessarily re-uses the response — which cannot be the intent, and is exactly why this is an owner judgement rather than a maintainer\'s reading. Scope limits the exposure: one route (/live-data/wallet/eth), and /wallets is already hidden from rollout. `review` was ratified `verified` on 2026-09-18 to record that the document HAS been read; the judgement above is still outstanding and is the owner\'s.',
     conditions: [
@@ -1074,6 +1074,12 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     // document was READ; the judgement has been outstanding since 2026-09-18.
     // ⚠ SMALLER AND FIXABLE: termsUrl points at the HOMEPAGE, not the document the
     // finding quotes. A verified entry should link what was read.
+    // ── DECIDED 2026-09-24 (D25, T-251): KEEP THE NARROW READING — owner: "Keep the narrow
+    // reading for saftey". The clause is read as a bar on redistributing or re-serving the
+    // service, not on answering a call. Exposure that makes this safe to hold: one route
+    // on a hidden page, plus keyless gas for four chains where the fallback is a labelled
+    // estimate. Verdict stays conditional; the judgement is recorded as a judgement. The
+    // OWNER-FLAGGED note above now applies to the OTHER THREE in its class (T-407).
     //
     reviewedAt: '2026-09-14',
     review: 'verified',
