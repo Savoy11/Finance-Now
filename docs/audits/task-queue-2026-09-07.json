@@ -56,8 +56,8 @@
   "total_verified": 398,
   "outstanding": 348,
   "by_status": {
-   "open": 70,
-   "closed": 120,
+   "open": 69,
+   "closed": 121,
    "blocked": 67,
    "unclear": 1,
    "parked": 90
@@ -69,7 +69,7 @@
    "owner-machine": 83
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 120,
+  "closed_by_annotation": 121,
   "counts_recomputed_on": "2026-09-24",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 348
@@ -3623,7 +3623,7 @@
   {
    "id": "T-369",
    "title": "Adopt a recurring check of post-merge push runs on main",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "either",
    "category": "process",
@@ -3644,6 +3644,18 @@
     "note": "THE RECURRING CHECK NOW EXISTS AS A WORKFLOW, PENDING OWNER ADOPTION via the PR that carries it. .github/workflows/main-health.yml runs daily at 13:00 UTC (and on dispatch), looks up the most recent COMPLETED ci.yml push run on main with one read-only API call, and fails if that run did not succeed — which makes GitHub email the owner. No checkout, contents:read + actions:read only; it cannot make main red, only report that it is. Chosen over \"a habit or a Routine\" because a habit has no record and no failure mode, and a cloud Routine is a paid surface D21 defers. The item's \"record the decision in TASK-QUEUE via the steward\" half closes when the owner merges the PR; this note is the steward's record of the proposal. If the owner declines the workflow, the item stays open on the original terms.",
     "evidence": [
      ".github/workflows/main-health.yml"
+    ]
+   },
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-24",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "ADOPTED. The owner merged PR #228 (40fc9db), which carries .github/workflows/main-health.yml — the recurring check the item asked for, as a workflow rather than a habit. Daily at 13:00 UTC and on dispatch it looks up the most recent completed ci.yml push run on main with one read-only API call and fails if that run did not succeed, so GitHub emails the owner. First run, dispatched 2026-09-24 immediately after the merge: run 36051717677, conclusion success — main's latest push run was green and the check said so. The other two deliverables (the cd-staging gate at cd-staging.yml:87 and the README CI badge) were already in the tree, per the 2026-09-21 steward note. The \"record the decision in TASK-QUEUE via the steward\" half is this closure.",
+    "approved_by": "owner, 2026-09-24 — \"Merge #228\"",
+    "evidence": [
+     ".github/workflows/main-health.yml",
+     "https://github.com/Savoy11/Finance-Now/actions/runs/36051717677"
     ]
    }
   },
@@ -36191,6 +36203,13 @@
     "the_reading": "\"Stand as they are\" approves the DRAFTS, not the state of the bar. The decision record spells out per floor what was adopted (two met, one not met and not waived, one empty, one gated, one parked) so the approval cannot later be read as \"the bar is met\".",
     "evidence": [
      "docs/decisions/2026-09-24-owner-decisions.md"
+    ]
+   },
+   {
+    "on": "2026-09-24",
+    "what": "T-369 closed on the owner merging #228; the main-health workflow ran once by dispatch and passed.",
+    "evidence": [
+     ".github/workflows/main-health.yml"
     ]
    }
   ]
