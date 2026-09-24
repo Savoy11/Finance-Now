@@ -133,6 +133,55 @@ and if `proxy` or `hosting` is true the run does not count, whichever machine ma
 This has produced four wrong conclusions in this repo, most recently on 2026-09-14 when
 a VPN on AS62651 would have made twenty publisher terms pages read as unreachable.
 
+#### 5.1.1 Feature floor — candidate list (DRAFT 2026-09-24, T-298 — owner strikes from it)
+
+**How this list was built, so the owner knows what a strike means.** Every surface below is
+either 🟢 Live or 🟡 Partial in `DATA-AVAILABILITY.md` (run of 2026-09-19) and is **not** on the
+§5.2 fence. A 🟢 row is listed by name. A 🟡 row is listed **with the degraded state that is
+accepted at v1**, because the data-honesty floor already requires that a surface either show
+real data or say plainly that it cannot — so "must work" for a 🟡 surface means *works in its
+disclosed state*, not *becomes 🟢 before launch*. Striking a line means it is not required to
+work at v1; it does **not** move the line onto the fence, which takes a decision.
+
+**Core (always on)**
+- `/headlines` — the landing page; cross-module merge of the crypto and equities wires
+- `/watchlist`, `/portfolios` — DB-backed; live prices; the Look-through tab
+- `/compare` — 2–6 assets of any class · *accepted 🟡: macro series are provider-dependent and render a dash when unpriced*
+- `/research`, `/brief`, the Assistant widget — *accepted: dark without `ANTHROPIC_API_KEY`, and say so*
+- `/settings` (Integrations, Suite Modules), `/data-sources`, `/how-we-make-money` — *the last one's four sections are owner-copy placeholders today (§3) and are part of the Legal floor, not this one*
+
+**Crypto module**
+- Coins (`/assets`) with the Reserves tab · Coin detail (`/assets/[id]`) · Alerts (TopBar)
+- `/news` · `/videos` · `/coin-discovery` with the "About this project" panel
+- `/staking` — both tabs · *accepted 🟡: 27 of 51 live APRs, the rest labelled static estimates; Live Pools lands DefiLlama only (T-399)*
+- `/technical-analysis` (Backtest tab hidden — on the fence) · `/scanner` · `/pump-report`
+- Network fees — *accepted 🟡: BTC + four EVM L1s live, L2s and non-EVM chains are labelled estimates*
+- `/social` — *accepted 🔑: Reddit withheld without `REDDIT_CLIENT_ID` (its robots gate), volume signals absent without Santiment/LunarCrush keys; the page says which*
+
+**Equities module**
+- Stock Registry (`/equities`) — *accepted 🟡: the 79-name curated catalog on the free FMP tier; the paid universe is deferred under D21*
+- Equity detail · SEC filings · fundamentals · company profile — all keyless and 🟢
+- Quotes, price chart, OHLCV/TA, trailing returns — *accepted 🔑: keyed; catalog `ref` prices with the amber tag when no key is held; returns `source: none` rather than fabricated*
+- `/equities/news` — *accepted 🟡: CNBC only (MarketWatch removed on terms), no per-ticker feed*
+- `/equities/social` — *accepted 🟡: StockTwits only*
+- `/equities/scanner` · `/equities/options` (Trade Risk Scorer) · `/equities/calendar` — *accepted 🟡: earnings live, economic calendar empty on the free tier*
+
+**Macro Markets module**
+- `/macro/news` · `/macro/currencies` with the two-tier converter · `/macro/rates` with the Treasury curve — all 🟢 keyless
+- `/macro` overview, `/macro/commodities` — *accepted 🔑: instrument quotes have measured UNCONFIGURED on every run since 2026-09-09 and render a dash; the catalog copy, categories and ETF proxies are unaffected*
+- `/macro/scanner` (29 of 45 instruments, exclusion stated on-page) · `/macro/technical-analysis` (51 indicators, volume ones withheld and named)
+
+**ETFs & Funds module**
+- `/funds` registry · fund detail with the Fee Drag Analyzer and sales-load disclosure · holdings from N-PORT — *accepted 🟡: UITs such as SPY fall back to indicative top holdings, and say so*
+
+**Portfolio Builder (premium)** — both modes, saved plans, the drift monitor
+
+**Programmatic surfaces** — `/api/v1/*` (every listed endpoint answers; `transfer/routes` answers 503 by decision) and the MCP server's tools, less `find_transfer_routes` (withheld) and with `run_audit`'s shipping status still open (D5)
+
+**Deliberately absent from this list, and why:** Transfer Fees and Wallets (hidden — fence) ·
+every backtest surface (hidden — fence) · futures term structure and CUSIP bond quotes (🔴, no
+source, stated on-page) · everything ⚪ Removed.
+
 ### 5.2 Finance Now — explicitly out of v1
 
 ~~**DRAFT 2026-09-14 (T-299, owner decision D15) — awaiting approval.**~~ ✅ **APPROVED AS
