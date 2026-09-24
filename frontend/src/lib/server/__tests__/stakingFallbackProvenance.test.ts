@@ -76,6 +76,13 @@ describe('staking FALLBACK provenance', () => {
     expect(routeSrc).toContain('measuredKeys: FALLBACK_MEASURED.size')
   })
 
+  it('the refresh script refuses to write a live zero as a measured value', () => {
+    // The guard below would catch a 0 after the fact; this pins the script so it
+    // never writes one. A live 0 is 'no rate reported', kept as a skip with a reason.
+    const script = readFileSync(join(process.cwd(), 'scripts/refresh-staking-fallbacks.mjs'), 'utf8')
+    expect(script).toMatch(/if \(value <= 0\) \{[\s\S]*?skipped\.push/)
+  })
+
   it('keeps every measured value plausible for a staking APR', () => {
     // Guards a decimal slip in a hand-edit (a 4.86 becoming 486). Deliberately
     // wide: real readings in this table span 0.17% to 14.3%, and a tight band

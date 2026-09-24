@@ -122,7 +122,7 @@ checks them. Three need the owner and are marked so; a floor nobody can test is 
 |---|---|---|
 | **Data honesty** | `npm run audit` on the owner's machine, from a **verified non-VPN egress**, reports **0 FAIL**, and every FALLBACK is explained by design or a missing key — not by an unreachable upstream | ⚠ **Nearly met, 2026-09-12** (`docs/audits/live-data-audit-2026-09-12.md`). The non-VPN run — the one that counts — was **64 REAL / 9 FALLBACK / 1 FAIL**. All 9 fallbacks qualify: by design or key-gated. The 1 FAIL does **not** meet a 0-FAIL bar as written, and is recorded as not-met rather than waved through: it was a Tronscan `429` that reproduced against Tronscan directly, outside the app, so it is a provider rate limit and not our defect — but "someone else's transient" is a judgement, and a bar that accepts judgements is not a bar. **Owner call: re-run to confirm it clears, or amend the bar to allow a documented transient upstream failure.** For reference the VPN run the same evening was 65/9/0, which is why the egress precondition below matters |
 | **Quality** | `npx tsc --noEmit` clean · `npx eslint .` 0 errors · full vitest suite green · `npx next build` succeeds · no known data-corrupting bug | ✅ **Met — re-measured 2026-09-24**: tsc clean, 0 errors / 46 warnings, 117 files / 1613 tests, build succeeds in CI on every PR (`CI Success Gate` is a required check since 2026-09-23). The 2026-09-14 figures were 44 warnings / 1444 tests; the warning count is the React-compiler lint baseline and has not moved by intent |
-| **Feature** | The specific list of surfaces that must work, with nothing half-built behind a nav link | ⚠ **OWNER** — needs the list. §5.2 names what is *out*, which is the other half |
+| **Feature** | The specific list of surfaces that must work, with nothing half-built behind a nav link | ✅ **FILLED 2026-09-24 (D24)** — the list is §5.1.1 **in full**; owner: *"Keep all."* Each 🟡 surface counts as working *in its disclosed degraded state*. **Provisional**: the owner will review this after the worklist is finished and may change it — until then, this is the floor. ~~⚠ OWNER — needs the list.~~ §5.2 names what is *out*, which is the other half |
 | **Legal** | Sections 1–3 of this document closed | ⚠ **OWNER** — and gated: the FMP reading (2026-09-13) established that public-facing display needs a vendor agreement, not a plan upgrade. Lead time, not a checkout |
 | **Operational** | Backups, error monitoring, a support inbox someone reads | ⚠ **OWNER** — parked under the 2026-09-05 rollout ruling (D1); provisioning is not being done yet by decision |
 
@@ -132,6 +132,58 @@ is not the same claim as "owner's IP". Check the egress *first* —
 and if `proxy` or `hosting` is true the run does not count, whichever machine made it.
 This has produced four wrong conclusions in this repo, most recently on 2026-09-14 when
 a VPN on AS62651 would have made twenty publisher terms pages read as unreachable.
+
+#### 5.1.1 Feature floor — ~~candidate list (DRAFT 2026-09-24, T-298 — owner strikes from it)~~ ADOPTED IN FULL 2026-09-24 (D24)
+
+> **Owner, 2026-09-24:** *"Keep all, once we finish the worklist I will review this and we may make changes."* Nothing was struck. The list below is the Feature floor as adopted; the "how it was built" note is kept because it defines what "must work" means for a 🟡 line. **Provisional** — a post-worklist review is expected and any change to it is a decision, recorded here.
+
+
+**How this list was built, so the owner knows what a strike means.** Every surface below is
+either 🟢 Live or 🟡 Partial in `DATA-AVAILABILITY.md` (run of 2026-09-19) and is **not** on the
+§5.2 fence. A 🟢 row is listed by name. A 🟡 row is listed **with the degraded state that is
+accepted at v1**, because the data-honesty floor already requires that a surface either show
+real data or say plainly that it cannot — so "must work" for a 🟡 surface means *works in its
+disclosed state*, not *becomes 🟢 before launch*. Striking a line means it is not required to
+work at v1; it does **not** move the line onto the fence, which takes a decision.
+
+**Core (always on)**
+- `/headlines` — the landing page; cross-module merge of the crypto and equities wires
+- `/watchlist`, `/portfolios` — DB-backed; live prices; the Look-through tab
+- `/compare` — 2–6 assets of any class · *accepted 🟡: macro series are provider-dependent and render a dash when unpriced*
+- `/research`, `/brief`, the Assistant widget — *accepted: dark without `ANTHROPIC_API_KEY`, and say so*
+- `/settings` (Integrations, Suite Modules), `/data-sources`, `/how-we-make-money` — *the last one's four sections are owner-copy placeholders today (§3) and are part of the Legal floor, not this one*
+
+**Crypto module**
+- Coins (`/assets`) with the Reserves tab · Coin detail (`/assets/[id]`) · Alerts (TopBar)
+- `/news` · `/videos` · `/coin-discovery` with the "About this project" panel
+- `/staking` — both tabs · *accepted 🟡: 27 of 51 live APRs, the rest labelled static estimates; Live Pools lands DefiLlama only (T-399)*
+- `/technical-analysis` (Backtest tab hidden — on the fence) · `/scanner` · `/pump-report`
+- Network fees — *accepted 🟡: BTC + four EVM L1s live, L2s and non-EVM chains are labelled estimates*
+- `/social` — *accepted 🔑: Reddit withheld without `REDDIT_CLIENT_ID` (its robots gate), volume signals absent without Santiment/LunarCrush keys; the page says which*
+
+**Equities module**
+- Stock Registry (`/equities`) — *accepted 🟡: the 79-name curated catalog on the free FMP tier; the paid universe is deferred under D21*
+- Equity detail · SEC filings · fundamentals · company profile — all keyless and 🟢
+- Quotes, price chart, OHLCV/TA, trailing returns — *accepted 🔑: keyed; catalog `ref` prices with the amber tag when no key is held; returns `source: none` rather than fabricated*
+- `/equities/news` — *accepted 🟡: CNBC only (MarketWatch removed on terms), no per-ticker feed*
+- `/equities/social` — *accepted 🟡: StockTwits only*
+- `/equities/scanner` · `/equities/options` (Trade Risk Scorer) · `/equities/calendar` — *accepted 🟡: earnings live, economic calendar empty on the free tier*
+
+**Macro Markets module**
+- `/macro/news` · `/macro/currencies` with the two-tier converter · `/macro/rates` with the Treasury curve — all 🟢 keyless
+- `/macro` overview, `/macro/commodities` — *accepted 🔑: instrument quotes have measured UNCONFIGURED on every run since 2026-09-09 and render a dash; the catalog copy, categories and ETF proxies are unaffected*
+- `/macro/scanner` (29 of 45 instruments, exclusion stated on-page) · `/macro/technical-analysis` (51 indicators, volume ones withheld and named)
+
+**ETFs & Funds module**
+- `/funds` registry · fund detail with the Fee Drag Analyzer and sales-load disclosure · holdings from N-PORT — *accepted 🟡: UITs such as SPY fall back to indicative top holdings, and say so*
+
+**Portfolio Builder (premium)** — both modes, saved plans, the drift monitor
+
+**Programmatic surfaces** — `/api/v1/*` (every listed endpoint answers; `transfer/routes` answers 503 by decision) and the MCP server's tools, less `find_transfer_routes` (withheld) and with `run_audit`'s shipping status still open (D5)
+
+**Deliberately absent from this list, and why:** Transfer Fees and Wallets (hidden — fence) ·
+every backtest surface (hidden — fence) · futures term structure and CUSIP bond quotes (🔴, no
+source, stated on-page) · everything ⚪ Removed.
 
 ### 5.2 Finance Now — explicitly out of v1
 

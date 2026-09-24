@@ -56,8 +56,8 @@
   "total_verified": 398,
   "outstanding": 348,
   "by_status": {
-   "open": 70,
-   "closed": 120,
+   "open": 64,
+   "closed": 126,
    "blocked": 67,
    "unclear": 1,
    "parked": 90
@@ -69,7 +69,7 @@
    "owner-machine": 83
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 120,
+  "closed_by_annotation": 126,
   "counts_recomputed_on": "2026-09-24",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 348
@@ -3623,7 +3623,7 @@
   {
    "id": "T-369",
    "title": "Adopt a recurring check of post-merge push runs on main",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "either",
    "category": "process",
@@ -3644,6 +3644,18 @@
     "note": "THE RECURRING CHECK NOW EXISTS AS A WORKFLOW, PENDING OWNER ADOPTION via the PR that carries it. .github/workflows/main-health.yml runs daily at 13:00 UTC (and on dispatch), looks up the most recent COMPLETED ci.yml push run on main with one read-only API call, and fails if that run did not succeed — which makes GitHub email the owner. No checkout, contents:read + actions:read only; it cannot make main red, only report that it is. Chosen over \"a habit or a Routine\" because a habit has no record and no failure mode, and a cloud Routine is a paid surface D21 defers. The item's \"record the decision in TASK-QUEUE via the steward\" half closes when the owner merges the PR; this note is the steward's record of the proposal. If the owner declines the workflow, the item stays open on the original terms.",
     "evidence": [
      ".github/workflows/main-health.yml"
+    ]
+   },
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-24",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "ADOPTED. The owner merged PR #228 (40fc9db), which carries .github/workflows/main-health.yml — the recurring check the item asked for, as a workflow rather than a habit. Daily at 13:00 UTC and on dispatch it looks up the most recent completed ci.yml push run on main with one read-only API call and fails if that run did not succeed, so GitHub emails the owner. First run, dispatched 2026-09-24 immediately after the merge: run 36051717677, conclusion success — main's latest push run was green and the check said so. The other two deliverables (the cd-staging gate at cd-staging.yml:87 and the README CI badge) were already in the tree, per the 2026-09-21 steward note. The \"record the decision in TASK-QUEUE via the steward\" half is this closure.",
+    "approved_by": "owner, 2026-09-24 — \"Merge #228\"",
+    "evidence": [
+     ".github/workflows/main-health.yml",
+     "https://github.com/Savoy11/Finance-Now/actions/runs/36051717677"
     ]
    }
   },
@@ -4172,7 +4184,7 @@
   {
    "id": "T-231",
    "title": "Triage dependabot pytest 8→9 (#98, backend)",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "dependency",
@@ -4195,12 +4207,25 @@
      "lines": "41-53",
      "quote": "Bumps [pytest](https://github.com/pytest-dev/pytest) from 8.4.2 to 9.1.1."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-24",
+    "basis": "verified-here",
+    "verdict": "already-done",
+    "reason": "PR #98 — pytest 8.4.2 → 9.1.1 in /backend — was MERGED on 2026-09-13T22:40Z. The item asked the owner to say \"merge or close\"; the merge happened the day before D2 (2026-09-14) froze the backend, and the item never learned. gh pr view 98 → state MERGED.",
+    "context": "Backend is FROZEN under D2 (2026-09-14): nothing builds or runs it, so a dev-dependency major there is inert either way. The one backend Dependabot PR still open, #213 (cryptography 49→50), is the same shape and is not this item.",
+    "evidence": [
+     "https://github.com/Savoy11/Finance-Now/pull/98",
+     "https://github.com/Savoy11/Finance-Now/pull/151",
+     "backend/FROZEN.md"
+    ]
+   }
   },
   {
    "id": "T-232",
    "title": "Triage dependabot faker 24→40 (#96/#132, backend dev)",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "dependency",
@@ -4224,7 +4249,20 @@
      "lines": "15-27",
      "quote": "Bumps [faker](https://github.com/joke2k/faker) from 24.14.1 to 40.37.0."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-24",
+    "basis": "verified-here",
+    "verdict": "already-done",
+    "reason": "PR #151 — faker 24.14.1 → 40.38.0 in /backend (dev) — was MERGED on 2026-09-13T21:52Z; #96 and #132, the earlier recreations the item names, were closed 2026-08-31 and 2026-09-07 as superseded. The weekly recreation the item feared stopped because the bump landed. gh pr view 151 → state MERGED.",
+    "context": "Backend is FROZEN under D2 (2026-09-14): nothing builds or runs it, so a dev-dependency major there is inert either way. The one backend Dependabot PR still open, #213 (cryptography 49→50), is the same shape and is not this item.",
+    "evidence": [
+     "https://github.com/Savoy11/Finance-Now/pull/98",
+     "https://github.com/Savoy11/Finance-Now/pull/151",
+     "backend/FROZEN.md"
+    ]
+   }
   },
   {
    "id": "T-234",
@@ -4536,7 +4574,7 @@
   {
    "id": "T-298",
    "title": "Supply the Feature floor of the release bar — the list of surfaces that must work at v1",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "decision",
@@ -4559,9 +4597,23 @@
    ],
    "progress": {
     "noted_on": "2026-09-24",
-    "note": "RE-SCOPED, NOT CLOSED, under D23. The owner adopted the §5.1 release bar AS IT STANDS — two floors met (Quality) or filled-and-measurable (Data honesty, currently 1 FAIL not waived), Legal gated on D22, Operational parked under D1, and the Feature floor STRUCTURALLY APPROVED BUT EMPTY. The item's original title asked to define the bar AND fill the five floors; the definition is adopted and mirrored into TASK-QUEUE §P3-W3 as required, so what remains is exactly the Feature list, and this item now says only that. Closing would have ticked a box on a two-of-five bar.",
+    "note": "CANDIDATE LIST DRAFTED for the owner to strike from — docs/BUSINESS-CHECKLIST.md §5.1.1. Built from DATA-AVAILABILITY.md (run of 2026-09-19) and CLAUDE.md's Feature Inventory: every 🟢/🟡 surface not on the §5.2 fence, with the accepted degraded state named for each 🟡 so \"must work\" means \"works in its disclosed state\". Striking a line means not required at v1; it does not move a surface onto the fence. Writing the struck list INTO the Feature row is the owner's act, same as the rest of the bar.",
     "evidence": [
-     "docs/decisions/2026-09-24-owner-decisions.md"
+     "docs/BUSINESS-CHECKLIST.md"
+    ]
+   },
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-24",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "FILLED by owner decision D24 — \"Keep all, once we finish the worklist I will review this and we may make changes.\" The Feature floor is docs/BUSINESS-CHECKLIST.md §5.1.1 in full, each 🟡 surface counting as working in its disclosed degraded state. With D23 (bar adopted, mirrored into TASK-QUEUE §P3-W3) and D24 (Feature floor filled) the five-floor bar the item asked for is defined. Provisional: the owner's post-worklist review may change the list, and any change is a decision, not an edit.",
+    "what_this_does_not_say": "That the bar is MET. D23's per-floor table stands: Data honesty had 1 FAIL not waived, Legal is gated on D22's launch set, Operational is parked under D1.",
+    "approved_by": "owner, 2026-09-24",
+    "evidence": [
+     "docs/decisions/2026-09-24-owner-decisions.md",
+     "docs/BUSINESS-CHECKLIST.md",
+     "docs/TASK-QUEUE.md"
     ]
    }
   },
@@ -5058,7 +5110,16 @@
      "lines": "8-14",
      "quote": "The date below is deliberately NOT bumped: it describes the table as a whole, and the ~520 long-tail entries were not re-checked, so the staleness banner must stay on."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-09-24",
+    "note": "MACHINE HALF RE-RUN on the owner's machine over clean egress; MANUAL HALF PREPARED. `npm run fee-reconcile`: 106 of 534 rows reconcile against live keyless exchange APIs — 65 confirmed, 22 changed, 8 dynamic, 11 suspended. 20 of the 22 changes were applied via `npm run fee-apply` (keyed on exchange/coin/network, current-value guard passed); the two `→ 0` proposals — Bitfinex DOT/Polkadot and Bitget USDC/BEP-20 — were deliberately held back because they are T-056's subject, the two zero-fee rows a prior pass already held for hand verification. `npm run fee-worksheet`: 447 entries still need a human across 29 exchanges, core-45 called out first; transfer-fee-worksheet.csv and .md are generated and gitignored, ready to fill. TRANSFER_FEES_LAST_VERIFIED stays 2025-06-01 (480 days) — only a completed pass over every exchange moves it, and the page is held out of rollout with the staleness acknowledged.",
+    "evidence": [
+     "frontend/src/lib/data/transferFees.ts",
+     "frontend/scripts/reconcile-transfer-fees.ts",
+     "frontend/scripts/apply-fee-updates.ts"
+    ]
+   }
   },
   {
    "id": "T-036",
@@ -5090,7 +5151,14 @@
      "lines": "286-300",
      "quote": "Seeded from published schedules, confidence pinned LOW until verified. Check the spot fee schedule page while you have each exchange open for withdrawals."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-09-24",
+    "note": "WORKSHEET GENERATED (with T-031's): transfer-fee-worksheet.csv carries the Spot trading fees section with Observed maker/taker columns blank, ready to fill from each exchange's fee schedule page. Nothing here is automatable — the schedules are HTML pages behind terms this app has not been granted to scrape — so the item stays open on its original terms.",
+    "evidence": [
+     "frontend/scripts/gen-transfer-fee-worksheet.ts"
+    ]
+   }
   },
   {
    "id": "T-055",
@@ -5152,7 +5220,14 @@
      "lines": "2026-08-22",
      "quote": "HELD BACK: two rows proposing a fee of exactly zero (Bitfinex DOT, Bitget USDC/BEP-20). … Those need a spot-check against the exchanges' own pages first."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-09-24",
+    "note": "RE-SURFACED, STILL HELD. The 2026-09-24 machine reconcile read both rows as 0 again from the exchanges' public APIs (Bitfinex DOT/Polkadot 0.1 → 0; Bitget USDC/BEP-20 1 → 0, min 9.9977). Two independent reads agreeing on 0 is stronger evidence than one — but a zero withdrawal fee is the row a user is most likely to act on and the row an API is most likely to report as 0 when it means \"unknown\", so the hand check this item asks for still stands. Not applied.",
+    "evidence": [
+     "frontend/scripts/reconcile-transfer-fees.ts"
+    ]
+   }
   },
   {
    "id": "T-073",
@@ -6094,7 +6169,7 @@
   {
    "id": "T-251",
    "title": "publicnode.com — owner judgement on the broadest terms clause in the registry",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "terms-review",
@@ -6117,6 +6192,19 @@
     "note": "RE-SCOPED, not closed. The item was filed as owner-MACHINE work (\"seeded low confidence, needs a read\"), and on both counts it is stale: the entry is verified and the document has been read. What is left is an owner DECISION, which is a different kind of work and a different queue. The entry says so itself: \"review was ratified verified on 2026-09-18 to record that the document HAS been read; the judgement above is still outstanding and is the owner's.\" An item that keeps asking for a read that happened hides a decision that has been waiting nine days.",
     "evidence": [
      "frontend/src/lib/server/sourceTerms.ts"
+    ]
+   },
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-24",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "DECIDED by owner decision D25 — \"Keep the narrow reading for saftey.\" The clause is read as a bar on redistributing or re-serving PublicNode's service, not on answering a call; the entry stays conditional with its three conditions, and the judgement is recorded on the entry, in LEGAL-REVIEW §7 and in docs/decisions/2026-09-24-owner-decisions.md. Exposure: one route on a hidden page plus keyless gas for four chains with a labelled-estimate fallback.",
+    "approved_by": "owner, 2026-09-24",
+    "evidence": [
+     "docs/decisions/2026-09-24-owner-decisions.md",
+     "frontend/src/lib/server/sourceTerms.ts",
+     "docs/LEGAL-REVIEW.md"
     ]
    }
   },
@@ -6422,9 +6510,12 @@
     }
    ],
    "progress": {
-    "noted_on": "2026-09-19",
-    "note": "PART DONE: #174 read the 37 non-'40-Act expense ratios from their prospectuses, so the stated blocker is cleared. NOT done: FUND_DATA_LAST_VERIFIED is still 2026-07-20. Moving it is now a judgement about whether the unchecked catalog fields were covered too — an owner call, not remaining work.",
-    "evidence": "docs/audits/queue-sweep-2026-09-18.md"
+    "noted_on": "2026-09-24",
+    "note": "RECONCILIATION RUN on the owner's machine over clean egress (Spectrum, proxy:false, hosting:false): `npm run fund-fees -- --inspect` then `npm run fund-fees`. Unit declared by the dataset (uom=pure, decimal). Of 126 catalog rows the quarter's Risk/Return archive matched 4 — GDX 0.51, AGG 0.03, MUB 0.05, DODGX 0.51 — and all four AGREE with the catalog to the basis point (differing: 0). 99 rows are not in this quarter's archive and 23 have no expense value in it; that is the archive's coverage, not a catalog problem, and the script's own note says one quarterly archive only covers funds that filed a prospectus that quarter. What this settles: nothing the archive could see disagrees with the catalog. What it cannot settle: the other 122 rows, and the unchecked AUM/yield/inception fields. FUND_DATA_LAST_VERIFIED (2026-07-20, 55 days from its window) is NOT moved — the 2026-09-19 note already made that the owner's judgement, and this run adds four agreeing data points to it, not a whole-table pass.",
+    "evidence": [
+     "frontend/fund-fee-reconcile.json (generated, untracked)",
+     "frontend/scripts/build-fund-fees.mjs"
+    ]
    }
   },
   {
@@ -11033,12 +11124,12 @@
   {
    "id": "T-403",
    "title": "CI never runs test:coverage, so the number is recorded on no run",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "process",
    "effort": "small",
-   "blocking_decision": "T-403 — owner decision required",
+   "blocking_decision": null,
    "related_ids": [
     "T-256"
    ],
@@ -11060,6 +11151,19 @@
     "on": "2026-09-21",
     "by": "checklist-steward sweep (opportunity-scout FILE mode), owner-approved 2026-09-21",
     "why": "Surfaced by a re-verification sweep with no existing ledger entry anywhere. Filed rather than folded into a neighbouring item, because an unattributed defect riding inside another ticket is how these stayed invisible."
+   },
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-24",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "Owner, 2026-09-24: \"Yes to the CI run.\" ci.yml's frontend test step now runs `npm run test:coverage` with text-summary + json-summary reporters, so the tests run ONCE with coverage rather than twice. This changes nothing about what gates: vitest.config.ts sets no thresholds on purpose, so the step can still only fail on a failing test. A separate NON-GATING step (if: always(), continue-on-error) writes a four-row table to the run's step summary and uploads coverage-summary.json as a 30-day artifact, so the number is measured on every run and the trend is readable.",
+    "what_was_not_done": "No threshold. The item's own reasoning and the config's comment agree: a gate would block a fix for arriving without a test while saying nothing about whether the tested lines carry a user-facing number.",
+    "approved_by": "owner, 2026-09-24",
+    "evidence": [
+     ".github/workflows/ci.yml",
+     "frontend/vitest.config.ts"
+    ]
    }
   },
   {
@@ -11196,7 +11300,7 @@
   },
   {
    "id": "T-407",
-   "title": "Revisit the four sources kept conditional on an unresolved judgement (CoinDesk, Investing.com, publicnode, Bitget)",
+   "title": "Revisit the three sources kept conditional on an unresolved judgement (CoinDesk, Investing.com, Bitget)",
    "status": "open",
    "confidence": "high",
    "owner_role": "owner-decision",
@@ -11229,6 +11333,13 @@
     "on": "2026-09-23",
     "by": "terms-cluster sweep, owner-directed",
     "why": "Owner, 2026-09-23: \"I have some concerns around coindesk which will require some additional research, for now annotate and we will revisit this and any similar cases.\" Scanning the registry for \"similar cases\" found three more, and a D22 gap alongside them."
+   },
+   "progress": {
+    "noted_on": "2026-09-24",
+    "note": "NARROWED from four to three: publicnode was decided under D25 (narrow reading kept). CoinDesk and Investing.com still turn on the one shared question (does a terms document that never mentions feeds govern a feed the publisher publishes and permits in robots.txt?); Bitget still turns on §1 Prohibited Countries naming the United States, and does not wait for the others.",
+    "evidence": [
+     "docs/decisions/2026-09-24-owner-decisions.md"
+    ]
    }
   },
   {
@@ -36191,6 +36302,60 @@
     "the_reading": "\"Stand as they are\" approves the DRAFTS, not the state of the bar. The decision record spells out per floor what was adopted (two met, one not met and not waived, one empty, one gated, one parked) so the approval cannot later be read as \"the bar is met\".",
     "evidence": [
      "docs/decisions/2026-09-24-owner-decisions.md"
+    ]
+   },
+   {
+    "on": "2026-09-24",
+    "what": "T-369 closed on the owner merging #228; the main-health workflow ran once by dispatch and passed.",
+    "evidence": [
+     ".github/workflows/main-health.yml"
+    ]
+   },
+   {
+    "on": "2026-09-24",
+    "what": "T-231 and T-232 closed as already-done (both PRs merged 2026-09-13, unnoticed); T-298 Feature-floor candidate list drafted for the owner.",
+    "the_pattern_again": "Two \"owner decides merge or close\" items were waiting on a decision that GitHub had already recorded eleven days earlier. Same shape as T-236: the ledger cannot see GitHub, and nothing cross-checks. Verified with gh pr view before closing, and the closure cites the PR state so it can be re-checked.",
+    "evidence": [
+     "https://github.com/Savoy11/Finance-Now/pull/98",
+     "https://github.com/Savoy11/Finance-Now/pull/151"
+    ]
+   },
+   {
+    "on": "2026-09-24",
+    "what": "T-298 closed on D24 — the Feature floor is §5.1.1 in full, provisionally.",
+    "evidence": [
+     "docs/decisions/2026-09-24-owner-decisions.md"
+    ]
+   },
+   {
+    "on": "2026-09-24",
+    "what": "T-403 closed — coverage measured on every CI run, non-gating.",
+    "evidence": [
+     ".github/workflows/ci.yml"
+    ]
+   },
+   {
+    "on": "2026-09-24",
+    "what": "T-251 closed on D25; T-407 narrowed to three sources.",
+    "evidence": [
+     "docs/decisions/2026-09-24-owner-decisions.md"
+    ]
+   },
+   {
+    "on": "2026-09-24",
+    "what": "Staleness cluster, first pass on the owner's machine: the stakingRates FALLBACK table re-measured and rewritten (the one clock that WITHHOLDS data, due 2026-10-03); the fund-fee reconciliation run for T-386; the transfer-fee worksheets generated for T-031/T-036.",
+    "staking_fallbacks": "`npm run staking:refresh-fallbacks -- --write` from clean egress with all 7 upstreams live and 27/51 keys live. 20 of the 27 measured keys moved; FALLBACK_MEASURED_ON → 2026-09-24. Three moved by more than 25%: ankr_eth 0.92 → 2.47 (+168% — the route's own history shows this key at 2.45 on 09-09 and 0.92 on 09-18, so it is a volatile DefiLlama pool reading, not a parse error), bifrost_ksm 12.04 → 6.41, and ⚠ lombard_btc 0.29 → 0. The zero is what DefiLlama reports for the LBTC pool as a LIVE value; the script treats a live 0 as a number and wrote it. Flagged for the owner rather than hand-edited: overriding a measurement with a remembered value is the fabricated-freshness failure the measured/unmeasured split exists to prevent. If a 0 fallback is judged misleading, the cure is in the route (treat 0 as no-rate) or in the measured set, not in the table.",
+    "why_this_clock_first": "stakingProviders fires 2026-09-27 but the owner decided on 2026-09-20 to let that notice fire — it changes a disclosure, not the data. stakingRates' 14-day FALLBACK_STALE_AFTER_DAYS WITHHOLDS the rate (dash) when it fires, so it is the only clock in the cluster whose expiry removes a number from the page. transferFees is stale by 359 days and acknowledged (page held out of rollout).",
+    "evidence": [
+     "frontend/src/lib/server/stakingRates.ts",
+     "frontend/scripts/refresh-staking-fallbacks.mjs"
+    ]
+   },
+   {
+    "on": "2026-09-24",
+    "what": "Transfer fees: 20 live-verified withdrawal-fee updates applied; two zero proposals held for T-056; worksheets generated for the 447-row manual pass (T-031/T-036).",
+    "evidence": [
+     "frontend/src/lib/data/transferFees.ts"
     ]
    }
   ]

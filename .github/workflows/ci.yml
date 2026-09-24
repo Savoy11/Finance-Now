@@ -109,10 +109,43 @@ jobs:
       # the check that fails the build when a data source is unregistered or
       # prohibited — could not fail anything. A well-written checker that never
       # runs is indistinguishable from no checker.
-      - name: Run frontend tests
+      # Runs WITH coverage since 2026-09-24 (T-403, owner decision). This does not
+      # change what gates: vitest.config.ts sets no coverage thresholds on purpose, so
+      # this step can still only fail on a failing test, exactly as before. What it
+      # adds is a number that is actually measured on a run — test:coverage and
+      # @vitest/coverage-v8 had been installed for two months and never executed.
+      - name: Run frontend tests (with coverage)
         run: |
           cd frontend
-          npm test
+          npm run test:coverage -- --coverage.reporter=text-summary --coverage.reporter=json-summary
+
+      # NON-GATING on purpose. The summary lands on the run page and the JSON is kept
+      # as an artifact so the trend is readable across runs. It is not a threshold:
+      # a gate here would block a fix for arriving without a test while saying
+      # nothing about whether the tested lines carry a user-facing number. Report
+      # it, read it, decide — docs/audits/2026-07-30-audit.md.
+      - name: Coverage summary (informational)
+        if: always()
+        continue-on-error: true
+        run: |
+          cd frontend
+          f=coverage/coverage-summary.json
+          test -s "$f" || { echo "no coverage summary was produced"; exit 0; }
+          node -e '
+            const t = require("./" + process.argv[1]).total
+            const row = (k) => `| ${k} | ${t[k].pct}% | ${t[k].covered}/${t[k].total} |`
+            console.log("## Coverage (lib layers only — see vitest.config.ts)\n\n| | pct | covered |\n|---|---|---|\n" + ["lines","statements","functions","branches"].map(row).join("\n"))
+          ' "$f" | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload coverage summary
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-summary
+          path: frontend/coverage/coverage-summary.json
+          if-no-files-found: ignore
+          retention-days: 30
 
       # Two separate guarantees, both previously unenforced.
       #
