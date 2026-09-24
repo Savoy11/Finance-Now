@@ -122,16 +122,16 @@ export interface StakingRatesResponse {
 //   order-of-magnitude answer, which is what the UI's own disclosure says.
 const FALLBACK: Record<string, number> = {
   // ETH liquid staking
-  lido_eth:        2.23,
-  rocketpool_eth:  2.16,
-  ankr_eth:        0.92,
+  lido_eth:        2.25,
+  rocketpool_eth:  2.13,
+  ankr_eth:        2.47,
   coinbase_eth:    3.2,
   kraken_eth:      3.5,
   binance_eth:     3.1,
 
   // Solana
-  marinade_sol:    6.13,
-  jito_sol:        4.86,
+  marinade_sol:    6.05,
+  jito_sol:        4.98,
   native_sol:      6.5,   // generic Solana native staking
 
   // Cosmos / ATOM
@@ -179,39 +179,39 @@ const FALLBACK: Record<string, number> = {
 
   // ── Liquid-staking / restaking protocols (live via DeFiLlama Yields) ────────
   // ETH LSTs & restaking
-  frax_eth:         2.49,
+  frax_eth:         2.58,
   stakewise_eth:    2.33,
-  stader_eth:       2.51,
+  stader_eth:       2.26,
   swell_eth:        0.56,
-  renzo_eth:        2.22,
-  kelp_eth:         2.41,
-  puffer_eth:       2.15,
+  renzo_eth:        2.24,
+  kelp_eth:         2.37,
+  puffer_eth:       2.27,
   origin_eth:       2.65,
-  bedrock_eth:      2.72,
-  etherfi_eth:      2.37,
+  bedrock_eth:      2.44,
+  etherfi_eth:      2.34,
   // Solana LSTs
-  sanctum_sol:      5.42,
+  sanctum_sol:      5.63,
   ankr_sol:         6.2,
   // Avalanche LSTs
-  benqi_avax:       3.51,
+  benqi_avax:       4.14,
   ankr_avax:        6.32,
   // Polygon / BNB LSTs
-  stader_matic:     2.33,
+  stader_matic:     2.34,
   stader_bnb:       5.0,
   pstake_bnb:       5.5,
-  ankr_bnb:         0.97,
+  ankr_bnb:         1,
   // Cosmos LSTs
   quicksilver_atom:13.0,
   pstake_atom:     12.5,
   // Polkadot / Kusama LSTs
-  bifrost_dot:     2.94,
-  bifrost_ksm:     12.04,
+  bifrost_dot:     3.03,
+  bifrost_ksm:     6.41,
   // Bitcoin LST
   lombard_btc:      0.29,
 }
 
 /** When the FALLBACK_MEASURED keys were read from live upstreams. */
-const FALLBACK_MEASURED_ON = '2026-09-18'
+const FALLBACK_MEASURED_ON = '2026-09-24'
 
 /**
  * How long a measured reading stays worth publishing. Owner decision 2026-09-18.

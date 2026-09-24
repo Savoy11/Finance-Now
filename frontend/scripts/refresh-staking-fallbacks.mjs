@@ -66,6 +66,16 @@ for (const key of measured) {
     skipped.push(key)
     continue
   }
+  // A live ZERO is "no rate reported", not a rate — the same verdict the upstream
+  // probe calls `no-rate`. Writing it would publish "0% APR" as a measured fallback
+  // the moment the upstream goes quiet, and stakingFallbackProvenance.test.ts
+  // rightly refuses a measured value of 0. First seen 2026-09-24: DefiLlama
+  // reported the LBTC pool at 0 while every other key was live. Keep the prior
+  // value and say so, exactly as a non-live upstream is handled.
+  if (value <= 0) {
+    skipped.push(`${key} (live upstream reported ${value} — no rate, prior value kept)`)
+    continue
+  }
   const fresh = parseFloat(value.toFixed(2))
   const re = new RegExp(`(^\\s*${key}:\\s*)([0-9.]+)(,)`, 'm')
   const found = next.match(re)
