@@ -348,6 +348,14 @@ before merging (a solo owner can still self-approve; the gate is against the acc
 optionally require the `ci-success` check. While in Settings, enable secret-scanning **push
 protection** — this audit found nothing in history; push protection keeps it that way at zero
 ongoing cost.
+✅ **IN PLACE, verified 2026-09-24 (T-236).** `GET /repos/…/rules/branches/main` returns a
+ruleset requiring a pull request and the `CI Success Gate` status check, plus `deletion` and
+`non_fast_forward` blocks; `security_and_analysis` reports `secret_scanning: enabled` and
+`secret_scanning_push_protection: enabled`. First observed enforcing on 2026-09-23, when a
+direct push to `main` reported *"Bypassed rule violations … Changes must be made through a
+pull request"* — a bypass, not a pass, which is why direct pushes stopped that day. Not done,
+on purpose: "Require review from Code Owners" (T-102, owner decision) and "Automatically
+delete head branches" (overridden by the 2026-09-12 no-deletion rule).
 
 **5. Fold `docs/audit/` into `docs/audits/` and fix the CLAUDE.md working-directory line.
 ✅ EXECUTED 2026-08-24 — PR #111.** Both files moved as pure renames; the four live path

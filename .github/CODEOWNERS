@@ -10,6 +10,13 @@
 # it binding, enable "Require review from Code Owners" in the branch protection rule
 # for the default branch. Until then this file is a routing declaration, not a gate —
 # recorded here so nobody mistakes its presence for enforcement.
+#
+# STATUS 2026-09-24 (T-236): a ruleset on main now requires a pull request and the
+# "CI Success Gate" status check, and blocks deletion and force-push; secret-scanning
+# push protection is enabled. "Require review from Code Owners" is STILL OFF — that is
+# T-102, an owner decision, so the paragraph above remains true: routing, not a gate.
+# "Automatically delete head branches" was deliberately NOT enabled (owner, 2026-09-12:
+# no automated deletion of anything; archive-branch.yml tags instead).
 
 # Default owner for everything not matched below.
 *                                   @Savoy11
