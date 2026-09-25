@@ -9,7 +9,8 @@ export * from './normalize'
 export * from './engine'
 export * from './profiles/equity'
 export * from './profiles/optionsTrade'
-export * from './profiles/stakingAdapter'
+// './profiles/stakingAdapter' was deleted on 2026-09-25 (D26) — it scored the six
+// staking dimensions and had had no live consumer since D14.
 export * from './profiles/stablecoin'
 export * from './profiles/cryptoAsset'
 export * from './profiles/commodity'

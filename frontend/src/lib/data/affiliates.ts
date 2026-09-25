@@ -7,7 +7,7 @@ import type { StakingProvider } from './stakingProviders'
  * ── Why this module exists ────────────────────────────────────────────────
  *
  * Finance Now publishes curated risk judgments about the providers it would be
- * paid by: every entry in `STAKING_PROVIDERS` carries a `RiskProfile` — six
+ * paid by: (until 2026-09-25 — D26 removed them) every entry in `STAKING_PROVIDERS` carried a `RiskProfile` — six
  * editorial dimensions, published as-is — and those dimensions are the reference
  * INPUTS a reader weighs when choosing between providers. Nothing combines them
  * into a single number (owner decision D14: there is no composite staking risk
@@ -23,7 +23,9 @@ import type { StakingProvider } from './stakingProviders'
  *
  * Three layers, because a single one of them is only a convention:
  *
- * 1. **The scoring function never sees a provider.** `scoreStakingProvider()`
+ * 1. **The scoring function never sees a provider.** (Historical since D26, 2026-09-25 —
+ *    there is no staking scoring function at all now; the rule below is kept because it
+ *    is the shape any future one must have.) `scoreStakingProvider()`
  *    takes a bare `RiskProfile` — six numbers — not a `StakingProvider`. There
  *    is no field for it to read. That was already true and is now pinned by a
  *    test so a future refactor cannot quietly widen the signature.

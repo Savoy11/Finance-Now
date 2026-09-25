@@ -88,7 +88,8 @@ export function SponsoredTag({ program, className }: { program?: string; classNa
       href="/how-we-make-money"
       // ⚠ Both branches said "does not affect this provider's RISK SCORE" until
       // 2026-09-21. There is no risk score: D14 removed every composite, and the
-      // six RiskProfile dimensions are published as they are. A disclosure that
+      // six RiskProfile dimensions were published as they were (removed 2026-09-25, D26;
+      // the point stands for every other field). A disclosure that
       // reassures the reader about a number the app does not publish is both
       // wrong and, by implying a ranking exists, pointed at RP-3. The promise is
       // now made about the things that do exist — and both are enforced by

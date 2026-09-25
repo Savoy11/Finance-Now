@@ -67,8 +67,8 @@ function AffiliateDisclosure() {
     <div className="rounded-card border border-border bg-bg-card px-4 py-3 space-y-2">
       <p className="text-[11px] leading-relaxed text-text-secondary">
         <strong className="text-text-primary">This is information, not advice.</strong>{' '}
-        Risk dimensions and rates here are educational reference data. Nothing on this page
-        is a recommendation to stake with anyone, and a low number on any dimension is not a
+        Rates, lock-ups and custody models here are educational reference data. Nothing on this page
+        is a recommendation to stake with anyone, and nothing here rates a provider — the app publishes no risk scores or dimensions (owner decisions D14 and D26); a low fee or high APY is not a
         safety guarantee — Celsius rated well on every dimension before it froze customer
         funds, which is why it is still in the catalog.
       </p>
@@ -86,7 +86,7 @@ function AffiliateDisclosure() {
               {' '}— because referral programs are common among exchanges and rare among liquid-staking
               protocols. <strong>Providers appear in a fixed catalog order that is never
               influenced by whether we are paid</strong> — the list is not ranked, and no paid
-              provider’s warnings or risk dimensions are softened.{' '}
+              provider’s warnings are softened.{' '}
             </>
           )}
           <a href="/how-we-make-money" className="underline hover:text-amber-200">How we make money</a>.
@@ -605,8 +605,8 @@ function StakingPageInner() {
         <div>
           <PageHeader
             title="Staking Opportunities"
-            subtitle="APY, lock-up periods, custody models and risk dimensions for exchanges, wallets, and liquid staking protocols"
-            description={`Staking Opportunities lists ${STAKING_PROVIDERS.filter(p => !p.defunct).length} active providers across three categories — CeFi exchanges, self-custody wallets, and liquid staking protocols — with the curated risk dimensions recorded for each. The categories carry structurally different risks rather than more or less of one risk, so they are described, not ranked.`}
+            subtitle="APY, lock-up periods and custody models for exchanges, wallets, and liquid staking protocols"
+            description={`Staking Opportunities lists ${STAKING_PROVIDERS.filter(p => !p.defunct).length} active providers across three categories — CeFi exchanges, self-custody wallets, and liquid staking protocols. The categories carry structurally different risks rather than more or less of one risk, so they are described, not ranked — and no provider carries a risk score or rating of any kind (owner decisions D14, 2026-09-14, and D26, 2026-09-25).`}
             details={[
               // D-10 fix: this header used to describe six-dimension risk
               // scores and a 0–100 composite that never render on this page,
@@ -619,7 +619,7 @@ function StakingPageInner() {
               // /live-data/staking-discovery and the MCP server, and the
               // helpers that computed it were deleted. NT7 (rendering scores
               // here) is closed by that decision, not still open.
-              { label: 'Risk dimensions', text: 'Each provider carries a curated six-dimension risk profile (custody, counterparty, contract, slashing, liquidity, regulatory), each rated 1–10 where higher means riskier. These are reference inputs, not a ranking: they are never combined into an overall score anywhere in the app or its API, and the list is not ordered by them.' },
+              { label: 'No risk scores', text: 'No provider on this page, in the public API or in the MCP tool carries a risk score, rating or per-dimension figure. The six curated 1–10 dimensions that used to sit behind the API were removed on 2026-09-25 (D26): a risk figure attached to the provider you are looking at reads as a recommendation. Custody model, lock-up, liquidity and TVL are facts; the judgement is yours.' },
               { label: 'Live APY', text: 'Liquid-staking & restaking protocols pull live APY from DeFiLlama plus each protocol’s own API (Lido, Rocket Pool, Marinade, Jito, Stride). Self-custody wallets show the live on-chain network rate for native delegation. CeFi exchange rates are static estimates and may differ from current offerings.' },
               { label: 'Defunct providers', text: 'Failed providers are excluded here. Celsius — the educational cautionary example — is behind the "Show defunct platforms" toggle below.' },
             ]}
@@ -655,8 +655,8 @@ function StakingPageInner() {
             {new Date(STAKING_DATA_LAST_VERIFIED).toLocaleDateString()} ({prov.ageDays} days ago)
             {prov.stale && `, past the ${STAKING_DATA_STALE_AFTER_DAYS}-day review window`}.
             {liveCount > 0
-              ? ` ${liveCount} APR${liveCount > 1 ? 's are' : ' is'} live; every other rate, lock-up, minimum, and risk score is a curated estimate — confirm current terms with the provider.`
-              : ' All rates, lock-ups, minimums, and risk scores below are curated estimates — confirm current terms with the provider.'}
+              ? ` ${liveCount} APR${liveCount > 1 ? 's are' : ' is'} live; every other rate, lock-up and minimum is a curated estimate — confirm current terms with the provider.`
+              : ' All rates, lock-ups and minimums below are curated estimates — confirm current terms with the provider.'}
           </ProvenanceNotice>
         )
       })()}
@@ -776,7 +776,7 @@ function StakingPageInner() {
         Exchange (CeFi) staking rates are static estimates — check each platform directly for current rates.
         Liquid-staking / restaking APRs are fetched live from DeFiLlama and public protocol APIs; self-custody
         wallet rows show the live network base rate for native delegation (gross of validator commission).
-        Risk dimensions are curated editorial assessments, not an overall score, and do not constitute financial advice. Always do your own research before staking.
+        Nothing here rates a provider or constitutes financial advice. Always do your own research before staking.
       </div>
       </>)}
     </div>

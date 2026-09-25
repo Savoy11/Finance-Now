@@ -74,7 +74,9 @@ multiplied this. The unified framework fixes the vocabulary before that happens.
 >   so the constraint that kept them alive is gone with them. The API break was
 >   taken deliberately, not as a cleanup.
 >
->   The six `RiskProfile` dimensions remain and are published as inputs.
+>   ~~The six `RiskProfile` dimensions remain and are published as inputs.~~ **Overtaken
+>   2026-09-25 (D26): the six dimensions and `stakingAdapter.ts` are removed.** The
+>   framework's other profiles are unaffected.
 >   `scoreStakingProvider()` is retained as the canonical adapter but has **no live
 >   consumer**; D18 defers new profiles until a surface is approved to render a
 >   score. Note the D14 ruling named only the public API as the helpers' consumer —

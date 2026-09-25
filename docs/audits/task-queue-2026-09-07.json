@@ -56,9 +56,9 @@
   "total_verified": 398,
   "outstanding": 349,
   "by_status": {
-   "open": 64,
-   "closed": 126,
-   "blocked": 68,
+   "open": 63,
+   "closed": 128,
+   "blocked": 67,
    "unclear": 1,
    "parked": 90
   },
@@ -69,8 +69,8 @@
    "owner-machine": 83
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 126,
-  "counts_recomputed_on": "2026-09-24",
+  "closed_by_annotation": 128,
+  "counts_recomputed_on": "2026-09-25",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 349
  },
@@ -4782,12 +4782,12 @@
   {
    "id": "T-265",
    "title": "Staking rubric lacks an impermanent-loss axis",
-   "status": "open",
+   "status": "closed",
    "confidence": "medium",
    "owner_role": "owner-decision",
    "category": "decision",
    "effort": "unknown",
-   "blocking_decision": "Whether to extend the staking risk rubric (owner)",
+   "blocking_decision": null,
    "related_ids": [
     "T9"
    ],
@@ -4799,7 +4799,17 @@
      "lines": "93-99, 101-103",
      "quote": "But the dominant risk of an LP position is **impermanent loss**, which the six-dimension *staking* rubric has no axis for — it's only partially absorbed into contract/liquidity."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-25",
+    "basis": "superseded-by-owner-decision",
+    "verdict": "moot",
+    "reason": "MOOT under D26 (2026-09-25): the six-dimension staking risk rubric this item wanted to extend with an impermanent-loss axis was removed entirely. There is no rubric to add an axis to, and adding one back would reverse an owner decision.",
+    "evidence": [
+     "docs/decisions/2026-09-25-owner-decisions.md"
+    ]
+   }
   },
   {
    "id": "T-349",
@@ -6520,18 +6530,18 @@
   },
   {
    "id": "T-394",
-   "title": "Full re-verification of the staking provider catalog before bumping STAKING_DATA_LAST_VERIFIED (stale 2026-09-26)",
+   "title": "Re-verify the staking provider catalog's FACTUAL fields (TVL, APR, lock-ups, minimums, audits, founded, websites) before bumping STAKING_DATA_LAST_VERIFIED",
    "status": "open",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "data-verification",
-   "effort": "large",
+   "effort": "medium",
    "blocking_decision": null,
    "related_ids": [
     "M5"
    ],
    "summary": "Partial edits did not re-verify the whole.",
-   "next_action": "On the owner's machine, walk STAKING_PROVIDERS (55 rows × 6 risk dimensions, lockups, minimums, TVL, audit counts, reference APRs) against each provider's own docs, apply corrections via PR, and only then set STAKING_DATA_LAST_VERIFIED to the pass date.",
+   "next_action": "The six risk dimensions are gone (D26), so the pass is the factual fields only. TVL (20 mapped + 4 confirmed slugs) and static APR (28 live rows) are applied. Remaining, per provider from `npm run staking-worksheet`: lock-up days, minimum stake, audit count, founded year, and the 17 CeFi/wallet TVL/\"AUM\" figures DefiLlama cannot see — each against the provider's own docs, via PR. Then, and only then, move STAKING_DATA_LAST_VERIFIED to the pass date. The 2026-09-27 notice fires as acknowledged.",
    "sources": [
     {
      "file": "frontend/src/lib/data/stakingProviders.ts",
@@ -6540,10 +6550,10 @@
     }
    ],
    "progress": {
-    "noted_on": "2026-09-24",
-    "note": "EDITORIAL PASS PAUSED at round 1 (5 of 55 providers), pending T-409. Round 1 landed on owner approval: liquidityRisk +2 and counterpartyRisk +1 on Renzo, Puffer, Swell, Ankr and Stride, plus Renzo's tagline. In the same breath the owner said the risk assessment itself \"may sound like a recommendation\" and should be considered for removal — which is RP-6's reasoning applied to the six dimensions D14 kept. Continuing 50 providers of six judgments each while that is open would be 300 judgments that may be deleted; so the editorial half waits on T-409, and the FACTUAL half of this item (TVL, APR, lock-ups, minimums, audits, websites) proceeds regardless — the first two of those are already applied. Machine half status unchanged: worksheet tool built and mirror-tested; 20 TVL and 28 static-APR corrections applied; date unmoved; four DefiLlama slug candidates awaiting confirmation.",
+    "noted_on": "2026-09-25",
+    "note": "RE-SCOPED by D26. The editorial half — 330 judgments — no longer exists; round 1's five adjustments were themselves removed with the dimensions the next day (the sequence is legible in the catalog's comments). What remains is factual and the worksheet already pre-fills two of its columns. Owner also confirmed the four DefiLlama slug candidates (origin-protocol, quicksilver, pstake, bifrost), now in the generator.",
     "evidence": [
-     "frontend/src/lib/data/stakingProviders.ts",
+     "docs/decisions/2026-09-25-owner-decisions.md",
      "frontend/scripts/gen-staking-catalog-worksheet.ts"
     ]
    }
@@ -8500,7 +8510,14 @@
      "lines": "120-121",
      "quote": "2. **Expose to the suite** — `/api/v1/risk/*` endpoints + `score_options_trade` / `score_equity` MCP tools, making risk scoring part of the sellable connector surface."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-09-25",
+    "note": "RELEVANT PRECEDENT: D26 removed the staking risk dimensions from the API and MCP tool on exactly this reasoning — and found that a figure exposed only through an agent narrating it is, if anything, more recommendation-shaped than one on a page, because no on-page disclaimer reaches it. This item asks whether RP-6 extends to equity, /api/v1/risk/* and score_equity; the owner has now drawn that line once for staking. Not decided here — this item is still the owner's — but the precedent is recorded.",
+    "evidence": [
+     "docs/decisions/2026-09-25-owner-decisions.md"
+    ]
+   }
   },
   {
    "id": "T-149",
@@ -11405,12 +11422,12 @@
   {
    "id": "T-409",
    "title": "Owner: remove the six per-provider staking risk dimensions from every surface, on the RP-6 reasoning?",
-   "status": "blocked",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "decision",
    "effort": "medium",
-   "blocking_decision": "Owner, 2026-09-24, mid-way through T-394's first editorial round: \"we should consider removing this risk assessment as it may sound like a recommendation.\" A consideration, not yet a decision.",
+   "blocking_decision": null,
    "related_ids": [
     "T-394",
     "T-357",
@@ -11441,6 +11458,19 @@
     "on": "2026-09-24",
     "by": "checklist-steward, from the owner's words during T-394 round 1",
     "why": "A consideration voiced mid-task needs a home before the task it interrupts continues, or it is lost and the task does wasted work."
+   },
+   "closure": {
+    "status_was": "blocked",
+    "closed_on": "2026-09-25",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "DECIDED AND EXECUTED — owner decision D26, \"Remove them.\" The six per-provider dimensions are removed from the catalog (RiskProfile, risks, assetRisks, mergedRisks, RISK_DIMENSION_LABELS), the v1 API (riskBreakdown) and its OpenAPI text, the MCP tool and the agent tool, the discovery route's derived risks (RISK_PRESETS, adjustRiskFromSignals), and lib/risk/profiles/stakingAdapter.ts. custodyModel stays. Guarded by lib/risk/__tests__/riskDimensionsRemoved.test.ts (strip-comments, guards the guard); the D14 guard's \"half that stays\" assertions were flipped. Recorded as RP-7 in rejected-proposals.md; CLAUDE.md's D14 block annotated, not rewritten.",
+    "approved_by": "owner, 2026-09-25",
+    "evidence": [
+     "docs/decisions/2026-09-25-owner-decisions.md",
+     "docs/audits/rejected-proposals.md",
+     "frontend/src/lib/risk/__tests__/riskDimensionsRemoved.test.ts"
+    ]
    }
   }
  ],
@@ -36420,6 +36450,13 @@
     "why_paused": "The dimensions are 330 of the item's ~400 judgments. If they go, the pass is a different and much smaller item. Pausing costs nothing; continuing could cost 300 judgments.",
     "evidence": [
      "docs/audits/task-queue-2026-09-07.json"
+    ]
+   },
+   {
+    "on": "2026-09-25",
+    "what": "D26 executed: the six staking risk dimensions removed from every surface. T-409 closed; T-394 re-scoped to factual fields; T-265 moot; T-357 annotated with the precedent.",
+    "evidence": [
+     "docs/decisions/2026-09-25-owner-decisions.md"
     ]
    }
   ]
