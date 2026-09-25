@@ -535,11 +535,23 @@ Central data file for the Staking Opportunities page.
 - **Provenance:** `STAKING_DATA_LAST_VERIFIED` + `getStakingDataProvenance()` drive the freshness notice on `/staking` (both the Providers and Live Pools tabs — `/staking-discovery` was merged in on 2026-08-20 and now redirects), and the `referenceData` block on `/api/v1/staking/opportunities`. Stale after 90 days (shorter than the 120 used for fees/attestations — a provider's risk profile can change overnight, which is why Celsius is in the catalog).
 - **`StakingCoinId`** — 16 stakeable coins: eth, sol, ada, dot, atom, matic, avax, bnb, trx, btc, cro, osmo, ksm, inj, tia, near
 - **`ProviderCategory`** — `'cefi' | 'wallet' | 'liquid'`
-- **`RiskProfile`** — 6 dimensions, each 1–10: `custodyRisk`, `counterpartyRisk`, `contractRisk`, `slashingRisk`, `liquidityRisk`, `regulatoryRisk`
+- ~~**`RiskProfile`** — 6 dimensions, each 1–10: `custodyRisk`, `counterpartyRisk`, `contractRisk`, `slashingRisk`, `liquidityRisk`, `regulatoryRisk`~~ **REMOVED 2026-09-25 (owner decision D26)** — see the ⚠ block below. No per-provider risk figure of any kind exists now; `custodyModel` (a fact) stays.
 - ⚠ **There is NO composite staking risk score anywhere in this app, its API, or its MCP
-  server (owner decision D14, 2026-09-14). Do not add one.** The six `RiskProfile`
+  server (owner decision D14, 2026-09-14). Do not add one.** ~~The six `RiskProfile`
   dimensions above are published as-is — they are reference INPUTS, not a ranking — and
-  nothing combines them into a single number.
+  nothing combines them into a single number.~~
+
+  > **⚠ OVERTAKEN 2026-09-25 — D26 removed the six dimensions too.** Owner: *"it may sound
+  > like a recommendation."* RP-6's reasoning, applied to the inputs D14 had kept. What
+  > made it sharper than a taste call: the `/staking` page had **never rendered** them —
+  > they reached a person only through `/api/v1`, the MCP tool and the agent tool, i.e.
+  > through an AI agent narrating *"custody risk 2 out of 10"*. Removed: `RiskProfile`,
+  > `risks`/`assetRisks` on every provider and asset, `mergedRisks()`, the API's
+  > `riskBreakdown`, the MCP/agent-tool text, the discovery route's derived `risks`
+  > (`RISK_PRESETS`/`adjustRiskFromSignals`), and `lib/risk/profiles/stakingAdapter.ts`.
+  > Guarded by `lib/risk/__tests__/riskDimensionsRemoved.test.ts`. The rest of this D14
+  > block is left as written: it is the history D26 extends. Record:
+  > `docs/decisions/2026-09-25-owner-decisions.md`.
 
   The distinction the decision draws: *"Risk metrics that use traditional financial
   formulas can stay and should be visible where appropriate."* Sharpe, Sortino,
@@ -1422,7 +1434,7 @@ A separate, agent-optimised REST API lives at `/api/v1/`. It is distinct from `/
 | `GET /api/v1/exchanges?tier=1` | All supported exchanges with ids, coins, networks |
 | `GET /api/v1/network-fees` | Gas fees for all **18** networks, **5 of them live** — BTC via mempool.space plus ETH/BNB/Polygon/AVAX via keyless `publicnode eth_gasPrice`; the other 13 are static gas amounts priced live (`source: 'estimate'`) — `NETWORK_GAS` / `NetworkKey` / `FEE_PROVIDERS` in `lib/data/networkFees.ts`, which the route derives from. Said 16 networks until 2026-09-12, and said "BTC live, rest estimated" until 2026-09-22 — the live EVM gas landed 2026-08-21 (`01d6bfe`) and this row never caught up |
 | `GET /api/v1/transfer/routes?from=binance&to=coinbase&coin=usdt&amount=1000` | Transfer route finder |
-| `GET /api/v1/staking/opportunities?coin=eth&category=liquid` | Staking options with APY, lock-up, custody model and six curated risk dimensions. **No composite score and no risk filter** (D14) — `max_risk`/`min_safety` are ignored if sent |
+| `GET /api/v1/staking/opportunities?coin=eth&category=liquid` | Staking options with APY, lock-up, custody model, receipt token, TVL and audit count. **No risk figure of any kind** — no composite (D14) and, since 2026-09-25, no per-dimension figures either (D26); `riskBreakdown` no longer appears and `max_risk`/`min_safety` are ignored if sent |
 | `GET /api/v1/news?coin=btc&sentiment=negative&limit=10` | News with sentiment/category tagging |
 | `GET /api/v1/securities/quotes?symbols=AAPL,VOO,GC=F` | Stock/ETF/fund/macro quotes (max 25; same keyed ladder + reference fallback as the UI, `reference: true` rows labeled) |
 | `GET /api/v1/securities/history?symbol=AAPL&range=1y` | Daily close history for any quotable symbol (1mo–max) |
@@ -1453,7 +1465,7 @@ A standalone Node.js MCP server at `mcp-server/` (repo root) that exposes Financ
 | `list_exchanges` | All supported exchanges with coin/network support |
 | ~~`find_transfer_routes`~~ | ⚪ **WITHHELD 2026-08-22** — Transfer Fees held out of the initial rollout; tool commented out in mcp-server, `/api/v1/transfer/routes` answers 503 |
 | `get_network_fees` | Gas fees for all **18** networks (same `NETWORK_GAS` set as the v1 route) |
-| `get_staking_opportunities` | Staking options filtered by coin and category; reports the six risk dimensions, no composite score (D14) |
+| `get_staking_opportunities` | Staking options filtered by coin and category; reports facts only — APY, lock-up, custody model, receipt token, TVL, audits. No risk score, rating or dimension (D14 + D26) |
 | `get_crypto_news` | Recent news with sentiment, category, and coin tags |
 | `get_security_quotes` | Stock/ETF/fund/macro quotes (reference prices flagged) |
 | `get_security_history` | Daily close history + 52-week range for any quotable symbol |

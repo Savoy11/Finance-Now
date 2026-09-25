@@ -1,12 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { mergedRisks, type RiskProfile } from '../../data/stakingProviders'
 import { scoreEquity } from '../profiles/equity'
 import {
   isNetShortPremium,
   scoreOptionsTrade,
   type OptionsTradeInputs,
 } from '../profiles/optionsTrade'
-import { scoreStakingProvider } from '../profiles/stakingAdapter'
 
 // ---------------------------------------------------------------- equities
 
@@ -177,84 +175,4 @@ describe('scoreOptionsTrade', () => {
  * 25%, custody 20%, liquidity 20%, contract 15%, slashing 10%, regulatory 10%),
  * and the adapter must reproduce them or this fails.
  */
-function legacyComposite(r: RiskProfile): number {
-  return (
-    r.custodyRisk      * 0.20 +
-    r.counterpartyRisk * 0.25 +
-    r.contractRisk     * 0.15 +
-    r.slashingRisk     * 0.10 +
-    r.liquidityRisk    * 0.20 +
-    r.regulatoryRisk   * 0.10
-  )
-}
-
-describe('scoreStakingProvider', () => {
-  const lidoLike: RiskProfile = {
-    custodyRisk: 3,
-    counterpartyRisk: 3,
-    contractRisk: 4,
-    slashingRisk: 3,
-    liquidityRisk: 2,
-    regulatoryRisk: 4,
-  }
-
-  const celsiusLike: RiskProfile = {
-    custodyRisk: 10,
-    counterpartyRisk: 10,
-    contractRisk: 7,
-    slashingRisk: 5,
-    liquidityRisk: 10,
-    regulatoryRisk: 10,
-  }
-
-  it('preserves the ordering of the legacy weighting', () => {
-    // Legacy: higher = riskier. Unified: higher = safer. Order must invert.
-    expect(legacyComposite(lidoLike)).toBeLessThan(legacyComposite(celsiusLike))
-    const unifiedLido = scoreStakingProvider(lidoLike)
-    const unifiedCelsius = scoreStakingProvider(celsiusLike)
-    expect(unifiedLido.score).toBeGreaterThan(unifiedCelsius.score)
-  })
-
-  it('maps the exact legacy weighting onto the unified scale', () => {
-    // safety = (10 - legacyComposite) / 9 * 100 because the adapter reuses
-    // the same weights and the conversion is linear.
-    const legacy = legacyComposite(lidoLike)
-    const unified = scoreStakingProvider(lidoLike)
-    expect(unified.score).toBeCloseTo(((10 - legacy) / 9) * 100, 1)
-  })
-
-  it('produces full coverage and confidence for curated profiles', () => {
-    const result = scoreStakingProvider(lidoLike)
-    expect(result.coverage).toBe(1)
-    expect(result.confidence).toBe(1)
-    expect(result.dimensions).toHaveLength(6)
-  })
-
-  it('puts a Celsius-like provider in the critical band', () => {
-    expect(scoreStakingProvider(celsiusLike).band).toBe('critical')
-  })
-
-  // R2 Phase 3.5 — the staking-discovery and public-API routes score
-  // mergedRisks(provider.risks, asset.assetRisks). Confirm asset-level overrides
-  // flow through the adapter and preserve legacy ordering on the canonical scale.
-  it('preserves ordering through mergedRisks asset overrides', () => {
-    // An asset override that WORSENS liquidity must lower the canonical safety.
-    const worseLiquidity = mergedRisks(lidoLike, { liquidityRisk: 9 })
-    const base = scoreStakingProvider(lidoLike)
-    const overridden = scoreStakingProvider(worseLiquidity)
-    // Legacy composite rises (riskier); canonical safety must fall.
-    expect(legacyComposite(worseLiquidity)).toBeGreaterThan(legacyComposite(lidoLike))
-    expect(overridden.score).toBeLessThan(base.score)
-    // And the override still maps exactly onto the linear legacy weighting.
-    const legacy = legacyComposite(worseLiquidity)
-    expect(overridden.score).toBeCloseTo(((10 - legacy) / 9) * 100, 1)
-  })
-
-  it('mergedRisks with no overrides is identical to the base profile', () => {
-    expect(mergedRisks(lidoLike, undefined)).toEqual(lidoLike)
-    expect(scoreStakingProvider(mergedRisks(lidoLike, {})).score).toBeCloseTo(
-      scoreStakingProvider(lidoLike).score,
-      5,
-    )
-  })
-})
+// describe('scoreStakingProvider') was removed with the adapter on 2026-09-25 (D26).

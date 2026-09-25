@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { CORS, options } from '@/app/api/_cors'
 import {
-  STAKING_PROVIDERS, mergedRisks,
+  STAKING_PROVIDERS,
   resolveYieldType, YIELD_TYPE_META, getStakingDataProvenance,
   type StakingCoinId, type ProviderCategory,
 } from '@/lib/data/stakingProviders'
@@ -47,7 +47,9 @@ export async function GET(req: NextRequest) {
   // able to fix it; silently returning a wider set is the safe direction,
   // because no row is filtered out by a rule the caller can no longer see.
   //
-  // What REPLACES the filter: `riskBreakdown` still carries all six curated
+  // What REPLACED the filter under D14 — `riskBreakdown`, the six dimensions — is
+  // itself gone under D26 (2026-09-25). Nothing replaces it: no risk figure at all.
+  // (The next lines are the D14-era note, kept as history.)
   // dimensions per row. A caller who wants a threshold applies its own to those
   // numbers, which makes the judgment theirs and inspectable.
 
@@ -71,8 +73,6 @@ export async function GET(req: NextRequest) {
       // By default, hide products that don't actually stake the queried coin
       // (governance-token staking, lending) so "ETH staking" means ETH staking.
       if (!includeAdjacent && !yieldMeta.stakesQueriedAsset && !yieldTypeParam) continue
-
-      const effectiveRisks = mergedRisks(provider.risks, asset.assetRisks)
 
       // Resolved through the SAME pure function the staking page uses, off the
       // same collector — see lib/server/stakingRates.ts for why this route no
@@ -115,17 +115,9 @@ export async function GET(req: NextRequest) {
         receiptToken:    asset.receiptToken ?? null,
         minStakeNative:  asset.minStakeNative,
         custodyModel:    provider.custodyModel,
-        // The six curated dimensions, each 1–10 higher-is-riskier, exactly as the
-        // catalog records them. No composite is derived from them here (D14) —
-        // these are the inputs, and the weighting is the caller's to choose.
-        riskBreakdown: {
-          custody:      effectiveRisks.custodyRisk,
-          counterparty: effectiveRisks.counterpartyRisk,
-          contract:     effectiveRisks.contractRisk,
-          slashing:     effectiveRisks.slashingRisk,
-          liquidity:    effectiveRisks.liquidityRisk,
-          regulatory:   effectiveRisks.regulatoryRisk,
-        },
+        // No risk figures of any kind (D14 removed the composite, D26 the six
+        // dimensions). custodyModel, lockup, liquidity and TVL are facts; the
+        // caller forms its own view from them.
         features:       asset.features,
         tvlBillions:    provider.tvlBillions ?? null,
         auditCount:     provider.auditCount ?? null,
@@ -153,7 +145,7 @@ export async function GET(req: NextRequest) {
     total: opportunities.length,
     yieldTypeCounts,
     filters: { coin: coinParam ?? 'all', category: categoryParam ?? 'all', yieldType: yieldTypeParam ?? 'all', includeAdjacent, includeDefunct },
-    note: 'Each opportunity carries a yieldType (native, liquid, cefi, restaking, governance, lending). By default only products that actually stake the queried coin are returned; governance-token staking and lending yield are excluded unless include_adjacent=true or yield_type is set explicitly. SCORING: this endpoint publishes NO composite risk or safety score, and has no risk-based filter. Removed 2026-09-14: the safetyScore, band, riskScore and riskLevel fields and the max_risk, min_safety and max_safety parameters. A single number ranking providers against each other reads as a recommendation, so the endpoint reports the inputs and leaves the weighting to the caller. Those parameters are now ignored rather than rejected, so an old client still gets a 200 — but with MORE rows than before, because nothing is being filtered out. riskBreakdown carries all six curated dimensions (custody, counterparty, contract, slashing, liquidity, regulatory), each 1–10 where HIGHER = RISKIER; apply your own threshold to those. Defunct providers (e.g. Celsius) are excluded by default — use include_defunct=true. FRESHNESS: updatedAt is when this response was generated, which describes the live APRs only (per-row aprSource="live"). Rows with aprSource="derived" are our estimates anchored to the Lido feed, not provider-published rates. Rows with aprSource="estimate", and every risk dimension, lock-up, and minimum on every row, come from the curated catalog described by referenceData — check referenceData.verifiedAt, not updatedAt, before treating those as current.',
+    note: 'Each opportunity carries a yieldType (native, liquid, cefi, restaking, governance, lending). By default only products that actually stake the queried coin are returned; governance-token staking and lending yield are excluded unless include_adjacent=true or yield_type is set explicitly. SCORING: this endpoint publishes NO composite risk or safety score, and has no risk-based filter. Removed 2026-09-14: the safetyScore, band, riskScore and riskLevel fields and the max_risk, min_safety and max_safety parameters. A single number ranking providers against each other reads as a recommendation, so the endpoint reports the inputs and leaves the weighting to the caller. Those parameters are now ignored rather than rejected, so an old client still gets a 200 — but with MORE rows than before, because nothing is being filtered out. Removed 2026-09-25 (owner decision D26): the riskBreakdown object with the six curated 1–10 dimensions — a risk figure attached to a provider reads as a recommendation whichever way it is labelled. This endpoint now carries no risk figure of any kind; custody model, lock-up, liquidity and TVL are facts, and the judgement is the caller\'s. Defunct providers (e.g. Celsius) are excluded by default — use include_defunct=true. FRESHNESS: updatedAt is when this response was generated, which describes the live APRs only (per-row aprSource="live"). Rows with aprSource="derived" are our estimates anchored to the Lido feed, not provider-published rates. Rows with aprSource="estimate", and every lock-up and minimum on every row, come from the curated catalog described by referenceData — check referenceData.verifiedAt, not updatedAt, before treating those as current.',
     source: 'Finance Now curated staking catalog + live protocol APR feeds (Lido, Marinade, Jito). Some exchange ETH rates are derived from the Lido feed (aprSource="derived").',
     updatedAt: new Date().toISOString(),
     // Provenance for the curated half of this payload. Without it the fresh

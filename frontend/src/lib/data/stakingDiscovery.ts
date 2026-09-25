@@ -1,71 +1,8 @@
-import type { ProviderCategory, RiskProfile } from './stakingProviders'
+import type { ProviderCategory } from './stakingProviders'
 
-// ─── Risk presets by provider category ───────────────────────────────────────
-// These are starting-point values auto-filled into the risk form.
-// Higher = riskier on each dimension (1–10 scale).
-
-export const RISK_PRESETS: Record<ProviderCategory, RiskProfile> = {
-  cefi: {
-    custodyRisk:      7,  // They hold your keys
-    counterpartyRisk: 7,  // Company failure risk
-    contractRisk:     2,  // Usually no smart contracts
-    slashingRisk:     2,  // Exchange absorbs slashing
-    liquidityRisk:    5,  // Withdrawal delays common
-    regulatoryRisk:   6,  // Regulated exchanges face more exposure
-  },
-  wallet: {
-    custodyRisk:      2,  // You hold your keys
-    counterpartyRisk: 3,  // Software/company can still disappear
-    contractRisk:     3,  // Some wallet staking uses contracts
-    slashingRisk:     4,  // Depends on validator selection
-    liquidityRisk:    5,  // Unbonding periods apply
-    regulatoryRisk:   3,
-  },
-  liquid: {
-    custodyRisk:      2,  // Smart contract custody, not company
-    counterpartyRisk: 3,  // Protocol governance risk
-    contractRisk:     6,  // Smart contract bugs are real
-    slashingRisk:     4,  // Pooled validator risk
-    liquidityRisk:    3,  // Receipt token adds liquidity
-    regulatoryRisk:   4,
-  },
-}
-
-// Adjustments applied on top of presets based on observable signals
-
-export function adjustRiskFromSignals(base: RiskProfile, signals: {
-  tvlUsd: number
-  auditCount: number
-  isSmartContract: boolean
-  chainMature: boolean   // mainnet with 2+ years history
-  hasReceiptToken: boolean
-}): RiskProfile {
-  const r = { ...base }
-
-  // TVL as a liquidity/counterparty signal
-  if (signals.tvlUsd > 5_000_000_000)      { r.counterpartyRisk = Math.max(1, r.counterpartyRisk - 2); r.liquidityRisk = Math.max(1, r.liquidityRisk - 2) }
-  else if (signals.tvlUsd > 500_000_000)   { r.counterpartyRisk = Math.max(1, r.counterpartyRisk - 1); r.liquidityRisk = Math.max(1, r.liquidityRisk - 1) }
-  else if (signals.tvlUsd < 10_000_000)    { r.counterpartyRisk = Math.min(10, r.counterpartyRisk + 2); r.liquidityRisk = Math.min(10, r.liquidityRisk + 1) }
-  else if (signals.tvlUsd < 50_000_000)    { r.counterpartyRisk = Math.min(10, r.counterpartyRisk + 1) }
-
-  // Audits lower contract risk
-  if (signals.isSmartContract) {
-    if (signals.auditCount >= 3)           r.contractRisk = Math.max(1, r.contractRisk - 2)
-    else if (signals.auditCount >= 1)      r.contractRisk = Math.max(1, r.contractRisk - 1)
-    else                                   r.contractRisk = Math.min(10, r.contractRisk + 2)
-  }
-
-  // Mature chain lowers regulatory & contract risk slightly
-  if (signals.chainMature) {
-    r.regulatoryRisk = Math.max(1, r.regulatoryRisk - 1)
-    r.contractRisk   = Math.max(1, r.contractRisk - 1)
-  }
-
-  // Receipt token improves liquidity
-  if (signals.hasReceiptToken) r.liquidityRisk = Math.max(1, r.liquidityRisk - 1)
-
-  return r
-}
+// RISK_PRESETS and adjustRiskFromSignals() — per-category 1–10 risk presets adjusted by
+// TVL, audits and chain maturity — were REMOVED on 2026-09-25 (owner decision D26), with
+// the six dimensions they produced. See lib/data/stakingProviders.ts.
 
 // ─── Provider IDs already in the built-in list ───────────────────────────────
 // Used to deduplicate DefiLlama results. Add new built-in provider IDs here.
@@ -164,7 +101,6 @@ export interface CustomStakingProvider {
   category:      ProviderCategory
   custodyModel:  'custodial' | 'non-custodial' | 'smart-contract'
   website:       string
-  risks:         RiskProfile
   tvlUsd:        number | null
   auditCount:    number
   coins: Array<{

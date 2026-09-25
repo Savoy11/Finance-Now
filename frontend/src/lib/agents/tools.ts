@@ -92,7 +92,7 @@ const TOOL_REGISTRY: RegisteredTool[] = [
     market: 'crypto',
     tool: {
       name: 'get_staking_opportunities',
-      description: 'Get staking options for a coin with APY, lock-up terms, custody model, and six curated risk DIMENSIONS (custody, counterparty, contract, slashing, liquidity, regulatory), each 1–10 where higher = riskier. There is no overall risk or safety score and no risk-based filter (owner decision D14, 2026-09-14): the dimensions are reference inputs, not a ranking. Describe them if asked; do not combine them into a score or present the list as ranked.',
+      description: 'Get staking options for a coin with APY (live where available), lock-up terms, custody model, receipt token, TVL and audit count. There are NO risk scores, ratings or dimensions of any kind (owner decisions D14, 2026-09-14, and D26, 2026-09-25) and no risk-based filter. Report the facts; do not rate, rank or recommend providers, and do not invent a risk assessment the data does not carry.',
       input_schema: {
         type: 'object',
         properties: {

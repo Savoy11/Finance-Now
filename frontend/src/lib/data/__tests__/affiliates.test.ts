@@ -1,11 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { readFileSync } from 'node:fs'
+import { readFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 import {
   resolveOutboundLink, forRanking, sponsoredProviders, affiliateCoverageByCategory,
 } from '../affiliates'
 import { STAKING_PROVIDERS, type StakingProvider } from '../stakingProviders'
-import { scoreStakingProvider } from '../../risk/profiles/stakingAdapter'
 
 const root = join(process.cwd(), 'src')
 const read = (p: string) => readFileSync(join(root, p), 'utf-8')
@@ -13,10 +12,6 @@ const read = (p: string) => readFileSync(join(root, p), 'utf-8')
 const base = (over: Partial<StakingProvider> = {}): StakingProvider => ({
   id: 'test-provider', name: 'Test', category: 'cefi', tagline: '', description: '',
   custodyModel: 'custodial', website: 'https://example.test',
-  risks: {
-    custodyRisk: 5, counterpartyRisk: 5, contractRisk: 5,
-    slashingRisk: 5, liquidityRisk: 5, regulatoryRisk: 5,
-  },
   assets: {},
   ...over,
 })
@@ -77,29 +72,17 @@ describe('the catalog ships with no live affiliate link', () => {
 })
 
 describe('integrity rule — affiliate status cannot reach scoring or ranking', () => {
-  it('the risk composite takes six numbers, not a provider', () => {
-    // The structural guarantee: there is no provider object in scope for the
-    // scoring function, so there is no affiliate field it could read. Pinned
-    // here so a future refactor cannot quietly widen the signature to take a
-    // whole provider "for convenience".
-    //
-    // This used to assert the same thing about computeOverallRisk(), which was
-    // DELETED under D14 (2026-09-14) once nothing published its output.
-    // scoreStakingProvider() is the surviving engine and inherits the rule.
-    const risks = base().risks
-    const score = scoreStakingProvider(risks)
-    expect(typeof score.score).toBe('number')
-    expect(scoreStakingProvider.length).toBe(1)
-
-    const paid = base({ affiliateUrl: 'https://example.test/?ref=fn' })
-    const unpaid = base()
-    expect(scoreStakingProvider(paid.risks).score).toBe(scoreStakingProvider(unpaid.risks).score)
-  })
-
-  it('scoreStakingProvider also takes only a RiskProfile', () => {
-    const src = read('lib/risk/profiles/stakingAdapter.ts')
-    expect(src).toMatch(/export function scoreStakingProvider\(\s*risks: RiskProfile/)
-    expect(src).not.toContain('affiliate')
+  it('there is no staking risk scoring left for affiliate status to reach', () => {
+    // This used to pin that computeOverallRisk() (deleted under D14) and then
+    // scoreStakingProvider() (deleted under D26, 2026-09-25) took six numbers and
+    // never a provider object. Both are gone, and so are the six numbers. What
+    // remains to guard is that the affiliate module imports nothing from lib/risk
+    // and that no staking surface computes a risk figure at all — the latter is
+    // riskDimensionsRemoved.test.ts's job.
+    const src = read('lib/data/affiliates.ts')
+    expect(src).not.toMatch(/from ['"][^'"]*lib\/risk/)
+    expect(src).not.toMatch(/from ['"][^'"]*\/risk\//)
+    expect(existsSync(join(root, 'lib/risk/profiles/stakingAdapter.ts'))).toBe(false)
   })
 
   it('forRanking hands back the same object, narrowed — no copy to drift', () => {
@@ -112,7 +95,7 @@ describe('integrity rule — affiliate status cannot reach scoring or ranking', 
     // comparator ever reads affiliate status, this fails before review does.
     const rankingPaths = [
       'lib/data/stakingProviders.ts',
-      'lib/risk/profiles/stakingAdapter.ts',
+      // lib/risk/profiles/stakingAdapter.ts — deleted under D26 (2026-09-25)
       'lib/risk/engine.ts',
       'app/api/v1/staking/opportunities/route.ts',
       'app/live-data/staking-discovery/route.ts',

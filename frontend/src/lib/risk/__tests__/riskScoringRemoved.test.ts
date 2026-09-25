@@ -34,6 +34,7 @@ describe('per-coin risk scoring is gone from the crypto surfaces', () => {
       'src/hooks/useRiskScores.ts',
       'src/lib/api/risk-scores.ts',
       'src/components/analytics/HistoricalScoreChart.tsx',
+      'src/lib/risk/profiles/stakingAdapter.ts', // D26, 2026-09-25
     ]) {
       expect(fs.existsSync(repo(f)), `${f} is back`).toBe(false)
     }
@@ -79,7 +80,7 @@ describe('lib/risk survives for its other, separately-decided consumers', () => 
     for (const f of [
       'src/lib/risk/engine.ts',
       'src/lib/risk/profiles/optionsTrade.ts',   // /equities/options
-      'src/lib/risk/profiles/stakingAdapter.ts', // retained; no live consumer after D14 (D18 defers)
+      // stakingAdapter.ts was retained under D14 and DELETED under D26 (2026-09-25)
       'src/lib/risk/profiles/equity.ts',
       'src/lib/risk/profiles/commodity.ts',
     ]) {
@@ -160,9 +161,8 @@ describe('D14 — no composite staking risk score is published anywhere', () => 
     const src = read('src/lib/data/stakingProviders.ts')
     expect(src).not.toMatch(/export function computeOverallRisk/)
     expect(src).not.toMatch(/export function getRiskLevel/)
-    // mergedRisks is NOT part of this removal — it composes the dimensions the
-    // surfaces still publish, and deleting it would break them.
-    expect(src).toMatch(/export function mergedRisks/)
+    // mergedRisks went with the six dimensions on 2026-09-25 (D26).
+    expect(src).not.toMatch(/export function mergedRisks/)
   })
 
   it('the public API serves no composite and offers no risk filter', () => {
@@ -179,9 +179,9 @@ describe('D14 — no composite staking risk score is published anywhere', () => 
     for (const param of ['max_risk', 'min_safety', 'max_safety']) {
       expect(src, `${param} filter is back`).not.toContain(`searchParams.get('${param}')`)
     }
-    // The six dimensions must still be there — this is the half that stays.
-    expect(src).toMatch(/riskBreakdown/)
-    expect(src).toMatch(/counterparty:\s*effectiveRisks\.counterpartyRisk/)
+    // Under D14 the six dimensions were the half that stayed; D26 (2026-09-25)
+    // removed them too. riskDimensionsRemoved.test.ts owns that guard.
+    expect(servesKey(src, 'riskBreakdown'), 'riskBreakdown is back on the v1 response').toBe(false)
   })
 
   it('staking-discovery serves no composite and offers no risk filter', () => {
@@ -193,8 +193,8 @@ describe('D14 — no composite staking risk score is published anywhere', () => 
     expect(src).not.toContain('computeOverallRisk')
     expect(src).not.toContain('scoreStakingProvider')
     expect(src).not.toContain("searchParams.get('max_risk')")
-    // Still publishes the dimensions it derived from the presets.
-    expect(src).toMatch(/risks:\s+RiskProfile/)
+    // The derived dimensions went under D26 as well.
+    expect(src).not.toMatch(/risks:\s+RiskProfile/)
   })
 
   it('the MCP server exposes no risk comparison tool', () => {
@@ -207,7 +207,7 @@ describe('D14 — no composite staking risk score is published anywhere', () => 
     expect(src).toContain("'get_staking_opportunities'")
     expect(src).not.toContain("params.set('max_risk'")
     expect(src).not.toContain("params.set('min_safety'")
-    expect(src).toContain('riskBreakdown')
+    expect(src).not.toContain('riskBreakdown') // D26
   })
 
   it('the /staking page ranks nothing in prose', () => {
