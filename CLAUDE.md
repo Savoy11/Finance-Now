@@ -200,9 +200,12 @@ frontend/src/
 │   │   │                           #   see docs/architecture/risk-framework.md
 │   │   ├── engine.ts               # composeRisk() — profile-agnostic scoring
 │   │   ├── normalize.ts            # piecewise/linear normalizers, vol, drawdown
-│   │   └── profiles/               # 8: commodity, cryptoAsset, currency, equity,
-│   │                               #   optionsTrade, rateInstrument, stablecoin,
-│   │                               #   stakingAdapter (macro three added by P2-R3)
+│   │   └── profiles/               # 7: commodity, cryptoAsset, currency, equity,
+│   │                               #   optionsTrade, rateInstrument, stablecoin
+│   │                               #   (macro three added by P2-R3). Was 8 —
+│   │                               #   stakingAdapter went with the six dimensions
+│   │                               #   it scored, 2026-09-25 (D26)
+│   │                               #   (derive: ls src/lib/risk/profiles | wc -l)
 │   ├── auth/                       # Auth.js config + getCurrentUserId()/requireUserId()
 │   ├── db/                         # Drizzle schema + client (users, entitlements, instruments,
 │                                   #   user_wallets…)
@@ -579,10 +582,14 @@ Central data file for the Staking Opportunities page.
   out by a rule the caller can no longer see. `middleware.ts` logs those requests so a
   silently-widened result set stays attributable.
 
-- **`scoreStakingProvider()`** (`lib/risk/profiles/stakingAdapter.ts`) is retained as the
-  canonical **0–100, higher-is-SAFER** engine with the 5-band vocabulary, but has **no
-  live consumer** after D14. D18 defers new risk profiles until a surface is approved to
-  render one, so do not wire it into a page on the assumption it is merely unused.
+- ~~**`scoreStakingProvider()`** (`lib/risk/profiles/stakingAdapter.ts`) is retained as
+  the canonical **0–100, higher-is-SAFER** engine with the 5-band vocabulary, but has **no
+  live consumer** after D14.~~ **DELETED 2026-09-25 with the six dimensions it scored
+  (D26).** The file is gone, so there is nothing to wire up — this bullet is kept struck
+  through rather than removed because it read as an instruction about a live file.
+  **D18 still stands for any FUTURE profile:** it defers new ones until a surface is
+  approved to render a score, so do not add one on the reasoning that an unused profile
+  is harmless.
 - **`STAKING_PROVIDERS`** array — 55 providers (count is dynamic; the page reads `STAKING_PROVIDERS.length`). Representative names:
   - CeFi: Celsius (defunct, cautionary), Coinbase, Kraken, Binance, OKX, Bybit, KuCoin, Crypto.com, Bitget, Gate.io, HTX, Robinhood, Nexo, Gemini, Bitfinex, Bitstamp, MEXC, Upbit
   - Wallet: Ledger Live, MetaMask, Phantom, Trust Wallet, Exodus, Keplr, Solflare, Coinbase Wallet, Atomic Wallet, Trezor Suite
