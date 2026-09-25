@@ -72,6 +72,12 @@ const LLAMA_SLUG: Readonly<Record<string, string>> = {
   lombard: 'lombard-lbtc',
   ankr: 'ankr',
   metapool: 'meta-pool-near',
+  // The four below were printed as name-match CANDIDATES on the 2026-09-24 run and
+  // confirmed by the owner on 2026-09-25.
+  'origin-protocol': 'origin-ether',
+  quicksilver: 'quicksilver-protocol',
+  pstake: 'pstake-lsd',
+  bifrost: 'bifrost-liquid-staking',
 }
 
 type LlamaProtocol = { slug: string; name: string; tvl: number; category: string }
@@ -153,8 +159,9 @@ async function main() {
   }
   md.push('The unit of work is ONE PROVIDER: open its docs once and check every row it owns. Fill the OBSERVED columns in the CSV; record your verdict on each risk dimension here. `STAKING_DATA_LAST_VERIFIED` moves only when every provider is ticked.')
   md.push('')
-  md.push('| # | provider | cat | founded | website → status | catalog TVL ($B) | DefiLlama TVL ($B) | audits | custody | cpty | contract | slashing | liquidity | regulatory | ✓ |')
-  md.push('|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|')
+  // No risk-dimension columns: the six were removed under D26 (2026-09-25).
+  md.push('| # | provider | cat | founded | website → status | catalog TVL ($B) | DefiLlama TVL ($B) | audits | ✓ |')
+  md.push('|---|---|---|---|---|---|---|---|---|')
   const candidates: string[] = []
   let n = 0
   for (const p of STAKING_PROVIDERS) {
@@ -171,8 +178,7 @@ async function main() {
     } else if (p.category !== 'liquid') {
       llamaTvl = 'n/a (not a DeFi protocol)'
     }
-    const r = p.risks
-    md.push(`| ${n} | **${p.name}**${p.defunct ? ' (DEFUNCT)' : ''} | ${p.category} | ${p.founded ?? ''} | ${p.website ?? ''} → ${status} | ${p.tvlBillions ?? ''} | ${llamaTvl} | ${p.auditCount ?? ''} | ${r.custodyRisk} | ${r.counterpartyRisk} | ${r.contractRisk} | ${r.slashingRisk} | ${r.liquidityRisk} | ${r.regulatoryRisk} | ☐ |`)
+    md.push(`| ${n} | **${p.name}**${p.defunct ? ' (DEFUNCT)' : ''} | ${p.category} | ${p.founded ?? ''} | ${p.website ?? ''} → ${status} | ${p.tvlBillions ?? ''} | ${llamaTvl} | ${p.auditCount ?? ''} | ☐ |`)
   }
   md.push('')
   if (candidates.length) {

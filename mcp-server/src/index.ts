@@ -248,10 +248,16 @@ server.tool(
 // the six curated dimensions instead. If an agent wants a single number it can
 // weight them itself, which keeps that judgment the caller's and inspectable.
 // Do not re-add a composite or a risk-ordered sort here.
+//
+// ⚠ 2026-09-25 (owner decision D26): the six dimensions went too. The page had never
+// rendered them — they reached a person only through this tool and the API, i.e. through
+// an agent narrating "custody risk 2 out of 10", which is where a reference number most
+// easily becomes advice. This tool now reports facts only: APY, lock-up, custody model,
+// receipt token, TVL, audits. Do not re-add per-provider risk figures in any form.
 
 server.tool(
   'get_staking_opportunities',
-  'Find staking opportunities for a cryptocurrency across CeFi exchanges (Coinbase, Kraken, Binance…), self-custody wallets (Ledger, MetaMask, Phantom…), and liquid staking protocols (Lido, Rocket Pool, Marinade, Jito…). Each result includes APR/APY (live where available, otherwise estimates), lock-up period, custody model, and six curated risk DIMENSIONS (custody, counterparty, contract, slashing, liquidity, regulatory), each 1–10 where HIGHER = RISKIER. It deliberately publishes NO composite risk or safety score and offers no risk-based filter: the dimensions are reference inputs, not a ranking, and nothing here is a recommendation to stake with any provider. Results are ordered by APR, not by risk.',
+  'Find staking opportunities for a cryptocurrency across CeFi exchanges (Coinbase, Kraken, Binance…), self-custody wallets (Ledger, MetaMask, Phantom…), and liquid staking protocols (Lido, Rocket Pool, Marinade, Jito…). Each result includes APR/APY (live where available, otherwise estimates), lock-up period, custody model (who holds the keys), receipt token, TVL and audit count. It deliberately publishes NO risk score, rating or dimension of any kind and offers no risk-based filter — nothing here is a recommendation to stake with any provider. Results are ordered by APR.',
   {
     coin:     z.string().optional().describe('Coin id to filter by. E.g. "eth", "sol", "ada", "dot", "atom". Omit for all stakeable coins.'),
     category: z.enum(['cefi', 'wallet', 'liquid']).optional().describe('cefi = exchange staking (custodial), wallet = self-custody wallet delegation, liquid = liquid staking protocols (stETH, mSOL, etc.)'),
@@ -267,8 +273,7 @@ server.tool(
         coin: string; coinId: string; apr: number; aprSource: string
         lockupDays: number; lockupNote: string | null; liquid: boolean
         receiptToken: string | null; minStakeNative: number
-        custodyModel: string
-        riskBreakdown: Record<string, number>; features: string[]
+        custodyModel: string; features: string[]
         tvlBillions: number | null; auditCount: number | null
       }>
       total: number; updatedAt: string
@@ -282,7 +287,6 @@ server.tool(
     // on the provider, so it keeps its icon. The risk-level icon that used to sit
     // at the start of every row was a colour-coded grade, and went with D14.
     const custodyIcon = (model: string) => ({ custodial: '🏦', 'non-custodial': '🔑', 'smart-contract': '📜' }[model] ?? '')
-    const DIMENSIONS = ['custody', 'counterparty', 'contract', 'slashing', 'liquidity', 'regulatory'] as const
 
     let text = `**Staking Opportunities** (${data.total} results, updated: ${new Date(data.updatedAt).toLocaleTimeString()})\n\n`
 
@@ -302,11 +306,6 @@ server.tool(
         text += `  Lock-up: ${opp.lockupDays === 0 ? 'None' : `${opp.lockupDays} days`}`
         if (opp.minStakeNative > 0) text += ` | Min: ${opp.minStakeNative} ${opp.coinId.toUpperCase()}`
         text += '\n'
-        const dims = DIMENSIONS
-          .filter(d => opp.riskBreakdown?.[d] != null)
-          .map(d => `${d} ${opp.riskBreakdown[d]}`)
-          .join(', ')
-        if (dims) text += `  Risk dimensions (1–10, higher = riskier): ${dims}\n`
         const extras: string[] = []
         if (opp.tvlBillions) extras.push(`TVL: $${opp.tvlBillions}B`)
         if (opp.auditCount)  extras.push(`Audits: ${opp.auditCount}`)
@@ -316,9 +315,8 @@ server.tool(
     }
 
     text += `---\n🏦 custodial (exchange holds keys)  🔑 non-custodial (you hold keys)  📜 smart-contract (on-chain code)\n`
-    text += `Risk dimensions are curated editorial reference data on a 1–10 scale where HIGHER = RISKIER. `
-    text += `They are not combined into an overall score and are not a recommendation — a low number is not a safety guarantee. `
-    text += `Rows are ordered by APY. Confirm current terms with the provider before staking.`
+    text += `No risk scores or ratings are published for any provider (owner decisions D14 and D26); custody model, lock-up and TVL are facts, not verdicts. `
+    text += `Rows are ordered by APY. Nothing here is a recommendation — confirm current terms with the provider before staking.`
 
     return { content: [{ type: 'text', text }] }
   }

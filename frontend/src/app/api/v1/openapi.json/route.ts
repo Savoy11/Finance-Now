@@ -18,7 +18,7 @@ const SPEC = {
   tags: [
     { name: 'prices',   description: 'Live coin prices from CoinGecko' },
     { name: 'transfer', description: 'Transfer fee routing between exchanges and wallets' },
-    { name: 'staking',  description: 'Staking opportunities with APY and curated risk dimensions (no composite score)' },
+    { name: 'staking',  description: 'Staking opportunities with APY, lock-up, custody model and TVL (no risk scores of any kind)' },
     { name: 'network',  description: 'Blockchain network gas fees' },
     { name: 'news',       description: 'Crypto news with sentiment and asset tagging' },
     { name: 'securities', description: 'Stock / ETF / mutual-fund / macro-instrument quotes and history' },
@@ -96,7 +96,7 @@ const SPEC = {
       get: {
         tags: ['staking'],
         summary: 'Find staking opportunities for a coin',
-        description: 'Returns staking options across CeFi exchanges, self-custody wallets, and liquid staking protocols. Each opportunity includes live APY (where available), lock-up period, custody model, and six curated risk DIMENSIONS — custody, counterparty, smart contract, slashing, liquidity, regulatory — each 1–10 where HIGHER = RISKIER. BREAKING CHANGE 2026-09-14: this endpoint no longer publishes a composite risk or safety score, and has no risk-based filter. The safetyScore, band, riskScore and riskLevel fields and the max_risk, min_safety and max_safety parameters were REMOVED. A single number ranking providers against each other reads as a recommendation, so the endpoint reports the inputs and leaves the weighting to the caller. Removed parameters are ignored rather than rejected, so an existing client still receives a 200 — but with MORE rows than before, since nothing is filtered out. Apply your own threshold to riskBreakdown. Results are ordered by APR, never by risk.',
+        description: 'Returns staking options across CeFi exchanges, self-custody wallets, and liquid staking protocols. Each opportunity includes live APY (where available), lock-up period, custody model, receipt token, TVL and audit count. BREAKING CHANGE 2026-09-25 (owner decision D26): the riskBreakdown object — the six curated 1–10 risk dimensions — was REMOVED; the field simply no longer appears, nothing is rejected. A risk figure attached to a provider reads as a recommendation, whichever way it is labelled. BREAKING CHANGE 2026-09-14: this endpoint no longer publishes a composite risk or safety score, and has no risk-based filter. The safetyScore, band, riskScore and riskLevel fields and the max_risk, min_safety and max_safety parameters were REMOVED. A single number ranking providers against each other reads as a recommendation, so the endpoint reports the inputs and leaves the weighting to the caller. Removed parameters are ignored rather than rejected, so an existing client still receives a 200 — but with MORE rows than before, since nothing is filtered out. Results are ordered by APR, never by risk.',
         parameters: [
           { name: 'coin',          in: 'query', description: 'Filter by coin id (e.g. eth, sol, ada)',                                 schema: { type: 'string', example: 'eth' } },
           { name: 'category',      in: 'query', description: 'Filter by provider category',                                            schema: { type: 'string', enum: ['cefi', 'wallet', 'liquid'] } },
@@ -431,18 +431,6 @@ const SPEC = {
                 receiptToken:   { type: 'string', nullable: true, example: 'stETH' },
                 minStakeNative: { type: 'number', example: 0 },
                 custodyModel:   { type: 'string', enum: ['custodial', 'non-custodial', 'smart-contract'] },
-                riskBreakdown: {
-                  type: 'object',
-                  description: 'The six curated risk dimensions, each 1–10 where HIGHER = RISKIER. These are editorial reference INPUTS, not a ranking: they are deliberately never combined into an overall score by this API. A caller wanting a single figure or a threshold applies its own weighting, which keeps that judgment the caller\'s and inspectable.',
-                  properties: {
-                    custody:      { type: 'number', description: 'Who holds the keys and what happens if the provider fails.' },
-                    counterparty: { type: 'number', description: 'Exposure to the provider as a business.' },
-                    contract:     { type: 'number', description: 'Smart-contract and code risk.' },
-                    slashing:     { type: 'number', description: 'Protocol penalties for validator misbehaviour or downtime.' },
-                    liquidity:    { type: 'number', description: 'How hard it is to exit, including unbonding queues.' },
-                    regulatory:   { type: 'number', description: 'Jurisdictional and licensing exposure.' },
-                  },
-                },
                 features:    { type: 'array', items: { type: 'string' } },
                 tvlBillions: { type: 'number', nullable: true },
                 auditCount:  { type: 'integer', nullable: true },

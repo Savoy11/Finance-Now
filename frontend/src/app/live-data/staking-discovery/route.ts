@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import {
-  RISK_PRESETS, adjustRiskFromSignals, DEFILLAMA_SLUG_BLOCKLIST,
+  DEFILLAMA_SLUG_BLOCKLIST,
   ALL_STAKING_SYMBOLS, COIN_SYMBOL_MAP, MATURE_CHAINS,
 } from '@/lib/data/stakingDiscovery'
-import type { ProviderCategory, RiskProfile } from '@/lib/data/stakingProviders'
+import type { ProviderCategory } from '@/lib/data/stakingProviders'
 
 export const dynamic = 'force-dynamic'
 
@@ -28,18 +28,8 @@ export interface DiscoveredPool {
   projectUrl:      string | null  // Protocol homepage (distinct from opportunity URL)
   category:        ProviderCategory
   custodyModel:    'custodial' | 'non-custodial' | 'smart-contract'
-  risks:           RiskProfile
-  /**
-   * The six curated dimensions the presets and signal adjustments produced.
-   *
-   * No composite is derived from them. `riskScore`, `riskLevel`, `riskCanonical`
-   * and `band` were REMOVED on 2026-09-14 (owner decision D14), along with the
-   * `max_risk` filter, on the same reasoning as /api/v1/staking/opportunities:
-   * one number ranking pools against each other reads as a verdict on which to
-   * pick. Nothing in the UI ever rendered them — the field comment here already
-   * said so and said to drop them rather than let them drift, which is what D14
-   * settled. Do not reintroduce a composite here.
-   */
+  // No `risks` since 2026-09-25 (D26): the six derived dimensions went with the
+  // catalog's. `riskScore`/`riskLevel`/`riskCanonical` had already gone under D14.
   hasReceiptToken: boolean
   chainMature:     boolean
   source:          DiscoverySource
@@ -140,10 +130,6 @@ function buildPool(
   const receipt      = hasReceiptToken(partial.symbol)
   const auditCount   = partial.auditCount ?? 0
   const custodyModel = partial.category === 'cefi' ? 'custodial' : partial.category === 'wallet' ? 'non-custodial' : 'smart-contract'
-  const risks = adjustRiskFromSignals(RISK_PRESETS[partial.category], {
-    tvlUsd: partial.tvlUsd, auditCount,
-    isSmartContract: partial.category === 'liquid', chainMature, hasReceiptToken: receipt,
-  })
   return {
     poolId:          partial.poolId,
     project:         partial.project,
@@ -161,7 +147,6 @@ function buildPool(
     projectUrl:      partial.projectUrl ?? partial.url ?? null,
     category:        partial.category,
     custodyModel,
-    risks,
     hasReceiptToken: receipt,
     chainMature,
     source:          partial.source,
