@@ -103,13 +103,31 @@ const TOTAL_LABELS = new Set(['Total Annual Fund Operating Expenses', 'Total Exp
  *  restate the fee in their annual report rather than re-filing a prospectus. */
 const FORMS = [/^424B/, /^485BPOS/, /^S-1/, /^10-K$/]
 
+/**
+ * ticker → { cik, via }. Two maps, because the SEC keeps two: company_tickers.json
+ * lists OPERATING companies and the trusts that file like them (GLD, SLV, USO, IBIT —
+ * the very funds this probe was built for), while every '40-Act fund lives in
+ * company_tickers_mf.json under its trust's CIK. Until 2026-09-26 only the first was
+ * read, and fourteen '40-Act ETFs came back "no CIK" in a row — a statement about
+ * this script's reach that read like a statement about the funds (T-411). The first
+ * map wins where both carry a ticker; `via` says which one answered.
+ */
 async function tickerToCik() {
+  const map = new Map()
   const res = await politeFetch('https://www.sec.gov/files/company_tickers.json')
   if (!res.ok) throw new Error(`company_tickers.json: HTTP ${res.status}`)
-  const payload = await res.json()
-  const map = new Map()
-  for (const row of Object.values(payload)) {
-    map.set(String(row.ticker).toUpperCase(), String(row.cik_str).padStart(10, '0'))
+  for (const row of Object.values(await res.json())) {
+    map.set(String(row.ticker).toUpperCase(), { cik: String(row.cik_str).padStart(10, '0'), via: 'company_tickers.json' })
+  }
+  const mf = await politeFetch('https://www.sec.gov/files/company_tickers_mf.json')
+  if (!mf.ok) throw new Error(`company_tickers_mf.json: HTTP ${mf.status}`)
+  const payload = await mf.json()
+  const iCik = (payload.fields ?? []).indexOf('cik')
+  const iSym = (payload.fields ?? []).indexOf('symbol')
+  if (iCik < 0 || iSym < 0) throw new Error(`company_tickers_mf.json: expected cik and symbol fields, got [${(payload.fields ?? []).join(', ')}]`)
+  for (const row of payload.data ?? []) {
+    const sym = String(row[iSym]).toUpperCase()
+    if (!map.has(sym)) map.set(sym, { cik: String(row[iCik]).padStart(10, '0'), via: 'company_tickers_mf.json' })
   }
   return map
 }
@@ -325,8 +343,23 @@ async function main() {
     const catalogEntry = byCatalog.get(symbol) ?? null
     const catalogPct = catalogEntry?.catalogPct ?? null
     const catalogName = catalogEntry?.name ?? null
-    const cik = cikMap.get(symbol)
-    if (!cik) { rows.push({ symbol, catalogPct, status: 'no-cik' }); log(`  ${symbol.padEnd(6)} no CIK in company_tickers.json`); continue }
+    const resolved = cikMap.get(symbol)
+    const cik = resolved?.cik
+    if (!cik) { rows.push({ symbol, catalogPct, status: 'no-cik' }); log(`  ${symbol.padEnd(6)} no CIK in company_tickers.json or company_tickers_mf.json`); continue }
+    if (resolved.via === 'company_tickers_mf.json') {
+      // The fund map resolves a '40-Act fund to its TRUST's CIK, and a trust files one
+      // prospectus for every series it holds. This probe reads a document and reports the
+      // first fee label it meets; on a trust-wide filing that is some other fund's table.
+      // Demonstrated 2026-09-26: XLC resolved to the Select Sector SPDR Trust, the probe
+      // read its 2026-04-24 485BPOS and reported 0.35% "differs by +0.27pp" — a figure
+      // belonging to a sibling fund, dressed as a finding. So the resolution is reported
+      // (the reader learns where the fund lives) and the number is NOT: the Risk/Return
+      // dataset joins on the share class, and `npm run fund-fees -- --symbols` is the
+      // tool that can scope a fee to one series.
+      rows.push({ symbol, catalogPct, cik, status: 'trust-unscoped' })
+      log(`  ${symbol.padEnd(6)} lives in the mutual-fund map under trust CIK ${cik}; its prospectus covers every fund in the trust and this probe cannot scope a fee table to one series — use \`npm run fund-fees -- --symbols ${symbol}\`, which joins on the share class`)
+      continue
+    }
 
     let candidates
     try { candidates = await candidateFilings(cik) } catch (err) { rows.push({ symbol, catalogPct, cik, status: 'submissions-error', detail: err.message }); log(`  ${symbol.padEnd(6)} submissions error: ${err.message}`); continue }

@@ -54,25 +54,25 @@
  },
  "counts": {
   "total_verified": 398,
-  "outstanding": 351,
+  "outstanding": 352,
   "by_status": {
-   "open": 58,
-   "closed": 132,
-   "blocked": 68,
+   "open": 57,
+   "closed": 133,
+   "blocked": 69,
    "unclear": 1,
    "parked": 92
   },
   "by_owner_role": {
    "remote-dev": 86,
    "either": 39,
-   "owner-decision": 143,
+   "owner-decision": 144,
    "owner-machine": 83
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 132,
+  "closed_by_annotation": 133,
   "counts_recomputed_on": "2026-09-26",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
-  "total": 351
+  "total": 352
  },
  "blocking_decisions": [
   {
@@ -11570,7 +11570,7 @@
   {
    "id": "T-411",
    "title": "Fee-script reach: candidate mode, walk back quarters, and the right ticker map for ’40-Act funds",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "tooling",
@@ -11593,6 +11593,49 @@
     "on": "2026-09-26",
     "by": "session steward",
     "why": "Surfaced while closing T-070; filed as its own item so it is not lost inside a closure note."
+   },
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-26",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "BUILT, and the run it enabled found more than the item expected. (1) build-fund-fees.mjs takes --symbols (catalogued or not; a candidate gets its SEC figure and no delta) and reads the newest four quarterly archives, newest quarter carrying a fund winning — selection and merge live in scripts/lib/rrQuarters.mjs, unit-tested. (2) The prospectus probe resolves through company_tickers_mf.json as well — but deliberately does NOT read a trust-wide prospectus as one fund’s fee: the first attempt resolved XLC to its trust, read the trust’s 485BPOS and reported a sibling fund’s 0.35% as “differs by +0.27pp”. It now reports `trust-unscoped` and points at fund-fees --symbols, which joins on the share class. (3) FOUND ON THE WAY, and the bigger fix: the tag model had ExpensesOverAssets (the taxonomy’s TOTAL line) as a fallback for NET; every archive carries NetExpensesOverAssets for some fund, so the total was never read and every no-waiver fund reported no-expense-value under a green run. That is why 2026-09-09 matched 27 of 126 and read as thorough. Fixed: net where a waiver exists, total otherwise. The whole-catalog run now matches 97 of the 103 series registrants and surfaces 17 differences (docs/audits/fund-fee-reconcile-2026-09-26.md) — proposed for the owner, not applied; the script still writes nothing.",
+    "evidence": [
+     "frontend/scripts/build-fund-fees.mjs",
+     "frontend/scripts/lib/rrQuarters.mjs",
+     "frontend/scripts/probe-fund-prospectus-fees.mjs",
+     "frontend/src/lib/server/__tests__/rrQuarters.test.ts",
+     "frontend/src/lib/server/__tests__/feeScriptReach.test.ts",
+     "docs/audits/fund-fee-reconcile-2026-09-26.md"
+    ]
+   }
+  },
+  {
+   "id": "T-412",
+   "title": "Rule on the 17 expense-ratio differences the four-quarter reconcile found (2026-09-26)",
+   "status": "blocked",
+   "confidence": "high",
+   "owner_role": "owner-decision",
+   "category": "data-verification",
+   "effort": "small",
+   "blocking_decision": "Owner: approve applying the 17 corrections in docs/audits/fund-fee-reconcile-2026-09-26.md (sixteen are 1 bp fee cuts read from the funds’ own filings; FXAIX is 0.015 → 0.01; PRGFX rises 0.65 → 0.66). Each names its filing and accession. Applied by hand, FUND_DATA_LAST_VERIFIED unmoved.",
+   "related_ids": [
+    "T-411",
+    "D27"
+   ],
+   "summary": "The first reconcile that read the total-expense line and four quarters matched 97 of 103 series registrants (27 before) and found 17 rows differing from the catalog by at least half a basis point. Every one is a primary-source reading with an accession number. Same shape as the six sector SPDRs D27 corrected: fee cuts filed after the catalog was compiled.",
+   "next_action": "Owner says yes/no per group; then edit fundCatalog.ts by hand for the approved rows, cite the accession in the provenance block, leave the stamp, and re-run npm run fund-fees to confirm zero differences.",
+   "sources": [
+    {
+     "file": "docs/audits/fund-fee-reconcile-2026-09-26.md",
+     "lines": "Differences",
+     "quote": "17 rows differ from the catalog by ≥ 0.005pp; the script writes nothing."
+    }
+   ],
+   "opened": {
+    "on": "2026-09-26",
+    "by": "session steward",
+    "why": "Surfaced by the T-411 run; filed as its own owner-decision item rather than applied, because a fee overwrite is the class of change the reconcile script refuses to make by design."
    }
   }
  ],
@@ -36630,6 +36673,13 @@
     "evidence": [
      "docs/decisions/2026-09-26-owner-decisions.md",
      "frontend/src/lib/data/fundCatalog.ts"
+    ]
+   },
+   {
+    "on": "2026-09-26",
+    "what": "T-411 closed: fee scripts read four quarters, accept candidates, resolve through both SEC ticker maps, and read the total-expense line the old tag model skipped. T-412 opened for the 17 differences the first full run found.",
+    "evidence": [
+     "docs/audits/fund-fee-reconcile-2026-09-26.md"
     ]
    }
   ]
