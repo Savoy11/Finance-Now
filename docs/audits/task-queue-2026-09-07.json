@@ -56,20 +56,20 @@
   "total_verified": 398,
   "outstanding": 349,
   "by_status": {
-   "open": 61,
-   "closed": 130,
-   "blocked": 67,
+   "open": 56,
+   "closed": 131,
+   "blocked": 69,
    "unclear": 1,
-   "parked": 90
+   "parked": 92
   },
   "by_owner_role": {
    "remote-dev": 84,
-   "either": 41,
-   "owner-decision": 141,
+   "either": 39,
+   "owner-decision": 143,
    "owner-machine": 83
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 130,
+  "closed_by_annotation": 131,
   "counts_recomputed_on": "2026-09-26",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 349
@@ -3016,7 +3016,7 @@
   {
    "id": "T-172",
    "title": "staking-discovery latency (~18–22 s) — standing perf item",
-   "status": "open",
+   "status": "closed",
    "confidence": "medium",
    "owner_role": "remote-dev",
    "category": "bug",
@@ -3038,6 +3038,18 @@
     "remaining_work": "Restated against today's tree, the original next_action is half-stale — do NOT re-do the 6 s budget, it is at route.ts:77/98. What is actually left, in the order it should be taken: (1) SPLIT OUT THE DEAD UPSTREAMS. Three of the four sources contribute zero pools — route.ts:227 still fetches `api.yearn.finance/v1/chains/1/vaults/all` (does not resolve), :281 still fetches `api-v2.pendle.finance/core/v1/sdk/1/markets?limit=100&order_by=liquidity:desc` (404s on that exact URL), and Beefy answers 200 landing nothing. That is a correctness defect, not a latency one, it has no ledger item of its own (T-172 is the only queue entry mentioning any of the three), and it should become one rather than riding a perf item. (2) FIX THE COLD-START HOLE at route.ts:457-467: last-good is per-exact-filter-key and only consulted when a fetch failed, so a zero-pool response can ship as `ok: true` with no `stale` flag. (3) ONLY THEN the latency question, and only on the owner's machine: one `npm run audit` plus repeated direct probes, because the single 2,238 ms reading is not reproducible on demand and a single fast sample is not a measurement. Note the ~18-22 s figure in the item's title is superseded by DATA-AVAILABILITY.md:843 (~2.2 s re-measured 2026-09-19) — reopening against 18 s would chase a number that no longer describes the route.",
     "evidence": [
      "frontend/src/app/live-data/staking-discovery/route.ts:457-467"
+    ]
+   },
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-26",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "THE LATENCY IN THE TITLE IS GONE AND THE HOLE THE PROGRESS NOTE FOUND IS CLOSED. Measured on the owner's machine over clean egress on 2026-09-26: 0.97 s cold-ish (145 pools), 0.58–0.69 s warm, 1.64 s on the first request of the session — against the 18–22 s the title carried from before the 6 s per-fetch budget landed (route.ts UPSTREAM_TIMEOUT_MS, the item's first cure). The second cure — serve last-good immediately and refresh in the background — is NOT built and deliberately so: a background refresher is a fix for a slow route, and this one is fast now; what was actually wrong was that a cold or differently-filtered request landing on an outage returned `ok: true, pools: []` with nothing in the payload saying the upstreams had failed, indistinguishable from a legitimately empty result. The route now returns `upstreams` — each of the four's outcome on THIS request, 'live (n)' or 'failed: <reason>' — and `degraded` on every response path, the same shape staking-rates uses; the Live Pools panel names the unreachable sources in a badge and renders an outage-with-nothing as \"sources unreachable\" rather than \"no pools match\". discoveryDegraded.test.ts pins that every return path carries `upstreams`, that `degraded` derives from the settled results and not the pool count, and that the panel reads both.",
+    "evidence": [
+     "frontend/src/app/live-data/staking-discovery/route.ts",
+     "frontend/src/app/(dashboard)/staking/LivePoolsPanel.tsx",
+     "frontend/src/lib/server/__tests__/discoveryDegraded.test.ts"
     ]
    }
   },
@@ -3075,12 +3087,12 @@
   {
    "id": "T-352",
    "title": "Bond profile follow-up — scale duration by realized rate volatility",
-   "status": "open",
+   "status": "parked",
    "confidence": "medium",
    "owner_role": "remote-dev",
    "category": "feature",
    "effort": "medium",
-   "blocking_decision": null,
+   "blocking_decision": "D18 (2026-09-14): defer until a consumer exists — trigger is a surface approved to render the score. Parked by ruling; the ledger carried it as open for twelve days.",
    "related_ids": [
     "P5",
     "§6.1"
@@ -3093,7 +3105,16 @@
      "lines": "560-563",
      "quote": "v1 treats duration as a standalone proxy (defensible for a research tool) but the dimension must be documented as such, and evidence must carry raw duration so a user can see the primitive. A later version should scale it by realized rate vol."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-09-26",
+    "note": "PARKED UNDER D18 — the ledger never learned the ruling. Not built. One thing D18 should know when it is revisited: its stated premise (\"after D14, the options scorer is lib/risk’s last live consumer\") is incomplete. rateInstrumentRiskTier() in lib/risk/profiles/rateInstrument.ts calls scoreRateInstrument() and feeds `riskTier` on every rate instrument in lib/data/instruments.ts, which the Portfolios weighted-risk figure averages over. So the duration dimension this item would rescale IS consumed today — by a tier, not a rendered score. Whether that figure is \"a surface approved to render the score\" (D18’s trigger) is the owner’s reading, not this pass’s; and after RP-6, D26 and T-357, whether a per-instrument risk tier should be refined or removed is the same open question. Recorded so the next visit starts from the true state.",
+    "evidence": [
+     "frontend/src/lib/risk/profiles/rateInstrument.ts",
+     "frontend/src/lib/data/instruments.ts",
+     "docs/decisions/2026-09-14-owner-decisions.md"
+    ]
+   }
   },
   {
    "id": "T-001",
@@ -3187,12 +3208,12 @@
   {
    "id": "T-070",
    "title": "S6 — catalog growth with provenance discipline",
-   "status": "open",
+   "status": "blocked",
    "confidence": "high",
-   "owner_role": "either",
+   "owner_role": "owner-decision",
    "category": "feature",
    "effort": "medium",
-   "blocking_decision": null,
+   "blocking_decision": "Rule on docs/proposals/2026-09-21-fund-catalog-candidates.md — which of the three groups (sector XLC/XLP/XLY/XLB; bond VCSH/VMBS/VTIP/EMLC/BKLN; international VSS/VGK/EWJ/VYMI/HEFA) to add, plus the two judgement calls the proposal names (VYMI’s category; whether BKLN belongs in `bond` at all under fundRiskLevel()). All 14 passed the quotable + actively-trading probe on 2026-09-26; expense ratios are still to be read once a group is approved.",
    "related_ids": [
     "S6"
    ],
@@ -3217,7 +3238,8 @@
     "corrections": [
      "The strongest evidence of a sector gap was in code rather than the catalog: portfolioBuilder.ts:222 types SECTOR_ETF as Partial<Record<SectorId, string>> — the type itself admits not every GICS sector is covered, and seven of eleven are mapped. That is NOT a bug and was nearly reported as one: the UI hard-codes TILTABLE_SECTORS to exactly the seven that have a fund, so no user is ever offered a tilt that would silently do nothing.",
      "An inference was available and refused. The six Select Sector SPDR siblings all sit at 0.09, which makes 0.09 very tempting for the missing four. The catalog's own provenance banner records UNG (0.60 -> 1.17) and CPER (0.65 -> 0.88) as cases where that reasoning produced a wrong published fee, so every proposed ER is marked unverified instead.",
-     "Flagged, not acted on: fundRiskLevel() maps category 'bond' to 'conservative' with no discrimination, and the catalog already strains it — HYG (high yield) and EMB (EM sovereign) both band Conservative today. Two proposed candidates would strain it further. That is a modelling decision, not a catalog one."
+     "Flagged, not acted on: fundRiskLevel() maps category 'bond' to 'conservative' with no discrimination, and the catalog already strains it — HYG (high yield) and EMB (EM sovereign) both band Conservative today. Two proposed candidates would strain it further. That is a modelling decision, not a catalog one.",
+     "2026-09-26: THE OWNER-MACHINE HALF RAN, on the owner’s machine, egress verified clean first (Charter AS11426, proxy:false hosting:false), and with no `npm run audit` beforehand as the proposal requires. (1) The RR index URL needs no finding — `npm run fund-fees -- --inspect` resolved sec.gov from its built-in list and printed the tag table, so that half of next_action is moot. (2) All 14 candidates are QUOTABLE through the app’s own ladder (finnhub, none reference) and ACTIVELY TRADING (22 daily closes 2026-08-26..2026-09-25 via tiingo, not one cached price). (3) Expense ratios are NOT yet read: `npm run fund-prospectus-fees -- --symbols …` answered no-cik for all 14 because it resolves through company_tickers.json (operating companies) — all 14 DO resolve in company_tickers_mf.json (cik + series + class ids, fetched 2026-09-26), so the Risk/Return dataset path is viable and the prospectus probe needs only a fallback to that map. That is the script’s reach, not evidence about the funds; the Risk/Return path (build-fund-fees.mjs) reconciles only catalog rows and has no candidate mode. Both are small script gaps worth closing when a group is approved, and neither is a reason to write a figure from memory. Re-scoped to blocked/owner-decision: nothing further is a developer’s until the proposal is ruled on."
     ],
     "evidence": [
      "docs/proposals/2026-09-21-fund-catalog-candidates.md"
@@ -3742,12 +3764,12 @@
   {
    "id": "T-119",
    "title": "Per-link affiliate disclosure UI + 'How we make money' page",
-   "status": "open",
+   "status": "blocked",
    "confidence": "medium",
-   "owner_role": "either",
+   "owner_role": "owner-decision",
    "category": "feature",
    "effort": "medium",
-   "blocking_decision": null,
+   "blocking_decision": "Owner copy for the four OwnerCopyRequired placeholders on /how-we-make-money (docs/BUSINESS-CHECKLIST.md §3: the formal disclosure naming the commission-receiving entity; which referral programs are joined and what they permit; jurisdiction handling incl. UK FCA financial-promotion rules; a complaints route). The item itself says not to invent the wording.",
    "related_ids": [
     "P2"
    ],
@@ -3767,7 +3789,8 @@
     "corrections": [
      "FOUR DISCLOSURE STRINGS PROMISED SOMETHING THAT DOES NOT EXIST, and were fixed. The per-link tooltip (both branches) told the reader a paid link \"does not affect this provider's RISK SCORE\", and the page said the same twice more. D14 removed every composite staking risk score; the six RiskProfile dimensions are published as they are. Reassuring a reader about a number the app does not publish is wrong on its face.",
      "Worse than inaccurate in one place: the page claimed the providers it could be paid by \"are systematically not the ones that SCORE BEST\". Nothing scores best — that sentence asserts a ranking, which is the exact shape RP-3 forbids, inside the document whose job is to explain the integrity rules. All four now describe the published dimensions and ordering, both of which lib/data/__tests__/affiliates.test.ts already enforces.",
-     "Deliberately NOT built: a guard test scanning user-facing copy for risk-score language. Text-scanning guards misfired three times in this session, each caught by explanatory prose rather than a real regression — the comment documenting this very fix would trip one. The behaviour is already structurally guarded; the copy is downstream of a decision, and D14 is in the do-not-fix registry where a reviewer will meet it."
+     "Deliberately NOT built: a guard test scanning user-facing copy for risk-score language. Text-scanning guards misfired three times in this session, each caught by explanatory prose rather than a real regression — the comment documenting this very fix would trip one. The behaviour is already structurally guarded; the copy is downstream of a decision, and D14 is in the do-not-fix registry where a reviewer will meet it.",
+     "2026-09-26: re-scoped from open/either to blocked/owner-decision. The 2026-09-21 verification found the per-link tag and the page built and reachable; nothing on this item is a developer’s any more, and an \"either\" item that only the owner can finish reads as available work when it is not."
     ],
     "evidence": [
      "frontend/src/components/ui/SponsoredLink.tsx:60-104",
@@ -3835,7 +3858,8 @@
     "remaining_work": "The result-quality half is untouched and is owner-gated: it needs `npm run audit` on the owner's machine with provider keys, then driving /equities, /funds, /assets, /coin-discovery and the three scanner pages to record findings BEFORE changing any defaults. Also left open by the verification: whether W3-2's min-liquidity input should come back — see the correction below.",
     "corrections": [
      "The audit this item cites is MISFILED in its own citation. It names docs/audits/screener-consistency-2026-07-30.md, which does not exist; the document is at docs/assessments/screener-consistency-2026-07-30.md. That wrong path is almost certainly why the earlier 2026-09-12 annotation concluded the consistency pass had not happened. It did happen, on 2026-07-30.",
-     "W3-2 IS THE PARTS-INVENTORY PATTERN IN MINIATURE, and docs/TASK-QUEUE.md:1627 reads as fully delivered. The min-liquidity filter code, the derived sort key, its tests and a rendered sortable column all exist, and the SORT works end to end — but the filter INPUT was removed along with the /assets screener bar on 2026-08-22, so that filter can never be switched on from the UI. The code documents this at AssetRegistryClient.tsx:137-141. Restoring the inputs is UI-only (the store fields and applyParams support already exist) but it is a product decision, not a bug fix."
+     "W3-2 IS THE PARTS-INVENTORY PATTERN IN MINIATURE, and docs/TASK-QUEUE.md:1627 reads as fully delivered. The min-liquidity filter code, the derived sort key, its tests and a rendered sortable column all exist, and the SORT works end to end — but the filter INPUT was removed along with the /assets screener bar on 2026-08-22, so that filter can never be switched on from the UI. The code documents this at AssetRegistryClient.tsx:137-141. Restoring the inputs is UI-only (the store fields and applyParams support already exist) but it is a product decision, not a bug fix.",
+     "2026-09-26: the result-quality half is not separate work — D20 (2026-09-14) says the one-off agent-eval run \"closes T-001 and T-129’s result-quality half\". Preflight on 2026-09-26: dev server up, Anthropic key configured, egress clean (Charter AS11426, proxy:false hosting:false). `npm run agent-eval` (plan only) selected 11 of 11. The `--run` bills the owner’s key and is the owner’s to trigger; nothing here evaluated output."
     ],
     "evidence": [
      "docs/ROADMAP.md — the 2026-09-21 steward annotation",
@@ -3917,12 +3941,12 @@
   {
    "id": "T-353",
    "title": "ETF/fund risk profile (fund.ts)",
-   "status": "open",
+   "status": "parked",
    "confidence": "medium",
    "owner_role": "either",
    "category": "feature",
    "effort": "medium",
-   "blocking_decision": "none (owner approval to queue; P5 affects aggregation only)",
+   "blocking_decision": "D18 (2026-09-14): defer until a consumer exists — trigger is a surface approved to render the score. Parked by ruling; the ledger carried it as open for twelve days.",
    "related_ids": [
     "§4"
    ],
@@ -3934,7 +3958,16 @@
      "lines": "122",
      "quote": "3. **ETF/fund profile** — expense ratio, AUM, tracking error, concentration."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-09-26",
+    "note": "PARKED UNDER D18 — the ledger never learned the ruling. Not built. Two facts for the revisit: (1) a fund risk tier already exists — fundRiskTier() in lib/data/instruments.ts assigns one per fund today, so this item is a REPLACEMENT of that rule with a scored profile, not a first tier; (2) it lands squarely on the T-357 question (does RP-6’s \"no per-asset risk figure\" extend beyond crypto?), which D26 sharpened for staking on 2026-09-25 and the owner has not yet answered for funds or equities. Building it before that answer would be building the thing the answer may remove.",
+    "evidence": [
+     "frontend/src/lib/data/instruments.ts",
+     "docs/decisions/2026-09-14-owner-decisions.md",
+     "docs/decisions/2026-09-25-owner-decisions.md"
+    ]
+   }
   },
   {
    "id": "T-059",
@@ -11019,17 +11052,10 @@
     "why": "Surfaced by a re-verification sweep with no existing ledger entry anywhere. Filed rather than folded into a neighbouring item, because an unattributed defect riding inside another ticket is how these stayed invisible."
    },
    "progress": {
-    "noted_on": "2026-09-22",
-    "note": "TWO OF THREE FIXED. Option B of the drafted set was chosen: widen COIN_SYMBOL_MAP first, because it — not the upstreams — was the binding constraint. (1) THE COIN MAP now carries liquid-staking and restaking derivatives for eth, sol, avax and bnb. Measured effect on the working rung: DefiLlama went from 97 to 157 pools, the new survivors being exactly STETH, WBETH, WEETH, RETH and JITOSOL. (2) PENDLE is repointed and LIVE for the first time — it had been returning nothing at all. Three changes were needed, not one: the path lost its `/sdk` segment, `?order_by=liquidity:desc` is now rejected with HTTP 400, and `totalLiquidity` became `liquidity`, AN OBJECT `{ usd, acc }`. It yields 1 pool today, which is correct rather than disappointing — Pendle's chain-1 universe is dominated by yield-bearing stables this app does not cover.",
-    "remaining_work": "(1) YEARN is still unwired and still blocked on TERMS, not code: its API moved to ydaemon.yearn.fi (/1/vaults/all answers 200 with 524KB), which is a NEW HOST with no source-terms entry. sourceTerms.test.ts fails the suite on an unregistered host — the gate working as designed. Someone must read Yearn's terms and add a dated verdict before the fetcher can be repointed. (2) BEEFY is still empty, and the coin-map widening barely moved it: 8 resolved became 9, and all 9 are still cut by the $1,000,000 min_tvl default. That was flagged as a separate question in the options document and was NOT part of the ruling, so min_tvl is untouched. It remains open: is $1m the right bar for a DISCOVERY surface, and should the route signal when a source returned items that were all filtered locally?",
-    "corrections": [
-     "The `liquidity` shape change was NOT in the earlier diagnosis, which called it a rename. A rename-only fix compiles and then silently compares an object to a number: `(m.liquidity ?? 0) < minTvl` evaluates `NaN < 1000000`, which is false, so every market would PASS the liquidity gate — a filter that quietly stops filtering. Caught by measuring the live payload rather than by reading the diff.",
-     "The filed question — which of the three whitelist flags replaces `isWhitelisted` — turned out to have no consequence. Measured before the widening, Pro admitted 28 markets past liquidity/APY/expiry, LimitOrder 27 and Simple 1, and ALL THREE resolved to zero pools afterwards. `isWhitelistedPro` was chosen as the closest analogue to the old single flag; revisit only if the coin map grows further."
-    ],
+    "noted_on": "2026-09-26",
+    "note": "NEW EVIDENCE from T-172: the discovery response now reports each upstream outcome, and on every request since it landed Yearn reads `failed: fetch failed` — a connection-level failure, not an empty answer. So of the three zero-contributors this item names, Yearn is a DEAD or MOVED endpoint (the repoint to ydaemon.yearn.fi this item already anticipates, gated on a terms entry), Beefy is `live (0)` — it answers and nothing passes the $1M min_tvl gate — and Pendle is `live (1)` after the 2026-09-22 repoint. Three different cures, now distinguishable from the payload rather than from a probe.",
     "evidence": [
-     "frontend/src/lib/data/stakingDiscovery.ts — the widened map, with the exclusions documented",
-     "frontend/src/lib/data/__tests__/stakingCoinMap.test.ts — 26 tests; the synthetic exclusions and the prefix-clash guard are both mutation-checked",
-     "frontend/src/app/live-data/staking-discovery/route.ts — Pendle repointed"
+     "frontend/src/app/live-data/staking-discovery/route.ts"
     ]
    }
   },
@@ -36499,6 +36525,27 @@
     "evidence": [
      "docs/architecture/risk-framework.md",
      "CLAUDE.md"
+    ]
+   },
+   {
+    "on": "2026-09-26",
+    "what": "T-172 closed: latency re-measured at under 2 s; per-upstream outcomes added to the discovery response and panel.",
+    "evidence": [
+     "frontend/src/app/live-data/staking-discovery/route.ts"
+    ]
+   },
+   {
+    "on": "2026-09-26",
+    "what": "D18 applied to the ledger: T-352 and T-353 parked (both carried open since the 2026-09-14 ruling). T-119 re-scoped to blocked/owner-decision (dev half built; owner copy remains). T-129 tied to the D20 eval run per the ruling.",
+    "evidence": [
+     "docs/decisions/2026-09-14-owner-decisions.md"
+    ]
+   },
+   {
+    "on": "2026-09-26",
+    "what": "T-070 owner-machine half run: 14/14 candidates quotable and actively trading; expense ratios pending approval; re-scoped to blocked/owner-decision on the unruled proposal.",
+    "evidence": [
+     "docs/proposals/2026-09-21-fund-catalog-candidates.md"
     ]
    }
   ]
