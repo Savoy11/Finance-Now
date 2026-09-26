@@ -289,6 +289,13 @@ the same one:
 3. **Bitget** needs its own answer, because the question is different in kind.
 
 Until then the annotation on each entry is the control, and `T-407` is the tracking item.
+
+**The switch exists (2026-09-26, T-247).** `whatMayBeDisplayed` is a real registry field —
+CoinDesk and Investing.com carry `unclear`, the six publishers that grant summaries carry
+`headline-link-summary` — and `summaryPermitted()` gates every summary site in the three news
+routes on the article's host. If either scope question resolves toward headline-and-link, the
+change is one field and the summaries go dark on every route at once, with the tests updated
+to match. Nothing is withheld today; this is the mechanism, not a decision.
 **Nothing here is an emergency and nothing here should be quietly closed.** Three of the
 four were the owner's deliberate 2026-09-20 calls made *with* the readings in hand; this
 section exists so those calls stay visible rather than ageing into apparent settledness.
