@@ -159,6 +159,19 @@ const FACTS: Fact[] = [
     source: 'COMMODITY + CURRENCY + RATES catalogs',
     asserts: [{ file: 'CLAUDE.md', pattern: /all (\d+) macro instruments/ }],
   },
+  {
+    // Added 2026-09-26 (T-300 closure). D26 deleted stakingAdapter.ts on 2026-09-25 and
+    // both CLAUDE.md's tree and risk-framework.md's status line went on saying "8
+    // profiles … stakingAdapter" for a day, because this count was not watched. A file
+    // deletion is exactly the event a pinned count exists to make loud.
+    id: 'risk-profiles',
+    value: () => execSync('git ls-files "frontend/src/lib/risk/profiles/*.ts"', { cwd: repoRoot, encoding: 'utf8' }).split('\n').filter(Boolean).length,
+    source: 'git ls-files frontend/src/lib/risk/profiles/*.ts',
+    asserts: [
+      { file: 'CLAUDE.md', pattern: /└── profiles\/\s+# (\d+): commodity/ },
+      { file: 'docs/architecture/risk-framework.md', pattern: /\*\*(\d+) profiles\*\*/ },
+    ],
+  },
 ]
 
 const WORDS: Record<string, number> = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10 }

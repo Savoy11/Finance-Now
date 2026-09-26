@@ -78,6 +78,9 @@ export type TermsConfidence = 'high' | 'medium' | 'low'
  */
 export type ReviewState = 'verified' | 'seeded'
 
+/** See `SourceTermsEntry.whatMayBeDisplayed`. */
+export type DisplayGrant = 'headline-link-summary' | 'headline-link' | 'unclear'
+
 export interface SourceTermsEntry {
   /** Registrable host. Matches this host exactly OR any subdomain of it. */
   domain: string
@@ -133,6 +136,24 @@ export interface SourceTermsEntry {
     liftedBy?: string
     note: string
   }
+  /**
+   * What the terms grant a syndicator to SHOW — for content sources (RSS/JSON
+   * feeds), the thing the app actually does with them. Read from the document,
+   * never inferred from a verdict:
+   *
+   * - `headline-link-summary` — the feed's headline, link and summary may be shown
+   *   (with whatever attribution the conditions name).
+   * - `headline-link` — headline and link only. `summaryPermitted()` returns false
+   *   and the three news routes blank the summary for this host.
+   * - `unclear` — the document grants nothing explicit and the owner has chosen to
+   *   proceed on an unresolved scope question (docs/LEGAL-REVIEW.md §7). Renders
+   *   like `headline-link-summary`; the value records that it is a judgement.
+   *
+   * Absent means the question does not arise (an API host) or has not been read.
+   * Added 2026-09-26 under T-247: until then the CoinDesk entry's comment said
+   * this was "recorded" — in prose only, in a field that did not exist.
+   */
+  whatMayBeDisplayed?: DisplayGrant
 }
 
 /**
@@ -1326,7 +1347,8 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     // expansively defined “Services”, or a ToS that never mentions feeds does not reach
     // one the publisher deliberately publishes. The text closes neither.
     //
-    // `whatMayBeDisplayed` is recorded as UNCLEAR rather than headline-and-link-only. That
+    // `whatMayBeDisplayed` is recorded as UNCLEAR rather than headline-and-link-only (a real
+    // field since 2026-09-26, T-247 — before that this sentence described prose only). That
     // distinction is the point: recording the latter would read a grant of headline display
     // into a document that grants none.
     //
@@ -1352,6 +1374,7 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     // does not govern one the publisher deliberately publishes. Live: `coindesk-rss` in
     // /live-data/news renders headline + a 280-char summary today.
     //
+    whatMayBeDisplayed: 'unclear',
     reviewedAt: '2026-09-20',
     review: 'verified',
     confidence: 'medium',
@@ -1363,6 +1386,7 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     termsUrl: 'https://cointelegraph.com/terms-and-privacy',
     finding: 'Publishes a public RSS feed for syndication of headline/link/summary with attribution.',
     conditions: ['Headline, link and feed summary only', 'Attribute and link back to the origin article'],
+    whatMayBeDisplayed: 'headline-link-summary',
     reviewedAt: '2026-09-14',
     review: 'verified',
     confidence: 'medium',
@@ -1374,6 +1398,7 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     termsUrl: 'https://decrypt.co/terms',
     finding: 'Publishes a public RSS feed for syndication of headline/link/summary with attribution.',
     conditions: ['Headline, link and feed summary only', 'Attribute and link back to the origin article'],
+    whatMayBeDisplayed: 'headline-link-summary',
     reviewedAt: '2026-09-14',
     review: 'verified',
     confidence: 'medium',
@@ -1385,6 +1410,7 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     termsUrl: 'https://bitcoinmagazine.com/terms-of-use',
     finding: 'Publishes a public RSS feed for syndication of headline/link/summary with attribution.',
     conditions: ['Headline, link and feed summary only', 'Attribute and link back to the origin article'],
+    whatMayBeDisplayed: 'headline-link-summary',
     reviewedAt: '2026-09-14',
     review: 'verified',
     confidence: 'medium',
@@ -1489,6 +1515,7 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     termsUrl: 'https://www.nbcuniversal.com/terms',
     finding: 'Publishes public RSS feeds per desk for syndication of headline/link/summary with attribution and a link back.',
     conditions: ['Headline, link and feed summary only', 'Attribute CNBC and link back'],
+    whatMayBeDisplayed: 'headline-link-summary',
     reviewedAt: '2026-09-14',
     review: 'verified',
     confidence: 'medium',
@@ -1556,6 +1583,7 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     // ⚠ The quotes come from a hand-written PDF extractor, not poppler — RE-CHECK ANY
     // QUOTE against the PDF page before using it in correspondence with Fusion Media.
     //
+    whatMayBeDisplayed: 'unclear',
     reviewedAt: '2026-09-20',
     review: 'verified',
     confidence: 'medium',
@@ -1569,6 +1597,7 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     termsUrl: 'https://oilprice.com/terms-and-conditions',
     finding: 'Publishes a public RSS feed and permits syndication of headline/link/summary with attribution and a link back.',
     conditions: ['Headline, link and feed summary only', 'Attribute and link back'],
+    whatMayBeDisplayed: 'headline-link-summary',
     reviewedAt: '2026-09-14',
     review: 'verified',
     confidence: 'medium',
@@ -1580,6 +1609,7 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     termsUrl: 'https://www.fxstreet.com/about/terms-of-service',
     finding: 'Publishes a public RSS feed for syndication with attribution and a link back to the origin article.',
     conditions: ['Headline, link and feed summary only', 'Attribute and link back'],
+    whatMayBeDisplayed: 'headline-link-summary',
     reviewedAt: '2026-09-14',
     review: 'verified',
     confidence: 'medium',
@@ -1617,6 +1647,30 @@ export function matchTermsEntry(host: string): SourceTermsEntry | null {
     if (!best || d.length > best.domain.length) best = entry
   }
   return best
+}
+
+/**
+ * May a feed item's SUMMARY be shown for this article/feed URL?
+ *
+ * False only when the governing entry says `headline-link`. An unregistered host,
+ * an entry without the field, and `unclear` all answer true — the last on purpose:
+ * `unclear` is the owner's recorded decision to proceed (LEGAL-REVIEW §7), and
+ * this helper enforces the registry, it does not second-guess it. Flipping a
+ * source to `headline-link` is therefore a one-field change that reaches all
+ * three news routes at once — which is the point of T-247.
+ *
+ * `entries` is injectable so the rule is testable against a fixture.
+ */
+export function summaryPermitted(url: string, entries: readonly SourceTermsEntry[] = SOURCE_TERMS): boolean {
+  const host = hostOf(url)
+  if (!host) return true
+  let best: SourceTermsEntry | null = null
+  for (const entry of entries) {
+    const d = entry.domain.toLowerCase()
+    if (host !== d && !host.endsWith(`.${d}`)) continue
+    if (!best || d.length > best.domain.length) best = entry
+  }
+  return best?.whatMayBeDisplayed !== 'headline-link'
 }
 
 export interface SourceTermsDecision {

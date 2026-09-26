@@ -56,8 +56,8 @@
   "total_verified": 398,
   "outstanding": 349,
   "by_status": {
-   "open": 63,
-   "closed": 128,
+   "open": 61,
+   "closed": 130,
    "blocked": 67,
    "unclear": 1,
    "parked": 90
@@ -69,8 +69,8 @@
    "owner-machine": 83
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 128,
-  "counts_recomputed_on": "2026-09-25",
+  "closed_by_annotation": 130,
+  "counts_recomputed_on": "2026-09-26",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 349
  },
@@ -2139,7 +2139,7 @@
   {
    "id": "T-300",
    "title": "Review all project documents for accuracy against what ships",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "docs",
@@ -2159,6 +2159,21 @@
     "noted_on": "2026-09-19",
     "note": "PART DONE 2026-09-19. A 21-agent accuracy sweep covered 8 working documents (CLAUDE.md, ROADMAP.md, dataSources.ts/DATA-SOURCES.md, source-terms.md, P3-production-review.md, the 2026-07-30 audit+proposals pair, README.md, the equities TA page): 52 corrections applied, 21 of 52 proposed replacements REFUTED by an adversarial pass before they could land. Two completeness critics then swept the documents nobody was assigned and found 22 further gaps, 14 of which were fixed here. NOT DONE, and now the highest-value remainder: docs/architecture/overview.md describes the retired two-service system as current throughout (only a banner was added); docs/runbooks/scaling.md and its sibling document operating a Kubernetes deployment that never existed; docs/MARKET-ASSESSMENT.md's own stale-claim banner has itself expired; docs/audits/production-readiness-scorecard.md scopes a retired backend. ROOT CAUSE identified: docs/agents/checklist-steward.md's inventory table has no row for the architecture, deployment, runbook, policy or decision families, so every document that drifted worst is one no agent was told to keep true.",
     "evidence": "docs/audits/doc-accuracy-sweep-2026-09-19.md"
+   },
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-26",
+    "basis": "verified-here",
+    "verdict": "already-done",
+    "reason": "THE 2026-09-19 \"NOT DONE\" LIST WAS DONE ON 2026-09-20/22 AND THE ITEM NEVER LEARNED. Every document it named carries a dated correction now: docs/architecture/overview.md (a four-kinds-of-wrong banner dated 2026-09-20 — which is the treatment docs/agents/checklist-steward.md prescribes for architecture docs: \"never rewrite a design rationale — add a dated banner\"), docs/runbooks/scaling.md and incident-response.md (2026-09-22), docs/MARKET-ASSESSMENT.md (the expired banner updated 2026-09-20), docs/audits/production-readiness-scorecard.md (scope correction 2026-09-20). The ROOT CAUSE it identified is fixed too: the steward inventory table gained rows for docs/architecture, docs/deployment + runbooks, docs/policies + decisions, the other audits, and the charters in #209 (2026-09-20). RESIDUAL SWEEP 2026-09-26: every .md under docs/ mentioning FastAPI, :8000, Celery, kubectl, EKS or TimescaleDB was checked for a dated correction in its head. Sixteen files match; eleven carry a banner; of the five without, ROADMAP.md says the backend \"stays dormant\" (true), auth.md's mentions sit inside its own correction blocks, and app-audit-2026-07-27.md and doc-accuracy-sweep-2026-09-19.md are dated records that stay as written by policy. The one real stale claim found — risk-framework.md's status line and CLAUDE.md's tree both still listing \"8 profiles … stakingAdapter\" after D26 deleted it — is fixed in this closure, and the profile count joins docs:check's pinned set so the next such deletion fails loudly.",
+    "scope_note": "The item says \"both repos\". This closes the Finance Now half; the Chronolens half belongs to that repository's own queue and is not touched here.",
+    "evidence": [
+     "docs/agents/checklist-steward.md",
+     "docs/architecture/overview.md",
+     "docs/runbooks/scaling.md",
+     "docs/MARKET-ASSESSMENT.md",
+     "docs/audits/production-readiness-scorecard.md"
+    ]
    }
   },
   {
@@ -6979,7 +6994,7 @@
   {
    "id": "T-247",
    "title": "Conditional: stop rendering feed summaries if any publisher permits headline-and-link only",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "feature",
@@ -7002,6 +7017,18 @@
      "frontend/src/lib/server/sourceTerms.ts",
      "frontend/src/app/live-data/news/route.ts",
      "frontend/src/app/live-data/macro-news/route.ts"
+    ]
+   },
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-26",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "BUILT, on the re-scoped terms: a per-source display grant, `whatMayBeDisplayed` (headline-link-summary | headline-link | unclear), with `summaryPermitted(url)` as its one enforcement point, called at all nine summary sites across /live-data/news (incl. the Messari, NewsAPI and GNews parsers), /live-data/market-news and /live-data/macro-news, gated on the ARTICLE host so a feed carrying several publishers is judged per item. Eight publisher entries carry a value from their readings: six `headline-link-summary`, CoinDesk and Investing.com `unclear`. No source is `headline-link` today, so nothing is withheld — this is the switch, and flipping either T-407 source is now a one-field change. It also closes the defect filed under this item on 2026-09-23: the CoinDesk comment claimed `whatMayBeDisplayed` was \"recorded\" in a field that did not exist. displayGrant.test.ts pins the rule, the values, and that no summary site is ungated.",
+    "known_gap": "When a source IS flipped to headline-link, the routes blank the summary but do not yet tell the reader why (no per-article `summaryWithheld` marker). Deliberately left for the flip itself — adding a field to three article types and the UI for a state no source is in would be speculative work.",
+    "evidence": [
+     "frontend/src/lib/server/sourceTerms.ts",
+     "frontend/src/lib/server/__tests__/displayGrant.test.ts"
     ]
    }
   },
@@ -11360,10 +11387,10 @@
     "why": "Owner, 2026-09-23: \"I have some concerns around coindesk which will require some additional research, for now annotate and we will revisit this and any similar cases.\" Scanning the registry for \"similar cases\" found three more, and a D22 gap alongside them."
    },
    "progress": {
-    "noted_on": "2026-09-24",
-    "note": "NARROWED from four to three: publicnode was decided under D25 (narrow reading kept). CoinDesk and Investing.com still turn on the one shared question (does a terms document that never mentions feeds govern a feed the publisher publishes and permits in robots.txt?); Bitget still turns on §1 Prohibited Countries naming the United States, and does not wait for the others.",
+    "noted_on": "2026-09-26",
+    "note": "MECHANISM READY (T-247): CoinDesk and Investing.com carry whatMayBeDisplayed: unclear. Resolving either toward headline-and-link is now setting that field to headline-link — the three news routes blank the summary automatically — plus updating displayGrant.test.ts's \"no source is headline-link today\" assertion with the decision. The question itself is unchanged and still the owner's (or a professional's).",
     "evidence": [
-     "docs/decisions/2026-09-24-owner-decisions.md"
+     "frontend/src/lib/server/sourceTerms.ts"
     ]
    }
   },
@@ -36457,6 +36484,21 @@
     "what": "D26 executed: the six staking risk dimensions removed from every surface. T-409 closed; T-394 re-scoped to factual fields; T-265 moot; T-357 annotated with the precedent.",
     "evidence": [
      "docs/decisions/2026-09-25-owner-decisions.md"
+    ]
+   },
+   {
+    "on": "2026-09-26",
+    "what": "T-247 built and closed: the per-source display switch. T-407 annotated — flipping a source is one field now.",
+    "evidence": [
+     "frontend/src/lib/server/sourceTerms.ts"
+    ]
+   },
+   {
+    "on": "2026-09-26",
+    "what": "T-300 closed as already-done after a residual sweep; one D26-era stale count fixed in two docs and pinned.",
+    "evidence": [
+     "docs/architecture/risk-framework.md",
+     "CLAUDE.md"
     ]
    }
   ]

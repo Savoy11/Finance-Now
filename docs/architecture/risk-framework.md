@@ -1,8 +1,9 @@
 # Unified Risk Framework
 
-**Status:** v1 core implemented (`frontend/src/lib/risk/`) · **8 profiles**: commodity,
-cryptoAsset, currency, equity, optionsTrade, rateInstrument, stablecoin, stakingAdapter
-**Date:** 2026-07-03 · **Status line refreshed:** 2026-09-08
+**Status:** v1 core implemented (`frontend/src/lib/risk/`) · **7 profiles**: commodity,
+cryptoAsset, currency, equity, optionsTrade, rateInstrument, stablecoin (stakingAdapter was
+the 8th until owner decision D26 deleted it, 2026-09-25)
+**Date:** 2026-07-03 · **Status line refreshed:** 2026-09-26
 
 > **The canonical scale, its bands and its vocabulary are specified in
 > [`risk-scale-spec.md`](./risk-scale-spec.md), not here.** This document is the

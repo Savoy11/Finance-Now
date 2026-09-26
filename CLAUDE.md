@@ -202,9 +202,8 @@ frontend/src/
 │   │   ├── normalize.ts            # piecewise/linear normalizers, vol, drawdown
 │   │   └── profiles/               # 7: commodity, cryptoAsset, currency, equity,
 │   │                               #   optionsTrade, rateInstrument, stablecoin
-│   │                               #   (macro three added by P2-R3). Was 8 —
-│   │                               #   stakingAdapter went with the six dimensions
-│   │                               #   it scored, 2026-09-25 (D26)
+│   │                               #   (macro three added by P2-R3; stakingAdapter
+│   │                               #   was the 8th until D26 deleted it, 2026-09-25)
 │   │                               #   (derive: ls src/lib/risk/profiles | wc -l)
 │   ├── auth/                       # Auth.js config + getCurrentUserId()/requireUserId()
 │   ├── db/                         # Drizzle schema + client (users, entitlements, instruments,
@@ -842,6 +841,16 @@ flow a lie.
   then edit the URL" is a hole straight through the gate). A hard block is `403` with no
   override; anything else needing a human is `409` carrying the report, and the
   Integrations UI shows the matched clauses and asks for `termsAcknowledged`.
+
+**One display field, and it is the switch (T-247, 2026-09-26):** `whatMayBeDisplayed` on a
+content source records what its terms grant a syndicator to *show* — `headline-link-summary`,
+`headline-link`, or `unclear` (the owner's recorded decision to proceed on an unresolved scope
+question — LEGAL-REVIEW §7). `summaryPermitted(url)` is its one enforcement point and every
+summary site in the three news routes calls it, gated on the **article's** host; only
+`headline-link` blanks a summary. So resolving CoinDesk or Investing.com toward
+headline-and-link is a one-field change that reaches all three routes at once.
+`lib/server/__tests__/displayGrant.test.ts` pins the rule, the eight publisher values, and
+that no summary site is ungated. No source is `headline-link` today.
 
 **Two review states**, and the split is not cosmetic:
 - `verified` — someone opened the document and read the relevant clauses on `reviewedAt`.

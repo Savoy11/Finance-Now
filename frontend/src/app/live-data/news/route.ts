@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { summaryPermitted } from '@/lib/server/sourceTerms'
 import { getNewsProviders, recordProviderFetch, type AnyActiveProvider, type CustomProviderDef } from '@/lib/api/live/providers'
 import { ASSET_LIST } from '@/lib/data/assetList'
 import { pinnedFetch } from '@/lib/server/pinnedFetch'
@@ -488,7 +489,10 @@ function parseRssFeed(xml: string, provider: CustomProviderDef, limit: number): 
     return {
       id: `${provider.id}-${i}-${Date.now()}`,
       headline: item.title,
-      summary: item.summary.slice(0, 280),
+      // Blank when the publisher's terms grant headline-and-link only (T-247;
+      // registry field `whatMayBeDisplayed`). Gated on the ARTICLE url, so a feed
+      // that syndicates several hosts is judged per item.
+      summary: summaryPermitted(item.url) ? item.summary.slice(0, 280) : '',
       source: item.sourceName ?? provider.name,
       provider: provider.id,
       providerLabel: provider.name,
@@ -538,7 +542,7 @@ function parseJsonNewsFeed(data: unknown, provider: CustomProviderDef, limit: nu
     }
 
     const headline = get('headline') || get('title')
-    const summary  = (get('summary') || get('description')).slice(0, 280)
+    const summary  = summaryPermitted(articleUrl) ? (get('summary') || get('description')).slice(0, 280) : ''
     const text = headline + ' ' + summary
 
     return {
@@ -624,7 +628,8 @@ async function fetchMessari(apiKey: string, assetFilter: string, limit: number):
 
   return ((data.data as Array<Record<string, unknown>>) ?? []).map((item, i): LiveNewsArticle => {
     const headline = (item.title as string) ?? ''
-    const summary  = ((item.content as string) ?? '').slice(0, 280)
+    // Gated on the article's own host, like every other summary site (T-247).
+    const summary  = summaryPermitted((item.url as string) ?? '') ? ((item.content as string) ?? '').slice(0, 280) : ''
     const text = headline + ' ' + summary
     return {
       id: `ms-${(item.id as string) ?? i}`,
@@ -659,7 +664,7 @@ async function fetchNewsAPI(apiKey: string, assetFilter: string, limit: number, 
 
   return ((data.articles as Array<Record<string, unknown>>) ?? []).map((item, i): LiveNewsArticle => {
     const headline = (item.title as string) ?? ''
-    const summary  = (item.description as string) ?? ''
+    const summary  = summaryPermitted((item.url as string) ?? '') ? ((item.description as string) ?? '') : ''
     const text = headline + ' ' + summary
     return {
       id: `na-${i}-${Date.now()}`,
@@ -719,7 +724,7 @@ async function fetchGNews(apiKey: string, assetFilter: string, limit: number, se
 
   return ((data.articles as Array<Record<string, unknown>>) ?? []).map((item, i): LiveNewsArticle => {
     const headline = (item.title as string) ?? ''
-    const summary  = (item.description as string) ?? ''
+    const summary  = summaryPermitted((item.url as string) ?? '') ? ((item.description as string) ?? '') : ''
     const text = headline + ' ' + summary
     return {
       id: `gn-${i}-${Date.now()}`,
