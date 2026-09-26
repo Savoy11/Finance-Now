@@ -5,7 +5,7 @@ import { clsx } from 'clsx'
 import { Sliders } from 'lucide-react'
 import {
   ASSET_CLASS_INFO, BOND_STYLES, buildFromAllocation, validateAllocation,
-  type AllocationInputs, type BuilderAssetClass, type BondStyle, type BuiltPortfolio,
+  type AllocationInputs, type BuilderAssetClass, type BondStyle, type BuiltPortfolio, TILTABLE_SECTORS,
 } from '@/lib/data/portfolioBuilder'
 import { SECTOR_INFO, type SectorId } from '@/lib/data/equityCatalog'
 import { formatCurrency } from '@/lib/utils/format'
@@ -27,9 +27,6 @@ import { formatCurrency } from '@/lib/utils/format'
 const CLASSES: BuilderAssetClass[] = [
   'us-equity', 'intl-equity', 'sector-tilt', 'bonds', 'inflation', 'cash', 'crypto', 'commodity', 'currency',
 ]
-
-/** Sectors with a catalog ETF behind them — the same set the questionnaire tilts. */
-const TILTABLE: SectorId[] = ['technology', 'financials', 'energy', 'healthcare', 'industrials', 'utilities', 'real-estate']
 
 export function AllocationBuilder({ onBuilt }: { onBuilt: (plan: BuiltPortfolio) => void }) {
   const [amount, setAmount] = useState(25_000)
@@ -151,7 +148,7 @@ export function AllocationBuilder({ onBuilt }: { onBuilt: (plan: BuiltPortfolio)
             Sector weights <span className="normal-case text-text-muted/70">(as % of your sector sleeve)</span>
           </span>
           <div className="grid gap-2 sm:grid-cols-3">
-            {TILTABLE.map((s) => (
+            {TILTABLE_SECTORS.map((s) => (
               <label key={s} className="flex items-center gap-2 rounded border border-border bg-bg-elevated px-2 py-1.5">
                 <span className="flex-1 truncate text-xs text-text-secondary">{SECTOR_INFO[s].label}</span>
                 <input

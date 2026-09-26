@@ -17,7 +17,7 @@ import {
   CRYPTO_STYLES, COMMODITY_STYLES, CURRENCY_STYLES, BOND_STYLES,
   type BuiltPortfolio, type CryptoComfort, type SavedPlan,
   type BuilderAssetClass, type SleeveAppetite,
-  type CryptoStyle, type CommodityStyle, type CurrencyStyle, type BondStyle,
+  type CryptoStyle, type CommodityStyle, type CurrencyStyle, type BondStyle, TILTABLE_SECTORS,
 } from '@/lib/data/portfolioBuilder'
 import { AllocationBuilder } from '@/components/portfolio-builder/AllocationBuilder'
 import { formatCurrency } from '@/lib/utils/format'
@@ -83,11 +83,6 @@ function SleeveRow({ label, appetite, onAppetite, styleValue, onStyle, styleOpti
 
 const styleOptions = (t: Record<string, { label: string }>): Array<[string, string]> =>
   Object.entries(t).map(([v, { label }]) => [v, label])
-
-/** Sectors with a catalog ETF to tilt into. */
-const TILTABLE_SECTORS: SectorId[] = [
-  'technology', 'financials', 'energy', 'healthcare', 'industrials', 'utilities', 'real-estate',
-]
 
 // Portfolio Builder — premium module (own entitlement = separately sellable).
 // v1: questionnaire → diversified target allocation with rationale, saved
