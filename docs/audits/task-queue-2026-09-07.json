@@ -56,16 +56,16 @@
   "total_verified": 398,
   "outstanding": 349,
   "by_status": {
-   "open": 60,
+   "open": 56,
    "closed": 131,
-   "blocked": 67,
+   "blocked": 69,
    "unclear": 1,
-   "parked": 90
+   "parked": 92
   },
   "by_owner_role": {
    "remote-dev": 84,
-   "either": 41,
-   "owner-decision": 141,
+   "either": 39,
+   "owner-decision": 143,
    "owner-machine": 83
   },
   "closed_but_listed_open_in_docs": 60,
@@ -3087,12 +3087,12 @@
   {
    "id": "T-352",
    "title": "Bond profile follow-up — scale duration by realized rate volatility",
-   "status": "open",
+   "status": "parked",
    "confidence": "medium",
    "owner_role": "remote-dev",
    "category": "feature",
    "effort": "medium",
-   "blocking_decision": null,
+   "blocking_decision": "D18 (2026-09-14): defer until a consumer exists — trigger is a surface approved to render the score. Parked by ruling; the ledger carried it as open for twelve days.",
    "related_ids": [
     "P5",
     "§6.1"
@@ -3105,7 +3105,16 @@
      "lines": "560-563",
      "quote": "v1 treats duration as a standalone proxy (defensible for a research tool) but the dimension must be documented as such, and evidence must carry raw duration so a user can see the primitive. A later version should scale it by realized rate vol."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-09-26",
+    "note": "PARKED UNDER D18 — the ledger never learned the ruling. Not built. One thing D18 should know when it is revisited: its stated premise (\"after D14, the options scorer is lib/risk’s last live consumer\") is incomplete. rateInstrumentRiskTier() in lib/risk/profiles/rateInstrument.ts calls scoreRateInstrument() and feeds `riskTier` on every rate instrument in lib/data/instruments.ts, which the Portfolios weighted-risk figure averages over. So the duration dimension this item would rescale IS consumed today — by a tier, not a rendered score. Whether that figure is \"a surface approved to render the score\" (D18’s trigger) is the owner’s reading, not this pass’s; and after RP-6, D26 and T-357, whether a per-instrument risk tier should be refined or removed is the same open question. Recorded so the next visit starts from the true state.",
+    "evidence": [
+     "frontend/src/lib/risk/profiles/rateInstrument.ts",
+     "frontend/src/lib/data/instruments.ts",
+     "docs/decisions/2026-09-14-owner-decisions.md"
+    ]
+   }
   },
   {
    "id": "T-001",
@@ -3199,12 +3208,12 @@
   {
    "id": "T-070",
    "title": "S6 — catalog growth with provenance discipline",
-   "status": "open",
+   "status": "blocked",
    "confidence": "high",
-   "owner_role": "either",
+   "owner_role": "owner-decision",
    "category": "feature",
    "effort": "medium",
-   "blocking_decision": null,
+   "blocking_decision": "Rule on docs/proposals/2026-09-21-fund-catalog-candidates.md — which of the three groups (sector XLC/XLP/XLY/XLB; bond VCSH/VMBS/VTIP/EMLC/BKLN; international VSS/VGK/EWJ/VYMI/HEFA) to add, plus the two judgement calls the proposal names (VYMI’s category; whether BKLN belongs in `bond` at all under fundRiskLevel()). All 14 passed the quotable + actively-trading probe on 2026-09-26; expense ratios are still to be read once a group is approved.",
    "related_ids": [
     "S6"
    ],
@@ -3229,7 +3238,8 @@
     "corrections": [
      "The strongest evidence of a sector gap was in code rather than the catalog: portfolioBuilder.ts:222 types SECTOR_ETF as Partial<Record<SectorId, string>> — the type itself admits not every GICS sector is covered, and seven of eleven are mapped. That is NOT a bug and was nearly reported as one: the UI hard-codes TILTABLE_SECTORS to exactly the seven that have a fund, so no user is ever offered a tilt that would silently do nothing.",
      "An inference was available and refused. The six Select Sector SPDR siblings all sit at 0.09, which makes 0.09 very tempting for the missing four. The catalog's own provenance banner records UNG (0.60 -> 1.17) and CPER (0.65 -> 0.88) as cases where that reasoning produced a wrong published fee, so every proposed ER is marked unverified instead.",
-     "Flagged, not acted on: fundRiskLevel() maps category 'bond' to 'conservative' with no discrimination, and the catalog already strains it — HYG (high yield) and EMB (EM sovereign) both band Conservative today. Two proposed candidates would strain it further. That is a modelling decision, not a catalog one."
+     "Flagged, not acted on: fundRiskLevel() maps category 'bond' to 'conservative' with no discrimination, and the catalog already strains it — HYG (high yield) and EMB (EM sovereign) both band Conservative today. Two proposed candidates would strain it further. That is a modelling decision, not a catalog one.",
+     "2026-09-26: THE OWNER-MACHINE HALF RAN, on the owner’s machine, egress verified clean first (Charter AS11426, proxy:false hosting:false), and with no `npm run audit` beforehand as the proposal requires. (1) The RR index URL needs no finding — `npm run fund-fees -- --inspect` resolved sec.gov from its built-in list and printed the tag table, so that half of next_action is moot. (2) All 14 candidates are QUOTABLE through the app’s own ladder (finnhub, none reference) and ACTIVELY TRADING (22 daily closes 2026-08-26..2026-09-25 via tiingo, not one cached price). (3) Expense ratios are NOT yet read: `npm run fund-prospectus-fees -- --symbols …` answered no-cik for all 14 because it resolves through company_tickers.json (operating companies) — all 14 DO resolve in company_tickers_mf.json (cik + series + class ids, fetched 2026-09-26), so the Risk/Return dataset path is viable and the prospectus probe needs only a fallback to that map. That is the script’s reach, not evidence about the funds; the Risk/Return path (build-fund-fees.mjs) reconciles only catalog rows and has no candidate mode. Both are small script gaps worth closing when a group is approved, and neither is a reason to write a figure from memory. Re-scoped to blocked/owner-decision: nothing further is a developer’s until the proposal is ruled on."
     ],
     "evidence": [
      "docs/proposals/2026-09-21-fund-catalog-candidates.md"
@@ -3754,12 +3764,12 @@
   {
    "id": "T-119",
    "title": "Per-link affiliate disclosure UI + 'How we make money' page",
-   "status": "open",
+   "status": "blocked",
    "confidence": "medium",
-   "owner_role": "either",
+   "owner_role": "owner-decision",
    "category": "feature",
    "effort": "medium",
-   "blocking_decision": null,
+   "blocking_decision": "Owner copy for the four OwnerCopyRequired placeholders on /how-we-make-money (docs/BUSINESS-CHECKLIST.md §3: the formal disclosure naming the commission-receiving entity; which referral programs are joined and what they permit; jurisdiction handling incl. UK FCA financial-promotion rules; a complaints route). The item itself says not to invent the wording.",
    "related_ids": [
     "P2"
    ],
@@ -3779,7 +3789,8 @@
     "corrections": [
      "FOUR DISCLOSURE STRINGS PROMISED SOMETHING THAT DOES NOT EXIST, and were fixed. The per-link tooltip (both branches) told the reader a paid link \"does not affect this provider's RISK SCORE\", and the page said the same twice more. D14 removed every composite staking risk score; the six RiskProfile dimensions are published as they are. Reassuring a reader about a number the app does not publish is wrong on its face.",
      "Worse than inaccurate in one place: the page claimed the providers it could be paid by \"are systematically not the ones that SCORE BEST\". Nothing scores best — that sentence asserts a ranking, which is the exact shape RP-3 forbids, inside the document whose job is to explain the integrity rules. All four now describe the published dimensions and ordering, both of which lib/data/__tests__/affiliates.test.ts already enforces.",
-     "Deliberately NOT built: a guard test scanning user-facing copy for risk-score language. Text-scanning guards misfired three times in this session, each caught by explanatory prose rather than a real regression — the comment documenting this very fix would trip one. The behaviour is already structurally guarded; the copy is downstream of a decision, and D14 is in the do-not-fix registry where a reviewer will meet it."
+     "Deliberately NOT built: a guard test scanning user-facing copy for risk-score language. Text-scanning guards misfired three times in this session, each caught by explanatory prose rather than a real regression — the comment documenting this very fix would trip one. The behaviour is already structurally guarded; the copy is downstream of a decision, and D14 is in the do-not-fix registry where a reviewer will meet it.",
+     "2026-09-26: re-scoped from open/either to blocked/owner-decision. The 2026-09-21 verification found the per-link tag and the page built and reachable; nothing on this item is a developer’s any more, and an \"either\" item that only the owner can finish reads as available work when it is not."
     ],
     "evidence": [
      "frontend/src/components/ui/SponsoredLink.tsx:60-104",
@@ -3847,7 +3858,8 @@
     "remaining_work": "The result-quality half is untouched and is owner-gated: it needs `npm run audit` on the owner's machine with provider keys, then driving /equities, /funds, /assets, /coin-discovery and the three scanner pages to record findings BEFORE changing any defaults. Also left open by the verification: whether W3-2's min-liquidity input should come back — see the correction below.",
     "corrections": [
      "The audit this item cites is MISFILED in its own citation. It names docs/audits/screener-consistency-2026-07-30.md, which does not exist; the document is at docs/assessments/screener-consistency-2026-07-30.md. That wrong path is almost certainly why the earlier 2026-09-12 annotation concluded the consistency pass had not happened. It did happen, on 2026-07-30.",
-     "W3-2 IS THE PARTS-INVENTORY PATTERN IN MINIATURE, and docs/TASK-QUEUE.md:1627 reads as fully delivered. The min-liquidity filter code, the derived sort key, its tests and a rendered sortable column all exist, and the SORT works end to end — but the filter INPUT was removed along with the /assets screener bar on 2026-08-22, so that filter can never be switched on from the UI. The code documents this at AssetRegistryClient.tsx:137-141. Restoring the inputs is UI-only (the store fields and applyParams support already exist) but it is a product decision, not a bug fix."
+     "W3-2 IS THE PARTS-INVENTORY PATTERN IN MINIATURE, and docs/TASK-QUEUE.md:1627 reads as fully delivered. The min-liquidity filter code, the derived sort key, its tests and a rendered sortable column all exist, and the SORT works end to end — but the filter INPUT was removed along with the /assets screener bar on 2026-08-22, so that filter can never be switched on from the UI. The code documents this at AssetRegistryClient.tsx:137-141. Restoring the inputs is UI-only (the store fields and applyParams support already exist) but it is a product decision, not a bug fix.",
+     "2026-09-26: the result-quality half is not separate work — D20 (2026-09-14) says the one-off agent-eval run \"closes T-001 and T-129’s result-quality half\". Preflight on 2026-09-26: dev server up, Anthropic key configured, egress clean (Charter AS11426, proxy:false hosting:false). `npm run agent-eval` (plan only) selected 11 of 11. The `--run` bills the owner’s key and is the owner’s to trigger; nothing here evaluated output."
     ],
     "evidence": [
      "docs/ROADMAP.md — the 2026-09-21 steward annotation",
@@ -3929,12 +3941,12 @@
   {
    "id": "T-353",
    "title": "ETF/fund risk profile (fund.ts)",
-   "status": "open",
+   "status": "parked",
    "confidence": "medium",
    "owner_role": "either",
    "category": "feature",
    "effort": "medium",
-   "blocking_decision": "none (owner approval to queue; P5 affects aggregation only)",
+   "blocking_decision": "D18 (2026-09-14): defer until a consumer exists — trigger is a surface approved to render the score. Parked by ruling; the ledger carried it as open for twelve days.",
    "related_ids": [
     "§4"
    ],
@@ -3946,7 +3958,16 @@
      "lines": "122",
      "quote": "3. **ETF/fund profile** — expense ratio, AUM, tracking error, concentration."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-09-26",
+    "note": "PARKED UNDER D18 — the ledger never learned the ruling. Not built. Two facts for the revisit: (1) a fund risk tier already exists — fundRiskTier() in lib/data/instruments.ts assigns one per fund today, so this item is a REPLACEMENT of that rule with a scored profile, not a first tier; (2) it lands squarely on the T-357 question (does RP-6’s \"no per-asset risk figure\" extend beyond crypto?), which D26 sharpened for staking on 2026-09-25 and the owner has not yet answered for funds or equities. Building it before that answer would be building the thing the answer may remove.",
+    "evidence": [
+     "frontend/src/lib/data/instruments.ts",
+     "docs/decisions/2026-09-14-owner-decisions.md",
+     "docs/decisions/2026-09-25-owner-decisions.md"
+    ]
+   }
   },
   {
    "id": "T-059",
@@ -36511,6 +36532,20 @@
     "what": "T-172 closed: latency re-measured at under 2 s; per-upstream outcomes added to the discovery response and panel.",
     "evidence": [
      "frontend/src/app/live-data/staking-discovery/route.ts"
+    ]
+   },
+   {
+    "on": "2026-09-26",
+    "what": "D18 applied to the ledger: T-352 and T-353 parked (both carried open since the 2026-09-14 ruling). T-119 re-scoped to blocked/owner-decision (dev half built; owner copy remains). T-129 tied to the D20 eval run per the ruling.",
+    "evidence": [
+     "docs/decisions/2026-09-14-owner-decisions.md"
+    ]
+   },
+   {
+    "on": "2026-09-26",
+    "what": "T-070 owner-machine half run: 14/14 candidates quotable and actively trading; expense ratios pending approval; re-scoped to blocked/owner-decision on the unruled proposal.",
+    "evidence": [
+     "docs/proposals/2026-09-21-fund-catalog-candidates.md"
     ]
    }
   ]
