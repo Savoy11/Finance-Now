@@ -227,7 +227,22 @@ const SECTOR_ETF: Partial<Record<SectorId, string>> = {
   'industrials': 'XLI',
   'utilities': 'XLU',
   'real-estate': 'VNQ',
+  // T-410 (2026-09-26): the four sectors that had no broad catalog fund until D27
+  // added the Select Sector SPDRs for them. Still Partial — 'other' has no fund.
+  'communication-services': 'XLC',
+  'consumer-staples': 'XLP',
+  'consumer-discretionary': 'XLY',
+  'materials': 'XLB',
 }
+
+/**
+ * The sectors a plan can tilt toward — DERIVED from the map above so the questionnaire
+ * chips and the allocation builder's inputs cannot drift from what the engine can
+ * actually buy. Until 2026-09-26 both UI files carried their own hand-typed copy of
+ * this list (seven entries), which is the shape of bug the derive-never-type rule
+ * exists for: add a fund here and the UI would silently keep offering seven.
+ */
+export const TILTABLE_SECTORS = Object.keys(SECTOR_ETF) as SectorId[]
 
 function fund(symbol: string) {
   const f = FUND_CATALOG.find((x) => x.symbol === symbol)
