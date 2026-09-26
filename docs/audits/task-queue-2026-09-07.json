@@ -56,8 +56,8 @@
   "total_verified": 398,
   "outstanding": 349,
   "by_status": {
-   "open": 63,
-   "closed": 128,
+   "open": 62,
+   "closed": 129,
    "blocked": 67,
    "unclear": 1,
    "parked": 90
@@ -69,8 +69,8 @@
    "owner-machine": 83
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 128,
-  "counts_recomputed_on": "2026-09-25",
+  "closed_by_annotation": 129,
+  "counts_recomputed_on": "2026-09-26",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 349
  },
@@ -6979,7 +6979,7 @@
   {
    "id": "T-247",
    "title": "Conditional: stop rendering feed summaries if any publisher permits headline-and-link only",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "feature",
@@ -7002,6 +7002,18 @@
      "frontend/src/lib/server/sourceTerms.ts",
      "frontend/src/app/live-data/news/route.ts",
      "frontend/src/app/live-data/macro-news/route.ts"
+    ]
+   },
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-26",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "BUILT, on the re-scoped terms: a per-source display grant, `whatMayBeDisplayed` (headline-link-summary | headline-link | unclear), with `summaryPermitted(url)` as its one enforcement point, called at all nine summary sites across /live-data/news (incl. the Messari, NewsAPI and GNews parsers), /live-data/market-news and /live-data/macro-news, gated on the ARTICLE host so a feed carrying several publishers is judged per item. Eight publisher entries carry a value from their readings: six `headline-link-summary`, CoinDesk and Investing.com `unclear`. No source is `headline-link` today, so nothing is withheld — this is the switch, and flipping either T-407 source is now a one-field change. It also closes the defect filed under this item on 2026-09-23: the CoinDesk comment claimed `whatMayBeDisplayed` was \"recorded\" in a field that did not exist. displayGrant.test.ts pins the rule, the values, and that no summary site is ungated.",
+    "known_gap": "When a source IS flipped to headline-link, the routes blank the summary but do not yet tell the reader why (no per-article `summaryWithheld` marker). Deliberately left for the flip itself — adding a field to three article types and the UI for a state no source is in would be speculative work.",
+    "evidence": [
+     "frontend/src/lib/server/sourceTerms.ts",
+     "frontend/src/lib/server/__tests__/displayGrant.test.ts"
     ]
    }
   },
@@ -11360,10 +11372,10 @@
     "why": "Owner, 2026-09-23: \"I have some concerns around coindesk which will require some additional research, for now annotate and we will revisit this and any similar cases.\" Scanning the registry for \"similar cases\" found three more, and a D22 gap alongside them."
    },
    "progress": {
-    "noted_on": "2026-09-24",
-    "note": "NARROWED from four to three: publicnode was decided under D25 (narrow reading kept). CoinDesk and Investing.com still turn on the one shared question (does a terms document that never mentions feeds govern a feed the publisher publishes and permits in robots.txt?); Bitget still turns on §1 Prohibited Countries naming the United States, and does not wait for the others.",
+    "noted_on": "2026-09-26",
+    "note": "MECHANISM READY (T-247): CoinDesk and Investing.com carry whatMayBeDisplayed: unclear. Resolving either toward headline-and-link is now setting that field to headline-link — the three news routes blank the summary automatically — plus updating displayGrant.test.ts's \"no source is headline-link today\" assertion with the decision. The question itself is unchanged and still the owner's (or a professional's).",
     "evidence": [
-     "docs/decisions/2026-09-24-owner-decisions.md"
+     "frontend/src/lib/server/sourceTerms.ts"
     ]
    }
   },
@@ -36457,6 +36469,13 @@
     "what": "D26 executed: the six staking risk dimensions removed from every surface. T-409 closed; T-394 re-scoped to factual fields; T-265 moot; T-357 annotated with the precedent.",
     "evidence": [
      "docs/decisions/2026-09-25-owner-decisions.md"
+    ]
+   },
+   {
+    "on": "2026-09-26",
+    "what": "T-247 built and closed: the per-source display switch. T-407 annotated — flipping a source is one field now.",
+    "evidence": [
+     "frontend/src/lib/server/sourceTerms.ts"
     ]
    }
   ]

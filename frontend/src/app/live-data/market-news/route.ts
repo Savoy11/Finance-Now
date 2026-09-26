@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { summaryPermitted } from '@/lib/server/sourceTerms'
 import { detectSymbols, requestedMatcher } from '@/lib/server/marketNewsSymbols'
 import { FUND_CATALOG } from '@/lib/data/fundCatalog'
 import { getEquityProviders, recordProviderFetch, type AnyActiveProvider } from '@/lib/api/live/providers'
@@ -93,7 +94,8 @@ function parseRss(xml: string, source: string): Omit<MarketArticle, 'sentiment' 
     url: item.url,
     source,
     publishedAt: new Date(item.publishedAt).toISOString(),
-    summary: item.summary.slice(0, 280),
+    // Blank when the publisher's terms grant headline-and-link only (T-247).
+    summary: summaryPermitted(item.url) ? item.summary.slice(0, 280) : '',
   }))
 }
 
@@ -150,7 +152,7 @@ function parseJsonNews(payload: unknown, provider: ActiveCustom): Omit<MarketArt
       url,
       source: provider.name,
       publishedAt: pickDate(entry, map.publishedAt, ['publishedAt', 'published_at', 'date', 'pubDate', 'datetime', 'created_at']) ?? new Date().toISOString(),
-      summary: (pickString(entry, map.summary, ['summary', 'description', 'excerpt', 'text']) ?? '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').slice(0, 280),
+      summary: summaryPermitted(url) ? (pickString(entry, map.summary, ['summary', 'description', 'excerpt', 'text']) ?? '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').slice(0, 280) : '',
     })
   }
   return out
