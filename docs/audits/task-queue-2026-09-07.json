@@ -54,25 +54,25 @@
  },
  "counts": {
   "total_verified": 398,
-  "outstanding": 349,
+  "outstanding": 351,
   "by_status": {
-   "open": 56,
-   "closed": 131,
-   "blocked": 69,
+   "open": 58,
+   "closed": 132,
+   "blocked": 68,
    "unclear": 1,
    "parked": 92
   },
   "by_owner_role": {
-   "remote-dev": 84,
+   "remote-dev": 86,
    "either": 39,
    "owner-decision": 143,
    "owner-machine": 83
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 131,
+  "closed_by_annotation": 132,
   "counts_recomputed_on": "2026-09-26",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
-  "total": 349
+  "total": 351
  },
  "blocking_decisions": [
   {
@@ -3208,12 +3208,12 @@
   {
    "id": "T-070",
    "title": "S6 — catalog growth with provenance discipline",
-   "status": "blocked",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "feature",
    "effort": "medium",
-   "blocking_decision": "Rule on docs/proposals/2026-09-21-fund-catalog-candidates.md — which of the three groups to add (sector XLC/XLP/XLY/XLB; bond VCSH/VMBS/VTIP/EMLC/BKLN; international VSS/VGK/EWJ/VYMI/HEFA), VYMI’s category, whether BKLN belongs in `bond`, and the six-row 0.09→0.08 sector-SPDR correction. All 14 are verified quotable, actively trading, and carry a primary-source expense ratio (docs/audits/fund-candidates-probe-2026-09-26.md); only issuer facts and the append remain, per approved group.",
+   "blocking_decision": null,
    "related_ids": [
     "S6"
    ],
@@ -3244,6 +3244,18 @@
     ],
     "evidence": [
      "docs/proposals/2026-09-21-fund-catalog-candidates.md"
+    ]
+   },
+   "closure": {
+    "status_was": "blocked",
+    "closed_on": "2026-09-26",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "DONE UNDER D27. The owner ruled on 2026-09-26: add all fourteen candidates, VYMI included (filed international), BKLN under bond, and apply the six-row 0.09→0.08 Select Sector SPDR correction. All fourteen rows are in fundCatalog.ts with the provenance discipline the item names: each was verified quotable, actively trading and fee-sourced from its own SEC filing BEFORE it was written (docs/audits/fund-candidates-probe-2026-09-26.md carries the accession numbers), aumB is the ETF share class from the issuer, yields are issuer-published or computed from issuer distribution records, and FUND_DATA_LAST_VERIFIED did not move. The catalog is 140 rows; CLAUDE.md and docs:check agree. Two follow-ups the work surfaced are filed as their own items rather than folded in: T-410 (widen SECTOR_ETF / TILTABLE now that the four sector funds exist — the proposal said this must be a separate change) and T-411 (the fee scripts’ reach: no candidate mode, newest quarter only, and the prospectus probe reads the wrong ticker map for ’40-Act funds).",
+    "evidence": [
+     "frontend/src/lib/data/fundCatalog.ts",
+     "docs/decisions/2026-09-26-owner-decisions.md",
+     "docs/audits/fund-candidates-probe-2026-09-26.md"
     ]
    }
   },
@@ -11525,6 +11537,62 @@
      "docs/audits/rejected-proposals.md",
      "frontend/src/lib/risk/__tests__/riskDimensionsRemoved.test.ts"
     ]
+   }
+  },
+  {
+   "id": "T-410",
+   "title": "Widen the Portfolio Builder sector tilts to the four sectors XLC/XLP/XLY/XLB now cover",
+   "status": "open",
+   "confidence": "high",
+   "owner_role": "remote-dev",
+   "category": "feature",
+   "effort": "small",
+   "blocking_decision": null,
+   "related_ids": [
+    "T-070",
+    "D27"
+   ],
+   "summary": "SECTOR_ETF in portfolioBuilder.ts is Partial<Record<SectorId, string>> because the catalog had no broad fund for communication-services, consumer-staples, consumer-discretionary or materials. D27 added XLC/XLP/XLY/XLB on 2026-09-26. The proposal that produced them said the tilt widening must be a separate change, made only after the funds exist and are verified — they now do.",
+   "next_action": "Map the four sectors in SECTOR_ETF, widen TILTABLE_SECTORS (portfolio-builder/page.tsx) and TILTABLE (AllocationBuilder.tsx) to match, extend portfolioBuilder.test.ts so a tilt toward each new sector lands on its fund, and check that the questionnaire copy about untiltable sectors (if any) is derived, not typed.",
+   "sources": [
+    {
+     "file": "docs/proposals/2026-09-21-fund-catalog-candidates.md",
+     "lines": "Candidate group A — \"Effect if these land\"",
+     "quote": "That is a separate change and is not proposed here — it is a code edit to files outside this document’s scope, and it must not happen before the funds exist and are verified."
+    }
+   ],
+   "opened": {
+    "on": "2026-09-26",
+    "by": "session steward",
+    "why": "Surfaced while closing T-070; filed as its own item so it is not lost inside a closure note."
+   }
+  },
+  {
+   "id": "T-411",
+   "title": "Fee-script reach: candidate mode, walk back quarters, and the right ticker map for ’40-Act funds",
+   "status": "open",
+   "confidence": "high",
+   "owner_role": "remote-dev",
+   "category": "tooling",
+   "effort": "small",
+   "blocking_decision": null,
+   "related_ids": [
+    "T-070",
+    "T-386"
+   ],
+   "summary": "Three gaps met on 2026-09-26 while sourcing fees for T-070. (1) build-fund-fees.mjs reconciles catalog rows only — no --symbols mode for a candidate. (2) It reads the NEWEST quarterly archive only; a fund appears only in the quarter it files its prospectus, so the Select Sector SPDRs’ January fee cut (0.09→0.08, 485BPOS 2026-01-28) was invisible to the 2026-09-01 run against 2026q2 and six rows stayed wrong. (3) probe-fund-prospectus-fees.mjs resolves tickers through company_tickers.json (operating companies) and answered no-cik for all fourteen ’40-Act ETFs; they are in company_tickers_mf.json, which build-fund-fees.mjs already reads.",
+   "next_action": "In build-fund-fees.mjs: accept --symbols to reconcile arbitrary tickers, and walk the last four quarterly archives (cached per quarter under fn-rr-cache-<q>, newest first, first hit wins) so an annual filer is always found. In probe-fund-prospectus-fees.mjs: fall back to company_tickers_mf.json when company_tickers.json has no CIK. Keep both report-never-write. Then re-run against the whole catalog and read the diff before trusting it — the 0.08 shows a run can be green and stale at once.",
+   "sources": [
+    {
+     "file": "docs/audits/fund-candidates-probe-2026-09-26.md",
+     "lines": "Two script gaps met on the way",
+     "quote": "Both a --symbols mode and a walk back over the last four quarters would have made this probe a one-liner — and would have caught the 0.08 above on the 2026-09-01 run."
+    }
+   ],
+   "opened": {
+    "on": "2026-09-26",
+    "by": "session steward",
+    "why": "Surfaced while closing T-070; filed as its own item so it is not lost inside a closure note."
    }
   }
  ],
@@ -36554,6 +36622,14 @@
     "what": "T-070: expense ratios read from primary SEC filings for all 14 candidates; six-row sector-SPDR 0.09→0.08 discrepancy found and proposed.",
     "evidence": [
      "docs/audits/fund-candidates-probe-2026-09-26.md"
+    ]
+   },
+   {
+    "on": "2026-09-26",
+    "what": "D27 applied: fourteen fund rows added and six sector-SPDR fees corrected; T-070 closed; T-410 and T-411 opened from its follow-ups.",
+    "evidence": [
+     "docs/decisions/2026-09-26-owner-decisions.md",
+     "frontend/src/lib/data/fundCatalog.ts"
     ]
    }
   ]
