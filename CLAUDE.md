@@ -210,7 +210,7 @@ frontend/src/
 │   │   ├── transferFees.ts         # 30 exchanges × 22 coins × 18 networks (+ provenance)
 │   │   ├── stakingProviders.ts     # 55 staking providers with risk profiles (+ provenance)
 │   │   ├── equityCatalog.ts        # 79 large-cap stocks, 11 sectors, reference data
-│   │   ├── fundCatalog.ts          # 126 ETFs/mutual funds + computeFeeDrag()
+│   │   ├── fundCatalog.ts          # 140 ETFs/mutual funds + computeFeeDrag()
 │   │   ├── commodityCatalog.ts     # 19 front-month contracts, 5 categories
 │   │   ├── currencyCatalog.ts      # 17 FX pairs + DXY
 │   │   ├── ratesCatalog.ts         # 4 CBOE yield indices + 4 CBOT futures
@@ -596,7 +596,7 @@ To add a provider: append to `STAKING_PROVIDERS` following the pattern. Celsius 
 - To add a stock: append to `EQUITY_CATALOG`; the registry table, detail route, and quote universe pick it up automatically.
 
 ### `src/lib/data/fundCatalog.ts` (Funds module)
-- **`FUND_CATALOG`** — 126 funds (`type: 'etf' | 'mutual'`) with issuer, category (`FUND_CATEGORY_INFO`), expense ratio, AUM, yield, inception, tracked index, and indicative top holdings.
+- **`FUND_CATALOG`** — 140 funds (`type: 'etf' | 'mutual'`) with issuer, category (`FUND_CATEGORY_INFO`), expense ratio, AUM, yield, inception, tracked index, and indicative top holdings.
 - **`computeFeeDrag(principal, erPct, years, returnPct, benchmarkErPct, frontLoadPct)`** — cost projection used by the Fee Drag Analyzer on fund detail pages. `frontLoadPct` is a SALES CHARGE deducted at purchase, not an annual fee: it comes off the top so only the remainder compounds, and it is **not** charged to the benchmark (a no-load index fund), or the comparison would cancel out the very difference it exists to show. Defaults to 0, so every no-load fund is unaffected.
 - **`SalesCharge` / `fundSalesCharge(f)`** — a fund's load, or null. **`kind` is required and `maxPct` is optional on purpose**: a load's EXISTENCE (from the issuer's documented share-class structure) and its RATE (from the prospectus) are separately knowable, and conflating them is how a wrong fee gets published. Undefined `maxPct` means *"a charge applies and we have not verified how much"* — never *"no charge"*. A stated rate REQUIRES `source` + `verifiedAt`, enforced catalog-wide by a test. The UI puts a verified rate into the maths and discloses an unverified one in words while excluding it from the projection: guessing is worse than omitting, and omitting silently is worse than both. Populate rates with `npm run fund-fees` (below), never from memory.
 - To add a fund: append to `FUND_CATALOG` following the pattern.
@@ -1394,7 +1394,7 @@ One module (`macro` entitlement), three areas. Owner spec + status: `docs/ROADMA
 ### ETFs & Funds module (`/funds`)
 | Feature | Route | Status | Source / Notes |
 |---------|-------|--------|----------------|
-| Fund Registry | `/funds` | 🟡 Key-gated | `fundCatalog.ts` + live quotes; 126 ETFs/mutual funds (8 added 2026-08-19 for items 11/13: BNDX/IAGG/BWX/EMB/VWOB international, MUB/VTEB/TFI municipal). Catalog carries provenance (`getFundDataProvenance()`, stale after 120d) rendered on detail pages — its expense ratios are computed on by `computeFeeDrag`, the builder's fee math, and `reviewPlan`'s fee-creep check |
+| Fund Registry | `/funds` | 🟡 Key-gated | `fundCatalog.ts` + live quotes; 140 ETFs/mutual funds (8 added 2026-08-19 for items 11/13: BNDX/IAGG/BWX/EMB/VWOB international, MUB/VTEB/TFI municipal; **14 added 2026-09-26 under D27** — XLC/XLP/XLY/XLB sector, VCSH/VMBS/VTIP/EMLC/BKLN bond, VSS/VGK/EWJ/VYMI/HEFA international — each probed quotable, actively trading and fee-sourced from its SEC filing first, `docs/audits/fund-candidates-probe-2026-09-26.md`). Catalog carries provenance (`getFundDataProvenance()`, stale after 120d) rendered on detail pages — its expense ratios are computed on by `computeFeeDrag`, the builder's fee math, and `reviewPlan`'s fee-creep check |
 | Fund Detail | `/funds/[symbol]` | 🟢 Live | Live chart/news + fund facts; Fee Drag Analyzer, top holdings. **The analyzer accounts for sales loads since 2026-09-03**: a verified rate enters the projection, an unverified one is disclosed in an amber panel that says plainly the figures understate the cost and links the prospectus. AGTHX is the live example — a Class A front-end load roughly DOUBLES its ten-year cost versus the 0.59% expense ratio alone, and none of it was shown before |
 
 ---

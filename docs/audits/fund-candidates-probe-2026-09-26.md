@@ -99,3 +99,15 @@ the difference, so it is small per row and real.
 
 Once ruled, step 4 (issuer facts) runs for the approved rows and they are appended
 with a dated provenance comment. `FUND_DATA_LAST_VERIFIED` does not move.
+
+## Applied — 2026-09-26, later the same day (D27)
+
+The owner ruled: add all fourteen, VYMI included, BKLN under `bond`, and apply the
+six-row 0.08 correction (`docs/decisions/2026-09-26-owner-decisions.md`). Step 4 ran
+for every row before it was written — ETF-class net assets, trailing yield, inception
+and index from the issuer (SSGA product pages 2026-09-24; Vanguard fact sheets as of
+2026-06-30 plus the issuer distribution records for the trailing yield; the iShares
+screener feed 2026-09-25; the VanEck page 2026-09-25; Invesco’s yield endpoint
+2026-09-25 with net assets from N-PORT, one series per ETF). All fourteen rows are in
+`fundCatalog.ts` with a dated provenance block; `FUND_DATA_LAST_VERIFIED` unmoved.
+Follow-ups filed: T-410 (sector tilt widening), T-411 (fee-script reach).
