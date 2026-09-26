@@ -1,8 +1,16 @@
 // Reconcile the fund catalog's expense ratios and sales loads against the SEC's
 // Risk/Return Summary data sets — the prospectus fee table, structured.
 //
-//   node scripts/build-fund-fees.mjs --inspect     discover tables/tags, change nothing
-//   node scripts/build-fund-fees.mjs               write a reconciliation report
+//   node scripts/build-fund-fees.mjs --inspect            discover tables/tags, change nothing
+//   node scripts/build-fund-fees.mjs                      reconcile the whole catalog
+//   node scripts/build-fund-fees.mjs --symbols XLC,VTIP   reconcile these tickers, catalogued or not
+//
+// It reads the newest FOUR quarterly archives (RR_QUARTERS=n to change, RR_QUARTER=YYYYqN
+// to pin exactly one) and, per ticker, takes the newest quarter that carries it. A fund
+// appears only in the quarter it filed its prospectus, and most file annually, so a
+// single-quarter read is GREEN AND STALE at once: the Select Sector SPDRs' January 2026
+// fee cut sat in 2026q1 while a September run read 2026q2, found nothing, and left six
+// rows wrong with a clean report (T-411). Quarters cache under fn-rr-cache-<q>.
 //
 // WHY THIS EXISTS
 //
@@ -48,6 +56,7 @@ import path from 'node:path'
 import os from 'node:os'
 import { execFileSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
+import { selectQuarters, mergeFirstHit } from './lib/rrQuarters.mjs'
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const OUT_JSON = path.join(ROOT, 'fund-fee-reconcile.json')
@@ -94,12 +103,24 @@ let resolvedIndexUrl = null
  * read off the wrong element is worse than no fee.
  */
 const TAG_CANDIDATES = {
+  // ⚠ Read against the 2026q2/q1/2025q4 archives on 2026-09-26 (T-411), so these two
+  // are no longer candidates but the taxonomy's own meaning:
+  //   ExpensesOverAssets     = "Total Annual Fund Operating Expenses" — every fund has it
+  //   NetExpensesOverAssets  = the total AFTER a fee waiver — only funds with a waiver
+  // Until 2026-09-26 ExpensesOverAssets sat SECOND in the net list. Resolution picks the
+  // first candidate the archive carries at all, and every archive carries
+  // NetExpensesOverAssets (some fund somewhere has a waiver), so the total line was
+  // never read: every fund WITHOUT a waiver — XLK, VOO, VTIP, most of the catalog —
+  // came back "no-expense-value" with a green run. That is how a reconcile matched
+  // 27 of 126 on 2026-09-09 and nobody asked why the cheapest index funds were absent.
+  // The row logic below takes net where it exists and total otherwise, which is the
+  // figure an investor pays and the one the catalog records.
   netExpenseRatio: [
     'NetExpensesOverAssets',
-    'ExpensesOverAssets',
     'NetAnnualFundOperatingExpensesOverAssets',
   ],
   grossExpenseRatio: [
+    'ExpensesOverAssets',
     'GrossExpensesOverAssets',
     'TotalAnnualFundOperatingExpensesOverAssets',
     'OperatingExpensesOverAssets',
@@ -148,7 +169,7 @@ async function fundClassTickerMap(wantedSymbols) {
   return map
 }
 
-async function newestDatasetUrl() {
+async function datasetsToRead() {
   let html = null
   let usedIndex = null
   const tried = []
@@ -197,28 +218,19 @@ async function newestDatasetUrl() {
       'the filename pattern before assuming the data is gone.'
     )
   }
-  // RR_QUARTER pins a specific archive. A fund appears ONLY in the quarter it filed
-  // its prospectus, and most file annually — so the newest archive covers roughly a
-  // quarter of the catalog and says nothing about the rest. Without this, a fund that
-  // files in Q4 is unreachable for nine months of the year, which is what left AGTHX
-  // (T-073) unverified after the 2026-09-09 run reconciled only 27 of 126.
+  // A fund appears ONLY in the quarter it filed its prospectus, and most file annually —
+  // so one archive covers roughly a quarter of the catalog and says nothing about the
+  // rest. Until 2026-09-26 this read the newest archive only (RR_QUARTER to pin another),
+  // which left AGTHX (T-073) unverified after the 2026-09-09 run reconciled 27 of 126, and
+  // left six sector SPDRs at a stale 0.09 with a green report (T-411). Now the newest
+  // RR_QUARTERS (default 4) are read and the newest quarter carrying a fund wins.
   const pinned = (process.env.RR_QUARTER ?? '').trim().toLowerCase()
-  if (pinned) {
-    const hit = links.find((l) => l.key === pinned)
-    if (!hit) {
-      throw new Error(
-        `RR_QUARTER=${pinned} is not published. Available: ` +
-        `${links.slice(0, 8).map((l) => l.key).join(', ')}` +
-        `${links.length > 8 ? `, +${links.length - 8} older` : ''}`
-      )
-    }
-    log(`dataset: ${hit.key} (pinned via RR_QUARTER)`)
-    return hit.href.startsWith('http') ? hit.href : `https://www.sec.gov${hit.href}`
-  }
-
-  const first = links[0].href
-  log(`newest dataset: ${links[0].key} (${links.length} quarters published; set RR_QUARTER=YYYYqN to pin one)`)
-  return first.startsWith('http') ? first : `https://www.sec.gov${first}`
+  const limit = Number(process.env.RR_QUARTERS ?? 4)
+  const chosen = selectQuarters(links, { pinned, limit })
+  log(pinned
+    ? `dataset: ${chosen[0].key} (pinned via RR_QUARTER)`
+    : `datasets: ${chosen.map((l) => l.key).join(', ')} (newest ${chosen.length} of ${links.length} published; RR_QUARTERS=n to widen, RR_QUARTER=YYYYqN to pin one)`)
+  return chosen.map((l) => ({ key: l.key, url: l.href.startsWith('http') ? l.href : `https://www.sec.gov${l.href}` }))
 }
 
 async function download(url, dest) {
@@ -349,25 +361,28 @@ function rawRate(raw) {
 async function main() {
   const inspect = process.argv.includes('--inspect')
 
-  // Cached in a stable location: the archive is large and re-downloading it to
-  // re-check a column name is wasteful. Delete the folder to force a fresh pull.
-  // Cache per quarter: without the suffix a pinned run would silently reuse whichever
-  // archive was downloaded first and reconcile the wrong three months.
-  const q = (process.env.RR_QUARTER ?? '').trim().toLowerCase()
-  const work = path.join(os.tmpdir(), q ? `fn-rr-cache-${q}` : 'fn-rr-cache')
-  fs.mkdirSync(work, { recursive: true })
-  const zip = path.join(work, 'rr.zip')
-
-  if (!fs.existsSync(zip)) {
-    await download(await newestDatasetUrl(), zip)
-  } else {
-    log(`using cached archive (${(fs.statSync(zip).size / 1048576).toFixed(1)} MB)`)
+  // Cached per quarter in a stable location: each archive is large and re-downloading
+  // it to re-check a column name is wasteful. Delete a folder to force a fresh pull.
+  // Always suffixed with the quarter — an unsuffixed cache cannot say which three
+  // months it holds. (A pre-2026-09-26 `fn-rr-cache` folder is simply no longer read;
+  // nothing here deletes it.)
+  const quarters = []
+  for (const d of await datasetsToRead()) {
+    const work = path.join(os.tmpdir(), `fn-rr-cache-${d.key}`)
+    fs.mkdirSync(work, { recursive: true })
+    const zip = path.join(work, 'rr.zip')
+    if (!fs.existsSync(zip)) {
+      await download(d.url, zip)
+    } else {
+      log(`${d.key}: using cached archive (${(fs.statSync(zip).size / 1048576).toFixed(1)} MB)`)
+    }
+    const already = fs.readdirSync(work).some((f) => /^num\.(tsv|txt)$/i.test(f))
+    if (!already) extract(zip, work)
+    const files = fs.readdirSync(work).filter((f) => /\.(tsv|txt|csv)$/i.test(f))
+    quarters.push({ key: d.key, work, files })
   }
-
-  const already = fs.readdirSync(work).some((f) => /^num\.(tsv|txt)$/i.test(f))
-  if (!already) extract(zip, work)
-
-  const files = fs.readdirSync(work).filter((f) => /\.(tsv|txt|csv)$/i.test(f))
+  // --inspect describes the newest (or pinned) archive; the others share its layout.
+  const { work, files } = quarters[0]
 
   if (inspect) {
     log('\n══ RR dataset contents ══')
@@ -410,21 +425,53 @@ async function main() {
   }
   log(`catalog: ${catalog.length} funds`)
 
-  // ── SEC side ──────────────────────────────────────────────────────────────
-  const subFile = files.find((f) => /^sub\./i.test(f))
-  const numFile = files.find((f) => /^num\./i.test(f))
-  if (!subFile || !numFile) {
-    throw new Error(`expected sub.* and num.* in the archive; found: ${files.join(', ')}`)
+  // --symbols A,B,C reconciles those tickers instead of the catalog — catalogued or not.
+  // A candidate that is not yet in the catalog gets its SEC figure and filing reported
+  // with no delta (there is nothing to differ from); the unit cross-check still uses
+  // only catalogued rows, since those are the values known to be right.
+  const symbolsFlag = (() => {
+    const i = process.argv.indexOf('--symbols')
+    return i >= 0 && process.argv[i + 1] ? process.argv[i + 1].split(',').map((x) => x.trim().toUpperCase()).filter(Boolean) : null
+  })()
+  const targets = symbolsFlag
+    ? symbolsFlag.map((symbol) => catalog.find((f) => f.symbol === symbol) ?? { symbol, type: null, expenseRatioPct: null })
+    : catalog
+  if (symbolsFlag) log(`symbols: ${symbolsFlag.join(', ')} (${targets.filter((t) => t.expenseRatioPct != null).length} of them catalogued)`)
+
+  // ── SEC side — one pass per quarter, newest first; the newest quarter carrying a fund wins ──
+  const wanted = new Set(targets.map((f) => f.symbol))
+  const catalogEr = new Map(catalog.map((f) => [f.symbol, f.expenseRatioPct]))
+
+  // classId -> ticker, for the target symbols only. Same source lib/server/nport.ts
+  // uses to resolve a fund to its series, so the two agree by construction.
+  const classToTicker = await fundClassTickerMap(wanted)
+  const unmapped = [...wanted].filter((t) => ![...classToTicker.values()].includes(t))
+  log(`class-id map: ${classToTicker.size} classes cover ${wanted.size - unmapped.length} of ${wanted.size} symbols`)
+  if (unmapped.length) {
+    // Named, not counted. A fund absent from the MF map is usually not a series
+    // registrant at all (commodity pools such as USO file differently), which is a
+    // different fact from "the SEC published no fee for it".
+    log(`   not series registrants / absent from the MF map (${unmapped.length}): ${unmapped.join(', ')}`)
   }
 
-  const sub = readTable(path.join(work, subFile))
+  const filingByAdsh = new Map()
+  const uomsSeen = new Set()
+  const resolvedTag = {}
+  const perQuarter = []
+  for (const quarter of quarters) {
+  const subFile = quarter.files.find((f) => /^sub\./i.test(f))
+  const numFile = quarter.files.find((f) => /^num\./i.test(f))
+  if (!subFile || !numFile) {
+    throw new Error(`${quarter.key}: expected sub.* and num.* in the archive; found: ${quarter.files.join(', ')}`)
+  }
+
+  const sub = readTable(path.join(quarter.work, subFile))
   const sAdsh = requireCol(sub.header, 'sub', 'adsh')
   const sName = requireCol(sub.header, 'sub', 'name')
   const sFiled = requireCol(sub.header, 'sub', 'filed', 'period')
-  const filingByAdsh = new Map(sub.rows.map((r) => [r[sAdsh], { name: r[sName], filed: r[sFiled] }]))
-  log(`filings: ${filingByAdsh.size}`)
+  for (const r of sub.rows) filingByAdsh.set(r[sAdsh], { name: r[sName], filed: r[sFiled] })
 
-  const num = readTable(path.join(work, numFile))
+  const num = readTable(path.join(quarter.work, numFile))
   const nAdsh = requireCol(num.header, 'num', 'adsh')
   const nTag = requireCol(num.header, 'num', 'tag')
   const nValue = requireCol(num.header, 'num', 'value')
@@ -443,58 +490,52 @@ async function main() {
   const CLASS_IN_DIMS = /(?:^|;)Class=(C\d{9})/
 
   // Which candidate matched each field, so the report can say where a number
-  // came from rather than presenting it as anonymous truth.
+  // came from rather than presenting it as anonymous truth. Resolved per quarter —
+  // the taxonomy can move between archives — and the first quarter's answer is the
+  // one reported.
   const tagsPresent = new Set(num.rows.map((r) => r[nTag]))
-  const resolvedTag = {}
+  const quarterTag = {}
   for (const [field, candidates] of Object.entries(TAG_CANDIDATES)) {
-    resolvedTag[field] = candidates.find((c) => tagsPresent.has(c)) ?? null
+    quarterTag[field] = candidates.find((c) => tagsPresent.has(c)) ?? null
+    if (resolvedTag[field] === undefined) resolvedTag[field] = quarterTag[field]
   }
-  log('\ntag resolution:')
-  for (const [field, tag] of Object.entries(resolvedTag)) {
-    log(`   ${field.padEnd(18)} ${tag ?? 'UNMATCHED — reported as unavailable, never substituted'}`)
+  if (quarter === quarters[0]) {
+    log('\ntag resolution:')
+    for (const [field, tag] of Object.entries(quarterTag)) {
+      log(`   ${field.padEnd(18)} ${tag ?? 'UNMATCHED — reported as unavailable, never substituted'}`)
+    }
   }
-  if (!resolvedTag.netExpenseRatio && !resolvedTag.grossExpenseRatio) {
+  if (!quarterTag.netExpenseRatio && !quarterTag.grossExpenseRatio) {
     throw new Error(
-      'no expense-ratio tag matched. Run --inspect, read the tag list, and update ' +
+      `${quarter.key}: no expense-ratio tag matched. Run --inspect, read the tag list, and update ` +
       'TAG_CANDIDATES. Reporting every fund as "no SEC value" would look like a ' +
       'clean run when nothing was actually checked.'
     )
   }
 
-  const wanted = new Set(catalog.map((f) => f.symbol))
-  const catalogEr = new Map(catalog.map((f) => [f.symbol, f.expenseRatioPct]))
-
-  // classId -> ticker, for the catalog symbols only. Same source lib/server/nport.ts
-  // uses to resolve a fund to its series, so the two agree by construction.
-  const classToTicker = await fundClassTickerMap(wanted)
-  const unmapped = [...wanted].filter((t) => ![...classToTicker.values()].includes(t))
-  log(`class-id map: ${classToTicker.size} classes cover ${wanted.size - unmapped.length} of ${wanted.size} catalog symbols`)
-  if (unmapped.length) {
-    // Named, not counted. A fund absent from the MF map is usually not a series
-    // registrant at all (commodity pools such as USO file differently), which is a
-    // different fact from "the SEC published no fee for it".
-    log(`   not series registrants / absent from the MF map (${unmapped.length}): ${unmapped.join(', ')}`)
-  }
-
-  // Pass 1 — collect RAW values. Nothing is scaled yet: the unit is a property
-  // of the dataset and is decided once, below, from all of them together.
-  const byTicker = new Map()
-  const uomsSeen = new Set()
+  // Pass 1 — collect RAW values for this quarter. Nothing is scaled yet: the unit is
+  // a property of the dataset and is decided once, below, from all of them together.
+  const hits = new Map()
   for (const r of num.rows) {
     const classId = CLASS_IN_DIMS.exec(r[nOtherDims] ?? '')?.[1]
     if (!classId) continue
     const ticker = classToTicker.get(classId)
     if (!ticker || !wanted.has(ticker)) continue
-    const entry = byTicker.get(ticker) ?? { adsh: r[nAdsh], raw: {} }
-    for (const [field, tag] of Object.entries(resolvedTag)) {
+    const entry = hits.get(ticker) ?? { adsh: r[nAdsh], raw: {} }
+    for (const [field, tag] of Object.entries(quarterTag)) {
       if (tag && r[nTag] === tag && entry.raw[field] === undefined) {
         const v = rawRate(r[nValue])
         if (v != null) { entry.raw[field] = v; uomsSeen.add(String(r[nUom] || '').toLowerCase()) }
       }
     }
-    byTicker.set(ticker, entry)
+    hits.set(ticker, entry)
   }
-  log(`\nmatched ${byTicker.size} of ${catalog.length} catalog funds in the dataset`)
+  log(`${quarter.key}: ${filingByAdsh.size} filings so far; ${hits.size} of ${wanted.size} symbols carry a fee row here`)
+  perQuarter.push({ key: quarter.key, hits })
+  } // end per-quarter pass
+
+  const byTicker = mergeFirstHit(perQuarter)
+  log(`\nmatched ${byTicker.size} of ${wanted.size} symbols across ${quarters.length} quarter${quarters.length === 1 ? '' : 's'}`)
 
   // Pass 2 — calibrate the unit against the catalog's own verified ratios.
   const samples = []
@@ -564,18 +605,21 @@ async function main() {
 
   // ── Reconcile ─────────────────────────────────────────────────────────────
   const rows = []
-  for (const f of catalog) {
+  for (const f of targets) {
     const hit = byTicker.get(f.symbol)
     const filing = hit ? filingByAdsh.get(hit.adsh) : undefined
     const sec = hit?.values ?? {}
     const secEr = sec.netExpenseRatio ?? sec.grossExpenseRatio
+    const catalogued = f.expenseRatioPct != null
     rows.push({
       symbol: f.symbol,
       type: f.type,
+      catalogued,
+      quarter: hit?.quarter ?? null,
       catalogExpenseRatioPct: f.expenseRatioPct,
       secExpenseRatioPct: secEr ? Number(secEr.pct.toFixed(4)) : null,
       secExpenseBasis: secEr?.basis ?? null,
-      expenseDeltaPct: secEr ? Number((secEr.pct - f.expenseRatioPct).toFixed(4)) : null,
+      expenseDeltaPct: secEr && catalogued ? Number((secEr.pct - f.expenseRatioPct).toFixed(4)) : null,
       secFrontLoadPct: sec.frontLoad ? Number(sec.frontLoad.pct.toFixed(4)) : null,
       secDeferredLoadPct: sec.deferredLoad ? Number(sec.deferredLoad.pct.toFixed(4)) : null,
       sec12b1Pct: sec.twelveB1 ? Number(sec.twelveB1.pct.toFixed(4)) : null,
@@ -590,12 +634,15 @@ async function main() {
   // A "material" difference is one that changes a rendered figure: the UI shows
   // two decimals, so anything at or above half a basis point can move it.
   const MATERIAL_PCT = 0.005
-  const differing = matched.filter((r) => Math.abs(r.expenseDeltaPct) >= MATERIAL_PCT)
+  const differing = matched.filter((r) => r.catalogued && Math.abs(r.expenseDeltaPct) >= MATERIAL_PCT)
+  const candidates = matched.filter((r) => !r.catalogued)
   const loads = rows.filter((r) => r.secFrontLoadPct || r.secDeferredLoadPct)
 
   fs.writeFileSync(OUT_JSON, JSON.stringify({
     generatedAt: new Date().toISOString(),
     source: resolvedIndexUrl,
+    quartersRead: quarters.map((q) => q.key),
+    symbols: symbolsFlag,
     resolvedTags: resolvedTag,
     // The unit is DECLARED by the dataset (uom), not inferred. crossCheck is the
     // catalog calibration when enough funds matched to run it, and null when the
@@ -603,6 +650,8 @@ async function main() {
     unit: { basis: unit.basis, source: `uom=${uoms[0]}`, multiplier: unit.mult, crossCheck },
     counts: {
       catalog: catalog.length,
+      targets: targets.length,
+      candidatesNotInCatalog: candidates.length,
       matched: matched.length,
       notFound: rows.filter((r) => r.status === 'not-found-in-dataset').length,
       noExpenseValue: rows.filter((r) => r.status === 'no-expense-value').length,
@@ -613,11 +662,11 @@ async function main() {
   }, null, 2))
 
   const csv = [
-    'symbol,type,catalog_er,sec_er,delta,front_load,deferred_load,12b1,filed_on,accession,status',
+    'symbol,type,catalog_er,sec_er,delta,front_load,deferred_load,12b1,filed_on,accession,quarter,status',
     ...rows.map((r) => [
-      r.symbol, r.type, r.catalogExpenseRatioPct, r.secExpenseRatioPct ?? '', r.expenseDeltaPct ?? '',
+      r.symbol, r.type ?? '', r.catalogExpenseRatioPct ?? '', r.secExpenseRatioPct ?? '', r.expenseDeltaPct ?? '',
       r.secFrontLoadPct ?? '', r.secDeferredLoadPct ?? '', r.sec12b1Pct ?? '',
-      r.filedOn ?? '', r.accession ?? '', r.status,
+      r.filedOn ?? '', r.accession ?? '', r.quarter ?? '', r.status,
     ].join(',')),
   ].join('\n')
   fs.writeFileSync(OUT_CSV, csv)
@@ -629,8 +678,17 @@ async function main() {
   } else {
     for (const r of differing.sort((a, b) => Math.abs(b.expenseDeltaPct) - Math.abs(a.expenseDeltaPct))) {
       const sign = r.expenseDeltaPct > 0 ? '+' : ''
-      log(`   ${r.symbol.padEnd(6)} catalog ${String(r.catalogExpenseRatioPct).padEnd(7)} SEC ${String(r.secExpenseRatioPct).padEnd(7)} (${sign}${r.expenseDeltaPct})  filed ${r.filedOn ?? '?'}`)
+      log(`   ${r.symbol.padEnd(6)} catalog ${String(r.catalogExpenseRatioPct).padEnd(7)} SEC ${String(r.secExpenseRatioPct).padEnd(7)} (${sign}${r.expenseDeltaPct})  filed ${r.filedOn ?? '?'} [${r.quarter}]`)
     }
+  }
+
+  if (candidates.length) {
+    log('\n══ Not in the catalog — SEC figure only, nothing to differ from ══')
+    for (const r of candidates) {
+      log(`   ${r.symbol.padEnd(6)} SEC ${String(r.secExpenseRatioPct).padEnd(7)} filed ${r.filedOn ?? '?'} [${r.quarter}]  ${r.accession ?? ''}`)
+    }
+    log('   A candidate row still needs quotability, a live history and the issuer facts')
+    log('   before it is appended — docs/proposals/2026-09-21-fund-catalog-candidates.md.')
   }
 
   log('\n══ Sales charges found ══')
@@ -654,7 +712,7 @@ async function main() {
     log(`\n══ ${missing.length} funds with no usable SEC value ══`)
     log('   Not evidence of anything: ETFs whose fees sit in a different filing,')
     log('   share classes filed under another ticker, or funds outside this')
-    log('   quarter. Absence here never means "no fee".')
+    log(`   the ${quarters.length} quarter${quarters.length === 1 ? '' : 's'} read. Absence here never means "no fee".`)
     for (const r of missing.slice(0, 20)) log(`   ${r.symbol.padEnd(6)} ${r.status}`)
     if (missing.length > 20) log(`   … and ${missing.length - 20} more (full list in the JSON)`)
   }

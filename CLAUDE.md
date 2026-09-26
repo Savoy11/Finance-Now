@@ -948,9 +948,23 @@ npm run audit   # full audit; also audit:strict and audit:json
 **Fee reconciliation (owner machine — needs sec.gov):**
 
 ```bash
-npm run fund-fees -- --inspect   # discover the dataset's tables/columns/tags; changes nothing
-npm run fund-fees                # write fund-fee-reconcile.json + fund-fee-worksheet.csv
+npm run fund-fees -- --inspect          # discover the dataset's tables/columns/tags; changes nothing
+npm run fund-fees                       # reconcile the whole catalog → fund-fee-reconcile.json + fund-fee-worksheet.csv
+npm run fund-fees -- --symbols XLC,VTIP # reconcile these tickers, catalogued or not (a candidate gets its SEC figure, no delta)
 ```
+
+**It reads the newest FOUR quarterly archives, not one (T-411, 2026-09-26).** A fund appears in
+the Risk/Return dataset only in the quarter it filed its prospectus, and most file annually, so a
+single-quarter read is green and stale at once: the Select Sector SPDRs cut their fee to 0.08% in a
+485BPOS filed 2026-01-28 (2026q1), the 2026-09-01 reconcile read 2026q2 alone, found nothing for
+them, and six rows sat at 0.09 under a clean report until D27. Per ticker the newest quarter that
+carries it wins (`scripts/lib/rrQuarters.mjs`, unit-tested); `RR_QUARTERS=n` widens, `RR_QUARTER=YYYYqN`
+pins one; each quarter caches under `fn-rr-cache-<q>`. **The same pass fixed a second blindness:**
+`ExpensesOverAssets` is the taxonomy's *Total Annual Fund Operating Expenses* and `NetExpensesOverAssets`
+the total after a waiver, but the script had listed the total line as a fallback for *net* — and since
+every archive carries the net tag for some fund, the total was never read and every no-waiver fund
+(VOO, XLK, VTIP…) reported `no-expense-value`. That is how the 2026-09-09 run matched 27 of 126 and
+read as thorough. Net is now taken where a waiver exists and the total otherwise.
 
 `scripts/build-fund-fees.mjs` checks `FUND_CATALOG`'s expense ratios and finds its sales-load
 rates against the SEC's quarterly **Risk/Return Summary** data sets — the prospectus fee table as
