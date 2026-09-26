@@ -199,9 +199,10 @@ frontend/src/
 │   │   │                           #   see docs/architecture/risk-framework.md
 │   │   ├── engine.ts               # composeRisk() — profile-agnostic scoring
 │   │   ├── normalize.ts            # piecewise/linear normalizers, vol, drawdown
-│   │   └── profiles/               # 8: commodity, cryptoAsset, currency, equity,
-│   │                               #   optionsTrade, rateInstrument, stablecoin,
-│   │                               #   stakingAdapter (macro three added by P2-R3)
+│   │   └── profiles/               # 7: commodity, cryptoAsset, currency, equity,
+│   │                               #   optionsTrade, rateInstrument, stablecoin
+│   │                               #   (macro three added by P2-R3; stakingAdapter
+│   │                               #   was the 8th until D26 deleted it, 2026-09-25)
 │   ├── auth/                       # Auth.js config + getCurrentUserId()/requireUserId()
 │   ├── db/                         # Drizzle schema + client (users, entitlements, instruments,
 │                                   #   user_wallets…)
