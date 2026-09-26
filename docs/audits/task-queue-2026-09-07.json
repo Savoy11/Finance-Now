@@ -56,8 +56,8 @@
   "total_verified": 398,
   "outstanding": 349,
   "by_status": {
-   "open": 61,
-   "closed": 130,
+   "open": 60,
+   "closed": 131,
    "blocked": 67,
    "unclear": 1,
    "parked": 90
@@ -69,7 +69,7 @@
    "owner-machine": 83
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 130,
+  "closed_by_annotation": 131,
   "counts_recomputed_on": "2026-09-26",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 349
@@ -3016,7 +3016,7 @@
   {
    "id": "T-172",
    "title": "staking-discovery latency (~18–22 s) — standing perf item",
-   "status": "open",
+   "status": "closed",
    "confidence": "medium",
    "owner_role": "remote-dev",
    "category": "bug",
@@ -3038,6 +3038,18 @@
     "remaining_work": "Restated against today's tree, the original next_action is half-stale — do NOT re-do the 6 s budget, it is at route.ts:77/98. What is actually left, in the order it should be taken: (1) SPLIT OUT THE DEAD UPSTREAMS. Three of the four sources contribute zero pools — route.ts:227 still fetches `api.yearn.finance/v1/chains/1/vaults/all` (does not resolve), :281 still fetches `api-v2.pendle.finance/core/v1/sdk/1/markets?limit=100&order_by=liquidity:desc` (404s on that exact URL), and Beefy answers 200 landing nothing. That is a correctness defect, not a latency one, it has no ledger item of its own (T-172 is the only queue entry mentioning any of the three), and it should become one rather than riding a perf item. (2) FIX THE COLD-START HOLE at route.ts:457-467: last-good is per-exact-filter-key and only consulted when a fetch failed, so a zero-pool response can ship as `ok: true` with no `stale` flag. (3) ONLY THEN the latency question, and only on the owner's machine: one `npm run audit` plus repeated direct probes, because the single 2,238 ms reading is not reproducible on demand and a single fast sample is not a measurement. Note the ~18-22 s figure in the item's title is superseded by DATA-AVAILABILITY.md:843 (~2.2 s re-measured 2026-09-19) — reopening against 18 s would chase a number that no longer describes the route.",
     "evidence": [
      "frontend/src/app/live-data/staking-discovery/route.ts:457-467"
+    ]
+   },
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-26",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "THE LATENCY IN THE TITLE IS GONE AND THE HOLE THE PROGRESS NOTE FOUND IS CLOSED. Measured on the owner's machine over clean egress on 2026-09-26: 0.97 s cold-ish (145 pools), 0.58–0.69 s warm, 1.64 s on the first request of the session — against the 18–22 s the title carried from before the 6 s per-fetch budget landed (route.ts UPSTREAM_TIMEOUT_MS, the item's first cure). The second cure — serve last-good immediately and refresh in the background — is NOT built and deliberately so: a background refresher is a fix for a slow route, and this one is fast now; what was actually wrong was that a cold or differently-filtered request landing on an outage returned `ok: true, pools: []` with nothing in the payload saying the upstreams had failed, indistinguishable from a legitimately empty result. The route now returns `upstreams` — each of the four's outcome on THIS request, 'live (n)' or 'failed: <reason>' — and `degraded` on every response path, the same shape staking-rates uses; the Live Pools panel names the unreachable sources in a badge and renders an outage-with-nothing as \"sources unreachable\" rather than \"no pools match\". discoveryDegraded.test.ts pins that every return path carries `upstreams`, that `degraded` derives from the settled results and not the pool count, and that the panel reads both.",
+    "evidence": [
+     "frontend/src/app/live-data/staking-discovery/route.ts",
+     "frontend/src/app/(dashboard)/staking/LivePoolsPanel.tsx",
+     "frontend/src/lib/server/__tests__/discoveryDegraded.test.ts"
     ]
    }
   },
@@ -11019,17 +11031,10 @@
     "why": "Surfaced by a re-verification sweep with no existing ledger entry anywhere. Filed rather than folded into a neighbouring item, because an unattributed defect riding inside another ticket is how these stayed invisible."
    },
    "progress": {
-    "noted_on": "2026-09-22",
-    "note": "TWO OF THREE FIXED. Option B of the drafted set was chosen: widen COIN_SYMBOL_MAP first, because it — not the upstreams — was the binding constraint. (1) THE COIN MAP now carries liquid-staking and restaking derivatives for eth, sol, avax and bnb. Measured effect on the working rung: DefiLlama went from 97 to 157 pools, the new survivors being exactly STETH, WBETH, WEETH, RETH and JITOSOL. (2) PENDLE is repointed and LIVE for the first time — it had been returning nothing at all. Three changes were needed, not one: the path lost its `/sdk` segment, `?order_by=liquidity:desc` is now rejected with HTTP 400, and `totalLiquidity` became `liquidity`, AN OBJECT `{ usd, acc }`. It yields 1 pool today, which is correct rather than disappointing — Pendle's chain-1 universe is dominated by yield-bearing stables this app does not cover.",
-    "remaining_work": "(1) YEARN is still unwired and still blocked on TERMS, not code: its API moved to ydaemon.yearn.fi (/1/vaults/all answers 200 with 524KB), which is a NEW HOST with no source-terms entry. sourceTerms.test.ts fails the suite on an unregistered host — the gate working as designed. Someone must read Yearn's terms and add a dated verdict before the fetcher can be repointed. (2) BEEFY is still empty, and the coin-map widening barely moved it: 8 resolved became 9, and all 9 are still cut by the $1,000,000 min_tvl default. That was flagged as a separate question in the options document and was NOT part of the ruling, so min_tvl is untouched. It remains open: is $1m the right bar for a DISCOVERY surface, and should the route signal when a source returned items that were all filtered locally?",
-    "corrections": [
-     "The `liquidity` shape change was NOT in the earlier diagnosis, which called it a rename. A rename-only fix compiles and then silently compares an object to a number: `(m.liquidity ?? 0) < minTvl` evaluates `NaN < 1000000`, which is false, so every market would PASS the liquidity gate — a filter that quietly stops filtering. Caught by measuring the live payload rather than by reading the diff.",
-     "The filed question — which of the three whitelist flags replaces `isWhitelisted` — turned out to have no consequence. Measured before the widening, Pro admitted 28 markets past liquidity/APY/expiry, LimitOrder 27 and Simple 1, and ALL THREE resolved to zero pools afterwards. `isWhitelistedPro` was chosen as the closest analogue to the old single flag; revisit only if the coin map grows further."
-    ],
+    "noted_on": "2026-09-26",
+    "note": "NEW EVIDENCE from T-172: the discovery response now reports each upstream outcome, and on every request since it landed Yearn reads `failed: fetch failed` — a connection-level failure, not an empty answer. So of the three zero-contributors this item names, Yearn is a DEAD or MOVED endpoint (the repoint to ydaemon.yearn.fi this item already anticipates, gated on a terms entry), Beefy is `live (0)` — it answers and nothing passes the $1M min_tvl gate — and Pendle is `live (1)` after the 2026-09-22 repoint. Three different cures, now distinguishable from the payload rather than from a probe.",
     "evidence": [
-     "frontend/src/lib/data/stakingDiscovery.ts — the widened map, with the exclusions documented",
-     "frontend/src/lib/data/__tests__/stakingCoinMap.test.ts — 26 tests; the synthetic exclusions and the prefix-clash guard are both mutation-checked",
-     "frontend/src/app/live-data/staking-discovery/route.ts — Pendle repointed"
+     "frontend/src/app/live-data/staking-discovery/route.ts"
     ]
    }
   },
@@ -36499,6 +36504,13 @@
     "evidence": [
      "docs/architecture/risk-framework.md",
      "CLAUDE.md"
+    ]
+   },
+   {
+    "on": "2026-09-26",
+    "what": "T-172 closed: latency re-measured at under 2 s; per-upstream outcomes added to the discovery response and panel.",
+    "evidence": [
+     "frontend/src/app/live-data/staking-discovery/route.ts"
     ]
    }
   ]

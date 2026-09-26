@@ -43,6 +43,16 @@ export interface StakingDiscoveryResponse {
   updatedAt: string
   /** True when upstreams failed and this is the last-known-good payload (updatedAt reflects when it was actually fetched). */
   stale?:    boolean
+  /**
+   * Each upstream's outcome on THIS request — 'live (n)' or 'failed: <reason>' —
+   * because `sources.yearn: 0` cannot say whether Yearn answered with nothing or
+   * did not answer (T-172; the same gap staking-rates closed with its own
+   * `upstreams`). Present on every response, including a served last-good one,
+   * where it describes the request that fell back.
+   */
+  upstreams: Record<DiscoverySource, string>
+  /** True when at least one upstream failed on this request, whatever the pool count. */
+  degraded:  boolean
 }
 
 // ─── Shared helpers ───────────────────────────────────────────────────────────
@@ -422,6 +432,15 @@ export async function GET(req: NextRequest) {
   const [dlResult, yearnResult, pendleResult, beefyResult] = results
   const anyUpstreamFailed = results.some(r => r.status === 'rejected')
 
+  // What each upstream did on THIS request. A rejection's message is the reason
+  // (getJson names timeouts and HTTP statuses); a fulfilled leg reports its count,
+  // so 'live (0)' — answered, nothing matched — is distinguishable from 'failed'.
+  const describe = (r: PromiseSettledResult<DiscoveredPool[]>): string =>
+    r.status === 'fulfilled' ? `live (${r.value.length})` : `failed: ${r.reason instanceof Error ? r.reason.message : String(r.reason)}`.slice(0, 160)
+  const upstreams: Record<DiscoverySource, string> = {
+    defillama: describe(dlResult), yearn: describe(yearnResult), pendle: describe(pendleResult), beefy: describe(beefyResult),
+  }
+
   const dlPools     = dlResult.status     === 'fulfilled' ? dlResult.value     : []
   const yearnPools  = yearnResult.status  === 'fulfilled' ? yearnResult.value  : []
   const pendlePools = pendleResult.status === 'fulfilled' ? pendleResult.value : []
@@ -465,8 +484,13 @@ export async function GET(req: NextRequest) {
   if (pools.length === 0 && anyUpstreamFailed) {
     const cached = lastGood.get(cacheKey)
     if (cached && Date.now() - cached.cachedAt < LAST_GOOD_TTL_MS) {
-      return NextResponse.json({ ...cached.response, stale: true } satisfies StakingDiscoveryResponse)
+      // `upstreams` describes THIS request — the one that fell back — not the cached one.
+      return NextResponse.json({ ...cached.response, stale: true, degraded: true, upstreams } satisfies StakingDiscoveryResponse)
     }
+    // No warm last-good for this filter combination. Until 2026-09-26 this fell
+    // through to `ok: true, pools: []` with nothing saying the upstreams were down —
+    // indistinguishable from a legitimately empty result. Now `degraded` + `upstreams`
+    // say so, and the panel renders "sources unreachable", not "no pools".
   }
 
   const response: StakingDiscoveryResponse = {
@@ -474,6 +498,8 @@ export async function GET(req: NextRequest) {
     pools,
     total: pools.length,
     sources,
+    upstreams,
+    degraded: anyUpstreamFailed,
     updatedAt: new Date().toISOString(),
   }
 
