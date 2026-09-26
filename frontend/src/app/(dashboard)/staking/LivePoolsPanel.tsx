@@ -53,6 +53,13 @@ function LiveOpportunities({ search }: { search: string }) {
   }, [data, search])
 
   const visible = showAll ? pools : pools.slice(0, LIVE_PREVIEW_ROWS)
+  // Which upstreams did not answer on this request (T-172). `sources.yearn: 0` cannot
+  // say whether Yearn answered with nothing or did not answer; `upstreams` can.
+  const failedUpstreams = data
+    ? (Object.entries(data.upstreams ?? {}) as Array<[DiscoverySource, string]>)
+        .filter(([, outcome]) => outcome.startsWith('failed'))
+        .map(([src]) => SOURCE_LABELS[src])
+    : []
   const sourceSummary = data
     ? (Object.entries(data.sources) as Array<[DiscoverySource, number]>)
         .filter(([, n]) => n > 0)
@@ -78,6 +85,14 @@ function LiveOpportunities({ search }: { search: string }) {
             cached — discovery sources unreachable
           </span>
         )}
+        {data?.degraded && failedUpstreams.length > 0 && (
+          <span
+            className="px-1.5 py-0.5 text-[10px] rounded border font-medium bg-amber-500/15 text-amber-300 border-amber-500/30"
+            title={Object.entries(data.upstreams).map(([k, v]) => `${k}: ${v}`).join('\n')}
+          >
+            {failedUpstreams.join(', ')} unreachable — showing the rest
+          </span>
+        )}
         <button
           onClick={() => refetch()}
           disabled={isFetching}
@@ -99,7 +114,16 @@ function LiveOpportunities({ search }: { search: string }) {
         </div>
       )}
       {data && pools.length === 0 && !isLoading && (
-        <div className="px-4 py-8 text-center text-xs text-text-muted">No live pools match your search.</div>
+        data.degraded && data.total === 0 ? (
+          // Nothing came back AND an upstream failed: say which, rather than implying a search
+          // matched nothing. Before 2026-09-26 this state was unreachable-from-the-payload.
+          <div className="px-4 py-8 text-center text-xs text-text-muted">
+            Discovery sources unreachable — {failedUpstreams.join(', ') || 'upstream'} did not answer.{' '}
+            <button onClick={() => refetch()} className="text-accent-blue hover:underline">Retry</button>
+          </div>
+        ) : (
+          <div className="px-4 py-8 text-center text-xs text-text-muted">No live pools match your search.</div>
+        )
       )}
 
       {/* Pool table */}
