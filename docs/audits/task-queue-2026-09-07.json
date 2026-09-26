@@ -3213,7 +3213,7 @@
    "owner_role": "owner-decision",
    "category": "feature",
    "effort": "medium",
-   "blocking_decision": "Rule on docs/proposals/2026-09-21-fund-catalog-candidates.md — which of the three groups (sector XLC/XLP/XLY/XLB; bond VCSH/VMBS/VTIP/EMLC/BKLN; international VSS/VGK/EWJ/VYMI/HEFA) to add, plus the two judgement calls the proposal names (VYMI’s category; whether BKLN belongs in `bond` at all under fundRiskLevel()). All 14 passed the quotable + actively-trading probe on 2026-09-26; expense ratios are still to be read once a group is approved.",
+   "blocking_decision": "Rule on docs/proposals/2026-09-21-fund-catalog-candidates.md — which of the three groups to add (sector XLC/XLP/XLY/XLB; bond VCSH/VMBS/VTIP/EMLC/BKLN; international VSS/VGK/EWJ/VYMI/HEFA), VYMI’s category, whether BKLN belongs in `bond`, and the six-row 0.09→0.08 sector-SPDR correction. All 14 are verified quotable, actively trading, and carry a primary-source expense ratio (docs/audits/fund-candidates-probe-2026-09-26.md); only issuer facts and the append remain, per approved group.",
    "related_ids": [
     "S6"
    ],
@@ -3239,7 +3239,8 @@
      "The strongest evidence of a sector gap was in code rather than the catalog: portfolioBuilder.ts:222 types SECTOR_ETF as Partial<Record<SectorId, string>> — the type itself admits not every GICS sector is covered, and seven of eleven are mapped. That is NOT a bug and was nearly reported as one: the UI hard-codes TILTABLE_SECTORS to exactly the seven that have a fund, so no user is ever offered a tilt that would silently do nothing.",
      "An inference was available and refused. The six Select Sector SPDR siblings all sit at 0.09, which makes 0.09 very tempting for the missing four. The catalog's own provenance banner records UNG (0.60 -> 1.17) and CPER (0.65 -> 0.88) as cases where that reasoning produced a wrong published fee, so every proposed ER is marked unverified instead.",
      "Flagged, not acted on: fundRiskLevel() maps category 'bond' to 'conservative' with no discrimination, and the catalog already strains it — HYG (high yield) and EMB (EM sovereign) both band Conservative today. Two proposed candidates would strain it further. That is a modelling decision, not a catalog one.",
-     "2026-09-26: THE OWNER-MACHINE HALF RAN, on the owner’s machine, egress verified clean first (Charter AS11426, proxy:false hosting:false), and with no `npm run audit` beforehand as the proposal requires. (1) The RR index URL needs no finding — `npm run fund-fees -- --inspect` resolved sec.gov from its built-in list and printed the tag table, so that half of next_action is moot. (2) All 14 candidates are QUOTABLE through the app’s own ladder (finnhub, none reference) and ACTIVELY TRADING (22 daily closes 2026-08-26..2026-09-25 via tiingo, not one cached price). (3) Expense ratios are NOT yet read: `npm run fund-prospectus-fees -- --symbols …` answered no-cik for all 14 because it resolves through company_tickers.json (operating companies) — all 14 DO resolve in company_tickers_mf.json (cik + series + class ids, fetched 2026-09-26), so the Risk/Return dataset path is viable and the prospectus probe needs only a fallback to that map. That is the script’s reach, not evidence about the funds; the Risk/Return path (build-fund-fees.mjs) reconciles only catalog rows and has no candidate mode. Both are small script gaps worth closing when a group is approved, and neither is a reason to write a figure from memory. Re-scoped to blocked/owner-decision: nothing further is a developer’s until the proposal is ruled on."
+     "2026-09-26: THE OWNER-MACHINE HALF RAN, on the owner’s machine, egress verified clean first (Charter AS11426, proxy:false hosting:false), and with no `npm run audit` beforehand as the proposal requires. (1) The RR index URL needs no finding — `npm run fund-fees -- --inspect` resolved sec.gov from its built-in list and printed the tag table, so that half of next_action is moot. (2) All 14 candidates are QUOTABLE through the app’s own ladder (finnhub, none reference) and ACTIVELY TRADING (22 daily closes 2026-08-26..2026-09-25 via tiingo, not one cached price). (3) Expense ratios are NOT yet read: `npm run fund-prospectus-fees -- --symbols …` answered no-cik for all 14 because it resolves through company_tickers.json (operating companies) — all 14 DO resolve in company_tickers_mf.json (cik + series + class ids, fetched 2026-09-26), so the Risk/Return dataset path is viable and the prospectus probe needs only a fallback to that map. That is the script’s reach, not evidence about the funds; the Risk/Return path (build-fund-fees.mjs) reconciles only catalog rows and has no candidate mode. Both are small script gaps worth closing when a group is approved, and neither is a reason to write a figure from memory. Re-scoped to blocked/owner-decision: nothing further is a developer’s until the proposal is ruled on.",
+     "2026-09-26 (later the same day): EXPENSE RATIOS READ for all 14 from the SEC Risk/Return datasets — 2026q2, 2026q1 and 2025q4 archives, joined on the share-class id in num.otherdims exactly as build-fund-fees.mjs does. Record with accession numbers: docs/audits/fund-candidates-probe-2026-09-26.md. Notable: HEFA is 0.70 gross / 0.35 net of a contractual waiver; BKLN 0.67 / 0.65; the rest carry no waiver. FINDING OUTSIDE THE PROPOSAL: the six Select Sector SPDRs already in the catalog (XLK/XLF/XLE/XLV/XLI/XLU) are 0.08 in their 2026-01-28 filing, not the 0.09 the tree carries — npm run fund-fees reads only the newest quarterly archive and so never saw that filing. Proposed as a six-row correction; not applied."
     ],
     "evidence": [
      "docs/proposals/2026-09-21-fund-catalog-candidates.md"
@@ -36546,6 +36547,13 @@
     "what": "T-070 owner-machine half run: 14/14 candidates quotable and actively trading; expense ratios pending approval; re-scoped to blocked/owner-decision on the unruled proposal.",
     "evidence": [
      "docs/proposals/2026-09-21-fund-catalog-candidates.md"
+    ]
+   },
+   {
+    "on": "2026-09-26",
+    "what": "T-070: expense ratios read from primary SEC filings for all 14 candidates; six-row sector-SPDR 0.09→0.08 discrepancy found and proposed.",
+    "evidence": [
+     "docs/audits/fund-candidates-probe-2026-09-26.md"
     ]
    }
   ]
