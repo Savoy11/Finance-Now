@@ -394,6 +394,14 @@ needs the most careful honest-data framing, not for data availability.
   >   at `/macro/scanner` on 2026-08-19 (one scanner per section). Its universe
   >   is unchanged — the same 29 liquid instruments, the same 6 delisted-ETF
   >   commodities and 10 EM/cross FX pairs excluded and stated on-page.
+  > - **"macro symbols are Yahoo symbols" is dead** (added 2026-09-20, T-107).
+  >   Yahoo was removed on terms grounds on 2026-08-06 and is hard-blocked in
+  >   `pinnedFetch`. The ⚠ note above this section covers the spec table's
+  >   Yahoo rows but not this sentence. The *path* is unchanged — macro still
+  >   rides `security-ohlcv` — but every live rung on it is keyed now, and its
+  >   macro coverage is **partial and provider-dependent**: Tiingo does not
+  >   carry `GC=F` or `EURUSD=X` at all, so an unpriced instrument renders a
+  >   dash rather than a fabricated level.
   >
   > Unchanged: all 45 instruments chart, 6 chart types, the grouped picker.
 

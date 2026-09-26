@@ -106,6 +106,7 @@ frontend/src/
 │   │                               #   retained" until 2026-09-22; what is actually
 │   │                               #   retained is an empty directory, nothing else.
 │   └── live-data/                  # Server-side API proxy routes (no API keys exposed) — 58 routes
+│                                   #   (derive: find src/app/live-data -name route.ts | wc -l)
 │       ├── markets/route.ts        # CoinGecko price data
 │       ├── news/route.ts           # Multi-provider crypto news (RSS + JSON feeds)
 │       ├── social/route.ts         # Social sentiment data
@@ -203,6 +204,7 @@ frontend/src/
 │   │                               #   optionsTrade, rateInstrument, stablecoin
 │   │                               #   (macro three added by P2-R3; stakingAdapter
 │   │                               #   was the 8th until D26 deleted it, 2026-09-25)
+│   │                               #   (derive: ls src/lib/risk/profiles | wc -l)
 │   ├── auth/                       # Auth.js config + getCurrentUserId()/requireUserId()
 │   ├── db/                         # Drizzle schema + client (users, entitlements, instruments,
 │                                   #   user_wallets…)
@@ -579,10 +581,14 @@ Central data file for the Staking Opportunities page.
   out by a rule the caller can no longer see. `middleware.ts` logs those requests so a
   silently-widened result set stays attributable.
 
-- **`scoreStakingProvider()`** (`lib/risk/profiles/stakingAdapter.ts`) is retained as the
-  canonical **0–100, higher-is-SAFER** engine with the 5-band vocabulary, but has **no
-  live consumer** after D14. D18 defers new risk profiles until a surface is approved to
-  render one, so do not wire it into a page on the assumption it is merely unused.
+- ~~**`scoreStakingProvider()`** (`lib/risk/profiles/stakingAdapter.ts`) is retained as
+  the canonical **0–100, higher-is-SAFER** engine with the 5-band vocabulary, but has **no
+  live consumer** after D14.~~ **DELETED 2026-09-25 with the six dimensions it scored
+  (D26).** The file is gone, so there is nothing to wire up — this bullet is kept struck
+  through rather than removed because it read as an instruction about a live file.
+  **D18 still stands for any FUTURE profile:** it defers new ones until a surface is
+  approved to render a score, so do not add one on the reasoning that an unused profile
+  is harmless.
 - **`STAKING_PROVIDERS`** array — 55 providers (count is dynamic; the page reads `STAKING_PROVIDERS.length`). Representative names:
   - CeFi: Celsius (defunct, cautionary), Coinbase, Kraken, Binance, OKX, Bybit, KuCoin, Crypto.com, Bitget, Gate.io, HTX, Robinhood, Nexo, Gemini, Bitfinex, Bitstamp, MEXC, Upbit
   - Wallet: Ledger Live, MetaMask, Phantom, Trust Wallet, Exodus, Keplr, Solflare, Coinbase Wallet, Atomic Wallet, Trezor Suite
@@ -1331,7 +1337,7 @@ Risk/status color convention used across the app:
 | Watchlist | `/watchlist` | 🟢 Live | Cross-module: coins, stocks, ETFs & funds, and macro instruments in named lists with live prices. **DB-backed** via `/api/user/watchlists` (+`/[id]` PUT/DELETE) through `useWatchlistStore` (optimistic, client-UUID ids, one-time localStorage import that MERGES even into a non-empty account — see store comment). Feed bias (`lib/watchlist/bias.ts`) and the Daily Brief read the store, not localStorage |
 | News | `/news` | 🟢 Live | Multi-provider RSS/JSON; sentiment + asset detection |
 | Social | `/social` | 🟡 Partial | `/live-data/social`. **Live:** Reddit post text/link/author/timestamp (Atom feeds, keyless but robots-gated — see below), and the social VOLUME figures from Santiment (`mentionsCount`) and LunarCrush (`social_volume_24h`, `galaxy_score`), both **key-gated**: with no key those signals are absent, not zero. **Derived:** every sentiment label. Reddit's is a keyword regex over the post text; LunarCrush's is a threshold on galaxy score (≥60 / ≤35) rather than the provider's own `sentiment` field; Santiment's is hardcoded `neutral`. The per-asset `sentimentScore` aggregates those derived labels, so it is derived twice over. **Neither live nor derived:** Reddit `score` is a literal 0 and `upvoteRatio` is never set — Atom carries no vote data, and both are sentinels the pages render only when present. Reddit itself is gated off in `pinnedFetch` unless `REDDIT_CLIENT_ID` is set (its robots.txt disallows this app's agent, 2026-08-29 terms review). |
-| Global | `/global-adoption` | ⚪ De-routed | Access removed (T5) pending a post-production rework — a mislabeled CBDC tracker on stale/duplicated static data with a fabricated live timestamp. Page and `/live-data/cbdc-data` route were both **deleted 2026-09-14 (D10)**; `/global-adoption` still redirects to `/headlines` so bookmarks land. See `docs/assessments/T5-utility-triage.md`. |
+| Global | ~~`/global-adoption`~~ | ⚪ **Deleted 2026-09-14 (D10)** | Was de-routed under T5 pending a rework — a mislabeled CBDC tracker on stale/duplicated static data with a fabricated live timestamp. Owner decision **D10** then **cut it outright**: the page and `/live-data/cbdc-data` are both **gone** (PR #191, `b484313`), which also closed T-138 by deletion rather than by fixing the fabricated `updatedAt`. This row said both were "retained" until 2026-09-17, and said the deletion landed on 2026-09-15 until 2026-09-20 — `b484313` is dated 2026-09-14. The `/global-adoption` → `/headlines` redirect is deliberately **kept** in `next.config.mjs` so an existing deep link still lands somewhere. See `docs/assessments/T5-utility-triage.md` and `docs/decisions/2026-09-14-owner-decisions.md`. |
 | Transfer Fee Calc | ~~`/transfer-fees`~~ | ⚪ **Hidden from rollout** | Static fee table (`transferFees.ts`) + live token prices; staleness-labeled. **Live withdrawal-fee overlay** (`/live-data/withdraw-fees`, keyless KuCoin/HTX confirmed + 5 unprobed; RP-5 forbids keyed endpoints) — overlay-only, per-row `live` tags. **Withdrawal availability is disclosed as assumed, not checked**: live-reported suspensions render as blocked routes with attribution, and the notice is deliberately NOT gated on fee staleness. `depositEnabled` is the same assumption with no source — a known open gap. Tax-character panel (`lib/data/taxCharacter.ts`) states what kind of event each leg is, with no numbers |
 | Staking | `/staking` | 🟡 Partial | **Two tabs since 2026-08-20 (W3-3):** Providers (curated catalog, live APR where available, defunct toggle) and Live Pools (on-chain opportunities via `/live-data/staking-discovery`). Curated catalog is staleness-labeled (`getStakingDataProvenance()`) |
 | Staking Discovery | ~~`/staking-discovery`~~ | ⚪ Merged | **Merged into `/staking` 2026-08-20 (W3-3, option B)** — its curated directory duplicated the Staking page's provider cards; the live on-chain pool discovery became the **Live Pools tab** on `/staking` (`?tab=pools`, content-preserving redirect). The defunct-platform toggle (Celsius, the cautionary example) moved to the Providers tab. `/live-data/staking-discovery` unchanged |
@@ -1600,7 +1606,7 @@ if (res1.status === 'fulfilled' && res1.value.ok) { /* use it */ }
 // always fall through to static defaults if fetch fails
 ```
 
-**Sequential fallback ladder** (try A, else B, else C — `markets`, `portfolio-prices`; ⚪ `cbdc-data` was this pattern’s third example until the route was cut 2026-09-14, D10) → per-leg
+**Sequential fallback ladder** (try A, else B, else C — `markets`, `portfolio-prices`, `coin-profile`) → per-leg
 try/catch, returning on first success. **Do not "upgrade" these to `allSettled`**: it fires every provider in
 parallel, burning rate limit on exactly the calls the ladder exists to avoid. The 2026-07-22 pass found 7 of 8
 routes flagged for "missing allSettled" were already correct for this reason.
