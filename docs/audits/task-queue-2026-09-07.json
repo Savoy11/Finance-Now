@@ -11640,10 +11640,9 @@
    "owner_role": "owner-decision",
    "category": "terms-review",
    "effort": "medium",
-   "blocking_decision": "Owner rulings, in the order they bite: (1) OKX — personal-only with the D22 trigger, or prohibited now (§9.4 quoted in the audit; funding-rates loses its only source either way at the trigger); (2) Nasdaq Trader — add to T-407 or rule now; (3) KuCoin — ⚠ SINGLE-USER ONLY + D22 trigger; (4) Alpha Vantage, Messari, Santiment — join the T-151 keystone; (5) CoinMarketCap — which plan the key is on, and render \"Data provided by CoinMarketCap.com\" if commercial; (6) Jito / Rocket Pool / Pendle — accept the narrow interface-only reading as D25 did; (7) which clean readings to flip to verified.",
+   "blocking_decision": "Owner rulings, in the order they bite: (1) OKX — personal-only with the D22 trigger, or prohibited now (§9.4 quoted in the audit; funding-rates loses its only source either way at the trigger); (2) Nasdaq Trader — add to T-407 or rule now; (3) KuCoin — ⚠ SINGLE-USER ONLY + D22 trigger; (4) Alpha Vantage, Messari, Santiment — apply the D22 posture the personal-vs-commercial keystone closed on (personal today, commercial at release; ⚠ SINGLE-USER ONLY); (5) CoinMarketCap — which plan the key is on, and render \"Data provided by CoinMarketCap.com\" if commercial; (6) Jito / Rocket Pool / Pendle — accept the narrow interface-only reading as D25 did; (7) which clean readings to flip to verified.",
    "related_ids": [
     "T-005",
-    "T-151",
     "T-407",
     "D22",
     "D25"
