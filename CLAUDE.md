@@ -516,6 +516,13 @@ const { data } = useQuery({
 > `lib/server/__tests__/queueLedgerCheck.test.ts`, because a guard only ever seen green
 > proves nothing. `node scripts/check-queue-ledger.mjs --html <out>` also renders the ledger
 > as a page — the published Finance Now Ledger artifact is that output, never hand-edited.
+> **The page carries a shared workspace (2026-09-27)**: uploads, progress notes and
+> "confirm complete" live in the artifact's own runtime storage (`db` collections `docs` and
+> `log`, plus `assets`), not in the HTML, so regenerating never touches them. Publish with
+> `WORKSPACE_CAPABILITIES` from `scripts/lib/ledgerWorkspace.mjs`. A confirmation there is a
+> request, not a closure: read `log` with the artifact data tool and apply it to the JSON by
+> PR. The browser half never deletes (archive only) and never writes markup from text —
+> both pinned by `lib/server/__tests__/ledgerWorkspace.test.ts`.
 
 ### `src/lib/data/transferFees.ts`
 Central data file for the Transfer Fee Calculator.
