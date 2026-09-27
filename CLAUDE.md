@@ -518,6 +518,20 @@ const { data } = useQuery({
 > `lib/server/__tests__/queueLedgerCheck.test.ts`, because a guard only ever seen green
 > proves nothing. `node scripts/check-queue-ledger.mjs --html <out>` also renders the ledger
 > as a page — the published Finance Now Ledger artifact is that output, never hand-edited.
+> **The page carries a shared workspace (2026-09-27)**: uploads, progress notes and
+> "confirm complete" live in the artifact's own runtime storage (`db` collections `docs` and
+> `log`, plus `assets`), not in the HTML, so regenerating never touches them. Publish with
+> `WORKSPACE_CAPABILITIES` from `scripts/lib/ledgerWorkspace.mjs` — its db rule raises writes
+> to `admin` (Editor, Owner, project members: the level that also gets `assets`); reads stay
+> open to everyone the page is shared with, so every upload is readable by all of them,
+> including signed-in visitors arriving by link while link sharing is on (they hold `view`).
+> Sharing is the owner's setting. A confirmation there is a request, not a closure: read `log`
+> with the artifact data tool and apply it to the JSON by PR. Every decision and every write
+> is in `ledgerWorkspace.core.js` (no DOM; the tests run it against fake stores), and the
+> store it exposes has no delete path — archive only, per the owner's no-deletion rule. Rows
+> are normalized before they render, so one malformed row cannot blank the page. The db caps
+> at 5,000 documents across `docs` and `log`; at the cap, creates fail with `quota_exceeded`
+> and the page says nothing was removed — what to do then is the owner's call, not a cleanup.
 
 ### `src/lib/data/transferFees.ts`
 Central data file for the Transfer Fee Calculator.
