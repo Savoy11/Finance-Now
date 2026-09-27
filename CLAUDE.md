@@ -521,8 +521,9 @@ const { data } = useQuery({
 > `log`, plus `assets`), not in the HTML, so regenerating never touches them. Publish with
 > `WORKSPACE_CAPABILITIES` from `scripts/lib/ledgerWorkspace.mjs` — its db rule raises writes
 > to `admin` (Editor, Owner, project members: the level that also gets `assets`); reads stay
-> open to everyone the page is shared with, so every upload is readable by all of them (a page
-> declaring `db`/`assets` is organization-internal). A confirmation there is a request, not a closure: read `log`
+> open to everyone the page is shared with, so every upload is readable by all of them,
+> including signed-in visitors arriving by link while link sharing is on (they hold `view`).
+> Sharing is the owner's setting. A confirmation there is a request, not a closure: read `log`
 > with the artifact data tool and apply it to the JSON by PR. Every decision and every write
 > is in `ledgerWorkspace.core.js` (no DOM; the tests run it against fake stores), and the
 > store it exposes has no delete path — archive only, per the owner's no-deletion rule. Rows
