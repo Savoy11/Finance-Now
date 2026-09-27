@@ -6,6 +6,14 @@ import path from 'node:path'
 // throughout src — failed to resolve. Mirror the tsconfig path mapping so tests
 // and the app agree.
 export default defineConfig({
+  // tsconfig.json sets `jsx: "preserve"` because Next.js compiles JSX itself.
+  // Vitest 3's Vite tolerated that; Vitest 4 ships Vite 8, which reads the field
+  // and then refuses to transform JSX at all — every test importing a .tsx
+  // component failed to parse (reserves.test.ts, videoAnalyzers.test.ts).
+  // Vite 8 transforms with oxc, not esbuild, so an `esbuild:` block here is
+  // silently ignored; `oxc` is the knob that works. This governs the test
+  // pipeline only and leaves the Next build reading tsconfig unchanged.
+  oxc: { jsx: { runtime: 'automatic' } },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

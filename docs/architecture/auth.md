@@ -81,6 +81,15 @@ Exercised against the real database, not just type-checked:
 
 ### One real bug this caught
 
+> **Superseded 2026-09-14 (owner decision D2) — kept as the record of a real
+> bug, not as current architecture.** Everything in this subsection describes a
+> `/api/*` proxy rewrite that **no longer exists**: the legacy backend is frozen
+> (`backend/FROZEN.md`) and the rewrite was removed from `next.config.mjs`,
+> which also retired the constraint that dynamic `/api/*` routes had to live
+> under `/api/user/`. The Auth.js exclusion and the suffix-stripping described
+> below are both gone with it, because the thing they were guarding is gone.
+> Read this as *why those routes once 500'd*.
+
 `next.config.mjs` proxied `/api/*` to the legacy backend. Next.js rewrites run
 in the `afterFiles` phase — **after** concrete file routes but **before**
 dynamic ones. So `/api/auth/signup` (a literal file) reached its handler while

@@ -111,18 +111,29 @@ function Setup-Env {
         Copy-Item -Path $ENV_EXAMPLE -Destination $ENV_FILE
         Write-Ok ".env.local created from .env.example — every variable annotated with what it unlocks"
     } else {
-        # Fallback only if the example is missing. NEXT_PUBLIC_API_URL is inert
-        # since 2026-09-14 (owner decision D2): the /api/* proxy rewrite that
-        # consumed it was removed from next.config.mjs and the API_BASE_URL
-        # constant was deleted, so nothing reads it and the value below has no
-        # effect. Written only so this minimal file matches .env.example. If a
-        # proxy to a backend ever returns, this must be the ORIGIN only — a /api
-        # or /api/v1 suffix plus an appended /api/:path is what produced
-        # /api/v1/api/v1/... .
+        # Fallback only if the example is missing. This used to write
+        # NEXT_PUBLIC_API_URL plus a note about next.config.mjs's rewrite appending
+        # /api/:path — but owner decision D2 (2026-09-14) retired the backend and
+        # REMOVED that rewrite, so the variable is read by nothing and the advice
+        # described a mechanism that no longer exists. Nothing is required to start
+        # the app, so the minimal file sets nothing.
+        #
+        # #216 fixed this differently on main: it kept the variable as an ACTIVE
+        # line and corrected only the comment, "written only so this minimal file
+        # matches .env.example". That justification does not hold — .env.example
+        # COMMENTS the variable out, so an active line here is the one thing that
+        # does not match it. Dropping the line is what matches.
+        #
+        # Keeping #216's one durable fact: if a proxy to a backend ever returns,
+        # the value must be the ORIGIN only. A /api or /api/v1 suffix here, plus
+        # the rewrite appending /api/:path, is what produced /api/v1/api/v1/... .
         Write-Warn ".env.example not found — writing a minimal .env.local instead"
         @"
-# The legacy Python backend is OPTIONAL and dormant; the app runs live-only without it.
-NEXT_PUBLIC_API_URL=http://localhost:8000
+# Nothing here is required. Finance Now runs live-only against keyless public
+# providers, and any surface with no reachable source says so rather than
+# inventing a figure. Add optional keys (DATABASE_URL, AUTH_SECRET, provider
+# and LLM keys) to unlock specific surfaces — see CLAUDE.md § Environment
+# Variables for which key affects what.
 "@ | Set-Content -Path $ENV_FILE -Encoding utf8
         Write-Ok ".env.local created (minimal; the app runs live-only — there is no mock data path)"
     }

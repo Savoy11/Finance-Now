@@ -146,7 +146,7 @@ npm run lint
 | `DATABASE_URL` | — | Postgres. Backs portfolios, watchlists, builder plans, wallets, users. Without it those routes answer 503 and the rest of the app runs |
 | `AUTH_SECRET` | — | Required only once the login wall is re-enabled. `openssl rand -base64 32` |
 | `FN_ALLOW_LOCAL_USER` | dev: allow, prod: deny | ⚠ true in production hands every anonymous visitor the same account |
-| `NEXT_PUBLIC_API_URL` | — | **No longer read by anything** (2026-09-14, owner decision D2). The legacy backend is retired (`backend/FROZEN.md`) and the `/api/*` proxy rewrite that used this value was removed from `next.config.mjs`. Setting it has no effect |
+| `NEXT_PUBLIC_API_URL` | — | **Read by nothing since 2026-09-14 (D2).** The legacy backend is retired (`backend/FROZEN.md`) and the `/api/*` proxy rewrite that consumed this value was removed from `next.config.mjs`, so setting it has no effect. The old advice here — "origin only, the rewrite appends `/api/:path`" — described that removed rewrite |
 | `ANTHROPIC_API_KEY` | — | Daily Brief, all agents, Pump Report. Also settable in Integrations → AI Providers, where the UI key wins |
 | `FMP_API_KEY` | — | First rung of the quote ladder; the only source for the Stock Registry universe. Free tier covers per-symbol data, not the broad universe |
 
