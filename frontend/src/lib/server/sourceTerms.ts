@@ -178,6 +178,9 @@ export const SOURCE_TERMS_SEEDED = '2026-08-06'
 export const SOURCE_TERMS: SourceTermsEntry[] = [
   // ── PROHIBITED ─────────────────────────────────────────────────────────────
   {
+    // READ 2026-09-26 (T-005; docs/audits/terms-review-seeded-2026-09-26.md) — review stays seeded until the owner ratifies:
+    // CONFIRMED — ToS bars collecting data "using any automated means … for any purpose without our"
+    // permission. prohibited stands.
     domain: 'yahoo.com',
     name: 'Yahoo (incl. Yahoo Finance)',
     verdict: 'prohibited',
@@ -255,6 +258,9 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
 
   // ── CONDITIONAL ────────────────────────────────────────────────────────────
   {
+    // READ 2026-09-26 (T-005; docs/audits/terms-review-seeded-2026-09-26.md) — review stays seeded until the owner ratifies:
+    // FAVOURABLE — Webmaster FAQ (declared UA): "free to access and reuse"; "maximum access rate is 10
+    // requests per second"; declare your user agent. Both conditions verbatim.
     domain: 'sec.gov',
     name: 'U.S. SEC (EDGAR)',
     verdict: 'conditional',
@@ -307,6 +313,10 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     confidence: 'high',
   },
   {
+    // READ 2026-09-26 (T-005; docs/audits/terms-review-seeded-2026-09-26.md) — review stays seeded until the owner ratifies:
+    // NO DOCUMENT — the API docs publish a free server (api.llama.fi) and a $300/mo plan for higher
+    // limits; no terms-of-use text exists anywhere. The most load-bearing keyless source has no
+    // licence to point at.
     domain: 'llama.fi',
     name: 'DefiLlama',
     verdict: 'conditional',
@@ -614,6 +624,9 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     confidence: 'medium',
   },
   {
+    // READ 2026-09-26 (T-005; docs/audits/terms-review-seeded-2026-09-26.md) — review stays seeded until the owner ratifies:
+    // ⚠ PERSONAL, NON-COMMERCIAL — ToS §2(a): commercial use includes providing "information accessed
+    // through the Alpha Vantage Platform" to others. Same class as FMP/Finnhub/Twelve Data → T-151.
     domain: 'alphavantage.co',
     name: 'Alpha Vantage',
     verdict: 'conditional',
@@ -626,6 +639,11 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     confidence: 'medium',
   },
   {
+    // READ 2026-09-26 (T-005; docs/audits/terms-review-seeded-2026-09-26.md) — review stays seeded until the owner ratifies:
+    // ⚠ TWO API AGREEMENTS at pro.coinmarketcap.com. Personal: "strictly for your personal use", no
+    // aggregation for third parties, storing only "for caching purposes". Commercial: display licence
+    // on "Your Product" + REQUIRED attribution "Data provided by CoinMarketCap.com" with hyperlink
+    // (not rendered today). Which binds depends on the key’s plan.
     domain: 'coinmarketcap.com',
     name: 'CoinMarketCap',
     verdict: 'conditional',
@@ -638,6 +656,9 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     confidence: 'medium',
   },
   {
+    // READ 2026-09-26 (T-005; docs/audits/terms-review-seeded-2026-09-26.md) — review stays seeded until the owner ratifies:
+    // UNREAD — /en/terms serves only navigation to curl, headless Chrome and the Chrome extension.
+    // Moot for a US deployment: api.binance.com answers 451 (geo-block); Binance.US is verified.
     domain: 'binance.com',
     name: 'Binance',
     verdict: 'conditional',
@@ -719,6 +740,13 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     confidence: 'medium',
   },
   {
+    // READ 2026-09-26 (T-005; docs/audits/terms-review-seeded-2026-09-26.md) — review stays seeded until the owner ratifies:
+    // ⚠ READS AS PROHIBITED for a deployed analytics platform — the OKX API Agreement (28 Jul 2026,
+    // reached from ToS §4.3) §9.4: Market Data "solely for your own personal, non-commercial trading
+    // and account management purposes"; may not "publish, display, or otherwise make Market Data
+    // available to any third party" nor use it in any "financial data aggregator, price feed, or
+    // analytics platform"; "apply equally to … public endpoints". Funding rates and OHLCV are named in
+    // §1.8. OWNER DECISION (T-413): personal-only under D22, or prohibited now.
     domain: 'okx.com',
     name: 'OKX',
     verdict: 'conditional',
@@ -810,6 +838,9 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     confidence: 'medium',
   },
   {
+    // READ 2026-09-26 (T-005; docs/audits/terms-review-seeded-2026-09-26.md) — review stays seeded until the owner ratifies:
+    // FAVOURABLE — "using jsDelivr CDN is free for both personal and commercial use"; the prohibited
+    // pattern is scraping "unique files across hundreds of packages", not one daily JSON.
     domain: 'cdn.jsdelivr.net',
     name: 'jsDelivr (currency-api mirror)',
     verdict: 'conditional',
@@ -822,6 +853,10 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     confidence: 'medium',
   },
   {
+    // READ 2026-09-26 (T-005; docs/audits/terms-review-seeded-2026-09-26.md) — review stays seeded until the owner ratifies:
+    // CONDITIONAL — Terms of Use §7: CC BY-SA 4.0 / GFDL, "these licenses do allow commercial uses"
+    // with attribution by hyperlink to the article; §12 incorporates the User-Agent Policy, Robot
+    // Policy and API:Etiquette.
     domain: 'wikipedia.org',
     name: 'Wikipedia',
     verdict: 'conditional',
@@ -836,6 +871,10 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
 
   // ── APPROVED ───────────────────────────────────────────────────────────────
   {
+    // READ 2026-09-26 (T-005; docs/audits/terms-review-seeded-2026-09-26.md) — review stays seeded until the owner ratifies:
+    // FAVOURABLE — the registered URL 404s; the live policy page is
+    // /subfooter/site-policies-and-notices and states no reuse restriction. Federal works: 17 U.S.C.
+    // §105. termsUrl should move to the live page.
     domain: 'home.treasury.gov',
     name: 'U.S. Treasury',
     verdict: 'approved',
@@ -847,6 +886,9 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     confidence: 'high',
   },
   {
+    // READ 2026-09-26 (T-005; docs/audits/terms-review-seeded-2026-09-26.md) — review stays seeded until the owner ratifies:
+    // FAVOURABLE — "Is the API free for commercial use? Yes. The rates themselves fall under each
+    // provider’s terms." No quotas; abuse rate-limiting; open source.
     domain: 'frankfurter.dev',
     name: 'Frankfurter (ECB reference rates)',
     verdict: 'approved',
@@ -858,6 +900,11 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     confidence: 'high',
   },
   {
+    // READ 2026-09-26 (T-005; docs/audits/terms-review-seeded-2026-09-26.md) — review stays seeded until the owner ratifies:
+    // ⚠ RESTRICTIVE ON ITS FACE — the symbol-directory page has no terms; the site’s Copyright &
+    // Disclaimer says Content "may not be copied, reproduced, transmitted, displayed … or otherwise
+    // used" without written consent beyond fair use, and "Nasdaq stock symbols are proprietary to
+    // Nasdaq, Inc." Whether a plain-text symbol list is "Content" is the T-407 class of judgement.
     domain: 'nasdaqtrader.com',
     name: 'Nasdaq Trader (symbol directory)',
     verdict: 'approved',
@@ -869,6 +916,9 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     confidence: 'medium',
   },
   {
+    // READ 2026-09-26 (T-005; docs/audits/terms-review-seeded-2026-09-26.md) — review stays seeded until the owner ratifies:
+    // FAVOURABLE — Terms of Service cover "their associated API services"; disclaimers, accelerator
+    // terms and sanctions exclusions only; nothing restricts reading the API.
     domain: 'mempool.space',
     name: 'mempool.space',
     verdict: 'approved',
@@ -1005,6 +1055,9 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     confidence: 'medium',
   },
   {
+    // READ 2026-09-26 (T-005; docs/audits/terms-review-seeded-2026-09-26.md) — review stays seeded until the owner ratifies:
+    // UNREAD — the site serves an "Important Tips" interstitial to every path; /en/terms is 404.
+    // Behind the hidden Transfer Fees surface; not load-bearing.
     domain: 'xt.com',
     name: 'XT.com (public market-data API)',
     verdict: 'conditional',
@@ -1107,6 +1160,11 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     confidence: 'medium',
   },
   {
+    // READ 2026-09-26 (T-005; docs/audits/terms-review-seeded-2026-09-26.md) — review stays seeded until the owner ratifies:
+    // ⚠ CONDITIONAL-PERSONAL — Terms of Use (09/24/2026) Article 91: no "commercial use of the
+    // Platform or any content", no "data collection robots … for other commercial interests", no
+    // systematic collection into "databases" without written permission. A personal run reads inside
+    // it; a deployed product does not → ⚠ SINGLE-USER ONLY + D22 trigger.
     domain: 'kucoin.com',
     name: 'KuCoin (public market-data API)',
     verdict: 'conditional',
@@ -1119,6 +1177,9 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     confidence: 'medium',
   },
   {
+    // READ 2026-09-26 (T-005; docs/audits/terms-review-seeded-2026-09-26.md) — review stays seeded until the owner ratifies:
+    // UNREAD — the registry names the API docs; the Terms link redirects to a support landing page
+    // under both fetch paths. Behind the hidden Transfer Fees surface.
     domain: 'huobi.pro',
     name: 'HTX / Huobi (public market-data API)',
     verdict: 'conditional',
@@ -1131,6 +1192,10 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     confidence: 'medium',
   },
   {
+    // READ 2026-09-26 (T-005; docs/audits/terms-review-seeded-2026-09-26.md) — review stays seeded until the owner ratifies:
+    // NO DOCUMENT — the registered URL now returns an OpenAPI spec whose x-guidance reads "Free
+    // endpoints under /public/* … no payment required" (contact api@blockchain.com). The site’s own
+    // Terms were not read.
     domain: 'blockchain.info',
     name: 'Blockchain.com (explorer)',
     verdict: 'approved',
@@ -1141,6 +1206,10 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     confidence: 'medium',
   },
   {
+    // READ 2026-09-26 (T-005; docs/audits/terms-review-seeded-2026-09-26.md) — review stays seeded until the owner ratifies:
+    // CONDITIONAL — "Commercial use is allowed as long as the attribution is given right next to the
+    // display of the data"; "You may not use our data to impersonate us". The condition is beside the
+    // number, not on a sources page — confirm the Fear & Greed surfaces do that.
     domain: 'alternative.me',
     name: 'alternative.me (Fear & Greed)',
     verdict: 'approved',
@@ -1151,6 +1220,9 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     confidence: 'medium',
   },
   {
+    // READ 2026-09-26 (T-005; docs/audits/terms-review-seeded-2026-09-26.md) — review stays seeded until the owner ratifies:
+    // NO API DOCUMENT — the docs landing carries no terms; the Lido DAO Terms of Use govern the web
+    // interface and say nothing about eth-api.lido.fi; protocol code "freely licensed to the public".
     domain: 'lido.fi',
     name: 'Lido',
     verdict: 'approved',
@@ -1161,6 +1233,9 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     confidence: 'medium',
   },
   {
+    // READ 2026-09-26 (T-005; docs/audits/terms-review-seeded-2026-09-26.md) — review stays seeded until the owner ratifies:
+    // NO API DOCUMENT — the docs landing carries no terms; the Terms of Use govern the website and say
+    // nothing about api.marinade.finance; "APY figures displayed are estimates".
     domain: 'marinade.finance',
     name: 'Marinade',
     verdict: 'approved',
@@ -1171,6 +1246,10 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     confidence: 'medium',
   },
   {
+    // READ 2026-09-26 (T-005; docs/audits/terms-review-seeded-2026-09-26.md) — review stays seeded until the owner ratifies:
+    // ⚠ AMBIGUOUS — Terms of Use (via footer) bar "data mining tools, robots, crawlers … to scrape or
+    // otherwise remove data from the Interfaces or Features"; kobe.mainnet.jito.network is a
+    // documented API, not a listed Interface. Recommend the narrow reading (D25 precedent).
     domain: 'jito.network',
     name: 'Jito',
     verdict: 'approved',
@@ -1198,6 +1277,9 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     confidence: 'medium',
   },
   {
+    // READ 2026-09-26 (T-005; docs/audits/terms-review-seeded-2026-09-26.md) — review stays seeded until the owner ratifies:
+    // NO DATA CLAUSE — the site Terms (June 2017) are generic boilerplate; the developer page the
+    // registry names renders only in a browser and was not read. Keyed, optional.
     domain: 'cryptopanic.com',
     name: 'CryptoPanic',
     verdict: 'conditional',
@@ -1210,6 +1292,11 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     confidence: 'medium',
   },
   {
+    // READ 2026-09-26 (T-005; docs/audits/terms-review-seeded-2026-09-26.md) — review stays seeded until the owner ratifies:
+    // ⚠ INTERNAL USE ONLY — Terms of Service: use "is for your internal use only … may not be resold,
+    // shared, redistributed, published, posted publicly", republishing only via portions "expressly
+    // marked as permissible to share publicly". Keyed, optional; personal today, a public deployment
+    // needs the marked widgets or an agreement.
     domain: 'messari.io',
     name: 'Messari',
     verdict: 'conditional',
@@ -1221,6 +1308,10 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     confidence: 'medium',
   },
   {
+    // READ 2026-09-26 (T-005; docs/audits/terms-review-seeded-2026-09-26.md) — review stays seeded until the owner ratifies:
+    // CONDITIONAL — User Agreement §4.1: licence "solely for purposes approved by LunarCrush";
+    // Appendix 1 bars "data mining, robots, scraping … from the Interface" (keyed API use is not
+    // that). No redistribution clause found. Keyed, optional.
     domain: 'lunarcrush.com',
     name: 'LunarCrush',
     verdict: 'conditional',
@@ -1233,6 +1324,10 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     confidence: 'medium',
   },
   {
+    // READ 2026-09-26 (T-005; docs/audits/terms-review-seeded-2026-09-26.md) — review stays seeded until the owner ratifies:
+    // ⚠ PERSONAL-ONLY — T&C (July 2023) §10.3: "solely for your own private use and not for resale or
+    // other transfer to, or use by or for the benefit of, any third party"; nothing "that could
+    // compete with the business of Santiment". Keyed, optional.
     domain: 'santiment.net',
     name: 'Santiment',
     verdict: 'conditional',
@@ -1251,6 +1346,10 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
   // published figures, to be shown as theirs and not re-derived into something
   // that looks like an independent measurement.
   {
+    // READ 2026-09-26 (T-005; docs/audits/terms-review-seeded-2026-09-26.md) — review stays seeded until the owner ratifies:
+    // ⚠ AMBIGUOUS — Terms of Service (PDF) bar "any robot, spider, crawler, scraper, or other
+    // automated means or interface not provided by us, to access the Site to extract data";
+    // api.rocketpool.net is an interface provided by them. Recommend the narrow reading.
     domain: 'rocketpool.net',
     name: 'Rocket Pool',
     verdict: 'approved',
@@ -1261,6 +1360,8 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     confidence: 'medium',
   },
   {
+    // READ 2026-09-26 (T-005; docs/audits/terms-review-seeded-2026-09-26.md) — review stays seeded until the owner ratifies:
+    // NO DOCUMENT EXISTS — no terms on the site, in the docs, or at any conventional path.
     domain: 'stride.zone',
     name: 'Stride',
     verdict: 'approved',
@@ -1271,6 +1372,8 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     confidence: 'medium',
   },
   {
+    // READ 2026-09-26 (T-005; docs/audits/terms-review-seeded-2026-09-26.md) — review stays seeded until the owner ratifies:
+    // NO DOCUMENT EXISTS — beefy.com/terms is 404; the docs carry none.
     domain: 'beefy.finance',
     name: 'Beefy Finance',
     verdict: 'approved',
@@ -1284,6 +1387,8 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     // No longer fetched since 2026-09-26 (T-399): api.yearn.finance stopped resolving and
     // the discovery rung was dropped rather than repointed (its vaults are in DefiLlama's
     // feed). Entry kept as the record of the verdict; nothing in dataSources.ts names it.
+    // READ 2026-09-26 (T-005; docs/audits/terms-review-seeded-2026-09-26.md) — review stays seeded until the owner ratifies:
+    // NOT READ — the discovery rung was dropped the same day (T-399); nothing fetches this host.
     domain: 'yearn.finance',
     name: 'Yearn Finance',
     verdict: 'approved',
@@ -1294,6 +1399,11 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     confidence: 'medium',
   },
   {
+    // READ 2026-09-26 (T-005; docs/audits/terms-review-seeded-2026-09-26.md) — review stays seeded until the owner ratifies:
+    // ⚠ AMBIGUOUS — Terms of Use (docs) bar users from "copy, reproduce, republish … resell, or
+    // distribute in any way, any data, content, or any part of Pendle Protocol except as expressly
+    // permitted by applicable laws"; written for the Website/Protocol, with the API separately
+    // documented for developers. Recommend the narrow reading.
     domain: 'pendle.finance',
     name: 'Pendle',
     verdict: 'approved',
