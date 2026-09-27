@@ -95,19 +95,7 @@ const UPSTREAMS = [
     // The route also applies DEFILLAMA_SLUG_BLOCKLIST; omitted here on purpose,
     // so a blocklisted project shows as a survivor rather than as a dead source.
   },
-  {
-    name: 'yearn',
-    label: 'Yearn Finance',
-    url: 'https://api.yearn.finance/v1/chains/1/vaults/all',
-    note: 'Reported as not resolving. If that holds, the cure is a new URL or removal — not a reparse.',
-    pick: (j) => (Array.isArray(j) ? j : null),
-    stages: [
-      ['endorsed', (v) => !!v.endorsed],
-      [`tvl.tvl >= ${MIN_TVL}`, (v) => (v.tvl?.tvl ?? 0) >= MIN_TVL],
-      [`apy.net_apy*100 >= ${MIN_APY}`, (v) => ((v.apy?.net_apy ?? 0) * 100) >= MIN_APY],
-      ['coin id resolves', (v) => !!symbolToCoinId(v.token?.symbol)],
-    ],
-  },
+  // yearn — rung dropped 2026-09-26 (T-399); see the tombstone in the route.
   {
     name: 'pendle',
     label: 'Pendle',

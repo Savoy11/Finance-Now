@@ -9,7 +9,8 @@ export const dynamic = 'force-dynamic'
 
 // ─── Shared output type ───────────────────────────────────────────────────────
 
-export type DiscoverySource = 'defillama' | 'yearn' | 'pendle' | 'beefy'
+// 'yearn' was a member until 2026-09-26 (T-399) — see the tombstone where its fetcher was.
+export type DiscoverySource = 'defillama' | 'pendle' | 'beefy'
 
 export interface DiscoveredPool {
   poolId:          string
@@ -45,7 +46,7 @@ export interface StakingDiscoveryResponse {
   stale?:    boolean
   /**
    * Each upstream's outcome on THIS request — 'live (n)' or 'failed: <reason>' —
-   * because `sources.yearn: 0` cannot say whether Yearn answered with nothing or
+   * because `sources.beefy: 0` cannot say whether Beefy answered with nothing or
    * did not answer (T-172; the same gap staking-rates closed with its own
    * `upstreams`). Present on every response, including a served last-good one,
    * where it describes the request that fell back.
@@ -66,12 +67,12 @@ const RETRY_DELAY_MS = 400
 /**
  * Per-request timeout budget.
  *
- * This route fans out to four upstreams in parallel, so the response is gated by
+ * This route fans out to three upstreams in parallel, so the response is gated by
  * the SLOWEST of them — and with no timeout, "slowest" had no upper bound at
  * all. It was measured at 18-22 s (DATA-AVAILABILITY, standing perf item). Six
  * seconds is generous for a JSON list endpoint and short enough that a wedged
  * upstream costs the page one slot instead of the whole response: the fan-out is
- * `allSettled`, so a timed-out leg drops its pools and the other three still
+ * `allSettled`, so a timed-out leg drops its pools and the other two still
  * serve.
  */
 const UPSTREAM_TIMEOUT_MS = 6_000
@@ -202,54 +203,23 @@ async function fetchDefiLlama(minTvl: number, minApy: number, coinFilter: string
   return pools
 }
 
-// ─── Yearn Finance ────────────────────────────────────────────────────────────
-// Endpoint: https://api.yearn.finance/v1/chains/1/vaults/all
-// Returns ETH-chain vaults with net APY and TVL.
-
-interface YearnVault {
-  address:  string
-  name:     string
-  symbol:   string
-  endorsed: boolean
-  type:     string
-  token:    { symbol: string; address: string }
-  tvl:      { tvl: number } | null
-  apy:      { net_apy: number; gross_apr: number } | null
-  metadata: { displayName?: string } | null
-}
-
-async function fetchYearn(minTvl: number, minApy: number, coinFilter: string | null): Promise<DiscoveredPool[]> {
-  const vaults = await getJson<YearnVault[]>('https://api.yearn.finance/v1/chains/1/vaults/all', 1800)
-  const pools: DiscoveredPool[] = []
-
-  for (const v of vaults) {
-    if (!v.endorsed) continue
-    const tvl = v.tvl?.tvl ?? 0
-    if (tvl < minTvl) continue
-    const netApy = (v.apy?.net_apy ?? 0) * 100
-    if (netApy < minApy) continue
-
-    const coinId = symbolToCoinId(v.token.symbol)
-    if (!coinId || (coinFilter && coinId !== coinFilter)) continue
-
-    const vaultName = v.metadata?.displayName ?? v.name ?? v.token.symbol
-    const pool = buildPool({
-      poolId:          `yearn-${v.address}`,
-      project:         'Yearn Finance',
-      opportunityName: vaultName,
-      symbol:          v.token.symbol,
-      chain:           'Ethereum',
-      coinId, tvlUsd: tvl, apy: netApy,
-      apyBase: (v.apy?.gross_apr ?? 0) * 100, apyReward: null,
-      auditCount: 3,
-      url:        `https://yearn.finance/vaults/1/${v.address}`,
-      projectUrl: 'https://yearn.finance',
-      category: 'liquid', source: 'yearn',
-    })
-    pools.push(pool)
-  }
-  return pools
-}
+// ─── Yearn Finance — RUNG DROPPED 2026-09-26 (T-399) ─────────────────────────
+// `fetchYearn` read https://api.yearn.finance/v1/chains/1/vaults/all, a host that no
+// longer resolves (`failed: fetch failed` on every request once T-172 made outcomes
+// visible). Measured on the owner's machine before deciding, against the two live
+// replacements: yDaemon (ydaemon.yearn.fi) answers 200 with 200 vaults but its own
+// README calls it "a legacy rest API … please refer to Kong"; Kong (kong.yearn.farm,
+// GraphQL) answers too. Through this route's gates either would land exactly TWO pools —
+// the WETH yVaults at ~$19M and ~$3M — and both are ALREADY in DefiLlama's feed
+// (project `yearn-finance`, pools 2b840e0a… and 7df4c62f…), which this route reads
+// first. A repoint would add a new host and a terms entry for zero new pools, onto an
+// API that announces its own retirement. Same evidence standard as the 2026-09-09
+// staking-rates audit: a rung that carries nothing the others do not is dropped.
+// If Yearn-specific data is ever wanted, Kong is the path, not yDaemon.
+//
+// D21 note: DefiLlama was already the only source landing pools in practice (Pendle
+// contributes 1, Beefy 0 — see their sections), so this changes nothing about that
+// single-source exposure; it removes a rung that was masking it as `yearn: 0`.
 
 // ─── Pendle Finance ───────────────────────────────────────────────────────────
 // Endpoint: https://api-v2.pendle.finance/core/v1/1/markets
@@ -271,6 +241,10 @@ async function fetchYearn(minTvl: number, minApy: number, coinFilter: string | n
 // 100 sampled markets, LimitOrder 95, and Simple a curated 10. Note the choice currently
 // changes nothing downstream: all three resolved to ZERO pools before COIN_SYMBOL_MAP was
 // widened, and the widening is what actually unblocks this rung.
+// Measured 2026-09-26 (T-399): of the first 100 markets, 23 are whitelisted, ≥ $1M and
+// unexpired — and 22 of those are stablecoin-yield markets (sUSDS, sUSDe, USDx …) that
+// COIN_SYMBOL_MAP excludes on purpose. wstETH is the one that maps. `live (1)` is the
+// correct answer for this rung, not a parse failure; page 2 of the feed is all < $1M.
 interface PendleMarket {
   address:         string
   name:            string
@@ -332,6 +306,10 @@ async function fetchPendle(minTvl: number, minApy: number, coinFilter: string | 
 // Endpoint: https://api.beefy.finance/vaults + https://api.beefy.finance/apy/breakdown
 // Multichain yield optimizer — covers SOL, AVAX, BNB, MATIC chains.
 
+// Measured 2026-09-26 (T-399): 554 active vaults, 76 single-asset; the only single-asset
+// vaults at ≥ $1M hold USDC, BIFI or CVX — none a stakeable coin in COIN_SYMBOL_MAP. So
+// `live (0)` is Beefy answering honestly with nothing this page wants, not a dead rung.
+// TVL parses correctly ({ chainId: { vaultId: usd } } is flattened below).
 interface BeefyVault {
   id:         string
   name:       string
@@ -425,11 +403,10 @@ export async function GET(req: NextRequest) {
 
   const results = await Promise.allSettled([
     fetchDefiLlama(minTvl, minApy, coinFilter),
-    fetchYearn(minTvl, minApy, coinFilter),
     fetchPendle(minTvl, minApy, coinFilter),
     fetchBeefy(minTvl, minApy, coinFilter),
   ])
-  const [dlResult, yearnResult, pendleResult, beefyResult] = results
+  const [dlResult, pendleResult, beefyResult] = results
   const anyUpstreamFailed = results.some(r => r.status === 'rejected')
 
   // What each upstream did on THIS request. A rejection's message is the reason
@@ -438,17 +415,15 @@ export async function GET(req: NextRequest) {
   const describe = (r: PromiseSettledResult<DiscoveredPool[]>): string =>
     r.status === 'fulfilled' ? `live (${r.value.length})` : `failed: ${r.reason instanceof Error ? r.reason.message : String(r.reason)}`.slice(0, 160)
   const upstreams: Record<DiscoverySource, string> = {
-    defillama: describe(dlResult), yearn: describe(yearnResult), pendle: describe(pendleResult), beefy: describe(beefyResult),
+    defillama: describe(dlResult), pendle: describe(pendleResult), beefy: describe(beefyResult),
   }
 
   const dlPools     = dlResult.status     === 'fulfilled' ? dlResult.value     : []
-  const yearnPools  = yearnResult.status  === 'fulfilled' ? yearnResult.value  : []
   const pendlePools = pendleResult.status === 'fulfilled' ? pendleResult.value : []
   const beefyPools  = beefyResult.status  === 'fulfilled' ? beefyResult.value  : []
 
   let all: DiscoveredPool[] = [
     ...dlPools,
-    ...yearnPools,
     ...pendlePools,
     ...beefyPools,
   ]
@@ -471,7 +446,6 @@ export async function GET(req: NextRequest) {
 
   const sources: Record<DiscoverySource, number> = {
     defillama: dlPools.length,
-    yearn:     yearnPools.length,
     pendle:    pendlePools.length,
     beefy:     beefyPools.length,
   }

@@ -215,7 +215,7 @@ export const DATA_SOURCES: DataSourceEntry[] = [
   {
     id: 'staking-discovery', surface: 'Staking / yield discovery', module: 'crypto',
     route: '/live-data/staking-discovery', status: 'live',
-    providers: [DEFILLAMA('yields.llama.fi'), { name: 'Yearn', host: 'api.yearn.finance', role: 'primary', auth: 'none' }, { name: 'Pendle', host: 'api-v2.pendle.finance', role: 'primary', auth: 'none' }, { name: 'Beefy', host: 'api.beefy.finance', role: 'primary', auth: 'none' }],
+    providers: [DEFILLAMA('yields.llama.fi'), { name: 'Pendle', host: 'api-v2.pendle.finance', role: 'primary', auth: 'none' }, { name: 'Beefy', host: 'api.beefy.finance', role: 'primary', auth: 'none' }],
     cadence: 'on demand · ~18s (4 upstreams)',
   },
 

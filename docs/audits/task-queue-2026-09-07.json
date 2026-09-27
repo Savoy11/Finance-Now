@@ -56,8 +56,8 @@
   "total_verified": 398,
   "outstanding": 351,
   "by_status": {
-   "open": 58,
-   "closed": 132,
+   "open": 55,
+   "closed": 135,
    "blocked": 68,
    "unclear": 1,
    "parked": 92
@@ -69,7 +69,7 @@
    "owner-machine": 83
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 132,
+  "closed_by_annotation": 135,
   "counts_recomputed_on": "2026-09-26",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 351
@@ -5402,7 +5402,7 @@
   {
    "id": "T-090",
    "title": "Reproduce /equities/social stuck on 'Fetching social signals…' on the owner's IP",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "bug",
@@ -5426,7 +5426,18 @@
      "lines": "439-441",
      "quote": "⚠ Separately: the `/equities/social` **page** currently never issues its query (stuck on \"Fetching social signals…\" while the app reports Offline/DISCONNECTED). Pre-existing and unrelated — the route and a direct fetch from that page both work; tracked separately."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-26",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "DOES NOT REPRODUCE on the owner’s IP, which is exactly the check the item asked for. /equities/social opened in Chrome against the dev server on 2026-09-26: the page issued GET /live-data/stock-social?limit=40, got 200, and rendered StockTwits posts within the first few seconds; the route itself answers in ~0.8 s with 30 signals and declares Reddit withheld (robots gate). The original observation came from a container where the Reddit leg hung; the robots gate now short-circuits that leg everywhere, so there is no hanging fetch for the query to sit behind. Nothing to fix.",
+    "evidence": [
+     "frontend/src/app/(dashboard)/equities/social/page.tsx",
+     "frontend/src/app/live-data/stock-social/route.ts"
+    ]
+   }
   },
   {
    "id": "T-105",
@@ -5871,7 +5882,7 @@
   {
    "id": "T-155",
    "title": "Run fund-fee reconciliation on the owner's machine (resolve the SEC RR index URL, --inspect, then full run)",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "data-verification",
@@ -5904,7 +5915,18 @@
      "lines": "21",
      "quote": "`npm run fund-fees -- --inspect` still fails: SEC Risk/Return Summary dataset index URL unresolved (all 5 INDEX_URLS candidates 404). Owner to search sec.gov for \"Mutual Fund Prospectus Risk/Return Summary Data Sets\", run `RR_INDEX_URL=<url> npm run fund-fees -- --inspect`"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-26",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "DONE, AND THE LEDGER NEVER LEARNED. Every step this item asks for has run on the owner’s machine: the RR index URL resolves from the script’s own INDEX_URLS list (the \"riskreturn\" spelling, added 2026-09-09 — so the \"all five 404\" premise has been false since then), --inspect confirmed the table and tag names (2026-09-09 and again 2026-09-26), and the full run wrote fund-fee-reconcile.json and fund-fee-worksheet.csv on 2026-09-09, 2026-09-24 and 2026-09-26. The 2026-09-26 run is the first that read the total-expense line and four quarters (T-411); its report is the fund-fee-reconcile audit of 2026-09-26 (landing with T-411, PR #240) and its 17 differences are T-412. Nothing here remains for anyone.",
+    "evidence": [
+     "frontend/scripts/build-fund-fees.mjs",
+     "frontend/src/lib/data/fundCatalog.ts"
+    ]
+   }
   },
   {
    "id": "T-225",
@@ -11031,7 +11053,7 @@
   {
    "id": "T-399",
    "title": "Three of the four staking-discovery upstreams contribute zero pools",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "bug",
@@ -11069,6 +11091,18 @@
     "note": "NEW EVIDENCE from T-172: the discovery response now reports each upstream outcome, and on every request since it landed Yearn reads `failed: fetch failed` — a connection-level failure, not an empty answer. So of the three zero-contributors this item names, Yearn is a DEAD or MOVED endpoint (the repoint to ydaemon.yearn.fi this item already anticipates, gated on a terms entry), Beefy is `live (0)` — it answers and nothing passes the $1M min_tvl gate — and Pendle is `live (1)` after the 2026-09-22 repoint. Three different cures, now distinguishable from the payload rather than from a probe.",
     "evidence": [
      "frontend/src/app/live-data/staking-discovery/route.ts"
+    ]
+   },
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-26",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "THREE HOSTS, THREE DIFFERENT ANSWERS, all measured on the owner’s machine over clean egress on 2026-09-26. YEARN — dropped, not repointed. api.yearn.finance no longer resolves. The two live replacements both answer (yDaemon 200 with 200 vaults; Kong GraphQL 200), but yDaemon’s own README calls it legacy and points at Kong, and through the route’s gates either would land exactly two pools — the WETH yVaults at ~$19M and ~$3M — both ALREADY in DefiLlama’s feed (project yearn-finance). A new host plus a terms entry for zero new pools, on an API announcing its retirement, is the wrong trade; the rung was removed with a tombstone, the probe script and dataSources followed, the yearn.finance registry entry stays annotated. PENDLE — correct as is: 23 of the first 100 markets are whitelisted, ≥$1M and unexpired, 22 are stablecoin-yield markets COIN_SYMBOL_MAP excludes by design, wstETH maps; `live (1)` is the true count. BEEFY — correct as is: 554 active vaults, 76 single-asset, the only ones ≥$1M hold USDC/BIFI/CVX; `live (0)` is Beefy answering with nothing this page wants. Both are now said in the route beside the interfaces so nobody re-diagnoses them. D21: DefiLlama was already the only source landing pools in practice; this removes a rung that masked that as `yearn: 0` rather than changing it. DATA-AVAILABILITY.md’s discovery row (generated 2026-09-19) still describes the old state and will follow on the next regeneration.",
+    "evidence": [
+     "frontend/src/app/live-data/staking-discovery/route.ts",
+     "frontend/scripts/probe-discovery-upstreams.mjs",
+     "frontend/src/lib/data/dataSources.ts"
     ]
    }
   },
@@ -36630,6 +36664,20 @@
     "evidence": [
      "docs/decisions/2026-09-26-owner-decisions.md",
      "frontend/src/lib/data/fundCatalog.ts"
+    ]
+   },
+   {
+    "on": "2026-09-26",
+    "what": "T-155 closed on verification: the fund-fee reconcile it asks for has run three times on the owner’s machine, most recently under T-411.",
+    "evidence": [
+     "docs/audits/fund-fee-reconcile-2026-09-26.md"
+    ]
+   },
+   {
+    "on": "2026-09-26",
+    "what": "T-399 closed: Yearn rung dropped (dead host; replacements legacy or redundant with DefiLlama), Pendle and Beefy measured correct and annotated. T-090 closed: does not reproduce on the owner’s IP.",
+    "evidence": [
+     "frontend/src/app/live-data/staking-discovery/route.ts"
     ]
    }
   ]
