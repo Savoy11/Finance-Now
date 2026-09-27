@@ -9,22 +9,38 @@
 //   db  docs/<assetId>   one row per file: name, type, size, kind, itemIds, note,
 //                        uploadedBy, uploadedAt, archived
 //   db  log/<id>         one row per action: itemId, kind (progress | confirmed |
-//                        reopened | note), text, docIds, by, at
+//                        reopened | note), text, docIds, by, at, ord (ordering)
 //   user          who uploaded or confirmed (ids only are stored; names resolve per view)
 //
 // The page must be published with WORKSPACE_CAPABILITIES. A confirmation recorded here
 // does not change the ledger: Claude reads `log` (ArtifactData list) and applies it to
 // the JSON in a pull request, and the page shows "ledger pending" until then.
 //
-// Pure string builders, so the generator stays a single template and the rules the
-// browser half keeps are testable (lib/server/__tests__/ledgerWorkspace.test.ts).
+// The browser half is two files inlined into one wrapper: ledgerWorkspace.core.js (every
+// decision and every write, no DOM, run for real by the tests) and
+// ledgerWorkspace.client.js (drawing and wiring). The builders here are pure strings, so
+// the generator stays a single template (lib/server/__tests__/ledgerWorkspace.test.ts).
 import fs from 'node:fs'
 
-/** Pass as `capabilities` when publishing the ledger page. */
-export const WORKSPACE_CAPABILITIES = { db: {}, assets: {}, user: { scopes: ['profile'] } }
+/**
+ * Pass as `capabilities` when publishing the ledger page. The db rule raises writes to
+ * `admin` (Editor, Owner, project members), the level that also gets `assets`, so the
+ * people who can confirm an item are exactly the people who can upload its evidence.
+ * Reads stay at the default (`view`): everyone the page is shared with sees the work.
+ */
+export const WORKSPACE_CAPABILITIES = {
+  db: { rules: [{ path: '', write: 'admin' }] },
+  assets: {},
+  user: { scopes: ['profile'] },
+}
 
-const CLIENT = fs.readFileSync(new URL('./ledgerWorkspace.client.js', import.meta.url), 'utf8')
-if (/<\/script/i.test(CLIENT)) throw new Error('ledgerWorkspace.client.js must not contain a closing script tag')
+function inlineSource(name) {
+  const src = fs.readFileSync(new URL(`./${name}`, import.meta.url), 'utf8')
+  if (/<\/script/i.test(src)) throw new Error(`${name} must not contain a closing script tag`)
+  return src
+}
+const CORE = inlineSource('ledgerWorkspace.core.js')
+const CLIENT = inlineSource('ledgerWorkspace.client.js')
 
 /** The item list the browser half needs, safe to embed inside a <script> element. */
 export function itemsJson(items) {
@@ -39,8 +55,14 @@ export function workspaceItemSlot(id) {
   return `<div class="ws-slot" data-ws-item="${String(id).replace(/[^A-Za-z0-9-]/g, '')}" hidden></div>`
 }
 
+/**
+ * The item list, then ONE script holding the core and the client inside a wrapper, so
+ * `LedgerWorkspaceCore` never becomes a page global. The `;` between the two files is
+ * load-bearing: the client opens with "(", and without it the core's closing "})()"
+ * and the client parse as one call expression and the page throws on load.
+ */
 export function workspaceScripts(items) {
-  return `<script type="application/json" id="ws-items">${itemsJson(items)}</script>\n<script>\n${CLIENT}\n</script>`
+  return `<script type="application/json" id="ws-items">${itemsJson(items)}</script>\n<script>\n(function () {\n${CORE}\n;\n${CLIENT}\n})();\n</script>`
 }
 
 export function workspaceSection() {
@@ -167,5 +189,6 @@ textarea.ws-input{resize:vertical}
 .ws-filerow{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin-top:4px}
 .ws-filerow .ws-label{margin:0;width:100%}
 .ws-filerow .ws-input{width:auto}
-@media (max-width:640px){.ws-doc{grid-template-columns:36px 1fr}.ws-doc .ws-link{grid-column:2;justify-self:start}}
+.ws-doc-side{display:flex;flex-direction:column;align-items:flex-end;gap:2px;max-width:220px;text-align:right}
+@media (max-width:640px){.ws-doc{grid-template-columns:36px 1fr}.ws-doc-side{grid-column:2;align-items:flex-start;text-align:left;max-width:none}}
 `
