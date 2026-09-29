@@ -11,7 +11,7 @@ ruling, what it cascades to, and what was actually done.
 | D30 | Professional help | *"No not at this time; I am the accountant."* The owner self-administers the books and compliance; no lawyer or CPA is engaged for now. **D4 is unchanged:** the personalised tools stay dark until a qualified review clears them. → RECORDED | T-284/T-285's "book a lawyer/accountant consultation" step is superseded by D28. D4's review stays the gate for the personalised tools |
 | D31 | House source-labeling policy (T-292) | **Approved with two corrections**: rename Chronolens → News Charts, and state honestly that `<DerivedNote>` is required by the policy but **not yet rendered anywhere** (imported once, in `coin-discovery/page.tsx:16`, never used). §7's three unenforced rows stay **convention for now**; no coverage test is queued. → APPLIED | T-292 closes. `docs/policies/source-labeling.md` status moves from DRAFT to APPROVED |
 | D32 | "Risk framework shipped" milestone (T-310) | **Approved as applied.** The strike-through and OVERTAKEN annotation in `docs/MARKET-ASSESSMENT.md` §8 (applied 2026-09-14 under D15) stand as written. → APPLIED | T-310 closes |
-| D33 | Methodology Guide scope (T-359) | **Scope corrected and approved.** The guide (Google Doc "CAEP — Methodology Guide", last updated 2026-07-22) has no risk section. The new **Section 3 — Risk scoring** covers: the options Trade Risk Scorer; how Portfolios' 1–10 tiers and the fund suitability band are derived; the Pump Report's separate 0–10 heuristic and AI suspicion scores; and what is deliberately **not** scored (per-coin scores — RP-6; composites and cross-asset comparisons — D14; staking risk dimensions — D26). Dropped from the old list: the staking API legacy-field note (nothing left to describe after D26) and the P5 cross-class paragraph (answered by D14: no comparisons). → DRAFTED; the owner pastes it into the Google Doc | T-359 stays open until the text is in the guide. New item T-415 files the stale risk wording found while scoping |
+| D33 | Methodology Guide scope (T-359) | **Scope corrected and approved.** The guide (Google Doc "CAEP — Methodology Guide", last updated 2026-07-22) has no risk section. The new **Section 3 — Risk scoring** covers: the options Trade Risk Scorer; how Portfolios' 1–10 tiers and the fund suitability band are derived; the Pump Report's separate 0–10 heuristic and AI suspicion scores; and what is deliberately **not** scored (per-coin scores — RP-6; composites and cross-asset comparisons — D14; staking risk dimensions — D26). Dropped from the old list: the staking API legacy-field note (nothing left to describe after D26) and the P5 cross-class paragraph (answered by D14: no comparisons). → DRAFTED; the owner pastes it into the Google Doc. **→ APPLIED 2026-09-29** (see the note below) | T-359 ~~stays open until the text is in the guide~~ **closed 2026-09-29**. New item T-415 files the stale risk wording found while scoping |
 
 ## Notes the rulings did not settle, and how they were resolved
 
@@ -45,6 +45,16 @@ does not queue; the owner chose to keep §7 as convention for now.
 **D33 and the Drive connector.** The connector can read the Google Doc but cannot edit
 its body, so the section was drafted as paste-ready text and handed to the owner. T-359
 closes when the text is in the guide and a Change Log row is added there.
+
+> **Applied 2026-09-29.** The owner pasted Section 3 into the guide and then gave edit
+> access so the cleanup could be done in the Doc directly (in a browser, since the connector
+> still cannot edit a body). The Doc is now titled **"Finance Now — Methodology Guide"** —
+> it was still carrying the pre-rename "CAEP" title — and an older copy in the same Drive
+> was renamed "Original Methodology Guide" so the two cannot be confused. The 2026-09-28
+> Change Log row is in, the Last updated line reads 2026-09-28, and the Change Log was moved
+> back to the **end** of the guide, which is where the guide's own Purpose section says it
+> lives (Section 3 had landed after it). Verified by reading the Doc back through the Drive
+> connector. T-359 closes on that basis.
 
 ## New item filed
 
