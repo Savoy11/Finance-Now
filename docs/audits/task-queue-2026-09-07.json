@@ -56,8 +56,8 @@
   "total_verified": 398,
   "outstanding": 352,
   "by_status": {
-   "closed": 138,
-   "open": 53,
+   "closed": 140,
+   "open": 51,
    "parked": 93,
    "blocked": 67,
    "unclear": 1
@@ -69,7 +69,7 @@
    "owner-machine": 83
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 138,
+  "closed_by_annotation": 140,
   "counts_recomputed_on": "2026-09-29",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 352
@@ -4406,7 +4406,7 @@
   {
    "id": "T-264",
    "title": "Confirm keplr liquidityRisk = 7",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "data-verification",
@@ -4423,7 +4423,19 @@
      "lines": "89-92, 101-103",
      "quote": "**`keplr` base `liquidityRisk = 7`** vs other self-custody wallets at 5 (`ledger-live`, `trust-wallet`, `exodus`)."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-29",
+    "basis": "superseded-by-owner-decision",
+    "verdict": "moot",
+    "reason": "ANSWERED, THEN MOOT — IT WAS SIMPLY NEVER CLOSED. D17 (2026-09-14) confirmed Keplr's liquidityRisk of 7 and asked for the reasoning to be annotated in stakingProviders.ts, which was done. D26 (2026-09-25) then removed all six staking risk dimensions, liquidityRisk included, so no value is left to confirm. Its twin T-265 — the impermanent-loss axis, decided in the same D17 row — was closed as moot under D26 on 2026-09-25; this one was missed. The unbonding facts D17 relied on (21 days on Cosmos Hub, Injective and Celestia, 28 on Polkadot, 14 on Osmosis) remain on each Keplr asset's lockupDays and lockupNote, and the Keplr comment now says so. A dated pointer under D17 in the 2026-09-14 decisions record states that D26 overtook it.",
+    "evidence": [
+     "docs/decisions/2026-09-14-owner-decisions.md",
+     "docs/decisions/2026-09-25-owner-decisions.md",
+     "frontend/src/lib/data/stakingProviders.ts"
+    ]
+   }
   },
   {
    "id": "T-284",
@@ -11686,7 +11698,7 @@
   {
    "id": "T-415",
    "title": "Remove stale risk wording left after D14/D26",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "docs",
@@ -11709,7 +11721,23 @@
      "lines": "29",
      "quote": "six curated risk dimensions (1–10, higher = riskier)"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-29",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "DONE. Every site listed in docs/decisions/2026-09-28-owner-decisions.md was corrected, and the one question the item reserved for the owner was answered more firmly than it was asked: offered a rename of the equity-diligence riskScore, the owner ruled \"Remove it entirely; the backend of the risk assessment is most likely not correct\" (D34), so the report now carries no numeric score under any name and diligenceReport.test.ts guards that. The eight listed sites: the /api/v1 index (no risk figure of any kind, dimensions removed 2026-09-25); the app-assistant's \"risk scoring that DOES exist\" list (now the options scorer, the Portfolios 1–10 tiers, the fund suitability band and the Pump Report's fraud signals, and it says staking carries none); scoreStakingProvider called \"retained\" in stakingProviders.ts and CLAUDE.md (struck — deleted under D26) plus the Keplr assetRisks comment; the site metadata's \"risk scores\"; the diligence riskScore (D34); three coin-detail comments describing the removed Composite Risk panel as rendering; D18's \"last live consumer\" (dated pointer appended, the ruling left as made); and risk-scale-spec §1 (dated annotation with a table of the three other user-facing scales). FOUND BEYOND THE EIGHT, same class, and fixed in the same change because each told a reader or an agent that a risk figure exists: /how-we-make-money said the app \"rates providers\" and described \"six risk dimensions we publish\" in its code-describing sections (the owner-copy placeholders were not touched); the paid-link tooltip promised not to affect \"published risk dimensions\"; the /staking provenance notice was titled \"Provider risk profiles & terms\" and the catalog's provenance source string, which also reaches /api/v1 referenceData, said \"risk profiles\"; the Research page's example question asked the agent for staking \"risk profiles, and which suits a risk-averse holder\"; the app-assistant still called Coin Discovery \"scored\" (cut 2026-08-20); dataSources.ts (DATA-SOURCES.md regenerated), two CLAUDE.md rows, an MCP-server comment, and two code comments still named staking risk as live. The T6 assessment carries a dated annotation. No behaviour changed apart from the diligence report's shape.",
+    "evidence": [
+     "docs/decisions/2026-09-29-owner-decisions.md",
+     "frontend/src/lib/agents/prompts.ts",
+     "frontend/src/lib/agents/__tests__/diligenceReport.test.ts",
+     "frontend/src/app/api/v1/route.ts",
+     "frontend/src/app/(dashboard)/how-we-make-money/page.tsx",
+     "docs/architecture/risk-scale-spec.md",
+     "docs/decisions/2026-09-14-owner-decisions.md"
+    ]
+   }
   }
  ],
  "closed_but_still_listed_as_open_in_docs": [
@@ -36754,6 +36782,14 @@
     "evidence": [
      "docs/decisions/2026-09-28-owner-decisions.md",
      "Google Drive: Finance Now — Methodology Guide (id 1McXb3ldYr-EGnCei7Ld5v1UiKo4oQuFfadcVGcd1Huc)"
+    ]
+   },
+   {
+    "on": "2026-09-29",
+    "what": "T-415 closed: the stale risk wording left after D14/D26 corrected at the eight listed sites and at the same-class sites found beyond them; the owner answered its reserved question with D34 (the equity-diligence riskScore is removed, not renamed). T-264 closed as moot: D17 had confirmed it and D26 removed the value; its twin T-265 had been closed on 2026-09-25.",
+    "evidence": [
+     "docs/decisions/2026-09-29-owner-decisions.md",
+     "docs/decisions/2026-09-14-owner-decisions.md"
     ]
    }
   ]

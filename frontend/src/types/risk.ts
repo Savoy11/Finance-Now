@@ -15,4 +15,5 @@ export interface RiskBandConfig {
 // them were themselves removed on 2026-08-29 (RP-6). What remains here is
 // RiskBandConfig, which lib/risk/presentation.ts still uses for the risk
 // surfaces that were separately decided and kept — the options Trade Risk
-// Scorer, staking-provider risk, and the macro/equity profiles.
+// Scorer, and the macro profiles that derive Portfolios' 1–10 tiers.
+// (Staking-provider risk was on this list until D26 removed it, 2026-09-25.)

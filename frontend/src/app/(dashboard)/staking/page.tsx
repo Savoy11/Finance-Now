@@ -638,16 +638,17 @@ function StakingPageInner() {
       {/* Data provenance — reads the same registry that powers /data-sources */}
       <SourceLine id="staking-rates" asOf={updatedAt} />
       {/* Provenance / freshness notice for the curated provider catalog. The
-          SourceLine above covers the live APR feeds; this covers the risk
-          profiles, terms, and reference APRs underneath them, which are
+          SourceLine above covers the live APR feeds; this covers the terms,
+          lock-ups, minimums and reference APRs underneath them, which are
           hand-maintained and were previously shown with no indication of age
-          (audit finding M5). Same shape as the transfer-fees notice. */}
+          (audit finding M5). Same shape as the transfer-fees notice. It said
+          "risk profiles" until 2026-09-29; D26 removed those on 2026-09-25. */}
       {(() => {
         const prov = getStakingDataProvenance()
         return (
           <ProvenanceNotice
-            label="Provider risk profiles & terms"
-            staleLabel="Provider risk data may be out of date"
+            label="Provider terms & reference data"
+            staleLabel="Provider reference data may be out of date"
             confidence={prov.confidence}
             stale={prov.stale}
           >
