@@ -850,6 +850,15 @@ ships. If the CoinGecko batch is throttled in practice, Phase 2 increases its vi
 
 ## 9. Methodology Guide updates
 
+> **✅ Done 2026-09-29 (D33, T-359) — and the list below was not written as-is.** Its scope
+> was corrected before writing: several items no longer describe anything that ships (per-coin
+> scores went under RP-6, composites and cross-asset comparisons under D14, staking's six
+> dimensions under D26), so the guide's new **Section 3 — Risk scoring** documents what exists
+> and a "what is deliberately not scored" table instead. What was kept and what was dropped is
+> in `docs/decisions/2026-09-28-owner-decisions.md` (D33). The Google Doc is now titled
+> **"Finance Now — Methodology Guide"**. The list is left as written: it is the record D33
+> corrects.
+
 The Methodology Guide (Google Doc, per project memory) must be updated when methodology
 changes. This spec triggers:
 
