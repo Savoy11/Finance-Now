@@ -1,13 +1,13 @@
 # Business & Compliance Checklist
 
 Company-level work that belongs to **neither product's backlog**. Finance Now (this repo) and
-Chronolens are developed independently, but they are shipped by one business — entity
+News Charts are developed independently, but they are shipped by one business — entity
 structure, regulatory research, disclosures and tax compliance are decided once, for both.
 
 **This doc is worked separately from the website and the software.** Product work lives in
-`docs/ROADMAP.md` (Finance Now) and Chronolens's `docs/MASTER-CHECKLIST.md`.
+`docs/ROADMAP.md` (Finance Now) and News Charts' `docs/MASTER-CHECKLIST.md`.
 
-**Last updated:** 2026-07-26 · Source: owner brain dump
+**Last updated:** 2026-09-28 (§1 entity decisions, D28; Chronolens renamed News Charts) · Source: owner brain dump (2026-07-26)
 
 > Nothing here is legal or tax advice. These are the questions to take to a lawyer and an
 > accountant, plus the homework to do before those meetings so they're cheap and short.
@@ -16,13 +16,19 @@ structure, regulatory research, disclosures and tax compliance are decided once,
 
 ## 1. Entity & filings
 
-- [ ] **How to structure the business filing** covering both the website and the desktop
+- [x] **How to structure the business filing** covering both the website and the desktop
       application.
-- [ ] **LLC vs S-Corp** — S-Corp is a *tax election*, not a separate entity type, so the real
+      ✅ **DECIDED 2026-09-28 (D28, `docs/decisions/2026-09-28-owner-decisions.md`):** one new
+      North Carolina LLC (target January 2027) owning Finance Now and News Charts as registered
+      assumed names; the owner's rental LLC stays separate.
+- [x] **LLC vs S-Corp** — S-Corp is a *tax election*, not a separate entity type, so the real
       questions are: form an LLC now, and does electing S-Corp treatment save enough
       self-employment tax to be worth the payroll overhead (it usually only pays off past a
       meaningful profit level).
-- [ ] **One entity or two? Should the website and software file separately?** Decide on the
+      ✅ **DECIDED 2026-09-28 (D28, `docs/decisions/2026-09-28-owner-decisions.md`):** form the
+      LLC (timed to the rollout under D13) with the default single-member tax status; revisit
+      the S-corp election once profit justifies payroll — not in the launch year.
+- [x] **One entity or two? Should the website and software file separately?** Decide on the
       real trade-off, not vibes:
       - *One entity, two products* — cheaper, simpler books, single tax return; but the two
         products share liability.
@@ -31,7 +37,10 @@ structure, regulatory research, disclosures and tax compliance are decided once,
       - A middle path exists: one holding entity with the products as separate DBAs or
         wholly-owned subsidiaries.
       - Note the products have genuinely different risk surfaces: Finance Now touches financial data,
-        risk scoring and (potentially) brokerage links; Chronolens is a research/media site.
+        risk scoring and (potentially) brokerage links; News Charts is a research/media site.
+      ✅ **DECIDED 2026-09-28 (D28, `docs/decisions/2026-09-28-owner-decisions.md`):** **one
+      entity**, two products as assumed names, tracked as separate profit centres. Revisit only
+      once both products earn.
 - [ ] Registered agent, EIN/TIN, state of formation, operating agreement.
 - [ ] Business bank account + bookkeeping separate from personal, from day one.
 
@@ -50,13 +59,13 @@ structure, regulatory research, disclosures and tax compliance are decided once,
       - **Crypto-specific promotion rules** — UK FCA financial promotion regime covers crypto
         referrals; several jurisdictions restrict crypto affiliate marketing.
 - [ ] **Which countries can access which product**, and whether geo-blocking is cheaper than
-      compliance in the hard jurisdictions. (Chronolens tracks the site-side implementation;
+      compliance in the hard jurisdictions. (News Charts tracks the site-side implementation;
       the *decision* is here.)
 - [ ] 🔁 **Standing item: re-check data-source licensing on a cadence, for both products.**
       Not a one-time gate. A licence change is *silent* — a broken feed announces itself, but a
       provider changing its terms breaks nothing: the code keeps fetching while the business
       becomes non-compliant. Applies to CAEP's provider registry (CoinGecko, FMP, Finnhub,
-      Twelve Data, Tiingo, Alpha Vantage, exchange APIs) exactly as it does to Chronolens's
+      Twelve Data, Tiingo, Alpha Vantage, exchange APIs) exactly as it does to News Charts'
       eleven feeds. Quarterly once live, plus on every trigger: a new source is added, ads or
       affiliate links go live, beta → public, a new jurisdiction opens, a provider announces
       terms/pricing changes, or a plan is upgraded. Each product's checklist tracks its own
@@ -102,7 +111,7 @@ structure, regulatory research, disclosures and tax compliance are decided once,
 - [ ] Suggested shape for each bar (fill in per product):
       - Feature floor: the specific list that must work, with nothing half-built behind a nav link
       - Data honesty: every surface either shows real data or says plainly that it can't
-        (Finance Now: the REAL-vs-FALLBACK audit rule · Chronolens: the ⛔ pre-release feed gate)
+        (Finance Now: the REAL-vs-FALLBACK audit rule · News Charts: the ⛔ pre-release feed gate)
       - Legal floor: sections 1–3 of this document closed
       - Operational floor: backups, error monitoring, a support inbox someone reads
       - Quality floor: no known data-corrupting bug; tests green
@@ -224,7 +233,7 @@ bug report.**
 
 - [ ] **Review all project documents** so they accurately describe what each product actually is
       and does — both repos have docs written at different stages, and stale claims in a public
-      repo are a liability once there are customers. Known example: Chronolens's
+      repo are a liability once there are customers. Known example: News Charts'
       `docs/EVENTS-SCHEMA.md` carried a "not yet applied" header long after the migrations
       existed.
 - [ ] Same pass over anything user-facing: marketing copy, README, in-app help — no claim that
