@@ -54,25 +54,25 @@
  },
  "counts": {
   "total_verified": 398,
-  "outstanding": 351,
+  "outstanding": 352,
   "by_status": {
-   "open": 58,
-   "closed": 132,
-   "blocked": 68,
-   "unclear": 1,
-   "parked": 92
+   "closed": 137,
+   "open": 54,
+   "parked": 93,
+   "blocked": 67,
+   "unclear": 1
   },
   "by_owner_role": {
-   "remote-dev": 86,
+   "remote-dev": 87,
    "either": 39,
    "owner-decision": 143,
    "owner-machine": 83
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 132,
-  "counts_recomputed_on": "2026-09-26",
+  "closed_by_annotation": 137,
+  "counts_recomputed_on": "2026-09-28",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
-  "total": 351
+  "total": 352
  },
  "blocking_decisions": [
   {
@@ -4428,7 +4428,7 @@
   {
    "id": "T-284",
    "title": "Decide the business filing structure for both products",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "decision",
@@ -4443,12 +4443,24 @@
      "lines": "19-20",
      "quote": "**How to structure the business filing** covering both the website and the desktop application."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-28",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "DECIDED under D28: one new North Carolina LLC (formation targeted January 2027) owning Finance Now and News Charts as registered assumed names; the owner's rental LLC stays separate. The planned lawyer/accountant consultation is superseded — the owner self-administers (D30). BUSINESS-CHECKLIST.md §1 ticked with a dated note.",
+    "approved_by": "owner, in the FN & NC business chat 2026-09-28 — \"Approve as written\"",
+    "evidence": [
+     "docs/decisions/2026-09-28-owner-decisions.md",
+     "docs/BUSINESS-CHECKLIST.md"
+    ]
+   }
   },
   {
    "id": "T-285",
    "title": "Decide LLC formation and S-Corp election",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "decision",
@@ -4463,12 +4475,24 @@
      "lines": "21-24",
      "quote": "**LLC vs S-Corp** — S-Corp is a *tax election*, not a separate entity type, so the real questions are: form an LLC now, and does electing S-Corp treatment save enough self-employment tax to be worth the payroll overhead"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-28",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "DECIDED under D28: form an LLC (timed to the rollout under D13, target January 2027) with the default single-member disregarded tax status; the S-corp election is revisited once profit justifies payroll — not in the launch year. BUSINESS-CHECKLIST.md §1 ticked with a dated note.",
+    "approved_by": "owner, in the FN & NC business chat 2026-09-28 — \"Approve as written\"",
+    "evidence": [
+     "docs/decisions/2026-09-28-owner-decisions.md",
+     "docs/BUSINESS-CHECKLIST.md"
+    ]
+   }
   },
   {
    "id": "T-286",
    "title": "Decide one entity or two for website vs software",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "decision",
@@ -4483,7 +4507,19 @@
      "lines": "25-34",
      "quote": "**One entity or two? Should the website and software file separately?** Decide on the real trade-off, not vibes:"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-28",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "DECIDED under D28: one entity, two products as assumed names, tracked as separate profit centres in the books. Two entities are revisited only once both products earn (see the owner's accounting manual, outside the repo). BUSINESS-CHECKLIST.md §1 ticked with a dated note.",
+    "approved_by": "owner, in the FN & NC business chat 2026-09-28 — \"Approve as written\"",
+    "evidence": [
+     "docs/decisions/2026-09-28-owner-decisions.md",
+     "docs/BUSINESS-CHECKLIST.md"
+    ]
+   }
   },
   {
    "id": "T-289",
@@ -4555,7 +4591,7 @@
   {
    "id": "T-292",
    "title": "Write the house source-labeling policy",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "decision",
@@ -4570,7 +4606,19 @@
      "lines": "71-75",
      "quote": "**Source-labeling policy (both products).** Decide the house rule for how third-party data is labeled wherever it appears: which sources must be named, in what wording, how licence-required attribution is rendered (Wikipedia CC BY-SA, LoC, GDELT, SEC all differ)"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-28",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "APPROVED under D31 with two corrections applied in the same change: Chronolens → News Charts, and the policy now states that <DerivedNote> is required but not yet rendered on any page. §7's unenforced rows stay convention; no coverage test queued. Status line moved DRAFT → APPROVED.",
+    "approved_by": "owner, in the FN & NC business chat 2026-09-28 — \"Approve with the two fixes\"",
+    "evidence": [
+     "docs/decisions/2026-09-28-owner-decisions.md",
+     "docs/policies/source-labeling.md"
+    ]
+   }
   },
   {
    "id": "T-295",
@@ -4627,7 +4675,7 @@
    "sources": [
     {
      "file": "docs/BUSINESS-CHECKLIST.md",
-     "lines": "91",
+     "lines": "103",
      "quote": "Annual entity filings / franchise tax calendar."
     }
    ]
@@ -4714,7 +4762,7 @@
   {
    "id": "T-310",
    "title": "Strike or restate the 'Risk framework shipped' go/no-go milestone",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "docs",
@@ -4732,7 +4780,19 @@
      "lines": "191",
      "quote": "- [ ] Risk framework shipped (removes the N/A on the flagship metric)"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-28",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "APPROVED AS APPLIED under D32: the strike-through and OVERTAKEN annotation at docs/MARKET-ASSESSMENT.md §8 (applied 2026-09-14 under D15) stand as written. Nothing further to change.",
+    "approved_by": "owner, in the FN & NC business chat 2026-09-28 — \"Approve and close\"",
+    "evidence": [
+     "docs/decisions/2026-09-28-owner-decisions.md",
+     "docs/MARKET-ASSESSMENT.md"
+    ]
+   }
   },
   {
    "id": "T-359",
@@ -4742,21 +4802,25 @@
    "owner_role": "owner-decision",
    "category": "docs",
    "effort": "medium",
-   "blocking_decision": "Owner approval of the re-cut scope (and P5 for the comparability paragraph)",
+   "blocking_decision": null,
    "related_ids": [
     "P1",
     "P5",
     "RP-6"
    ],
    "summary": "Nine updates.",
-   "next_action": "Draft a re-cut list (options scorer methodology; staking API legacy vs canonical fields; RP-6 'what is not scored'; profile-derived riskTiers in Portfolios; cross-class limit pending P5) and get owner approval, then add a 'Section 3 — Risk scoring' + Change Log entry to the Google Doc via the Drive connector.",
+   "next_action": "Owner pastes the drafted Section 3 — Risk scoring and its Change Log row into the Google Doc \"CAEP — Methodology Guide\" (the Drive connector cannot edit a doc body). Then close with the paste date.",
    "sources": [
     {
      "file": "docs/architecture/risk-scale-spec.md",
      "lines": "744-764",
      "quote": "The Methodology Guide (Google Doc, per project memory) must be updated when methodology changes. This spec triggers:"
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-09-28",
+    "note": "Scope corrected and approved 2026-09-28 (D33). Covers: the options Trade Risk Scorer; how Portfolios' 1–10 tiers and the fund suitability band are derived; the Pump Report's separate 0–10 heuristic and AI suspicion scores; what is deliberately not scored (RP-6, D14, D26). Dropped: the staking API legacy-field note (nothing left after D26) and the P5 paragraph (answered by D14). Text drafted and handed to the owner."
+   }
   },
   {
    "id": "T-365",
@@ -8068,22 +8132,26 @@
   {
    "id": "T-287",
    "title": "Registered agent, EIN, state of formation, operating agreement",
-   "status": "blocked",
+   "status": "parked",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "process",
    "effort": "medium",
-   "blocking_decision": "Entity structure (T-284), LLC/S-Corp election (T-285) and one-vs-two entities (T-286) must be decided first",
+   "blocking_decision": "D13: entity formation is parked with the rollout and timed to it (target January 2027). The structure it waited on is settled by D28 (2026-09-28).",
    "related_ids": [],
    "summary": "Formation chores.",
-   "next_action": "After T-284/T-285/T-286 are decided: pick the state, file the LLC, appoint a registered agent, obtain the EIN online, sign an operating agreement; tick with dates.",
+   "next_action": "At the rollout date: file the NC Articles of Organization (Form L-01), obtain the EIN online, sign a single-member operating agreement, file the assumed-name certificate for both products (Guilford County), register with NCDOR (NC-BR). Registered agent: the owner, at the NC address. Tick with dates.",
    "sources": [
     {
      "file": "docs/BUSINESS-CHECKLIST.md",
-     "lines": "35",
+     "lines": "44",
      "quote": "Registered agent, EIN/TIN, state of formation, operating agreement."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-09-28",
+    "note": "Structure settled 2026-09-28 (D28), so this is no longer blocked on a decision — it is parked under D13 and timed to the rollout. The filing steps and fees are in the owner's FN & NC Accounting, Tax & Filing Manual (v2), outside the repo."
+   }
   },
   {
    "id": "T-288",
@@ -8100,7 +8168,7 @@
    "sources": [
     {
      "file": "docs/BUSINESS-CHECKLIST.md",
-     "lines": "36",
+     "lines": "45",
      "quote": "Business bank account + bookkeeping separate from personal, from day one."
     }
    ]
@@ -10251,7 +10319,11 @@
      "lines": "487",
      "quote": "Billing model: per-module licenses vs. tiered bundles — Phase 6."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-09-28",
+    "note": "Working plan recorded 2026-09-28 (D29): tiered bundles, not per-module licences — hosted Free / Core $9.99 / Pro $29 / Advisor $99 per seat, plus a $299 BYOK Perpetual desktop edition. Pending the owner's reassessment; stays parked under D21."
+   }
   },
   {
    "id": "T-086",
@@ -10271,7 +10343,11 @@
      "lines": "123-131",
      "quote": "| Pro | **$9.99–14.99/mo** | BYOK premium sources, full alerts, portfolios, TA suite, priority data | | Agent/API | usage-based or ~$29/mo | keyed `/api/v1` + MCP access, rate limits |"
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-09-28",
+    "note": "Working plan recorded 2026-09-28 (D29): the August two-edition model (see T-085's note). Pending the owner's reassessment; stays parked under D21, no code or doc change until then."
+   }
   },
   {
    "id": "T-088",
@@ -11594,6 +11670,34 @@
     "by": "session steward",
     "why": "Surfaced while closing T-070; filed as its own item so it is not lost inside a closure note."
    }
+  },
+  {
+   "id": "T-415",
+   "title": "Remove stale risk wording left after D14/D26",
+   "status": "open",
+   "confidence": "high",
+   "owner_role": "remote-dev",
+   "category": "docs",
+   "effort": "small",
+   "blocking_decision": null,
+   "related_ids": [
+    "T-359",
+    "T-310"
+   ],
+   "summary": "Found while scoping T-359 (D33, 2026-09-28): eight places still describe risk figures the app no longer has, or miss ones it does. api/v1 index advertises six staking risk dimensions (removed D26); the agent prompt says staking risk profiles exist; stakingProviders.ts and CLAUDE.md say scoreStakingProvider is retained (its adapter was deleted); site metadata advertises 'risk scores'; the equity due-diligence agent still has a field named riskScore; coin-detail comments say the removed composite panel renders; D18 calls the options scorer lib/risk's last live consumer (the macro profiles feed Portfolios' tiers); the risk spec says no other scale is user-facing (Pump Report and Portfolios use 0–10 and 1–10).",
+   "next_action": "One docs-and-copy PR correcting each site listed in docs/decisions/2026-09-28-owner-decisions.md (New item filed). No behaviour change; rename the equity-diligence riskScore field only if the owner agrees, since it changes an agent output shape.",
+   "sources": [
+    {
+     "file": "docs/decisions/2026-09-28-owner-decisions.md",
+     "lines": "49-72",
+     "quote": "T-415 — Remove stale risk wording left after D14/D26."
+    },
+    {
+     "file": "frontend/src/app/api/v1/route.ts",
+     "lines": "29",
+     "quote": "six curated risk dimensions (1–10, higher = riskier)"
+    }
+   ]
   }
  ],
  "closed_but_still_listed_as_open_in_docs": [
