@@ -78,6 +78,23 @@ of that score to the twelve components that still render `N/A`. See §7.
 > A score of 95 means low risk. A score of 5 means critical risk.
 > There is no other scale in the product's user-facing or public-API surface.
 
+> ⚠ **Annotation 2026-09-29 (T-415) — the last sentence above is not true of the tree.**
+> The rule stands for every score this spec governs, and today the options Trade Risk
+> Scorer is the only one published on the canonical scale. Three other figures are
+> user-facing, each on its own scale and labelled with its direction where it renders:
+>
+> | Figure | Scale | Where |
+> |---|---|---|
+> | Portfolios weighted risk | 1–10, higher = riskier — an allocation-weighted average of curated instrument tiers; macro tiers are derived from the commodity, currency and rate profiles | `portfolios/page.tsx`, `lib/data/instruments.ts` |
+> | Pump Report `signalScore` + `collapseRisk` | 0–10 heuristic, higher = more suspicious; the band is cut from the score at 2/4/6/8 | `live-data/pump-report/metrics/route.ts` |
+> | Pump Report `suspicionScore` | 0–10, higher = more suspicious (the Phase 6 rename) | `live-data/pump-report/investigate/route.ts` |
+>
+> The fund pages' suitability band is a label, not a number. The equity due-diligence
+> agent's 0–10 `riskScore` was a fourth such scale until D34 removed it on 2026-09-29.
+> What is deliberately not scored at all is recorded in RP-6 (per-coin), D14
+> (composites) and D26 (staking dimensions). Left as written above: this is the
+> ratified contract, and the table is where the tree departs from it.
+
 ### 1.1 Bands
 
 | Band | Range | Meaning | Colour token |
@@ -849,6 +866,15 @@ ships. If the CoinGecko batch is throttled in practice, Phase 2 increases its vi
 ---
 
 ## 9. Methodology Guide updates
+
+> **✅ Done 2026-09-29 (D33, T-359) — and the list below was not written as-is.** Its scope
+> was corrected before writing: several items no longer describe anything that ships (per-coin
+> scores went under RP-6, composites and cross-asset comparisons under D14, staking's six
+> dimensions under D26), so the guide's new **Section 3 — Risk scoring** documents what exists
+> and a "what is deliberately not scored" table instead. What was kept and what was dropped is
+> in `docs/decisions/2026-09-28-owner-decisions.md` (D33). The Google Doc is now titled
+> **"Finance Now — Methodology Guide"**. The list is left as written: it is the record D33
+> corrects.
 
 The Methodology Guide (Google Doc, per project memory) must be updated when methodology
 changes. This spec triggers:
