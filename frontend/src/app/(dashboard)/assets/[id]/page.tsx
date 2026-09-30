@@ -411,8 +411,9 @@ function AssetHeader({ asset }: { asset: NonNullable<ReturnType<typeof useAsset>
             {/* The risk-band pill went with the score gauge (2026-08-29): a
                 verdict word pinned to the asset's identity is the same rating
                 as the number, just spelled out, and equally uninterrogable
-                here. The band still renders in the Composite Risk panel beside
-                the pillars that produced it. */}
+                here. The Composite Risk panel that also showed the band was
+                removed the same day (RP-6), so no band renders anywhere on
+                this page. */}
             <span className="px-2.5 py-1 text-xs rounded border border-border bg-bg-elevated text-text-secondary font-mono">
               {ASSET_TYPE_LABELS[asset.assetType] ?? asset.assetType}
             </span>
@@ -485,11 +486,9 @@ function AssetHeader({ asset }: { asset: NonNullable<ReturnType<typeof useAsset>
             2026-08-29 (owner). A large colour-coded number beside the price,
             with no pillars, weights, coverage or evidence next to it, is a
             rating — it states a verdict the reader cannot interrogate. The
-            same figure still renders further down inside the Composite Risk
-            panel, where it arrives with its methodology, its confidence, its
-            data coverage and its evidence; that panel is the explanatory
-            surface item 4 deliberately kept (RP-3: scoring what the reader
-            opened is explanation, publishing a bare rating is not).
+            Composite Risk panel that item 4 had kept as the explanatory
+            surface was removed the same day (RP-6), so no per-coin score
+            renders anywhere — see the removal note after OverviewTab.
             TO RESTORE: this block and the score row in components/ui/
             SearchInput.tsx are the two removals. */}
         <div className="flex items-center gap-6 flex-shrink-0">
@@ -635,9 +634,11 @@ function OverviewTab({ asset }: { asset: NonNullable<ReturnType<typeof useAsset>
 //
 // lib/risk/ ITSELF STAYS. It is a general framework, and its other consumers
 // are untouched and were separately decided: the options Trade Risk Scorer
-// (/equities/options), staking provider risk (curated, lib/data/
-// stakingProviders.ts), and the macro/equity profiles. This removal is about
-// publishing a per-coin score, not about the engine that computed it.
+// (/equities/options) and the macro profiles that derive Portfolios' 1–10
+// tiers (lib/data/instruments.ts). This removal is about publishing a per-coin
+// score, not about the engine that computed it. (This paragraph also listed
+// staking provider risk until 2026-09-29: D14 removed its composite on
+// 2026-09-14 and D26 its six dimensions and scorer on 2026-09-25.)
 //
 // TO RESTORE: git history at this commit carries the panel, the route and the
 // index join intact — and lib/risk/__tests__/riskScoringRemoved.test.ts
@@ -1013,9 +1014,9 @@ function AssetDetailPageInner() {
   const [activeTab, setActiveTab] = useState<Tab>('overview')
 
   const { data: rawAsset, isLoading, isError, refetch } = useAsset(params.id)
-  // R2 Phase 2: join the live risk composite so the gauge below reads a real
-  // score instead of N/A. Unscored assets stay null. (Same-page live composite
-  // panel and this gauge now draw from one source — resolving the old contradiction.)
+  // R2 Phase 2 used to join the live risk composite here so the score gauge and
+  // the Composite Risk panel read one source. Both were removed 2026-08-29
+  // (RP-6), so there is nothing left to join and the asset passes through as-is.
   const asset = rawAsset
 
   if (isLoading) {

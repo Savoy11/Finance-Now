@@ -87,17 +87,18 @@ export function SponsoredTag({ program, className }: { program?: string; classNa
     <a
       href="/how-we-make-money"
       // ⚠ Both branches said "does not affect this provider's RISK SCORE" until
-      // 2026-09-21. There is no risk score: D14 removed every composite, and the
-      // six RiskProfile dimensions were published as they were (removed 2026-09-25, D26;
-      // the point stands for every other field). A disclosure that
-      // reassures the reader about a number the app does not publish is both
-      // wrong and, by implying a ranking exists, pointed at RP-3. The promise is
-      // now made about the things that do exist — and both are enforced by
-      // lib/data/__tests__/affiliates.test.ts, not merely asserted here.
+      // 2026-09-21, and "published risk dimensions" until 2026-09-29. There is no
+      // risk figure of either kind: D14 removed every composite, and D26
+      // (2026-09-25) the six RiskProfile dimensions. A disclosure that reassures
+      // the reader about a number the app does not publish is both wrong and, by
+      // implying a ranking exists, pointed at RP-3. The promise is now made only
+      // about list placement, which does exist — RankableProvider keeps affiliate
+      // fields out of every sort, and lib/data/__tests__/affiliates.test.ts pins
+      // it, so it is enforced rather than merely asserted here.
       title={
         program
-          ? `We may earn a commission if you sign up through this link (${program}). It costs you nothing, and it does not affect this provider's published risk dimensions or where it appears in any list.`
-          : 'We may earn a commission if you sign up through this link. It costs you nothing, and it does not affect this provider’s published risk dimensions or where it appears in any list.'
+          ? `We may earn a commission if you sign up through this link (${program}). It costs you nothing, and it does not affect where this provider appears in any list.`
+          : 'We may earn a commission if you sign up through this link. It costs you nothing, and it does not affect where this provider appears in any list.'
       }
       className={clsx(
         'shrink-0 rounded border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5',
