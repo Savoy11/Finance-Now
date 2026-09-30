@@ -1123,6 +1123,8 @@ adjacent decided item: an options *chain browser* is closed by owner decision
 >    macro pages' own `formatFxRate` is unaffected (prints no symbol).
 > 3. `computeAnnualIncome` yields income from unpriced securities at target
 >    value (defensible for an explicitly-reference estimate; pinned).
+>    ✅ **Decided 2026-09-30 (D48, T-099):** priced holdings only, with the coverage
+>    shown on the card — the same rule #1 got as PB-1. The pin is flipped.
 > 4. Minor, pinned or noted: `fibRetracement([])` returns non-finite values
 >    (all callers guard length first); `buildTechnicalRead([])` throws
 >    (unreachable from the page); a perfectly flat series triggers the

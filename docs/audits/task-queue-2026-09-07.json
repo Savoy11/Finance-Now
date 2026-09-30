@@ -56,10 +56,10 @@
   "total_verified": 398,
   "outstanding": 357,
   "by_status": {
-   "closed": 148,
-   "open": 47,
-   "parked": 93,
-   "blocked": 68,
+   "closed": 172,
+   "open": 31,
+   "parked": 109,
+   "blocked": 44,
    "unclear": 1
   },
   "by_owner_role": {
@@ -69,7 +69,7 @@
    "owner-machine": 84
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 148,
+  "closed_by_annotation": 172,
   "counts_recomputed_on": "2026-09-30",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 357
@@ -3985,7 +3985,7 @@
   {
    "id": "T-059",
    "title": "Answer the owner-flagged item-16 legality question on build-by-allocation",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "terms-review",
@@ -4010,17 +4010,32 @@
      "lines": "771, 938",
      "quote": "Owner confirmed **setting**, not reporting, and additive — the risk-based builder stays. This is a second engine, not an edit: `BuilderInputs` has no target-weight field and every weight is derived. Owner also flagged a legality question of his own"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-30",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "ANSWERED under D47 (2026-09-30): \"A lawyer doesn't need to review this.\" Build-by-allocation — the item-16 feature this question was about — needs no legal review and stays live. The 2026-09-30 queue sweep had found D4 calling it \"built, dark\" while its mode switch was visible (frontend/src/app/(dashboard)/portfolio-builder/page.tsx:278); D47 settles it by clearing the feature, not by hiding it. D4 is narrowed, not reversed: its review still gates S5 contribution modeling (T-067) and the federal sale-tax estimator (T-058), neither of which is built.",
+    "approved_by": "owner, 2026-09-30 — \"A lawyer doesn't need to review this.\" (D47)",
+    "evidence": [
+     "docs/decisions/2026-09-30-owner-decisions.md",
+     "docs/decisions/2026-09-14-owner-decisions.md",
+     "docs/BUSINESS-CHECKLIST.md",
+     "docs/LEGAL-REVIEW.md",
+     "docs/audits/queue-sweep-2026-09-30.md"
+    ]
+   }
   },
   {
    "id": "T-060",
    "title": "S4 first decision — do saved options positions join the DB?",
-   "status": "open",
+   "status": "parked",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "decision",
    "effort": "small",
-   "blocking_decision": null,
+   "blocking_decision": "PARKED 2026-09-30 — D9 (2026-09-14): the S4 options subproject is deferred with the rollout (D1), and behind the D4 legal review since it expands an advice-adjacent tool. D9 names T-061, T-062 and T-063; T-060 is S4's first decision. The ledger carried it as open until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md).",
    "related_ids": [
     "P2-O2",
     "S4"
@@ -4038,7 +4053,7 @@
   {
    "id": "T-096",
    "title": "Decide whether Compare accepts non-catalog tickers",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "decision",
@@ -4055,12 +4070,26 @@
      "lines": "154-155, 182-184",
      "quote": "Compare's universe is catalog-limited (79 stocks + 118 funds + coin catalog) — a non-catalog ticker can't be compared although `security-chart` could serve it. Wave 2 scope question, not a defect."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-30",
+    "basis": "verified-here",
+    "verdict": "already-done",
+    "reason": "DONE under D16 (2026-09-14) the same week; the ledger never learned. Compare keeps an off-catalog symbol and widens its picker through the keyless lookups, as Portfolios does: frontend/src/app/(dashboard)/compare/page.tsx:65 (the D16 / T-096 header), :92 provisionalOption, :113 searchRemoteOptions. Shipped in f5b7651 (#192).",
+    "approved_by": "owner, 2026-09-30 — approved applying the queue sweep: \"Yes, update all 47\"",
+    "evidence": [
+     "docs/decisions/2026-09-14-owner-decisions.md",
+     "frontend/src/app/(dashboard)/compare/page.tsx",
+     "commit f5b7651 (#192)",
+     "docs/audits/queue-sweep-2026-09-30.md"
+    ]
+   }
   },
   {
    "id": "T-097",
    "title": "CR3 — keep or drop the permanently-n/a 30d sparkline column on the Coin Registry",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "decision",
@@ -4078,12 +4107,26 @@
      "lines": "108-110, 230, 256, 263-264",
      "quote": "A permanently-\"n/a\" column in the initial rollout invites \"is it broken?\" tickets. W2: keep (honest placeholder) or drop the column until a source exists."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-30",
+    "basis": "verified-here",
+    "verdict": "already-done",
+    "reason": "DONE under D11 (2026-09-14): the always-\"n/a\" 30d column was cut and Sparkline.tsx, its only consumer, deleted in e384d83 (#191). AssetTable.tsx has no 30d column.",
+    "approved_by": "owner, 2026-09-30 — approved applying the queue sweep: \"Yes, update all 47\"",
+    "evidence": [
+     "docs/decisions/2026-09-14-owner-decisions.md",
+     "frontend/src/components/assets/AssetTable.tsx",
+     "commit e384d83 (#191)",
+     "docs/audits/queue-sweep-2026-09-30.md"
+    ]
+   }
   },
   {
    "id": "T-098",
    "title": "CR6 — cut the coin-detail on-chain analytics section or scope a real source",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "decision",
@@ -4101,12 +4144,27 @@
      "lines": "233, 256, 267-269",
      "quote": "`analyticsBundle` is hardcoded `null` in live mode, so the section *always* renders \"not available\" and its four chart components are unreachable dead UI. Honest, but permanently dead weight on the page. W2: cut the section or scope a real source."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-30",
+    "basis": "verified-here",
+    "verdict": "already-done",
+    "reason": "DONE under D11 (2026-09-14): the on-chain section was cut — PegDeviationChart, LiquidityDepthChart, WalletConcentration, VelocityChart and the AnalyticsBundle types deleted in e384d83 (#191). The cut is recorded where it happened: frontend/src/app/(dashboard)/assets/[id]/page.tsx:778 and frontend/src/types/asset.ts:124. PriceHistoryChart stays.",
+    "approved_by": "owner, 2026-09-30 — approved applying the queue sweep: \"Yes, update all 47\"",
+    "evidence": [
+     "docs/decisions/2026-09-14-owner-decisions.md",
+     "frontend/src/app/(dashboard)/assets/[id]/page.tsx",
+     "frontend/src/types/asset.ts",
+     "commit e384d83 (#191)",
+     "docs/audits/queue-sweep-2026-09-30.md"
+    ]
+   }
   },
   {
    "id": "T-099",
    "title": "D-24 pinned #3 — may computeAnnualIncome yield income on unpriced securities at target value?",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "decision",
@@ -4125,7 +4183,21 @@
      "lines": "1071-1072, 1082-1083",
      "quote": "`computeAnnualIncome` yields income from unpriced securities at target value (defensible for an explicitly-reference estimate; pinned)."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-30",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "DONE under D48 (2026-09-30): Est. Annual Income counts priced holdings only. computeAnnualIncome leaves out a holding with no live price and reports `unpriced` and `pricedPct` (frontend/src/lib/data/portfolioUtils.ts); the card shows \"covers N% of yielding holdings\" below 99.5%, as the Weighted Risk card does, and the page's \"Live pricing\" note now names the income estimate. The test that pinned the old behaviour is flipped (portfolioUtils.test.ts, \"D48: …\"), and restoring the old `currentValue ?? targetValue` fallback turns both D48 tests red.",
+    "approved_by": "owner, 2026-09-30 — \"Yes, priced holdings only\" (D48)",
+    "evidence": [
+     "docs/decisions/2026-09-30-owner-decisions.md",
+     "frontend/src/lib/data/portfolioUtils.ts",
+     "frontend/src/lib/data/__tests__/portfolioUtils.test.ts",
+     "frontend/src/app/(dashboard)/portfolios/page.tsx"
+    ]
+   }
   },
   {
    "id": "T-125",
@@ -4152,12 +4224,12 @@
   {
    "id": "T-127",
    "title": "Decide the desktop update mechanism and whether updates are monetized",
-   "status": "open",
+   "status": "parked",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "decision",
    "effort": "unknown",
-   "blocking_decision": "How does an installed copy get new versions (auto-update channel? manual download? signed releases?), and does that ride the entitlement system (Phase 6) as paid upgrades, a subscription, or free updates with paid modules.",
+   "blocking_decision": "PARKED 2026-09-30 — D1 (2026-09-14): the parked production/hosting/desktop items \"stay parked\" — this is the desktop update-mechanism decision. The ledger carried it as open until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md). Was: \"How does an installed copy get new versions (auto-update channel? manual download? signed releases?), and does that ride the entitlement system (Phase 6) as paid upgrades, a subscription, or free updates with paid modules.\"",
    "related_ids": [],
    "summary": "Owner backlog (2026-07-26).",
    "next_action": "Put the ROADMAP.md:425-428 question to the owner as a three-option decision (auto-update / manual signed download / store channel × free / paid / subscription); on an answer, record it as a dated note under the ROADMAP entry via the propose→approve path and tick the box. No code work until then.",
@@ -4172,7 +4244,7 @@
   {
    "id": "T-128",
    "title": "Bond ladder tool — standalone vs extend the builder engine",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "decision",
@@ -4189,7 +4261,20 @@
      "lines": "433-438",
      "quote": "Decide whether this is surfacing that engine as a standalone tool or extending it. Affiliate half extends the affiliate-links section above — same integrity rules (ladder is chosen by duration match, never by who pays)."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-30",
+    "basis": "verified-here",
+    "verdict": "already-done",
+    "reason": "DECIDED under D16 (2026-09-14): the bond ladder EXTENDS the Portfolio Builder engine (bondLadder() / consolidateLadder()); a standalone tool with a second ladder implementation is ruled out. Recorded at docs/ROADMAP.md:581, where the build itself stays an unscheduled backlog entry — it is not a ledger item.",
+    "approved_by": "owner, 2026-09-30 — approved applying the queue sweep: \"Yes, update all 47\"",
+    "evidence": [
+     "docs/decisions/2026-09-14-owner-decisions.md",
+     "docs/ROADMAP.md",
+     "docs/audits/queue-sweep-2026-09-30.md"
+    ]
+   }
   },
   {
    "id": "T-151",
@@ -4374,12 +4459,12 @@
   {
    "id": "T-245",
    "title": "Reddit — decide whether to register OAuth and set REDDIT_CLIENT_ID to lift the robots gate",
-   "status": "open",
+   "status": "parked",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "dependency",
    "effort": "medium",
-   "blocking_decision": null,
+   "blocking_decision": "PARKED 2026-09-30 — D8 (2026-09-14): Reddit OAuth is deferred with the rollout — its API terms are read in the launch vendor pass (parked under D1/D3). The ledger carried it as open until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md).",
    "related_ids": [
     "#121"
    ],
@@ -4556,12 +4641,12 @@
   {
    "id": "T-290",
    "title": "Decide which countries can access which product",
-   "status": "open",
+   "status": "parked",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "decision",
    "effort": "medium",
-   "blocking_decision": null,
+   "blocking_decision": "PARKED 2026-09-30 — D13 (2026-09-14): answered for development — \"T-290 country access answered by D3: US-only development.\" Which countries can use the product at launch comes back with the rollout (D1), so the item stays tracked rather than closed. The ledger carried it as open until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md).",
    "related_ids": [],
    "summary": "Geo-block vs comply.",
    "next_action": "Owner decides after T-289's privacy/crypto-promotion findings (GDPR/UK FCA are the drivers); record the jurisdiction list as a dated note and tick BUSINESS-CHECKLIST.md:52.",
@@ -4576,12 +4661,12 @@
   {
    "id": "T-291",
    "title": "Develop required disclosure documents and decide placement",
-   "status": "open",
+   "status": "parked",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "process",
    "effort": "large",
-   "blocking_decision": null,
+   "blocking_decision": "PARKED 2026-09-30 — D7 (2026-09-14): defer with the rollout — nothing affiliate-related ships before it, so the disclosure documents land at the same moment. The 2026-09-24 CoinGecko §7 finding (progress) is the first input when this reopens. The ledger carried it as open until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md).",
    "related_ids": [],
    "summary": "ToS, privacy, not-advice, affiliate disclosure, attribution, complaints.",
    "next_action": "Owner commissions ToS/Privacy/not-advice/affiliate/attribution/complaints documents (counsel-reviewed); a remote-dev session can draft the data-source attribution page from lib/data/dataSources.ts + sourceTerms.ts conditions once the house policy (T-292) exists.",
@@ -4635,12 +4720,12 @@
   {
    "id": "T-295",
    "title": "Build the owner's tax/TIN/compliance deadline tracker",
-   "status": "open",
+   "status": "parked",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "process",
    "effort": "small",
-   "blocking_decision": null,
+   "blocking_decision": "PARKED 2026-09-30 — D13 (2026-09-14): business formation is deferred with the rollout — \"Entity/LLC/EIN/bank/tax-tracker/filings parked under D1\" — and D28 (2026-09-28) targets formation for January 2027. The ledger carried it as open until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md).",
    "related_ids": [],
    "summary": "Ships in neither product.",
    "next_action": "Owner sets up the deadline calendar + document checklist outside the repo (no code); tick BUSINESS-CHECKLIST.md:83 when it exists.",
@@ -4655,12 +4740,12 @@
   {
    "id": "T-296",
    "title": "Bookkeeping in place before the first affiliate payout",
-   "status": "open",
+   "status": "parked",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "process",
    "effort": "small",
-   "blocking_decision": null,
+   "blocking_decision": "PARKED 2026-09-30 — D13 (2026-09-14): business formation is deferred with the rollout — \"Entity/LLC/EIN/bank/tax-tracker/filings parked under D1\" — and D28 (2026-09-28) targets formation for January 2027. The ledger carried it as open until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md).",
    "related_ids": [],
    "summary": "1099s expected.",
    "next_action": "Owner ties this to §1 (business bank account + bookkeeping from day one, BUSINESS-CHECKLIST line 37); no repo action until the ROADMAP 'Affiliate links' integrity rules are scheduled.",
@@ -4675,12 +4760,12 @@
   {
    "id": "T-297",
    "title": "Annual entity filings / franchise tax calendar",
-   "status": "open",
+   "status": "parked",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "process",
    "effort": "small",
-   "blocking_decision": null,
+   "blocking_decision": "PARKED 2026-09-30 — D13 (2026-09-14): business formation is deferred with the rollout — \"Entity/LLC/EIN/bank/tax-tracker/filings parked under D1\" — and D28 (2026-09-28) targets formation for January 2027. The ledger carried it as open until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md).",
    "related_ids": [],
    "summary": "Recurring.",
    "next_action": "Owner: after forming the entity (§1), add the state's annual report/franchise tax dates to the T-295 calendar; tick BUSINESS-CHECKLIST.md:91.",
@@ -4889,12 +4974,12 @@
   {
    "id": "T-202",
    "title": "SOC 2 — change management policy",
-   "status": "open",
+   "status": "parked",
    "confidence": "medium",
    "owner_role": "owner-decision",
    "category": "process",
    "effort": "small",
-   "blocking_decision": "none for a policy draft; deploy-approval half waits on the hosting decision",
+   "blocking_decision": "PARKED 2026-09-30 — D5 (2026-09-14): SOC 2 not now — revisit post-launch; trigger: the first paying customer or the first enterprise conversation. D5 also answers this item's own question: \"Branch-and-PR stays the informal change-management control.\" The ledger carried it as open until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md). Was: \"none for a policy draft; deploy-approval half waits on the hosting decision\"",
    "related_ids": [
     "F4"
    ],
@@ -4963,7 +5048,7 @@
   {
    "id": "T-349",
    "title": "P5 — is cross-asset-class risk comparison a supported claim?",
-   "status": "open",
+   "status": "closed",
    "confidence": "medium",
    "owner_role": "owner-decision",
    "category": "decision",
@@ -4980,7 +5065,20 @@
      "lines": "599-612, 782",
      "quote": "PRODUCT DECISION REQUIRED (P5): decide whether cross-asset-class comparison is a supported product claim. If **yes**, profiles need a joint calibration pass against real distributions (already on `risk-framework.md`'s roadmap as item 6) and that is substantial work."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-09-30",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "ANSWERED NO under D14 (2026-09-14): \"Remove all risk comparisons to avoid potentially sounding like a recommendation.\" D14's own scope table keeps the Portfolios weighted-risk figure — the user's own holdings, coverage disclosed — and D33's Methodology Guide lists cross-asset comparisons among what is deliberately not scored. The methodology note this item proposed for a \"No\" was not ordered by D14 and was not added.",
+    "approved_by": "owner, 2026-09-30 — approved applying the queue sweep: \"Yes, update all 47\"",
+    "evidence": [
+     "docs/decisions/2026-09-14-owner-decisions.md",
+     "docs/decisions/2026-09-28-owner-decisions.md",
+     "docs/audits/queue-sweep-2026-09-30.md"
+    ]
+   }
   },
   {
    "id": "T-003",
@@ -7008,12 +7106,12 @@
   {
    "id": "T-061",
    "title": "S4 — UI parity with the API (8 legs, more presets)",
-   "status": "blocked",
+   "status": "parked",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "feature",
    "effort": "small",
-   "blocking_decision": "Owner activation of subproject S4 (charter proposed 2026-08-20, not activated).",
+   "blocking_decision": "PARKED 2026-09-30 — D9 (2026-09-14): the S4 options subproject is deferred with the rollout (D1), and behind the D4 legal review since it expands an advice-adjacent tool. D9 names T-061, T-062 and T-063; T-060 is S4's first decision. The ledger carried it as blocked until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md). Was: \"Owner activation of subproject S4 (charter proposed 2026-08-20, not activated).\"",
    "related_ids": [
     "RP-1",
     "S4"
@@ -7031,12 +7129,12 @@
   {
    "id": "T-062",
    "title": "S4 — what-if sliders (IV / underlying move)",
-   "status": "blocked",
+   "status": "parked",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "feature",
    "effort": "small",
-   "blocking_decision": "Owner activation of subproject S4.",
+   "blocking_decision": "PARKED 2026-09-30 — D9 (2026-09-14): the S4 options subproject is deferred with the rollout (D1), and behind the D4 legal review since it expands an advice-adjacent tool. D9 names T-061, T-062 and T-063; T-060 is S4's first decision. The ledger carried it as blocked until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md). Was: \"Owner activation of subproject S4.\"",
    "related_ids": [
     "S4"
    ],
@@ -7053,12 +7151,12 @@
   {
    "id": "T-063",
    "title": "S4 — plain-language explanations per risk dimension",
-   "status": "blocked",
+   "status": "parked",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "feature",
    "effort": "small",
-   "blocking_decision": "S4 activation (owner)",
+   "blocking_decision": "PARKED 2026-09-30 — D9 (2026-09-14): the S4 options subproject is deferred with the rollout (D1), and behind the D4 legal review since it expands an advice-adjacent tool. D9 names T-061, T-062 and T-063; T-060 is S4's first decision. The ledger carried it as blocked until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md). Was: \"S4 activation (owner)\"",
    "related_ids": [
     "RP-3",
     "S4"
@@ -7227,12 +7325,12 @@
   {
    "id": "T-222",
    "title": "Series A — sub-500ms p95 at 1,000 RPS load test",
-   "status": "blocked",
+   "status": "parked",
    "confidence": "high",
    "owner_role": "either",
    "category": "ops-infra",
    "effort": "medium",
-   "blocking_decision": "Whether the FastAPI backend returns (ROADMAP.md:486) and a staging/production deployment to test against.",
+   "blocking_decision": "PARKED 2026-09-30 — D2 (2026-09-14) answered the backend half — the backend is retired; the rest needs a staging or production deployment to test against, parked with the rollout (D1). The ledger carried it as blocked until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md). Was: \"Whether the FastAPI backend returns (ROADMAP.md:486) and a staging/production deployment to test against.\"",
    "related_ids": [],
    "summary": "Against a deployed API.",
    "next_action": "After a staging deploy exists: add a k6 (or locust) script under infrastructure/ targeting the /api/v1 routes and record the p95 in the scorecard. Nothing to do before that.",
@@ -7287,7 +7385,7 @@
   {
    "id": "T-356",
    "title": "Calibration pass — percentile-derived thresholds",
-   "status": "blocked",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "either",
    "category": "feature",
@@ -7304,7 +7402,19 @@
      "lines": "126-127",
      "quote": "6. **Calibration pass** — replace v1 anchors with percentile-derived thresholds once real distributions are available per asset class."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "blocked",
+    "closed_on": "2026-09-30",
+    "basis": "superseded-by-owner-decision",
+    "verdict": "superseded",
+    "reason": "NOT CHOSEN: the calibration pass ran only if P5 were answered yes, and D14 (2026-09-14) answered it no.",
+    "approved_by": "owner, 2026-09-30 — approved applying the queue sweep: \"Yes, update all 47\"",
+    "evidence": [
+     "docs/decisions/2026-09-14-owner-decisions.md",
+     "docs/audits/queue-sweep-2026-09-30.md"
+    ]
+   }
   },
   {
    "id": "T-393",
@@ -7329,12 +7439,12 @@
   {
    "id": "T-197",
    "title": "SOC 2 — document data flows and system inventory",
-   "status": "blocked",
+   "status": "parked",
    "confidence": "medium",
    "owner_role": "either",
    "category": "docs",
    "effort": "medium",
-   "blocking_decision": "Owner: adopt the SOC 2 roadmap (T-196) and fix the deployment shape to be inventoried",
+   "blocking_decision": "PARKED 2026-09-30 — D5 (2026-09-14): SOC 2 not now — revisit post-launch; trigger: the first paying customer or the first enterprise conversation. The ledger carried it as blocked until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md). Was: \"Owner: adopt the SOC 2 roadmap (T-196) and fix the deployment shape to be inventoried\"",
    "related_ids": [],
    "summary": "Draftable from the repo for sign-off.",
    "next_action": "If the owner greenlights SOC 2 (T-196), draft docs/compliance/system-inventory.md from docs/architecture/data-flow.md, DATA-SOURCES.md and frontend/src/lib/api/live/providers.ts, then submit for owner sign-off; otherwise no action.",
@@ -7398,7 +7508,7 @@
   {
    "id": "T-011",
    "title": "IV rank — decide whether to persist a daily IV snapshot or keep manual entry",
-   "status": "blocked",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "decision",
@@ -7427,7 +7537,19 @@
      "lines": "121-122",
      "quote": "`ivRank` is manual-entry only in the options scorer | No keyless source carries IV *history*. Computing it forward needs persistence and a 52-week warm-up — flagged as a product decision, not an oversight"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "blocked",
+    "closed_on": "2026-09-30",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "DECIDED under D12 (2026-09-14): keep IV rank as manual entry; no daily IV snapshot is persisted. The Trade Risk Scorer's IV-rank field is the hand-entered input it already was (frontend/src/app/(dashboard)/equities/options/page.tsx:166).",
+    "approved_by": "owner, 2026-09-30 — approved applying the queue sweep: \"Yes, update all 47\"",
+    "evidence": [
+     "docs/decisions/2026-09-14-owner-decisions.md",
+     "docs/audits/queue-sweep-2026-09-30.md"
+    ]
+   }
   },
   {
    "id": "T-012",
@@ -7459,7 +7581,7 @@
    "owner_role": "owner-decision",
    "category": "feature",
    "effort": "large",
-   "blocking_decision": "FIFO vs average cost basis for realized P&L (and whether the method is per-portfolio rather than global)? Plus: how are existing hand-entered avg_cost_basis holdings migrated when trades arrive?",
+   "blocking_decision": "FIFO is decided (D12, 2026-09-14). Still open, for when the trade ledger is built: one method for every portfolio or a method per portfolio, and how a holding's hand-entered average cost becomes its opening lot.",
    "related_ids": [
     "NT2",
     "P3-W2-S2",
@@ -7500,7 +7622,15 @@
      "lines": "15",
      "quote": "S2 (trade ledger): approved, blocked on one owner decision — FIFO vs average cost basis."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-09-30",
+    "note": "Narrowed 2026-09-30 by the queue sweep: D12 (2026-09-14) chose FIFO for realised P&L — the subproject's \"first decision\" (docs/TASK-QUEUE.md P3-W2-S2). The two sub-questions this item also carried were not ruled on and remain. The blocker was: \"FIFO vs average cost basis for realized P&L (and whether the method is per-portfolio rather than global)? Plus: how are existing hand-entered avg_cost_basis holdings migrated when trades arrive?\"",
+    "evidence": [
+     "docs/decisions/2026-09-14-owner-decisions.md",
+     "docs/audits/queue-sweep-2026-09-30.md"
+    ]
+   }
   },
   {
    "id": "T-054",
@@ -7548,7 +7678,7 @@
    "owner_role": "owner-decision",
    "category": "decision",
    "effort": "medium",
-   "blocking_decision": "Owner's unanswered item-16 legality question — does advice-adjacent tooling (a federal sale-tax estimator on user-supplied basis/holding period/rate) cross into regulated advice?",
+   "blocking_decision": "D4 (2026-09-14): a qualified legal review before launch decides whether a federal sale-tax estimator crosses into regulated advice. None is engaged (D30). D47 (2026-09-30) cleared build-by-allocation only, not this.",
    "related_ids": [
     "RP-3",
     "S3",
@@ -7568,7 +7698,15 @@
      "lines": "2026-08-21",
      "quote": "NOT built: the federal sale-tax estimator (part 2). It takes user-supplied basis/holding period/rate on the TEY pattern and is the piece that touches the S5 charter's advice-adjacent caution — surface the legality question first."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-09-30",
+    "note": "Rewritten 2026-09-30: the item-16 legality question (T-059) was answered by D47 for build-by-allocation only, so this item now waits on D4's legal review by name — still in force for the advice-adjacent S5 tools. The blocker was: \"Owner's unanswered item-16 legality question — does advice-adjacent tooling (a federal sale-tax estimator on user-supplied basis/holding period/rate) cross into regulated advice?\"",
+    "evidence": [
+     "docs/decisions/2026-09-30-owner-decisions.md",
+     "docs/decisions/2026-09-14-owner-decisions.md"
+    ]
+   }
   },
   {
    "id": "T-067",
@@ -7600,7 +7738,7 @@
    "owner_role": "owner-decision",
    "category": "feature",
    "effort": "large",
-   "blocking_decision": "S5 scope boundary (T-064) and the item-16 legality question (T-059).",
+   "blocking_decision": "S5 scope boundary (T-064) and D4's legal review of the advice-adjacent S5 tools — still in force after D47, which cleared build-by-allocation only.",
    "related_ids": [
     "S5"
    ],
@@ -7612,7 +7750,15 @@
      "lines": "1967-1968",
      "quote": "(4) taxable-vs-sheltered account awareness (asset LOCATION, not just allocation)."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-09-30",
+    "note": "Rewritten 2026-09-30: the item-16 legality question (T-059) was answered by D47 for build-by-allocation only, so this item now waits on D4's legal review by name — still in force for the advice-adjacent S5 tools. The blocker was: \"S5 scope boundary (T-064) and the item-16 legality question (T-059).\"",
+    "evidence": [
+     "docs/decisions/2026-09-30-owner-decisions.md",
+     "docs/decisions/2026-09-14-owner-decisions.md"
+    ]
+   }
   },
   {
    "id": "T-071",
@@ -7666,7 +7812,7 @@
   {
    "id": "T-079",
    "title": "Dependabot redis-py 5.3.1→8.1.0 (#59/#97, backend) — decide after a behaviour check",
-   "status": "blocked",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "dependency",
@@ -7695,7 +7841,22 @@
      "lines": "54-66",
      "quote": "Bumps [redis](https://github.com/redis/redis-py) from 5.3.1 to 8.1.0."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "blocked",
+    "closed_on": "2026-09-30",
+    "basis": "verified-here",
+    "verdict": "already-done",
+    "reason": "DONE: both Dependabot PRs are closed unmerged — #59 on 2026-08-17, #97 on 2026-09-09 (checked on GitHub 2026-09-30) — and D2 (2026-09-14) retired the backend, so the behaviour check this item asked for has nothing left to protect.",
+    "approved_by": "owner, 2026-09-30 — approved applying the queue sweep: \"Yes, update all 47\"",
+    "evidence": [
+     "docs/decisions/2026-09-14-owner-decisions.md",
+     "https://github.com/Savoy11/Finance-Now/pull/59",
+     "https://github.com/Savoy11/Finance-Now/pull/97",
+     "backend/FROZEN.md",
+     "docs/audits/queue-sweep-2026-09-30.md"
+    ]
+   }
   },
   {
    "id": "T-092",
@@ -7779,7 +7940,7 @@
   {
    "id": "T-136",
    "title": "If INVEST: rework /global-adoption as a curated, dated CBDC Tracker",
-   "status": "blocked",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "feature",
@@ -7796,12 +7957,24 @@
      "lines": "48",
      "quote": "**Conditional alternative — INVEST** *only if CBDC coverage is a deliberate strategic goal*: (a) delete the dead Atlantic Council/IMF fetchers and relabel honestly as a *curated, dated* reference (single source of truth in `lib/data/`, a real \"last reviewed\" date, **no fabricated `updatedAt`**)"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "blocked",
+    "closed_on": "2026-09-30",
+    "basis": "superseded-by-owner-decision",
+    "verdict": "superseded",
+    "reason": "NOT CHOSEN: D10 (2026-09-14) resolved T-135 to CUT, so the INVEST branch never opens.",
+    "approved_by": "owner, 2026-09-30 — approved applying the queue sweep: \"Yes, update all 47\"",
+    "evidence": [
+     "docs/decisions/2026-09-14-owner-decisions.md",
+     "docs/audits/queue-sweep-2026-09-30.md"
+    ]
+   }
   },
   {
    "id": "T-137",
    "title": "If CUT: finish the /global-adoption clean-removal checklist",
-   "status": "blocked",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "process",
@@ -7818,7 +7991,22 @@
      "lines": "52-58",
      "quote": "1. `frontend/src/lib/modules/registry.ts` — remove nav item (line 93 `{ href: '/global-adoption', label: 'Global', icon: Globe }`); remove `'/global-adoption'` from the crypto module `routePrefixes` (line 84); remove the now-unused `Globe` import (line 9 — used only at line 93)."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "blocked",
+    "closed_on": "2026-09-30",
+    "basis": "verified-here",
+    "verdict": "already-done",
+    "reason": "DONE under D10 in e384d83 (#191): the page, /live-data/cbdc-data, its provenance helper and test, and the registry entry are gone; no routePrefixes entry remains; the smoke check now expects a 404 (frontend/scripts/test-live-data.mjs:313). One step was deliberately NOT taken: the /global-adoption redirect stays (frontend/next.config.mjs:52) so bookmarks land on /headlines, and its comment was rewritten to say so.",
+    "approved_by": "owner, 2026-09-30 — approved applying the queue sweep: \"Yes, update all 47\"",
+    "evidence": [
+     "docs/decisions/2026-09-14-owner-decisions.md",
+     "frontend/next.config.mjs",
+     "frontend/scripts/test-live-data.mjs",
+     "commit e384d83 (#191)",
+     "docs/audits/queue-sweep-2026-09-30.md"
+    ]
+   }
   },
   {
    "id": "T-154",
@@ -7872,12 +8060,12 @@
   {
    "id": "T-196",
    "title": "SOC 2 — engage an auditor",
-   "status": "blocked",
+   "status": "parked",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "process",
    "effort": "unknown",
-   "blocking_decision": "Owner: adopt the SOC 2 roadmap and commit budget/timeline for an auditor",
+   "blocking_decision": "PARKED 2026-09-30 — D5 (2026-09-14): SOC 2 not now — revisit post-launch; trigger: the first paying customer or the first enterprise conversation. The ledger carried it as blocked until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md). Was: \"Owner: adopt the SOC 2 roadmap and commit budget/timeline for an auditor\"",
    "related_ids": [],
    "summary": "Commercial.",
    "next_action": "Owner decides whether and when to pursue SOC 2 Type I (only meaningful once a hosted deployment exists); record the decision in docs/BUSINESS-CHECKLIST.md.",
@@ -7892,12 +8080,12 @@
   {
    "id": "T-198",
    "title": "SOC 2 — formal access control policy",
-   "status": "blocked",
+   "status": "parked",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "process",
    "effort": "unknown",
-   "blocking_decision": "Owner: adopt the SOC 2 roadmap and author the organisational policy",
+   "blocking_decision": "PARKED 2026-09-30 — D5 (2026-09-14): SOC 2 not now — revisit post-launch; trigger: the first paying customer or the first enterprise conversation. The ledger carried it as blocked until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md). Was: \"Owner: adopt the SOC 2 roadmap and author the organisational policy\"",
    "related_ids": [],
    "summary": "Least privilege, quarterly reviews.",
    "next_action": "Owner decides to adopt the SOC 2 program (T-196) and authors/approves the access-control policy; a dev session can then only template it (e.g. docs/compliance/access-control-policy.md) for signature.",
@@ -7912,12 +8100,12 @@
   {
    "id": "T-200",
    "title": "SOC 2 — secrets rotation policy",
-   "status": "blocked",
+   "status": "parked",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "ops-infra",
    "effort": "medium",
-   "blocking_decision": "Hosting decision (AWS/Terraform vs Vercel+Neon vs VPS) — ROADMAP Phase 6 / P3 review D2",
+   "blocking_decision": "PARKED 2026-09-30 — D5 (2026-09-14): SOC 2 not now — revisit post-launch; trigger: the first paying customer or the first enterprise conversation. The ledger carried it as blocked until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md). Was: \"Hosting decision (AWS/Terraform vs Vercel+Neon vs VPS) — ROADMAP Phase 6 / P3 review D2\"",
    "related_ids": [],
    "summary": "90-day, Secrets Manager.",
    "next_action": "Owner settles the hosting path (P3 review Appendix E D2). If AWS: add aws_secretsmanager_secret_rotation (+ rotation Lambda) for aws_secretsmanager_secret.backend/api_keys in infrastructure/terraform/main.tf and switch rds.tf to manage_master_user_password = true; if managed Postgres elsewhere, restate the policy for that provider in docs/architecture/security.md.",
@@ -7987,12 +8175,12 @@
   {
    "id": "T-208",
    "title": "SOC 2 — automated backup verification drills",
-   "status": "blocked",
+   "status": "parked",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "ops-infra",
    "effort": "medium",
-   "blocking_decision": "Which hosting path ships (ROADMAP Phase 6; P3 review D2)? A drill needs a provisioned database.",
+   "blocking_decision": "PARKED 2026-09-30 — D5 (2026-09-14): SOC 2 not now — revisit post-launch; trigger: the first paying customer or the first enterprise conversation. The ledger carried it as blocked until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md). Was: \"Which hosting path ships (ROADMAP Phase 6; P3 review D2)? A drill needs a provisioned database.\"",
    "related_ids": [],
    "summary": "Quarterly restore drills.",
    "next_action": "After the hosting decision and first provisioned database: add a scheduled restore-to-scratch job (cron/GitHub Action) that restores the latest snapshot and runs a row-count/schema check, and record the quarterly cadence in backup-restore.md.",
@@ -8007,12 +8195,12 @@
   {
    "id": "T-210",
    "title": "SOC 2 Phase 3 — evidence collection through Type I",
-   "status": "blocked",
+   "status": "parked",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "process",
    "effort": "large",
-   "blocking_decision": "Is SOC 2 being pursued for Finance Now, and when is an auditor engaged (scorecard Phase 1, first box)?",
+   "blocking_decision": "PARKED 2026-09-30 — D5 (2026-09-14): SOC 2 not now — revisit post-launch; trigger: the first paying customer or the first enterprise conversation. The ledger carried it as blocked until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md). Was: \"Is SOC 2 being pursued for Finance Now, and when is an auditor engaged (scorecard Phase 1, first box)?\"",
    "related_ids": [],
    "summary": "Four sequential milestones.",
    "next_action": "Owner decides whether SOC 2 is a goal for this product at all and, if so, adds 'engage a SOC 2 auditor (Vanta/Drata/Secureframe)' to BUSINESS-CHECKLIST.md with a target quarter; Phase 3 cannot be scheduled before that.",
@@ -8027,12 +8215,12 @@
   {
    "id": "T-211",
    "title": "SOC 2 Phase 4 — continuous monitoring through Type II",
-   "status": "blocked",
+   "status": "parked",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "process",
    "effort": "large",
-   "blocking_decision": "Is SOC 2 being pursued, and when is an auditor engaged (scorecard Phase 1, first box)?",
+   "blocking_decision": "PARKED 2026-09-30 — D5 (2026-09-14): SOC 2 not now — revisit post-launch; trigger: the first paying customer or the first enterprise conversation. The ledger carried it as blocked until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md). Was: \"Is SOC 2 being pursued, and when is an auditor engaged (scorecard Phase 1, first box)?\"",
    "related_ids": [],
    "summary": "Four sequential milestones.",
    "next_action": "No action until T-210 is unblocked and a Type I report exists; steward proposal to mark Phases 3-4 as 'sequenced after Phase 1, not scheduled'.",
@@ -8127,7 +8315,7 @@
   {
    "id": "T-219",
    "title": "Series A — backend monitoring pipelines live in production",
-   "status": "blocked",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "ops-infra",
@@ -8142,12 +8330,25 @@
      "lines": "234, 146-151",
      "quote": "**Live data, not mock** — all 4 asset monitoring pipelines live in production (see the wording note above: the *frontend* is already live-only; this item is about the backend pipelines, and there is no production deployment)"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "blocked",
+    "closed_on": "2026-09-30",
+    "basis": "superseded-by-owner-decision",
+    "verdict": "moot",
+    "reason": "MOOT under D2 (2026-09-14): the backend is retired and frozen, and \"all backend-gated items close\". Any revival starts from an explicit decision reversing D2, whose checklist lives in backend/FROZEN.md:76. There is no backend left to monitor.",
+    "approved_by": "owner, 2026-09-30 — approved applying the queue sweep: \"Yes, update all 47\"",
+    "evidence": [
+     "docs/decisions/2026-09-14-owner-decisions.md",
+     "backend/FROZEN.md",
+     "docs/audits/queue-sweep-2026-09-30.md"
+    ]
+   }
   },
   {
    "id": "T-220",
    "title": "Series A — scoring model validation against historical depegs",
-   "status": "blocked",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "data-verification",
@@ -8164,7 +8365,20 @@
      "lines": "235",
      "quote": "**Scoring model validation** — back-test scores against historical depeg events (UST, USDC, BUSD)"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "blocked",
+    "closed_on": "2026-09-30",
+    "basis": "superseded-by-owner-decision",
+    "verdict": "moot",
+    "reason": "MOOT under D2 (2026-09-14): the backend is retired and frozen, and \"all backend-gated items close\". Any revival starts from an explicit decision reversing D2, whose checklist lives in backend/FROZEN.md:76. The scoring engine to validate is the retired one, and RP-6 publishes no per-coin score for it to feed.",
+    "approved_by": "owner, 2026-09-30 — approved applying the queue sweep: \"Yes, update all 47\"",
+    "evidence": [
+     "docs/decisions/2026-09-14-owner-decisions.md",
+     "backend/FROZEN.md",
+     "docs/audits/queue-sweep-2026-09-30.md"
+    ]
+   }
   },
   {
    "id": "T-221",
@@ -8213,12 +8427,12 @@
   {
    "id": "T-288",
    "title": "Open business bank account and separate bookkeeping",
-   "status": "blocked",
+   "status": "parked",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "process",
    "effort": "small",
-   "blocking_decision": "Requires the formed entity and EIN from T-287",
+   "blocking_decision": "PARKED 2026-09-30 — D28 (2026-09-28) says in terms that T-287 and T-288 \"stay parked under D13, now timed to the rollout\"; it needs the entity and EIN from T-287, which is parked. The ledger carried it as blocked until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md). Was: \"Requires the formed entity and EIN from T-287\"",
    "related_ids": [],
    "summary": "Day-one chore.",
    "next_action": "Once the EIN exists (T-287): open the business account, set up a bookkeeping ledger separate from personal, and route any future provider/affiliate payments through it; tick with a date.",
@@ -8258,7 +8472,7 @@
   {
    "id": "T-348",
    "title": "E3 — reconcile backend scoring bands before any reactivation",
-   "status": "blocked",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "dependency",
@@ -8275,7 +8489,20 @@
      "lines": "312, 786",
      "quote": "Backend is optional/legacy (auth+agent only). **Its band thresholds disagree with the frontend's** (65/50/30 vs 60/40/20). Out of scope for this spec but must not be reactivated without adopting canonical bands."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "blocked",
+    "closed_on": "2026-09-30",
+    "basis": "superseded-by-owner-decision",
+    "verdict": "moot",
+    "reason": "MOOT under D2 (2026-09-14): the backend is retired and frozen, and \"all backend-gated items close\". Any revival starts from an explicit decision reversing D2, whose checklist lives in backend/FROZEN.md:76. This item's own condition already travels with the backend: FROZEN.md:91 says app/scoring must not be reactivated without adopting the canonical 80/60/40/20 bands.",
+    "approved_by": "owner, 2026-09-30 — approved applying the queue sweep: \"Yes, update all 47\"",
+    "evidence": [
+     "docs/decisions/2026-09-14-owner-decisions.md",
+     "backend/FROZEN.md",
+     "docs/audits/queue-sweep-2026-09-30.md"
+    ]
+   }
   },
   {
    "id": "T-378",
@@ -8423,7 +8650,7 @@
    "owner_role": "owner-decision",
    "category": "decision",
    "effort": "small",
-   "blocking_decision": "T-059 - the owner's item-16 legality question on advice-adjacent features",
+   "blocking_decision": "D4 (2026-09-14): the advice-adjacent S5 tools wait on a qualified legal review before launch; none is engaged (D30). D47 (2026-09-30) cleared build-by-allocation only.",
    "related_ids": [
     "RP-2",
     "S5"
@@ -8436,7 +8663,15 @@
      "lines": "1969-1972",
      "quote": "**First decision:** scope boundary with the departed personal-finance product. Contribution modeling and account-type awareness edge toward retirement planning, which the owner moved to a separate tool. The subproject needs an explicit line: portfolio construction stays, financial planning goes."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-09-30",
+    "note": "Rewritten 2026-09-30: the item-16 legality question (T-059) was answered by D47 for build-by-allocation only, so this item now waits on D4's legal review by name — still in force for the advice-adjacent S5 tools. The blocker was: \"T-059 - the owner's item-16 legality question on advice-adjacent features\"",
+    "evidence": [
+     "docs/decisions/2026-09-30-owner-decisions.md",
+     "docs/decisions/2026-09-14-owner-decisions.md"
+    ]
+   }
   },
   {
    "id": "T-116",
@@ -8446,7 +8681,7 @@
    "owner_role": "owner-decision",
    "category": "feature",
    "effort": "medium",
-   "blocking_decision": "Owner activation of S5 plus the reminder scope (in-app vs out-of-app) and clearance of the item 16 legality flag",
+   "blocking_decision": "Owner activation of S5 plus the reminder scope (in-app vs out-of-app).",
    "related_ids": [],
    "summary": "Owner spec item 5; PlanMonitor exists but no notifications.",
    "next_action": "Owner activates S5 and answers two questions: (1) scope — in-app reminders via the TopBar bell/toast pattern (deliverable now) vs email/push (needs hosting, parked); (2) the legality flag on advice-adjacent features, since a drift-breach reminder with trade lists is one. Then add drift-breach reminders to the S5 build-out list.",
@@ -8456,7 +8691,14 @@
      "lines": "346-348, 352-354",
      "quote": "Depends on the cross-asset instrument layer + DB persistence (Phase 0/1); reminders need notifications; monetized via the entitlement system (Phase 6)."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-09-30",
+    "note": "Rewritten 2026-09-30: the item-16 legality flag this item also waited on was cleared by D47 — build-by-allocation needs no legal review. The blocker was: \"Owner activation of S5 plus the reminder scope (in-app vs out-of-app) and clearance of the item 16 legality flag\"",
+    "evidence": [
+     "docs/decisions/2026-09-30-owner-decisions.md"
+    ]
+   }
   },
   {
    "id": "T-123",
@@ -8526,12 +8768,12 @@
   {
    "id": "T-201",
    "title": "SOC 2 — sign off the incident response runbook",
-   "status": "blocked",
+   "status": "parked",
    "confidence": "medium",
    "owner_role": "owner-decision",
    "category": "process",
    "effort": "medium",
-   "blocking_decision": "Hosting decision and whether a SOC 2 programme is pursued at all (no owner decision recorded); rollout parked 2026-09-05",
+   "blocking_decision": "PARKED 2026-09-30 — D5 (2026-09-14): SOC 2 not now — revisit post-launch; trigger: the first paying customer or the first enterprise conversation. The ledger carried it as blocked until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md). Was: \"Hosting decision and whether a SOC 2 programme is pursued at all (no owner decision recorded); rollout parked 2026-09-05\"",
    "related_ids": [],
    "summary": "Runbook exists.",
    "next_action": "Owner decides whether SOC 2 / a formal IR procedure is being pursued and on what stack; if yes, rewrite docs/runbooks/incident-response.md for the actual deployment (frontend + Postgres, provider outages, key leaks) and then sign/date it.",
@@ -8546,12 +8788,12 @@
   {
    "id": "T-203",
    "title": "SOC 2 — vendor risk assessments (CoinGecko, DefiLlama, Chainlink)",
-   "status": "blocked",
+   "status": "parked",
    "confidence": "medium",
    "owner_role": "owner-decision",
    "category": "terms-review",
    "effort": "medium",
-   "blocking_decision": "Whether SOC 2 is pursued at all (no owner decision recorded)",
+   "blocking_decision": "PARKED 2026-09-30 — D5 (2026-09-14): SOC 2 not now — revisit post-launch; trigger: the first paying customer or the first enterprise conversation. The ledger carried it as blocked until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md). Was: \"Whether SOC 2 is pursued at all (no owner decision recorded)\"",
    "related_ids": [],
    "summary": "Formal assessment, not a terms reading.",
    "next_action": "Owner decides whether a SOC 2 programme is pursued; if yes, add a vendor-risk section per provider to docs/architecture/source-terms.md (or a new docs/audits/vendor-risk-YYYY-MM-DD.md) drawing on sourceTerms.ts entries and provider status pages; drop Chainlink unless the legacy backend ships.",
@@ -8566,12 +8808,12 @@
   {
    "id": "T-207",
    "title": "SOC 2 — business continuity / DR plan with RTO/RPO",
-   "status": "blocked",
+   "status": "parked",
    "confidence": "medium",
    "owner_role": "owner-decision",
    "category": "process",
    "effort": "medium",
-   "blocking_decision": "Hosting decision",
+   "blocking_decision": "PARKED 2026-09-30 — D5 (2026-09-14): SOC 2 not now — revisit post-launch; trigger: the first paying customer or the first enterprise conversation. The ledger carried it as blocked until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md). Was: \"Hosting decision\"",
    "related_ids": [],
    "summary": "Related to the mirror-clone item.",
    "next_action": "Once hosting is decided, revise docs/runbooks/backup-restore.md's RTO/RPO table for the real provider (e.g. Neon PITR vs Aurora), add a BC section (who, when, comms), and have the owner sign/date it; then propose the scorecard annotation.",
@@ -8611,7 +8853,7 @@
   {
    "id": "T-283",
    "title": "Apply useScreenerUrl deep-linking to the Coin Registry if wanted",
-   "status": "blocked",
+   "status": "closed",
    "confidence": "medium",
    "owner_role": "owner-decision",
    "category": "feature",
@@ -8628,7 +8870,21 @@
      "lines": "44-47",
      "quote": "Coins was deliberately left on its store: its `?tab=` handling already uses `useSearchParams` inside the existing component structure, and moving its store state into URLs is a larger refactor than the consistency win justifies. If wanted later, the same hook applies."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "blocked",
+    "closed_on": "2026-09-30",
+    "basis": "verified-here",
+    "verdict": "already-done",
+    "reason": "DONE under D16 (2026-09-14): the Coin Registry's screener state is deep-linkable — frontend/src/app/(dashboard)/assets/AssetRegistryClient.tsx:82 wires useScreenerUrl, keeping the ?tab= handling. Shipped in f5b7651 (#192).",
+    "approved_by": "owner, 2026-09-30 — approved applying the queue sweep: \"Yes, update all 47\"",
+    "evidence": [
+     "docs/decisions/2026-09-14-owner-decisions.md",
+     "frontend/src/app/(dashboard)/assets/AssetRegistryClient.tsx",
+     "commit f5b7651 (#192)",
+     "docs/audits/queue-sweep-2026-09-30.md"
+    ]
+   }
   },
   {
    "id": "T-323",
@@ -9028,7 +9284,7 @@
   {
    "id": "T-183",
    "title": "Risk A — Redis Pub/Sub backplane for WebSocket ConnectionManager",
-   "status": "parked",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "feature",
@@ -9045,12 +9301,25 @@
      "lines": "43, 116, 142, 240",
      "quote": "WebSocket `ConnectionManager` in-memory — won't scale past 1 pod | Use Redis Pub/Sub as backplane (Q3 sprint) | Yes — no pub/sub anywhere in `streaming/manager.py`"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "parked",
+    "closed_on": "2026-09-30",
+    "basis": "superseded-by-owner-decision",
+    "verdict": "moot",
+    "reason": "MOOT under D2 (2026-09-14): the backend is retired and frozen, and \"all backend-gated items close\". Any revival starts from an explicit decision reversing D2, whose checklist lives in backend/FROZEN.md:76. This item is backend-only: the WebSocket ConnectionManager backplane — the app opens no socket.",
+    "approved_by": "owner, 2026-09-30 — approved applying the queue sweep: \"Yes, update all 47\"",
+    "evidence": [
+     "docs/decisions/2026-09-14-owner-decisions.md",
+     "backend/FROZEN.md",
+     "docs/audits/queue-sweep-2026-09-30.md"
+    ]
+   }
   },
   {
    "id": "T-184",
    "title": "Risk B — encrypt mfa_secret at the column level",
-   "status": "parked",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "security",
@@ -9067,7 +9336,20 @@
      "lines": "117, 133, 167",
      "quote": "`mfa_secret` stored in plaintext | Add AES-256 column encryption via `pgcrypto` (Q3 sprint) | Yes — `models/user.py:49` is a bare `String(64)`"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "parked",
+    "closed_on": "2026-09-30",
+    "basis": "superseded-by-owner-decision",
+    "verdict": "moot",
+    "reason": "MOOT under D2 (2026-09-14): the backend is retired and frozen, and \"all backend-gated items close\". Any revival starts from an explicit decision reversing D2, whose checklist lives in backend/FROZEN.md:76. This item is backend-only: the backend users table's mfa_secret column.",
+    "approved_by": "owner, 2026-09-30 — approved applying the queue sweep: \"Yes, update all 47\"",
+    "evidence": [
+     "docs/decisions/2026-09-14-owner-decisions.md",
+     "backend/FROZEN.md",
+     "docs/audits/queue-sweep-2026-09-30.md"
+    ]
+   }
   },
   {
    "id": "T-185",
@@ -9094,7 +9376,7 @@
   {
    "id": "T-186",
    "title": "Risk D — TimescaleDB retention policies",
-   "status": "parked",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "ops-infra",
@@ -9111,12 +9393,25 @@
      "lines": "119",
      "quote": "No data retention policy enforced in code | Add TimescaleDB retention policies (Q3 sprint) | Yes — no `retention` reference in the tree"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "parked",
+    "closed_on": "2026-09-30",
+    "basis": "superseded-by-owner-decision",
+    "verdict": "moot",
+    "reason": "MOOT under D2 (2026-09-14): the backend is retired and frozen, and \"all backend-gated items close\". Any revival starts from an explicit decision reversing D2, whose checklist lives in backend/FROZEN.md:76. This item is backend-only: TimescaleDB retention on the backend's hypertables.",
+    "approved_by": "owner, 2026-09-30 — approved applying the queue sweep: \"Yes, update all 47\"",
+    "evidence": [
+     "docs/decisions/2026-09-14-owner-decisions.md",
+     "backend/FROZEN.md",
+     "docs/audits/queue-sweep-2026-09-30.md"
+    ]
+   }
   },
   {
    "id": "T-187",
    "title": "Risk E — authenticated internal /docs route for production",
-   "status": "parked",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "feature",
@@ -9133,7 +9428,20 @@
      "lines": "120",
      "quote": "API docs disabled in production | Deploy separate internal `/docs` route behind auth (Q3) | Yes — `main.py:59–61` gate all three on `DEBUG`; no authed alternative"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "parked",
+    "closed_on": "2026-09-30",
+    "basis": "superseded-by-owner-decision",
+    "verdict": "moot",
+    "reason": "MOOT under D2 (2026-09-14): the backend is retired and frozen, and \"all backend-gated items close\". Any revival starts from an explicit decision reversing D2, whose checklist lives in backend/FROZEN.md:76. This item is backend-only: FastAPI's /docs route.",
+    "approved_by": "owner, 2026-09-30 — approved applying the queue sweep: \"Yes, update all 47\"",
+    "evidence": [
+     "docs/decisions/2026-09-14-owner-decisions.md",
+     "backend/FROZEN.md",
+     "docs/audits/queue-sweep-2026-09-30.md"
+    ]
+   }
   },
   {
    "id": "T-188",
@@ -9180,7 +9488,7 @@
   {
    "id": "T-335",
    "title": "A07 — refresh-token rotation with reuse detection in the backend",
-   "status": "parked",
+   "status": "closed",
    "confidence": "medium",
    "owner_role": "remote-dev",
    "category": "security",
@@ -9197,7 +9505,20 @@
      "lines": "130, 65-70",
      "quote": "⚠ **No refresh-token rotation** — this row claimed it and `/refresh` does not do it: it issues a new access token and leaves the refresh token unchanged for its full 7 days, so a stolen one is reusable and undetectable. Rotation with reuse-detection is an open follow-up"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "parked",
+    "closed_on": "2026-09-30",
+    "basis": "superseded-by-owner-decision",
+    "verdict": "moot",
+    "reason": "MOOT under D2 (2026-09-14): the backend is retired and frozen, and \"all backend-gated items close\". Any revival starts from an explicit decision reversing D2, whose checklist lives in backend/FROZEN.md:76. This item is backend-only: the backend's /refresh token rotation.",
+    "approved_by": "owner, 2026-09-30 — approved applying the queue sweep: \"Yes, update all 47\"",
+    "evidence": [
+     "docs/decisions/2026-09-14-owner-decisions.md",
+     "backend/FROZEN.md",
+     "docs/audits/queue-sweep-2026-09-30.md"
+    ]
+   }
   },
   {
    "id": "T-035",
@@ -9304,7 +9625,7 @@
   {
    "id": "T-182",
    "title": "Isolate the JWT blocklist in its own Redis DB under noeviction",
-   "status": "parked",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "either",
    "category": "ops-infra",
@@ -9326,7 +9647,20 @@
      "lines": "206-218",
      "quote": "The belt-and-braces fix is an isolated Redis DB for the blocklist under `noeviction`. It is a deployment change and is not load-bearing given the 10-minute lifetime, so it is recorded rather than done."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "parked",
+    "closed_on": "2026-09-30",
+    "basis": "superseded-by-owner-decision",
+    "verdict": "moot",
+    "reason": "MOOT under D2 (2026-09-14): the backend is retired and frozen, and \"all backend-gated items close\". Any revival starts from an explicit decision reversing D2, whose checklist lives in backend/FROZEN.md:76. This item is backend-only: the JWT blocklist's Redis DB.",
+    "approved_by": "owner, 2026-09-30 — approved applying the queue sweep: \"Yes, update all 47\"",
+    "evidence": [
+     "docs/decisions/2026-09-14-owner-decisions.md",
+     "backend/FROZEN.md",
+     "docs/audits/queue-sweep-2026-09-30.md"
+    ]
+   }
   },
   {
    "id": "T-341",
@@ -10115,7 +10449,7 @@
   {
    "id": "T-135",
    "title": "Decide final disposition of /global-adoption (T5): delete vs rework as CBDC Tracker",
-   "status": "parked",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "decision",
@@ -10142,7 +10476,20 @@
      "lines": "12-14, 22-24, 45-48",
      "quote": "The `/global-adoption` **CUT** recommendation was followed in substance but not in full: the page and its `/live-data/cbdc-data` route are retained and de-routed rather than deleted, pending a possible post-production rework."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "parked",
+    "closed_on": "2026-09-30",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "DECIDED under D10 (2026-09-14): CUT. The page and /live-data/cbdc-data were deleted in e384d83 (#191); T-137 records the removal checklist.",
+    "approved_by": "owner, 2026-09-30 — approved applying the queue sweep: \"Yes, update all 47\"",
+    "evidence": [
+     "docs/decisions/2026-09-14-owner-decisions.md",
+     "commit e384d83 (#191)",
+     "docs/audits/queue-sweep-2026-09-30.md"
+    ]
+   }
   },
   {
    "id": "T-161",
@@ -10471,7 +10818,7 @@
   {
    "id": "T-114",
    "title": "Decide whether the FastAPI backend returns for scoring/backtesting",
-   "status": "parked",
+   "status": "closed",
    "confidence": "medium",
    "owner_role": "owner-decision",
    "category": "decision",
@@ -10486,7 +10833,20 @@
      "lines": "98-99, 486",
      "quote": "Whether the FastAPI backend returns for scoring/backtesting workloads."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "parked",
+    "closed_on": "2026-09-30",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "DECIDED under D2 (2026-09-14): the FastAPI backend is retired and frozen, not returning. Reviving it needs an explicit decision reversing D2 (backend/FROZEN.md:76).",
+    "approved_by": "owner, 2026-09-30 — approved applying the queue sweep: \"Yes, update all 47\"",
+    "evidence": [
+     "docs/decisions/2026-09-14-owner-decisions.md",
+     "backend/FROZEN.md",
+     "docs/audits/queue-sweep-2026-09-30.md"
+    ]
+   }
   },
   {
    "id": "T-189",
@@ -37143,6 +37503,17 @@
     "evidence": [
      "docs/decisions/2026-09-30-owner-decisions.md",
      "frontend/src/lib/server/sourceTerms.ts"
+    ]
+   },
+   {
+    "on": "2026-09-30",
+    "what": "Queue sweep: 47 items the ledger still carried against rulings it had never learned — most from 2026-09-14 — applied with the owner's approval. 22 closed (9 done: T-096, T-097, T-098, T-283, T-135, T-136, T-137, T-128, T-079; 13 answered no or moot under D2/D12/D14: T-011, T-349, T-356, T-114, T-219, T-220, T-348, T-182, T-183, T-184, T-186, T-187, T-335); 24 parked with their triggers (D1, D5, D7, D8, D9, D13, D28, D2+D1); T-027 narrowed (D12: FIFO). The sweep proposed moving T-059 to blocked; the owner answered its question instead — D47, \"A lawyer doesn't need to review this\" — so it closed, and T-058, T-064, T-068 and T-116 were re-pointed off it. T-099 closed under D48 (Est. Annual Income counts priced holdings only).",
+    "why_it_was_run": "The next four owner-decision items were T-096 to T-099, and three had been decided and built on 2026-09-14. The 2026-09-14 decisions file names some items by id and reaches others by cascade (D2: \"all 19 backend-gated items close\"; D5: SOC 2 \"not now\"), and earlier passes that applied it searched by id.",
+    "left_alone": "T-125, T-365, T-366, T-154 and T-026 look deferred but no ruling names them; T-357 and T-012 are the questions D34 declined to extend itself to; T-289 stays live under D13.",
+    "evidence": [
+     "docs/audits/queue-sweep-2026-09-30.md",
+     "docs/decisions/2026-09-14-owner-decisions.md",
+     "docs/decisions/2026-09-30-owner-decisions.md"
     ]
    }
   ]

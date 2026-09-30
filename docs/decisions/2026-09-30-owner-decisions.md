@@ -3,11 +3,11 @@
 Recorded from the owner's answers in the session that worked T-414 (the rulings the
 2026-09-26 reading of the 37 non-'40-Act fund fees asked for), then T-412 (the seventeen
 differences the 2026-09-26 four-quarter reconcile found), then T-413 (the findings from the
-2026-09-26 source-terms readings). Same form as `2026-09-29-owner-decisions.md`: one row per
-ruling, what it cascades to, and what was actually done. Each question offered a
-recommendation first — the audit's, except for OKX, where the audit named both readings
-without choosing and the session recommended one — and the owner took it eleven times of
-twelve. The exception is D46.
+2026-09-26 source-terms readings), then a ledger sweep and T-099 (D47, D48). Same form as
+`2026-09-29-owner-decisions.md`: one row per ruling, what it cascades to, and what was
+actually done. Each question offered a recommendation first — the audit's, except for OKX,
+where the audit named both readings without choosing and the session recommended one — and
+the owner took it twelve times of fourteen. The exceptions are D46 and D47.
 
 | # | Decision | Ruling | Cascades to |
 |---|---|---|---|
@@ -23,6 +23,8 @@ twelve. The exception is D46.
 | D44 | CoinMarketCap (T-413, question 5) | **Treat it as personal (D22)** — the owner's key is free, absent or unconfirmed. Chosen over "a paid commercial plan". → APPLIED | `⚠ SINGLE-USER ONLY` condition; the commercial agreement's required credit line ("Data provided by CoinMarketCap.com" with a link) is recorded as the route to broader rights, not rendered |
 | D45 | Jito, Rocket Pool, Pendle (T-413, question 6) | **The narrow reading** — their terms govern their websites, not the public APIs the app reads — as D25 read publicnode. Chosen over "stop using all three". → APPLIED | each goes `approved` → `conditional` with an "API only" condition that records the judgement as a judgement |
 | D46 | Which 2026-09-26 readings to mark `verified` (T-413, question 7) | **Not yet.** No entry is flipped, including the six ruled on above: every one stays `seeded`, with its reading and its ruling recorded beside it. Chosen over "all 17 fully read and settled" and "only the 11 clean readings". → HELD | T-005 stays blocked, on this sign-off alone |
+| D47 | "Set my own weights" — Portfolio Builder's build-by-allocation mode (found by the 2026-09-30 queue sweep: D4 said it was dark, and it is live) | **"A lawyer doesn't need to review this."** Build-by-allocation is cleared: no legal review, and it stays visible. Neither offered option — hide it now (recommended), or keep it for the owner and hide it before launch. **D4 is narrowed, not reversed:** its review still gates S5 contribution modeling and the federal sale-tax estimator, neither of which is built. → APPLIED | T-059, the item-16 legality question, closes. T-058, T-064 and T-068 now wait on D4's review by name; the item-16 clause of T-116's blocker is cleared. `BUSINESS-CHECKLIST.md` §5, `LEGAL-REVIEW.md` §D and the TASK-QUEUE S5 note record it |
+| D48 | Est. Annual Income on holdings with no live price (T-099) | **Priced holdings only, with the coverage shown** — the page's own rule ("excluded from totals, never valued at cost"), and PB-1's for the value and P&L totals. Chosen over "keep planned amounts and say so" and "leave it as is". → APPLIED | `computeAnnualIncome` leaves out a holding with no live price and reports `unpriced` and `pricedPct`; the card says "covers N% of yielding holdings" below 99.5%, as the risk card does. The test that pinned the old behaviour is flipped, and restoring the old fallback turns two tests red. T-099 closes |
 
 ## Notes
 
@@ -125,3 +127,28 @@ CoinMarketCap, Messari, Santiment, Jito, Rocket Pool and Pendle. And OKX's regis
 through the Terms of Service §4.3; the reading did not record that address, so the entry
 says so and T-005's sign-off should record it.
 
+## Notes on D47 and D48
+
+**The sweep behind D47.** The next four owner-decision items in the ledger were T-096 to
+T-099, and three of them had been decided on 2026-09-14 and built that day. A pass over
+every item not closed found 47 in the same state; the owner approved applying all 47
+(`docs/audits/queue-sweep-2026-09-30.md`). One finding needed the owner rather than the
+ledger: D4 — restated by D30 — says build-by-allocation "stay[s] built but dark until a
+qualified review clears" it, and `BUSINESS-CHECKLIST.md` listed it as "built, dark", while
+the mode switch was live at `portfolio-builder/page.tsx:278`. D47 settles it the other way
+from both offered fixes: nothing is hidden, because no review is needed.
+
+**What D47 does not decide.** The answer was given about the tool the question named. It is
+not recorded as a ruling on the other two tools D4 named — S5 contribution modeling and the
+federal sale-tax estimator — and nothing about them was changed on its strength. Both are
+unbuilt, and their items (T-067, T-058) say not to build them before the review. If the
+owner's answer covers them too, that is its own ruling. (`BUSINESS-CHECKLIST.md` had also
+called those two "built"; it now says they are not.)
+
+**Why D48 shows a percentage rather than a count.** The Weighted Risk card beside it already
+says "covers N% of allocation" when its figure describes only part of the portfolio, and a
+reader who has learned that line should find the same one here. The percentage is of the
+yielding holdings' planned capital, not of the whole portfolio: a crypto position can never
+yield income on this card, so counting it would make a fully priced estimate look partial.
+With no live price at all, the card shows a dash and says how many yielding holdings lack
+one.

@@ -1973,6 +1973,12 @@ explicit line: portfolio construction stays, financial planning goes.
 **Note:** the owner flagged a legality question on item 16 — surface it here
 before building further advice-adjacent features.
 
+> **Status 2026-09-30: the item-16 question is answered for item 16 itself.** D4
+> (2026-09-14) sent the advice-adjacent tools to a qualified legal review before launch.
+> D47 (2026-09-30) then cleared build-by-allocation, which is item 16: *"A lawyer doesn't
+> need to review this."* It stays live, and T-059 is closed. The review still gates (3)
+> contribution modeling and the federal sale-tax estimator. Neither is built.
+
 #### S6 — Fund Registry
 **State:** 126-fund catalog with provenance, live quotes, N-PORT holdings +
 history + the NT9 asset mix, TEY on munis, look-through, overlap on Compare.
