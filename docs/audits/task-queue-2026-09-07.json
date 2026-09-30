@@ -6732,6 +6732,9 @@
     "evidence": [
      "docs/decisions/2026-09-25-owner-decisions.md",
      "frontend/scripts/gen-staking-catalog-worksheet.ts"
+    ],
+    "corrections": [
+     "2026-09-26: LOCK-UP FIELD AUDITED, and the pass it needs is now 12 rows rather than 187. lockupDays is mostly a PROTOCOL property for a natively-staked position — Cosmos unbonding is 21 days for everybody — so rows for one coin that disagree can be interrogated without leaving the repo. Eleven of the fifteen coins are internally consistent (ada 0d×11, atom 21d×15, avax 14d×9, bnb 7d×8, dot 28d×15, inj 21d×6, matic 9d×8, tia 21d×6, plus three single-row coins). Four disagree, and in every one the rows that carry a lockupNote agree with the protocol while the rows that differ are silent: SOL has four values across 22 rows (all seven noted rows say 3d with \"~2-3 epoch cooldown\"; seven at 5d, one at 7d and one at 0d carry no note), TRX has four silent rows at 3d against one noted row at 14d citing Stake 2.0, NEAR has three rows at 4d whose own note says \"~4-day\" where NEAR docs state 4 EPOCHS ≈ 24 hours, and ETH spreads 0d×9 / 7d×7 / 10d×1 with only the 7d and 10d rows explaining themselves. TWO FALSE LEADS RECORDED IN THE AUDIT rather than dropped: a first pass called eight rows impossible when six are lending or soft-staking products where zero is correct and the catalog says so in `features` (not lockupNote), and called eleven rows missing the field when the parse was line-based and those entries span several lines — no live row is missing it. Record: docs/audits/staking-lockups-2026-09-26.md. Nothing applied; STAKING_DATA_LAST_VERIFIED unmoved. REMAINING ON THIS ITEM: the 12 rows the audit names, plus audit counts, founded years, minimum stakes, and the 17 CeFi/wallet TVL figures DefiLlama cannot see."
     ]
    }
   },
@@ -36986,6 +36989,13 @@
     "what": "T-386 expense-ratio half complete: all 37 non-'40-Act rows read, four Teucrium rows found holding the management fee instead of a 3x-higher total, and a two-way waiver treatment surfaced. Filed as T-414.",
     "evidence": [
      "docs/audits/fund-fees-non-40act-2026-09-26.md"
+    ]
+   },
+   {
+    "on": "2026-09-26",
+    "what": "T-394: lockupDays audited across all 187 rows — 11 of 15 coins consistent, 4 disputed, scoped to 12 rows needing a provider doc; two of the auditor’s own false leads recorded.",
+    "evidence": [
+     "docs/audits/staking-lockups-2026-09-26.md"
     ]
    }
   ]
