@@ -982,6 +982,13 @@ every archive carries the net tag for some fund, the total was never read and ev
 (VOO, XLK, VTIP…) reported `no-expense-value`. That is how the 2026-09-09 run matched 27 of 126 and
 read as thorough. Net is now taken where a waiver exists and the total otherwise.
 
+**And it keeps BOTH figures (T-412, 2026-09-30).** It used to write only the one it compared, so no
+run could tell a waiver from a fee cut — and D36 (a row records the fee paid today, and its
+description states the full fee) needs exactly that distinction. Each row now carries net, gross
+and a waiver flag, and the report lists every waiver with whether the catalog description states
+the gross (`scripts/lib/feeWaiver.mjs`, unit-tested). A net with no total, or a net above its total,
+is reported as unknown and sent to the filing — never classified by guess.
+
 `scripts/build-fund-fees.mjs` checks `FUND_CATALOG`'s expense ratios and finds its sales-load
 rates against the SEC's quarterly **Risk/Return Summary** data sets — the prospectus fee table as
 structured XBRL. It fills the gap `build-fund-facts.mjs` names: N-PORT carries no expense tag.
