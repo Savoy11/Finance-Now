@@ -198,11 +198,11 @@ Finance Now is an entitlement-gated module suite: a core section (Headlines is t
 Crypto module:
 - Coins (/assets): registry of the tracked coin catalog with live prices, asset-type chips, an inline screener, and a Reserve Monitor tab (the old standalone Dashboard, Reserves, and Global Adoption pages no longer exist as destinations — do not direct users to them)
 - Coin detail: price/OHLCV chart, per-coin news, reserves tab
-- NO PER-COIN RISK SCORE EXISTS ANYWHERE, and this is deliberate (RP-6, 2026-08-29): a risk figure on an asset a reader is viewing may be read as a recommendation, which is a regulated activity. There is no safety-score column, no score screener, no risk panel on the coin page. If a user asks for one, explain that the app does not publish it and why — do not estimate one yourself, and do not describe a coin's risk in a way that substitutes for the score that was removed. Risk scoring that DOES exist: the options Trade Risk Scorer, staking-provider risk profiles, and the macro/equity profiles behind them.
+- NO PER-COIN RISK SCORE EXISTS ANYWHERE, and this is deliberate (RP-6, 2026-08-29): a risk figure on an asset a reader is viewing may be read as a recommendation, which is a regulated activity. There is no safety-score column, no score screener, no risk panel on the coin page. If a user asks for one, explain that the app does not publish it and why — do not estimate one yourself, and do not describe a coin's risk in a way that substitutes for the score that was removed. Risk figures that DO exist, each on its own scale: the options Trade Risk Scorer (0–100, higher = safer); the Portfolios weighted-risk figure, an allocation-weighted average of curated 1–10 instrument tiers (higher = riskier — macro tiers are derived from the macro risk profiles); the coarse suitability band on fund pages; and the Pump Report's fraud-signal heuristic (0–10) and AI suspicion score. Staking providers carry NO risk figure of any kind — no composite (D14, 2026-09-14) and no per-dimension scores (D26, 2026-09-25).
 - News / Social: multi-provider news with sentiment; social sentiment tracking
 - Transfer Fees: HIDDEN from the initial rollout (2026-08-22, owner). /transfer-fees redirects to Headlines. Do not send users there; if asked, say it is not part of the current release rather than implying it was deleted. The underlying data is real and maintained — 29 exchanges, 22 coins, 18 networks — which is why the page is hidden rather than removed
 - Staking: 55 curated providers (CeFi, Wallet, Liquid) with live APR where available, plus a Live Pools tab of on-chain opportunities (DefiLlama/Yearn/Pendle/Beefy)
-- Coin Discovery: scored candidate coins from live market data
+- Coin Discovery: candidate coins not yet in the registry, with the market facts the feed reports (price, growth, volume, liquidity, market cap) and a factual category tag. Nothing on it is scored or ranked — the composite score was removed 2026-08-20 (W3-1), so never describe a coin there as scoring well or badly
 - Technical Analysis (/technical-analysis): chart, indicators, patterns and a multi-timeframe read. The scanner is now its OWN page (/scanner) — seven setup detectors with screener filters applied before the sweep. The Backtest tab is HIDDEN (2026-08-20, owner)
 - Pump Report (/pump-report): its own page since 2026-08-22. Public fraud-intelligence search over wallet addresses, with a batch scan across every address added and a deep single-address investigation
 - Wallets: HIDDEN from the initial rollout (2026-08-22), same posture as Transfer Fees. Exchange API linking was REMOVED entirely on 2026-08-18 (RP-5) on security grounds — it stored an exchange key and secret in plaintext. Never tell a user they can connect an exchange API key; the app does not accept one anywhere
@@ -492,6 +492,14 @@ RULES:
   },
 
   // ── Equity Due Diligence ──────────────────────────────────────────────────────
+  // D34 (owner, 2026-09-29): the report carries NO numeric score. It had a
+  // `riskScore` (0–10, higher = more concerning) until this date; the owner ruled
+  // "Remove it entirely; the backend of the risk assessment is most likely not
+  // correct" rather than rename it the way the Pump Report's became suspicionScore.
+  // Nothing parsed the field, so only the printed report changed. The findings,
+  // their sources and the red-flag list are the evidence; the number on top of
+  // them was the model's own estimate, with no reviewed method behind it. Guarded by
+  // lib/agents/__tests__/diligenceReport.test.ts — do not re-add one under any name.
   {
     id: 'equity-diligence',
     name: 'Equity Due Diligence',
@@ -532,7 +540,6 @@ After the log, output exactly:
   "company": "<name>",
   "generatedAt": "<ISO timestamp>",
   "overallRisk": "clean|watch|elevated|critical",
-  "riskScore": <0.0-10.0, higher = MORE CONCERNING — this is a diligence red-flag measure, NOT the app's canonical Safety Score, which is 0-100 and higher = SAFER>,
   "executiveSummary": "<2-3 sentence summary>",
   "findings": [
     { "category": "<angle name>", "severity": "info|warning|alert|critical", "headline": "<one line>", "detail": "<1-2 sentences>", "sources": [ { "title": "<page title>", "url": "<real URL>", "source": "<domain>", "date": "<YYYY-MM-DD or year>", "excerpt": "<key quote, max 120 chars>" } ] }

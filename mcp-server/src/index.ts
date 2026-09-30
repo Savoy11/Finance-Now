@@ -383,11 +383,12 @@ server.tool(
 // safetyScore, band, riskScore or riskLevel at all, so this tool could not be
 // revived as written even if the decision were reversed.
 //
-// What remains available: get_staking_opportunities returns the six curated
-// risk DIMENSIONS per provider (1–10, higher = riskier). An agent asked to
-// compare providers can read those and explain the differences — the
+// What remains available: get_staking_opportunities returns facts per provider
+// — APY, lock-up, custody model, receipt token, TVL and audit count. An agent
+// asked to compare providers can read those and explain the differences — the
 // explanatory side of the ranking-vs-explanation line — without this tool
-// publishing a ranking on the app's behalf.
+// publishing a ranking on the app's behalf. (Until 2026-09-25 this said the
+// tool returned the six curated 1–10 risk dimensions; D26 removed them.)
 //
 // Do not reintroduce a composite staking score here. See
 // docs/decisions/2026-09-14-owner-decisions.md (D14) and

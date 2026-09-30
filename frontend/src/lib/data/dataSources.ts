@@ -209,7 +209,7 @@ export const DATA_SOURCES: DataSourceEntry[] = [
       { name: 'Stride', host: 'edge.stride.zone', role: 'primary', auth: 'none' },
       { name: 'Injective LCD (chain inflation)', role: 'primary', auth: 'none' },
     ],
-    cadence: '20m client poll · 7 parallel upstreams', staticData: ['lib/data/stakingProviders.ts (risk profiles, fallback APRs)'],
+    cadence: '20m client poll · 7 parallel upstreams', staticData: ['lib/data/stakingProviders.ts (provider terms, fallback APRs)'],
     notes: 'Liquid-staking/restaking protocols + native network rates are live (DefiLlama + protocol APIs + chain inflation). CeFi exchange rates are static estimates. Each rate carries sources[key] = "live" | "estimate".',
   },
   {

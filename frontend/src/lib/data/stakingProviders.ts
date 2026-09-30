@@ -1,14 +1,16 @@
 // Staking providers data — CeFi exchanges, self-custody wallets, liquid staking protocols.
-// Risk scores are on a 1–10 scale (10 = highest risk) across 6 dimensions.
+// No provider carries a risk score, rating or per-dimension figure: D14 (2026-09-14)
+// removed the composite and D26 (2026-09-25) the six 1–10 dimensions. custodyModel is a
+// fact about a provider, not a score, and stays.
 
 // ── Provenance / staleness machinery (same pattern as transferFees.ts and
 //    stablecoinMeta.ts) ──────────────────────────────────────────────────────
 //
 // This is the app's last large hand-maintained table with no staleness surface
-// (audit finding M5). Everything below — 6-dimension risk profiles, lockup
-// periods, minimums, TVL, audit counts, and the reference APRs for every
-// provider except the three with live feeds — is a curated snapshot, and it was
-// being presented with no indication of its age.
+// (audit finding M5). Everything below — lockup periods, minimums, TVL, audit
+// counts, the 6-dimension risk profiles (until D26 removed them, 2026-09-25), and
+// the reference APRs for every provider except the three with live feeds — is a
+// curated snapshot, and it was being presented with no indication of its age.
 //
 // The date is the day the catalog as a whole was compiled, taken from this
 // file's git history (28a78c5). It is deliberately NOT bumped to the later
@@ -37,6 +39,9 @@
 // reference INPUTS (D14), not arithmetic — 330 of them across 55 providers. That is the
 // owner's call to make, and a rushed pass to beat a date is how a wrong risk figure gets
 // published with a fresh timestamp on it.
+// (D26, 2026-09-25, then removed the six dimensions, so the 330 judgments no longer
+// exist. A full pass now means T-394's factual fields: TVL, APR, lock-ups, minimums,
+// audit counts, founded and websites. The ack below still stands as written.)
 //
 // ⚠ This ack covers the 2026-06-28 compile and nothing else. Re-verifying part of the
 // catalog still must not move the date, and `npm run staleness:check` voids this line
@@ -87,7 +92,7 @@ export function getStakingDataProvenance(now: Date = new Date()): StakingDataPro
   const confidence: StakingDataConfidence =
     ageDays <= 45 ? 'high' : ageDays <= STAKING_DATA_STALE_AFTER_DAYS ? 'medium' : 'low'
   return {
-    source: 'Curated provider risk profiles, terms, and reference APRs',
+    source: 'Curated provider terms, lock-ups, minimums and reference APRs',
     verifiedAt: STAKING_DATA_LAST_VERIFIED,
     ageDays,
     stale,
@@ -213,13 +218,12 @@ export interface StakingProvider {
  * every consumer and went with them.
  *
  * The rule D14 draws: a COMPOSITE is a single number that ranks providers against
- * each other, which is the shape that reads as a recommendation. The six raw
- * dimensions below are the curated inputs and STAY — cards describing them
- * without a composite are the decided state (RP-3), not a half-built feature.
+ * each other, which is the shape that reads as a recommendation. D14 kept the six
+ * raw dimensions as curated inputs; D26 (2026-09-25) removed them too, so no
+ * provider carries a risk figure of any kind now.
  *
- * `scoreStakingProvider()` (lib/risk/profiles/stakingAdapter.ts) is retained as
- * the canonical 0–100 higher-is-safer engine, but has no live consumer after
- * D14; D18 defers new risk profiles until a surface is approved to render one.
+ * `scoreStakingProvider()` (lib/risk/profiles/stakingAdapter.ts) was deleted with
+ * the dimensions under D26. It had had no live consumer since D14.
  */
 
 // mergedRisks() was deleted with RiskProfile (D26, 2026-09-25).
@@ -1067,14 +1071,12 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     custodyModel: 'non-custodial',
     founded: 2020,
     website: 'https://wallet.keplr.app',
-    // liquidityRisk 7, not the 5 other self-custody wallets carry — CONFIRMED, not a typo
-    // (owner, 2026-09-14, D17). Keplr is the Cosmos-ecosystem wallet and every chain it
-    // delegates to has a long mandatory unbonding queue: 21 days on Cosmos Hub, Injective
-    // and Celestia, 28 on Polkadot, 14 on Osmosis — see the per-asset assetRisks below,
-    // which push it to 8 for DOT. That is materially worse liquidity than an ETH or SOL
-    // wallet where liquid-staking derivatives exist, so scoring it the same would be the
-    // false equivalence the rubric is meant to avoid. No impermanent-loss axis was added
-    // (T-265 declined): IL is a liquidity-provision risk, not a staking-provider one.
+    // This comment used to justify Keplr's liquidityRisk of 7 (the owner confirmed it on
+    // 2026-09-14, D17) and the per-asset assetRisks that pushed DOT to 8. D26 (2026-09-25)
+    // removed every risk dimension, so both are gone. The facts behind them stay on each
+    // asset: every chain Keplr delegates to has a long mandatory unbonding queue — 21 days
+    // on Cosmos Hub, Injective and Celestia, 28 on Polkadot, 14 on Osmosis — recorded in
+    // lockupDays and lockupNote below.
     assets: {
       atom: { coinId: 'atom', staticApr: 14.0, minStakeNative: 0.1, lockupDays: 21, lockupNote: '21-day Cosmos Hub unbonding', liquid: false, features: ['Direct on-chain delegation', 'You choose validator', '21-day unbonding', 'Slashing for double-signing and downtime', 'Governance participation included'] },
       osmo: { coinId: 'osmo', staticApr: 10.0, minStakeNative: 1,   lockupDays: 14, lockupNote: '14-day Osmosis unbonding', liquid: false, features: ['Superfluid staking — stake while providing liquidity', '14-day unbonding on Osmosis', 'Governance voting power'] },
