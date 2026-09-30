@@ -295,3 +295,74 @@ describe('catalog-wide sales-charge provenance', () => {
     }
   })
 })
+
+describe('fee basis: the total a holder pays, not the management fee (D35, D37)', () => {
+  // A commodity pool's MANAGEMENT fee was recorded as its expense ratio three times
+  // before anyone noticed the pattern: USO, UNG and CPER (corrected 2026-09-10), then
+  // the four Teucrium funds at 1.00 against totals over three times that (read
+  // 2026-09-26, corrected under D35). Each filing states the management fee as one
+  // line of a larger total, so the check is simple: the catalog must hold MORE than it.
+  const MANAGEMENT_FEE: Record<string, number> = {
+    USO: 0.45, UNG: 0.6, CPER: 0.65, CORN: 1, WEAT: 1, SOYB: 1, CANE: 1,
+  }
+  const holdsOnlyTheManagementFee = (er: number, mgmt: number) => er <= mgmt
+  const row = (symbol: string) => {
+    const f = FUND_CATALOG.find((x) => x.symbol === symbol)
+    if (!f) throw new Error(`${symbol} is missing from the catalog`)
+    return f
+  }
+
+  it('each of these pools records its total, which is above its management fee', () => {
+    for (const [symbol, mgmt] of Object.entries(MANAGEMENT_FEE)) {
+      const er = row(symbol).expenseRatioPct
+      expect(holdsOnlyTheManagementFee(er, mgmt), `${symbol} records ${er}, only its management fee`).toBe(false)
+    }
+  })
+
+  it('guards the guard: the rows as they stood before D35 fail it', () => {
+    expect(holdsOnlyTheManagementFee(1, MANAGEMENT_FEE.CORN)).toBe(true)
+    expect(holdsOnlyTheManagementFee(0.6, MANAGEMENT_FEE.UNG)).toBe(true)
+  })
+
+  it('holds the realized 2025 totals D35 approved, and each description names the year', () => {
+    // A realized ratio moves with fund size (CANE ran 3.21–4.42% over three years), so a
+    // figure without its year reads as a standing rate it is not.
+    const d35: Record<string, number> = { CORN: 3.45, WEAT: 3.18, SOYB: 3.34, CANE: 4.27 }
+    for (const [symbol, er] of Object.entries(d35)) {
+      expect(row(symbol).expenseRatioPct, symbol).toBe(er)
+      expect(row(symbol).description, `${symbol} does not name the year of its ratio`).toMatch(/\b2025\b/)
+    }
+  })
+
+  it('holds PSLV at its 2025 management expense ratio, naming the year (D37)', () => {
+    expect(row('PSLV').expenseRatioPct).toBe(0.56)
+    expect(row('PSLV').description).toMatch(/\b2025\b/)
+  })
+})
+
+describe('one waiver rule: the fee paid today, with the full fee stated (D36)', () => {
+  // Before D36 the catalog recorded waived fees two ways — IBIT at its contractual rate,
+  // SIVR and the D27 rows at the waived one — so rows that computeFeeDrag compares sat on
+  // different bases. The rule now: record what an investor pays today, and state the full
+  // fee in the description so a lapsed waiver can be seen and re-checked.
+  const GROSS = /net of a (?:contractual |fee )?waiver \((\d+(?:\.\d+)?)% gross/i
+  const grossStated = (description: string) => {
+    const m = description.match(GROSS)
+    return m ? Number(m[1]) : null
+  }
+
+  it('every row that mentions a waiver states its gross figure and records less than it', () => {
+    const waived = FUND_CATALOG.filter((f) => /waiver/i.test(f.description))
+    expect(waived.map((f) => f.symbol)).toContain('SIVR')
+    for (const f of waived) {
+      const gross = grossStated(f.description)
+      expect(gross, `${f.symbol} mentions a waiver without its "(X% gross)" figure`).not.toBeNull()
+      expect(f.expenseRatioPct, `${f.symbol} records the gross, not the fee paid today`).toBeLessThan(gross!)
+    }
+  })
+
+  it('guards the guard: a waiver named without its gross figure is caught', () => {
+    expect(grossStated('Expense ratio is net of a fee waiver.')).toBeNull()
+    expect(grossStated('Expense ratio is net of a contractual waiver (0.31% gross).')).toBe(0.31)
+  })
+})

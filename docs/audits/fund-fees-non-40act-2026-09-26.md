@@ -138,3 +138,18 @@ a reading pass, and the readings are now complete without them.
    IBIT 0.25 → 0.12 with the gross disclosed.
 3. **PSLV** — leave 0.57, or move to 0.56 and name the year.
 4. **BAR, HACK** — nothing to do; both confirmed. DBC, UDN — prior decisions hold.
+
+## Answered 2026-09-30 — D35, D36, D37
+
+The owner took the recommendation on all three questions
+(`docs/decisions/2026-09-30-owner-decisions.md`), and they are applied in `fundCatalog.ts`:
+
+- **D35** — CORN 3.45, WEAT 3.18, SOYB 3.34, CANE 4.27, each description naming 2025.
+  The fact-sheet check above became a follow-up rather than a precondition (T-416).
+- **D36** — one rule: the fee an investor pays today, with the full fee stated in the
+  description. SIVR's description now carries its 0.45% gross. IBIT stays 0.25 until
+  T-416 reads whether its 0.12% waiver is in effect today — the reading above records the
+  waiver, not its dates.
+- **D37** — PSLV 0.56, naming 2025.
+
+The text above is left as written: it is the reading the rulings were made on.
