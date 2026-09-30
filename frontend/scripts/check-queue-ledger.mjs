@@ -5,6 +5,18 @@
 //   npm run queue:check                              # CI: exit 1 on any `fail` finding
 //   node scripts/check-queue-ledger.mjs --html out.html   # also write the page
 //
+// The News Charts ledger has the same shape and is rendered by this same file, pointed at
+// that repository's JSON (2026-09-30), so both published pages carry the same sections:
+//
+//   node scripts/check-queue-ledger.mjs --html nc.html \
+//     --queue ../../News-Charts/docs/audits/nc-task-queue-2026-09-28.json \
+//     --root ../../News-Charts --title "News Charts Ledger" --repo Savoy11/News-Charts \
+//     --baseline NC-170@2026-09-28
+//
+// --baseline names the last item in the ledger's first version, for a JSON that does not
+// record one itself (`baseline: { through, on }`); items numbered after it, or carrying an
+// `opened` block, are listed in the page's "Added since the ledger began" section.
+//
 // REPORTS, NEVER WRITES to the ledger — same split as the fee and probe scripts. If a
 // check is red, fix the JSON and re-run; do not teach the check to look away.
 import fs from 'node:fs'
@@ -14,19 +26,44 @@ import { runChecks, evidenceOf, STATUSES, ROLES } from './lib/queueLedgerChecks.
 // The page's shared workspace (uploads + confirmations) lives in the artifact's runtime
 // storage, not in this HTML, so it survives every regeneration. Publish the page with
 // WORKSPACE_CAPABILITIES from the same module.
-import { WORKSPACE_CSS, workspaceSection, workspaceItemSlot, workspaceScripts } from './lib/ledgerWorkspace.mjs'
+import { WORKSPACE_CSS, workspaceSection, workspaceItemSlot, workspaceScripts, addedSection, itemsAddedSince } from './lib/ledgerWorkspace.mjs'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
-const ROOT = path.resolve(here, '../..')
-const QUEUE = path.join(ROOT, 'docs/audits/task-queue-2026-09-07.json')
-const REG = path.join(ROOT, 'frontend/src/lib/server/sourceTerms.ts')
+const FN_ROOT = path.resolve(here, '../..')
 
 const args = process.argv.slice(2)
-const htmlOut = args.includes('--html') ? args[args.indexOf('--html') + 1] : null
-if (args.includes('--html') && !htmlOut) { console.error('--html needs a path'); process.exit(2) }
+/** The value after `--name`, or null; a flag given with no value is a usage error. */
+function flag(name) {
+  const i = args.indexOf(`--${name}`)
+  if (i < 0) return null
+  const v = args[i + 1]
+  if (!v || v.startsWith('--')) { console.error(`--${name} needs a value`); process.exit(2) }
+  return v
+}
+const htmlOut = flag('html')
+const ROOT = flag('root') ? path.resolve(flag('root')) : FN_ROOT
+const QUEUE = flag('queue') ? path.resolve(flag('queue')) : path.join(FN_ROOT, 'docs/audits/task-queue-2026-09-07.json')
+const TITLE = flag('title') ?? 'Finance Now Ledger'
+const REPO = flag('repo')
+const isDefaultQueue = !flag('queue')
 
 const ledger = JSON.parse(fs.readFileSync(QUEUE, 'utf8'))
-const registrySource = fs.readFileSync(REG, 'utf8')
+// C8 compares open items with the source-terms registry of the repository the ledger
+// belongs to. Finance Now's must exist (a missing file fails loudly, in CI too). Another
+// repository without one gets an empty registry, which leaves C8 silent: Finance Now's
+// verdicts describe Finance Now's use of a site, not another product's.
+const REG = path.join(ROOT, 'frontend/src/lib/server/sourceTerms.ts')
+const registrySource = isDefaultQueue || fs.existsSync(REG) ? fs.readFileSync(REG, 'utf8') : ''
+// Where the page remembers its filters in the viewer's browser: `fnl` for Finance Now, and
+// for another ledger its item prefix plus `l` (NC-### → `ncl`), so two ledgers never share one.
+const STORE_KEY = `${isDefaultQueue ? 'fnl' : (String(ledger.outstanding?.[0]?.id ?? 'x').split('-')[0].toLowerCase() + 'l')}.filters`
+const baseline = (() => {
+  if (ledger.baseline?.through) return ledger.baseline
+  const b = flag('baseline')
+  if (!b) return null
+  const [through, on] = b.split('@')
+  return { through, on: on ?? null }
+})()
 // Local calendar date, not UTC — a late-evening run on the owner's machine should not
 // stamp the page with tomorrow's date.
 const today = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` })()
@@ -87,8 +124,13 @@ ${workspaceItemSlot(i.id)}
 
   const failing = result.checks.filter((c) => c.severity === 'fail' && c.findings.length).length
   const verdictLine = result.fails ? `${plural(result.fails, 'failing finding')} across ${plural(failing, 'check')}` : 'No failing checks'
+  const sourceLabel = path.relative(ROOT, QUEUE).split(path.sep).join('/')
+  const checkedBy = isDefaultQueue ? '<span class="mono">npm run queue:check</span>' : 'the ledger checks'
+  const footerLead = isDefaultQueue
+    ? 'Regenerated from the canonical JSON by <code>node scripts/check-queue-ledger.mjs --html &lt;out&gt;</code> — this page never edits it. The same checks run in CI as <code>npm run queue:check</code>.'
+    : `Generated from <code>${esc(sourceLabel)}</code> with the Finance Now ledger generator (<code>check-queue-ledger.mjs --html</code>, pointed at this file) — this page never edits the JSON. Finance Now items are referenced as <code>FN T-###</code>.`
 
-  return `<title>Finance Now Ledger</title>
+  return `<title>${esc(TITLE)}</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
 :root{
@@ -193,8 +235,8 @@ ${WORKSPACE_CSS}
 </style>
 
 <header class="top"><div class="wrap">
-<h1>Finance Now Ledger</h1>
-<div class="sub"><span>Source <span class="mono">docs/audits/task-queue-2026-09-07.json</span></span><span>Checked <span class="mono">${checkedOn}</span></span><span>main <span class="mono">${esc(String(q.main_sha).slice(0, 7))}</span> at generation, ledger since maintained by annotation</span><span><span class="mono">${items.length}</span> items</span></div>
+<h1>${esc(TITLE)}</h1>
+<div class="sub"><span>Source <span class="mono">${esc(sourceLabel)}</span></span><span>Checked <span class="mono">${checkedOn}</span></span><span>main <span class="mono">${esc(String(q.main_sha).slice(0, 7))}</span> at generation${REPO ? ` (${esc(REPO)})` : ''}, ledger since maintained by annotation</span><span><span class="mono">${items.length}</span> items</span></div>
 <div class="verdict${result.fails ? '' : ' pass'}"><span class="mark"></span>${esc(verdictLine)} · ${plural(result.warns, 'warning')} · ${result.reviews} to review</div>
 </div></header>
 
@@ -212,10 +254,12 @@ ${WORKSPACE_CSS}
 </div>
 </section>
 
-${workspaceSection()}
+${addedSection(itemsAddedSince(items, baseline), baseline)}
+
+${workspaceSection(sourceLabel)}
 
 <section>
-<p class="eyebrow">Integrity checks · run ${checkedOn} by <span class="mono">npm run queue:check</span></p>
+<p class="eyebrow">Integrity checks · run ${checkedOn} by ${checkedBy}</p>
 ${checkHtml}
 </section>
 
@@ -228,7 +272,7 @@ ${STATUSES.map((s) => `<button class="tog" id="tog-${s}" type="button" data-stat
 
 ${sections}
 
-<footer>Regenerated from the canonical JSON by <code>node scripts/check-queue-ledger.mjs --html &lt;out&gt;</code> — this page never edits it. The same checks run in CI as <code>npm run queue:check</code>. Closed items keep their full closure record so a closure can be audited from here without opening the file. The workspace above is the exception: its uploads and confirmations are stored with the published page, not in this output, so regenerating never touches them.</footer>
+<footer>${footerLead} Closed items keep their full closure record so a closure can be audited from here without opening the file. The workspace above is the exception: its uploads and confirmations are stored with the published page, not in this output, so regenerating never touches them.</footer>
 </div>
 
 <script>
@@ -250,12 +294,18 @@ ${sections}
       var c=g.querySelector('[data-count]'); if(c) c.textContent=n;
     });
     showing.textContent='Showing '+vis+' of '+total;
-    try{localStorage.setItem('fnl.filters',JSON.stringify({q:q.value,r:r,on:on}))}catch(e){}
+    try{localStorage.setItem('${STORE_KEY}',JSON.stringify({q:q.value,r:r,on:on}))}catch(e){}
   }
   togs.forEach(function(t){t.addEventListener('click',function(){t.setAttribute('aria-pressed',t.getAttribute('aria-pressed')==='true'?'false':'true');apply()})});
   q.addEventListener('input',apply); role.addEventListener('change',apply);
-  try{var s=JSON.parse(localStorage.getItem('fnl.filters')||'null'); if(s){q.value=s.q||'';role.value=s.r||'';togs.forEach(function(t){if(s.on&&s.on[t.dataset.status]===false)t.setAttribute('aria-pressed','false')})}}catch(e){}
+  try{var s=JSON.parse(localStorage.getItem('${STORE_KEY}')||'null'); if(s){q.value=s.q||'';role.value=s.r||'';togs.forEach(function(t){if(s.on&&s.on[t.dataset.status]===false)t.setAttribute('aria-pressed','false')})}}catch(e){}
   apply();
+  // "Added since the ledger began": a number opens its item below, even when a filter hides it.
+  document.querySelectorAll('[data-jump]').forEach(function(b){b.addEventListener('click',function(){
+    var el=document.querySelector('.item[data-id="'+b.getAttribute('data-jump')+'"]'); if(!el) return;
+    el.hidden=false; var g=el.closest('.group'); if(g) g.hidden=false; el.open=true;
+    el.scrollIntoView({behavior:'smooth',block:'start'});
+  })});
 })();
 </script>
 ${workspaceScripts(items)}

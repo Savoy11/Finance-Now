@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import {
   WORKSPACE_CAPABILITIES, itemsJson, workspaceItemSlot, workspaceScripts, workspaceSection,
+  addedSection, itemsAddedSince,
 } from '../../../../scripts/lib/ledgerWorkspace.mjs'
 
 /**
@@ -26,10 +27,16 @@ type Entry = { id: string; itemId: string; kind: string; text: string; docIds: s
 type Doc = { id: string; name: string; contentType: string; sizeBytes: number | null; kind: string; itemIds: string[]; note: string; uploadedBy: string | null; uploadedAt: string; archived: boolean }
 type FakeFile = { name: string; size: number; type: string }
 type Upload = { ids: string[]; error: string | null; refused?: boolean }
+type Added = {
+  id: string; title: string; detail: string; role: string; source: string; by: string | null; at: string; ord: number | null
+  state: string; filedAs: string; stateNote: string; stateBy: string | null; stateAt: string
+}
 type Store = {
   uploadFiles(files: FakeFile[], meta: Row, onProgress?: (name: string) => void): Promise<Upload>
   addLog(itemId: string, kind: string, text: string, docIds: unknown, seen: Entry[]): Promise<Entry>
   setArchived(id: string, archived: boolean): Promise<void>
+  addItem(fields: Row, seen: Added[]): Promise<{ row: Row | null; error: string | null }>
+  setItemState(id: string, state: string, filedAs: string, note: string): Promise<{ error: string | null }>
 }
 type Core = {
   MB: number
@@ -45,6 +52,9 @@ type Core = {
   checkFiles(files: FakeFile[]): { ok: boolean; error?: string }
   dbMessage(e: unknown): string
   makeStore(opts: { db: unknown; assets: unknown; me: string | null; now?: () => number; wait?: () => Promise<void> }): Store
+  normAdded(id: string, x: unknown): Added
+  checkNewItem(f: unknown): string | null
+  checkStateChange(state: string, filedAs: string, note: string): string | null
 }
 const core = new Function(`${coreSrc}\nreturn LedgerWorkspaceCore`)() as Core
 
@@ -115,12 +125,25 @@ describe('the page can carry the workspace', () => {
   })
 
   it('the generator places the section, a slot per item, the styles and the scripts', () => {
-    expect(generator).toMatch(/import \{ WORKSPACE_CSS, workspaceSection, workspaceItemSlot, workspaceScripts \} from '\.\/lib\/ledgerWorkspace\.mjs'/)
-    expect(generator).toMatch(/\$\{workspaceSection\(\)\}/)
+    expect(generator).toMatch(/import \{ WORKSPACE_CSS, workspaceSection, workspaceItemSlot, workspaceScripts, addedSection, itemsAddedSince \} from '\.\/lib\/ledgerWorkspace\.mjs'/)
+    // The section names the JSON a closure is filed in, which differs per ledger (FN, NC).
+    expect(generator).toMatch(/\$\{workspaceSection\(sourceLabel\)\}/)
+    expect(workspaceSection('docs/audits/nc-task-queue-2026-09-28.json')).toMatch(/edits <code>docs\/audits\/nc-task-queue-2026-09-28\.json<\/code>/)
+    expect(workspaceSection()).toMatch(/edits <code>docs\/audits\/task-queue-2026-09-07\.json<\/code>/)
     expect(generator).toMatch(/\$\{workspaceItemSlot\(i\.id\)\}/)
     expect(generator).toMatch(/\$\{WORKSPACE_CSS\}/)
     expect(generator).toMatch(/\$\{workspaceScripts\(items\)\}/)
     expect(generator).toMatch(/data-id="\$\{esc\(i\.id\)\}"/)
+  })
+
+  it('another ledger keeps its own filters, footer and source-terms registry', () => {
+    // Filters are remembered under the ledger's own key (fnl, ncl…), never a shared one.
+    expect(generator).not.toMatch(/'fnl\.filters'/)
+    expect(generator.match(/localStorage\.(?:set|get)Item\('\$\{STORE_KEY\}'/g)).toHaveLength(2)
+    // C8 reads the registry of the repository the ledger belongs to; Finance Now's is required.
+    expect(generator).toMatch(/const REG = path\.join\(ROOT, 'frontend\/src\/lib\/server\/sourceTerms\.ts'\)/)
+    expect(generator).toMatch(/isDefaultQueue \|\| fs\.existsSync\(REG\) \? fs\.readFileSync\(REG, 'utf8'\) : ''/)
+    expect(generator).toMatch(/<footer>\$\{footerLead\} /)
   })
 })
 
@@ -399,7 +422,7 @@ describe("the owner's rules", () => {
 
   it('the store has no delete path to call', () => {
     const { store } = storeWith()
-    expect(Object.keys(store).sort()).toEqual(['addLog', 'setArchived', 'uploadFiles'])
+    expect(Object.keys(store).sort()).toEqual(['addItem', 'addLog', 'setArchived', 'setItemState', 'uploadFiles'])
   })
 
   it('archiving only ever sets the flag to a boolean', async () => {
@@ -454,5 +477,96 @@ describe('embedding is safe', () => {
     expect(coreSrc).not.toMatch(/<\/script/i)
     expect(clientSrc).not.toMatch(/<\/script/i)
     expect(workspaceScripts([]).match(/<\/script>/g)?.length).toBe(2)
+  })
+})
+
+// ── items added after the ledger was made (2026-09-30) ─────────────────────────
+describe('items added after the ledger was made', () => {
+  const ledgerItem = (id: string, over: Row = {}) => ({ id, title: `title ${id}`, status: 'open', owner_role: 'remote-dev', ...over })
+
+  it('lists items numbered after the baseline, or carrying an opened block, newest first', () => {
+    const items = [
+      ledgerItem('T-397'), ledgerItem('T-398'),
+      ledgerItem('T-399', { opened: { on: '2026-09-21', by: 'steward' } }),
+      ledgerItem('T-400'),
+      ledgerItem('T-416', { opened: { on: '2026-09-30', by: 'steward' } }),
+      ledgerItem('T-012', { opened: { on: '2026-09-23', by: 'steward' } }),
+    ]
+    const got = itemsAddedSince(items, { through: 'T-398', on: '2026-09-16' }).map((i) => i.id)
+    expect(got).toEqual(['T-416', 'T-012', 'T-399', 'T-400'])
+  })
+
+  it('without a baseline, only an opened block marks an item as new', () => {
+    const items = [ledgerItem('NC-171'), ledgerItem('NC-172', { opened: { on: '2026-10-01' } })]
+    expect(itemsAddedSince(items, null).map((i) => i.id)).toEqual(['NC-172'])
+    expect(itemsAddedSince(items, { through: 'NC-170' }).map((i) => i.id)).toEqual(['NC-172', 'NC-171'])
+  })
+
+  it('a baseline for one prefix never marks another prefix as new', () => {
+    expect(itemsAddedSince([ledgerItem('NC-900')], { through: 'T-398' })).toEqual([])
+  })
+
+  it('the section names the baseline range, lists filed items as jump buttons, and escapes titles', () => {
+    const html = addedSection([ledgerItem('T-412', { title: '<b>fees</b>', status: 'blocked', owner_role: 'owner-decision', opened: { on: '2026-09-26', by: 'session steward' } })], { through: 'T-398', on: '2026-09-16' })
+    expect(html).toMatch(/held T-001 to T-398/)
+    expect(html).toMatch(/data-jump="T-412"/)
+    expect(html).toMatch(/&lt;b&gt;fees&lt;\/b&gt;/)
+    expect(html).not.toMatch(/<b>fees/)
+    expect(html).toMatch(/filed 2026-09-26 by session steward/)
+    expect(html).toMatch(/id="added-form" hidden/)
+    expect(addedSection([], null)).toMatch(/None yet\./)
+  })
+
+  it('a row with wrong types becomes a safe row; an unknown state reads as waiting', () => {
+    const a = core.normAdded('x1', { title: 5, role: 'constructor', state: 'toString', filedAs: 'not an id', by: {}, ord: 'NaN' })
+    expect(a).toMatchObject({ id: 'x1', title: 'Untitled item', role: '', state: 'waiting', filedAs: '', by: null, ord: null })
+    expect(core.normAdded('x2', { state: 'filed', filedAs: ' t-417 ' }).filedAs).toBe('T-417')
+    expect(core.normAdded('x3', null).state).toBe('waiting')
+  })
+
+  it('a new item needs a title; nothing is written without one', async () => {
+    const { db, store } = storeWith()
+    expect(core.checkNewItem({ title: '  ' })).toMatch(/title/)
+    const r = await store.addItem({ title: '' }, [])
+    expect(r.error).toMatch(/title/)
+    expect(db.calls).toEqual([])
+  })
+
+  it('records a waiting item with who by id, when, and an order after what the writer has seen', async () => {
+    const { db, store } = storeWith()
+    const seen = [core.normAdded('old', { ord: T0 + 9000 })]
+    const r = await store.addItem({ title: ' Build /about ', detail: 'd', role: 'remote-dev', source: 'About page tab', extra: 'x' }, seen)
+    expect(r.error).toBeNull()
+    expect(db.rows.get('added/auto1')).toEqual({
+      title: 'Build /about', detail: 'd', role: 'remote-dev', source: 'About page tab', by: 'user_7f3a',
+      at: new Date(T0).toISOString(), ord: T0 + 9001, state: 'waiting', filedAs: '', stateNote: '', stateBy: null, stateAt: '',
+    })
+  })
+
+  it('a retried create writes the same item, never a second one', async () => {
+    const db = fakeDb(); db.fail.set = ['unavailable']
+    await storeWith(db).store.addItem({ title: 't' }, [])
+    expect(db.calls).toEqual(['set added/auto1', 'set added/auto1'])
+  })
+
+  it('filing needs a number, dropping needs a reason; either can be put back, and none deletes', async () => {
+    const { db, store } = storeWith()
+    await store.addItem({ title: 't' }, [])
+    expect((await store.setItemState('auto1', 'filed', 'soon', '')).error).toMatch(/number/)
+    expect((await store.setItemState('auto1', 'dropped', '', ' ')).error).toMatch(/why/)
+    expect((await store.setItemState('auto1', 'deleted', '', '')).error).toMatch(/Unknown/)
+    expect((await store.setItemState('auto1', 'filed', 'nc-171', '')).error).toBeNull()
+    expect(db.rows.get('added/auto1')).toMatchObject({ state: 'filed', filedAs: 'NC-171', stateBy: 'user_7f3a' })
+    await store.setItemState('auto1', 'dropped', '', 'duplicate of T-120')
+    expect(db.rows.get('added/auto1')).toMatchObject({ state: 'dropped', filedAs: '', stateNote: 'duplicate of T-120' })
+    await store.setItemState('auto1', 'waiting', '', '')
+    expect(db.rows.get('added/auto1')).toMatchObject({ state: 'waiting', title: 't' })
+    expect(db.calls.filter((c) => /delete/.test(c))).toEqual([])
+  })
+
+  it('the page reads the added collection and draws its rows as text', () => {
+    expect(clientSrc).toMatch(/db\.collection\('added'\)\.onSnapshot/)
+    expect(clientSrc).toMatch(/C\.normAdded\(d\.id, d\.data\(\)\)/)
+    expect(generator).toMatch(/\$\{addedSection\(itemsAddedSince\(items, baseline\), baseline\)\}/)
   })
 })
