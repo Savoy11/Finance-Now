@@ -54,25 +54,25 @@
  },
  "counts": {
   "total_verified": 398,
-  "outstanding": 355,
+  "outstanding": 356,
   "by_status": {
-   "closed": 145,
-   "open": 45,
+   "closed": 146,
+   "open": 46,
    "parked": 93,
-   "blocked": 71,
+   "blocked": 70,
    "unclear": 1
   },
   "by_owner_role": {
    "remote-dev": 87,
    "either": 39,
    "owner-decision": 147,
-   "owner-machine": 82
+   "owner-machine": 83
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 145,
+  "closed_by_annotation": 146,
   "counts_recomputed_on": "2026-09-30",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
-  "total": 355
+  "total": 356
  },
  "blocking_decisions": [
   {
@@ -6701,7 +6701,8 @@
      "frontend/scripts/build-fund-fees.mjs"
     ],
     "corrections": [
-     "2026-09-26: THE EXPENSE-RATIO HALF IS COMPLETE — all 37 non-'40-Act rows now carry a primary-source figure. `npm run fund-prospectus-fees` resolved 30 of them (27 agree to the basis point; DBC/UDN/IBIT re-flagged and all three are already-decided non-corrections recorded in the fundCatalog banner), and the remaining SEVEN were read by hand from their filings: HACK 0.60 ✅ (Amplify ETF Trust 485BPOS 2026-01-28), BAR 0.1749% ✅ (10-K 2026-08-13, superseding the 2018 S-1 the probe refused to trust), PSLV 0.45% contractual / 0.56% MER against a catalogued 0.57 (40-F 2026-03-16 ex99-6), and CORN/WEAT/SOYB/CANE — WHERE THE CATALOG IS WRONG BY OVER TWO POINTS. Those four record 1.00, which is the management fee; the trust's 10-K (2026-03-02) states total gross expense ratios of 3.45 / 3.18 / 3.34 / 4.27% for FY2025 and each prospectus's own breakeven table implies ~3.6%. That is the USO/UNG error three times larger, and it survived because the Risk/Return dataset does not cover commodity pools while the probe could not resolve a four-fund shared registrant. Also found: the catalog now treats waivers two ways — IBIT keeps its contractual 0.25 while SIVR (0.30 of 0.45) and the three D27 rows (EMLC, BKLN, HEFA 0.35 of 0.70) all record net. Corrections and the waiver-rule question are filed as T-414; nothing was applied and the stamp did not move. Record: docs/audits/fund-fees-non-40act-2026-09-26.md. WHAT REMAINS ON THIS ITEM: the unchecked AUM / yield / inception fields across the catalog, which is the other half of its title and is untouched."
+     "2026-09-26: THE EXPENSE-RATIO HALF IS COMPLETE — all 37 non-'40-Act rows now carry a primary-source figure. `npm run fund-prospectus-fees` resolved 30 of them (27 agree to the basis point; DBC/UDN/IBIT re-flagged and all three are already-decided non-corrections recorded in the fundCatalog banner), and the remaining SEVEN were read by hand from their filings: HACK 0.60 ✅ (Amplify ETF Trust 485BPOS 2026-01-28), BAR 0.1749% ✅ (10-K 2026-08-13, superseding the 2018 S-1 the probe refused to trust), PSLV 0.45% contractual / 0.56% MER against a catalogued 0.57 (40-F 2026-03-16 ex99-6), and CORN/WEAT/SOYB/CANE — WHERE THE CATALOG IS WRONG BY OVER TWO POINTS. Those four record 1.00, which is the management fee; the trust's 10-K (2026-03-02) states total gross expense ratios of 3.45 / 3.18 / 3.34 / 4.27% for FY2025 and each prospectus's own breakeven table implies ~3.6%. That is the USO/UNG error three times larger, and it survived because the Risk/Return dataset does not cover commodity pools while the probe could not resolve a four-fund shared registrant. Also found: the catalog now treats waivers two ways — IBIT keeps its contractual 0.25 while SIVR (0.30 of 0.45) and the three D27 rows (EMLC, BKLN, HEFA 0.35 of 0.70) all record net. Corrections and the waiver-rule question are filed as T-414; nothing was applied and the stamp did not move. Record: docs/audits/fund-fees-non-40act-2026-09-26.md. WHAT REMAINS ON THIS ITEM: the unchecked AUM / yield / inception fields across the catalog, which is the other half of its title and is untouched.",
+     "2026-09-30: the four Teucrium corrections and PSLV's 0.56 were applied under T-414 (D35, D37), and D36 settled the waiver rule — the fee paid today, with the full fee stated. T-416 carries the three readings the cloud session could not make. This item's other half, the AUM / yield / inception fields, is still untouched."
     ]
    }
   },
@@ -11871,12 +11872,12 @@
   {
    "id": "T-414",
    "title": "Rule on the non-'40-Act fee corrections, and on one waiver rule for the catalog",
-   "status": "blocked",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "data-verification",
    "effort": "small",
-   "blocking_decision": "Owner rulings: (1) CORN/WEAT/SOYB/CANE — replace the 1.00 management fee with the realized total gross expense ratio (3.45 / 3.18 / 3.34 / 4.27, FY2025) after confirming against each issuer fact sheet, exactly as USO and UNG were corrected; this changes a rendered dollar figure on the fund detail pages. (2) Adopt ONE waiver convention — the D27 net-of-waiver rule, which moves IBIT 0.25 → 0.12 with the gross disclosed — or keep IBIT gross and move SIVR/EMLC/BKLN/HEFA to gross instead. (3) PSLV: leave 0.57 or move to 0.56 and name the year. Detail and verbatim sources: docs/audits/fund-fees-non-40act-2026-09-26.md.",
+   "blocking_decision": null,
    "related_ids": [
     "T-386",
     "D27"
@@ -11894,6 +11895,50 @@
     "on": "2026-09-26",
     "by": "session steward",
     "why": "Filed rather than applied: a fee overwrite is the change the fee scripts refuse to make by design, and the waiver question is about how the app characterises cost."
+   },
+   "closure": {
+    "status_was": "blocked",
+    "closed_on": "2026-09-30",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "DONE under D35–D37. The owner answered all three questions with the audit's recommendation. D35: CORN 1.00 → 3.45, WEAT 1.00 → 3.18, SOYB 1.00 → 3.34, CANE 1.00 → 4.27 — the realized fiscal-2025 total gross expense ratios in the Teucrium Commodity Trust's Form 10-K filed 2026-03-02, each description naming the year; on $10,000 the Fee Drag Analyzer's thirty-year cost for CORN goes from $19,133 to $48,889. D36: one waiver rule — record what an investor pays today and state the full fee in the description. SIVR's description gains its 0.45% gross, EMLC/BKLN/HEFA already complied, and the 2026-09-10 IBIT reasoning is annotated as replaced rather than rewritten; IBIT stays 0.25 pending T-416. D37: PSLV 0.57 → 0.56, the 2025 management expense ratio (Form 40-F filed 2026-03-16). fundCatalog.test.ts now fails if any of USO/UNG/CPER/CORN/WEAT/SOYB/CANE records no more than its management fee, if a row mentions a waiver without its gross figure, or if the D35/D37 values or their year go; the guards were driven red by restoring CORN to 1.00 and dropping SIVR's gross. FUND_DATA_LAST_VERIFIED unmoved. The fact-sheet cross-check, the IBIT/ETHA waiver status and SIVR's gross move to T-416 (owner's machine): this environment refuses sec.gov and teucrium.com.",
+    "approved_by": "owner, in the session that worked T-414 on 2026-09-30 — chose \"Use the 2025 totals (Recommended)\", \"What investors pay today (Recommended)\" and \"0.56%, naming 2025 (Recommended)\"",
+    "evidence": [
+     "docs/decisions/2026-09-30-owner-decisions.md",
+     "frontend/src/lib/data/fundCatalog.ts",
+     "frontend/src/lib/data/__tests__/fundCatalog.test.ts",
+     "docs/audits/fund-fees-non-40act-2026-09-26.md"
+    ]
+   }
+  },
+  {
+   "id": "T-416",
+   "title": "Make the three readings T-414 could not: Teucrium fact sheets, IBIT/ETHA waiver status, SIVR's gross fee",
+   "status": "open",
+   "confidence": "high",
+   "owner_role": "owner-machine",
+   "category": "data-verification",
+   "effort": "small",
+   "blocking_decision": null,
+   "related_ids": [
+    "T-414",
+    "T-386",
+    "D35",
+    "D36"
+   ],
+   "summary": "D35 applied the Teucrium 10-K totals without the issuer fact-sheet cross-check (the owner made it a follow-up); D36 kept IBIT at 0.25 pending a reading of whether its 0.12% waiver is in effect today; and SIVR's description now prints a 0.45% gross that the 2026-09-26 audit states without naming its filing. The cloud environment that worked T-414 refuses sec.gov, efts.sec.gov and teucrium.com, so none of the three could be read there.",
+   "next_action": "On the owner's machine: open teucrium.com/corn, /weat, /soyb and /cane and record each fund's stated expense ratio and as-of date against 3.45 / 3.18 / 3.34 / 4.27; open the iShares IBIT and ETHA product pages (or the current 424B3's Sponsor's Fee section) and record whether any fee waiver is in effect today; read SIVR's sponsor fee and any waiver from its current prospectus or issuer page. If all agree, close this item citing the pages. Any difference goes back to the owner; under D36, IBIT or ETHA move only if a waiver is in effect today.",
+   "sources": [
+    {
+     "file": "docs/decisions/2026-09-30-owner-decisions.md",
+     "lines": "What is still open",
+     "quote": "This cloud session could not make three readings: the environment's network policy refuses www.sec.gov, efts.sec.gov and teucrium.com, and its web-fetch tool is blocked the same way."
+    }
+   ],
+   "opened": {
+    "on": "2026-09-30",
+    "by": "session steward",
+    "why": "Split out of T-414 so its rulings could close: the owner chose to apply D35 now and check the fact sheets after, and the IBIT and SIVR questions need a machine that can reach the filings."
    }
   }
  ],
@@ -36996,6 +37041,13 @@
     "what": "T-394: lockupDays audited across all 187 rows — 11 of 15 coins consistent, 4 disputed, scoped to 12 rows needing a provider doc; two of the auditor’s own false leads recorded.",
     "evidence": [
      "docs/audits/staking-lockups-2026-09-26.md"
+    ]
+   },
+   {
+    "on": "2026-09-30",
+    "what": "T-414 closed under owner rulings D35–D37: Teucrium ×4 to their realized 2025 totals, one waiver rule (fee paid today, full fee stated), PSLV 0.56; T-416 opened for the three readings the cloud session could not make.",
+    "evidence": [
+     "docs/decisions/2026-09-30-owner-decisions.md"
     ]
    }
   ]
