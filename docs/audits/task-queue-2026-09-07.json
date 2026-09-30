@@ -54,25 +54,25 @@
  },
  "counts": {
   "total_verified": 398,
-  "outstanding": 354,
+  "outstanding": 355,
   "by_status": {
    "closed": 145,
    "open": 45,
    "parked": 93,
-   "blocked": 70,
+   "blocked": 71,
    "unclear": 1
   },
   "by_owner_role": {
    "remote-dev": 87,
    "either": 39,
-   "owner-decision": 146,
+   "owner-decision": 147,
    "owner-machine": 82
   },
   "closed_but_listed_open_in_docs": 60,
   "closed_by_annotation": 145,
   "counts_recomputed_on": "2026-09-30",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
-  "total": 354
+  "total": 355
  },
  "blocking_decisions": [
   {
@@ -6699,6 +6699,9 @@
     "evidence": [
      "frontend/fund-fee-reconcile.json (generated, untracked)",
      "frontend/scripts/build-fund-fees.mjs"
+    ],
+    "corrections": [
+     "2026-09-26: THE EXPENSE-RATIO HALF IS COMPLETE — all 37 non-'40-Act rows now carry a primary-source figure. `npm run fund-prospectus-fees` resolved 30 of them (27 agree to the basis point; DBC/UDN/IBIT re-flagged and all three are already-decided non-corrections recorded in the fundCatalog banner), and the remaining SEVEN were read by hand from their filings: HACK 0.60 ✅ (Amplify ETF Trust 485BPOS 2026-01-28), BAR 0.1749% ✅ (10-K 2026-08-13, superseding the 2018 S-1 the probe refused to trust), PSLV 0.45% contractual / 0.56% MER against a catalogued 0.57 (40-F 2026-03-16 ex99-6), and CORN/WEAT/SOYB/CANE — WHERE THE CATALOG IS WRONG BY OVER TWO POINTS. Those four record 1.00, which is the management fee; the trust's 10-K (2026-03-02) states total gross expense ratios of 3.45 / 3.18 / 3.34 / 4.27% for FY2025 and each prospectus's own breakeven table implies ~3.6%. That is the USO/UNG error three times larger, and it survived because the Risk/Return dataset does not cover commodity pools while the probe could not resolve a four-fund shared registrant. Also found: the catalog now treats waivers two ways — IBIT keeps its contractual 0.25 while SIVR (0.30 of 0.45) and the three D27 rows (EMLC, BKLN, HEFA 0.35 of 0.70) all record net. Corrections and the waiver-rule question are filed as T-414; nothing was applied and the stamp did not move. Record: docs/audits/fund-fees-non-40act-2026-09-26.md. WHAT REMAINS ON THIS ITEM: the unchecked AUM / yield / inception fields across the catalog, which is the other half of its title and is untouched."
     ]
    }
   },
@@ -11860,6 +11863,34 @@
     "on": "2026-09-26",
     "by": "session steward",
     "why": "Nine findings from one reading pass; filed as one owner-decision item so the rulings land together and T-005 can close on ratification."
+   }
+  },
+  {
+   "id": "T-414",
+   "title": "Rule on the non-'40-Act fee corrections, and on one waiver rule for the catalog",
+   "status": "blocked",
+   "confidence": "high",
+   "owner_role": "owner-decision",
+   "category": "data-verification",
+   "effort": "small",
+   "blocking_decision": "Owner rulings: (1) CORN/WEAT/SOYB/CANE — replace the 1.00 management fee with the realized total gross expense ratio (3.45 / 3.18 / 3.34 / 4.27, FY2025) after confirming against each issuer fact sheet, exactly as USO and UNG were corrected; this changes a rendered dollar figure on the fund detail pages. (2) Adopt ONE waiver convention — the D27 net-of-waiver rule, which moves IBIT 0.25 → 0.12 with the gross disclosed — or keep IBIT gross and move SIVR/EMLC/BKLN/HEFA to gross instead. (3) PSLV: leave 0.57 or move to 0.56 and name the year. Detail and verbatim sources: docs/audits/fund-fees-non-40act-2026-09-26.md.",
+   "related_ids": [
+    "T-386",
+    "D27"
+   ],
+   "summary": "Four commodity-pool rows understate their cost by 2.2–3.3 percentage points because they hold the management fee where the total is three times higher — the USO/UNG error, unseen until the 37 non-'40-Act rows were read on 2026-09-26. Separately, the catalog reached the point of recording waived fees two different ways (IBIT gross, SIVR and the three D27 rows net), which makes expenseRatioPct non-comparable across rows that computeFeeDrag treats as comparable. Companion to the four-quarter reconcile corrections filed the same day for the ’40-Act rows (opened on the fee-script branch, so it is not yet an id this branch can cite).",
+   "next_action": "Read docs/audits/fund-fees-non-40act-2026-09-26.md and answer its three questions. Then a steward pass edits fundCatalog.ts by hand for the approved rows, cites each filing in the provenance block, annotates the banner's older IBIT reasoning rather than rewriting it, leaves FUND_DATA_LAST_VERIFIED alone, and re-runs npm run fund-prospectus-fees to confirm.",
+   "sources": [
+    {
+     "file": "docs/audits/fund-fees-non-40act-2026-09-26.md",
+     "lines": "The headline",
+     "quote": "At 1.00% instead of ~3.4%, the projection understates the cost of holding CORN over thirty years by roughly two thirds."
+    }
+   ],
+   "opened": {
+    "on": "2026-09-26",
+    "by": "session steward",
+    "why": "Filed rather than applied: a fee overwrite is the change the fee scripts refuse to make by design, and the waiver question is about how the app characterises cost."
    }
   }
  ],
@@ -36948,6 +36979,13 @@
     "what": "T-005 reading half done: all 30 seeded terms documents read on the owner’s machine; registry entries annotated; nine findings filed as T-413 (OKX API Agreement §9.4 reads as prohibited for a deployed platform).",
     "evidence": [
      "docs/audits/terms-review-seeded-2026-09-26.md"
+    ]
+   },
+   {
+    "on": "2026-09-26",
+    "what": "T-386 expense-ratio half complete: all 37 non-'40-Act rows read, four Teucrium rows found holding the management fee instead of a 3x-higher total, and a two-way waiver treatment surfaced. Filed as T-414.",
+    "evidence": [
+     "docs/audits/fund-fees-non-40act-2026-09-26.md"
     ]
    }
   ]
