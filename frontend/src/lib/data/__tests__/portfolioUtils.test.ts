@@ -241,21 +241,36 @@ describe('computeAnnualIncome', () => {
       holding({ cgId: 'sec:AAPL', symbol: 'AAPL', name: 'Apple', targetAlloc: 50 }),
       holding({ cgId: 'bitcoin', targetAlloc: 50 }),
     ])
-    const est = computeAnnualIncome(computeHoldings(p, {}))
+    // Bitcoin unpriced on purpose: it is not a security, so it is not "left out" either.
+    const est = computeAnnualIncome(computeHoldings(p, { 'sec:AAPL': 255 }))
     expect(est.covered).toBe(1)
+    expect(est.unpriced).toBe(0)
     expect(est.income).toBeCloseTo(5_000 * aaplYield / 100, 6)
   })
 
-  it('a security with no reference yield contributes nothing', () => {
+  it('a security with no reference yield contributes nothing, and nothing is left out', () => {
     const p = portfolio([holding({ cgId: 'sec:ZZZNOPE', symbol: 'ZZZNOPE', targetAlloc: 100 })])
-    expect(computeAnnualIncome(computeHoldings(p, {}))).toEqual({ income: 0, covered: 0 })
+    expect(computeAnnualIncome(computeHoldings(p, {}))).toEqual({ income: 0, covered: 0, unpriced: 0, pricedPct: 100 })
   })
 
-  it('pins: an unpriced security still yields income at its target value (labeled ref)', () => {
+  // D48 (owner, 2026-09-30). This pinned the opposite until then — "an unpriced
+  // security still yields income at its target value" — the at-cost valuation the
+  // page rules out for every other figure, and that PB-1 removed from the totals.
+  it('D48: an unpriced security is LEFT OUT of income, and the estimate says so', () => {
     const p = portfolio([holding({ cgId: 'sec:SPY', symbol: 'SPY', targetAlloc: 100 })])
-    const est = computeAnnualIncome(computeHoldings(p, {}))
+    expect(computeAnnualIncome(computeHoldings(p, {}))).toEqual({ income: 0, covered: 0, unpriced: 1, pricedPct: 0 })
+  })
+
+  it('D48: under mixed coverage only the priced slice yields, and pricedPct is that slice', () => {
+    const p = portfolio([
+      holding({ cgId: 'sec:SPY', symbol: 'SPY', targetAlloc: 75 }),
+      holding({ cgId: 'sec:AAPL', symbol: 'AAPL', name: 'Apple', targetAlloc: 25 }),
+    ])
+    const est = computeAnnualIncome(computeHoldings(p, { 'sec:SPY': 640 }))
     expect(est.covered).toBe(1)
-    expect(est.income).toBeCloseTo(10_000 * spyYield / 100, 6)
+    expect(est.unpriced).toBe(1)
+    expect(est.income).toBeCloseTo(7_500 * spyYield / 100, 6)
+    expect(est.pricedPct).toBeCloseTo(75, 6)
   })
 
   it('income scales with current value when P&L is known', () => {
