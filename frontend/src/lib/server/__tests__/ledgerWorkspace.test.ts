@@ -492,14 +492,14 @@ describe('items added after the ledger was made', () => {
       ledgerItem('T-416', { opened: { on: '2026-09-30', by: 'steward' } }),
       ledgerItem('T-012', { opened: { on: '2026-09-23', by: 'steward' } }),
     ]
-    const got = itemsAddedSince(items, { through: 'T-398', on: '2026-09-16' }).map((i) => i.id)
+    const got = itemsAddedSince(items, { through: 'T-398', on: '2026-09-16' }).map((i: { id: string }) => i.id)
     expect(got).toEqual(['T-416', 'T-012', 'T-399', 'T-400'])
   })
 
   it('without a baseline, only an opened block marks an item as new', () => {
     const items = [ledgerItem('NC-171'), ledgerItem('NC-172', { opened: { on: '2026-10-01' } })]
-    expect(itemsAddedSince(items, null).map((i) => i.id)).toEqual(['NC-172'])
-    expect(itemsAddedSince(items, { through: 'NC-170' }).map((i) => i.id)).toEqual(['NC-172', 'NC-171'])
+    expect(itemsAddedSince(items, null).map((i: { id: string }) => i.id)).toEqual(['NC-172'])
+    expect(itemsAddedSince(items, { through: 'NC-170' }).map((i: { id: string }) => i.id)).toEqual(['NC-172', 'NC-171'])
   })
 
   it('a baseline for one prefix never marks another prefix as new', () => {
