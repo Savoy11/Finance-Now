@@ -1281,6 +1281,9 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     confidence: 'medium',
   },
   {
+    // No longer fetched since 2026-09-26 (T-399): api.yearn.finance stopped resolving and
+    // the discovery rung was dropped rather than repointed (its vaults are in DefiLlama's
+    // feed). Entry kept as the record of the verdict; nothing in dataSources.ts names it.
     domain: 'yearn.finance',
     name: 'Yearn Finance',
     verdict: 'approved',

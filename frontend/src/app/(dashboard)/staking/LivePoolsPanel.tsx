@@ -19,7 +19,7 @@ import type { StakingDiscoveryResponse, DiscoverySource } from '@/app/live-data/
 // (/staking-discovery now redirects to /staking?tab=pools).
 
 const SOURCE_LABELS: Record<DiscoverySource, string> = {
-  defillama: 'DefiLlama', yearn: 'Yearn', pendle: 'Pendle', beefy: 'Beefy',
+  defillama: 'DefiLlama', pendle: 'Pendle', beefy: 'Beefy',
 }
 
 function fmtUsd(n: number) {

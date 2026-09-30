@@ -215,8 +215,11 @@ export const DATA_SOURCES: DataSourceEntry[] = [
   {
     id: 'staking-discovery', surface: 'Staking / yield discovery', module: 'crypto',
     route: '/live-data/staking-discovery', status: 'live',
-    providers: [DEFILLAMA('yields.llama.fi'), { name: 'Yearn', host: 'api.yearn.finance', role: 'primary', auth: 'none' }, { name: 'Pendle', host: 'api-v2.pendle.finance', role: 'primary', auth: 'none' }, { name: 'Beefy', host: 'api.beefy.finance', role: 'primary', auth: 'none' }],
-    cadence: 'on demand · ~18s (4 upstreams)',
+    providers: [DEFILLAMA('yields.llama.fi'), { name: 'Pendle', host: 'api-v2.pendle.finance', role: 'primary', auth: 'none' }, { name: 'Beefy', host: 'api.beefy.finance', role: 'primary', auth: 'none' }],
+    // 3 upstreams since the Yearn rung was dropped (T-399, 2026-09-26), and the latency
+    // is measured, not inherited: 0.6-1.6s on the owner's machine after the 6s per-fetch
+    // budget landed. The old '~18s (4 upstreams)' predated both.
+    cadence: 'on demand · under 2s (3 upstreams)',
   },
 
   {

@@ -11,6 +11,7 @@
  * would. Run it whenever a data source is added, removed, or changes status.
  */
 import fs from 'node:fs'
+import { stripComments } from './lib/stripComments.mjs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { DATA_SOURCES, SOURCE_STATUS_META, type DataSourceEntry } from '../src/lib/data/dataSources'
@@ -100,12 +101,20 @@ function renderMarkdown(): string {
   return lines.join('\n')
 }
 
-/** Extract hosts hardcoded in each route's fetch() URLs. */
+/**
+ * Extract hosts hardcoded in each route's fetch() URLs.
+ *
+ * COMMENTS ARE STRIPPED FIRST (2026-09-26). A tombstone recording a removed endpoint is
+ * not a fetch: when the Yearn rung went, its comment still named api.yearn.finance and
+ * this reported a route fetching an unregistered host — a defect that did not exist. The
+ * stripper is string-aware because `https://x` contains `//`, so the obvious regex eats
+ * the rest of any line carrying a URL (scripts/lib/stripComments.mjs, unit-tested).
+ */
 function hostsInRoute(routeId: string): Set<string> {
   const f = path.join(liveDataDir, routeId, 'route.ts')
   const hosts = new Set<string>()
   if (!fs.existsSync(f)) return hosts
-  const src = fs.readFileSync(f, 'utf8')
+  const src = stripComments(fs.readFileSync(f, 'utf8'))
   for (const m of src.matchAll(/https?:\/\/[^'"`\s)]+/g)) {
     try {
       const host = new URL(m[0]).host
