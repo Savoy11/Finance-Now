@@ -88,3 +88,23 @@ matching the verified rate already in the catalog. No other matched fund reports
 Approve the sixteen non-FXAIX corrections, or any subset. Applied by hand to
 `fundCatalog.ts`, each with its accession in the provenance block; the stamp does not
 move; `npm run fund-fees` re-run afterwards should report zero differences.
+
+## Answered 2026-09-30 — D38, D39 (T-412 closed)
+
+The owner took both recommendations: **apply all sixteen** (D38) and **hold FXAIX at
+0.015** until its prospectus fee table is read (D39). The sixteen rows were edited by hand,
+each with its filed date and accession in a T-412 block in `fundCatalog.ts`;
+`FUND_DATA_LAST_VERIFIED` did not move. Rulings: `docs/decisions/2026-09-30-owner-decisions.md`.
+
+Two corrections to this report, found while applying it:
+
+- **"Sixteen are one-basis-point fee cuts" is not what the table says.** ICLN is −0.02
+  (0.41 → 0.39), so fifteen are cuts (fourteen of 1 bp, ICLN's of 2 bp) and PRGFX rises
+  1 bp.
+- **The run could not tell a waiver from a cut.** The script compared the net figure
+  where a filing states a waiver and the total otherwise, but wrote only the one it
+  compared, so this report cannot say whether any of the sixteen is a waived fee — which
+  D36 (2026-09-30) now requires the catalog to disclose with its full fee. The script
+  keeps both figures from 2026-09-30 and lists every waiver against the catalog's
+  descriptions. The confirming re-run is **T-417**, on the owner's machine, together with
+  the FXAIX reading.

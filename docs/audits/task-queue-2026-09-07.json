@@ -54,25 +54,25 @@
  },
  "counts": {
   "total_verified": 398,
-  "outstanding": 356,
+  "outstanding": 357,
   "by_status": {
-   "closed": 146,
-   "open": 46,
+   "closed": 147,
+   "open": 47,
    "parked": 93,
-   "blocked": 70,
+   "blocked": 69,
    "unclear": 1
   },
   "by_owner_role": {
    "remote-dev": 87,
    "either": 39,
    "owner-decision": 147,
-   "owner-machine": 83
+   "owner-machine": 84
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 146,
+  "closed_by_annotation": 147,
   "counts_recomputed_on": "2026-09-30",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
-  "total": 356
+  "total": 357
  },
  "blocking_decisions": [
   {
@@ -11814,12 +11814,12 @@
   {
    "id": "T-412",
    "title": "Rule on the 17 expense-ratio differences the four-quarter reconcile found (2026-09-26)",
-   "status": "blocked",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "data-verification",
    "effort": "small",
-   "blocking_decision": "Owner: approve applying the 17 corrections in docs/audits/fund-fee-reconcile-2026-09-26.md (sixteen are 1 bp fee cuts read from the funds’ own filings; FXAIX is 0.015 → 0.01; PRGFX rises 0.65 → 0.66). Each names its filing and accession. Applied by hand, FUND_DATA_LAST_VERIFIED unmoved.",
+   "blocking_decision": null,
    "related_ids": [
     "T-411",
     "D27"
@@ -11837,6 +11837,21 @@
     "on": "2026-09-26",
     "by": "session steward",
     "why": "Surfaced by the T-411 run; filed as its own owner-decision item rather than applied, because a fee overwrite is the class of change the reconcile script refuses to make by design."
+   },
+   "closure": {
+    "status_was": "blocked",
+    "closed_on": "2026-09-30",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "DONE under D38–D39. D38: all sixteen corrections applied by hand to fundCatalog.ts, each with its filed date and accession in a T-412 provenance block — fourteen 1 bp cuts, ICLN's 2 bp cut (0.41 → 0.39; the audit's prose called all sixteen 1 bp, its table did not) and PRGFX's 1 bp rise (0.65 → 0.66, a realized ratio). D39: FXAIX held at 0.015 — the filing's data tag states 0.010% at six declared decimals against Fidelity's long-published 0.015%, and the prospectus text decides; T-417 reads it. Not known: whether any of the sixteen is a waived (net) figure. The reconcile took net where a waiver exists and the total otherwise, but never said which, so D36's second half (the description states the full fee) could not be checked for these rows. build-fund-fees.mjs now keeps both figures and lists every waiver with whether its description states the gross (scripts/lib/feeWaiver.mjs, unit-tested; its report path was run offline against a synthetic dataset, and the wiring pins were driven red by bypassing the helper). The confirming re-run is T-417, on the owner's machine. FUND_DATA_LAST_VERIFIED unmoved.",
+    "approved_by": "owner, in the session that worked T-412 on 2026-09-30 — chose \"Apply all 16 (Recommended)\" and \"Keep 0.015% for now (Recommended)\"",
+    "evidence": [
+     "docs/decisions/2026-09-30-owner-decisions.md",
+     "frontend/src/lib/data/fundCatalog.ts",
+     "docs/audits/fund-fee-reconcile-2026-09-26.md",
+     "frontend/scripts/lib/feeWaiver.mjs",
+     "frontend/src/lib/server/__tests__/feeWaiver.test.ts"
+    ]
    }
   },
   {
@@ -11927,7 +11942,7 @@
     "D36"
    ],
    "summary": "D35 applied the Teucrium 10-K totals without the issuer fact-sheet cross-check (the owner made it a follow-up); D36 kept IBIT at 0.25 pending a reading of whether its 0.12% waiver is in effect today; and SIVR's description now prints a 0.45% gross that the 2026-09-26 audit states without naming its filing. The cloud environment that worked T-414 refuses sec.gov, efts.sec.gov and teucrium.com, so none of the three could be read there.",
-   "next_action": "On the owner's machine: open teucrium.com/corn, /weat, /soyb and /cane and record each fund's stated expense ratio and as-of date against 3.45 / 3.18 / 3.34 / 4.27; open the iShares IBIT and ETHA product pages (or the current 424B3's Sponsor's Fee section) and record whether any fee waiver is in effect today; read SIVR's sponsor fee and any waiver from its current prospectus or issuer page. If all agree, close this item citing the pages. Any difference goes back to the owner; under D36, IBIT or ETHA move only if a waiver is in effect today.",
+   "next_action": "On the owner's machine: open the iShares IBIT and ETHA product pages (or the current 424B3's Sponsor's Fee section) and record whether any fee waiver is in effect today; read SIVR's sponsor fee and any waiver from its current prospectus or issuer page. If all agree with the catalog, close this item citing the pages. Any difference goes back to the owner; under D36, IBIT or ETHA move only if a waiver is in effect today. (The Teucrium fact-sheet check was dropped by the owner on 2026-09-30 — see progress.)",
    "sources": [
     {
      "file": "docs/decisions/2026-09-30-owner-decisions.md",
@@ -11939,6 +11954,50 @@
     "on": "2026-09-30",
     "by": "session steward",
     "why": "Split out of T-414 so its rulings could close: the owner chose to apply D35 now and check the fact sheets after, and the IBIT and SIVR questions need a machine that can reach the filings."
+   },
+   "progress": {
+    "noted_on": "2026-09-30",
+    "note": "PART 1 DROPPED BY THE OWNER. On merging #253 the owner said \"It's fine I trust your findings\" rather than read the four Teucrium fact sheets, which the session reported back as dropping the cross-check of the 10-K totals D35 applied — no objection followed. Parts 2 and 3 are NOT checks of anything already found and stay open: whether an IBIT or ETHA fee waiver is in effect today (under D36 the catalog moves to the net only if one is), and which filing SIVR's 0.45% gross comes from.",
+    "evidence": [
+     "docs/decisions/2026-09-30-owner-decisions.md"
+    ]
+   }
+  },
+  {
+   "id": "T-417",
+   "title": "Re-run the fee reconcile after T-412: confirm no differences, check the waiver list, read FXAIX's fee table",
+   "status": "open",
+   "confidence": "high",
+   "owner_role": "owner-machine",
+   "category": "data-verification",
+   "effort": "small",
+   "blocking_decision": null,
+   "related_ids": [
+    "T-412",
+    "T-411",
+    "T-416",
+    "D36",
+    "D38",
+    "D39"
+   ],
+   "summary": "T-412 applied sixteen fees from the 2026-09-26 reconcile (D38) and held FXAIX (D39). Two things need sec.gov, which the cloud session that applied them cannot reach: the confirming re-run T-412 asked for, and FXAIX's prospectus fee table. The re-run now also answers what the 2026-09-26 run could not — whether any of the sixteen is a waived figure whose description must state the full fee under D36; until 2026-09-30 the script kept only the figure it compared.",
+   "next_action": "On the owner's machine: `cd frontend && npm run fund-fees`. Expect no expense differences except FXAIX (catalog 0.015 against the filing's 0.010). Read the 'Fee waivers in effect — D36' section: a catalogued fund marked 'DESCRIPTION MUST STATE THE GROSS' gets 'Expense ratio is net of a contractual waiver (X% gross).' appended to its description by hand (fundCatalog.test.ts then pins it), and a row sent to 'read the filing's fee table' goes to a human, not a guess. Then open FXAIX's filing (accession 0000819118-26-000072, filed 2026-04-24) and read the fee table's total annual fund operating expenses: if 0.010%, set the row to 0.01 citing the accession; if 0.015%, record why the data tag says otherwise. Close this item citing the run date.",
+   "sources": [
+    {
+     "file": "docs/audits/fund-fee-reconcile-2026-09-26.md",
+     "lines": "FXAIX needs a human before it moves",
+     "quote": "Leave the row until someone reads the fee table in that filing."
+    },
+    {
+     "file": "frontend/src/lib/data/fundCatalog.ts",
+     "lines": "T-412 / D38–D39 block",
+     "quote": "NOT KNOWN: whether any of the sixteen is a waived (net) figure."
+    }
+   ],
+   "opened": {
+    "on": "2026-09-30",
+    "by": "session steward",
+    "why": "Split out of T-412 so its ruling could close: the confirming re-run and the FXAIX reading both need sec.gov, which the cloud environment refuses."
    }
   }
  ],
@@ -37048,6 +37107,14 @@
     "what": "T-414 closed under owner rulings D35–D37: Teucrium ×4 to their realized 2025 totals, one waiver rule (fee paid today, full fee stated), PSLV 0.56; T-416 opened for the three readings the cloud session could not make.",
     "evidence": [
      "docs/decisions/2026-09-30-owner-decisions.md"
+    ]
+   },
+   {
+    "on": "2026-09-30",
+    "what": "T-412 closed under owner rulings D38–D39: sixteen fees from the 2026-09-26 reconcile applied, FXAIX held at 0.015 pending its prospectus; build-fund-fees.mjs now reports gross beside net and lists every waiver against D36; T-417 opened for the confirming re-run and the FXAIX reading; T-416's Teucrium cross-check recorded as dropped by the owner.",
+    "evidence": [
+     "docs/decisions/2026-09-30-owner-decisions.md",
+     "frontend/scripts/lib/feeWaiver.mjs"
     ]
    }
   ]
