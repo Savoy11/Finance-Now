@@ -13,8 +13,10 @@ import path from 'node:path'
  *
  * IT DELIBERATELY DOES NOT GUARD lib/risk ITSELF. That framework is general and
  * its other consumers were each decided separately and remain live: the options
- * Trade Risk Scorer, curated staking-provider risk, and the macro/equity
- * profiles. A test that banned the engine would misread the decision.
+ * Trade Risk Scorer, and the macro profiles that derive Portfolios' 1–10 tiers.
+ * (Curated staking-provider risk was on this list until D26 removed it on
+ * 2026-09-25; riskDimensionsRemoved.test.ts guards that.) A test that banned
+ * the engine would misread the decision.
  */
 
 const repo = (rel: string) => path.join(process.cwd(), rel)

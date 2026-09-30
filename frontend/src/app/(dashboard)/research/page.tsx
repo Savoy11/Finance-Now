@@ -79,7 +79,7 @@ const AGENT_BY_ID = new Map<string, AgentChoice>(
 
 const EXAMPLES: Record<Market, string[]> = {
   crypto: [
-    'Compare ETH and SOL staking: APYs, risk profiles, and which suits a risk-averse holder.',
+    'Compare ETH and SOL staking: APYs, lock-ups, custody models and liquid-staking options.',
     'Analyze BTC price action over the last year and summarize the trend with key levels.',
     'What is the cheapest end-to-end route to move $10,000 USDC from Kraken to a wallet on Arbitrum?',
     'Summarize the latest news sentiment for the top L1s and flag anything material.',

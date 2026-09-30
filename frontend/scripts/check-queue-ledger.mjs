@@ -11,6 +11,10 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { runChecks, evidenceOf, STATUSES, ROLES } from './lib/queueLedgerChecks.mjs'
+// The page's shared workspace (uploads + confirmations) lives in the artifact's runtime
+// storage, not in this HTML, so it survives every regeneration. Publish the page with
+// WORKSPACE_CAPABILITIES from the same module.
+import { WORKSPACE_CSS, workspaceSection, workspaceItemSlot, workspaceScripts } from './lib/ledgerWorkspace.mjs'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(here, '../..')
@@ -57,7 +61,7 @@ function renderHtml(q, result, checkedOn) {
   const itemHtml = (i) => {
     const c = i.closure, p = i.progress
     const text = esc(`${i.id} ${i.title} ${i.summary} ${i.next_action} ${i.blocking_decision ?? ''} ${i.category}`.toLowerCase())
-    return `<details class="item" data-status="${i.status}" data-role="${i.owner_role}" data-text="${text}">
+    return `<details class="item" data-id="${esc(i.id)}" data-status="${i.status}" data-role="${i.owner_role}" data-text="${text}">
 <summary><span class="id">${esc(i.id)}</span><span class="title">${esc(i.title)}</span><span class="chips"><span class="chip st-${i.status}">${LABEL[i.status]}</span><span class="chip role">${ROLE_LABEL[i.owner_role]}</span><span class="chip dim">${esc(i.category)} · ${esc(i.effort)}</span></span></summary>
 <div class="body">
 ${i.blocking_decision ? `<p class="kv"><b>Blocked on</b>${esc(i.blocking_decision)}</p>` : ''}
@@ -66,6 +70,7 @@ ${i.blocking_decision ? `<p class="kv"><b>Blocked on</b>${esc(i.blocking_decisio
 ${p?.note ? `<p class="kv note"><b>Progress · ${esc(p.noted_on)}</b>${esc(p.note)}</p>` : ''}
 ${c ? `<div class="closure"><p class="kv"><b>Closed ${esc(c.closed_on ?? '—')} · ${esc(c.verdict ?? 'no verdict recorded')} · ${esc(c.basis ?? '')}</b>${esc(c.reason ?? '')}</p>${evidenceOf(c).length ? `<p class="kv"><b>Evidence</b>${evidenceOf(c).map(esc).join('<br>')}</p>` : ''}${c.approved_by ? `<p class="kv"><b>Approved by</b>${esc(c.approved_by)}</p>` : ''}</div>` : ''}
 ${i.related_ids?.length ? `<p class="kv dimtext"><b>Related</b>${i.related_ids.map(esc).join(', ')}</p>` : ''}
+${workspaceItemSlot(i.id)}
 </div></details>`
   }
 
@@ -184,6 +189,7 @@ footer code{font-family:var(--mono);font-size:12px;background:var(--bg3);padding
   .controls{top:calc(env(safe-area-inset-top,0px) + 118px)}
 }
 @media (prefers-reduced-motion:no-preference){.check,.item{transition:background-color .15s}}
+${WORKSPACE_CSS}
 </style>
 
 <header class="top"><div class="wrap">
@@ -206,6 +212,8 @@ footer code{font-family:var(--mono);font-size:12px;background:var(--bg3);padding
 </div>
 </section>
 
+${workspaceSection()}
+
 <section>
 <p class="eyebrow">Integrity checks · run ${checkedOn} by <span class="mono">npm run queue:check</span></p>
 ${checkHtml}
@@ -220,7 +228,7 @@ ${STATUSES.map((s) => `<button class="tog" id="tog-${s}" type="button" data-stat
 
 ${sections}
 
-<footer>Regenerated from the canonical JSON by <code>node scripts/check-queue-ledger.mjs --html &lt;out&gt;</code> — this page never edits it. The same checks run in CI as <code>npm run queue:check</code>. Closed items keep their full closure record so a closure can be audited from here without opening the file.</footer>
+<footer>Regenerated from the canonical JSON by <code>node scripts/check-queue-ledger.mjs --html &lt;out&gt;</code> — this page never edits it. The same checks run in CI as <code>npm run queue:check</code>. Closed items keep their full closure record so a closure can be audited from here without opening the file. The workspace above is the exception: its uploads and confirmations are stored with the published page, not in this output, so regenerating never touches them.</footer>
 </div>
 
 <script>
@@ -250,5 +258,6 @@ ${sections}
   apply();
 })();
 </script>
+${workspaceScripts(items)}
 `
 }

@@ -1,10 +1,11 @@
 # House source-labeling policy
 
-**Status: DRAFT for owner approval (T-292, owner decision D15, 2026-09-14).**
-Nothing here is new behaviour. The conventions below already ship; this writes down
-the rule they were following so a new surface has something to conform to instead of
-a precedent to copy. Where a clause states something the code does **not** yet do, it
-says so explicitly.
+**Status: APPROVED 2026-09-28 (owner decision D31, `docs/decisions/2026-09-28-owner-decisions.md`).**
+Drafted 2026-09-14 under D15 (T-292). Almost nothing here is new behaviour: the
+conventions below already ship, and this writes down the rule they were following so a
+new surface has something to conform to instead of a precedent to copy. The one
+exception is `<DerivedNote>` (§2, §4, §7): the policy requires it, but no page renders it
+yet. Where a clause states something the code does **not** yet do, it says so explicitly.
 
 Scope: both products. `BUSINESS-CHECKLIST.md` §3 asks for one house rule; each
 product's checklist then tracks its own rendering.
@@ -27,7 +28,7 @@ interchangeable — each answers a different question a reader might have.
 |---|---|---|
 | **`<SourceLine route="…">`** | *Where did this page's data come from?* | **Every surface that renders third-party data.** Reads from the `dataSources.ts` registry by route id, so the name and link cannot drift from the route that actually fetched it |
 | **`<ProvenanceNotice>`** | *How old is this, and who checked it?* | **Every hand-maintained table.** Renders `verifiedAt` / `ageDays` / `stale` / `confidence` from the data module's own provenance object |
-| **`<DerivedNote>`** | *Did a provider publish this, or did we compute it?* | **Any computed figure sitting beside provider-sourced values**, especially in a table where proximity implies a common origin |
+| **`<DerivedNote>`** | *Did a provider publish this, or did we compute it?* | **Any computed figure sitting beside provider-sourced values**, especially in a table where proximity implies a common origin. ⚠ **Not yet rendered on any page** — the component exists, and is imported once (`coin-discovery/page.tsx`) but never used (checked 2026-09-28) |
 | **`<DataGapNote>`** | *Why is this missing?* | **Any absent value**, so a gap reads as a decision or a known limit rather than a bug |
 
 ### 2.1 ProvenanceNotice is always visible, never conditional
@@ -103,7 +104,7 @@ unenforced rule is a hope:
 | Every gap notice has a known reason and a message | `gapNoticeCoverage.test.ts` — walks every `.tsx` |
 | Fund sales-charge rates carry `source` + `verifiedAt` | Catalog-wide test |
 | **SourceLine present on every data surface** | ⚠ **Not enforced.** Convention only |
-| **DerivedNote present on every computed figure** | ⚠ **Not enforced.** Convention only |
+| **DerivedNote present on every computed figure** | ⚠ **Not enforced, and not yet followed** — no page renders it today |
 | **ProvenanceNotice on every curated table** | ⚠ **Not enforced.** Convention only |
 
 The three unenforced rows are the honest gap in this policy. Closing them means a test
@@ -112,9 +113,10 @@ done**, and out of scope for a policy document.
 
 ---
 
-## Owner decisions still open in this document
+## Owner decisions (resolved 2026-09-28, D31)
 
-1. **Approve or amend** the rule in §1 and the four labels in §2.
-2. **§7's three unenforced rows** — worth a coverage test, or left as convention?
-3. **Chronolens's rendering** of this same policy is its own checklist item; this
+1. **The rule in §1 and the four labels in §2 are approved**, with the `<DerivedNote>`
+   gap stated rather than implied away.
+2. **§7's three unenforced rows stay convention for now.** No coverage test is queued.
+3. **News Charts' rendering** of this same policy is its own checklist item; this
    document is the shared rule, not that product's implementation.
