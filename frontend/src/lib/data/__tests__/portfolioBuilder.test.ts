@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   ASSET_CLASS_INFO, bondLadder, buildPortfolio, checkDrift, consolidateLadder, MIN_RUNG_PCT,
   reviewPlan, actualWeightsFromPortfolio, applyBondStyle,
-  type BuilderInputs, type BuiltPortfolio, type SavedPlan,
+  type BuilderInputs, type BuiltPortfolio, type SavedPlan, TILTABLE_SECTORS,
 } from '../portfolioBuilder'
 import type { Portfolio } from '../portfolioUtils'
 import { FUND_CATALOG } from '../fundCatalog'
@@ -791,5 +791,37 @@ describe('checkDrift', () => {
 
   it('ignores zero-weight positions when listing unplanned holdings', () => {
     expect(checkDrift(plan, { ...onTarget, GME: 0 }).unplanned).toHaveLength(0)
+  })
+})
+
+describe('tiltable sectors are exactly the sectors the engine can buy (T-410)', () => {
+  // A growth plan with room for a real tilt, so the sliver rule never hides a mapping.
+  const roomy = { riskTolerance: 8, yearsToFirstUse: 30, yearsToRetirement: 30 }
+
+  it('every tiltable sector produces a sector-tilt holding on a catalogued sector fund', () => {
+    for (const sector of TILTABLE_SECTORS) {
+      const plan = build({ ...roomy, sectorFocus: [sector] })
+      const tilt = plan.holdings.filter((h) => h.assetClass === 'sector-tilt')
+      expect(tilt, sector).toHaveLength(1)
+      const fund = FUND_CATALOG.find((f) => f.symbol === tilt[0].symbol)
+      expect(fund, `${sector} → ${tilt[0].symbol} is not in the catalog`).toBeDefined()
+      expect(fund!.category, `${sector} → ${tilt[0].symbol}`).toBe('sector')
+    }
+  })
+
+  it('the four sectors D27 added on 2026-09-26 tilt onto their Select Sector SPDRs', () => {
+    const expected: Array<[SectorId, string]> = [
+      ['communication-services', 'XLC'], ['consumer-staples', 'XLP'], ['consumer-discretionary', 'XLY'], ['materials', 'XLB'],
+    ]
+    for (const [sector, symbol] of expected) {
+      expect(TILTABLE_SECTORS).toContain(sector)
+      const plan = build({ ...roomy, sectorFocus: [sector] })
+      expect(plan.holdings.find((h) => h.assetClass === 'sector-tilt')?.symbol, sector).toBe(symbol)
+    }
+  })
+
+  it("'other' is not tiltable — there is no fund for it, and the list is derived, so it cannot appear by accident", () => {
+    expect(TILTABLE_SECTORS).not.toContain('other')
+    expect(new Set(TILTABLE_SECTORS).size).toBe(TILTABLE_SECTORS.length)
   })
 })
