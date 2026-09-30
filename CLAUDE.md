@@ -162,6 +162,8 @@ frontend/src/
 │       ├── market-calendar/route.ts, fund-universe/route.ts, coin-list/, coin-search/
 │       └── btc-stats/, defi-tvl/, fear-greed/, funding-rates/, ohlcv/, assets/
 │                                   #   (first three now feed the crypto TA Market Structure panel — NT11)
+│                                   #   (funding-rates has NO source since 2026-09-30 — OKX withdrawn on
+│                                   #    terms, D40; it answers ok:false with the reason)
 │                                   #   (no cbdc-data/ — route cut 2026-09-14 (D10) along with
 │                                   #    /global-adoption; the page redirect remains)
 │
@@ -823,14 +825,18 @@ site nobody has reviewed. Full design: `docs/architecture/source-terms.md`.
   maintainer's obligation, not something code enforces; writing them down is the point.
 - `prohibited` — hard-blocked, no override, anywhere.
 
-> **The prohibited set is five, and two of them are recent.** `yahoo.com` (2026-08-06,
+> **The prohibited set is six, and three of them are recent.** `yahoo.com` (2026-08-06,
 > terms), `cboe.com` (P2-O1 audit, 2026-08-05), `poloniex.com` (2026-09-15, User Agreement
-> §9), and — added **2026-09-20** — `dowjones.io` and `marketwatch.com` (Dow Jones Terms of
+> §9), — added **2026-09-20** — `dowjones.io` and `marketwatch.com` (Dow Jones Terms of
 > Use §9.1/§9.4.1: RSS content is named expressly and automated ingestion needs prior
-> written consent). All five are `pinnedFetch` socket blocks and none has an override, so
-> re-adding a fetcher does not bring one back — it just fails somewhere less obvious.
-> Yahoo is described at length above; the other four were only ever recorded in
-> `sourceTerms.ts`, which is why this list exists.
+> written consent), and — added **2026-09-30** (D40) — `okx.com` (API Agreement §9.4:
+> market data only for "your own personal, non-commercial trading and account management
+> purposes", never in an "analytics platform", public endpoints expressly included;
+> `/live-data/funding-rates` lost its only source and answers `ok:false` with the reason).
+> All six are `pinnedFetch` socket blocks and none has an override, so re-adding a fetcher
+> does not bring one back — it just fails somewhere less obvious. Yahoo is described at
+> length above; the other five were only ever recorded in `sourceTerms.ts`, which is why
+> this list exists.
 
 **Two assertion forms, and the split is the design:**
 - `assertSourceNotProhibited` (used by `pinnedFetch`) — only `prohibited` fails. A

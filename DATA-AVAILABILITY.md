@@ -206,8 +206,8 @@ its results: **AS11426 Charter/Spectrum, `proxy: false`, `hosting: false`, US.**
 |----------|--------|-------------|
 | `api.binance.com` | **451** (US geo-block — permanent, not an IP artifact) | All crypto OHLCV silently served by Binance.US instead |
 | `api.binance.us` | 200 | The de-facto crypto candle source |
-| `fapi.binance.com` (futures) | **451** | `funding-rates` uses OKX instead |
-| `api.okx.com` | 200 | Funding rates + open interest |
+| `fapi.binance.com` (futures) | **451** | `funding-rates` used OKX instead — until OKX was withdrawn on terms, 2026-09-30 (D40) |
+| ~~`api.okx.com`~~ | 200 | **NOT USED SINCE 2026-09-30 — removed on terms grounds (D40), not availability.** Its API Agreement §9.4 bars using its market data in an analytics platform, public endpoints included; `okx.com` is `prohibited` in `sourceTerms.ts`. `funding-rates` has no source |
 | Coinbase / Kraken public | 200 | Unused reachable fallbacks if more are ever needed |
 | `min-api.cryptocompare.com` | **401** | Now requires a key; unusable keyless |
 | CoinGecko free | 200 (intermittent **429**) | Rate-limited under load; 60 s polling floor |
@@ -230,7 +230,8 @@ its results: **AS11426 Charter/Spectrum, `proxy: false`, `hosting: false`, US.**
 **Key-gating vs geo-blocking are different problems.** A route needing a paid FMP plan
 (`stock-universe` — the screener still 402s even with the key held) is a commercial
 decision, and under **D21 it is deferred, not chased**. A route blocked by IP
-(`ohlcv`, `funding-rates`) cannot be fixed by paying anyone.
+(`ohlcv`) cannot be fixed by paying anyone — and neither can one blocked by terms:
+`funding-rates` has had no source since OKX was withdrawn on 2026-09-30 (D40).
 
 **Reddit is a third case and belongs in neither bucket.** It is 🔑 gated by *our own*
 robots decision since 2026-08-29, lifted by setting `REDDIT_CLIENT_ID` and accepting
@@ -665,7 +666,7 @@ added 2026-07-29; their rows stay ⬜ **Not measured** until the next run.
 | Asset OHLCV / price charts | 🟡 Partial | **Binance.US** → CoinGecko fallback | Binance.com is 451 here, so candles come from the US mirror — different venue, different prices. `venue` field records which. |
 | Coin list / search / discovery | 🟢 Live | CoinGecko | 750 coins, 209 discovery candidates. |
 | Fear & Greed Index | 🟢 Live | alternative.me | |
-| Funding rates + open interest | 🟢 Live | **OKX** (Binance fapi is 451 here) | 10 instruments. |
+| Funding rates + open interest | 🔴 Not available | — (**OKX withdrawn on terms 2026-09-30, D40**) | OKX's API Agreement §9.4 bars using its market data in an analytics platform, public endpoints included; Binance fapi is 451 here. The route answers `ok:false` with the reason and the Market Structure panel says so. It measured 🟢 from OKX, 10 instruments, on the 2026-09-19 run. |
 | DeFi TVL | 🟢 Live | DefiLlama | 50 protocols. |
 | BTC network stats | 🟢 Live | blockchain.info + mempool.space | Height, hashrate, difficulty, mempool. Hashrate **unit is inferred from magnitude** (`lib/server/btcHashrate.ts`), not assumed: the upstream sends GH/s and a hardcoded `/1e12` reported `0 EH/s` while block height advanced normally (fixed 2026-07-29). Returns `null` — rendered as not-available — rather than a figure it cannot justify. A wrong field inside an otherwise healthy payload is the one failure the REAL/FALLBACK split cannot catch. |
 | Reserves / collateralization | 🟢 Live | DefiLlama Stablecoins API | 9 stablecoins. Composition breakdown is **approximate / derived** from chain distribution, not issuer attestation. |

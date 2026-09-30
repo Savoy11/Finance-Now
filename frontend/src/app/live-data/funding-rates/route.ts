@@ -1,9 +1,22 @@
 import { NextResponse } from 'next/server'
 
-// Funding rates and open interest from OKX public API (no key required).
-// Binance fapi is geo-restricted in many server environments; OKX is unrestricted.
+// Perpetual-swap funding rates and open interest — currently NO SOURCE.
 //
-// Response: { ok, rates: FundingRate[], updatedAt }
+// OKX was the only source, through its keyless public v5 API, until 2026-09-30. Its API
+// Agreement §9.4 (read on the owner's machine 2026-09-26) limits Market Data — which §1.8
+// defines to include funding rates — to "your own personal, non-commercial trading and
+// account management purposes", bars using it in any "analytics platform", and applies
+// "equally to Market Data accessed through public endpoints". The owner withdrew it (D40,
+// docs/decisions/2026-09-30-owner-decisions.md) and okx.com is now `prohibited` in
+// lib/server/sourceTerms.ts. Binance futures (fapi) answers 451 from US hosts.
+//
+// The route stays and answers ok:false WITH THE REASON, the way futures-curve does, so the
+// Market Structure panel can say why the figure is missing instead of showing a bare dash
+// — and a source whose terms permit this use can be wired back in here without touching
+// the panel. The earlier implementation also reported a failed fetch as a 0% funding rate;
+// that path is gone with the fetch.
+//
+// Response: { ok: false, rates: [], reason, updatedAt }
 
 export const dynamic = 'force-dynamic'
 
@@ -17,87 +30,24 @@ export interface FundingRate {
   longShortRatio: number | null
 }
 
-const OKX_INSTRUMENTS = [
-  { instId: 'BTC-USDT-SWAP', symbol: 'BTC' },
-  { instId: 'ETH-USDT-SWAP', symbol: 'ETH' },
-  { instId: 'SOL-USDT-SWAP', symbol: 'SOL' },
-  { instId: 'BNB-USDT-SWAP', symbol: 'BNB' },
-  { instId: 'XRP-USDT-SWAP', symbol: 'XRP' },
-  { instId: 'ADA-USDT-SWAP', symbol: 'ADA' },
-  { instId: 'DOGE-USDT-SWAP', symbol: 'DOGE' },
-  { instId: 'AVAX-USDT-SWAP', symbol: 'AVAX' },
-  { instId: 'DOT-USDT-SWAP', symbol: 'DOT' },
-  { instId: 'MATIC-USDT-SWAP', symbol: 'MATIC' },
-]
-
-const OKX_BASE = 'https://www.okx.com/api/v5/public'
-
-interface OkxFundingRate {
-  instId: string
-  fundingRate: string
-  nextFundingTime: string
+export interface FundingRatesResponse {
+  ok: boolean
+  rates: FundingRate[]
+  /** Why `rates` is empty, in words a reader can act on. Present whenever ok is false. */
+  reason?: string
+  updatedAt: string
 }
 
-interface OkxOpenInterest {
-  instId: string
-  oiUsd: string
-}
+// Not exported: a route module may export only its handlers, config and types.
+const UNAVAILABLE_REASON =
+  'No source: OKX, the only one, was withdrawn on 2026-09-30 because its API terms bar using its ' +
+  'market data in an analytics platform. No other funding-rate source has been cleared for this use.'
 
-export async function GET(): Promise<NextResponse> {
-  try {
-    const results = await Promise.allSettled(
-      OKX_INSTRUMENTS.map(async ({ instId, symbol }) => {
-        const [frRes, oiRes] = await Promise.allSettled([
-          fetch(`${OKX_BASE}/funding-rate?instId=${instId}`, {
-            headers: { Accept: 'application/json' },
-            next: { revalidate: 60 },
-            signal: AbortSignal.timeout(6000),
-          }),
-          fetch(`${OKX_BASE}/open-interest?instType=SWAP&instId=${instId}`, {
-            headers: { Accept: 'application/json' },
-            next: { revalidate: 60 },
-            signal: AbortSignal.timeout(6000),
-          }),
-        ])
-
-        let fundingRate = 0
-        let nextFundingTime: number | null = null
-        if (frRes.status === 'fulfilled' && frRes.value.ok) {
-          const d = await frRes.value.json() as { data: OkxFundingRate[] }
-          const row = d.data?.[0]
-          if (row) {
-            fundingRate = parseFloat(row.fundingRate)
-            nextFundingTime = row.nextFundingTime ? parseInt(row.nextFundingTime) : null
-          }
-        }
-
-        let openInterestUsd: number | null = null
-        if (oiRes.status === 'fulfilled' && oiRes.value.ok) {
-          const d = await oiRes.value.json() as { data: OkxOpenInterest[] }
-          const row = d.data?.[0]
-          if (row?.oiUsd) openInterestUsd = parseFloat(row.oiUsd)
-        }
-
-        return {
-          symbol,
-          exchange: 'OKX',
-          fundingRate,
-          annualized: fundingRate * 3 * 365 * 100,
-          nextFundingTime,
-          openInterestUsd,
-          longShortRatio: null,
-        } satisfies FundingRate
-      })
-    )
-
-    const rates: FundingRate[] = []
-    for (const r of results) {
-      if (r.status === 'fulfilled') rates.push(r.value)
-    }
-    rates.sort((a, b) => Math.abs(b.fundingRate) - Math.abs(a.fundingRate))
-
-    return NextResponse.json({ ok: true, rates, updatedAt: new Date().toISOString() })
-  } catch {
-    return NextResponse.json({ ok: false, rates: [], updatedAt: new Date().toISOString() })
-  }
+export async function GET(): Promise<NextResponse<FundingRatesResponse>> {
+  return NextResponse.json({
+    ok: false,
+    rates: [],
+    reason: UNAVAILABLE_REASON,
+    updatedAt: new Date().toISOString(),
+  })
 }
