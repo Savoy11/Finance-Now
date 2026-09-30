@@ -58,7 +58,7 @@ document. Items the rulings only *seem* to cover are listed separately and left 
 | Items | Ruling | Trigger |
 |---|---|---|
 | **T-245** Reddit OAuth | D8 | The rollout's vendor-terms pass |
-| **T-291** Disclosure documents | D7 | The rollout — nothing affiliate-related ships before it |
+| **T-291** Disclosure documents | D7 | The rollout — nothing affiliate-related ships before it. ⚠ **Wrong, and reversed the same day** — see the correction at the end |
 | **T-060, T-061, T-062, T-063** S4 options subproject | D9 (names T-061–T-063) | The rollout, behind the D4 legal review |
 | **T-202** SOC 2 change-management policy | D5 | First paying customer or first enterprise conversation. Until then *"branch-and-PR stays the informal change-management control"* — D5 answers this item's own question |
 | **T-196, T-197, T-198, T-200, T-201, T-203, T-207, T-208, T-210, T-211** the SOC 2 programme | D5 | Same trigger |
@@ -136,3 +136,31 @@ While checking descriptions against the fee rows, VUG's still said "at 4 bps" af
 moved its row to 0.03 — a slip in the T-412 change — and VTEB's said "MUB's twin at the
 same fee" against 0.03 and 0.05, wrong since the re-root. Both reworded;
 `fundCatalog.test.ts` now fails any description whose "N bps" disagrees with its row.
+
+## Correction, the same day — T-291 should not have been parked
+
+**What went wrong.** This sweep matched items against `docs/decisions/` and the tree, and never
+read the ledger page's workspace log — the `log` collection other sessions write to when
+something happens away from the repository. The FN & NC business chat had recorded two things
+there that bear on T-291: a first draft of the whole disclosure set on 29 September, and the
+owner's decision on 30 September about where the legal pages go. So T-291 was parked ("do not
+start unprompted") while the owner was working on it. The log also recorded a third decision the
+sweep had left as an owner question: no paid or affiliate links at launch.
+
+**How it was fixed.** After #254 merged, the log was read and the owner was asked to confirm
+each decision before it was recorded. Both were confirmed and recorded as **D49** and **D50**
+(`docs/decisions/2026-09-30-owner-decisions.md`):
+
+| Item | Was (after this sweep) | Now | Ruling |
+|---|---|---|---|
+| **T-291** Disclosure documents | parked | **open** — reopened, with a correction on the item | D50 |
+| **T-293** Placement rules | blocked on T-291 | **open** — the rule is decided; the build remains | D50 |
+| **T-120** Affiliate program terms | open | **parked** until after launch | D49 |
+| **T-125** Affiliate legal review | open (left alone above) | **parked** until after launch | D49 |
+
+Counts after the correction: closed 172, open 31, blocked 43, parked 110, unclear 1.
+
+**The lesson, for the next sweep.** Read the workspace `log` before proposing anything. Decisions
+reach it before they reach the repository — here because this file's own PR was still open — and
+a sweep that checks the repository alone will park work that is under way.
+

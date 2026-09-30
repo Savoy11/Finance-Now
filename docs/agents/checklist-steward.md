@@ -63,6 +63,13 @@ entries in two or three ledgers (e.g. F2 lives in TASK-QUEUE follow-ups, DATA-AV
 action item 10, and the app-audit remediation context). A proposal that updates one and
 not its siblings creates the next drift. Find the siblings before proposing.
 
+**One sibling lives outside the repository: the published ledger page's workspace log**
+(the artifact's `log` collection, read with the artifact data tool). Other sessions record
+progress and owner decisions there, sometimes before any PR can carry them. Read it before
+proposing a sweep. On 2026-09-30 a sweep that skipped it parked T-291 while the owner was
+drafting its documents in another chat, and it was reversed the same day
+(`docs/audits/queue-sweep-2026-09-30.md`).
+
 ---
 
 ## The verification rules (non-negotiable)

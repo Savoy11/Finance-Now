@@ -77,6 +77,10 @@ structure, regulatory research, disclosures and tax compliance are decided once,
       Terms of Service, Privacy Policy, "Not investment advice" disclaimer, affiliate/ad
       disclosure ("How we make money"), data-source attribution page, and a contact/complaints
       route.
+      **Status 2026-09-30:** where they go is decided (D50, next item but one). The documents
+      are not: a first draft of the whole set, shared by both products, was written in the
+      business chat on 29 September and is recorded outside this repo; it awaits the owner's
+      approval. Tracked as T-291.
 - [x] **Source-labeling policy (both products).** ✅ **DRAFTED 2026-09-14 — awaiting approval.**
       Written up as `docs/policies/source-labeling.md` rather than inline here, because it ran
       to a page: the rule ("every number traceable to a named third party or to us, tellable
@@ -85,8 +89,13 @@ structure, regulatory research, disclosures and tax compliance are decided once,
       are marked, how absence is stated, placement, and — deliberately — a table of which rules
       are machine-checked and which are convention only. Three are convention only; that is the
       honest gap. Each product's checklist tracks its own rendering.
-- [ ] Placement rules: linked in the footer of every page **and** surfaced at the point of
+- [x] Placement rules: linked in the footer of every page **and** surfaced at the point of
       relevance (a disclaimer nobody sees does not protect anyone).
+      ✅ **DECIDED 2026-09-30 (D50, `docs/decisions/2026-09-30-owner-decisions.md`):** one
+      About page per product, reached from a footer link on every page and, on Finance Now,
+      from Settings ("About & Legal" replaces the How We Make Money entry). Privacy keeps its
+      own footer link. The short "not investment advice" lines stay beside the features they
+      qualify. Not built yet — T-293.
 - [ ] Keep one canonical copy per document, shared by both products where the text is identical,
       so they can't drift.
 
@@ -222,7 +231,7 @@ bug report.**
 
 **Deferred to post-launch by decision, not by capacity**
 - SOC 2 — *D5, trigger: first paying customer or first enterprise conversation*
-- Affiliate links and their disclosure — *D7*
+- Affiliate links and their disclosure — *D7*; none on either product at launch, revisited after it — *D49*
 - Reddit OAuth — *D8* · S4 options subproject — *D9* · new risk profiles — *D18*
 - Business entity formation — *D13*
 
