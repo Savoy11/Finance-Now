@@ -197,9 +197,11 @@ import type { SectorId } from './equityCatalog'
 //
 //   FXAIX  0.015 HELD     D39. Its filing's data tag is 0.0001 at six declared decimals —
 //                         0.010% as stated, not a rounding of 0.015% — while Fidelity's own
-//                         literature has long said 0.015%. Both cannot be right, and the
-//                         prospectus TEXT decides, not the tag. T-417 reads the fee table in
-//                         0000819118-26-000072 (filed 2026-04-24) on the owner's machine.
+//                         literature has long said 0.015%. Both are right only if 0.010% is
+//                         the fee AFTER a waiver — a 0.015% full fee with 0.005% waived —
+//                         and the 2026-09-26 run could not say which line it read. The
+//                         prospectus fee table decides, not the tag: T-417 reads it, from
+//                         0000819118-26-000072 (filed 2026-04-24), on the owner's machine.
 //
 // ⚠ NOT KNOWN: whether any of the sixteen is a waived (net) figure. The reconcile takes
 // net where a filing states a waiver and the total otherwise — D36's first half — but

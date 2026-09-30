@@ -108,3 +108,6 @@ Two corrections to this report, found while applying it:
   keeps both figures from 2026-09-30 and lists every waiver against the catalog's
   descriptions. The confirming re-run is **T-417**, on the owner's machine, together with
   the FXAIX reading.
+- **"Both cannot be right" (FXAIX) is too strong.** Both are right if 0.010% is the fee
+  after a waiver: a 0.015% full fee with 0.005% waived. Because the run could not say which
+  line it read (the correction above), T-417 checks for a waiver line before anything else.

@@ -13,7 +13,7 @@ all five times.
 | D36 | How the catalog records a fee under a waiver (T-414, question 2) | **What investors pay today, with the full fee stated in the fund's description.** Chosen over "the full official fee". The D27 rule becomes the catalog's one rule. The 2026-09-10 IBIT reasoning ("waivers are revocable, so the standing rate is the durable figure to publish") is annotated as replaced, not rewritten. → APPLIED | SIVR's description now states its 0.45% gross; EMLC, BKLN and HEFA already complied. IBIT stays 0.25 until T-416 reads whether any waiver is in effect today. `fundCatalog.test.ts` fails if a row mentions a waiver without its gross figure, or records the gross |
 | D37 | PSLV's expense ratio (T-414, question 3) | **0.56%, naming 2025** — the 2025 management expense ratio from Sprott Physical Silver Trust's Form 40-F, over leaving 0.57. → APPLIED | `fundCatalog.ts` (row and banner); pinned in `fundCatalog.test.ts` |
 | D38 | The sixteen corrections the four-quarter reconcile found (T-412, question 1) | **Apply all sixteen** — ICLN 0.41 → 0.39; IYT, IHI, IAI, ITA, ITB 0.39 → 0.38; SOXX 0.35 → 0.34; IBB 0.45 → 0.44; TIP 0.19 → 0.18; VUG, VTV 0.04 → 0.03; VWO 0.07 → 0.06; VBTLX 0.05 → 0.04; VWINX 0.23 → 0.22; QYLD 0.61 → 0.60; PRGFX 0.65 → 0.66. Each read from the fund's own Risk/Return filing, matched on its SEC class id. Chosen over "wait for a fresh check". → APPLIED | `fundCatalog.ts` (sixteen rows and a T-412 block citing each filed date and accession); `build-fund-fees.mjs` now reports gross beside net (below); T-417 carries the confirming re-run |
-| D39 | FXAIX (T-412, question 2) | **Keep 0.015% until the prospectus is read.** The filing's data tag states 0.010% at six declared decimals; Fidelity's own literature has long said 0.015%. Both cannot be right, and the prospectus text decides, not the tag. Chosen over "change to 0.010% now". → HELD | T-417 reads the fee table in accession 0000819118-26-000072 on the owner's machine |
+| D39 | FXAIX (T-412, question 2) | **Keep 0.015% until the prospectus is read.** The filing's data tag states 0.010% at six declared decimals; Fidelity's own literature has long said 0.015%. Both are right only if 0.010% is the fee after a waiver — a 0.015% full fee with 0.005% waived — which the 2026-09-26 run could not tell; otherwise one is wrong. The prospectus fee table decides, not the tag. Chosen over "change to 0.010% now". → HELD | T-417 reads the fee table in accession 0000819118-26-000072 on the owner's machine |
 
 ## Notes
 
@@ -73,3 +73,12 @@ D38's sixteen is a waiver is therefore still open, and T-417's re-run answers it
 stated 0.010% rather than rounding 0.015%, and the reconcile's own report asks for the
 prospectus text before the row moves. Holding it risks overstating the fee by 0.005
 percentage points; moving it wrongly would publish a fee the fund does not charge.
+
+**Or both are right.** The owner asked whether the 0.005% is a fee paid to Fidelity. It may
+be: if the fee table shows a 0.015% management fee with 0.005% waived, Fidelity's 0.015%
+is the full fee and 0.010% is what investors pay, and under D36 the row becomes 0.01 with
+"(0.015% gross)" in its description. The first draft of D39 said the two "cannot both be
+right"; that was too strong, and T-417 now covers the waiver case. It could not be settled
+from the cloud session: its network policy refuses sec.gov and fidelity.com, and two web
+searches returned summaries that disagreed — one described a 0.015% total with a 0.010%
+net, the other gross and net both at 0.015%. Neither is a reading.
