@@ -94,6 +94,18 @@ step, and this file is its citation.
 | D19 | Opportunity-scout PROPOSE pass (T-322) | **Defer until rollout planning.** Proposals made now park under D1 immediately. Its five 2026-09-08 proposals remain pending the owner's ruling. | 1 item |
 | D20 | T6 agent-prompt evaluation (T-001) | **Run once now; owner judges.** One-off, not scheduled (D6 stands). Needs ANTHROPIC_API_KEY. Closes T-001 and T-129's result-quality half. → ACTIONABLE | 2 items |
 
+> ⚠ **Two pointers appended 2026-09-29 (T-415).** The rulings above are left as made.
+>
+> - **D17 was overtaken by D26 (2026-09-25).** D26 removed all six staking risk
+>   dimensions, so Keplr's liquidityRisk of 7 no longer exists anywhere. The facts D17
+>   cited — the 21-day Cosmos unbonding, and 28 days on Polkadot — stay on each asset's
+>   `lockupDays`/`lockupNote` in `stakingProviders.ts`.
+> - **D18's reason overstated one thing.** After D14, the options scorer was not
+>   `lib/risk`'s last live consumer: the commodity, currency and rate profiles also derive
+>   Portfolios' 1–10 instrument tiers, in `frontend/src/lib/data/instruments.ts` (P2-R3).
+>   The ruling stands unchanged — none of those consumers renders a profile's score, so
+>   no surface is yet approved to render one, and T-352, T-353 and T-355 stay deferred.
+
 
 ---
 

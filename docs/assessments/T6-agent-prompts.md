@@ -164,3 +164,25 @@ misfiled as a prompt problem. Nothing in this annotation evaluates agent output.
 invocation trigger yet and never runs". NT5 gave it one — it is in the Research
 page's per-market agent picker and on the research route's whitelist — so that
 copy has been wrong since 2026-08-18.
+
+## Annotation — 2026-09-29 (T-415 and D34; does not amend anything above)
+
+- **`equity-diligence`'s `riskScore` is gone (D34).** The paragraph under "A second,
+  quieter defect" left it in place, named as it was, with its direction stated. On
+  2026-09-29 the owner was offered the same rename the Pump Report got and ruled
+  instead: *"Remove it entirely; the backend of the risk assessment is most likely not
+  correct."* The report schema now carries no numeric score under any name, and
+  `lib/agents/__tests__/diligenceReport.test.ts` guards that — including a score
+  re-added under a new name, which its last case drives red on purpose.
+- **The app-assistant's "risk scoring that DOES exist" list**, recorded in the
+  2026-09-21 table as naming "staking-provider dimensions, macro/equity profiles", went
+  stale when D26 removed the dimensions on 2026-09-25; the equity profile had no
+  consumer either. It now names the options Trade Risk Scorer, the Portfolios
+  weighted-risk figure (macro tiers derived from the macro profiles), the fund
+  suitability band and the Pump Report's fraud-signal scores, each with its own scale,
+  and says staking providers carry no risk figure of any kind.
+- **Coin Discovery** was still described to the assistant as "scored candidate coins",
+  though its composite score was cut on 2026-08-20 (W3-1). The line now lists the facts
+  the page shows and tells the assistant that nothing on it is scored.
+- The agent-config Data Scraper copy named under "Not fixed" above was checked on the
+  same date and no longer says the agent never runs.

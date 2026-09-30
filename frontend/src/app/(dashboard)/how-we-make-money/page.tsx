@@ -58,7 +58,7 @@ export default function HowWeMakeMoneyPage() {
         title="How we make money"
         subtitle="What is paid for, what is not, and what that can and cannot influence"
         icon={<Coins size={20} aria-hidden />}
-        description="Finance Now rates providers it could be paid by. That is a real conflict of interest, so this page states the arrangement and the rules that constrain it."
+        description="Finance Now describes providers it could be paid by. That is a real conflict of interest, so this page states the arrangement and the rules that constrain it."
       />
 
       {/* The live state — computed, so it cannot be out of date. */}
@@ -89,11 +89,10 @@ export default function HowWeMakeMoneyPage() {
             </ul>
             <p className="text-[11px] leading-relaxed text-text-muted">
               That spread is uneven as a matter of fact rather than by choice: referral programs are
-              common among exchanges and rare among liquid-staking protocols. Exchanges also carry
-              the highest custody and counterparty figures among the six risk dimensions we publish,
-              so the providers we could be paid by are systematically the ones our own published
-              figures treat most cautiously — stated here because the bias runs against you, not in
-              your favour.
+              common among exchanges and rare among liquid-staking protocols. Every exchange in the
+              catalog is also custodial — it holds your coins on your behalf — so the providers we
+              could be paid by are the ones you would be trusting with custody. That is stated here
+              because the bias runs against you, not in your favour.
             </p>
           </div>
         )}
@@ -107,11 +106,11 @@ export default function HowWeMakeMoneyPage() {
         </p>
         <ul className="space-y-2 text-xs leading-relaxed text-text-secondary">
           <li>
-            <strong className="text-text-primary">It cannot change a risk judgement.</strong> Each
-            provider carries six risk dimensions, published as they are — there is deliberately no
-            single overall score anywhere in the app to move. The functions that work on those
-            dimensions take the six numbers and never receive the provider object at all, so there
-            is no affiliate field for them to read.
+            <strong className="text-text-primary">It cannot change a risk judgement.</strong> There
+            is none to change: no provider carries a risk score, rating or per-dimension figure
+            anywhere in the app. The last such figures, six curated risk dimensions per provider,
+            were removed on 2026-09-25, and a test fails the build if one comes back. The affiliate
+            code imports nothing from the app&rsquo;s risk engine either.
           </li>
           <li>
             <strong className="text-text-primary">It cannot change ordering or filtering.</strong>{' '}
@@ -119,9 +118,9 @@ export default function HowWeMakeMoneyPage() {
             comparator is a compile error, not a review catch.
           </li>
           <li>
-            <strong className="text-text-primary">It cannot soften a warning.</strong> A high risk
-            dimension, a staleness notice and a defunct badge render identically whether or not we
-            are paid. Defunct providers get no outbound link at all, paid or otherwise.
+            <strong className="text-text-primary">It cannot soften a warning.</strong> A staleness
+            notice and a defunct badge render identically whether or not we are paid. Defunct
+            providers get no outbound link at all, paid or otherwise.
           </li>
           <li>
             <strong className="text-text-primary">It cannot replace the honest URL.</strong> A
