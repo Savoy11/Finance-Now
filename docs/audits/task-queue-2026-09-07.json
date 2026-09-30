@@ -2,6 +2,11 @@
  "generated_at": "2026-09-07T12:06:35Z",
  "repo": "Savoy11/Finance-Now",
  "main_sha": "2128a18",
+ "baseline": {
+  "through": "T-398",
+  "on": "2026-09-16",
+  "note": "The last item in this file's first committed version (bcd4490, 2026-09-16). The published ledger page lists every item numbered after it, or carrying an `opened` block, in its 'Added since the ledger began' section, so new work reads as new instead of mixing into the status groups."
+ },
  "working_branch": {
   "name": "claude/finance-wave-two-62esqa",
   "head": "58521d1",

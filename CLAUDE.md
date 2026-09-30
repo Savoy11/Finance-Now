@@ -530,8 +530,14 @@ const { data } = useQuery({
 > is in `ledgerWorkspace.core.js` (no DOM; the tests run it against fake stores), and the
 > store it exposes has no delete path — archive only, per the owner's no-deletion rule. Rows
 > are normalized before they render, so one malformed row cannot blank the page. The db caps
-> at 5,000 documents across `docs` and `log`; at the cap, creates fail with `quota_exceeded`
+> at 5,000 documents across `docs`, `log` and `added`; at the cap, creates fail with `quota_exceeded`
 > and the page says nothing was removed — what to do then is the owner's call, not a cleanup.
+> **"Added since the ledger began" (2026-09-30)** lists items numbered after the JSON's
+> `baseline.through` (T-398), or carrying an `opened` block, and holds a third collection,
+> `added`: work recorded on the page before it has a number. Filing one means adding it to
+> the JSON by PR, then marking the row `filed` with its new number; a mistaken row is
+> `dropped` with a reason, never removed. The News Charts ledger is rendered by this same
+> script (`--queue`/`--root`/`--title`/`--repo`/`--baseline`; the header comment has the line).
 
 ### `src/lib/data/transferFees.ts`
 Central data file for the Transfer Fee Calculator.

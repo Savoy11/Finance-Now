@@ -3,7 +3,8 @@
  * Inlined into the published ledger page by scripts/lib/ledgerWorkspace.mjs, right after
  * ledgerWorkspace.core.js and inside the same wrapper, so `LedgerWorkspaceCore` is in
  * scope here. It runs in the claude.ai artifact viewer and reaches three runtime
- * capabilities through `claude.use(name)`: `db` (the document store: `docs` and `log`),
+ * capabilities through `claude.use(name)`: `db` (the document store: `docs`, `log`, and
+ * `added` — new work items recorded on the page before they have a number),
  * `assets` (the file store) and `user` (who did what). Every one can resolve null — a
  * reader view, a copy opened outside claude.ai — and the page must still render the ledger.
  *
@@ -30,7 +31,7 @@
   // ── runtime state ────────────────────────────────────────────────────────────
   var db = null, assets = null, user = null, store = null
   var canWrite = false           // set at start; a refused write turns it off for the visit
-  var docsById = {}, docsList = [], logList = []
+  var docsById = {}, docsList = [], logList = [], addedList = []
   var openSlots = {}             // itemId -> render function for an open item panel
   var slotForms = {}             // itemId -> that panel's form
   var itemEls = null             // itemId -> the item's <details>, built on first use
@@ -178,7 +179,110 @@
     var ids = []
     docsList.forEach(function (d) { ids.push(d.uploadedBy) })
     logList.forEach(function (l) { ids.push(l.by) })
+    addedList.forEach(function (a) { ids.push(a.by); ids.push(a.stateBy) })
     return ids
+  }
+
+  // ── rendering: items added after the ledger was made (db `added`) ────────────
+  function addedRow(a, ps) {
+    var li = el('li', 'ws-pend ws-added-row' + (a.state === 'waiting' ? '' : ' done'))
+    if (a.state === 'filed' && a.filedAs) {
+      var b = el('button', 'ws-pend-id mono', a.filedAs); b.type = 'button'
+      b.title = C.own(BY_ID, a.filedAs) ? BY_ID[a.filedAs].title : 'Not in this version of the ledger yet'
+      b.addEventListener('click', function () { jumpTo(a.filedAs) })
+      li.appendChild(b)
+    } else {
+      li.appendChild(el('span', 'chip dim', a.state === 'dropped' ? 'Dropped' : 'New'))
+    }
+    var body = el('div')
+    body.appendChild(el('span', 'ws-pend-title', a.title))
+    var meta = [C.own(C.ROLE_LABEL, a.role) ? C.ROLE_LABEL[a.role] : '', 'added by ' + who(ps, a.by), when(a.at), a.source].filter(Boolean)
+    body.appendChild(el('span', 'ws-dim', meta.join(' · ')))
+    if (a.detail) body.appendChild(el('p', 'ws-note', a.detail))
+    if (a.state !== 'waiting') {
+      var line = (a.state === 'filed' ? 'Filed' + (a.filedAs ? ' as ' + a.filedAs : '') : 'Dropped') + ' by ' + who(ps, a.stateBy) + (a.stateAt ? ' · ' + when(a.stateAt) : '')
+      body.appendChild(el('span', 'ws-dim', line))
+      if (a.stateNote) body.appendChild(el('p', 'ws-note', a.stateNote))
+    }
+    if (canWrite) body.appendChild(addedActions(a))
+    li.appendChild(body)
+    return li
+  }
+
+  /** Filed-as / Drop for a waiting item; Put back for a filed or dropped one. Never a delete. */
+  function addedActions(a) {
+    var box = el('div', 'ws-added-acts')
+    var status = el('span', 'ws-status')
+    function run(state, input) {
+      return async function () {
+        var v = input ? input.value.trim() : ''
+        var problem = C.checkStateChange(state, state === 'filed' ? v : '', state === 'dropped' ? v : '')
+        if (problem) { setStatus(status, problem, 'err'); return }
+        setDisabled([].slice.call(box.querySelectorAll('button,input')), true)
+        try {
+          var r = await store.setItemState(a.id, state, state === 'filed' ? v : '', state === 'dropped' ? v : '')
+          if (r.error) setStatus(status, r.error, 'err')
+        } catch (e) {
+          noteDbError(e)
+          setStatus(status, C.dbMessage(e), 'err')
+        } finally {
+          setDisabled([].slice.call(box.querySelectorAll('button,input')), false)
+        }
+      }
+    }
+    if (a.state === 'waiting') {
+      var num = el('input', 'ws-input mono'); num.placeholder = 'Filed as, e.g. T-417'; num.setAttribute('aria-label', 'Number it was filed as')
+      var bFile = el('button', 'ws-link', 'Mark filed'); bFile.type = 'button'
+      bFile.addEventListener('click', run('filed', num))
+      var why = el('input', 'ws-input'); why.placeholder = 'Why drop it?'; why.setAttribute('aria-label', 'Reason for dropping')
+      var bDrop = el('button', 'ws-link', 'Drop'); bDrop.type = 'button'
+      bDrop.title = 'Moves it out of the waiting list. Nothing is deleted.'
+      bDrop.addEventListener('click', run('dropped', why))
+      box.appendChild(num); box.appendChild(bFile); box.appendChild(why); box.appendChild(bDrop)
+    } else {
+      var back = el('button', 'ws-link', 'Put back to waiting'); back.type = 'button'
+      back.addEventListener('click', run('waiting', null))
+      box.appendChild(back)
+    }
+    box.appendChild(status)
+    return box
+  }
+
+  function renderAdded(ps) {
+    var list = $('added-list')
+    if (!list) return
+    var showAll = $('added-show-closed').checked
+    var waiting = addedList.filter(function (a) { return a.state === 'waiting' })
+    var shown = showAll ? addedList : waiting
+    clear(list)
+    if (!shown.length) list.appendChild(el('li', 'ws-empty', addedList.length ? 'Nothing waiting. Every added item has been filed or dropped.' : 'Nothing added yet.'))
+    eachRow(shown, function (a) { list.appendChild(addedRow(a, ps)) })
+    $('added-count').textContent = String(waiting.length)
+    $('added-show-wrap').hidden = addedList.length === waiting.length
+  }
+
+  function wireAddedForm() {
+    var title = $('added-title'), detail = $('added-detail'), role = $('added-role'), source = $('added-source')
+    var btn = $('added-save'), status = $('added-status')
+    var controls = [title, detail, role, source, btn]
+    $('added-show-closed').addEventListener('change', renderLibrary)
+    btn.addEventListener('click', async function () {
+      var fields = { title: title.value, detail: detail.value, role: role.value, source: source.value }
+      var problem = C.checkNewItem(fields)
+      if (problem) { setStatus(status, problem, 'err'); return }
+      setDisabled(controls, true)
+      try {
+        var r = await store.addItem(fields, addedList)
+        if (r.error) { setStatus(status, r.error, 'err'); return }
+        title.value = ''; detail.value = ''; role.value = ''; source.value = ''
+        setStatus(status, 'Added. Claude gives it a number when it files it into the ledger.', 'ok')
+      } catch (e) {
+        noteDbError(e)
+        setStatus(status, C.dbMessage(e), 'err')
+      } finally {
+        setDisabled(controls, false)
+      }
+    })
   }
 
   async function renderLibrary() {
@@ -224,6 +328,9 @@
     var recent = logList.slice(0, 15)
     if (!recent.length) act.appendChild(el('li', 'ws-empty', 'No activity yet.'))
     eachRow(recent, function (l) { act.appendChild(logRow(l, ps, true)) })
+
+    // Items added on the page, waiting for a number
+    try { renderAdded(ps) } catch (e) { if (window.console) console.warn('workspace: added list failed to draw', e) }
 
     // Chips on every item summary, then any open item panels
     paintChips()
@@ -445,6 +552,7 @@
   function applyWriteGate() {
     $('ws-uploader').hidden = !(assets && canWrite)
     $('ws-readonly').hidden = canWrite
+    if ($('added-form')) $('added-form').hidden = !canWrite
     Object.keys(slotForms).forEach(function (id) { slotForms[id].hidden = !canWrite })
     renderLibrary() // redraws rows with or without their Archive controls
   }
@@ -468,14 +576,17 @@
   async function start() {
     var conn = $('ws-conn')
     var c = window.claude
+    var addedConn = $('added-conn')
     if (!c || typeof c.use !== 'function') {
       setStatus(conn, 'This copy of the page has no workspace storage. Open the published page on claude.ai to see uploads and confirmations.', 'err')
+      setStatus(addedConn, 'Items waiting for a number are kept with the published page; open it on claude.ai to see them.', 'err')
       return
     }
     var got = await Promise.all([c.use('db'), c.use('assets'), c.use('user')])
     db = got[0]; assets = got[1]; user = got[2]
     if (!db) {
       setStatus(conn, 'The workspace is not available in this view. The ledger below is unaffected.', 'err')
+      setStatus(addedConn, 'Items waiting for a number are not available in this view.', 'err')
       return
     }
     var me = null, editor = null
@@ -489,7 +600,9 @@
     store = C.makeStore({ db: db, assets: assets, me: me })
     $('ws-live').hidden = false
     setStatus(conn, '')
+    setStatus(addedConn, '')
     wireMainForm()
+    if ($('added-list')) wireAddedForm()
     applyWriteGate()
     refreshUsage()
 
@@ -512,6 +625,18 @@
       logList = list
       renderLibrary()
     }, function (e) { setStatus($('ws-conn'), 'Activity stopped updating (' + ((e && e.code) || 'error') + '). Reload to reconnect.', 'err') })
+
+    if ($('added-list')) {
+      db.collection('added').onSnapshot(function (snap) {
+        var list = []
+        snap.docs.forEach(function (d) {
+          try { list.push(C.normAdded(d.id, d.data())) } catch (e) { /* unreadable row: skipped */ }
+        })
+        list.sort(function (a, b) { return C.orderOf(b) - C.orderOf(a) || (b.id < a.id ? -1 : 1) })
+        addedList = list
+        renderLibrary()
+      }, function (e) { setStatus($('added-conn'), 'The waiting list stopped updating (' + ((e && e.code) || 'error') + '). Reload to reconnect.', 'err') })
+    }
 
     // Any item already open when the workspace connected.
     document.querySelectorAll('.item[open] .ws-slot').forEach(openSlot)

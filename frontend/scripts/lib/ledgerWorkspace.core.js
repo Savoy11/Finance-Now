@@ -52,6 +52,16 @@ var LedgerWorkspaceCore = (function () {
   var LOG_KINDS = { progress: true, confirmed: true, reopened: true, note: true }
   var DECISIONS = { confirmed: true, reopened: true }
 
+  // ── items added after the ledger was made (db collection `added`, 2026-09-30) ──
+  // A new work item can be recorded on the page the moment it comes up, before anyone
+  // gives it a number in the repository list. It waits there until Claude files it
+  // (state `filed`, with the number it got) or someone drops it (with the reason).
+  // Nothing is ever removed: a mistaken row is dropped, and a dropped or filed row can
+  // be put back to waiting.
+  var ADDED_STATES = { waiting: 'Waiting to be filed', filed: 'Filed', dropped: 'Dropped' }
+  var ROLE_LABEL = { 'owner-decision': 'Owner decision', 'owner-machine': "Owner's machine", either: 'Either', 'remote-dev': 'Dev' }
+  var ITEM_ID = /^[A-Z]{1,4}-\d{1,5}$/
+
   function own(o, k) { return typeof k === 'string' && Object.prototype.hasOwnProperty.call(o, k) }
   function str(v) { return typeof v === 'string' ? v : '' }
   function strs(v) { return Array.isArray(v) ? v.filter(function (s) { return typeof s === 'string' && s.length > 0 }) : [] }
@@ -87,6 +97,45 @@ var LedgerWorkspaceCore = (function () {
       at: str(x.at),
       ord: num(x.ord),
     }
+  }
+
+  /** An `added` row as the page may use it, whatever was stored. The snapshot id always wins. */
+  function normAdded(id, x) {
+    x = x && typeof x === 'object' ? x : {}
+    var state = own(ADDED_STATES, x.state) ? x.state : 'waiting'
+    var filedAs = str(x.filedAs).trim().toUpperCase()
+    return {
+      id: String(id),
+      title: str(x.title).slice(0, 200) || 'Untitled item',
+      detail: str(x.detail).slice(0, 4000),
+      role: own(ROLE_LABEL, x.role) ? x.role : '',
+      source: str(x.source).slice(0, 300),
+      by: str(x.by) || null,
+      at: str(x.at),
+      ord: num(x.ord),
+      state: state,
+      // A `filed` row without a well-formed number is still shown, as filed, with no link.
+      filedAs: ITEM_ID.test(filedAs) ? filedAs : '',
+      stateNote: str(x.stateNote).slice(0, 1000),
+      stateBy: str(x.stateBy) || null,
+      stateAt: str(x.stateAt),
+    }
+  }
+
+  /** Why a new item cannot be saved yet, or null. */
+  function checkNewItem(f) {
+    f = f || {}
+    if (!str(f.title).trim()) return 'Give the item a title.'
+    if (str(f.title).trim().length > 200) return 'Keep the title under 200 characters; put the rest in the details.'
+    return null
+  }
+
+  /** Why a state change cannot be saved yet, or null. */
+  function checkStateChange(state, filedAs, note) {
+    if (!own(ADDED_STATES, state)) return 'Unknown state.'
+    if (state === 'filed' && !ITEM_ID.test(str(filedAs).trim().toUpperCase())) return 'Give the number it was filed as, like T-417 or NC-171.'
+    if (state === 'dropped' && !str(note).trim()) return 'Say why it is being dropped.'
+    return null
   }
 
   /** Where an entry sits in time: its `ord`, else its `at`, bounded to a valid date. */
@@ -261,7 +310,54 @@ var LedgerWorkspaceCore = (function () {
       await withRetry(function () { return db.collection('docs').doc(String(id)).update({ archived: archived === true }) }, 'unavailable', wait)
     }
 
-    return { uploadFiles: uploadFiles, addLog: addLog, setArchived: setArchived }
+    /**
+     * Record a new work item, waiting to be filed. `seen` is the rows already listed (for
+     * ordering). Resolves { row, error }: a validation problem comes back as `error` and
+     * nothing is written; a db error is thrown.
+     */
+    async function addItem(fields, seen) {
+      fields = fields || {}
+      var problem = checkNewItem(fields)
+      if (problem) return { row: null, error: problem }
+      var t = now()
+      var row = {
+        title: str(fields.title).trim().slice(0, 200),
+        detail: str(fields.detail).trim().slice(0, 4000),
+        role: own(ROLE_LABEL, fields.role) ? fields.role : '',
+        source: str(fields.source).trim().slice(0, 300),
+        by: me,
+        at: new Date(t).toISOString(),
+        ord: nextOrd(seen, t),
+        state: 'waiting',
+        filedAs: '',
+        stateNote: '',
+        stateBy: null,
+        stateAt: '',
+      }
+      var ref = db.collection('added').doc() // minted once: a retry cannot create a second item
+      await withRetry(function () { return ref.set(row) }, 'unavailable', wait)
+      return { row: row, error: null }
+    }
+
+    /**
+     * Mark an added item filed (with its number), dropped (with the reason), or back to
+     * waiting. Never removes it. Resolves { error }; a db error is thrown.
+     */
+    async function setItemState(id, state, filedAs, note) {
+      var problem = checkStateChange(state, filedAs, note)
+      if (problem) return { error: problem }
+      var patch = {
+        state: state,
+        filedAs: state === 'filed' ? str(filedAs).trim().toUpperCase() : '',
+        stateNote: str(note).trim().slice(0, 1000),
+        stateBy: me,
+        stateAt: new Date(now()).toISOString(),
+      }
+      await withRetry(function () { return db.collection('added').doc(String(id)).update(patch) }, 'unavailable', wait)
+      return { error: null }
+    }
+
+    return { uploadFiles: uploadFiles, addLog: addLog, setArchived: setArchived, addItem: addItem, setItemState: setItemState }
   }
 
   return {
@@ -270,5 +366,7 @@ var LedgerWorkspaceCore = (function () {
     stateOf: stateOf, awaitingLedger: awaitingLedger, chipText: chipText,
     typeFor: typeFor, checkFiles: checkFiles, uploadError: uploadError, withRetry: withRetry,
     dbMessage: dbMessage, makeStore: makeStore,
+    ADDED_STATES: ADDED_STATES, ROLE_LABEL: ROLE_LABEL, normAdded: normAdded,
+    checkNewItem: checkNewItem, checkStateChange: checkStateChange,
   }
 })(); // the semicolon matters: the client, inlined next, opens with "(" (and see workspaceScripts)
