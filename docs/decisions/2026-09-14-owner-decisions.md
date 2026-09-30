@@ -106,6 +106,17 @@ step, and this file is its citation.
 >   The ruling stands unchanged — none of those consumers renders a profile's score, so
 >   no surface is yet approved to render one, and T-352, T-353 and T-355 stay deferred.
 
+> ⚠ **Two pointers appended 2026-09-30 (queue sweep).** The rulings above are left as made.
+>
+> - **D4 was narrowed by D47.** The owner ruled that build-by-allocation needs no legal
+>   review — *"A lawyer doesn't need to review this"* — so it stays live. D4 still gates
+>   S5 contribution modeling and the federal sale-tax estimator. Neither was built, although
+>   this file's D4 row says all three "stay built" (`docs/decisions/2026-09-30-owner-decisions.md`).
+> - **Applied to the ledger in full on 2026-09-30.** This file says applying it "is the next
+>   step". That happened in pieces (2026-09-19, 2026-09-26), and 47 items were still carried
+>   as open, blocked or parked against rulings made here. They were applied with the owner's
+>   approval: `docs/audits/queue-sweep-2026-09-30.md`.
+
 
 ---
 

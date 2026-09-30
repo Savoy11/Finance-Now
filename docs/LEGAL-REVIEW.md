@@ -131,6 +131,14 @@ estimator over user-supplied basis and holding period) cross into regulated advi
 the same line RP-3 and RP-6 already drew for risk scores — *ranking versus explanation* —
 applied to a different feature. It blocks the tax estimator outright.
 
+> **Update 2026-09-30.** "Unrecorded since 2026-08-17" stopped being true on 2026-09-14:
+> D4 answered *how* the question gets settled — a qualified legal review before launch —
+> for build-by-allocation, S5 contribution modeling and the tax estimator. On 2026-09-30
+> the owner took build-by-allocation out of that set: *"A lawyer doesn't need to review
+> this"* (D47). It stays live, and T-059 is closed. The review still gates the tax
+> estimator (T-058) and contribution modeling (T-067). Neither is built, and no reviewer
+> is engaged (D30).
+
 **E. Affiliate programmes.** T-119, T-120, T-124, T-125. FTC disclosure and other
 jurisdictions (UK FCA), plus per-programme terms on placement, comparison tables and
 ranking. Nothing here ships before B and C.

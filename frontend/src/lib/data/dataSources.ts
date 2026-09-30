@@ -149,9 +149,9 @@ export const DATA_SOURCES: DataSourceEntry[] = [
   },
   {
     id: 'funding-rates', surface: 'Perp funding rates + open interest', module: 'crypto',
-    route: '/live-data/funding-rates', status: 'live',
-    providers: [{ name: 'OKX', host: 'www.okx.com', url: 'https://www.okx.com/docs-v5/', role: 'primary', auth: 'none' }],
-    notes: 'Binance futures (fapi) is 451 from many hosts; OKX is the working source.',
+    route: '/live-data/funding-rates', status: 'unavailable',
+    providers: [{ name: 'None — no source cleared for this use', role: 'primary', auth: 'none' }],
+    notes: 'OKX was the only source and was withdrawn on terms grounds 2026-09-30 (owner decision D40): its API Agreement §9.4 limits Market Data — funding rates included, public endpoints expressly — to "your own personal, non-commercial trading and account management purposes" and bars using it in any "analytics platform". Binance futures (fapi) answers 451 from US hosts. The route answers ok:false with the reason, and the Market Structure panel shows funding and open interest as not available.',
   },
   {
     id: 'defi-tvl', surface: 'DeFi TVL', module: 'crypto',

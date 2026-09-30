@@ -12,6 +12,11 @@
 // fee cut sat in 2026q1 while a September run read 2026q2, found nothing, and left six
 // rows wrong with a clean report (T-411). Quarters cache under fn-rr-cache-<q>.
 //
+// It compares the catalog against the fee an investor pays today — the net under a
+// waiver, the total otherwise — and reports BOTH figures per fund, listing every waiver
+// with whether the catalog's description states the full fee (D36, 2026-09-30). Until
+// then it kept only the figure it compared, so a run could not tell a waiver from a cut.
+//
 // WHY THIS EXISTS
 //
 // build-fund-facts.mjs says it plainly: "Expense ratio is deliberately NOT here:
@@ -57,6 +62,7 @@ import os from 'node:os'
 import { execFileSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { selectQuarters, mergeFirstHit } from './lib/rrQuarters.mjs'
+import { classifyExpense, grossStatement, catalogDescriptions } from './lib/feeWaiver.mjs'
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const OUT_JSON = path.join(ROOT, 'fund-fee-reconcile.json')
@@ -424,6 +430,13 @@ async function main() {
     throw new Error('parsed 0 funds from fundCatalog.ts — the entry shape changed; fix the parse rather than trusting an empty diff')
   }
   log(`catalog: ${catalog.length} funds`)
+  // Descriptions, for D36's second half only: a row holding a waived (net) fee must state
+  // its full fee. Read separately so the parse above keeps its three fields; a row this
+  // misses answers 'unknown' in the waiver report, never 'not stated'.
+  const descriptions = catalogDescriptions(catalogSrc)
+  if (descriptions.size < catalog.length) {
+    log(`   ⚠ descriptions read for ${descriptions.size} of ${catalog.length} funds — the rest report 'unknown' for D36`)
+  }
 
   // --symbols A,B,C reconciles those tickers instead of the catalog — catalogued or not.
   // A candidate that is not yet in the catalog gets its SEC figure and filing reported
@@ -604,6 +617,7 @@ async function main() {
   }
 
   // ── Reconcile ─────────────────────────────────────────────────────────────
+  const round4 = (x) => (x == null ? null : Number(x.toFixed(4)))
   const rows = []
   for (const f of targets) {
     const hit = byTicker.get(f.symbol)
@@ -611,6 +625,9 @@ async function main() {
     const sec = hit?.values ?? {}
     const secEr = sec.netExpenseRatio ?? sec.grossExpenseRatio
     const catalogued = f.expenseRatioPct != null
+    // Both figures, and whether a waiver separates them (D36). secEr above stays the one
+    // the catalog is compared against: net where a filing states a waiver, else the total.
+    const fee = classifyExpense({ netPct: sec.netExpenseRatio?.pct ?? null, grossPct: sec.grossExpenseRatio?.pct ?? null })
     rows.push({
       symbol: f.symbol,
       type: f.type,
@@ -620,6 +637,14 @@ async function main() {
       secExpenseRatioPct: secEr ? Number(secEr.pct.toFixed(4)) : null,
       secExpenseBasis: secEr?.basis ?? null,
       expenseDeltaPct: secEr && catalogued ? Number((secEr.pct - f.expenseRatioPct).toFixed(4)) : null,
+      secNetExpenseRatioPct: round4(fee.netPct),
+      secGrossExpenseRatioPct: round4(fee.grossPct),
+      secFeeLine: fee.line,
+      waiver: fee.waiver,
+      waiverNote: fee.note,
+      catalogStatesGross: fee.waiver === true && catalogued
+        ? grossStatement(descriptions.get(f.symbol), round4(fee.grossPct))
+        : null,
       secFrontLoadPct: sec.frontLoad ? Number(sec.frontLoad.pct.toFixed(4)) : null,
       secDeferredLoadPct: sec.deferredLoad ? Number(sec.deferredLoad.pct.toFixed(4)) : null,
       sec12b1Pct: sec.twelveB1 ? Number(sec.twelveB1.pct.toFixed(4)) : null,
@@ -637,6 +662,13 @@ async function main() {
   const differing = matched.filter((r) => r.catalogued && Math.abs(r.expenseDeltaPct) >= MATERIAL_PCT)
   const candidates = matched.filter((r) => !r.catalogued)
   const loads = rows.filter((r) => r.secFrontLoadPct || r.secDeferredLoadPct)
+  // D36: waived funds, and the matched rows whose data cannot say (net with no total to
+  // compare, or net above its total) — those go to a human, never to a guess.
+  const waived = matched.filter((r) => r.waiver === true)
+  const waiverUnclear = matched.filter((r) => r.waiver === null && r.secFeeLine === 'net')
+  // Any waived catalogued row whose description does not state the filing's gross: missing,
+  // a different figure, or a description the parse could not read.
+  const descriptionsToFix = waived.filter((r) => r.catalogued && r.catalogStatesGross !== 'stated')
 
   fs.writeFileSync(OUT_JSON, JSON.stringify({
     generatedAt: new Date().toISOString(),
@@ -657,16 +689,22 @@ async function main() {
       noExpenseValue: rows.filter((r) => r.status === 'no-expense-value').length,
       differing: differing.length,
       withLoads: loads.length,
+      waivers: waived.length,
+      waiverUnclear: waiverUnclear.length,
+      waiverDescriptionsToFix: descriptionsToFix.length,
     },
     rows,
   }, null, 2))
 
   const csv = [
-    'symbol,type,catalog_er,sec_er,delta,front_load,deferred_load,12b1,filed_on,accession,quarter,status',
+    // The waiver columns are appended, not interleaved, so the older columns keep their positions.
+    'symbol,type,catalog_er,sec_er,delta,front_load,deferred_load,12b1,filed_on,accession,quarter,status,sec_net_er,sec_gross_er,fee_line,waiver,catalog_states_gross',
     ...rows.map((r) => [
       r.symbol, r.type ?? '', r.catalogExpenseRatioPct ?? '', r.secExpenseRatioPct ?? '', r.expenseDeltaPct ?? '',
       r.secFrontLoadPct ?? '', r.secDeferredLoadPct ?? '', r.sec12b1Pct ?? '',
       r.filedOn ?? '', r.accession ?? '', r.quarter ?? '', r.status,
+      r.secNetExpenseRatioPct ?? '', r.secGrossExpenseRatioPct ?? '', r.secFeeLine ?? '',
+      r.waiver == null ? '' : String(r.waiver), r.catalogStatesGross ?? '',
     ].join(',')),
   ].join('\n')
   fs.writeFileSync(OUT_CSV, csv)
@@ -679,6 +717,37 @@ async function main() {
     for (const r of differing.sort((a, b) => Math.abs(b.expenseDeltaPct) - Math.abs(a.expenseDeltaPct))) {
       const sign = r.expenseDeltaPct > 0 ? '+' : ''
       log(`   ${r.symbol.padEnd(6)} catalog ${String(r.catalogExpenseRatioPct).padEnd(7)} SEC ${String(r.secExpenseRatioPct).padEnd(7)} (${sign}${r.expenseDeltaPct})  filed ${r.filedOn ?? '?'} [${r.quarter}]`)
+    }
+  }
+
+  // D36 (owner ruling, 2026-09-30): a row records the fee an investor pays TODAY — the net
+  // under a waiver — and its description states the full fee. The comparison above already
+  // uses the net; this is the half it could not see until both figures were kept.
+  log('\n══ Fee waivers in effect — D36: the catalog records the net, the description states the gross ══')
+  if (waived.length === 0 && waiverUnclear.length === 0) {
+    log('   none among the matched funds')
+  } else {
+    const verdict = {
+      stated: 'gross stated in the description',
+      'not-stated': 'DESCRIPTION MUST STATE THE GROSS (D36)',
+      'stated-differs': 'DESCRIPTION STATES A DIFFERENT GROSS',
+      unknown: 'description not read — check by hand',
+    }
+    for (const r of waived) {
+      const d36 = r.catalogued ? verdict[r.catalogStatesGross] : 'not in the catalog'
+      log(`   ${r.symbol.padEnd(6)} net ${String(r.secNetExpenseRatioPct).padEnd(7)} gross ${String(r.secGrossExpenseRatioPct).padEnd(7)} ${d36}`)
+    }
+    for (const r of waiverUnclear) {
+      const why = r.waiverNote === 'net-above-total'
+        ? `net ${r.secNetExpenseRatioPct} is ABOVE its total ${r.secGrossExpenseRatioPct}`
+        : `net ${r.secNetExpenseRatioPct} with no total line to compare it with`
+      log(`   ${r.symbol.padEnd(6)} ${why} — read the filing's fee table (${r.accession ?? '?'})`)
+    }
+    if (descriptionsToFix.length) {
+      const n = descriptionsToFix.length
+      log(`\n   ${n} catalogued row${n === 1 ? '' : 's'} hold${n === 1 ? 's' : ''} a waived fee whose description does not state the filing's full fee.`)
+      log('   Add or correct "Expense ratio is net of a contractual waiver (X% gross)." in the description;')
+      log('   fundCatalog.test.ts then pins it. A waiver can lapse, so re-check its end date.')
     }
   }
 

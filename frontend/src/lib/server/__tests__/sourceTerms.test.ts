@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import {
   SOURCE_TERMS,
   SOURCE_TERMS_REVIEW_AFTER_DAYS,
@@ -286,5 +288,26 @@ describe('news publishers', () => {
     const d = checkSourceTerms(`https://${host}/`, NOW)
     expect(d.entry?.verdict, `${host} must be prohibited — Dow Jones ToU §9.1/§9.4.1`).toBe('prohibited')
     expect(d.allowed, `${host} must not be allowed`).toBe(false)
+  })
+})
+
+describe('OKX (D40, 2026-09-30)', () => {
+  // Withdrawn on TERMS, not availability — the keyless v5 endpoints still answer. Its API
+  // Agreement §9.4 bars using its market data in an "analytics platform", and says so of
+  // public endpoints expressly. As with Dow Jones, the refusal is asserted where the next
+  // maintainer looking for a funding-rate source will meet it.
+  it.each(['www.okx.com', 'okx.com'])('%s is PROHIBITED and must stay unfetchable', (host) => {
+    const d = checkSourceTerms(`https://${host}/api/v5/public/funding-rate?instId=BTC-USDT-SWAP`, NOW)
+    expect(d.entry?.verdict, `${host} must be prohibited — OKX API Agreement §9.4`).toBe('prohibited')
+    expect(d.allowed, `${host} must not be allowed`).toBe(false)
+  })
+
+  it('the funding-rates route calls nothing on OKX and says why it has no data', () => {
+    const code = readFileSync(join(process.cwd(), 'src/app/live-data/funding-rates/route.ts'), 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/^\s*\/\/.*$/gm, '')
+    expect(code).not.toMatch(/okx\.com/i)
+    expect(code).toMatch(/ok: false/)
+    expect(code).toMatch(/reason: /)
   })
 })

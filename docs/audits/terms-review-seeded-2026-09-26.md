@@ -274,3 +274,23 @@ None is load-bearing. They stay `seeded` with this note.
    for publicnode.
 7. Which of the twelve clean readings to flip to `verified` — the flip is the owner's, as
    before; the registry entries are ready for it.
+
+## Answered 2026-09-30 — D40–D46 (T-413 closed; T-005 waits on sign-off)
+
+Rulings: `docs/decisions/2026-09-30-owner-decisions.md`.
+
+1. **OKX → `prohibited` (D40).** Removed as a data source. `/live-data/funding-rates` has no
+   source and answers `ok:false` with the reason.
+2. **Nasdaq Trader → T-407 (D41)**, decided with CoinDesk and Investing.com. Kept in use
+   meanwhile; the entry is `conditional` with the open question as its condition.
+3. **KuCoin → `⚠ SINGLE-USER ONLY` + D22 trigger (D42).**
+4. **Alpha Vantage, Messari, Santiment → `⚠ SINGLE-USER ONLY` (D43).**
+5. **CoinMarketCap → treated as personal (D44).** The owner's key is free, absent or
+   unconfirmed; the commercial plan's credit line is recorded as the route, not rendered.
+6. **Jito, Rocket Pool, Pendle → the narrow reading (D45)**, as D25 took for publicnode.
+   Each is `conditional` with an "API only" condition.
+7. **Mark readings `verified` → not yet (D46).** Nothing flips, the six ruled entries
+   included. T-005 stays open on that sign-off alone.
+
+One correction to this audit: it says **nine** findings, but rows 10, 11, 12, 16, 17, 19,
+21, 24, 25 and 28 are **ten** hosts.

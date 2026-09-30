@@ -255,6 +255,33 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     review: 'verified',
     confidence: 'high',
   },
+  {
+    domain: 'okx.com',
+    name: 'OKX',
+    verdict: 'prohibited',
+    // RULED 2026-09-30 (T-413, owner decision D40): STOP USING IT. Read 2026-09-26 on the owner's
+    // machine — docs/audits/terms-review-seeded-2026-09-26.md. `review` stays 'seeded' only because the
+    // owner deferred marking any of that day's readings verified (D46); the document WAS read.
+    //
+    // The OKX API Agreement (last updated 28 Jul 2026, reached from the Terms of Service §4.3) §9.4
+    // licenses Market Data "solely for your own personal, non-commercial trading and account management
+    // purposes", bars displaying it to any third party, bars using it to "build, operate, or contribute
+    // to any competing data product, market data service, financial data aggregator, price feed, or
+    // analytics platform", and says the restrictions "apply equally to Market Data accessed through
+    // public endpoints". §1.8 names funding rates and OHLCV. The Poloniex shape above, not the FMP one:
+    // the grant does not reach an analytics display at all, so there is no licence to put a condition on.
+    //
+    // Consequence: /live-data/funding-rates lost its only source and answers ok:false with the reason;
+    // the Market Structure panel shows funding and open interest as not available.
+    // ⚠ termsUrl still names the API documentation, which is not the terms. The reading reached the API
+    // Agreement from ToS §4.3 but did not record its address — record it when T-005 ratifies.
+    termsUrl: 'https://www.okx.com/docs-v5/en/#overview',
+    finding:
+      'OKX API Agreement (last updated 2026-07-28, reached from the Terms of Service §4.3), read 2026-09-26 on the owner\'s machine. §9.4 "Market Data — Non-Commercial Use and Redistribution Restrictions" allows Market Data to be used "solely for your own personal, non-commercial trading and account management purposes"; it may not be resold, redistributed, published, displayed or otherwise made available to any third party without OKX\'s prior written consent, nor used "to build, operate, or contribute to any competing data product, market data service, financial data aggregator, price feed, or analytics platform", and the restrictions "apply equally to Market Data accessed through public endpoints". §1.8 defines Market Data to include funding rates and OHLCV. Finance Now is an analytics platform, so its use falls outside the grant. Removed as a data source 2026-09-30 (owner decision D40).',
+    reviewedAt: '2026-09-30',
+    review: 'seeded',
+    confidence: 'high',
+  },
 
   // ── CONDITIONAL ────────────────────────────────────────────────────────────
   {
@@ -627,13 +654,18 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     // READ 2026-09-26 (T-005; docs/audits/terms-review-seeded-2026-09-26.md) — review stays seeded until the owner ratifies:
     // ⚠ PERSONAL, NON-COMMERCIAL — ToS §2(a): commercial use includes providing "information accessed
     // through the Alpha Vantage Platform" to others. Same class as FMP/Finnhub/Twelve Data → T-151.
+    // RULED 2026-09-30 (T-413): D43 — personal use only (D22).
+    // review stays 'seeded': the owner deferred every verified flip (D46).
     domain: 'alphavantage.co',
     name: 'Alpha Vantage',
     verdict: 'conditional',
     termsUrl: 'https://www.alphavantage.co/terms_of_service/',
     finding:
       'Documented public API issued against a free key, offered for third-party application use at 25 requests/day on the free tier.',
-    conditions: ['Valid API key required', 'Free tier is 25 requests/day — do not exceed'],
+    conditions: [
+      'Valid API key required', 'Free tier is 25 requests/day — do not exceed',
+      '⚠ SINGLE-USER ONLY — satisfied TODAY, blocking AT RELEASE (D22, 2026-09-23; applied 2026-09-30 under T-413 / D43). Nobody but the owner can load a page today, so this licence is currently met. The FIRST NON-OWNER PAGE LOAD — a private beta, a demo link, a shared staging URL — puts the app outside it. To operate beyond that: Terms of Service §2(a) licenses "personal, non-commercial use" and counts as commercial any use that lets individuals or entities other than the user access the information "directly or indirectly"; commercial use is by written agreement (premium@alphavantage.co). It is the IPO calendar\'s only source and the last rung of the equity quote ladder. See docs/decisions/2026-09-30-owner-decisions.md.',
+    ],
     reviewedAt: '2026-08-06',
     review: 'seeded',
     confidence: 'medium',
@@ -644,13 +676,19 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     // aggregation for third parties, storing only "for caching purposes". Commercial: display licence
     // on "Your Product" + REQUIRED attribution "Data provided by CoinMarketCap.com" with hyperlink
     // (not rendered today). Which binds depends on the key’s plan.
+    // RULED 2026-09-30 (T-413): D44 — personal use only (D22): the owner's key is free, absent or
+    // unconfirmed, so the Personal API terms govern.
+    // review stays 'seeded': the owner deferred every verified flip (D46).
     domain: 'coinmarketcap.com',
     name: 'CoinMarketCap',
     verdict: 'conditional',
     termsUrl: 'https://coinmarketcap.com/api/documentation/v1/#section/Terms-of-Use',
     finding:
       'Commercial API. Keyed access under a plan licence; attribution to CoinMarketCap is required wherever its data is displayed.',
-    conditions: ['Valid API key required', 'Attribute CoinMarketCap on any surface showing its data'],
+    conditions: [
+      'Valid API key required', 'Attribute CoinMarketCap on any surface showing its data',
+      '⚠ SINGLE-USER ONLY — satisfied TODAY, blocking AT RELEASE (D22, 2026-09-23; applied 2026-09-30 under T-413 / D44). Nobody but the owner can load a page today, so this licence is currently met. The FIRST NON-OWNER PAGE LOAD — a private beta, a demo link, a shared staging URL — puts the app outside it. To operate beyond that: the Commercial API agreement, which requires "Data provided by CoinMarketCap.com" with a hyperlink on every surface showing its data — not rendered today. Meanwhile the Personal terms also bar storing Content "other than for caching purposes". See docs/decisions/2026-09-30-owner-decisions.md.',
+    ],
     reviewedAt: '2026-08-06',
     review: 'seeded',
     confidence: 'medium',
@@ -737,24 +775,6 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     // (Disclosures, Privacy Policy, Trading Rules) are unread.
     reviewedAt: '2026-09-20',
     review: 'verified',
-    confidence: 'medium',
-  },
-  {
-    // READ 2026-09-26 (T-005; docs/audits/terms-review-seeded-2026-09-26.md) — review stays seeded until the owner ratifies:
-    // ⚠ READS AS PROHIBITED for a deployed analytics platform — the OKX API Agreement (28 Jul 2026,
-    // reached from ToS §4.3) §9.4: Market Data "solely for your own personal, non-commercial trading
-    // and account management purposes"; may not "publish, display, or otherwise make Market Data
-    // available to any third party" nor use it in any "financial data aggregator, price feed, or
-    // analytics platform"; "apply equally to … public endpoints". Funding rates and OHLCV are named in
-    // §1.8. OWNER DECISION (T-413): personal-only under D22, or prohibited now.
-    domain: 'okx.com',
-    name: 'OKX',
-    verdict: 'conditional',
-    termsUrl: 'https://www.okx.com/docs-v5/en/#overview',
-    finding: 'Documented keyless public market-data API (v5) with published rate limits, offered for programmatic use.',
-    conditions: ['Respect the published v5 rate limits'],
-    reviewedAt: '2026-08-06',
-    review: 'seeded',
     confidence: 'medium',
   },
   {
@@ -905,12 +925,17 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     // Disclaimer says Content "may not be copied, reproduced, transmitted, displayed … or otherwise
     // used" without written consent beyond fair use, and "Nasdaq stock symbols are proprietary to
     // Nasdaq, Inc." Whether a plain-text symbol list is "Content" is the T-407 class of judgement.
+    // RULED 2026-09-30 (T-413): D41 — undecided; joins T-407 with CoinDesk and Investing.com. Kept in use meanwhile.
+    // review stays 'seeded': the owner deferred every verified flip (D46).
     domain: 'nasdaqtrader.com',
     name: 'Nasdaq Trader (symbol directory)',
-    verdict: 'approved',
+    verdict: 'conditional',
     termsUrl: 'https://www.nasdaqtrader.com/Trader.aspx?id=symboldirdefs',
     finding:
       'Symbol directory files published on a public FTP/HTTP endpoint expressly as a reference resource for market participants. Listing metadata only — no quotes.',
+    conditions: [
+      '⚠ OPEN — decided with CoinDesk and Investing.com under T-407 (D41, 2026-09-30). The site\'s Copyright & Disclaimer (read 2026-09-26) says its "Content" "may not be copied, reproduced, transmitted, displayed, performed, distributed, rented, sublicensed, altered, stored for subsequent use or otherwise used" without Nasdaq\'s prior written consent, and that "Nasdaq stock symbols are proprietary to Nasdaq, Inc." Whether the plain-text symbol directory — listing facts, not design, text or images — is "Content" in that sense is undecided. Used meanwhile, for fund discovery only.',
+    ],
     reviewedAt: '2026-08-06',
     review: 'seeded',
     confidence: 'medium',
@@ -1165,13 +1190,18 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     // Platform or any content", no "data collection robots … for other commercial interests", no
     // systematic collection into "databases" without written permission. A personal run reads inside
     // it; a deployed product does not → ⚠ SINGLE-USER ONLY + D22 trigger.
+    // RULED 2026-09-30 (T-413): D42 — personal use only (D22); the ToS were read 2026-09-26.
+    // review stays 'seeded': the owner deferred every verified flip (D46).
     domain: 'kucoin.com',
     name: 'KuCoin (public market-data API)',
     verdict: 'conditional',
     termsUrl: 'https://www.kucoin.com/docs',
     finding:
-      'KuCoin publishes a documented public REST API; the currencies endpoint (incl. per-chain withdrawal fees) is unauthenticated. Docs impose public rate limits. Seeded from the published API documentation — the exchange ToS have not been read for this project.',
-    conditions: ['Respect documented rate limits', 'Keyless public endpoints only — no authenticated endpoints (RP-5)'],
+      'KuCoin publishes a documented public REST API; the currencies endpoint (incl. per-chain withdrawal fees) is unauthenticated. Docs impose public rate limits. Seeded from the published API documentation. The exchange Terms of Use (09/24/2026) were read 2026-09-26: Article 91 bars commercial use of the Platform or its content and systematic collection without the Platform\'s written permission (see the note above).',
+    conditions: [
+      'Respect documented rate limits', 'Keyless public endpoints only — no authenticated endpoints (RP-5)',
+      '⚠ SINGLE-USER ONLY — satisfied TODAY, blocking AT RELEASE (D22, 2026-09-23; applied 2026-09-30 under T-413 / D42). Nobody but the owner can load a page today, so this licence is currently met. The FIRST NON-OWNER PAGE LOAD — a private beta, a demo link, a shared staging URL — puts the app outside it. To operate beyond that: Terms of Use Article 91 bars commercial use of the Platform or its content, and systematic collection "without the written permission of the Platform" — ask KuCoin for that permission. The one surface it feeds, Transfer Fees, is already hidden from rollout. See docs/decisions/2026-09-30-owner-decisions.md.',
+    ],
     reviewedAt: '2026-08-21',
     review: 'seeded',
     confidence: 'medium',
@@ -1250,11 +1280,16 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     // ⚠ AMBIGUOUS — Terms of Use (via footer) bar "data mining tools, robots, crawlers … to scrape or
     // otherwise remove data from the Interfaces or Features"; kobe.mainnet.jito.network is a
     // documented API, not a listed Interface. Recommend the narrow reading (D25 precedent).
+    // RULED 2026-09-30 (T-413): D45 — the narrow (website-only) reading, as D25 took for publicnode.
+    // review stays 'seeded': the owner deferred every verified flip (D46).
     domain: 'jito.network',
     name: 'Jito',
-    verdict: 'approved',
+    verdict: 'conditional',
     termsUrl: 'https://docs.jito.network/',
     finding: 'Protocol publishes documented keyless APY endpoints for public/integrator use.',
+    conditions: [
+      'API only (D45, 2026-09-30 — the narrow reading D25 took for publicnode). The Terms of Use bar data-mining tools, robots, crawlers or scrapers used "to scrape or otherwise remove data from the Interfaces or Features"; read as governing the web interface, not the documented APY endpoint this app calls. A judgement about scope, recorded as one: never fetch or scrape the website itself.',
+    ],
     reviewedAt: '2026-08-06',
     review: 'seeded',
     confidence: 'medium',
@@ -1297,12 +1332,17 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     // shared, redistributed, published, posted publicly", republishing only via portions "expressly
     // marked as permissible to share publicly". Keyed, optional; personal today, a public deployment
     // needs the marked widgets or an agreement.
+    // RULED 2026-09-30 (T-413): D43 — personal use only (D22).
+    // review stays 'seeded': the owner deferred every verified flip (D46).
     domain: 'messari.io',
     name: 'Messari',
     verdict: 'conditional',
     termsUrl: 'https://messari.io/terms-of-service',
     finding: 'Commercial research and data API. Keyed access under the plan licence; redistribution of research content is restricted.',
-    conditions: ['Valid API key required', 'Display with attribution — no redistribution of research content'],
+    conditions: [
+      'Valid API key required', 'Display with attribution — no redistribution of research content',
+      '⚠ SINGLE-USER ONLY — satisfied TODAY, blocking AT RELEASE (D22, 2026-09-23; applied 2026-09-30 under T-413 / D43). Nobody but the owner can load a page today, so this licence is currently met. The FIRST NON-OWNER PAGE LOAD — a private beta, a demo link, a shared staging URL — puts the app outside it. To operate beyond that: the Terms of Service limit use to "your internal use only and only by one end user", with no publishing or sharing, except portions "clearly, prominently, and expressly marked as permissible to share publicly (i.e., certain of our APIs or widgets…)" — use only those, or get an agreement. See docs/decisions/2026-09-30-owner-decisions.md.',
+    ],
     reviewedAt: '2026-08-06',
     review: 'seeded',
     confidence: 'medium',
@@ -1328,12 +1368,17 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     // ⚠ PERSONAL-ONLY — T&C (July 2023) §10.3: "solely for your own private use and not for resale or
     // other transfer to, or use by or for the benefit of, any third party"; nothing "that could
     // compete with the business of Santiment". Keyed, optional.
+    // RULED 2026-09-30 (T-413): D43 — personal use only (D22).
+    // review stays 'seeded': the owner deferred every verified flip (D46).
     domain: 'santiment.net',
     name: 'Santiment',
     verdict: 'conditional',
     termsUrl: 'https://santiment.net/terms-and-conditions/',
     finding: 'Commercial on-chain and social analytics GraphQL API. Keyed access under the plan licence.',
-    conditions: ['Valid API key required', 'Stay within the plan\'s metric and history entitlements'],
+    conditions: [
+      'Valid API key required', 'Stay within the plan\'s metric and history entitlements',
+      '⚠ SINGLE-USER ONLY — satisfied TODAY, blocking AT RELEASE (D22, 2026-09-23; applied 2026-09-30 under T-413 / D43). Nobody but the owner can load a page today, so this licence is currently met. The FIRST NON-OWNER PAGE LOAD — a private beta, a demo link, a shared staging URL — puts the app outside it. To operate beyond that: Terms and Conditions (July 2023) §10.3 — "solely for your own private use and not for resale or other transfer to, or use by or for the benefit of, any third party" — name no route to broader rights: ask Santiment directly and treat it as long-lead. See docs/decisions/2026-09-30-owner-decisions.md.',
+    ],
     reviewedAt: '2026-08-06',
     review: 'seeded',
     confidence: 'medium',
@@ -1350,11 +1395,16 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     // ⚠ AMBIGUOUS — Terms of Service (PDF) bar "any robot, spider, crawler, scraper, or other
     // automated means or interface not provided by us, to access the Site to extract data";
     // api.rocketpool.net is an interface provided by them. Recommend the narrow reading.
+    // RULED 2026-09-30 (T-413): D45 — the narrow (website-only) reading, as D25 took for publicnode.
+    // review stays 'seeded': the owner deferred every verified flip (D46).
     domain: 'rocketpool.net',
     name: 'Rocket Pool',
-    verdict: 'approved',
+    verdict: 'conditional',
     termsUrl: 'https://docs.rocketpool.net/',
     finding: 'Protocol publishes documented keyless network-stats endpoints for public/integrator use.',
+    conditions: [
+      'API only (D45, 2026-09-30 — the narrow reading D25 took for publicnode). The Terms of Service (PDF) bar "any robot, spider, crawler, scraper, or other automated means or interface not provided by us, to access the Site to extract data"; api.rocketpool.net is an interface they provide, so the clause is read as governing the Site. A judgement about scope, recorded as one: never scrape the Site itself.',
+    ],
     reviewedAt: '2026-08-06',
     review: 'seeded',
     confidence: 'medium',
@@ -1404,11 +1454,16 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     // distribute in any way, any data, content, or any part of Pendle Protocol except as expressly
     // permitted by applicable laws"; written for the Website/Protocol, with the API separately
     // documented for developers. Recommend the narrow reading.
+    // RULED 2026-09-30 (T-413): D45 — the narrow (website-only) reading, as D25 took for publicnode.
+    // review stays 'seeded': the owner deferred every verified flip (D46).
     domain: 'pendle.finance',
     name: 'Pendle',
-    verdict: 'approved',
+    verdict: 'conditional',
     termsUrl: 'https://docs.pendle.finance/Developers/Overview',
     finding: 'Protocol publishes a documented keyless market/yield API for public/integrator use.',
+    conditions: [
+      'API only (D45, 2026-09-30 — the narrow reading D25 took for publicnode). The Terms of Use bar users from copying, republishing or distributing "any data, content, or any part of Pendle Protocol" except as law permits; read as governing the app interface and its content, not the documented public API this app queries for pool discovery. A judgement about scope, recorded as one: show pool figures only, never republish Pendle\'s interface content.',
+    ],
     reviewedAt: '2026-08-06',
     review: 'seeded',
     confidence: 'medium',

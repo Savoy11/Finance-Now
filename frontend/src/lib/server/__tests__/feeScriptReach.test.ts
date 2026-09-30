@@ -46,6 +46,21 @@ describe('build-fund-fees.mjs reads across quarters and accepts candidates', () 
     expect(fees).toMatch(/quartersRead: quarters\.map/)
   })
 
+  it('keeps BOTH expense figures and reports every waiver against D36 (2026-09-30)', () => {
+    // Until T-412 the script compared net ?? total and dropped the other, so a run could
+    // not tell a waiver from a fee cut, and D36's "state the full fee" was uncheckable.
+    expect(fees).toMatch(/import \{ classifyExpense, grossStatement, catalogDescriptions \} from '\.\/lib\/feeWaiver\.mjs'/)
+    // Anchored on the assignment: the helper's result must BE `fee`, not sit behind a bypass.
+    expect(fees).toMatch(/const fee = classifyExpense\(\{ netPct: sec\.netExpenseRatio\?\.pct \?\? null, grossPct: sec\.grossExpenseRatio\?\.pct \?\? null \}\)\n/)
+    expect(fees).toMatch(/catalogStatesGross: fee\.waiver === true && catalogued\s*\?\s*grossStatement\(descriptions\.get\(f\.symbol\)/)
+    for (const field of ['secNetExpenseRatioPct', 'secGrossExpenseRatioPct', 'waiver', 'catalogStatesGross']) {
+      expect(fees).toMatch(new RegExp(`\\b${field}: `))
+    }
+    expect(fees).toMatch(/Fee waivers in effect — D36/)
+    // The comparison figure is unchanged: net where a waiver exists, else the total.
+    expect(fees).toMatch(/const secEr = sec\.netExpenseRatio \?\? sec\.grossExpenseRatio/)
+  })
+
   it('still reports, never writes: nothing touches fundCatalog.ts or the stamp', () => {
     expect(fees).not.toMatch(/writeFileSync\([^)]*fundCatalog/)
     expect(fees).not.toMatch(/FUND_DATA_LAST_VERIFIED\s*=/)

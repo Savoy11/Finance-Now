@@ -776,7 +776,18 @@ function PortfolioDetail({ portfolio, onEdit, onBack }: {
         <div className="bg-bg-card border border-border rounded-xl p-4 text-center">
           <div className="text-xl font-bold text-emerald-400">{annualIncome.covered > 0 ? fmt$(annualIncome.income, 0) : '—'}</div>
           <div className="text-xs text-text-muted mt-0.5">Est. Annual Income</div>
-          <div className="text-[10px] text-text-muted mt-0.5">{annualIncome.covered > 0 ? `${annualIncome.covered} yielding holding${annualIncome.covered !== 1 ? 's' : ''} · ref yields` : 'no yielding securities'}</div>
+          <div className="text-[10px] text-text-muted mt-0.5">{
+            annualIncome.covered > 0
+              ? `${annualIncome.covered} yielding holding${annualIncome.covered !== 1 ? 's' : ''} · ref yields`
+              : annualIncome.unpriced > 0
+                ? `no live price for ${annualIncome.unpriced} yielding holding${annualIncome.unpriced !== 1 ? 's' : ''}`
+                : 'no yielding securities'
+          }</div>
+          {/* D48: holdings with no live price are left out, as in every other total
+              here — so say how much the figure covers, the way the risk card does. */}
+          {annualIncome.covered > 0 && annualIncome.pricedPct < 99.5 && (
+            <div className="text-[10px] text-amber-400 mt-0.5">covers {annualIncome.pricedPct.toFixed(0)}% of yielding holdings</div>
+          )}
         </div>
         <div className="bg-bg-card border border-border rounded-xl p-4 text-center">
           <div className="text-xl font-bold text-text-primary">{holdings.length}</div>
@@ -1062,7 +1073,7 @@ export default function PortfoliosPage() {
                   // localStorage-only persistence (the store has been DB-backed
                   // since the /api/user/portfolios migration) and a stale "live
                   // mode" (LIVE_DATA is hardcoded true; there is no other mode).
-                  { label: 'Live pricing', text: 'Valuations use live prices — CoinGecko for crypto, the keyed quote ladder for stocks and funds. Positions without a live price are excluded from totals, never valued at cost.' },
+                  { label: 'Live pricing', text: 'Valuations use live prices — CoinGecko for crypto, the keyed quote ladder for stocks and funds. Positions without a live price are excluded from totals and from the income estimate, never valued at cost.' },
                   { label: 'Risk metrics', text: 'Weighted risk averages each holding\'s curated risk tier (1–10, higher = riskier) by allocation, renormalised over the share of the portfolio that has a tier — the coverage percentage says how much. It is NOT the canonical 0–100 Safety Score, which is not published per asset (RP-6); concentration warnings flag single-position weight. Sharpe and drawdown are not computed here — see Compare for window statistics.' },
                   { label: 'Persistence', text: 'Portfolios are saved to your account database via /api/user/portfolios. A one-time import migrated any legacy localStorage portfolios.' },
                 ]}

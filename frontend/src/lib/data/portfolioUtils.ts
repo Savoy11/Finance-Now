@@ -267,23 +267,40 @@ export function computeMetrics(
 // ─── Estimated annual income ──────────────────────────────────────────────────
 
 export interface AnnualIncomeEstimate {
-  income:  number   // projected USD per year from reference yields
-  covered: number   // holdings that contributed (had a yield and a value)
+  income:    number   // projected USD per year from reference yields, priced holdings only
+  covered:   number   // holdings that contributed (a reference yield AND a live price)
+  unpriced:  number   // holdings with a reference yield left out for want of a live price
+  pricedPct: number   // share of the yielding holdings' planned capital the income covers
 }
 
 // Projected annual dividend/distribution income from security holdings'
 // reference yields (crypto staking yield is tracked on the Staking page).
+//
+// D48 (owner, 2026-09-30): a holding with no live price is LEFT OUT, and
+// `unpriced` / `pricedPct` say how much was left out. This used to fall back to
+// the planned amount (`currentValue ?? targetValue`), so this one figure counted
+// at cost what the page promises never to — "positions without a live price are
+// excluded from totals, never valued at cost" — and what PB-1 took out of the
+// value and P&L totals on 2026-08-18.
 export function computeAnnualIncome(holdings: ComputedHolding[]): AnnualIncomeEstimate {
   let income = 0
   let covered = 0
+  let unpriced = 0
+  let yieldingCapital = 0
+  let pricedCapital = 0
   for (const h of holdings) {
     if (!isSecurityKey(h.cgId)) continue
     const sym = securitySymbol(h.cgId)
     const yieldPct = getEquity(sym)?.dividendYieldPct ?? getFund(sym)?.yieldPct ?? null
-    const value = h.currentValue ?? h.targetValue
-    if (yieldPct != null && value > 0) { income += value * yieldPct / 100; covered++ }
+    if (yieldPct == null || h.targetValue <= 0) continue
+    yieldingCapital += h.targetValue
+    if (h.currentValue == null) { unpriced++; continue }
+    pricedCapital += h.targetValue
+    if (h.currentValue > 0) { income += h.currentValue * yieldPct / 100; covered++ }
   }
-  return { income, covered }
+  // Nothing yielding means nothing was left out: 100, not 0.
+  const pricedPct = yieldingCapital > 0 ? (pricedCapital / yieldingCapital) * 100 : 100
+  return { income, covered, unpriced, pricedPct }
 }
 
 // ─── Backtest arithmetic ──────────────────────────────────────────────────────

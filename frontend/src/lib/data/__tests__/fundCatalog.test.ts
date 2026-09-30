@@ -366,3 +366,32 @@ describe('one waiver rule: the fee paid today, with the full fee stated (D36)', 
     expect(grossStated('Expense ratio is net of a contractual waiver (0.31% gross).')).toBe(0.31)
   })
 })
+
+describe('a description that quotes its own fee agrees with its row (2026-09-30)', () => {
+  // A fee typed into a description is a second copy of the row's number, and nothing
+  // re-reads it when the row changes. D38 moved VUG 0.04 → 0.03 and its description kept
+  // saying "at 4 bps" until this check found it. (VTEB's "MUB's twin at the same fee" was
+  // the relative version — 0.03 against 0.05 since the re-root — and was reworded rather
+  // than guarded: a comparison names another row, which a pattern cannot resolve.)
+  const BPS = /\b(\d+(?:\.\d+)?)\s*bps\b/i
+  const quotedBps = (description: string) => {
+    const m = description.match(BPS)
+    return m ? Number(m[1]) : null
+  }
+  const agrees = (quoted: number, expenseRatioPct: number) =>
+    Math.abs(quoted - expenseRatioPct * 100) < 1e-9
+
+  it('every "N bps" in a description equals that fund’s expense ratio', () => {
+    const quoting = FUND_CATALOG.filter((f) => quotedBps(f.description) !== null)
+    expect(quoting.map((f) => f.symbol)).toContain('VUG')
+    for (const f of quoting) {
+      const q = quotedBps(f.description)!
+      expect(agrees(q, f.expenseRatioPct), `${f.symbol} says ${q} bps but records ${f.expenseRatioPct}%`).toBe(true)
+    }
+  })
+
+  it('guards the guard: VUG as it stood before this fix fails it', () => {
+    expect(agrees(quotedBps('Large-cap growth at 4 bps; tech-heavy tilt.')!, 0.03)).toBe(false)
+    expect(agrees(quotedBps('S&P 500 at 1.5 bps — among the cheapest funds anywhere.')!, 0.015)).toBe(true)
+  })
+})

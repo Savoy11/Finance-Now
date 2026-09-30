@@ -16,13 +16,14 @@ import { DataBadge } from '@/components/ui/DataBadge'
 import type { FearGreedData } from '@/app/live-data/fear-greed/route'
 import type { DefiTvlData } from '@/app/live-data/defi-tvl/route'
 import type { BtcStatsData } from '@/app/live-data/btc-stats/route'
+import type { FundingRatesResponse } from '@/app/live-data/funding-rates/route'
 
 // ─── Market Structure panel (crypto-native overlays, feature #3) ─────────────────
 
 export function MarketStructurePanel({ symbol }: { symbol: string }) {
   const isBtc = symbol.toUpperCase() === 'BTC'
 
-  const { data: funding } = useQuery({
+  const { data: funding } = useQuery<FundingRatesResponse>({
     queryKey: ['ms-funding'],
     queryFn: () => fetch('/live-data/funding-rates').then(r => r.json()),
     staleTime: 5 * 60 * 1000,
@@ -57,7 +58,13 @@ export function MarketStructurePanel({ symbol }: { symbol: string }) {
     enabled: isBtc,
   })
 
-  const row = (funding?.rates ?? []).find((r: { symbol: string }) => r.symbol?.toUpperCase() === symbol.toUpperCase())
+  const row = (funding?.rates ?? []).find((r) => r.symbol?.toUpperCase() === symbol.toUpperCase())
+  // Funding and open interest have had NO source since 2026-09-30 (D40: OKX's terms bar this
+  // use). The route says why; show that rather than a bare "n/a" that reads like a glitch.
+  const fundingReason = funding?.ok === false ? funding.reason : undefined
+  const fundingMissing = fundingReason
+    ? <span className="text-text-muted" title={fundingReason}>not available — source withdrawn</span>
+    : <span className="text-text-muted">n/a</span>
   const stableTotal: number | null = reserves?.assets
     ? reserves.assets.reduce((a: number, s: { circulatingUsd?: number }) => a + (s.circulatingUsd ?? 0), 0)
     : null
@@ -84,7 +91,7 @@ export function MarketStructurePanel({ symbol }: { symbol: string }) {
         <span className="text-xs font-semibold uppercase tracking-wider text-text-muted">Market Structure</span>
         <DataBadge
           status={row || stableTotal || fg || totalTvl ? 'live' : 'unavailable'}
-          source={`OKX · DefiLlama · Alternative.me${isBtc ? ' · mempool.space' : ''}`}
+          source={`DefiLlama · Alternative.me${isBtc ? ' · mempool.space' : ''}`}
         />
       </div>
 
@@ -96,12 +103,12 @@ export function MarketStructurePanel({ symbol }: { symbol: string }) {
             <span className={clsx('font-mono font-semibold', row.annualized >= 0 ? 'text-emerald-400' : 'text-red-400')}>
               {row.annualized >= 0 ? '+' : ''}{row.annualized.toFixed(2)}% <span className="text-text-muted font-normal">({row.exchange})</span>
             </span>
-          ) : <span className="text-text-muted">n/a</span>}
+          ) : fundingMissing}
         </div>
         {/* Open interest */}
         <div className="flex items-center justify-between text-[11px]">
           <span className="flex items-center gap-1.5 text-text-muted"><Scale size={12} /> Open interest</span>
-          {row?.openInterestUsd ? <span className="font-mono font-semibold text-text-primary">{fmtUsd(row.openInterestUsd)}</span> : <span className="text-text-muted">n/a</span>}
+          {row?.openInterestUsd ? <span className="font-mono font-semibold text-text-primary">{fmtUsd(row.openInterestUsd)}</span> : fundingMissing}
         </div>
         {/* Long/short ratio */}
         <div className="flex items-center justify-between text-[11px]">
