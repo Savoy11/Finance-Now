@@ -726,3 +726,6 @@ went to `docs/BUSINESS-CHECKLIST.md`, which is worked separately from both produ
 - Bank sync provider (Plaid vs Teller) if/when CSV import isn't enough.
 - Whether the FastAPI backend returns for scoring/backtesting workloads.
 - Billing model: per-module licenses vs. tiered bundles — Phase 6.
+  Working plan recorded 2026-09-28 (D29): **tiered bundles** — hosted Free / Core /
+  Pro / Advisor plus a BYOK Perpetual desktop edition — pending the owner's reassessment;
+  still parked under D21 (T-085).

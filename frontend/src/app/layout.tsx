@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     template: '%s | Finance Now',
   },
   description:
-    'Institutional-grade multi-asset analytics: crypto, equities, funds, and macro — risk scores, reserve transparency, and real-time alerts.',
+    'Institutional-grade multi-asset analytics: crypto, equities, funds, and macro — reserve transparency, technical analysis, and real-time alerts.',
   robots: 'noindex, nofollow',
 }
 
