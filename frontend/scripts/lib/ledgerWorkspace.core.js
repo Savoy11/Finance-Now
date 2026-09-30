@@ -61,6 +61,8 @@ var LedgerWorkspaceCore = (function () {
   var ADDED_STATES = { waiting: 'Waiting to be filed', filed: 'Filed', dropped: 'Dropped' }
   var ROLE_LABEL = { 'owner-decision': 'Owner decision', 'owner-machine': "Owner's machine", either: 'Either', 'remote-dev': 'Dev' }
   var ITEM_ID = /^[A-Z]{1,4}-\d{1,5}$/
+  // The `by` a Claude session writes on the rows it adds (not a person's id; never sent to profiles).
+  var CLAUDE_ID = 'claude'
 
   function own(o, k) { return typeof k === 'string' && Object.prototype.hasOwnProperty.call(o, k) }
   function str(v) { return typeof v === 'string' ? v : '' }
@@ -366,7 +368,7 @@ var LedgerWorkspaceCore = (function () {
     stateOf: stateOf, awaitingLedger: awaitingLedger, chipText: chipText,
     typeFor: typeFor, checkFiles: checkFiles, uploadError: uploadError, withRetry: withRetry,
     dbMessage: dbMessage, makeStore: makeStore,
-    ADDED_STATES: ADDED_STATES, ROLE_LABEL: ROLE_LABEL, normAdded: normAdded,
+    ADDED_STATES: ADDED_STATES, ROLE_LABEL: ROLE_LABEL, CLAUDE_ID: CLAUDE_ID, normAdded: normAdded,
     checkNewItem: checkNewItem, checkStateChange: checkStateChange,
   }
 })(); // the semicolon matters: the client, inlined next, opens with "(" (and see workspaceScripts)

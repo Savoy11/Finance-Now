@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import {
-  WORKSPACE_CAPABILITIES, itemsJson, workspaceItemSlot, workspaceScripts, workspaceSection,
+  WORKSPACE_CAPABILITIES, WORKSPACE_CSS, itemsJson, workspaceItemSlot, workspaceScripts, workspaceSection,
   addedSection, itemsAddedSince,
 } from '../../../../scripts/lib/ledgerWorkspace.mjs'
 
@@ -53,6 +53,7 @@ type Core = {
   dbMessage(e: unknown): string
   makeStore(opts: { db: unknown; assets: unknown; me: string | null; now?: () => number; wait?: () => Promise<void> }): Store
   normAdded(id: string, x: unknown): Added
+  CLAUDE_ID: string
   checkNewItem(f: unknown): string | null
   checkStateChange(state: string, filedAs: string, note: string): string | null
 }
@@ -568,5 +569,18 @@ describe('items added after the ledger was made', () => {
     expect(clientSrc).toMatch(/db\.collection\('added'\)\.onSnapshot/)
     expect(clientSrc).toMatch(/C\.normAdded\(d\.id, d\.data\(\)\)/)
     expect(generator).toMatch(/\$\{addedSection\(itemsAddedSince\(items, baseline\), baseline\)\}/)
+  })
+
+  it("rows Claude writes read as Claude's, and that marker never reaches the name lookup", () => {
+    expect(core.CLAUDE_ID).toBe('claude')
+    expect(core.normAdded('a', { title: 't', by: 'claude' }).by).toBe('claude')
+    // who() names the marker before any profile lookup; names() filters it out, because one
+    // id profiles() cannot resolve could fail the whole lookup and blank every other name.
+    expect(clientSrc).toMatch(/if \(id === C\.CLAUDE_ID\) return 'Claude'/)
+    expect(clientSrc).toMatch(/x !== C\.CLAUDE_ID/)
+  })
+
+  it('the New and Dropped chips sit at the top of their row instead of stretching to its height', () => {
+    expect(WORKSPACE_CSS).toMatch(/\.ws-added-row > \.chip\{align-self:start;justify-self:start\}/)
   })
 })
