@@ -56,10 +56,10 @@
   "total_verified": 398,
   "outstanding": 357,
   "by_status": {
-   "closed": 147,
+   "closed": 148,
    "open": 47,
    "parked": 93,
-   "blocked": 69,
+   "blocked": 68,
    "unclear": 1
   },
   "by_owner_role": {
@@ -69,7 +69,7 @@
    "owner-machine": 84
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 147,
+  "closed_by_annotation": 148,
   "counts_recomputed_on": "2026-09-30",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 357
@@ -5039,7 +5039,7 @@
    "owner_role": "owner-decision",
    "category": "terms-review",
    "effort": "medium",
-   "blocking_decision": "Owner: ratify the readings in docs/audits/terms-review-seeded-2026-09-26.md — flip the twelve clean entries to verified, and rule on the nine findings filed as T-413 (OKX §9.4 first). Reading is not ratifying; every entry still says seeded.",
+   "blocking_decision": "Owner: sign off the 2026-09-26 readings — mark `verified` the entries whose documents were read (docs/audits/terms-review-seeded-2026-09-26.md). Deferred by the owner on 2026-09-30 (D46: \"Not yet\"); nothing else remains. Reading is not ratifying; every entry still says seeded.",
    "related_ids": [
     "P2-O1",
     "W4"
@@ -5085,7 +5085,8 @@
      "frontend/src/lib/server/sourceTerms.ts"
     ],
     "corrections": [
-     "2026-09-26: THE READING HALF IS DONE — all 30 seeded hosts, on the owner’s machine over verified clean egress (Charter AS11426, proxy:false hosting:false), three fetch paths (curl, curl with the SEC-declared agent, local headless Chrome for browser-only pages). Record with verbatim clauses: docs/audits/terms-review-seeded-2026-09-26.md; each registry entry carries a dated READ comment pointing there, nothing else changed. Twelve read clean, nine carry a finding the owner must weigh, three could not be read from any path (Binance.com — moot under the US 451; HTX; XT.com), four have no document at all (DefiLlama, Blockchain.com, Stride, Beefy — recorded as absent, not cleared), Yearn is no longer fetched (T-399), Yahoo is confirmed prohibited. THE ONE THAT CHANGES SOMETHING: the OKX API Agreement (28 Jul 2026) §9.4 grants Market Data — funding rates and OHLCV by name — \"solely for your own personal, non-commercial trading and account management purposes\", bars making it available to any third party \"whether for commercial gain or otherwise\", bars its use in any \"financial data aggregator, price feed, or analytics platform\", and applies \"equally to … public endpoints\". The registry’s seeded conditional cannot stand; whether it is personal-only under D22 or prohibited now is the owner’s (T-413). Re-scoped to blocked/owner-decision: the remaining work is ratification."
+     "2026-09-26: THE READING HALF IS DONE — all 30 seeded hosts, on the owner’s machine over verified clean egress (Charter AS11426, proxy:false hosting:false), three fetch paths (curl, curl with the SEC-declared agent, local headless Chrome for browser-only pages). Record with verbatim clauses: docs/audits/terms-review-seeded-2026-09-26.md; each registry entry carries a dated READ comment pointing there, nothing else changed. Twelve read clean, nine carry a finding the owner must weigh, three could not be read from any path (Binance.com — moot under the US 451; HTX; XT.com), four have no document at all (DefiLlama, Blockchain.com, Stride, Beefy — recorded as absent, not cleared), Yearn is no longer fetched (T-399), Yahoo is confirmed prohibited. THE ONE THAT CHANGES SOMETHING: the OKX API Agreement (28 Jul 2026) §9.4 grants Market Data — funding rates and OHLCV by name — \"solely for your own personal, non-commercial trading and account management purposes\", bars making it available to any third party \"whether for commercial gain or otherwise\", bars its use in any \"financial data aggregator, price feed, or analytics platform\", and applies \"equally to … public endpoints\". The registry’s seeded conditional cannot stand; whether it is personal-only under D22 or prohibited now is the owner’s (T-413). Re-scoped to blocked/owner-decision: the remaining work is ratification.",
+     "2026-09-30: T-413 CLOSED under D40–D46. OKX is prohibited (funding-rates has no source); Nasdaq Trader joins T-407; KuCoin, Alpha Vantage, Messari, Santiment and CoinMarketCap carry the D22 SINGLE-USER condition; Jito, Rocket Pool and Pendle take the narrow reading. Offered the flip for the 11 clean readings plus the 6 ruled entries, the owner chose \"Not yet\" (D46), so every 2026-09-26 entry stays seeded with its READ and RULED notes beside it. What remains here is that sign-off and nothing else — no re-reading. When it happens, also record the OKX API Agreement's address: the entry's termsUrl still names the API docs."
     ]
    }
   },
@@ -11535,7 +11536,7 @@
   },
   {
    "id": "T-407",
-   "title": "Revisit the three sources kept conditional on an unresolved judgement (CoinDesk, Investing.com, Bitget)",
+   "title": "Revisit the three sources kept conditional on an unresolved judgement (CoinDesk, Investing.com, Bitget) — plus Nasdaq Trader (D41, 2026-09-30)",
    "status": "open",
    "confidence": "high",
    "owner_role": "owner-decision",
@@ -11548,7 +11549,9 @@
     "T-247",
     "T-251",
     "T-242",
-    "T-151"
+    "T-151",
+    "T-413",
+    "D41"
    ],
    "summary": "Four registry entries are `conditional` in a sense the word does not carry anywhere else in the registry. Normally `conditional` means permitted while conditions hold, and the conditions are obligations to honour. In these four it means WE ARE PROCEEDING ON A QUESTION THE DOCUMENT DOES NOT ANSWER — the plain text does not permit what the app does, and the entry is conditional because of an owner judgement about SCOPE. Same word, two different claims, and the registry has no field that separates them. CoinDesk: no display permission; \"rss\"/\"syndicat\"/\"feed\" return zero hits in 300 lines. Investing.com: no display permission and automated extraction expressly forbidden, yet it publishes the feeds and robots.txt permits /rss/. publicnode: bars re-use \"commercially and non-commercially\", which read literally prohibits consuming an RPC provider at all. Bitget: §1 lists the UNITED STATES among Prohibited Countries while the owner is US-resident. Three of the four were the owner's deliberate 2026-09-20 calls made with the readings in hand. This item exists so those calls stay visible rather than ageing into apparent settledness.",
    "next_action": "NOT a re-read — all four documents have been read carefully and will not say anything different next time. What is owed is a decision on each, and they do not all need the same one. (1) CoinDesk and Investing.com turn on ONE shared question: does a terms document that never mentions feeds govern a feed the publisher deliberately publishes and permits in robots.txt? Answer it once and both resolve; it is a question for a professional, not another careful reading. (2) publicnode needs only a judgement on whether to keep reading an absurdly broad clause narrowly — exposure is one route on a page already hidden from rollout. Also fix its termsUrl, which points at the homepage rather than the document its finding quotes. (3) ⚠ BITGET DOES NOT WAIT FOR EITHER. It is the only source where a clause may bar use OUTRIGHT rather than limit scope, and the owner is US-resident. Everything else here is about what may be SHOWN; this is about whether the app may call the host at all, today. If any resolves toward prohibited, T-247 is the mechanism — a per-source display flag — and the blast radius is recorded on each entry.",
@@ -11574,6 +11577,9 @@
     "note": "MECHANISM READY (T-247): CoinDesk and Investing.com carry whatMayBeDisplayed: unclear. Resolving either toward headline-and-link is now setting that field to headline-link — the three news routes blank the summary automatically — plus updating displayGrant.test.ts's \"no source is headline-link today\" assertion with the decision. The question itself is unchanged and still the owner's (or a professional's).",
     "evidence": [
      "frontend/src/lib/server/sourceTerms.ts"
+    ],
+    "corrections": [
+     "2026-09-30: NASDAQ TRADER JOINS THIS ITEM (D41). Its Copyright & Disclaimer (read 2026-09-26) says its \"Content\" may not be copied, reproduced, displayed or otherwise used without Nasdaq's prior written consent, and that \"Nasdaq stock symbols are proprietary to Nasdaq, Inc.\" The app downloads the plain-text symbol directory (nasdaqtraded.txt) to discover funds beyond the 140 curated ones in /live-data/fund-universe. Whether a list of facts is \"Content\" is the same scope question as CoinDesk and Investing.com, so it is decided with them. Kept in use meanwhile; the entry went approved → conditional with the question as its condition. If it resolves toward prohibited, the fund list falls back to the 140 curated funds."
     ]
    }
   },
@@ -11857,12 +11863,12 @@
   {
    "id": "T-413",
    "title": "Rule on the nine findings from the 2026-09-26 seeded-terms readings (OKX §9.4 first)",
-   "status": "blocked",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "terms-review",
    "effort": "medium",
-   "blocking_decision": "Owner rulings, in the order they bite: (1) OKX — personal-only with the D22 trigger, or prohibited now (§9.4 quoted in the audit; funding-rates loses its only source either way at the trigger); (2) Nasdaq Trader — add to T-407 or rule now; (3) KuCoin — ⚠ SINGLE-USER ONLY + D22 trigger; (4) Alpha Vantage, Messari, Santiment — apply the D22 posture the personal-vs-commercial keystone closed on (personal today, commercial at release; ⚠ SINGLE-USER ONLY); (5) CoinMarketCap — which plan the key is on, and render \"Data provided by CoinMarketCap.com\" if commercial; (6) Jito / Rocket Pool / Pendle — accept the narrow interface-only reading as D25 did; (7) which clean readings to flip to verified.",
+   "blocking_decision": null,
    "related_ids": [
     "T-005",
     "T-407",
@@ -11882,6 +11888,20 @@
     "on": "2026-09-26",
     "by": "session steward",
     "why": "Nine findings from one reading pass; filed as one owner-decision item so the rulings land together and T-005 can close on ratification."
+   },
+   "closure": {
+    "status_was": "blocked",
+    "closed_on": "2026-09-30",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "DONE under D40–D46 — all seven questions answered. D40: OKX is `prohibited` (API Agreement §9.4: market data only for personal trading and account management, never in an analytics platform, public endpoints included); /live-data/funding-rates lost its only source and answers ok:false with the reason, and the Market Structure panel says so; pinned in sourceTerms.test.ts (driven red by reverting the verdict and re-adding an OKX call). D41: Nasdaq Trader joins T-407 and goes approved → conditional with the open question as its condition. D42–D44: KuCoin, Alpha Vantage, Messari, Santiment and CoinMarketCap carry the D22 ⚠ SINGLE-USER ONLY condition, each naming its route to broader rights (none stated for Santiment); CoinMarketCap is treated as the personal plan. D45: Jito, Rocket Pool and Pendle take the narrow, website-only reading D25 took for publicnode and go approved → conditional with an API-only condition. D46: no reading is marked verified yet — that sign-off stays on T-005. The item said 'nine' findings; there are ten hosts.",
+    "approved_by": "owner, in the session that worked T-413 on 2026-09-30 — chose \"Stop using OKX now (Recommended)\", \"Add it to that open question (Recommended)\", \"Allow while only you use it (Recommended)\", \"Allow while only you use them (Recommended)\", \"Free key, no key, or not sure (Recommended)\", \"Yes, website-only reading (Recommended)\" and \"Not yet\"",
+    "evidence": [
+     "docs/decisions/2026-09-30-owner-decisions.md",
+     "frontend/src/lib/server/sourceTerms.ts",
+     "frontend/src/app/live-data/funding-rates/route.ts",
+     "docs/audits/terms-review-seeded-2026-09-26.md"
+    ]
    }
   },
   {
@@ -37115,6 +37135,14 @@
     "evidence": [
      "docs/decisions/2026-09-30-owner-decisions.md",
      "frontend/scripts/lib/feeWaiver.mjs"
+    ]
+   },
+   {
+    "on": "2026-09-30",
+    "what": "T-413 closed under owner rulings D40–D46: OKX prohibited (funding-rates now has no source); Nasdaq Trader moved to T-407; KuCoin, Alpha Vantage, Messari, Santiment and CoinMarketCap personal-only under D22; Jito, Rocket Pool and Pendle on the narrow reading; no reading marked verified yet (D46), so T-005 waits on that sign-off alone.",
+    "evidence": [
+     "docs/decisions/2026-09-30-owner-decisions.md",
+     "frontend/src/lib/server/sourceTerms.ts"
     ]
    }
   ]

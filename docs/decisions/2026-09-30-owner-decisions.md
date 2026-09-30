@@ -1,11 +1,13 @@
 # Owner decisions — 2026-09-30
 
 Recorded from the owner's answers in the session that worked T-414 (the rulings the
-2026-09-26 reading of the 37 non-'40-Act fund fees asked for) and then T-412 (the
-seventeen differences the 2026-09-26 four-quarter reconcile found). Same form as
-`2026-09-29-owner-decisions.md`: one row per ruling, what it cascades to, and what was
-actually done. Each question offered the audit's recommendation first; the owner took it
-all five times.
+2026-09-26 reading of the 37 non-'40-Act fund fees asked for), then T-412 (the seventeen
+differences the 2026-09-26 four-quarter reconcile found), then T-413 (the findings from the
+2026-09-26 source-terms readings). Same form as `2026-09-29-owner-decisions.md`: one row per
+ruling, what it cascades to, and what was actually done. Each question offered a
+recommendation first — the audit's, except for OKX, where the audit named both readings
+without choosing and the session recommended one — and the owner took it eleven times of
+twelve. The exception is D46.
 
 | # | Decision | Ruling | Cascades to |
 |---|---|---|---|
@@ -14,6 +16,13 @@ all five times.
 | D37 | PSLV's expense ratio (T-414, question 3) | **0.56%, naming 2025** — the 2025 management expense ratio from Sprott Physical Silver Trust's Form 40-F, over leaving 0.57. → APPLIED | `fundCatalog.ts` (row and banner); pinned in `fundCatalog.test.ts` |
 | D38 | The sixteen corrections the four-quarter reconcile found (T-412, question 1) | **Apply all sixteen** — ICLN 0.41 → 0.39; IYT, IHI, IAI, ITA, ITB 0.39 → 0.38; SOXX 0.35 → 0.34; IBB 0.45 → 0.44; TIP 0.19 → 0.18; VUG, VTV 0.04 → 0.03; VWO 0.07 → 0.06; VBTLX 0.05 → 0.04; VWINX 0.23 → 0.22; QYLD 0.61 → 0.60; PRGFX 0.65 → 0.66. Each read from the fund's own Risk/Return filing, matched on its SEC class id. Chosen over "wait for a fresh check". → APPLIED | `fundCatalog.ts` (sixteen rows and a T-412 block citing each filed date and accession); `build-fund-fees.mjs` now reports gross beside net (below); T-417 carries the confirming re-run |
 | D39 | FXAIX (T-412, question 2) | **Keep 0.015% until the prospectus is read.** The filing's data tag states 0.010% at six declared decimals; Fidelity's own literature has long said 0.015%. Both are right only if 0.010% is the fee after a waiver — a 0.015% full fee with 0.005% waived — which the 2026-09-26 run could not tell; otherwise one is wrong. The prospectus fee table decides, not the tag. Chosen over "change to 0.010% now". → HELD | T-417 reads the fee table in accession 0000819118-26-000072 on the owner's machine |
+| D40 | OKX (T-413, question 1) | **Stop using it now.** Its API Agreement §9.4 allows Market Data only "for your own personal, non-commercial trading and account management purposes", bars using it in any "analytics platform", and covers public endpoints expressly. Chosen over "keep it while only you use it" (the D22 posture). → APPLIED | `okx.com` is `prohibited` in `sourceTerms.ts`; `/live-data/funding-rates` answers `ok:false` with the reason; the Market Structure panel shows funding and open interest as not available and no longer credits OKX; `DATA-SOURCES.md` (regenerated), `DATA-AVAILABILITY.md` and `CLAUDE.md`'s prohibited list updated; pinned in `sourceTerms.test.ts` |
+| D41 | Nasdaq Trader (T-413, question 2) | **Add it to T-407** with CoinDesk and Investing.com — whether a plain-text symbol list is protected "Content" is the same scope question. Kept in use meanwhile. Chosen over "stop using it now". → APPLIED | `nasdaqtrader.com` goes `approved` → `conditional`, the open question written into its condition; T-407 gains it |
+| D42 | KuCoin (T-413, question 3) | **Personal use only (D22)** — allowed while only the owner uses the app. Chosen over "stop using it now". → APPLIED | `⚠ SINGLE-USER ONLY` condition on `kucoin.com`, naming the written permission Article 91 asks for; its finding no longer says the terms were unread |
+| D43 | Alpha Vantage, Messari, Santiment (T-413, question 4) | **Personal use only (D22).** Chosen over "stop using all three". → APPLIED | `⚠ SINGLE-USER ONLY` condition on each, naming its route to broader rights — none is stated for Santiment |
+| D44 | CoinMarketCap (T-413, question 5) | **Treat it as personal (D22)** — the owner's key is free, absent or unconfirmed. Chosen over "a paid commercial plan". → APPLIED | `⚠ SINGLE-USER ONLY` condition; the commercial agreement's required credit line ("Data provided by CoinMarketCap.com" with a link) is recorded as the route to broader rights, not rendered |
+| D45 | Jito, Rocket Pool, Pendle (T-413, question 6) | **The narrow reading** — their terms govern their websites, not the public APIs the app reads — as D25 read publicnode. Chosen over "stop using all three". → APPLIED | each goes `approved` → `conditional` with an "API only" condition that records the judgement as a judgement |
+| D46 | Which 2026-09-26 readings to mark `verified` (T-413, question 7) | **Not yet.** No entry is flipped, including the six ruled on above: every one stays `seeded`, with its reading and its ruling recorded beside it. Chosen over "all 17 fully read and settled" and "only the 11 clean readings". → HELD | T-005 stays blocked, on this sign-off alone |
 
 ## Notes
 
@@ -82,3 +91,37 @@ right"; that was too strong, and T-417 now covers the waiver case. It could not 
 from the cloud session: its network policy refuses sec.gov and fidelity.com, and two web
 searches returned summaries that disagreed — one described a 0.015% total with a 0.010%
 net, the other gross and net both at 0.015%. Neither is a reading.
+
+## Notes on D40–D46
+
+**Why OKX went and the D22 sources stayed.** FMP, Finnhub, Tiingo and now KuCoin, Alpha
+Vantage, Messari, Santiment and CoinMarketCap grant a licence for personal use and forbid
+going beyond it — a condition this app meets while only the owner can load a page. OKX's
+grant is narrower in kind: "your own personal, non-commercial *trading and account
+management* purposes", with a separate bar on any "analytics platform". That is the
+Poloniex shape (§9, "solely for the purposes of trading on Poloniex"), where the use falls
+outside the grant rather than failing a condition inside it — so there was no licence to
+keep while single-user.
+
+**What D40 costs.** One panel: funding rate and open interest on the crypto
+technical-analysis page's Market Structure panel, which now say "not available — source
+withdrawn", with the reason on hover. OKX was the surface's only source, which is the
+single-sourcing D21 warns about; Binance futures answers 451 from US hosts. A replacement
+needs a source whose terms permit display in an analytics product, and that is a new
+reading, not a setting. The route keeps its address and response shape, so one can be
+wired in without touching the panel. The rewrite also removes a defect: a failed OKX call
+used to be reported as a 0% funding rate.
+
+**D46 and what "seeded" now means for these entries.** The registry defines `seeded` as
+"written from documented posture, never read". Every entry read on 2026-09-26 stays
+`seeded` by the owner's choice, although its document was read, so each carries a dated
+`READ` note and, where ruled, a `RULED 2026-09-30` note saying so. OKX is therefore
+`prohibited` and `seeded` at once — the combination Yahoo already had.
+
+**Two slips in the record, corrected here.** The 2026-09-26 audit and T-413 both speak of
+"nine findings" and list ten hosts: Nasdaq Trader, OKX, KuCoin, Alpha Vantage,
+CoinMarketCap, Messari, Santiment, Jito, Rocket Pool and Pendle. And OKX's registered
+`termsUrl` names its API documentation rather than the API Agreement the reading found
+through the Terms of Service §4.3; the reading did not record that address, so the entry
+says so and T-005's sign-off should record it.
+
