@@ -13251,7 +13251,7 @@
   {
    "id": "T-157",
    "title": "Build a dedicated panel for the macro-screener agent",
-   "status": "superseded",
+   "status": "done",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "feature",
@@ -13261,7 +13261,7 @@
     "NT5"
    ],
    "summary": "Whitelisted but no panel unlike equity-screener.",
-   "next_action": "Do not build. Propose (steward flow) a one-line annotation on CLAUDE.md:792 and the P3 X5 row: 'panel not approved separately (NT6 folded into item 6/7); reachable via the Research picker since NT5'. Only if the owner reopens NT6, mirror components/markets/OutlierScanPanel.tsx onto /macro/scanner.",
+   "next_action": "Nothing left to do: built 2026-10-01 as the Macro Scanner’s AI Movers Scan (PR #262). The 2026-09-07 next action, which said not to build unless the owner reopened NT6, is carried in the progress note.",
    "sources": [
     {
      "file": "CLAUDE.md",
@@ -13294,6 +13294,18 @@
       "lines": "792",
       "note": "'whitelisted on the research route … but has no dedicated panel yet'"
      }
+    ]
+   },
+   "progress": {
+    "noted_on": "2026-10-01",
+    "note": "Built after all. This item was set aside on one condition — build it only if the owner reopened NT6 — and on 2026-10-01 the owner did, choosing “Macro movers AI button” (the macro screener agent on the Macro Scanner page, like the equities AI Outlier Scan) as one of four features to build. The Macro Scanner now carries the AI Movers Scan. It shares one panel component with the equities scan (AgentScanPanel), so the equities panel was reused rather than copied. Status moves from superseded to done; the why block is the 2026-09-07 verifier’s reading and stays as history. Carried forward from 2026-09-07: Do not build. Propose (steward flow) a one-line annotation on CLAUDE.md:792 and the P3 X5 row: 'panel not approved separately (NT6 folded into item 6/7); reachable via the Research picker since NT5'. Only if the owner reopens NT6, mirror components/markets/OutlierScanPanel.tsx onto /macro/scanner.",
+    "evidence": [
+     "frontend/src/components/markets/agentScans.ts",
+     "frontend/src/components/markets/AgentScanPanel.tsx",
+     "frontend/src/app/(dashboard)/macro/scanner/page.tsx",
+     "frontend/src/lib/agents/__tests__/researchAgents.test.ts",
+     "docs/audits/rejected-proposals.md",
+     "docs/assessments/P3-production-review.md"
     ]
    }
   },
@@ -37591,6 +37603,15 @@
     "evidence": [
      "docs/decisions/2026-10-01-owner-decisions.md",
      "docs/audits/production-readiness-scorecard.md"
+    ]
+   },
+   {
+    "on": "2026-10-01",
+    "what": "T-157, a dedicated panel for the macro-screener agent, moved from superseded to done. It had been set aside on 2026-09-07 with one condition, that the owner reopen NT6, and the owner did by choosing the macro movers button as one of four features to build. PR #262 builds it as the Macro Scanner’s AI Movers Scan, sharing one panel with the equities AI Outlier Scan. No count moves: T-157 is listed under closed_but_still_listed_as_open_in_docs, not under outstanding.",
+    "evidence": [
+     "frontend/src/components/markets/agentScans.ts",
+     "docs/audits/rejected-proposals.md",
+     "docs/assessments/P3-production-review.md"
     ]
    }
   ]
