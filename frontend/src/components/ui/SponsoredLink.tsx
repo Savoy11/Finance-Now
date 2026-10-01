@@ -4,6 +4,7 @@ import { clsx } from 'clsx'
 import { ExternalLink } from 'lucide-react'
 import type { ReactNode } from 'react'
 import type { OutboundLink } from '@/lib/data/affiliates'
+import { HOW_WE_MAKE_MONEY_HREF } from '@/lib/legal/links'
 
 /**
  * The single outbound-link component for anything that might be monetised.
@@ -85,7 +86,7 @@ export function SponsoredLink({
 export function SponsoredTag({ program, className }: { program?: string; className?: string }) {
   return (
     <a
-      href="/how-we-make-money"
+      href={HOW_WE_MAKE_MONEY_HREF}
       // ⚠ Both branches said "does not affect this provider's RISK SCORE" until
       // 2026-09-21, and "published risk dimensions" until 2026-09-29. There is no
       // risk figure of either kind: D14 removed every composite, and D26
