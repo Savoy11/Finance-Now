@@ -63,8 +63,8 @@
   "by_status": {
    "closed": 172,
    "open": 31,
-   "parked": 109,
-   "blocked": 44,
+   "parked": 110,
+   "blocked": 43,
    "unclear": 1
   },
   "by_owner_role": {
@@ -4207,12 +4207,12 @@
   {
    "id": "T-125",
    "title": "Affiliate legal review — FTC disclosure + other jurisdictions (UK FCA)",
-   "status": "open",
+   "status": "parked",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "terms-review",
    "effort": "unknown",
-   "blocking_decision": null,
+   "blocking_decision": "PARKED 2026-09-30 — D49 (2026-09-30, made in the business chat and confirmed by the owner in this session): no paid or affiliate links at launch on either product; revisit after launch. The affiliate legal review is needed before the first program is joined, not for launch.",
    "related_ids": [
     "P2"
    ],
@@ -4666,12 +4666,12 @@
   {
    "id": "T-291",
    "title": "Develop required disclosure documents and decide placement",
-   "status": "parked",
+   "status": "open",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "process",
    "effort": "large",
-   "blocking_decision": "PARKED 2026-09-30 — D7 (2026-09-14): defer with the rollout — nothing affiliate-related ships before it, so the disclosure documents land at the same moment. The 2026-09-24 CoinGecko §7 finding (progress) is the first input when this reopens. The ledger carried it as open until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md).",
+   "blocking_decision": null,
    "related_ids": [],
    "summary": "ToS, privacy, not-advice, affiliate disclosure, attribution, complaints.",
    "next_action": "Owner commissions ToS/Privacy/not-advice/affiliate/attribution/complaints documents (counsel-reviewed); a remote-dev session can draft the data-source attribution page from lib/data/dataSources.ts + sourceTerms.ts conditions once the house policy (T-292) exists.",
@@ -4683,10 +4683,15 @@
     }
    ],
    "progress": {
-    "noted_on": "2026-09-24",
-    "note": "NEW CONCRETE INPUT from the CoinGecko API Terms read in full (T-243, docs/audits/terms-review-coingecko-2026-09-24.md §2). §7 makes six specific clauses of the app's own user agreement and privacy policy CONTRACTUALLY REQUIRED the moment anyone outside the owner's entity can use it: (a) identify the CoinGecko API as CoinGecko's property; (b) bind users to terms no less protective of CoinGecko than the API Terms; (c) exclude and disclaim all CoinGecko liability; (d) assume full responsibility for offering the API; (e) a privacy policy no less stringent than CoinGecko's; (f) sole responsibility for all disclaimers and warnings about data accuracy, limitations and crypto-market volatility. This is the first source whose terms dictate the CONTENT of the app's disclosures rather than merely requiring that some exist. Expect the same shape from the other API providers when their remainders are read; check FMP, Finnhub and Twelve Data's readings for an equivalent clause before drafting.",
+    "noted_on": "2026-09-30",
+    "note": "REOPENED the same day it was parked. The 2026-09-30 queue sweep parked this under D7 without reading the ledger page's workspace log, where the business chat had recorded a first draft of the whole disclosure set on 29 Sep — shared by both products: Terms of Use, Privacy Policy, Not Investment Advice, How We Make Money, Data Sources & Attribution, Contact & Complaints, with CoinGecko API Terms §7 (a)–(f) mapped clause by clause — and the owner's placement decision on 30 Sep, now D50. The draft lives outside this repository and awaits the owner's approval; it lists 20 code or decision items that must land before its text is true. Carried forward from 2026-09-24: CoinGecko's §7 makes six clauses of the app's own user agreement and privacy policy contractually required once anyone outside the owner's entity can use it (docs/audits/terms-review-coingecko-2026-09-24.md §2).",
     "evidence": [
-     "docs/audits/terms-review-coingecko-2026-09-24.md"
+     "docs/decisions/2026-09-30-owner-decisions.md",
+     "docs/audits/terms-review-coingecko-2026-09-24.md",
+     "docs/audits/queue-sweep-2026-09-30.md"
+    ],
+    "corrections": [
+     "2026-09-30: parked by the queue sweep under D7 and reopened the same day under D50, on the owner's confirmation. The 2026-09-24 note this replaces is carried forward in the note above."
     ]
    }
   },
@@ -6944,12 +6949,12 @@
   {
    "id": "T-120",
    "title": "Review each affiliate program's terms (app placement, comparison tables, ranking) and open links in the system browser",
-   "status": "open",
+   "status": "parked",
    "confidence": "medium",
    "owner_role": "owner-machine",
    "category": "terms-review",
    "effort": "medium",
-   "blocking_decision": null,
+   "blocking_decision": "PARKED 2026-09-30 — D49 (2026-09-30, made in the business chat and confirmed by the owner in this session): no paid or affiliate links at launch on either product; revisit after launch. The program-terms reading is needed before the first program is joined, not for launch.",
    "related_ids": [
     "P2"
    ],
@@ -7350,12 +7355,12 @@
   {
    "id": "T-293",
    "title": "Define disclosure placement rules (footer + point of relevance)",
-   "status": "blocked",
+   "status": "open",
    "confidence": "high",
    "owner_role": "either",
    "category": "process",
    "effort": "small",
-   "blocking_decision": "Develop the required disclosure documents and decide where they're posted (T-291)",
+   "blocking_decision": null,
    "related_ids": [],
    "summary": "Follows the documents.",
    "next_action": "Once T-291 documents exist: add a footer link block to frontend/src/app/(dashboard)/layout.tsx and a shared disclaimer component for point-of-relevance surfaces; write the rule into BUSINESS-CHECKLIST.md §3.",
@@ -7365,7 +7370,15 @@
      "lines": "76-77",
      "quote": "Placement rules: linked in the footer of every page **and** surfaced at the point of relevance (a disclaimer nobody sees does not protect anyone)."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-09-30",
+    "note": "UNBLOCKED by D50: the placement rule this item asked for is decided — one About page per product, reached from a footer link on every page and, on Finance Now, from Settings (\"About & Legal\" replaces the How We Make Money entry); Privacy keeps its own footer link; the short \"not investment advice\" lines stay beside the features they qualify. BUSINESS-CHECKLIST.md §3's placement line is ticked. What remains is the build — the footer link block, an /about page, the Settings entry and the point-of-relevance lines — with page text from T-291's documents once the owner approves them. The blocker was: \"Develop the required disclosure documents and decide where they're posted (T-291)\"",
+    "evidence": [
+     "docs/decisions/2026-09-30-owner-decisions.md",
+     "docs/BUSINESS-CHECKLIST.md"
+    ]
+   }
   },
   {
    "id": "T-294",
@@ -37519,6 +37532,15 @@
      "docs/audits/queue-sweep-2026-09-30.md",
      "docs/decisions/2026-09-14-owner-decisions.md",
      "docs/decisions/2026-09-30-owner-decisions.md"
+    ]
+   },
+   {
+    "on": "2026-09-30",
+    "what": "D49 and D50 recorded — two rulings the owner had made earlier the same day in the business chat, found in the ledger page's workspace log after #254 merged and confirmed by the owner before recording. D49 (no paid or affiliate links at launch on either product): T-120 and T-125 parked until after launch. D50 (legal pages: one About page per product, footer links, Privacy its own link, not-advice lines beside features): T-291 reopened — the morning's queue sweep had parked it without reading that log — and T-293 unblocked, with the build left.",
+    "evidence": [
+     "docs/decisions/2026-09-30-owner-decisions.md",
+     "docs/audits/queue-sweep-2026-09-30.md",
+     "docs/BUSINESS-CHECKLIST.md"
     ]
    }
   ]

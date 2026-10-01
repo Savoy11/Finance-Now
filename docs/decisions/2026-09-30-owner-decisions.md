@@ -3,11 +3,12 @@
 Recorded from the owner's answers in the session that worked T-414 (the rulings the
 2026-09-26 reading of the 37 non-'40-Act fund fees asked for), then T-412 (the seventeen
 differences the 2026-09-26 four-quarter reconcile found), then T-413 (the findings from the
-2026-09-26 source-terms readings), then a ledger sweep and T-099 (D47, D48). Same form as
+2026-09-26 source-terms readings), then a ledger sweep and T-099 (D47, D48), then two
+rulings the owner had made in the business chat and confirmed here (D49, D50). Same form as
 `2026-09-29-owner-decisions.md`: one row per ruling, what it cascades to, and what was
 actually done. Each question offered a recommendation first — the audit's, except for OKX,
 where the audit named both readings without choosing and the session recommended one — and
-the owner took it twelve times of fourteen. The exceptions are D46 and D47.
+the owner took it fourteen times of sixteen. The exceptions are D46 and D47.
 
 | # | Decision | Ruling | Cascades to |
 |---|---|---|---|
@@ -25,6 +26,8 @@ the owner took it twelve times of fourteen. The exceptions are D46 and D47.
 | D46 | Which 2026-09-26 readings to mark `verified` (T-413, question 7) | **Not yet.** No entry is flipped, including the six ruled on above: every one stays `seeded`, with its reading and its ruling recorded beside it. Chosen over "all 17 fully read and settled" and "only the 11 clean readings". → HELD | T-005 stays blocked, on this sign-off alone |
 | D47 | "Set my own weights" — Portfolio Builder's build-by-allocation mode (found by the 2026-09-30 queue sweep: D4 said it was dark, and it is live) | **"A lawyer doesn't need to review this."** Build-by-allocation is cleared: no legal review, and it stays visible. Neither offered option — hide it now (recommended), or keep it for the owner and hide it before launch. **D4 is narrowed, not reversed:** its review still gates S5 contribution modeling and the federal sale-tax estimator, neither of which is built. → APPLIED | T-059, the item-16 legality question, closes. T-058, T-064 and T-068 now wait on D4's review by name; the item-16 clause of T-116's blocker is cleared. `BUSINESS-CHECKLIST.md` §5, `LEGAL-REVIEW.md` §D and the TASK-QUEUE S5 note record it |
 | D48 | Est. Annual Income on holdings with no live price (T-099) | **Priced holdings only, with the coverage shown** — the page's own rule ("excluded from totals, never valued at cost"), and PB-1's for the value and P&L totals. Chosen over "keep planned amounts and say so" and "leave it as is". → APPLIED | `computeAnnualIncome` leaves out a holding with no live price and reports `unpriced` and `pricedPct`; the card says "covers N% of yielding holdings" below 99.5%, as the risk card does. The test that pinned the old behaviour is flipped, and restoring the old fallback turns two tests red. T-099 closes |
+| D49 | Paid and affiliate links at launch (made in the FN & NC business chat; confirmed in this session) | **None at launch, on either product; revisit after launch.** Recorded in the ledger page's workspace log at 11:15 UTC and in the Disclosure Set, then confirmed here: *"Yes, record it."* → APPLIED | T-120 (each affiliate program's terms) and T-125 (the affiliate legal review) are parked until after launch — neither is needed for it. Nothing changes in code: no provider has an `affiliateUrl`, so the paid-link slots stay empty. `BUSINESS-CHECKLIST.md` §5 names D49 beside D7 |
+| D50 | Where the legal pages go (made in the business chat; confirmed in this session) | **One About page per product**, reached from a footer link on every page and, on Finance Now, from Settings, where "About & Legal" replaces the How We Make Money entry. **Privacy keeps its own footer link** (CalOPPA; CoinGecko API Terms §7(e)). **The short "not investment advice" lines stay beside the features they qualify.** Confirmed here: *"Yes, record and reopen."* → APPLIED | T-291 is reopened — this session's queue sweep had parked it the same morning (see the note below). T-293 is unblocked: the rule it asked for is decided, and building the footer, the About page and the Settings entry is what remains. `BUSINESS-CHECKLIST.md` §3's placement line is ticked |
 
 ## Notes
 
@@ -152,3 +155,26 @@ yielding holdings' planned capital, not of the whole portfolio: a crypto positio
 yield income on this card, so counting it would make a fully priced estimate look partial.
 With no live price at all, the card shows a dash and says how many yielding holdings lack
 one.
+
+## Notes on D49 and D50
+
+**Where these came from.** Both were made earlier the same day in the FN & NC business chat,
+which is drafting the disclosure set, and recorded there and in the ledger page's workspace
+log — not in the repository, because this file was still in an open PR (#254). The workspace
+entries said so themselves. This session found them only after #254 merged, by reading that
+log, and asked the owner to confirm each before recording it; both were confirmed.
+
+**The mistake D50 corrects.** The morning's queue sweep parked T-291 under D7 ("the disclosure
+documents land with the rollout") without reading the workspace log, where the business chat
+had recorded a first draft of the whole disclosure set on 29 September and the placement
+decision on 30 September. "Parked" means *do not start unprompted*, and the owner had
+prompted it. T-291 is reopened, the correction is recorded on the item and in
+`docs/audits/queue-sweep-2026-09-30.md`, and that record now says to read the log before a
+sweep.
+
+**What D49 does not do.** It does not remove anything built: the per-link "Paid link" label,
+`SponsoredLink` and the How We Make Money page stay, unused. The business chat is redrafting
+that page as a short launch version ("no link on either site pays us"); that copy is T-119's,
+awaiting the owner's approval, and is not recorded as a ruling here. T-123 (affiliate
+sign-ups on the Coin Registry) and T-124 (brokerage referrals) are also affiliate surfaces,
+but the owner confirmed parking the two items named, so these two were left as they are.
