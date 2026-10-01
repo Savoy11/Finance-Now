@@ -28,13 +28,14 @@ import { writeFileSync, readFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 import {
   EXCHANGES,
-  COIN_INFO,
-  NETWORKS,
   TRANSFER_FEES_LAST_VERIFIED,
   transferFeesAgeDays,
   SPOT_TRADING_FEES,
   TRADING_FEES_COMPILED,
 } from '../src/lib/data/transferFees'
+// The row list, the impact ranking, the fee-page links and the core-45 cut are shared
+// with the owner's check page (gen-fee-check-page.ts), so the two cannot disagree.
+import { feeRows, byImpact, FEE_PAGES, CORE_N, type FeeRow } from './lib/transferFeeRows'
 
 // ─── What the machine already did ────────────────────────────────────────────
 //
@@ -53,130 +54,24 @@ if (existsSync(RECONCILE_FILE)) {
   } catch { /* a malformed artifact just means nothing is excluded */ }
 }
 
-// ─── Impact ranking ──────────────────────────────────────────────────────────
-//
-// 428 rows reads as hopeless and gets abandoned; "check these and you have
-// covered most real transfers" gets finished. This orders the work by how
-// likely a row is to sit on a route someone actually takes.
-//
-// ⚠ This is a JUDGEMENT about usage, not measured data and not a fee value.
-// Getting the order wrong costs some wasted effort; it cannot make the table
-// wrong. Re-rank it freely.
-const COIN_WEIGHT: Record<string, number> = {
-  usdt: 10, usdc: 9, btc: 8, eth: 8,
-  sol: 4, xrp: 3, bnb: 3, doge: 2, ltc: 2, trx: 2, ada: 2, matic: 2, avax: 2,
-}
-const NETWORK_WEIGHT: Record<string, number> = {
-  trc20: 10, erc20: 9, bep20: 7, solana: 6, polygon: 5, arbitrum: 5, bitcoin: 5,
-  base: 3, optimism: 3, avalanche: 3, xrpl: 3,
-}
-function impactScore(tier: number, coinId: string, networkId: string): number {
-  const t = tier === 1 ? 3 : 1
-  return t * (COIN_WEIGHT[coinId] ?? 1) * (NETWORK_WEIGHT[networkId] ?? 1)
-}
-
-// Withdrawal-fee pages, best known at time of writing. These are a starting point,
-// NOT verified links — exchanges move these pages and several require a login to
-// show live fees. If one 404s, search "<exchange> withdrawal fees" and please fix
-// the entry here so the next pass doesn't hit the same dead end.
-const FEE_PAGES: Record<string, string> = {
-  binance: 'https://www.binance.com/en/fee/cryptoFee',
-  coinbase: 'https://help.coinbase.com/en/coinbase/trading-and-funding/pricing-and-fees/fees',
-  kraken: 'https://support.kraken.com/hc/en-us/articles/360000767986',
-  okx: 'https://www.okx.com/fees',
-  bybit: 'https://www.bybit.com/en/help-center/article/Deposit-Withdrawal-Fee',
-  kucoin: 'https://www.kucoin.com/vip/level',
-  cryptocom: 'https://crypto.com/exchange/document/fees-limits',
-  bitget: 'https://www.bitget.com/fee',
-  gateio: 'https://www.gate.io/fee',
-  htx: 'https://www.htx.com/support/en-us/detail/360000203002',
-  mexc: 'https://www.mexc.com/fee',
-  gemini: 'https://www.gemini.com/fees',
-  bitfinex: 'https://www.bitfinex.com/fees',
-  bitstamp: 'https://www.bitstamp.net/fee-schedule/',
-  upbit: 'https://upbit.com/service_center/guide',
-  robinhood: 'https://robinhood.com/us/en/support/articles/crypto-fees/',
-  hyperliquid: 'https://hyperliquid.gitbook.io/hyperliquid-docs',
-  bingx: 'https://bingx.com/en-us/rate/',
-  phemex: 'https://phemex.com/fees-conditions',
-  woox: 'https://woox.io/en/fees',
-  bitmart: 'https://www.bitmart.com/fee/en-US',
-  bitrue: 'https://www.bitrue.com/fee',
-  lbank: 'https://www.lbank.com/fees',
-  pionex: 'https://www.pionex.com/blog/pionex-fees/',
-}
-
 const csvCell = (v: unknown): string => {
   const s = v === undefined || v === null ? '' : String(v)
   return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
 }
 
-interface Row {
-  tier: 1 | 2
-  exchangeId: string
-  exchange: string
-  coin: string
-  coinId: string
-  network: string
-  networkId: string
-  fee: number
-  minWithdraw: number
-  withdrawEnabled: boolean
-  depositEnabled: boolean
-  note: string
-  recentlyChecked: boolean
+interface Row extends FeeRow {
   /** Verified by machine against the exchange's own API — no human check needed. */
   reconciled: boolean
-  impact: number
 }
 
-const rows: Row[] = []
-
-for (const ex of EXCHANGES) {
-  for (const [coinId, coin] of Object.entries(ex.coins)) {
-    if (!coin) continue
-    for (const n of coin.networks) {
-      const note = n.note ?? ''
-      rows.push({
-        tier: ex.tier,
-        exchangeId: ex.id,
-        exchange: ex.name,
-        coinId,
-        coin: COIN_INFO[coinId as keyof typeof COIN_INFO]?.symbol ?? coinId.toUpperCase(),
-        networkId: n.networkId,
-        network: NETWORKS[n.networkId]?.shortName ?? n.networkId,
-        fee: n.withdrawFee,
-        minWithdraw: n.minWithdraw,
-        withdrawEnabled: n.withdrawEnabled,
-        depositEnabled: n.depositEnabled,
-        note,
-        // The 2026-07-20 partial pass left this marker on the entries it checked.
-        // Those are the only rows in the table with a verification date attached.
-        recentlyChecked: /re-verified 2026-07/i.test(note),
-        reconciled: reconciledKeys.has(`${ex.id}:${coinId}:${n.networkId}`),
-        impact: impactScore(ex.tier, coinId, n.networkId),
-      })
-    }
-  }
-}
+const rows: Row[] = feeRows(EXCHANGES).map((r) => ({ ...r, reconciled: reconciledKeys.has(r.key) }))
 
 // Outstanding work first, highest-impact first within that — then everything
 // else, so the top of the file is the part actually worth someone's afternoon.
 // Ties break alphabetically so the file is stable across runs and diffs cleanly.
-rows.sort(
-  (a, b) =>
-    Number(a.reconciled) - Number(b.reconciled) ||
-    b.impact - a.impact ||
-    a.tier - b.tier ||
-    a.exchange.localeCompare(b.exchange) ||
-    a.coin.localeCompare(b.coin) ||
-    a.network.localeCompare(b.network)
-)
+rows.sort((a, b) => Number(a.reconciled) - Number(b.reconciled) || byImpact(a, b))
 
 const outstanding = rows.filter((r) => !r.reconciled)
-// The 80/20 line: enough of the highest-impact rows to cover the routes people
-// actually take, small enough that someone will finish it in one sitting.
-const CORE_N = 45
 const core = outstanding.slice(0, CORE_N)
 
 // ─── CSV ─────────────────────────────────────────────────────────────────────

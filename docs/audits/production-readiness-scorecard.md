@@ -380,6 +380,13 @@ cannot be verified from the repository.
 
 ## Series A Readiness Roadmap
 
+> **Closed 2026-10-01 — owner decision D51.** *"Lets close the three from the old
+> platform model."* This roadmap was written for the CAEP-era stablecoin-risk product,
+> and its three ledger items are closed: T-218 (paying institutional pilots), T-222 (the
+> 1,000-RPS load test) and T-224 (the business proof points). Nothing below is a live
+> target. It stays as written, as the dated plan of the earlier product; a future
+> fundraising plan starts fresh (`docs/decisions/2026-10-01-owner-decisions.md`).
+
 > **Scope banner, 2026-09-22.** **Six of the nine Technical Proof Points** are scoped to
 > components that do not ship. The four asset monitoring pipelines live in the frozen
 > tree (`backend/app/pipelines/chainlink.py`, `coingecko.py`, `defillama.py`,
