@@ -61,9 +61,9 @@
   "total_verified": 398,
   "outstanding": 357,
   "by_status": {
-   "closed": 172,
+   "closed": 175,
    "open": 31,
-   "parked": 110,
+   "parked": 107,
    "blocked": 43,
    "unclear": 1
   },
@@ -74,8 +74,8 @@
    "owner-machine": 84
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 172,
-  "counts_recomputed_on": "2026-09-30",
+  "closed_by_annotation": 175,
+  "counts_recomputed_on": "2026-10-01",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 357
  },
@@ -5384,9 +5384,11 @@
     }
    ],
    "progress": {
-    "noted_on": "2026-09-24",
-    "note": "MACHINE HALF RE-RUN on the owner's machine over clean egress; MANUAL HALF PREPARED. `npm run fee-reconcile`: 106 of 534 rows reconcile against live keyless exchange APIs — 65 confirmed, 22 changed, 8 dynamic, 11 suspended. 20 of the 22 changes were applied via `npm run fee-apply` (keyed on exchange/coin/network, current-value guard passed); the two `→ 0` proposals — Bitfinex DOT/Polkadot and Bitget USDC/BEP-20 — were deliberately held back because they are T-056's subject, the two zero-fee rows a prior pass already held for hand verification. `npm run fee-worksheet`: 447 entries still need a human across 29 exchanges, core-45 called out first; transfer-fee-worksheet.csv and .md are generated and gitignored, ready to fill. TRANSFER_FEES_LAST_VERIFIED stays 2025-06-01 (480 days) — only a completed pass over every exchange moves it, and the page is held out of rollout with the staleness acknowledged.",
+    "noted_on": "2026-10-01",
+    "note": "WORKING IT NOW, PAGE STILL HIDDEN (D52, 2026-10-01). The owner chose to work this item while Transfer Fees stays withheld from the suite, so T-028's restore is not part of it. This environment's network policy refuses every exchange host — the fee pages and the keyless fee feeds alike — so the reading is the owner's and everything else is the session's: `npm run fee-check-page -- <out.html>` builds a check page from transferFees.ts (one card per exchange with its fee-page link and rows; the 45 highest-impact rows on exchanges without a keyless fee feed first; each exchange's entry-tier trading fee; the fee leads of T-037–T-053 on the exchanges they name). Each answer — matches, different, not offered, can't see it — is saved in that page's own database; the session reads them and applies them in a pull request, a changed fee through `npm run fee-apply` and its guards. Rows on the six exchanges with a keyless feed stay with `npm run fee-reconcile` on the owner's machine. TRANSFER_FEES_LAST_VERIFIED moves only when every row is checked. Nothing has been checked through the page yet. Carried forward from 2026-09-24: MACHINE HALF RE-RUN on the owner's machine over clean egress; MANUAL HALF PREPARED. `npm run fee-reconcile`: 106 of 534 rows reconcile against live keyless exchange APIs — 65 confirmed, 22 changed, 8 dynamic, 11 suspended. 20 of the 22 changes were applied via `npm run fee-apply` (keyed on exchange/coin/network, current-value guard passed); the two `→ 0` proposals — Bitfinex DOT/Polkadot and Bitget USDC/BEP-20 — were deliberately held back because they are T-056's subject, the two zero-fee rows a prior pass already held for hand verification. `npm run fee-worksheet`: 447 entries still need a human across 29 exchanges, core-45 called out first; transfer-fee-worksheet.csv and .md are generated and gitignored, ready to fill. TRANSFER_FEES_LAST_VERIFIED stays 2025-06-01 (480 days) — only a completed pass over every exchange moves it, and the page is held out of rollout with the staleness acknowledged.",
     "evidence": [
+     "docs/decisions/2026-10-01-owner-decisions.md",
+     "frontend/scripts/gen-fee-check-page.ts",
      "frontend/src/lib/data/transferFees.ts",
      "frontend/scripts/reconcile-transfer-fees.ts",
      "frontend/scripts/apply-fee-updates.ts"
@@ -7336,7 +7338,7 @@
   {
    "id": "T-222",
    "title": "Series A — sub-500ms p95 at 1,000 RPS load test",
-   "status": "parked",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "either",
    "category": "ops-infra",
@@ -7351,7 +7353,19 @@
      "lines": "238",
      "quote": "**Sub-500ms API p95 latency** at 1,000 RPS demonstrated in load test"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "parked",
+    "closed_on": "2026-10-01",
+    "basis": "owner-ruling",
+    "verdict": "moot",
+    "reason": "MOOT under D51 (2026-10-01): the owner closed the old platform's Series A plan — \"Lets close the three from the old platform model.\" This item comes from the Series A Readiness Roadmap in docs/audits/production-readiness-scorecard.md, written for the CAEP-era stablecoin-risk product before the multi-asset suite; that section now carries a banner saying it is dated history, not a live target. A future fundraising plan starts fresh rather than from this item. The ask was a 500 ms p95 at 1,000 requests a second against a deployed API; no deployment exists, and none is planned for this purpose.",
+    "approved_by": "owner, 2026-10-01 — answering the parked-items review's question about the three Series A items: \"Lets close the three from the old platform model.\"",
+    "evidence": [
+     "docs/decisions/2026-10-01-owner-decisions.md",
+     "docs/audits/production-readiness-scorecard.md"
+    ]
+   }
   },
   {
    "id": "T-293",
@@ -10973,7 +10987,7 @@
   {
    "id": "T-218",
    "title": "Series A — ≥3 paying institutional pilots",
-   "status": "parked",
+   "status": "closed",
    "confidence": "medium",
    "owner_role": "owner-decision",
    "category": "process",
@@ -10988,12 +11002,24 @@
      "lines": "233",
      "quote": "**≥3 paying institutional pilots** (hedge funds, banks, or treasury teams)"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "parked",
+    "closed_on": "2026-10-01",
+    "basis": "owner-ruling",
+    "verdict": "moot",
+    "reason": "MOOT under D51 (2026-10-01): the owner closed the old platform's Series A plan — \"Lets close the three from the old platform model.\" This item comes from the Series A Readiness Roadmap in docs/audits/production-readiness-scorecard.md, written for the CAEP-era stablecoin-risk product before the multi-asset suite; that section now carries a banner saying it is dated history, not a live target. A future fundraising plan starts fresh rather than from this item. The ask was three paying institutional pilots (hedge funds, banks or treasury teams) for that product's pitch.",
+    "approved_by": "owner, 2026-10-01 — answering the parked-items review's question about the three Series A items: \"Lets close the three from the old platform model.\"",
+    "evidence": [
+     "docs/decisions/2026-10-01-owner-decisions.md",
+     "docs/audits/production-readiness-scorecard.md"
+    ]
+   }
   },
   {
    "id": "T-224",
    "title": "Series A business proof points (ARR, NRR, TAM, positioning, narrative, advisors)",
-   "status": "parked",
+   "status": "closed",
    "confidence": "medium",
    "owner_role": "owner-decision",
    "category": "process",
@@ -11008,7 +11034,19 @@
      "lines": "243-249",
      "quote": "**ARR**: $250k–$500k ARR from paying customers"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "parked",
+    "closed_on": "2026-10-01",
+    "basis": "owner-ruling",
+    "verdict": "moot",
+    "reason": "MOOT under D51 (2026-10-01): the owner closed the old platform's Series A plan — \"Lets close the three from the old platform model.\" This item comes from the Series A Readiness Roadmap in docs/audits/production-readiness-scorecard.md, written for the CAEP-era stablecoin-risk product before the multi-asset suite; that section now carries a banner saying it is dated history, not a live target. A future fundraising plan starts fresh rather than from this item. The asks were the pitch's business proof points: ARR, NRR, a TAM analysis, competitive positioning, the regulatory narrative and an advisory board.",
+    "approved_by": "owner, 2026-10-01 — answering the parked-items review's question about the three Series A items: \"Lets close the three from the old platform model.\"",
+    "evidence": [
+     "docs/decisions/2026-10-01-owner-decisions.md",
+     "docs/audits/production-readiness-scorecard.md"
+    ]
+   }
   },
   {
    "id": "T-237",
@@ -37545,6 +37583,14 @@
      "docs/decisions/2026-09-30-owner-decisions.md",
      "docs/audits/queue-sweep-2026-09-30.md",
      "docs/BUSINESS-CHECKLIST.md"
+    ]
+   },
+   {
+    "on": "2026-10-01",
+    "what": "Owner answers to the parked-items review. D51: the old platform's Series A plan is closed — T-218, T-222 and T-224 close as moot, and the scorecard's Series A section is bannered as dated history. D52: T-031, the hand check of the transfer-fee table, is worked now with Transfer Fees still hidden; the session builds the owner a check page and applies the answers by PR. The review's other proposals — closing T-336, T-337, T-339 and T-279, folding T-296 and two added rows into existing items, writing 22 missing park reasons and rewording 9 — were not answered and are not applied.",
+    "evidence": [
+     "docs/decisions/2026-10-01-owner-decisions.md",
+     "docs/audits/production-readiness-scorecard.md"
     ]
    }
   ]
