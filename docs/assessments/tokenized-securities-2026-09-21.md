@@ -570,7 +570,7 @@ adds a paid tier, or touches key custody. IDs are provisional.
 | TS-6 | `<TokenizedNotice>` (7C), always visible; gap-reason usage for hidden rows | P1 | S | TS-5 |
 | TS-7 | `/live-data/tokenized-representations` route; premium/discount as `<DerivedNote>` (7D) | P1 | M | TS-5, `dataSources.ts` entry |
 | TS-8 | Equity and fund detail "Tokenized representations" panel | P1 | M | TS-6, TS-7 |
-| TS-9 | `lib/utils/marketHours.ts`; class profiles and Compare caveat read from it (7D, F8) — **needed by 2026-12-06** | P1 | M | — |
+| TS-9 | `lib/utils/marketHours.ts`; class profiles and Compare caveat read from it (7D, F8) — **needed by 2026-12-06** — ✅ **built 2026-10-01**, see the note below | P1 | M | — |
 | TS-10 | Compare: representation class profile; TSLA vs TSLAx with the overlap caveat | P2 | M | TS-7, TS-9 |
 | TS-11 | Portfolios / Watchlist representation-aware resolution and breakdown; DB extension table | P2 | L | TS-5, decision 2 |
 | TS-12 | Agents / v1 API / MCP awareness; one agent-eval task (7F) | P1 | S–M | TS-7 |
@@ -579,6 +579,18 @@ adds a paid tier, or touches key custody. IDs are provisional.
 | TS-15 | Risk-profile spec for representations, recorded under `docs/architecture/risk-framework.md`, not built (7E) | P2 | S | D18 |
 | TS-16 | Affiliate integrity rule: no placement for a security the viewer's jurisdiction may not hold (7I) | P1 | XS | decision 6 |
 | TS-17 | Regulatory-watch entries for §3.3's dates in the steward's ledger; re-read this document at each | P1 | XS | — |
+
+> **Built 2026-10-01 — TS-9, at the owner's request, outside the queue.** `lib/utils/marketHours.ts`
+> now holds the "When it trades" answers and Nasdaq's overnight schedule (start **reported** for
+> 2026-12-06, SEC Rel. 34-105199). Compare's class profiles and its weekend caveat read from it:
+> the caveat is keyed on which venues trade on weekends rather than on the word "crypto". The
+> stock/ETF wording changes only when someone sets the start to `confirmed`; a reported date that
+> passes unconfirmed turns it into "was reported … not confirmed", never into "trades overnight".
+> The file's staleness clock fires on 2026-12-01, and `marketHours.test.ts` fails if, while the
+> start is still only reported, that clock would fire on or after it. The caveat's old claim that
+> Compare's window stats use shared trading days only was wrong — they use each series' own days —
+> and was corrected in the same change. **Not built from 7D:** the `24/7` / `24/5` /
+> `issuer-window` venues for representations, which need TS-5's table and belong with TS-10.
 
 ---
 

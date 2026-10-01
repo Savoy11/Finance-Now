@@ -1,10 +1,19 @@
 import { describe, it, expect } from 'vitest'
 import {
-  compareAssetClasses, CLASS_PROFILES, DIMENSION_LABELS, type DimensionId,
+  classAnswer, compareAssetClasses, CLASS_PROFILES, DIMENSION_LABELS, type DimensionId,
 } from '../assetClassProfiles'
+import { hoursLabel, NASDAQ_OVERNIGHT } from '@/lib/utils/marketHours'
 import type { InstrumentClass } from '@/lib/data/instruments'
 
 const ALL: InstrumentClass[] = ['crypto', 'equity', 'etf', 'mutual', 'commodity', 'currency', 'rate']
+const DIMS = Object.keys(DIMENSION_LABELS) as DimensionId[]
+
+// "When it trades" changes with the date, so the content checks run on both sides of
+// the one dated change in it (Nasdaq's overnight session).
+const DAY = 86_400_000
+const LAUNCH = Date.parse(`${NASDAQ_OVERNIGHT.launch}T00:00:00Z`)
+const DATES = [new Date(LAUNCH - 30 * DAY), new Date(LAUNCH + 30 * DAY)]
+const NOW = DATES[0]
 
 describe('CLASS_PROFILES completeness', () => {
   it('covers every instrument class on every dimension', () => {
@@ -12,8 +21,10 @@ describe('CLASS_PROFILES completeness', () => {
     // would render an empty column in the comparison panel.
     for (const c of ALL) {
       expect(CLASS_PROFILES[c], `missing profile for ${c}`).toBeDefined()
-      for (const d of Object.keys(DIMENSION_LABELS) as DimensionId[]) {
-        expect(CLASS_PROFILES[c].dimensions[d], `${c} missing ${d}`).toBeTruthy()
+      for (const now of DATES) {
+        for (const d of DIMS) {
+          expect(classAnswer(c, d, now), `${c} missing ${d}`).toBeTruthy()
+        }
       }
     }
   })
@@ -24,10 +35,24 @@ describe('CLASS_PROFILES completeness', () => {
     const forbidden = /\b(should|recommend|buy|sell|avoid|best|worst|better investment|safer choice)\b/i
     for (const c of ALL) {
       expect(CLASS_PROFILES[c].whatItIs).not.toMatch(forbidden)
-      for (const text of Object.values(CLASS_PROFILES[c].dimensions)) {
-        expect(text, `advice wording in ${c}`).not.toMatch(forbidden)
+      for (const now of DATES) {
+        for (const d of DIMS) {
+          expect(classAnswer(c, d, now), `advice wording in ${c}.${d}`).not.toMatch(forbidden)
+        }
       }
     }
+  })
+
+  it('reads "When it trades" from the market-hours module, never a typed string', () => {
+    // The TS-9 regression: stocks and ETFs said "US exchange hours, weekdays." in a
+    // string nothing could update when Nasdaq's overnight session starts.
+    for (const c of ALL) {
+      for (const now of DATES) {
+        expect(classAnswer(c, 'hours', now)).toBe(hoursLabel(CLASS_PROFILES[c].venue, now))
+      }
+      expect(Object.keys(CLASS_PROFILES[c].dimensions)).not.toContain('hours')
+    }
+    expect(classAnswer('equity', 'hours', NOW)).toContain('Nasdaq')
   })
 })
 
@@ -53,7 +78,7 @@ describe('compareAssetClasses', () => {
     // Both are pooled vehicles: ownership, income and supply answers are
     // written identically on purpose. If someone edits one side, this fails
     // and forces the question "did they really stop being alike?"
-    const r = compareAssetClasses(['etf', 'mutual'])!
+    const r = compareAssetClasses(['etf', 'mutual'], NOW)!
     const sharedDims = r.similarities.map((row) => row.dimension)
     expect(sharedDims).toContain('ownership')
     expect(sharedDims).toContain('income')
@@ -68,11 +93,25 @@ describe('compareAssetClasses', () => {
     expect(r.differences).toHaveLength(Object.keys(DIMENSION_LABELS).length)
   })
 
-  it('emits the weekend-overlap caveat only for crypto mixed with market-hours assets', () => {
-    const mixed = compareAssetClasses(['crypto', 'equity'])!
-    expect(mixed.caveats.some((c) => c.includes('weekend'))).toBe(true)
-    const noCrypto = compareAssetClasses(['equity', 'etf'])!
-    expect(noCrypto.caveats.some((c) => c.includes('weekend'))).toBe(false)
+  it('emits the weekend-overlap caveat only when a seven-day market meets a weekday one', () => {
+    const weekend = (classes: InstrumentClass[]) =>
+      compareAssetClasses(classes, NOW)!.caveats.find((c) => c.includes('weekend'))
+    // Crypto beside each weekday venue: stock, NAV fund, futures, FX, rates.
+    for (const other of ['equity', 'mutual', 'commodity', 'currency', 'rate'] as InstrumentClass[]) {
+      expect(weekend(['crypto', other]), `crypto + ${other}`).toBeDefined()
+    }
+    expect(weekend(['crypto', 'equity'])).toContain('crypto’s weekend moves')
+    // Weekday venues only, however many.
+    expect(weekend(['equity', 'etf'])).toBeUndefined()
+    expect(weekend(['equity', 'currency', 'commodity'])).toBeUndefined()
+  })
+
+  it('says correlation pairs shared dates and window stats do not — the code does both', () => {
+    // The old caveat said window stats were computed on shared days only. They are not:
+    // Compare runs windowStats over each series' own points (compareStats.ts).
+    const text = compareAssetClasses(['crypto', 'equity'], NOW)!.caveats.find((c) => c.includes('weekend'))!
+    expect(text).toMatch(/Correlation and beta pair the series on dates both have a close/)
+    expect(text).toMatch(/window stats use each series’ own trading days/)
   })
 
   it('emits the not-investable caveat for rate indices', () => {
