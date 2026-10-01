@@ -26,6 +26,7 @@ import {
 import type { StakingRatesResponse } from '@/app/live-data/staking-rates/route'
 import type { GapReasonId } from '@/lib/data/dataGaps'
 import { DataGapNote } from '@/components/ui/DataGapNote'
+import { HOW_WE_MAKE_MONEY_HREF } from '@/lib/legal/links'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -89,7 +90,7 @@ function AffiliateDisclosure() {
               provider’s warnings are softened.{' '}
             </>
           )}
-          <a href="/how-we-make-money" className="underline hover:text-amber-200">How we make money</a>.
+          <a href={HOW_WE_MAKE_MONEY_HREF} className="underline hover:text-amber-200">How we make money</a>.
         </p>
       )}
     </div>

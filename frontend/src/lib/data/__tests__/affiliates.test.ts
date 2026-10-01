@@ -54,13 +54,14 @@ describe('resolveOutboundLink', () => {
 describe('the catalog ships with no live affiliate link', () => {
   it('no provider has an affiliateUrl set', () => {
     // The plumbing lands before any program is joined. If this ever fails, a
-    // real referral URL has been added — which is fine, but it means the
-    // disclosure copy on /how-we-make-money is no longer describing a
-    // hypothetical and the owner-copy placeholders must be filled in first.
+    // real referral URL has been added — and the About page (section "How we
+    // make money", lib/legal/disclosures.ts) says "No link on either site pays
+    // us". D49 rules paid links out until after launch; when they return, the
+    // owner's paid-link wording replaces that section first.
     const withUrls = STAKING_PROVIDERS.filter((p) => p.affiliateUrl)
     expect(
       withUrls.map((p) => p.id),
-      'an affiliate URL was added — fill in the owner copy on /how-we-make-money before shipping it',
+      'an affiliate URL was added — D49 rules paid links out until after launch, and /about says no link pays us',
     ).toEqual([])
   })
 

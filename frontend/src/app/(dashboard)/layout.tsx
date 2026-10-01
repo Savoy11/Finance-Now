@@ -16,6 +16,7 @@ import { useRecentAlerts }  from '@/hooks/useAlerts'
 import { useGlobalRefresh } from '@/hooks/useGlobalRefresh'
 import { usePriceAlertMonitor } from '@/hooks/usePriceAlertMonitor'
 import { PullToRefresh }    from '@/components/ui/PullToRefresh'
+import { SiteFooter }       from '@/components/layout/SiteFooter'
 // LOGIN TEMPORARILY DISABLED (by request). The auth wall is fully off so it
 // cannot affect the build or block access.
 //
@@ -67,6 +68,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
             <DataStatusBanner />
             <div className="p-4 sm:p-6"><ErrorBoundary>{children}</ErrorBoundary></div>
           </main>
+          <SiteFooter />
         </PullToRefresh>
         <StatusBar />
       </div>

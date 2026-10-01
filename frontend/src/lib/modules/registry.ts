@@ -30,6 +30,7 @@ import {
   Activity,
   Radar,
   Sigma,
+  Info,
 } from 'lucide-react'
 
 // ─── Suite module registry ────────────────────────────────────────────────────
@@ -126,11 +127,13 @@ export const MODULES: SuiteModule[] = [
           { href: '/agent-config', label: 'AI Agents', icon: Bot },
           { href: '/data-sources', label: 'Data Sources', icon: Network },
           // Sits beside Data Sources because it answers the sibling question:
-          // that page says where the data comes from, this one says what the
-          // app is paid for. It is reachable from the nav rather than only from
-          // a per-link tag, because a disclosure a reader can only find by
-          // clicking the thing being disclosed is not much of a disclosure.
-          { href: '/how-we-make-money', label: 'How We Make Money', icon: Coins },
+          // that page says where the data comes from, this one says who runs the
+          // app and what it is paid for. It replaced How We Make Money on
+          // 2026-10-01 (D50): the About page gathers that text with the Terms,
+          // the Privacy Policy and the not-advice notice, and the footer on
+          // every page links it too. /how-we-make-money redirects to its section.
+          // The page lives in the (legal) route group, outside the sign-in gate.
+          { href: '/about', label: 'About & Legal', icon: Info },
         ],
       },
     ],

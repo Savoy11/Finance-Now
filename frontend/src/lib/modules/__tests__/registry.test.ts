@@ -13,12 +13,19 @@ import { MODULES, flattenNavItems, moduleForPath } from '../registry'
  * precisely how a broken link survives review.
  */
 
-const APP_DIR = path.join(process.cwd(), 'src/app/(dashboard)')
+const APP_ROOT = path.join(process.cwd(), 'src/app')
 
-/** Does a route exist on disk for this href? */
+// A route group — "(dashboard)", "(legal)" — is a folder that adds nothing to
+// the URL, so a nav href may live under any of them. About & Legal is the first
+// nav entry outside (dashboard): it sits in (legal) to stay readable when the
+// dashboard's sign-in gate is on (2026-10-01, D50).
+const ROUTE_GROUPS = fs.readdirSync(APP_ROOT).filter((d) => /^\(.+\)$/.test(d))
+
+/** Does a route exist on disk for this href, in any route group? */
 function pageExists(href: string): boolean {
   const rel = href.replace(/^\//, '')
-  return fs.existsSync(path.join(APP_DIR, rel, 'page.tsx'))
+  return [APP_ROOT, ...ROUTE_GROUPS.map((g) => path.join(APP_ROOT, g))]
+    .some((dir) => fs.existsSync(path.join(dir, rel, 'page.tsx')))
 }
 
 const allItems = MODULES.flatMap((m) => flattenNavItems(m.navItems).map((item) => ({ mod: m, item })))
@@ -26,6 +33,7 @@ const allItems = MODULES.flatMap((m) => flattenNavItems(m.navItems).map((item) =
 describe('module registry', () => {
   it('found nav items to check (guards the guard)', () => {
     expect(allItems.length).toBeGreaterThan(20)
+    expect(ROUTE_GROUPS).toContain('(dashboard)')
   })
 
   it('every nav item — parent and child alike — routes to a real page', () => {

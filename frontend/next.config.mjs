@@ -104,6 +104,12 @@ const nextConfig = {
       // and its one unique feature — live on-chain pool discovery — became the
       // Live Pools tab there. Content-preserving redirect, like /reserves.
       { source: '/staking-discovery', destination: '/staking?tab=pools', permanent: false },
+      // How We Make Money folded into About & Legal (2026-10-01, D50): the About
+      // page's second section carries its launch version (D49: no paid links), so
+      // this lands on that section rather than the top of the page. The old page
+      // is deleted; its paid-link wording waits in the disclosure draft's
+      // "Later: paid links" tab for when paid links are revisited after launch.
+      { source: '/how-we-make-money', destination: '/about#how-we-make-money', permanent: false },
     ]
   },
   async headers() {

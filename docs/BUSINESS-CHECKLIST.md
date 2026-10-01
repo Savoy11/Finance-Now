@@ -80,7 +80,10 @@ structure, regulatory research, disclosures and tax compliance are decided once,
       **Status 2026-09-30:** where they go is decided (D50, next item but one). The documents
       are not: a first draft of the whole set, shared by both products, was written in the
       business chat on 29 September and is recorded outside this repo; it awaits the owner's
-      approval. Tracked as T-291.
+      approval. Tracked as T-291. **2026-10-01:** Finance Now's copy of that draft is on its
+      About pages (`/about`, `/about/terms`, `/about/privacy`, `/about/not-investment-advice`),
+      word for word, under a "Draft — not yet in force" notice that stays until the owner
+      approves the set and every blank is filled (`frontend/src/lib/legal/disclosures.ts`).
 - [x] **Source-labeling policy (both products).** ✅ **DRAFTED 2026-09-14 — awaiting approval.**
       Written up as `docs/policies/source-labeling.md` rather than inline here, because it ran
       to a page: the rule ("every number traceable to a named third party or to us, tellable
@@ -95,7 +98,9 @@ structure, regulatory research, disclosures and tax compliance are decided once,
       About page per product, reached from a footer link on every page and, on Finance Now,
       from Settings ("About & Legal" replaces the How We Make Money entry). Privacy keeps its
       own footer link. The short "not investment advice" lines stay beside the features they
-      qualify. Not built yet — T-293.
+      qualify. **Built 2026-10-01 for Finance Now (T-293):** the footer is on every page, sign-in
+      included, and Settings → About & Legal replaced How We Make Money, whose address redirects.
+      Still to do: the short lines beside the features (drafted in the disclosure set).
 - [ ] Keep one canonical copy per document, shared by both products where the text is identical,
       so they can't drift.
 

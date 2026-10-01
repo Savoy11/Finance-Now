@@ -53,6 +53,16 @@ frontend/src/
 │   ├── layout.tsx                  # Root layout — wraps everything in <Providers>
 │   ├── providers.tsx               # React Query + Toaster setup
 │   ├── (auth)/                     # Login page (Auth.js credentials; wall currently off)
+│   ├── (legal)/                    # About & Legal — PUBLIC: no sign-in gate, no sidebar (D50,
+│   │                               #   2026-10-01). Outside (dashboard) on purpose: that layout
+│   │                               #   renders nothing signed-out once REQUIRE_AUTH is on, and
+│   │                               #   the Privacy link must work for a visitor who isn't
+│   │   ├── layout.tsx              # Public shell: header + SiteFooter
+│   │   └── about/page.tsx          # /about, the draft's ten sections; terms/, privacy/,
+│   │                               #   not-investment-advice/ hold the full documents and
+│   │                               #   open-source/ the licence list built from package-lock.json.
+│   │                               #   Text: lib/legal/disclosures.ts — Draft v1, shown under a
+│   │                               #   "Draft — not yet in force" notice until approved + no blanks
 │   ├── (dashboard)/                # All main pages (use Sidebar layout)
 │   │   ├── layout.tsx              # Dashboard shell with Sidebar
 │   │   │
@@ -67,11 +77,8 @@ frontend/src/
 │   │   ├── agent-config/page.tsx   # AI Agents tab
 │   │   ├── settings/page.tsx       # Integrations + Suite Modules toggles
 │   │   ├── data-sources/page.tsx
-│   │   ├── how-we-make-money/page.tsx  # ⚠ FTC affiliate disclosure, nav-reachable under
-│   │   │                               #   Settings (registry.ts:133). Its four disclosure
-│   │   │                               #   sections are OWNER-COPY-REQUIRED PLACEHOLDERS,
-│   │   │                               #   not finished text. Added to this tree 2026-09-22
-│   │   │                               #   — it had been live and undocumented here
+│   │   │  # (no how-we-make-money/ — folded into /about on 2026-10-01 under D50;
+│   │   │  #  /how-we-make-money redirects to /about#how-we-make-money, next.config.mjs)
 │   │   │
 │   │   │  # ── Crypto module (all gated by <ModuleGate module="crypto">) ──
 │   │   ├── assets/page.tsx         # Coin Registry ("Coins" nav; route kept /assets) — live prices
@@ -173,7 +180,10 @@ frontend/src/
 │   │   ├── ModuleGate.tsx          # Wraps module pages; locks when module disabled
 │   │   ├── TopBar.tsx
 │   │   ├── StatusBar.tsx
-│   │   └── DataStatusBanner.tsx
+│   │   ├── DataStatusBanner.tsx
+│   │   └── SiteFooter.tsx          # Not-advice line + About · Terms · Privacy · Not investment
+│   │                               #   advice. In all three layouts — a test fails if one drops it
+│   ├── legal/                      # About & Legal rendering: LegalDocumentView, DraftNotice…
 │   ├── ui/                         # Generic reusable components (incl. SourceLine, ProvenanceNotice)
 │   ├── charts/                     # Recharts wrappers + CandlestickChart/indicatorRegistry (shared TA engine)
 │   ├── markets/                    # Shared equities/funds UI (PriceChartCard, MarketNewsList)
@@ -206,6 +216,9 @@ frontend/src/
 │   │                               #   (macro three added by P2-R3; stakingAdapter
 │   │                               #   was the 8th until D26 deleted it, 2026-09-25)
 │   ├── auth/                       # Auth.js config + getCurrentUserId()/requireUserId()
+│   ├── legal/                      # disclosures.ts — the public documents' text (Draft v1 of
+│   │                               #   the owner's disclosure set, copied as written); inline.ts
+│   │                               #   (bold, links, [BLANKS]); openSource.ts (lockfile → licences)
 │   ├── db/                         # Drizzle schema + client (users, entitlements, instruments,
 │                                   #   user_wallets…)
 │   ├── data/                       # Static/semi-static data files (no API calls)
@@ -1394,7 +1407,7 @@ Risk/status color convention used across the app:
 | Risk Case Studies | `/backtests` | ⚪ Removed | Deleted (2026-07) — static educational replay of 3 depeg events with no clear user value; `/backtests` redirects to `/headlines`. Recoverable from the `archive/pre-reset-main` branch if ever wanted — the deletion predates the 2026-08-05 re-root of `main` (see "How Changes Land"), so it is not in `main`'s own history. (Equities Strategy Backtests at `/equities/backtests` are unrelated. That page is **retained but HIDDEN since 2026-08-20** — `/equities/backtests` redirects to `/equities`, so no user reaches it. "Remain" read as reachable; see the Equities table.) |
 | Videos | `/videos` | 🟢 Live | Video search + AI analysis (`/live-data/videos`, `video-search`, `video-analyze`) |
 | Data Sources | `/data-sources` | — | Per-provider status and utilization, read from the provider registry |
-| How We Make Money | `/how-we-make-money` | ⚠ **Placeholder copy** | The standing FTC affiliate disclosure behind the per-link `Paid link` tags (`components/ui/SponsoredLink.tsx`). Nav-reachable under Settings (`registry.ts:133`). ⚠ **Its four disclosure sections are OWNER-COPY-REQUIRED PLACEHOLDERS, not a disclosure** — `docs/BUSINESS-CHECKLIST.md` §3 lists the disclosure set as the owner's to write, and they are deliberately written so they cannot be mistaken for finished text. Not harmful today: no provider has an `affiliateUrl` set, so the page's live sections compute zero and the placeholders describe an arrangement that does not yet exist. **And none will at launch: D49 (2026-09-30) rules out paid or affiliate links on either product until after launch** — do not populate an `affiliateUrl`. D50 moves this page's content into a per-product About page (footer link on every page; "About & Legal" in Settings); that build is T-293 and has not happened. **This page was live and absent from this document until 2026-09-22** — `docs:check` iterates CLAUDE.md and never the filesystem, so a page that exists but is unlisted cannot fail it |
+| About & Legal | `/about` | ⚠ **Draft copy** | **Built 2026-10-01 (D50, T-293); replaced How We Make Money**, whose address now redirects to `/about#how-we-make-money`. Ten sections in the order of the owner's draft (who we are, how we make money, not investment advice, regulatory status, data credits, privacy, terms, questions and complaints, policy updates, open-source notices), with the full Terms of Use, Privacy Policy and Not Investment Advice at `/about/terms`, `/about/privacy`, `/about/not-investment-advice` and a licence list generated from `package-lock.json` at `/about/open-source`. Reached from a footer on every page (`SiteFooter`, in all three layouts) and from Settings → About & Legal. Lives in the **`(legal)` route group, outside the dashboard's sign-in gate**, so a signed-out visitor can read the Privacy Policy once sign-in is on. ⚠ **The text is Draft v1 of the owner's disclosure set (T-291), copied as written, and is NOT in force**: `lib/legal/disclosures.ts` keeps `DISCLOSURE_STATUS = 'draft'`, the bracketed blanks ([COMPANY LLC NAME], [CONTACT EMAIL]…) render highlighted, and a "Draft — not yet in force" notice listing them shows until the owner approves the set AND no blank is left (`disclosuresInForce()`; a test pins both halves). Edit wording in the owner's document first, then copy it — never here alone. The "How we make money" section says no link pays us (D49: none at launch) — **do not populate an `affiliateUrl`**; `lib/legal/__tests__/disclosures.test.ts` fails if a paid link appears while that sentence stands. Still to do under T-293: the short not-advice lines beside the features they qualify |
 | Daily Brief | `/brief` | 🟢 Live | AI morning brief grounded in holdings (needs ANTHROPIC_API_KEY) |
 | Compare | `/compare` | 🟡 Key-gated | 2–6 assets of ANY class (stocks/funds/coins + all 45 macro instruments — commodities/FX/rates ride `security-chart`, coverage provider-dependent), date-aligned growth-of-100 + window stats + correlation + **beta vs a selectable benchmark** (SPY/QQQ/IWM/VT/AGG/BTC, R² shown alongside) (`security-chart`, `chart`). Fund selections also get a **holdings-overlap** section (`lib/data/lookThrough.ts`) — the question correlation can't answer: whether two funds move together because they hold the same companies or because they track the same economy. Partial holdings lists are labelled as floors, never rescaled. **Cross-class comparisons get a structural panel** (`lib/data/assetClassProfiles.ts`, pure + tested): when ≥2 distinct asset classes are selected it states similarities and differences across five dimensions (what you own / income / valuation anchor / trading hours / supply) plus mix-specific method caveats (crypto weekend overlap, rate indices not investable, FX carry, NAV timing, futures roll). Facts only, class-level only — the advice line (RP-3) holds. **"When it trades" is computed, not typed** (`lib/utils/marketHours.ts`, TS-9, 2026-10-01): Nasdaq's overnight session has a *reported* start of 2026-12-06, and the stock/ETF wording changes only when someone marks that start `confirmed` — the file's staleness clock fires before the date to make them check |
 | Budget | ~~`/budget`~~ | ⚪ Removed | **Module removed 2026-08-20** — owner decision: personal-finance tooling moves to a separate product (*"we will build this out in a completely different tool"*). Pages, `/api/user/budget/*`, `lib/budget/` all deleted. **DB tables + imported bank history RETAINED** — schema definitions kept in `lib/db/schema/budget.ts` precisely so drizzle never generates a DROP; export instructions live in that file's banner. Reverses RP-2 via its recorded reopen trigger |

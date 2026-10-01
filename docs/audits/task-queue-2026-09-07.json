@@ -4683,9 +4683,10 @@
     }
    ],
    "progress": {
-    "noted_on": "2026-09-30",
-    "note": "REOPENED the same day it was parked. The 2026-09-30 queue sweep parked this under D7 without reading the ledger page's workspace log, where the business chat had recorded a first draft of the whole disclosure set on 29 Sep — shared by both products: Terms of Use, Privacy Policy, Not Investment Advice, How We Make Money, Data Sources & Attribution, Contact & Complaints, with CoinGecko API Terms §7 (a)–(f) mapped clause by clause — and the owner's placement decision on 30 Sep, now D50. The draft lives outside this repository and awaits the owner's approval; it lists 20 code or decision items that must land before its text is true. Carried forward from 2026-09-24: CoinGecko's §7 makes six clauses of the app's own user agreement and privacy policy contractually required once anyone outside the owner's entity can use it (docs/audits/terms-review-coingecko-2026-09-24.md §2).",
+    "noted_on": "2026-10-01",
+    "note": "2026-10-01: Draft v1 is on the app's About pages — /about and the full Terms of Use, Privacy Policy and Not Investment Advice under it — copied as written, with links added where the text refers to another page, and under a \"Draft — not yet in force\" notice that lists the blanks still to fill. Approving it now means: the owner's OK on the wording, the blanks filled, any wording changed in the document since 2026-10-01 copied across, and DISCLOSURE_STATUS set to 'approved' in frontend/src/lib/legal/disclosures.ts; a test keeps the notice up while any blank remains. The About page's \"Terms of Use\" line and its data-sources and open-source pointers were not worded by the draft and are marked so in that file. Carried forward from 2026-09-30: REOPENED the same day it was parked. The 2026-09-30 queue sweep parked this under D7 without reading the ledger page's workspace log, where the business chat had recorded a first draft of the whole disclosure set on 29 Sep — shared by both products: Terms of Use, Privacy Policy, Not Investment Advice, How We Make Money, Data Sources & Attribution, Contact & Complaints, with CoinGecko API Terms §7 (a)–(f) mapped clause by clause — and the owner's placement decision on 30 Sep, now D50. The draft lives outside this repository and awaits the owner's approval; it lists 20 code or decision items that must land before its text is true. Carried forward from 2026-09-24: CoinGecko's §7 makes six clauses of the app's own user agreement and privacy policy contractually required once anyone outside the owner's entity can use it (docs/audits/terms-review-coingecko-2026-09-24.md §2).",
     "evidence": [
+     "frontend/src/lib/legal/disclosures.ts",
      "docs/decisions/2026-09-30-owner-decisions.md",
      "docs/audits/terms-review-coingecko-2026-09-24.md",
      "docs/audits/queue-sweep-2026-09-30.md"
@@ -7372,11 +7373,14 @@
     }
    ],
    "progress": {
-    "noted_on": "2026-09-30",
-    "note": "UNBLOCKED by D50: the placement rule this item asked for is decided — one About page per product, reached from a footer link on every page and, on Finance Now, from Settings (\"About & Legal\" replaces the How We Make Money entry); Privacy keeps its own footer link; the short \"not investment advice\" lines stay beside the features they qualify. BUSINESS-CHECKLIST.md §3's placement line is ticked. What remains is the build — the footer link block, an /about page, the Settings entry and the point-of-relevance lines — with page text from T-291's documents once the owner approves them. The blocker was: \"Develop the required disclosure documents and decide where they're posted (T-291)\"",
+    "noted_on": "2026-10-01",
+    "note": "BUILT 2026-10-01, except the lines beside features. A footer on every page — the app, the sign-in page and the About pages — carries the one-line notice and links to About, Terms, Privacy and Not investment advice. /about (\"About & Legal\") has the draft's ten sections, with the full Terms of Use, Privacy Policy and Not Investment Advice at /about/terms, /about/privacy and /about/not-investment-advice, and open-source notices generated from the lockfile at /about/open-source. In Settings, How We Make Money is now About & Legal, and /how-we-make-money redirects to its section. The pages sit in their own route group, (legal), so a signed-out visitor can still read them once sign-in is switched on. The words are T-291's Draft v1, copied as written, under a \"Draft — not yet in force\" notice that stays until the owner approves the set and every blank is filled. STILL TO DO: the short not-advice lines beside the features they qualify (Portfolio Builder, the Trade Risk Scorer and calculators, the assistant, Research and Daily Brief, Pump Report, crypto pages, questions about a video), drafted in the Disclosure Set's Not Investment Advice tab. Carried forward from 2026-09-30: D50 decided the placement rule, and BUSINESS-CHECKLIST.md §3's placement line is ticked.",
     "evidence": [
-     "docs/decisions/2026-09-30-owner-decisions.md",
-     "docs/BUSINESS-CHECKLIST.md"
+     "frontend/src/lib/legal/disclosures.ts",
+     "frontend/src/app/(legal)/about/page.tsx",
+     "frontend/src/components/layout/SiteFooter.tsx",
+     "frontend/src/lib/legal/__tests__/disclosures.test.ts",
+     "docs/decisions/2026-09-30-owner-decisions.md"
     ]
    }
   },
@@ -12189,7 +12193,7 @@
      "frontend/src/lib/agents/prompts.ts",
      "frontend/src/lib/agents/__tests__/diligenceReport.test.ts",
      "frontend/src/app/api/v1/route.ts",
-     "frontend/src/app/(dashboard)/how-we-make-money/page.tsx",
+     "094bbae:frontend/src/app/(dashboard)/how-we-make-money/page.tsx — the page as this item corrected it; the file was deleted on 2026-10-01 when D50 folded How We Make Money into /about",
      "docs/architecture/risk-scale-spec.md",
      "docs/decisions/2026-09-14-owner-decisions.md"
     ]
