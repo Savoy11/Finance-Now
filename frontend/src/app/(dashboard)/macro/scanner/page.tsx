@@ -10,6 +10,8 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { SourceLine } from '@/components/ui/SourceLine'
 import { rsi, sma, computeSignalSummary, type Signal } from '@/lib/utils/indicators'
 import { SignalBadge } from '@/components/charts/SignalBadge'
+import { AgentScanPanel } from '@/components/markets/AgentScanPanel'
+import { MACRO_MOVERS_SCAN } from '@/components/markets/agentScans'
 import {
   MACRO_INSTRUMENTS, SCANNER_INSTRUMENTS, GROUPS, fmtLevel,
   type MacroGroup, type MacroInstrument,
@@ -178,12 +180,15 @@ function MacroScannerInner() {
           subtitle="RSI, trend-vs-average and composite signal across the liquid macro universe"
           description="Ranks commodities, currencies and rates on the same indicator engine the crypto and equity scanners use. Levels follow each market's own convention — grains in cents per bushel, yields in percent, bond futures in points of par."
           details={[
-            { label: 'Universe', text: 'The liquid subset: 29 of 45 macro instruments. Thin contracts and EM/cross FX pairs are excluded because a ranked reading beside a liquid one reads as comparable when it is not — they all still chart on Technical Analysis.' },
+            { label: 'Universe', text: `The liquid subset: ${SCANNER_INSTRUMENTS.length} of ${MACRO_INSTRUMENTS.length} macro instruments. Thin contracts and EM/cross FX pairs are excluded because a ranked reading beside a liquid one reads as comparable when it is not — they all still chart on Technical Analysis.` },
             { label: 'What it is', text: 'A discovery tool across instruments. The TA page is the other half: it charts the one instrument you picked.' },
           ]}
         />
       </div>
       <SourceLine id="macro-quotes" />
+      {/* The Macro Screener agent's own run button (NT6, 2026-10-01). Same panel
+          as the equities AI Outlier Scan, so a fix to one reaches both. */}
+      <AgentScanPanel scan={MACRO_MOVERS_SCAN} />
       <ScannerTab />
     </div>
   )

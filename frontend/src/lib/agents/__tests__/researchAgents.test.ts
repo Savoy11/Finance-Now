@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import fs from 'node:fs'
 import path from 'node:path'
 import { AGENT_DEFAULTS } from '../prompts'
+import { AGENT_SCANS, EQUITY_OUTLIER_SCAN, MACRO_MOVERS_SCAN } from '@/components/markets/agentScans'
 
 /**
  * NT5 guard — the Research page's agent picker, the run route's whitelist, and
@@ -87,5 +88,36 @@ describe('NT5 — research agent wiring', () => {
       expect(whitelisted, `${id} must be runnable`).toContain(id)
       expect(offered, `${id} must be selectable`).toContain(id)
     }
+  })
+})
+
+describe('AI scans on market pages — the same boundary, a fourth surface', () => {
+  // A page's scan button posts an agent id like the picker does, so it can break
+  // the same two ways: an id the route refuses, or an agent run off its market's
+  // tools. And the macro screener was the NT5 defect's last case: whitelisted,
+  // with a panel approved (NT6), reachable only by a deep link (P3 review X5).
+
+  it('every scan runs an agent the route accepts', () => {
+    expect(AGENT_SCANS.length, 'guards the guard: the scan list was read').toBeGreaterThan(1)
+    for (const scan of AGENT_SCANS) expect(whitelisted, `${scan.title} posts ${scan.agentId}`).toContain(scan.agentId)
+  })
+
+  it('every scan sits in the module whose tools its agent uses', () => {
+    const byId = new Map(AGENT_DEFAULTS.map((a) => [a.id, a]))
+    for (const scan of AGENT_SCANS) {
+      expect(byId.get(scan.agentId)?.market, `${scan.title} (${scan.agentId})`).toBe(scan.market)
+    }
+  })
+
+  it('each scan is mounted on a page of its own module', () => {
+    expect(read('src/app/(dashboard)/macro/scanner/page.tsx')).toContain(`<AgentScanPanel scan={MACRO_MOVERS_SCAN} />`)
+    expect(read('src/components/markets/OutlierScanPanel.tsx')).toContain(`<AgentScanPanel scan={EQUITY_OUTLIER_SCAN} />`)
+    expect(read('src/app/(dashboard)/equities/scanner/page.tsx')).toMatch(/<OutlierScanPanel \/>/)
+    expect(MACRO_MOVERS_SCAN.market).toBe('macro')
+    expect(EQUITY_OUTLIER_SCAN.market).toBe('equities')
+  })
+
+  it('the AI Agents tab no longer sends the macro screener to a deep link', () => {
+    expect(read('src/app/(dashboard)/agent-config/page.tsx')).not.toMatch(/No panel yet/)
   })
 })

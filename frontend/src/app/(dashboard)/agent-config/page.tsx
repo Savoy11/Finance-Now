@@ -385,7 +385,7 @@ export default function AgentConfigPage() {
             {activeTab === 'equity-scraper'   && 'The Equity Data Scraper finds upcoming earnings, analyst rating changes, IPOs and index changes, and returns them as structured records. Run it from the Research page’s agent picker (Equities).'}
             {activeTab === 'equity-diligence' && 'The Equity Due Diligence agent investigates one company for red flags — accounting quality, litigation, SEC enforcement, short-seller reports, governance, insider activity. Run it from the Research page’s agent picker (Equities).'}
             {activeTab === 'macro-research'   && 'The Macro Research Agent analyzes commodities, currencies, and bonds/rates using live futures/FX quotes, the official treasury yield curve, and macro news. Launch it from the Research page.'}
-            {activeTab === 'macro-screener'   && 'The Macro Screener sweeps every macro instrument for the biggest moves and regime signals (dollar, curve shape, energy/gold tone) and explains the drivers. No panel yet — run it from the Research page via ?agent=macro-screener.'}
+            {activeTab === 'macro-screener'   && 'The Macro Screener sweeps every macro instrument for the biggest moves and regime signals (dollar, curve shape, energy/gold tone) and explains the drivers. Run it from the “AI Movers Scan” panel on the Macro Scanner, or from the Research page.'}
           </p>
 
           {tabAgents.length === 0 ? (

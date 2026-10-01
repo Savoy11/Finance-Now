@@ -54,7 +54,7 @@ visible so nobody re-raises them as fresh ideas.
 
 | # | Proposal | Raised | Status |
 |---|---|---|---|
-| NT6 | `macro-screener` panel on `/macro` | 2026-08-12 | **Superseded 2026-08-18** — folded into the per-section scanner work (short-list item 6/7). Approved capability, different roof; not a rejection |
+| NT6 | `macro-screener` panel on `/macro` | 2026-08-12 | **Superseded 2026-08-18** — folded into the per-section scanner work (short-list item 6/7). Approved capability, different roof; not a rejection. **Built 2026-10-01** under that roof: the Macro Scanner's "AI Movers Scan" (owner-chosen feature work), sharing one panel with the equities AI Outlier Scan |
 | NT8 | Futures term-structure provider (keyed) | 2026-08-12 | **Deferred 2026-08-18** — sourcing decision, folded into the enterprise-key conversation with 12b and D2 |
 
 
