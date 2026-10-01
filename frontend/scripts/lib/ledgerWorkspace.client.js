@@ -89,11 +89,15 @@
 
   // ── people ───────────────────────────────────────────────────────────────────
   async function names(ids) {
-    var uniq = ids.filter(function (x, i, a) { return x && a.indexOf(x) === i })
+    // Only real people go to profiles(): one unknown id could fail the whole lookup.
+    var uniq = ids.filter(function (x, i, a) { return x && x !== C.CLAUDE_ID && a.indexOf(x) === i })
     if (!user || !uniq.length) return {}
     try { return (await user.profiles(uniq)) || {} } catch (e) { return {} }
   }
   function who(ps, id) {
+    // Rows written by a Claude session through the artifact data tool carry by: "claude".
+    // Writes need edit access, so only someone trusted with the page can set it.
+    if (id === C.CLAUDE_ID) return 'Claude'
     if (!id || !C.own(ps, id)) return 'Someone'
     var p = ps[id]
     if (p && p.isMe) return 'You'

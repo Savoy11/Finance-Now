@@ -202,7 +202,7 @@ export function workspaceSection(sourceLabel = 'docs/audits/task-queue-2026-09-0
 </div>
 
 <details class="ws-how"><summary>How Claude uses this</summary>
-<p>Another Claude session given this page's link reads the workspace with the artifact data tool: the <code>docs</code> collection lists every file with the items it belongs to, the <code>log</code> collection holds every progress note, confirmation and reopen, and the <code>added</code> collection holds the items recorded above as waiting for a number. It reads an uploaded file through the artifact's asset path. A confirmation becomes a ledger closure, and an added item becomes a numbered one, only through a pull request that edits <code>${escHtml(sourceLabel)}</code>, after which this page is regenerated.</p>
+<p>Another Claude session given this page's link reads the workspace with the artifact data tool: the <code>docs</code> collection lists every file with the items it belongs to, the <code>log</code> collection holds every progress note, confirmation and reopen, and the <code>added</code> collection holds the items recorded above as waiting for a number. A row Claude writes carries <code>by: "claude"</code>, so the page shows it as Claude's rather than an unnamed person's. It reads an uploaded file through the artifact's asset path. A confirmation becomes a ledger closure, and an added item becomes a numbered one, only through a pull request that edits <code>${escHtml(sourceLabel)}</code>, after which this page is regenerated.</p>
 </details>
 </div>
 </section>`
@@ -276,6 +276,7 @@ textarea.ws-input{resize:vertical}
 .ws-added .ws-pend .ws-dim{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center;margin-top:2px}
 .ws-added .added-filed{max-height:420px;overflow:auto}
 .ws-added-row.done{opacity:.65}
+.ws-added-row > .chip{align-self:start;justify-self:start}
 .ws-added-acts{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;margin-top:4px}
 .ws-added-acts .ws-input{width:auto;min-width:0;flex:1 1 140px}
 #added-form{margin-top:10px;padding-top:8px;border-top:1px dashed var(--line2)}
