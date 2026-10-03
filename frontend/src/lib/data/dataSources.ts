@@ -335,10 +335,16 @@ export const DATA_SOURCES: DataSourceEntry[] = [
     notes: 'IPO_CALENDAR is on Alpha Vantage’s free tier — the only free source publishing forward listing DATES (SEC S-1 filings show intent, not timing). Reports configured:false without a key. Its 25 requests/day is a terms CONDITION, so the route caches 6h. Price ranges arrive as 0 when the issuer has not set one and are rendered as “not set”, never $0.',
   },
   {
-    id: 'market-calendar', surface: 'Market calendar (earnings / econ)', module: 'equities',
+    id: 'market-calendar', surface: 'Market calendar (earnings / econ / FOMC)', module: 'equities',
     route: '/live-data/market-calendar', status: 'key-gated',
-    providers: [{ name: 'FMP', host: 'financialmodelingprep.com', role: 'primary', auth: 'key' }],
-    notes: 'Earnings needs a free FMP key; economic calendar needs a paid one. Reports configured:false without one.',
+    providers: [
+      { name: 'FMP', host: 'financialmodelingprep.com', role: 'primary', auth: 'key' },
+      // Not fetched: the host is named so the source-terms test holds the Board's reuse terms
+      // to the same check as every other source. The dates are a hand-copied table.
+      { name: 'Federal Reserve Board', host: 'www.federalreserve.gov', url: 'https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm', role: 'primary', auth: 'none' },
+    ],
+    staticData: ['lib/data/fomcCalendar.ts (FOMC meeting dates, copied from the Board’s calendar; 90-day review clock)'],
+    notes: 'Earnings needs a free FMP key; other US economic releases need a paid one. FOMC meeting dates are KEYLESS and NOT FETCHED: a dated table copied by hand from the Federal Reserve Board’s calendar (public domain; the Board asks to be cited), returned on every plan — including with no FMP key, where the route still reports configured:false — and never counted against the 40-row FMP cap, which keeps high-impact rows first. `ok` counts FMP rows only, so a dead FMP leg still reads ok:false.',
   },
 
   // ── FUNDS ──────────────────────────────────────────────────────────────────
