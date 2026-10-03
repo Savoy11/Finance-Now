@@ -5,7 +5,7 @@ change the registry and regenerate. This is the "where does the data come from" 
 `DATA-AVAILABILITY.md` (which tracks whether each surface is live). The same registry powers the
 in-app **/data-sources** page and the per-page provenance badges, so the app and the docs never diverge._
 
-_Last generated: **2026-09-30**_
+_Last generated: **2026-10-03**_
 
 ## Legend
 
@@ -79,7 +79,7 @@ Provider tags: `key` = needs an API key · `paid` = needs a paid plan · untagge
 | Stock Registry universe | Partial | FMP company-screener `financialmodelingprep.com` _(paid)_<br>Curated catalog<br>[SEC XBRL frames (P/E backfill)](https://www.sec.gov/edgar) `data.sec.gov` | — | `/live-data/stock-universe` |
 | Equity screener / outliers | Partial | Derived from stock-universe | — | `/live-data/stock-outliers` |
 | IPO calendar | Key-gated | [Alpha Vantage](https://www.alphavantage.co/documentation/) `www.alphavantage.co` _(key)_ | — | `/live-data/ipo-calendar` |
-| Market calendar (earnings / econ) | Key-gated | FMP `financialmodelingprep.com` _(key)_ | — | `/live-data/market-calendar` |
+| Market calendar (earnings / econ / FOMC) | Key-gated | FMP `financialmodelingprep.com` _(key)_<br>[Federal Reserve Board](https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm) `www.federalreserve.gov` | — | `/live-data/market-calendar` |
 | Trade Risk Scorer (options) | Derived | Finance Now risk engine (lib/risk/profiles/optionsTrade.ts)<br>User-entered option quotes (from their broker chain)<br>[FMP](https://site.financialmodelingprep.com/developer/docs) `financialmodelingprep.com` _(key)_ | on demand | `/api/v1/options/score` |
 
 - **Stock / ETF / fund quotes** — Registry-driven provider ladder (Integrations page). EVERY live rung needs an API key since the keyless one was withdrawn on terms grounds (2026-08-06) — with no key, stocks and funds fall to catalog reference prices behind an amber `ref` tag, and macro instruments (no reference price by design) show a dash. Reference/fallback data: `lib/data/equityCatalog.ts`, `lib/data/fundCatalog.ts`.
@@ -91,7 +91,7 @@ Provider tags: `key` = needs an API key · `paid` = needs a paid plan · untagge
 - **Stock Registry universe** — FMP screener is PAID-only; without a key the registry falls back to ~79 curated names. P/E backfilled from SEC XBRL frames on the FMP path only. Reference/fallback data: `lib/data/equityCatalog.ts (~79 names)`.
 - **Equity screener / outliers** — Sector z-scores over whatever universe stock-universe returns — inherits its narrowness on the catalog fallback.
 - **IPO calendar** — IPO_CALENDAR is on Alpha Vantage’s free tier — the only free source publishing forward listing DATES (SEC S-1 filings show intent, not timing). Reports configured:false without a key. Its 25 requests/day is a terms CONDITION, so the route caches 6h. Price ranges arrive as 0 when the issuer has not set one and are rendered as “not set”, never $0.
-- **Market calendar (earnings / econ)** — Earnings needs a free FMP key; economic calendar needs a paid one. Reports configured:false without one.
+- **Market calendar (earnings / econ / FOMC)** — Earnings needs a free FMP key; other US economic releases need a paid one. FOMC meeting dates are KEYLESS and NOT FETCHED: a dated table copied by hand from the Federal Reserve Board’s calendar (public domain; the Board asks to be cited), returned on every plan — including with no FMP key, where the route still reports configured:false — and never counted against the 40-row FMP cap, which keeps high-impact rows first. `ok` counts FMP rows only, so a dead FMP leg still reads ok:false. Reference/fallback data: `lib/data/fomcCalendar.ts (FOMC meeting dates, copied from the Board’s calendar; 90-day review clock)`.
 - **Trade Risk Scorer (options)** — Every option-level figure is entered by the user — Finance Now carries NO options chain, because no source it may use publishes one (Cboe’s terms prohibit auto-extraction; Yahoo’s options endpoint required auth and Yahoo is now blocked outright on terms grounds). See docs/assessments/P2-O1-options-data.md. Only the underlying price is fetched, through the shared quote ladder, which is keyed. The score itself is this app’s computation, not any provider’s figure.
 
 ## ETFs & Funds

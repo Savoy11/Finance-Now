@@ -713,7 +713,7 @@ added 2026-07-29; their rows stay ⬜ **Not measured** until the next run.
 | SEC filings | 🟢 Live | SEC EDGAR | Keyless. |
 | Company fundamentals / ratios | 🟢 Live | SEC EDGAR XBRL | AAPL rev $416B, net margin 26.9% — sanity-checked. |
 | Company profile | 🟢 Live | SEC EDGAR + Wikipedia | |
-| Market calendar | 🟡 Partial 🔑 | FMP | `configured: true` — earnings live (3 upcoming, 2026-09-19). The economic calendar is a **paid** FMP endpoint (402 on free), so `economic` is always empty here. Deferred under D21, not chased. |
+| Market calendar | 🟡 Partial 🔑 | FMP · Federal Reserve Board (table) | `configured: true` — earnings live (3 upcoming, 2026-09-19). The economic calendar is a **paid** FMP endpoint (402 on free), so FMP's `economic` rows are always empty here. Deferred under D21, not chased. **Since 2026-10-03 `economic` still carries FOMC rate decisions** on every plan, with or without an FMP key: a keyless table (`lib/data/fomcCalendar.ts`) copied from the Board's calendar, not a fetch. |
 | IPO calendar | 🟢 Live 🔑 | Alpha Vantage `IPO_CALENDAR` | `configured: true`, `source=alpha-vantage`, 2 upcoming listings (2026-09-19). Fixed in #205: it sent `Accept: text/csv`, which this endpoint **406s** while answering `*/*` with that very CSV — so T-384 read as "needs a key" for weeks when a key would never have helped. One rung deep on purpose; the 25 req/day free tier is a terms condition, hence the 6 h revalidate. **Live-probe evidence only — the harness has no IPO check.** |
 
 ### ETFs & Funds module

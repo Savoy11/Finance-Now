@@ -233,6 +233,7 @@ frontend/src/
 │   │   ├── ratesCatalog.ts         # 4 CBOE yield indices + 4 CBOT futures
 │   │   ├── instruments.ts          # Unified instrument layer across all classes
 │   │   ├── stablecoinMeta.ts       # Curated issuer metadata (+ provenance)
+│   │   ├── fomcCalendar.ts         # FOMC meeting dates from the Fed Board's calendar (+ provenance)
 │   │   ├── portfolioBuilder.ts     # Portfolio Builder engine (pure TS, vitest-tested)
 │   │   ├── lookThrough.ts          # Fund look-through + pairwise overlap (pure TS, vitest-tested)
 │   │   ├── taxCharacter.ts         # Tax CHARACTER of a transfer route — what kind of event each
@@ -714,7 +715,7 @@ site nobody has reviewed. Full design: `docs/architecture/source-terms.md`.
 > The fix for any of the key-gated rows is a free API key on the Integrations page — **not
 > a substitute scraper.**
 
-> ⚠ **30 of 56 registry entries are `seeded`, not `verified` — check `review` before
+> ⚠ **31 of 57 registry entries are `seeded`, not `verified` — check `review` before
 > trusting one.** The registry was authored in an environment whose network policy
 > blocked every publisher and provider host at the gateway, so not one terms document
 > could be opened. The entries are honest starting positions drawn from each
@@ -1439,7 +1440,7 @@ Caveats, all deliberate:
 | Equity TA | `/equities/technical-analysis` | 🟢 Derived | Shared candlestick engine, 62 indicators (shared registry), patterns |
 | Equity Scanner | `/equities/scanner` | 🟢 Derived | **The section's one scanner** (items 6/7): the same seven setup detectors the crypto scanner runs, over the 79-name curated catalog, **merged with the AI Outlier Scan**. Replaced the 24-symbol RSI/SMA screener tab. No auto-refresh — every row is a keyed provider request, unlike crypto's keyless source; windows (3M/6M/1Y) change history depth, not bar size, because the provider serves daily bars only |
 | Strategy Backtests | `/equities/backtests` | 🚫 Hidden | **HIDDEN 2026-08-20, deliberately recoverable** — owner: *"hide the back testing tool … I may revisit back testing."* All three backtest surfaces went dark the same way: this page (route now redirects to `/equities`), the crypto TA Backtest tab, and the Portfolios Backtest tab. Every engine (`equityBacktest.ts`, `backtest.ts`), panel component and test is retained in place; subproject P3-W2-S1 is suspended, not cancelled. Restore = delete the redirect + re-add the nav entry and tab unions (each site carries a comment saying exactly this) |
-| Market Calendar | `/equities/calendar` | 🟡 Partial | FMP calendars (free key); earnings + US economic events |
+| Market Calendar | `/equities/calendar` | 🟡 Partial | FMP calendars: earnings (free key) + US economic events (paid endpoint, empty on free). **FOMC meeting dates are keyless** (2026-10-03): a hand-maintained table, `lib/data/fomcCalendar.ts`, copied from the Federal Reserve Board's calendar with a 90-day review clock, shown on every plan and with no FMP key at all. Dates after the next meeting are labelled tentative, per the Board's own rule. `ok` counts FMP rows only, so the research agent never reads a dead FMP leg as "no earnings" |
 
 ### Macro Markets module (`/macro`) — bonds/rates, commodities, fiat
 One module (`macro` entitlement), three areas. Owner spec + status: `docs/ROADMAP.md` ("Macro Markets"). **Zero new quote plumbing** — futures, FX pairs, and yield indices all price through the existing `security-quotes`/`security-chart`/`security-ohlcv` routes (verified). Catalogs carry **no reference prices** (futures/FX quotes stale in hours; unpriced = honest dash).
