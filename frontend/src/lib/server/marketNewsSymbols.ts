@@ -5,6 +5,7 @@ import 'server-only'
 
 import { EQUITY_CATALOG } from '@/lib/data/equityCatalog'
 import { FUND_CATALOG } from '@/lib/data/fundCatalog'
+import { isTokenizedSecuritiesStory, tokenUnderlyings } from './tokenizedNews'
 
 
 // Symbols that are common English words false-positive as bare uppercase
@@ -54,6 +55,41 @@ export function detectSymbols(text: string, extra?: SymbolMatcher | null): strin
   for (const m of extra ? [extra, ...NAME_MATCHERS] : NAME_MATCHERS) {
     if (m.name?.test(text) || m.ticker.test(text)) found.push(m.symbol)
     if (found.length >= 6) break
+  }
+  // A token symbol names its underlying: TSLAx is Tesla stock in a wrapper. The
+  // ticker matcher above refuses "TSLAx" on purpose, because a bare ticker must
+  // not run into lowercase letters, so tokens are read separately, by the
+  // issuers' own suffixes (tokenizedNews.ts).
+  for (const symbol of tokenUnderlyings(text)) {
+    if (found.length >= 6) break
+    if (!found.includes(symbol)) found.push(symbol)
+  }
+  return found
+}
+
+// Company names that are also everyday crypto vocabulary. In a crypto story,
+// "oracle" almost always means a price feed (xStocks are priced by Chainlink
+// oracles), and "intel" means research, as in Arkham's Intel Exchange. On the
+// crypto feed these two stocks link by ticker or token only, never by name.
+const CRYPTO_VOCABULARY = new Set(['ORCL', 'INTC'])
+
+/**
+ * The catalog stocks a crypto-feed story about tokenized securities names: the
+ * company in "tokenized Tesla shares", or the underlying of "NVDAx". Empty for
+ * every other story. The crypto feed tags coins, and naming every company a
+ * crypto story mentions would be a different feature from this one (TS-13).
+ */
+export function detectTokenizedSymbols(text: string): string[] {
+  if (!isTokenizedSecuritiesStory(text)) return []
+  const found: string[] = []
+  for (const m of NAME_MATCHERS) {
+    const byName = !CRYPTO_VOCABULARY.has(m.symbol) && !!m.name?.test(text)
+    if (byName || m.ticker.test(text)) found.push(m.symbol)
+    if (found.length >= 6) return found
+  }
+  for (const symbol of tokenUnderlyings(text)) {
+    if (found.length >= 6) break
+    if (!found.includes(symbol)) found.push(symbol)
   }
   return found
 }

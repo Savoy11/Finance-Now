@@ -326,7 +326,7 @@ server.tool(
 
 server.tool(
   'get_crypto_news',
-  'Get recent crypto news articles with sentiment analysis and coin tagging. Articles are aggregated from the configured providers (CryptoPanic, Messari, NewsAPI, GNews). Each article is tagged with sentiment (positive/negative/neutral), a category (regulation/security/adoption/macro/protocol/global/general), and the coins it relates to.',
+  'Get recent crypto news articles with sentiment analysis and coin tagging. Articles are aggregated from the configured providers (CryptoPanic, Messari, NewsAPI, GNews). Each article is tagged with sentiment (positive/negative/neutral), a category (regulation/market/protocol/security/adoption/macro/global/tokenization/general), and the coins it relates to. A story about tokenized securities also lists the stocks it names (a token such as TSLAx counts as Tesla).',
   {
     coin:      z.string().optional().describe('Filter to articles relevant to this coin. E.g. "btc", "eth", "sol"'),
     limit:     z.number().min(1).max(50).optional().describe('Number of articles to return (1–50, default 10)'),
@@ -340,7 +340,7 @@ server.tool(
     const data = await get<{
       articles: Array<{
         title: string; url: string; source: string; publishedAt: string
-        sentiment: string; category: string; relatedAssets: string[]
+        sentiment: string; category: string; relatedAssets: string[]; relatedSymbols?: string[]
       }>
       total: number; updatedAt: string
     }>(`/news?${params}`)
@@ -354,7 +354,8 @@ server.tool(
     const lines = data.articles.map(a => {
       const age   = Math.round((Date.now() - new Date(a.publishedAt).getTime()) / 60000)
       const ageStr = age < 60 ? `${age}m ago` : `${Math.round(age / 60)}h ago`
-      return `${sentimentIcon(a.sentiment)} **${a.title}**\n   ${a.source} · ${ageStr} · ${a.category}${a.relatedAssets.length ? ` · [${a.relatedAssets.join(', ')}]` : ''}\n   ${a.url}`
+      const stocks = a.relatedSymbols?.length ? ` · stocks: ${a.relatedSymbols.join(', ')}` : ''
+      return `${sentimentIcon(a.sentiment)} **${a.title}**\n   ${a.source} · ${ageStr} · ${a.category}${a.relatedAssets.length ? ` · [${a.relatedAssets.join(', ')}]` : ''}${stocks}\n   ${a.url}`
     }).join('\n\n')
 
     const filters = [coin && `coin: ${coin}`, sentiment && `sentiment: ${sentiment}`].filter(Boolean).join(', ')

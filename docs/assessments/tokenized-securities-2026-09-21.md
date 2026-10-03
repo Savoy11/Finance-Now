@@ -574,7 +574,7 @@ adds a paid tier, or touches key custody. IDs are provisional.
 | TS-10 | Compare: representation class profile; TSLA vs TSLAx with the overlap caveat | P2 | M | TS-7, TS-9 |
 | TS-11 | Portfolios / Watchlist representation-aware resolution and breakdown; DB extension table | P2 | L | TS-5, decision 2 |
 | TS-12 | Agents / v1 API / MCP awareness; one agent-eval task (7F) | P1 | S–M | TS-7 |
-| TS-13 | News taggers: tokenization regex → underlying tickers + category; Clarity Act mapping widened | P2 | S | — |
+| TS-13 | News taggers: tokenization regex → underlying tickers + category; Clarity Act mapping widened — ✅ **built 2026-10-01**, see the note below | P2 | S | — |
 | TS-14 | Source-terms readings for rwa.xyz, chain.link, issuer pages, TSV feeds — owner machine | P1 | S each | — |
 | TS-15 | Risk-profile spec for representations, recorded under `docs/architecture/risk-framework.md`, not built (7E) | P2 | S | D18 |
 | TS-16 | Affiliate integrity rule: no placement for a security the viewer's jurisdiction may not hold (7I) | P1 | XS | decision 6 |
@@ -591,6 +591,19 @@ adds a paid tier, or touches key custody. IDs are provisional.
 > Compare's window stats use shared trading days only was wrong — they use each series' own days —
 > and was corrected in the same change. **Not built from 7D:** the `24/7` / `24/5` /
 > `issuer-window` venues for representations, which need TS-5's table and belong with TS-10.
+
+> **Built 2026-10-01 — TS-13, at the owner's request, outside the queue.** `lib/server/tokenizedNews.ts`
+> serves both news feeds. A story about tokenized stocks, funds or bonds is filed under a new
+> `tokenization` category, checked before Global, because many launches are outside the US. It is
+> linked to the catalog stock it names, by company name, ticker or token symbol. Token symbols follow the
+> issuers' own suffixes: `TSLAx` for Kraken xStocks and `TSLAon` for Ondo. Both conventions were read
+> from search excerpts of the issuers' pages, which this environment's egress refuses to open. On the
+> crypto feed the stocks go in a new `relatedSymbols` field, which is empty for every other story; the
+> crypto News page and Headlines show them as links to the stock page. F12's other half is done
+> too: the CLARITY Act now reaches every coin's feed, not just USDC/USDT/PYUSD's (`newsRegulatoryImpact.ts`).
+> **Not built:** Dinari dShares symbols (the sources disagree: `AAPL.D` on one listing site, `dAAPL`
+> on another), and links for tokenized ETFs such as `SPYx` (the chips link to stock pages, and a fund's
+> page lives elsewhere). The agent half of F12 is TS-12.
 
 ---
 

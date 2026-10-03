@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { summaryPermitted } from '@/lib/server/sourceTerms'
 import { detectSymbols, requestedMatcher } from '@/lib/server/marketNewsSymbols'
+import { isTokenizedSecuritiesStory } from '@/lib/server/tokenizedNews'
 import { FUND_CATALOG } from '@/lib/data/fundCatalog'
 import { getEquityProviders, recordProviderFetch, type AnyActiveProvider } from '@/lib/api/live/providers'
 import { fetchCustomUrl, findArray, pickDate, pickString, type ActiveCustom } from '@/lib/server/customFeeds'
@@ -24,7 +25,7 @@ export const dynamic = 'force-dynamic'
 export type MarketSentiment = 'positive' | 'negative' | 'neutral'
 
 export type MarketNewsCategory =
-  | 'earnings' | 'analyst' | 'macro' | 'ma' | 'dividend' | 'market' | 'general'
+  | 'tokenization' | 'earnings' | 'analyst' | 'macro' | 'ma' | 'dividend' | 'market' | 'general'
 
 export interface MarketArticle {
   id: string
@@ -35,7 +36,10 @@ export interface MarketArticle {
   summary: string
   sentiment: MarketSentiment
   category: MarketNewsCategory
-  /** Catalog tickers detected in the headline/summary. */
+  /**
+   * Catalog tickers detected in the headline/summary. A token symbol counts as
+   * its underlying: "TSLAx" tags TSLA (TS-13, lib/server/tokenizedNews.ts).
+   */
   relatedSymbols: string[]
   /** Published within the last hour. */
   isBreaking: boolean
@@ -124,6 +128,9 @@ const CATEGORY_PATTERNS: Array<[MarketNewsCategory, RegExp]> = [
 ]
 
 function classifyCategory(text: string): MarketNewsCategory {
+  // Tokenized securities first, as on the crypto feed: a story about a share's
+  // second form belongs together whatever else it mentions (TS-13).
+  if (isTokenizedSecuritiesStory(text)) return 'tokenization'
   for (const [category, pattern] of CATEGORY_PATTERNS) {
     if (pattern.test(text)) return category
   }

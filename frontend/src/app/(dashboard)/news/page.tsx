@@ -14,6 +14,7 @@ import { LIVE_DATA } from '@/lib/constants'
 import type { LiveNewsArticle } from '@/app/live-data/news/route'
 import { useAssetList } from '@/lib/hooks/useAssetList'
 import { useTierStore } from '@/store/useTierStore'
+import { useEntitlementStore } from '@/store/useEntitlementStore'
 import { useFeedBiasStore } from '@/store/useFeedBiasStore'
 import { useWatchlistBias } from '@/lib/watchlist/useWatchlistBias'
 import { applyBias, shouldAugmentFetch, fetchTerms } from '@/lib/watchlist/bias'
@@ -38,6 +39,7 @@ const CATEGORY_STYLES: Record<string, string> = {
   adoption:   'text-emerald-400 bg-emerald-400/10 border-emerald-500/20',
   macro:      'text-amber-400 bg-amber-400/10 border-amber-500/20',
   global:     'text-teal-400 bg-teal-400/10 border-teal-500/20',
+  tokenization: 'text-fuchsia-400 bg-fuchsia-400/10 border-fuchsia-500/20',
   general:    'text-slate-400 bg-slate-400/10 border-slate-500/20',
 }
 
@@ -91,6 +93,10 @@ function ShareButton({ url, title }: { url: string; title: string }) {
 }
 
 function ArticleCard({ article }: { article: AnyArticle }) {
+  // Stocks a tokenized-securities story names (TS-13). They link to the stock's
+  // page while the Equities module is on, and stay plain labels while it is off.
+  const stocks = 'relatedSymbols' in article ? article.relatedSymbols : []
+  const equitiesOn = useEntitlementStore((s) => s.isEnabled('equities'))
   const provider = 'provider' in article ? article.provider : 'unknown'
   const providerLabel = 'providerLabel' in article ? article.providerLabel : null
   const providerStyle = PROVIDER_STYLES[provider] ?? PROVIDER_STYLES.unknown
@@ -159,6 +165,17 @@ function ArticleCard({ article }: { article: AnyArticle }) {
                 {id}
               </span>
             ))}
+            {stocks.map((symbol) => {
+              const label = `${symbol} stock, named in this story about tokenized securities`
+              const chip = 'px-1.5 py-0.5 rounded bg-fuchsia-500/10 border border-fuchsia-500/20 text-[10px] font-mono text-fuchsia-300'
+              return equitiesOn ? (
+                <Link key={symbol} href={`/equities/${symbol.toLowerCase()}`} title={label} aria-label={label} className={clsx(chip, 'hover:bg-fuchsia-500/20 transition-colors')}>
+                  {symbol}
+                </Link>
+              ) : (
+                <span key={symbol} title={label} className={chip}>{symbol}</span>
+              )
+            })}
           </div>
         </div>
         <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -223,9 +240,10 @@ function NewsPageInner() {
 
   const watchlist = useWatchlistBias()
   const biasStrength = useFeedBiasStore((s) => s.getStrength('crypto-news'))
-  /** Crypto articles carry asset-id tags; text is the fallback. */
+  /** Crypto articles carry asset-id tags, plus stock tickers on tokenized-securities stories; text is the fallback. */
   const toBiasable = (a: AnyArticle) => ({
     assetIds: a.relatedAssets,
+    symbols: 'relatedSymbols' in a ? a.relatedSymbols : undefined,
     text: `${a.headline} ${a.summary}`,
   })
 
@@ -274,6 +292,7 @@ function NewsPageInner() {
           a.sentiment,
           a.source,
           ...a.relatedAssets,
+          ...('relatedSymbols' in a ? a.relatedSymbols : []),
         ].join(' ').toLowerCase()
         if (!keywords.every((kw) => topic.includes(kw))) return false
       }
@@ -300,7 +319,8 @@ function NewsPageInner() {
                 : 'Regulatory, protocol, and market updates for tracked assets'}
               description="News & Analysis aggregates regulatory, protocol, and market stories from multiple providers. Each article is tagged with the assets it mentions and a sentiment score so you can filter by coin or quickly spot negative coverage."
               details={[
-                { label: 'Asset detection', text: 'Articles are tagged using coin name/ticker matching, issuer mapping (e.g. Circle → USDC), and regulatory inference (e.g. MiCA → USDC, USDT).' },
+                { label: 'Asset detection', text: 'Articles are tagged using coin name/ticker matching, issuer mapping (e.g. Circle → USDC), and regulatory inference (e.g. MiCA → USDC, USDT). The CLARITY Act and other US market-structure bills bear on every coin, so those stories appear in every coin’s feed.' },
+                { label: 'Tokenized securities', text: 'A story about tokenized stocks, funds or bonds is filed under Tokenization. If it names a stock in the equity catalog, by company name, ticker or token symbol (TSLAx from Kraken xStocks, TSLAon from Ondo), that stock gets its own tag, which links to the stock’s page while the Equities module is on. A tokenized share is a separate product from the share itself, with its own price, hours and eligibility rules.' },
                 { label: 'Sentiment', text: 'Positive (green dot) · Neutral (grey) · Negative (red). Sentiment is inferred from headline keywords.' },
                 { label: 'Sources', text: 'Finance Now aggregates live RSS and JSON feeds from The Block, CoinDesk, Cointelegraph, and others. There is no mock mode — if no feed is reachable the list is shown as empty rather than seeded with fabricated articles.' },
                 { label: 'Keyword filter', text: 'Type a word or phrase to filter the feed by topic. Keywords match against each story’s headline, summary, classified category, tagged assets, sentiment, and source — so terms like "regulation" or "btc" match relevant stories even when the word isn’t in the title. Multiple keywords are combined with AND (every keyword must match); matching is case-insensitive. Adding a keyword also queries the news providers (NewsAPI, GNews) for fresh stories on that term, so the feed pulls in matching coverage rather than only filtering what is already loaded.' },
