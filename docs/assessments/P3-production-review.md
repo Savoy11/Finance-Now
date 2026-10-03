@@ -621,7 +621,7 @@ routes. All agent-run routes are `guardSensitiveRoute`-protected.
 | X2 | research-analyst / equity-research / equity-screener / macro-research | READY | Whitelisted, invocable, honest 503s naming the fix surface. |
 | X3 | pump-report-investigator / pump-report-chat | NEEDS-FIX | Their routes **ignore the per-agent `enabled` toggle** — a "disabled" pump agent still runs (exposure bounded by localhost/token guard, but the Integrations toggle is a lie for these two). Also return 500 instead of 503 on missing key. |
 | X4 | data-scraper / equity-data-scraper / equity-diligence | **NEEDS-OWNER-DECISION** | Confirmed unreachable: no invocation path exists. Configurable and toggleable, described in `/agent-config` as "runs autonomously…". Standing owner-backlog decision: give them a trigger UI or retire them. |
-| X5 | macro-screener | NEEDS-FIX (small) | Whitelisted and functional but reachable only via `?agent=` deep link — its equity twin has a panel. Add the panel or note the deep link in UI. |
+| X5 | macro-screener | NEEDS-FIX (small) | Whitelisted and functional but reachable only via `?agent=` deep link — its equity twin has a panel. Add the panel or note the deep link in UI. **Done 2026-10-01:** the AI Movers Scan panel on `/macro/scanner`. |
 
 ### Public /api/v1 (12 endpoints + OpenAPI spec)
 
