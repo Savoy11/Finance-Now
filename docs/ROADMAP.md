@@ -216,6 +216,14 @@ module registry.
 >   (`lib/data/costBasis.ts`, pure and tested) and the routes that save trades (under
 >   `/api/user/tracked-portfolios`, migration 0005) now exist. The entry screen does not,
 >   so the "Done when" below is still not met.
+>   **Update 2026-10-04, later (T-027 step 3):** the entry screen exists,
+>   `/portfolios/tracked` (Portfolios → Tracked in the sidebar). **The "Done when" below
+>   is met in code:** on a local Postgres, a tracked portfolio built from recorded trades
+>   showed cost, live value and FIFO gains that matched figures worked out by hand, and
+>   each check started from a fresh browser profile. On the owner's machine it holds once
+>   migration 0005 is applied (`npm run db:migrate` in `frontend/`). With wallets done
+>   (NT3), that leaves nothing in Phase 1 unbuilt. Stock splits are not handled yet
+>   (T-421).
 - Migrate portfolios / wallets / watchlist pages from localStorage & mocks to
   DB-backed API routes.
 - Trade transaction history (buy/sell/transfer) → cost basis, realized and

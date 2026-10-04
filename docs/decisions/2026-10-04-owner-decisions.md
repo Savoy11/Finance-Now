@@ -406,3 +406,47 @@ portfolio) and after it (create, list, rename, record, cancel and remove, with t
 figures checked by hand).
 
 Still to build: the screen (step 3). Stock splits still have no kind of trade.
+
+**D65: step 3, the screen, as built** (T-027; asked for with *"merge and continue with
+step 3"*). `/portfolios/tracked`, under Portfolios in the sidebar, lists tracked portfolios
+and makes new ones. One opens to show:
+
+- **Four figures at the top:** what the holdings cost (fees included), their value at live
+  prices, the unrealized gain (value less cost), and the realized gain, with
+  `REALIZED_METHOD_LABEL` printed under it and the part that rests on starting positions.
+- **A holding with no live price is left out of the value and the unrealized gain, never
+  valued at its cost.** The value figure says how many holdings were priced, and a notice
+  names the rest (and says stock and fund prices need a market data key). These figures come
+  from `valueLedger()` in `frontend/src/lib/data/tradeLedger.ts`, exact like the lot engine,
+  and tested.
+- **The holdings table:** units, average cost, cost, live price, value, and unrealized and
+  realized gain per holding, with any problem the lot engine found (a sale of more than was
+  held, a trade dated before the starting position) shown beside the holding it concerns.
+- **The form for one trade:** buy, sell, starting position, transfer in, transfer out. It
+  checks a trade with the server's own rules (`parseTradeInput`) before sending it, offers
+  only coins, stocks and funds, and does not offer a second starting position for a holding
+  that has one. A refusal from the server is shown in the form.
+- **Every trade, cancelled ones included.** Cancelling asks for an optional reason; the trade
+  stays listed, struck through, with the date and the reason.
+- **Renaming and removing.** Removing asks first and takes the portfolio's trades with it.
+- **Before migration 0005 has run, the page says so** and repeats the server's instruction,
+  instead of showing an empty list.
+
+The Portfolios page's instrument search moved into
+`frontend/src/components/portfolio/useInstrumentSearch.ts`, which both pickers now use, so
+they cannot drift apart. The page's source line reads a new registry entry,
+`tracked-portfolios`, which marks the figures as Finance Now's own computation from CoinGecko
+and the quote ladder, not a provider's.
+
+Checked in a browser against a local Postgres, with test prices in place of live ones: a
+starting position, a buy, a sale, a bitcoin purchase, a cancelled buy, and a stock with no
+live price. Every figure on screen matched one worked out by hand; after the sale, for
+example, cost $701.20, value $937.20, unrealized +$236.00 and realized +$398.00, all of it
+from the starting position. Each run started from a fresh browser profile and found the
+earlier runs' portfolios intact, which is ROADMAP Phase 1's "Done when". Also checked: a
+server refusal shown in the form, the phone layout, and the before-migration notice.
+
+T-027 is closed. **Stock splits are T-421:** a split changes how many units each lot holds
+without changing its cost, which no kind of trade can express yet, so after a split a
+holding's units and prices here will not match a broker's. ⚠ Migration 0005 still has to be
+run on the owner's machine (`npm run db:migrate` in `frontend/`).

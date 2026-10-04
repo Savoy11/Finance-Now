@@ -1656,9 +1656,11 @@ jurisdictions may need both.
 > can be added later without changing saved data. Today's what-if portfolios are not
 > converted: trades go in a new kind of tracked portfolio, where anything already owned is
 > entered once as a starting position, the oldest lot. Gains are plain, labelled
-> `REALIZED_METHOD_LABEL`, with no tax adjustments. Steps 1 and 2 of 3 are built: the lot
-> engine (`frontend/src/lib/data/costBasis.ts`) and saving trades (routes under
-> `/api/user/tracked-portfolios`, migration 0005). The entry screen is step 3. Record:
+> `REALIZED_METHOD_LABEL`, with no tax adjustments. All three steps are built: the lot
+> engine (`frontend/src/lib/data/costBasis.ts`), saving trades (routes under
+> `/api/user/tracked-portfolios`, migration 0005), and the screen, `/portfolios/tracked`.
+> T-027 closed 2026-10-04; stock splits are T-421. Migration 0005 must be run on the
+> owner's machine (`npm run db:migrate`) before tracked portfolios work. Record:
 > `docs/decisions/2026-10-04-owner-decisions.md`.
 
 **Scope:** `/api/user/trades` CRUD (dynamic segments — must live under `/api/user/`, see

@@ -417,6 +417,16 @@ export const DATA_SOURCES: DataSourceEntry[] = [
     notes: 'Prices split by instrument class: CoinGecko ids price through portfolio-prices, sec:-keyed stocks/funds/macro through the security-quotes ladder. Lists themselves are user data (Postgres), not a provider feed.',
   },
   {
+    id: 'tracked-portfolios', surface: 'Tracked portfolios (trade history, FIFO gains)', module: 'shared',
+    route: '/live-data/portfolio-prices + /live-data/security-quotes', status: 'derived',
+    providers: [
+      { name: 'Finance Now engine (lib/data/costBasis.ts)', role: 'derived', auth: 'none' },
+      COINGECKO,
+      { name: 'Equity quote ladder (FMP → Finnhub → Twelve Data → Tiingo → Alpha Vantage)', role: 'fallback', auth: 'key' },
+    ],
+    notes: 'Trades are user data (Postgres, /api/user/tracked-portfolios). Cost, average cost and realized gains are Finance Now’s own FIFO computation over those trades, not provider figures and not tax figures (D65). Live prices enter only for value and unrealized gain; a holding with no live price is left out of the totals, never valued at cost.',
+  },
+  {
     id: 'compare', surface: 'Compare (growth-of-100, window stats, correlation)', module: 'shared',
     route: '/live-data/security-chart + /live-data/chart', status: 'derived',
     providers: [
