@@ -61,10 +61,10 @@
   "total_verified": 398,
   "outstanding": 362,
   "by_status": {
-   "closed": 183,
+   "closed": 184,
    "open": 34,
    "parked": 114,
-   "blocked": 30,
+   "blocked": 29,
    "unclear": 1
   },
   "by_owner_role": {
@@ -74,7 +74,7 @@
    "owner-machine": 85
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 183,
+  "closed_by_annotation": 184,
   "counts_recomputed_on": "2026-10-04",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 362
@@ -8139,7 +8139,7 @@
   {
    "id": "T-093",
    "title": "D5 — hard-guard or remove MCP run_audit before any external distribution",
-   "status": "blocked",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "security",
@@ -8168,7 +8168,21 @@
      "lines": "62-66",
      "quote": "Whether it ships in any externally distributed build is an open owner decision (P3 review D5) — do not distribute this server outside the development machine before that decision is made."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "blocked",
+    "closed_on": "2026-10-04",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "Built under D68 (option A). run_audit is removed from mcp-server/src/index.ts, with a dated note where it was, and the server registers nine tools, each reading /api/v1 and nothing else. A new test, frontend/src/lib/server/__tests__/mcpDataOnly.test.ts, fails if the server registers run_audit, imports child_process or fs, or fetches anything but its /api/v1 base; it went red on main's copy of the server, and its own self-check caught two detectors broken on purpose. The built server was started over stdio and listed nine tools; a call to run_audit is refused as unknown. Read against the code, the P3 review's first exposure held (npx installs a missing package unasked when there is no terminal) and its second did not (a fixed list of eight public routes, none behind apiGuard; the scan read only .ts/.tsx files under frontend/src and printed names and counts). The same pass corrected the server description, which still offered an options-trade risk scorer and crypto transfer fees, and the README's line saying staking results carry six risk dimensions; the D64 and D26 guards gained a check each.",
+    "approved_by": "owner, 2026-10-04: \"Go with option A for T-093\"",
+    "evidence": [
+     "docs/decisions/2026-10-04-owner-decisions.md",
+     "mcp-server/src/index.ts",
+     "mcp-server/README.md",
+     "frontend/src/lib/server/__tests__/mcpDataOnly.test.ts"
+    ]
+   }
   },
   {
    "id": "T-136",
@@ -11020,14 +11034,18 @@
     "D5"
    ],
    "summary": "Phase 3 'agent bet'; interacts with D5.",
-   "next_action": "No action now. Revisit at the owner's planning session once D2 (API auth/rate limiting, enterprise key, hosting) and D5 (run_audit removal or hard guard before any external distribution) are settled; the 2026-09-05 rollout ruling defers all launch-shaped work.",
+   "next_action": "No action now. Revisit at the owner's planning session once D2 (API auth/rate limiting, enterprise key, hosting) is settled; the P3 review's D5 was settled on 2026-10-04 (D68: run_audit removed, the server is data-only). The 2026-09-05 rollout ruling defers all launch-shaped work.",
    "sources": [
     {
      "file": "docs/MARKET-ASSESSMENT.md",
      "lines": "159-163",
      "quote": "Package `/api/v1` + MCP as a first-class product for AI-agent builders"
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-10-04",
+    "note": "D68 settled the P3 review's D5, one of this item's two blockers: run_audit is removed and the MCP server is data-only, held by frontend/src/lib/server/__tests__/mcpDataOnly.test.ts. D2 remains. Was: \"No action now. Revisit at the owner's planning session once D2 (API auth/rate limiting, enterprise key, hosting) and D5 (run_audit removal or hard guard before any external distribution) are settled; the 2026-09-05 rollout ruling defers all launch-shaped work.\""
+   }
   },
   {
    "id": "T-113",
@@ -38094,6 +38112,13 @@
    {
     "on": "2026-10-04",
     "what": "D67: T-058 parked with the Transfer Fees page (T-028), option C; D4's legal review still gates building it. The owner's coming review of the Portfolio Builder noted on T-064. Counts recomputed: parked 114, blocked 30, total 362.",
+    "evidence": [
+     "docs/decisions/2026-10-04-owner-decisions.md"
+    ]
+   },
+   {
+    "on": "2026-10-04",
+    "what": "D68: T-093 closed, option A. run_audit removed from the MCP server, which is now data-only and held there by mcpDataOnly.test.ts; T-094 notes that the P3 review's D5 is settled and D2 remains. Counts recomputed: closed 184, blocked 29, total 362.",
     "evidence": [
      "docs/decisions/2026-10-04-owner-decisions.md"
     ]

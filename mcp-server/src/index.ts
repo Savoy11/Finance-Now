@@ -63,7 +63,7 @@ async function post<T>(path: string, body: unknown): Promise<T> {
 const server = new McpServer({
   name: 'finance-now',
   version: '1.1.0',
-  description: 'Finance Now — crypto transfer fees, staking analysis, network fees, prices and news, plus stock/ETF/fund/macro quotes and history, the US Treasury yield curve, ECB FX rates, and an options-trade risk scorer',
+  description: 'Finance Now — crypto prices, exchanges, network fees, staking opportunities and news, plus stock/ETF/fund/macro quotes and history, the US Treasury yield curve and ECB FX rates',
 })
 
 // ─── Tool: get_coin_prices ────────────────────────────────────────────────────
@@ -516,315 +516,31 @@ server.tool(
   }
 )
 
-// ─── Tool: run_audit ─────────────────────────────────────────────────────────
-
-import { execFile } from 'child_process'
-import { promisify } from 'util'
-import { readdir, readFile } from 'fs/promises'
-import { join, resolve } from 'path'
-
-const execFileAsync = promisify(execFile)
-
-// On Windows, import.meta.url gives file:///C:/... — strip the leading slash from pathname
-const _metaPath = new URL('.', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1')
-const FRONTEND_DIR = resolve(_metaPath, '../../frontend')
-
-// All live-data routes to probe, with expected response field checks
-const LIVE_DATA_ROUTES: Array<{
-  path: string
-  label: string
-  checks: Array<{ field: string; type: 'string' | 'number' | 'boolean' | 'array' | 'object' }>
-}> = [
-  {
-    path: '/live-data/markets',
-    label: 'Markets (prices)',
-    checks: [
-      { field: 'ok', type: 'boolean' },
-      { field: 'quotes', type: 'object' },
-    ],
-  },
-  {
-    path: '/live-data/fear-greed',
-    label: 'Fear & Greed Index',
-    checks: [
-      { field: 'ok', type: 'boolean' },
-      { field: 'value', type: 'number' },
-      { field: 'classification', type: 'string' },
-    ],
-  },
-  {
-    path: '/live-data/btc-stats',
-    label: 'BTC Network Stats',
-    checks: [
-      { field: 'ok', type: 'boolean' },
-      { field: 'blockHeight', type: 'number' },
-      { field: 'fees', type: 'object' },
-    ],
-  },
-  {
-    path: '/live-data/defi-tvl',
-    label: 'DeFi TVL (DefiLlama)',
-    checks: [
-      { field: 'ok', type: 'boolean' },
-      { field: 'totalTvl', type: 'number' },
-      { field: 'chains', type: 'array' },
-    ],
-  },
-  {
-    path: '/live-data/funding-rates',
-    label: 'Funding Rates (OKX)',
-    checks: [
-      { field: 'ok', type: 'boolean' },
-      { field: 'rates', type: 'array' },
-    ],
-  },
-  {
-    path: '/live-data/network-fees',
-    label: 'Network Gas Fees',
-    checks: [
-      { field: 'ok', type: 'boolean' },
-      { field: 'networkFees', type: 'object' },
-    ],
-  },
-  {
-    path: '/live-data/staking-rates',
-    label: 'Staking Rates',
-    checks: [
-      { field: 'ok', type: 'boolean' },
-      { field: 'rates', type: 'object' },
-    ],
-  },
-  {
-    path: '/live-data/news',
-    label: 'News Feed',
-    checks: [
-      { field: 'articles', type: 'array' },
-    ],
-  },
-]
-
-function checkType(value: unknown, type: string): boolean {
-  if (type === 'array') return Array.isArray(value)
-  if (type === 'object') return typeof value === 'object' && value !== null && !Array.isArray(value)
-  return typeof value === type
-}
-
-async function runTsc(): Promise<{ passed: boolean; errorCount: number; output: string }> {
-  try {
-    await execFileAsync('npx', ['tsc', '--noEmit', '--pretty', 'false'], {
-      cwd: FRONTEND_DIR,
-      shell: true,
-      timeout: 60_000,
-    })
-    return { passed: true, errorCount: 0, output: 'No type errors' }
-  } catch (err: unknown) {
-    const out = (err as { stdout?: string; stderr?: string }).stdout ?? ''
-    const errorCount = (out.match(/error TS/g) ?? []).length
-    const lines = out.split('\n').filter((l: string) => l.includes('error TS')).slice(0, 20)
-    return { passed: false, errorCount, output: lines.join('\n') || out.slice(0, 1000) }
-  }
-}
-
-async function probeRoutes(): Promise<Array<{
-  label: string
-  path: string
-  status: 'pass' | 'fail' | 'error'
-  httpStatus?: number
-  latencyMs?: number
-  issues: string[]
-}>> {
-  return Promise.all(
-    LIVE_DATA_ROUTES.map(async ({ path, label, checks }) => {
-      const url = `${BASE_URL}${path}`
-      const t0 = Date.now()
-      try {
-        const res = await fetch(url, { signal: AbortSignal.timeout(15_000) })
-        const latencyMs = Date.now() - t0
-        const issues: string[] = []
-
-        if (!res.ok) {
-          return { label, path, status: 'fail' as const, httpStatus: res.status, latencyMs, issues: [`HTTP ${res.status}`] }
-        }
-
-        let body: Record<string, unknown>
-        try {
-          body = await res.json() as Record<string, unknown>
-        } catch {
-          return { label, path, status: 'fail' as const, httpStatus: res.status, latencyMs, issues: ['Invalid JSON response'] }
-        }
-
-        for (const { field, type } of checks) {
-          if (!(field in body)) {
-            issues.push(`Missing field: ${field}`)
-          } else if (!checkType(body[field], type)) {
-            issues.push(`Field "${field}" expected ${type}, got ${typeof body[field]}`)
-          } else if (type === 'array' && (body[field] as unknown[]).length === 0) {
-            issues.push(`Field "${field}" is an empty array`)
-          }
-        }
-
-        // Check for ok:false
-        if ('ok' in body && body.ok === false) {
-          issues.push('Response has ok:false — upstream fetch may have failed')
-        }
-
-        return {
-          label,
-          path,
-          status: issues.length === 0 ? 'pass' as const : 'fail' as const,
-          httpStatus: res.status,
-          latencyMs,
-          issues,
-        }
-      } catch (err: unknown) {
-        return {
-          label,
-          path,
-          status: 'error' as const,
-          latencyMs: Date.now() - t0,
-          issues: [(err as Error).message ?? 'Unknown error'],
-        }
-      }
-    })
-  )
-}
-
-async function scanCodeQuality(): Promise<{
-  anyCount: number
-  consoleLogs: number
-  missingErrorBoundaries: number
-  findings: string[]
-}> {
-  const findings: string[] = []
-  let anyCount = 0
-  let consoleLogs = 0
-  let missingErrorBoundaries = 0
-
-  async function walk(dir: string): Promise<string[]> {
-    const entries = await readdir(dir, { withFileTypes: true })
-    const files: string[] = []
-    for (const e of entries) {
-      if (e.name === 'node_modules' || e.name === '.next' || e.name === 'dist') continue
-      const full = join(dir, e.name)
-      if (e.isDirectory()) files.push(...await walk(full))
-      else if (e.name.endsWith('.ts') || e.name.endsWith('.tsx')) files.push(full)
-    }
-    return files
-  }
-
-  const files = await walk(join(FRONTEND_DIR, 'src'))
-
-  for (const file of files) {
-    const src = await readFile(file, 'utf-8')
-    const rel = file.replace(FRONTEND_DIR, '').replace(/\\/g, '/')
-
-    // Count : any (type-level)
-    const anyMatches = src.match(/: any\b/g) ?? []
-    if (anyMatches.length > 0) {
-      anyCount += anyMatches.length
-      findings.push(`${rel}: ${anyMatches.length} use(s) of \`: any\``)
-    }
-
-    // console.log/warn/error left in non-route files (exclude ErrorBoundary — intentional)
-    if (!rel.includes('/live-data/') && !rel.includes('/api/') && !rel.includes('ErrorBoundary')) {
-      const logs = src.match(/console\.(log|warn|error)\(/g) ?? []
-      if (logs.length > 0) {
-        consoleLogs += logs.length
-        findings.push(`${rel}: ${logs.length} console.${logs.map(m => m.slice(8, -1)).join('/')} call(s)`)
-      }
-    }
-
-    // Dashboard layout must have ErrorBoundary wrapping children
-    if (rel.endsWith('/(dashboard)/layout.tsx')) {
-      if (!src.includes('ErrorBoundary')) {
-        missingErrorBoundaries++
-        findings.push(`${rel}: dashboard layout missing ErrorBoundary around children`)
-      }
-    }
-  }
-
-  return { anyCount, consoleLogs, missingErrorBoundaries, findings }
-}
-
-server.tool(
-  'run_audit',
-  'Run a full health audit of the Finance Now application. Checks: TypeScript type errors, live-data route health (HTTP status + response shape), and code quality (any types, console.logs, missing error boundaries). Returns a structured pass/fail report.',
-  {
-    checks: z.array(z.enum(['tsc', 'routes', 'quality'])).optional()
-      .describe('Which checks to run. Omit or pass all three to run everything. Options: "tsc" (TypeScript), "routes" (API health), "quality" (code scan).'),
-  },
-  async ({ checks }) => {
-    const run = (c: string) => !checks || checks.includes(c as 'tsc' | 'routes' | 'quality')
-
-    const [tscResult, routeResults, qualityResult] = await Promise.all([
-      run('tsc') ? runTsc() : null,
-      run('routes') ? probeRoutes() : null,
-      run('quality') ? scanCodeQuality() : null,
-    ])
-
-    const lines: string[] = []
-    const PASS = '✅'
-    const FAIL = '❌'
-    const WARN = '⚠️'
-
-    lines.push('# Finance Now Audit Report')
-    lines.push(`*${new Date().toLocaleString()}*\n`)
-
-    // ── TypeScript ──
-    if (tscResult) {
-      lines.push('## TypeScript (`tsc --noEmit`)')
-      if (tscResult.passed) {
-        lines.push(`${PASS} No type errors\n`)
-      } else {
-        lines.push(`${FAIL} **${tscResult.errorCount} error(s)**\n`)
-        lines.push('```')
-        lines.push(tscResult.output)
-        lines.push('```\n')
-      }
-    }
-
-    // ── Routes ──
-    if (routeResults) {
-      const passed = routeResults.filter(r => r.status === 'pass').length
-      const failed = routeResults.filter(r => r.status !== 'pass').length
-      lines.push(`## Live-Data Routes (${passed}/${routeResults.length} healthy)`)
-
-      for (const r of routeResults) {
-        const icon = r.status === 'pass' ? PASS : r.status === 'error' ? '🔴' : FAIL
-        const latency = r.latencyMs !== undefined ? ` ${r.latencyMs}ms` : ''
-        const http = r.httpStatus ? ` HTTP ${r.httpStatus}` : ''
-        lines.push(`${icon} **${r.label}** (\`${r.path}\`)${http}${latency}`)
-        for (const issue of r.issues) lines.push(`   — ${issue}`)
-      }
-      lines.push('')
-
-      if (failed > 0) {
-        lines.push(`${WARN} ${failed} route(s) have issues — check upstream API availability.\n`)
-      }
-    }
-
-    // ── Code Quality ──
-    if (qualityResult) {
-      const totalIssues = qualityResult.anyCount + qualityResult.consoleLogs + qualityResult.missingErrorBoundaries
-      lines.push(`## Code Quality (${totalIssues === 0 ? 'clean' : `${totalIssues} issue(s)`})`)
-      lines.push(`- \`: any\` usages: **${qualityResult.anyCount}**`)
-      lines.push(`- \`console.log\` calls in UI: **${qualityResult.consoleLogs}**`)
-      lines.push(`- Pages missing ErrorBoundary: **${qualityResult.missingErrorBoundaries}**`)
-
-      if (qualityResult.findings.length > 0) {
-        lines.push('\n**Findings:**')
-        for (const f of qualityResult.findings.slice(0, 30)) lines.push(`- ${f}`)
-        if (qualityResult.findings.length > 30) {
-          lines.push(`- … and ${qualityResult.findings.length - 30} more`)
-        }
-      } else {
-        lines.push(`\n${PASS} No quality issues found`)
-      }
-    }
-
-    return { content: [{ type: 'text', text: lines.join('\n') }] }
-  }
-)
+// ─── Tool: run_audit — REMOVED 2026-10-04 (D68) ─────────────────────────────
+//
+// Deleted, not withheld, under owner decision D68 (T-093, which settled the P3
+// review's D5). It was the one tool here that was not market data: it ran the
+// TypeScript checker on the machine hosting this server, called eight
+// /live-data routes and read every code file under frontend/src.
+//
+// Why it went rather than being locked down:
+//   - It ran `npx tsc`. Where TypeScript is not installed, npx downloads a
+//     package and runs it, and with no terminal to ask in (this server talks
+//     over stdio) npm assumes yes. Anything that could get an agent to call the
+//     tool could set that off, including text in an article the agent read.
+//   - It worked only inside a full checkout of this repository, so it was of no
+//     use to anyone else this server might be given to.
+//   - Its checks had drifted: /live-data/funding-rates has had no source since
+//     2026-09-30 (D40), so it reported that route broken on every run.
+//   - What it checked is checked better elsewhere: CI type-checks and lints
+//     every pull request, and `npm run audit` (in frontend/) tests the live-data
+//     routes and tells real data from fallback, which a status-and-shape check
+//     cannot.
+//
+// This server is data-only: every tool reads Finance Now's /api/v1 and nothing
+// else. Do not add a tool that runs a program, reads or writes files, or calls
+// anything but that API — frontend/src/lib/server/__tests__/mcpDataOnly.test.ts
+// fails if one appears. Record: docs/decisions/2026-10-04-owner-decisions.md (D68).
 
 // ─── Tool: score_options_trade — SWITCHED OFF 2026-10-04 (D64) ──────────────
 //

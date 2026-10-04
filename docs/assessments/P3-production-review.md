@@ -655,6 +655,10 @@ today's surface is market-data-only, as Phase 6 assumes.
 > deprecated), P3 ✅ (counts no longer hand-typed), P4 ✅ (post-rebrand
 > self-description, README created, `zod` declared). P5 remains the open D5
 > decision — the README warns against external distribution until it is made.
+>
+> **2026-10-04: P5 is settled.** `run_audit` was removed (owner decision D68,
+> `docs/decisions/2026-10-04-owner-decisions.md`) and the server is data-only.
+> See the note under "D5 — why 'dev-machine only' is the operative constraint".
 
 | # | Finding | Verdict |
 |---|---------|---------|
@@ -838,6 +842,17 @@ Three exposures, all security-posture rather than compliance:
 The hard guard, if the constraint ever needs enforcing in code rather than
 discipline: refuse to run unless `FN_BASE_URL` is localhost **and** an explicit
 opt-in env var is set. Not built — the owner's decision is the constraint itself.
+
+> **Settled 2026-10-04 (D68): `run_audit` was removed, not hard-guarded**
+> (`docs/decisions/2026-10-04-owner-decisions.md`). Read against the code that day,
+> exposure 1 held: npm assumes `--yes`, and so installs a missing package unasked,
+> when standard input is not a terminal, which is how an MCP server runs. Exposure 2
+> did not: the route probes were a fixed list of eight public market-data routes, none
+> behind `apiGuard`, and the tool took no argument that could change them; the source
+> walk read only `.ts`/`.tsx` files under `frontend/src` and printed file names and
+> counts, never the secret stores, which are JSON files in `frontend/`. Exposure 3
+> went with the tool. The server is now data-only, held by
+> `frontend/src/lib/server/__tests__/mcpDataOnly.test.ts`.
 
 ### OPEN — deferred, with the unblocker named
 

@@ -44,12 +44,12 @@ One environment variable:
 claude mcp add finance-now node /absolute/path/to/mcp-server/dist/index.js
 ```
 
-## Tools (10)
+## Tools (9)
 
 Market data — crypto: `get_coin_prices`, `list_exchanges`,
 `get_network_fees`, `get_staking_opportunities`,
 `get_crypto_news`. Securities & macro: `get_security_quotes`, `get_security_history`,
-`get_yield_curve`, `get_fx_rates`. Maintenance: `run_audit`.
+`get_yield_curve`, `get_fx_rates`.
 
 ⚠ **`score_options_trade` is withheld** (2026-10-04, owner decision D64). Every
 risk rating the app shows is off until the risk engine is rebuilt and the compliance
@@ -76,18 +76,29 @@ completes verification, so the tool is commented out in `src/index.ts` and
 fee to a user is the same harm as the app's own page showing it. Un-comment the
 tool block to restore.
 
-⚠ **`run_audit`** is a dev/maintenance tool, not market data: it shells out
-(`npx tsc`), probes live-data routes, and walks the frontend source tree. Whether it
-ships in any externally distributed build is an open owner decision (P3 review D5) —
-do not distribute this server outside the development machine before that decision
-is made.
+⚠ **`run_audit` was REMOVED** (2026-10-04, owner decision D68). It was a maintenance
+tool, not market data: it ran the TypeScript checker on the machine hosting this
+server, called eight live-data routes and read the frontend's code files. Where
+TypeScript is not installed, `npx` downloads a package and runs it without asking,
+because this server has no terminal to ask in, so anything that could get an agent to
+call the tool could set that off. It also worked only inside a full checkout of the
+repository, and one of its eight checks had been wrong since 2026-09-30 (the
+funding-rates route lost its only source under D40). Its jobs are done elsewhere: CI
+type-checks and lints every pull request, and `npm run audit` in `frontend/` tests the
+live-data routes and tells real data from fallback.
+
+This server is now **data-only**: every tool reads Finance Now's `/api/v1` and nothing
+else, and `frontend/src/lib/server/__tests__/mcpDataOnly.test.ts` fails if a tool that
+runs a program or touches files appears. That settles the P3 review's D5, which kept
+this server on the development machine because of `run_audit`. Offering the server to
+other people is still its own decision (T-094 in the ledger).
 
 ## Conventions the tools follow
 
-- Staking results carry the **six curated risk dimensions** (custody, counterparty,
-  contract, slashing, liquidity, regulatory), each 1–10 where **higher = riskier**.
-  They are never combined into an overall score and the rows are ordered by APY, not
-  by risk (D14). The dimensions are reference inputs, not a recommendation.
+- Staking results carry **no risk score, rating or dimension** of any kind: D14
+  removed the composite scores and D26 the six per-provider risk dimensions. Each row
+  gives APY, lock-up, custody model, receipt token, TVL and audit count, and rows are
+  ordered by APY. They are facts, not a recommendation.
 - `aprSource` distinguishes `live` (provider-published feed), `derived` (our estimate
   anchored to the Lido feed), and `estimate` (curated catalog).
 - Reference (non-live) security quotes are flagged, never silently mixed with live.

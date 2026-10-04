@@ -4,7 +4,7 @@ Recorded from the owner's answers while working through the blocked list, starti
 T-119, then T-005, then the four sources D54 left out (D55), then T-065 and T-066 (D56), then
 T-192 (D57), then Reddit sign-in, raised with T-246 (D58), then T-204 (D59), then T-294
 (D60), then T-393 (D61), then T-387 (D62), then T-009 (D63), then T-012 (D64), then T-027
-(D65), then T-054 (D66), then T-058 (D67). Same form as
+(D65), then T-054 (D66), then T-058 (D67), then T-093 (D68). Same form as
 `2026-10-03-owner-decisions.md`: one row per ruling, what it cascades to, and what was
 actually done.
 
@@ -24,6 +24,7 @@ actually done.
 | D65 | T-027 (recording real buys and sells in Portfolios), the next item on the blocked list. FIFO was already decided (D12, 2026-09-14); two questions were left: one method for every portfolio or one per portfolio, and how a price someone already typed in becomes a holding's first lot | **Option A for both:** *"merge and go with option A for both,"* in reply to two questions. Question 1: FIFO for every portfolio (A), or a method chosen per portfolio, FIFO or average cost (B). Question 2: keep today's portfolios as they are and add a new kind of tracked portfolio, with anything already owned entered once as a starting position (A); convert today's portfolios automatically (B); or accept only real trades, from the first purchase on (C). → APPLIED | One method, FIFO, for every portfolio, named beside every realized figure. Today's portfolios are never converted (see the notes). A starting position (how many, the average price paid, and the date if known) is the oldest lot, so FIFO sells it first, and a gain from it is marked as resting on the average entered. Gains and losses are plain, labelled "FIFO (oldest units sold first), not adjusted for tax rules": no wash-sale adjustment and no split into short and long term, since tax-adjusted figures wait on D4's legal review. The session proposed that rule alongside both questions, and it stands with the answer. T-027 moves from blocked to open, and step 1 of 3 is built: the lot engine (see the notes) |
 | D66 | T-054 (nothing checks whether the receiving exchange is accepting deposits on a network), the next item on the blocked list. Offered: read deposit status from the free exchange feeds the app already uses, where they publish it (A); accept the page's "assumed, not checked" notice as the final state (B); or park it until the Transfer Fees page returns to the suite (C) | **Option A:** *"go with option A for T-054"* → APPLIED | Four of the six keyless feeds read for withdrawal fees also say, per network, whether deposits are open (KuCoin `isDepositEnabled`, HTX `depositStatus`, Bitget `rechargeable`, XT.com `depositEnabled`, per each exchange's API documentation); LBank's and Bitfinex's carry nothing on deposits. The parsers now read it strictly: only each payload's own open and closed values count, and anything else stays unknown. A closed deposit at the receiving exchange is listed as a blocked route saying who reported it and when, where it used to drop the route without a word; an open one reported live is tagged on the route; the page notice and the withheld v1 API make the deposit claim per route, as they already did for withdrawals. Every other exchange's deposit status stays the stored assumption. The field names are confirmed by the owner-machine probe, which now reports them: T-422. T-054 closes. The Transfer Fees page stays hidden (T-028) |
 | D67 | T-058 (an estimate of the federal tax on a sale, the second part of the Transfer Fees tax panel), the next item on the blocked list. Offered: keep waiting on D4's legal review (A); clear it as D47 cleared build-by-allocation and build it on the pattern of the tax-equivalent-yield calculator already on municipal fund pages (B); park it with the hidden Transfer Fees page and decide when that page returns (C); or drop it, so the app explains what kind of tax event a step is but never puts a number on the tax (D) | **Option C:** *"Lets go with C; I still need to go back and review the portfolio builder"* → APPLIED | T-058 moves from blocked to parked, beside T-028 (the Transfer Fees rollout hold): the question comes back when that page is restored. D4 is unchanged: its review still gates building the estimator and S5 contribution modeling, and none is engaged (D30). Nothing is built, and part 1, the tax-character panel, stays as it is. The owner's own review of the Portfolio Builder, still to come, is noted on T-064, the S5 scope decision it bears on |
+| D68 | T-093 (the MCP server's `run_audit` tool, which the P3 review's D5 kept on the development machine until it was removed or locked down), the next item on the blocked list. Offered: remove it (A); switch it off but keep the code, as `find_transfer_routes` and `score_options_trade` are kept (B); lock it down so it appears only when the owner turns it on and the server points at the owner's own computer (C); or leave it and park T-093 beside T-094 (D). Recommended: A, unless the owner uses it from Claude Desktop, in which case C | **Option A:** *"Go with option A for T-093"* → APPLIED | `run_audit` is removed from `mcp-server/src/index.ts`, with a dated note where it was, and the server now offers nine tools, all reading `/api/v1` and nothing else. A new test holds it to that: no tool may run a program, touch files or call anything but the API. Its jobs are covered elsewhere: CI type-checks and lints every pull request, and `npm run audit` tests the live-data routes. The P3 review's D5 is settled, so T-093 closes and T-094 (offering the server to agent builders) loses one of its two blockers; D2 remains. The same pass corrected two descriptions that had fallen behind: the server's own description, which every AI client receives on connecting, still offered "an options-trade risk scorer" (off since D64) and "crypto transfer fees" (withheld since 2026-08-22), and its README still said staking results carry six risk dimensions (removed under D26). The launch list's caveat on the server (BUSINESS-CHECKLIST, programmatic surfaces) is gone. That list also still showed the options risk scorer and its API endpoint as shipping; both now say they are switched off under D64, which this records rather than decides |
 
 ## Notes
 
@@ -486,3 +487,40 @@ here** (this environment cannot reach exchange hosts). If one is wrong, nothing 
 shown: the status stays unknown and the stored assumption stands. `npm run fee-probe` now
 counts the deposit statuses each feed sends and warns when a feed marked `reportsDeposits`
 sends none. Running it on the owner's machine is T-422.
+
+**D68: what went, and what the review overstated** (T-093; asked for with *"Go with option
+A for T-093"*).
+
+- **What `run_audit` did.** When an AI called it, it ran the TypeScript checker (`npx tsc`)
+  in `frontend/` on the machine hosting the MCP server, called eight `/live-data` routes and
+  checked the fields in each answer, and read every `.ts`/`.tsx` file under `frontend/src`
+  to count `: any` types, console messages and a missing error boundary.
+- **The risk that was real.** Where TypeScript is not installed, `npx` downloads a package
+  from the internet and runs it. It does not ask first when it has no terminal to ask in:
+  npm's own documentation says `--yes` is assumed "when standard input is not a TTY", and an
+  MCP server talks over stdio. Anything that could get an AI to call the tool could set
+  that off, including instructions hidden in an article the AI had read. On the owner's
+  machine, where TypeScript is installed, the worst case was the checker running.
+- **What the review overstated.** The P3 review's D5 note also said the tool could reach the
+  admin-protected routes from inside the host, past `FN_ADMIN_TOKEN`, and that it walked the
+  tree where the secret stores live. Read against the code on 2026-10-04: its route checks
+  were a fixed list of eight public market-data routes, none behind `apiGuard`, and the tool
+  took no argument that could change them; its code scan read only `.ts`/`.tsx` files under
+  `frontend/src` and printed file names and counts, never contents, while `.provider-config.json` and
+  `.agent-prompts.json` sit in `frontend/` and are JSON. Recorded so the removal is not read
+  as a sign that anything leaked.
+- **Why it was not worth keeping.** It worked only inside a full checkout of this
+  repository. One of its eight checks had been wrong since 2026-09-30: the funding-rates
+  route lost its only source under D40 and answers "not available", so the tool reported it
+  broken on every run, still labelled "(OKX)". Its route check looked only at status and
+  field shape, which cannot tell real data from fallback; `npm run audit` can.
+- **What holds it now.** `frontend/src/lib/server/__tests__/mcpDataOnly.test.ts`: the server
+  registers no `run_audit`, imports nothing that runs a program or touches files, and calls
+  nothing but its `/api/v1` base. Each check was run against `main`'s copy of the server
+  and failed, and each detector was broken on purpose and caught by the test's own
+  self-check. The D64 and D26 guards gained a line each, for the server description and the
+  README. The built server was started and asked for its tools: nine, and a call to
+  `run_audit` is refused as an unknown tool.
+- **Two different D5s.** This D5 is the P3 review's (2026-08-17, Appendix E of
+  `docs/assessments/P3-production-review.md`). The D5 in `2026-09-14-owner-decisions.md` is
+  SOC 2 and is unaffected.
