@@ -561,8 +561,11 @@ product's value dies if the ratings follow the money.
 - [ ] **Transfer Fee Calculator** — the highest-intent surface in the app, and
       `docs/MARKET-ASSESSMENT.md` already notes competing fee/bridge comparators are
       affiliate-monetized. Same integrity rules: cheapest route wins, never the paying route.
-- [ ] **Coin Registry / Wallets** — exchange and hardware-wallet signups.
+- [ ] **Coin Registry / Wallets** — exchange and hardware-wallet signups. *Parked until after
+      launch (D49, D69; T-123). Wallets is hidden and exchange-account linking is gone (RP-5),
+      so only the Coins pages remain, and they link to no exchange or wallet maker today.*
 - [ ] Equities/Funds modules — brokerage referrals, if the terms allow a research context.
+      *Parked until after launch (D49, D69; T-124).*
 
 ### Legal / compliance
 

@@ -63,8 +63,8 @@
   "by_status": {
    "closed": 184,
    "open": 34,
-   "parked": 114,
-   "blocked": 29,
+   "parked": 116,
+   "blocked": 27,
    "unclear": 1
   },
   "by_owner_role": {
@@ -8951,25 +8951,32 @@
   {
    "id": "T-123",
    "title": "Affiliate signups on Coin Registry / Wallets",
-   "status": "blocked",
+   "status": "parked",
    "confidence": "medium",
    "owner_role": "owner-decision",
    "category": "feature",
    "effort": "medium",
-   "blocking_decision": "Owner re-scopes the surface list given Wallets is hidden (2026-08-22) and RP-5",
+   "blocking_decision": "PARKED 2026-10-04 — D69 (2026-10-04): parked beside T-120 and T-125 under D49 (2026-09-30): no paid or affiliate links at launch on either product; all four come back after launch. Was: \"Owner re-scopes the surface list given Wallets is hidden (2026-08-22) and RP-5\"",
    "related_ids": [
     "P2",
-    "RP-5"
+    "RP-5",
+    "T-120",
+    "T-125",
+    "T-030"
    ],
    "summary": "Scope needs re-check (wallets hidden, RP-5).",
-   "next_action": "Ask the owner to re-scope ROADMAP.md:400 to Coin Registry only (Wallets hidden, RP-5); if approved and after T-118 ships, reuse AffiliateLink on /assets and /assets/[id] with no ordering change.",
+   "next_action": "Nothing now. After launch, when D49 is revisited: decide the pages (the Coins pages only, unless Wallets is restored under T-030), then read each programme's terms (T-120) and clear the affiliate legal review (T-125), including the UK's crypto-promotion rules, before any link. Build on SponsoredLink (components/ui/SponsoredLink.tsx, from T-118) on /assets and /assets/[id], with no change to ordering.",
    "sources": [
     {
      "file": "docs/ROADMAP.md",
      "lines": "400",
      "quote": "**Coin Registry / Wallets** — exchange and hardware-wallet signups."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-10-04",
+    "note": "Parked under D69. Checked 2026-10-04: Wallets is hidden (T-030) and exchange-account linking is gone (RP-5), so only the Coins pages remain for this. Those pages link only to each project's website, whitepaper, news stories and reserve reports, and to no exchange or wallet maker, so sign-up links there would be new links rather than paid versions of existing ones. The shared component this item's earlier next action called AffiliateLink exists as SponsoredLink, and T-118, which it waited on, closed on 2026-09-21."
+   }
   },
   {
    "id": "T-176",
@@ -9343,17 +9350,19 @@
   {
    "id": "T-124",
    "title": "Brokerage referrals on Equities/Funds — only if program terms allow a research context",
-   "status": "blocked",
+   "status": "parked",
    "confidence": "medium",
    "owner_role": "owner-machine",
    "category": "terms-review",
    "effort": "medium",
-   "blocking_decision": "An owner-machine terms read confirming brokerage referral programs permit placement in a research/comparison context.",
+   "blocking_decision": "PARKED 2026-10-04 — D69 (2026-10-04): parked beside T-120 and T-125 under D49 (2026-09-30): no paid or affiliate links at launch on either product; all four come back after launch. Was: \"An owner-machine terms read confirming brokerage referral programs permit placement in a research/comparison context.\"",
    "related_ids": [
-    "P2"
+    "P2",
+    "T-120",
+    "T-125"
    ],
    "summary": "Conditioned on a terms read.",
-   "next_action": "After T-118 ships the staking pattern: owner reads the candidate brokerage programs' terms on a machine that reaches them, specifically whether a research/comparison context is permitted; only if yes does a dev extend the shared component to equity/fund detail pages under the same integrity rules.",
+   "next_action": "Nothing now. After launch, when D49 is revisited: the owner reads the candidate brokerage programmes' terms on a machine that reaches them, specifically whether a research or comparison setting is permitted, read against the deployment that will exist then (see the D22 note); only if it is does a dev extend SponsoredLink to stock and fund detail pages under the same integrity rules.",
    "sources": [
     {
      "file": "docs/ROADMAP.md",
@@ -9362,10 +9371,11 @@
     }
    ],
    "progress": {
-    "noted_on": "2026-09-23",
-    "note": "HALF-UNBLOCKED. The blocker was compound — \"T-118 (staking affiliate pattern) shipped, AND an owner-machine terms read…\" — and its first clause was SATISFIED 2026-09-21 when T-118 closed, so the shared component this item extends now exists. On 2026-09-23 the blocker was rewritten to the remaining clause alone; it briefly kept the satisfied clause in a parenthetical, which the C7 integrity check correctly flagged as a blocker citing a closed item, so the history moved here where it belongs. ⚠ D22 makes the remaining read harder rather than easier, and the item should not be picked up without noticing why: an affiliate placement is a commercial arrangement on a surface that, under D22, is intended to become publicly reachable. A programme's terms have to be read against the deployment that will exist at release, not the single-user app today. It also sits behind LEGAL-REVIEW §3.B and §3.C (entity formation and the disclosure set) — group E there says plainly that nothing in this cluster ships before those.",
+    "noted_on": "2026-10-04",
+    "note": "HALF-UNBLOCKED. The blocker was compound — \"T-118 (staking affiliate pattern) shipped, AND an owner-machine terms read…\" — and its first clause was SATISFIED 2026-09-21 when T-118 closed, so the shared component this item extends now exists. On 2026-09-23 the blocker was rewritten to the remaining clause alone; it briefly kept the satisfied clause in a parenthetical, which the C7 integrity check correctly flagged as a blocker citing a closed item, so the history moved here where it belongs. ⚠ D22 makes the remaining read harder rather than easier, and the item should not be picked up without noticing why: an affiliate placement is a commercial arrangement on a surface that, under D22, is intended to become publicly reachable. A programme's terms have to be read against the deployment that will exist at release, not the single-user app today. It also sits behind LEGAL-REVIEW §3.B and §3.C (entity formation and the disclosure set) — group E there says plainly that nothing in this cluster ships before those. 2026-10-04 (D69): parked beside T-120 and T-125 under D49, so the terms read waits until after launch. D49's own record had left this item and T-123 as they were, because only T-120 and T-125 had been confirmed.",
     "evidence": [
-     "docs/LEGAL-REVIEW.md"
+     "docs/LEGAL-REVIEW.md",
+     "docs/decisions/2026-10-04-owner-decisions.md"
     ]
    }
   },
@@ -38119,6 +38129,13 @@
    {
     "on": "2026-10-04",
     "what": "D68: T-093 closed, option A. run_audit removed from the MCP server, which is now data-only and held there by mcpDataOnly.test.ts; T-094 notes that the P3 review's D5 is settled and D2 remains. Counts recomputed: closed 184, blocked 29, total 362.",
+    "evidence": [
+     "docs/decisions/2026-10-04-owner-decisions.md"
+    ]
+   },
+   {
+    "on": "2026-10-04",
+    "what": "D69: T-123 and T-124 parked beside T-120 and T-125 under D49 (no paid or affiliate links at launch), option A for both. T-123 records that only the Coins pages remain for it; T-124 keeps its terms read for after launch. Counts recomputed: parked 116, blocked 27, total 362.",
     "evidence": [
      "docs/decisions/2026-10-04-owner-decisions.md"
     ]
