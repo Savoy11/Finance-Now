@@ -63,8 +63,8 @@
   "by_status": {
    "closed": 185,
    "open": 34,
-   "parked": 123,
-   "blocked": 19,
+   "parked": 125,
+   "blocked": 17,
    "unclear": 1
   },
   "by_owner_role": {
@@ -8405,15 +8405,33 @@
   {
    "id": "T-206",
    "title": "Penetration test before production launch",
-   "status": "blocked",
+   "status": "parked",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "security",
    "effort": "unknown",
-   "blocking_decision": "Internal or third-party pentest, what scope, what budget, and when relative to the parked rollout?",
-   "related_ids": [],
+   "blocking_decision": "PARKED 2026-10-04 — D73 (2026-10-04): parked until all the features are built, and blocked until every proposed security feature has been added, beside T-209. Owner: \"These should be parked until after we have finished building all the features and blocked by the addition of all proposed security features\". The proposed security features, as listed on 2026-10-04: the ledger's security items not yet closed (T-087, T-088, T-131, T-185, T-189, T-191, T-260, T-339, T-340) and the security-checklist rows it files under ops-infra (T-204, T-205, T-341, T-342). Was: \"Internal or third-party pentest, what scope, what budget, and when relative to the parked rollout?\"",
+   "related_ids": [
+    "T-209",
+    "T-087",
+    "T-088",
+    "T-131",
+    "T-185",
+    "T-189",
+    "T-191",
+    "T-260",
+    "T-339",
+    "T-340",
+    "T-204",
+    "T-205",
+    "T-341",
+    "T-342",
+    "T-112",
+    "T-363",
+    "T-216"
+   ],
    "summary": "Owner decision on vendor/scope; report shareable under NDA.",
-   "next_action": "Owner decides scope (app-only vs app+infra), vendor vs internal, and budget, and adds the item to BUSINESS-CHECKLIST.md; schedule it after a staging environment exists and before the rollout gate is lifted.",
+   "next_action": "Nothing now. When the owner confirms all the features are built and the security items named above are closed: settle who tests (in-house or hired), how much of the system the test covers, and the budget (a hired test is a paid decision, which D21 defers); run it against a hosted copy of the site (T-112 chooses the host, T-363 provisions staging); then propose steward annotations on the penetration-test rows of production-readiness-scorecard.md and architecture/security.md with proof.",
    "sources": [
     {
      "file": "docs/audits/production-readiness-scorecard.md",
@@ -8425,7 +8443,14 @@
      "lines": "266",
      "quote": "- [ ] Perform penetration test before production launch"
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-10-04",
+    "note": "Parked under D73. Its open questions stay open for when it returns: who tests, how much of the system, the budget and when. Checked 2026-10-04: no hosted copy of the site exists to test (nothing has been provisioned, D22), and a business buyer's request for a test report sits with T-216 under D5's trigger.",
+    "evidence": [
+     "docs/decisions/2026-10-04-owner-decisions.md"
+    ]
+   }
   },
   {
    "id": "T-208",
@@ -9122,15 +9147,31 @@
   {
    "id": "T-209",
    "title": "MFA enforcement for all admin accounts",
-   "status": "blocked",
+   "status": "parked",
    "confidence": "medium",
    "owner_role": "owner-decision",
    "category": "security",
    "effort": "medium",
-   "blocking_decision": "Rollout auth/entitlement posture (D1) and hosting decision; rollout parked 2026-09-05",
-   "related_ids": [],
+   "blocking_decision": "PARKED 2026-10-04 — D73 (2026-10-04): parked until all the features are built, and blocked until every proposed security feature has been added, beside T-206. Owner: \"These should be parked until after we have finished building all the features and blocked by the addition of all proposed security features\". The proposed security features, as listed on 2026-10-04: the ledger's security items not yet closed (T-087, T-088, T-131, T-185, T-189, T-191, T-260, T-339, T-340) and the security-checklist rows it files under ops-infra (T-204, T-205, T-341, T-342). Was: \"Rollout auth/entitlement posture (D1) and hosting decision; rollout parked 2026-09-05\"",
+   "related_ids": [
+    "T-206",
+    "T-087",
+    "T-088",
+    "T-131",
+    "T-185",
+    "T-189",
+    "T-191",
+    "T-260",
+    "T-339",
+    "T-340",
+    "T-204",
+    "T-205",
+    "T-341",
+    "T-342",
+    "T-112"
+   ],
    "summary": "SOC 2 and hardening checklist.",
-   "next_action": "Owner decides rollout auth posture (P3 review D1) and hosting; then implement TOTP MFA in the Auth.js flow (frontend/src/lib/auth/config.ts + users schema) enforced for admin role, and enable MFA on the AWS root/IAM users from the owner's machine if AWS is used.",
+   "next_action": "Nothing now. When the owner confirms all the features are built and the security items named above are closed: decide which accounts count as admin accounts by then, and require two-step sign-in on each. The app has none today (see progress), so unless that changes it means the accounts that control the site: GitHub, the host and database once chosen (T-112), the domain registrar, and the AI and data providers. Two-step sign-in for the app's own users is part of T-088. Then propose steward annotations on the MFA rows of production-readiness-scorecard.md and architecture/security.md with proof.",
    "sources": [
     {
      "file": "docs/audits/production-readiness-scorecard.md",
@@ -9142,7 +9183,17 @@
      "lines": "249",
      "quote": "- [ ] Enable MFA for all admin accounts"
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-10-04",
+    "note": "Parked under D73. Checked 2026-10-04: the app has no admin accounts. The users table (frontend/src/lib/db/schema/auth.ts) has no role column; sign-in is email and password only (the Credentials provider in frontend/src/lib/auth/config.ts) and is switched off (REQUIRE_AUTH = false in frontend/src/app/(dashboard)/layout.tsx). What needs guarding (the AI agents, the Pump Report's included, and the data-provider settings) goes through guardSensitiveRoute in frontend/src/lib/server/apiGuard.ts: a shared FN_ADMIN_TOKEN when one is set, otherwise localhost only. The item came from the retired backend, whose users had two-step sign-in.",
+    "evidence": [
+     "docs/decisions/2026-10-04-owner-decisions.md",
+     "frontend/src/lib/db/schema/auth.ts",
+     "frontend/src/lib/auth/config.ts",
+     "frontend/src/lib/server/apiGuard.ts"
+    ]
+   }
   },
   {
    "id": "T-283",
@@ -38196,6 +38247,13 @@
    {
     "on": "2026-10-04",
     "what": "D72, option B: T-205 parked with the hosting decision beside T-204 and reworded to fit any host; T-195 parked beside the business-tier items (D71) under D5's trigger. Counts recomputed: parked 123, blocked 19, total 362.",
+    "evidence": [
+     "docs/decisions/2026-10-04-owner-decisions.md"
+    ]
+   },
+   {
+    "on": "2026-10-04",
+    "what": "D73, the owner's own answer: T-206 (penetration test) and T-209 (two-step sign-in for admin accounts) parked until all the features are built, and blocked until every proposed security feature has been added; both list the 13 security items that stand today. T-209 records that the app has no admin accounts. Counts recomputed: parked 125, blocked 17, total 362.",
     "evidence": [
      "docs/decisions/2026-10-04-owner-decisions.md"
     ]
