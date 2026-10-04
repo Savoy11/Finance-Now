@@ -11,6 +11,12 @@
  * below). Change the wording in the document first, then copy it here: a page
  * edited in two places stops being one document.
  *
+ * WHERE THE DOCUMENTS LIVE NOW (D60, 2026-10-04). In the file libraries of the two
+ * ledger pages, Finance Now's and News Charts'. A document both products share is the
+ * same file in both. The next copy comes from the ledger upload, after comparing the
+ * two, and DISCLOSURE_SOURCE then names that upload. Until something is uploaded, the
+ * copy below stays the one taken from the Disclosure Set page on 2026-10-01.
+ *
  * WHERE IT LIVES ON SCREEN (D50, 2026-09-30). One About page, reached from a
  * footer link on every page and from Settings, where "About & Legal" replaced
  * How We Make Money. The three long documents get their own pages under /about so

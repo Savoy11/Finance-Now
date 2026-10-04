@@ -101,8 +101,15 @@ structure, regulatory research, disclosures and tax compliance are decided once,
       qualify. **Built 2026-10-01 for Finance Now (T-293):** the footer is on every page, sign-in
       included, and Settings → About & Legal replaced How We Make Money, whose address redirects.
       Still to do: the short lines beside the features (drafted in the disclosure set).
-- [ ] Keep one canonical copy per document, shared by both products where the text is identical,
+- [x] Keep one canonical copy per document, shared by both products where the text is identical,
       so they can't drift.
+      ✅ **DECIDED 2026-10-04 (D60, `docs/decisions/2026-10-04-owner-decisions.md`):** for now
+      the documents live in the two ledgers' file libraries, the Finance Now Ledger and the
+      News Charts Ledger pages on the owner's account. A document both products share is the
+      same file in both libraries; when it changes, both get the new version in the same pass
+      and the old one is archived. A session changing either product's legal pages compares
+      the two libraries first, and each app records which upload it copied. Not yet done:
+      nothing is uploaded, and News Charts has no legal pages (its NC-124).
 
 ## 4. Tax & ongoing compliance
 

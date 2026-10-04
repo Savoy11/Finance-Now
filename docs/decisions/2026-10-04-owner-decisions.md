@@ -2,7 +2,8 @@
 
 Recorded from the owner's answers while working through the blocked list, starting at its top:
 T-119, then T-005, then the four sources D54 left out (D55), then T-065 and T-066 (D56), then
-T-192 (D57), then Reddit sign-in, raised with T-246 (D58), then T-204 (D59). Same form as
+T-192 (D57), then Reddit sign-in, raised with T-246 (D58), then T-204 (D59), then T-294
+(D60). Same form as
 `2026-10-03-owner-decisions.md`: one row per ruling, what it cascades to, and what was
 actually done.
 
@@ -14,6 +15,7 @@ actually done.
 | D57 | T-192 (plan-based rate limits on the public API), the next item on the blocked list | **Option 1, "Park it with its siblings":** *"go with option 1 and move on to T-246,"* in reply to three options: park it with its siblings, close it as part of the old platform's checklist, or leave it blocked. → APPLIED | T-192 moves from blocked to parked, beside T-188 (usage metering for billing) and T-191 (per-key IP allowlists) from the same Enterprise Sales Readiness list. It comes back when the launch is planned, after the owner reassesses pricing (D29, parked under D21) and decides whether `/api/v1` gets API keys (T-087). No code change |
 | D58 | Reddit sign-in (T-245, parked under D8 until the launch vendor pass), raised by the owner while T-246 (Reddit vote counts) waited on its options: *"can we add a way to sign into reddit from the app?"* | **Revisit as a post-launch project.** *"No lets revisit this as a post launch project. I would like them to see how it will be used in a live setting, they may offer a better way to use access the data we need."* Given in reply to three options: apply for Reddit's approval first and build after, build now behind a switch, or keep waiting until launch. → APPLIED | Refines D8: Reddit access moves out of the launch vendor pass to after launch, when the owner applies to Reddit with the live app to show. T-245 stays parked on that trigger. T-246 moves from blocked to parked beside it, since vote counts only come through that access (its option 1). Reddit stays off, and the app now says so: the two Reddit rows on the Integrations page said "Public API — no key needed", and both Social routes told the reader to configure `REDDIT_CLIENT_ID` |
 | D59 | T-204 (a web firewall in front of the live site), the next item on the blocked list | **Option 1, "Park it with the hosting decision":** *"go with option 1 and move on to T-294,"* in reply to three options: park it with the hosting decision, reworded to fit any host; close it; or leave it blocked. → APPLIED | T-204 moves from blocked to parked beside the hosting choice, which D1 keeps parked with the other launch items (T-112). It is reworded from "Deploy/configure AWS WAF in front of the ALB" to fit any host, since a public site needs a firewall wherever it runs. No code change |
+| D60 | T-294 (one master copy of each legal document both products share), the next item on the blocked list | **The two ledgers are the documents' home for now.** *"I have a ledger for News Charts now which can be referenced here for the sake of ensuring the legal documents between both projects are in sync. I plan to use the ledgers as the current home to the any legal documents for the projects."* Given in reply to three options: make the Disclosure Set document the master, share the text through code, or wait for the drafts' approval. → APPLIED | The file libraries of the Finance Now Ledger and News Charts Ledger pages hold each product's legal documents. A document both products share is the same file in both, and a session working on either product's legal pages checks the other; the News Charts repository and its ledger are the reference for that check. T-294 closes, and T-291's note gains the upload step. Nothing is uploaded yet: neither library holds a legal document, and News Charts has no legal pages (its NC-124) |
 
 ## Notes
 
@@ -175,3 +177,29 @@ refers to it through two placeholders, `${AWS_ACCOUNT_ID}` and `${WAF_ID}`, that
 deploy workflow fills in. Nothing has been deployed anywhere (D22). The reworded item
 keeps those AWS steps and adds what the other two hosts would need: Vercel's built-in
 firewall, or Cloudflare in front of a rented server.
+
+**D60: what "in sync" means, and how it is checked.** Each ledger page keeps its own file
+library, so each product keeps its own copy. The rule is about those copies:
+
+- A legal document both products share is uploaded to both libraries as the same file,
+  attached to the item it belongs to (T-291 here, NC-124 in the News Charts ledger).
+- When it changes, the new version goes into both libraries in the same pass, and the
+  previous version is archived, never deleted. The libraries have no delete.
+- A session that changes either product's legal pages first reads both libraries (the
+  `docs` collection, through the artifact data tool) and compares the current files.
+  Each app then records which upload it copied, as `DISCLOSURE_SOURCE` does in
+  `frontend/src/lib/legal/disclosures.ts`.
+- A document only one product needs lives in that product's ledger alone.
+
+**D60: what exists today.** Finance Now's About pages carry Draft v1, copied on 2026-10-01
+from the Disclosure Set page, which stays the source of that copy until the documents are
+uploaded. Neither ledger's library holds a legal document: Finance Now's holds 17 files,
+none of them legal, and News Charts' holds none. News Charts has no legal pages at all,
+only a one-line footer sentence (`app/layout.tsx:90` in that repository), tracked there
+as NC-124. The News Charts repository was added to this session read-only on 2026-10-04,
+so its ledger is not changed from here; NC-124 needs the same note on that side.
+
+**D60: why the ledgers' addresses are not written here.** This repository is public, and
+the Finance Now Ledger page is shared with anyone who has its link. Its address in a
+public file would open the ledger, and every legal draft uploaded to it, to anyone who
+reads the repository. Both pages are on the owner's account and are named instead.

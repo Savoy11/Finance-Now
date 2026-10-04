@@ -61,10 +61,10 @@
   "total_verified": 398,
   "outstanding": 358,
   "by_status": {
-   "closed": 179,
+   "closed": 180,
    "open": 31,
    "parked": 110,
-   "blocked": 37,
+   "blocked": 36,
    "unclear": 1
   },
   "by_owner_role": {
@@ -74,7 +74,7 @@
    "owner-machine": 84
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 179,
+  "closed_by_annotation": 180,
   "counts_recomputed_on": "2026-10-04",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 358
@@ -4708,13 +4708,14 @@
     }
    ],
    "progress": {
-    "noted_on": "2026-10-01",
-    "note": "2026-10-01: Draft v1 is on the app's About pages — /about and the full Terms of Use, Privacy Policy and Not Investment Advice under it — copied as written, with links added where the text refers to another page, and under a \"Draft — not yet in force\" notice that lists the blanks still to fill. Approving it now means: the owner's OK on the wording, the blanks filled, any wording changed in the document since 2026-10-01 copied across, and DISCLOSURE_STATUS set to 'approved' in frontend/src/lib/legal/disclosures.ts; a test keeps the notice up while any blank remains. The About page's \"Terms of Use\" line and its data-sources and open-source pointers were not worded by the draft and are marked so in that file. Carried forward from 2026-09-30: REOPENED the same day it was parked. The 2026-09-30 queue sweep parked this under D7 without reading the ledger page's workspace log, where the business chat had recorded a first draft of the whole disclosure set on 29 Sep — shared by both products: Terms of Use, Privacy Policy, Not Investment Advice, How We Make Money, Data Sources & Attribution, Contact & Complaints, with CoinGecko API Terms §7 (a)–(f) mapped clause by clause — and the owner's placement decision on 30 Sep, now D50. The draft lives outside this repository and awaits the owner's approval; it lists 20 code or decision items that must land before its text is true. Carried forward from 2026-09-24: CoinGecko's §7 makes six clauses of the app's own user agreement and privacy policy contractually required once anyone outside the owner's entity can use it (docs/audits/terms-review-coingecko-2026-09-24.md §2).",
+    "noted_on": "2026-10-04",
+    "note": "2026-10-04 (D60): the documents' home is now the two ledgers' file libraries. When the set is approved, upload each document to both (attached to T-291 here and NC-124 in the News Charts ledger), compare the two, then copy the app's text from the upload and name it in DISCLOSURE_SOURCE. 2026-10-01: Draft v1 is on the app's About pages — /about and the full Terms of Use, Privacy Policy and Not Investment Advice under it — copied as written, with links added where the text refers to another page, and under a \"Draft — not yet in force\" notice that lists the blanks still to fill. Approving it now means: the owner's OK on the wording, the blanks filled, any wording changed in the document since 2026-10-01 copied across, and DISCLOSURE_STATUS set to 'approved' in frontend/src/lib/legal/disclosures.ts; a test keeps the notice up while any blank remains. The About page's \"Terms of Use\" line and its data-sources and open-source pointers were not worded by the draft and are marked so in that file. Carried forward from 2026-09-30: REOPENED the same day it was parked. The 2026-09-30 queue sweep parked this under D7 without reading the ledger page's workspace log, where the business chat had recorded a first draft of the whole disclosure set on 29 Sep — shared by both products: Terms of Use, Privacy Policy, Not Investment Advice, How We Make Money, Data Sources & Attribution, Contact & Complaints, with CoinGecko API Terms §7 (a)–(f) mapped clause by clause — and the owner's placement decision on 30 Sep, now D50. The draft lives outside this repository and awaits the owner's approval; it lists 20 code or decision items that must land before its text is true. Carried forward from 2026-09-24: CoinGecko's §7 makes six clauses of the app's own user agreement and privacy policy contractually required once anyone outside the owner's entity can use it (docs/audits/terms-review-coingecko-2026-09-24.md §2).",
     "evidence": [
      "frontend/src/lib/legal/disclosures.ts",
      "docs/decisions/2026-09-30-owner-decisions.md",
      "docs/audits/terms-review-coingecko-2026-09-24.md",
-     "docs/audits/queue-sweep-2026-09-30.md"
+     "docs/audits/queue-sweep-2026-09-30.md",
+     "docs/decisions/2026-10-04-owner-decisions.md"
     ],
     "corrections": [
      "2026-09-30: parked by the queue sweep under D7 and reopened the same day under D50, on the owner's confirmation. The 2026-09-24 note this replaces is carried forward in the note above."
@@ -7502,7 +7503,7 @@
   {
    "id": "T-294",
    "title": "Keep one canonical copy of each shared legal document",
-   "status": "blocked",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "either",
    "category": "process",
@@ -7517,7 +7518,20 @@
      "lines": "78-79",
      "quote": "Keep one canonical copy per document, shared by both products where the text is identical, so they can't drift."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "blocked",
+    "closed_on": "2026-10-04",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "DECIDED under D60. The owner named the home of the legal documents: \"I plan to use the ledgers as the current home to the any legal documents for the projects,\" with the News Charts ledger referenced from here to keep the two products' documents in sync. So the file libraries of the Finance Now Ledger and News Charts Ledger pages hold each product's legal documents; a document both products share is the same file in both, updated in both in the same pass with the old version archived; a session changing either product's legal pages compares the two libraries first, and each app records which upload it copied. The choice is recorded in BUSINESS-CHECKLIST.md, as this item's next step asked. What remains is tracked elsewhere: nothing is uploaded yet, which waits on the owner's approval of the drafts (T-291, whose note now carries the upload step), and News Charts has no legal pages (NC-124 in its own ledger, which this session can read but not change). The ledgers' addresses are kept out of this public repository, since the Finance Now Ledger page is shared with anyone who has its link.",
+    "approved_by": "owner, 2026-10-04: \"I have a ledger for News Charts now which can be referenced here for the sake of ensuring the legal documents between both projects are in sync. I plan to use the ledgers as the current home to the any legal documents for the projects.\"",
+    "evidence": [
+     "docs/decisions/2026-10-04-owner-decisions.md",
+     "docs/BUSINESS-CHECKLIST.md",
+     "frontend/src/lib/legal/disclosures.ts"
+    ]
+   }
   },
   {
    "id": "T-356",
@@ -37799,6 +37813,14 @@
     "evidence": [
      "docs/decisions/2026-10-04-owner-decisions.md",
      "infrastructure/terraform/main.tf"
+    ]
+   },
+   {
+    "on": "2026-10-04",
+    "what": "T-294 closed under D60: the two ledgers' file libraries are the current home of both products' legal documents, a shared document is the same file in both, and a session changing either product's legal pages compares the two first. T-291's note gains the upload step. Blocked 37 to 36, closed 179 to 180.",
+    "evidence": [
+     "docs/decisions/2026-10-04-owner-decisions.md",
+     "docs/BUSINESS-CHECKLIST.md"
     ]
    }
   ]
