@@ -1979,6 +1979,16 @@ before building further advice-adjacent features.
 > need to review this."* It stays live, and T-059 is closed. The review still gates (3)
 > contribution modeling and the federal sale-tax estimator. Neither is built.
 
+> **Status 2026-10-04: (1) and (2) built under D56.** The owner chose to start just these
+> two: *"merge and go with option 1."* (1) A drift check is saved to the plan's history only
+> when the user presses **Save this check** (`builder_plan_snapshots`, migration 0004,
+> `/api/user/builder-plans/[id]/snapshots`, `lib/data/planHistory.ts`). (2) **Print
+> rebalance notes** prints the drift table through the browser's print dialog
+> (`lib/data/rebalanceNotes.ts`, `RebalanceNotesPrint.tsx`). T-065 and T-066 are closed.
+> (3) contribution modeling (T-067) still waits on the scope boundary (T-064), and (4) asset
+> location (T-068) on T-064 and D4's legal review. Drift-breach reminders (T-116) are not on
+> this list yet and keep their own two questions.
+
 #### S6 — Fund Registry
 **State:** 126-fund catalog with provenance, live quotes, N-PORT holdings +
 history + the NT9 asset mix, TEY on munis, look-through, overlap on Compare.

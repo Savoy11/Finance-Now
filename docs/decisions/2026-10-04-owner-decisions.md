@@ -1,7 +1,7 @@
 # Owner decisions — 2026-10-04
 
 Recorded from the owner's answers while working through the blocked list, starting at its top:
-T-119, then T-005, then the four sources D54 left out (D55). Same form as
+T-119, then T-005, then the four sources D54 left out (D55), then T-065 and T-066 (D56). Same form as
 `2026-10-03-owner-decisions.md`: one row per ruling, what it cascades to, and what was
 actually done.
 
@@ -9,6 +9,7 @@ actually done.
 |---|---|---|---|
 | D54 | Which 2026-09-26 source-terms readings to mark `verified` (T-005), held under D46 on 2026-09-30 with "Not yet" | **Option 1, "All 17 fully read and settled"**, in reply to the same three options D46 offered: *"Close t-119 and go with option 1 for t-005."* The 17 are the set as offered on 2026-09-30: the eleven clean readings (sec.gov, home.treasury.gov, frankfurter.dev, wikipedia.org, cdn.jsdelivr.net, alternative.me, mempool.space, lunarcrush.com, lido.fi, marinade.finance, and yahoo.com, which stays prohibited), plus the six ruled on in that session's first batch of questions (okx.com, nasdaqtrader.com, kucoin.com, alphavantage.co, messari.io, santiment.net). → APPLIED | Each entry in `sourceTerms.ts` goes `review: 'seeded'` → `'verified'`, with `reviewedAt` set to 2026-09-26, the day the document was read. The registry goes from 26 to 43 verified of 56, and from 30 to 13 seeded. Each `finding` now says what the document says, in place of text written before anyone had read it. The only verdict that moves is alternative.me's (see the notes). T-005 closes |
 | D55 | The four 2026-09-26 readings D54 left out: CoinMarketCap, Jito, Rocket Pool and Pendle, read and then ruled on later on 2026-09-30 (D44, D45) | **Mark them verified too.** *"yes and you can move on,"* in reply to the session asking whether to mark these four as well, or move on to the next blocked item. → APPLIED | Each goes `seeded` → `verified`, dated 2026-09-26, with a finding that quotes its document. CoinMarketCap's `termsUrl` now names the Personal API agreement that D44 applies; it was found by web search and is marked to confirm. The registry goes from 43 to 47 verified of 56, and from 13 to 9 seeded |
+| D56 | T-065 (plan history) and T-066 (printable rebalance notes), the next two items on the blocked list. Both waited on the owner switching on S5, the Portfolio Builder build-out charter in `docs/TASK-QUEUE.md` | **Option 1, "Start just these two now":** *"merge and go with option 1,"* in reply to three options: start just these two now, park them until after launch, or leave them blocked until S5 is switched on as a whole. → APPLIED | Both are built (see the notes), and T-065 and T-066 close. S5 is started for its items (1) and (2) only. The other S5 work keeps its blockers: contribution modeling (T-067) waits on the scope boundary (T-064), asset location (T-068) on T-064 and D4's legal review, and the federal sale-tax estimator (T-058) on D4. Rebalance reminders (T-116) keep their own two questions: in-app or email, and the legality flag |
 
 ## Notes
 
@@ -70,3 +71,51 @@ States. Two things remain, and each already has an item. T-291 tracks the remain
 (company name, contact email) and the owner's approval of the text. T-125 tracks the UK rules
 on financial promotions and other countries' rules, parked until paid links are considered
 after launch.
+
+**D56: why these two could start alone.** Neither needs the scope boundary or the legal
+review. Both work only with the user's own plan, and both show figures the drift check
+already puts on screen: how far each holding is from its target, and the dollar trade that
+would bring it back. Saving those figures, or printing them, adds no new calculation.
+
+**D56: plan history (T-065).** The drift check now has a **Save this check** button. A
+saved check keeps what the plan was compared with, the value used, and each holding's
+target, actual weight, drift and trade. The History table under the check lists saved
+checks newest first, with the largest drift and its change since the check before, and
+whether a rebalance was due. A check that finds the plan inside its bands, after one that
+did not, says **Back within bands**. It describes one plan over time and ranks nothing.
+The S5 charter calls it the honest version of NT10, the risk-score history RP-4 rejected:
+the user's own plan, not market scores.
+
+- **Saving is a button, never automatic.** The ledger proposed saving a check on each
+  review. Opening the panel would then save one every time, including checks on
+  hand-entered weights that do not add up to 100%. And Mark reviewed, on the plans list,
+  can be pressed without any check being run. So a check is kept only when the user
+  chooses to keep it, and saving does not mark the plan reviewed.
+- **The server stores only what it checks.** Every number is range-checked, unknown fields
+  are dropped, and the summaries (largest drift, rebalance due, turnover) are recomputed
+  from the rows instead of taken from the browser.
+- **Nothing is removed to make room.** One plan keeps up to 500 saved checks. Past that,
+  saving is refused with a message, and no older check is deleted, in line with the
+  owner's no-deletion rule. Deleting a plan deletes its saved checks with it, as part of
+  that plan.
+- **It needs a database update on the owner's machine:** `npm run db:migrate` in
+  `frontend/` applies migration 0004, which adds the `builder_plan_snapshots` table. Until
+  then the History section says to run it, instead of failing.
+- **Tested against a real database.** The session installed a temporary Postgres 16,
+  applied main's four migrations, and ran the app against it. Before 0004 the saved-checks
+  request answered with the `db:migrate` message. `scripts/db-migrate.mjs` then applied
+  0004 cleanly on top. A check saved and listed; one with false summaries was stored with
+  the true ones; a plan belonging to another user answered "Plan not found"; the 501st save
+  was refused with the 500 rows untouched; and deleting the plan removed its saved checks.
+  In a browser, both buttons stayed off until the entered weights totalled 100%, a save
+  added a row at the top of History, and each click on Print opened the print dialog once.
+
+**D56: printable rebalance notes (T-066).** A **Print rebalance notes** button opens the
+browser's print dialog with a one-page sheet: the plan's name, the date, what it was
+compared with, the value used, the band, and the drift table. A holding outside its band
+shows the trade back to target; the rest show "within band". The sheet ends by saying the
+figures are arithmetic, not a recommendation to buy or sell anything, and that they leave
+out trading costs and tax. No file is made; the print dialog offers paper or PDF. Both
+buttons stay off while hand-entered weights do not total 100%, since a drift check on those
+numbers means nothing. The sheet was checked in print mode: only the sheet prints, and the
+rest of the app is hidden.

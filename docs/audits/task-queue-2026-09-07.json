@@ -61,10 +61,10 @@
   "total_verified": 398,
   "outstanding": 358,
   "by_status": {
-   "closed": 177,
+   "closed": 179,
    "open": 31,
    "parked": 107,
-   "blocked": 42,
+   "blocked": 40,
    "unclear": 1
   },
   "by_owner_role": {
@@ -74,7 +74,7 @@
    "owner-machine": 84
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 177,
+  "closed_by_annotation": 179,
   "counts_recomputed_on": "2026-10-04",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 358
@@ -7217,7 +7217,7 @@
   {
    "id": "T-065",
    "title": "S5 — plan history via snapshot persistence",
-   "status": "blocked",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "feature",
@@ -7235,12 +7235,29 @@
      "lines": "1962-1965",
      "quote": "(1) plan HISTORY — what did the drift look like over time, when did rebalances happen (needs snapshot persistence — the honest version of what NT10 wanted, but for the user's own plan rather than market scores);"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "blocked",
+    "closed_on": "2026-10-04",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "DONE under D56. The owner chose to start S5's items (1) and (2) alone: \"merge and go with option 1.\" The drift monitor's Save this check stores one drift check in builder_plan_snapshots (migration 0004) through /api/user/builder-plans/[id]/snapshots. A History table lists saved checks newest first, with the largest drift, its change since the check before and whether a rebalance was due, and marks a check back within its bands after one that was not. Saving is a button press, not the next_action's capture on each review: that would save a check every time the panel opened, including checks on hand-entered weights that do not total 100%, and Mark reviewed can be pressed with no check run. The server stores only what parsePlanSnapshot returns and recomputes the summaries from the rows. One plan keeps at most 500 checks; past that, saving is refused and nothing is removed. planHistory.test.ts (22 tests) pins the validator and the comparisons, and errors.test.ts the missing-table message. Tested in this session against a temporary Postgres 16: 0004 applied cleanly after 0000-0003, another user's plan answered 404, the 501st save was refused with nothing removed, deleting the plan removed its checks, and in a browser a save added a row to History. The owner's database needs npm run db:migrate before the History section works; until then it says so.",
+    "approved_by": "owner, 2026-10-04: \"merge and go with option 1\", choosing \"Start just these two now\" for T-065 and T-066",
+    "evidence": [
+     "docs/decisions/2026-10-04-owner-decisions.md",
+     "frontend/src/lib/data/planHistory.ts",
+     "frontend/src/lib/data/__tests__/planHistory.test.ts",
+     "frontend/src/app/api/user/builder-plans/[id]/snapshots/route.ts",
+     "frontend/drizzle/0004_builder-plan-snapshots.sql",
+     "frontend/src/lib/db/errors.ts",
+     "frontend/src/components/portfolio-builder/PlanMonitor.tsx"
+    ]
+   }
   },
   {
    "id": "T-066",
    "title": "S5 — printable rebalance execution notes",
-   "status": "blocked",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "feature",
@@ -7257,7 +7274,22 @@
      "lines": "1965",
      "quote": "(2) rebalance execution notes — printable trade lists;"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "blocked",
+    "closed_on": "2026-10-04",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "DONE under D56, in the same answer as T-065. The drift monitor's Print rebalance notes button builds the notes with buildRebalanceNotes (lib/data/rebalanceNotes.ts) and renders them into a portal on <body> that globals.css shows only in print, while html[data-print=\"rebalance-notes\"] is set. The browser's print dialog does the rest, and no file is made, as the next_action asked. The sheet gives the plan, the date, what it was compared with, the value used, the band and the drift table: the trade back to target for a holding outside its band, \"within band\" for the rest. It ends by saying the figures are arithmetic, not a recommendation to buy or sell anything, and leave out trading costs and tax. A hold row never carries a trade. rebalanceNotes.test.ts (8 tests) pins row parity with checkDrift, the totals and the wording, including that no imperative appears. Checked by rendering: in print mode only the sheet shows. In a browser against a real database, each click printed once, and the page's print mark and the portal were gone afterwards. The button stays off while hand-entered weights do not total 100%.",
+    "approved_by": "owner, 2026-10-04: \"merge and go with option 1\", choosing \"Start just these two now\" for T-065 and T-066",
+    "evidence": [
+     "docs/decisions/2026-10-04-owner-decisions.md",
+     "frontend/src/lib/data/rebalanceNotes.ts",
+     "frontend/src/lib/data/__tests__/rebalanceNotes.test.ts",
+     "frontend/src/components/portfolio-builder/RebalanceNotesPrint.tsx",
+     "frontend/src/app/globals.css"
+    ]
+   }
   },
   {
    "id": "T-192",
@@ -8731,11 +8763,12 @@
     }
    ],
    "progress": {
-    "noted_on": "2026-09-30",
-    "note": "Rewritten 2026-09-30: the item-16 legality question (T-059) was answered by D47 for build-by-allocation only, so this item now waits on D4's legal review by name — still in force for the advice-adjacent S5 tools. The blocker was: \"T-059 - the owner's item-16 legality question on advice-adjacent features\"",
+    "noted_on": "2026-10-04",
+    "note": "Rewritten 2026-09-30: the item-16 legality question (T-059) was answered by D47 for build-by-allocation only, so this item now waits on D4's legal review by name — still in force for the advice-adjacent S5 tools. The blocker was: \"T-059 - the owner's item-16 legality question on advice-adjacent features\" 2026-10-04: D56 started S5's items (1) plan history and (2) printable rebalance notes (T-065, T-066, both closed), which needed neither this boundary nor D4's review. This item now decides (3) contribution modeling (T-067) and (4) asset location (T-068).",
     "evidence": [
      "docs/decisions/2026-09-30-owner-decisions.md",
-     "docs/decisions/2026-09-14-owner-decisions.md"
+     "docs/decisions/2026-09-14-owner-decisions.md",
+     "docs/decisions/2026-10-04-owner-decisions.md"
     ]
    }
   },
@@ -37693,6 +37726,16 @@
      "docs/decisions/2026-10-04-owner-decisions.md",
      "frontend/src/lib/server/sourceTerms.ts",
      "docs/audits/terms-review-seeded-2026-09-26.md"
+    ]
+   },
+   {
+    "on": "2026-10-04",
+    "what": "T-065 and T-066 closed under D56, the next two items on the blocked list: the owner chose to start S5's plan history and printable rebalance notes alone (\"merge and go with option 1\"). Both are built: a saved drift check goes to builder_plan_snapshots (migration 0004, which the owner's database needs applied with npm run db:migrate), and Print rebalance notes prints the drift table through the browser's print dialog. T-064's note now says it decides only S5's items (3) and (4); T-067, T-068 and T-058 keep their blockers. Blocked 42 to 40, closed 177 to 179.",
+    "evidence": [
+     "docs/decisions/2026-10-04-owner-decisions.md",
+     "docs/TASK-QUEUE.md",
+     "frontend/src/lib/data/planHistory.ts",
+     "frontend/src/lib/data/rebalanceNotes.ts"
     ]
    }
   ]

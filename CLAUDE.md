@@ -658,6 +658,22 @@ Pure engine, no API calls, covered by `__tests__/portfolioBuilder.test.ts` (86 t
 - **`actualWeightsFromPortfolio(portfolio, prices)`** — bridges a `/portfolios` portfolio into symbol→weight. Positions with no live price are **excluded, never valued at cost**; `pricedPct` reports coverage so the UI can disclose it.
 - UI: `src/components/portfolio-builder/PlanMonitor.tsx` (expandable per saved plan) supports both a linked portfolio and manual weight entry.
 - **Plans persist to Postgres** (`builder_plans` table — jsonb snapshot of engine output, deliberately not normalized) via `/api/user/builder-plans` (+ `/[id]` PATCH/DELETE). Ownership via `getCurrentUserId()` (local-user mode while the auth wall is off). The page one-time-imports legacy `BUILDER_STORAGE_KEY` localStorage plans (timestamps preserved, key renamed `*:imported` so it can't run twice). `builder_plans.linked_portfolio_id` persists which portfolio the drift monitor compares against (auto-selected on load; portfolios are DB-backed with UUID ids).
+- **Plan history and printable rebalance notes (D56, 2026-10-04; T-065, T-066).** The drift
+  monitor's **Save this check** stores one drift check in `builder_plan_snapshots` through
+  `/api/user/builder-plans/[id]/snapshots` (GET newest first, POST one). ⚠ **Migration 0004
+  adds that table — run `npm run db:migrate` on the owner's machine**; until then the route
+  answers 503 with that instruction (`isMissingTableError`, `lib/db/errors.ts`) rather than a
+  500. Saving is a button press, never a side effect of opening the panel, and it does not
+  mark the plan reviewed. The server stores only what `parsePlanSnapshot()`
+  (`lib/data/planHistory.ts`, pure + tested) returns, and recomputes the summaries from the
+  rows. One plan keeps at most `MAX_SAVED_CHECKS_PER_PLAN`; past that, saving is refused and
+  **nothing is pruned** (the no-deletion rule). Rows go only with their plan or user
+  (CASCADE). **Print rebalance notes** renders `buildRebalanceNotes()`
+  (`lib/data/rebalanceNotes.ts`, pure + tested) into a `<body>` portal
+  (`RebalanceNotesPrint.tsx`) that `globals.css` shows only in print, while
+  `html[data-print="rebalance-notes"]` is set; it makes no file. Both buttons stay off
+  while hand-entered weights do not total 100%. Contribution modeling and asset location
+  are **not** built: they wait on T-064 and D4.
 - ~~**⚠ New API routes with dynamic segments MUST live under `/api/user/`**~~ — **this
   constraint was LIFTED on 2026-09-14 (D2).** It existed only because a
   `next.config.mjs` rewrite proxied unmatched `/api/*` paths to the legacy backend and
