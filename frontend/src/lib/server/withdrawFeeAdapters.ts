@@ -1,5 +1,7 @@
 // Parsers for the keyless exchange withdrawal-fee APIs behind
-// /live-data/withdraw-fees (S3 Tier-1 live overlay).
+// /live-data/withdraw-fees (S3 Tier-1 live overlay). Where a payload also says
+// whether a network is open for withdrawals or deposits, that is read too
+// (deposit status: T-054, owner decision D66).
 //
 // Design rules (mirrored in lib/data/transferFees.ts):
 //   1. OVERLAY ONLY — buildFeeOverrideMap() keeps a parsed row only when the
@@ -34,7 +36,26 @@ export interface ParsedFeeRow {
   withdrawFee?: number
   minWithdraw?: number
   withdrawEnabled?: boolean
+  /**
+   * Whether the exchange is accepting deposits of this coin on this network,
+   * when its payload says (T-054, D66). Read strictly: only the payload's own
+   * open and closed values count, and anything else stays undefined, because a
+   * misread "closed" would block a working route and a misread "open" would
+   * vouch for a shut one. Undefined means unknown, and the stored assumption stands.
+   */
+  depositEnabled?: boolean
 }
+
+/** A yes/no status sent as a real boolean; anything else is unknown. */
+const bool = (v: unknown): boolean | undefined => (typeof v === 'boolean' ? v : undefined)
+
+/** A yes/no status sent as one of two words (or a boolean); anything else is unknown. */
+const status = (v: unknown, open: string, closed: string): boolean | undefined =>
+  v === true || v === open ? true : v === false || v === closed ? false : undefined
+
+/** A row is worth keeping when it says anything: a fee, or either status. */
+const saysSomething = (r: Pick<ParsedFeeRow, 'withdrawFee' | 'withdrawEnabled' | 'depositEnabled'>) =>
+  r.withdrawFee !== undefined || r.withdrawEnabled !== undefined || r.depositEnabled !== undefined
 
 // ─── Symbol → CoinId ──────────────────────────────────────────────────────────
 
@@ -104,12 +125,13 @@ export function parseKucoinCurrencies(json: any): ParsedFeeRow[] {
     for (const c of cur?.chains ?? []) {
       const network = normalizeChain(String(c?.chainName ?? c?.chainId ?? ''))
       const withdrawFee = num(c?.withdrawalMinFee)
-      const withdrawEnabled = typeof c?.isWithdrawEnabled === 'boolean' ? c.isWithdrawEnabled : undefined
-      if (!network || (withdrawFee === undefined && withdrawEnabled === undefined)) continue
+      const withdrawEnabled = bool(c?.isWithdrawEnabled)
+      const depositEnabled = bool(c?.isDepositEnabled)
+      if (!network || !saysSomething({ withdrawFee, withdrawEnabled, depositEnabled })) continue
       rows.push({
         exchangeId: 'kucoin', coin, network, withdrawFee,
         minWithdraw: num(c?.withdrawalMinSize),
-        withdrawEnabled,
+        withdrawEnabled, depositEnabled,
       })
     }
   }
@@ -132,11 +154,12 @@ export function parseHtxCurrencies(json: any): ParsedFeeRow[] {
       // more than the 2025 snapshot's assumption, so the row survives.
       const withdrawFee = c?.withdrawFeeType === 'fixed' ? num(c?.transactFeeWithdraw) : undefined
       const withdrawEnabled = c?.withdrawStatus === undefined ? undefined : c.withdrawStatus === 'allowed'
-      if (withdrawFee === undefined && withdrawEnabled === undefined) continue
+      const depositEnabled = status(c?.depositStatus, 'allowed', 'prohibited')
+      if (!saysSomething({ withdrawFee, withdrawEnabled, depositEnabled })) continue
       rows.push({
         exchangeId: 'htx', coin, network, withdrawFee,
         minWithdraw: num(c?.minWithdrawAmt),
-        withdrawEnabled,
+        withdrawEnabled, depositEnabled,
       })
     }
   }
@@ -154,11 +177,13 @@ export function parseBitgetCoins(json: any): ParsedFeeRow[] {
       const network = normalizeChain(String(c?.chain ?? ''))
       const withdrawFee = num(c?.withdrawFee)
       const withdrawEnabled = c?.withdrawable === undefined ? undefined : String(c.withdrawable) === 'true'
-      if (!network || (withdrawFee === undefined && withdrawEnabled === undefined)) continue
+      // Bitget calls deposits "recharge".
+      const depositEnabled = status(c?.rechargeable, 'true', 'false')
+      if (!network || !saysSomething({ withdrawFee, withdrawEnabled, depositEnabled })) continue
       rows.push({
         exchangeId: 'bitget', coin, network, withdrawFee,
         minWithdraw: num(c?.minWithdrawAmount),
-        withdrawEnabled,
+        withdrawEnabled, depositEnabled,
       })
     }
   }
@@ -184,8 +209,9 @@ export function parseLbankWithdrawConfigs(json: any): ParsedFeeRow[] {
     // (btc → bitcoin, ltc → litecoin, ...).
     const network = normalizeChain(String(c?.chain ?? '')) ?? normalizeChain(String(c?.assetCode ?? ''))
     const withdrawFee = num(c?.fee)
-    const withdrawEnabled = typeof c?.canWithDraw === 'boolean' ? c.canWithDraw : undefined
-    if (!network || (withdrawFee === undefined && withdrawEnabled === undefined)) continue
+    // Withdrawal settings only: this feed says nothing about deposits.
+    const withdrawEnabled = bool(c?.canWithDraw)
+    if (!network || !saysSomething({ withdrawFee, withdrawEnabled })) continue
     rows.push({
       exchangeId: 'lbank', coin, network, withdrawFee,
       minWithdraw: num(c?.min),
@@ -250,11 +276,12 @@ export function parseXtSupportCurrency(json: any): ParsedFeeRow[] {
     for (const c of cur?.supportChains ?? []) {
       const network = normalizeChain(String(c?.chain ?? ''))
       const withdrawFee = num(c?.withdrawFeeAmount) ?? num(c?.withdrawFee)
-      const withdrawEnabled = typeof c?.withdrawEnabled === 'boolean' ? c.withdrawEnabled : undefined
-      if (!network || (withdrawFee === undefined && withdrawEnabled === undefined)) continue
+      const withdrawEnabled = bool(c?.withdrawEnabled)
+      const depositEnabled = bool(c?.depositEnabled)
+      if (!network || !saysSomething({ withdrawFee, withdrawEnabled, depositEnabled })) continue
       rows.push({
         exchangeId: 'xtcom', coin, network, withdrawFee,
-        withdrawEnabled,
+        withdrawEnabled, depositEnabled,
       })
     }
   }
@@ -278,11 +305,18 @@ export interface WithdrawFeeSource {
   parse: (json: any) => ParsedFeeRow[]
   /** False until the owner probe confirms it answers keyless from a real IP. */
   probed: boolean
+  /**
+   * Whether this source's parser reads a deposit status (T-054, D66). Taken from
+   * each exchange's API documentation; `npm run fee-probe` on the owner's machine
+   * warns when a source marked true parses no deposit status at all, which is
+   * how a renamed field shows up.
+   */
+  reportsDeposits: boolean
 }
 
 export const WITHDRAW_FEE_SOURCES: WithdrawFeeSource[] = [
-  { exchangeId: 'kucoin', url: 'https://api.kucoin.com/api/v3/currencies', parse: parseKucoinCurrencies, probed: true },
-  { exchangeId: 'htx', url: 'https://api.huobi.pro/v2/reference/currencies', parse: parseHtxCurrencies, probed: true },
+  { exchangeId: 'kucoin', url: 'https://api.kucoin.com/api/v3/currencies', parse: parseKucoinCurrencies, probed: true, reportsDeposits: true },
+  { exchangeId: 'htx', url: 'https://api.huobi.pro/v2/reference/currencies', parse: parseHtxCurrencies, probed: true, reportsDeposits: true },
   // Batch 2 all confirmed on the owner probe 2026-08-22 (HTTP 200, rows parsed):
   // bitget 42, poloniex 31, lbank 51, bitfinex 14, xtcom 41. Combined with
   // kucoin+htx that was 280 live rows, 123 of which matched a curated route.
@@ -296,10 +330,10 @@ export const WITHDRAW_FEE_SOURCES: WithdrawFeeSource[] = [
   // sourceTerms.ts, so pinnedFetch would refuse it at the socket anyway; leaving
   // the source registered would fail the dataSources terms sweep in
   // __tests__/sourceTerms.test.ts. Do not re-add it without a licence.
-  { exchangeId: 'bitget', url: 'https://api.bitget.com/api/v2/spot/public/coins', parse: parseBitgetCoins, probed: true },
-  { exchangeId: 'lbank', url: 'https://api.lbkex.com/v2/withdrawConfigs.do', parse: parseLbankWithdrawConfigs, probed: true },
-  { exchangeId: 'bitfinex', url: 'https://api-pub.bitfinex.com/v2/conf/pub:map:currency:tx:fee', parse: parseBitfinexTxFees, probed: true },
-  { exchangeId: 'xtcom', url: 'https://sapi.xt.com/v4/public/wallet/support/currency', parse: parseXtSupportCurrency, probed: true },
+  { exchangeId: 'bitget', url: 'https://api.bitget.com/api/v2/spot/public/coins', parse: parseBitgetCoins, probed: true, reportsDeposits: true },
+  { exchangeId: 'lbank', url: 'https://api.lbkex.com/v2/withdrawConfigs.do', parse: parseLbankWithdrawConfigs, probed: true, reportsDeposits: false },
+  { exchangeId: 'bitfinex', url: 'https://api-pub.bitfinex.com/v2/conf/pub:map:currency:tx:fee', parse: parseBitfinexTxFees, probed: true, reportsDeposits: false },
+  { exchangeId: 'xtcom', url: 'https://sapi.xt.com/v4/public/wallet/support/currency', parse: parseXtSupportCurrency, probed: true, reportsDeposits: true },
 ]
 
 // ─── Overlay filter ───────────────────────────────────────────────────────────
@@ -316,10 +350,19 @@ export function buildFeeOverrideMap(rows: ParsedFeeRow[]): {
   availabilityExchangeIds: string[]
   /** `exchangeId:coin:network` keys whose STATUS was live-reported. */
   availabilityRows: string[]
+  /** Exchanges that reported DEPOSIT status (T-054, D66): a separate, narrower claim again. */
+  depositAvailabilityExchangeIds: string[]
+  /** `exchangeId:coin:network` keys whose deposit status was live-reported. */
+  depositAvailabilityRows: string[]
 } {
   const overrides: LiveFeeOverrideMap = {}
   let applied = 0
   let skipped = 0
+  // Deposit status is kept apart from withdrawal status for the same reason
+  // withdrawal status is kept apart from fees: LBank reports withdrawals and
+  // says nothing about deposits, so one list would vouch for checks never made.
+  const depositAvailability = new Set<string>()
+  const depositAvailabilityRows: string[] = []
   // Exchanges that actually reported withdrawal AVAILABILITY, which is a
   // strictly narrower claim than "we got a fee from them". Bitfinex's fee map
   // carries no status field at all, so it can be a live FEE source while never
@@ -337,10 +380,15 @@ export function buildFeeOverrideMap(rows: ParsedFeeRow[]): {
       withdrawFee: row.withdrawFee,
       minWithdraw: row.minWithdraw,
       withdrawEnabled: row.withdrawEnabled,
+      depositEnabled: row.depositEnabled,
     }
     if (row.withdrawEnabled !== undefined) {
       availability.add(row.exchangeId)
       availabilityRows.push(`${row.exchangeId}:${row.coin}:${row.network}`)
+    }
+    if (row.depositEnabled !== undefined) {
+      depositAvailability.add(row.exchangeId)
+      depositAvailabilityRows.push(`${row.exchangeId}:${row.coin}:${row.network}`)
     }
     applied++
   }
@@ -348,5 +396,7 @@ export function buildFeeOverrideMap(rows: ParsedFeeRow[]): {
     overrides, applied, skipped,
     availabilityExchangeIds: [...availability],
     availabilityRows,
+    depositAvailabilityExchangeIds: [...depositAvailability],
+    depositAvailabilityRows,
   }
 }
