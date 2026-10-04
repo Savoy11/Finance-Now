@@ -243,7 +243,7 @@ bug report.**
 
 **Deferred to post-launch by decision, not by capacity**
 - SOC 2 — *D5, trigger: first paying customer or first enterprise conversation*
-- A business (enterprise) tier: company sign-in (SSO), an uptime guarantee, data-residency choice, separate customer environments, business contracts — *D71, same trigger as SOC 2*
+- A business (enterprise) tier: company sign-in (SSO), an uptime guarantee, data-residency choice, separate customer environments, business contracts, and running in more than one region — *D71 and D72, same trigger as SOC 2*
 - Affiliate links and their disclosure — *D7*; none on either product at launch, revisited after it — *D49*
 - Reddit OAuth — *D8* · S4 options subproject — *D9* · new risk profiles — *D18*
 - Business entity formation — *D13*
