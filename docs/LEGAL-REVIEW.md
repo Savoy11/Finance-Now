@@ -138,6 +138,10 @@ applied to a different feature. It blocks the tax estimator outright.
 > this"* (D47). It stays live, and T-059 is closed. The review still gates the tax
 > estimator (T-058) and contribution modeling (T-067). Neither is built, and no reviewer
 > is engaged (D30).
+>
+> **Update 2026-10-04 (D67).** The tax estimator (T-058) is parked with the Transfer Fees
+> page, which is hidden from the suite (T-028): the question comes back when that page is
+> restored. D4's review still gates building it.
 
 **E. Affiliate programmes.** T-119, T-120, T-124, T-125. FTC disclosure and other
 jurisdictions (UK FCA), plus per-programme terms on placement, comparison tables and

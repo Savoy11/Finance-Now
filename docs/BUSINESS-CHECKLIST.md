@@ -248,7 +248,7 @@ bug report.**
 - Business entity formation — *D13*
 
 **Gated on external review**
-- S5 contribution modeling and the federal sale-tax estimator — *D4: not built; a qualified legal review clears them before they are built.* Until 2026-09-30 this line also named build-by-allocation and called all three "built, dark". Only build-by-allocation was built, and it was live. The owner then ruled that it needs no review (D47), so it stays live and is off this list.
+- S5 contribution modeling and the federal sale-tax estimator — *D4: not built; a qualified legal review clears them before they are built.* The estimator (T-058) is also parked with the hidden Transfer Fees page since 2026-10-04 (D67). Until 2026-09-30 this line also named build-by-allocation and called all three "built, dark". Only build-by-allocation was built, and it was live. The owner then ruled that it needs no review (D47), so it stays live and is off this list.
 
 ## 6. Documentation accuracy
 

@@ -1946,6 +1946,10 @@ of totals that are being corrected means doing the reconciliation twice.
 > table, so nothing goes stale) and is the piece that touches the owner's
 > advice-adjacent caution in the S5 charter: surface the legality question
 > before building it.
+>
+> **Parked 2026-10-04 (D67, T-058).** It is decided with the Transfer Fees page
+> (T-028): the question comes back when that page is restored. D4's legal
+> review still gates building it.
 
 **State:** the strongest data asset in the app — 30 exchanges × 22 coins × 18
 networks, hand-maintained with provenance, path-finding (`findTransferPaths`),
