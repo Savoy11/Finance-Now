@@ -1615,6 +1615,25 @@ and `reviewPlan()`/`buildCurveData()` do, and it is the only reason their edge c
 
 ---
 
+## Dependency audit — the Security Scan gate
+
+`npm run deps:check` (in `frontend/`) has been the CI Security Scan's dependency audit since
+2026-10-03 (D53). It fails on every high or critical advisory, as the bare
+`npm audit --audit-level=high` it replaced did, **except** one that a recorded owner decision
+allows in `frontend/audit-exceptions.json`. An exception names one GHSA advisory and its
+package, cites a `| Dnn |` row under `docs/decisions/`, and expires at most 92 days after it was
+decided. It also stops applying the moment npm reports a fix short of a major upgrade. Holding
+on past the date takes a new decision with a new date, never an edited expiry.
+`npm run deps:check -- --now=YYYY-MM-DD` previews a later date. The rules and their reasons are
+in `scripts/lib/auditGate.mjs`; `lib/server/__tests__/auditGate.test.ts` drives each one red
+and also reads the CI step. `mcp-server/` keeps its plain `npm audit`.
+
+The first exception, granted 2026-10-03 until 2026-11-03: GHSA-vfj7-8cjw-p6xm, braces ≤ 3.0.3,
+which has no patched release. braces only sees file patterns written in this repo (Tailwind's
+content paths, ESLint's file globs). T-418 tracks its removal.
+
+---
+
 ## Counts and lists in copy: derive them, never type them
 
 **If code can compute a number, the string must not contain it.** Every count written

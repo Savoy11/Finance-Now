@@ -59,25 +59,25 @@
  },
  "counts": {
   "total_verified": 398,
-  "outstanding": 357,
+  "outstanding": 358,
   "by_status": {
    "closed": 175,
    "open": 31,
    "parked": 107,
-   "blocked": 43,
+   "blocked": 44,
    "unclear": 1
   },
   "by_owner_role": {
    "remote-dev": 87,
-   "either": 39,
+   "either": 40,
    "owner-decision": 147,
    "owner-machine": 84
   },
   "closed_but_listed_open_in_docs": 60,
   "closed_by_annotation": 175,
-  "counts_recomputed_on": "2026-10-01",
+  "counts_recomputed_on": "2026-10-03",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
-  "total": 357
+  "total": 358
  },
  "blocking_decisions": [
   {
@@ -12438,6 +12438,38 @@
     "on": "2026-09-30",
     "by": "session steward",
     "why": "Split out of T-412 so its ruling could close: the confirming re-run and the FXAIX reading both need sec.gov, which the cloud environment refuses."
+   }
+  },
+  {
+   "id": "T-418",
+   "title": "Remove the braces audit exception once a fix ships, or decide again by 2026-11-03",
+   "status": "blocked",
+   "confidence": "high",
+   "owner_role": "either",
+   "category": "security",
+   "effort": "small",
+   "blocking_decision": "Has npm started reporting a fix for GHSA-vfj7-8cjw-p6xm that needs no major upgrade (most likely a braces 3.0.4), or has the D53 exception reached its 2026-11-03 expiry, when the owner decides again?",
+   "related_ids": [
+    "D53"
+   ],
+   "summary": "D53 (2026-10-03) allows one advisory in the CI dependency audit: GHSA-vfj7-8cjw-p6xm, a high-severity crash in braces 3.0.3 and earlier, which has no patched release. braces reaches this app only through tooling that reads file patterns written in the repo (Tailwind's content paths, ESLint's file globs). The exception ends on its own, and the Security Scan goes red again, on whichever comes first: npm reports a fix short of a major upgrade, or 2026-11-03 passes.",
+   "next_action": "When the Security Scan goes red on GHSA-vfj7-8cjw-p6xm, or by 2026-11-03: in frontend/, run `npm run deps:check`. If it says a fix is available, run `npm audit fix` (no `--force`), confirm `npm run deps:check` passes, then remove the braces entry from frontend/audit-exceptions.json by hand and update CLAUDE.md's Dependency audit section. If no fix exists by the expiry, put the choice to the owner again: a new dated exception under a new decision (never an edited expiry), or a Tailwind 4 migration plus an eslint-config-next change, which together remove both paths braces comes in by.",
+   "sources": [
+    {
+     "file": "docs/decisions/2026-10-03-owner-decisions.md",
+     "lines": "D53",
+     "quote": "The gate stops allowing the advisory on whichever comes first"
+    },
+    {
+     "file": "frontend/audit-exceptions.json",
+     "lines": "GHSA-vfj7-8cjw-p6xm",
+     "quote": "\"expires\": \"2026-11-03\""
+    }
+   ],
+   "opened": {
+    "on": "2026-10-03",
+    "by": "session steward",
+    "why": "Opened with D53, so the exception's end is on the ledger as well as in CI."
    }
   }
  ],
@@ -37612,6 +37644,16 @@
      "frontend/src/components/markets/agentScans.ts",
      "docs/audits/rejected-proposals.md",
      "docs/assessments/P3-production-review.md"
+    ]
+   },
+   {
+    "on": "2026-10-03",
+    "what": "T-418 opened with D53: the CI dependency audit now allows GHSA-vfj7-8cjw-p6xm (braces 3.0.3 and earlier, no patched release) until 2026-11-03, or until npm reports a fix short of a major upgrade. T-418 tracks removing the exception, or putting the choice to the owner again at its expiry. Outstanding 357 to 358, blocked 43 to 44.",
+    "evidence": [
+     "docs/decisions/2026-10-03-owner-decisions.md",
+     "frontend/audit-exceptions.json",
+     "frontend/scripts/lib/auditGate.mjs",
+     "frontend/src/lib/server/__tests__/auditGate.test.ts"
     ]
    }
   ]

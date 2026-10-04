@@ -49,7 +49,8 @@
     "staking:refresh-fallbacks": "node scripts/refresh-staking-fallbacks.mjs",
     "docs:check": "tsx scripts/check-doc-facts.ts",
     "queue:check": "node scripts/check-queue-ledger.mjs",
-    "staleness:check": "tsx scripts/check-staleness-horizon.ts"
+    "staleness:check": "tsx scripts/check-staleness-horizon.ts",
+    "deps:check": "node scripts/check-dependency-audit.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.125.0",
