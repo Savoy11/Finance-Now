@@ -63,8 +63,8 @@
   "by_status": {
    "closed": 185,
    "open": 34,
-   "parked": 121,
-   "blocked": 21,
+   "parked": 123,
+   "blocked": 19,
    "unclear": 1
   },
   "by_owner_role": {
@@ -8287,15 +8287,20 @@
   {
    "id": "T-195",
    "title": "Multi-region deployment",
-   "status": "blocked",
+   "status": "parked",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "ops-infra",
    "effort": "large",
-   "blocking_decision": "Phase 6 deploy target: Vercel + Neon/Supabase, VPS Docker Compose, or existing K8s/Terraform (ROADMAP.md:213-214)",
-   "related_ids": [],
+   "blocking_decision": "PARKED 2026-10-04 — D72 (2026-10-04): parked beside the business-tier items (D71) and T-217, all waiting on D5's trigger (2026-09-14): the first paying customer or the first conversation with a business buyer. Running in more than one region pays its way through business customers' uptime and data-residency needs (T-212, T-213), and it needs a host first (T-112). Was: \"Phase 6 deploy target: Vercel + Neon/Supabase, VPS Docker Compose, or existing K8s/Terraform (ROADMAP.md:213-214)\"",
+   "related_ids": [
+    "T-212",
+    "T-213",
+    "T-217",
+    "T-112"
+   ],
    "summary": "Series A proof point.",
-   "next_action": "Owner decides the Phase 6 deploy target first; multi-region only matters if the K8s/Terraform path is chosen. No code action until then.",
+   "next_action": "Nothing now. When D5's trigger fires and a host is chosen (T-112), take this up as it stood: Owner decides the Phase 6 deploy target first; multi-region only matters if the K8s/Terraform path is chosen. No code action until then.",
    "sources": [
     {
      "file": "docs/audits/production-readiness-scorecard.md",
@@ -8366,16 +8371,19 @@
   },
   {
    "id": "T-205",
-   "title": "Enable CloudTrail + GuardDuty on all AWS accounts",
-   "status": "blocked",
+   "title": "Record changes to the hosting account and alert on suspicious activity, using what the chosen host offers",
+   "status": "parked",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "ops-infra",
    "effort": "small",
-   "blocking_decision": "Which hosting path ships — the existing AWS/EKS Terraform, Vercel + Neon/Supabase, or a VPS Docker Compose (ROADMAP Phase 6; P3 review D2)?",
-   "related_ids": [],
-   "summary": "SOC 2 and hardening checklist items.",
-   "next_action": "Once the owner picks AWS: add aws_guardduty_detector (enable = true) and an org/account aws_cloudtrail with a KMS-encrypted S3 bucket + log validation to infrastructure/terraform (bootstrap/ is the natural home since both are account-level), run terraform validate on the owner's machine.",
+   "blocking_decision": "PARKED 2026-10-04 — D72 (2026-10-04): parked with the hosting decision beside T-204, which D1 (2026-09-14) keeps parked with the other launch items until the launch is planned (T-112). Reworded from \"Enable CloudTrail + GuardDuty on all AWS accounts\" to fit any host. Was: \"Which hosting path ships — the existing AWS/EKS Terraform, Vercel + Neon/Supabase, or a VPS Docker Compose (ROADMAP Phase 6; P3 review D2)?\"",
+   "related_ids": [
+    "T-204",
+    "T-112"
+   ],
+   "summary": "A record of every change made to the hosting account, and alerts on suspicious activity, so a break-in or a mistake can be seen and traced. On AWS these are CloudTrail and GuardDuty; other hosts offer their own. On the security checklist beside the firewall (T-204).",
+   "next_action": "When the host is chosen (T-112). AWS: add aws_guardduty_detector (enable = true) and an account aws_cloudtrail with a KMS-encrypted S3 bucket and log-file validation to infrastructure/terraform (bootstrap/ is the natural home, since both are account-level), then run terraform validate on the owner's machine. Vercel or a rented server: turn on that host's account activity log and its security alerts, or the closest it offers. Then propose steward annotations on production-readiness-scorecard.md:178 and architecture/security.md:251 and :255 with file:line proof.",
    "sources": [
     {
      "file": "docs/audits/production-readiness-scorecard.md",
@@ -38181,6 +38189,13 @@
    {
     "on": "2026-10-04",
     "what": "D71: T-190 (company sign-in), T-212, T-213, T-214 and T-216 parked beside T-217 and the SOC 2 items, all waiting on D5's trigger (the first paying customer or the first business-buyer conversation), option A. T-190 notes that D2 settled its backend question. Counts recomputed: parked 121, blocked 21, total 362.",
+    "evidence": [
+     "docs/decisions/2026-10-04-owner-decisions.md"
+    ]
+   },
+   {
+    "on": "2026-10-04",
+    "what": "D72, option B: T-205 parked with the hosting decision beside T-204 and reworded to fit any host; T-195 parked beside the business-tier items (D71) under D5's trigger. Counts recomputed: parked 123, blocked 19, total 362.",
     "evidence": [
      "docs/decisions/2026-10-04-owner-decisions.md"
     ]

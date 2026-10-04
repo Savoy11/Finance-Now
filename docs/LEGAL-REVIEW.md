@@ -158,6 +158,7 @@ listed so it is not rediscovered as new.
 customer or the first conversation with a business buyer. The SOC 2 items were parked under
 it on 2026-09-30; D71 parked T-216 there too, with T-190 (company sign-in), T-212 (an uptime
 guarantee), T-213 (data residency) and T-214 (separate customer environments), beside T-217.
+D72 added T-195 (running in more than one region), which data residency would need.
 
 **G. Tokenized securities** (opened 2026-09-21). Full record:
 `docs/assessments/tokenized-securities-2026-09-21.md`. The SEC's five-year "innovation
