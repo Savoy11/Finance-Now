@@ -62,15 +62,15 @@
   "outstanding": 360,
   "by_status": {
    "closed": 181,
-   "open": 32,
+   "open": 33,
    "parked": 113,
-   "blocked": 33,
+   "blocked": 32,
    "unclear": 1
   },
   "by_owner_role": {
-   "remote-dev": 87,
+   "remote-dev": 88,
    "either": 42,
-   "owner-decision": 147,
+   "owner-decision": 146,
    "owner-machine": 84
   },
   "closed_but_listed_open_in_docs": 60,
@@ -7772,12 +7772,12 @@
   {
    "id": "T-027",
    "title": "P3-W2-S2 / NT2 trade ledger — FIFO vs average cost decision, then /api/user/trades + cost-basis engine + entry UI",
-   "status": "blocked",
+   "status": "open",
    "confidence": "high",
-   "owner_role": "owner-decision",
+   "owner_role": "remote-dev",
    "category": "feature",
    "effort": "large",
-   "blocking_decision": "FIFO is decided (D12, 2026-09-14). Still open, for when the trade ledger is built: one method for every portfolio or a method per portfolio, and how a holding's hand-entered average cost becomes its opening lot.",
+   "blocking_decision": null,
    "related_ids": [
     "NT2",
     "P3-W2-S2",
@@ -7786,7 +7786,7 @@
     "S2"
    ],
    "summary": "Approved 2026-08-18; trade_transactions table exists with zero consumers. First owner decision is the cost-basis method (affects realized P&L users file taxes on) plus a migration story for hand-entered avg_cost holdings.",
-   "next_action": "Put the FIFO-vs-average (and per-portfolio vs global) question to the owner; once answered, start with the pure lot-tracking engine in lib/ with vitest (wash sales, partial lots, same-day round trips) before any /api/user/trades route.",
+   "next_action": "Step 2: /api/user/trades (list one portfolio's trades; add one) and a migration that can mark a portfolio as tracked and a trade as a starting position, with the date optional for a starting position. Settle corrections first: the table is append-only, and under FIFO an offsetting sale would use up the oldest lot rather than the mistaken one, so a correction has to name the trade it cancels. Step 3: the entry screen on /portfolios, with REALIZED_METHOD_LABEL beside every realized figure. Stock splits have no kind of trade yet.",
    "sources": [
     {
      "file": "docs/TASK-QUEUE.md",
@@ -7820,11 +7820,12 @@
     }
    ],
    "progress": {
-    "noted_on": "2026-09-30",
-    "note": "Narrowed 2026-09-30 by the queue sweep: D12 (2026-09-14) chose FIFO for realised P&L — the subproject's \"first decision\" (docs/TASK-QUEUE.md P3-W2-S2). The two sub-questions this item also carried were not ruled on and remain. The blocker was: \"FIFO vs average cost basis for realized P&L (and whether the method is per-portfolio rather than global)? Plus: how are existing hand-entered avg_cost_basis holdings migrated when trades arrive?\"",
+    "noted_on": "2026-10-04",
+    "note": "D65 (2026-10-04) answered the two questions D12 left: FIFO for every portfolio, and anything already owned is entered once as a starting position in a new kind of tracked portfolio, where it is the oldest lot (today's portfolios are not converted). Gains are plain, labelled 'FIFO (oldest units sold first), not adjusted for tax rules'. Step 1 of 3 is built: the lot engine, frontend/src/lib/data/costBasis.ts, with 24 tests. The blocker was: \"FIFO is decided (D12, 2026-09-14). Still open, for when the trade ledger is built: one method for every portfolio or a method per portfolio, and how a holding's hand-entered average cost becomes its opening lot.\"",
     "evidence": [
-     "docs/decisions/2026-09-14-owner-decisions.md",
-     "docs/audits/queue-sweep-2026-09-30.md"
+     "docs/decisions/2026-10-04-owner-decisions.md",
+     "frontend/src/lib/data/costBasis.ts",
+     "frontend/src/lib/data/__tests__/costBasis.test.ts"
     ]
    }
   },
@@ -37963,6 +37964,14 @@
     "evidence": [
      "docs/decisions/2026-10-04-owner-decisions.md",
      "frontend/src/lib/risk/visibility.ts"
+    ]
+   },
+   {
+    "on": "2026-10-04",
+    "what": "T-027 unblocked under D65: FIFO for every portfolio, a new kind of tracked portfolio with anything already owned entered once as a starting position, and plain gains labelled as not adjusted for tax rules. Step 1 of 3, the lot engine (frontend/src/lib/data/costBasis.ts), is built; saving trades and the entry screen remain. Blocked 33 to 32 and open 32 to 33; T-027's owner role moves from owner-decision to remote-dev (147 to 146, 87 to 88). 360 items, unchanged.",
+    "evidence": [
+     "docs/decisions/2026-10-04-owner-decisions.md",
+     "frontend/src/lib/data/costBasis.ts"
     ]
    }
   ]

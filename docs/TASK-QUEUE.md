@@ -1651,6 +1651,15 @@ unlabelled realized P&L is the same class of defect as an undated static table. 
 whether the method is per-portfolio rather than global; a user with holdings in two
 jurisdictions may need both.
 
+> **Decided (2026-10-04).** FIFO, for every portfolio: D12 (2026-09-14) chose FIFO, and D65
+> chose one method over one per portfolio, since trades are kept as made and a second method
+> can be added later without changing saved data. Today's what-if portfolios are not
+> converted: trades go in a new kind of tracked portfolio, where anything already owned is
+> entered once as a starting position, the oldest lot. Gains are plain, labelled
+> `REALIZED_METHOD_LABEL`, with no tax adjustments. Step 1 of 3, the lot engine, is
+> `frontend/src/lib/data/costBasis.ts`; the route and the entry screen are T-027's steps 2
+> and 3. Record: `docs/decisions/2026-10-04-owner-decisions.md`.
+
 **Scope:** `/api/user/trades` CRUD (dynamic segments — must live under `/api/user/`, see
 the `next.config.mjs` rewrite note) · a pure cost-basis engine in `lib/` · an entry UI on
 `/portfolios`.
