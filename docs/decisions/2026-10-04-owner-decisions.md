@@ -4,7 +4,7 @@ Recorded from the owner's answers while working through the blocked list, starti
 T-119, then T-005, then the four sources D54 left out (D55), then T-065 and T-066 (D56), then
 T-192 (D57), then Reddit sign-in, raised with T-246 (D58), then T-204 (D59), then T-294
 (D60), then T-393 (D61), then T-387 (D62), then T-009 (D63), then T-012 (D64), then T-027
-(D65), then T-054 (D66), then T-058 (D67), then T-093 (D68), then T-123 and T-124 (D69). Same form as
+(D65), then T-054 (D66), then T-058 (D67), then T-093 (D68), then T-123 and T-124 (D69), then T-176 (D70). Same form as
 `2026-10-03-owner-decisions.md`: one row per ruling, what it cascades to, and what was
 actually done.
 
@@ -26,6 +26,7 @@ actually done.
 | D67 | T-058 (an estimate of the federal tax on a sale, the second part of the Transfer Fees tax panel), the next item on the blocked list. Offered: keep waiting on D4's legal review (A); clear it as D47 cleared build-by-allocation and build it on the pattern of the tax-equivalent-yield calculator already on municipal fund pages (B); park it with the hidden Transfer Fees page and decide when that page returns (C); or drop it, so the app explains what kind of tax event a step is but never puts a number on the tax (D) | **Option C:** *"Lets go with C; I still need to go back and review the portfolio builder"* → APPLIED | T-058 moves from blocked to parked, beside T-028 (the Transfer Fees rollout hold): the question comes back when that page is restored. D4 is unchanged: its review still gates building the estimator and S5 contribution modeling, and none is engaged (D30). Nothing is built, and part 1, the tax-character panel, stays as it is. The owner's own review of the Portfolio Builder, still to come, is noted on T-064, the S5 scope decision it bears on |
 | D68 | T-093 (the MCP server's `run_audit` tool, which the P3 review's D5 kept on the development machine until it was removed or locked down), the next item on the blocked list. Offered: remove it (A); switch it off but keep the code, as `find_transfer_routes` and `score_options_trade` are kept (B); lock it down so it appears only when the owner turns it on and the server points at the owner's own computer (C); or leave it and park T-093 beside T-094 (D). Recommended: A, unless the owner uses it from Claude Desktop, in which case C | **Option A:** *"Go with option A for T-093"* → APPLIED | `run_audit` is removed from `mcp-server/src/index.ts`, with a dated note where it was, and the server now offers nine tools, all reading `/api/v1` and nothing else. A new test holds it to that: no tool may run a program, touch files or call anything but the API. Its jobs are covered elsewhere: CI type-checks and lints every pull request, and `npm run audit` tests the live-data routes. The P3 review's D5 is settled, so T-093 closes and T-094 (offering the server to agent builders) loses one of its two blockers; D2 remains. The same pass corrected two descriptions that had fallen behind: the server's own description, which every AI client receives on connecting, still offered "an options-trade risk scorer" (off since D64) and "crypto transfer fees" (withheld since 2026-08-22), and its README still said staking results carry six risk dimensions (removed under D26). The launch list's caveat on the server (BUSINESS-CHECKLIST, programmatic surfaces) is gone. That list also still showed the options risk scorer and its API endpoint as shipping; both now say they are switched off under D64, which this records rather than decides |
 | D69 | T-123 (referral sign-up links to crypto exchanges and hardware-wallet makers on the Coins and Wallets pages), the next item on the blocked list, and T-124 (referral links to brokerages on the stock and fund pages), the item after it, which was in the same position. T-123 was blocked on which pages it should cover, with Wallets hidden since 2026-08-22 and exchange-account linking removed (RP-5); T-124 on a reading of brokerage programmes' terms. D49 (2026-09-30) had already ruled out paid or affiliate links at launch on either product and parked T-120 and T-125, but left these two as they were because only those two had been confirmed. Offered for T-123: park it with T-120 and T-125 until after launch, noting the scope facts (A); the same, with the scope answered now as the Coins pages only (B); drop it (C); or leave it blocked (D). Recommended: A, with the same answer offered for T-124 | **Option A for both:** *"go with option A for T-123 and T-124"* → APPLIED | T-123 and T-124 move from blocked to parked, beside T-120 (each programme's terms) and T-125 (the affiliate legal review), all four to be revisited after launch under D49. Nothing is built, and nothing paid is linked: no provider has an `affiliateUrl`. T-123 now records what its scope question will meet: Wallets is hidden (T-030) and exchange-account linking is gone (RP-5), so only the Coins pages remain today; those pages link only to each project's website, whitepaper, news stories and reserve reports, so exchange or wallet sign-ups there would be new links rather than paid versions of existing ones, and the UK's crypto-promotion rules fall to T-125. T-124 keeps its question for after launch: whether brokerage programmes allow a research or comparison setting, read against the deployment that will exist then (its D22 note). The note on D49 that left these two out now points here |
+| D70 | T-176 (whether the Pump Report encourages day trading, and whether it ships at launch), the next item on the blocked list. RP-5 (2026-08-18) had named it as the surface the owner's day-trading concern pointed at and left it as a separate decision. Put to the owner with what it shows in both places: the Pump Report page (a web search for fraud reports on a wallet address, labelled clean, suspicious, flagged or critical) and a Pump Report tab on each coin's page (an AI fraud search on the coin and, for 20 well-known coins, a live "collapse risk" grade and 0–10 pump score from 24-hour price and volume, refreshed every 2 minutes), with the note that the coin tab's grade sits against RP-6 and D64. Offered: keep the page and switch the coin tab off under D64 (A, recommended); switch off only the live grade (B); hide all of it at launch (C); or keep everything (D) | **Keep it, all of it:** *"I believe it can stay; I dont think that it encourages day trading.  The goal of the pump report is to combat day trading and meme trading by alerting users of securities that are being targeted by these types of investors"* → APPLIED | T-176 closes. The Pump Report ships in the initial rollout as it is: the address page and the coin tab, its live grade and score included. They stay outside D64's switch on the owner's reading of what they are for, an alert that an asset is being targeted by pump and meme traders, not a rating of how risky it is to own. No code changes. The records that said the Pump Report only rates wallet addresses are corrected: D64's note above, the comment in `lib/risk/visibility.ts`, and RP-8. RP-5's open question is marked settled, the decision is added to `docs/audits/rejected-proposals.md`'s table of decisions that rejected nothing, and CLAUDE.md now describes the coin tab, which it did not mention |
 
 ## Notes
 
@@ -313,6 +314,10 @@ Not covered: the Pump Report's fraud-signal score (0–10) and AI suspicion scor
 rate scam signals on wallet addresses rather than how risky an asset is to own, and the
 standard statistics D14 kept (Sharpe, Sortino, volatility, drawdown, beta on Compare).
 The session named the Pump Report scores to the owner as left on.
+(Corrected under D70, the same evening: that describes the Pump Report page. The Pump
+Report tab on each coin's page also shows a 0–10 signal and a "collapse risk" grade for the
+coin itself, worked out from 24-hour price and volume. The owner, told so, kept both outside
+D64.)
 
 **D64: what still describes the ratings.** The Methodology Guide's Section 3 (T-359, a
 Google Doc the owner maintains) explains how Portfolios' tiers and the fund band are
@@ -525,3 +530,23 @@ A for T-093"*).
 - **Two different D5s.** This D5 is the P3 review's (2026-08-17, Appendix E of
   `docs/assessments/P3-production-review.md`). The D5 in `2026-09-14-owner-decisions.md` is
   SOC 2 and is unaffected.
+
+**D70: what the Pump Report shows, and why it stays** (T-176; *"I believe it can stay"*).
+
+- **The Pump Report page** (`/pump-report`). A wallet address goes in; an AI searches the
+  public web for fraud reports on it (rug pulls, flagged wallets, scam sites) and labels it
+  clean, suspicious, flagged or critical, with its sources. A deeper investigation and a
+  chat follow. No prices and nothing about when to buy or sell.
+- **The Pump Report tab on each coin's page** (`/assets/[id]`). Opening it starts the same
+  kind of AI fraud search on the coin itself. For the 20 coins in
+  `/live-data/pump-report/metrics`, it also shows a "Live Heuristic Signal": a 0–10 score
+  and a "collapse risk" grade from Low to Critical, worked out from the coin's 24-hour price
+  move and its volume against market cap, refreshed every 2 minutes. Until today no record
+  described this tab: CLAUDE.md's Coin Detail row did not mention it, and D64's note above
+  described the Pump Report as rating wallet addresses only.
+- **Why it stays.** The owner's purpose for it is the opposite of the concern RP-5 recorded:
+  it is meant to work against day trading and meme trading, by alerting users that an asset
+  is being targeted by those traders. On that reading the coin tab's grade is a warning about
+  pump activity, not a rating of how risky a coin is to own, so D64's switch does not cover
+  it. The tension with RP-6 and D64 was put to the owner before the answer; the answer is
+  recorded as given.

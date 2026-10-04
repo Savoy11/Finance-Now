@@ -22,8 +22,11 @@
  *     lib/modules/registry.ts, and the MCP tool is commented out in
  *     mcp-server/src/index.ts; those three do not read this constant.
  *
- * The Pump Report's fraud-signal score and AI suspicion score are not covered:
- * they rate scam signals on wallet addresses, not how risky an asset is to own.
+ * The Pump Report is not covered (D70, 2026-10-04). Its page rates scam signals
+ * on wallet addresses, and its tab on each coin's page shows a 0-10 pump signal
+ * and a "collapse risk" grade worked out from 24-hour price and volume. The
+ * owner kept both as an alert that an asset is being targeted by pump and meme
+ * traders, not a rating of how risky it is to own.
  *
  * TO RESTORE, after the rebuild and the compliance research (see D64's items in
  * docs/audits/task-queue-2026-09-07.json): set this to true, re-add the nav
