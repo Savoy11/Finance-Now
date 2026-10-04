@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid, numeric, integer, uniqueIndex, index } from 'drizzle-orm/pg-core'
+import { pgTable, text, timestamp, uuid, numeric, integer, boolean, uniqueIndex, index } from 'drizzle-orm/pg-core'
 import { users } from './auth'
 import { instruments } from './instruments'
 
@@ -17,8 +17,8 @@ export const portfolios = pgTable('portfolios', {
   name: text('name').notNull(),
   description: text('description').notNull().default(''),
   // Hypothetical capital for allocation-model portfolios (the existing
-  // /portfolios and /portfolio-builder behaviour). Null for portfolios that
-  // are a real ledger of trades, where value comes from holdings instead.
+  // /portfolios and /portfolio-builder behaviour). Null for a tracked
+  // portfolio (tracked_portfolios below), whose value comes from its trades.
   startingCapital: numeric('starting_capital', { precision: 20, scale: 2 }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -34,13 +34,14 @@ export const holdings = pgTable('holdings', {
   userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   portfolioId: uuid('portfolio_id').notNull().references(() => portfolios.id, { onDelete: 'cascade' }),
   instrumentId: uuid('instrument_id').notNull().references(() => instruments.id, { onDelete: 'restrict' }),
-  // Real position size. Null on allocation-model portfolios that only express
-  // target weights.
+  // Real position size. No route writes it: what-if holdings carry target
+  // weights, and a tracked portfolio keeps no holdings rows at all, because its
+  // positions are worked out from its trades (lib/data/costBasis.ts).
   quantity: numeric('quantity', { precision: 38, scale: 18 }),
   // Target weight 0–100 for allocation-model portfolios; null on real ledgers.
   targetAllocPct: numeric('target_alloc_pct', { precision: 7, scale: 4 }),
-  // Average cost per unit. Maintained by the trade ledger when trades exist,
-  // or entered directly when the user just states a cost basis.
+  // A what-if holding's entry price, as the user typed it (the Portfolios
+  // page's "entry price"). Tracked portfolios do not use it (see quantity).
   avgCostBasis: numeric('avg_cost_basis', { precision: 20, scale: 8 }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -51,12 +52,28 @@ export const holdings = pgTable('holdings', {
   userIdx: index('holdings_user_idx').on(t.userId),
 }))
 
+// A portfolio that is a real record of trades (D65, 2026-10-04), as opposed to
+// the what-if portfolios above. A row here is the marker, made with the
+// portfolio and never added later, so a portfolio is tracked from its first
+// day or never. It is a table of its own rather than a column on portfolios
+// because the existing portfolio queries select every column of that table:
+// a new column would break the Portfolios page until the migration was run.
+export const trackedPortfolios = pgTable('tracked_portfolios', {
+  portfolioId: uuid('portfolio_id').primaryKey().references(() => portfolios.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  userIdx: index('tracked_portfolios_user_idx').on(t.userId),
+}))
+
 export const TRADE_SIDES = ['buy', 'sell', 'transfer_in', 'transfer_out'] as const
 export type TradeSide = (typeof TRADE_SIDES)[number]
 
 // The append-only ledger cost basis and realized P&L derive from. Nothing here
-// is ever mutated in place — a correction is a new offsetting row, so the
-// history stays auditable.
+// is ever changed or removed. A mistaken trade is cancelled by a row in
+// trade_cancellations that names it, and the right one is added as a new
+// trade: under FIFO an offsetting sale would use up the oldest lot rather than
+// the mistaken one, so a correction has to name what it cancels.
 export const tradeTransactions = pgTable('trade_transactions', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
@@ -66,7 +83,11 @@ export const tradeTransactions = pgTable('trade_transactions', {
   quantity: numeric('quantity', { precision: 38, scale: 18 }).notNull(),
   pricePerUnit: numeric('price_per_unit', { precision: 20, scale: 8 }).notNull(),
   feeUsd: numeric('fee_usd', { precision: 20, scale: 2 }).notNull().default('0'),
-  executedAt: timestamp('executed_at', { withTimezone: true }).notNull(),
+  // Null only on a starting position whose date the user did not give (D65).
+  executedAt: timestamp('executed_at', { withTimezone: true }),
+  // A starting position (D65): units already owned when recording began, at
+  // the average price paid. Always a transfer in, and the oldest lot.
+  opening: boolean('opening').notNull().default(false),
   note: text('note'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (t) => ({
@@ -74,6 +95,17 @@ export const tradeTransactions = pgTable('trade_transactions', {
   // Cost-basis recomputation always walks one portfolio's trades in time
   // order — this index is what keeps that a range scan.
   ledgerIdx: index('trade_tx_ledger_idx').on(t.portfolioId, t.instrumentId, t.executedAt),
+}))
+
+// Cancelling a trade, which is how a mistake is corrected (see above). One row
+// per cancelled trade; the lot engine leaves cancelled trades out.
+export const tradeCancellations = pgTable('trade_cancellations', {
+  tradeId: uuid('trade_id').primaryKey().references(() => tradeTransactions.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  reason: text('reason').notNull().default(''),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  userIdx: index('trade_cancellations_user_idx').on(t.userId),
 }))
 
 export const watchlists = pgTable('watchlists', {
@@ -102,5 +134,7 @@ export const watchlistItems = pgTable('watchlist_items', {
 export type Portfolio = typeof portfolios.$inferSelect
 export type Holding = typeof holdings.$inferSelect
 export type TradeTransaction = typeof tradeTransactions.$inferSelect
+export type TrackedPortfolio = typeof trackedPortfolios.$inferSelect
+export type TradeCancellation = typeof tradeCancellations.$inferSelect
 export type Watchlist = typeof watchlists.$inferSelect
 export type WatchlistItem = typeof watchlistItems.$inferSelect

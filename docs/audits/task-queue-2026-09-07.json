@@ -7786,7 +7786,7 @@
     "S2"
    ],
    "summary": "Approved 2026-08-18; trade_transactions table exists with zero consumers. First owner decision is the cost-basis method (affects realized P&L users file taxes on) plus a migration story for hand-entered avg_cost holdings.",
-   "next_action": "Step 2: /api/user/trades (list one portfolio's trades; add one) and a migration that can mark a portfolio as tracked and a trade as a starting position, with the date optional for a starting position. Settle corrections first: the table is append-only, and under FIFO an offsetting sale would use up the oldest lot rather than the mistaken one, so a correction has to name the trade it cancels. Step 3: the entry screen on /portfolios, with REALIZED_METHOD_LABEL beside every realized figure. Stock splits have no kind of trade yet.",
+   "next_action": "Step 3: the screen. A tracked portfolio on /portfolios (or beside it) that lists its trades, records a trade or a starting position, cancels a mistaken one, and shows each holding's lots, value at live prices and gains, with REALIZED_METHOD_LABEL beside every realized figure. Migration 0005 must be run on the owner's machine (npm run db:migrate) before tracked portfolios work. Stock splits have no kind of trade yet.",
    "sources": [
     {
      "file": "docs/TASK-QUEUE.md",
@@ -7821,11 +7821,13 @@
    ],
    "progress": {
     "noted_on": "2026-10-04",
-    "note": "D65 (2026-10-04) answered the two questions D12 left: FIFO for every portfolio, and anything already owned is entered once as a starting position in a new kind of tracked portfolio, where it is the oldest lot (today's portfolios are not converted). Gains are plain, labelled 'FIFO (oldest units sold first), not adjusted for tax rules'. Step 1 of 3 is built: the lot engine, frontend/src/lib/data/costBasis.ts, with 24 tests. The blocker was: \"FIFO is decided (D12, 2026-09-14). Still open, for when the trade ledger is built: one method for every portfolio or a method per portfolio, and how a holding's hand-entered average cost becomes its opening lot.\"",
+    "note": "Steps 1 and 2 of 3 are built. Step 1 (#273): the lot engine, frontend/src/lib/data/costBasis.ts. Step 2: saving trades. Routes under /api/user/tracked-portfolios create, list, rename and remove tracked portfolios and record and cancel trades; their input rules are in frontend/src/lib/data/tradeLedger.ts, and migration 0005 adds the tracked-portfolio marker table, the cancellation table and the starting-position column. A mistake is cancelled, never edited or removed. Only coins, stocks and funds can be tracked. The what-if routes leave tracked portfolios out. Checked end to end on a local Postgres, before and after the migration. The screen (step 3) remains.",
     "evidence": [
      "docs/decisions/2026-10-04-owner-decisions.md",
-     "frontend/src/lib/data/costBasis.ts",
-     "frontend/src/lib/data/__tests__/costBasis.test.ts"
+     "frontend/drizzle/0005_trade-ledger.sql",
+     "frontend/src/lib/data/tradeLedger.ts",
+     "frontend/src/lib/server/trackedPortfolios.ts",
+     "frontend/src/lib/data/__tests__/tradeLedger.test.ts"
     ]
    }
   },
@@ -37972,6 +37974,14 @@
     "evidence": [
      "docs/decisions/2026-10-04-owner-decisions.md",
      "frontend/src/lib/data/costBasis.ts"
+    ]
+   },
+   {
+    "on": "2026-10-04",
+    "what": "T-027 step 2 built under D65: saving trades (routes under /api/user/tracked-portfolios, migration 0005, input rules in frontend/src/lib/data/tradeLedger.ts). T-027 stays open for step 3, the screen. No status moved; counts unchanged.",
+    "evidence": [
+     "docs/decisions/2026-10-04-owner-decisions.md",
+     "frontend/src/lib/data/tradeLedger.ts"
     ]
    }
   ]

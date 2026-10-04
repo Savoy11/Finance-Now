@@ -1656,9 +1656,10 @@ jurisdictions may need both.
 > can be added later without changing saved data. Today's what-if portfolios are not
 > converted: trades go in a new kind of tracked portfolio, where anything already owned is
 > entered once as a starting position, the oldest lot. Gains are plain, labelled
-> `REALIZED_METHOD_LABEL`, with no tax adjustments. Step 1 of 3, the lot engine, is
-> `frontend/src/lib/data/costBasis.ts`; the route and the entry screen are T-027's steps 2
-> and 3. Record: `docs/decisions/2026-10-04-owner-decisions.md`.
+> `REALIZED_METHOD_LABEL`, with no tax adjustments. Steps 1 and 2 of 3 are built: the lot
+> engine (`frontend/src/lib/data/costBasis.ts`) and saving trades (routes under
+> `/api/user/tracked-portfolios`, migration 0005). The entry screen is step 3. Record:
+> `docs/decisions/2026-10-04-owner-decisions.md`.
 
 **Scope:** `/api/user/trades` CRUD (dynamic segments — must live under `/api/user/`, see
 the `next.config.mjs` rewrite note) · a pure cost-basis engine in `lib/` · an entry UI on

@@ -7,6 +7,7 @@ import {
   PORTFOLIO_UUID_RE, replacePortfolio, validatePortfolio,
   type IncomingPortfolio,
 } from '@/lib/server/portfolioPersistence'
+import { isTrackedPortfolio } from '@/lib/server/trackedPortfolios'
 
 // Single-portfolio operations.
 //   PUT    /api/user/portfolios/[id]  → full-document replace (fields +
@@ -42,6 +43,15 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
   const v = validatePortfolio(body as IncomingPortfolio)
   if ('error' in v) return NextResponse.json({ ok: false, error: v.error }, { status: 400 })
+
+  // A tracked portfolio's holdings come from its trades (D65); replacing them
+  // with target weights would turn it into something it is not.
+  if (await isTrackedPortfolio(userId, id)) {
+    return NextResponse.json(
+      { ok: false, error: 'This is a tracked portfolio: its holdings come from its trades, so it cannot be edited as a what-if portfolio.' },
+      { status: 409 },
+    )
+  }
 
   const replaced = await replacePortfolio(userId, id, v)
   if (!replaced) return NextResponse.json({ ok: false, error: 'Portfolio not found' }, { status: 404 })

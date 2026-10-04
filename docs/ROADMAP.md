@@ -212,9 +212,10 @@ module registry.
 >   portfolio. And there is nothing to migrate: those holdings carry a percentage of
 >   pretend money and an optional entry price, never a quantity, so today's portfolios
 >   stay as they are and trades go in a new kind of tracked portfolio, where anything
->   already owned is entered once as a starting position. The lot-tracking function now
->   exists (`lib/data/costBasis.ts`, pure and tested). `/api/user/trades` and the entry
->   screen do not, so the "Done when" below is still not met.
+>   already owned is entered once as a starting position. The lot-tracking function
+>   (`lib/data/costBasis.ts`, pure and tested) and the routes that save trades (under
+>   `/api/user/tracked-portfolios`, migration 0005) now exist. The entry screen does not,
+>   so the "Done when" below is still not met.
 - Migrate portfolios / wallets / watchlist pages from localStorage & mocks to
   DB-backed API routes.
 - Trade transaction history (buy/sell/transfer) → cost basis, realized and
