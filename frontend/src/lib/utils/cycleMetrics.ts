@@ -76,7 +76,7 @@ export const CYCLE_COPY = {
   panelIntro:
     'Where past-cycle metrics currently read. This panel describes the market — it does not predict it, and it produces no score.',
   indicatorFailureNote:
-    'In October 2025, the classic cycle-top indicators (Pi Cycle, MVRV bands and peers) did not fire before the peak and the ~50% decline that followed. Metrics trained on earlier, retail-driven cycles degraded when the buyer base changed. Read every figure here as history, not signal.',
+    'In October 2025, the classic cycle-top indicators (Pi Cycle, MVRV bands and peers) did not fire before the peak and the fall of more than half that followed. Metrics trained on earlier, retail-driven cycles degraded when the buyer base changed. Read every figure here as history, not signal.',
   absentMetricsNote:
     'Not shown here: MVRV, NUPL, SOPR and holder-flow metrics need realized-cap data from paid on-chain providers, and this app has no source for them. An absent metric with a stated reason beats a proxy wearing its name.',
   halvingCaveat:
@@ -88,7 +88,7 @@ export const CYCLE_COPY = {
   rotationCaveat:
     'A 30-day variant computed over this app’s tracked coins (rank ≤ 50, stablecoins excluded) — NOT the standard Altcoin Season Index, which uses 90 days over CoinGecko’s top 50. In prior cycles a majority of large coins outperforming BTC marked late-cycle rotation; in this cycle that rotation has not arrived.',
   piCycleCaveat:
-    'The 111-day average crossing 2× the 350-day average marked the 2013, 2017 and 2021 tops within days — and did not fire before the October 2025 peak and the ~50% decline that followed. It is shown here as a famous indicator with a documented recent miss, not as a signal.',
+    'The 111-day average crossing 2× the 350-day average marked the 2013, 2017 and 2021 tops within days — and did not fire before the October 2025 peak and the fall of more than half that followed. It is shown here as a famous indicator with a documented recent miss, not as a signal.',
   fearGreedCaveat:
     'A sentiment composite (volatility, volume, social activity, dominance) from alternative.me — a mood reading, not a valuation.',
 } as const

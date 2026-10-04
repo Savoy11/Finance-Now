@@ -63,6 +63,20 @@ describe('vocabulary guard', () => {
   })
 })
 
+describe('cycle history rows', () => {
+  // The table prints the labels and the drawdown chart reads maxDrawdownPct, so
+  // editing one without the other shows two different falls for one cycle.
+  // The labels are rounded (~$), hence a point of slack.
+  const usd = (label: string) => Number(label.match(/\$([\d,]+)/)![1].replace(/,/g, ''))
+
+  it('each drawdown matches its own peak and trough to within a point', () => {
+    for (const c of CYCLE_HISTORY) {
+      const fromLabels = (usd(c.troughLabel) / usd(c.peakLabel) - 1) * 100
+      expect(Math.abs(fromLabels - c.maxDrawdownPct), `${c.halving} cycle`).toBeLessThanOrEqual(1)
+    }
+  })
+})
+
 describe('cycle history provenance', () => {
   it('reports age and staleness from an injected now', () => {
     expect(cycleHistoryAgeDays(new Date('2026-08-30T12:00:00Z'))).toBe(1)

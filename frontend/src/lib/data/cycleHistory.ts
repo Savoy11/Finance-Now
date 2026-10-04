@@ -52,10 +52,18 @@ export const CYCLE_HISTORY: CycleRecord[] = [
     maxDrawdownPct: -77, halvingToPeakMonths: 18,
     note: 'Leverage and credit contagion (Luna, FTX) drove the unwind.',
   },
+  // Open row. Its "so far" low was re-checked on 2026-10-04 (D61) and moved from
+  // 'Jun 2026 · ~$59,000', −53%: FMP's daily BTCUSD low on 1 Jul 2026 (UTC) was
+  // $57,718, and Crypto.com's candles give $57,737 for July against $58,015 for
+  // June. The 2026-08-29 compile used press reports of a ~$59k low on 30 June.
+  // The peak is an intraday high (FMP: $126,296, 6 Oct 2025), so the trough is
+  // an intraday low. The row closes when BTC trades above that peak or at the
+  // 2028 halving, whichever comes first (D61, T-393). One re-checked row does
+  // not re-date the table, so CYCLE_HISTORY_LAST_VERIFIED is unchanged.
   {
     halving: '2024', halvingDate: '2024-04-20',
-    peakLabel: 'Oct 2025 · ~$126,200', troughLabel: 'Jun 2026 · ~$59,000 (so far)',
-    maxDrawdownPct: -53, halvingToPeakMonths: 18, open: true,
+    peakLabel: 'Oct 2025 · ~$126,200', troughLabel: 'Jul 2026 · ~$57,700 (so far)',
+    maxDrawdownPct: -54, halvingToPeakMonths: 18, open: true,
     note: 'ETF era. Shallowest drawdown on record; the classic top indicators did not fire before the peak.',
   },
 ]
