@@ -63,8 +63,8 @@
   "by_status": {
    "closed": 180,
    "open": 31,
-   "parked": 112,
-   "blocked": 34,
+   "parked": 113,
+   "blocked": 33,
    "unclear": 1
   },
   "by_owner_role": {
@@ -7651,12 +7651,12 @@
   {
    "id": "T-009",
    "title": "Settle the delayed-data convention before any keyed chain route ships",
-   "status": "blocked",
+   "status": "parked",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "decision",
    "effort": "medium",
-   "blocking_decision": "Either delayed-with-visible-delay-labeling is an accepted category (a new, explicit convention, rendered on every affected surface), or chains stay not-available until a paid source is configured",
+   "blocking_decision": "PARKED 2026-10-04 — D63 (2026-10-04): parked beside the other options items (T-060 to T-063, parked under D9). The question applies only if options chains are reopened (RP-1). Of RP-1's reopen triggers, a licensed source worth its cost is a paid decision D21 defers, and live use showing hand entry is the wrong shape needs the launch; the third, Yahoo's options feed, no longer applies, since yahoo.com has been prohibited on its terms since 2026-08-06. The ledger carried it as blocked until 2026-10-04. Was: \"Either delayed-with-visible-delay-labeling is an accepted category (a new, explicit convention, rendered on every affected surface), or chains stay not-available until a paid source is configured\"",
    "related_ids": [
     "P2-O1",
     "P2-O3",
@@ -7675,7 +7675,17 @@
      "lines": "148-154, 187-191",
      "quote": "**If B is ever taken, the delayed-data convention must be settled first**, before any route ships: every surface showing a delayed number renders the delay in the `ProvenanceNotice` pattern (always visible, never only-when-stale), and the delay metadata travels through `/api/v1` verbatim"
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-10-04",
+    "note": "Parked under D63; the question stays unanswered on purpose, as the 2026-08-05 decision recorded it. Checked 2026-10-04: the app has no options chain route (RP-1 rejected 2026-08-05, Option A), and the Trade Risk Scorer at /equities/options takes hand-entered legs. Draft v1 of the disclosures and the site footer already say data \"may be delayed\"; that is a general notice, not the per-screen delay label this item asks about.",
+    "evidence": [
+     "docs/decisions/2026-10-04-owner-decisions.md",
+     "docs/audits/rejected-proposals.md",
+     "docs/assessments/P2-O1-options-data.md",
+     "frontend/src/lib/server/sourceTerms.ts"
+    ]
+   }
   },
   {
    "id": "T-011",
@@ -37858,6 +37868,14 @@
     "evidence": [
      "docs/decisions/2026-10-04-owner-decisions.md",
      "frontend/src/lib/technicals/__tests__/sweep.test.ts"
+    ]
+   },
+   {
+    "on": "2026-10-04",
+    "what": "T-009 parked under D63 beside the other options items: whether delayed prices, clearly labelled, are allowed is settled only if options chains are reopened (RP-1). Blocked 34 to 33, parked 112 to 113.",
+    "evidence": [
+     "docs/decisions/2026-10-04-owner-decisions.md",
+     "docs/audits/rejected-proposals.md"
     ]
    }
   ]

@@ -4,7 +4,7 @@
 operation: what was done, and where the prior state lives. Same pattern as
 `branch-restarts-2026-10-03.md`.
 
-The session branch `ccr-3ad5880b-hsbobf` was force-pushed (`--force-with-lease`) five times on
+The session branch `ccr-3ad5880b-hsbobf` was force-pushed (`--force-with-lease`) six times on
 this date. Its previous work had already been **squash-merged** into `main`, so the branch
 was restarted from the latest `main` for the next change rather than stacking new commits
 on history `main` already holds. No unmerged work was discarded.
@@ -16,6 +16,7 @@ on history `main` already holds. No unmerged work was discarded.
 | 2026-10-04 ~11:47 | `a7184af` | `7be3b3e` (#267: D57, D58) | `refs/pull/267/head`; tag `archive/ccr-3ad5880b-hsbobf@a7184af` | T-204 parked with the hosting decision (D59), restarted from `7be3b3e` |
 | 2026-10-04 ~13:20 | `b99818d` | `fc58ef3` (#268: D59, D60) | `refs/pull/268/head`; tag `archive/ccr-3ad5880b-hsbobf@b99818d` | T-393's open cycle row corrected and the item parked (D61), restarted from `fc58ef3` |
 | 2026-10-04 ~13:40 | `4bfa1fb` | `f4d9a23` (#269: D61) | `refs/pull/269/head`; tag `archive/ccr-3ad5880b-hsbobf@4bfa1fb` | T-387 parked with a test on the swept coin list (D62), restarted from `f4d9a23` |
+| 2026-10-04 ~13:50 | `240a787` | `0ad260a` (#270: D62) | `refs/pull/270/head`; tag `archive/ccr-3ad5880b-hsbobf@240a787` | T-009 parked beside the other options items (D63), restarted from `0ad260a` |
 
 Each tag was created by `.github/workflows/archive-branch.yml` when its PR merged.
 
@@ -36,7 +37,10 @@ git checkout -b ccr-restore-268 archive/ccr-3ad5880b-hsbobf@b99818d
 
 git fetch origin refs/pull/269/head:restore-269
 git checkout -b ccr-restore-269 archive/ccr-3ad5880b-hsbobf@4bfa1fb
+
+git fetch origin refs/pull/270/head:restore-270
+git checkout -b ccr-restore-270 archive/ccr-3ad5880b-hsbobf@240a787
 ```
 
 None of these is needed for anything: the squash commits `a6264e5`, `f498966`,
-`7be3b3e`, `fc58ef3` and `f4d9a23` are on `main` and carry the whole of each change.
+`7be3b3e`, `fc58ef3`, `f4d9a23` and `0ad260a` are on `main` and carry the whole of each change.
