@@ -69,8 +69,12 @@ describe('D64: risk ratings are switched off', () => {
     expect(code('next.config.mjs')).toMatch(/source: '\/equities\/options', destination: '\/equities'/)
   })
 
-  it('the MCP server registers no options scoring tool', () => {
-    expect(code('../mcp-server/src/index.ts')).not.toContain("'score_options_trade'")
+  it('the MCP server registers no options scoring tool, and does not describe itself as having one', () => {
+    const mcp = code('../mcp-server/src/index.ts')
+    expect(mcp).not.toContain("'score_options_trade'")
+    // Every client receives the server's description when it connects. It ended
+    // "and an options-trade risk scorer" until 2026-10-04, after the tool was off.
+    expect(mcp).not.toMatch(/risk scorer/i)
   })
 
   it('the agent prompts no longer send anyone to the scorer', () => {

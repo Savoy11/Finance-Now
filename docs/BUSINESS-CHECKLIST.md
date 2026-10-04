@@ -197,7 +197,7 @@ work at v1; it does **not** move the line onto the fence, which takes a decision
 - Quotes, price chart, OHLCV/TA, trailing returns — *accepted 🔑: keyed; catalog `ref` prices with the amber tag when no key is held; returns `source: none` rather than fabricated*
 - `/equities/news` — *accepted 🟡: CNBC only (MarketWatch removed on terms), no per-ticker feed*
 - `/equities/social` — *accepted 🟡: StockTwits only*
-- `/equities/scanner` · `/equities/options` (Trade Risk Scorer) · `/equities/calendar` — *accepted 🟡: earnings live, economic calendar empty on the free tier*
+- `/equities/scanner` · ~~`/equities/options` (Trade Risk Scorer)~~ *switched off under D64 (2026-10-04) until the risk engine is rebuilt (T-420), its address redirecting to `/equities`* · `/equities/calendar` — *accepted 🟡: earnings live, economic calendar empty on the free tier*
 
 **Macro Markets module**
 - `/macro/news` · `/macro/currencies` with the two-tier converter · `/macro/rates` with the Treasury curve — all 🟢 keyless
@@ -209,7 +209,7 @@ work at v1; it does **not** move the line onto the fence, which takes a decision
 
 **Portfolio Builder (premium)** — both modes, saved plans, the drift monitor
 
-**Programmatic surfaces** — `/api/v1/*` (every listed endpoint answers; `transfer/routes` answers 503 by decision) and the MCP server's tools, less `find_transfer_routes` (withheld) and with `run_audit`'s shipping status still open (D5)
+**Programmatic surfaces** — `/api/v1/*` (every listed endpoint answers; `transfer/routes` and, since D64, `options/score` answer 503 by decision) and the MCP server's tools, less `find_transfer_routes` and `score_options_trade` (both withheld; the second since D64). `run_audit` was removed on 2026-10-04 (D68), which settles the P3 review's D5: every tool left reads `/api/v1` and nothing else
 
 **Deliberately absent from this list, and why:** Transfer Fees and Wallets (hidden — fence) ·
 every backtest surface (hidden — fence) · futures term structure and CUSIP bond quotes (🔴, no

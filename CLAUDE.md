@@ -1590,7 +1590,7 @@ A standalone Node.js MCP server at `mcp-server/` (repo root) that exposes Financ
 | `get_security_history` | Daily close history + 52-week range for any quotable symbol |
 | `get_yield_curve` | Official Treasury par curve with spreads and shape |
 | `get_fx_rates` | Daily ECB reference FX rates (official tier) |
-| `run_audit` | ⚠ Dev/maintenance tool, not market data: shells out (`npx tsc`), probes live-data routes, walks the frontend source tree. Whether it ships in any externally distributed build is an **open owner decision (P3 review D5)** — documented here so the tool count stops drifting, not as an endorsement |
+| ~~`run_audit`~~ | ⚪ **REMOVED 2026-10-04 (D68)** — a maintenance tool, not market data: it ran `npx tsc` on the host (which downloads and runs a package, unasked, where TypeScript is missing), called eight live-data routes and read the frontend's code files. Removed rather than locked down; CI and `npm run audit` do its checks better. The server is **data-only** now: every tool reads `/api/v1` and nothing else, held by `lib/server/__tests__/mcpDataOnly.test.ts`. This settles the P3 review's D5 (not the 2026-09-14 D5, which is SOC 2) |
 | ~~`score_options_trade`~~ | ⚪ **WITHHELD 2026-10-04 (D64)** — commented out in `mcp-server/src/index.ts` with every other risk rating until the risk engine is rebuilt. When on: risk-score a user-described options position (0–100, higher = safer, per-dimension) |
 
 ### Setup (build once)
