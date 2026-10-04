@@ -13,8 +13,9 @@
 import type { TradeSide } from '@/lib/db/schema/invest'
 import { CLASS_LABELS, INSTRUMENT_BY_KEY, isSecurityKey, type InstrumentClass } from './instruments'
 import {
-  COST_BASIS_METHOD, LEDGER_SIDES, REALIZED_METHOD_LABEL, computeCostBasis, tradeProblem,
-  type CostBasis, type LedgerTrade,
+  COST_BASIS_METHOD, LEDGER_SIDES, REALIZED_METHOD_LABEL, computeCostBasis, differenceUsd, sumUsd,
+  toCents, tradeProblem, valueAtPrice,
+  type CostBasis, type LedgerIssue, type LedgerTrade,
 } from './costBasis'
 
 /** The most trades one portfolio keeps. Recording past it is refused; nothing is ever removed to make room. */
@@ -53,7 +54,7 @@ const FUTURE_ALLOWANCE_MS = 24 * 60 * 60 * 1000
  * exchange rates, and rates are yields or futures points, so their figures
  * would not mean what the engine assumes.
  */
-const TRACKABLE: ReadonlySet<InstrumentClass> = new Set(['crypto', 'equity', 'etf', 'mutual'])
+export const TRACKABLE_CLASSES: ReadonlySet<InstrumentClass> = new Set(['crypto', 'equity', 'etf', 'mutual'])
 
 /** Whether an instrument key can go in a tracked portfolio, and if not, why. */
 export function trackableInstrument(key: string): { ok: true } | { ok: false; reason: string } {
@@ -64,7 +65,7 @@ export function trackableInstrument(key: string): { ok: true } | { ok: false; re
   // Keys the catalog does not know are classed as the instrument resolver
   // classes them: a security key is a stock, anything else a coin.
   const cls: InstrumentClass = known?.class ?? (isSecurityKey(key) ? 'equity' : 'crypto')
-  if (TRACKABLE.has(cls)) return { ok: true }
+  if (TRACKABLE_CLASSES.has(cls)) return { ok: true }
   return {
     ok: false,
     reason: `${known?.name ?? key} is a ${CLASS_LABELS[cls].toLowerCase()} instrument. Trade history covers coins, stocks and funds, which are priced in dollars per unit; this one is quoted another way.`,
@@ -317,3 +318,138 @@ export function buildLedgerView(trades: readonly StoredTrade[], cancellations: r
       .sort((a, b) => a.symbol.localeCompare(b.symbol) || a.instrumentKey.localeCompare(b.instrumentKey)),
   }
 }
+
+// ─── Valuing it at live prices ───────────────────────────────────────────────
+
+export interface HoldingValue {
+  instrumentKey: string
+  symbol: string
+  name: string
+  quantityHeld: string
+  costHeldUsd: string
+  averageCostUsd: string | null
+  /** The live price used, or null when there is none. */
+  priceUsd: number | null
+  /** Units held times the live price; null with no live price. */
+  valueUsd: string | null
+  /** Value less what the units held cost; null with no live price. */
+  unrealizedUsd: string | null
+  realizedGainUsd: string
+  realizedFromStartingPositionUsd: string
+  issues: LedgerIssue[]
+}
+
+export interface LedgerTotals {
+  /** What everything held cost. */
+  costHeldUsd: string
+  /** What the priced holdings cost: the figure value is compared against. */
+  pricedCostUsd: string
+  /** Priced holdings only. A holding with no live price is left out, never valued at cost. */
+  valueUsd: string
+  unrealizedUsd: string
+  realizedGainUsd: string
+  realizedFromStartingPositionUsd: string
+  /** Holdings with units still held. */
+  heldCount: number
+  /** Of those, how many have a live price. */
+  pricedCount: number
+  /** Symbols held with no live price. */
+  unpriced: string[]
+}
+
+const isHeld = (h: HoldingView) => h.basis.quantityHeld !== '0'
+
+/**
+ * Each holding at its live price, and the portfolio's totals. Prices are keyed
+ * by instrument key, as fetchInstrumentPrices returns them. Value and unrealized
+ * gain count priced holdings only, and the totals say how many that is.
+ */
+export function valueLedger(view: LedgerView, prices: Readonly<Record<string, number>>): { holdings: HoldingValue[]; totals: LedgerTotals } {
+  const holdings: HoldingValue[] = view.holdings.map((h) => {
+    const held = isHeld(h)
+    const price = held ? prices[h.instrumentKey] ?? null : null
+    const valueUsd = held ? valueAtPrice(h.basis.quantityHeld, price) : null
+    return {
+      instrumentKey: h.instrumentKey,
+      symbol: h.symbol,
+      name: h.name,
+      quantityHeld: h.basis.quantityHeld,
+      costHeldUsd: h.basis.costHeldUsd,
+      averageCostUsd: h.basis.averageCostUsd,
+      priceUsd: valueUsd === null ? null : price,
+      valueUsd,
+      unrealizedUsd: valueUsd === null ? null : differenceUsd(valueUsd, h.basis.costHeldUsd),
+      realizedGainUsd: h.basis.realizedGainUsd,
+      realizedFromStartingPositionUsd: h.basis.realizedFromStartingPositionUsd,
+      issues: h.basis.issues,
+    }
+  })
+
+  const held = holdings.filter((h) => h.quantityHeld !== '0')
+  const priced = held.filter((h) => h.valueUsd !== null)
+  const pricedCostUsd = sumUsd(priced.map((h) => h.costHeldUsd))
+  const valueUsd = sumUsd(priced.map((h) => h.valueUsd as string))
+  return {
+    holdings,
+    totals: {
+      costHeldUsd: sumUsd(held.map((h) => h.costHeldUsd)),
+      pricedCostUsd,
+      valueUsd,
+      unrealizedUsd: differenceUsd(valueUsd, pricedCostUsd),
+      realizedGainUsd: sumUsd(holdings.map((h) => h.realizedGainUsd)),
+      realizedFromStartingPositionUsd: sumUsd(holdings.map((h) => h.realizedFromStartingPositionUsd)),
+      heldCount: held.length,
+      pricedCount: priced.length,
+      unpriced: held.filter((h) => h.valueUsd === null).map((h) => h.symbol),
+    },
+  }
+}
+
+// ─── Words and figures for the screen ────────────────────────────────────────
+
+const group = (whole: string) => whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+
+/** An exact dollar figure as "$1,234.50" or "-$12.00", rounded to cents (halves away from zero). */
+export function formatUsd(value: string): string {
+  const cents = toCents(value)
+  const neg = cents.startsWith('-')
+  const [whole, frac] = (neg ? cents.slice(1) : cents).split('.')
+  return `${neg ? '-' : ''}$${group(whole)}.${frac}`
+}
+
+/** A signed change, "+$1,234.50" or "-$12.00"; nothing is signed when it rounds to zero. */
+export function formatUsdChange(value: string): string {
+  const text = formatUsd(value)
+  return text.startsWith('-') || text === '$0.00' ? text : `+${text}`
+}
+
+/** A price per unit: to the cent from $1 up, otherwise every decimal the column keeps (up to 8). */
+export function formatUnitPrice(value: string): string {
+  const [whole, frac = ''] = value.replace(/^-/, '').split('.')
+  if (whole !== '0') return formatUsd(value)
+  return `${value.startsWith('-') ? '-' : ''}$0.${(frac || '00').padEnd(2, '0')}`
+}
+
+/** A stored amount without the zeros its column pads it with: "10.50000000" is "10.5". A whole number is left alone. */
+export function trimDecimal(value: string): string {
+  return value.includes('.') ? value.replace(/0+$/, '').replace(/\.$/, '') : value
+}
+
+/** A live price, which arrives as a number, the same way as formatUnitPrice. */
+export function formatLivePrice(price: number): string {
+  return formatUnitPrice(trimDecimal(price.toFixed(8)))
+}
+
+/** Units with thousands separators; the decimals stay exactly as given. */
+export function formatUnits(value: string): string {
+  const neg = value.startsWith('-')
+  const [whole, frac] = (neg ? value.slice(1) : value).split('.')
+  return `${neg ? '-' : ''}${group(whole)}${frac ? `.${frac}` : ''}`
+}
+
+/** What each kind of trade is called on the screen. A starting position is a transfer in marked as one. */
+export function tradeKindLabel(t: { side: TradeSide; opening: boolean }): string {
+  if (t.opening) return 'Starting position'
+  return { buy: 'Buy', sell: 'Sell', transfer_in: 'Transfer in', transfer_out: 'Transfer out' }[t.side]
+}
+

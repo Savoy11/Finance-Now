@@ -192,6 +192,35 @@ export function toCents(value: string): string {
   return `${neg ? '-' : ''}${digits.slice(0, -2)}.${digits.slice(-2)}`
 }
 
+/**
+ * Units held times a live price, exact on the price as the database would
+ * store it (8 decimals). Null for a price that is missing, negative or not a
+ * number: a holding with no live price is left unvalued, never valued at cost.
+ */
+export function valueAtPrice(quantity: string, priceUsd: number | null | undefined): string | null {
+  if (priceUsd == null || !Number.isFinite(priceUsd) || priceUsd < 0) return null
+  const qty = parseScaled(quantity, QTY_DP)
+  const price = parseScaled(priceUsd.toFixed(PRICE_DP), PRICE_DP)
+  if (qty === null || price === null) return null
+  return usd(qty * price)
+}
+
+function readUsd(value: string): bigint {
+  const v = parseScaled(value, USD_DP)
+  if (v === null) throw new Error(`not a dollar figure: ${value}`)
+  return v
+}
+
+/** The exact sum of dollar figures from this file. */
+export function sumUsd(values: readonly string[]): string {
+  return usd(values.reduce((s, v) => s + readUsd(v), ZERO))
+}
+
+/** a − b, exactly. */
+export function differenceUsd(a: string, b: string): string {
+  return usd(readUsd(a) - readUsd(b))
+}
+
 // ─── Lots ────────────────────────────────────────────────────────────────────
 
 /** What each kind of trade does to the lots. A side added to the table fails to compile here until it is placed. */

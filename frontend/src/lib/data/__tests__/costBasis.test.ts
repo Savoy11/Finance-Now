@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import type { TradeSide, TradeTransaction } from '@/lib/db/schema/invest'
 import {
-  COST_BASIS_METHOD, REALIZED_METHOD_LABEL, computeCostBasis, toCents,
-  type LedgerTrade,
+  COST_BASIS_METHOD, REALIZED_METHOD_LABEL, computeCostBasis, differenceUsd, sumUsd, toCents,
+  valueAtPrice, type LedgerTrade,
 } from '../costBasis'
 
 /**
@@ -311,3 +311,25 @@ describe('toCents', () => {
     expect(() => toCents('12 dollars')).toThrow(/not a dollar figure/)
   })
 })
+
+describe('valueAtPrice, sumUsd and differenceUsd', () => {
+  it('values units at a live price exactly, to the 8 decimals a price is stored with', () => {
+    expect(valueAtPrice('3', 310)).toBe('930')
+    expect(valueAtPrice('0.000000000000000001', 60000)).toBe('0.00000000000006')
+    expect(valueAtPrice('1', 0.123456789)).toBe('0.12345679')
+  })
+
+  it('gives no value without a usable price', () => {
+    for (const p of [null, undefined, Number.NaN, Number.POSITIVE_INFINITY, -5]) expect(valueAtPrice('3', p)).toBeNull()
+  })
+
+  it('adds and subtracts exactly, where floating point would not', () => {
+    expect(0.1 + 0.2).not.toBe(0.3)
+    expect(sumUsd(['0.1', '0.2'])).toBe('0.3')
+    expect(sumUsd([])).toBe('0')
+    expect(differenceUsd('930', '750.6')).toBe('179.4')
+    expect(differenceUsd('0', '0.000000000000002')).toBe('-0.000000000000002')
+    expect(() => sumUsd(['1', 'abc'])).toThrow(/not a dollar figure/)
+  })
+})
+

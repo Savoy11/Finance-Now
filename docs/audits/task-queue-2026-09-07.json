@@ -59,25 +59,25 @@
  },
  "counts": {
   "total_verified": 398,
-  "outstanding": 360,
+  "outstanding": 361,
   "by_status": {
-   "closed": 181,
+   "closed": 182,
    "open": 33,
    "parked": 113,
    "blocked": 32,
    "unclear": 1
   },
   "by_owner_role": {
-   "remote-dev": 88,
+   "remote-dev": 89,
    "either": 42,
    "owner-decision": 146,
    "owner-machine": 84
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 181,
+  "closed_by_annotation": 182,
   "counts_recomputed_on": "2026-10-04",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
-  "total": 360
+  "total": 361
  },
  "blocking_decisions": [
   {
@@ -7772,7 +7772,7 @@
   {
    "id": "T-027",
    "title": "P3-W2-S2 / NT2 trade ledger — FIFO vs average cost decision, then /api/user/trades + cost-basis engine + entry UI",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "feature",
@@ -7821,13 +7821,30 @@
    ],
    "progress": {
     "noted_on": "2026-10-04",
-    "note": "Steps 1 and 2 of 3 are built. Step 1 (#273): the lot engine, frontend/src/lib/data/costBasis.ts. Step 2: saving trades. Routes under /api/user/tracked-portfolios create, list, rename and remove tracked portfolios and record and cancel trades; their input rules are in frontend/src/lib/data/tradeLedger.ts, and migration 0005 adds the tracked-portfolio marker table, the cancellation table and the starting-position column. A mistake is cancelled, never edited or removed. Only coins, stocks and funds can be tracked. The what-if routes leave tracked portfolios out. Checked end to end on a local Postgres, before and after the migration. The screen (step 3) remains.",
+    "note": "All three steps are built. Step 1 (#273): the lot engine, frontend/src/lib/data/costBasis.ts. Step 2 (#274): saving trades, through routes under /api/user/tracked-portfolios, with the input rules in frontend/src/lib/data/tradeLedger.ts and migration 0005. Step 3: the screen, /portfolios/tracked (Portfolios, then Tracked, in the sidebar), with the four figures at the top, the holdings table, the trade form and every trade, cancelled ones included; REALIZED_METHOD_LABEL is printed beside every realized figure, and a holding with no live price is left out of value and unrealized gain, never valued at cost (valueLedger in tradeLedger.ts, tested). Checked in a browser against a local Postgres with test prices: every figure matched one worked out by hand.",
     "evidence": [
      "docs/decisions/2026-10-04-owner-decisions.md",
-     "frontend/drizzle/0005_trade-ledger.sql",
+     "frontend/src/app/(dashboard)/portfolios/tracked/page.tsx",
+     "frontend/src/components/portfolio/tracked/TrackedPortfolioDetail.tsx",
      "frontend/src/lib/data/tradeLedger.ts",
-     "frontend/src/lib/server/trackedPortfolios.ts",
      "frontend/src/lib/data/__tests__/tradeLedger.test.ts"
+    ]
+   },
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-10-04",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "Built in three steps under D65 (D12 chose FIFO): the lot engine (#273), saving trades (#274), and the screen at /portfolios/tracked. Checked in a browser against a local Postgres, from a fresh browser profile each run: a starting position, a buy, a sale, a bitcoin purchase, a cancelled buy and a stock with no live price, with cost, value and gains matching figures worked out by hand (after the sale: cost $701.20, value $937.20, unrealized +$236.00, realized +$398.00, all from the starting position). That is ROADMAP Phase 1's \"Done when\", met in code; on the owner's machine it holds once migration 0005 is applied (npm run db:migrate in frontend/). Stock splits, which no kind of trade expresses yet, are split off as T-421.",
+    "approved_by": "owner, 2026-10-04: D65, \"merge and go with option A for both\", then \"merge and continue with step 2\" and \"merge and continue with step 3\"",
+    "evidence": [
+     "docs/decisions/2026-10-04-owner-decisions.md",
+     "docs/ROADMAP.md",
+     "frontend/src/app/(dashboard)/portfolios/tracked/page.tsx",
+     "frontend/src/components/portfolio/tracked/TrackedPortfolioDetail.tsx",
+     "frontend/src/lib/data/tradeLedger.ts",
+     "commit 7b48e14 (#273)",
+     "commit 5c55869 (#274)"
     ]
    }
   },
@@ -12699,6 +12716,34 @@
     "on": "2026-10-04",
     "by": "session steward",
     "why": "Opened with D64 at the owner's request: \"We can add an item for a pre launch rebuild of the risk engine and to address applying risk scores again later.\""
+   }
+  },
+  {
+   "id": "T-421",
+   "title": "Stock splits in tracked portfolios: record a split so each lot's units and per-unit cost follow it",
+   "status": "open",
+   "confidence": "high",
+   "owner_role": "remote-dev",
+   "category": "feature",
+   "effort": "medium",
+   "blocking_decision": null,
+   "related_ids": [
+    "T-027",
+    "D65"
+   ],
+   "summary": "A split changes how many units each lot holds without changing its cost. No kind of trade expresses that: a transfer in adds a new, newest lot instead of splitting each existing one, so FIFO would then sell the wrong units. Until this lands, a holding that splits shows units and per-unit prices on /portfolios/tracked that no longer match the broker's; the page's header says so.",
+   "next_action": "Add a split (a ratio and a date) per holding, entered by hand like every other trade, and apply it in the lot engine (frontend/src/lib/data/costBasis.ts) to every lot open on that date: units times the ratio, cost unchanged. It needs a migration, engine tests (a split between a buy and a sale, a reverse split, a split after an undated starting position, cash paid for a fraction of a share), a place in the trade form, and the same cancel-never-edit rule as trades.",
+   "sources": [
+    {
+     "file": "docs/decisions/2026-10-04-owner-decisions.md",
+     "lines": "D65 notes",
+     "quote": "Stock splits have no kind of trade yet. A split changes how many units each lot holds without changing its cost, which neither a purchase nor a transfer can express."
+    }
+   ],
+   "opened": {
+    "on": "2026-10-04",
+    "by": "session steward",
+    "why": "Split off from T-027 when it closed: D65's notes name stock splits as the one part of trade history still unbuilt, and the tracked-portfolio page tells readers they are not handled yet."
    }
   }
  ],
@@ -37982,6 +38027,14 @@
     "evidence": [
      "docs/decisions/2026-10-04-owner-decisions.md",
      "frontend/src/lib/data/tradeLedger.ts"
+    ]
+   },
+   {
+    "on": "2026-10-04",
+    "what": "T-027 step 3 built under D65: the tracked-portfolio screen, /portfolios/tracked. T-027 closed (verified-here: checked in a browser against a local Postgres, figures matched by hand). T-421 opened for stock splits, split off from T-027. Counts recomputed: closed 182, open 33, total 361.",
+    "evidence": [
+     "docs/decisions/2026-10-04-owner-decisions.md",
+     "frontend/src/app/(dashboard)/portfolios/tracked/page.tsx"
     ]
    }
   ]

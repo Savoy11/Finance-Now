@@ -24,10 +24,11 @@ import {
   type Portfolio, type PortfolioHolding,
 } from '@/lib/data/portfolioUtils'
 import type { PortfolioPricesResponse } from '@/app/live-data/portfolio-prices/route'
-import { INSTRUMENTS, INSTRUMENT_BY_KEY, CLASS_LABELS, formatInstrumentQuote, type InstrumentClass } from '@/lib/data/instruments'
+import { INSTRUMENT_BY_KEY, CLASS_LABELS, formatInstrumentQuote } from '@/lib/data/instruments'
 import { fetchInstrumentPrices } from '@/lib/api/instrumentPrices'
 import type { PortfolioHistoryResponse } from '@/app/live-data/portfolio-history/route'
 import { PortfolioLookThrough } from '@/components/portfolio/PortfolioLookThrough'
+import { useInstrumentSearch, type InstrumentCandidate } from '@/components/portfolio/useInstrumentSearch'
 import { RISK_RATINGS_SHOWN } from '@/lib/risk/visibility'
 
 // ─── Formatting helpers ───────────────────────────────────────────────────────
@@ -199,75 +200,6 @@ function HoldingRow({ holding, total, onUpdate, onRemove, disabled }: {
   )
 }
 
-// ─── Add-search plumbing ──────────────────────────────────────────────────────
-
-/** One row in the add-holding picker, whichever universe it came from. */
-interface AddCandidate {
-  key: string          // storage key: CoinGecko id, or 'sec:' + symbol
-  symbol: string
-  name: string
-  class: InstrumentClass
-  color?: string
-  /** True when this came from a network lookup rather than the local catalogs. */
-  remote: boolean
-}
-
-async function searchRemoteCandidates(q: string): Promise<AddCandidate[]> {
-  const [coins, stocks, funds] = await Promise.allSettled([
-    fetch(`/live-data/coin-search?q=${encodeURIComponent(q)}`).then(r => r.json()) as Promise<{
-      coins?: { cgId: string; symbol: string; name: string }[]
-    }>,
-    // ?q= searches the whole universe by name OR ticker (added for the Market
-    // News search, #115) — this replaced an exact-symbol lookup here, which
-    // could only find a stock you already knew the ticker of. Keyless it
-    // answers from the curated catalog; the local matches already cover that,
-    // so the dedupe below simply drops the echoes.
-    fetch(`/live-data/stock-universe?q=${encodeURIComponent(q)}`).then(r => r.json()) as Promise<{
-      ok?: boolean; entries?: { symbol: string; name: string }[]
-    }>,
-    // Every US-listed ETF + registered mutual fund share class (NASDAQ Trader
-    // + SEC directories, keyless). The type comes from the directory, so an
-    // added fund is labeled ETF / Mutual fund, not lumped in as a stock.
-    fetch(`/live-data/fund-universe?q=${encodeURIComponent(q)}`).then(r => r.json()) as Promise<{
-      ok?: boolean; entries?: { symbol: string; name: string; type: 'etf' | 'mutual' }[]
-    }>,
-  ])
-
-  const out: AddCandidate[] = []
-  const seen = new Set<string>()
-  const push = (c: AddCandidate) => {
-    if (!seen.has(c.key)) { seen.add(c.key); out.push(c) }
-  }
-  if (coins.status === 'fulfilled') {
-    for (const c of (coins.value.coins ?? []).slice(0, 8)) {
-      push({ key: c.cgId, symbol: c.symbol, name: c.name, class: 'crypto', remote: true })
-    }
-  }
-  // Funds before stocks: an ETF can appear in BOTH directories under the same
-  // 'sec:' key (FMP's screener carries ETF rows too), and first-in wins the
-  // dedupe — it should be labeled ETF, not Stock.
-  if (funds.status === 'fulfilled' && funds.value.ok) {
-    for (const e of funds.value.entries ?? []) {
-      push({ key: `sec:${e.symbol}`, symbol: e.symbol, name: e.name, class: e.type === 'etf' ? 'etf' : 'mutual', remote: true })
-    }
-  }
-  if (stocks.status === 'fulfilled' && stocks.value.ok) {
-    for (const e of stocks.value.entries ?? []) {
-      push({ key: `sec:${e.symbol}`, symbol: e.symbol, name: e.name, class: 'equity', remote: true })
-    }
-  }
-  return out
-}
-
-function useDebounced(value: string, ms: number): string {
-  const [v, setV] = useState(value)
-  useEffect(() => {
-    const t = setTimeout(() => setV(value), ms)
-    return () => clearTimeout(t)
-  }, [value, ms])
-  return v
-}
-
 // ─── Portfolio builder / editor ───────────────────────────────────────────────
 
 function PortfolioEditor({ existing, onSave, onCancel }: {
@@ -283,58 +215,12 @@ function PortfolioEditor({ existing, onSave, onCancel }: {
   const [coinSearch, setCoinSearch] = useState('')
   const [errors, setErrors] = useState<string[]>([])
 
-  // ── Search: the whole suite's universe, not just the curated catalogs ──────
-  //
-  // Local instruments answer instantly — all seven classes (coins, stocks,
-  // ETFs, mutual funds, commodities, currencies, rates). On top of that, two
-  // remote lookups widen the universe to what the app actually tracks:
-  //   · /live-data/coin-search — any coin CoinGecko carries (the Coin
-  //     Discovery universe), priced by the same portfolio-prices route.
-  //   · /live-data/stock-universe?symbol= — any quotable ticker (the Stock
-  //     Registry universe). Keyless it answers only the curated catalog, so
-  //     the remote rung simply adds nothing without an FMP key — the same
-  //     asset that couldn't be found couldn't have been priced either.
-  // Both are additive and deduplicated against local results; a remote failure
-  // degrades to local-only rather than erroring the picker.
-  const localMatches: AddCandidate[] = useMemo(() => {
-    const q = coinSearch.trim().toLowerCase()
-    if (!q) return []
-    return INSTRUMENTS.filter(c =>
-      !holdings.some(h => h.cgId === c.cgId) &&
-      (c.symbol.toLowerCase().includes(q) || c.name.toLowerCase().includes(q))
-    ).slice(0, 20).map(c => ({
-      key: c.cgId, symbol: c.symbol, name: c.name, class: c.class, color: c.color, remote: false,
-    }))
-  }, [coinSearch, holdings])
-
-  const debouncedSearch = useDebounced(coinSearch.trim(), 350)
-  const { data: remoteData } = useQuery<AddCandidate[]>({
-    queryKey: ['portfolio-add-search', debouncedSearch],
-    queryFn: () => searchRemoteCandidates(debouncedSearch),
-    // Only reach out when the query is real and local coverage is thin —
-    // 2 chars of "bt" already shows BTC locally; no need to hit the network.
-    enabled: debouncedSearch.length >= 2,
-    staleTime: 5 * 60_000,
-    retry: false,
-  })
-
-  const filteredCoins: AddCandidate[] = useMemo(() => {
-    const seen = new Set(localMatches.map(c => c.key))
-    for (const h of holdings) seen.add(h.cgId)
-    // Local symbols too: CoinGecko search returns bitcoin even though the
-    // catalog carries it — the catalog row (with its vetted metadata) wins.
-    for (const c of localMatches) seen.add(c.symbol.toUpperCase())
-    const remote = (remoteData ?? []).filter(c => {
-      if (seen.has(c.key) || seen.has(c.symbol.toUpperCase())) return false
-      seen.add(c.key)
-      return true
-    })
-    return [...localMatches, ...remote].slice(0, 24)
-  }, [localMatches, remoteData, holdings])
-
+  // ── Search: the whole suite's universe (shared with the tracked-portfolio
+  // trade form — see components/portfolio/useInstrumentSearch.ts) ──────────
+  const filteredCoins = useInstrumentSearch(coinSearch, { exclude: holdings.map(h => h.cgId) })
   const allocTotal = holdings.reduce((s, h) => s + (h.targetAlloc || 0), 0)
 
-  function addHolding(coin: AddCandidate) {
+  function addHolding(coin: InstrumentCandidate) {
     const even = parseFloat((100 / (holdings.length + 1)).toFixed(1))
     // Redistribute evenly
     const updated: PortfolioHolding[] = holdings.map(h => ({ ...h, targetAlloc: even }))

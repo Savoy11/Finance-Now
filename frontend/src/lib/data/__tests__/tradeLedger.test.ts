@@ -2,8 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { INSTRUMENT_BY_KEY, type InstrumentClass } from '../instruments'
 import { REALIZED_METHOD_LABEL } from '../costBasis'
 import {
-  MAX_NOTE_LENGTH, MAX_REASON_LENGTH, buildLedgerView, parseCancelInput, parsePortfolioInput,
-  parseTradeInput, trackableInstrument, type StoredCancellation, type StoredTrade,
+  MAX_NOTE_LENGTH, MAX_REASON_LENGTH, buildLedgerView, formatLivePrice, formatUnitPrice, formatUnits, formatUsd,
+  formatUsdChange, parseCancelInput, parsePortfolioInput, parseTradeInput, trackableInstrument,
+  tradeKindLabel, trimDecimal, valueLedger, type StoredCancellation, type StoredTrade,
 } from '../tradeLedger'
 
 /**
@@ -189,3 +190,96 @@ describe('buildLedgerView', () => {
     expect(basis.issues.map((i) => i.code)).toEqual(['sold-more-than-held'])
   })
 })
+
+describe('valueLedger', () => {
+  let n = 100
+  function stored(instrumentKey: string, symbol: string, side: StoredTrade['side'], quantity: string, price: string, date: string | null, extra: Partial<StoredTrade> = {}): StoredTrade {
+    n += 1
+    return {
+      id: `v${n}`, instrumentKey, symbol, name: symbol, side, quantity, pricePerUnit: price, feeUsd: '0',
+      executedAt: date === null ? null : new Date(`${date}T15:00:00Z`), opening: false, note: null,
+      createdAt: new Date('2026-10-01T00:00:00Z'), ...extra,
+    }
+  }
+  const view = buildLedgerView([
+    stored('sec:VTI', 'VTI', 'transfer_in', '10', '200', null, { opening: true }),
+    stored('sec:VTI', 'VTI', 'buy', '5', '250', '2026-03-02', { feeUsd: '1.00' }),
+    stored('sec:VTI', 'VTI', 'sell', '12', '300', '2026-06-01', { feeUsd: '2.00' }),
+    stored('bitcoin', 'BTC', 'buy', '1', '60000', '2026-04-01'),
+    stored('sec:AAPL', 'AAPL', 'buy', '3', '150', '2026-01-01'),
+    stored('sec:AAPL', 'AAPL', 'sell', '3', '180', '2026-02-01'),
+  ], [], NOW)
+
+  it('values what is held at live prices, and leaves an unpriced holding unvalued', () => {
+    const { holdings, totals } = valueLedger(view, { 'sec:VTI': 310, 'sec:AAPL': 200 })
+    const vti = holdings.find((h) => h.symbol === 'VTI')!
+    expect([vti.quantityHeld, vti.costHeldUsd, vti.valueUsd, vti.unrealizedUsd]).toEqual(['3', '750.6', '930', '179.4'])
+    const btc = holdings.find((h) => h.symbol === 'BTC')!
+    expect([btc.priceUsd, btc.valueUsd, btc.unrealizedUsd]).toEqual([null, null, null])
+    // Sold to nothing: no value, and not counted as unpriced either.
+    const aapl = holdings.find((h) => h.symbol === 'AAPL')!
+    expect([aapl.quantityHeld, aapl.valueUsd, aapl.realizedGainUsd]).toEqual(['0', null, '90'])
+
+    expect(totals).toEqual({
+      costHeldUsd: '60750.6',
+      pricedCostUsd: '750.6',
+      valueUsd: '930',
+      unrealizedUsd: '179.4',
+      realizedGainUsd: '1187.6',
+      realizedFromStartingPositionUsd: '998.33333333333333333333333333',
+      heldCount: 2,
+      pricedCount: 1,
+      unpriced: ['BTC'],
+    })
+  })
+
+  it('never values a holding at its cost when its price is missing or unusable', () => {
+    for (const price of [undefined, Number.NaN, -1]) {
+      const prices: Record<string, number> = price === undefined ? {} : { bitcoin: price }
+      const { totals } = valueLedger(view, prices)
+      expect(totals.unpriced).toContain('BTC')
+      expect(totals.valueUsd).toBe('0')
+    }
+  })
+})
+
+describe('formatting for the screen', () => {
+  it('writes dollars to the cent with separators, and signs a change', () => {
+    expect(formatUsd('1234.5')).toBe('$1,234.50')
+    expect(formatUsd('1234567.891')).toBe('$1,234,567.89')
+    expect(formatUsd('-12')).toBe('-$12.00')
+    expect(formatUsd('-0.004')).toBe('$0.00')
+    expect(formatUsdChange('179.4')).toBe('+$179.40')
+    expect(formatUsdChange('-200')).toBe('-$200.00')
+    expect(formatUsdChange('0.001')).toBe('$0.00')
+  })
+
+  it('keeps a small unit price to every decimal stored, and a large one to the cent', () => {
+    expect(formatUnitPrice('250.2')).toBe('$250.20')
+    expect(formatUnitPrice('60000')).toBe('$60,000.00')
+    expect(formatUnitPrice('0.5')).toBe('$0.50')
+    expect(formatUnitPrice('0.00000002')).toBe('$0.00000002')
+    expect([formatLivePrice(310), formatLivePrice(100), formatLivePrice(0.5), formatLivePrice(0.00001234), formatLivePrice(1e-9)])
+      .toEqual(['$310.00', '$100.00', '$0.50', '$0.00001234', '$0.00'])
+  })
+
+  // The database pads amounts to their column's scale. Trimming must stop at the
+  // decimal point: "10" without one is ten, never one.
+  it('drops padding zeros after a decimal point and leaves whole numbers alone', () => {
+    expect(['10.50000000', '100', '100.000', '0.00000000', '0.000000000000000001'].map(trimDecimal))
+      .toEqual(['10.5', '100', '100', '0', '0.000000000000000001'])
+  })
+
+  it('groups units without touching their decimals', () => {
+    expect(formatUnits('1234.5')).toBe('1,234.5')
+    expect(formatUnits('1000000')).toBe('1,000,000')
+    expect(formatUnits('0.000000000000000001')).toBe('0.000000000000000001')
+  })
+
+  it('names every kind of trade, and a starting position as one', () => {
+    expect(tradeKindLabel({ side: 'transfer_in', opening: true })).toBe('Starting position')
+    expect(['buy', 'sell', 'transfer_in', 'transfer_out'].map((side) => tradeKindLabel({ side: side as StoredTrade['side'], opening: false })))
+      .toEqual(['Buy', 'Sell', 'Transfer in', 'Transfer out'])
+  })
+})
+

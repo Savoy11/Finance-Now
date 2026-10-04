@@ -12,6 +12,7 @@ import {
   Search,
   CandlestickChart,
   Briefcase,
+  ReceiptText,
   FlaskConical,
   Settings,
   Bot,
@@ -103,7 +104,16 @@ export const MODULES: SuiteModule[] = [
       { href: '/videos', label: 'Videos', icon: Video },
       { href: '/brief', label: 'Daily Brief', icon: Sunrise },
       { href: '/watchlist', label: 'Watchlist', icon: Star },
-      { href: '/portfolios', label: 'Portfolios', icon: Briefcase },
+      {
+        href: '/portfolios',
+        label: 'Portfolios',
+        icon: Briefcase,
+        // T-027 (D65): records of real trades, beside the what-if portfolios
+        // the parent page holds. The two are separate kinds and never convert.
+        children: [
+          { href: '/portfolios/tracked', label: 'Tracked', icon: ReceiptText },
+        ],
+      },
       { href: '/compare', label: 'Compare', icon: GitCompareArrows },
       { href: '/research', label: 'Research', icon: Microscope },
       // Item 1 (2026-08-19), unblocked by the nested-nav primitive items 6/7
