@@ -714,13 +714,13 @@ site nobody has reviewed. Full design: `docs/architecture/source-terms.md`.
 > The fix for any of the key-gated rows is a free API key on the Integrations page — **not
 > a substitute scraper.**
 
-> ⚠ **30 of 56 registry entries are `seeded`, not `verified` — check `review` before
+> ⚠ **9 of 56 registry entries are `seeded`, not `verified` — check `review` before
 > trusting one.** The registry was authored in an environment whose network policy
 > blocked every publisher and provider host at the gateway, so not one terms document
 > could be opened. The entries are honest starting positions drawn from each
 > provider's publicly documented posture (published API docs, documented free tiers,
-> openly advertised RSS feeds) — they are **not readings**. **26 entries are
-> `verified`** as of 2026-09-20 (the count was spelled out as a word here until then,
+> openly advertised RSS feeds) — they are **not readings**. **47 entries are
+> `verified`** as of 2026-10-04 (the count was spelled out as a word here until 2026-09-20,
 > which is why no guard could watch it — see `docs:check`): **Cboe** (P2-O1 audit, 2026-08-05) and
 > **CoinGecko** (the 2026-08-29 probe run) were the first two, and sixteen more
 > were **read** on a clean egress on 2026-09-14/15
@@ -736,6 +736,16 @@ site nobody has reviewed. Full design: `docs/architecture/source-terms.md`.
 > like any other and is why a rising `verified` count is not by itself good news.
 > Readings: `docs/audits/terms-review-finnhub-2026-09-20.md`,
 > `terms-review-twelvedata-binanceus-2026-09-20.md`, `terms-review-news-2026-09-20.md`.
+>
+> **Twenty-one more on 2026-10-04 (D54, D55), which take 26 to 47.** All thirty seeded
+> entries were read on the owner's machine on 2026-09-26
+> (`docs/audits/terms-review-seeded-2026-09-26.md`). D46 held the sign-off. D54 then marked
+> seventeen of them verified: the eleven clean readings and the six ruled on first (OKX,
+> Nasdaq Trader, KuCoin, Alpha Vantage, Messari, Santiment). D55 added the four ruled on
+> later that day (CoinMarketCap, Jito, Rocket Pool, Pendle). The 9 still `seeded` are
+> CryptoPanic (its API terms would not open), three that could not be read (Binance.com,
+> HTX, XT.com), four with no terms document at all (DefiLlama, Blockchain.com, Stride,
+> Beefy), and Yearn, which is no longer fetched.
 >
 > A seeded `approved`/`conditional` means *nobody has objected yet*, not *cleared*.
 > Seeded entries still serve data — breaking the app over a documentation gap is the
@@ -1394,7 +1404,7 @@ Risk/status color convention used across the app:
 | Reserves | `/assets?tab=reserves` | 🟢 Live | Reserve Transparency Monitor — DefiLlama stablecoin supply + collateralization (`/live-data/reserves`). **A tab inside Coins, not a page.** The standalone `/reserves` page was folded in on 2026-07-29 (`/reserves` → `/assets?tab=reserves`, `next.config.mjs`); no separate nav entry. ⚠ **All reserve UI lives in `components/analytics/reserves.tsx` — do not re-inline it.** Three hand-maintained copies existed and only the orphaned page ever got the fixes, so the two surfaces users actually reach carried the bugs: peg-mechanism badges keyed on `_` while the feed sends `-` (8 of 9 coins unstyled), a KPI reading "Verified Attestations … by third-party auditor" for something nobody verifies, a header claiming the whole table was live when only supply is, and no provenance at all. `ReserveProvenance` is mandatory on any surface showing attester/date/collateralization — those come from the `stablecoinMeta` snapshot, not the live feed |
 | Alerts | TopBar bell | 🟢 Live | `/live-data/alerts` — stablecoin depegs + major-asset 24h moves; surfaced in the TopBar bell (no standalone page) |
 | Watchlist | `/watchlist` | 🟢 Live | Cross-module: coins, stocks, ETFs & funds, and macro instruments in named lists with live prices. **DB-backed** via `/api/user/watchlists` (+`/[id]` PUT/DELETE) through `useWatchlistStore` (optimistic, client-UUID ids, one-time localStorage import that MERGES even into a non-empty account — see store comment). Feed bias (`lib/watchlist/bias.ts`) and the Daily Brief read the store, not localStorage |
-| News | `/news` | 🟢 Live | Multi-provider RSS/JSON; sentiment + asset detection |
+| News | `/news` | 🟢 Live | Multi-provider RSS/JSON; sentiment + asset detection. Stories about tokenized securities are filed under **Tokenization** and tag the catalog stock they name (TS-13, 2026-10-01) — see News Feed Architecture |
 | Social | `/social` | 🟡 Partial | `/live-data/social`. **Live:** Reddit post text/link/author/timestamp (Atom feeds, keyless but robots-gated — see below), and the social VOLUME figures from Santiment (`mentionsCount`) and LunarCrush (`social_volume_24h`, `galaxy_score`), both **key-gated**: with no key those signals are absent, not zero. **Derived:** every sentiment label. Reddit's is a keyword regex over the post text; LunarCrush's is a threshold on galaxy score (≥60 / ≤35) rather than the provider's own `sentiment` field; Santiment's is hardcoded `neutral`. The per-asset `sentimentScore` aggregates those derived labels, so it is derived twice over. **Neither live nor derived:** Reddit `score` is a literal 0 and `upvoteRatio` is never set — Atom carries no vote data, and both are sentinels the pages render only when present. Reddit itself is gated off in `pinnedFetch` unless `REDDIT_CLIENT_ID` is set (its robots.txt disallows this app's agent, 2026-08-29 terms review). |
 | Global | `/global-adoption` | ⚪ De-routed | Access removed (T5) pending a post-production rework — a mislabeled CBDC tracker on stale/duplicated static data with a fabricated live timestamp. Page and `/live-data/cbdc-data` route were both **deleted 2026-09-14 (D10)**; `/global-adoption` still redirects to `/headlines` so bookmarks land. See `docs/assessments/T5-utility-triage.md`. |
 | Transfer Fee Calc | ~~`/transfer-fees`~~ | ⚪ **Hidden from rollout** | Static fee table (`transferFees.ts`) + live token prices; staleness-labeled. **Live withdrawal-fee overlay** (`/live-data/withdraw-fees`, keyless KuCoin/HTX confirmed + 5 unprobed; RP-5 forbids keyed endpoints) — overlay-only, per-row `live` tags. **Withdrawal availability is disclosed as assumed, not checked**: live-reported suspensions render as blocked routes with attribution, and the notice is deliberately NOT gated on fee staleness. `depositEnabled` is the same assumption with no source — a known open gap. Tax-character panel (`lib/data/taxCharacter.ts`) states what kind of event each leg is, with no numbers |
@@ -1434,7 +1444,7 @@ Caveats, all deliberate:
 - Runs only on the FMP path — the 79-entry curated catalog already carries hand-written P/E, so enriching it would gain one row for three multi-MB fetches.
 - Frame years derive from the clock (`recentAnnualFrames()`), so this does not go stale each January.
 | Equity Detail | `/equities/[symbol]` | 🟢 Live | Live chart/news + reference stats, 52-wk range, key stats |
-| Market News | `/equities/news` | 🟢 Live | RSS multi-feed; category/sentiment/ticker filters |
+| Market News | `/equities/news` | 🟢 Live | RSS multi-feed; category/sentiment/ticker filters. A token symbol tags its company (`TSLAx`, `TSLAon` → TSLA), and stories about tokenized securities are filed under **Tokenization** (TS-13) |
 | Stock Social | `/equities/social` | 🟡 Partial | **StockTwits only in practice** (keyless). Reddit is **gated off by its own robots.txt** — not rate-limited, not IP-dependent: `assertRobotsPermits` refuses every `reddit.com` URL unless `REDDIT_CLIENT_ID` is set, and the route declares the omission in `withheld[]` rather than quietly returning a short feed. This row said "Reddit + StockTwits" until 2026-09-22 |
 | Equity TA | `/equities/technical-analysis` | 🟢 Derived | Shared candlestick engine, 62 indicators (shared registry), patterns |
 | Equity Scanner | `/equities/scanner` | 🟢 Derived | **The section's one scanner** (items 6/7): the same seven setup detectors the crypto scanner runs, over the 79-name curated catalog, **merged with the AI Outlier Scan**. Replaced the 24-symbol RSI/SMA screener tab. No auto-refresh — every row is a keyed provider request, unlike crypto's keyless source; windows (3M/6M/1Y) change history depth, not bar size, because the provider serves daily bars only |
@@ -1483,10 +1493,25 @@ All agents run through one loop (`runner.ts`, Anthropic + OpenAI-compatible). De
 The news route has a multi-layer asset detection system:
 1. **Direct mention** — regex patterns for coin names/tickers (e.g. "bitcoin", "BTC")
 2. **Issuer match** — "Circle" → USDC, "Tether" → USDT
-3. **Regulatory inference** — "MiCA" → USDC+USDT, "GENIUS Act" → USDC+USDT+PYUSD, "DeFi regulation" → DAI+FRAX
+3. **Regulatory inference** (`lib/server/newsRegulatoryImpact.ts`, tested) — "MiCA" → USDC+USDT, "GENIUS Act" → USDC+USDT+PYUSD, "DeFi regulation" → DAI+FRAX. The **CLARITY Act and other US market-structure bills → `general`**, i.e. every coin's feed, plus the three stablecoins they reached before. Until TS-13 (2026-10-01) CLARITY shared the GENIUS entry and reached only those three
 4. **Category fallback** — "stablecoin" with no match → general stablecoins; "crypto/blockchain" → general
 
 Asset filter is applied server-side so only relevant articles are returned when a coin filter is active. Articles tagged `'general'` always pass through.
+
+**Tokenized securities (TS-13, 2026-10-01).** `lib/server/tokenizedNews.ts` answers two questions for this
+route and `/live-data/market-news` alike, so the two feeds cannot disagree. First, is the story about
+tokenized stocks, funds or bonds? If so, its category is **`tokenization`**, checked before every other
+category, Global included: xStocks and Ondo's stocks are not offered in the US, so many launch stories would
+otherwise file as Global. Second, which catalog stock does it name? A token symbol counts as its company
+by the issuers' own suffixes, `TSLAx` (Kraken xStocks) and `TSLAon` (Ondo), with three guards: the
+suffix must be lowercase (an all-capitals ticker ending in X is a mutual fund), the ticker part must have
+two letters or more (C, T and V are catalog tickers, and "Con", "Ton" and "Tx" are words), and the ticker
+must be in the stock catalog. On this route the stocks go in `relatedSymbols`, which is **empty for every
+other story**: the crypto feed tags coins, not companies. "Oracle" and "Intel" never link by name here,
+because both are everyday crypto words (price oracles, Arkham's Intel Exchange). Not read: Dinari's
+dShares symbols, because the sources disagree on their form, and tokenized ETFs, because the chips link
+to stock pages. `lib/server/__tests__/tokenizedNews.test.ts` also reads the category vocabulary from the
+two routes, the two filter lists and the `/api/v1/news` spec and note, and fails if they drift apart.
 
 ---
 
@@ -1510,7 +1535,7 @@ A separate, agent-optimised REST API lives at `/api/v1/`. It is distinct from `/
 | `GET /api/v1/network-fees` | Gas fees for all **18** networks, **5 of them live** — BTC via mempool.space plus ETH/BNB/Polygon/AVAX via keyless `publicnode eth_gasPrice`; the other 13 are static gas amounts priced live (`source: 'estimate'`) — `NETWORK_GAS` / `NetworkKey` / `FEE_PROVIDERS` in `lib/data/networkFees.ts`, which the route derives from. Said 16 networks until 2026-09-12, and said "BTC live, rest estimated" until 2026-09-22 — the live EVM gas landed 2026-08-21 (`01d6bfe`) and this row never caught up |
 | `GET /api/v1/transfer/routes?from=binance&to=coinbase&coin=usdt&amount=1000` | Transfer route finder |
 | `GET /api/v1/staking/opportunities?coin=eth&category=liquid` | Staking options with APY, lock-up, custody model, receipt token, TVL and audit count. **No risk figure of any kind** — no composite (D14) and, since 2026-09-25, no per-dimension figures either (D26); `riskBreakdown` no longer appears and `max_risk`/`min_safety` are ignored if sent |
-| `GET /api/v1/news?coin=btc&sentiment=negative&limit=10` | News with sentiment/category tagging |
+| `GET /api/v1/news?coin=btc&sentiment=negative&limit=10` | News with sentiment/category tagging; `relatedSymbols` lists the stocks a story about tokenized securities names (TS-13) |
 | `GET /api/v1/securities/quotes?symbols=AAPL,VOO,GC=F` | Stock/ETF/fund/macro quotes (max 25; same keyed ladder + reference fallback as the UI, `reference: true` rows labeled) |
 | `GET /api/v1/securities/history?symbol=AAPL&range=1y` | Daily close history for any quotable symbol (1mo–max) |
 | `GET /api/v1/macro/yield-curve` | Official treasury.gov 13-maturity par curve + 2s10s/3m10y spreads + shape |
@@ -1541,7 +1566,7 @@ A standalone Node.js MCP server at `mcp-server/` (repo root) that exposes Financ
 | ~~`find_transfer_routes`~~ | ⚪ **WITHHELD 2026-08-22** — Transfer Fees held out of the initial rollout; tool commented out in mcp-server, `/api/v1/transfer/routes` answers 503 |
 | `get_network_fees` | Gas fees for all **18** networks (same `NETWORK_GAS` set as the v1 route) |
 | `get_staking_opportunities` | Staking options filtered by coin and category; reports facts only — APY, lock-up, custody model, receipt token, TVL, audits. No risk score, rating or dimension (D14 + D26) |
-| `get_crypto_news` | Recent news with sentiment, category, and coin tags |
+| `get_crypto_news` | Recent news with sentiment, category, and coin tags, plus the stocks a story about tokenized securities names |
 | `get_security_quotes` | Stock/ETF/fund/macro quotes (reference prices flagged) |
 | `get_security_history` | Daily close history + 52-week range for any quotable symbol |
 | `get_yield_curve` | Official Treasury par curve with spreads and shape |
@@ -1597,6 +1622,25 @@ Anything producing a **dollar figure or a percentage a user acts on** should be 
 `computeNetworkFees()`, `computeFeeDrag()`, `portfolioBuilder.ts`, `lookThrough.ts`,
 `lib/risk/`. Where a function needs the clock, take an injectable `now` — every provenance helper
 and `reviewPlan()`/`buildCurveData()` do, and it is the only reason their edge cases are testable.
+
+---
+
+## Dependency audit — the Security Scan gate
+
+`npm run deps:check` (in `frontend/`) has been the CI Security Scan's dependency audit since
+2026-10-03 (D53). It fails on every high or critical advisory, as the bare
+`npm audit --audit-level=high` it replaced did, **except** one that a recorded owner decision
+allows in `frontend/audit-exceptions.json`. An exception names one GHSA advisory and its
+package, cites a `| Dnn |` row under `docs/decisions/`, and expires at most 92 days after it was
+decided. It also stops applying the moment npm reports a fix short of a major upgrade. Holding
+on past the date takes a new decision with a new date, never an edited expiry.
+`npm run deps:check -- --now=YYYY-MM-DD` previews a later date. The rules and their reasons are
+in `scripts/lib/auditGate.mjs`; `lib/server/__tests__/auditGate.test.ts` drives each one red
+and also reads the CI step. `mcp-server/` keeps its plain `npm audit`.
+
+The first exception, granted 2026-10-03 until 2026-11-03: GHSA-vfj7-8cjw-p6xm, braces ≤ 3.0.3,
+which has no patched release. braces only sees file patterns written in this repo (Tailwind's
+content paths, ESLint's file globs). T-418 tracks its removal.
 
 ---
 

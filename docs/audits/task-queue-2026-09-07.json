@@ -59,25 +59,25 @@
  },
  "counts": {
   "total_verified": 398,
-  "outstanding": 357,
+  "outstanding": 358,
   "by_status": {
-   "closed": 175,
+   "closed": 177,
    "open": 31,
    "parked": 107,
-   "blocked": 43,
+   "blocked": 42,
    "unclear": 1
   },
   "by_owner_role": {
    "remote-dev": 87,
-   "either": 39,
+   "either": 40,
    "owner-decision": 147,
    "owner-machine": 84
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 175,
-  "counts_recomputed_on": "2026-10-01",
+  "closed_by_annotation": 177,
+  "counts_recomputed_on": "2026-10-04",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
-  "total": 357
+  "total": 358
  },
  "blocking_decisions": [
   {
@@ -3782,7 +3782,7 @@
   {
    "id": "T-119",
    "title": "Per-link affiliate disclosure UI + 'How we make money' page",
-   "status": "blocked",
+   "status": "closed",
    "confidence": "medium",
    "owner_role": "owner-decision",
    "category": "feature",
@@ -3814,6 +3814,21 @@
      "frontend/src/components/ui/SponsoredLink.tsx:60-104",
      "frontend/src/app/(dashboard)/how-we-make-money/page.tsx:25-37 (the placeholder component), :102-133",
      "frontend/src/lib/data/__tests__/affiliates.test.ts — the ranking/scoring isolation guards"
+    ]
+   },
+   "closure": {
+    "status_was": "blocked",
+    "closed_on": "2026-10-04",
+    "basis": "superseded-by-owner-decision",
+    "verdict": "superseded",
+    "reason": "BUILT, AND THE REST OVERTAKEN. The per-link half was built and verified on 2026-09-21: components/ui/SponsoredLink.tsx shows a visible \"Paid link\" tag beside a paid link, and adds rel=\"sponsored\" only when the link is paid. The blocker was the owner's wording for four placeholder sections on the old /how-we-make-money page, and that page no longer exists. Under D50, T-293 put the owner's Draft v1 disclosure text on /about (2026-10-01), and /how-we-make-money now redirects to its How we make money section. D49 (no paid links at launch) leaves no referral programs to list and no entity receiving commission to name, so the section says no link pays us. Draft v1 also says who operates the sites, gives a complaints route with response times, and says both sites are for people in the United States. What is left already has an item: the bracketed blanks ([COMPANY LLC NAME], [CONTACT EMAIL]) and the owner's approval of the text are T-291; UK FCA financial-promotion rules and other jurisdictions are T-125, parked until paid links are considered after launch.",
+    "approved_by": "owner, 2026-10-04: \"Close t-119 and go with option 1 for t-005\", in reply to the session's recommendation to close it as overtaken",
+    "evidence": [
+     "frontend/src/components/ui/SponsoredLink.tsx",
+     "frontend/src/lib/legal/disclosures.ts",
+     "frontend/next.config.mjs",
+     "docs/decisions/2026-09-30-owner-decisions.md",
+     "docs/decisions/2026-10-04-owner-decisions.md"
     ]
    }
   },
@@ -5143,7 +5158,7 @@
   {
    "id": "T-005",
    "title": "Verify the 30 remaining seeded source-terms registry entries on the owner's machine",
-   "status": "blocked",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "terms-review",
@@ -5196,6 +5211,21 @@
     "corrections": [
      "2026-09-26: THE READING HALF IS DONE — all 30 seeded hosts, on the owner’s machine over verified clean egress (Charter AS11426, proxy:false hosting:false), three fetch paths (curl, curl with the SEC-declared agent, local headless Chrome for browser-only pages). Record with verbatim clauses: docs/audits/terms-review-seeded-2026-09-26.md; each registry entry carries a dated READ comment pointing there, nothing else changed. Twelve read clean, nine carry a finding the owner must weigh, three could not be read from any path (Binance.com — moot under the US 451; HTX; XT.com), four have no document at all (DefiLlama, Blockchain.com, Stride, Beefy — recorded as absent, not cleared), Yearn is no longer fetched (T-399), Yahoo is confirmed prohibited. THE ONE THAT CHANGES SOMETHING: the OKX API Agreement (28 Jul 2026) §9.4 grants Market Data — funding rates and OHLCV by name — \"solely for your own personal, non-commercial trading and account management purposes\", bars making it available to any third party \"whether for commercial gain or otherwise\", bars its use in any \"financial data aggregator, price feed, or analytics platform\", and applies \"equally to … public endpoints\". The registry’s seeded conditional cannot stand; whether it is personal-only under D22 or prohibited now is the owner’s (T-413). Re-scoped to blocked/owner-decision: the remaining work is ratification.",
      "2026-09-30: T-413 CLOSED under D40–D46. OKX is prohibited (funding-rates has no source); Nasdaq Trader joins T-407; KuCoin, Alpha Vantage, Messari, Santiment and CoinMarketCap carry the D22 SINGLE-USER condition; Jito, Rocket Pool and Pendle take the narrow reading. Offered the flip for the 11 clean readings plus the 6 ruled entries, the owner chose \"Not yet\" (D46), so every 2026-09-26 entry stays seeded with its READ and RULED notes beside it. What remains here is that sign-off and nothing else — no re-reading. When it happens, also record the OKX API Agreement's address: the entry's termsUrl still names the API docs."
+    ]
+   },
+   "closure": {
+    "status_was": "blocked",
+    "closed_on": "2026-10-04",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "DONE under D54 and D55. All thirty seeded entries were read on the owner's machine on 2026-09-26 (docs/audits/terms-review-seeded-2026-09-26.md). D40–D45 ruled on the findings, and D46 held the sign-off. D54 marks the seventeen offered as option 1 verified, each dated 2026-09-26: sec.gov, home.treasury.gov, frankfurter.dev, wikipedia.org, cdn.jsdelivr.net, alternative.me, mempool.space, lunarcrush.com, lido.fi, marinade.finance and yahoo.com (prohibited), plus okx.com (prohibited), nasdaqtrader.com, kucoin.com, alphavantage.co, messari.io and santiment.net. D54 takes the registry from 26 to 43 verified of 56. Each finding now quotes its document. The old text was written from public descriptions before anyone read the terms, and Alpha Vantage's had said its free key was offered for third-party use, where §2(a) says personal, non-commercial. alternative.me's verdict moves from approved to conditional on its attribution clause, and the Market Structure panel now credits it beside the figure; a test pins both surfaces that show the index. The OKX API Agreement's address is now recorded, as this item's note asked, along with Treasury's live policy page, Nasdaq Trader's Copyright & Disclaimer and KuCoin's Terms of Use. The last three were found by web search and are marked to confirm at the next reading. D55 then marks the four ruled on after that set was drawn up (CoinMarketCap, Jito, Rocket Pool and Pendle) verified too, taking the registry to 47 of 56; CoinMarketCap's termsUrl now names the Personal API agreement D44 applies, found the same way. Nine entries stay seeded for reasons this item no longer covers. CryptoPanic's API terms were never read. Binance.com, HTX and XT.com could not be read. DefiLlama, Blockchain.com, Stride and Beefy have no terms document. Yearn is no longer fetched.",
+    "approved_by": "owner, 2026-10-04: \"Close t-119 and go with option 1 for t-005\" (option 1 is \"All 17 fully read and settled\", as offered on 2026-09-30); and owner, 2026-10-04: \"yes and you can move on\" (D55, the four ruled on later)",
+    "evidence": [
+     "docs/decisions/2026-10-04-owner-decisions.md",
+     "docs/audits/terms-review-seeded-2026-09-26.md",
+     "frontend/src/lib/server/sourceTerms.ts",
+     "frontend/src/lib/server/__tests__/sourceTerms.test.ts",
+     "frontend/src/components/analytics/technical/MarketStructurePanel.tsx"
     ]
    }
   },
@@ -12438,6 +12468,38 @@
     "on": "2026-09-30",
     "by": "session steward",
     "why": "Split out of T-412 so its ruling could close: the confirming re-run and the FXAIX reading both need sec.gov, which the cloud environment refuses."
+   }
+  },
+  {
+   "id": "T-418",
+   "title": "Remove the braces audit exception once a fix ships, or decide again by 2026-11-03",
+   "status": "blocked",
+   "confidence": "high",
+   "owner_role": "either",
+   "category": "security",
+   "effort": "small",
+   "blocking_decision": "Has npm started reporting a fix for GHSA-vfj7-8cjw-p6xm that needs no major upgrade (most likely a braces 3.0.4), or has the D53 exception reached its 2026-11-03 expiry, when the owner decides again?",
+   "related_ids": [
+    "D53"
+   ],
+   "summary": "D53 (2026-10-03) allows one advisory in the CI dependency audit: GHSA-vfj7-8cjw-p6xm, a high-severity crash in braces 3.0.3 and earlier, which has no patched release. braces reaches this app only through tooling that reads file patterns written in the repo (Tailwind's content paths, ESLint's file globs). The exception ends on its own, and the Security Scan goes red again, on whichever comes first: npm reports a fix short of a major upgrade, or 2026-11-03 passes.",
+   "next_action": "When the Security Scan goes red on GHSA-vfj7-8cjw-p6xm, or by 2026-11-03: in frontend/, run `npm run deps:check`. If it says a fix is available, run `npm audit fix` (no `--force`), confirm `npm run deps:check` passes, then remove the braces entry from frontend/audit-exceptions.json by hand and update CLAUDE.md's Dependency audit section. If no fix exists by the expiry, put the choice to the owner again: a new dated exception under a new decision (never an edited expiry), or a Tailwind 4 migration plus an eslint-config-next change, which together remove both paths braces comes in by.",
+   "sources": [
+    {
+     "file": "docs/decisions/2026-10-03-owner-decisions.md",
+     "lines": "D53",
+     "quote": "The gate stops allowing the advisory on whichever comes first"
+    },
+    {
+     "file": "frontend/audit-exceptions.json",
+     "lines": "GHSA-vfj7-8cjw-p6xm",
+     "quote": "\"expires\": \"2026-11-03\""
+    }
+   ],
+   "opened": {
+    "on": "2026-10-03",
+    "by": "session steward",
+    "why": "Opened with D53, so the exception's end is on the ledger as well as in CI."
    }
   }
  ],
@@ -37612,6 +37674,25 @@
      "frontend/src/components/markets/agentScans.ts",
      "docs/audits/rejected-proposals.md",
      "docs/assessments/P3-production-review.md"
+    ]
+   },
+   {
+    "on": "2026-10-03",
+    "what": "T-418 opened with D53: the CI dependency audit now allows GHSA-vfj7-8cjw-p6xm (braces 3.0.3 and earlier, no patched release) until 2026-11-03, or until npm reports a fix short of a major upgrade. T-418 tracks removing the exception, or putting the choice to the owner again at its expiry. Outstanding 357 to 358, blocked 43 to 44.",
+    "evidence": [
+     "docs/decisions/2026-10-03-owner-decisions.md",
+     "frontend/audit-exceptions.json",
+     "frontend/scripts/lib/auditGate.mjs",
+     "frontend/src/lib/server/__tests__/auditGate.test.ts"
+    ]
+   },
+   {
+    "on": "2026-10-04",
+    "what": "T-119 and T-005 closed with the owner's approval, the first two items on the blocked list. T-119: the paid-link label was built on 2026-09-21, and the four placeholder sections it waited on were overtaken by D49 and D50; the remaining blanks are T-291 and the UK rules T-125. T-005: D54 marks the seventeen 2026-09-26 readings offered as option 1 verified, and D55 the four ruled on later that day, taking the registry from 26 to 47 of 56. Blocked 44 to 42, closed 175 to 177.",
+    "evidence": [
+     "docs/decisions/2026-10-04-owner-decisions.md",
+     "frontend/src/lib/server/sourceTerms.ts",
+     "docs/audits/terms-review-seeded-2026-09-26.md"
     ]
    }
   ]

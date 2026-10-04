@@ -43,6 +43,7 @@ export async function GET(req: NextRequest) {
           sentiment: string
           category: string
           relatedAssets: string[]
+          relatedSymbols?: string[]
           summary?: string
         }>
         reason?: 'no-providers' | 'all-failed'
@@ -73,8 +74,9 @@ export async function GET(req: NextRequest) {
           source:        a.source,
           publishedAt:   a.publishedAt,
           sentiment:     a.sentiment,       // 'positive' | 'negative' | 'neutral'
-          category:      a.category,        // 'regulation' | 'security' | 'adoption' | 'macro' | 'protocol' | 'global' | 'general'
+          category:      a.category,        // 'regulation' | 'market' | 'protocol' | 'security' | 'adoption' | 'macro' | 'global' | 'tokenization' | 'general'
           relatedAssets: a.relatedAssets,   // e.g. ['btc', 'eth']
+          relatedSymbols: a.relatedSymbols ?? [], // stock tickers a tokenized-securities story names, e.g. ['TSLA']
           summary:       a.summary ?? null,
         }))
     }
@@ -96,7 +98,7 @@ export async function GET(req: NextRequest) {
     articles,
     total: articles.length,
     filters: { coin: coin ?? 'all', sentiment: sentiment ?? 'all', limit },
-    note: 'sentiment: positive/negative/neutral. category: regulation/security/adoption/macro/protocol/global/general. relatedAssets: coin ids affected by the article.',
+    note: 'sentiment: positive/negative/neutral. category: regulation/market/protocol/security/adoption/macro/global/tokenization/general. relatedAssets: coin ids affected by the article. relatedSymbols: stock tickers a story about tokenized securities names (a token such as TSLAx counts as its company); empty for every other story.',
     updatedAt: new Date().toISOString(),
   }, { headers: CORS })
 }

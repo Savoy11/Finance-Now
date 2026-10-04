@@ -326,10 +326,19 @@ jobs:
       #
       # `--package-lock-only` resolves the tree from mcp-server/package-lock.json
       # without an `npm ci`, so this adds a few seconds rather than an install.
+      #
+      # frontend/ goes through scripts/check-dependency-audit.mjs since 2026-10-03
+      # (D53), not a bare `npm audit`. It fails on everything `--audit-level=high`
+      # failed on, except an advisory that a recorded owner decision allows for a
+      # dated window in frontend/audit-exceptions.json: at most 92 days, and only
+      # while npm reports no fix short of a major upgrade. The first is
+      # GHSA-vfj7-8cjw-p6xm (braces), which has no patched release and turned main
+      # and every PR red. Do not add `|| true` and do not raise the threshold: either
+      # makes the gate unable to fail. auditGate.test.ts reads this step.
       - name: Node.js dependency audit
         run: |
           cd frontend
-          npm audit --audit-level=high
+          node scripts/check-dependency-audit.mjs
           cd ../mcp-server
           npm audit --audit-level=high --package-lock-only
 

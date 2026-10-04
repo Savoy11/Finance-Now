@@ -26,6 +26,7 @@ const SENTIMENT_STYLES = {
 }
 
 const CATEGORY_STYLES: Record<MarketNewsCategory, string> = {
+  tokenization: 'text-fuchsia-400 bg-fuchsia-400/10 border-fuchsia-500/20',
   earnings: 'text-cyan-400 bg-cyan-400/10 border-cyan-500/20',
   analyst:  'text-violet-400 bg-violet-400/10 border-violet-500/20',
   macro:    'text-amber-400 bg-amber-400/10 border-amber-500/20',
@@ -43,11 +44,12 @@ const CATEGORIES: Array<{ value: MarketNewsCategory | 'all'; label: string }> = 
   { value: 'ma', label: 'M&A' },
   { value: 'dividend', label: 'Dividends & Buybacks' },
   { value: 'market', label: 'Market' },
+  { value: 'tokenization', label: 'Tokenization' },
   { value: 'general', label: 'General' },
 ]
 
 const CATEGORY_LABELS: Record<MarketNewsCategory, string> = {
-  earnings: 'earnings', analyst: 'analyst', macro: 'macro',
+  tokenization: 'tokenization', earnings: 'earnings', analyst: 'analyst', macro: 'macro',
   ma: 'M&A', dividend: 'dividend', market: 'market', general: 'general',
 }
 
@@ -369,7 +371,7 @@ function EquityNewsContent() {
             subtitle="Earnings, analyst actions, macro, and market stories with ticker tagging"
             description="Aggregates stock-market headlines from the CNBC RSS feed. Each article is classified by category, scored for sentiment from headline keywords, and tagged with catalog tickers it mentions."
             details={[
-              { label: 'Ticker detection', text: 'Company-name matching plus $CASHTAG / uppercase ticker matching against the equity catalog. Ticker chips link to the stock detail page.' },
+              { label: 'Ticker detection', text: 'Company-name matching plus $CASHTAG / uppercase ticker matching against the equity catalog. A tokenized-stock symbol counts as its company: TSLAx (Kraken xStocks) and TSLAon (Ondo) both tag TSLA, and stories about tokenized securities are filed under Tokenization. Ticker chips link to the stock detail page.' },
               { label: 'Symbol search', text: 'Search any stock, ETF, or mutual fund — catalog names match on company/fund name and ticker; a ticker outside the catalogs matches on explicit mention ($SYM or the bare symbol) only, since there is no name to look for. Finance Now has no per-ticker news feed — the only free one was withdrawn on terms grounds — so a symbol with no coverage today returns nothing rather than general market stories relabelled as its own.' },
             ]}
           />
