@@ -1783,12 +1783,21 @@ of totals that are being corrected means doing the reconciliation twice.
 > disclosure that the MCP tool relays verbatim, so an agent cannot tell a user a
 > transfer will go through.
 >
-> **Still open — deposit status.** The mirror gap: `depositEnabled` is also
+> ~~**Still open — deposit status.** The mirror gap: `depositEnabled` is also
 > all-true from the snapshot, a closed deposit still silently removes a route,
 > and no keyless source reports deposit status. A suspended deposit strands
 > funds the same way. The page copy covers availability on both sides rather
 > than implying only withdrawals are uncertain; closing it needs a
-> deposit-status source.
+> deposit-status source.~~
+>
+> **Closed 2026-10-04 (D66, T-054).** No keyless source *was being read* for
+> deposit status, but four of the feeds already read for withdrawal fees publish
+> it (KuCoin, HTX, Bitget, XT.com, per their API documentation). The parsers now
+> read it strictly, a closed deposit at the receiving exchange is listed as a
+> blocked route with who reported it instead of vanishing, and an open one
+> reported live is tagged on the route. Every other exchange's deposit status
+> stays the stored assumption, and the page says so per route. The field names
+> are confirmed by `npm run fee-probe` on the owner's machine (T-422).
 >
 > **Tax character, part 1 (2026-08-21):** `lib/data/taxCharacter.ts` — pure +
 > 14 tests — tags the route the user built with what KIND of event each leg is:

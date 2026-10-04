@@ -364,6 +364,12 @@ export interface NetworkConfig {
    * Absent ⇒ the flag is the 2025-06-01 snapshot's ASSUMPTION, not a check.
    */
   liveAvailability?: boolean
+  /**
+   * True when `depositEnabled` on this row came from a live exchange API
+   * (T-054, D66). Its own flag for the same reason `liveAvailability` is: a
+   * source can report withdrawals and say nothing about deposits (LBank).
+   */
+  liveDepositAvailability?: boolean
 }
 
 // ─── Live withdrawal-fee overlay (S3 Tier-1) ──────────────────────────────────
@@ -373,7 +379,9 @@ export interface NetworkConfig {
 // map, which findTransferPaths() applies over the static table. Two rules:
 //   1. Overlay only — a live entry updates a row that already exists in
 //      EXCHANGES; it never adds a coin/network route the curated table doesn't
-//      carry (deposit support and route warnings are hand-curated).
+//      carry (which networks an exchange takes deposits on, and route warnings,
+//      are hand-curated). Whether a listed network is OPEN is a live status:
+//      withdrawals on the sending side, and since D66 deposits on the receiving.
 //   2. Labeled per-row — an overlaid fee sets `liveFee` so the UI can tag it,
 //      and static rows keep the staleness warning. The two are never blended
 //      silently.
@@ -386,6 +394,12 @@ export interface LiveFeeOverride {
   withdrawFee?: number
   minWithdraw?: number
   withdrawEnabled?: boolean
+  /**
+   * Deposit status on this network (T-054, D66). Applied to the RECEIVING
+   * exchange of a route, where withdrawal fields mean nothing; absent leaves the
+   * stored flag, and its "assumed" labelling, in place.
+   */
+  depositEnabled?: boolean
 }
 
 /** exchangeId → coin → network → override */
@@ -1807,6 +1821,12 @@ export interface TransferHop {
    * — claiming otherwise presents a stored "open" as a checked one.
    */
   availabilityLive?: boolean
+  /**
+   * True when the RECEIVING exchange's deposit status for this hop was
+   * live-reported (T-054, D66). Absent on a hop that ends in a personal wallet,
+   * and wherever the stored flag is all there is.
+   */
+  depositAvailabilityLive?: boolean
 }
 
 export interface TransferPath {
@@ -1827,10 +1847,15 @@ export interface TransferPath {
    * Why a non-viable path is blocked. `isViable: false` used to mean exactly
    * one thing (amount below the exchange minimum), so the UI hard-coded that
    * label; a suspended withdrawal is a second, materially different reason and
-   * must not be reported as "amount too low".
+   * must not be reported as "amount too low". A closed deposit at the
+   * receiving exchange is a third (D66): it used to drop the route silently.
    */
-  blockedReason?: 'below-minimum' | 'withdrawals-suspended'
+  blockedReason?: 'below-minimum' | 'withdrawals-suspended' | 'deposits-suspended'
 }
+
+/** A route that is blocked because an exchange has closed a door, not because of the amount asked for. */
+export const isSuspension = (reason: TransferPath['blockedReason']) =>
+  reason === 'withdrawals-suspended' || reason === 'deposits-suspended'
 
 export interface NetworkFeeEntry {
   feeNative: number
@@ -1904,6 +1929,54 @@ function buildWarnings(
   return warnings
 }
 
+/**
+ * The receiving side's networks with any live deposit status laid over the
+ * stored flag (T-054, owner decision D66). Only the status is taken: a route's
+ * receiving exchange charges no withdrawal fee, so its fee fields mean nothing here.
+ */
+function withLiveDeposits(
+  coin: ExchangeCoin | undefined,
+  overrides: Partial<Record<NetworkId, LiveFeeOverride>> | undefined,
+): ExchangeCoin | undefined {
+  if (!coin || !overrides) return coin
+  return {
+    networks: coin.networks.map(n => {
+      const live = overrides[n.networkId]?.depositEnabled
+      return live === undefined ? n : { ...n, depositEnabled: live, liveDepositAvailability: true }
+    }),
+  }
+}
+
+/** Why a route into an exchange is blocked when that exchange is not taking deposits on its network. */
+function depositsClosedWarning(toName: string, coinId: CoinId, dNet: NetworkConfig, liveAsOf?: string): TransferWarning {
+  const netName = NETWORKS[dNet.networkId].shortName
+  return {
+    type: 'danger',
+    title: 'Deposits suspended',
+    message: dNet.liveDepositAvailability
+      ? `${toName} reports ${coinId.toUpperCase()} deposits on ${netName} as suspended in its public API${liveAsOf ? ` (checked ${liveAsOf})` : ''}. Coins sent while deposits are closed can sit uncredited until they reopen — check the exchange's status page before sending.`
+      : `The withdrawal-fee table records ${coinId.toUpperCase()} deposits on ${netName} at ${toName} as disabled — a stored value from ${TRANSFER_FEES_LAST_VERIFIED}, not a live check. Confirm on the exchange.`,
+  }
+}
+
+/** A route an exchange has closed: listed with its reason, never priced or recommended. */
+function blockedPath(
+  id: string,
+  networkId: NetworkId,
+  blockedReason: 'withdrawals-suspended' | 'deposits-suspended',
+  warnings: TransferWarning[],
+): TransferPath {
+  return {
+    id, type: 'direct', networkId, hops: [],
+    exchangeFeeCoin: 0, exchangeFeeUsd: 0, networkFeeUsd: 0, totalFeeUsd: 0, feePercent: 0,
+    estimatedTime: 'N/A', warnings, isViable: false, isRecommended: false, blockedReason,
+  }
+}
+
+/** Open routes first, cheapest first among them. */
+const byViabilityThenFee = (a: TransferPath, b: TransferPath) =>
+  a.isViable !== b.isViable ? (a.isViable ? -1 : 1) : a.totalFeeUsd - b.totalFeeUsd
+
 export function findTransferPaths(
   fromId: string,
   toId: string,
@@ -1936,14 +2009,20 @@ export function findTransferPaths(
   // they silently got an empty result.)
   if (fromId === PERSONAL_WALLET_ID) {
     if (!toEx) return []
-    const toCoinW = toEx.coins[coinId]
+    const toCoinW = withLiveDeposits(toEx.coins[coinId], liveOverrides?.[toId]?.[coinId])
     if (!toCoinW || toCoinW.networks.length === 0) {
       return [{ id: 'no-dest', type: 'no-path', networkId: null, hops: [], exchangeFeeCoin: 0, exchangeFeeUsd: 0, networkFeeUsd: 0, totalFeeUsd: 0, feePercent: 0, estimatedTime: 'N/A', warnings: [{ type: 'danger', title: 'Not supported at destination', message: `${toEx.name} does not support ${coinId.toUpperCase()} deposits.` }], isViable: false, isRecommended: false }]
     }
     const walletPaths: TransferPath[] = []
     const amountUsd = amount * coinPriceUsd
     for (const dNet of toCoinW.networks) {
-      if (!dNet.depositEnabled) continue
+      // A closed deposit used to drop the route without a word; it is listed,
+      // blocked, with who says so (D66).
+      if (!dNet.depositEnabled) {
+        walletPaths.push(blockedPath(`wallet-deposits-suspended-${dNet.networkId}`, dNet.networkId, 'deposits-suspended',
+          [depositsClosedWarning(toEx.name, coinId, dNet, liveAsOf)]))
+        continue
+      }
       const nFee = networkFees[dNet.networkId]
       if (!nFee) continue
       const network = NETWORKS[dNet.networkId]
@@ -1957,6 +2036,7 @@ export function findTransferPaths(
           exchangeFee: 0, exchangeFeeUsd: 0,
           networkFee: nFee.feeNative, networkFeeUsd: nFee.feeUsd,
           nativeGasToken: nFee.nativeToken, gasCoveredByFee: false, note: dNet.note,
+          depositAvailabilityLive: dNet.liveDepositAvailability,
         }],
         exchangeFeeCoin: 0, exchangeFeeUsd: 0, networkFeeUsd: nFee.feeUsd,
         totalFeeUsd,
@@ -1969,18 +2049,24 @@ export function findTransferPaths(
         isViable: true, isRecommended: false,
       })
     }
-    if (walletPaths.length === 0) {
-      return [{ id: 'no-path', type: 'no-path', networkId: null, hops: [], exchangeFeeCoin: 0, exchangeFeeUsd: 0, networkFeeUsd: 0, totalFeeUsd: 0, feePercent: 0, estimatedTime: 'N/A', warnings: [{ type: 'danger', title: 'No transfer path found', message: `No deposit network with fee data found at ${toEx.name} for ${coinId.toUpperCase()}.` }], isViable: false, isRecommended: false }]
+    if (!walletPaths.some(p => p.isViable)) {
+      const closed = walletPaths.map(p => NETWORKS[p.networkId!].shortName)
+      const unpriced = toCoinW.networks.length - closed.length
+      return [...walletPaths, { id: 'no-path', type: 'no-path', networkId: null, hops: [], exchangeFeeCoin: 0, exchangeFeeUsd: 0, networkFeeUsd: 0, totalFeeUsd: 0, feePercent: 0, estimatedTime: 'N/A', warnings: [closed.length > 0
+        ? { type: 'danger', title: 'No route available — deposits suspended', message: `${toEx.name} is not taking ${coinId.toUpperCase()} deposits on ${closed.join(', ')}${unpriced > 0 ? `, and the ${unpriced === 1 ? 'other network it lists has' : 'other networks it lists have'} no fee data` : ''}. This is usually temporary — check ${toEx.name}'s status page.` }
+        : { type: 'danger', title: 'No transfer path found', message: `No deposit network with fee data found at ${toEx.name} for ${coinId.toUpperCase()}.` }], isViable: false, isRecommended: false }]
     }
-    walletPaths.sort((a, b) => a.totalFeeUsd - b.totalFeeUsd)
-    walletPaths[0].isRecommended = true
+    // A blocked route costs nothing, so a plain fee sort would put it first.
+    walletPaths.sort(byViabilityThenFee)
+    walletPaths.find(p => p.isViable)!.isRecommended = true
     return walletPaths
   }
 
   const fromEx = EXCHANGES.find(e => e.id === fromId)
   if (!fromEx) return []
 
-  // Apply live fee overrides to the WITHDRAWING side only (deposits are free).
+  // Apply live fees and withdrawal status to the WITHDRAWING side (deposits are
+  // free); the receiving side takes only its deposit status, below (D66).
   // Overlay, never extend: only rows already in the static table are touched.
   const rawFromCoin = fromEx.coins[coinId]
   const coinOverrides = liveOverrides?.[fromId]?.[coinId]
@@ -2009,27 +2095,26 @@ export function findTransferPaths(
     return [{ id: 'no-source', type: 'no-path', networkId: null, hops: [], exchangeFeeCoin: 0, exchangeFeeUsd: 0, networkFeeUsd: 0, totalFeeUsd: 0, feePercent: 0, estimatedTime: 'N/A', warnings: [{ type: 'danger', title: 'Not supported', message: `${fromEx.name} does not support ${coinId.toUpperCase()} withdrawals.` }], isViable: false, isRecommended: false }]
   }
 
-  const toCoin = toEx?.coins[coinId]
+  // The receiving side, with live deposit status laid over the stored flag
+  // where the exchange reports it (T-054, D66).
+  const toCoin = withLiveDeposits(toEx?.coins[coinId], liveOverrides?.[toId]?.[coinId])
   if (toEx && (!toCoin || toCoin.networks.length === 0)) {
     return [{ id: 'no-dest', type: 'no-path', networkId: null, hops: [], exchangeFeeCoin: 0, exchangeFeeUsd: 0, networkFeeUsd: 0, totalFeeUsd: 0, feePercent: 0, estimatedTime: 'N/A', warnings: [{ type: 'danger', title: 'Not supported at destination', message: `${toEx.name} does not support ${coinId.toUpperCase()} deposits.` }], isViable: false, isRecommended: false }]
   }
 
-  // ⚠ KNOWN GAP (the mirror of the withdrawal-suspension work below): a closed
-  // DEPOSIT silently removes the route here, and no live source reports deposit
-  // status, so all 543 catalogued rows assert depositEnabled: true from the
-  // stored snapshot. A suspended deposit strands funds just as a suspended
-  // withdrawal does — the coin leaves the source and the destination will not
-  // credit it. Closing this needs a deposit-status source; until then the
-  // page-level notice covers availability generally rather than implying only
-  // withdrawals are uncertain.
-  const depositNetworkIds = toEx
-    ? new Set(toCoin!.networks.filter(n => n.depositEnabled).map(n => n.networkId))
-    : null
+  // Which networks the destination takes this coin on at all. A network missing
+  // here is no route. One listed but closed for deposits is a blocked route,
+  // shown with its reason: it used to vanish without a word, while a closed
+  // deposit strands funds just as a closed withdrawal does (T-054, D66). The
+  // status is live where the receiving exchange reports it, and the stored
+  // assumption everywhere else.
+  const destNets = toEx ? new Map(toCoin!.networks.map(n => [n.networkId, n])) : null
 
   const paths: TransferPath[] = []
 
   for (const wNet of fromCoin.networks) {
-    if (depositNetworkIds && !depositNetworkIds.has(wNet.networkId)) continue
+    const dNet = destNets?.get(wNet.networkId)
+    if (destNets && !dNet) continue
 
     const nFee = networkFees[wNet.networkId]
     if (!nFee) continue
@@ -2041,24 +2126,23 @@ export function findTransferPaths(
     // table's flag is a 2025-06-01 assumption.
     if (!wNet.withdrawEnabled) {
       const netName = NETWORKS[wNet.networkId].shortName
-      paths.push({
-        id: `suspended-${wNet.networkId}`,
-        type: 'direct',
-        networkId: wNet.networkId,
-        hops: [],
-        exchangeFeeCoin: 0, exchangeFeeUsd: 0, networkFeeUsd: 0, totalFeeUsd: 0, feePercent: 0,
-        estimatedTime: 'N/A',
-        warnings: [{
+      paths.push(blockedPath(`suspended-${wNet.networkId}`, wNet.networkId, 'withdrawals-suspended', [
+        {
           type: 'danger',
           title: 'Withdrawals suspended',
           message: wNet.liveAvailability
             ? `${fromEx.name} reports ${coinId.toUpperCase()} withdrawals on ${netName} as suspended in its public API${liveAsOf ? ` (checked ${liveAsOf})` : ''}. Suspensions are usually temporary — check the exchange's status page before planning around this.`
             : `The withdrawal-fee table records ${coinId.toUpperCase()} withdrawals on ${netName} at ${fromEx.name} as disabled — a stored value from ${TRANSFER_FEES_LAST_VERIFIED}, not a live check. Confirm on the exchange.`,
-        }],
-        isViable: false,
-        isRecommended: false,
-        blockedReason: 'withdrawals-suspended',
-      })
+        },
+        // When the receiving side is closed too, say so: one door reopening is not enough.
+        ...(dNet && !dNet.depositEnabled ? [depositsClosedWarning(toEx!.name, coinId, dNet, liveAsOf)] : []),
+      ]))
+      continue
+    }
+
+    if (dNet && !dNet.depositEnabled) {
+      paths.push(blockedPath(`deposits-suspended-${wNet.networkId}`, wNet.networkId, 'deposits-suspended',
+        [depositsClosedWarning(toEx!.name, coinId, dNet, liveAsOf)]))
       continue
     }
 
@@ -2083,6 +2167,7 @@ export function findTransferPaths(
         networkFee: nFee.feeNative, networkFeeUsd: nFee.feeUsd,
         nativeGasToken: nFee.nativeToken, gasCoveredByFee: true, note: wNet.note,
         feeLive: wNet.liveFee, availabilityLive: wNet.liveAvailability,
+        depositAvailabilityLive: dNet?.liveDepositAvailability,
       }],
       exchangeFeeCoin: wNet.withdrawFee, exchangeFeeUsd, networkFeeUsd,
       totalFeeUsd, feePercent,
@@ -2094,10 +2179,10 @@ export function findTransferPaths(
   }
 
   // No shared network → multi-hop via wallet.
-  // Suspended routes are pushed above but must NOT count as "we found a route",
-  // or a closed direct network would suppress the wallet alternative — which is
-  // exactly the case where the user most needs it.
-  const hasDirectRoute = paths.some(p => p.blockedReason !== 'withdrawals-suspended')
+  // Suspended routes (either door) are pushed above but must NOT count as "we
+  // found a route", or a closed direct network would suppress the wallet
+  // alternative — which is exactly the case where the user most needs it.
+  const hasDirectRoute = paths.some(p => !isSuspension(p.blockedReason))
   if (!hasDirectRoute && toEx) {
     // Prefer a network both legs support so no bridge/swap is implied
     const sharedNet = fromCoin.networks.find(n =>
@@ -2123,7 +2208,7 @@ export function findTransferPaths(
         networkId: srcNet.networkId,
         hops: [
           { step: 1, from: fromEx.name, to: 'Personal Wallet', networkId: srcNet.networkId, exchangeFee: srcNet.withdrawFee, exchangeFeeUsd, networkFee: 0, networkFeeUsd: 0, nativeGasToken: NETWORKS[srcNet.networkId].nativeToken, gasCoveredByFee: true, feeLive: srcNet.liveFee, availabilityLive: srcNet.liveAvailability },
-          { step: 2, from: 'Personal Wallet', to: toEx.name, networkId: dstNet.networkId, exchangeFee: 0, exchangeFeeUsd: 0, networkFee: dstNFee.feeNative, networkFeeUsd: dstNFee.feeUsd, nativeGasToken: dstNFee.nativeToken, gasCoveredByFee: false },
+          { step: 2, from: 'Personal Wallet', to: toEx.name, networkId: dstNet.networkId, exchangeFee: 0, exchangeFeeUsd: 0, networkFee: dstNFee.feeNative, networkFeeUsd: dstNFee.feeUsd, nativeGasToken: dstNFee.nativeToken, gasCoveredByFee: false, depositAvailabilityLive: dstNet.liveDepositAvailability },
         ],
         exchangeFeeCoin: srcNet.withdrawFee, exchangeFeeUsd, networkFeeUsd, totalFeeUsd,
         feePercent: amountUsd > 0 ? (totalFeeUsd / amountUsd) * 100 : 0,
@@ -2141,23 +2226,26 @@ export function findTransferPaths(
       // networks are perfectly compatible — saying otherwise sends the user
       // hunting for a different exchange when they should be waiting out a
       // temporary halt (or checking the status page).
-      const suspendedCount = paths.filter(p => p.blockedReason === 'withdrawals-suspended').length
+      const closedOut = paths.some(p => p.blockedReason === 'withdrawals-suspended')
+      const closedIn = paths.some(p => p.blockedReason === 'deposits-suspended')
+      const coin = coinId.toUpperCase()
       paths.push({
         id: 'no-path', type: 'no-path', networkId: null, hops: [],
         exchangeFeeCoin: 0, exchangeFeeUsd: 0, networkFeeUsd: 0, totalFeeUsd: 0, feePercent: 0,
         estimatedTime: 'N/A',
-        warnings: [suspendedCount > 0
-          ? { type: 'danger' as const, title: 'No route available — withdrawals suspended', message: `${fromEx.name} and ${toEx.name} do share a network for ${coinId.toUpperCase()}, but every route out of ${fromEx.name} is currently reported as suspended. This is usually temporary — check ${fromEx.name}'s status page rather than switching exchanges.` }
-          : { type: 'danger' as const, title: 'No transfer path found', message: `No compatible network found between ${fromEx.name} and ${toEx.name} for ${coinId.toUpperCase()}.` }],
+        warnings: [closedOut && closedIn
+          ? { type: 'danger' as const, title: 'No route available — exchanges report these networks closed', message: `${fromEx.name} and ${toEx.name} do share a network for ${coin}, but every one is currently reported closed: for withdrawals at ${fromEx.name} or for deposits at ${toEx.name}. This is usually temporary — check both exchanges' status pages rather than switching exchanges.` }
+          : closedOut
+          ? { type: 'danger' as const, title: 'No route available — withdrawals suspended', message: `${fromEx.name} and ${toEx.name} do share a network for ${coin}, but every route out of ${fromEx.name} is currently reported as suspended. This is usually temporary — check ${fromEx.name}'s status page rather than switching exchanges.` }
+          : closedIn
+          ? { type: 'danger' as const, title: 'No route available — deposits suspended', message: `${fromEx.name} and ${toEx.name} do share a network for ${coin}, but ${toEx.name} is currently reported as not taking ${coin} deposits on any of them. This is usually temporary — check ${toEx.name}'s status page rather than switching exchanges.` }
+          : { type: 'danger' as const, title: 'No transfer path found', message: `No compatible network found between ${fromEx.name} and ${toEx.name} for ${coin}.` }],
         isViable: false, isRecommended: false,
       })
     }
   }
 
-  paths.sort((a, b) => {
-    if (a.isViable !== b.isViable) return a.isViable ? -1 : 1
-    return a.totalFeeUsd - b.totalFeeUsd
-  })
+  paths.sort(byViabilityThenFee)
 
   const firstViable = paths.find(p => p.isViable)
   if (firstViable) firstViable.isRecommended = true

@@ -4,7 +4,7 @@ Recorded from the owner's answers while working through the blocked list, starti
 T-119, then T-005, then the four sources D54 left out (D55), then T-065 and T-066 (D56), then
 T-192 (D57), then Reddit sign-in, raised with T-246 (D58), then T-204 (D59), then T-294
 (D60), then T-393 (D61), then T-387 (D62), then T-009 (D63), then T-012 (D64), then T-027
-(D65). Same form as
+(D65), then T-054 (D66). Same form as
 `2026-10-03-owner-decisions.md`: one row per ruling, what it cascades to, and what was
 actually done.
 
@@ -22,6 +22,7 @@ actually done.
 | D63 | T-009 (whether delayed prices, clearly labelled, are allowed, to be settled before any options-chain feature ships), the next item on the blocked list | **Option 1, "Park it with the other options items":** *"merge and go with option 1,"* in reply to three options: park it until options chains are reopened; decide the rule now (delayed prices allowed only where the delay is shown on every screen that uses them and passed through the public API); or close it and add the question to the options-chain proposal's notes. → APPLIED | T-009 moves from blocked to parked beside T-060 to T-063. It comes back only if options chains are reopened (RP-1). The question stays unanswered on purpose, as the 2026-08-05 decision recorded it. No code change |
 | D64 | T-012 (whether the macro risk-profile scores should show anywhere), the next item on the blocked list. Offered: keep them in Portfolios only, show them on the macro pages with their workings, or leave it for the legal review | **Switch off every risk rating until the risk engine is rebuilt.** *"We will need to remove it until the risk engine is rebuilt. We can add an item for a pre launch rebuild of the risk engine and to address applying risk scores again later. This project will also require significant compliance and regulatory research to determine if and how risk can be assessed for each asset type."* Asked which of the three places that show ratings this covers, the owner chose all three: Portfolios' ratings, the fund page's risk label, and the options Trade Risk Scorer. → APPLIED | Switched off, code kept (see the notes): the three surfaces, the options API (503), the agent tool and the MCP tool, behind `RISK_RATINGS_SHOWN` in `lib/risk/visibility.ts` plus a redirect and a commented-out nav entry. T-012 closes. Two items open: T-419, compliance and regulatory research into whether and how risk can be assessed for each asset type, and T-420, the pre-launch rebuild of the engine and the return of ratings, which waits on T-419. RP-8 records the switch-off so it is not re-proposed meanwhile |
 | D65 | T-027 (recording real buys and sells in Portfolios), the next item on the blocked list. FIFO was already decided (D12, 2026-09-14); two questions were left: one method for every portfolio or one per portfolio, and how a price someone already typed in becomes a holding's first lot | **Option A for both:** *"merge and go with option A for both,"* in reply to two questions. Question 1: FIFO for every portfolio (A), or a method chosen per portfolio, FIFO or average cost (B). Question 2: keep today's portfolios as they are and add a new kind of tracked portfolio, with anything already owned entered once as a starting position (A); convert today's portfolios automatically (B); or accept only real trades, from the first purchase on (C). → APPLIED | One method, FIFO, for every portfolio, named beside every realized figure. Today's portfolios are never converted (see the notes). A starting position (how many, the average price paid, and the date if known) is the oldest lot, so FIFO sells it first, and a gain from it is marked as resting on the average entered. Gains and losses are plain, labelled "FIFO (oldest units sold first), not adjusted for tax rules": no wash-sale adjustment and no split into short and long term, since tax-adjusted figures wait on D4's legal review. The session proposed that rule alongside both questions, and it stands with the answer. T-027 moves from blocked to open, and step 1 of 3 is built: the lot engine (see the notes) |
+| D66 | T-054 (nothing checks whether the receiving exchange is accepting deposits on a network), the next item on the blocked list. Offered: read deposit status from the free exchange feeds the app already uses, where they publish it (A); accept the page's "assumed, not checked" notice as the final state (B); or park it until the Transfer Fees page returns to the suite (C) | **Option A:** *"go with option A for T-054"* → APPLIED | Four of the six keyless feeds read for withdrawal fees also say, per network, whether deposits are open (KuCoin `isDepositEnabled`, HTX `depositStatus`, Bitget `rechargeable`, XT.com `depositEnabled`, per each exchange's API documentation); LBank's and Bitfinex's carry nothing on deposits. The parsers now read it strictly: only each payload's own open and closed values count, and anything else stays unknown. A closed deposit at the receiving exchange is listed as a blocked route saying who reported it and when, where it used to drop the route without a word; an open one reported live is tagged on the route; the page notice and the withheld v1 API make the deposit claim per route, as they already did for withdrawals. Every other exchange's deposit status stays the stored assumption. The field names are confirmed by the owner-machine probe, which now reports them: T-422. T-054 closes. The Transfer Fees page stays hidden (T-028) |
 
 ## Notes
 
@@ -450,3 +451,37 @@ T-027 is closed. **Stock splits are T-421:** a split changes how many units each
 without changing its cost, which no kind of trade can express yet, so after a split a
 holding's units and prices here will not match a broker's. ⚠ Migration 0005 still has to be
 run on the owner's machine (`npm run db:migrate` in `frontend/`).
+
+**D66: deposit status, as built** (T-054; asked for with *"go with option A for T-054"*).
+
+- **Read strictly, in each exchange's own words.** KuCoin and XT.com send a real true or
+  false; HTX sends "allowed" or "prohibited"; Bitget sends "true" or "false" (as words or
+  booleans) under the name `rechargeable`. Any other value is unknown, not closed, because a
+  misread "closed" would block a working route and a misread "open" would vouch for a shut
+  one. A row carrying only a deposit status is kept.
+- **Kept apart from withdrawal status.** The overlay reports which exchanges and which routes
+  had their deposit status reported, separately from withdrawals: LBank reports withdrawals
+  and says nothing about deposits, and one list would vouch for checks never made.
+- **Applied to the receiving exchange only.** A deposit flag on the sending exchange says
+  nothing about the route. For a transfer out of a personal wallet, every network the
+  exchange lists is shown, the closed ones blocked, and the cheapest open one recommended (a
+  blocked route costs nothing, so a plain fee sort would have put it first).
+- **A closed door is listed, never hidden.** Blocked for deposits, with a message naming the
+  exchange, its public API and the time checked; when withdrawals are closed on the same
+  network too, both are named. When every shared network is closed, the dead end says which
+  side is closed instead of "no compatible network".
+- **Tests.** Fifteen new ones across the parsers, the overlay and the route finder, including
+  one that ties each source's `reportsDeposits` mark to what its parser actually reads. Ten
+  deliberate breakages were tried, among them reading the sending side's deposits,
+  recommending a blocked route, counting a blocked route as a found one, loosening HTX's and
+  Bitget's readings, and dropping a deposit-only row; the tests caught every one.
+- **Checked in a browser** with the redirect lifted on the session's machine only (not
+  committed): a closed TRC-20 deposit at KuCoin showed as a blocked route naming KuCoin's
+  public API and the time; the open ERC-20 route carried the "deposit open · reported live"
+  tag; the notice pointed at it.
+
+⚠ **The field names come from each exchange's API documentation, not from a payload seen
+here** (this environment cannot reach exchange hosts). If one is wrong, nothing false is
+shown: the status stays unknown and the stored assumption stands. `npm run fee-probe` now
+counts the deposit statuses each feed sends and warns when a feed marked `reportsDeposits`
+sends none. Running it on the owner's machine is T-422.

@@ -15,7 +15,7 @@ import { DataBadge } from '@/components/ui/DataBadge'
 import { clsx } from 'clsx'
 import {
   EXCHANGES, COIN_INFO, NETWORKS, PERSONAL_WALLET_ID,
-  EVM_NETWORKS, findTransferPaths,
+  EVM_NETWORKS, findTransferPaths, isSuspension,
   SPOT_TRADING_FEES, computeSaleCost, getTradingFeeProvenance, TRADING_FEES_COMPILED,
   TRANSFER_FEES_LAST_VERIFIED, transferFeesAreStale, transferFeesAgeDays,
   getTransferFeeProvenance,
@@ -56,6 +56,17 @@ const STATIC_FEES: NetworkFeeMap = Object.fromEntries(
   }]),
 ) as NetworkFeeMap
 const STATIC_PRICES: CoinPriceMap = { ...FALLBACK_PRICES }
+
+// What each reason a route is blocked is called on screen, and the order they
+// are listed in. Typed against the engine's union, so a new reason cannot be
+// added there without a label here.
+type BlockedReason = NonNullable<TransferPath['blockedReason']>
+const BLOCKED_LABEL: Record<BlockedReason, string> = {
+  'below-minimum': 'Amount too low',
+  'withdrawals-suspended': 'Withdrawals suspended',
+  'deposits-suspended': 'Deposits suspended',
+}
+const BLOCKED_ORDER = Object.keys(BLOCKED_LABEL) as BlockedReason[]
 
 // ─── Data fetching ─────────────────────────────────────────────────────────────
 
@@ -177,6 +188,13 @@ function HopRow({ hop, coinId, coinPrices }: {
         <div>
           <p className="text-slate-500 mb-0.5">Deposit fee</p>
           <p className="text-emerald-400 font-semibold">Free</p>
+          {/* Same rule as the withdrawal tag: shown only when the receiving
+              exchange reported this network open (D66); silence means assumed. */}
+          {hop.depositAvailabilityLive && (
+            <p className="mt-1 text-[9px] font-semibold uppercase tracking-wide text-emerald-400">
+              deposit open · reported live
+            </p>
+          )}
         </div>
       </div>
       {hop.note && (
@@ -342,13 +360,11 @@ function PathCard({ path, coinId, amount, coinPrices }: {
             // shared grey label buried the distinction behind an accordion.
             <span className={clsx(
               'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide',
-              path.blockedReason === 'withdrawals-suspended'
+              isSuspension(path.blockedReason)
                 ? 'bg-red-500/15 border border-red-500/30 text-red-400'
                 : 'bg-slate-700 border border-slate-600 text-slate-400',
             )}>
-              {path.blockedReason === 'withdrawals-suspended'
-                ? 'Withdrawals suspended'
-                : path.blockedReason === 'below-minimum' ? 'Amount too low' : 'Not viable'}
+              {path.blockedReason ? BLOCKED_LABEL[path.blockedReason] : 'Not viable'}
             </span>
           )}
         </div>
@@ -680,6 +696,9 @@ function TransferFeesPageInner() {
   // True only when a route ON SCREEN carries a live status report.
   const routesWithLiveStatus = segmentPaths.some(seg =>
     seg.some(p => p.hops.some(h => h.availabilityLive)))
+  // The same, for the receiving side's deposit status (D66).
+  const routesWithLiveDepositStatus = segmentPaths.some(seg =>
+    seg.some(p => p.hops.some(h => h.depositAvailabilityLive)))
 
   const taxNotes = getTransferTaxNotes({
     sellingFirst: includeSale,
@@ -715,6 +734,7 @@ function TransferFeesPageInner() {
               details={[
                 { label: 'Live gas prices', text: 'Bitcoin uses live mempool sat/vByte; Ethereum, BNB Chain, Polygon and Avalanche use live eth_gasPrice from a public RPC. Both are a live rate multiplied by an assumed transaction size, so the size is still an estimate. Arbitrum, Optimism and Base are deliberately NOT live — their cost is dominated by an L1 data fee that eth_gasPrice does not report, so a live-looking number would understate it. Remaining networks use static gas amounts at live token prices.' },
                 { label: 'Multi-hop routes', text: 'When a direct exchange-to-exchange path is unavailable, the calculator finds the best two-leg route via your personal wallet.' },
+                { label: 'Open or closed', text: 'Whether a network is open, for withdrawals at the sending exchange and for deposits at the receiving one, is read live where the exchange\'s public feed reports it, and each route says so. Everywhere else it is the stored table\'s assumption. A route an exchange reports closed is listed as blocked, with who reported it.' },
                 { label: 'EVM address collision', text: 'Transferring between EVM networks (ETH, Polygon, Arbitrum, etc.) uses the same address — verify the destination network before sending.' },
               ]}
             />
@@ -1028,11 +1048,12 @@ function TransferFeesPageInner() {
                   notice is deliberately NOT gated on staleness: re-verifying the
                   fee table would not make withdrawal status checked, and a notice
                   that disappears past a threshold teaches readers to treat its
-                  absence as "live" (the ProvenanceNotice lesson). It is also keyed
-                  on availabilityExchangeIds, not the live-fee sources — a source
-                  can send us a fee while saying nothing about whether the door is
-                  open (Bitfinex), and claiming otherwise advertises a check that
-                  never happened. */}
+                  absence as "live" (the ProvenanceNotice lesson). Each half is
+                  keyed on the status of the routes on screen, not on which sources
+                  answered: a source can send us a fee while saying nothing about
+                  whether the door is open (Bitfinex), or report withdrawals and
+                  say nothing about deposits (LBank), and claiming otherwise
+                  advertises a check that never happened. */}
               <div className="flex items-start gap-2 rounded-lg border border-border bg-bg-card px-3 py-2 text-xs text-text-muted">
                 <AlertTriangle size={13} className="shrink-0 mt-0.5 text-amber-400/80" />
                 <span>
@@ -1046,11 +1067,17 @@ function TransferFeesPageInner() {
                   ) : (
                     <> — no route shown here has a live status report.</>
                   )}
-                  {' '}The same applies to the receiving side: no source reports whether an
-                  exchange is currently accepting <em>deposits</em> on a network. Exchanges
-                  suspend both without notice, so a route listed here is not a guarantee it
-                  will go through — check both exchanges&rsquo; status pages before a large or
-                  time-sensitive transfer.
+                  {' '}The same applies to whether the receiving exchange is accepting{' '}
+                  <em>deposits</em> on a network
+                  {routesWithLiveDepositStatus ? (
+                    <> — except the routes tagged{' '}
+                      <span className="text-emerald-400">deposit open · reported live</span>.</>
+                  ) : (
+                    <> — no route shown here has a live deposit report.</>
+                  )}
+                  {' '}Exchanges suspend both without notice, so a route listed here is not a
+                  guarantee it will go through — check both exchanges&rsquo; status pages before
+                  a large or time-sensitive transfer.
                 </span>
               </div>
 
@@ -1189,13 +1216,11 @@ function TransferFeesPageInner() {
                         <p className="text-[11px] text-slate-500 font-medium uppercase tracking-wide">
                           {(() => {
                             // "amount too low" was hard-coded when that was the
-                            // only way to be blocked. A suspended withdrawal is
-                            // a second reason and must not wear the first's label.
-                            const low = nonViable.some(p => p.blockedReason === 'below-minimum')
-                            const susp = nonViable.some(p => p.blockedReason === 'withdrawals-suspended')
-                            if (low && susp) return 'Blocked routes (amount too low · withdrawals suspended)'
-                            if (susp) return 'Blocked routes (withdrawals suspended)'
-                            return 'Blocked routes (amount too low)'
+                            // only way to be blocked. Each reason present is
+                            // named, in a fixed order, so a suspension never
+                            // wears another reason's label.
+                            const reasons = BLOCKED_ORDER.filter(r => nonViable.some(p => p.blockedReason === r))
+                            return `Blocked routes (${(reasons.length ? reasons : ['below-minimum' as const]).map(r => BLOCKED_LABEL[r].toLowerCase()).join(' · ')})`
                           })()}
                         </p>
                         {nonViable.map(p => <PathCard key={p.id} path={p} coinId={coinId} amount={numAmount} coinPrices={coinPrices} />)}
