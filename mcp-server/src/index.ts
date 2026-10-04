@@ -32,7 +32,8 @@ async function get<T>(path: string): Promise<T> {
 
 /**
  * POST a JSON body. Only `score_options_trade` needs this — a multi-leg trade
- * doesn't fit a query string.
+ * doesn't fit a query string. That tool is switched off (D64), so nothing calls
+ * this until it is restored.
  *
  * On a 400 it surfaces the API's `details` array verbatim rather than a bare
  * status, because that array names exactly which fields were missing or
@@ -825,74 +826,82 @@ server.tool(
   }
 )
 
-// ─── Tool: score_options_trade ────────────────────────────────────────────────
+// ─── Tool: score_options_trade — SWITCHED OFF 2026-10-04 (D64) ──────────────
+//
+// Every risk rating the app shows is off until the risk engine is rebuilt and
+// the compliance research on whether and how risk can be rated is done (see
+// frontend/src/lib/risk/visibility.ts). /api/v1/options/score answers 503, so
+// leaving this registered would only fail mid-conversation, and an assistant
+// quoting a trade's risk score is the same harm as the page showing it. Kept,
+// not deleted: un-comment to restore, with the frontend switch.
 
-const optionLegSchema = z.object({
-  side: z.enum(['long', 'short']),
-  type: z.enum(['call', 'put']),
-  strike: z.number().positive(),
-  bid: z.number().min(0),
-  ask: z.number().min(0),
-  openInterest: z.number().min(0).optional(),
-  volume: z.number().min(0).optional(),
-  delta: z.number().optional().describe('Signed delta per contract, e.g. -0.30 for an OTM short put'),
-})
 
-server.tool(
-  'score_options_trade',
-  'Score the risk of an options position the USER describes — liquidity, IV environment, assignment, ' +
-  'time decay and defined risk — returning a 0-100 safety score (HIGHER = SAFER) with per-dimension ' +
-  'detail. Explains risk; does NOT recommend trades or predict profit. Finance Now has no options ' +
-  'chain feed, so every option-level number must come from the user (their broker chain) — ask for ' +
-  'anything missing rather than inventing a bid, ask, open interest or IV rank. Omitted optional ' +
-  'fields lower the confidence figure, never the score.',
-  {
-    underlyingPrice: z.number().positive().describe('Current price of the underlying'),
-    daysToExpiry: z.number().min(0).describe('Calendar days until expiry'),
-    legs: z.array(optionLegSchema).min(1).max(8).describe('The position, one entry per leg'),
-    ivRank: z.number().min(0).max(100).optional()
-      .describe('Where current IV sits in its 52-week range. No keyless source carries IV history — only pass what the user supplies.'),
-    earningsInDays: z.number().optional(),
-    exDividendInDays: z.number().optional(),
-    maxLossUsd: z.union([z.number().min(0), z.literal('unbounded')]).optional()
-      .describe('"unbounded" is a real value for naked short exposure — do not omit it to make a trade score better'),
-    maxProfitUsd: z.number().optional(),
-  },
-  async (args) => {
-    const data = await post<{
-      risk: {
-        score: number; band: string; confidence: number; coverage: number
-        dimensions: Array<{ label: string; score: number | null; weight: number; evidence: Array<{ metric: string; value: unknown; note?: string }> }>
-        warnings: string[]
-      }
-      netShortPremium: boolean
-      disclaimer: string
-    }>('/options/score', args)
+// const optionLegSchema = z.object({
+//   side: z.enum(['long', 'short']),
+//   type: z.enum(['call', 'put']),
+//   strike: z.number().positive(),
+//   bid: z.number().min(0),
+//   ask: z.number().min(0),
+//   openInterest: z.number().min(0).optional(),
+//   volume: z.number().min(0).optional(),
+//   delta: z.number().optional().describe('Signed delta per contract, e.g. -0.30 for an OTM short put'),
+// })
 
-    const { risk } = data
-    const lines = [
-      `**Options trade risk: ${risk.score.toFixed(0)}/100 (${risk.band})** — higher is safer`,
-      `${data.netShortPremium ? 'Net short premium (credit trade)' : 'Net long premium (debit trade)'} · ` +
-      `confidence ${(risk.confidence * 100).toFixed(0)}% · coverage ${(risk.coverage * 100).toFixed(0)}%`,
-      '',
-      '**By dimension:**',
-    ]
-    for (const d of risk.dimensions) {
-      const score = d.score == null ? 'not scored' : d.score.toFixed(0)
-      lines.push(`- ${d.label} (weight ${(d.weight * 100).toFixed(0)}%): ${score}`)
-      for (const ev of d.evidence) {
-        lines.push(`    ${ev.metric}: ${ev.value ?? '—'}${ev.note ? ` — ${ev.note}` : ''}`)
-      }
-    }
-    if (risk.warnings.length > 0) {
-      lines.push('', '**Notes:**')
-      for (const w of risk.warnings) lines.push(`- ${w}`)
-    }
-    lines.push('', `_${data.disclaimer}_`)
+// server.tool(
+//   'score_options_trade',
+//   'Score the risk of an options position the USER describes — liquidity, IV environment, assignment, ' +
+//   'time decay and defined risk — returning a 0-100 safety score (HIGHER = SAFER) with per-dimension ' +
+//   'detail. Explains risk; does NOT recommend trades or predict profit. Finance Now has no options ' +
+//   'chain feed, so every option-level number must come from the user (their broker chain) — ask for ' +
+//   'anything missing rather than inventing a bid, ask, open interest or IV rank. Omitted optional ' +
+//   'fields lower the confidence figure, never the score.',
+//   {
+//     underlyingPrice: z.number().positive().describe('Current price of the underlying'),
+//     daysToExpiry: z.number().min(0).describe('Calendar days until expiry'),
+//     legs: z.array(optionLegSchema).min(1).max(8).describe('The position, one entry per leg'),
+//     ivRank: z.number().min(0).max(100).optional()
+//       .describe('Where current IV sits in its 52-week range. No keyless source carries IV history — only pass what the user supplies.'),
+//     earningsInDays: z.number().optional(),
+//     exDividendInDays: z.number().optional(),
+//     maxLossUsd: z.union([z.number().min(0), z.literal('unbounded')]).optional()
+//       .describe('"unbounded" is a real value for naked short exposure — do not omit it to make a trade score better'),
+//     maxProfitUsd: z.number().optional(),
+//   },
+//   async (args) => {
+//     const data = await post<{
+//       risk: {
+//         score: number; band: string; confidence: number; coverage: number
+//         dimensions: Array<{ label: string; score: number | null; weight: number; evidence: Array<{ metric: string; value: unknown; note?: string }> }>
+//         warnings: string[]
+//       }
+//       netShortPremium: boolean
+//       disclaimer: string
+//     }>('/options/score', args)
 
-    return { content: [{ type: 'text', text: lines.join('\n') }] }
-  }
-)
+//     const { risk } = data
+//     const lines = [
+//       `**Options trade risk: ${risk.score.toFixed(0)}/100 (${risk.band})** — higher is safer`,
+//       `${data.netShortPremium ? 'Net short premium (credit trade)' : 'Net long premium (debit trade)'} · ` +
+//       `confidence ${(risk.confidence * 100).toFixed(0)}% · coverage ${(risk.coverage * 100).toFixed(0)}%`,
+//       '',
+//       '**By dimension:**',
+//     ]
+//     for (const d of risk.dimensions) {
+//       const score = d.score == null ? 'not scored' : d.score.toFixed(0)
+//       lines.push(`- ${d.label} (weight ${(d.weight * 100).toFixed(0)}%): ${score}`)
+//       for (const ev of d.evidence) {
+//         lines.push(`    ${ev.metric}: ${ev.value ?? '—'}${ev.note ? ` — ${ev.note}` : ''}`)
+//       }
+//     }
+//     if (risk.warnings.length > 0) {
+//       lines.push('', '**Notes:**')
+//       for (const w of risk.warnings) lines.push(`- ${w}`)
+//     }
+//     lines.push('', `_${data.disclaimer}_`)
+
+//     return { content: [{ type: 'text', text: lines.join('\n') }] }
+//   }
+// )
 
 // ─── Start server ─────────────────────────────────────────────────────────────
 

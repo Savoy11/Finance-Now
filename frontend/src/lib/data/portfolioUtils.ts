@@ -2,6 +2,7 @@ import { CATEGORY_META, type CoinCategory } from './portfolioCoins'
 import { CLASS_LABELS, INSTRUMENT_BY_KEY, isSecurityKey, securitySymbol, type InstrumentClass } from './instruments'
 import { getEquity } from './equityCatalog'
 import { getFund } from './fundCatalog'
+import { RISK_RATINGS_SHOWN } from '@/lib/risk/visibility'
 
 // ─── Core types ───────────────────────────────────────────────────────────────
 
@@ -377,7 +378,14 @@ export interface DiversificationWarning {
 }
 export function getDiversificationWarnings(
   holdings: ComputedHolding[],
-  metrics: PortfolioMetrics
+  metrics: PortfolioMetrics,
+  /**
+   * Whether to add the two warnings read off the weighted risk score. Off by
+   * default while risk ratings are switched off (D64): they put the score into
+   * words, "suitable only for high-risk tolerance" included. Tests pass true
+   * to keep the switched-off logic checked.
+   */
+  { includeRiskScore = RISK_RATINGS_SHOWN }: { includeRiskScore?: boolean } = {},
 ): DiversificationWarning[] {
   const warns: DiversificationWarning[] = []
 
@@ -397,7 +405,7 @@ export function getDiversificationWarnings(
 
   // No warning when weightedRisk is null — a warning derived from a number we
   // refused to fabricate would be fabricating it with extra steps.
-  if (metrics.weightedRisk !== null) {
+  if (includeRiskScore && metrics.weightedRisk !== null) {
     if (metrics.weightedRisk >= 8) warns.push({ level: 'danger', message: 'Portfolio risk score is very high — suitable only for high-risk tolerance.' })
     else if (metrics.weightedRisk >= 6) warns.push({ level: 'warn', message: 'Portfolio leans aggressive — significant volatility expected.' })
   }

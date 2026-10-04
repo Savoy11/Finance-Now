@@ -29,7 +29,6 @@ import {
   Network,
   Activity,
   Radar,
-  Sigma,
   Info,
 } from 'lucide-react'
 
@@ -219,7 +218,13 @@ export const MODULES: SuiteModule[] = [
       { href: '/equities/social', label: 'Stock Social', icon: MessageSquare },
       { href: '/equities/technical-analysis', label: 'Technical Analysis', icon: CandlestickChart },
       { href: '/equities/scanner', label: 'Scanner', icon: Radar },
-      { href: '/equities/options', label: 'Options Scorer', icon: Sigma },
+      // Options Scorer HIDDEN 2026-10-04 (D64): every risk rating is switched off
+      // until the risk engine is rebuilt and the compliance research is done.
+      // The page and engine stay; /equities/options redirects in next.config.mjs,
+      // the v1 route answers 503, and the agent and MCP tools are withheld (see
+      // lib/risk/visibility.ts). To restore: put this entry back (and Sigma in
+      // the lucide-react import) and delete the redirect.
+      // { href: '/equities/options', label: 'Options Scorer', icon: Sigma },
       // Backtests HIDDEN 2026-08-20 (owner: "hide the back testing tool …
       // I may revisit back testing"). The page, lib/utils/equityBacktest.ts,
       // its tests and subproject P3-W2-S1 are all retained — /equities/backtests

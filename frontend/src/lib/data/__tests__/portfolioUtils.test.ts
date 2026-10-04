@@ -410,11 +410,22 @@ describe('class-aware breakdown and honest weighted risk', () => {
     expect(m.categoryBreakdown.reduce((a, s) => a + s.pct, 0)).toBeCloseTo(100)
   })
 
+  // The two risk-score warnings are switched off with every risk rating (D64);
+  // these pass includeRiskScore so the switched-off logic stays checked.
   it('derives no risk warning from an unknowable risk figure', () => {
     const p = portfolio([holding({ cgId: 'unknown-coin', symbol: 'UNK' })])
     const hs = computeHoldings(p, {})
     const m = computeMetrics(p, hs)
-    const warns = getDiversificationWarnings(hs, m)
+    const warns = getDiversificationWarnings(hs, m, { includeRiskScore: true })
     expect(warns.some((w: { message: string }) => w.message.includes('risk score'))).toBe(false)
+  })
+
+  it('puts a high risk score into words only when asked to', () => {
+    const p = portfolio([holding({ cgId: 'unknown-coin', symbol: 'UNK' })])
+    const hs = computeHoldings(p, {})
+    const m = { ...computeMetrics(p, hs), weightedRisk: 8.5 }
+    const said = (warns: { message: string }[]) => warns.some((w) => w.message.includes('risk score'))
+    expect(said(getDiversificationWarnings(hs, m, { includeRiskScore: true }))).toBe(true)
+    expect(said(getDiversificationWarnings(hs, m, { includeRiskScore: false }))).toBe(false)
   })
 })

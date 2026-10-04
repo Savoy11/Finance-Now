@@ -59,25 +59,25 @@
  },
  "counts": {
   "total_verified": 398,
-  "outstanding": 358,
+  "outstanding": 360,
   "by_status": {
-   "closed": 180,
-   "open": 31,
+   "closed": 181,
+   "open": 32,
    "parked": 113,
    "blocked": 33,
    "unclear": 1
   },
   "by_owner_role": {
    "remote-dev": 87,
-   "either": 40,
+   "either": 42,
    "owner-decision": 147,
    "owner-machine": 84
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 180,
+  "closed_by_annotation": 181,
   "counts_recomputed_on": "2026-10-04",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
-  "total": 358
+  "total": 360
  },
  "blocking_decisions": [
   {
@@ -7736,7 +7736,7 @@
   {
    "id": "T-012",
    "title": "Decide where P2-R3 macro risk-profile scores surface in the UI",
-   "status": "blocked",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "decision",
@@ -7753,7 +7753,21 @@
      "lines": "1341-1342",
      "quote": "Do NOT build new UI. Where the scores surface (macro detail pages? watchlist?) is a separate decision — this task makes the engine able to answer, not the app ask."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "blocked",
+    "closed_on": "2026-10-04",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "D64: the macro risk-profile scores show nowhere, and neither does any other risk rating. Every rating is switched off until the risk engine is rebuilt before launch (T-420), after compliance and regulatory research into whether and how risk can be assessed for each asset type (T-419): Portfolios' ratings and weighted risk, which carried the macro tiers, the fund-page risk label, and the options Trade Risk Scorer. RP-8 records it.",
+    "approved_by": "owner, 2026-10-04: \"We will need to remove it until the risk engine is rebuilt. We can add an item for a pre launch rebuild of the risk engine and to address applying risk scores again later. This project will also require significant compliance and regulatory research to determine if and how risk can be assessed for each asset type.\" Then, asked which places this covers: all three.",
+    "evidence": [
+     "docs/decisions/2026-10-04-owner-decisions.md",
+     "docs/audits/rejected-proposals.md",
+     "frontend/src/lib/risk/visibility.ts",
+     "frontend/src/lib/risk/__tests__/riskRatingsHidden.test.ts"
+    ]
+   }
   },
   {
    "id": "T-027",
@@ -12617,6 +12631,71 @@
     "on": "2026-10-03",
     "by": "session steward",
     "why": "Opened with D53, so the exception's end is on the ledger as well as in CI."
+   }
+  },
+  {
+   "id": "T-419",
+   "title": "Research whether and how risk can be assessed for each asset type (compliance and regulatory)",
+   "status": "open",
+   "confidence": "high",
+   "owner_role": "either",
+   "category": "legal",
+   "effort": "large",
+   "blocking_decision": null,
+   "related_ids": [
+    "T-420",
+    "T-012",
+    "T-289",
+    "D4",
+    "D64"
+   ],
+   "summary": "D64 switched off every risk rating the app shows until the risk engine is rebuilt. The owner set this as the first step: \"This project will also require significant compliance and regulatory research to determine if and how risk can be assessed for each asset type.\" The answer may differ by asset type (crypto, stocks, ETFs and funds, commodities, currencies, interest rates, options) and by form: a score on an asset's own page, a rating of holdings the user added, or only the standard statistics D14 kept.",
+   "next_action": "Draft a memo per asset type: what a risk rating would say, which rules could treat it as advice or a recommendation, what disclosures it would need, and what can be shown instead. Build on the regulatory posture work (T-289) and take it to the legal review before launch (D4). Record the owner's answer for each asset type; T-420 builds on it.",
+   "sources": [
+    {
+     "file": "docs/decisions/2026-10-04-owner-decisions.md",
+     "lines": "D64",
+     "quote": "compliance and regulatory research into whether and how risk can be assessed for each asset type"
+    }
+   ],
+   "opened": {
+    "on": "2026-10-04",
+    "by": "session steward",
+    "why": "Opened with D64 at the owner's request, as the research the risk engine rebuild depends on."
+   }
+  },
+  {
+   "id": "T-420",
+   "title": "Rebuild the risk engine before launch, then decide whether and where risk ratings return",
+   "status": "blocked",
+   "confidence": "high",
+   "owner_role": "either",
+   "category": "feature",
+   "effort": "large",
+   "blocking_decision": "T-419: whether and how risk can be assessed for each asset type. The rebuild follows that answer, and is a pre-launch item (owner, 2026-10-04).",
+   "related_ids": [
+    "T-419",
+    "T-012",
+    "T-352",
+    "T-353",
+    "T-355",
+    "T-359",
+    "D18",
+    "D64"
+   ],
+   "summary": "D64 switched off every risk rating until the engine is rebuilt: Portfolios' ratings and weighted risk, the fund-page risk label, and the options Trade Risk Scorer with its API, agent and MCP tools. The code stays, switched off behind RISK_RATINGS_SHOWN in frontend/src/lib/risk/visibility.ts. This item is the rebuild, and bringing ratings back where the research allows.",
+   "next_action": "After T-419: rebuild lib/risk to the asset types and forms the research allows. Then restore surfaces one at a time, each on the owner's say-so, following lib/risk/visibility.ts (the switch, the nav entry, the redirect, the MCP tool) and revisiting lib/risk/__tests__/riskRatingsHidden.test.ts and RP-8. Update the agent prompts and the Methodology Guide's Section 3 (T-359), which still describes the switched-off ratings.",
+   "sources": [
+    {
+     "file": "frontend/src/lib/risk/visibility.ts",
+     "lines": "header",
+     "quote": "Whether the app shows any risk rating at all. OFF since 2026-10-04 (D64)."
+    }
+   ],
+   "opened": {
+    "on": "2026-10-04",
+    "by": "session steward",
+    "why": "Opened with D64 at the owner's request: \"We can add an item for a pre launch rebuild of the risk engine and to address applying risk scores again later.\""
    }
   }
  ],
@@ -37876,6 +37955,14 @@
     "evidence": [
      "docs/decisions/2026-10-04-owner-decisions.md",
      "docs/audits/rejected-proposals.md"
+    ]
+   },
+   {
+    "on": "2026-10-04",
+    "what": "T-012 closed under D64: every risk rating the app shows is switched off until the risk engine is rebuilt. T-419 (compliance and regulatory research into whether and how risk can be assessed for each asset type) and T-420 (the pre-launch rebuild, waiting on T-419) were opened. Closed 180 to 181 and open 31 to 32; blocked stays at 33, with T-012 out and T-420 in; 358 items to 360.",
+    "evidence": [
+     "docs/decisions/2026-10-04-owner-decisions.md",
+     "frontend/src/lib/risk/visibility.ts"
     ]
    }
   ]

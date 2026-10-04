@@ -4,6 +4,7 @@ import {
   type FundCategoryId, type FundRiskLevel, type FundStrategy, type FundType,
 } from '@/lib/data/fundCatalog'
 import type { SectorId } from '@/lib/data/equityCatalog'
+import { RISK_RATINGS_SHOWN } from '@/lib/risk/visibility'
 
 // Full ETF universe for the Fund Registry — every US-listed ETF, not just the
 // curated catalog. Mirrors /live-data/stock-universe.
@@ -44,8 +45,13 @@ export interface FundUniverseEntry {
   website: string | null
   /** Portfolio-construction strategy (catalog funds only). */
   strategy: FundStrategy | null
-  /** Coarse suitability band derived from category + strategy (catalog funds only). */
-  riskLevel: FundRiskLevel | null
+  /**
+   * Coarse suitability band derived from category + strategy (catalog funds
+   * only). Absent while risk ratings are switched off (D64), rather than null:
+   * a field that is always null reads as "could not fetch it", not "we do not
+   * publish it" (RP-6).
+   */
+  riskLevel?: FundRiskLevel | null
   /** Minimum-holding / frequent-trading / daily-reset disclaimer, when applicable. */
   tradingRestriction: string | null
 }
@@ -99,7 +105,8 @@ function catalogEntry(f: (typeof FUND_CATALOG)[number]): FundUniverseEntry {
     inceptionYear: f.inceptionYear, indexTracked: f.indexTracked,
     focusSector: f.focusSector ?? null, focusIndustry: f.focusIndustry ?? null,
     website: f.website ?? null,
-    strategy: fundStrategy(f), riskLevel: fundRiskLevel(f),
+    strategy: fundStrategy(f),
+    ...(RISK_RATINGS_SHOWN ? { riskLevel: fundRiskLevel(f) } : {}),
     tradingRestriction: fundTradingRestriction(f),
   }
 }
@@ -235,7 +242,8 @@ function skeleton(e: { symbol: string; name: string }, type: FundType): FundUniv
     // URL, so uncurated funds genuinely have none. Better null than a guessed
     // link that 404s.
     website: null,
-    strategy: null, riskLevel: null,
+    strategy: null,
+    ...(RISK_RATINGS_SHOWN ? { riskLevel: null } : {}),
     // Mutual funds get the honest generic policy note even without curation.
     tradingRestriction: type === 'mutual' ? fundTradingRestriction({ tradingRestriction: undefined, type, issuer: '' }) : null,
   }

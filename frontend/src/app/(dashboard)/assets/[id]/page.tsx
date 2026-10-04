@@ -638,7 +638,9 @@ function OverviewTab({ asset }: { asset: NonNullable<ReturnType<typeof useAsset>
 // tiers (lib/data/instruments.ts). This removal is about publishing a per-coin
 // score, not about the engine that computed it. (This paragraph also listed
 // staking provider risk until 2026-09-29: D14 removed its composite on
-// 2026-09-14 and D26 its six dimensions and scorer on 2026-09-25.)
+// 2026-09-14 and D26 its six dimensions and scorer on 2026-09-25.) Since
+// 2026-10-04 (D64) both are switched off too, with their code kept, until the
+// risk engine is rebuilt: see lib/risk/visibility.ts.
 //
 // TO RESTORE: git history at this commit carries the panel, the route and the
 // index join intact — and lib/risk/__tests__/riskScoringRemoved.test.ts
