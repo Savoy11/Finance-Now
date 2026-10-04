@@ -3,7 +3,7 @@
 Recorded from the owner's answers while working through the blocked list, starting at its top:
 T-119, then T-005, then the four sources D54 left out (D55), then T-065 and T-066 (D56), then
 T-192 (D57), then Reddit sign-in, raised with T-246 (D58), then T-204 (D59), then T-294
-(D60), then T-393 (D61). Same form as
+(D60), then T-393 (D61), then T-387 (D62). Same form as
 `2026-10-03-owner-decisions.md`: one row per ruling, what it cascades to, and what was
 actually done.
 
@@ -17,6 +17,7 @@ actually done.
 | D59 | T-204 (a web firewall in front of the live site), the next item on the blocked list | **Option 1, "Park it with the hosting decision":** *"go with option 1 and move on to T-294,"* in reply to three options: park it with the hosting decision, reworded to fit any host; close it; or leave it blocked. → APPLIED | T-204 moves from blocked to parked beside the hosting choice, which D1 keeps parked with the other launch items (T-112). It is reworded from "Deploy/configure AWS WAF in front of the ALB" to fit any host, since a public site needs a firewall wherever it runs. No code change |
 | D60 | T-294 (one master copy of each legal document both products share), the next item on the blocked list | **The two ledgers are the documents' home for now.** *"I have a ledger for News Charts now which can be referenced here for the sake of ensuring the legal documents between both projects are in sync. I plan to use the ledgers as the current home to the any legal documents for the projects."* Given in reply to three options: make the Disclosure Set document the master, share the text through code, or wait for the drafts' approval. → APPLIED | The file libraries of the Finance Now Ledger and News Charts Ledger pages hold each product's legal documents. A document both products share is the same file in both, and a session working on either product's legal pages checks the other; the News Charts repository and its ledger are the reference for that check. T-294 closes, and T-291's note gains the upload step. Nothing is uploaded yet: neither library holds a legal document, and News Charts has no legal pages (its NC-124) |
 | D61 | T-393 (close the 2024 cycle row in the Cycle Context tab's "Prior cycles" table once its low is final), the next item on the blocked list | **Option 1, "Fix the row now and park the item until the market settles it":** *"go with option 1 and move on to T-387; also consider past cycles, there is research that has been complied that show charts of growth from the cycle,"* in reply to three options: fix the row and park the item; also have the page work out the low itself; or leave it as it is. → APPLIED | The open row's low so far moves from "Jun 2026 · ~$59,000", −53%, to "Jul 2026 · ~$57,700", −54% (see the notes), which also moves the open cycle's bar on the "Drawdown vs prior cycles" chart, and two notes on the tab now say "more than half" where they said "~50%". T-393 moves from blocked to parked: the low becomes final when BTC trades above the October 2025 high (about $126,300) or at the 2028 halving (around April 2028), whichever comes first. The table's compiled-on date stays 2026-08-29, because only one row was re-checked. A new test holds each row's drawdown to its own peak and trough. On the past-cycles point the owner then asked for a growth chart (*"add the growth chart, merge and go with option 2"*), built in the same change: the tab gains "Growth from each cycle's low" (see the notes) |
+| D62 | T-387 (the Coins page's technical filters past about 250 coins), the next item on the blocked list | **Option 2, "Park it and add a small test":** *"add the growth chart, merge and go with option 2,"* in reply to three options: park it until the coin list passes about 250 or a paid data plan is taken up; the same plus a test that fails past 250; or close it. → APPLIED | T-387 moves from blocked to parked under D21 (paid-service decisions are deferred). It comes back when the swept coin list grows past 250 (80 today) or a paid data plan is taken up. `SWEEP_UNIVERSE_LIMIT` (250) in `lib/technicals/sweep.ts` names the limit, and a test fails if `COINGECKO_IDS` grows past it, with a message pointing to T-387. No behaviour change |
 
 ## Notes
 
@@ -255,3 +256,15 @@ the chart guidance's palette validator: it passes colour-blind separation and co
 dark card. The card is history only. Nothing fits a curve through the bars or projects the
 next high, which is where the familiar "diminishing returns" charts go next, and its caveat
 sits in `CYCLE_COPY` where the advice-wording guard reads it.
+
+**D62: why a test as well as the park.** The trigger is a fact about the code: how many
+coins `COINGECKO_IDS` lists. The Coins screener and the Scanner page both sweep that whole
+list from the browser, one candle request per coin, five at a time, so 80 coins is 16
+rounds and 250 would be 50. Past that, the design note in `sweep.ts` says the filters stop
+being usable, and the answer is a server-side snapshot on a paid data plan. A parked item
+is read by whoever opens the ledger, but the person who would cross the limit is editing
+the coin list. The test reaches them at that moment. It was checked red by lowering the
+limit to 79, one under today's count.
+
+**D62: what is not decided.** Whether to take up a paid data plan stays deferred under
+D21, and nothing here grows the coin list.
