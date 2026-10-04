@@ -146,6 +146,10 @@ applied to a different feature. It blocks the tax estimator outright.
 **E. Affiliate programmes.** T-119, T-120, T-124, T-125. FTC disclosure and other
 jurisdictions (UK FCA), plus per-programme terms on placement, comparison tables and
 ranking. Nothing here ships before B and C.
+**2026-10-04 update:** none of it ships at launch either. D49 (2026-09-30) ruled out paid and
+affiliate links at launch on both products and parked T-120 and T-125; D69 parked T-123 (referral
+sign-ups on the Coins pages) and T-124 beside them. T-119 closed on 2026-10-04 (D50's About page
+carries its launch copy). All four parked items come back together after launch.
 
 **F. Enterprise and SOC 2.** T-196, T-203, T-210, T-211, T-216. All blocked behind the
 2026-09-05 "not ready for rollout" ruling and the hosting decision. Deliberately parked —
