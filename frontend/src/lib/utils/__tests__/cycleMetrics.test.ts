@@ -1,7 +1,10 @@
 import { describe, it, expect } from 'vitest'
-import { halvingPosition, drawdownComparison, rotationRead, piCycleState, CYCLE_COPY } from '../cycleMetrics'
 import {
-  CYCLE_HISTORY, cycleHistoryAgeDays, cycleHistoryIsStale, getCycleHistoryProvenance,
+  halvingPosition, drawdownComparison, growthFromLows, growthScaleDecades, growthBarPct, formatMultiple,
+  rotationRead, piCycleState, CYCLE_COPY,
+} from '../cycleMetrics'
+import {
+  CYCLE_HISTORY, cycleHistoryAgeDays, cycleHistoryIsStale, getCycleHistoryProvenance, peakLabel, troughLabel,
 } from '@/lib/data/cycleHistory'
 
 describe('halvingPosition', () => {
@@ -64,16 +67,72 @@ describe('vocabulary guard', () => {
 })
 
 describe('cycle history rows', () => {
-  // The table prints the labels and the drawdown chart reads maxDrawdownPct, so
-  // editing one without the other shows two different falls for one cycle.
-  // The labels are rounded (~$), hence a point of slack.
-  const usd = (label: string) => Number(label.match(/\$([\d,]+)/)![1].replace(/,/g, ''))
-
   it('each drawdown matches its own peak and trough to within a point', () => {
+    // The table prints the prices and the drawdown chart reads maxDrawdownPct,
+    // so editing one without the other shows two different falls for one
+    // cycle. The prices are rounded (~$), hence a point of slack.
     for (const c of CYCLE_HISTORY) {
-      const fromLabels = (usd(c.troughLabel) / usd(c.peakLabel) - 1) * 100
-      expect(Math.abs(fromLabels - c.maxDrawdownPct), `${c.halving} cycle`).toBeLessThanOrEqual(1)
+      const fromPrices = (c.troughUsd / c.peakUsd - 1) * 100
+      expect(Math.abs(fromPrices - c.maxDrawdownPct), `${c.halving} cycle`).toBeLessThanOrEqual(1)
     }
+  })
+
+  it('prints its labels from the numbers, and marks only the open low "so far"', () => {
+    expect(peakLabel(CYCLE_HISTORY[1])).toBe('Nov 2013 · ~$1,150')
+    expect(troughLabel(CYCLE_HISTORY[1])).toBe('Jan 2015 · ~$170')
+    for (const c of CYCLE_HISTORY) {
+      expect(troughLabel(c).endsWith('(so far)'), `${c.halving} cycle`).toBe(!!c.open)
+    }
+  })
+})
+
+describe('growthFromLows', () => {
+  it('pairs each cycle’s low with the next cycle’s high, from the table itself', () => {
+    const rows = growthFromLows(null)
+    expect(rows).toHaveLength(CYCLE_HISTORY.length - 1)
+    rows.forEach((r, i) => {
+      expect(r.multiple).toBeCloseTo(CYCLE_HISTORY[i + 1].peakUsd / CYCLE_HISTORY[i].troughUsd)
+      expect(r.live).toBe(false)
+    })
+    expect(rows.map((r) => r.label)).toEqual(['2011 → 2013', '2015 → 2017', '2018 → 2021', '2022 → 2025'])
+  })
+
+  it('appends the live row only when a real price exists', () => {
+    for (const price of [null, NaN, 0, -1]) {
+      expect(growthFromLows(price).some((r) => r.live)).toBe(false)
+    }
+    const live = growthFromLows(85_100).at(-1)!
+    expect(live.live).toBe(true)
+    expect(live.label).toBe('2026 → now')
+    expect(live.multiple).toBeCloseTo(85_100 / 57_700)
+  })
+})
+
+describe('growth chart scale', () => {
+  it('spans enough powers of ten for the largest rise, and never fewer than one', () => {
+    expect(growthScaleDecades(growthFromLows(null))).toBe(3) // 575× needs a 1,000× mark
+    expect(growthScaleDecades([])).toBe(1)
+  })
+
+  it('measures bars from 1×, so a bar’s length counts tenfold rises', () => {
+    expect(growthBarPct(1, 3)).toBe(0)
+    expect(growthBarPct(10, 3)).toBeCloseTo(100 / 3)
+    expect(growthBarPct(1_000, 3)).toBe(100)
+    expect(growthBarPct(5_000, 3)).toBe(100)
+  })
+
+  it('draws no bar below the low rather than a negative one', () => {
+    expect(growthBarPct(0.9, 3)).toBe(0)
+    expect(growthBarPct(NaN, 3)).toBe(0)
+  })
+
+  it('formats whole multiples from 10× up and one decimal below', () => {
+    expect(formatMultiple(575)).toBe('575×')
+    expect(formatMultiple(115.88)).toBe('116×')
+    expect(formatMultiple(1_250)).toBe('1,250×')
+    expect(formatMultiple(8.14)).toBe('8.1×')
+    expect(formatMultiple(9.96)).toBe('10×')
+    expect(formatMultiple(0.94)).toBe('0.9×')
   })
 })
 
