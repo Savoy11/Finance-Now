@@ -63,8 +63,8 @@
   "by_status": {
    "closed": 179,
    "open": 31,
-   "parked": 109,
-   "blocked": 38,
+   "parked": 110,
+   "blocked": 37,
    "unclear": 1
   },
   "by_owner_role": {
@@ -7401,16 +7401,18 @@
   },
   {
    "id": "T-204",
-   "title": "Deploy/configure AWS WAF in front of the ALB",
-   "status": "blocked",
+   "title": "Put a web firewall in front of the live site, using what the chosen host offers",
+   "status": "parked",
    "confidence": "high",
    "owner_role": "either",
    "category": "ops-infra",
    "effort": "small",
-   "blocking_decision": "Hosting decision (AWS/Terraform vs Vercel/VPS) — ROADMAP Phase 6 / P3 review D2",
-   "related_ids": [],
-   "summary": "SOC 2 and hardening checklist item.",
-   "next_action": "If the AWS path is chosen: pass the Terraform output waf_web_acl_arn into the deploy (add WAF_ACL_ARN to both envsubst allowlists in .github/workflows/cd-staging.yml and cd-production.yml, change ingress.yaml:41 to use it), then propose a steward annotation on scorecard:177 and security.md:252 with file:line proof. Otherwise leave unticked.",
+   "blocking_decision": "PARKED 2026-10-04 — D59 (2026-10-04): parked with the hosting decision, which D1 (2026-09-14) keeps parked with the other launch items until the launch is planned (T-112). Reworded to fit any host. The ledger carried it as blocked until 2026-10-04. Was: \"Hosting decision (AWS/Terraform vs Vercel/VPS) — ROADMAP Phase 6 / P3 review D2\"",
+   "related_ids": [
+    "T-112"
+   ],
+   "summary": "A firewall in front of the public site blocks common attacks and request floods. The AWS setup already defines one that was never wired into a deploy; Vercel and a rented server behind Cloudflare each have their own.",
+   "next_action": "When the host is chosen (T-112). AWS: pass the Terraform output waf_web_acl_arn into the deploy (add WAF_ACL_ARN to both envsubst allowlists in .github/workflows/cd-staging.yml and cd-production.yml, and change infrastructure/kubernetes/ingress.yaml:41 to use it). Vercel: turn on its firewall with managed rules and a rate limit equivalent to the Terraform one. Rented server: put it behind Cloudflare or similar with the same. Then propose steward annotations on production-readiness-scorecard.md:177 and architecture/security.md:252 with file:line proof.",
    "sources": [
     {
      "file": "docs/audits/production-readiness-scorecard.md",
@@ -7422,7 +7424,17 @@
      "lines": "252",
      "quote": "- [ ] Configure WAF rules on ALB"
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-10-04",
+    "note": "Parked under D59 and reworded to fit any host. Title was: \"Deploy/configure AWS WAF in front of the ALB\". Summary was: \"SOC 2 and hardening checklist item.\" Checked 2026-10-04: infrastructure/terraform/main.tf:314 defines aws_wafv2_web_acl.fn (AWS managed common and known-bad-inputs rule groups, and a rate rule of 2,000 requests per 5 minutes per IP), outputs.tf:184 exports its ARN, and ingress.yaml:41 refers to it through ${AWS_ACCOUNT_ID} and ${WAF_ID}, which neither deploy workflow substitutes. Nothing has been provisioned (D22).",
+    "evidence": [
+     "docs/decisions/2026-10-04-owner-decisions.md",
+     "infrastructure/terraform/main.tf",
+     "infrastructure/kubernetes/ingress.yaml",
+     ".github/workflows/cd-staging.yml"
+    ]
+   }
   },
   {
    "id": "T-222",
@@ -37779,6 +37791,14 @@
     "evidence": [
      "docs/decisions/2026-10-04-owner-decisions.md",
      "frontend/src/lib/api/live/providers.ts"
+    ]
+   },
+   {
+    "on": "2026-10-04",
+    "what": "T-204 parked under D59 beside the hosting choice (T-112), which D1 keeps parked until the launch is planned, and reworded from an AWS-only task to a firewall for whichever host is chosen. Blocked 38 to 37, parked 109 to 110.",
+    "evidence": [
+     "docs/decisions/2026-10-04-owner-decisions.md",
+     "infrastructure/terraform/main.tf"
     ]
    }
   ]

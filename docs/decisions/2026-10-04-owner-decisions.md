@@ -2,7 +2,7 @@
 
 Recorded from the owner's answers while working through the blocked list, starting at its top:
 T-119, then T-005, then the four sources D54 left out (D55), then T-065 and T-066 (D56), then
-T-192 (D57), then Reddit sign-in, raised with T-246 (D58). Same form as
+T-192 (D57), then Reddit sign-in, raised with T-246 (D58), then T-204 (D59). Same form as
 `2026-10-03-owner-decisions.md`: one row per ruling, what it cascades to, and what was
 actually done.
 
@@ -13,6 +13,7 @@ actually done.
 | D56 | T-065 (plan history) and T-066 (printable rebalance notes), the next two items on the blocked list. Both waited on the owner switching on S5, the Portfolio Builder build-out charter in `docs/TASK-QUEUE.md` | **Option 1, "Start just these two now":** *"merge and go with option 1,"* in reply to three options: start just these two now, park them until after launch, or leave them blocked until S5 is switched on as a whole. → APPLIED | Both are built (see the notes), and T-065 and T-066 close. S5 is started for its items (1) and (2) only. The other S5 work keeps its blockers: contribution modeling (T-067) waits on the scope boundary (T-064), asset location (T-068) on T-064 and D4's legal review, and the federal sale-tax estimator (T-058) on D4. Rebalance reminders (T-116) keep their own two questions: in-app or email, and the legality flag |
 | D57 | T-192 (plan-based rate limits on the public API), the next item on the blocked list | **Option 1, "Park it with its siblings":** *"go with option 1 and move on to T-246,"* in reply to three options: park it with its siblings, close it as part of the old platform's checklist, or leave it blocked. → APPLIED | T-192 moves from blocked to parked, beside T-188 (usage metering for billing) and T-191 (per-key IP allowlists) from the same Enterprise Sales Readiness list. It comes back when the launch is planned, after the owner reassesses pricing (D29, parked under D21) and decides whether `/api/v1` gets API keys (T-087). No code change |
 | D58 | Reddit sign-in (T-245, parked under D8 until the launch vendor pass), raised by the owner while T-246 (Reddit vote counts) waited on its options: *"can we add a way to sign into reddit from the app?"* | **Revisit as a post-launch project.** *"No lets revisit this as a post launch project. I would like them to see how it will be used in a live setting, they may offer a better way to use access the data we need."* Given in reply to three options: apply for Reddit's approval first and build after, build now behind a switch, or keep waiting until launch. → APPLIED | Refines D8: Reddit access moves out of the launch vendor pass to after launch, when the owner applies to Reddit with the live app to show. T-245 stays parked on that trigger. T-246 moves from blocked to parked beside it, since vote counts only come through that access (its option 1). Reddit stays off, and the app now says so: the two Reddit rows on the Integrations page said "Public API — no key needed", and both Social routes told the reader to configure `REDDIT_CLIENT_ID` |
+| D59 | T-204 (a web firewall in front of the live site), the next item on the blocked list | **Option 1, "Park it with the hosting decision":** *"go with option 1 and move on to T-294,"* in reply to three options: park it with the hosting decision, reworded to fit any host; close it; or leave it blocked. → APPLIED | T-204 moves from blocked to parked beside the hosting choice, which D1 keeps parked with the other launch items (T-112). It is reworded from "Deploy/configure AWS WAF in front of the ALB" to fit any host, since a public site needs a firewall wherever it runs. No code change |
 
 ## Notes
 
@@ -165,3 +166,12 @@ saved on the Integrations page would not lift the gate unless that check reads i
 **D58: what stays as it is.** Reddit is not read, and no code path changes. The crypto and
 stock Social pages run without it: StockTwits, plus LunarCrush and Santiment when their keys
 are set.
+
+**D59: what exists today.** The AWS setup files define a firewall that was never
+connected. `infrastructure/terraform/main.tf:314` declares it with AWS's managed common
+and known-bad-input rule groups and a limit of 2,000 requests per 5 minutes from one
+address, and `outputs.tf:184` exports it. `infrastructure/kubernetes/ingress.yaml:41`
+refers to it through two placeholders, `${AWS_ACCOUNT_ID}` and `${WAF_ID}`, that neither
+deploy workflow fills in. Nothing has been deployed anywhere (D22). The reworded item
+keeps those AWS steps and adds what the other two hosts would need: Vercel's built-in
+firewall, or Cloudflare in front of a rented server.
