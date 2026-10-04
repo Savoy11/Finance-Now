@@ -3,7 +3,7 @@
 Recorded from the owner's answers while working through the blocked list, starting at its top:
 T-119, then T-005, then the four sources D54 left out (D55), then T-065 and T-066 (D56), then
 T-192 (D57), then Reddit sign-in, raised with T-246 (D58), then T-204 (D59), then T-294
-(D60). Same form as
+(D60), then T-393 (D61). Same form as
 `2026-10-03-owner-decisions.md`: one row per ruling, what it cascades to, and what was
 actually done.
 
@@ -16,6 +16,7 @@ actually done.
 | D58 | Reddit sign-in (T-245, parked under D8 until the launch vendor pass), raised by the owner while T-246 (Reddit vote counts) waited on its options: *"can we add a way to sign into reddit from the app?"* | **Revisit as a post-launch project.** *"No lets revisit this as a post launch project. I would like them to see how it will be used in a live setting, they may offer a better way to use access the data we need."* Given in reply to three options: apply for Reddit's approval first and build after, build now behind a switch, or keep waiting until launch. → APPLIED | Refines D8: Reddit access moves out of the launch vendor pass to after launch, when the owner applies to Reddit with the live app to show. T-245 stays parked on that trigger. T-246 moves from blocked to parked beside it, since vote counts only come through that access (its option 1). Reddit stays off, and the app now says so: the two Reddit rows on the Integrations page said "Public API — no key needed", and both Social routes told the reader to configure `REDDIT_CLIENT_ID` |
 | D59 | T-204 (a web firewall in front of the live site), the next item on the blocked list | **Option 1, "Park it with the hosting decision":** *"go with option 1 and move on to T-294,"* in reply to three options: park it with the hosting decision, reworded to fit any host; close it; or leave it blocked. → APPLIED | T-204 moves from blocked to parked beside the hosting choice, which D1 keeps parked with the other launch items (T-112). It is reworded from "Deploy/configure AWS WAF in front of the ALB" to fit any host, since a public site needs a firewall wherever it runs. No code change |
 | D60 | T-294 (one master copy of each legal document both products share), the next item on the blocked list | **The two ledgers are the documents' home for now.** *"I have a ledger for News Charts now which can be referenced here for the sake of ensuring the legal documents between both projects are in sync. I plan to use the ledgers as the current home to the any legal documents for the projects."* Given in reply to three options: make the Disclosure Set document the master, share the text through code, or wait for the drafts' approval. → APPLIED | The file libraries of the Finance Now Ledger and News Charts Ledger pages hold each product's legal documents. A document both products share is the same file in both, and a session working on either product's legal pages checks the other; the News Charts repository and its ledger are the reference for that check. T-294 closes, and T-291's note gains the upload step. Nothing is uploaded yet: neither library holds a legal document, and News Charts has no legal pages (its NC-124) |
+| D61 | T-393 (close the 2024 cycle row in the Cycle Context tab's "Prior cycles" table once its low is final), the next item on the blocked list | **Option 1, "Fix the row now and park the item until the market settles it":** *"go with option 1 and move on to T-387; also consider past cycles, there is research that has been complied that show charts of growth from the cycle,"* in reply to three options: fix the row and park the item; also have the page work out the low itself; or leave it as it is. → APPLIED | The open row's low so far moves from "Jun 2026 · ~$59,000", −53%, to "Jul 2026 · ~$57,700", −54% (see the notes), which also moves the open cycle's bar on the "Drawdown vs prior cycles" chart, and two notes on the tab now say "more than half" where they said "~50%". T-393 moves from blocked to parked: the low becomes final when BTC trades above the October 2025 high (about $126,300) or at the 2028 halving (around April 2028), whichever comes first. The table's compiled-on date stays 2026-08-29, because only one row was re-checked. A new test holds each row's drawdown to its own peak and trough. On the past-cycles point the owner then asked for a growth chart (*"add the growth chart, merge and go with option 2"*), built in the same change: the tab gains "Growth from each cycle's low" (see the notes) |
 
 ## Notes
 
@@ -203,3 +204,54 @@ so its ledger is not changed from here; NC-124 needs the same note on that side.
 the Finance Now Ledger page is shared with anyone who has its link. Its address in a
 public file would open the ledger, and every legal draft uploaded to it, to anyone who
 reads the repository. Both pages are on the owner's account and are named instead.
+
+**D61: why parked rather than blocked.** T-393 waits on the market, not on a decision.
+Neither event that makes the 2024 cycle's low final has happened: on 2026-10-04 BTC was
+about $85,100 (Crypto.com), roughly a third below the October 2025 high, and the next
+halving is about 18 months away. Both triggers are mechanical rather than judgements. Once
+BTC trades above the old high, no later fall can deepen that peak's drawdown. At the next
+halving the cycle ends by the table's own definition. An earlier rule, such as a rise of
+some size off the low, would amount to declaring the bottom, which the panel never does
+(`cycleMetrics.test.ts` forbids "bottom is in" in its copy). The table's review date
+(2027-02-26, from `CYCLE_HISTORY_STALE_AFTER_DAYS`) makes someone look at the row again
+even if no trigger fires first.
+
+**D61: the corrected figure, and where the old one came from.** The table was compiled
+on 2026-08-29 from the Crypto Cycle Briefing (artifact `41f5795c`), which took "bottomed
+near $58.6–59.3k on June 30" from press reports. Exchange price records put the lowest
+trade lower and a day later. FMP's daily BTCUSD low on 1 July 2026 (UTC) was $57,718, and
+Crypto.com's monthly candles give $57,737 for July against $58,015 for June. US reports
+may have dated it 30 June because their days end several hours after UTC midnight. The
+hour of the low was not checked: FMP's hourly crypto data needs a paid plan. The row's
+peak (~$126,200) is an intraday high (FMP: $126,296 on 6 October 2025), so the trough is
+now an intraday low to match. The drawdown is (57,700 ÷ 126,200) − 1 = −54.3%, shown as
+−54%. Two notes on the same tab (`CYCLE_COPY.indicatorFailureNote` and `piCycleCaveat` in
+`cycleMetrics.ts`) called it "the ~50% decline". They now say "the fall of more than half",
+which no later low can make untrue.
+
+**D61: past cycles.** The owner asked to consider past cycles, pointing to compiled
+research that charts growth from each cycle. The research this table was built from is
+the briefing above. It charts each cycle's fall, not its growth, and its figures for the
+2012, 2016 and 2020 cycles agree with the table's rows (−86%, −84%, −77%; it rounds two
+peaks more coarsely, ~$1.1k and ~$20k where the table has ~$1,150 and ~$19,700), as does
+its −93% for 2011. No past row moved. The growth such charts show, the rise from each
+cycle's low to the next peak, can be worked out from the table itself: about 575× from
+the 2011 low, 116× from 2015, 22× from 2018 and 8× from 2022.
+
+**D61: the growth chart.** Put to the owner as a proposal, then approved: *"add the growth
+chart, merge and go with option 2."* The Cycle Context tab has a new card, "Growth from each
+cycle's low", beside "Drawdown vs prior cycles". It has one bar per completed cycle, from its
+low to the next cycle's high, and a live bar from the latest low to today's price, which
+appears only when the markets feed has a price. The numbers come from the table, never typed
+twice. The table's prices became numbers (`peakUsd`, `troughUsd` in `cycleHistory.ts`), and its
+labels are printed from them, so the chart and the table cannot disagree.
+
+The bars use a log scale measured from 1×, because the rises run from 575× down to 8×, and on
+a straight scale everything after the first would be a sliver. The card says so, and its scale
+marks (1×, 10×, 100×, 1,000×) sit at their exact places; on phones the marks are hidden and
+each bar's printed value carries it. Past cycles are gray and the live bar is the app's
+accent blue, the same treatment as "BTC now" on the drawdown card. That pair was checked with
+the chart guidance's palette validator: it passes colour-blind separation and contrast on the
+dark card. The card is history only. Nothing fits a curve through the bars or projects the
+next high, which is where the familiar "diminishing returns" charts go next, and its caveat
+sits in `CYCLE_COPY` where the advice-wording guard reads it.

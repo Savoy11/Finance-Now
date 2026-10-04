@@ -63,8 +63,8 @@
   "by_status": {
    "closed": 180,
    "open": 31,
-   "parked": 110,
-   "blocked": 36,
+   "parked": 111,
+   "blocked": 35,
    "unclear": 1
   },
   "by_owner_role": {
@@ -7570,22 +7570,33 @@
   {
    "id": "T-393",
    "title": "Close out the 2024 cycle row in CYCLE_HISTORY once its trough is final",
-   "status": "blocked",
+   "status": "parked",
    "confidence": "high",
    "owner_role": "either",
    "category": "data-verification",
    "effort": "small",
-   "blocking_decision": "Has the 2024-cycle trough become final — i.e. has BTC set a confirmed new cycle high (or reached the 2028 halving) making Jun 2026 ~$59k the cycle low?",
+   "blocking_decision": "PARKED 2026-10-04 — D61 (2026-10-04): waits on the market, not on a decision. The 2024 cycle's low becomes final when BTC trades above the October 2025 high (about $126,300) or at the 2028 halving (around April 2028), whichever comes first. The ledger carried it as blocked until 2026-10-04. Was: \"Has the 2024-cycle trough become final — i.e. has BTC set a confirmed new cycle high (or reached the 2028 halving) making Jun 2026 ~$59k the cycle low?\"",
    "related_ids": [],
-   "summary": "cycleHistory.ts open: true.",
-   "next_action": "Nothing until the trough is confirmable; then edit cycleHistory.ts lines 55-60 (final troughLabel/maxDrawdownPct, drop open: true), bump the file's provenance date, run its tests, PR.",
+   "summary": "The Cycle Context tab's \"Prior cycles\" table marks the 2024 cycle open (open: true) because its low can still change. Its low so far is ~$57,700 (1 Jul 2026, UTC), −54% from the October 2025 high.",
+   "next_action": "When BTC trades above the October 2025 high (about $126,300) or the 2028 halving arrives: in frontend/src/lib/data/cycleHistory.ts set the 2024 row's final troughMonth, troughUsd and maxDrawdownPct and drop open: true; re-check every row against a price record before moving CYCLE_HISTORY_LAST_VERIFIED (one re-checked row does not re-date the table); run the cycle tests; PR. Before then, if BTC trades below ~$57,700, update the \"so far\" low and drawdown together (cycleMetrics.test.ts holds them in step).",
    "sources": [
     {
      "file": "frontend/src/lib/data/cycleHistory.ts",
-     "lines": "25, 55-60",
+     "lines": "32, 62-75",
      "quote": "/** True while the cycle's trough cannot yet be declared final. */"
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-10-04",
+    "note": "Parked under D61. The open row's \"so far\" figures were corrected from 'Jun 2026 · ~$59,000', −53% to 'Jul 2026 · ~$57,700', −54%: FMP's daily BTCUSD low on 1 Jul 2026 (UTC) was $57,718, and Crypto.com's candles give $57,737 for July against $58,015 for June. The 2026-08-29 compile had taken a ~$59k low on 30 June from press reports. CYCLE_HISTORY_LAST_VERIFIED stays 2026-08-29, since only this row was re-checked. A new test holds each row's drawdown to its own peak and trough. The tab's two notes that called it \"the ~50% decline\" now say \"the fall of more than half\". The table's prices are now numbers (peakUsd, troughUsd) with printed labels, and a new card, \"Growth from each cycle's low\", reads them (D61). On 2026-10-04 BTC was about $85,100, roughly a third below the peak. Summary was: \"cycleHistory.ts open: true.\" Next action was: \"Nothing until the trough is confirmable; then edit cycleHistory.ts lines 55-60 (final troughLabel/maxDrawdownPct, drop open: true), bump the file's provenance date, run its tests, PR.\"",
+    "evidence": [
+     "docs/decisions/2026-10-04-owner-decisions.md",
+     "frontend/src/lib/data/cycleHistory.ts",
+     "frontend/src/lib/utils/__tests__/cycleMetrics.test.ts",
+     "frontend/src/lib/utils/cycleMetrics.ts",
+     "frontend/src/components/assets/CycleContext.tsx"
+    ]
+   }
   },
   {
    "id": "T-197",
@@ -37821,6 +37832,14 @@
     "evidence": [
      "docs/decisions/2026-10-04-owner-decisions.md",
      "docs/BUSINESS-CHECKLIST.md"
+    ]
+   },
+   {
+    "on": "2026-10-04",
+    "what": "T-393 parked under D61: the 2024 cycle's low becomes final when BTC trades above the October 2025 high or at the 2028 halving, whichever comes first, which is the market's call, not a decision. Its \"so far\" figures were corrected to ~$57,700 (1 Jul 2026), −54%. Blocked 36 to 35, parked 110 to 111.",
+    "evidence": [
+     "docs/decisions/2026-10-04-owner-decisions.md",
+     "frontend/src/lib/data/cycleHistory.ts"
     ]
    }
   ]
