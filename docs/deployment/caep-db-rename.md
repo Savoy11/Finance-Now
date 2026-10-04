@@ -28,6 +28,9 @@ new email first, then the legacy one, and **adopts** a legacy row by renaming
 it in place — the row id (which every portfolio, watchlist, budget, and
 builder plan points at) is preserved. No manual step; runs on first request.
 
+> **Removed 2026-10-04 (owner decision D75)** — see **Sunset** below. Builds from
+> that date on no longer look for the legacy email.
+
 ## What needs a manual step (existing local installs only)
 
 Fresh clones and fresh deployments need nothing. Installs with data created
@@ -80,3 +83,23 @@ The `CAEP_*` env-var fallbacks and `caep:*` localStorage shims are **not**
 covered by this sunset; they protect user-facing configuration and browser
 data and should outlive it (suggested horizon: mid-2027, a year past the
 July-2026 rebrand).
+
+**Applied 2026-10-04 (owner decision D75, T-329).** The lookup is removed from
+`getOrCreateLocalUser()`. No long-lived deployment existed to wait for, so the
+condition was the owner's machines, with one step on each: if it had not opened the
+Watchlist or Portfolios page since 2026-08-12, open one of them once before taking
+this change, and check that the saved data is there.
+
+If a database from before the rename is ever opened by a later build, nothing is
+lost: the app creates a fresh, empty `local@fn.local` row, and the data stays on
+the old `local@caep.local` row. To reconnect it, stop the app and run:
+
+```sql
+BEGIN;
+UPDATE users SET email = 'local-unused@fn.local' WHERE lower(email) = 'local@fn.local';
+UPDATE users SET email = 'local@fn.local' WHERE lower(email) = 'local@caep.local';
+COMMIT;
+```
+
+The first `UPDATE` moves the fresh row aside rather than deleting it, so anything
+saved on it in the meantime is kept.
