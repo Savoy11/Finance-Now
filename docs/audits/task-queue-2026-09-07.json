@@ -63,8 +63,8 @@
   "by_status": {
    "closed": 185,
    "open": 34,
-   "parked": 116,
-   "blocked": 26,
+   "parked": 121,
+   "blocked": 21,
    "unclear": 1
   },
   "by_owner_role": {
@@ -8482,15 +8482,17 @@
   {
    "id": "T-212",
    "title": "Enterprise — SLA documentation",
-   "status": "blocked",
+   "status": "parked",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "docs",
    "effort": "medium",
-   "blocking_decision": "Enterprise-tier decision and hosting decision",
-   "related_ids": [],
+   "blocking_decision": "PARKED 2026-10-04 — D71 (2026-10-04): parked beside T-217 and the SOC 2 items, all waiting on D5's trigger (2026-09-14): the first paying customer or the first conversation with a business buyer. Was: \"Enterprise-tier decision and hosting decision\"",
+   "related_ids": [
+    "T-217"
+   ],
    "summary": "99.9% uptime, credits.",
-   "next_action": "Owner decides whether an enterprise/API tier with an SLA is offered; if yes, after hosting is chosen and uptime monitoring exists, draft docs/legal/sla.md with the credits schedule for lawyer review.",
+   "next_action": "Nothing now. When D5's trigger fires, take this up as it stood: Owner decides whether an enterprise/API tier with an SLA is offered; if yes, after hosting is chosen and uptime monitoring exists, draft docs/legal/sla.md with the credits schedule for lawyer review.",
    "sources": [
     {
      "file": "docs/audits/production-readiness-scorecard.md",
@@ -8502,15 +8504,17 @@
   {
    "id": "T-213",
    "title": "Enterprise — data-residency region selector",
-   "status": "blocked",
+   "status": "parked",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "ops-infra",
    "effort": "medium",
-   "blocking_decision": "Which hosting path ships, and does an enterprise tier with residency requirements exist (P3 review D1/D2)?",
-   "related_ids": [],
+   "blocking_decision": "PARKED 2026-10-04 — D71 (2026-10-04): parked beside T-217 and the SOC 2 items, all waiting on D5's trigger (2026-09-14): the first paying customer or the first conversation with a business buyer. Was: \"Which hosting path ships, and does an enterprise tier with residency requirements exist (P3 review D1/D2)?\"",
+   "related_ids": [
+    "T-217"
+   ],
    "summary": "Terraform workspace.",
-   "next_action": "Defer until hosting (D2) and enterprise posture (D1) are decided; if both land on AWS + enterprise, parameterize region via Terraform workspaces and make the KMS key multi-region.",
+   "next_action": "Nothing now. When D5's trigger fires, take this up as it stood: Defer until hosting (D2) and enterprise posture (D1) are decided; if both land on AWS + enterprise, parameterize region via Terraform workspaces and make the KMS key multi-region.",
    "sources": [
     {
      "file": "docs/audits/production-readiness-scorecard.md",
@@ -8522,15 +8526,17 @@
   {
    "id": "T-214",
    "title": "Enterprise — dedicated environments / tenant isolation",
-   "status": "blocked",
+   "status": "parked",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "ops-infra",
    "effort": "large",
-   "blocking_decision": "Enterprise-tier decision; hosting decision; multi-tenant backend not built",
-   "related_ids": [],
+   "blocking_decision": "PARKED 2026-10-04 — D71 (2026-10-04): parked beside T-217 and the SOC 2 items, all waiting on D5's trigger (2026-09-14): the first paying customer or the first conversation with a business buyer. Was: \"Enterprise-tier decision; hosting decision; multi-tenant backend not built\"",
+   "related_ids": [
+    "T-217"
+   ],
    "summary": "Unticked.",
-   "next_action": "Owner decides whether enterprise customers are a target; nothing to build until hosting and per-user multi-tenancy (MARKET-ASSESSMENT Phase 0) land.",
+   "next_action": "Nothing now. When D5's trigger fires, take this up as it stood: Owner decides whether enterprise customers are a target; nothing to build until hosting and per-user multi-tenancy (MARKET-ASSESSMENT Phase 0) land.",
    "sources": [
     {
      "file": "docs/audits/production-readiness-scorecard.md",
@@ -8542,15 +8548,17 @@
   {
    "id": "T-216",
    "title": "Enterprise commercial requirements (DPA, MSA, questionnaire, pentest report, insurance)",
-   "status": "blocked",
+   "status": "parked",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "process",
    "effort": "large",
-   "blocking_decision": "Enterprise sales decision; SOC 2 (T-210) and pentest (T-206) prerequisites",
-   "related_ids": [],
+   "blocking_decision": "PARKED 2026-10-04 — D71 (2026-10-04): parked beside T-217 and the SOC 2 items, all waiting on D5's trigger (2026-09-14): the first paying customer or the first conversation with a business buyer. Was: \"Enterprise sales decision; SOC 2 (T-210) and pentest (T-206) prerequisites\"",
+   "related_ids": [
+    "T-217"
+   ],
    "summary": "Five unticked boxes.",
-   "next_action": "Owner decides whether enterprise sales are pursued; if yes, add DPA/MSA/insurance/questionnaire items to docs/BUSINESS-CHECKLIST.md as lawyer-meeting homework, sequenced after T-206 (pentest) and T-210 (SOC 2 Type I).",
+   "next_action": "Nothing now. When D5's trigger fires, take this up as it stood: Owner decides whether enterprise sales are pursued; if yes, add DPA/MSA/insurance/questionnaire items to docs/BUSINESS-CHECKLIST.md as lawyer-meeting homework, sequenced after T-206 (pentest) and T-210 (SOC 2 Type I).",
    "sources": [
     {
      "file": "docs/audits/production-readiness-scorecard.md",
@@ -9020,22 +9028,28 @@
   {
    "id": "T-190",
    "title": "SSO — SAML 2.0 / OIDC",
-   "status": "blocked",
+   "status": "parked",
    "confidence": "medium",
    "owner_role": "owner-decision",
    "category": "feature",
    "effort": "medium",
-   "blocking_decision": "Owner: is enterprise SSO in scope, and is it implemented on Auth.js (frontend) rather than the dormant backend?",
-   "related_ids": [],
+   "blocking_decision": "PARKED 2026-10-04 — D71 (2026-10-04): parked beside T-217 and the SOC 2 items, all waiting on D5's trigger (2026-09-14): the first paying customer or the first conversation with a business buyer. Was: \"Owner: is enterprise SSO in scope, and is it implemented on Auth.js (frontend) rather than the dormant backend?\"",
+   "related_ids": [
+    "T-217"
+   ],
    "summary": "Scope needs re-deciding given Auth.js.",
-   "next_action": "Owner decides whether corporate SSO is in scope for the first public release and on which stack; if yes, implement as an Auth.js OIDC provider in frontend/src/lib/auth/config.ts (generic OIDC covers Okta/Azure AD) rather than in the dormant backend.",
+   "next_action": "Nothing now. When D5's trigger fires, take this up as it stood: Owner decides whether corporate SSO is in scope for the first public release and on which stack; if yes, implement as an Auth.js OIDC provider in frontend/src/lib/auth/config.ts (generic OIDC covers Okta/Azure AD) rather than in the dormant backend.",
    "sources": [
     {
      "file": "docs/audits/production-readiness-scorecard.md",
      "lines": "136, 205",
      "quote": "**SSO/SAML integration**: Add SAML 2.0 / OIDC support for corporate IdPs (Okta, Azure AD)"
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-10-04",
+    "note": "Parked under D71. The item's second question is already settled: D2 (2026-09-14) retired the backend, so if SSO is built it is a sign-in provider in frontend/src/lib/auth/config.ts (generic OIDC covers Okta and Azure AD). Checked 2026-10-04: sign-in today is email and password only (the Credentials provider), and the sign-in requirement is switched off (REQUIRE_AUTH = false in frontend/src/app/(dashboard)/layout.tsx)."
+   }
   },
   {
    "id": "T-201",
@@ -38160,6 +38174,13 @@
    {
     "on": "2026-10-04",
     "what": "D70: T-176 closed by owner ruling. The Pump Report stays in the initial rollout, its coin-page tab and live grade included, outside D64's switch; the records that said it rates wallet addresses only are corrected. Counts recomputed: closed 185, blocked 26, total 362.",
+    "evidence": [
+     "docs/decisions/2026-10-04-owner-decisions.md"
+    ]
+   },
+   {
+    "on": "2026-10-04",
+    "what": "D71: T-190 (company sign-in), T-212, T-213, T-214 and T-216 parked beside T-217 and the SOC 2 items, all waiting on D5's trigger (the first paying customer or the first business-buyer conversation), option A. T-190 notes that D2 settled its backend question. Counts recomputed: parked 121, blocked 21, total 362.",
     "evidence": [
      "docs/decisions/2026-10-04-owner-decisions.md"
     ]

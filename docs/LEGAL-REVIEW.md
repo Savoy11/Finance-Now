@@ -154,6 +154,10 @@ carries its launch copy). All four parked items come back together after launch.
 **F. Enterprise and SOC 2.** T-196, T-203, T-210, T-211, T-216. All blocked behind the
 2026-09-05 "not ready for rollout" ruling and the hosting decision. Deliberately parked —
 listed so it is not rediscovered as new.
+**2026-10-04 update:** the whole group now waits on one trigger, D5's: the first paying
+customer or the first conversation with a business buyer. The SOC 2 items were parked under
+it on 2026-09-30; D71 parked T-216 there too, with T-190 (company sign-in), T-212 (an uptime
+guarantee), T-213 (data residency) and T-214 (separate customer environments), beside T-217.
 
 **G. Tokenized securities** (opened 2026-09-21). Full record:
 `docs/assessments/tokenized-securities-2026-09-21.md`. The SEC's five-year "innovation
