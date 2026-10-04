@@ -63,8 +63,8 @@
   "by_status": {
    "closed": 183,
    "open": 34,
-   "parked": 113,
-   "blocked": 31,
+   "parked": 114,
+   "blocked": 30,
    "unclear": 1
   },
   "by_owner_role": {
@@ -7904,20 +7904,21 @@
   {
    "id": "T-058",
    "title": "Federal sale-tax estimator (tax panel part 2) — surface the legality question first",
-   "status": "blocked",
+   "status": "parked",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "decision",
    "effort": "medium",
-   "blocking_decision": "D4 (2026-09-14): a qualified legal review before launch decides whether a federal sale-tax estimator crosses into regulated advice. None is engaged (D30). D47 (2026-09-30) cleared build-by-allocation only, not this.",
+   "blocking_decision": "PARKED 2026-10-04 — D67 (2026-10-04): parked with the Transfer Fees page, which is hidden from the suite (T-028). The estimator would sit in that page's \"I'm selling first\" section, so the question comes back when the page is restored. D4's legal review still gates building it, and none is engaged (D30). Was: \"D4 (2026-09-14): a qualified legal review before launch decides whether a federal sale-tax estimator crosses into regulated advice. None is engaged (D30). D47 (2026-09-30) cleared build-by-allocation only, not this.\"",
    "related_ids": [
+    "T-028",
     "RP-3",
     "S3",
     "S5",
     "item 16"
    ],
    "summary": "TEY-pattern estimator on user-supplied basis/rate; not built because it touches the S5 advice-adjacent caution.",
-   "next_action": "Do not build. Put the question to the owner in one line: 'Is a federal sale-tax estimator on user-supplied basis/holding-period/rate (no bracket table) advice-adjacent under the same concern you raised on item 16? Yes = build; No = keep it out.' Record the answer in docs/TASK-QUEUE.md via the propose→approve→apply flow.",
+   "next_action": "Nothing now. When the owner restores Transfer Fees (T-028), put the question again: build the estimator on the tax-equivalent-yield pattern (the user's own basis, holding period and rate; no stored tax tables; what it leaves out named on the page) once D4's review or the owner clears it, as D47 did for build-by-allocation, or drop it and keep the panel to explaining what kind of tax event each step is.",
    "sources": [
     {
      "file": "docs/TASK-QUEUE.md",
@@ -7931,11 +7932,12 @@
     }
    ],
    "progress": {
-    "noted_on": "2026-09-30",
-    "note": "Rewritten 2026-09-30: the item-16 legality question (T-059) was answered by D47 for build-by-allocation only, so this item now waits on D4's legal review by name — still in force for the advice-adjacent S5 tools. The blocker was: \"Owner's unanswered item-16 legality question — does advice-adjacent tooling (a federal sale-tax estimator on user-supplied basis/holding period/rate) cross into regulated advice?\"",
+    "noted_on": "2026-10-04",
+    "note": "Parked under D67. Checked 2026-10-04: nothing of part 2 is built. Part 1, the tax-character panel (frontend/src/lib/data/taxCharacter.ts), stays: it names what kind of event each step is and computes nothing. The tax-equivalent-yield calculator on municipal fund pages (frontend/src/lib/utils/taxEquivalentYield.ts) is the pattern the estimator would follow if it is ever built.",
     "evidence": [
-     "docs/decisions/2026-09-30-owner-decisions.md",
-     "docs/decisions/2026-09-14-owner-decisions.md"
+     "docs/decisions/2026-10-04-owner-decisions.md",
+     "frontend/src/lib/data/taxCharacter.ts",
+     "frontend/src/lib/utils/taxEquivalentYield.ts"
     ]
    }
   },
@@ -8897,7 +8899,7 @@
    ],
    "progress": {
     "noted_on": "2026-10-04",
-    "note": "Rewritten 2026-09-30: the item-16 legality question (T-059) was answered by D47 for build-by-allocation only, so this item now waits on D4's legal review by name — still in force for the advice-adjacent S5 tools. The blocker was: \"T-059 - the owner's item-16 legality question on advice-adjacent features\" 2026-10-04: D56 started S5's items (1) plan history and (2) printable rebalance notes (T-065, T-066, both closed), which needed neither this boundary nor D4's review. This item now decides (3) contribution modeling (T-067) and (4) asset location (T-068).",
+    "note": "Rewritten 2026-09-30: the item-16 legality question (T-059) was answered by D47 for build-by-allocation only, so this item now waits on D4's legal review by name — still in force for the advice-adjacent S5 tools. The blocker was: \"T-059 - the owner's item-16 legality question on advice-adjacent features\" 2026-10-04: D56 started S5's items (1) plan history and (2) printable rebalance notes (T-065, T-066, both closed), which needed neither this boundary nor D4's review. This item now decides (3) contribution modeling (T-067) and (4) asset location (T-068). 2026-10-04 (D67): the owner, choosing to park T-058: \"I still need to go back and review the portfolio builder.\" That review comes before this boundary is drawn.",
     "evidence": [
      "docs/decisions/2026-09-30-owner-decisions.md",
      "docs/decisions/2026-09-14-owner-decisions.md",
@@ -38087,6 +38089,13 @@
     "evidence": [
      "docs/decisions/2026-10-04-owner-decisions.md",
      "frontend/src/lib/server/withdrawFeeAdapters.ts"
+    ]
+   },
+   {
+    "on": "2026-10-04",
+    "what": "D67: T-058 parked with the Transfer Fees page (T-028), option C; D4's legal review still gates building it. The owner's coming review of the Portfolio Builder noted on T-064. Counts recomputed: parked 114, blocked 30, total 362.",
+    "evidence": [
+     "docs/decisions/2026-10-04-owner-decisions.md"
     ]
    }
   ]
