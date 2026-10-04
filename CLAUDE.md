@@ -714,13 +714,13 @@ site nobody has reviewed. Full design: `docs/architecture/source-terms.md`.
 > The fix for any of the key-gated rows is a free API key on the Integrations page — **not
 > a substitute scraper.**
 
-> ⚠ **30 of 56 registry entries are `seeded`, not `verified` — check `review` before
+> ⚠ **13 of 56 registry entries are `seeded`, not `verified` — check `review` before
 > trusting one.** The registry was authored in an environment whose network policy
 > blocked every publisher and provider host at the gateway, so not one terms document
 > could be opened. The entries are honest starting positions drawn from each
 > provider's publicly documented posture (published API docs, documented free tiers,
-> openly advertised RSS feeds) — they are **not readings**. **26 entries are
-> `verified`** as of 2026-09-20 (the count was spelled out as a word here until then,
+> openly advertised RSS feeds) — they are **not readings**. **43 entries are
+> `verified`** as of 2026-10-04 (the count was spelled out as a word here until 2026-09-20,
 > which is why no guard could watch it — see `docs:check`): **Cboe** (P2-O1 audit, 2026-08-05) and
 > **CoinGecko** (the 2026-08-29 probe run) were the first two, and sixteen more
 > were **read** on a clean egress on 2026-09-14/15
@@ -736,6 +736,16 @@ site nobody has reviewed. Full design: `docs/architecture/source-terms.md`.
 > like any other and is why a rising `verified` count is not by itself good news.
 > Readings: `docs/audits/terms-review-finnhub-2026-09-20.md`,
 > `terms-review-twelvedata-binanceus-2026-09-20.md`, `terms-review-news-2026-09-20.md`.
+>
+> **Seventeen more on 2026-10-04 (D54), which take 26 to 43.** All thirty seeded entries
+> were read on the owner's machine on 2026-09-26
+> (`docs/audits/terms-review-seeded-2026-09-26.md`). D46 held the sign-off, and D54 then
+> marked seventeen of them verified: the eleven clean readings and the six ruled on first
+> (OKX, Nasdaq Trader, KuCoin, Alpha Vantage, Messari, Santiment). The 13 still `seeded`
+> are four read and ruled on after that set was drawn up (CoinMarketCap, Jito, Rocket
+> Pool, Pendle), CryptoPanic (its API terms would not open), three that could not be read
+> (Binance.com, HTX, XT.com), four with no terms document at all (DefiLlama,
+> Blockchain.com, Stride, Beefy), and Yearn, which is no longer fetched.
 >
 > A seeded `approved`/`conditional` means *nobody has objected yet*, not *cleared*.
 > Seeded entries still serve data — breaking the app over a documentation gap is the
