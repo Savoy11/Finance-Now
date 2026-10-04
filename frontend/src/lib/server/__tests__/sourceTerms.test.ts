@@ -99,11 +99,16 @@ describe('checkSourceTerms', () => {
     expect(d.reason).toMatch(/No terms review on record/)
   })
 
+  // Both Treasury tests measure from the entry's own reviewedAt, not from NOW. The entry
+  // was re-read on 2026-09-26, after the 2026-08-06 fixture, and a fixture must not depend
+  // on nobody ever reading a document again — the provenance test below says the same.
+  const treasuryReadAt = () => Date.parse(`${matchTermsEntry('home.treasury.gov')!.reviewedAt}T12:00:00Z`)
+
   it('allows an approved host and reports its age', () => {
-    const d = checkSourceTerms('https://home.treasury.gov/resource-center/data.xml', NOW)
+    const d = checkSourceTerms('https://home.treasury.gov/resource-center/data.xml', new Date(treasuryReadAt() + 3 * 86_400_000))
     expect(d.allowed).toBe(true)
     expect(d.status).toBe('approved')
-    expect(d.ageDays).toBe(0)
+    expect(d.ageDays).toBe(3)
     expect(d.stale).toBe(false)
   })
 
@@ -131,7 +136,7 @@ describe('checkSourceTerms', () => {
   })
 
   it('marks a verdict stale past the review window without disallowing it', () => {
-    const later = new Date(NOW.getTime() + (SOURCE_TERMS_REVIEW_AFTER_DAYS + 1) * 86_400_000)
+    const later = new Date(treasuryReadAt() + (SOURCE_TERMS_REVIEW_AFTER_DAYS + 1) * 86_400_000)
     const d = checkSourceTerms('https://home.treasury.gov/x', later)
     expect(d.stale).toBe(true)
     // Stale is a prompt to re-read, not a reason to break the app.
@@ -309,5 +314,26 @@ describe('OKX (D40, 2026-09-30)', () => {
     expect(code).not.toMatch(/okx\.com/i)
     expect(code).toMatch(/ok: false/)
     expect(code).toMatch(/reason: /)
+  })
+})
+
+describe('alternative.me (D54, 2026-10-04)', () => {
+  // Its terms, read 2026-09-26, allow commercial use "as long as the attribution is given right
+  // next to the display of the data". A source badge elsewhere on a card does not meet that, so
+  // the credit is asserted beside the figure on both surfaces that show the index.
+  const read = (p: string) => readFileSync(join(process.cwd(), p), 'utf8')
+
+  it('records the attribution as a condition of its verdict', () => {
+    const e = matchTermsEntry('api.alternative.me')!
+    expect(e.verdict).toBe('conditional')
+    expect(e.conditions?.join(' ')).toMatch(/right next to every display of the index/)
+  })
+
+  it('credits alternative.me beside the Fear & Greed figure on both surfaces', () => {
+    // Market Structure panel: inside the same element as the value.
+    expect(read('src/components/analytics/technical/MarketStructurePanel.tsx')).toMatch(/\{fg\.value\}[\s\S]{0,900}· alternative\.me<\/span>/)
+    // Cycle Context: the caption rendered under the figure names it.
+    expect(read('src/lib/utils/cycleMetrics.ts')).toMatch(/fearGreedCaveat:\s*'[^']*from alternative\.me/)
+    expect(read('src/components/assets/CycleContext.tsx')).toMatch(/title="Fear & Greed"[\s\S]{0,2000}CYCLE_COPY\.fearGreedCaveat/)
   })
 })

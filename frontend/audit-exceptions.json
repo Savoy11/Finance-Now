@@ -1,0 +1,13 @@
+{
+  "_about": "Advisories the CI dependency audit (npm run deps:check) allows for a dated window. Each one names one advisory and the package npm reports it on, cites an owner decision recorded under docs/decisions/, and expires at most 92 days after it was decided. It also stops applying as soon as npm reports a fix that needs no major upgrade. Rules: scripts/lib/auditGate.mjs. Remove an entry by hand once npm no longer reports its advisory; the check prints a warning when that happens.",
+  "exceptions": [
+    {
+      "advisory": "GHSA-vfj7-8cjw-p6xm",
+      "package": "braces",
+      "decision": "D53",
+      "decided": "2026-10-03",
+      "expires": "2026-11-03",
+      "reason": "No patched braces release exists: 3.0.3 is the newest version and the advisory covers it (<=3.0.3). braces comes in through tailwindcss 3.4.19 (via chokidar and micromatch) and eslint-config-next 16 (via @next/eslint-plugin-next, fast-glob and micromatch). Both run it on glob patterns written in this repo, Tailwind's content paths and ESLint's file globs, and no visitor input reaches it. npm's suggested fixes are breaking (Tailwind 4, or eslint-config-next 14.2.35) and neither clears both paths."
+    }
+  ]
+}
