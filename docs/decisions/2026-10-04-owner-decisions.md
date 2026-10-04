@@ -1,12 +1,14 @@
 # Owner decisions — 2026-10-04
 
 Recorded from the owner's answers while working through the blocked list, starting at its top:
-T-119, then T-005. Same form as `2026-10-03-owner-decisions.md`: one row per ruling, what it
-cascades to, and what was actually done.
+T-119, then T-005, then the four sources D54 left out (D55). Same form as
+`2026-10-03-owner-decisions.md`: one row per ruling, what it cascades to, and what was
+actually done.
 
 | # | Decision | Ruling | Cascades to |
 |---|---|---|---|
 | D54 | Which 2026-09-26 source-terms readings to mark `verified` (T-005), held under D46 on 2026-09-30 with "Not yet" | **Option 1, "All 17 fully read and settled"**, in reply to the same three options D46 offered: *"Close t-119 and go with option 1 for t-005."* The 17 are the set as offered on 2026-09-30: the eleven clean readings (sec.gov, home.treasury.gov, frankfurter.dev, wikipedia.org, cdn.jsdelivr.net, alternative.me, mempool.space, lunarcrush.com, lido.fi, marinade.finance, and yahoo.com, which stays prohibited), plus the six ruled on in that session's first batch of questions (okx.com, nasdaqtrader.com, kucoin.com, alphavantage.co, messari.io, santiment.net). → APPLIED | Each entry in `sourceTerms.ts` goes `review: 'seeded'` → `'verified'`, with `reviewedAt` set to 2026-09-26, the day the document was read. The registry goes from 26 to 43 verified of 56, and from 30 to 13 seeded. Each `finding` now says what the document says, in place of text written before anyone had read it. The only verdict that moves is alternative.me's (see the notes). T-005 closes |
+| D55 | The four 2026-09-26 readings D54 left out: CoinMarketCap, Jito, Rocket Pool and Pendle, read and then ruled on later on 2026-09-30 (D44, D45) | **Mark them verified too.** *"yes and you can move on,"* in reply to the session asking whether to mark these four as well, or move on to the next blocked item. → APPLIED | Each goes `seeded` → `verified`, dated 2026-09-26, with a finding that quotes its document. CoinMarketCap's `termsUrl` now names the Personal API agreement that D44 applies; it was found by web search and is marked to confirm. The registry goes from 43 to 47 verified of 56, and from 13 to 9 seeded |
 
 ## Notes
 
@@ -15,14 +17,16 @@ cascades to, and what was actually done.
 from them. Marking an entry verified records the first fact. It does not say the permission
 is enough for a public launch. Four of the 17 are for personal use only (KuCoin under D42;
 Alpha Vantage, Messari and Santiment under D43). OKX is prohibited (D40). Nasdaq Trader's
-question is still open under T-407 (D41). Each entry keeps those conditions as they were.
+question is still open under T-407 (D41). Of the four D55 added, CoinMarketCap is for personal use
+only too (D44), and Jito, Rocket Pool and Pendle keep D45's narrow reading, recorded as a
+judgement. Each entry keeps those conditions as they were.
 
 **Why these 17 and not the four ruled on later that day.** On 2026-09-30 the sign-off
 question came in the same batch as the CoinMarketCap question (D44) and the Jito, Rocket
 Pool and Pendle question (D45). So option 1 named the six sources already ruled on and left
-out "the four with an open question". Those four have been ruled on since, but they stay
-`seeded`: marking them needs a separate yes. Eight more stay seeded for reasons D54 does
-not touch:
+out "the four with an open question". Those four were ruled on later that day, and D55
+marked them verified once the owner gave that separate yes. Eight more stay seeded for
+reasons neither decision touches:
 
 - CryptoPanic: its API terms page would not open.
 - Binance.com, HTX and XT.com: they could not be read.

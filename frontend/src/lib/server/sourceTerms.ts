@@ -671,27 +671,29 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     confidence: 'medium',
   },
   {
-    // READ 2026-09-26 (T-005; docs/audits/terms-review-seeded-2026-09-26.md) — review stays seeded until the owner ratifies:
+    // READ 2026-09-26 (T-005; docs/audits/terms-review-seeded-2026-09-26.md); marked verified 2026-10-04 (D55):
     // ⚠ TWO API AGREEMENTS at pro.coinmarketcap.com. Personal: "strictly for your personal use", no
     // aggregation for third parties, storing only "for caching purposes". Commercial: display licence
     // on "Your Product" + REQUIRED attribution "Data provided by CoinMarketCap.com" with hyperlink
     // (not rendered today). Which binds depends on the key’s plan.
     // RULED 2026-09-30 (T-413): D44 — personal use only (D22): the owner's key is free, absent or
     // unconfirmed, so the Personal API terms govern.
-    // review stays 'seeded': not among the 17 readings marked verified on 2026-10-04 (D54), a set drawn
-    // up on 2026-09-30 while this one's question was still open.
     domain: 'coinmarketcap.com',
     name: 'CoinMarketCap',
     verdict: 'conditional',
-    termsUrl: 'https://coinmarketcap.com/api/documentation/v1/#section/Terms-of-Use',
+    // termsUrl is the Personal API agreement, the one D44 applies. Until 2026-10-04 it named a
+    // documentation anchor that now redirects to a docs landing. The address was found by web search
+    // that day (indexed as "CoinMarketCap API Terms of Use - Personal"), not opened from the cloud
+    // session that recorded it. The Commercial agreement's address was not recorded.
+    termsUrl: 'https://pro.coinmarketcap.com/user-agreement-personal/',
     finding:
-      'Commercial API. Keyed access under a plan licence; attribution to CoinMarketCap is required wherever its data is displayed.',
+      'Keyed API under two agreements, both read 2026-09-26; which one binds depends on the key\'s plan, and D44 treats the owner\'s key as personal. The Personal API terms: "The Service is strictly for your personal use", and you may not "Copy, manipulate or aggregate any Content (including data) for the purpose of making it available to any third party" or "Download or store Content other than for caching purposes". The Commercial API terms license the Content "solely on Your Product" and require that "Your Product shall prominently provide attribution to CoinMarketCap as follows: \'Data provided by CoinMarketCap.com\' and shall include a hyperlink to such website."',
     conditions: [
       'Valid API key required', 'Attribute CoinMarketCap on any surface showing its data',
       '⚠ SINGLE-USER ONLY — satisfied TODAY, blocking AT RELEASE (D22, 2026-09-23; applied 2026-09-30 under T-413 / D44). Nobody but the owner can load a page today, so this licence is currently met. The FIRST NON-OWNER PAGE LOAD — a private beta, a demo link, a shared staging URL — puts the app outside it. To operate beyond that: the Commercial API agreement, which requires "Data provided by CoinMarketCap.com" with a hyperlink on every surface showing its data — not rendered today. Meanwhile the Personal terms also bar storing Content "other than for caching purposes". See docs/decisions/2026-09-30-owner-decisions.md.',
     ],
-    reviewedAt: '2026-08-06',
-    review: 'seeded',
+    reviewedAt: '2026-09-26',
+    review: 'verified',
     confidence: 'medium',
   },
   {
@@ -1296,23 +1298,22 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     confidence: 'medium',
   },
   {
-    // READ 2026-09-26 (T-005; docs/audits/terms-review-seeded-2026-09-26.md) — review stays seeded until the owner ratifies:
+    // READ 2026-09-26 (T-005; docs/audits/terms-review-seeded-2026-09-26.md); marked verified 2026-10-04 (D55):
     // ⚠ AMBIGUOUS — Terms of Use (via footer) bar "data mining tools, robots, crawlers … to scrape or
     // otherwise remove data from the Interfaces or Features"; kobe.mainnet.jito.network is a
     // documented API, not a listed Interface. Recommend the narrow reading (D25 precedent).
     // RULED 2026-09-30 (T-413): D45 — the narrow (website-only) reading, as D25 took for publicnode.
-    // review stays 'seeded': not among the 17 readings marked verified on 2026-10-04 (D54), a set drawn
-    // up on 2026-09-30 while this one's question was still open.
     domain: 'jito.network',
     name: 'Jito',
     verdict: 'conditional',
     termsUrl: 'https://docs.jito.network/',
-    finding: 'Protocol publishes documented keyless APY endpoints for public/integrator use.',
+    finding:
+      'Protocol publishes documented keyless APY endpoints (kobe.mainnet.jito.network). Its Terms of Use, read 2026-09-26 (reached from the site footer), bar using "data mining tools, robots, crawlers, or similar data gathering and extraction tools to scrape or otherwise remove data from the Interfaces or Features". The documented API is not listed as an Interface, and D45 reads the clause as governing the web interface.',
     conditions: [
       'API only (D45, 2026-09-30 — the narrow reading D25 took for publicnode). The Terms of Use bar data-mining tools, robots, crawlers or scrapers used "to scrape or otherwise remove data from the Interfaces or Features"; read as governing the web interface, not the documented APY endpoint this app calls. A judgement about scope, recorded as one: never fetch or scrape the website itself.',
     ],
-    reviewedAt: '2026-08-06',
-    review: 'seeded',
+    reviewedAt: '2026-09-26',
+    review: 'verified',
     confidence: 'medium',
   },
 
@@ -1415,23 +1416,22 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
   // published figures, to be shown as theirs and not re-derived into something
   // that looks like an independent measurement.
   {
-    // READ 2026-09-26 (T-005; docs/audits/terms-review-seeded-2026-09-26.md) — review stays seeded until the owner ratifies:
+    // READ 2026-09-26 (T-005; docs/audits/terms-review-seeded-2026-09-26.md); marked verified 2026-10-04 (D55):
     // ⚠ AMBIGUOUS — Terms of Service (PDF) bar "any robot, spider, crawler, scraper, or other
     // automated means or interface not provided by us, to access the Site to extract data";
     // api.rocketpool.net is an interface provided by them. Recommend the narrow reading.
     // RULED 2026-09-30 (T-413): D45 — the narrow (website-only) reading, as D25 took for publicnode.
-    // review stays 'seeded': not among the 17 readings marked verified on 2026-10-04 (D54), a set drawn
-    // up on 2026-09-30 while this one's question was still open.
     domain: 'rocketpool.net',
     name: 'Rocket Pool',
     verdict: 'conditional',
     termsUrl: 'https://docs.rocketpool.net/',
-    finding: 'Protocol publishes documented keyless network-stats endpoints for public/integrator use.',
+    finding:
+      'Protocol publishes documented keyless network-stats endpoints (api.rocketpool.net). Its Terms of Service (PDF), read 2026-09-26, bar using "any robot, spider, crawler, scraper, or other automated means or interface not provided by us, to access the Site to extract data". api.rocketpool.net is an interface they provide, and D45 reads the clause as governing the Site.',
     conditions: [
       'API only (D45, 2026-09-30 — the narrow reading D25 took for publicnode). The Terms of Service (PDF) bar "any robot, spider, crawler, scraper, or other automated means or interface not provided by us, to access the Site to extract data"; api.rocketpool.net is an interface they provide, so the clause is read as governing the Site. A judgement about scope, recorded as one: never scrape the Site itself.',
     ],
-    reviewedAt: '2026-08-06',
-    review: 'seeded',
+    reviewedAt: '2026-09-26',
+    review: 'verified',
     confidence: 'medium',
   },
   {
@@ -1474,24 +1474,23 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     confidence: 'medium',
   },
   {
-    // READ 2026-09-26 (T-005; docs/audits/terms-review-seeded-2026-09-26.md) — review stays seeded until the owner ratifies:
+    // READ 2026-09-26 (T-005; docs/audits/terms-review-seeded-2026-09-26.md); marked verified 2026-10-04 (D55):
     // ⚠ AMBIGUOUS — Terms of Use (docs) bar users from "copy, reproduce, republish … resell, or
     // distribute in any way, any data, content, or any part of Pendle Protocol except as expressly
     // permitted by applicable laws"; written for the Website/Protocol, with the API separately
     // documented for developers. Recommend the narrow reading.
     // RULED 2026-09-30 (T-413): D45 — the narrow (website-only) reading, as D25 took for publicnode.
-    // review stays 'seeded': not among the 17 readings marked verified on 2026-10-04 (D54), a set drawn
-    // up on 2026-09-30 while this one's question was still open.
     domain: 'pendle.finance',
     name: 'Pendle',
     verdict: 'conditional',
     termsUrl: 'https://docs.pendle.finance/Developers/Overview',
-    finding: 'Protocol publishes a documented keyless market/yield API for public/integrator use.',
+    finding:
+      'Protocol publishes a documented keyless market and yield API for developers. Its Terms of Use, read 2026-09-26 in the docs, say users shall not "copy, reproduce, republish, upload, post, transmit, resell, or distribute in any way, any data, content, or any part of Pendle Protocol except as expressly permitted by applicable laws". D45 reads that as governing the app interface and its content, not the documented API.',
     conditions: [
       'API only (D45, 2026-09-30 — the narrow reading D25 took for publicnode). The Terms of Use bar users from copying, republishing or distributing "any data, content, or any part of Pendle Protocol" except as law permits; read as governing the app interface and its content, not the documented public API this app queries for pool discovery. A judgement about scope, recorded as one: show pool figures only, never republish Pendle\'s interface content.',
     ],
-    reviewedAt: '2026-08-06',
-    review: 'seeded',
+    reviewedAt: '2026-09-26',
+    review: 'verified',
     confidence: 'medium',
   },
 

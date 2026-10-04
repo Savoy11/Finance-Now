@@ -329,3 +329,10 @@ the reading had overtaken would put the wrong thing on record:
 
   The last three addresses were found by web search on 2026-10-04 and could not be opened
   from that cloud session, so confirm them at the next reading on the owner's machine.
+
+**Later the same day: D55.** The four read and ruled on after the seventeen were drawn up
+are marked `verified` too, each dated 2026-09-26: rows 17 (CoinMarketCap), 24 (Jito), 25
+(Rocket Pool) and 28 (Pendle). Their findings now quote the clauses above, and the narrow
+reading of D45 stays recorded as a judgement in each condition. CoinMarketCap's `termsUrl`
+now names the Personal API agreement that D44 applies, also found by web search and marked
+to confirm. That leaves 9 of 56 `seeded`: rows 8, 9, 13–15, 18, 26, 27 and 29.
