@@ -4,6 +4,7 @@ import { and, desc, eq } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { holdings, instrumentCrypto, instruments, portfolios } from '@/lib/db/schema'
 import { clientKeyFor, resolveInstruments } from './instrumentResolve'
+import { trackedPortfolioIds } from './trackedPortfolios'
 import type { Portfolio, PortfolioHolding } from '@/lib/data/portfolioUtils'
 
 // ─── Portfolio persistence helpers ───────────────────────────────────────────
@@ -14,11 +15,17 @@ export const PORTFOLIO_UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{
 export const MAX_BULK_PORTFOLIOS = 20
 export const MAX_HOLDINGS = 60
 
-/** Load a user's portfolios in the client's wire shape. */
+/**
+ * Load a user's what-if portfolios in the client's wire shape. Tracked
+ * portfolios (D65) are left out: they hold trades, not target weights, and
+ * have their own routes under /api/user/tracked-portfolios.
+ */
 export async function loadPortfolios(userId: string): Promise<Portfolio[]> {
-  const pRows = await db.select().from(portfolios)
+  const tracked = await trackedPortfolioIds(userId)
+  const pRows = (await db.select().from(portfolios)
     .where(eq(portfolios.userId, userId))
-    .orderBy(desc(portfolios.createdAt))
+    .orderBy(desc(portfolios.createdAt)))
+    .filter((p) => !tracked.has(p.id))
   if (pRows.length === 0) return []
 
   const hRows = await db.select({

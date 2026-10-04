@@ -4,7 +4,7 @@
 operation: what was done, and where the prior state lives. Same pattern as
 `branch-restarts-2026-10-03.md`.
 
-The session branch `ccr-3ad5880b-hsbobf` was force-pushed (`--force-with-lease`) eight times on
+The session branch `ccr-3ad5880b-hsbobf` was force-pushed (`--force-with-lease`) nine times on
 this date. Its previous work had already been **squash-merged** into `main`, so the branch
 was restarted from the latest `main` for the next change rather than stacking new commits
 on history `main` already holds. No unmerged work was discarded.
@@ -19,6 +19,7 @@ on history `main` already holds. No unmerged work was discarded.
 | 2026-10-04 ~13:50 | `240a787` | `0ad260a` (#270: D62) | `refs/pull/270/head`; tag `archive/ccr-3ad5880b-hsbobf@240a787` | T-009 parked beside the other options items (D63), restarted from `0ad260a` |
 | 2026-10-04 ~14:15 | `787c014` | `d29b05c` (#271: D63) | `refs/pull/271/head`; tag `archive/ccr-3ad5880b-hsbobf@787c014` | Every risk rating switched off until the risk engine is rebuilt (D64), restarted from `d29b05c` |
 | 2026-10-04 ~15:10 | `a62655a` | `190c887` (#272: D64) | `refs/pull/272/head`; tag `archive/ccr-3ad5880b-hsbobf@a62655a` | T-027's two open questions answered and its FIFO lot engine built (D65), restarted from `190c887` |
+| 2026-10-04 ~15:35 | `7e02313` | `7b48e14` (#273: D65) | `refs/pull/273/head`; tag `archive/ccr-3ad5880b-hsbobf@7e02313` | T-027 step 2, saving trades, restarted from `7b48e14` |
 
 Each tag was created by `.github/workflows/archive-branch.yml` when its PR merged.
 
@@ -48,7 +49,10 @@ git checkout -b ccr-restore-271 archive/ccr-3ad5880b-hsbobf@787c014
 
 git fetch origin refs/pull/272/head:restore-272
 git checkout -b ccr-restore-272 archive/ccr-3ad5880b-hsbobf@a62655a
+
+git fetch origin refs/pull/273/head:restore-273
+git checkout -b ccr-restore-273 archive/ccr-3ad5880b-hsbobf@7e02313
 ```
 
 None of these is needed for anything: the squash commits `a6264e5`, `f498966`,
-`7be3b3e`, `fc58ef3`, `f4d9a23`, `0ad260a`, `d29b05c` and `190c887` are on `main` and carry the whole of each change.
+`7be3b3e`, `fc58ef3`, `f4d9a23`, `0ad260a`, `d29b05c`, `190c887` and `7b48e14` are on `main` and carry the whole of each change.

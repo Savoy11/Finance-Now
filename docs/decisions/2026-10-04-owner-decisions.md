@@ -367,3 +367,42 @@ of what is left is already exact; the special case was removed.
 - **The entry screen** on /portfolios, with `REALIZED_METHOD_LABEL` beside every realized
   figure, offering only things that can be bought (the yield indices among the macro
   instruments cannot).
+
+**D65: step 2, saving trades, as built** (T-027; asked for with *"merge and continue with
+step 2"*). Routes under `/api/user/tracked-portfolios`: the list and create (`GET`/`POST`),
+rename and remove (`PATCH`/`DELETE /[id]`), the trades with each holding's FIFO figures
+(`GET /[id]/trades`), recording one (`POST /[id]/trades`), and cancelling one
+(`POST /[id]/trades/[tradeId]/cancel`). The rules a trade must meet are in
+`frontend/src/lib/data/tradeLedger.ts`, tested:
+
+- **A tracked portfolio is marked by a row in a new table, `tracked_portfolios`, not by a
+  column on `portfolios`.** Every existing portfolio query selects all of that table's
+  columns, so a new column would have broken the Portfolios page until the migration ran.
+  The what-if routes leave tracked portfolios out of their list and refuse to overwrite one
+  (409). `DELETE /api/user/portfolios/[id]` still removes any of the user's portfolios, as
+  before.
+- **A mistake is cancelled, never edited or removed.** Cancelling adds a row to
+  `trade_cancellations` naming the trade; the lot engine leaves it out, and it stays listed,
+  marked cancelled, with the reason given. A trade can be cancelled once. The schema's old
+  comment, "a correction is a new offsetting row", is replaced, since under FIFO an
+  offsetting sale would use up the oldest lot instead of the mistaken one.
+- **One starting position per holding.** A second is refused until the first is cancelled.
+- **Only coins, stocks and funds.** The lot engine works in US dollars per unit. Commodities
+  are futures quoted in cents or dollars per contract unit, currencies are exchange rates and
+  rates are yields or futures points, so those are refused with the reason. This goes further
+  than the yield indices named above: none of the macro instruments' quotes are dollars per
+  unit.
+- **Amounts travel as decimal strings** and must fit their columns. A trade needs a date
+  unless it is a starting position, no earlier than 1900 and no more than a day ahead.
+- **At most 10,000 trades per portfolio.** Past that, recording is refused and nothing is
+  removed to make room.
+
+⚠ **Migration 0005 (`frontend/drizzle/0005_trade-ledger.sql`) adds the two tables and the
+starting-position column. Run `npm run db:migrate` on the owner's machine.** Until then the
+new routes answer 503 with that instruction, and every existing page works as before. Both
+states were checked end to end on a local Postgres: before the migration (the what-if list,
+create and edit work, the new routes answer 503, and a failed create leaves no stray
+portfolio) and after it (create, list, rename, record, cancel and remove, with the FIFO
+figures checked by hand).
+
+Still to build: the screen (step 3). Stock splits still have no kind of trade.

@@ -89,7 +89,7 @@ describe('computeCostBasis — FIFO (D12, D65)', () => {
     const row: TradeTransaction = {
       id: 'r1', userId: 'u', portfolioId: 'p', instrumentId: 'i', side: 'buy',
       quantity: '2.000000000000000000', pricePerUnit: '50.00000000', feeUsd: '0.50',
-      executedAt: new Date('2026-02-01T00:00:00Z'), note: null, createdAt: new Date('2026-02-01T00:00:00Z'),
+      executedAt: new Date('2026-02-01T00:00:00Z'), opening: false, note: null, createdAt: new Date('2026-02-01T00:00:00Z'),
     }
     const r = run([row])
     expect(r.lots).toEqual([{ tradeId: 'r1', acquiredAt: '2026-02-01T00:00:00.000Z', startingPosition: false, quantity: '2', costUsd: '100.5' }])

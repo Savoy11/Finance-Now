@@ -36,6 +36,13 @@
       "when": 1791093396228,
       "tag": "0004_builder-plan-snapshots",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791129682966,
+      "tag": "0005_trade-ledger",
+      "breakpoints": true
     }
   ]
 }

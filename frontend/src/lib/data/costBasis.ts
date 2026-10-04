@@ -23,8 +23,9 @@
 // the 8 decimals the holdings column stores, and toCents(), for display.
 //
 // Pure, with the clock injectable, so every rule above is tested
-// (__tests__/costBasis.test.ts). Nothing calls it yet: saving trades and the
-// screen for entering them are T-027's steps two and three.
+// (__tests__/costBasis.test.ts). The trade routes under
+// /api/user/tracked-portfolios call it through lib/data/tradeLedger.ts; the
+// screen for entering trades is T-027's step three.
 
 import type { TradeSide } from '@/lib/db/schema/invest'
 
@@ -196,10 +197,13 @@ export function toCents(value: string): string {
 /** What each kind of trade does to the lots. A side added to the table fails to compile here until it is placed. */
 const EFFECT: Record<TradeSide, 'acquire' | 'dispose'> = {
   buy: 'acquire',
-  transfer_in: 'acquire',
   sell: 'dispose',
+  transfer_in: 'acquire',
   transfer_out: 'dispose',
 }
+
+/** Every kind of trade the ledger knows, in the table's order. */
+export const LEDGER_SIDES = Object.keys(EFFECT) as TradeSide[]
 
 interface Row {
   id: string
@@ -239,6 +243,16 @@ function readTrade(t: LedgerTrade): Row | string {
     if (Number.isNaN(at)) return `Left out: "${String(t.executedAt)}" is not a date.`
   }
   return { id: t.id, side: t.side, qty, price, fee, at, opening }
+}
+
+/**
+ * Why this trade would be left out of the lots, or null when it counts. The
+ * trade routes refuse what the engine would skip, so a saved trade is never
+ * one that silently does nothing.
+ */
+export function tradeProblem(t: LedgerTrade): string | null {
+  const row = readTrade(t)
+  return typeof row === 'string' ? row.replace(/^Left out: (.)/, (_, c: string) => c.toUpperCase()) : null
 }
 
 /**
