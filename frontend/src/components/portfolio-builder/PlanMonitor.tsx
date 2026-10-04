@@ -3,7 +3,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { clsx } from 'clsx'
-import { AlertTriangle, ArrowDownRight, ArrowUpRight, CheckCircle2, Info, Minus } from 'lucide-react'
+import toast from 'react-hot-toast'
+import {
+  AlertTriangle, ArrowDownRight, ArrowUpRight, CheckCircle2, History, Info, Minus, Printer, Save,
+} from 'lucide-react'
 import { hydratePortfolios, usePortfolioStore } from '@/store/usePortfolioStore'
 import { fetchInstrumentPrices } from '@/lib/api/instrumentPrices'
 import { STALE_TIME_SHORT } from '@/lib/constants'
@@ -11,12 +14,23 @@ import {
   actualWeightsFromPortfolio, checkDrift, reviewPlan,
   type SavedPlan,
 } from '@/lib/data/portfolioBuilder'
+import { buildRebalanceNotes, type RebalanceNotes } from '@/lib/data/rebalanceNotes'
+import { planHistory, snapshotFromDrift, type SavedCheck } from '@/lib/data/planHistory'
+import { RebalanceNotesPrint } from './RebalanceNotesPrint'
 
 // Drift + suitability panel for one saved plan. A plan only earns its keep if
 // it's checked against what the user actually holds, so this reads real
 // portfolios (live-priced) and falls back to manual entry when there aren't any.
+//
+// Two things a check can become (D56, 2026-10-04): a saved check in the plan's
+// history (T-065, lib/data/planHistory.ts), kept only when the user presses
+// Save, and printed rebalance notes (T-066, lib/data/rebalanceNotes.ts), which
+// restate the drift table on paper. Both carry the figures on screen, no others.
 
 type Source = 'portfolio' | 'manual'
+
+/** Saved checks shown before "Show all". */
+const HISTORY_SHOWN = 10
 
 function fmtUsd(n: number) {
   const abs = Math.abs(n)
@@ -103,6 +117,52 @@ export function PlanMonitor({ saved }: { saved: SavedPlan }) {
   )
 
   const manualTotal = Object.values(manual).reduce((s, v) => s + (Number(v) || 0), 0)
+  // Hand-entered weights that do not total 100% give drift figures that mean
+  // nothing, so they can be looked at but not saved or printed.
+  const checkUsable = !!drift && !!actual && (usingPortfolio || Math.abs(manualTotal - 100) <= 1)
+
+  const historyQuery = useQuery({
+    queryKey: ['builder-plan-history', saved.id],
+    queryFn: async (): Promise<SavedCheck[]> => {
+      const res = await fetch(`/api/user/builder-plans/${saved.id}/snapshots`)
+      const json = await res.json().catch(() => null)
+      if (!res.ok || !json?.ok) throw new Error(json?.error ?? 'Saved checks could not be loaded')
+      return json.checks as SavedCheck[]
+    },
+    staleTime: 30_000,
+  })
+  const history = useMemo(() => planHistory(historyQuery.data ?? []), [historyQuery.data])
+  const [showAllHistory, setShowAllHistory] = useState(false)
+
+  const saveCheck = useMutation({
+    mutationFn: async () => {
+      if (!drift || !actual) throw new Error('There is no check to save yet')
+      const snapshot = snapshotFromDrift(drift, {
+        portfolioName: usingPortfolio ? portfolio!.name : null,
+        valueUsd: actual.valueUsd, pricedPct: actual.pricedPct, bandPct: saved.plan.driftBandPct,
+      })
+      const res = await fetch(`/api/user/builder-plans/${saved.id}/snapshots`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ snapshot }),
+      })
+      const json = await res.json().catch(() => null)
+      if (!res.ok || !json?.ok) throw new Error(json?.error ?? 'The check was not saved')
+    },
+    onSuccess: () => {
+      toast.success('Check saved to this plan’s history')
+      void queryClient.invalidateQueries({ queryKey: ['builder-plan-history', saved.id] })
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  const [printNotes, setPrintNotes] = useState<RebalanceNotes | null>(null)
+  const printRebalanceNotes = () => {
+    if (!drift || !actual) return
+    setPrintNotes(buildRebalanceNotes({
+      planName: saved.name, drift, portfolioName: usingPortfolio ? portfolio!.name : null,
+      valueUsd: actual.valueUsd, pricedPct: actual.pricedPct, bandPct: saved.plan.driftBandPct,
+      preparedAt: new Date(),
+    }))
+  }
 
   return (
     <div className="border-t border-border/60 bg-bg-elevated/40 px-4 py-4 space-y-4">
@@ -272,8 +332,104 @@ export function PlanMonitor({ saved }: { saved: SavedPlan }) {
               {drift.unplanned.map((u) => `${u.symbol} ${u.currentPct.toFixed(1)}%`).join(', ')}
             </p>
           )}
+
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => saveCheck.mutate()}
+              disabled={!checkUsable || saveCheck.isPending}
+              className="flex items-center gap-1.5 rounded border border-border bg-bg-card px-2.5 py-1 text-xs font-medium text-text-secondary transition-colors hover:border-accent-blue/50 hover:text-accent-blue disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <Save size={12} aria-hidden /> {saveCheck.isPending ? 'Saving…' : 'Save this check'}
+            </button>
+            <button
+              onClick={printRebalanceNotes}
+              disabled={!checkUsable}
+              className="flex items-center gap-1.5 rounded border border-border bg-bg-card px-2.5 py-1 text-xs font-medium text-text-secondary transition-colors hover:border-accent-blue/50 hover:text-accent-blue disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <Printer size={12} aria-hidden /> Print rebalance notes
+            </button>
+            <span className="text-[11px] text-text-muted">
+              {checkUsable
+                ? 'Saving keeps these figures in the plan’s history. The notes print the table above, with what it was compared with.'
+                : 'Weights must total 100% before this check can be saved or printed.'}
+            </span>
+          </div>
         </>
       )}
+
+      {printNotes && <RebalanceNotesPrint notes={printNotes} onDone={() => setPrintNotes(null)} />}
+
+      {/* Plan history (T-065) */}
+      <div className="space-y-1.5">
+        <h3 className="flex items-center gap-1.5 text-xs font-medium text-text-secondary uppercase tracking-wider">
+          <History size={12} aria-hidden /> History
+        </h3>
+        {historyQuery.isLoading ? (
+          <p className="text-xs text-text-muted">Loading saved checks…</p>
+        ) : historyQuery.isError ? (
+          <p className="text-xs text-amber-400">{(historyQuery.error as Error).message}</p>
+        ) : history.length === 0 ? (
+          <p className="text-xs text-text-muted">
+            No saved checks yet. Save a check to start a record of how far this plan drifts over time, and
+            when it comes back within its bands.
+          </p>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="text-text-muted uppercase tracking-wider text-[10px]">
+                    <th className="text-left font-medium py-1.5">Saved</th>
+                    <th className="text-left font-medium py-1.5">Compared with</th>
+                    <th className="text-right font-medium py-1.5">Largest drift</th>
+                    <th className="text-left font-medium py-1.5 pl-4">Status</th>
+                    <th className="text-right font-medium py-1.5">Turnover</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/40">
+                  {(showAllHistory ? history : history.slice(0, HISTORY_SHOWN)).map((e) => (
+                    <tr key={e.id}>
+                      <td className="py-1.5 text-text-secondary">
+                        {new Date(e.capturedAt).toLocaleDateString()}
+                        <span className="ml-1.5 text-text-muted">
+                          {new Date(e.capturedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                        </span>
+                      </td>
+                      <td className="py-1.5 text-text-muted">{e.snapshot.portfolioName ?? 'Entered weights'}</td>
+                      <td className="text-right font-mono tabular-nums text-text-secondary py-1.5">
+                        {e.snapshot.maxDriftPts.toFixed(1)} pts
+                        {e.maxDriftChangePts !== null && e.maxDriftChangePts !== 0 && (
+                          <span className="ml-1 text-text-muted">
+                            ({e.maxDriftChangePts > 0 ? '+' : ''}{e.maxDriftChangePts.toFixed(1)})
+                          </span>
+                        )}
+                      </td>
+                      <td className={clsx('py-1.5 pl-4', e.snapshot.rebalanceDue ? 'text-amber-400' : 'text-emerald-400')}>
+                        {e.snapshot.rebalanceDue ? 'Rebalance due' : e.backWithinBands ? 'Back within bands' : 'Within bands'}
+                      </td>
+                      <td className="text-right font-mono tabular-nums text-text-muted py-1.5">
+                        {e.snapshot.turnoverUsd > 0 ? fmtUsd(e.snapshot.turnoverUsd) : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="text-[11px] text-text-muted">
+              Each row is a check you saved: the largest drift from target, against a ±{saved.plan.driftBandPct}%
+              band, with the change since the check before it in brackets.
+              {history.length > HISTORY_SHOWN && (
+                <>
+                  {' '}
+                  <button onClick={() => setShowAllHistory((v) => !v)} className="text-accent-blue hover:underline">
+                    {showAllHistory ? 'Show the latest only' : `Show all ${history.length}`}
+                  </button>
+                </>
+              )}
+            </p>
+          </>
+        )}
+      </div>
 
       {/* Suitability findings */}
       <div className="space-y-1.5">

@@ -77,3 +77,27 @@
     animation: shimmer 2s linear infinite;
   }
 }
+
+/* Printable rebalance notes (T-066, components/portfolio-builder/RebalanceNotesPrint.tsx).
+   The notes render into a portal on <body> that never shows on screen. While one is
+   printing, <html> carries data-print="rebalance-notes" and the rest of the page is
+   left out of the printout. */
+.rebalance-print {
+  display: none;
+}
+
+@media print {
+  html[data-print='rebalance-notes'] body > :not(.rebalance-print) {
+    display: none !important;
+  }
+
+  html[data-print='rebalance-notes'] .rebalance-print {
+    display: block;
+  }
+
+  html[data-print='rebalance-notes'],
+  html[data-print='rebalance-notes'] body {
+    background: #fff !important;
+    color-scheme: light;
+  }
+}
