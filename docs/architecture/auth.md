@@ -42,8 +42,9 @@ no session, local denied   → null → caller returns 401
 Local-user mode exists because the auth wall is off: rows still need an owner,
 and re-enabling login to get one would override the owner's decision. It
 resolves to a single account, `local@fn.local`, created on first use (installs
-from before the 2026-08 rename hold it as `local@caep.local`; the row is
-adopted — renamed in place, id preserved — on first touch). That
+from before the 2026-08-12 rename held it as `local@caep.local` and renamed it in
+place, id preserved, on first use; that lookup was removed on 2026-10-04, D75 —
+`docs/deployment/caep-db-rename.md`). That
 account has `password_hash = NULL` and **cannot be logged into** — it only owns
 rows.
 

@@ -4,7 +4,7 @@
 operation: what was done, and where the prior state lives. Same pattern as
 `branch-restarts-2026-10-03.md`.
 
-The session branch `ccr-3ad5880b-hsbobf` was force-pushed (`--force-with-lease`) nineteen times on
+The session branch `ccr-3ad5880b-hsbobf` was force-pushed (`--force-with-lease`) twenty times on
 this date. Its previous work had already been **squash-merged** into `main`, so the branch
 was restarted from the latest `main` for the next change rather than stacking new commits
 on history `main` already holds. No unmerged work was discarded.
@@ -30,6 +30,7 @@ on history `main` already holds. No unmerged work was discarded.
 | 2026-10-04 ~22:11 | `20634ef` | `9403290` (#281: D71) | `refs/pull/281/head`; tag `archive/ccr-3ad5880b-hsbobf@20634ef` | T-205 parked with the hosting decision and T-195 with the business tier (D72), restarted from `9403290` |
 | 2026-10-04 ~22:36 | `11dbe2d` | `1c9b212` (#282: D72) | `refs/pull/282/head`; tag `archive/ccr-3ad5880b-hsbobf@11dbe2d` | T-206 and T-209 parked until every feature is built and every proposed security feature is in (D73), restarted from `1c9b212` |
 | 2026-10-04 ~22:53 | `cca27bf` | `e0d2073` (#283: D73) | `refs/pull/283/head`; tag `archive/ccr-3ad5880b-hsbobf@cca27bf` | T-221 closed on D51's reasoning, with an uptime check added to T-112 (D74), restarted from `e0d2073` |
+| 2026-10-04 ~23:09 | `c36bafc` | `88d34d5` (#284: D74) | `refs/pull/284/head`; tag `archive/ccr-3ad5880b-hsbobf@c36bafc` | The legacy `local@caep.local` lookup removed (D75, T-329), restarted from `88d34d5` |
 
 Each tag was created by `.github/workflows/archive-branch.yml` when its PR merged.
 
@@ -92,7 +93,10 @@ git checkout -b ccr-restore-282 archive/ccr-3ad5880b-hsbobf@11dbe2d
 
 git fetch origin refs/pull/283/head:restore-283
 git checkout -b ccr-restore-283 archive/ccr-3ad5880b-hsbobf@cca27bf
+
+git fetch origin refs/pull/284/head:restore-284
+git checkout -b ccr-restore-284 archive/ccr-3ad5880b-hsbobf@c36bafc
 ```
 
 None of these is needed for anything: the squash commits `a6264e5`, `f498966`,
-`7be3b3e`, `fc58ef3`, `f4d9a23`, `0ad260a`, `d29b05c`, `190c887`, `7b48e14`, `5c55869`, `ac42b26`, `0ced4c8`, `dbad818`, `1ef4ecb`, `356bbc4`, `5d1a00c`, `9403290`, `1c9b212` and `e0d2073` are on `main` and carry the whole of each change.
+`7be3b3e`, `fc58ef3`, `f4d9a23`, `0ad260a`, `d29b05c`, `190c887`, `7b48e14`, `5c55869`, `ac42b26`, `0ced4c8`, `dbad818`, `1ef4ecb`, `356bbc4`, `5d1a00c`, `9403290`, `1c9b212`, `e0d2073` and `88d34d5` are on `main` and carry the whole of each change.
