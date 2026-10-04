@@ -61,10 +61,10 @@
   "total_verified": 398,
   "outstanding": 362,
   "by_status": {
-   "closed": 185,
+   "closed": 186,
    "open": 34,
    "parked": 125,
-   "blocked": 17,
+   "blocked": 16,
    "unclear": 1
   },
   "by_owner_role": {
@@ -74,7 +74,7 @@
    "owner-machine": 85
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 185,
+  "closed_by_annotation": 186,
   "counts_recomputed_on": "2026-10-04",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 362
@@ -8671,13 +8671,19 @@
   {
    "id": "T-221",
    "title": "Series A — 99.9% uptime over 3 months",
-   "status": "blocked",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "ops-infra",
    "effort": "large",
    "blocking_decision": "Rollout gate (owner 2026-09-05 'we are not ready for rollout yet') — no deployment exists to measure.",
-   "related_ids": [],
+   "related_ids": [
+    "T-112",
+    "T-212",
+    "T-218",
+    "T-222",
+    "T-224"
+   ],
    "summary": "Requires production deployment.",
    "next_action": "No action until a production deployment exists; the clock can only start after rollout.",
    "sources": [
@@ -8686,7 +8692,19 @@
      "lines": "237",
      "quote": "**99.9% uptime** demonstrated over rolling 3 months"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "blocked",
+    "closed_on": "2026-10-04",
+    "basis": "owner-ruling",
+    "verdict": "moot",
+    "reason": "MOOT under D74 (2026-10-04), on D51's reasoning: the owner closed the old platform's Series A plan on 2026-10-01 (\"Lets close the three from the old platform model.\"), and this item is a row of the same Series A Readiness Roadmap in docs/audits/production-readiness-scorecard.md. It was not among D51's three because it was filed as blocked, and D51 answered a review of parked items. The ask was 99.9% uptime shown over three rolling months, about two hours of downtime in all, as a proof point for investors. What it was for is kept elsewhere: an uptime check that alerts the owner when the site is down is added to T-112, and an uptime promise to business customers is T-212, parked under D5's trigger (D71).",
+    "approved_by": "owner, 2026-10-04 — \"go with option A for T-221\"",
+    "evidence": [
+     "docs/decisions/2026-10-04-owner-decisions.md",
+     "docs/audits/production-readiness-scorecard.md"
+    ]
+   }
   },
   {
    "id": "T-287",
@@ -10684,9 +10702,12 @@
    "category": "ops-infra",
    "effort": "large",
    "blocking_decision": "D2 — Public API exposure: \"/api/v1 has no rate limit and no auth, and fans anonymous requests into the owner's keyed provider quota. Ship it, gate it, or fence it at deploy.\" Plus the hosting choice (Vercel + Neon/Supabase vs VPS Docker Compose vs the existing AWS/EKS path) — deferred to the owner's planning session.",
-   "related_ids": [],
+   "related_ids": [
+    "T-221",
+    "T-212"
+   ],
    "summary": "Vercel+Neon, VPS Compose, or existing EKS/Terraform; 2026-07 decision was local-first.",
-   "next_action": "No deploy work until the owner's planning session; the one cheap interim fix is to stop cd-staging.yml running on every push to main (gate it on a repo-variable or make it workflow_dispatch-only) so main's CI signal is readable — propose it as a small PR.",
+   "next_action": "No deploy work until the owner's planning session. When the host is chosen, the monitoring includes an uptime check (D74): something outside the site that checks it every few minutes and alerts the owner when it is down, on a free plan or what the chosen host offers (D21 defers paid plans).",
    "sources": [
     {
      "file": "docs/ROADMAP.md",
@@ -10698,7 +10719,15 @@
      "lines": "141-143",
      "quote": "Hosting (Vercel/Fly + managed Postgres), rate limiting, monitoring - Estimated infra cost at this stage: **$50–200/mo**"
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-10-04",
+    "note": "D74 (2026-10-04) adds an uptime check to this item's monitoring, carried over from T-221 (99.9% uptime over three months), which closed as a Series A proof point on D51's reasoning. Checked 2026-10-04: the interim fix the old next step proposed is already in place. .github/workflows/cd-staging.yml:87 runs its first job, which the rest depend on, only when the STAGING_DEPLOY_ENABLED repository variable is 'true' or on a manual run, so a push to main no longer deploys. Next step was: \"No deploy work until the owner's planning session; the one cheap interim fix is to stop cd-staging.yml running on every push to main (gate it on a repo-variable or make it workflow_dispatch-only) so main's CI signal is readable — propose it as a small PR.\"",
+    "evidence": [
+     "docs/decisions/2026-10-04-owner-decisions.md",
+     ".github/workflows/cd-staging.yml"
+    ]
+   }
   },
   {
    "id": "T-122",
@@ -38254,6 +38283,13 @@
    {
     "on": "2026-10-04",
     "what": "D73, the owner's own answer: T-206 (penetration test) and T-209 (two-step sign-in for admin accounts) parked until all the features are built, and blocked until every proposed security feature has been added; both list the 13 security items that stand today. T-209 records that the app has no admin accounts. Counts recomputed: parked 125, blocked 17, total 362.",
+    "evidence": [
+     "docs/decisions/2026-10-04-owner-decisions.md"
+    ]
+   },
+   {
+    "on": "2026-10-04",
+    "what": "D74, option A: T-221 (99.9% uptime over three months) closed as moot on D51's reasoning, the last open row of the old Series A plan; T-112 gains an uptime check and drops an interim fix already in place (cd-staging.yml:87). Counts recomputed: closed 186, blocked 16, total 362.",
     "evidence": [
      "docs/decisions/2026-10-04-owner-decisions.md"
     ]
