@@ -99,6 +99,13 @@ const nextConfig = {
       // removes access. Restore = delete this line + re-add the nav entry in
       // lib/modules/registry.ts.
       { source: '/equities/backtests', destination: '/equities', permanent: false },
+      // Options Trade Risk Scorer switched off 2026-10-04 (D64) with every other
+      // risk rating until the risk engine is rebuilt and reviewed. The page,
+      // lib/risk/profiles/optionsTrade.ts and its tests are retained; this
+      // redirect and the missing nav entry are what remove access. Restore =
+      // delete this line and re-add the entry in lib/modules/registry.ts (see
+      // lib/risk/visibility.ts for the full surface list).
+      { source: '/equities/options', destination: '/equities', permanent: false },
       // Staking Discovery merged into /staking (2026-08-20, W3-3 option B):
       // its curated directory duplicated the Staking page's provider cards,
       // and its one unique feature — live on-chain pool discovery — became the

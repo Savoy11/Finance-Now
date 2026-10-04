@@ -25,6 +25,7 @@ import { formatCompact, formatCurrency, formatPercent } from '@/lib/utils/format
 import { STALE_TIME_LONG, STALE_TIME_SHORT } from '@/lib/constants'
 import type { SecurityQuotesResponse } from '@/app/live-data/security-quotes/route'
 import type { FundUniverseResponse } from '@/app/live-data/fund-universe/route'
+import { RISK_RATINGS_SHOWN } from '@/lib/risk/visibility'
 
 // ─── Fee drag analyzer ────────────────────────────────────────────────────────
 // Projects what this fund's expense ratio costs versus a 0.03% benchmark fund
@@ -230,8 +231,10 @@ function FundDetailInner() {
       explain: 'ETFs trade all day on an exchange at market prices and are generally more tax-efficient; mutual funds price once daily at NAV and may carry investment minimums.' },
     { label: 'Strategy', value: FUND_STRATEGY_INFO[fundStrategy(entry)].label,
       explain: FUND_STRATEGY_INFO[fundStrategy(entry)].description },
-    { label: 'Risk Profile', value: FUND_RISK_INFO[fundRiskLevel(entry)].label,
-      explain: 'A coarse suitability band derived from the fund’s category and strategy — leveraged/inverse and crypto funds rank Speculative, bond funds Conservative. Not a market-data risk score.' },
+    // Switched off with every other risk rating until the risk engine is
+    // rebuilt (D64): a risk label on the page of the fund being viewed.
+    ...(RISK_RATINGS_SHOWN ? [{ label: 'Risk Profile', value: FUND_RISK_INFO[fundRiskLevel(entry)].label,
+      explain: 'A coarse suitability band derived from the fund’s category and strategy — leveraged/inverse and crypto funds rank Speculative, bond funds Conservative. Not a market-data risk score.' }] : []),
     ...(entry.focusSector ? [{ label: 'Target Sector', value: SECTOR_INFO[entry.focusSector].label,
       explain: 'The single sector this fund concentrates in. Sector funds trade diversification for focused exposure — expect bigger swings than broad-market funds.' }] : []),
     ...(entry.focusIndustry ? [{ label: 'Industry Focus', value: entry.focusIndustry,

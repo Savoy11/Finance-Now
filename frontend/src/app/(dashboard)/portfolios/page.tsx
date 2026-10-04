@@ -28,6 +28,7 @@ import { INSTRUMENTS, INSTRUMENT_BY_KEY, CLASS_LABELS, formatInstrumentQuote, ty
 import { fetchInstrumentPrices } from '@/lib/api/instrumentPrices'
 import type { PortfolioHistoryResponse } from '@/app/live-data/portfolio-history/route'
 import { PortfolioLookThrough } from '@/components/portfolio/PortfolioLookThrough'
+import { RISK_RATINGS_SHOWN } from '@/lib/risk/visibility'
 
 // ─── Formatting helpers ───────────────────────────────────────────────────────
 
@@ -464,7 +465,9 @@ function PortfolioEditor({ existing, onSave, onCancel }: {
                   </span>
                   {coin.remote && (
                     <span className="text-[10px] text-accent-blue/80 px-1.5 py-0.5 rounded bg-accent-blue/10"
-                      title="Found by live lookup rather than the curated catalogs — no vetted risk tier, so it is excluded from the weighted risk figure, not defaulted.">
+                      title={RISK_RATINGS_SHOWN
+                        ? 'Found by live lookup rather than the curated catalogs — no vetted risk tier, so it is excluded from the weighted risk figure, not defaulted.'
+                        : 'Found by live lookup rather than the curated catalogs.'}>
                       lookup
                     </span>
                   )}
@@ -735,7 +738,9 @@ function PortfolioDetail({ portfolio, onEdit, onBack }: {
         <SourceLine id="portfolio-prices" />
       </div>
 
-      {/* Metric strip */}
+      {/* Metric strip. The Weighted Risk tile is switched off with every other
+          risk rating until the risk engine is rebuilt (D64), which leaves four
+          tiles: one full row at this width. */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="bg-bg-card border border-border rounded-xl p-4 text-center">
           <div className="text-xl font-bold text-text-primary">{fmt$(portfolio.startingCapital, 0)}</div>
@@ -760,19 +765,21 @@ function PortfolioDetail({ portfolio, onEdit, onBack }: {
             <div className="text-xs text-text-muted mt-0.5">P&L (set entry prices)</div>
           </div>
         )}
-        <div className="bg-bg-card border border-border rounded-xl p-4 text-center">
-          <div className={clsx('text-xl font-bold', riskColor(metrics.weightedRisk))}>{metrics.weightedRisk ?? '—'}</div>
-          <div className="text-xs text-text-muted mt-0.5">Weighted Risk</div>
-          {metrics.riskLabel !== null && (
-            <div className={clsx('text-[10px] mt-0.5', RISK_LABEL_COLOR[metrics.riskLabel])}>{metrics.riskLabel}</div>
-          )}
-          {/* The number describes only the assessed slice — say so whenever
-              that slice is not the whole portfolio, or a 3.2 over a third of
-              the capital reads as a 3.2 over all of it. */}
-          {metrics.weightedRisk !== null && metrics.riskCoveredPct < 99.5 && (
-            <div className="text-[10px] text-amber-400 mt-0.5">covers {metrics.riskCoveredPct.toFixed(0)}% of allocation</div>
-          )}
-        </div>
+        {RISK_RATINGS_SHOWN && (
+          <div className="bg-bg-card border border-border rounded-xl p-4 text-center">
+            <div className={clsx('text-xl font-bold', riskColor(metrics.weightedRisk))}>{metrics.weightedRisk ?? '—'}</div>
+            <div className="text-xs text-text-muted mt-0.5">Weighted Risk</div>
+            {metrics.riskLabel !== null && (
+              <div className={clsx('text-[10px] mt-0.5', RISK_LABEL_COLOR[metrics.riskLabel])}>{metrics.riskLabel}</div>
+            )}
+            {/* The number describes only the assessed slice — say so whenever
+                that slice is not the whole portfolio, or a 3.2 over a third of
+                the capital reads as a 3.2 over all of it. */}
+            {metrics.weightedRisk !== null && metrics.riskCoveredPct < 99.5 && (
+              <div className="text-[10px] text-amber-400 mt-0.5">covers {metrics.riskCoveredPct.toFixed(0)}% of allocation</div>
+            )}
+          </div>
+        )}
         <div className="bg-bg-card border border-border rounded-xl p-4 text-center">
           <div className="text-xl font-bold text-emerald-400">{annualIncome.covered > 0 ? fmt$(annualIncome.income, 0) : '—'}</div>
           <div className="text-xs text-text-muted mt-0.5">Est. Annual Income</div>
@@ -784,7 +791,7 @@ function PortfolioDetail({ portfolio, onEdit, onBack }: {
                 : 'no yielding securities'
           }</div>
           {/* D48: holdings with no live price are left out, as in every other total
-              here — so say how much the figure covers, the way the risk card does. */}
+              here — so say how much the figure covers, the way the P&L tile does. */}
           {annualIncome.covered > 0 && annualIncome.pricedPct < 99.5 && (
             <div className="text-[10px] text-amber-400 mt-0.5">covers {annualIncome.pricedPct.toFixed(0)}% of yielding holdings</div>
           )}
@@ -909,42 +916,47 @@ function PortfolioDetail({ portfolio, onEdit, onBack }: {
       {/* ── Analysis ── */}
       {tab === 'analysis' && (
         <div className="space-y-5">
-          {/* Risk breakdown */}
+          {/* Risk breakdown. The ratings are switched off with every other risk
+              rating until the risk engine is rebuilt (D64); the mix figures stay. */}
           <div className="bg-bg-card border border-border rounded-xl p-5 space-y-4">
             <h4 className="text-sm font-semibold text-text-primary flex items-center gap-2">
-              <Shield size={14} className="text-accent-blue" /> Risk Profile
+              <Shield size={14} className="text-accent-blue" /> {RISK_RATINGS_SHOWN ? 'Risk Profile' : 'Concentration'}
             </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-3">
-                {[...holdings].sort((a, b) => (b.riskTier ?? -1) - (a.riskTier ?? -1)).map(h => (
-                  <div key={h.cgId}>
-                    <div className="flex items-center justify-between text-xs mb-1">
-                      <span className="flex items-center gap-1.5">
-                        <span className="size-2 rounded-full" style={{ backgroundColor: h.color }} />
-                        <span className="font-semibold text-text-primary">{h.symbol}</span>
-                        <span className="text-text-muted text-[10px]">{h.targetAlloc.toFixed(0)}% weight</span>
-                      </span>
-                      <span className={clsx('font-mono', riskColor(h.riskTier))} title={h.riskTier === null ? 'No vetted risk tier for this asset — it is excluded from the weighted figure, not defaulted' : undefined}>
-                        {h.riskTier === null ? 'not rated' : `${h.riskTier}/10`}
-                      </span>
+            <div className={clsx('grid grid-cols-1 gap-4', RISK_RATINGS_SHOWN && 'sm:grid-cols-2')}>
+              {RISK_RATINGS_SHOWN && (
+                <div className="space-y-3">
+                  {[...holdings].sort((a, b) => (b.riskTier ?? -1) - (a.riskTier ?? -1)).map(h => (
+                    <div key={h.cgId}>
+                      <div className="flex items-center justify-between text-xs mb-1">
+                        <span className="flex items-center gap-1.5">
+                          <span className="size-2 rounded-full" style={{ backgroundColor: h.color }} />
+                          <span className="font-semibold text-text-primary">{h.symbol}</span>
+                          <span className="text-text-muted text-[10px]">{h.targetAlloc.toFixed(0)}% weight</span>
+                        </span>
+                        <span className={clsx('font-mono', riskColor(h.riskTier))} title={h.riskTier === null ? 'No vetted risk tier for this asset — it is excluded from the weighted figure, not defaulted' : undefined}>
+                          {h.riskTier === null ? 'not rated' : `${h.riskTier}/10`}
+                        </span>
+                      </div>
+                      <div className="h-1.5 bg-bg-elevated rounded-full overflow-hidden">
+                        <div className={clsx('h-full rounded-full', riskBg(h.riskTier))} style={{ width: `${((h.riskTier ?? 0) / 10) * 100}%` }} />
+                      </div>
                     </div>
-                    <div className="h-1.5 bg-bg-elevated rounded-full overflow-hidden">
-                      <div className={clsx('h-full rounded-full', riskBg(h.riskTier))} style={{ width: `${((h.riskTier ?? 0) / 10) * 100}%` }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="space-y-3">
-                <div className="bg-bg-elevated rounded-xl p-4 border border-border text-center">
-                  <div className={clsx('text-3xl font-bold font-mono', riskColor(metrics.weightedRisk))}>{metrics.weightedRisk ?? '—'}</div>
-                  <div className="text-xs text-text-muted mt-1">Weighted Portfolio Risk</div>
-                  {metrics.riskLabel !== null && (
-                    <div className={clsx('text-sm font-semibold mt-1', RISK_LABEL_COLOR[metrics.riskLabel])}>{metrics.riskLabel}</div>
-                  )}
-                  {metrics.weightedRisk !== null && metrics.riskCoveredPct < 99.5 && (
-                    <div className="text-[10px] text-amber-400 mt-1">Assessed holdings cover {metrics.riskCoveredPct.toFixed(0)}% of allocation; the rest carries no vetted tier</div>
-                  )}
+                  ))}
                 </div>
+              )}
+              <div className="space-y-3">
+                {RISK_RATINGS_SHOWN && (
+                  <div className="bg-bg-elevated rounded-xl p-4 border border-border text-center">
+                    <div className={clsx('text-3xl font-bold font-mono', riskColor(metrics.weightedRisk))}>{metrics.weightedRisk ?? '—'}</div>
+                    <div className="text-xs text-text-muted mt-1">Weighted Portfolio Risk</div>
+                    {metrics.riskLabel !== null && (
+                      <div className={clsx('text-sm font-semibold mt-1', RISK_LABEL_COLOR[metrics.riskLabel])}>{metrics.riskLabel}</div>
+                    )}
+                    {metrics.weightedRisk !== null && metrics.riskCoveredPct < 99.5 && (
+                      <div className="text-[10px] text-amber-400 mt-1">Assessed holdings cover {metrics.riskCoveredPct.toFixed(0)}% of allocation; the rest carries no vetted tier</div>
+                    )}
+                  </div>
+                )}
                 <div className="bg-bg-elevated rounded-xl p-3 border border-border space-y-1.5">
                   <div className="flex justify-between text-xs">
                     <span className="text-text-muted">Stablecoin %</span>
@@ -1066,7 +1078,7 @@ export default function PortfoliosPage() {
               <PageHeader
                 title="Portfolios"
                 subtitle="Hypothetical portfolios for investment research and backtesting"
-                description="The Portfolios tool builds and analyzes hypothetical CROSS-ASSET allocations — crypto, stocks, ETFs, and mutual funds in one portfolio. Add holdings with target weights, fetch live prices, and see P&L, category mix, weighted risk, and concentration warnings — without committing real funds."
+                description={`The Portfolios tool builds and analyzes hypothetical CROSS-ASSET allocations — crypto, stocks, ETFs, and mutual funds in one portfolio. Add holdings with target weights, fetch live prices, and see P&L, category mix, ${RISK_RATINGS_SHOWN ? 'weighted risk, ' : ''}and concentration warnings — without committing real funds.`}
                 details={[
                   // D-9 fix: this block used to claim Sharpe (4% rf) and max
                   // drawdown — computed nowhere on this page — plus
@@ -1074,7 +1086,9 @@ export default function PortfoliosPage() {
                   // since the /api/user/portfolios migration) and a stale "live
                   // mode" (LIVE_DATA is hardcoded true; there is no other mode).
                   { label: 'Live pricing', text: 'Valuations use live prices — CoinGecko for crypto, the keyed quote ladder for stocks and funds. Positions without a live price are excluded from totals and from the income estimate, never valued at cost.' },
-                  { label: 'Risk metrics', text: 'Weighted risk averages each holding\'s curated risk tier (1–10, higher = riskier) by allocation, renormalised over the share of the portfolio that has a tier — the coverage percentage says how much. It is NOT the canonical 0–100 Safety Score, which is not published per asset (RP-6); concentration warnings flag single-position weight. Sharpe and drawdown are not computed here — see Compare for window statistics.' },
+                  RISK_RATINGS_SHOWN
+                    ? { label: 'Risk metrics', text: 'Weighted risk averages each holding\'s curated risk tier (1–10, higher = riskier) by allocation, renormalised over the share of the portfolio that has a tier — the coverage percentage says how much. It is NOT the canonical 0–100 Safety Score, which is not published per asset (RP-6); concentration warnings flag single-position weight. Sharpe and drawdown are not computed here — see Compare for window statistics.' }
+                    : { label: 'Risk metrics', text: 'Risk ratings are switched off until the risk engine is rebuilt and reviewed. Concentration warnings still flag single-position weight. Sharpe and drawdown are not computed here — see Compare for window statistics.' },
                   { label: 'Persistence', text: 'Portfolios are saved to your account database via /api/user/portfolios. A one-time import migrated any legacy localStorage portfolios.' },
                 ]}
               />

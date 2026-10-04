@@ -3,7 +3,7 @@
 Recorded from the owner's answers while working through the blocked list, starting at its top:
 T-119, then T-005, then the four sources D54 left out (D55), then T-065 and T-066 (D56), then
 T-192 (D57), then Reddit sign-in, raised with T-246 (D58), then T-204 (D59), then T-294
-(D60), then T-393 (D61), then T-387 (D62), then T-009 (D63). Same form as
+(D60), then T-393 (D61), then T-387 (D62), then T-009 (D63), then T-012 (D64). Same form as
 `2026-10-03-owner-decisions.md`: one row per ruling, what it cascades to, and what was
 actually done.
 
@@ -19,6 +19,7 @@ actually done.
 | D61 | T-393 (close the 2024 cycle row in the Cycle Context tab's "Prior cycles" table once its low is final), the next item on the blocked list | **Option 1, "Fix the row now and park the item until the market settles it":** *"go with option 1 and move on to T-387; also consider past cycles, there is research that has been complied that show charts of growth from the cycle,"* in reply to three options: fix the row and park the item; also have the page work out the low itself; or leave it as it is. → APPLIED | The open row's low so far moves from "Jun 2026 · ~$59,000", −53%, to "Jul 2026 · ~$57,700", −54% (see the notes), which also moves the open cycle's bar on the "Drawdown vs prior cycles" chart, and two notes on the tab now say "more than half" where they said "~50%". T-393 moves from blocked to parked: the low becomes final when BTC trades above the October 2025 high (about $126,300) or at the 2028 halving (around April 2028), whichever comes first. The table's compiled-on date stays 2026-08-29, because only one row was re-checked. A new test holds each row's drawdown to its own peak and trough. On the past-cycles point the owner then asked for a growth chart (*"add the growth chart, merge and go with option 2"*), built in the same change: the tab gains "Growth from each cycle's low" (see the notes) |
 | D62 | T-387 (the Coins page's technical filters past about 250 coins), the next item on the blocked list | **Option 2, "Park it and add a small test":** *"add the growth chart, merge and go with option 2,"* in reply to three options: park it until the coin list passes about 250 or a paid data plan is taken up; the same plus a test that fails past 250; or close it. → APPLIED | T-387 moves from blocked to parked under D21 (paid-service decisions are deferred). It comes back when the swept coin list grows past 250 (80 today) or a paid data plan is taken up. `SWEEP_UNIVERSE_LIMIT` (250) in `lib/technicals/sweep.ts` names the limit, and a test fails if `COINGECKO_IDS` grows past it, with a message pointing to T-387. No behaviour change |
 | D63 | T-009 (whether delayed prices, clearly labelled, are allowed, to be settled before any options-chain feature ships), the next item on the blocked list | **Option 1, "Park it with the other options items":** *"merge and go with option 1,"* in reply to three options: park it until options chains are reopened; decide the rule now (delayed prices allowed only where the delay is shown on every screen that uses them and passed through the public API); or close it and add the question to the options-chain proposal's notes. → APPLIED | T-009 moves from blocked to parked beside T-060 to T-063. It comes back only if options chains are reopened (RP-1). The question stays unanswered on purpose, as the 2026-08-05 decision recorded it. No code change |
+| D64 | T-012 (whether the macro risk-profile scores should show anywhere), the next item on the blocked list. Offered: keep them in Portfolios only, show them on the macro pages with their workings, or leave it for the legal review | **Switch off every risk rating until the risk engine is rebuilt.** *"We will need to remove it until the risk engine is rebuilt. We can add an item for a pre launch rebuild of the risk engine and to address applying risk scores again later. This project will also require significant compliance and regulatory research to determine if and how risk can be assessed for each asset type."* Asked which of the three places that show ratings this covers, the owner chose all three: Portfolios' ratings, the fund page's risk label, and the options Trade Risk Scorer. → APPLIED | Switched off, code kept (see the notes): the three surfaces, the options API (503), the agent tool and the MCP tool, behind `RISK_RATINGS_SHOWN` in `lib/risk/visibility.ts` plus a redirect and a commented-out nav entry. T-012 closes. Two items open: T-419, compliance and regulatory research into whether and how risk can be assessed for each asset type, and T-420, the pre-launch rebuild of the engine and the return of ratings, which waits on T-419. RP-8 records the switch-off so it is not re-proposed meanwhile |
 
 ## Notes
 
@@ -279,3 +280,35 @@ showing hand entry is the wrong shape needs the launch. The third, Yahoo's optio
 no longer applies: `yahoo.com` has been prohibited in `sourceTerms.ts` since 2026-08-06.
 The general notice that data "may be delayed" (Draft v1 of the disclosures, and the site
 footer) is not the per-screen delay label T-009 asks about.
+
+**D64: what is switched off, and what is not.** One constant, `RISK_RATINGS_SHOWN` in
+`frontend/src/lib/risk/visibility.ts`, set to `false`, gates:
+
+- **Portfolios.** The overview's Weighted Risk tile; on the Analysis tab, each holding's
+  rating out of 10 and the Weighted Portfolio Risk figure with its label (Conservative to
+  Speculative). The card now reads "Concentration" and keeps the stablecoin share, the
+  category count and the largest position. The two diversification warnings read off the
+  score ("Portfolio risk score is very high — suitable only for high-risk tolerance" and
+  "Portfolio leans aggressive") are off; the concentration warnings stay.
+- **Fund pages.** The "Risk Profile" line, and the `riskLevel` field on
+  `/live-data/fund-universe`, which is left out rather than sent as null.
+- **The options Trade Risk Scorer.** `/api/v1/options/score` answers 503 to both methods,
+  as `/api/v1/transfer/routes` does, and the discovery listing and OpenAPI spec say it is
+  withheld. The agent tool is left out of every toolset, and `runTool` answers with the
+  reason if a model names it anyway.
+
+Three parts sit outside the constant: the page redirects in `next.config.mjs`, its nav
+entry is commented out in `lib/modules/registry.ts`, and the MCP tool is commented out
+in `mcp-server/src/index.ts`. The agent prompts say ratings are switched off and tell
+the assistant not to produce one of its own. `lib/risk/__tests__/riskRatingsHidden.test.ts`
+checks all of it; turning the constant on was confirmed to fail five of its checks.
+
+Not covered: the Pump Report's fraud-signal score (0–10) and AI suspicion score, which
+rate scam signals on wallet addresses rather than how risky an asset is to own, and the
+standard statistics D14 kept (Sharpe, Sortino, volatility, drawdown, beta on Compare).
+The session named the Pump Report scores to the owner as left on.
+
+**D64: what still describes the ratings.** The Methodology Guide's Section 3 (T-359, a
+Google Doc the owner maintains) explains how Portfolios' tiers and the fund band are
+derived and how the options scorer works. It is outside the repository, so it was not
+changed; T-420 carries updating it when ratings return.

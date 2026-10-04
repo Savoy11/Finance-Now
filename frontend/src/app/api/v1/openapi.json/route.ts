@@ -190,22 +190,24 @@ const SPEC = {
     '/options/score': {
       get: {
         tags: ['options'],
-        summary: 'Describe the scoring request schema',
-        description: 'Returns the POST body schema and a worked example, so the endpoint is discoverable without the spec.',
+        summary: 'Describe the scoring request schema — WITHHELD',
+        description: 'NOT AVAILABLE IN THIS BUILD: answers 503. Risk ratings are switched off until the risk engine is rebuilt and reviewed. When restored, returns the POST body schema and a worked example, so the endpoint is discoverable without the spec.',
         responses: {
-          '200': { description: 'Schema and example' },
+          '503': { description: 'Withheld from this build — see the endpoint description.', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '200': { description: 'Schema and example (when restored)' },
         },
       },
       post: {
         tags: ['options'],
-        summary: 'Score a described options position',
-        description: 'Scores an options trade the CALLER describes on the canonical 0-100 safety scale (higher = safer), across liquidity, IV environment, assignment, time decay and defined risk, returning per-dimension scores with evidence plus confidence and coverage. Explains risk; does NOT recommend trades or predict profit. This endpoint does not fetch an options chain — no keyless chain source exists (see docs/assessments/P2-O1-options-data.md) — so every option-level figure must be supplied by the caller. Omitted optional fields lower `confidence`, never the score. maxLossUsd accepts the string "unbounded" for naked short exposure, which is a meaningful value rather than a missing one.',
+        summary: 'Score a described options position — WITHHELD',
+        description: 'NOT AVAILABLE IN THIS BUILD: answers 503. Risk ratings are switched off until the risk engine is rebuilt and reviewed; documented here so a caller understands the endpoint exists and is deliberately withheld. When restored: Scores an options trade the CALLER describes on the canonical 0-100 safety scale (higher = safer), across liquidity, IV environment, assignment, time decay and defined risk, returning per-dimension scores with evidence plus confidence and coverage. Explains risk; does NOT recommend trades or predict profit. This endpoint does not fetch an options chain — no keyless chain source exists (see docs/assessments/P2-O1-options-data.md) — so every option-level figure must be supplied by the caller. Omitted optional fields lower `confidence`, never the score. maxLossUsd accepts the string "unbounded" for naked short exposure, which is a meaningful value rather than a missing one.',
         requestBody: {
           required: true,
           content: { 'application/json': { schema: { $ref: '#/components/schemas/OptionsScoreRequest' } } },
         },
         responses: {
-          '200': { description: 'Composite risk with per-dimension detail', content: { 'application/json': { schema: { $ref: '#/components/schemas/OptionsScoreResponse' } } } },
+          '503': { description: 'Withheld from this build — see the endpoint description.', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '200': { description: 'Composite risk with per-dimension detail (shape retained for when the endpoint is restored)', content: { 'application/json': { schema: { $ref: '#/components/schemas/OptionsScoreResponse' } } } },
           '400': { description: 'Invalid trade description — `details` lists every problem found, not just the first', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
         },
       },

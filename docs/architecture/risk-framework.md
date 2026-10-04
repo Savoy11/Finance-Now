@@ -257,6 +257,12 @@ investment-advice line.
 
 *Annotated 2026-09-08 with what shipped.*
 
+> ⚠ **2026-10-04 (D64): every surface below that shows a rating is switched off** until
+> the engine is rebuilt before launch, after compliance research into whether and how
+> risk can be assessed for each asset type. The code stays; `frontend/src/lib/risk/visibility.ts`
+> lists each surface and how to restore it, and `riskRatingsHidden.test.ts` guards the
+> state. Items 1 and 2 describe what was built, not what is on screen.
+
 1. **Wire into UI** — ⚠ **partly done, and partly reversed.** The breakdown UI ships
    on the Trade Risk Scorer (`/equities/options`). The **assets** half was built and
    then removed under RP-6, so this item can never complete as written.

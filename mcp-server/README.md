@@ -44,13 +44,19 @@ One environment variable:
 claude mcp add finance-now node /absolute/path/to/mcp-server/dist/index.js
 ```
 
-## Tools (11)
+## Tools (10)
 
 Market data — crypto: `get_coin_prices`, `list_exchanges`,
 `get_network_fees`, `get_staking_opportunities`,
 `get_crypto_news`. Securities & macro: `get_security_quotes`, `get_security_history`,
-`get_yield_curve`, `get_fx_rates`. Analysis: `score_options_trade` (computes from
-caller-supplied figures — there is no options chain feed, by decision).
+`get_yield_curve`, `get_fx_rates`. Maintenance: `run_audit`.
+
+⚠ **`score_options_trade` is withheld** (2026-10-04, owner decision D64). Every
+risk rating the app shows is off until the risk engine is rebuilt and the compliance
+research on whether and how risk can be rated is done, so the tool is commented out
+in `src/index.ts` and `/api/v1/options/score` answers 503. Kept, not deleted:
+un-comment the tool block to restore, together with the app's switch in
+`frontend/src/lib/risk/visibility.ts`.
 
 ⚠ **`compare_staking_risk` was REMOVED** (2026-09-14, owner decision D14) — deleted,
 not withheld like `find_transfer_routes` below. It printed a side-by-side table of
@@ -58,9 +64,10 @@ composite Safety Scores across providers, which is a leaderboard delivered throu
 MCP: the surface RP-3 rejected in the app, reaching the same reader by another route.
 Its upstream (`/api/v1/staking/opportunities`) no longer serves `safetyScore`, `band`,
 `riskScore` or `riskLevel` at all, so there is nothing to restore it to. An agent asked
-to compare providers can still read the six risk dimensions from
-`get_staking_opportunities` and explain the differences — without this server
-publishing a ranking.
+to compare providers can still read the facts from `get_staking_opportunities`
+(APY, lock-up, custody model, TVL) and explain the differences — without this server
+publishing a ranking. (The six risk dimensions this sentence once pointed to went
+too, under D26 on 2026-09-25.)
 
 ⚠ **`find_transfer_routes` is withheld** (2026-08-22, owner decision): the Transfer
 Fee Calculator is kept but held out of the initial rollout while its fee table
