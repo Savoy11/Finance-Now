@@ -63,8 +63,8 @@
   "by_status": {
    "closed": 180,
    "open": 31,
-   "parked": 111,
-   "blocked": 35,
+   "parked": 112,
+   "blocked": 34,
    "unclear": 1
   },
   "by_owner_role": {
@@ -7621,22 +7621,32 @@
   {
    "id": "T-387",
    "title": "Coins technical screener — server-side snapshot past ~250 coins on a paid tier",
-   "status": "blocked",
+   "status": "parked",
    "confidence": "medium",
    "owner_role": "either",
    "category": "feature",
    "effort": "large",
-   "blocking_decision": "Owner's at-release paid-tier / universe-size decision (universe >~250 coins)",
+   "blocking_decision": "PARKED 2026-10-04 — D62 (2026-10-04): parked under D21 (paid-service decisions are deferred). It comes back when the swept coin list grows past 250 coins (80 today), which a test now fails on, or when a paid data plan is taken up. The ledger carried it as blocked until 2026-10-04. Was: \"Owner's at-release paid-tier / universe-size decision (universe >~250 coins)\"",
    "related_ids": [],
-   "summary": "sweep.ts design holds only while one sweep fits.",
-   "next_action": "No action until the owner adopts a paid CoinGecko tier or expands the coin universe past ~250; when that happens, design a server-side candle snapshot route (e.g. /live-data/technical-snapshot) that lib/technicals/sweep.ts readers consume instead of per-page sweeps, keeping the 'filters see the dataset' invariant.",
+   "summary": "The Coins screener and the Scanner page sweep every coin in COINGECKO_IDS from the browser, one candle request per coin. That holds up to about 250 coins; past it, the answer is a server-side snapshot on a paid data tier.",
+   "next_action": "Nothing until the swept coin list nears SWEEP_UNIVERSE_LIMIT (250; sweep.test.ts fails past it) or a paid data plan is taken up (D21). Then design a server-side candle snapshot route (e.g. /live-data/technical-snapshot) that lib/technicals/sweep.ts readers consume instead of per-page sweeps, keeping the \"filters see the dataset\" invariant.",
    "sources": [
     {
      "file": "git:14af870",
      "lines": "2026-08-22",
      "quote": "this design holds only while the whole universe fits in one sweep, because the screener's invariant is that filters see the dataset, not the page. Past roughly 250 coins the answer is a server-side snapshot on a paid tier"
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-10-04",
+    "note": "Parked under D62. Checked 2026-10-04: COINGECKO_IDS lists 80 coins, and both the Coins screener (hooks/useAssets.ts) and the Scanner page sweep that whole list. SWEEP_UNIVERSE_LIMIT (250) now names the limit in lib/technicals/sweep.ts, and sweep.test.ts fails if the list grows past it, with a message pointing here; checked red by lowering the limit to 79. Summary was: \"sweep.ts design holds only while one sweep fits.\"",
+    "evidence": [
+     "docs/decisions/2026-10-04-owner-decisions.md",
+     "frontend/src/lib/technicals/sweep.ts",
+     "frontend/src/lib/technicals/__tests__/sweep.test.ts",
+     "frontend/src/lib/api/live/coingeckoIds.ts"
+    ]
+   }
   },
   {
    "id": "T-009",
@@ -37840,6 +37850,14 @@
     "evidence": [
      "docs/decisions/2026-10-04-owner-decisions.md",
      "frontend/src/lib/data/cycleHistory.ts"
+    ]
+   },
+   {
+    "on": "2026-10-04",
+    "what": "T-387 parked under D62, inside D21's deferral of paid-service decisions: it comes back when the swept coin list grows past 250 (80 today) or a paid data plan is taken up. SWEEP_UNIVERSE_LIMIT names the limit and a test fails past it. Blocked 35 to 34, parked 111 to 112.",
+    "evidence": [
+     "docs/decisions/2026-10-04-owner-decisions.md",
+     "frontend/src/lib/technicals/__tests__/sweep.test.ts"
     ]
    }
   ]

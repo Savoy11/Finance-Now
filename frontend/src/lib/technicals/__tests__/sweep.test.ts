@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
-import { computeTechnicals, realisedVolatilityPct, sweepTechnicals } from '../sweep'
+import { computeTechnicals, realisedVolatilityPct, sweepTechnicals, SWEEP_UNIVERSE_LIMIT } from '../sweep'
+import { COINGECKO_IDS } from '@/lib/api/live/coingeckoIds'
 import type { OhlcvCandle } from '@/lib/utils/indicators'
 
 const candles = (closes: number[]): OhlcvCandle[] =>
@@ -195,5 +196,15 @@ describe('computeTechnicals — realised volatility field', () => {
 
   it('is null for an empty series', () => {
     expect(computeTechnicals([]).realisedVol30dPct).toBeNull()
+  })
+})
+
+describe('the swept coin list (T-387)', () => {
+  it('stays within what one browser sweep is designed to cover', () => {
+    // The Coins screener and /scanner both sweep every coin in COINGECKO_IDS
+    // from the browser, one candle request per coin. If this fails, the list
+    // has outgrown that design: read T-387 (parked under D62) before raising
+    // the limit. Its answer is a server-side snapshot, not a bigger number here.
+    expect(Object.keys(COINGECKO_IDS).length).toBeLessThanOrEqual(SWEEP_UNIVERSE_LIMIT)
   })
 })
