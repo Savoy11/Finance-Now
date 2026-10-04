@@ -63,8 +63,8 @@
   "by_status": {
    "closed": 179,
    "open": 31,
-   "parked": 107,
-   "blocked": 40,
+   "parked": 109,
+   "blocked": 38,
    "unclear": 1
   },
   "by_owner_role": {
@@ -4484,12 +4484,12 @@
    "owner_role": "owner-decision",
    "category": "dependency",
    "effort": "medium",
-   "blocking_decision": "PARKED 2026-09-30 — D8 (2026-09-14): Reddit OAuth is deferred with the rollout — its API terms are read in the launch vendor pass (parked under D1/D3). The ledger carried it as open until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md).",
+   "blocking_decision": "PARKED 2026-10-04 — D58 (2026-10-04): a post-launch project. The owner will apply to Reddit for Data API access after launch, so Reddit can see how the app is used live; Reddit may offer a better route to the data. Reddit now approves every API user, personal projects included, and commercial use needs its written approval. Was: \"PARKED 2026-09-30 — D8 (2026-09-14): Reddit OAuth is deferred with the rollout — its API terms are read in the launch vendor pass (parked under D1/D3). The ledger carried it as open until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md).\"",
    "related_ids": [
     "#121"
    ],
    "summary": "Both social routes degrade to StockTwits until then.",
-   "next_action": "Owner decides whether to register a Reddit 'script'/app OAuth client (free tier) after T-244's terms read. If yes: do NOT just set REDDIT_CLIENT_ID — first open a remote-dev task to implement the OAuth client_credentials flow (REDDIT_CLIENT_ID + REDDIT_CLIENT_SECRET, token from www.reddit.com/api/v1/access_token, requests to oauth.reddit.com with the registered User-Agent) in frontend/src/app/live-data/stock-social/route.ts and social/route.ts, then set the env var. If no: record the decision in docs/audits/rejected-proposals.md with a reopen trigger.",
+   "next_action": "After launch: the owner applies to Reddit for Data API access (its Responsible Builder Policy), describing the live app, and takes whatever access route Reddit offers. Then a remote-dev task builds the reader for that route before any credential is set: for OAuth client_credentials that is REDDIT_CLIENT_ID + REDDIT_CLIENT_SECRET, a token from www.reddit.com/api/v1/access_token, and requests to oauth.reddit.com with the registered User-Agent, in frontend/src/app/live-data/stock-social/route.ts and social/route.ts. T-246's vote counts come with it. If Reddit declines, record it in docs/audits/rejected-proposals.md with a reopen trigger.",
    "sources": [
     {
      "file": "docs/audits/terms-review-2026-08-29.md",
@@ -4506,7 +4506,17 @@
      "lines": "314-320",
      "quote": "reason: 'Reddit\\'s robots.txt disallows this app\\'s agent. Configure REDDIT_CLIENT_ID (OAuth) to read it through the supported path.',"
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-10-04",
+    "note": "Re-parked under D58, refining D8: post-launch rather than in the launch vendor pass. Two facts for whoever builds it. (1) Search results on 2026-10-04 agree that Reddit's Responsible Builder Policy now requires explicit approval before any API access, personal projects included; this environment cannot open Reddit's pages, so confirm it first. (2) assertRobotsPermits (lib/server/sourceTerms.ts) reads the credential from the environment only, so a key saved on the Integrations page would not lift the gate unless that check also reads getProviderKey. Setting REDDIT_CLIENT_ID alone would lift the gate while both routes still read the anonymous .rss feeds; the routes' messages used to invite exactly that and were reworded the same day.",
+    "evidence": [
+     "docs/decisions/2026-10-04-owner-decisions.md",
+     "frontend/src/lib/server/sourceTerms.ts",
+     "frontend/src/app/live-data/social/route.ts",
+     "frontend/src/app/live-data/stock-social/route.ts"
+    ]
+   }
   },
   {
    "id": "T-264",
@@ -7294,42 +7304,59 @@
   {
    "id": "T-192",
    "title": "Plan-based rate limit tiers",
-   "status": "blocked",
+   "status": "parked",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "feature",
    "effort": "medium",
-   "blocking_decision": "Billing model: per-module licenses vs. tiered bundles — Phase 6 (ROADMAP.md:487); D2 /api/v1 auth",
+   "blocking_decision": "PARKED 2026-10-04 — D57 (2026-10-04): parked with its siblings from the old Enterprise Sales Readiness list (T-188 usage metering, T-191 per-key IP allowlists). It comes back when the launch is planned, after the owner reassesses pricing (D29, parked under D21) and decides whether /api/v1 gets API keys (T-087). The ledger carried it as blocked until 2026-10-04. Was: \"Billing model: per-module licenses vs. tiered bundles — Phase 6 (ROADMAP.md:487); D2 /api/v1 auth\"",
    "related_ids": [],
-   "summary": "Single global limit today.",
-   "next_action": "Wait for the Phase 6 billing-model decision and D2. First code step afterwards: a rate limiter on frontend/src/app/api/v1 keyed by API key with a per-plan limit table, since that is the surface that ships.",
+   "summary": "No plan-based limits exist, and /api/v1 has no rate limit or API keys at all (measured 2026-10-04); the per-visitor limits in lib/server/apiGuard.ts cover other routes. Nobody else can reach the app while no deployed instance exists (D22).",
+   "next_action": "Leave parked until the launch is planned: the owner reassesses pricing (D29) and decides whether /api/v1 gets API keys (T-087, the P3 production review's D2). First code step afterwards: a rate limiter on frontend/src/app/api/v1 keyed by API key with a per-plan limit table, since that is the surface that ships.",
    "sources": [
     {
      "file": "docs/audits/production-readiness-scorecard.md",
      "lines": "138, 209",
      "quote": "**Rate limit tiers**: Implement plan-based rate limits (Free / Pro / Enterprise)"
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-10-04",
+    "note": "Parked under D57. The summary said \"Single global limit today.\" Measured 2026-10-04: none of the 13 /api/v1 routes calls guardQuotaRoute or guardSensitiveRoute, so there is no limit at all on that surface. The blocker's \"D2\" is the P3 production review's D2 (public API exposure, now T-087), not the 2026-09-14 D2 that froze the backend, and its ROADMAP.md:487 reference now sits at line 728.",
+    "evidence": [
+     "docs/decisions/2026-10-04-owner-decisions.md",
+     "docs/assessments/P3-production-review.md",
+     "frontend/src/lib/server/apiGuard.ts",
+     "docs/ROADMAP.md"
+    ]
+   }
   },
   {
    "id": "T-246",
    "title": "Restore Reddit vote metrics on crypto Social via JSON endpoints",
-   "status": "blocked",
+   "status": "parked",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "feature",
    "effort": "medium",
-   "blocking_decision": "T-245: whether to register Reddit OAuth (REDDIT_CLIENT_ID)",
+   "blocking_decision": "PARKED 2026-10-04 — D58 (2026-10-04): parked beside T-245, a post-launch project. Vote counts only come through Reddit's API access, which the owner will apply for after launch. The ledger carried it as blocked until 2026-10-04. Was: \"T-245: whether to register Reddit OAuth (REDDIT_CLIENT_ID)\"",
    "related_ids": [],
    "summary": "Pre-gate item; now depends on the OAuth decision.",
-   "next_action": "Fold into the T-245 implementation: once OAuth is approved, switch both routes' Reddit rung to the authenticated JSON listing (which carries score/upvote_ratio) and populate score/upvoteRatio. Meanwhile propose a dated annotation on FEATURE-ADDITIONS.md:221 noting the item now depends on the OAuth decision.",
+   "next_action": "After launch, with T-245: once Reddit grants access, switch both routes' Reddit rung to the authenticated JSON listing (which carries score/upvote_ratio) and populate score/upvoteRatio. Meanwhile propose a dated annotation on FEATURE-ADDITIONS.md:221 noting the item now depends on the Reddit access decision.",
    "sources": [
     {
      "file": "docs/FEATURE-ADDITIONS.md",
      "lines": "221-222",
      "quote": "**Known remaining (documented, not fixed)**: crypto Social's Reddit RSS carries no scores (JSON migration would restore vote metrics)"
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-10-04",
+    "note": "Parked under D58 with T-245. This answers the options put to the owner on 2026-10-04 with option 1 (park it with T-245): the owner's answer moved Reddit access to after launch, and vote counts cannot come any other way.",
+    "evidence": [
+     "docs/decisions/2026-10-04-owner-decisions.md"
+    ]
+   }
   },
   {
    "id": "T-247",
@@ -37736,6 +37763,22 @@
      "docs/TASK-QUEUE.md",
      "frontend/src/lib/data/planHistory.ts",
      "frontend/src/lib/data/rebalanceNotes.ts"
+    ]
+   },
+   {
+    "on": "2026-10-04",
+    "what": "T-192 parked under D57, the next item on the blocked list: plan-based rate limits wait on two decisions the owner has put off, the pricing reassessment (D29) and whether /api/v1 gets API keys (T-087), and its siblings T-188 and T-191 were already parked. Its summary now says /api/v1 has no limit or keys at all. Blocked 40 to 39, parked 107 to 108.",
+    "evidence": [
+     "docs/decisions/2026-10-04-owner-decisions.md",
+     "frontend/src/lib/server/apiGuard.ts"
+    ]
+   },
+   {
+    "on": "2026-10-04",
+    "what": "D58: Reddit access becomes a post-launch project, refining D8. T-245 is re-parked on that trigger with notes for whoever builds it, and T-246 (Reddit vote counts) moves from blocked to parked beside it. The Integrations page's two Reddit rows and both Social routes' messages now say Reddit is not read and why. Blocked 39 to 38, parked 108 to 109.",
+    "evidence": [
+     "docs/decisions/2026-10-04-owner-decisions.md",
+     "frontend/src/lib/api/live/providers.ts"
     ]
    }
   ]

@@ -4,7 +4,7 @@
 operation: what was done, and where the prior state lives. Same pattern as
 `branch-restarts-2026-10-03.md`.
 
-The session branch `ccr-3ad5880b-hsbobf` was force-pushed (`--force-with-lease`) once on
+The session branch `ccr-3ad5880b-hsbobf` was force-pushed (`--force-with-lease`) twice on
 this date. Its previous work had already been **squash-merged** into `main`, so the branch
 was restarted from the latest `main` for the next change rather than stacking new commits
 on history `main` already holds. No unmerged work was discarded.
@@ -12,15 +12,19 @@ on history `main` already holds. No unmerged work was discarded.
 | When (UTC) | Tip replaced | Its work landed on `main` as | Prior tip is held by | Replaced by |
 |---|---|---|---|---|
 | 2026-10-04 ~06:17 | `b469f15` | `a6264e5` (#264: TS-13, D53, D54, D55) | `refs/pull/264/head`; tag `archive/ccr-3ad5880b-hsbobf@b469f15` | Portfolio Builder plan history and printable rebalance notes (T-065, T-066; D56), restarted from `a6264e5` |
+| 2026-10-04 ~06:46 | `993c2d0` | `f498966` (#266: T-065, T-066, D56) | `refs/pull/266/head`; tag `archive/ccr-3ad5880b-hsbobf@993c2d0` | T-192 parked with its siblings (D57), restarted from `f498966` |
 
-The tag was created by `.github/workflows/archive-branch.yml` when #264 merged.
+Each tag was created by `.github/workflows/archive-branch.yml` when its PR merged.
 
 ## Recovering the prior state
 
 ```bash
 git fetch origin refs/pull/264/head:restore-264
 git checkout -b ccr-restore archive/ccr-3ad5880b-hsbobf@b469f15
+
+git fetch origin refs/pull/266/head:restore-266
+git checkout -b ccr-restore-266 archive/ccr-3ad5880b-hsbobf@993c2d0
 ```
 
-Neither is needed for anything: the squash commit `a6264e5` is on `main` and carries the
-whole change.
+None of these is needed for anything: the squash commits `a6264e5` and `f498966` are on
+`main` and carry the whole of each change.

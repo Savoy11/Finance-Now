@@ -365,3 +365,12 @@ commercial when it supports an employer, startup, agency… or client". The reme
 vendors name is an authorised commercial evaluation licence, usually free. That
 is the cheapest item on the whole agenda and it is worth doing whichever
 distribution model wins.
+
+## Pointers appended 2026-10-04
+
+> The rulings above are left as made.
+>
+> - **D8 was refined by D58** (`2026-10-04-owner-decisions.md`). Reddit access is now a
+>   post-launch project rather than part of the launch vendor pass: the owner will apply to
+>   Reddit after launch, so Reddit can see how the app is used. Reddit now approves every API
+>   user, personal projects included. T-246 (Reddit vote counts) was parked beside T-245.
