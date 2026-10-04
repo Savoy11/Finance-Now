@@ -3,7 +3,8 @@
 Recorded from the owner's answers while working through the blocked list, starting at its top:
 T-119, then T-005, then the four sources D54 left out (D55), then T-065 and T-066 (D56), then
 T-192 (D57), then Reddit sign-in, raised with T-246 (D58), then T-204 (D59), then T-294
-(D60), then T-393 (D61), then T-387 (D62), then T-009 (D63), then T-012 (D64). Same form as
+(D60), then T-393 (D61), then T-387 (D62), then T-009 (D63), then T-012 (D64), then T-027
+(D65). Same form as
 `2026-10-03-owner-decisions.md`: one row per ruling, what it cascades to, and what was
 actually done.
 
@@ -20,6 +21,7 @@ actually done.
 | D62 | T-387 (the Coins page's technical filters past about 250 coins), the next item on the blocked list | **Option 2, "Park it and add a small test":** *"add the growth chart, merge and go with option 2,"* in reply to three options: park it until the coin list passes about 250 or a paid data plan is taken up; the same plus a test that fails past 250; or close it. → APPLIED | T-387 moves from blocked to parked under D21 (paid-service decisions are deferred). It comes back when the swept coin list grows past 250 (80 today) or a paid data plan is taken up. `SWEEP_UNIVERSE_LIMIT` (250) in `lib/technicals/sweep.ts` names the limit, and a test fails if `COINGECKO_IDS` grows past it, with a message pointing to T-387. No behaviour change |
 | D63 | T-009 (whether delayed prices, clearly labelled, are allowed, to be settled before any options-chain feature ships), the next item on the blocked list | **Option 1, "Park it with the other options items":** *"merge and go with option 1,"* in reply to three options: park it until options chains are reopened; decide the rule now (delayed prices allowed only where the delay is shown on every screen that uses them and passed through the public API); or close it and add the question to the options-chain proposal's notes. → APPLIED | T-009 moves from blocked to parked beside T-060 to T-063. It comes back only if options chains are reopened (RP-1). The question stays unanswered on purpose, as the 2026-08-05 decision recorded it. No code change |
 | D64 | T-012 (whether the macro risk-profile scores should show anywhere), the next item on the blocked list. Offered: keep them in Portfolios only, show them on the macro pages with their workings, or leave it for the legal review | **Switch off every risk rating until the risk engine is rebuilt.** *"We will need to remove it until the risk engine is rebuilt. We can add an item for a pre launch rebuild of the risk engine and to address applying risk scores again later. This project will also require significant compliance and regulatory research to determine if and how risk can be assessed for each asset type."* Asked which of the three places that show ratings this covers, the owner chose all three: Portfolios' ratings, the fund page's risk label, and the options Trade Risk Scorer. → APPLIED | Switched off, code kept (see the notes): the three surfaces, the options API (503), the agent tool and the MCP tool, behind `RISK_RATINGS_SHOWN` in `lib/risk/visibility.ts` plus a redirect and a commented-out nav entry. T-012 closes. Two items open: T-419, compliance and regulatory research into whether and how risk can be assessed for each asset type, and T-420, the pre-launch rebuild of the engine and the return of ratings, which waits on T-419. RP-8 records the switch-off so it is not re-proposed meanwhile |
+| D65 | T-027 (recording real buys and sells in Portfolios), the next item on the blocked list. FIFO was already decided (D12, 2026-09-14); two questions were left: one method for every portfolio or one per portfolio, and how a price someone already typed in becomes a holding's first lot | **Option A for both:** *"merge and go with option A for both,"* in reply to two questions. Question 1: FIFO for every portfolio (A), or a method chosen per portfolio, FIFO or average cost (B). Question 2: keep today's portfolios as they are and add a new kind of tracked portfolio, with anything already owned entered once as a starting position (A); convert today's portfolios automatically (B); or accept only real trades, from the first purchase on (C). → APPLIED | One method, FIFO, for every portfolio, named beside every realized figure. Today's portfolios are never converted (see the notes). A starting position (how many, the average price paid, and the date if known) is the oldest lot, so FIFO sells it first, and a gain from it is marked as resting on the average entered. Gains and losses are plain, labelled "FIFO (oldest units sold first), not adjusted for tax rules": no wash-sale adjustment and no split into short and long term, since tax-adjusted figures wait on D4's legal review. The session proposed that rule alongside both questions, and it stands with the answer. T-027 moves from blocked to open, and step 1 of 3 is built: the lot engine (see the notes) |
 
 ## Notes
 
@@ -312,3 +314,56 @@ The session named the Pump Report scores to the owner as left on.
 Google Doc the owner maintains) explains how Portfolios' tiers and the fund band are
 derived and how the options scorer works. It is outside the repository, so it was not
 changed; T-420 carries updating it when ratings return.
+
+**D65: why there was nothing to convert.** Today's portfolios are what-if models: an amount
+of pretend money (`starting_capital`) split by percentages (`target_alloc_pct`), with an
+optional entry price stored in `holdings.avg_cost_basis`. No code writes `holdings.quantity`,
+so no saved holding says how many units anyone owns. Converting one would mean inventing both
+the number of units (pretend money divided by the entry price) and the date (the day it was
+added to the app). That was option B, and it was not recommended for that reason. The schema
+already allows the split D65 chose: `portfolios.starting_capital` is documented as null for a
+portfolio that is a real ledger of trades.
+
+**D65: what the engine does.** `computeCostBasis(trades, now)` in
+`frontend/src/lib/data/costBasis.ts` works through one holding's trades (one instrument in
+one portfolio), oldest first:
+
+- A purchase or a transfer in opens a lot, and its fee is part of the lot's cost.
+- A sale uses up the oldest lots first. Its fee comes off its proceeds, and the proceeds are
+  shared across the lots it used, in proportion to units.
+- A transfer out removes the oldest units too, with their cost, and makes no gain or loss.
+  A fee on it is reported with the transfer and counted nowhere else.
+- At the same moment, a purchase counts before a sale.
+- A starting position comes before everything else, even with no date. A trade dated before
+  it is pointed out, and so is a second starting position for the same holding.
+- Units sold beyond what was held get no cost: their proceeds are listed as unmatched and
+  left out of the gain.
+- A row that cannot be read is left out and listed with the reason. One bad row never blanks
+  the rest.
+
+The arithmetic is exact. The database returns amounts as strings, and the engine keeps them as
+whole numbers of the smallest unit (BigInt) until it writes them back out. Two things round,
+and both say how: the average cost per unit, to the 8 decimals the holdings column stores, and
+`toCents()`, for display. 24 tests cover it, including a same-day round trip (FIFO sells
+January's units, not that morning's), a loss followed by a repurchase (it stays a loss), a
+quantity's eighteenth decimal, and an 80-trade history in which every dollar and every unit is
+accounted for. Eight deliberate breakages were tried. Seven changed behaviour, and the tests
+caught each one: selling the newest units first, sales before purchases at the same moment, a
+starting position not put first, a buy fee left out, a sale's shares and a part-sold lot's
+cost each dropping a remainder, and an average cost cut off instead of rounded. The eighth,
+removing a special case for a sale's last share, changed nothing, because a proportional share
+of what is left is already exact; the special case was removed.
+
+**D65: what is still to decide or build** (T-027's steps 2 and 3):
+
+- **Saving trades.** `/api/user/trades` and a migration. The table cannot yet hold what D65
+  needs: nothing marks a portfolio as tracked or a trade as a starting position, and
+  `executed_at` cannot be left empty for a starting position with no date.
+- **Corrections.** The table is append-only ("a correction is a new offsetting row"), but under
+  FIFO an offsetting sale would use up the oldest lot rather than the mistaken one. A
+  correction has to name the trade it cancels.
+- **Stock splits** have no kind of trade yet. A split changes how many units each lot holds
+  without changing its cost, which neither a purchase nor a transfer can express.
+- **The entry screen** on /portfolios, with `REALIZED_METHOD_LABEL` beside every realized
+  figure, offering only things that can be bought (the yield indices among the macro
+  instruments cannot).
