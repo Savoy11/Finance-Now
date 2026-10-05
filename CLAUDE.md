@@ -527,11 +527,12 @@ const { data } = useQuery({
 > describes itself — header counts, closure blocks, blockers — and three times in one month
 > that description was false while every guard stayed green: a closure review verified 62
 > items and never wrote; a decision pass nulled two blockers and left them `blocked`; sixteen
-> terms items described readings finished days earlier. Twelve checks in
+> terms items described readings finished days earlier. Thirteen checks in
 > `scripts/lib/queueLedgerChecks.mjs`; it **fails** only on facts the ledger states about
 > itself that are false, and **warns** where a human must judge (a blocker citing a now-closed
 > item may be half-satisfied; an open item naming a verified host may want more than the
-> entry has — T-243 does). Every check is driven red by a named mutation in
+> entry has — T-243 does). Every parked item carries `parked_on`, the date it was parked, and
+> C13 warns on one without it (D85, 2026-10-05). Every check is driven red by a named mutation in
 > `lib/server/__tests__/queueLedgerCheck.test.ts`, because a guard only ever seen green
 > proves nothing. `node scripts/check-queue-ledger.mjs --html <out>` also renders the ledger
 > as a page — the published Finance Now Ledger artifact is that output, never hand-edited.
