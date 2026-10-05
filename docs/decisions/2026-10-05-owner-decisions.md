@@ -1,0 +1,9 @@
+# Owner decisions — 2026-10-05
+
+Recorded from the owner's answers while working through the blocked list, continuing from
+`2026-10-04-owner-decisions.md`, which ends at D75: T-355 (D76). Same form: one row per
+ruling, what it cascades to, and what was actually done.
+
+| # | Decision | Ruling | Cascades to |
+|---|---|---|---|
+| D76 | T-355 (a risk score for futures positions), the next item on the blocked list. A futures contract is an agreement to buy or sell something at a set price on a future date, usually on margin, so small price moves make large gains or losses. The draft in `docs/architecture/risk-scale-spec.md` §6.3 would score a futures position the way the options scorer scores an options trade: leverage, liquidity, the cost of rolling to the next contract, the underlying's volatility, and time to expiry. D18 (2026-09-14) deferred three new risk profiles, T-352, T-353 and this one, until a surface is approved to render the score. The other two were parked under it; this one stayed blocked on the undecided options and futures tool in the roadmap's backlog. D64 (2026-10-04) has since switched off every risk rating until the risk engine is rebuilt (T-420) after the compliance research (T-419), and T-420 already lists this item. Offered: park it under D18 beside T-352 and T-353, coming back only through the rebuild (A, recommended); fold it into T-420 (B); close it as not planned (C); or leave it blocked (D) | **Option A:** *"go with option A for T-355"* → APPLIED | T-355 moves from blocked to parked beside T-352 and T-353. It comes back only if the rebuild (T-420), after the research (T-419), allows risk ratings for futures and a surface to show one is approved (D18's trigger). Nothing is built. The §6.3 draft's banner no longer lists `stakingAdapter`, deleted under D26 on 2026-09-25, and now points at this ruling; `2026-09-14-owner-decisions.md` gains a pointer from D18 |
