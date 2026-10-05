@@ -269,6 +269,10 @@ investment-advice line.
 2. **Expose to the suite** — ⚠ partial. `score_options_trade` exists as an agent tool,
    `POST /api/v1/options/score` and an MCP tool. `score_equity` and the general
    `/api/v1/risk/*` surface are not built.
+   **Closed 2026-10-05 (D77):** its queue item, T-357, is closed into the rebuild (T-420).
+   D64 switched off every rating on the public data connection and the AI tools as well,
+   and whether any risk figure reaches them again is decided with the rebuild, surface by
+   surface, like the app's own pages.
 3. **ETF/fund profile** (`fund.ts`) — ⬜ not built. Inputs exist in `fundCatalog`
    (expense ratio, AUM, category) plus concentration from `lookThrough`.
 4. **Bond profile** — ✅ **DONE (P2-R3)** as `rateInstrument.ts`. The follow-up idea of
