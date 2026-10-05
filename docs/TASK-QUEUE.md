@@ -2093,6 +2093,10 @@ subproject owns.
 | S1-6 | Portfolios Backtest tab | Growth summary + return-by-holding math computed in-component, untested (part of D-24) |
 | S1-7 | Crypto TA | `patternProjection`, `detectSetups`, `computeRiskReward` untested while emitting dollar levels users trade against (CR-note-11, part of D-24) |
 
+> ⚠ **OVERTAKEN 2026-08-20 — annotation added 2026-10-05 (owner decision D80, T-395).**
+> Surfaces hidden 2026-08-20 and P3-W2-S1 suspended — S1-1 no longer gates rollout; the
+> fix lands with the S1 restore.
+
 **Why the existing tests didn't catch S1-1:** `equityBacktest.test.ts`'s 7 tests take
 `barsPerYear` as a **parameter**, so by construction they cannot detect that the caller's
 value no longer matches the data. Nothing regression-tests the page↔route contract. The

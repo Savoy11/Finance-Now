@@ -61,10 +61,10 @@
   "total_verified": 398,
   "outstanding": 362,
   "by_status": {
-   "closed": 188,
-   "open": 34,
-   "parked": 126,
-   "blocked": 13,
+   "closed": 189,
+   "open": 33,
+   "parked": 132,
+   "blocked": 7,
    "unclear": 1
   },
   "by_owner_role": {
@@ -74,7 +74,7 @@
    "owner-machine": 85
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 188,
+  "closed_by_annotation": 189,
   "counts_recomputed_on": "2026-10-05",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 362
@@ -4970,23 +4970,35 @@
   },
   {
    "id": "T-365",
-   "title": "Decide the AWS cost posture (~$1,350/month per environment)",
-   "status": "open",
+   "title": "Decide what to spend on hosting, with the host (AWS: about $1,350 a month per copy at the committed defaults)",
+   "status": "parked",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "decision",
    "effort": "small",
-   "blocking_decision": "Owner's AWS cost posture; timing coloured by the 2026-09-05 'not ready for rollout' ruling",
-   "related_ids": [],
-   "summary": "Cost levers listed in runbook.",
-   "next_action": "Owner chooses a posture (e.g. staging-only at reduced defaults: `redis_num_cache_clusters = 1`, `single_nat_gateway = true`, spot-only node group, Aurora Serverless v2) or defers AWS entirely until near release; record the ruling in docs/deployment/aws-provisioning.md and, if reducing, a remote-dev PR edits infrastructure/terraform/variables.tf defaults / rds.tf:191-193.",
+   "blocking_decision": "PARKED 2026-10-05 — D78 (2026-10-05): the cost question is decided with the host (T-112), which D1 (2026-09-14) keeps parked with the other launch items until the launch is planned; paid decisions wait under D21 (2026-09-18). The ledger carried it as open. Was: \"Owner's AWS cost posture; timing coloured by the 2026-09-05 'not ready for rollout' ruling\"",
+   "related_ids": [
+    "T-112",
+    "T-363",
+    "T-368"
+   ],
+   "summary": "The spending level for the chosen host. On AWS, the runbook lists the levers that cut the ~$1,350 a month per copy (docs/deployment/aws-provisioning.md, 'What this costs').",
+   "next_action": "Nothing now. When the host is chosen (T-112): settle the spending level for it. If AWS: choose from the runbook's levers (redis_num_cache_clusters = 1, Aurora Serverless v2, single_nat_gateway = true, a spot-only node group), record the ruling in docs/deployment/aws-provisioning.md, and have a remote-dev PR change the infrastructure/terraform defaults to match.",
    "sources": [
     {
      "file": "docs/deployment/aws-provisioning.md",
      "lines": "35-55",
      "quote": "If that is more than intended, the levers — in descending order of saving — are `redis_num_cache_clusters = 1`, Aurora Serverless v2 (already stubbed at `rds.tf:191-193`), `single_nat_gateway = true`, and dropping the on-demand node group to spot-only."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-10-05",
+    "note": "Parked under D78 and reworded to fit any host. Title was: \"Decide the AWS cost posture (~$1,350/month per environment)\". Summary was: \"Cost levers listed in runbook.\"",
+    "evidence": [
+     "docs/decisions/2026-10-05-owner-decisions.md",
+     "docs/deployment/aws-provisioning.md"
+    ]
+   }
   },
   {
    "id": "T-366",
@@ -8828,37 +8840,49 @@
   {
    "id": "T-378",
    "title": "Replace financenow.example.com placeholders once a real domain exists",
-   "status": "blocked",
+   "status": "parked",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "ops-infra",
    "effort": "small",
-   "blocking_decision": "What domain (and staging subdomain) will Finance Now be served from?",
-   "related_ids": [],
+   "blocking_decision": "PARKED 2026-10-05 — D78 (2026-10-05): parked with the hosting decision; the web address is chosen with the host at launch planning (T-112), which D1 (2026-09-14) keeps parked with the other launch items. Was: \"What domain (and staging subdomain) will Finance Now be served from?\"",
+   "related_ids": [
+    "T-112",
+    "T-363"
+   ],
    "summary": "Runbook, configmap, cd-staging.",
-   "next_action": "Owner names the production and staging hostnames; then remote-dev does one `grep -rln financenow.example.com` sweep (8 files) replacing the placeholder, ideally centralising on the terraform `domain_name` variable and a repo variable for the workflows.",
+   "next_action": "Nothing now. When the owner names the live and test web addresses (with the host, T-112): one sweep replacing financenow.example.com in the eight settings files under infrastructure/ and .github/ that carry it and in the two runbooks that use it (docs/runbooks/incident-response.md, docs/deployment/aws-provisioning.md), ideally centralising on the terraform `domain_name` variable and a repo variable for the workflows. Audit records that quote the placeholder stay as written.",
    "sources": [
     {
      "file": "docs/runbooks/incident-response.md",
      "lines": "23-26",
      "quote": "https://api.financenow.example.com/api/v1/market-data/<asset-id>/latest"
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-10-05",
+    "note": "Parked under D78. Checked 2026-10-05: financenow.example.com appears in eight settings files (two monitoring configs, terraform variables.tf, the nginx config, two Kubernetes manifests and both deploy workflows) and two runbooks.",
+    "evidence": [
+     "docs/decisions/2026-10-05-owner-decisions.md"
+    ]
+   }
   },
   {
    "id": "T-390",
    "title": "Verify ICE (.NYB) and CME (.CME) contract-month suffixes in termStructure",
-   "status": "blocked",
+   "status": "parked",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "data-verification",
    "effort": "small",
-   "blocking_decision": "A provider that quotes dated contract months — none free; awaits the owner's at-release paid-provider decision",
+   "blocking_decision": "PARKED 2026-10-05 — D79 (2026-10-05): parked under D21 (2026-09-18): no free source quotes dated futures contract months, so checking these codes waits on a paid provider, which D21 defers until closer to the end of production. Meanwhile /live-data/futures-curve answers ok:false with the reason. Was: \"A provider that quotes dated contract months — none free; awaits the owner's at-release paid-provider decision\"",
    "related_ids": [
-    "P2-O1"
+    "P2-O1",
+    "D21",
+    "T-383"
    ],
    "summary": "Unproven by the P2-O1 probe.",
-   "next_action": "No action until the owner selects a provider that quotes dated contract months (at-release paid decision). Then, on the owner's machine, resolve e.g. KCZ26.NYB / 6EZ26.CME (or that provider's equivalents) and update EXCHANGE_MONTH_SUFFIX comments in frontend/src/lib/data/termStructure.ts alongside restoring fetchMonthPrice in futures-curve/route.ts.",
+   "next_action": "Nothing now. When a provider that quotes dated contract months is chosen under D21: on the owner's machine, resolve e.g. KCZ26.NYB / 6EZ26.CME (or that provider's equivalents) and update the EXCHANGE_MONTH_SUFFIX comments in frontend/src/lib/data/termStructure.ts alongside restoring fetchMonthPrice in futures-curve/route.ts.",
    "sources": [
     {
      "file": "frontend/src/lib/data/termStructure.ts",
@@ -8870,7 +8894,7 @@
   {
    "id": "T-395",
    "title": "Apply annotation: S1-1 no longer gates rollout (pending owner approval)",
-   "status": "blocked",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "docs",
@@ -8888,7 +8912,20 @@
      "lines": "8-9",
      "quote": "TASK-QUEUE / P3 review: \"S1-1 no longer gates rollout\" — the surfaces are already dark (next.config.mjs redirects at ~lines 53 and 92; technical-analysis/page.tsx ~936; portfolios/page.tsx ~688)."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "blocked",
+    "closed_on": "2026-10-05",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "Applied under D80 (owner approval). The dated note — 'Surfaces hidden 2026-08-20 and P3-W2-S1 suspended — S1-1 no longer gates rollout; the fix lands with the S1 restore.' — is added as an OVERTAKEN blockquote at both places: in docs/assessments/P3-production-review.md after the FIX-FIRST table whose S1-1 row it qualifies, and in docs/TASK-QUEUE.md after the S1 inherited-defects table. The S1-1 rows themselves are left as written.",
+    "approved_by": "owner, 2026-10-05: \"go with option A for groups 1 and 2, approve T-395\"",
+    "evidence": [
+     "docs/decisions/2026-10-05-owner-decisions.md",
+     "docs/assessments/P3-production-review.md",
+     "docs/TASK-QUEUE.md"
+    ]
+   }
   },
   {
    "id": "T-396",
@@ -9456,38 +9493,51 @@
   },
   {
    "id": "T-368",
-   "title": "Verify the provisioned environment and watch a real push-run deploy",
-   "status": "blocked",
+   "title": "Check the test copy works and watch an automatic update reach it",
+   "status": "parked",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "ops-infra",
    "effort": "small",
-   "blocking_decision": "Depends on T-363 (staging provisioned) and T-365 (cost posture).",
-   "related_ids": [],
-   "summary": "ClusterRoleBinding, ECR repos, trust policy.",
-   "next_action": "Wait for T-363 (and T-365); then run the Step 5 kubectl/aws commands and trigger Actions → CD — Deploy to Staging → Run workflow, watching the push run to completion.",
+   "blocking_decision": "PARKED 2026-10-05 — D78 (2026-10-05): parked with T-363 and the hosting decision, which D1 (2026-09-14) keeps parked with the other launch items until the launch is planned (T-112). Reworded to fit any host. Was: \"Depends on T-363 (staging provisioned) and T-365 (cost posture).\"",
+   "related_ids": [
+    "T-363",
+    "T-365",
+    "T-112"
+   ],
+   "summary": "Once the test copy exists (T-363): confirm it is running, then watch a pushed change deploy to it on its own. On AWS: the cluster role binding, ECR repositories and trust policy (runbook Step 5).",
+   "next_action": "Nothing now. When T-363's test copy exists: on AWS, run the runbook's Step 5 kubectl/aws commands, then trigger Actions → CD — Deploy to Staging → Run workflow and watch the push run to completion; on another host, its own status check and one automatic deploy of a pushed change.",
    "sources": [
     {
      "file": "docs/deployment/aws-provisioning.md",
      "lines": "172-197",
      "quote": "**Check the push run, not just the PR checks.** That distinction is the entire reason this went unnoticed for three weeks."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-10-05",
+    "note": "Parked under D78 and reworded to fit any host. Title was: \"Verify the provisioned environment and watch a real push-run deploy\". Summary was: \"ClusterRoleBinding, ECR repos, trust policy.\"",
+    "evidence": [
+     "docs/decisions/2026-10-05-owner-decisions.md"
+    ]
+   }
   },
   {
    "id": "T-383",
    "title": "Wire the paid FMP rung of the IPO calendar once a live response is read",
-   "status": "blocked",
+   "status": "parked",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "feature",
    "effort": "small",
-   "blocking_decision": "Has the project reached the 'near release' point at which paid rungs are in scope (owner ruling: free-tier only until then), and can one live FMP /stable IPO-calendar response be captured on the owner's machine so its shape can be parsed rather than guessed?",
+   "blocking_decision": "PARKED 2026-10-05 — D79 (2026-10-05): parked under D21 (2026-09-18): paid-service decisions wait until closer to the end of production. The IPO calendar keeps its free source, Alpha Vantage, meanwhile; the paid FMP rung waits on that decision and on one live response read on the owner's machine. Was: \"Has the project reached the 'near release' point at which paid rungs are in scope (owner ruling: free-tier only until then), and can one live FMP /stable IPO-calendar response be captured on the owner's machine so its shape can be parsed rather than guessed?\"",
    "related_ids": [
-    "#145"
+    "#145",
+    "D21",
+    "T-390"
    ],
    "summary": "Deliberately unwired (#145).",
-   "next_action": "Nothing until the owner lifts the free-tier posture; then, on the owner's machine with FMP_API_KEY set, curl the FMP IPO-calendar endpoint once, save the raw JSON, and wire it as the first rung in frontend/src/app/live-data/ipo-calendar/route.ts with a parser test against that fixture.",
+   "next_action": "Nothing now. When a paid FMP plan is decided under D21: on the owner's machine with FMP_API_KEY set, request the FMP IPO-calendar endpoint once, save the raw JSON, and wire it as the first rung in frontend/src/app/live-data/ipo-calendar/route.ts with a parser test against that fixture, keeping Alpha Vantage as the free floor.",
    "sources": [
     {
      "file": "git:ad026c2 (#145)",
@@ -9530,23 +9580,38 @@
   },
   {
    "id": "T-363",
-   "title": "Provision the AWS staging environment (bootstrap + terraform apply)",
-   "status": "blocked",
+   "title": "Set up a test copy of the site (staging) on the chosen host",
+   "status": "parked",
    "confidence": "medium",
    "owner_role": "owner-machine",
    "category": "ops-infra",
    "effort": "large",
-   "blocking_decision": "T-365 cost posture and an owner go-ahead to spend on AWS while 'not ready for rollout' (2026-09-05) and free-tier-only postures hold",
-   "related_ids": [],
-   "summary": "Runbook steps 0–2.",
-   "next_action": "Owner first settles T-365 (cost posture) and whether staging is wanted before release; then on the owner's machine: `aws sts get-caller-identity`, `cd infrastructure/terraform/bootstrap && terraform init && terraform apply`, then `cd .. && terraform init -reconfigure -backend-config=\"key=staging/terraform.tfstate\" && terraform validate && terraform plan -var=\"environment=staging\" -out=staging.tfplan && terraform apply staging.tfplan`.",
+   "blocking_decision": "PARKED 2026-10-05 — D78 (2026-10-05): parked with the hosting decision beside T-204 and T-205, which D1 (2026-09-14) keeps parked with the other launch items until the launch is planned (T-112). Reworded to fit any host: AWS, at about $1,350 a month per copy at the committed defaults, is one of three hosting paths. Was: \"T-365 cost posture and an owner go-ahead to spend on AWS while 'not ready for rollout' (2026-09-05) and free-tier-only postures hold\"",
+   "related_ids": [
+    "T-112",
+    "T-204",
+    "T-205",
+    "T-365",
+    "T-368",
+    "T-378"
+   ],
+   "summary": "A test copy of the site, set up on the chosen host before launch, so a change can be tried before it reaches the live site. On AWS it is the runbook's steps 0–2 (docs/deployment/aws-provisioning.md): the bootstrap, then a terraform apply.",
+   "next_action": "Nothing now. When the host is chosen (T-112): set up a test copy there before launch, at the spending level settled with the host (T-365). AWS: on the owner's machine, `aws sts get-caller-identity`, `cd infrastructure/terraform/bootstrap && terraform init && terraform apply`, then `cd .. && terraform init -reconfigure -backend-config=\"key=staging/terraform.tfstate\" && terraform validate && terraform plan -var=\"environment=staging\" -out=staging.tfplan && terraform apply staging.tfplan`. Vercel or a rented server: that host's own preview or second-copy setup.",
    "sources": [
     {
      "file": "docs/deployment/aws-provisioning.md",
      "lines": "6-8, 12-17, 59-131",
      "quote": "This must be run **on a machine with AWS credentials for the target account**. None of it can run from CI, because CI's whole purpose is to assume a role that does not exist until step 2 completes."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-10-05",
+    "note": "Parked under D78 and reworded to fit any host. Title was: \"Provision the AWS staging environment (bootstrap + terraform apply)\". Summary was: \"Runbook steps 0–2.\"",
+    "evidence": [
+     "docs/decisions/2026-10-05-owner-decisions.md",
+     "docs/deployment/aws-provisioning.md"
+    ]
+   }
   },
   {
    "id": "T-017",
@@ -38360,6 +38425,13 @@
    {
     "on": "2026-10-05",
     "what": "D77, option A: T-357 (risk scores for outside programs) closed as superseded by D64; T-420 records that /api/v1 and the AI tools are among the surfaces it decides. Counts recomputed: closed 188, blocked 13, total 362.",
+    "evidence": [
+     "docs/decisions/2026-10-05-owner-decisions.md"
+    ]
+   },
+   {
+    "on": "2026-10-05",
+    "what": "D78, D79 and D80: T-363, T-365, T-368 and T-378 parked with the hosting decision (T-363, T-365 and T-368 reworded to fit any host); T-383 and T-390 parked under D21; T-395 closed with its note applied at both S1-1 places. Counts recomputed: closed 189, open 33, parked 132, blocked 7, total 362.",
     "evidence": [
      "docs/decisions/2026-10-05-owner-decisions.md"
     ]
