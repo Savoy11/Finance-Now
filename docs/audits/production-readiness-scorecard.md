@@ -1,5 +1,10 @@
 # Finance Now — Production Readiness Scorecard
 
+> **Not a rollout input — 2026-10-05, owner decision D81 (T-180).** This scorecard rates
+> the retired backend, and it is not recomputed. The release bar is
+> `docs/BUSINESS-CHECKLIST.md` §5.1, adopted under D23, and the current readiness record
+> is `docs/assessments/P3-production-review.md`. The banners below stay as written.
+
 > **Scope correction, 2026-09-20.** This scorecard's scope line reads "Full-stack
 > (backend API, scoring engine, data pipelines, infrastructure, frontend)", and sixteen
 > of its eighteen findings cite that backend's source by path. (The two that do not:

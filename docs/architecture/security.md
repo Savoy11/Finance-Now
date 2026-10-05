@@ -245,6 +245,12 @@ each verified to fail against the pre-fix code.
 
 ## Hardening Checklist
 
+> **2026-10-05 (owner decision D82):** the `SECRET_KEY` and `.env.example` rows were written
+> for the retired backend. For the live app they are T-339 (fresh `AUTH_SECRET` and
+> `FN_ADMIN_TOKEN`) and T-340 (real provider keys through the host's secret store or the
+> Integrations page), both done when the site is first set up on its host. The RDS backup
+> and certificate-renewal rows are reworded to fit any host (T-341, T-342).
+
 - [ ] Change default `SECRET_KEY` before production deployment
 - [ ] Enable MFA for all admin accounts
 - [ ] Rotate all API keys from `.env.example` defaults

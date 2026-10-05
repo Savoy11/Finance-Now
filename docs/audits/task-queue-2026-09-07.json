@@ -61,9 +61,9 @@
   "total_verified": 398,
   "outstanding": 362,
   "by_status": {
-   "closed": 189,
-   "open": 33,
-   "parked": 132,
+   "closed": 195,
+   "open": 46,
+   "parked": 113,
    "blocked": 7,
    "unclear": 1
   },
@@ -74,7 +74,7 @@
    "owner-machine": 85
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 189,
+  "closed_by_annotation": 195,
   "counts_recomputed_on": "2026-10-05",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 362
@@ -4055,10 +4055,11 @@
    "owner_role": "owner-decision",
    "category": "decision",
    "effort": "small",
-   "blocking_decision": "PARKED 2026-09-30 — D9 (2026-09-14): the S4 options subproject is deferred with the rollout (D1), and behind the D4 legal review since it expands an advice-adjacent tool. D9 names T-061, T-062 and T-063; T-060 is S4's first decision. The ledger carried it as open until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md).",
+   "blocking_decision": "PARKED 2026-09-30 — D9 (2026-09-14): the S4 options subproject is deferred with the rollout (D1), and behind the D4 legal review since it expands an advice-adjacent tool. D9 names T-061, T-062 and T-063; T-060 is S4's first decision. The ledger carried it as open until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md). 2026-10-05 (D82): it also waits on the risk engine rebuild (T-420). S4 extends the options Trade Risk Scorer, which D64 (2026-10-04) switched off until the engine is rebuilt.",
    "related_ids": [
     "P2-O2",
-    "S4"
+    "S4",
+    "T-420"
    ],
    "summary": "user_positions table, same optimistic pattern as wallets; the one architectural call in S4.",
    "next_action": "Owner decides whether saved options positions join the DB (user_positions, optimistic pattern as wallets) and whether to activate S4; a remote dev then scopes the migration and route under /api/user/.",
@@ -7177,10 +7178,11 @@
    "owner_role": "remote-dev",
    "category": "feature",
    "effort": "small",
-   "blocking_decision": "PARKED 2026-09-30 — D9 (2026-09-14): the S4 options subproject is deferred with the rollout (D1), and behind the D4 legal review since it expands an advice-adjacent tool. D9 names T-061, T-062 and T-063; T-060 is S4's first decision. The ledger carried it as blocked until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md). Was: \"Owner activation of subproject S4 (charter proposed 2026-08-20, not activated).\"",
+   "blocking_decision": "PARKED 2026-09-30 — D9 (2026-09-14): the S4 options subproject is deferred with the rollout (D1), and behind the D4 legal review since it expands an advice-adjacent tool. D9 names T-061, T-062 and T-063; T-060 is S4's first decision. The ledger carried it as blocked until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md). Was: \"Owner activation of subproject S4 (charter proposed 2026-08-20, not activated).\" 2026-10-05 (D82): it also waits on the risk engine rebuild (T-420). S4 extends the options Trade Risk Scorer, which D64 (2026-10-04) switched off until the engine is rebuilt.",
    "related_ids": [
     "RP-1",
-    "S4"
+    "S4",
+    "T-420"
    ],
    "summary": "UI accepts 1–4 legs vs API 8; hand entry stays (RP-1).",
    "next_action": "Once the owner activates S4: raise the UI cap in options/page.tsx:325 to 8 to match route.ts:65, add the missing structure presets in lib/options/presets, keep hand entry (RP-1) — small self-contained PR.",
@@ -7200,9 +7202,10 @@
    "owner_role": "remote-dev",
    "category": "feature",
    "effort": "small",
-   "blocking_decision": "PARKED 2026-09-30 — D9 (2026-09-14): the S4 options subproject is deferred with the rollout (D1), and behind the D4 legal review since it expands an advice-adjacent tool. D9 names T-061, T-062 and T-063; T-060 is S4's first decision. The ledger carried it as blocked until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md). Was: \"Owner activation of subproject S4.\"",
+   "blocking_decision": "PARKED 2026-09-30 — D9 (2026-09-14): the S4 options subproject is deferred with the rollout (D1), and behind the D4 legal review since it expands an advice-adjacent tool. D9 names T-061, T-062 and T-063; T-060 is S4's first decision. The ledger carried it as blocked until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md). Was: \"Owner activation of subproject S4.\" 2026-10-05 (D82): it also waits on the risk engine rebuild (T-420). S4 extends the options Trade Risk Scorer, which D64 (2026-10-04) switched off until the engine is rebuilt.",
    "related_ids": [
-    "S4"
+    "S4",
+    "T-420"
    ],
    "summary": "Pure engine makes re-scoring cheap; charter not active.",
    "next_action": "After S4 activation: add IV-shift and underlying-move sliders that re-run the pure scorer client-side and show the delta per dimension; keep the explains-not-recommends copy.",
@@ -7222,10 +7225,11 @@
    "owner_role": "remote-dev",
    "category": "feature",
    "effort": "small",
-   "blocking_decision": "PARKED 2026-09-30 — D9 (2026-09-14): the S4 options subproject is deferred with the rollout (D1), and behind the D4 legal review since it expands an advice-adjacent tool. D9 names T-061, T-062 and T-063; T-060 is S4's first decision. The ledger carried it as blocked until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md). Was: \"S4 activation (owner)\"",
+   "blocking_decision": "PARKED 2026-09-30 — D9 (2026-09-14): the S4 options subproject is deferred with the rollout (D1), and behind the D4 legal review since it expands an advice-adjacent tool. D9 names T-061, T-062 and T-063; T-060 is S4's first decision. The ledger carried it as blocked until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md). Was: \"S4 activation (owner)\" 2026-10-05 (D82): it also waits on the risk engine rebuild (T-420). S4 extends the options Trade Risk Scorer, which D64 (2026-10-04) switched off until the engine is rebuilt.",
    "related_ids": [
     "RP-3",
-    "S4"
+    "S4",
+    "T-420"
    ],
    "summary": "Must keep the explains-not-recommends stance (RP-3).",
    "next_action": "After S4 activation: add a `narrative` per dimension in lib/risk/profiles/optionsTrade.ts (pure, tested — tests should assert no 'buy/sell/should' instruction wording, mirroring taxCharacter.test.ts) and render it beside each dimension on /equities/options.",
@@ -9738,7 +9742,7 @@
    "owner_role": "remote-dev",
    "category": "feature",
    "effort": "medium",
-   "blocking_decision": null,
+   "blocking_decision": "PARKED — reason written 2026-10-05, D84 (2026-10-05): it waits on T-131 and T-132 (sign-in back on, a sign-up page) and on choosing an email provider.",
    "related_ids": [
     "Goal B",
     "Phase 6"
@@ -9831,9 +9835,11 @@
    "owner_role": "remote-dev",
    "category": "security",
    "effort": "medium",
-   "blocking_decision": "Whether the FastAPI backend returns (ROADMAP.md:486) — or Phase 6 audit-logging scope for the Next.js app",
+   "blocking_decision": "PARKED 2026-10-05 — D82 (2026-10-05): re-anchored. It waited on \"whether the FastAPI backend returns\", which D2 (2026-09-14) settled: the backend is retired and frozen. Its home is the app's own audit logging, part of the Phase 6 hardening in T-088, and it is on D73's list of security features. Was: \"Whether the FastAPI backend returns (ROADMAP.md:486) — or Phase 6 audit-logging scope for the Next.js app\"",
    "related_ids": [
-    "Risk C"
+    "Risk C",
+    "T-088",
+    "T-206"
    ],
    "summary": "No tamper-evidence migration.",
    "next_action": "Leave parked. When audit logging is built for the live Next.js app (Phase 6) do it there: add an `audit_log` table to frontend/src/lib/db/schema with a Drizzle custom migration that creates a BEFORE UPDATE OR DELETE trigger raising an exception, rather than retrofitting the dormant backend.",
@@ -9843,7 +9849,14 @@
      "lines": "118, 135, 168",
      "quote": "No audit log integrity protection (tamper-evident) | Implement WORM append-only log table with trigger (Q4) | Yes — `models/audit_log.py` exists, no trigger in any migration"
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-10-05",
+    "note": "Re-anchored under D82; status unchanged.",
+    "evidence": [
+     "docs/decisions/2026-10-05-owner-decisions.md"
+    ]
+   }
   },
   {
    "id": "T-186",
@@ -9945,7 +9958,7 @@
    "owner_role": "remote-dev",
    "category": "feature",
    "effort": "small",
-   "blocking_decision": null,
+   "blocking_decision": "PARKED — reason written 2026-10-05, D84 (2026-10-05): it dated: due around 2027-07, a year after the July 2026 rebrand (docs/deployment/caep-db-rename.md, Sunset).",
    "related_ids": [],
    "summary": "Deliberately excluded from the DB sunset.",
    "next_action": "No action until ~2027-07; when due, grep `CAEP_` and `caep:` across frontend/src and mcp-server, remove the fallbacks/shims, and drop the 'still honored' notes in CLAUDE.md.",
@@ -10023,7 +10036,7 @@
    "owner_role": "either",
    "category": "feature",
    "effort": "large",
-   "blocking_decision": null,
+   "blocking_decision": "PARKED — reason written 2026-10-05, D84 (2026-10-05): it waits on launch planning: the rollout posture on entitlements (T-083) and the billing model (T-085).",
    "related_ids": [
     "Goal B",
     "Phase 6"
@@ -10079,7 +10092,7 @@
    "owner_role": "either",
    "category": "feature",
    "effort": "small",
-   "blocking_decision": null,
+   "blocking_decision": "PARKED — reason written 2026-10-05, D84 (2026-10-05): it waits on turning the sign-in wall back on (T-131), in the same change.",
    "related_ids": [
     "Goal B",
     "Phase 6"
@@ -10136,50 +10149,71 @@
   },
   {
    "id": "T-341",
-   "title": "Enable RDS automated backups (7-day minimum)",
+   "title": "Turn on automatic database backups on the chosen host (7-day minimum; on AWS, RDS)",
    "status": "parked",
    "confidence": "high",
    "owner_role": "either",
    "category": "ops-infra",
    "effort": "small",
-   "blocking_decision": "First terraform apply — parked by the 2026-09-05 rollout ruling",
-   "related_ids": [],
-   "summary": "AWS hardening.",
-   "next_action": "Update docs/architecture/security.md:253 to note the setting is encoded in terraform (rds.tf:179, default 7d) and becomes ticked on first `terraform apply` verification; no code change needed.",
+   "blocking_decision": "PARKED 2026-10-05 — D82 (2026-10-05): reworded to fit any host and parked with the hosting decision (T-112), like D78. On AWS the setting is already in terraform: rds.tf reads rds_backup_retention_days, default 7. Was: \"First terraform apply — parked by the 2026-09-05 rollout ruling\"",
+   "related_ids": [
+    "T-112",
+    "T-206",
+    "T-208"
+   ],
+   "summary": "Automatic database backups kept at least 7 days, using what the chosen host offers.",
+   "next_action": "Nothing now. When the host is chosen (T-112): turn on automatic database backups kept at least 7 days. AWS: confirm the terraform setting at the first apply; a hosted Postgres (Neon, Supabase): its point-in-time restore; a rented server: a scheduled pg_dump to separate storage. Then note the date against the backups row of docs/architecture/security.md.",
    "sources": [
     {
      "file": "docs/architecture/security.md",
      "lines": "253",
      "quote": "- [ ] Enable RDS automated backups (7-day retention minimum)"
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-10-05",
+    "note": "Re-anchored under D82; status unchanged. Title was: \"Enable RDS automated backups (7-day minimum)\". Summary was: \"AWS hardening.\".",
+    "evidence": [
+     "docs/decisions/2026-10-05-owner-decisions.md",
+     "infrastructure/terraform/variables.tf"
+    ]
+   }
   },
   {
    "id": "T-043",
    "title": "Check MATIC→POL migration across exchange rows",
-   "status": "parked",
+   "status": "open",
    "confidence": "medium",
    "owner_role": "either",
    "category": "data-verification",
    "effort": "small",
    "blocking_decision": null,
    "related_ids": [
-    "S3"
+    "S3",
+    "T-031"
    ],
    "summary": "Priority 6; table still keys the coin as `matic` on polygon/erc20.",
-   "next_action": "During the owner-machine worksheet pass, for each non-live exchange (Binance, Coinbase, Kraken, OKX, Bybit, Gemini, Crypto.com, Gate.io, MEXC, Upbit...) check the POL withdrawal networks and mark the `matic`/erc20 row `delisted` in the CSV if retired — `npm run fee-apply` skips delisted rows, so retire them by hand in frontend/src/lib/data/transferFees.ts (matic blocks at lines 456, 545, 688, 777, 902...). No CoinId rename is needed; the adapters already map POL→matic.",
+   "next_action": "Answer it on the Transfer Fee Check page (T-031, D52), where it is listed under its exchange; then: During the owner-machine worksheet pass, for each non-live exchange (Binance, Coinbase, Kraken, OKX, Bybit, Gemini, Crypto.com, Gate.io, MEXC, Upbit...) check the POL withdrawal networks and mark the `matic`/erc20 row `delisted` in the CSV if retired — `npm run fee-apply` skips delisted rows, so retire them by hand in frontend/src/lib/data/transferFees.ts (matic blocks at lines 456, 545, 688, 777, 902...). No CoinId rename is needed; the adapters already map POL→matic.",
    "sources": [
     {
      "file": "docs/audits/fee-refresh-2026-08-20.md",
      "lines": "31, 133, 315, 620",
      "quote": "all four exchanges' tables still key the coin as `matic` on `polygon`/`erc20`. When re-verifying on the owner's machine, check whether each exchange now lists withdrawals under POL and whether the ERC-20 MATIC network row has been retired — a likely delisting/rename across all four."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-10-05",
+    "note": "Moved from parked to open under D83. It had no reason to wait: D52 (2026-10-01) put it on the Transfer Fee Check page as a lead on the exchange it names, and that page's checks are the owner's to do now while Transfer Fees stays hidden. It stays not-closed until answered, since the page lists only open leads.",
+    "evidence": [
+     "docs/decisions/2026-10-05-owner-decisions.md",
+     "frontend/scripts/lib/feeCheckData.ts"
+    ]
+   }
   },
   {
    "id": "T-180",
    "title": "Recompute the production-readiness scorecard (89 unverified; Frontend/UX and Testing stale)",
-   "status": "parked",
+   "status": "closed",
    "confidence": "medium",
    "owner_role": "either",
    "category": "docs",
@@ -10204,7 +10238,19 @@
      "lines": "49",
      "quote": "**Stale.** The floor is **45%**, not 80% — reconciled deliberately in 2026-07 so `pyproject.toml` matched what CI actually enforced"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "parked",
+    "closed_on": "2026-10-05",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "CLOSED under D81 (2026-10-05) by the item's own second branch: the scorecard is not a rollout input. It rates the retired backend (D2, 2026-09-14), and the release bar adopted under D23 (docs/BUSINESS-CHECKLIST.md §5.1) does not use it. A dated note at the top of docs/audits/production-readiness-scorecard.md now says so and points to docs/assessments/P3-production-review.md as the current readiness record.",
+    "approved_by": "owner, 2026-10-05: \"close group A, apply B and D, option 1 for C\"",
+    "evidence": [
+     "docs/decisions/2026-10-05-owner-decisions.md",
+     "docs/audits/production-readiness-scorecard.md"
+    ]
+   }
   },
   {
    "id": "T-260",
@@ -10283,7 +10329,7 @@
    "owner_role": "owner-decision",
    "category": "feature",
    "effort": "large",
-   "blocking_decision": null,
+   "blocking_decision": "PARKED — reason written 2026-10-05, D84 (2026-10-05): it waits on the owner asking for a derivatives journal, and comes after the options subproject's saved-positions decision (T-060, parked under D9).",
    "related_ids": [
     "P2-O2",
     "S4"
@@ -10334,7 +10380,7 @@
    "owner_role": "owner-decision",
    "category": "decision",
    "effort": "medium",
-   "blocking_decision": null,
+   "blocking_decision": "PARKED — reason written 2026-10-05, D84 (2026-10-05): it waits on options on futures becoming a real requirement.",
    "related_ids": [
     "P2-O2",
     "P2-O3"
@@ -10997,7 +11043,7 @@
   {
    "id": "T-279",
    "title": "5c — breaking removal of legacy 1-10 staking fields (/api/v2 or ?scale=)",
-   "status": "parked",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "feature",
@@ -11021,7 +11067,19 @@
      "lines": "512-515",
      "quote": "Phase 5c (breaking, deferred). Introduce `/api/v2/` or a `?scale=canonical|legacy` negotiation. **Do not remove the legacy fields** until there is either a deprecation window with telemetry showing no legacy traffic, or an explicit product decision to break unknown consumers."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "parked",
+    "closed_on": "2026-10-05",
+    "basis": "owner-ruling",
+    "verdict": "superseded",
+    "reason": "SUPERSEDED under D81 (2026-10-05) by D14 (2026-09-14), which removed the legacy staking risk fields outright (riskScore, riskLevel and the max_risk / min_safety filters) rather than deprecating them. Nothing is left for a /api/v2 or ?scale= negotiation to retire; frontend/src/middleware.ts records that its max_risk log no longer informs this decision and is kept only to show which clients are being silently un-filtered.",
+    "approved_by": "owner, 2026-10-05: \"close group A, apply B and D, option 1 for C\"",
+    "evidence": [
+     "docs/decisions/2026-10-05-owner-decisions.md",
+     "frontend/src/middleware.ts"
+    ]
+   }
   },
   {
    "id": "T-309",
@@ -11138,7 +11196,7 @@
   {
    "id": "T-336",
    "title": "Decide BLOCKLIST_FAIL_CLOSED once Redis is deployed for HA",
-   "status": "parked",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "decision",
@@ -11153,7 +11211,19 @@
      "lines": "195-204",
      "quote": "Set `BLOCKLIST_FAIL_CLOSED=true` to reject instead — sensible only with Redis deployed for high availability."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "parked",
+    "closed_on": "2026-10-05",
+    "basis": "owner-ruling",
+    "verdict": "moot",
+    "reason": "MOOT under D81 (2026-10-05). BLOCKLIST_FAIL_CLOSED is a setting of the retired backend only (backend/app/config.py, backend/app/core/security.py), which D2 (2026-09-14) retired and froze. The live app signs people in through Auth.js and keeps no Redis sign-out list, so there is no fail-open or fail-closed choice to make.",
+    "approved_by": "owner, 2026-10-05: \"close group A, apply B and D, option 1 for C\"",
+    "evidence": [
+     "docs/decisions/2026-10-05-owner-decisions.md",
+     "backend/FROZEN.md"
+    ]
+   }
   },
   {
    "id": "T-057",
@@ -11264,7 +11334,7 @@
    "owner_role": "owner-decision",
    "category": "decision",
    "effort": "large",
-   "blocking_decision": null,
+   "blocking_decision": "PARKED — reason written 2026-10-05, D84 (2026-10-05): it waits on launch planning: how the public data connection is exposed (T-087), settled with hosting and the business-key question. The P3 review's D5 was settled by D68.",
    "related_ids": [
     "D5"
    ],
@@ -11290,7 +11360,7 @@
    "owner_role": "owner-decision",
    "category": "feature",
    "effort": "large",
-   "blocking_decision": null,
+   "blocking_decision": "PARKED — reason written 2026-10-05, D84 (2026-10-05): it waits on launch planning: database-backed entitlements (T-083), sign-in and limits on the public data connection (T-087), and the sign-in wall (T-131).",
    "related_ids": [],
    "summary": "Phase 6 bullet; monetization path for Portfolio Builder.",
    "next_action": "No dev action until the owner's planning session settles D1 (DB-backed entitlements / paid-vs-free) and D2 (API auth + rate limiting) and re-enables the auth wall (auth.md Goal B steps 1-5). Then: api_keys table + issuance UI, key-gated /api/v1/user/* routes, MCP tool mirrors — scoped to portfolios, watchlists, builder plans, wallets.",
@@ -11363,17 +11433,28 @@
    "owner_role": "owner-decision",
    "category": "security",
    "effort": "medium",
-   "blocking_decision": "Whether the FastAPI backend returns / whether /api/v1 gets API-key auth at all (enterprise roadmap not adopted)",
-   "related_ids": [],
+   "blocking_decision": "PARKED 2026-10-05 — D82 (2026-10-05): re-anchored. It waited on \"whether the FastAPI backend returns\", which D2 (2026-09-14) settled: the backend is retired and frozen. It now waits on T-087: whether the public data connection (/api/v1) gets API keys at all. It is on D73's list of security features. Was: \"Whether the FastAPI backend returns / whether /api/v1 gets API-key auth at all (enterprise roadmap not adopted)\"",
+   "related_ids": [
+    "T-087",
+    "T-260",
+    "T-206"
+   ],
    "summary": "Enterprise requirement, not done.",
-   "next_action": "No action until the owner decides whether /api/v1 becomes keyed (frontend) or the backend returns; then add an allowed_ips column to the API-key model (backend/app/models/api_key.py or a new frontend Drizzle table) and enforce it in the key-auth dependency using the TRUST_FORWARDED_FOR rule from backend/app/config.py.",
+   "next_action": "No action until T-087 decides whether /api/v1 gets per-user API keys. If it does: add an allowed_ips column to that key table (a new Drizzle table in frontend/src/lib/db/schema) and enforce it in the key check, taking the caller's address the way T-260 settles for the app behind a proxy.",
    "sources": [
     {
      "file": "docs/audits/production-readiness-scorecard.md",
      "lines": "137, 206",
      "quote": "**IP allowlisting**: Add per-API-key IP allowlist enforcement"
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-10-05",
+    "note": "Re-anchored under D82; status unchanged.",
+    "evidence": [
+     "docs/decisions/2026-10-05-owner-decisions.md"
+    ]
+   }
   },
   {
    "id": "T-193",
@@ -11383,17 +11464,28 @@
    "owner_role": "owner-decision",
    "category": "feature",
    "effort": "medium",
-   "blocking_decision": "Whether the FastAPI backend returns; SOC 2 / enterprise roadmap adoption",
-   "related_ids": [],
+   "blocking_decision": "PARKED 2026-10-05 — D82 (2026-10-05): re-anchored. It waited on \"whether the FastAPI backend returns\", which D2 (2026-09-14) settled: the backend is retired and frozen. A signed audit-log export is a business-tier feature, so it waits with D71's items on D5's trigger (2026-09-14): the first paying customer or the first conversation with a business buyer. Was: \"Whether the FastAPI backend returns; SOC 2 / enterprise roadmap adoption\"",
+   "related_ids": [
+    "T-185",
+    "T-190",
+    "T-216"
+   ],
    "summary": "Enterprise requirement.",
-   "next_action": "No action until the backend's return and SOC 2 program are decided; then, after T-185's WORM trigger, add an export endpoint under backend/app/api/v1/ that streams audit rows with an HMAC/ed25519 signature over the export.",
+   "next_action": "Nothing now. When D5's trigger fires and a business tier is offered: after the app's tamper-proof audit log exists (T-185), add an export for compliance teams that streams the audit rows with a signature over the export, so a reader can tell it was not altered.",
    "sources": [
     {
      "file": "docs/audits/production-readiness-scorecard.md",
      "lines": "139, 210",
      "quote": "**Audit log export**: Provide signed audit log exports for compliance teams"
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-10-05",
+    "note": "Re-anchored under D82; status unchanged.",
+    "evidence": [
+     "docs/decisions/2026-10-05-owner-decisions.md"
+    ]
+   }
   },
   {
    "id": "T-194",
@@ -11403,17 +11495,27 @@
    "owner_role": "owner-decision",
    "category": "feature",
    "effort": "large",
-   "blocking_decision": "Whether the FastAPI backend returns / where server-side alert evaluation lives; enterprise roadmap adoption",
-   "related_ids": [],
+   "blocking_decision": "PARKED 2026-10-05 — D82 (2026-10-05): re-anchored. It waited on \"whether the FastAPI backend returns\", which D2 (2026-09-14) settled: the backend is retired and frozen. Sending alerts into a business's own security tools (SIEM webhooks) is a business-tier feature, so it waits with D71's items on D5's trigger (2026-09-14): the first paying customer or the first conversation with a business buyer. Was: \"Whether the FastAPI backend returns / where server-side alert evaluation lives; enterprise roadmap adoption\"",
+   "related_ids": [
+    "T-190",
+    "T-216"
+   ],
    "summary": "Enterprise requirement.",
-   "next_action": "No action until the owner adopts enterprise delivery requirements and decides where alert evaluation runs (backend return vs a frontend cron); then add a webhook_subscriptions table and an HMAC-signed POST dispatcher next to the alert scheduler in backend/app/pipelines/scheduler.py.",
+   "next_action": "Nothing now. When D5's trigger fires and a business tier is offered: decide where alert checks run for the app (a scheduled job), then add a webhook_subscriptions table and a dispatcher that sends each alert as a signed POST.",
    "sources": [
     {
      "file": "docs/audits/production-readiness-scorecard.md",
      "lines": "140, 211",
      "quote": "**Custom alerting webhooks**: Allow institutions to receive alerts via their SIEM"
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-10-05",
+    "note": "Re-anchored under D82; status unchanged.",
+    "evidence": [
+     "docs/decisions/2026-10-05-owner-decisions.md"
+    ]
+   }
   },
   {
    "id": "T-217",
@@ -11615,7 +11717,7 @@
   {
    "id": "T-037",
    "title": "Work the 8-item fee re-check queue in docs/audits/fee-refresh-2026-08-20.md",
-   "status": "parked",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "data-verification",
@@ -11632,122 +11734,25 @@
      "lines": "1726-1733",
      "quote": "`docs/audits/fee-refresh-2026-08-20.md` — an 8-item priority re-check queue (headline: Bitfinex may be 0/0 since 2025-12, our Hyperliquid rates look like a $25M+ tier) and a keyless Bybit API shortcut."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "parked",
+    "closed_on": "2026-10-05",
+    "basis": "owner-ruling",
+    "verdict": "superseded",
+    "reason": "SUPERSEDED under D81 (2026-10-05) by the Transfer Fee Check page (T-031, D52). Every lead in the 8-item queue has its own ledger item, and the page lists each open one under the exchange it names, so the queue is worked there. The annotation this item asked for is added to docs/audits/fee-refresh-2026-08-20.md: item 7 (KuCoin) recorded as corrected, with KuCoin's fees now also read live, and the keyless Bybit shortcut marked overtaken (it answered 403 on 2026-08-21; the endpoint needs a key).",
+    "approved_by": "owner, 2026-10-05: \"close group A, apply B and D, option 1 for C\"",
+    "evidence": [
+     "docs/decisions/2026-10-05-owner-decisions.md",
+     "docs/audits/fee-refresh-2026-08-20.md",
+     "frontend/src/lib/server/withdrawFeeAdapters.ts"
+    ]
+   }
   },
   {
    "id": "T-038",
    "title": "Re-check Bitfinex trading fees (reportedly 0%/0% since 2025-12-17)",
-   "status": "parked",
-   "confidence": "high",
-   "owner_role": "owner-machine",
-   "category": "data-verification",
-   "effort": "small",
-   "blocking_decision": null,
-   "related_ids": [
-    "S3"
-   ],
-   "summary": "Priority 1; confirm on bitfinex.com/fees and update SPOT_TRADING_FEES.bitfinex.",
-   "next_action": "On the owner machine open bitfinex.com/fees; if 0/0 is confirmed edit SPOT_TRADING_FEES.bitfinex in frontend/src/lib/data/transferFees.ts:109 to 0/0 with a dated note (file convention: zero-commission venues carry a 'not free — spread' note and a reviewed-by date).",
-   "sources": [
-    {
-     "file": "docs/audits/fee-refresh-2026-08-20.md",
-     "lines": "26, 763-764, 773",
-     "quote": "reports that **as of 2025-12-17 Bitfinex made all trading free (0% maker / 0% taker)** as a promotional/structural change. If confirmed on the official fee page, the entry should become 0/0 with a note"
-    }
-   ]
-  },
-  {
-   "id": "T-039",
-   "title": "Re-check Hyperliquid fee tier framing (table looks like $25M+ tier)",
-   "status": "parked",
-   "confidence": "high",
-   "owner_role": "owner-machine",
-   "category": "data-verification",
-   "effort": "small",
-   "blocking_decision": null,
-   "related_ids": [
-    "S3"
-   ],
-   "summary": "Priority 2; base tier reported 0.040/0.070 spot vs table 0.01/0.035.",
-   "next_action": "On the owner machine read the official Hyperliquid fees page (hyperliquid.gitbook.io); if base tier differs, set SPOT_TRADING_FEES.hyperliquid at transferFees.ts:133 to the entry tier and note the tier framing.",
-   "sources": [
-    {
-     "file": "docs/audits/fee-refresh-2026-08-20.md",
-     "lines": "27, 687-691, 774",
-     "quote": "the table's 0.01/0.035 matches a *higher-volume tier* ($25M+ 14-day volume), not the base tier. High-priority on-machine re-check."
-    }
-   ]
-  },
-  {
-   "id": "T-040",
-   "title": "Re-check Coinbase Advanced entry-tier maker/taker",
-   "status": "parked",
-   "confidence": "high",
-   "owner_role": "owner-machine",
-   "category": "data-verification",
-   "effort": "small",
-   "blocking_decision": null,
-   "related_ids": [
-    "S3"
-   ],
-   "summary": "Priority 3; possible Intro 1 at 0.60/1.20 vs table 0.4/0.6.",
-   "next_action": "On the owner machine open coinbase.com/advanced-fees; if Intro 1 is 0.60/1.20, edit SPOT_TRADING_FEES.coinbase at transferFees.ts:105.",
-   "sources": [
-    {
-     "file": "docs/audits/fee-refresh-2026-08-20.md",
-     "lines": "28, 179-182, 233-234",
-     "quote": "If the Intro-1 1.20% taker figure is real, the table's 0.4/0.6 may understate the true entry tier — **flag for priority verification on the owner's machine** (potential CHANGED)."
-    }
-   ]
-  },
-  {
-   "id": "T-041",
-   "title": "Re-check Gate.io fee section after the 2026-04-09 update",
-   "status": "parked",
-   "confidence": "high",
-   "owner_role": "owner-machine",
-   "category": "data-verification",
-   "effort": "small",
-   "blocking_decision": null,
-   "related_ids": [
-    "S3"
-   ],
-   "summary": "Priority 4; confirm gate.io vs gate.com canonical page.",
-   "next_action": "On the owner machine open the canonical Gate fee page (gate.io vs gate.com) and update SPOT_TRADING_FEES.gateio and the Gate.io EXCHANGES block (transferFees.ts:1065-1129) as needed.",
-   "sources": [
-    {
-     "file": "docs/audits/fee-refresh-2026-08-20.md",
-     "lines": "29, 491-493, 528-533",
-     "quote": "mention a **fee-structure update effective 2026-04-09** — priority re-check on the owner's machine; the table's flat 0.2/0.2 may be stale post-update."
-    }
-   ]
-  },
-  {
-   "id": "T-042",
-   "title": "Check whether Kraken ERC-20 withdrawal fees are dynamic; add notes",
-   "status": "parked",
-   "confidence": "high",
-   "owner_role": "owner-machine",
-   "category": "data-verification",
-   "effort": "small",
-   "blocking_decision": null,
-   "related_ids": [
-    "S3"
-   ],
-   "summary": "Priority 5; reported up to 10 USDT vs flat 2.5.",
-   "next_action": "On the owner machine check kraken.com/features/fee-schedule (withdrawal section) for dynamic ERC-20 fees and add a note to each affected row in the Kraken block of transferFees.ts (575-636).",
-   "sources": [
-    {
-     "file": "docs/audits/fee-refresh-2026-08-20.md",
-     "lines": "30, 186-188, 222-223, 234",
-     "quote": "Kraken's ERC-20 fees appear to be dynamic; the table rows carry no \"Dynamic\" note. **Flag: on re-run, check whether Kraken publishes dynamic ERC-20 fees and add notes accordingly** (potential CHANGED / note-gap)."
-    }
-   ]
-  },
-  {
-   "id": "T-045",
-   "title": "Close Gemini 'legacy free-tier' caveat on remaining zero-fee rows",
-   "status": "parked",
+   "status": "open",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "data-verification",
@@ -11755,10 +11760,166 @@
    "blocking_decision": null,
    "related_ids": [
     "S3",
-    "T8"
+    "T-031"
+   ],
+   "summary": "Priority 1; confirm on bitfinex.com/fees and update SPOT_TRADING_FEES.bitfinex.",
+   "next_action": "Answer it on the Transfer Fee Check page (T-031, D52), where it is listed under its exchange; then: On the owner machine open bitfinex.com/fees; if 0/0 is confirmed edit SPOT_TRADING_FEES.bitfinex in frontend/src/lib/data/transferFees.ts:109 to 0/0 with a dated note (file convention: zero-commission venues carry a 'not free — spread' note and a reviewed-by date).",
+   "sources": [
+    {
+     "file": "docs/audits/fee-refresh-2026-08-20.md",
+     "lines": "26, 763-764, 773",
+     "quote": "reports that **as of 2025-12-17 Bitfinex made all trading free (0% maker / 0% taker)** as a promotional/structural change. If confirmed on the official fee page, the entry should become 0/0 with a note"
+    }
+   ],
+   "progress": {
+    "noted_on": "2026-10-05",
+    "note": "Moved from parked to open under D83. It had no reason to wait: D52 (2026-10-01) put it on the Transfer Fee Check page as a lead on the exchange it names, and that page's checks are the owner's to do now while Transfer Fees stays hidden. It stays not-closed until answered, since the page lists only open leads.",
+    "evidence": [
+     "docs/decisions/2026-10-05-owner-decisions.md",
+     "frontend/scripts/lib/feeCheckData.ts"
+    ]
+   }
+  },
+  {
+   "id": "T-039",
+   "title": "Re-check Hyperliquid fee tier framing (table looks like $25M+ tier)",
+   "status": "open",
+   "confidence": "high",
+   "owner_role": "owner-machine",
+   "category": "data-verification",
+   "effort": "small",
+   "blocking_decision": null,
+   "related_ids": [
+    "S3",
+    "T-031"
+   ],
+   "summary": "Priority 2; base tier reported 0.040/0.070 spot vs table 0.01/0.035.",
+   "next_action": "Answer it on the Transfer Fee Check page (T-031, D52), where it is listed under its exchange; then: On the owner machine read the official Hyperliquid fees page (hyperliquid.gitbook.io); if base tier differs, set SPOT_TRADING_FEES.hyperliquid at transferFees.ts:133 to the entry tier and note the tier framing.",
+   "sources": [
+    {
+     "file": "docs/audits/fee-refresh-2026-08-20.md",
+     "lines": "27, 687-691, 774",
+     "quote": "the table's 0.01/0.035 matches a *higher-volume tier* ($25M+ 14-day volume), not the base tier. High-priority on-machine re-check."
+    }
+   ],
+   "progress": {
+    "noted_on": "2026-10-05",
+    "note": "Moved from parked to open under D83. It had no reason to wait: D52 (2026-10-01) put it on the Transfer Fee Check page as a lead on the exchange it names, and that page's checks are the owner's to do now while Transfer Fees stays hidden. It stays not-closed until answered, since the page lists only open leads.",
+    "evidence": [
+     "docs/decisions/2026-10-05-owner-decisions.md",
+     "frontend/scripts/lib/feeCheckData.ts"
+    ]
+   }
+  },
+  {
+   "id": "T-040",
+   "title": "Re-check Coinbase Advanced entry-tier maker/taker",
+   "status": "open",
+   "confidence": "high",
+   "owner_role": "owner-machine",
+   "category": "data-verification",
+   "effort": "small",
+   "blocking_decision": null,
+   "related_ids": [
+    "S3",
+    "T-031"
+   ],
+   "summary": "Priority 3; possible Intro 1 at 0.60/1.20 vs table 0.4/0.6.",
+   "next_action": "Answer it on the Transfer Fee Check page (T-031, D52), where it is listed under its exchange; then: On the owner machine open coinbase.com/advanced-fees; if Intro 1 is 0.60/1.20, edit SPOT_TRADING_FEES.coinbase at transferFees.ts:105.",
+   "sources": [
+    {
+     "file": "docs/audits/fee-refresh-2026-08-20.md",
+     "lines": "28, 179-182, 233-234",
+     "quote": "If the Intro-1 1.20% taker figure is real, the table's 0.4/0.6 may understate the true entry tier — **flag for priority verification on the owner's machine** (potential CHANGED)."
+    }
+   ],
+   "progress": {
+    "noted_on": "2026-10-05",
+    "note": "Moved from parked to open under D83. It had no reason to wait: D52 (2026-10-01) put it on the Transfer Fee Check page as a lead on the exchange it names, and that page's checks are the owner's to do now while Transfer Fees stays hidden. It stays not-closed until answered, since the page lists only open leads.",
+    "evidence": [
+     "docs/decisions/2026-10-05-owner-decisions.md",
+     "frontend/scripts/lib/feeCheckData.ts"
+    ]
+   }
+  },
+  {
+   "id": "T-041",
+   "title": "Re-check Gate.io fee section after the 2026-04-09 update",
+   "status": "open",
+   "confidence": "high",
+   "owner_role": "owner-machine",
+   "category": "data-verification",
+   "effort": "small",
+   "blocking_decision": null,
+   "related_ids": [
+    "S3",
+    "T-031"
+   ],
+   "summary": "Priority 4; confirm gate.io vs gate.com canonical page.",
+   "next_action": "Answer it on the Transfer Fee Check page (T-031, D52), where it is listed under its exchange; then: On the owner machine open the canonical Gate fee page (gate.io vs gate.com) and update SPOT_TRADING_FEES.gateio and the Gate.io EXCHANGES block (transferFees.ts:1065-1129) as needed.",
+   "sources": [
+    {
+     "file": "docs/audits/fee-refresh-2026-08-20.md",
+     "lines": "29, 491-493, 528-533",
+     "quote": "mention a **fee-structure update effective 2026-04-09** — priority re-check on the owner's machine; the table's flat 0.2/0.2 may be stale post-update."
+    }
+   ],
+   "progress": {
+    "noted_on": "2026-10-05",
+    "note": "Moved from parked to open under D83. It had no reason to wait: D52 (2026-10-01) put it on the Transfer Fee Check page as a lead on the exchange it names, and that page's checks are the owner's to do now while Transfer Fees stays hidden. It stays not-closed until answered, since the page lists only open leads.",
+    "evidence": [
+     "docs/decisions/2026-10-05-owner-decisions.md",
+     "frontend/scripts/lib/feeCheckData.ts"
+    ]
+   }
+  },
+  {
+   "id": "T-042",
+   "title": "Check whether Kraken ERC-20 withdrawal fees are dynamic; add notes",
+   "status": "open",
+   "confidence": "high",
+   "owner_role": "owner-machine",
+   "category": "data-verification",
+   "effort": "small",
+   "blocking_decision": null,
+   "related_ids": [
+    "S3",
+    "T-031"
+   ],
+   "summary": "Priority 5; reported up to 10 USDT vs flat 2.5.",
+   "next_action": "Answer it on the Transfer Fee Check page (T-031, D52), where it is listed under its exchange; then: On the owner machine check kraken.com/features/fee-schedule (withdrawal section) for dynamic ERC-20 fees and add a note to each affected row in the Kraken block of transferFees.ts (575-636).",
+   "sources": [
+    {
+     "file": "docs/audits/fee-refresh-2026-08-20.md",
+     "lines": "30, 186-188, 222-223, 234",
+     "quote": "Kraken's ERC-20 fees appear to be dynamic; the table rows carry no \"Dynamic\" note. **Flag: on re-run, check whether Kraken publishes dynamic ERC-20 fees and add notes accordingly** (potential CHANGED / note-gap)."
+    }
+   ],
+   "progress": {
+    "noted_on": "2026-10-05",
+    "note": "Moved from parked to open under D83. It had no reason to wait: D52 (2026-10-01) put it on the Transfer Fee Check page as a lead on the exchange it names, and that page's checks are the owner's to do now while Transfer Fees stays hidden. It stays not-closed until answered, since the page lists only open leads.",
+    "evidence": [
+     "docs/decisions/2026-10-05-owner-decisions.md",
+     "frontend/scripts/lib/feeCheckData.ts"
+    ]
+   }
+  },
+  {
+   "id": "T-045",
+   "title": "Close Gemini 'legacy free-tier' caveat on remaining zero-fee rows",
+   "status": "open",
+   "confidence": "high",
+   "owner_role": "owner-machine",
+   "category": "data-verification",
+   "effort": "small",
+   "blocking_decision": null,
+   "related_ids": [
+    "S3",
+    "T8",
+    "T-031"
    ],
    "summary": "Priority 8; USDC ERC-20/Polygon, LTC, DOGE rows carry the pass-through caveat since T8.",
-   "next_action": "On the owner machine open gemini.com/fees (transfer-fee article) and set the four rows at transferFees.ts:860-867 to the pass-through values, or keep 0 with a dated confirmation note.",
+   "next_action": "Answer it on the Transfer Fee Check page (T-031, D52), where it is listed under its exchange; then: On the owner machine open gemini.com/fees (transfer-fee article) and set the four rows at transferFees.ts:860-867 to the pass-through values, or keep 0 with a dated confirmation note.",
    "sources": [
     {
      "file": "docs/audits/fee-refresh-2026-08-20.md",
@@ -11770,56 +11931,20 @@
      "lines": "137, 141-142",
      "quote": "Gemini's remaining unverified \"10 free withdrawals\" entries were re-noted as legacy values pending confirmation."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-10-05",
+    "note": "Moved from parked to open under D83. It had no reason to wait: D52 (2026-10-01) put it on the Transfer Fee Check page as a lead on the exchange it names, and that page's checks are the owner's to do now while Transfer Fees stays hidden. It stays not-closed until answered, since the page lists only open leads.",
+    "evidence": [
+     "docs/decisions/2026-10-05-owner-decisions.md",
+     "frontend/scripts/lib/feeCheckData.ts"
+    ]
+   }
   },
   {
    "id": "T-046",
    "title": "Re-check Upbit BTC withdrawal fee (0.0005 vs 0.0009)",
-   "status": "parked",
-   "confidence": "high",
-   "owner_role": "owner-machine",
-   "category": "data-verification",
-   "effort": "small",
-   "blocking_decision": null,
-   "related_ids": [
-    "S3"
-   ],
-   "summary": "Group D re-check item.",
-   "next_action": "On the owner machine read Upbit's withdrawal-fee page for BTC and apply via `npm run fee-apply` from a filled worksheet row (exchange upbit, coin btc, network bitcoin).",
-   "sources": [
-    {
-     "file": "docs/audits/fee-refresh-2026-08-20.md",
-     "lines": "635-641, 651, 775",
-     "quote": "suggest **BTC withdrawal fee is 0.0005 BTC, not the 0.0009 in the table** — flag for on-machine re-check."
-    }
-   ]
-  },
-  {
-   "id": "T-047",
-   "title": "Extend Upbit trading-fee note with the 0.25% BTC/USDT-market rate if verified",
-   "status": "parked",
-   "confidence": "high",
-   "owner_role": "owner-machine",
-   "category": "data-verification",
-   "effort": "small",
-   "blocking_decision": null,
-   "related_ids": [
-    "S3"
-   ],
-   "summary": "Table notes KRW-market only.",
-   "next_action": "Fold into the Upbit page read for T-046: if 0.25% BTC/USDT-market is on the official page, extend the note at transferFees.ts:117.",
-   "sources": [
-    {
-     "file": "docs/audits/fee-refresh-2026-08-20.md",
-     "lines": "647-648, 653",
-     "quote": "Table note about KRW-market-only maker/taker could be extended with the reported 0.25% BTC/USDT-market rate if verified."
-    }
-   ]
-  },
-  {
-   "id": "T-049",
-   "title": "Re-check Bybit ETH/erc20 0.005 fee and 'free via Mantle' note",
-   "status": "parked",
+   "status": "open",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "data-verification",
@@ -11827,10 +11952,73 @@
    "blocking_decision": null,
    "related_ids": [
     "S3",
-    "T8"
+    "T-031"
+   ],
+   "summary": "Group D re-check item.",
+   "next_action": "Answer it on the Transfer Fee Check page (T-031, D52), where it is listed under its exchange; then: On the owner machine read Upbit's withdrawal-fee page for BTC and apply via `npm run fee-apply` from a filled worksheet row (exchange upbit, coin btc, network bitcoin).",
+   "sources": [
+    {
+     "file": "docs/audits/fee-refresh-2026-08-20.md",
+     "lines": "635-641, 651, 775",
+     "quote": "suggest **BTC withdrawal fee is 0.0005 BTC, not the 0.0009 in the table** — flag for on-machine re-check."
+    }
+   ],
+   "progress": {
+    "noted_on": "2026-10-05",
+    "note": "Moved from parked to open under D83. It had no reason to wait: D52 (2026-10-01) put it on the Transfer Fee Check page as a lead on the exchange it names, and that page's checks are the owner's to do now while Transfer Fees stays hidden. It stays not-closed until answered, since the page lists only open leads.",
+    "evidence": [
+     "docs/decisions/2026-10-05-owner-decisions.md",
+     "frontend/scripts/lib/feeCheckData.ts"
+    ]
+   }
+  },
+  {
+   "id": "T-047",
+   "title": "Extend Upbit trading-fee note with the 0.25% BTC/USDT-market rate if verified",
+   "status": "open",
+   "confidence": "high",
+   "owner_role": "owner-machine",
+   "category": "data-verification",
+   "effort": "small",
+   "blocking_decision": null,
+   "related_ids": [
+    "S3",
+    "T-031"
+   ],
+   "summary": "Table notes KRW-market only.",
+   "next_action": "Answer it on the Transfer Fee Check page (T-031, D52), where it is listed under its exchange; then: Fold into the Upbit page read for T-046: if 0.25% BTC/USDT-market is on the official page, extend the note at transferFees.ts:117.",
+   "sources": [
+    {
+     "file": "docs/audits/fee-refresh-2026-08-20.md",
+     "lines": "647-648, 653",
+     "quote": "Table note about KRW-market-only maker/taker could be extended with the reported 0.25% BTC/USDT-market rate if verified."
+    }
+   ],
+   "progress": {
+    "noted_on": "2026-10-05",
+    "note": "Moved from parked to open under D83. It had no reason to wait: D52 (2026-10-01) put it on the Transfer Fee Check page as a lead on the exchange it names, and that page's checks are the owner's to do now while Transfer Fees stays hidden. It stays not-closed until answered, since the page lists only open leads.",
+    "evidence": [
+     "docs/decisions/2026-10-05-owner-decisions.md",
+     "frontend/scripts/lib/feeCheckData.ts"
+    ]
+   }
+  },
+  {
+   "id": "T-049",
+   "title": "Re-check Bybit ETH/erc20 0.005 fee and 'free via Mantle' note",
+   "status": "open",
+   "confidence": "high",
+   "owner_role": "owner-machine",
+   "category": "data-verification",
+   "effort": "small",
+   "blocking_decision": null,
+   "related_ids": [
+    "S3",
+    "T8",
+    "T-031"
    ],
    "summary": "Single-source value from 2026-07-20; verify on Bybit's live withdrawal screen.",
-   "next_action": "On the owner machine open Bybit's ETH withdrawal screen (logged in), confirm the ERC-20 fee and the Mantle free route, and update transferFees.ts:743 via fee-apply.",
+   "next_action": "Answer it on the Transfer Fee Check page (T-031, D52), where it is listed under its exchange; then: On the owner machine open Bybit's ETH withdrawal screen (logged in), confirm the ERC-20 fee and the Mantle free route, and update transferFees.ts:743 via fee-apply.",
    "sources": [
     {
      "file": "docs/audits/fee-refresh-2026-08-20.md",
@@ -11842,73 +12030,110 @@
      "lines": "136",
      "quote": "| Bybit | ETH/erc20 | 0.0003 | 0.005 + Mantle-free note | 2026 sources (single-source — recheck on live screen) |"
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-10-05",
+    "note": "Moved from parked to open under D83. It had no reason to wait: D52 (2026-10-01) put it on the Transfer Fee Check page as a lead on the exchange it names, and that page's checks are the owner's to do now while Transfer Fees stays hidden. It stays not-closed until answered, since the page lists only open leads.",
+    "evidence": [
+     "docs/decisions/2026-10-05-owner-decisions.md",
+     "frontend/scripts/lib/feeCheckData.ts"
+    ]
+   }
   },
   {
    "id": "T-050",
    "title": "Distinguish Crypto.com App vs Exchange fee schedules on the re-run",
-   "status": "parked",
+   "status": "open",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "data-verification",
    "effort": "small",
    "blocking_decision": null,
    "related_ids": [
-    "S3"
+    "S3",
+    "T-031"
    ],
    "summary": "Table may mix the two schedules.",
-   "next_action": "On the owner machine read crypto.com/exchange/document/fees-limits and the App fee page, decide which schedule the table represents, and add a note to the Crypto.com entry and SPOT_TRADING_FEES.cryptocom.",
+   "next_action": "Answer it on the Transfer Fee Check page (T-031, D52), where it is listed under its exchange; then: On the owner machine read crypto.com/exchange/document/fees-limits and the App fee page, decide which schedule the table represents, and add a note to the Crypto.com entry and SPOT_TRADING_FEES.cryptocom.",
    "sources": [
     {
      "file": "docs/audits/fee-refresh-2026-08-20.md",
      "lines": "391-393, 416-420",
      "quote": "Distinguish App vs Exchange schedules on the re-run — the table appears to mix Exchange-style withdrawal fees with entry-tier Exchange trading fees; the fees-limits document covers the Exchange."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-10-05",
+    "note": "Moved from parked to open under D83. It had no reason to wait: D52 (2026-10-01) put it on the Transfer Fee Check page as a lead on the exchange it names, and that page's checks are the owner's to do now while Transfer Fees stays hidden. It stays not-closed until answered, since the page lists only open leads.",
+    "evidence": [
+     "docs/decisions/2026-10-05-owner-decisions.md",
+     "frontend/scripts/lib/feeCheckData.ts"
+    ]
+   }
   },
   {
    "id": "T-052",
    "title": "Re-confirm Kraken has no BEP-20 support",
-   "status": "parked",
+   "status": "open",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "data-verification",
    "effort": "small",
    "blocking_decision": null,
    "related_ids": [
-    "S3"
+    "S3",
+    "T-031"
    ],
    "summary": "Absence of rows is historically correct; re-confirm on the re-run.",
-   "next_action": "On the owner machine check Kraken's deposit/withdrawal network list for BNB Smart Chain; if still absent, no code change — record the confirmation in the worksheet CSV.",
+   "next_action": "Answer it on the Transfer Fee Check page (T-031, D52), where it is listed under its exchange; then: On the owner machine check Kraken's deposit/withdrawal network list for BNB Smart Chain; if still absent, no code change — record the confirmation in the worksheet CSV.",
    "sources": [
     {
      "file": "docs/audits/fee-refresh-2026-08-20.md",
      "lines": "224",
      "quote": "Table lacks BEP-20 rows for Kraken — correct historically (Kraken does not support BSC); re-confirm on re-run."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-10-05",
+    "note": "Moved from parked to open under D83. It had no reason to wait: D52 (2026-10-01) put it on the Transfer Fee Check page as a lead on the exchange it names, and that page's checks are the owner's to do now while Transfer Fees stays hidden. It stays not-closed until answered, since the page lists only open leads.",
+    "evidence": [
+     "docs/decisions/2026-10-05-owner-decisions.md",
+     "frontend/scripts/lib/feeCheckData.ts"
+    ]
+   }
   },
   {
    "id": "T-053",
    "title": "Verify OKX dynamic BTC/ETH withdrawal-fee notes",
-   "status": "parked",
+   "status": "open",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "data-verification",
    "effort": "small",
    "blocking_decision": null,
    "related_ids": [
-    "S3"
+    "S3",
+    "T-031"
    ],
    "summary": "okx.com was egress-blocked on 08-20.",
-   "next_action": "On the owner machine open OKX's BTC/ETH withdrawal screens; confirm the dynamic-fee wording and whether MATIC is listed as POL, and update the notes at transferFees.ts:640/644 if needed.",
+   "next_action": "Answer it on the Transfer Fee Check page (T-031, D52), where it is listed under its exchange; then: On the owner machine open OKX's BTC/ETH withdrawal screens; confirm the dynamic-fee wording and whether MATIC is listed as POL, and update the notes at transferFees.ts:640/644 if needed.",
    "sources": [
     {
      "file": "docs/audits/fee-refresh-2026-08-20.md",
      "lines": "256-258, 262, 264, 314-315",
      "quote": "Nothing observed; verify dynamic BTC/ETH fee notes and MATIC→POL migration naming on the owner's machine."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-10-05",
+    "note": "Moved from parked to open under D83. It had no reason to wait: D52 (2026-10-01) put it on the Transfer Fee Check page as a lead on the exchange it names, and that page's checks are the owner's to do now while Transfer Fees stays hidden. It stays not-closed until answered, since the page lists only open leads. Heads-up, 2026-10-05: okx.com has been prohibited in sourceTerms.ts since D40 (2026-09-30). That ruling covered OKX's API Agreement, which licenses its market data (funding rates, OHLCV) for personal trading only, and stopped the app fetching from OKX. Reading the fee figures OKX shows on its own pages by hand was not part of that reading, and OKX's rows remain in the fee table (transferFees.ts). If in doubt, leave this lead unanswered on the page until OKX's website terms are read.",
+    "evidence": [
+     "docs/decisions/2026-10-05-owner-decisions.md",
+     "frontend/scripts/lib/feeCheckData.ts",
+     "frontend/src/lib/server/sourceTerms.ts",
+     "docs/decisions/2026-09-30-owner-decisions.md"
+    ]
+   }
   },
   {
    "id": "T-160",
@@ -11935,7 +12160,7 @@
   {
    "id": "T-337",
    "title": "Set TRUST_FORWARDED_FOR=true only after verifying the proxy overwrites X-Forwarded-For",
-   "status": "parked",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "ops-infra",
@@ -11950,72 +12175,118 @@
      "lines": "237-242",
      "quote": "**When deploying behind an ALB / ingress / reverse proxy**, set `TRUST_FORWARDED_FOR=true` — but only after confirming the proxy *overwrites* rather than appends, and that nothing can reach the app directly, or the protection is gone again."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "parked",
+    "closed_on": "2026-10-05",
+    "basis": "owner-ruling",
+    "verdict": "moot",
+    "reason": "MOOT under D81 (2026-10-05). TRUST_FORWARDED_FOR is read only by the retired backend (backend/app/main.py, config.py, core/middleware.py), which D2 (2026-09-14) retired. The live app's version of the same question, trusting a proxy's forwarded address in apiGuard, is T-260, which stays parked for the deployment topology.",
+    "approved_by": "owner, 2026-10-05: \"close group A, apply B and D, option 1 for C\"",
+    "evidence": [
+     "docs/decisions/2026-10-05-owner-decisions.md",
+     "backend/FROZEN.md"
+    ]
+   }
   },
   {
    "id": "T-339",
-   "title": "Change default SECRET_KEY before production",
+   "title": "Set fresh production secrets for the app (AUTH_SECRET, FN_ADMIN_TOKEN) when the site is first hosted",
    "status": "parked",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "security",
    "effort": "small",
-   "blocking_decision": "Production provisioning — parked by the 2026-09-05 rollout ruling",
-   "related_ids": [],
-   "summary": "Backend hardening.",
-   "next_action": "At first provisioning: generate `openssl rand -hex 32`, store it under the Secrets Manager path the terraform/k8s secrets.yaml expects, then tick docs/architecture/security.md:248 with the date.",
+   "blocking_decision": "PARKED 2026-10-05 — D82 (2026-10-05): reworded for the live app and parked with the hosting decision (T-112). The SECRET_KEY it named belongs to the retired backend (D2, 2026-09-14); the app signs sessions with AUTH_SECRET and guards its sensitive routes with FN_ADMIN_TOKEN. Still on D73's list of security features. Was: \"Production provisioning — parked by the 2026-09-05 rollout ruling\"",
+   "related_ids": [
+    "T-112",
+    "T-131",
+    "T-260",
+    "T-206"
+   ],
+   "summary": "The app's own secrets for the hosted site: AUTH_SECRET signs sign-in sessions, and FN_ADMIN_TOKEN guards the sensitive routes once the site is not on localhost.",
+   "next_action": "Nothing now. When the site is first set up on the chosen host (T-112): generate AUTH_SECRET (`openssl rand -base64 32`) and FN_ADMIN_TOKEN as fresh random values, keep them in the host's secret store and never in a file in the repository, then note the date against the SECRET_KEY row of docs/architecture/security.md's hardening checklist.",
    "sources": [
     {
      "file": "docs/architecture/security.md",
      "lines": "248",
      "quote": "- [ ] Change default `SECRET_KEY` before production deployment"
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-10-05",
+    "note": "Re-anchored under D82; status unchanged. Title was: \"Change default SECRET_KEY before production\". Summary was: \"Backend hardening.\".",
+    "evidence": [
+     "docs/decisions/2026-10-05-owner-decisions.md",
+     "docs/architecture/security.md"
+    ]
+   }
   },
   {
    "id": "T-340",
-   "title": "Rotate all API keys from .env.example defaults",
+   "title": "Enter real provider keys on the hosted site through its secret store or the Integrations page",
    "status": "parked",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "security",
    "effort": "small",
-   "blocking_decision": "Production provisioning — parked by the 2026-09-05 rollout ruling",
-   "related_ids": [],
-   "summary": "Backend hardening.",
-   "next_action": "At provisioning: set every provider key via Integrations UI or Secrets Manager (never the .env.example values), then tick security.md:250. Nothing to do before then.",
+   "blocking_decision": "PARKED 2026-10-05 — D82 (2026-10-05): reworded for the live app and parked with the hosting decision (T-112). The defaults it named are in backend/.env.example, the retired backend's; frontend/.env.example carries no values. Still on D73's list of security features. Was: \"Production provisioning — parked by the 2026-09-05 rollout ruling\"",
+   "related_ids": [
+    "T-112",
+    "T-206"
+   ],
+   "summary": "Provider keys for the hosted site, entered through the host's secret store or the Integrations page.",
+   "next_action": "Nothing now. When the site is first set up on the chosen host (T-112): enter each provider key through the host's secret store or the Integrations page; nothing comes from an example file. Then note the date against the .env.example row of docs/architecture/security.md's hardening checklist.",
    "sources": [
     {
      "file": "docs/architecture/security.md",
      "lines": "250",
      "quote": "- [ ] Rotate all API keys from `.env.example` defaults"
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-10-05",
+    "note": "Re-anchored under D82; status unchanged. Title was: \"Rotate all API keys from .env.example defaults\". Summary was: \"Backend hardening.\".",
+    "evidence": [
+     "docs/decisions/2026-10-05-owner-decisions.md",
+     "docs/architecture/security.md"
+    ]
+   }
   },
   {
    "id": "T-342",
-   "title": "Verify TLS certificate auto-renewal",
+   "title": "Confirm the hosted site's security certificate renews itself (on AWS with Kubernetes, cert-manager)",
    "status": "parked",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "ops-infra",
    "effort": "small",
-   "blocking_decision": "Cluster provisioning — parked by the 2026-09-05 rollout ruling",
-   "related_ids": [],
-   "summary": "cert-manager unverified.",
-   "next_action": "When provisioning: install cert-manager, add infrastructure/kubernetes/cluster-issuer.yaml (letsencrypt-prod) matching the annotation in secrets.yaml:130, then confirm `kubectl get certificate` shows Ready and a renewal event before ticking security.md:254.",
+   "blocking_decision": "PARKED 2026-10-05 — D82 (2026-10-05): reworded to fit any host and parked with the hosting decision (T-112), like D78. Was: \"Cluster provisioning — parked by the 2026-09-05 rollout ruling\"",
+   "related_ids": [
+    "T-112",
+    "T-206"
+   ],
+   "summary": "The site's HTTPS certificate must renew before it expires; how depends on the host.",
+   "next_action": "Nothing now. When the host is chosen (T-112): confirm the site's HTTPS certificate renews itself before it expires. AWS with Kubernetes: install cert-manager, add infrastructure/kubernetes/cluster-issuer.yaml (letsencrypt-prod) matching the annotation in secrets.yaml, then confirm `kubectl get certificate` shows Ready and a renewal event; Vercel and most managed hosts renew on their own, which is confirmed once on their dashboard. Then note the date against the certificate row of docs/architecture/security.md.",
    "sources": [
     {
      "file": "docs/architecture/security.md",
      "lines": "254, 116",
      "quote": "- [ ] Verify TLS certificate auto-renewal"
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-10-05",
+    "note": "Re-anchored under D82; status unchanged. Title was: \"Verify TLS certificate auto-renewal\". Summary was: \"cert-manager unverified.\".",
+    "evidence": [
+     "docs/decisions/2026-10-05-owner-decisions.md"
+    ]
+   }
   },
   {
    "id": "T-373",
    "title": "Contingency: merge stray local-user rows if a pre-rename build runs against the renamed DB",
-   "status": "parked",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "ops-infra",
@@ -12030,7 +12301,19 @@
      "lines": "64-72",
      "quote": "Single-owner and pre-production, this is an accepted risk — if it happens, merge the two rows by hand (`UPDATE ... SET user_id = <original-id>` on the owned tables, then delete the stray user)."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "parked",
+    "closed_on": "2026-10-05",
+    "basis": "owner-ruling",
+    "verdict": "moot",
+    "reason": "MOOT under D81 (2026-10-05). The contingency needs a build from before the 2026-08-12 rename to be run against the renamed database, and its fix is written where anyone would look: the Rollback caveat in docs/deployment/caep-db-rename.md, and since D75 its Sunset section for the reverse case. A ledger item tracking an event that has not happened adds nothing.",
+    "approved_by": "owner, 2026-10-05: \"close group A, apply B and D, option 1 for C\"",
+    "evidence": [
+     "docs/decisions/2026-10-05-owner-decisions.md",
+     "docs/deployment/caep-db-rename.md"
+    ]
+   }
   },
   {
    "id": "T-399",
@@ -38432,6 +38715,13 @@
    {
     "on": "2026-10-05",
     "what": "D78, D79 and D80: T-363, T-365, T-368 and T-378 parked with the hosting decision (T-363, T-365 and T-368 reworded to fit any host); T-383 and T-390 parked under D21; T-395 closed with its note applied at both S1-1 places. Counts recomputed: closed 189, open 33, parked 132, blocked 7, total 362.",
+    "evidence": [
+     "docs/decisions/2026-10-05-owner-decisions.md"
+    ]
+   },
+   {
+    "on": "2026-10-05",
+    "what": "D81–D84, the parked-list review: T-336, T-337, T-279, T-373, T-180 and T-037 closed (D81); T-185, T-191, T-193 and T-194 re-anchored off the retired backend, T-339 to T-342 reworded for the live app and any host, and T-060 to T-063 joined to the risk engine rebuild (D82); 13 fee re-checks moved to open under T-031's page (D83); 8 blank reasons written (D84). Counts recomputed: closed 195, open 46, parked 113, blocked 7, total 362.",
     "evidence": [
      "docs/decisions/2026-10-05-owner-decisions.md"
     ]
