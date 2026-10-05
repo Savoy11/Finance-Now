@@ -32,10 +32,20 @@ was not bumped.**
 | 7 | KuCoin | USDT/USDC ERC-20 withdrawal fees flagged | Two rows |
 | 8 | Gemini | 4 "legacy free-tier" caveat rows still open | Withdrawal rows |
 
+> **Updated 2026-10-05 — owner decision D81 (T-037).** Each lead above has its own ledger
+> item and is listed under its exchange on the Transfer Fee Check page (T-031, D52), so
+> the queue is worked there. Item 7 (KuCoin) was recorded as corrected, and KuCoin's
+> withdrawal fees are now also read live (`WITHDRAW_FEE_SOURCES`).
+
 ## Owner-machine shortcuts the agents found
 
 - **Bybit:** `GET api.bybit.com/v5/asset/coin/query-info` returns the complete
   withdrawal-fee table, keyless — one request verifies all 36 rows.
+
+  > ⚠ **OVERTAKEN 2026-08-21 — annotation added 2026-10-05 (D81).** Probed on 2026-08-21,
+  > the endpoint answered 403: it sits in Bybit's authenticated Asset API group, so it
+  > is not keyless and the app does not use it (`withdrawFeeAdapters.ts`, RP-5). Bybit's
+  > rows are checked by hand on the Transfer Fee Check page.
 
 ## Per-exchange agent reports (verbatim)
 
