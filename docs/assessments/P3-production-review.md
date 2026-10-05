@@ -891,6 +891,10 @@ checks on entry.
 | ~~PB-2~~ | ✅ **DONE 2026-08-18.** New `quoteKind: 'fx'` + `quoteCurrency` on currency instruments, sourced from the catalog's existing `quote` ISO code; `formatFxQuote()` renders ¥147.26 / CHF 0.8923 / C$1.3651, ISO-suffixed for codes with no unambiguous symbol. Uses an explicit symbol map, **not** `Intl` currency mode, which would round JPY to zero decimals and destroy FX precision |
 | S1-1 | Equity backtest Sharpe annualized at 52/12 bars-per-year against data that is daily on every range. **Owned by P3-W2-S1** and deliberately not fixed here: the fix depends on S1's first decision (resample server-side vs relabel to daily), which the owner delegated to the subproject on 2026-08-17 |
 
+> ⚠ **OVERTAKEN 2026-08-20 — annotation added 2026-10-05 (owner decision D80, T-395).**
+> Surfaces hidden 2026-08-20 and P3-W2-S1 suspended — S1-1 no longer gates rollout; the
+> fix lands with the S1 restore.
+
 ### Approved build work — queued, not built
 
 **Tools/capabilities:** ~~NT1~~ ✅ **DONE 2026-08-19** (`/budget/manage` closes Budget notes
