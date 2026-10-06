@@ -97,9 +97,12 @@ function renderHtml(q, result, checkedOn) {
 
   const itemHtml = (i) => {
     const c = i.closure, p = i.progress
-    const text = esc(`${i.id} ${i.title} ${i.summary} ${i.next_action} ${i.blocking_decision ?? ''} ${i.category}`.toLowerCase())
+    const text = esc(`${i.id} ${i.title} ${i.summary} ${i.next_action} ${i.blocking_decision ?? ''} ${i.category} ${i.parked_on ?? ''}`.toLowerCase())
+    // A parked item shows when it was parked (D85), so one parked yesterday does not read
+    // the same as one parked when the ledger began.
+    const statusLabel = i.status === 'parked' && i.parked_on ? `${LABEL[i.status]} · ${esc(i.parked_on)}` : LABEL[i.status]
     return `<details class="item" data-id="${esc(i.id)}" data-status="${i.status}" data-role="${i.owner_role}" data-text="${text}">
-<summary><span class="id">${esc(i.id)}</span><span class="title">${esc(i.title)}</span><span class="chips"><span class="chip st-${i.status}">${LABEL[i.status]}</span><span class="chip role">${ROLE_LABEL[i.owner_role]}</span><span class="chip dim">${esc(i.category)} · ${esc(i.effort)}</span></span></summary>
+<summary><span class="id">${esc(i.id)}</span><span class="title">${esc(i.title)}</span><span class="chips"><span class="chip st-${i.status}">${statusLabel}</span><span class="chip role">${ROLE_LABEL[i.owner_role]}</span><span class="chip dim">${esc(i.category)} · ${esc(i.effort)}</span></span></summary>
 <div class="body">
 ${i.blocking_decision ? `<p class="kv"><b>Blocked on</b>${esc(i.blocking_decision)}</p>` : ''}
 <p class="kv"><b>Summary</b>${esc(i.summary)}</p>
