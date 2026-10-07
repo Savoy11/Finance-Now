@@ -5,7 +5,7 @@ change the registry and regenerate. This is the "where does the data come from" 
 `DATA-AVAILABILITY.md` (which tracks whether each surface is live). The same registry powers the
 in-app **/data-sources** page and the per-page provenance badges, so the app and the docs never diverge._
 
-_Last generated: **2026-10-04**_
+_Last generated: **2026-10-07**_
 
 ## Legend
 
@@ -81,6 +81,7 @@ Provider tags: `key` = needs an API key · `paid` = needs a paid plan · untagge
 | IPO calendar | Key-gated | [Alpha Vantage](https://www.alphavantage.co/documentation/) `www.alphavantage.co` _(key)_ | — | `/live-data/ipo-calendar` |
 | Market calendar (earnings / econ) | Key-gated | FMP `financialmodelingprep.com` _(key)_ | — | `/live-data/market-calendar` |
 | Trade Risk Scorer (options) | Derived | Finance Now risk engine (lib/risk/profiles/optionsTrade.ts)<br>User-entered option quotes (from their broker chain)<br>[FMP](https://site.financialmodelingprep.com/developer/docs) `financialmodelingprep.com` _(key)_ | on demand | `/api/v1/options/score` |
+| Options Calculator (payoff, breakevens, Greeks) | Derived | Finance Now arithmetic (lib/options/payoff.ts, lib/options/greeks.ts)<br>User-entered strikes, premiums and volatility (from their broker chain)<br>[FMP](https://site.financialmodelingprep.com/developer/docs) `financialmodelingprep.com` _(key)_ | on demand | `/live-data/security-quotes (underlying price only)` |
 
 - **Stock / ETF / fund quotes** — Registry-driven provider ladder (Integrations page). EVERY live rung needs an API key since the keyless one was withdrawn on terms grounds (2026-08-06) — with no key, stocks and funds fall to catalog reference prices behind an amber `ref` tag, and macro instruments (no reference price by design) show a dash. Reference/fallback data: `lib/data/equityCatalog.ts`, `lib/data/fundCatalog.ts`.
 - **Stock OHLCV / TA / backtests** — Both rungs are keyed. Without one the route returns source:"none" and the TA, backtest and candlestick surfaces show their no-live-source state rather than synthetic candles.
@@ -93,6 +94,7 @@ Provider tags: `key` = needs an API key · `paid` = needs a paid plan · untagge
 - **IPO calendar** — IPO_CALENDAR is on Alpha Vantage’s free tier — the only free source publishing forward listing DATES (SEC S-1 filings show intent, not timing). Reports configured:false without a key. Its 25 requests/day is a terms CONDITION, so the route caches 6h. Price ranges arrive as 0 when the issuer has not set one and are rendered as “not set”, never $0.
 - **Market calendar (earnings / econ)** — Earnings needs a free FMP key; economic calendar needs a paid one. Reports configured:false without one.
 - **Trade Risk Scorer (options)** — SWITCHED OFF 2026-10-04 (D64): the endpoint answers 503 and the page redirects, with every other risk rating, until the risk engine is rebuilt and reviewed. When on: every option-level figure is entered by the user — Finance Now carries NO options chain, because no source it may use publishes one (Cboe’s terms prohibit auto-extraction; Yahoo’s options endpoint required auth and Yahoo is now blocked outright on terms grounds). See docs/assessments/P2-O1-options-data.md. Only the underlying price is fetched, through the shared quote ladder, which is keyed. The score itself is this app’s computation, not any provider’s figure.
+- **Options Calculator (payoff, breakevens, Greeks)** — Added 2026-10-07 (D93, T-420 item 4). Arithmetic only: payoff at expiry, maximum gain and loss, breakevens, and Black-Scholes Greeks from the volatility the user enters. No grade or score; the graded Trade Risk Scorer stays switched off (D64, D92). Finance Now carries no options chain (docs/assessments/P2-O1-options-data.md), so every option figure is typed in by the user. Only the underlying price is fetched, through the shared quote ladder, which is keyed.
 
 ## ETFs & Funds
 
@@ -145,4 +147,4 @@ Provider tags: `key` = needs an API key · `paid` = needs a paid plan · untagge
 
 ---
 
-_52 surfaces catalogued. Regenerate with `npm run data-sources`; verify against the route code with `npm run data-sources -- --verify`._
+_53 surfaces catalogued. Regenerate with `npm run data-sources`; verify against the route code with `npm run data-sources -- --verify`._

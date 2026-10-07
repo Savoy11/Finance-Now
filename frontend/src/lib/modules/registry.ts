@@ -23,6 +23,7 @@ import {
   Compass,
   GitCompareArrows,
   CalendarDays,
+  Calculator,
   Sunrise,
   Globe,
   Gem,
@@ -243,6 +244,9 @@ export const MODULES: SuiteModule[] = [
       // lib/risk/visibility.ts). To restore: put this entry back (and Sigma in
       // the lucide-react import) and delete the redirect.
       // { href: '/equities/options', label: 'Options Scorer', icon: Sigma },
+      // Options Calculator (D93, 2026-10-07): arithmetic only, no grade, so it
+      // is not behind the D64 switch. The scorer above stays off.
+      { href: '/equities/options-calculator', label: 'Options Calculator', icon: Calculator },
       // Backtests HIDDEN 2026-08-20 (owner: "hide the back testing tool …
       // I may revisit back testing"). The page, lib/utils/equityBacktest.ts,
       // its tests and subproject P3-W2-S1 are all retained — /equities/backtests
