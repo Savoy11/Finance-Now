@@ -281,7 +281,7 @@ const TOOL_REGISTRY: RegisteredTool[] = [
     market: 'equities',
     tool: {
       name: 'get_market_calendar',
-      description: 'Get upcoming earnings dates and US economic events (CPI, Fed, jobs reports) for the next N days. Use for "when does X report earnings" or "what events are coming up" questions.',
+      description: 'Get upcoming earnings dates and US economic events (CPI, Fed, jobs reports) for the next N days. FOMC meeting dates are always included (rows with source "federal-reserve"; "tentative" means the Fed has not yet confirmed the date); earnings and other releases need an FMP key. Use for "when does X report earnings", "when is the next Fed meeting" or "what events are coming up" questions.',
       input_schema: {
         type: 'object',
         properties: {
@@ -768,7 +768,15 @@ export async function runTool(
           ok?: boolean; configured?: boolean; earnings?: unknown[]; economic?: unknown[]; from?: string; to?: string
         }
         if (data.configured === false) {
-          return { error: 'Market calendar requires an FMP API key (FMP_API_KEY) — not configured on this instance.' }
+          // FOMC meeting dates are keyless (lib/data/fomcCalendar.ts) and still come back;
+          // only earnings and the other economic releases need the key. Say which is which,
+          // so an empty earnings list is never read as "nobody reports".
+          return {
+            from: data.from, to: data.to,
+            earnings: [],
+            earningsUnavailable: 'Earnings and non-Fed economic releases need an FMP API key (FMP_API_KEY) — not configured on this instance.',
+            economic: (data.economic ?? []).slice(0, 25),
+          }
         }
         // Configured but both upstream legs failed: the route answers 200 with
         // ok:false and empty arrays. Returning those verbatim reads as "no

@@ -928,6 +928,24 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     confidence: 'high',
   },
   {
+    // READ 2026-10-03 (Market Calendar FOMC dates) — review stays seeded until the owner ratifies (D46):
+    // FAVOURABLE — website policy, "Copyright/trademark": "Unless otherwise indicated, information on
+    // Board's website is in the public domain and may be copied and distributed without permission.
+    // Please cite to the Board as the source of the information."
+    // NOT FETCHED AT RUNTIME: the FOMC meeting dates are copied by hand into lib/data/fomcCalendar.ts.
+    // Registered because the app reuses the Board's information, and the registry answers "may we use
+    // this website?", not only "may we fetch it?".
+    domain: 'federalreserve.gov',
+    name: 'Federal Reserve Board',
+    verdict: 'approved',
+    termsUrl: 'https://www.federalreserve.gov/disclaimer.htm',
+    finding:
+      'Website policy, "Copyright/trademark": information on the Board\'s website is in the public domain unless otherwise indicated and may be copied and distributed without permission; the Board asks to be cited as the source. Material marked as belonging to a non-Board party needs that party\'s permission. Used for the FOMC meeting schedule only, copied by hand; the Market Calendar cites the Board in its source line and provenance notice.',
+    reviewedAt: '2026-10-03',
+    review: 'seeded',
+    confidence: 'high',
+  },
+  {
     // READ 2026-09-26 (T-005; docs/audits/terms-review-seeded-2026-09-26.md); marked verified 2026-10-04 (D54):
     // FAVOURABLE — "Is the API free for commercial use? Yes. The rates themselves fall under each
     // provider’s terms." No quotas; abuse rate-limiting; open source.

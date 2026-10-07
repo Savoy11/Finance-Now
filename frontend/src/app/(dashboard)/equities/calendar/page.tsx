@@ -8,7 +8,9 @@ import { clsx } from 'clsx'
 import { ModuleGate } from '@/components/layout/ModuleGate'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { SourceLine } from '@/components/ui/SourceLine'
+import { ProvenanceNotice } from '@/components/ui/ProvenanceNotice'
 import { STALE_TIME_LONG } from '@/lib/constants'
+import { FOMC_SOURCE_URL, getFomcCalendarProvenance } from '@/lib/data/fomcCalendar'
 import type { EarningsEvent, EconomicEvent, MarketCalendarResponse } from '@/app/live-data/market-calendar/route'
 import { IpoCalendarSection } from './IpoCalendarSection'
 
@@ -89,6 +91,10 @@ function CalendarContent() {
   const offset = monthOffsetFromNow(month)
   const selEarnings = selectedDay ? earningsByDay.get(selectedDay) ?? [] : []
   const selEcon = selectedDay ? econByDay.get(selectedDay) ?? [] : []
+  const configured = !!data?.configured
+  const fomc = getFomcCalendarProvenance()
+  // Past the table's last row, "no FOMC meeting" means "not published yet", so say so.
+  const pastFomcSchedule = monthKey(month) > fomc.through.slice(0, 7)
 
   return (
     <div className="space-y-5 max-w-(--breakpoint-xl) mx-auto">
@@ -96,13 +102,25 @@ function CalendarContent() {
         <CalendarDays className="h-6 w-6 text-accent-blue" aria-hidden />
         <PageHeader
           title="Market Calendar"
-          subtitle="Earnings, IPOs, and high-impact US economic events"
-          description="A month grid of earnings dates for tracked and notable stocks, plus medium/high-impact US economic releases. Click a day for its full list; flip months with the arrows."
-          details={[{ label: 'Data source', text: 'Financial Modeling Prep. Earnings works on a free key; the economic-events calendar is a paid FMP endpoint and stays empty on the free tier.' }]}
+          subtitle="Earnings, IPOs, Fed meetings and high-impact US economic events"
+          description="A month grid of earnings dates for tracked and notable stocks, FOMC rate decisions, and medium/high-impact US economic releases. Click a day for its full list; flip months with the arrows."
+          details={[{ label: 'Data source', text: 'Financial Modeling Prep for earnings (free key) and other US economic releases (a paid FMP endpoint, empty on the free tier). FOMC meeting dates come from the Federal Reserve Board’s published calendar and need no key.' }]}
         />
       </div>
 
       <SourceLine id="market-calendar" />
+
+      <ProvenanceNotice
+        label="FOMC dates: Federal Reserve Board"
+        staleLabel="FOMC dates may be out of date"
+        confidence={fomc.confidence}
+        stale={fomc.stale}
+      >
+        Meeting dates copied from the{' '}
+        <a href={FOMC_SOURCE_URL} target="_blank" rel="noreferrer" className="underline hover:text-slate-200">Federal Reserve Board’s FOMC calendar</a>,
+        last checked {fomc.verifiedAt} ({fomc.ageDays} day{fomc.ageDays === 1 ? '' : 's'} ago). The Fed treats each date as tentative until
+        the meeting before it confirms it. Unscheduled meetings are not shown.
+      </ProvenanceNotice>
 
       {/* Outside the FMP gate on purpose — IPOs come from Alpha Vantage, so
           someone with that key but no FMP key still sees them. */}
@@ -110,20 +128,24 @@ function CalendarContent() {
 
       {isLoading ? (
         <div className="h-96 animate-shimmer bg-shimmer-gradient bg-size-[200%_100%] rounded-card" />
-      ) : !data?.configured ? (
-        <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-8 text-center">
-          <KeyRound className="mx-auto h-7 w-7 text-amber-400/70" aria-hidden />
-          <p className="mt-2 text-sm font-medium text-slate-200">Calendar needs a (free) FMP API key</p>
-          <p className="mt-1 text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
-            Earnings and economic calendars come from Financial Modeling Prep. Grab a free key at
-            financialmodelingprep.com, then add it in{' '}
-            <Link href="/settings" className="text-accent-blue hover:underline">Settings → Integrations → Equity Market Data</Link>{' '}
-            (Financial Modeling Prep) — or set <code className="font-mono text-slate-300">FMP_API_KEY</code> in{' '}
-            <code className="font-mono text-slate-300">frontend/.env.local</code>. The same key upgrades stock quotes suite-wide.
-          </p>
-        </div>
       ) : (
         <>
+          {/* No FMP key: the grid still renders, because FOMC dates are keyless. */}
+          {!configured && (
+            <div className="flex items-start gap-3 rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3">
+              <KeyRound className="mt-0.5 h-5 w-5 shrink-0 text-amber-400/70" aria-hidden />
+              <div>
+                <p className="text-sm font-medium text-slate-200">Earnings need a (free) FMP API key</p>
+                <p className="mt-0.5 text-xs text-slate-400 leading-relaxed">
+                  Fed meetings below need no key. Earnings and other economic releases come from Financial Modeling Prep. Grab a free key at
+                  financialmodelingprep.com, then add it in{' '}
+                  <Link href="/settings" className="text-accent-blue hover:underline">Settings → Integrations → Equity Market Data</Link>{' '}
+                  (Financial Modeling Prep) — or set <code className="font-mono text-slate-300">FMP_API_KEY</code> in{' '}
+                  <code className="font-mono text-slate-300">frontend/.env.local</code>. The same key upgrades stock quotes suite-wide.
+                </p>
+              </div>
+            </div>
+          )}
           {/* Month navigation */}
           <div className="flex items-center justify-between rounded-card border border-border bg-bg-card px-4 py-2.5">
             <button
@@ -156,6 +178,13 @@ function CalendarContent() {
             </button>
           </div>
 
+          {pastFomcSchedule && (
+            <p className="px-1 text-[11px] text-text-muted">
+              The Fed has not published FOMC dates past {new Date(`${fomc.through}T12:00:00`).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })} yet,
+              so no meeting shows this month.
+            </p>
+          )}
+
           {/* Month grid */}
           <div className="overflow-hidden rounded-card border border-border bg-bg-card">
             <div className="grid grid-cols-7 border-b border-border">
@@ -168,6 +197,8 @@ function CalendarContent() {
                 if (!iso) return <div key={`blank-${i}`} className="min-h-[84px] border-b border-r border-border/40 bg-bg-elevated/20" />
                 const dayEarnings = earningsByDay.get(iso) ?? []
                 const dayEcon = econByDay.get(iso) ?? []
+                const dayFomc = dayEcon.find((e) => e.source === 'federal-reserve')
+                const otherEcon = dayEcon.filter((e) => e.source !== 'federal-reserve')
                 const catalogRows = dayEarnings.filter((e) => e.inCatalog)
                 const isToday = iso === todayIso
                 const isSelected = iso === selectedDay
@@ -190,6 +221,12 @@ function CalendarContent() {
                       {dayNum}
                     </span>
                     <div className="mt-1 space-y-0.5">
+                      {/* The rate decision outranks everything else on its day. */}
+                      {dayFomc && (
+                        <span className="block truncate rounded-sm bg-red-400/10 px-1 py-px text-[10px] font-semibold text-red-400">
+                          FOMC{dayFomc.tentative ? ' (tent.)' : ''}
+                        </span>
+                      )}
                       {/* Tracked names first, at most three chips per cell —
                           the day panel below carries the full list. */}
                       {catalogRows.slice(0, 3).map((e) => (
@@ -202,9 +239,9 @@ function CalendarContent() {
                           +{dayEarnings.length - catalogRows.slice(0, 3).length} more
                         </span>
                       )}
-                      {dayEcon.length > 0 && (
+                      {otherEcon.length > 0 && (
                         <span className="block truncate px-1 text-[10px] text-amber-400">
-                          {dayEcon.length} econ
+                          {otherEcon.length} econ
                         </span>
                       )}
                     </div>
@@ -224,7 +261,11 @@ function CalendarContent() {
                   </h3>
                 </div>
                 <div className="max-h-80 divide-y divide-border/60 overflow-y-auto">
-                  {selEarnings.length === 0 && <p className="px-4 py-6 text-center text-sm text-text-muted">No earnings this day.</p>}
+                  {selEarnings.length === 0 && (
+                    <p className="px-4 py-6 text-center text-sm text-text-muted">
+                      {configured ? 'No earnings this day.' : 'Earnings need an FMP key (see above).'}
+                    </p>
+                  )}
                   {selEarnings.map((e, i) => (
                     <div key={`${e.symbol}-${i}`} className="flex items-center gap-3 px-4 py-2 text-sm">
                       {e.inCatalog ? (
@@ -246,13 +287,28 @@ function CalendarContent() {
                 <div className="max-h-80 divide-y divide-border/60 overflow-y-auto">
                   {selEcon.length === 0 && (
                     <p className="px-4 py-6 text-center text-xs text-text-muted leading-relaxed">
-                      No events this day. FMP&rsquo;s economic calendar is a <span className="text-text-secondary">paid-tier endpoint</span> —
-                      on a free key it is always empty (earnings are unaffected).
+                      No events this day. Fed meetings always show; other releases (CPI, jobs, GDP) come from
+                      FMP&rsquo;s economic calendar, a <span className="text-text-secondary">paid-tier endpoint</span> that
+                      is empty on a free key (earnings are unaffected).
                     </p>
                   )}
                   {selEcon.map((ev, i) => (
                     <div key={`${ev.event}-${i}`} className="flex items-center gap-3 px-4 py-2 text-sm">
-                      <span className="flex-1 text-xs text-text-secondary">{ev.event}</span>
+                      {ev.source === 'federal-reserve' && ev.url ? (
+                        <a href={ev.url} target="_blank" rel="noreferrer" className="flex-1 text-xs text-text-secondary hover:text-text-primary hover:underline">
+                          {ev.event}
+                        </a>
+                      ) : (
+                        <span className="flex-1 text-xs text-text-secondary">{ev.event}</span>
+                      )}
+                      {ev.tentative && (
+                        <span
+                          className="rounded-sm border border-slate-500/30 bg-slate-500/10 px-1.5 py-0.5 text-[10px] font-medium text-slate-300"
+                          title="The Fed confirms each date at the meeting before it."
+                        >
+                          Tentative
+                        </span>
+                      )}
                       {ev.impact && (
                         <span className={clsx('rounded-sm border px-1.5 py-0.5 text-[10px] font-medium capitalize',
                           ev.impact.toLowerCase() === 'high'
