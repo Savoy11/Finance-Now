@@ -200,9 +200,10 @@ exclusion and outside the CFTC's matching exemption for futures and forex (Rule 
 For crypto that is not a security under the SEC's 2026-03-17 interpretation, neither
 registration system reaches an impersonal rating. Recommended: an impersonal rating on the
 asset's own page for crypto coins and stocks only, facts everywhere else, never a rating of a
-portfolio as a whole. **The owner's answers per asset type are pending**; its twelve questions
-then go to the review before launch (D4). Like G, it was written without opening the primary
-documents.
+portfolio as a whole. **The owner took every recommendation on 2026-10-07 (D92)**; its twelve
+questions go to the review before launch (D4), as the investment-adviser part of T-289's brief.
+Nothing is shown until counsel confirms the impersonal form. Like G, it was written without
+opening the primary documents.
 
 ---
 
@@ -234,8 +235,8 @@ This note is not on a timer, because the triggers are events rather than dates:
    Prohibited-Countries clause names the United States while the owner is US-resident, and
    that is a question about whether the app may call the host at all, today.
 
-7. **Before any risk rating returns** (added 2026-10-07). Group H's answers, the owner's per
-   asset type and then the lawyer's, are what T-420 rebuilds to. Check the Second Circuit's
+7. **Before any risk rating returns** (added 2026-10-07). Group H's answers, the owner's (D92)
+   and then the lawyer's, are what T-420 rebuilds to and what decides whether anything shows. Check the Second Circuit's
    decision in the Seeking Alpha appeal (No. 24-2437) first: the memo could not confirm it.
 
 ⚠ `npm run staleness:check` does **not** watch any of this. It watches curated *data*

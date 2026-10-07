@@ -4,6 +4,9 @@ _Memo for the owner's answers and then for the legal review before launch (D4). 
 2026-10-07 by the session steward under D90's work order. **No code changed.** Nothing in
 the app turns on or off because of this memo; D64's switch stays where it is._
 
+**Answered 2026-10-07 (D92).** The owner took the recommendation for every asset type in §7.
+The rebuild (T-420) works to that scope; §8 goes to the legal review before launch (D4).
+
 > ⚠ **None of this is legal advice, and none of it was written by a lawyer.** It is a research
 > record written so the owner can decide what to ask for and the lawyer can start from the
 > facts. Same footing as `docs/LEGAL-REVIEW.md`.
@@ -444,15 +447,15 @@ cost only where you want ratings to be part of what the app is.
 
 | Asset type | Recommended | Why | Owner's answer |
 |---|---|---|---|
-| Crypto coins | **B** | Lowest federal exposure for coins that are not securities; real information value | _not yet answered_ |
-| Stablecoins | **A** | Most relied on, most damaging when wrong; the Reserve Monitor's facts say more | _not yet answered_ |
-| Stocks | **B** | The *Lowe* and *Seeking Alpha* form | _not yet answered_ |
-| ETFs and funds | **A**, with structure facts in place of the label | The label speaks the language of suitability; the facts are more precise | _not yet answered_ |
-| Commodities | **A** | A second regulator's rules for little extra information | _not yet answered_ |
-| Currencies | **A** | As commodities | _not yet answered_ |
-| Interest rates and bonds | **A**, with duration as arithmetic | Duration is the useful number and is a formula | _not yet answered_ |
-| Options | **A**; a calculator without a grade, after the lawyer's answer | The scorer is personal by construction | _not yet answered_ |
-| Any portfolio-level figure | **A**: no rating of a portfolio as a whole | The personal form, which the draft disclosures promise the app does not offer | _not yet answered_ |
+| Crypto coins | **B** | Lowest federal exposure for coins that are not securities; real information value | **B** (D92) |
+| Stablecoins | **A** | Most relied on, most damaging when wrong; the Reserve Monitor's facts say more | **A** (D92) |
+| Stocks | **B** | The *Lowe* and *Seeking Alpha* form | **B** (D92) |
+| ETFs and funds | **A**, with structure facts in place of the label | The label speaks the language of suitability; the facts are more precise | **A**, with structure facts (D92) |
+| Commodities | **A** | A second regulator's rules for little extra information | **A** (D92) |
+| Currencies | **A** | As commodities | **A** (D92) |
+| Interest rates and bonds | **A**, with duration as arithmetic | Duration is the useful number and is a formula | **A**, with duration (D92) |
+| Options | **A**; a calculator without a grade, after the lawyer's answer | The scorer is personal by construction | **A**; calculator after the lawyer (D92) |
+| Any portfolio-level figure | **A**: no rating of a portfolio as a whole | The personal form, which the draft disclosures promise the app does not offer | **A** (D92) |
 
 The Pump Report is not in the table: the owner decided it on 2026-10-04 (D70), and it ships.
 It is in the lawyer's questions below so that the review covers every rating that ships.

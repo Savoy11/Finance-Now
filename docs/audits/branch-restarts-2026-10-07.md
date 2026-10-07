@@ -14,7 +14,7 @@ on history `main` already holds. No unmerged work was discarded.
 | 2026-10-07 ~00:19 | `3b5b00d` | `e8c0a8a` (#290: D85) | `refs/pull/290/head`; tag `archive/ccr-3ad5880b-hsbobf@3b5b00d` | The open-items review (D86–D91), restarted from `e8c0a8a` |
 | 2026-10-07 ~01:05 | `ba469e6` | `251916c` (#291: D86–D91) | `refs/pull/291/head`; tag `archive/ccr-3ad5880b-hsbobf@ba469e6` | T-293, the short not-advice lines beside features, restarted from `251916c` |
 | 2026-10-07 ~01:30 | `0cb311a` | `cc94d8b` (#296: T-293) | `refs/pull/296/head`; tag `archive/ccr-3ad5880b-hsbobf@0cb311a` | T-421, splits in tracked portfolios, restarted from `cc94d8b` |
-| 2026-10-07 ~07:35 | `2298453` | `40e9f38` (#297: T-421) | `refs/pull/297/head`; tag `archive/ccr-3ad5880b-hsbobf@2298453` | T-419, the memo on risk ratings by asset type, restarted from `40e9f38` |
+| 2026-10-07 ~07:32 | `2298453` | `40e9f38` (#297: T-421) | `refs/pull/297/head`; tag `archive/ccr-3ad5880b-hsbobf@2298453` | T-419, the memo on risk ratings by asset type, restarted from `40e9f38` |
 
 Each tag was created by `.github/workflows/archive-branch.yml` when its PR merged.
 
