@@ -43,6 +43,13 @@
       "when": 1791129682966,
       "tag": "0005_trade-ledger",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791335656270,
+      "tag": "0006_trade-splits",
+      "breakpoints": true
     }
   ]
 }

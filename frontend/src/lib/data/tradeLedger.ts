@@ -13,7 +13,7 @@
 import type { TradeSide } from '@/lib/db/schema/invest'
 import { CLASS_LABELS, INSTRUMENT_BY_KEY, isSecurityKey, type InstrumentClass } from './instruments'
 import {
-  COST_BASIS_METHOD, LEDGER_SIDES, REALIZED_METHOD_LABEL, computeCostBasis, differenceUsd, sumUsd,
+  COST_BASIS_METHOD, LEDGER_SIDES, MAX_SPLIT_UNITS, REALIZED_METHOD_LABEL, computeCostBasis, differenceUsd, sumUsd,
   toCents, tradeProblem, valueAtPrice,
   type CostBasis, type LedgerIssue, type LedgerTrade,
 } from './costBasis'
@@ -40,6 +40,7 @@ const AMOUNT_LIMITS = {
   quantity: { decimals: 18, wholeDigits: 20, label: 'quantity' },
   pricePerUnit: { decimals: 8, wholeDigits: 12, label: 'price' },
   feeUsd: { decimals: 2, wholeDigits: 18, label: 'fee' },
+  cashInLieuUsd: { decimals: 2, wholeDigits: 18, label: 'cash for a fraction' },
 } as const
 
 /** Earliest date a trade may carry. A typo such as year 0026 is refused rather than sorted to the front. */
@@ -74,17 +75,27 @@ export function trackableInstrument(key: string): { ok: true } | { ok: false; re
 
 // ─── Input ───────────────────────────────────────────────────────────────────
 
+/** A split's terms as they are stored (T-421): see SplitTerms in costBasis.ts. */
+export interface SplitDetails {
+  unitsAfter: number
+  unitsBefore: number
+  cashInLieuUsd: string | null
+}
+
 export interface NewTrade {
   instrumentKey: string
   /** Shown for an instrument the catalog does not know; the catalog's own name wins. */
   nameHint: string
   side: TradeSide
+  /** On a split, '0': its row moves no units and no money by itself. */
   quantity: string
   pricePerUnit: string
   feeUsd: string
   executedAt: Date | null
   opening: boolean
   note: string | null
+  /** On a split only. */
+  split: SplitDetails | null
 }
 
 type Parsed<T> = { ok: true; value: T } | { ok: false; error: string }
@@ -105,6 +116,17 @@ function readAmount(raw: unknown, which: keyof typeof AMOUNT_LIMITS): Parsed<str
   return { ok: true, value: text }
 }
 
+/** One side of a split's ratio: a whole number, sent as a number or as digits. */
+function readRatioPart(raw: unknown, which: 'unitsAfter' | 'unitsBefore'): Parsed<number> {
+  const text = typeof raw === 'number' ? (Number.isSafeInteger(raw) ? String(raw) : '') : typeof raw === 'string' ? raw.trim() : ''
+  const n = /^\d{1,9}$/.test(text) ? Number(text) : NaN
+  if (!(n >= 1 && n <= MAX_SPLIT_UNITS)) {
+    const name = which === 'unitsAfter' ? 'units after' : 'units before'
+    return fail(`The ${name} must be a whole number from 1 to ${MAX_SPLIT_UNITS.toLocaleString('en-US')}.`)
+  }
+  return { ok: true, value: n }
+}
+
 /**
  * A trade as the client sent it, checked and normalised, or the reason it is
  * refused. Anything the lot engine would leave out is refused here, so no saved
@@ -123,12 +145,39 @@ export function parseTradeInput(body: unknown, now: Date = new Date()): Parsed<N
     return fail(`The kind of trade must be one of: ${LEDGER_SIDES.join(', ')}.`)
   }
 
-  const quantity = readAmount(body.quantity, 'quantity')
-  if (!quantity.ok) return quantity
-  const price = readAmount(body.pricePerUnit, 'pricePerUnit')
-  if (!price.ok) return price
-  const fee = body.feeUsd === undefined ? { ok: true as const, value: '0' } : readAmount(body.feeUsd, 'feeUsd')
-  if (!fee.ok) return fee
+  // A split (T-421) is a ratio, not an amount: it has no units, price or fee of its own.
+  const isSplit = side === 'split'
+  let split: SplitDetails | null = null
+  let quantity: Parsed<string> = { ok: true, value: '0' }
+  let price: Parsed<string> = { ok: true, value: '0' }
+  let fee: Parsed<string> = { ok: true, value: '0' }
+  if (isSplit) {
+    if (body.quantity !== undefined || body.pricePerUnit !== undefined || body.feeUsd !== undefined) {
+      return fail('A split has no units, price or fee of its own. Send its ratio as unitsAfter and unitsBefore, such as 2 and 1 for a 2-for-1 split.')
+    }
+    const after = readRatioPart(body.unitsAfter, 'unitsAfter')
+    if (!after.ok) return after
+    const before = readRatioPart(body.unitsBefore, 'unitsBefore')
+    if (!before.ok) return before
+    if (after.value === before.value) return fail('A split changes how many units there are, so the units after and the units before cannot be the same.')
+    let cashInLieuUsd: string | null = null
+    if (body.cashInLieuUsd !== undefined && body.cashInLieuUsd !== null && body.cashInLieuUsd !== '') {
+      const cash = readAmount(body.cashInLieuUsd, 'cashInLieuUsd')
+      if (!cash.ok) return cash
+      cashInLieuUsd = cash.value
+    }
+    split = { unitsAfter: after.value, unitsBefore: before.value, cashInLieuUsd }
+  } else {
+    if (body.unitsAfter !== undefined || body.unitsBefore !== undefined || body.cashInLieuUsd !== undefined) {
+      return fail('Only a split has a ratio or cash for a fraction.')
+    }
+    quantity = readAmount(body.quantity, 'quantity')
+    if (!quantity.ok) return quantity
+    price = readAmount(body.pricePerUnit, 'pricePerUnit')
+    if (!price.ok) return price
+    fee = body.feeUsd === undefined ? { ok: true as const, value: '0' } : readAmount(body.feeUsd, 'feeUsd')
+    if (!fee.ok) return fee
+  }
 
   if (body.opening !== undefined && typeof body.opening !== 'boolean') return fail('"opening" must be true or false.')
   const opening = body.opening === true
@@ -136,6 +185,7 @@ export function parseTradeInput(body: unknown, now: Date = new Date()): Parsed<N
 
   let executedAt: Date | null = null
   if (body.executedAt === undefined || body.executedAt === null || body.executedAt === '') {
+    if (isSplit) return fail('A split needs the date it took effect: the first day the shares traded in the new units.')
     if (!opening) return fail('Every trade needs a date. Only a starting position may leave it out.')
   } else {
     if (typeof body.executedAt !== 'string') return fail('The date must be sent as an ISO date, such as "2026-03-14" or "2026-03-14T15:30:00Z".')
@@ -159,6 +209,7 @@ export function parseTradeInput(body: unknown, now: Date = new Date()): Parsed<N
     executedAt,
     opening,
     note: noteText || null,
+    split,
   }
 
   // The engine's own rules, last, so the two can never disagree about what counts.
@@ -217,6 +268,8 @@ export interface StoredTrade {
   opening: boolean
   note: string | null
   createdAt: Date
+  /** A split's terms, from trade_splits; null on every other kind. */
+  split: SplitDetails | null
 }
 
 export interface StoredCancellation {
@@ -238,6 +291,8 @@ export interface TradeView {
   opening: boolean
   note: string | null
   createdAt: string
+  /** A split's terms; null on every other kind. */
+  split: SplitDetails | null
   /** Set once the trade is cancelled; a cancelled trade stays listed and counts for nothing. */
   cancelled: { at: string; reason: string } | null
 }
@@ -274,6 +329,7 @@ export function toTradeView(t: StoredTrade, cancellation?: StoredCancellation): 
     opening: t.opening,
     note: t.note,
     createdAt: t.createdAt.toISOString(),
+    split: t.split,
     cancelled: cancellation ? { at: cancellation.createdAt.toISOString(), reason: cancellation.reason } : null,
   }
 }
@@ -304,7 +360,7 @@ export function buildLedgerView(trades: readonly StoredTrade[], cancellations: r
     const g = groups.get(t.instrumentKey) ?? { symbol: t.symbol, name: t.name, trades: [] }
     g.trades.push({
       id: t.id, side: t.side, quantity: t.quantity, pricePerUnit: t.pricePerUnit,
-      feeUsd: t.feeUsd, executedAt: t.executedAt, opening: t.opening,
+      feeUsd: t.feeUsd, executedAt: t.executedAt, opening: t.opening, split: t.split,
     })
     groups.set(t.instrumentKey, g)
   }
@@ -447,9 +503,16 @@ export function formatUnits(value: string): string {
   return `${neg ? '-' : ''}${group(whole)}${frac ? `.${frac}` : ''}`
 }
 
-/** What each kind of trade is called on the screen. A starting position is a transfer in marked as one. */
-export function tradeKindLabel(t: { side: TradeSide; opening: boolean }): string {
+/**
+ * What each kind of trade is called on the screen. A starting position is a
+ * transfer in marked as one; a split names its ratio, and one that leaves fewer
+ * units is a reverse split.
+ */
+export function tradeKindLabel(t: { side: TradeSide; opening: boolean; split?: SplitDetails | null }): string {
   if (t.opening) return 'Starting position'
-  return { buy: 'Buy', sell: 'Sell', transfer_in: 'Transfer in', transfer_out: 'Transfer out' }[t.side]
+  if (t.side === 'split' && t.split) {
+    return `${t.split.unitsAfter < t.split.unitsBefore ? 'Reverse split' : 'Split'}, ${t.split.unitsAfter} for ${t.split.unitsBefore}`
+  }
+  return { buy: 'Buy', sell: 'Sell', transfer_in: 'Transfer in', transfer_out: 'Transfer out', split: 'Split' }[t.side]
 }
 

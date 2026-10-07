@@ -8,12 +8,12 @@ import { TRACKABLE_CLASSES, formatUnits, parseTradeInput, type LedgerView } from
 import { useInstrumentSearch, type InstrumentCandidate } from '@/components/portfolio/useInstrumentSearch'
 import type { TradeInput } from '@/lib/api/trackedPortfolios'
 
-// The form for recording one trade in a tracked portfolio (T-027, D65). It
-// checks the trade with the same rules the server applies (parseTradeInput)
-// before sending it, so a mistake is explained here rather than after a round
-// trip, and the server still checks it again.
+// The form for recording one trade in a tracked portfolio (T-027, D65), or a
+// split (T-421). It checks the entry with the same rules the server applies
+// (parseTradeInput) before sending it, so a mistake is explained here rather
+// than after a round trip, and the server still checks it again.
 
-type Kind = 'buy' | 'sell' | 'transfer_in' | 'transfer_out' | 'starting'
+type Kind = 'buy' | 'sell' | 'transfer_in' | 'transfer_out' | 'starting' | 'split'
 
 const KINDS: Array<{ id: Kind; label: string; hint: string }> = [
   { id: 'buy', label: 'Buy', hint: 'Units bought, at the price paid per unit. The fee is added to their cost.' },
@@ -21,6 +21,7 @@ const KINDS: Array<{ id: Kind; label: string; hint: string }> = [
   { id: 'starting', label: 'Starting position', hint: 'What you already owned before you began recording: how many, and the average price you paid. It counts as your oldest units, so it is sold first.' },
   { id: 'transfer_in', label: 'Transfer in', hint: 'Units moved in from elsewhere, carrying the cost you paid for them.' },
   { id: 'transfer_out', label: 'Transfer out', hint: 'Units moved out without being sold. Their cost leaves with them; there is no gain or loss.' },
+  { id: 'split', label: 'Split', hint: 'A split or reverse split: how many units you have after it for every so many before, such as 2 for 1, or 1 for 10. Every unit held before its date is changed by that ratio and keeps its cost, so the cost per unit changes.' },
 ]
 
 /** Today on the reader's own calendar, as the date input writes it. */
@@ -45,6 +46,9 @@ export function TradeForm({ view, onSubmit, busy }: {
   const [quantity, setQuantity] = useState('')
   const [price, setPrice] = useState('')
   const [fee, setFee] = useState('')
+  const [unitsAfter, setUnitsAfter] = useState('')
+  const [unitsBefore, setUnitsBefore] = useState('')
+  const [cash, setCash] = useState('')
   const [date, setDate] = useState(localToday)
   const [note, setNote] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -63,8 +67,9 @@ export function TradeForm({ view, onSubmit, busy }: {
   )
 
   const starting = kind === 'starting'
-  const needsPrice = kind !== 'transfer_out'
-  const showsFee = !starting
+  const isSplit = kind === 'split'
+  const needsPrice = kind !== 'transfer_out' && !isSplit
+  const showsFee = !starting && !isSplit
   const priceLabel = starting ? 'Average price paid per unit (USD)'
     : kind === 'sell' ? 'Price received per unit (USD)'
     : kind === 'transfer_in' ? 'Cost per unit you paid (USD)'
@@ -89,17 +94,29 @@ export function TradeForm({ view, onSubmit, busy }: {
     e.preventDefault()
     if (!instrument) { setError('Choose what was traded first.'); return }
     if (starting && hasStartingPosition) { setError('This holding already has a starting position. Cancel that one first if it is wrong.'); return }
-    const trade: TradeInput = {
-      instrument: instrument.key,
-      name: instrument.name,
-      side: starting ? 'transfer_in' : kind,
-      opening: starting,
-      quantity: quantity.trim(),
-      pricePerUnit: needsPrice ? price.trim() : '0',
-      ...(showsFee && fee.trim() ? { feeUsd: fee.trim() } : {}),
-      ...(date ? { executedAt: date } : {}),
-      ...(note.trim() ? { note: note.trim() } : {}),
-    }
+    // A split is a ratio, not an amount: it sends no units, price or fee.
+    const trade: TradeInput = isSplit
+      ? {
+        instrument: instrument.key,
+        name: instrument.name,
+        side: 'split',
+        unitsAfter: unitsAfter.trim(),
+        unitsBefore: unitsBefore.trim(),
+        ...(cash.trim() ? { cashInLieuUsd: cash.trim() } : {}),
+        ...(date ? { executedAt: date } : {}),
+        ...(note.trim() ? { note: note.trim() } : {}),
+      }
+      : {
+        instrument: instrument.key,
+        name: instrument.name,
+        side: starting ? 'transfer_in' : kind,
+        opening: starting,
+        quantity: quantity.trim(),
+        pricePerUnit: needsPrice ? price.trim() : '0',
+        ...(showsFee && fee.trim() ? { feeUsd: fee.trim() } : {}),
+        ...(date ? { executedAt: date } : {}),
+        ...(note.trim() ? { note: note.trim() } : {}),
+      }
     // The server's own rules, checked here first.
     const checked = parseTradeInput(trade)
     if (!checked.ok) { setError(checked.error); return }
@@ -109,6 +126,9 @@ export function TradeForm({ view, onSubmit, busy }: {
     setQuantity('')
     setPrice('')
     setFee('')
+    setUnitsAfter('')
+    setUnitsBefore('')
+    setCash('')
     setNote('')
     if (starting) pickKind('buy')
   }
@@ -182,11 +202,33 @@ export function TradeForm({ view, onSubmit, busy }: {
       </fieldset>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label className={labelCls} htmlFor={`${uid}-qty`}>Units</label>
-          <input id={`${uid}-qty`} className={inputCls} inputMode="decimal" placeholder="e.g. 10 or 0.25"
-            value={quantity} onChange={(e) => setQuantity(e.target.value)} />
-        </div>
+        {isSplit ? (
+          <>
+            <div>
+              <span className={labelCls} id={`${uid}-ratio`}>Ratio</span>
+              <div className="flex items-center gap-2" role="group" aria-labelledby={`${uid}-ratio`}>
+                <input className={inputCls} inputMode="numeric" placeholder="2" aria-label="Units after the split"
+                  value={unitsAfter} onChange={(e) => setUnitsAfter(e.target.value)} />
+                <span className="text-xs text-text-muted whitespace-nowrap">for every</span>
+                <input className={inputCls} inputMode="numeric" placeholder="1" aria-label="Units before the split"
+                  value={unitsBefore} onChange={(e) => setUnitsBefore(e.target.value)} />
+              </div>
+              <p className="text-[11px] text-text-muted mt-1">Units after, for every so many before: 2 for 1 doubles them, 1 for 10 is a reverse split.</p>
+            </div>
+            <div>
+              <label className={labelCls} htmlFor={`${uid}-cash`}>Cash for a fraction (USD, optional)</label>
+              <input id={`${uid}-cash`} className={inputCls} inputMode="decimal" placeholder="0.00"
+                value={cash} onChange={(e) => setCash(e.target.value)} />
+              <p className="text-[11px] text-text-muted mt-1">If your broker paid cash instead of a fraction of a unit, enter it. The fraction counts as sold for that amount.</p>
+            </div>
+          </>
+        ) : (
+          <div>
+            <label className={labelCls} htmlFor={`${uid}-qty`}>Units</label>
+            <input id={`${uid}-qty`} className={inputCls} inputMode="decimal" placeholder="e.g. 10 or 0.25"
+              value={quantity} onChange={(e) => setQuantity(e.target.value)} />
+          </div>
+        )}
         {needsPrice && (
           <div>
             <label className={labelCls} htmlFor={`${uid}-price`}>{priceLabel}</label>
@@ -202,10 +244,11 @@ export function TradeForm({ view, onSubmit, busy }: {
           </div>
         )}
         <div>
-          <label className={labelCls} htmlFor={`${uid}-date`}>{starting ? 'Date bought (optional)' : 'Date'}</label>
+          <label className={labelCls} htmlFor={`${uid}-date`}>{starting ? 'Date bought (optional)' : isSplit ? 'Date it took effect' : 'Date'}</label>
           <input id={`${uid}-date`} type="date" className={inputCls} max={localToday()}
             value={date} onChange={(e) => setDate(e.target.value)} />
           {starting && <p className="text-[11px] text-text-muted mt-1">Leave it blank if you don&apos;t know it. A starting position counts as your oldest units either way.</p>}
+          {isSplit && <p className="text-[11px] text-text-muted mt-1">The first day the units traded at the new price. Trades on that day are already in the new units.</p>}
         </div>
         <div className="sm:col-span-2">
           <label className={labelCls} htmlFor={`${uid}-note`}>Note (optional)</label>
@@ -219,7 +262,7 @@ export function TradeForm({ view, onSubmit, busy }: {
       <div className="flex justify-end">
         <button type="submit" disabled={busy}
           className="px-4 py-2 bg-accent-blue hover:bg-blue-600 disabled:opacity-50 text-white rounded-lg font-medium text-sm transition-colors">
-          {busy ? 'Saving…' : 'Save trade'}
+          {busy ? 'Saving…' : isSplit ? 'Save split' : 'Save trade'}
         </button>
       </div>
     </form>
