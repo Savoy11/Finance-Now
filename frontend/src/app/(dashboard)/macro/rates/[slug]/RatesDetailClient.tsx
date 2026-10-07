@@ -10,6 +10,7 @@ import { SourceLine } from '@/components/ui/SourceLine'
 import { RATES_CATEGORY_INFO, formatRatesQuote, getRatesEntry } from '@/lib/data/ratesCatalog'
 import { getFund } from '@/lib/data/fundCatalog'
 import { yieldFromCurve, curveYieldSourceLabel } from '@/lib/data/ratesFromCurve'
+import { rateMoveEffect } from '@/lib/utils/parBondDuration'
 import type { YieldCurveResponse } from '@/app/live-data/treasury-yield-curve/route'
 import { STALE_TIME_SHORT, STALE_TIME_LONG } from '@/lib/constants'
 
@@ -150,6 +151,49 @@ export function RatesDetailClient({ slug }: { slug: string }) {
                 : 'Futures prices move inversely to yields: this contract rallies when rates fall.'}
             </p>
           </div>
+
+          {/* Price sensitivity (D92, T-420): duration as arithmetic, from the
+              official par yield above. Only for the yield entries, where the
+              maturity and the yield are both known; a futures contract tracks
+              whichever bond is cheapest to deliver, which this cannot know. */}
+          {curveYield && (() => {
+            const e = rateMoveEffect(entry.maturityYears, curveYield.yieldPct)
+            const pct = (v: number) => `${v >= 0 ? '+' : '−'}${Math.abs(v).toFixed(1)}%`
+            const isBill = entry.maturityYears <= 1
+            return (
+              <div className="rounded-card border border-border bg-bg-card p-4">
+                <h2 className="text-sm font-medium text-text-secondary mb-3">If Rates Move</h2>
+                <p className="text-xs text-text-muted leading-relaxed">
+                  For a Treasury {isBill ? 'bill' : 'bought at par'} maturing in {entry.maturityYears < 1
+                    ? `${Math.round(entry.maturityYears * 52)} weeks`
+                    : `${entry.maturityYears} years`}, at today&rsquo;s yield:
+                </p>
+                <dl className="mt-3 space-y-2 text-xs">
+                  <div className="flex justify-between">
+                    <dt className="text-text-muted">Yield up {e.movePct} point</dt>
+                    <dd className="font-mono tabular-nums text-text-primary">{pct(e.ifRisesPct)} in price</dd>
+                  </div>
+                  <div className="flex justify-between">
+                    <dt className="text-text-muted">
+                      Yield down {e.fallMovePct < e.movePct ? `${e.fallMovePct.toFixed(2)} (to zero)` : `${e.movePct} point`}
+                    </dt>
+                    <dd className="font-mono tabular-nums text-text-primary">{pct(e.ifFallsPct)} in price</dd>
+                  </div>
+                  <div className="flex justify-between">
+                    <dt className="text-text-muted">Duration</dt>
+                    <dd className="font-mono tabular-nums text-text-primary">{e.durationYears.toFixed(2)} years</dd>
+                  </div>
+                </dl>
+                <p className="mt-3 pt-3 border-t border-border/60 text-[11px] text-text-muted leading-relaxed">
+                  Arithmetic, not a forecast: the standard bond-price formula applied to this maturity and
+                  today&rsquo;s published yield{isBill ? '' : ', with coupons twice a year'}. Duration is the
+                  rough rule of thumb (about that many percent per 1-point move); the two rows above are the
+                  exact repricing, which is why a fall gains a little more than a rise loses. A fund holding
+                  many bonds moves by its own duration, which its documents state.
+                </p>
+              </div>
+            )
+          })()}
 
           {/* Duration-matched funds */}
           <div className="rounded-card border border-border bg-bg-card p-4">
