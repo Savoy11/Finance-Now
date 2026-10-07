@@ -26,6 +26,7 @@ import { STALE_TIME_LONG, STALE_TIME_SHORT } from '@/lib/constants'
 import type { SecurityQuotesResponse } from '@/app/live-data/security-quotes/route'
 import type { FundUniverseResponse } from '@/app/live-data/fund-universe/route'
 import { RISK_RATINGS_SHOWN } from '@/lib/risk/visibility'
+import { FeatureNotice } from '@/components/legal/FeatureNotice'
 
 // ─── Fee drag analyzer ────────────────────────────────────────────────────────
 // Projects what this fund's expense ratio costs versus a 0.03% benchmark fund
@@ -151,6 +152,8 @@ function FeeDragCard({ expenseRatioPct, symbol, salesCharge, website }: {
           )
         })}
       </div>
+
+      <FeatureNotice feature="calculators" className="mt-3" />
     </div>
   )
 }

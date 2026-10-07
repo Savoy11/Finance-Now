@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query'
 import { clsx } from 'clsx'
 import { Loader2, Send, Sparkles, X } from 'lucide-react'
 import type { VideoAnalyzeResponse } from '@/app/live-data/video-analyze/route'
+import { FeatureNotice } from '@/components/legal/FeatureNotice'
 
 /**
  * NT4 / review finding A1 — the trigger UI for `/live-data/video-analyze`.
@@ -196,10 +197,12 @@ export function VideoAskDialog({
                 </div>
               )}
 
+              <FeatureNotice feature="videoAnswers" />
+
               {/* House policy: a model's reading of a video is our own derived
                   output, and the surface that renders it says whose it is. */}
               <p className={clsx('text-[10px] leading-relaxed text-text-muted')}>
-                Answered by {result.provider ?? 'an AI model'}
+                Read by {result.provider ?? 'an AI model'}
                 {result.model ? ` (${result.model})` : ''} from the video itself — not a transcript
                 the app holds, and not verified against one. Treat it as a reading, not a record.
               </p>

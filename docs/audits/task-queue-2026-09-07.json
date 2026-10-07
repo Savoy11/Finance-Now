@@ -62,8 +62,8 @@
   "total_verified": 398,
   "outstanding": 368,
   "by_status": {
-   "closed": 202,
-   "open": 22,
+   "closed": 203,
+   "open": 21,
    "parked": 136,
    "blocked": 7,
    "unclear": 1
@@ -75,7 +75,7 @@
    "owner-machine": 85
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 202,
+  "closed_by_annotation": 203,
   "counts_recomputed_on": "2026-10-07",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 368
@@ -7626,7 +7626,7 @@
   {
    "id": "T-293",
    "title": "Define disclosure placement rules (footer + point of relevance)",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "either",
    "category": "process",
@@ -7651,6 +7651,22 @@
      "frontend/src/components/layout/SiteFooter.tsx",
      "frontend/src/lib/legal/__tests__/disclosures.test.ts",
      "docs/decisions/2026-09-30-owner-decisions.md"
+    ]
+   },
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-10-07",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "DONE (D90, 2026-10-07). The draft's six Finance Now lines, copied as written from the Not Investment Advice tab (revision 5), now sit beside the features they qualify: Portfolio Builder (above a built plan); the calculators line on the Fee Drag Analyzer, the tax-equivalent yield card and the Trade Risk Scorer, which stays switched off under D64; the AI line on the assistant, Research, Daily Brief and the AI scans on the stock and macro scanners; the Pump Report line on its page and the coin tab; the video line on answers about a video; and the crypto line under every crypto page, through the module gate, so a new crypto page carries it without anyone adding it. Where a page's own line only repeated the draft's (Portfolio Builder, Daily Brief), the draft's replaced it; lines that said more stayed beside it. featureNotices.test.ts pins every place, fails on a line pasted into a page instead of rendered, and holds the copy to the tab revision disclosures.ts records. Checked in a browser for the pages that need no live data or AI key. The footer and the About & Legal pages, the rest of this item, were built on 2026-10-01.",
+    "approved_by": "owner, 2026-10-07: \"go with the recommendations\"",
+    "evidence": [
+     "frontend/src/lib/legal/featureNotices.ts",
+     "frontend/src/components/legal/FeatureNotice.tsx",
+     "frontend/src/lib/legal/__tests__/featureNotices.test.ts",
+     "frontend/src/components/layout/ModuleGate.tsx",
+     "docs/BUSINESS-CHECKLIST.md",
+     "docs/decisions/2026-10-07-owner-decisions.md"
     ]
    }
   },
@@ -39209,6 +39225,14 @@
     "what": "D86–D91, the open-items review (owner: \"go with the recommendations\"). Closed seven: T-106 (keys already set), T-181 and T-371 (moot), T-102 (not enabled), T-250 (now a staleness:check clock), T-392 (moot: nothing reads the file) and T-282 (clicked through; it found and fixed five filters the stock screener dropped from a link). Parked twenty-one: T-366, T-367 and T-215 with their groups, and the eighteen Transfer Fees items behind T-428 under D89, each carrying the 1 Oct fee findings. Filed six from the ledger page (T-423 to T-428) and folded three into T-087, T-340 and T-154.",
     "evidence": [
      "docs/decisions/2026-10-07-owner-decisions.md"
+    ]
+   },
+   {
+    "on": "2026-10-07",
+    "what": "T-293 closed (D90's second item): the draft's six short not-advice lines now sit beside the features they qualify, and every crypto page carries the crypto line through the module gate. A test pins each place.",
+    "evidence": [
+     "frontend/src/lib/legal/featureNotices.ts",
+     "frontend/src/lib/legal/__tests__/featureNotices.test.ts"
     ]
    }
   ]

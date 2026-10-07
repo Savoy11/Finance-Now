@@ -8,6 +8,7 @@ import { PumpReportTab } from '@/components/pump-report/PumpReportTab'
 import { ScanAllPanel } from '@/components/pump-report/ScanAllPanel'
 import { useWalletStore, hydrateWallets } from '@/store/useWalletStore'
 import type { ScanTarget } from '@/app/live-data/pump-report/scan/route'
+import { FeatureNotice } from '@/components/legal/FeatureNotice'
 
 // ─── Why this page exists ─────────────────────────────────────────────────────
 //
@@ -82,6 +83,7 @@ function PumpReportPageInner() {
         description="Search public fraud intelligence for an address — rug pulls, flagged wallets, scam sites. Read-only, and no private key is ever involved."
         icon={<ShieldAlert size={20} />}
       />
+      <FeatureNotice feature="pumpReport" />
 
       {/* Address entry. The page's own, so it does not depend on /wallets. */}
       <div className="space-y-3 rounded-card border border-border bg-bg-card p-4">

@@ -15,6 +15,7 @@ import {
 import { buildPreset, PRESETS, type PresetId } from '@/lib/options/presets'
 import { STALE_TIME_SHORT } from '@/lib/constants'
 import type { SecurityQuotesResponse } from '@/app/live-data/security-quotes/route'
+import { FeatureNotice } from '@/components/legal/FeatureNotice'
 
 // Trade Risk Scorer (P2-O2) — the UI for lib/risk/profiles/optionsTrade.ts,
 // which shipped complete and tested with zero consumers.
@@ -433,6 +434,7 @@ function OptionsScorerInner() {
               )}
             </div>
           )}
+          <FeatureNotice feature="calculators" />
           <p className="text-[11px] text-text-muted leading-relaxed">
             Scored by the app&rsquo;s options-trade risk profile (liquidity 30% · IV environment 20% ·
             defined risk 20% · assignment 15% · time decay 15%) on the canonical safety scale used

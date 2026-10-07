@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { clsx } from 'clsx'
 import { Landmark } from 'lucide-react'
 import { taxEquivalentYield, afterTaxYield, type TaxProfile } from '@/lib/utils/taxEquivalentYield'
+import { FeatureNotice } from '@/components/legal/FeatureNotice'
 
 /**
  * Tax-equivalent yield for a municipal bond fund (items 11/13).
@@ -117,6 +118,8 @@ export function TaxEquivalentYieldCard({ symbol, yieldPct }: { symbol: string; y
           ? `On a like-for-like comparison this fund beats a ${CORPORATE_REFERENCE.toFixed(2)}% taxable bond for you.`
           : `A ${CORPORATE_REFERENCE.toFixed(2)}% taxable bond still nets you more — munis are not automatically the better deal.`}
       </p>
+
+      <FeatureNotice feature="calculators" />
 
       {/* The limits are part of the answer, not a disclaimer bolted on. */}
       <p className="border-t border-border/60 pt-2 text-[10px] leading-relaxed text-text-muted/80">
