@@ -105,7 +105,7 @@ function MacroContent() {
   })
 
   return (
-    <div className="space-y-6 max-w-screen-xl mx-auto">
+    <div className="space-y-6 max-w-(--breakpoint-xl) mx-auto">
       <div className="flex items-center gap-3">
         <div className="size-9 rounded-lg bg-accent-blue/10 border border-accent-blue/20 flex items-center justify-center">
           <Globe size={18} className="text-accent-blue" aria-hidden />
@@ -148,7 +148,7 @@ function MacroContent() {
                 const priced = area.symbols.filter((s) => data?.[s.symbol]?.price != null).length
                 const live = priced > 0
                 return (
-                  <span className={clsx('px-2 py-0.5 rounded text-[10px] font-medium uppercase tracking-wider border',
+                  <span className={clsx('px-2 py-0.5 rounded-sm text-[10px] font-medium uppercase tracking-wider border',
                     live ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-bg-elevated border-border text-text-muted')}>
                     {isLoading ? '…' : live ? `${priced}/${area.symbols.length} live` : 'no live quotes'}
                   </span>

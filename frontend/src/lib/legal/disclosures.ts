@@ -11,6 +11,12 @@
  * below). Change the wording in the document first, then copy it here: a page
  * edited in two places stops being one document.
  *
+ * WHERE THE DOCUMENTS LIVE NOW (D60, 2026-10-04). In the file libraries of the two
+ * ledger pages, Finance Now's and News Charts'. A document both products share is the
+ * same file in both. The next copy comes from the ledger upload, after comparing the
+ * two, and DISCLOSURE_SOURCE then names that upload. Until something is uploaded, the
+ * copy below stays the one taken from the Disclosure Set page on 2026-10-01.
+ *
  * WHERE IT LIVES ON SCREEN (D50, 2026-09-30). One About page, reached from a
  * footer link on every page and from Settings, where "About & Legal" replaced
  * How We Make Money. The three long documents get their own pages under /about so
@@ -29,6 +35,7 @@
 import { DATA_SOURCES, requiredAttributions } from '@/lib/data/dataSources'
 import { blanksIn } from './inline'
 import { FOOTER_LINKS, FOOTER_NOTICE, HOW_WE_MAKE_MONEY_HREF, LEGAL_PATHS } from './links'
+import { FEATURE_NOTICES } from './featureNotices'
 
 export { FOOTER_LINKS, FOOTER_NOTICE, HOW_WE_MAKE_MONEY_HREF, LEGAL_PATHS }
 
@@ -316,7 +323,8 @@ export const PRIVACY_POLICY: LegalDocument = {
 // ─── Not Investment Advice (draft tab rev 5) ────────────────────────────────
 // The tab's "Short versions for the pages" table is working material, not part
 // of the public notice: its footer line is FOOTER_NOTICE above, and its lines
-// for individual features belong beside those features (D50), not here.
+// for individual features belong beside those features (D50), not here. They
+// are FEATURE_NOTICES in ./featureNotices (T-293, copied 2026-10-07).
 
 export const NOT_INVESTMENT_ADVICE: LegalDocument = {
   title: 'Not Investment Advice',
@@ -510,7 +518,10 @@ function sectionText(s: LegalSection): string[] {
   return [s.heading, ...s.blocks.flatMap(blockText)]
 }
 
-/** Every string a reader can see on the About and legal pages, footer included. */
+/**
+ * Every string a reader can see on the About and legal pages, footer included,
+ * and the short lines beside features, which are part of the same draft.
+ */
 export function allPublishedText(): string[] {
   return [
     ABOUT_PAGE.title,
@@ -518,6 +529,7 @@ export function allPublishedText(): string[] {
     ...LEGAL_DOCUMENTS.flatMap((d) => [d.title, d.effective ?? '', ...d.intro.flatMap(blockText), ...d.sections.flatMap(sectionText)]),
     FOOTER_NOTICE,
     ...FOOTER_LINKS.map((l) => l.label),
+    ...Object.values(FEATURE_NOTICES),
   ].filter(Boolean)
 }
 

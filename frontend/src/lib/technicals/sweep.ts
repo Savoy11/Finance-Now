@@ -16,10 +16,12 @@
  *
  * THE LIMIT THIS DESIGN HAS. Sweeping client-side is only correct while the
  * whole universe fits in one sweep, because the screener's invariant is that
- * filters run over the dataset and not the visible page. Past roughly 250
- * coins that stops being interactive, and the answer is a server-side
- * precomputed snapshot on a paid data tier — NOT sweeping just the page on
- * screen, which would filter as though it had seen everything.
+ * filters run over the dataset and not the visible page. Past roughly
+ * SWEEP_UNIVERSE_LIMIT coins that stops being interactive, and the answer is a
+ * server-side precomputed snapshot on a paid data tier — NOT sweeping just the
+ * page on screen, which would filter as though it had seen everything. That
+ * work is T-387, parked under D62 until the coin list nears the limit or a
+ * paid tier is taken up; a test fails if the list grows past it.
  */
 
 import { rsi, sma, type OhlcvCandle } from '@/lib/utils/indicators'
@@ -27,6 +29,13 @@ import { runPool } from '@/lib/utils/runPool'
 
 /** Matches /scanner's cap. Raising it rate-limits the provider, not speeds it up. */
 export const SWEEP_CONCURRENCY = 5
+
+/**
+ * The most coins one browser sweep is designed to cover: one candle request
+ * per coin, SWEEP_CONCURRENCY at a time, so 250 coins is 50 waves before a
+ * filter can answer. Not a tuning knob: raising it means building T-387.
+ */
+export const SWEEP_UNIVERSE_LIMIT = 250
 
 /** Daily candles over a year — enough history for a 200-period average. */
 export const SWEEP_RANGE = '1Y'

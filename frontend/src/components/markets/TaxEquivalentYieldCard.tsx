@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { clsx } from 'clsx'
 import { Landmark } from 'lucide-react'
 import { taxEquivalentYield, afterTaxYield, type TaxProfile } from '@/lib/utils/taxEquivalentYield'
+import { FeatureNotice } from '@/components/legal/FeatureNotice'
 
 /**
  * Tax-equivalent yield for a municipal bond fund (items 11/13).
@@ -57,7 +58,7 @@ export function TaxEquivalentYieldCard({ symbol, yieldPct }: { symbol: string; y
           <select
             value={federalPct}
             onChange={(e) => setFederalPct(Number(e.target.value))}
-            className="mt-1 w-full rounded border border-border bg-bg-elevated px-2 py-1.5 text-sm text-text-primary focus:border-accent-blue/50 focus:outline-none"
+            className="mt-1 w-full rounded-sm border border-border bg-bg-elevated px-2 py-1.5 text-sm text-text-primary focus:border-accent-blue/50 focus:outline-hidden"
           >
             {FEDERAL_BRACKETS.map((b) => <option key={b} value={b}>{b}%</option>)}
           </select>
@@ -67,14 +68,14 @@ export function TaxEquivalentYieldCard({ symbol, yieldPct }: { symbol: string; y
           <input
             type="number" min={0} max={15} step={0.1} value={statePct}
             onChange={(e) => setStatePct(Number(e.target.value))}
-            className="mt-1 w-full rounded border border-border bg-bg-elevated px-2 py-1.5 text-sm font-mono text-text-primary focus:border-accent-blue/50 focus:outline-none"
+            className="mt-1 w-full rounded-sm border border-border bg-bg-elevated px-2 py-1.5 text-sm font-mono text-text-primary focus:border-accent-blue/50 focus:outline-hidden"
           />
         </label>
       </div>
 
       <div className="space-y-1.5">
         <label className="flex items-start gap-2 text-[11px] leading-relaxed text-text-muted">
-          <input type="checkbox" checked={stateExempt} onChange={(e) => setStateExempt(e.target.checked)} className="mt-0.5 rounded border-border" />
+          <input type="checkbox" checked={stateExempt} onChange={(e) => setStateExempt(e.target.checked)} className="mt-0.5 rounded-sm border-border" />
           <span>
             My state also exempts this income.
             <span className="text-text-muted/70"> Usually true only for in-state issuers — a national
@@ -83,7 +84,7 @@ export function TaxEquivalentYieldCard({ symbol, yieldPct }: { symbol: string; y
           </span>
         </label>
         <label className="flex items-start gap-2 text-[11px] leading-relaxed text-text-muted">
-          <input type="checkbox" checked={itemizes} onChange={(e) => setItemizes(e.target.checked)} className="mt-0.5 rounded border-border" />
+          <input type="checkbox" checked={itemizes} onChange={(e) => setItemizes(e.target.checked)} className="mt-0.5 rounded-sm border-border" />
           <span>
             I itemize deductions.
             <span className="text-text-muted/70"> State tax then reduces federal taxable income, so the
@@ -93,13 +94,13 @@ export function TaxEquivalentYieldCard({ symbol, yieldPct }: { symbol: string; y
       </div>
 
       <div className="grid gap-2 sm:grid-cols-2">
-        <div className="rounded border border-border bg-bg-elevated p-3">
+        <div className="rounded-sm border border-border bg-bg-elevated p-3">
           <div className="text-lg font-bold font-mono text-emerald-400">{tey.taxEquivalentPct.toFixed(2)}%</div>
           <div className="text-[11px] text-text-muted">
             Tax-equivalent yield · {(tey.effectiveRate * 100).toFixed(1)}% effective rate
           </div>
         </div>
-        <div className="rounded border border-border bg-bg-elevated p-3">
+        <div className="rounded-sm border border-border bg-bg-elevated p-3">
           <div className={clsx('text-lg font-bold font-mono', muniWins ? 'text-emerald-400' : 'text-text-primary')}>
             {corporateAfterTax.toFixed(2)}%
           </div>
@@ -117,6 +118,8 @@ export function TaxEquivalentYieldCard({ symbol, yieldPct }: { symbol: string; y
           ? `On a like-for-like comparison this fund beats a ${CORPORATE_REFERENCE.toFixed(2)}% taxable bond for you.`
           : `A ${CORPORATE_REFERENCE.toFixed(2)}% taxable bond still nets you more — munis are not automatically the better deal.`}
       </p>
+
+      <FeatureNotice feature="calculators" />
 
       {/* The limits are part of the answer, not a disclaimer bolted on. */}
       <p className="border-t border-border/60 pt-2 text-[10px] leading-relaxed text-text-muted/80">

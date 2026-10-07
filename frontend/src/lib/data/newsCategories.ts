@@ -3,7 +3,7 @@
 // Live articles are fetched and classified in /live-data/news.
 
 export type NewsSentiment = 'positive' | 'neutral' | 'negative'
-export type NewsCategory = 'regulation' | 'market' | 'protocol' | 'security' | 'adoption' | 'macro' | 'global'
+export type NewsCategory = 'regulation' | 'market' | 'protocol' | 'security' | 'adoption' | 'macro' | 'global' | 'tokenization'
 
 export interface NewsArticle {
   id: string
@@ -27,4 +27,6 @@ export const NEWS_CATEGORIES: { value: NewsCategory | 'all'; label: string }[] =
   { value: 'adoption', label: 'Adoption' },
   { value: 'macro', label: 'Macro' },
   { value: 'global', label: 'Global' },
+  // Stories about tokenized stocks, funds and bonds (TS-13)
+  { value: 'tokenization', label: 'Tokenization' },
 ]

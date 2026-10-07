@@ -70,7 +70,7 @@ export function SearchInput({ className, placeholder = 'Search assets...', onSel
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={placeholder}
-          className="w-full pl-9 pr-9 py-2 bg-bg-secondary border border-border rounded text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-accent-blue/60 focus:ring-1 focus:ring-accent-blue/30 transition-colors"
+          className="w-full pl-9 pr-9 py-2 bg-bg-secondary border border-border rounded-sm text-sm text-text-primary placeholder-text-muted focus:outline-hidden focus:border-accent-blue/60 focus:ring-1 focus:ring-accent-blue/30 transition-colors"
           aria-label="Search assets"
           aria-autocomplete="list"
           aria-expanded={isOpen}
@@ -92,7 +92,7 @@ export function SearchInput({ className, placeholder = 'Search assets...', onSel
         <div
           ref={dropdownRef}
           id="search-results-listbox"
-          className="absolute top-full left-0 right-0 mt-1 bg-bg-card border border-border rounded shadow-card-hover z-50 overflow-hidden animate-fade-in"
+          className="absolute top-full left-0 right-0 mt-1 bg-bg-card border border-border rounded-sm shadow-card-hover z-50 overflow-hidden animate-fade-in"
           role="listbox"
           aria-label="Search results"
         >

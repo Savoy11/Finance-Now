@@ -51,7 +51,7 @@ export function ProvenanceNotice({
       )}
     >
       <span className="font-medium">{stale ? `⚠ ${staleLabel}` : label}</span>
-      <span className={clsx('px-1.5 py-0.5 rounded border text-[10px] font-semibold', conf.chip)}>
+      <span className={clsx('px-1.5 py-0.5 rounded-sm border text-[10px] font-semibold', conf.chip)}>
         {conf.label}
       </span>
       <span className="opacity-80">{children}</span>

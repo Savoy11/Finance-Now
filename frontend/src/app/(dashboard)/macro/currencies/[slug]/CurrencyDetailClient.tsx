@@ -39,10 +39,10 @@ export function CurrencyDetailClient({ slug }: { slug: string }) {
     .filter((p) => p.fund != null)
 
   return (
-    <div className="space-y-6 max-w-screen-xl mx-auto">
-      <Link href="/macro/currencies" className="inline-flex items-center gap-1.5 text-xs text-text-muted hover:text-text-secondary transition-colors">
+    <div className="space-y-6 max-w-(--breakpoint-xl) mx-auto">
+      <div><Link href="/macro/currencies" className="inline-flex items-center gap-1.5 text-xs text-text-muted hover:text-text-secondary transition-colors">
         <ArrowLeft size={13} aria-hidden /> Currencies
-      </Link>
+      </Link></div>
 
       {/* Header + live rate */}
       <div className="flex flex-wrap items-end justify-between gap-4">

@@ -368,3 +368,83 @@ describe('status survives an unparseable fee (the suspension is the point)', () 
     }
   })
 })
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Deposit status (T-054, owner decision D66). Four of the keyless feeds say
+// whether a network is open for deposits, each in its own words. The parsers
+// read only each payload's own open and closed values: anything else stays
+// unknown, because a misread "closed" blocks a working route and a misread
+// "open" vouches for a shut one.
+// ─────────────────────────────────────────────────────────────────────────────
+describe('deposit status (T-054, D66)', () => {
+  const statuses = (rows: ParsedFeeRow[]) => rows.map(r => [r.network, r.depositEnabled])
+
+  it('reads KuCoin isDepositEnabled, and only a real boolean', () => {
+    expect(statuses(parseKucoinCurrencies({ code: '200000', data: [{ currency: 'USDT', chains: [
+      { chainName: 'TRC20', withdrawalMinFee: '1', isWithdrawEnabled: true, isDepositEnabled: false },
+      { chainName: 'ERC20', withdrawalMinFee: '3', isWithdrawEnabled: true, isDepositEnabled: true },
+      { chainName: 'SOL', withdrawalMinFee: '1', isWithdrawEnabled: true, isDepositEnabled: 'false' },
+    ] }] }))).toEqual([['trc20', false], ['erc20', true], ['solana', undefined]])
+  })
+
+  it('reads HTX depositStatus as allowed or prohibited, and nothing else', () => {
+    expect(statuses(parseHtxCurrencies({ code: 200, data: [{ currency: 'usdt', chains: [
+      { displayName: 'TRC20', withdrawFeeType: 'fixed', transactFeeWithdraw: '1', withdrawStatus: 'allowed', depositStatus: 'prohibited' },
+      { displayName: 'ERC20', withdrawFeeType: 'fixed', transactFeeWithdraw: '3', withdrawStatus: 'allowed', depositStatus: 'allowed' },
+      { displayName: 'SOL', withdrawFeeType: 'fixed', transactFeeWithdraw: '1', withdrawStatus: 'allowed', depositStatus: 'maintenance' },
+    ] }] }))).toEqual([['trc20', false], ['erc20', true], ['solana', undefined]])
+  })
+
+  it('reads Bitget rechargeable, sent as a word or a boolean', () => {
+    expect(statuses(parseBitgetCoins({ code: '00000', data: [{ coin: 'USDT', chains: [
+      { chain: 'TRC20', withdrawFee: '1', withdrawable: 'true', rechargeable: 'false' },
+      { chain: 'ERC20', withdrawFee: '3', withdrawable: 'true', rechargeable: true },
+      { chain: 'SOL', withdrawFee: '1', withdrawable: 'true', rechargeable: 'paused' },
+    ] }] }))).toEqual([['trc20', false], ['erc20', true], ['solana', undefined]])
+  })
+
+  it('reads XT.com depositEnabled, and only a real boolean', () => {
+    expect(statuses(parseXtSupportCurrency({ rc: 0, result: [{ currency: 'usdt', supportChains: [
+      { chain: 'Tron', withdrawFeeAmount: '1', withdrawEnabled: true, depositEnabled: false },
+      { chain: 'Ethereum', withdrawFeeAmount: '3', withdrawEnabled: true, depositEnabled: 1 },
+    ] }] }))).toEqual([['trc20', false], ['erc20', undefined]])
+  })
+
+  it('keeps a row that carries only a deposit status', () => {
+    expect(parseKucoinCurrencies({ code: '200000', data: [{ currency: 'USDT', chains: [
+      { chainName: 'TRC20', isDepositEnabled: false },
+    ] }] })).toEqual([{ exchangeId: 'kucoin', coin: 'usdt', network: 'trc20', depositEnabled: false }])
+  })
+
+  // reportsDeposits drives the owner probe's "field may have been renamed"
+  // warning, so it must match what each parser actually reads.
+  it('marks exactly the sources whose parsers read a deposit status', () => {
+    // One payload per source, each closing a deposit in that exchange's own words.
+    const samples: Record<string, unknown> = {
+      kucoin: { code: '200000', data: [{ currency: 'USDT', chains: [{ chainName: 'TRC20', isDepositEnabled: false }] }] },
+      htx: { code: 200, data: [{ currency: 'usdt', chains: [{ displayName: 'TRC20', depositStatus: 'prohibited' }] }] },
+      bitget: { code: '00000', data: [{ coin: 'USDT', chains: [{ chain: 'TRC20', rechargeable: 'false' }] }] },
+      lbank: { result: 'true', data: [{ assetCode: 'usdt', chain: 'trc20', fee: '1', canWithDraw: true }] },
+      bitfinex: [[['UST', ['0', '15']]]],
+      xtcom: { rc: 0, result: [{ currency: 'usdt', supportChains: [{ chain: 'Tron', depositEnabled: false }] }] },
+    }
+    for (const s of WITHDRAW_FEE_SOURCES) {
+      expect(samples[s.exchangeId], `${s.exchangeId} needs a sample in this test`).toBeDefined()
+      const reads = s.parse(samples[s.exchangeId]).some(r => r.depositEnabled === false)
+      expect(reads, `${s.exchangeId}: reportsDeposits is ${s.reportsDeposits}`).toBe(s.reportsDeposits)
+    }
+  })
+
+  it('carries deposit status into the overrides and reports its coverage apart from withdrawals', () => {
+    const built = buildFeeOverrideMap([
+      { exchangeId: 'kucoin', coin: 'usdt', network: 'trc20', withdrawEnabled: true, depositEnabled: false },
+      // LBank reports withdrawals and says nothing about deposits.
+      { exchangeId: 'lbank', coin: 'usdt', network: 'trc20', withdrawFee: 1, withdrawEnabled: true },
+    ])
+    expect(built.overrides.kucoin?.usdt?.trc20?.depositEnabled).toBe(false)
+    expect(built.overrides.lbank?.usdt?.trc20?.depositEnabled).toBeUndefined()
+    expect([...built.availabilityExchangeIds].sort()).toEqual(['kucoin', 'lbank'])
+    expect(built.depositAvailabilityExchangeIds).toEqual(['kucoin'])
+    expect(built.depositAvailabilityRows).toEqual(['kucoin:usdt:trc20'])
+  })
+})

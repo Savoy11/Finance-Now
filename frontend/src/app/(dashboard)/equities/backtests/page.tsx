@@ -139,7 +139,7 @@ function EquityBacktestsContent() {
 
       {/* Disclaimer */}
       <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 flex gap-3">
-        <AlertTriangle size={16} className="text-amber-400 flex-shrink-0 mt-0.5" aria-hidden />
+        <AlertTriangle size={16} className="text-amber-400 shrink-0 mt-0.5" aria-hidden />
         <p className="text-xs text-text-muted leading-relaxed">
           <span className="font-medium text-amber-300">Educational, not investment advice.</span>{' '}
           Past performance does not predict future results. Even with a transaction cost applied, these
@@ -153,18 +153,18 @@ function EquityBacktestsContent() {
         <select
           value={symbol}
           onChange={(e) => setSymbol(e.target.value)}
-          className="bg-bg-secondary border border-border rounded px-2 py-1.5 text-sm text-text-primary font-mono focus:outline-none focus:border-accent-blue/60"
+          className="bg-bg-secondary border border-border rounded-sm px-2 py-1.5 text-sm text-text-primary font-mono focus:outline-hidden focus:border-accent-blue/60"
         >
           {EQUITY_CATALOG.map((e) => (
             <option key={e.symbol} value={e.symbol}>{e.symbol} — {e.name}</option>
           ))}
         </select>
-        <div className="flex items-center gap-0.5 bg-bg-elevated border border-border rounded p-0.5">
+        <div className="flex items-center gap-0.5 bg-bg-elevated border border-border rounded-sm p-0.5">
           {PERIODS.map(({ value, label }) => (
             <button
               key={value}
               onClick={() => setPeriod(value)}
-              className={clsx('px-2.5 py-1 rounded text-[11px] font-medium transition-colors',
+              className={clsx('px-2.5 py-1 rounded-sm text-[11px] font-medium transition-colors',
                 period === value ? 'bg-accent-blue/20 text-accent-blue' : 'text-text-muted hover:text-text-secondary')}
             >
               {label}
@@ -175,13 +175,13 @@ function EquityBacktestsContent() {
         {/* Transaction-cost tier (per side) */}
         <div className="flex items-center gap-1.5">
           <span className="text-[10px] uppercase tracking-wider text-text-muted">Fee / side</span>
-          <div className="flex items-center gap-0.5 bg-bg-elevated border border-border rounded p-0.5">
+          <div className="flex items-center gap-0.5 bg-bg-elevated border border-border rounded-sm p-0.5">
             {FEE_TIERS.map(({ bps, label }) => (
               <button
                 key={bps}
                 onClick={() => setFeeBps(bps)}
                 title="Transaction cost charged once per side (each entry and each exit)"
-                className={clsx('px-2.5 py-1 rounded text-[11px] font-medium transition-colors',
+                className={clsx('px-2.5 py-1 rounded-sm text-[11px] font-medium transition-colors',
                   feeBps === bps ? 'bg-accent-blue/20 text-accent-blue' : 'text-text-muted hover:text-text-secondary')}
               >
                 {label}

@@ -32,10 +32,12 @@
 export const FOMC_SOURCE_URL = 'https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm'
 
 /**
- * The day every row below was compared against FOMC_SOURCE_URL. The Board's page read
- * "Last Update: September 16, 2026" that day.
+ * The day every row below was compared against FOMC_SOURCE_URL. First compared 2026-10-03
+ * (page "Last Update: September 16, 2026"); compared again in full on 2026-10-07, from the
+ * owner's machine, against the page's "Last Update: October 07, 2026": every row, its end
+ * date and its asterisk matched, and January 25-26, 2028 is still in the page's note.
  */
-export const FOMC_LAST_VERIFIED = '2026-10-03'
+export const FOMC_LAST_VERIFIED = '2026-10-07'
 
 // Quarterly. The Board publishes a new year's dates only once a year, but any tentative
 // date can move at any of the eight meetings, so a quarter without a re-check is the most

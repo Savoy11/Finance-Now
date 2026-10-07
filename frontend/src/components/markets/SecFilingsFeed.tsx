@@ -79,7 +79,7 @@ export function SecFilingsFeed({ symbol }: { symbol: string }) {
       {isLoading && (
         <div className="space-y-2.5">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-9 rounded bg-bg-elevated animate-pulse" />
+            <div key={i} className="h-9 rounded-sm bg-bg-elevated animate-pulse" />
           ))}
         </div>
       )}
@@ -102,13 +102,13 @@ export function SecFilingsFeed({ symbol }: { symbol: string }) {
                 href={f.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block rounded px-2 py-1.5 -mx-2 hover:bg-bg-elevated transition-colors group"
+                className="block rounded-sm px-2 py-1.5 -mx-2 hover:bg-bg-elevated transition-colors group"
               >
                 <span className="flex items-center justify-between gap-2">
                   <span className="font-mono text-[11px] text-text-muted tabular-nums">{f.filedAt}</span>
                   <span className="flex items-center gap-1.5">
                     {f.form !== tab && (
-                      <span className="text-[9px] font-medium text-amber-400/80 border border-amber-400/30 rounded px-1" title="Amended filing">{f.form}</span>
+                      <span className="text-[9px] font-medium text-amber-400/80 border border-amber-400/30 rounded-sm px-1" title="Amended filing">{f.form}</span>
                     )}
                     <ExternalLink size={10} className="text-text-muted group-hover:text-accent-blue transition-colors" aria-hidden />
                   </span>
@@ -126,7 +126,7 @@ export function SecFilingsFeed({ symbol }: { symbol: string }) {
         <button
           onClick={() => setLimits(l => ({ ...l, [tab]: l[tab] + PAGE_SIZE }))}
           disabled={isFetching}
-          className="mt-3 w-full flex items-center justify-center gap-1.5 rounded border border-border px-3 py-1.5 text-xs text-text-secondary hover:text-text-primary hover:bg-bg-elevated transition-colors disabled:opacity-50"
+          className="mt-3 w-full flex items-center justify-center gap-1.5 rounded-sm border border-border px-3 py-1.5 text-xs text-text-secondary hover:text-text-primary hover:bg-bg-elevated transition-colors disabled:opacity-50"
         >
           {isFetching
             ? <><Loader2 size={12} className="animate-spin" aria-hidden /> Loading older filings…</>

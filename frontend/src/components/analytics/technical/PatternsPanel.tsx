@@ -29,7 +29,7 @@ export function PatternsPanel({ patterns, candles }: { patterns: DetectedPattern
           <div key={i} className={clsx('rounded-lg border p-3 flex flex-col gap-1.5', p.type === 'bullish' ? 'border-emerald-500/20 bg-emerald-500/5' : p.type === 'bearish' ? 'border-red-500/20 bg-red-500/5' : 'border-border bg-bg-elevated')}>
             <div className="flex items-center justify-between gap-2">
               <span className="text-xs font-semibold text-text-primary">{p.name}</span>
-              <span className={clsx('text-[10px] font-mono px-1.5 py-0.5 rounded', p.type === 'bullish' ? 'text-emerald-400 bg-emerald-400/10' : p.type === 'bearish' ? 'text-red-400 bg-red-400/10' : 'text-slate-400 bg-slate-400/10')}>
+              <span className={clsx('text-[10px] font-mono px-1.5 py-0.5 rounded-sm', p.type === 'bullish' ? 'text-emerald-400 bg-emerald-400/10' : p.type === 'bearish' ? 'text-red-400 bg-red-400/10' : 'text-slate-400 bg-slate-400/10')}>
                 {(p.confidence * 100).toFixed(0)}% conf.
               </span>
             </div>

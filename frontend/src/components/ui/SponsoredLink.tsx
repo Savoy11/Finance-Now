@@ -102,7 +102,7 @@ export function SponsoredTag({ program, className }: { program?: string; classNa
           : 'We may earn a commission if you sign up through this link. It costs you nothing, and it does not affect where this provider appears in any list.'
       }
       className={clsx(
-        'shrink-0 rounded border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5',
+        'shrink-0 rounded-sm border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5',
         'text-[10px] font-semibold uppercase tracking-wider text-amber-300/90',
         'transition-colors hover:border-amber-400/50 hover:text-amber-200',
         className,

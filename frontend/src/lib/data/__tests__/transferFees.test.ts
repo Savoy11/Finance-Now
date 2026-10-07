@@ -215,3 +215,91 @@ describe('findTransferPaths — withdrawal suspensions', () => {
     expect(disabled).toEqual([])
   })
 })
+
+// A closed deposit strands funds the same way a closed withdrawal does: the coin
+// leaves the sender and the receiver will not credit it. It used to drop the
+// route without a word; since D66 (T-054) it is listed, blocked, with who says so.
+describe('findTransferPaths — deposit suspensions (T-054, D66)', () => {
+  /** Close every network the receiving exchange lists for a coin, as a live report would. */
+  function closeDeposits(exchangeId: string, coin: 'usdt'): LiveFeeOverrideMap {
+    const ex = EXCHANGES.find(e => e.id === exchangeId)!
+    const byNet: Record<string, { depositEnabled: boolean }> = {}
+    for (const n of ex.coins[coin]!.networks) byNet[n.networkId] = { depositEnabled: false }
+    return { [exchangeId]: { [coin]: byNet } } as LiveFeeOverrideMap
+  }
+  const closeTrc20AtKucoin = { kucoin: { usdt: { trc20: { depositEnabled: false } } } } as LiveFeeOverrideMap
+
+  it('lists a live-reported closed deposit as a blocked route, attributed to the receiving exchange', () => {
+    const paths = findTransferPaths('binance', 'kucoin', 'usdt', 1000, ALL_FEES, PRICES, closeTrc20AtKucoin, '3:04 PM')
+    const blocked = paths.find(p => p.networkId === 'trc20')!
+    expect(blocked.blockedReason).toBe('deposits-suspended')
+    expect([blocked.isViable, blocked.isRecommended, blocked.totalFeeUsd, blocked.hops]).toEqual([false, false, 0, []])
+    const msg = blocked.warnings.find(w => w.title === 'Deposits suspended')!.message
+    expect(msg).toContain('KuCoin')
+    expect(msg).toContain('public API')
+    expect(msg).toContain('3:04 PM')
+    expect(msg).not.toContain(TRANSFER_FEES_LAST_VERIFIED)
+    // The other shared networks are untouched, and one of them is recommended.
+    expect(paths.find(p => p.isRecommended)?.networkId).not.toBe('trc20')
+  })
+
+  it('tags a deposit reported open on that hop only', () => {
+    const overrides = { kucoin: { usdt: { trc20: { depositEnabled: true } } } } as LiveFeeOverrideMap
+    const paths = findTransferPaths('binance', 'kucoin', 'usdt', 1000, ALL_FEES, PRICES, overrides)
+    expect(paths.find(p => p.networkId === 'trc20')!.hops[0].depositAvailabilityLive).toBe(true)
+    for (const p of paths.filter(p => p.networkId !== 'trc20')) {
+      expect(p.hops.some(h => h.depositAvailabilityLive)).toBe(false)
+    }
+  })
+
+  it('reads deposit status from the receiving exchange only', () => {
+    // A closed deposit at the SENDING exchange says nothing about this route.
+    const overrides = { binance: { usdt: { trc20: { depositEnabled: false } } } } as LiveFeeOverrideMap
+    const paths = findTransferPaths('binance', 'kucoin', 'usdt', 1000, ALL_FEES, PRICES, overrides)
+    expect(paths.some(p => p.blockedReason === 'deposits-suspended')).toBe(false)
+    expect(paths.some(p => p.hops.some(h => h.depositAvailabilityLive))).toBe(false)
+  })
+
+  it('names both closed doors when withdrawals and deposits are closed on the same network', () => {
+    const overrides = {
+      binance: { usdt: { trc20: { withdrawEnabled: false } } },
+      kucoin: { usdt: { trc20: { depositEnabled: false } } },
+    } as LiveFeeOverrideMap
+    const blocked = findTransferPaths('binance', 'kucoin', 'usdt', 1000, ALL_FEES, PRICES, overrides)
+      .find(p => p.networkId === 'trc20')!
+    expect(blocked.blockedReason).toBe('withdrawals-suspended')
+    expect(blocked.warnings.map(w => w.title)).toEqual(['Withdrawals suspended', 'Deposits suspended'])
+  })
+
+  it('explains the dead end when every network at the receiving exchange is closed', () => {
+    const paths = findTransferPaths('binance', 'kucoin', 'usdt', 1000, ALL_FEES, PRICES, closeDeposits('kucoin', 'usdt'))
+    expect(paths.some(p => p.isViable)).toBe(false)
+    expect(paths.find(p => p.type === 'no-path')!.warnings[0].title).toBe('No route available — deposits suspended')
+  })
+
+  it('lists a closed network on a wallet-to-exchange transfer, and recommends an open one', () => {
+    const paths = findTransferPaths(PERSONAL_WALLET_ID, 'kucoin', 'usdt', 1000, ALL_FEES, PRICES, closeTrc20AtKucoin)
+    expect(paths.find(p => p.networkId === 'trc20')!.blockedReason).toBe('deposits-suspended')
+    // A blocked route costs $0, so a plain fee sort would put it first and recommend it.
+    expect(paths[0].isViable).toBe(true)
+    expect(paths.find(p => p.isRecommended)!.isViable).toBe(true)
+  })
+
+  it('explains a wallet-to-exchange transfer with every network closed, and recommends nothing', () => {
+    const paths = findTransferPaths(PERSONAL_WALLET_ID, 'kucoin', 'usdt', 1000, ALL_FEES, PRICES, closeDeposits('kucoin', 'usdt'))
+    expect(paths.some(p => p.isViable || p.isRecommended)).toBe(false)
+    const noPath = paths.find(p => p.type === 'no-path')!
+    expect(noPath.warnings[0].title).toBe('No route available — deposits suspended')
+    expect(noPath.warnings[0].message).toContain('TRC-20')
+  })
+
+  // The stored-table branch of the deposit message is unreachable while every
+  // catalogued row is open. This fires the day a refresh writes the first
+  // closed row, which is when that copy starts rendering to users.
+  it('every catalogued row is depositEnabled: true (stored-closure copy is unreachable)', () => {
+    const closed = EXCHANGES.flatMap(ex =>
+      Object.entries(ex.coins).flatMap(([coinId, coin]) =>
+        coin!.networks.filter(n => !n.depositEnabled).map(n => `${ex.id}/${coinId}/${n.networkId}`)))
+    expect(closed).toEqual([])
+  })
+})

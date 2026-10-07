@@ -91,12 +91,12 @@ export function BacktestPanel({ assetId, symbol }: { assetId: string; symbol: st
 
       {/* Strategy selector dropdown — grouped by category */}
       <div className="flex items-center gap-3">
-        <label htmlFor="bt-strategy" className="text-xs text-text-muted flex-shrink-0">Strategy</label>
+        <label htmlFor="bt-strategy" className="text-xs text-text-muted shrink-0">Strategy</label>
         <select
           id="bt-strategy"
           value={activeKey}
           onChange={e => setStrategyKey(e.target.value)}
-          className="flex-1 rounded-lg border border-border bg-bg-card px-3 py-1.5 text-sm text-text-primary focus:outline-none focus:border-accent-blue/60 transition-colors"
+          className="flex-1 rounded-lg border border-border bg-bg-card px-3 py-1.5 text-sm text-text-primary focus:outline-hidden focus:border-accent-blue/60 transition-colors"
         >
           {CAT_ORDER.map(cat => {
             const group = STRATEGIES.filter(s => s.category === cat)
@@ -126,7 +126,7 @@ export function BacktestPanel({ assetId, symbol }: { assetId: string; symbol: st
             <button
               key={d}
               onClick={() => setDirection(d)}
-              className={clsx('px-2.5 py-1 rounded text-xs font-medium border transition-colors capitalize',
+              className={clsx('px-2.5 py-1 rounded-sm text-xs font-medium border transition-colors capitalize',
                 direction === d
                   ? d === 'long' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-red-500/20 text-red-400 border-red-500/30'
                   : 'text-text-muted border-border hover:text-text-secondary hover:bg-bg-elevated')}
@@ -142,7 +142,7 @@ export function BacktestPanel({ assetId, symbol }: { assetId: string; symbol: st
             <button
               key={f.value}
               onClick={() => setFeesPct(f.value)}
-              className={clsx('px-2.5 py-1 rounded text-xs font-medium border transition-colors',
+              className={clsx('px-2.5 py-1 rounded-sm text-xs font-medium border transition-colors',
                 feesPct === f.value
                   ? 'bg-accent-blue/20 text-accent-blue border-accent-blue/30'
                   : 'text-text-muted border-border hover:text-text-secondary hover:bg-bg-elevated')}

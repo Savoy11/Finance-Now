@@ -147,7 +147,7 @@ export function FinancialRatios({ symbol, price, priceIsLive }: FinancialRatiosP
       {isLoading && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-40 rounded bg-bg-elevated animate-pulse" />
+            <div key={i} className="h-40 rounded-sm bg-bg-elevated animate-pulse" />
           ))}
         </div>
       )}

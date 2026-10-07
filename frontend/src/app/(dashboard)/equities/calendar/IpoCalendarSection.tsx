@@ -45,9 +45,9 @@ export function IpoCalendarSection() {
 
       <div className="px-4 py-3">
         {isLoading ? (
-          <div className="h-24 animate-shimmer bg-shimmer-gradient bg-[length:200%_100%] rounded" />
+          <div className="h-24 animate-shimmer bg-shimmer-gradient bg-size-[200%_100%] rounded-sm" />
         ) : !data?.configured ? (
-          <div className="rounded border border-amber-500/20 bg-amber-500/5 px-3 py-3 text-center">
+          <div className="rounded-sm border border-amber-500/20 bg-amber-500/5 px-3 py-3 text-center">
             <KeyRound className="mx-auto h-5 w-5 text-amber-400/70" aria-hidden />
             <p className="mt-1.5 text-xs font-medium text-slate-200">IPO calendar needs a (free) Alpha Vantage key</p>
             <p className="mt-1 text-[11px] text-slate-400 max-w-md mx-auto leading-relaxed">
@@ -59,7 +59,7 @@ export function IpoCalendarSection() {
         ) : !data.ok ? (
           // A failure is never rendered as an empty calendar: "no IPOs are
           // scheduled" is a claim about the market, not about our request.
-          <div className="rounded border border-amber-500/20 bg-amber-500/5 px-3 py-2.5 flex gap-2.5">
+          <div className="rounded-sm border border-amber-500/20 bg-amber-500/5 px-3 py-2.5 flex gap-2.5">
             <AlertTriangle className="h-4 w-4 shrink-0 text-amber-400/80 mt-0.5" aria-hidden />
             <div className="text-[11px] leading-relaxed text-slate-300">
               <p className="font-medium text-slate-200">
@@ -83,7 +83,7 @@ export function IpoCalendarSection() {
             {Object.entries(byDate).map(([date, rows]) => (
               <div key={date}>
                 <p className="mb-1 text-[11px] font-medium uppercase tracking-wider text-text-muted">{fmtDate(date)}</p>
-                <div className="divide-y divide-border/40 rounded border border-border/60">
+                <div className="divide-y divide-border/40 rounded-sm border border-border/60">
                   {rows.map((e) => {
                     const range = formatIpoPriceRange(e)
                     return (

@@ -574,11 +574,31 @@ adds a paid tier, or touches key custody. IDs are provisional.
 | TS-10 | Compare: representation class profile; TSLA vs TSLAx with the overlap caveat | P2 | M | TS-7, TS-9 |
 | TS-11 | Portfolios / Watchlist representation-aware resolution and breakdown; DB extension table | P2 | L | TS-5, decision 2 |
 | TS-12 | Agents / v1 API / MCP awareness; one agent-eval task (7F) | P1 | S–M | TS-7 |
-| TS-13 | News taggers: tokenization regex → underlying tickers + category; Clarity Act mapping widened | P2 | S | — |
+| TS-13 | News taggers: tokenization regex → underlying tickers + category; Clarity Act mapping widened — ✅ **built 2026-10-01**, see the note below | P2 | S | — |
 | TS-14 | Source-terms readings for rwa.xyz, chain.link, issuer pages, TSV feeds — owner machine | P1 | S each | — |
 | TS-15 | Risk-profile spec for representations, recorded under `docs/architecture/risk-framework.md`, not built (7E) | P2 | S | D18 |
 | TS-16 | Affiliate integrity rule: no placement for a security the viewer's jurisdiction may not hold (7I) | P1 | XS | decision 6 |
 | TS-17 | Regulatory-watch entries for §3.3's dates in the steward's ledger; re-read this document at each | P1 | XS | — |
+
+> **Done 2026-10-07 — TS-1, TS-2, and TS-4 found already settled.** USDY is filed as
+> `assetType: 'tokenized'` in `assetCatalog.ts` and `category: 'tokenized'` in `assetList.ts`; its
+> false 282 bps depeg had already gone on 2026-09-22, when its peg fields were removed. That fills
+> the Coins page's "Tokenized" filter (TS-2). The registry's "CBDC" chip, which could match no
+> coin since the CBDC page went under D10, was removed rather than left as a filter that always
+> shows an empty table. `assetTypeChips.test.ts` holds all three: USDY's type, no peg on any
+> tokenized entry, and that every type chip can match at least one coin. TS-4 needed nothing:
+> `README.md` no longer claims "tokenized assets". TS-3 (spotting tokenized securities in Coin
+> Discovery) still waits on the owner-machine probes in §10.
+
+> **Done 2026-10-07 — TS-3, after the §10 probes.** Run on the owner's machine (residential egress);
+> results in `docs/audits/tokenized-securities-probe-2026-10-07.md`. F3 was live: 22 tokens from
+> CoinGecko's broad tokenized category sat in Coin Discovery's default top 250, the highest at rank 9.
+> `lib/server/tokenizedSecurities.ts` reads CoinGecko's seven security categories with members in the
+> top 750 (stocks, ETFs, Treasuries, money-market funds, credit, private credit, pre-IPO), cached a
+> day; Coin Discovery leaves their members out and lists them, and says when the check could not run.
+> Tokenized gold and silver stay in: commodity tokens, not securities. One correction to the TS-3 row:
+> the crypto scanner sweeps the app's own 80-coin catalog, not CoinGecko's top 750, so its badge reads
+> the catalog's `assetType` (USDY only) and needs no request.
 
 > **Built 2026-10-01 — TS-9, at the owner's request, outside the queue.** `lib/utils/marketHours.ts`
 > now holds the "When it trades" answers and Nasdaq's overnight schedule (start **reported** for
@@ -591,6 +611,19 @@ adds a paid tier, or touches key custody. IDs are provisional.
 > Compare's window stats use shared trading days only was wrong — they use each series' own days —
 > and was corrected in the same change. **Not built from 7D:** the `24/7` / `24/5` /
 > `issuer-window` venues for representations, which need TS-5's table and belong with TS-10.
+
+> **Built 2026-10-01 — TS-13, at the owner's request, outside the queue.** `lib/server/tokenizedNews.ts`
+> serves both news feeds. A story about tokenized stocks, funds or bonds is filed under a new
+> `tokenization` category, checked before Global, because many launches are outside the US. It is
+> linked to the catalog stock it names, by company name, ticker or token symbol. Token symbols follow the
+> issuers' own suffixes: `TSLAx` for Kraken xStocks and `TSLAon` for Ondo. Both conventions were read
+> from search excerpts of the issuers' pages, which this environment's egress refuses to open. On the
+> crypto feed the stocks go in a new `relatedSymbols` field, which is empty for every other story; the
+> crypto News page and Headlines show them as links to the stock page. F12's other half is done
+> too: the CLARITY Act now reaches every coin's feed, not just USDC/USDT/PYUSD's (`newsRegulatoryImpact.ts`).
+> **Not built:** Dinari dShares symbols (the sources disagree: `AAPL.D` on one listing site, `dAAPL`
+> on another), and links for tokenized ETFs such as `SPYx` (the chips link to stock pages, and a fund's
+> page lives elsewhere). The agent half of F12 is TS-12.
 
 ---
 

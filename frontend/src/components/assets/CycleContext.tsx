@@ -1,20 +1,25 @@
 'use client'
 
-// Cycle Context tab — Phase 1 (scope: docs/assessments/cycle-gauge-scope.md).
-// Four cards: halving clock, drawdown vs prior cycles, BTC dominance, Fear &
-// Greed. Descriptive only. No composite score exists here ON PURPOSE — a
-// blended "cycle score" is the verdict shape item 4 removed. All framing copy
-// lives in CYCLE_COPY (lib/utils/cycleMetrics.ts) where the vocabulary guard
-// test can sweep it; do not inline new framing strings in this file's JSX.
+// Cycle Context tab (scope: docs/assessments/cycle-gauge-scope.md). Cards:
+// halving clock, BTC dominance, drawdown vs prior cycles, growth from each
+// cycle's low (D61), Fear & Greed, rotation and Pi Cycle; then the prior-cycles
+// table every cycle figure comes from. Descriptive only. No composite score
+// exists here ON PURPOSE — a blended "cycle score" is the verdict shape item 4
+// removed. All framing copy lives in CYCLE_COPY (lib/utils/cycleMetrics.ts)
+// where the vocabulary guard test can sweep it; do not inline new framing
+// strings in this file's JSX.
 
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Clock, TrendingDown, PieChart, Gauge, Shuffle, Waves } from 'lucide-react'
+import { Clock, TrendingDown, TrendingUp, PieChart, Gauge, Shuffle, Waves } from 'lucide-react'
 import { clsx } from 'clsx'
 import { ProvenanceNotice } from '@/components/ui/ProvenanceNotice'
-import { halvingPosition, drawdownComparison, rotationRead, piCycleState, CYCLE_COPY } from '@/lib/utils/cycleMetrics'
+import {
+  halvingPosition, drawdownComparison, growthFromLows, growthScaleDecades, growthBarPct, formatMultiple,
+  rotationRead, piCycleState, CYCLE_COPY,
+} from '@/lib/utils/cycleMetrics'
 import { ASSET_CATALOG } from '@/lib/data/assetCatalog'
-import { CYCLE_HISTORY, getCycleHistoryProvenance } from '@/lib/data/cycleHistory'
+import { CYCLE_HISTORY, getCycleHistoryProvenance, peakLabel, troughLabel } from '@/lib/data/cycleHistory'
 import { STALE_TIME_LONG } from '@/lib/constants'
 import type { BtcStatsData } from '@/app/live-data/btc-stats/route'
 import type { FearGreedData } from '@/app/live-data/fear-greed/route'
@@ -52,7 +57,7 @@ export function CycleContext() {
   // The markets route serves the whole tracked universe in one response (it
   // takes no ids filter); we read one field of one coin from it. Keyed the
   // same for any other consumer with the same shape so the cache can share.
-  const { data: btcQuote } = useQuery<{ quotes?: Record<string, { athChangePct?: number | null; priceChange30d?: number | null; marketCapRank?: number | null }> }>({
+  const { data: btcQuote } = useQuery<{ quotes?: Record<string, { price?: number | null; athChangePct?: number | null; priceChange30d?: number | null; marketCapRank?: number | null }> }>({
     queryKey: ['live-markets-raw'],
     queryFn: () => fetch('/live-data/markets').then(r => r.json()),
     staleTime: STALE_TIME_LONG,
@@ -61,6 +66,9 @@ export function CycleContext() {
   const pos = useMemo(() => halvingPosition(LAST_HALVING_ISO, new Date()), [])
   const athChangePct = btcQuote?.quotes?.btc?.athChangePct ?? null
   const drawdowns = useMemo(() => drawdownComparison(athChangePct), [athChangePct])
+  const livePrice = btcQuote?.quotes?.btc?.price ?? null
+  const growth = useMemo(() => growthFromLows(livePrice), [livePrice])
+  const growthDecades = useMemo(() => growthScaleDecades(growth), [growth])
   const provenance = useMemo(() => getCycleHistoryProvenance(), [])
 
   // BTC daily closes for the Pi Cycle averages (Phase 3). range=BT is the
@@ -185,7 +193,7 @@ export function CycleContext() {
                 <span className={clsx('text-[11px] font-mono text-right', r.label === 'BTC now' ? 'text-accent-blue font-semibold' : 'text-text-muted')}>
                   {r.label}
                 </span>
-                <div className="h-3 rounded bg-bg-elevated overflow-hidden">
+                <div className="h-3 rounded-sm bg-bg-elevated overflow-hidden">
                   <div className={clsx('h-full rounded-r', r.label === 'BTC now' ? 'bg-accent-blue/60' : r.open ? 'bg-amber-500/40' : 'bg-red-500/35')}
                     style={{ width: `${Math.min(100, Math.abs(r.drawdownPct))}%` }} />
                 </div>
@@ -199,6 +207,45 @@ export function CycleContext() {
             <p className="text-[11px] text-amber-400">Live BTC drawdown unavailable right now — historical rows only.</p>
           )}
           <p className="text-[11px] leading-relaxed text-text-muted">{CYCLE_COPY.drawdownCaveat}</p>
+        </Card>
+
+        {/* ── Growth from each cycle's low ── */}
+        <Card icon={TrendingUp} title="Growth from each cycle’s low">
+          <div className="space-y-1.5">
+            {growth.map((r) => (
+              <div key={r.label} className="grid grid-cols-[7.5rem_1fr_3.5rem] items-center gap-2" title={r.detail}>
+                <span className={clsx('text-[11px] font-mono text-right', r.live ? 'text-accent-blue font-semibold' : 'text-text-muted')}>
+                  {r.label}
+                </span>
+                <div className="h-3 rounded-sm bg-bg-elevated overflow-hidden">
+                  <div className={clsx('h-full rounded-r', r.live ? 'bg-accent-blue' : 'bg-slate-500')}
+                    style={{ width: `${growthBarPct(r.multiple, growthDecades)}%` }} />
+                </div>
+                <span className="text-[11px] font-mono text-text-secondary">{formatMultiple(r.multiple)}</span>
+              </div>
+            ))}
+          </div>
+          {/* Log-scale marks (1×, 10×, 100×…), each at its exact place on the track.
+              Hidden on phones, where they would crowd; every bar prints its value. */}
+          <div className="hidden sm:grid grid-cols-[7.5rem_1fr_3.5rem] gap-2 text-[10px] font-mono text-text-muted" aria-hidden>
+            <span />
+            <div className="relative h-3">
+              {Array.from({ length: growthDecades + 1 }, (_, i) => (
+                <span key={i} className="absolute top-0 whitespace-nowrap"
+                  style={{
+                    left: `${(i / growthDecades) * 100}%`,
+                    transform: `translateX(${i === 0 ? '0' : i === growthDecades ? '-100%' : '-50%'})`,
+                  }}>
+                  {(10 ** i).toLocaleString('en-US')}×
+                </span>
+              ))}
+            </div>
+            <span />
+          </div>
+          {livePrice === null && (
+            <p className="text-[11px] text-amber-400">Live BTC price unavailable right now — completed cycles only.</p>
+          )}
+          <p className="text-[11px] leading-relaxed text-text-muted">{CYCLE_COPY.growthCaveat}</p>
         </Card>
 
         {/* ── Fear & Greed ── */}
@@ -307,8 +354,8 @@ export function CycleContext() {
               {CYCLE_HISTORY.map((c) => (
                 <tr key={c.halving}>
                   <td className="py-2 pr-3 font-mono text-text-primary">{c.halving}{c.open ? ' (open)' : ''}</td>
-                  <td className="py-2 px-3 font-mono text-text-secondary whitespace-nowrap">{c.peakLabel}</td>
-                  <td className="py-2 px-3 font-mono text-text-secondary whitespace-nowrap">{c.troughLabel}</td>
+                  <td className="py-2 px-3 font-mono text-text-secondary whitespace-nowrap">{peakLabel(c)}</td>
+                  <td className="py-2 px-3 font-mono text-text-secondary whitespace-nowrap">{troughLabel(c)}</td>
                   <td className="py-2 px-3 font-mono text-right text-text-secondary">{c.maxDrawdownPct}%</td>
                   <td className="py-2 px-3 font-mono text-right text-text-secondary">{c.halvingToPeakMonths != null ? `${c.halvingToPeakMonths} mo` : '—'}</td>
                   <td className="py-2 pl-3 text-text-muted">{c.note}</td>

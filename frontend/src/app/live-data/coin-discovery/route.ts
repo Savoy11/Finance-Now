@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server'
 import { FN_TRACKED_IDS, UTILITY_MAP, CATEGORY_INFO } from '@/lib/data/coinCatalog'
 import { fetchCoinGeckoPages } from '@/lib/server/coingeckoPages'
+import {
+  fetchTokenizedSecurityIndex, partitionTokenizedSecurities, type ExcludedSecurity,
+} from '@/lib/server/tokenizedSecurities'
 
 export const dynamic = 'force-dynamic'
 
@@ -39,6 +42,13 @@ export interface CoinDiscoveryResponse {
   ok: boolean
   candidates: CandidateCoin[]
   alreadyTracked: number
+  /**
+   * Tokenized securities left out of the candidates (TS-3): tokenized stocks,
+   * funds, Treasuries and credit are securities, not crypto projects. `checked`
+   * false means CoinGecko's categories could not be read, so none were left out
+   * and the page must say the check did not run.
+   */
+  tokenizedSecurities: { checked: boolean; partial: boolean; excluded: ExcludedSecurity[] }
   updatedAt: string
   source: { name: string; limit: number; url: string }
   error?: string
@@ -91,6 +101,7 @@ export async function GET(req: Request) {
         ok: false,
         candidates: [],
         alreadyTracked: 0,
+        tokenizedSecurities: { checked: false, partial: false, excluded: [] },
         updatedAt: new Date().toISOString(),
         source: { name: 'CoinGecko', limit, url: 'https://api.coingecko.com/api/v3/coins/markets' },
         error: `CoinGecko markets unavailable (${upstreamErrors.join('; ') || 'empty response'})`,
@@ -101,8 +112,15 @@ export async function GET(req: Request) {
 
   const alreadyTracked = rawCoins.filter(c => FN_TRACKED_IDS.has(c.id)).length
 
-  const candidates: CandidateCoin[] = rawCoins
-    .filter(c => !FN_TRACKED_IDS.has(c.id) && c.market_cap > 0)
+  // Tokenized securities are not candidate coins (TS-3). If the categories
+  // could not be read, nothing is left out and the response says so.
+  const index = await fetchTokenizedSecurityIndex()
+  const untracked = rawCoins.filter(c => !FN_TRACKED_IDS.has(c.id) && c.market_cap > 0)
+  const { kept, excluded } = index.checked.length > 0
+    ? partitionTokenizedSecurities(untracked, index)
+    : { kept: untracked, excluded: [] }
+
+  const candidates: CandidateCoin[] = kept
     .map(c => {
       const util = classifyUtility(c.id)
       const catInfo = CATEGORY_INFO[util.category] ?? CATEGORY_INFO.unknown
@@ -134,6 +152,11 @@ export async function GET(req: Request) {
     ok: true,
     candidates,
     alreadyTracked,
+    tokenizedSecurities: {
+      checked: index.checked.length > 0,
+      partial: index.failed.length > 0,
+      excluded,
+    },
     updatedAt: new Date().toISOString(),
     source: {
       name: 'CoinGecko',

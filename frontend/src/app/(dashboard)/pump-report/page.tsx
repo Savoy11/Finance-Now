@@ -8,6 +8,7 @@ import { PumpReportTab } from '@/components/pump-report/PumpReportTab'
 import { ScanAllPanel } from '@/components/pump-report/ScanAllPanel'
 import { useWalletStore, hydrateWallets } from '@/store/useWalletStore'
 import type { ScanTarget } from '@/app/live-data/pump-report/scan/route'
+import { FeatureNotice } from '@/components/legal/FeatureNotice'
 
 // ─── Why this page exists ─────────────────────────────────────────────────────
 //
@@ -82,6 +83,7 @@ function PumpReportPageInner() {
         description="Search public fraud intelligence for an address — rug pulls, flagged wallets, scam sites. Read-only, and no private key is ever involved."
         icon={<ShieldAlert size={20} />}
       />
+      <FeatureNotice feature="pumpReport" />
 
       {/* Address entry. The page's own, so it does not depend on /wallets. */}
       <div className="space-y-3 rounded-card border border-border bg-bg-card p-4">
@@ -92,7 +94,7 @@ function PumpReportPageInner() {
             onKeyDown={e => { if (e.key === 'Enter') addDraft() }}
             placeholder="Paste a public wallet address…"
             aria-label="Wallet address to scan"
-            className="min-w-64 flex-1 rounded-lg border border-border bg-bg-elevated px-3 py-2 font-mono text-xs text-text-primary placeholder:text-text-muted focus:border-accent-blue focus:outline-none"
+            className="min-w-64 flex-1 rounded-lg border border-border bg-bg-elevated px-3 py-2 font-mono text-xs text-text-primary placeholder:text-text-muted focus:border-accent-blue focus:outline-hidden"
           />
           <button
             onClick={addDraft}

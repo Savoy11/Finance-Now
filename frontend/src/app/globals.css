@@ -1,8 +1,117 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap')
+layer(utilities);
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --breakpoint-xs: 480px;
+
+  --color-bg-primary: #0a0b0e;
+  --color-bg-secondary: #12141a;
+  --color-bg-card: #1a1d26;
+  --color-bg-elevated: #1e2232;
+  --color-bg-hover: #232739;
+
+  --color-text-primary: #e2e8f0;
+  --color-text-secondary: #94a3b8;
+  --color-text-muted: #475569;
+  --color-text-inverted: #0a0b0e;
+
+  --color-border: #1e2433;
+  --color-border-subtle: #161926;
+  --color-border-strong: #2d3347;
+
+  --color-accent-blue: #3b82f6;
+  --color-accent-green: #10b981;
+  --color-accent-red: #ef4444;
+  --color-accent-amber: #f59e0b;
+  --color-accent-orange: #f97316;
+  --color-accent-purple: #8b5cf6;
+
+  --color-risk-low: #10b981;
+  --color-risk-moderate: #3b82f6;
+  --color-risk-elevated: #f59e0b;
+  --color-risk-high: #f97316;
+  --color-risk-critical: #ef4444;
+
+  --spacing-sidebar: 240px;
+  --spacing-topbar: 56px;
+  --spacing-statusbar: 28px;
+
+  --font-sans: Inter, system-ui, sans-serif;
+  --font-mono: JetBrains Mono, Menlo, monospace;
+
+  --radius-card: 0.75rem;
+  --radius-badge: 0.25rem;
+
+  /*
+    Tailwind 3's line heights, kept on purpose (2026-10-07). v3 set them as fixed
+    lengths (text-sm = 20px), which a child inherits as that length; v4 sets a
+    ratio, which a child with a smaller font multiplies by its own size. Every
+    `text-[10px]`/`text-[11px]` label inside a `text-sm` row lost height under v4,
+    and table-heavy pages (Equities, Funds, the scanners) came out 150–340px
+    shorter. These restore the v3 values exactly; 5xl and up are 1 in both.
+  */
+  --text-xs--line-height: 1rem;
+  --text-sm--line-height: 1.25rem;
+  --text-base--line-height: 1.5rem;
+  --text-lg--line-height: 1.75rem;
+  --text-xl--line-height: 1.75rem;
+  --text-2xl--line-height: 2rem;
+  --text-3xl--line-height: 2.25rem;
+  --text-4xl--line-height: 2.5rem;
+
+  --background-image-sidebar-gradient: linear-gradient(
+    180deg,
+    #12141a 0%,
+    #0d0f15 100%
+  );
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+}
+
+@utility line-clamp-1 {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+@utility line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+@utility bg-shimmer-gradient {
+  background-image: linear-gradient(
+    90deg,
+    #1a1d26 25%,
+    #232739 50%,
+    #1a1d26 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s linear infinite;
+}
 
 @layer base {
   :root {
@@ -42,7 +151,7 @@
 
   /* Focus visible */
   :focus-visible {
-    @apply outline-none ring-2 ring-accent-blue/50 ring-offset-1 ring-offset-bg-primary;
+    @apply outline-hidden ring-2 ring-accent-blue/50 ring-offset-1 ring-offset-bg-primary;
   }
 
   /* Remove default list styles */
@@ -56,24 +165,26 @@
   }
 }
 
-@layer utilities {
-  .line-clamp-1 {
-    display: -webkit-box;
-    -webkit-line-clamp: 1;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+/* Printable rebalance notes (T-066, components/portfolio-builder/RebalanceNotesPrint.tsx).
+   The notes render into a portal on <body> that never shows on screen. While one is
+   printing, <html> carries data-print="rebalance-notes" and the rest of the page is
+   left out of the printout. */
+.rebalance-print {
+  display: none;
+}
+
+@media print {
+  html[data-print='rebalance-notes'] body > :not(.rebalance-print) {
+    display: none !important;
   }
 
-  .line-clamp-2 {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+  html[data-print='rebalance-notes'] .rebalance-print {
+    display: block;
   }
 
-  .bg-shimmer-gradient {
-    background-image: linear-gradient(90deg, #1a1d26 25%, #232739 50%, #1a1d26 75%);
-    background-size: 200% 100%;
-    animation: shimmer 2s linear infinite;
+  html[data-print='rebalance-notes'],
+  html[data-print='rebalance-notes'] body {
+    background: #fff !important;
+    color-scheme: light;
   }
 }

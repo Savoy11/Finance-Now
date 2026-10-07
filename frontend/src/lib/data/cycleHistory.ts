@@ -16,9 +16,16 @@ export interface CycleRecord {
   /** Halving that opened the cycle, or 'genesis' for the pre-halving era. */
   halving: string
   halvingDate: string | null   // ISO date, null for genesis
-  peakLabel: string            // e.g. "Nov 2013 · ~$1,150"
-  troughLabel: string
-  /** Peak-to-trough drawdown, percent, negative. */
+  peakMonth: string            // e.g. "Nov 2013"
+  /** The cycle's high in USD, rounded: venues printed different extremes. */
+  peakUsd: number
+  troughMonth: string
+  troughUsd: number
+  /**
+   * Peak-to-trough drawdown, percent, negative. Typed from the research rather
+   * than worked out from the rounded prices above, which would move two rows
+   * by a point; a test keeps it within a point of those prices.
+   */
   maxDrawdownPct: number
   /** Months from halving to cycle peak, null where not applicable/known. */
   halvingToPeakMonths: number | null
@@ -30,35 +37,55 @@ export interface CycleRecord {
 export const CYCLE_HISTORY: CycleRecord[] = [
   {
     halving: 'genesis', halvingDate: null,
-    peakLabel: 'Jun 2011 · ~$32', troughLabel: 'Nov 2011 · ~$2',
+    peakMonth: 'Jun 2011', peakUsd: 32, troughMonth: 'Nov 2011', troughUsd: 2,
     maxDrawdownPct: -93, halvingToPeakMonths: null,
     note: 'Pre-halving era; a single small venue (Mt. Gox) set the price.',
   },
   {
     halving: '2012', halvingDate: '2012-11-28',
-    peakLabel: 'Nov 2013 · ~$1,150', troughLabel: 'Jan 2015 · ~$170',
+    peakMonth: 'Nov 2013', peakUsd: 1_150, troughMonth: 'Jan 2015', troughUsd: 170,
     maxDrawdownPct: -86, halvingToPeakMonths: 12,
     note: 'First halving cycle; retail mania, then the Mt. Gox collapse.',
   },
   {
     halving: '2016', halvingDate: '2016-07-09',
-    peakLabel: 'Dec 2017 · ~$19,700', troughLabel: 'Dec 2018 · ~$3,200',
+    peakMonth: 'Dec 2017', peakUsd: 19_700, troughMonth: 'Dec 2018', troughUsd: 3_200,
     maxDrawdownPct: -84, halvingToPeakMonths: 17,
     note: 'ICO boom and bust; the textbook altseason closed this cycle.',
   },
   {
     halving: '2020', halvingDate: '2020-05-11',
-    peakLabel: 'Nov 2021 · ~$69,000', troughLabel: 'Nov 2022 · ~$15,500',
+    peakMonth: 'Nov 2021', peakUsd: 69_000, troughMonth: 'Nov 2022', troughUsd: 15_500,
     maxDrawdownPct: -77, halvingToPeakMonths: 18,
     note: 'Leverage and credit contagion (Luna, FTX) drove the unwind.',
   },
+  // Open row. Its "so far" low was re-checked on 2026-10-04 (D61) and moved from
+  // 'Jun 2026 · ~$59,000', −53%: FMP's daily BTCUSD low on 1 Jul 2026 (UTC) was
+  // $57,718, and Crypto.com's candles give $57,737 for July against $58,015 for
+  // June. The 2026-08-29 compile used press reports of a ~$59k low on 30 June.
+  // The peak is an intraday high (FMP: $126,296, 6 Oct 2025), so the trough is
+  // an intraday low. The row closes when BTC trades above that peak or at the
+  // 2028 halving, whichever comes first (D61, T-393). One re-checked row does
+  // not re-date the table, so CYCLE_HISTORY_LAST_VERIFIED is unchanged.
   {
     halving: '2024', halvingDate: '2024-04-20',
-    peakLabel: 'Oct 2025 · ~$126,200', troughLabel: 'Jun 2026 · ~$59,000 (so far)',
-    maxDrawdownPct: -53, halvingToPeakMonths: 18, open: true,
+    peakMonth: 'Oct 2025', peakUsd: 126_200, troughMonth: 'Jul 2026', troughUsd: 57_700,
+    maxDrawdownPct: -54, halvingToPeakMonths: 18, open: true,
     note: 'ETF era. Shallowest drawdown on record; the classic top indicators did not fire before the peak.',
   },
 ]
+
+const approxUsd = (n: number) => `~$${n.toLocaleString('en-US')}`
+
+/** "Nov 2013 · ~$1,150", printed from the row's number so the two cannot disagree. */
+export function peakLabel(c: CycleRecord): string {
+  return `${c.peakMonth} · ${approxUsd(c.peakUsd)}`
+}
+
+/** As {@link peakLabel}, marked "(so far)" while the cycle is open. */
+export function troughLabel(c: CycleRecord): string {
+  return `${c.troughMonth} · ${approxUsd(c.troughUsd)}${c.open ? ' (so far)' : ''}`
+}
 
 // ─── Provenance ───────────────────────────────────────────────────────────────
 // House pattern (see CLAUDE.md "Data Files Reference"): dated by when the table

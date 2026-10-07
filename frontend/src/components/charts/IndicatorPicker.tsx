@@ -60,7 +60,7 @@ export function IndicatorPicker({ indicators, active, onToggle, onClearAll, foot
             onClick={() => onToggle(key)}
             aria-pressed={active.has(key)}
             className={clsx(
-              'px-2 py-0.5 rounded border text-[11px] font-medium transition-colors',
+              'px-2 py-0.5 rounded-sm border text-[11px] font-medium transition-colors',
               active.has(key)
                 ? activeClasses
                 : 'border-border text-text-muted hover:text-text-secondary hover:bg-bg-elevated'
@@ -144,7 +144,7 @@ export function IndicatorPicker({ indicators, active, onToggle, onClearAll, foot
           <span
             key={key}
             className={clsx(
-              'inline-flex items-center gap-1 pl-2 pr-1 py-0.5 rounded border text-[11px] font-medium',
+              'inline-flex items-center gap-1 pl-2 pr-1 py-0.5 rounded-sm border text-[11px] font-medium',
               ind.group === 'overlay'
                 ? 'border-amber-500/40 bg-amber-500/10 text-amber-400'
                 : 'border-violet-500/40 bg-violet-500/10 text-violet-400'

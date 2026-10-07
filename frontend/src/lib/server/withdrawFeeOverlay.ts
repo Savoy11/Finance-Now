@@ -51,6 +51,13 @@ export interface LiveFeeOverlay {
    * status-checked must key off this, not the exchange list.
    */
   availabilityRows: string[]
+  /**
+   * Exchanges that reported DEPOSIT status (T-054, D66). Narrower again: LBank
+   * reports withdrawals and says nothing about deposits.
+   */
+  depositAvailabilityExchangeIds: string[]
+  /** `exchangeId:coin:network` keys whose deposit status was live-reported. */
+  depositAvailabilityRows: string[]
 }
 
 /** Exchange ids the overlay can ever cover — used to describe coverage honestly. */
@@ -80,7 +87,10 @@ export async function fetchLiveFeeOverlay(): Promise<LiveFeeOverlay> {
     }
   })
 
-  const { overrides, applied, skipped, availabilityExchangeIds, availabilityRows } = buildFeeOverrideMap(allRows)
+  const {
+    overrides, applied, skipped,
+    availabilityExchangeIds, availabilityRows, depositAvailabilityExchangeIds, depositAvailabilityRows,
+  } = buildFeeOverrideMap(allRows)
 
   return {
     ok: sources.some(s => s.status === 'live'),
@@ -91,5 +101,7 @@ export async function fetchLiveFeeOverlay(): Promise<LiveFeeOverlay> {
     skipped,
     availabilityExchangeIds,
     availabilityRows,
+    depositAvailabilityExchangeIds,
+    depositAvailabilityRows,
   }
 }

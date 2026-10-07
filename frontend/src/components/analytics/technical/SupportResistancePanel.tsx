@@ -21,9 +21,9 @@ export function SupportResistancePanel({ candles }: { candles: OhlcvCandle[] }) 
         {levels.map((l, i) => {
           const isRes = l.type === 'resistance'
           return (
-            <div key={i} className="flex items-center justify-between px-2 py-1 rounded hover:bg-bg-elevated text-[11px]">
+            <div key={i} className="flex items-center justify-between px-2 py-1 rounded-sm hover:bg-bg-elevated text-[11px]">
               <div className="flex items-center gap-1.5">
-                <span className={clsx('px-1 py-0.5 rounded text-[9px] font-semibold uppercase', isRes ? 'bg-red-400/10 text-red-400' : 'bg-emerald-400/10 text-emerald-400')}>
+                <span className={clsx('px-1 py-0.5 rounded-sm text-[9px] font-semibold uppercase', isRes ? 'bg-red-400/10 text-red-400' : 'bg-emerald-400/10 text-emerald-400')}>
                   {isRes ? 'R' : 'S'}
                 </span>
                 {/* strength dots */}

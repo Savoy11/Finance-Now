@@ -1,5 +1,10 @@
 # Finance Now — Production Readiness Scorecard
 
+> **Not a rollout input — 2026-10-05, owner decision D81 (T-180).** This scorecard rates
+> the retired backend, and it is not recomputed. The release bar is
+> `docs/BUSINESS-CHECKLIST.md` §5.1, adopted under D23, and the current readiness record
+> is `docs/assessments/P3-production-review.md`. The banners below stay as written.
+
 > **Scope correction, 2026-09-20.** This scorecard's scope line reads "Full-stack
 > (backend API, scoring engine, data pipelines, infrastructure, frontend)", and sixteen
 > of its eighteen findings cite that backend's source by path. (The two that do not:
@@ -386,6 +391,17 @@ cannot be verified from the repository.
 > 1,000-RPS load test) and T-224 (the business proof points). Nothing below is a live
 > target. It stays as written, as the dated plan of the earlier product; a future
 > fundraising plan starts fresh (`docs/decisions/2026-10-01-owner-decisions.md`).
+>
+> **Updated 2026-10-04 — owner decision D74.** "Its three ledger items" above were not all
+> of them. T-221, the 99.9% uptime row, was filed as blocked, and D51 answered a review of
+> parked items, so it was missed; the owner closed it on the same reasoning (*"go with
+> option A for T-221"*). What it was for is kept elsewhere: an uptime check that alerts
+> the owner when the site is down joins the monitoring set up with the host (T-112), and
+> an uptime promise to business customers is T-212. The pipelines, scoring-validation and
+> WebSocket rows (T-219, T-220, T-183) had closed with the backend under D2. Two rows keep
+> parked items, for their own reasons rather than as fundraising targets: SOC 2 Type I
+> (T-210) and multi-region (T-195), both waiting on D5's trigger
+> (`docs/decisions/2026-10-04-owner-decisions.md`).
 
 > **Scope banner, 2026-09-22.** **Six of the nine Technical Proof Points** are scoped to
 > components that do not ship. The four asset monitoring pipelines live in the frozen

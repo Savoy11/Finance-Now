@@ -16,7 +16,9 @@ import path from 'node:path'
  * Trade Risk Scorer, and the macro profiles that derive Portfolios' 1–10 tiers.
  * (Curated staking-provider risk was on this list until D26 removed it on
  * 2026-09-25; riskDimensionsRemoved.test.ts guards that.) A test that banned
- * the engine would misread the decision.
+ * the engine would misread the decision. Since 2026-10-04 (D64) both of those
+ * consumers are switched off too, with their code kept for the rebuild;
+ * riskRatingsHidden.test.ts guards that, and this file still does not.
  */
 
 const repo = (rel: string) => path.join(process.cwd(), rel)

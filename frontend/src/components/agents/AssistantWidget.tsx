@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { Bot, X, Send, Loader2, Sparkles, Wrench } from 'lucide-react'
 import { useWatchlistBias } from '@/lib/watchlist/useWatchlistBias'
 import { agentWatchlistPayload } from '@/lib/watchlist/bias'
+import { FeatureNotice } from '@/components/legal/FeatureNotice'
 
 interface ChatMessage {
   role: 'user' | 'assistant'
@@ -144,7 +145,7 @@ export function AssistantWidget() {
                   {m.toolsUsed && m.toolsUsed.length > 0 && (
                     <div className="mt-2 pt-2 border-t border-slate-700/60 flex flex-wrap gap-1">
                       {m.toolsUsed.map((t, j) => (
-                        <span key={j} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] bg-slate-900/60 text-slate-400 border border-slate-700">
+                        <span key={j} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm text-[10px] bg-slate-900/60 text-slate-400 border border-slate-700">
                           <Wrench size={9} /> {t.name}
                         </span>
                       ))}
@@ -175,17 +176,18 @@ export function AssistantWidget() {
                 }}
                 rows={1}
                 placeholder="Ask anything…"
-                className="flex-1 bg-transparent text-sm text-slate-200 placeholder-slate-600 resize-none focus:outline-none max-h-32"
+                className="flex-1 bg-transparent text-sm text-slate-200 placeholder-slate-600 resize-none focus:outline-hidden max-h-32"
               />
               <button
                 onClick={() => send(input)}
                 disabled={loading || !input.trim()}
-                className="text-violet-400 hover:text-violet-300 disabled:opacity-30 disabled:hover:text-violet-400 p-1 flex-shrink-0"
+                className="text-violet-400 hover:text-violet-300 disabled:opacity-30 disabled:hover:text-violet-400 p-1 shrink-0"
                 aria-label="Send"
               >
                 <Send size={16} />
               </button>
             </div>
+            <FeatureNotice feature="aiAnswers" className="mt-2 text-center" />
           </div>
         </div>
       )}

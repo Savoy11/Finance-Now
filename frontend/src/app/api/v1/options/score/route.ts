@@ -5,6 +5,7 @@ import {
   type OptionLegInput, type OptionsTradeInputs,
 } from '@/lib/risk/profiles/optionsTrade'
 import type { CompositeRisk } from '@/lib/risk/types'
+import { RISK_RATINGS_SHOWN } from '@/lib/risk/visibility'
 
 // Public agent API — score a described options position (P2-O5).
 //
@@ -24,6 +25,21 @@ import type { CompositeRisk } from '@/lib/risk/types'
 
 export const dynamic = 'force-dynamic'
 export { options as OPTIONS }
+
+// ─── SWITCHED OFF (2026-10-04, D64) ──────────────────────────────────────────
+//
+// Every risk rating the app shows is off until the risk engine is rebuilt and
+// the compliance research on whether and how risk can be rated has been done
+// (lib/risk/visibility.ts). This endpoint answers 503 with a reason rather than
+// 404, so a caller learns it exists and is withheld instead of assuming a bad
+// path, the same as /api/v1/transfer/routes. Everything below the guard is
+// intact for the rebuild to start from.
+function withheld() {
+  return NextResponse.json({
+    error: 'Options trade scoring is not available in this build.',
+    reason: 'Risk ratings are switched off until the risk engine is rebuilt and reviewed. Do not substitute another score and present it as this API\'s answer.',
+  }, { status: 503, headers: CORS })
+}
 
 export interface V1OptionsScoreResponse {
   /** Canonical 0–100, higher = safer, with band and per-dimension detail. */
@@ -131,6 +147,7 @@ function validate(body: unknown): { inputs: OptionsTradeInputs } | { errors: str
 }
 
 export async function POST(request: NextRequest) {
+  if (!RISK_RATINGS_SHOWN) return withheld()
   let body: unknown
   try {
     body = await request.json()
@@ -166,6 +183,7 @@ export async function POST(request: NextRequest) {
 
 /** Discoverability: the schema, so the endpoint explains itself by hand. */
 export async function GET() {
+  if (!RISK_RATINGS_SHOWN) return withheld()
   return NextResponse.json({
     endpoint: '/api/v1/options/score',
     method: 'POST',

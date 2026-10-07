@@ -64,12 +64,12 @@ export function PriceChartCard({ symbol, valueFormat = 'usd' }: {
     <div className="rounded-card border border-border bg-bg-card p-4">
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-sm font-medium text-text-secondary">Price History</h2>
-        <div className="flex items-center gap-0.5 bg-bg-elevated border border-border rounded p-0.5">
+        <div className="flex items-center gap-0.5 bg-bg-elevated border border-border rounded-sm p-0.5">
           {RANGES.map(({ value, label }) => (
             <button
               key={value}
               onClick={() => setRange(value)}
-              className={clsx('px-2 py-1 rounded text-[11px] font-mono font-medium transition-colors',
+              className={clsx('px-2 py-1 rounded-sm text-[11px] font-mono font-medium transition-colors',
                 range === value ? 'bg-accent-blue/20 text-accent-blue' : 'text-text-muted hover:text-text-secondary')}
             >
               {label}
@@ -129,9 +129,9 @@ export function FiftyTwoWeekBar({ symbol, price }: { symbol: string; price: numb
         <span className="text-[11px] font-mono text-text-muted">{position.toFixed(0)}% of range</span>
       </div>
       <div className="relative h-1.5 rounded-full bg-bg-elevated">
-        <div className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-red-500/50 via-amber-400/50 to-emerald-500/50 w-full" />
+        <div className="absolute inset-y-0 left-0 rounded-full bg-linear-to-r from-red-500/50 via-amber-400/50 to-emerald-500/50 w-full" />
         <div
-          className="absolute -top-[3px] size-3 rounded-full bg-text-primary border-2 border-bg-card shadow"
+          className="absolute top-[-3px] size-3 rounded-full bg-text-primary border-2 border-bg-card shadow-sm"
           style={{ left: `calc(${position}% - 6px)` }}
           aria-label={`Current price is at ${position.toFixed(0)}% of the 52-week range`}
         />

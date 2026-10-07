@@ -12,7 +12,9 @@
 //
 // It prints, per source: HTTP status, row counts through the same parsers the
 // route uses, and a couple of sample parsed rows to eyeball against the
-// exchange's own withdrawal page.
+// exchange's own withdrawal page. Since D66 (T-054) it also counts the rows that
+// carried a deposit status, and warns when a source documented to report one
+// parsed none: that is how a renamed field shows up.
 
 import {
   WITHDRAW_FEE_SOURCES,
@@ -21,7 +23,7 @@ import {
 
 // Single source of truth — shared with the overlay and the reconcile tool, so
 // an endpoint change lands in one place.
-const SOURCES = WITHDRAW_FEE_SOURCES.map(s => ({ id: s.exchangeId, url: s.url, parse: s.parse }))
+const SOURCES = WITHDRAW_FEE_SOURCES.map(s => ({ id: s.exchangeId, url: s.url, parse: s.parse, reportsDeposits: s.reportsDeposits }))
 
 const allRows = []
 for (const s of SOURCES) {
@@ -38,8 +40,24 @@ for (const s of SOURCES) {
       process.stdout.write(
         `   sample: ${r.coin.toUpperCase()} on ${r.network} → fee ${r.withdrawFee}` +
         (r.minWithdraw !== undefined ? `, min ${r.minWithdraw}` : '') +
-        (r.withdrawEnabled === false ? ' (withdrawals disabled)' : '') + '\n'
+        (r.withdrawEnabled === false ? ' (withdrawals disabled)' : '') +
+        (r.depositEnabled === false ? ' (deposits disabled)' : '') + '\n'
       )
+    }
+    // Deposit status (D66). Counted, never sampled alone: the point is whether
+    // the field arrives at all, and how many networks report closed.
+    const withDeposit = rows.filter(r => r.depositEnabled !== undefined)
+    const depositsClosed = withDeposit.filter(r => r.depositEnabled === false)
+    if (s.reportsDeposits) {
+      process.stdout.write(`   deposit status on ${withDeposit.length} of ${rows.length} rows (${depositsClosed.length} closed)\n`)
+      if (rows.length > 0 && withDeposit.length === 0) {
+        process.stdout.write('   ⚠ documented to report deposit status, but none parsed — the field may have been renamed; save the JSON and report it.\n')
+      }
+      for (const r of depositsClosed.slice(0, 3)) {
+        process.stdout.write(`   deposits closed: ${r.coin.toUpperCase()} on ${r.network} — check it against the exchange's own status page\n`)
+      }
+    } else if (withDeposit.length > 0) {
+      process.stdout.write(`   deposit status on ${withDeposit.length} rows, from a source not marked as reporting it — update reportsDeposits\n`)
     }
     if (rows.length === 0) {
       process.stdout.write('   ⚠ endpoint answered but nothing parsed — payload shape may have changed; save the JSON and report it.\n')
@@ -49,11 +67,12 @@ for (const s of SOURCES) {
   }
 }
 
-const { applied, skipped } = buildFeeOverrideMap(allRows)
+const { applied, skipped, depositAvailabilityRows } = buildFeeOverrideMap(allRows)
 process.stdout.write(
   `\n── overlay summary ──\n` +
   `   ${allRows.length} live rows parsed; ${applied} match routes in the static table (will overlay), ` +
-  `${skipped} have no matching curated route (dropped — overlay never adds routes).\n\n` +
+  `${skipped} have no matching curated route (dropped — overlay never adds routes).\n` +
+  `   ${depositAvailabilityRows.length} of the matching routes carry a live deposit status.\n\n` +
   `Verdict guide: a source is USABLE if HTTP 200 with parsed rows > 0.\n` +
   `Spot-check 2–3 sample fees against the exchange's withdrawal page before trusting the overlay.\n`
 )

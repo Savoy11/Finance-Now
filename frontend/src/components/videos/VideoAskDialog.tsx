@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query'
 import { clsx } from 'clsx'
 import { Loader2, Send, Sparkles, X } from 'lucide-react'
 import type { VideoAnalyzeResponse } from '@/app/live-data/video-analyze/route'
+import { FeatureNotice } from '@/components/legal/FeatureNotice'
 
 /**
  * NT4 / review finding A1 — the trigger UI for `/live-data/video-analyze`.
@@ -117,7 +118,7 @@ export function VideoAskDialog({
             </h2>
             <p className="mt-0.5 truncate text-xs text-text-muted">{videoTitle}</p>
           </div>
-          <button onClick={onClose} aria-label="Close" className="rounded p-1 text-text-muted transition-colors hover:text-text-primary">
+          <button onClick={onClose} aria-label="Close" className="rounded-sm p-1 text-text-muted transition-colors hover:text-text-primary">
             <X size={16} />
           </button>
         </div>
@@ -146,7 +147,7 @@ export function VideoAskDialog({
               }}
               rows={2}
               placeholder="Ask anything about this video…"
-              className="flex-1 resize-none rounded-lg border border-border bg-bg-elevated px-3 py-2 text-sm text-text-primary placeholder:text-text-muted/60 focus:border-accent-blue/50 focus:outline-none"
+              className="flex-1 resize-none rounded-lg border border-border bg-bg-elevated px-3 py-2 text-sm text-text-primary placeholder:text-text-muted/60 focus:border-accent-blue/50 focus:outline-hidden"
             />
             <button
               onClick={() => ask(question)}
@@ -186,7 +187,7 @@ export function VideoAskDialog({
                           href={m.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-block rounded border border-border bg-bg-elevated px-2 py-0.5 font-mono text-[11px] text-accent-blue transition-colors hover:border-accent-blue/40"
+                          className="inline-block rounded-sm border border-border bg-bg-elevated px-2 py-0.5 font-mono text-[11px] text-accent-blue transition-colors hover:border-accent-blue/40"
                         >
                           {m.label}
                         </a>
@@ -196,10 +197,12 @@ export function VideoAskDialog({
                 </div>
               )}
 
+              <FeatureNotice feature="videoAnswers" />
+
               {/* House policy: a model's reading of a video is our own derived
                   output, and the surface that renders it says whose it is. */}
               <p className={clsx('text-[10px] leading-relaxed text-text-muted')}>
-                Answered by {result.provider ?? 'an AI model'}
+                Read by {result.provider ?? 'an AI model'}
                 {result.model ? ` (${result.model})` : ''} from the video itself — not a transcript
                 the app holds, and not verified against one. Treat it as a reading, not a record.
               </p>

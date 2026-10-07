@@ -59,3 +59,26 @@ later, the same hook applies.
   the pages render (200) with deep-link params and that types/lint/build pass, but
   a real browser click-through should confirm filter application end-to-end on the
   owner's machine.
+
+  > **Click-through done 2026-10-07 (T-282, D90), and it found a bug.** Run in a real
+  > browser (headless Chromium driving `npm run dev`) in the cloud session rather than
+  > on the owner's machine. That was enough here because both screeners filter the
+  > built-in lists, 79 stocks and 140 funds, which need no live data. Results:
+  >
+  > - `/funds?type=etf&cat=sector&r_expense=:0.2&sort=expense`: the ETFs button and the
+  >   Sector chip show selected, the expense range shows `– 0.2`, and the table holds
+  >   exactly the 11 sector ETFs at or under 0.2%, in expense order. Clicking Mutual
+  >   rewrites the link to `type=mutual`. ✅
+  > - `/equities?sector=technology&peMax=20&sort=pe&dir=asc`: the Technology chip is
+  >   selected, P/E max shows 20, and the table holds the one matching stock (QCOM, P/E 17).
+  >   Typing 30 into P/E max and clicking Financials rewrites the link to
+  >   `sector=financials&…&peMax=30`, and the table shows the 10 expected rows. ✅
+  > - **The stock screener dropped five of its filters from a link.** W3-5 added max
+  >   yield, min beta, a price range and "dividend payers only", and the page wrote all of
+  >   them into the link, but the code that restores a link on opening was never
+  >   extended. `/equities?yieldMax=1&betaMin=1.2&priceMin=100&priceMax=2000&payers=1`
+  >   opened on all 79 stocks with every box empty, and the link was then rewritten to a
+  >   bare `/equities`. Fixed in `EquitiesClient.tsx`: the same link now shows the 7
+  >   expected stocks with every box filled in. `lib/hooks/__tests__/screenerUrlKeys.test.ts`
+  >   now fails for any screener whose link carries a filter that opening the link does
+  >   not restore; run against the old file, it names exactly those five.

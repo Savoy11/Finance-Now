@@ -49,47 +49,50 @@
     "staking:refresh-fallbacks": "node scripts/refresh-staking-fallbacks.mjs",
     "docs:check": "tsx scripts/check-doc-facts.ts",
     "queue:check": "node scripts/check-queue-ledger.mjs",
-    "staleness:check": "tsx scripts/check-staleness-horizon.ts"
+    "staleness:check": "tsx scripts/check-staleness-horizon.ts",
+    "deps:check": "node scripts/check-dependency-audit.mjs"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.125.0",
-    "@tanstack/react-query": "^5.102.8",
-    "autoprefixer": "^10.5.6",
+    "@anthropic-ai/sdk": "^0.131.0",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@tanstack/react-query": "^5.104.1",
     "bcryptjs": "^3.0.3",
     "clsx": "^2.1.0",
     "date-fns": "^4.4.0",
-    "drizzle-orm": "^0.45.2",
+    "drizzle-orm": "^0.45.3",
     "lightweight-charts": "^5.2.1",
-    "lucide-react": "^1.44.0",
-    "next": "15.5.25",
+    "lucide-react": "^1.51.0",
+    "next": "15.5.27",
     "next-auth": "^5.0.0-beta.31",
     "openai": "^6.45.0",
     "postcss": "^8.5.28",
     "postgres": "^3.4.9",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
-    "react-hot-toast": "^2.4.0",
+    "react-hot-toast": "^2.6.1",
     "recharts": "^3.10.1",
-    "tailwindcss": "^3.4.0",
+    "tailwindcss": "^4.3.3",
     "typescript": "^5.4.0",
     "undici": "^7.29.1",
-    "zustand": "^4.5.0"
+    "zustand": "^5.0.15"
   },
   "overrides": {
     "sharp": "^0.35.4",
     "postcss": "$postcss"
   },
   "devDependencies": {
+    "@eslint/compat": "^2.1.1",
     "@microsoft/eslint-formatter-sarif": "^3.1.0",
     "@types/bcryptjs": "^3.0.0",
-    "@types/node": "^20.12.0",
+    "@types/node": "^24.19.1",
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
-    "@vitest/coverage-v8": "^3.2.6",
-    "drizzle-kit": "^0.31.10",
-    "eslint": "^9.39.5",
-    "eslint-config-next": "^16.3.4",
-    "js-yaml": "^5.4.1",
-    "vitest": "^3.0.0"
+    "@vitest/coverage-v8": "^5.0.3",
+    "drizzle-kit": "^0.31.11",
+    "eslint": "^10.12.0",
+    "eslint-config-next": "^16.3.8",
+    "js-yaml": "^5.4.2",
+    "typescript-eslint": "^8.71.1",
+    "vitest": "^5.0.3"
   }
 }

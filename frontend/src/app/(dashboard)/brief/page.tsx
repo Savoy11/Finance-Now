@@ -8,6 +8,8 @@ import { hydratePortfolios, usePortfolioStore } from '@/store/usePortfolioStore'
 import { hydrateWatchlists, useWatchlistStore, type WatchList } from '@/store/useWatchlistStore'
 import { INSTRUMENT_BY_KEY } from '@/lib/data/instruments'
 import { migrateStorageKey } from '@/lib/utils/storageMigration'
+import { FeatureNotice } from '@/components/legal/FeatureNotice'
+import { FEATURE_NOTICES } from '@/lib/legal/featureNotices'
 
 // One-time key migration for the Finance Now rename — runs before any read below.
 migrateStorageKey('caep:daily-brief:v1', 'fn:daily-brief:v1')
@@ -105,7 +107,7 @@ export default function DailyBriefPage() {
             description="The brief is grounded in your actual portfolios and watchlists: the research agent pulls live prices and news through the app's own data routes and synthesizes a short morning read. Requires an Anthropic API key (Settings → Integrations → AI Providers, or ANTHROPIC_API_KEY)."
             details={[
               { label: 'Context', text: symbols.length > 0 ? `Covering ${symbols.length} instruments from your portfolios and watchlists.` : 'No portfolio/watchlist holdings found — a default market brief will be generated.' },
-              { label: 'Not advice', text: 'Informational synthesis of live data — not investment advice.' },
+              { label: 'Not advice', text: FEATURE_NOTICES.aiAnswers },
             ]}
           />
         </div>
@@ -135,9 +137,10 @@ export default function DailyBriefPage() {
 
       {brief && !needsKey && (
         <article className="rounded-card border border-border bg-bg-card p-6">
-          <p className="text-[11px] text-text-muted mb-4">
+          <p className="text-[11px] text-text-muted">
             Generated {new Date(brief.generatedAt).toLocaleString()} · from live prices and news at generation time
           </p>
+          <FeatureNotice feature="aiAnswers" className="mb-4" />
           <div className="text-sm text-text-secondary leading-relaxed whitespace-pre-wrap">{brief.text}</div>
         </article>
       )}

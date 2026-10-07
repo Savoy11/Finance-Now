@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { AlertCircle, ChevronDown, Loader2, Sparkles, Telescope, Wrench } from 'lucide-react'
 import { runAgentScan, distinctToolNames, type AgentScan, type AgentScanTool } from './agentScans'
+import { FeatureNotice } from '@/components/legal/FeatureNotice'
 
 // One panel for every AI scan on a market page (agentScans.ts lists them): a
 // collapsed header, a run button, and the agent's report with the tools it called.
@@ -73,7 +74,7 @@ export function AgentScanPanel({ scan }: { scan: AgentScan }) {
           {loading && (
             <div className="space-y-2 py-1">
               <p className="text-xs text-text-muted flex items-center gap-2"><Loader2 size={13} className="animate-spin text-violet-400" aria-hidden /> {scan.progress}</p>
-              {[1, 2, 3].map((i) => <div key={i} className="h-3 rounded bg-bg-elevated animate-pulse" style={{ width: `${88 - i * 10}%` }} />)}
+              {[1, 2, 3].map((i) => <div key={i} className="h-3 rounded-sm bg-bg-elevated animate-pulse" style={{ width: `${88 - i * 10}%` }} />)}
             </div>
           )}
 
@@ -95,13 +96,14 @@ export function AgentScanPanel({ scan }: { scan: AgentScan }) {
                 {tools.length > 0 && (
                   <div className="ml-auto flex flex-wrap gap-1 justify-end">
                     {tools.map((name) => (
-                      <span key={name} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] bg-bg-elevated text-text-muted border border-border">
+                      <span key={name} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm text-[10px] bg-bg-elevated text-text-muted border border-border">
                         <Wrench size={9} aria-hidden /> {name}
                       </span>
                     ))}
                   </div>
                 )}
               </div>
+              <FeatureNotice feature="aiAnswers" className="px-4 pt-2.5" />
               <div className="px-4 py-3 text-sm text-text-secondary leading-relaxed whitespace-pre-wrap">{result.report}</div>
             </div>
           )}

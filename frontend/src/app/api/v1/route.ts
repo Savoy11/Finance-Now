@@ -32,7 +32,9 @@ export async function GET() {
       { method: 'GET', path: '/api/v1/securities/history',       description: 'Daily close-price history for any quotable security or macro instrument', params: ['symbol (required)', 'range (1mo|3mo|6mo|1y|5y|max, default 1y)'] },
       { method: 'GET', path: '/api/v1/macro/yield-curve',        description: 'Official US Treasury daily par yield curve (13 maturities) with 2s10s / 3m10y spreads and shape', params: [] },
       { method: 'GET', path: '/api/v1/macro/fx-rates',           description: 'Daily ECB reference FX rates (USD base, ~30 currencies, official tier only)', params: ['symbols (csv filter, optional — e.g. EUR,JPY,GBP)'] },
-      { method: 'POST', path: '/api/v1/options/score',           description: 'Score a described options position (0–100, higher = safer, per-dimension evidence). Computes from the request body only — there is no chain feed, so the caller supplies every option-level figure. GET the same path for the schema', params: [] },
+      // Listed, not hidden, for the same reason as transfer/routes. Switched off
+      // with every risk rating until the risk engine is rebuilt (D64).
+      { method: 'POST', path: '/api/v1/options/score',           description: 'WITHHELD from this build (503) — risk ratings are switched off until the risk engine is rebuilt and reviewed. When restored: scores a described options position (0–100, higher = safer, per-dimension evidence) from the request body only.', params: [] },
     ],
     supported_coins: SUPPORTED_COINS,
     supported_networks: SUPPORTED_NETWORKS,

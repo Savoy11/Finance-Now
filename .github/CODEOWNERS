@@ -11,6 +11,11 @@
 # for the default branch. Until then this file is a routing declaration, not a gate —
 # recorded here so nobody mistakes its presence for enforcement.
 #
+# 2026-10-07 (D87, T-102): left OFF on purpose. The owner is the only code owner and the
+# author of every pull request, and GitHub does not let an author approve their own, so
+# requiring code-owner review would block every merge or need a bypass each time.
+# Revisit when a second person works on the code.
+#
 # STATUS 2026-09-24 (T-236): a ruleset on main now requires a pull request and the
 # "CI Success Gate" status check, and blocks deletion and force-push; secret-scanning
 # push protection is enabled. "Require review from Code Owners" is STILL OFF — that is

@@ -12,7 +12,7 @@ export function LoadingSkeleton({ className, count = 1 }: LoadingSkeletonProps) 
         <div
           key={i}
           className={clsx(
-            'rounded animate-shimmer bg-shimmer-gradient bg-[length:200%_100%]',
+            'rounded-sm animate-shimmer bg-shimmer-gradient bg-size-[200%_100%]',
             className
           )}
           aria-hidden="true"
@@ -49,9 +49,9 @@ export function ChartSkeleton({ height = 200 }: { height?: number }) {
     <div className="rounded-card border border-border bg-bg-card p-4">
       <div className="flex items-center justify-between mb-4">
         <LoadingSkeleton className="h-5 w-40" />
-        <LoadingSkeleton className="h-8 w-32 rounded" />
+        <LoadingSkeleton className="h-8 w-32 rounded-sm" />
       </div>
-      <div className={`w-full rounded animate-pulse bg-bg-elevated`} style={{ height }} />
+      <div className={`w-full rounded-sm animate-pulse bg-bg-elevated`} style={{ height }} />
     </div>
   )
 }

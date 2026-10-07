@@ -57,6 +57,7 @@ import type { NewsCategory } from '@/lib/data/newsCategories'
 import type { LiveNewsArticle } from '@/app/live-data/news/route'
 import type { LiveReserveAsset } from '@/app/live-data/reserves/route'
 import { Loader2 } from 'lucide-react'
+import { FeatureNotice } from '@/components/legal/FeatureNotice'
 
 type Tab = 'overview' | 'news' | 'technical-analysis' | 'reserves' | 'pump-report'
 
@@ -135,7 +136,7 @@ function EmbedSignalSummary({ summary }: { summary: SignalSummary }) {
               <p className="text-[11px] font-medium text-text-primary truncate">{sig.name}</p>
               <p className="text-[10px] text-text-muted truncate">{sig.description}</p>
             </div>
-            <span className={clsx('shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded border', SIG_COLORS[sig.signal])}>
+            <span className={clsx('shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-sm border', SIG_COLORS[sig.signal])}>
               {SIG_LABELS[sig.signal]}
             </span>
           </div>
@@ -165,9 +166,9 @@ function EmbedKeyLevels({ candles }: { candles: OhlcvCandle[] }) {
             const isAbove   = l.price > last
             const isCurrent = Math.abs(l.price - last) / last < 0.005
             return (
-              <div key={l.ratio} className={clsx('flex items-center justify-between px-2 py-0.5 rounded text-[11px]', isCurrent ? 'bg-accent-blue/10 border border-accent-blue/30' : 'hover:bg-bg-elevated')}>
+              <div key={l.ratio} className={clsx('flex items-center justify-between px-2 py-0.5 rounded-sm text-[11px]', isCurrent ? 'bg-accent-blue/10 border border-accent-blue/30' : 'hover:bg-bg-elevated')}>
                 <span className={clsx('font-mono text-text-muted', isCurrent && 'text-accent-blue')}>{l.label}</span>
-                <span className={clsx('font-mono font-semibold', isAbove ? 'text-red-400' : 'text-emerald-400', isCurrent && '!text-accent-blue')}>
+                <span className={clsx('font-mono font-semibold', isAbove ? 'text-red-400' : 'text-emerald-400', isCurrent && 'text-accent-blue!')}>
                   ${l.price.toLocaleString(undefined, { maximumFractionDigits: l.price > 100 ? 2 : 4 })}
                 </span>
               </div>
@@ -179,7 +180,7 @@ function EmbedKeyLevels({ candles }: { candles: OhlcvCandle[] }) {
         <p className="text-[10px] text-text-muted mb-1.5 uppercase tracking-wide">Moving Averages</p>
         {[{ label: 'EMA 20', value: ema20, color: '#f59e0b' }, { label: 'EMA 50', value: ema50, color: '#8b5cf6' }].map(({ label, value, color }) =>
           value !== null && (
-            <div key={label} className="flex items-center justify-between px-2 py-0.5 rounded hover:bg-bg-elevated text-[11px]">
+            <div key={label} className="flex items-center justify-between px-2 py-0.5 rounded-sm hover:bg-bg-elevated text-[11px]">
               <div className="flex items-center gap-1.5">
                 <span className="size-2 rounded-full inline-block" style={{ background: color }} />
                 <span className="text-text-muted">{label}</span>
@@ -315,7 +316,7 @@ function TechnicalAnalysisTab({ asset }: { asset: NonNullable<ReturnType<typeof 
                       <div className="flex flex-wrap gap-1.5">
                         {EMBED_INDICATORS.filter((i) => i.group === grp).map(({ key, label }) => (
                           <button key={key} onClick={() => toggleIndicator(key)}
-                            className={clsx('px-2 py-0.5 rounded border text-[11px] font-medium transition-colors',
+                            className={clsx('px-2 py-0.5 rounded-sm border text-[11px] font-medium transition-colors',
                               activeIndicators.has(key)
                                 ? grp === 'overlay' ? 'border-amber-500/40 bg-amber-500/10 text-amber-400' : 'border-violet-500/40 bg-violet-500/10 text-violet-400'
                                 : 'border-border text-text-muted hover:text-text-secondary hover:bg-bg-elevated'
@@ -340,7 +341,7 @@ function TechnicalAnalysisTab({ asset }: { asset: NonNullable<ReturnType<typeof 
               const ind = EMBED_INDICATORS.find((i) => i.key === key)
               if (!ind) return null
               return (
-                <span key={key} className={clsx('inline-flex items-center gap-1 pl-2 pr-1 py-0.5 rounded border text-[11px] font-medium',
+                <span key={key} className={clsx('inline-flex items-center gap-1 pl-2 pr-1 py-0.5 rounded-sm border text-[11px] font-medium',
                   ind.group === 'overlay' ? 'border-amber-500/40 bg-amber-500/10 text-amber-400' : 'border-violet-500/40 bg-violet-500/10 text-violet-400'
                 )}>
                   {ind.label}
@@ -414,14 +415,14 @@ function AssetHeader({ asset }: { asset: NonNullable<ReturnType<typeof useAsset>
                 here. The Composite Risk panel that also showed the band was
                 removed the same day (RP-6), so no band renders anywhere on
                 this page. */}
-            <span className="px-2.5 py-1 text-xs rounded border border-border bg-bg-elevated text-text-secondary font-mono">
+            <span className="px-2.5 py-1 text-xs rounded-sm border border-border bg-bg-elevated text-text-secondary font-mono">
               {ASSET_TYPE_LABELS[asset.assetType] ?? asset.assetType}
             </span>
-            <span className="px-2.5 py-1 text-xs rounded border border-border bg-bg-elevated text-text-secondary font-mono">
+            <span className="px-2.5 py-1 text-xs rounded-sm border border-border bg-bg-elevated text-text-secondary font-mono">
               {BLOCKCHAIN_LABELS[asset.blockchain] ?? asset.blockchain}
             </span>
             {!asset.isActive && (
-              <span className="px-2 py-0.5 text-xs rounded bg-red-500/10 text-red-400 border border-red-500/30 font-mono">
+              <span className="px-2 py-0.5 text-xs rounded-sm bg-red-500/10 text-red-400 border border-red-500/30 font-mono">
                 INACTIVE
               </span>
             )}
@@ -459,7 +460,7 @@ function AssetHeader({ asset }: { asset: NonNullable<ReturnType<typeof useAsset>
                 href={asset.website}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium text-text-muted hover:text-accent-blue hover:bg-accent-blue/10 border border-border hover:border-accent-blue/30 transition-all"
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-[11px] font-medium text-text-muted hover:text-accent-blue hover:bg-accent-blue/10 border border-border hover:border-accent-blue/30 transition-all"
                 aria-label={`Visit ${asset.name} website`}
               >
                 <Globe size={11} aria-hidden />
@@ -471,7 +472,7 @@ function AssetHeader({ asset }: { asset: NonNullable<ReturnType<typeof useAsset>
                 href={asset.whitepaper}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium text-text-muted hover:text-accent-blue hover:bg-accent-blue/10 border border-border hover:border-accent-blue/30 transition-all"
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-[11px] font-medium text-text-muted hover:text-accent-blue hover:bg-accent-blue/10 border border-border hover:border-accent-blue/30 transition-all"
                 aria-label={`Read ${asset.name} whitepaper`}
               >
                 <BookOpen size={11} aria-hidden />
@@ -491,7 +492,7 @@ function AssetHeader({ asset }: { asset: NonNullable<ReturnType<typeof useAsset>
             renders anywhere — see the removal note after OverviewTab.
             TO RESTORE: this block and the score row in components/ui/
             SearchInput.tsx are the two removals. */}
-        <div className="flex items-center gap-6 flex-shrink-0">
+        <div className="flex items-center gap-6 shrink-0">
           {/* Quick stats */}
           <div className="flex flex-col gap-2 min-w-32">
             <div>
@@ -638,7 +639,9 @@ function OverviewTab({ asset }: { asset: NonNullable<ReturnType<typeof useAsset>
 // tiers (lib/data/instruments.ts). This removal is about publishing a per-coin
 // score, not about the engine that computed it. (This paragraph also listed
 // staking provider risk until 2026-09-29: D14 removed its composite on
-// 2026-09-14 and D26 its six dimensions and scorer on 2026-09-25.)
+// 2026-09-14 and D26 its six dimensions and scorer on 2026-09-25.) Since
+// 2026-10-04 (D64) both are switched off too, with their code kept, until the
+// risk engine is rebuilt: see lib/risk/visibility.ts.
 //
 // TO RESTORE: git history at this commit carries the panel, the route and the
 // index join intact — and lib/risk/__tests__/riskScoringRemoved.test.ts
@@ -732,23 +735,23 @@ function NewsTab({ assetId }: { assetId: string }) {
                 <div className="flex items-start justify-between gap-4 mb-2">
                   <div className="flex items-center gap-2 flex-wrap">
                     {article.isBreaking && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-red-500/10 text-red-400 border border-red-500/20">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase tracking-wider bg-red-500/10 text-red-400 border border-red-500/20">
                         <Zap size={9} aria-hidden /> Breaking
                       </span>
                     )}
-                    <span className={clsx('px-2 py-0.5 rounded border text-[10px] font-medium capitalize', SENTIMENT_STYLES[article.sentiment])}>
+                    <span className={clsx('px-2 py-0.5 rounded-sm border text-[10px] font-medium capitalize', SENTIMENT_STYLES[article.sentiment])}>
                       {article.sentiment}
                     </span>
-                    <span className="px-2 py-0.5 rounded border border-border bg-bg-elevated text-[10px] text-text-muted capitalize">
+                    <span className="px-2 py-0.5 rounded-sm border border-border bg-bg-elevated text-[10px] text-text-muted capitalize">
                       {article.category}
                     </span>
                     {providerLabel && badgeStyle && (
-                      <span className={clsx('px-2 py-0.5 rounded border text-[10px] font-medium', badgeStyle)}>
+                      <span className={clsx('px-2 py-0.5 rounded-sm border text-[10px] font-medium', badgeStyle)}>
                         via {providerLabel}
                       </span>
                     )}
                   </div>
-                  <span className="text-[11px] text-text-muted flex-shrink-0 font-mono">
+                  <span className="text-[11px] text-text-muted shrink-0 font-mono">
                     {timeAgoCompact(article.publishedAt)}
                   </span>
                 </div>
@@ -869,7 +872,7 @@ function LiveReservesView({ liveAsset }: { liveAsset: LiveReserveAsset }) {
             </div>
             {liveAsset.chains.length > 0 && (
               <div className="flex justify-between gap-2 items-start">
-                <span className="text-text-muted flex-shrink-0">Active Chains</span>
+                <span className="text-text-muted shrink-0">Active Chains</span>
                 <span className="text-text-secondary text-right">{liveAsset.chains.slice(0, 6).join(', ')}</span>
               </div>
             )}
@@ -1021,10 +1024,10 @@ function AssetDetailPageInner() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6 max-w-screen-2xl mx-auto">
+      <div className="space-y-6 max-w-(--breakpoint-2xl) mx-auto">
         <LoadingSkeleton className="h-48 rounded-card" />
         <div className="flex gap-4">
-          {TABS.map((t) => <LoadingSkeleton key={t.id} className="h-8 w-24 rounded" />)}
+          {TABS.map((t) => <LoadingSkeleton key={t.id} className="h-8 w-24 rounded-sm" />)}
         </div>
         <div className="grid grid-cols-4 gap-4">
           {Array.from({ length: 4 }, (_, i) => <LoadingSkeleton key={i} className="h-28 rounded-card" />)}
@@ -1040,13 +1043,13 @@ function AssetDetailPageInner() {
         <div className="flex gap-3">
           <button
             onClick={() => refetch()}
-            className="px-3 py-1.5 rounded text-xs bg-bg-elevated border border-border text-text-secondary hover:text-text-primary transition-colors"
+            className="px-3 py-1.5 rounded-sm text-xs bg-bg-elevated border border-border text-text-secondary hover:text-text-primary transition-colors"
           >
             Retry
           </button>
           <button
             onClick={() => router.push('/assets')}
-            className="px-3 py-1.5 rounded text-xs bg-accent-blue/10 border border-accent-blue/30 text-accent-blue hover:bg-accent-blue/20 transition-colors"
+            className="px-3 py-1.5 rounded-sm text-xs bg-accent-blue/10 border border-accent-blue/30 text-accent-blue hover:bg-accent-blue/20 transition-colors"
           >
             Back to Coins
           </button>
@@ -1056,7 +1059,7 @@ function AssetDetailPageInner() {
   }
 
   return (
-    <div className="space-y-6 max-w-screen-2xl mx-auto">
+    <div className="space-y-6 max-w-(--breakpoint-2xl) mx-auto">
       {/* Back button */}
       <button
         onClick={() => router.push('/assets')}
@@ -1121,6 +1124,7 @@ function AssetDetailPageInner() {
         )}
         {activeTab === 'pump-report' && (
           <ErrorBoundary>
+            <FeatureNotice feature="pumpReport" className="mb-4" />
             <PumpReportTab
               targets={[{ type: 'coin', id: asset.id, label: `${asset.name} (${asset.symbol})` }]}
               coinId={asset.id}

@@ -52,7 +52,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
       {/* Backdrop for the mobile drawer */}
       {mobileNavOpen && (
         <div
-          className="fixed inset-0 z-20 bg-black/60 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-20 bg-black/60 backdrop-blur-xs lg:hidden"
           aria-hidden
           onClick={() => setMobileNavOpen(false)}
         />

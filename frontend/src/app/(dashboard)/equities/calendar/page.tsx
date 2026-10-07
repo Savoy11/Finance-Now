@@ -97,7 +97,7 @@ function CalendarContent() {
   const pastFomcSchedule = monthKey(month) > fomc.through.slice(0, 7)
 
   return (
-    <div className="space-y-5 max-w-screen-xl mx-auto">
+    <div className="space-y-5 max-w-(--breakpoint-xl) mx-auto">
       <div className="flex items-center gap-3">
         <CalendarDays className="h-6 w-6 text-accent-blue" aria-hidden />
         <PageHeader
@@ -127,7 +127,7 @@ function CalendarContent() {
       <IpoCalendarSection />
 
       {isLoading ? (
-        <div className="h-96 animate-shimmer bg-shimmer-gradient bg-[length:200%_100%] rounded-card" />
+        <div className="h-96 animate-shimmer bg-shimmer-gradient bg-size-[200%_100%] rounded-card" />
       ) : (
         <>
           {/* No FMP key: the grid still renders, because FOMC dates are keyless. */}
@@ -152,7 +152,7 @@ function CalendarContent() {
               onClick={() => { setMonth((m) => shiftMonth(m, -1)); setSelectedDay(null) }}
               disabled={offset <= -MONTH_SPAN}
               aria-label="Previous month"
-              className="rounded p-1.5 text-text-muted transition-colors hover:bg-bg-elevated hover:text-text-primary disabled:opacity-30"
+              className="rounded-sm p-1.5 text-text-muted transition-colors hover:bg-bg-elevated hover:text-text-primary disabled:opacity-30"
             >
               <ChevronLeft size={16} />
             </button>
@@ -161,7 +161,7 @@ function CalendarContent() {
               {offset !== 0 && (
                 <button
                   onClick={() => { setMonth({ year: today.getFullYear(), month: today.getMonth() }); setSelectedDay(todayIso) }}
-                  className="rounded border border-border px-2 py-0.5 text-[11px] text-text-muted transition-colors hover:text-text-primary"
+                  className="rounded-sm border border-border px-2 py-0.5 text-[11px] text-text-muted transition-colors hover:text-text-primary"
                 >
                   Today
                 </button>
@@ -172,7 +172,7 @@ function CalendarContent() {
               onClick={() => { setMonth((m) => shiftMonth(m, 1)); setSelectedDay(null) }}
               disabled={offset >= MONTH_SPAN}
               aria-label="Next month"
-              className="rounded p-1.5 text-text-muted transition-colors hover:bg-bg-elevated hover:text-text-primary disabled:opacity-30"
+              className="rounded-sm p-1.5 text-text-muted transition-colors hover:bg-bg-elevated hover:text-text-primary disabled:opacity-30"
             >
               <ChevronRight size={16} />
             </button>
@@ -223,14 +223,14 @@ function CalendarContent() {
                     <div className="mt-1 space-y-0.5">
                       {/* The rate decision outranks everything else on its day. */}
                       {dayFomc && (
-                        <span className="block truncate rounded bg-red-400/10 px-1 py-px text-[10px] font-semibold text-red-400">
+                        <span className="block truncate rounded-sm bg-red-400/10 px-1 py-px text-[10px] font-semibold text-red-400">
                           FOMC{dayFomc.tentative ? ' (tent.)' : ''}
                         </span>
                       )}
                       {/* Tracked names first, at most three chips per cell —
                           the day panel below carries the full list. */}
                       {catalogRows.slice(0, 3).map((e) => (
-                        <span key={e.symbol} className="block truncate rounded bg-accent-blue/15 px-1 py-px font-mono text-[10px] text-accent-blue">
+                        <span key={e.symbol} className="block truncate rounded-sm bg-accent-blue/15 px-1 py-px font-mono text-[10px] text-accent-blue">
                           {e.symbol}
                         </span>
                       ))}
@@ -303,14 +303,14 @@ function CalendarContent() {
                       )}
                       {ev.tentative && (
                         <span
-                          className="rounded border border-slate-500/30 bg-slate-500/10 px-1.5 py-0.5 text-[10px] font-medium text-slate-300"
+                          className="rounded-sm border border-slate-500/30 bg-slate-500/10 px-1.5 py-0.5 text-[10px] font-medium text-slate-300"
                           title="The Fed confirms each date at the meeting before it."
                         >
                           Tentative
                         </span>
                       )}
                       {ev.impact && (
-                        <span className={clsx('rounded border px-1.5 py-0.5 text-[10px] font-medium capitalize',
+                        <span className={clsx('rounded-sm border px-1.5 py-0.5 text-[10px] font-medium capitalize',
                           ev.impact.toLowerCase() === 'high'
                             ? 'border-red-500/20 bg-red-400/10 text-red-400'
                             : 'border-amber-500/20 bg-amber-400/10 text-amber-400')}>

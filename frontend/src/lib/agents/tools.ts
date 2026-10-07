@@ -5,6 +5,7 @@ import { COMMODITY_CATALOG, COMMODITY_CATEGORY_INFO } from '@/lib/data/commodity
 import { CURRENCY_CATALOG, CURRENCY_CATEGORY_INFO } from '@/lib/data/currencyCatalog'
 import { RATES_CATALOG, RATES_CATEGORY_INFO } from '@/lib/data/ratesCatalog'
 import { ohlcvSourceLabel } from '@/lib/utils/ohlcvSource'
+import { RISK_RATINGS_SHOWN } from '@/lib/risk/visibility'
 
 // ─── Agent tool registry ──────────────────────────────────────────────────────
 //
@@ -427,13 +428,23 @@ const TOOL_REGISTRY: RegisteredTool[] = [
   },
 ]
 
-/** All tool definitions (every market). */
-export const AGENT_TOOLS: Anthropic.Tool[] = TOOL_REGISTRY.map((r) => r.tool)
+/**
+ * Tools switched off with every risk rating until the risk engine is rebuilt
+ * (D64, lib/risk/visibility.ts). They stay in the registry so restoring is the
+ * switch alone, and are left out of everything an agent is offered: an
+ * assistant quoting a trade's risk score is the same harm as the page showing it.
+ */
+export const WITHHELD_TOOLS: ReadonlySet<string> = new Set(RISK_RATINGS_SHOWN ? [] : ['score_options_trade'])
+
+const OFFERED_TOOLS = TOOL_REGISTRY.filter((r) => !WITHHELD_TOOLS.has(r.tool.name))
+
+/** All tool definitions an agent may be offered (every market). */
+export const AGENT_TOOLS: Anthropic.Tool[] = OFFERED_TOOLS.map((r) => r.tool)
 
 /** Tool definitions exposed to an agent, filtered by its toolset. */
 export function toolsForAgent(toolset: ToolSet = 'crypto'): Anthropic.Tool[] {
   if (toolset === 'all') return AGENT_TOOLS
-  return TOOL_REGISTRY.filter((r) => r.market === toolset).map((r) => r.tool)
+  return OFFERED_TOOLS.filter((r) => r.market === toolset).map((r) => r.tool)
 }
 
 // ─── Executor ───────────────────────────────────────────────────────────────
@@ -496,6 +507,11 @@ export async function runTool(
   watchlistTerms?: string[]
 ): Promise<unknown> {
   const watchlistParam = watchlistTerms?.length ? watchlistTerms.join(',') : null
+  // A model can name a tool it was not offered. A withheld one answers with the
+  // reason instead of running, so the reply says it is switched off.
+  if (WITHHELD_TOOLS.has(name)) {
+    return { error: `${name} is switched off in this build: risk ratings are off until the risk engine is rebuilt and reviewed. Do not estimate a score yourself.` }
+  }
   try {
     switch (name) {
       case 'get_prices': {

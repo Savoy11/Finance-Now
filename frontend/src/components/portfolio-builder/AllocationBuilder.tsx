@@ -75,7 +75,7 @@ export function AllocationBuilder({ onBuilt }: { onBuilt: (plan: BuiltPortfolio)
             <span className="font-mono text-text-primary">{formatCurrency(amount, 0)}</span>
           </div>
           <input type="range" min={1000} max={500000} step={1000} value={amount}
-            onChange={(e) => setAmount(Number(e.target.value))} className="w-full accent-blue-500" />
+            onChange={(e) => setAmount(Number(e.target.value))} className="w-full accent-accent-blue" />
         </label>
         <label className="block">
           <div className="mb-1 flex justify-between text-xs">
@@ -83,7 +83,7 @@ export function AllocationBuilder({ onBuilt }: { onBuilt: (plan: BuiltPortfolio)
             <span className="font-mono text-text-primary">{horizonYears}y</span>
           </div>
           <input type="range" min={0} max={45} value={horizonYears}
-            onChange={(e) => setHorizonYears(Number(e.target.value))} className="w-full accent-blue-500" />
+            onChange={(e) => setHorizonYears(Number(e.target.value))} className="w-full accent-accent-blue" />
         </label>
       </div>
 
@@ -97,14 +97,14 @@ export function AllocationBuilder({ onBuilt }: { onBuilt: (plan: BuiltPortfolio)
         </div>
         <div className="grid gap-2 sm:grid-cols-3">
           {CLASSES.map((c) => (
-            <label key={c} className="flex items-center gap-2 rounded border border-border bg-bg-elevated px-2 py-1.5">
-              <span className="size-2 rounded-sm" style={{ backgroundColor: ASSET_CLASS_INFO[c].color }} aria-hidden />
+            <label key={c} className="flex items-center gap-2 rounded-sm border border-border bg-bg-elevated px-2 py-1.5">
+              <span className="size-2 rounded-xs" style={{ backgroundColor: ASSET_CLASS_INFO[c].color }} aria-hidden />
               <span className="flex-1 text-xs text-text-secondary">{ASSET_CLASS_INFO[c].label}</span>
               <input
                 type="number" min={0} max={100} step={1}
                 value={weights[c] ?? 0}
                 onChange={(e) => setWeight(c, Number(e.target.value))}
-                className="w-14 rounded border border-border bg-bg-card px-1.5 py-0.5 text-right font-mono text-xs text-text-primary focus:border-accent-blue/50 focus:outline-none"
+                className="w-14 rounded-sm border border-border bg-bg-card px-1.5 py-0.5 text-right font-mono text-xs text-text-primary focus:border-accent-blue/50 focus:outline-hidden"
               />
               <span className="text-[10px] text-text-muted">%</span>
             </label>
@@ -116,7 +116,7 @@ export function AllocationBuilder({ onBuilt }: { onBuilt: (plan: BuiltPortfolio)
       {(weights['us-equity'] ?? 0) > 0 && (
         <div className="space-y-2">
           <label className="flex items-start gap-2 text-xs text-text-muted">
-            <input type="checkbox" checked={splitByCap} onChange={(e) => setSplitByCap(e.target.checked)} className="mt-0.5 rounded border-border" />
+            <input type="checkbox" checked={splitByCap} onChange={(e) => setSplitByCap(e.target.checked)} className="mt-0.5 rounded-sm border-border" />
             <span>
               Split US equity by market cap
               <span className="text-text-muted/70"> — off means one total-market fund, which already holds
@@ -126,12 +126,12 @@ export function AllocationBuilder({ onBuilt }: { onBuilt: (plan: BuiltPortfolio)
           {splitByCap && (
             <div className="grid gap-2 sm:grid-cols-3">
               {([['largePct', 'Large'], ['midPct', 'Mid'], ['smallPct', 'Small']] as const).map(([key, label]) => (
-                <label key={key} className="flex items-center gap-2 rounded border border-border bg-bg-elevated px-2 py-1.5">
+                <label key={key} className="flex items-center gap-2 rounded-sm border border-border bg-bg-elevated px-2 py-1.5">
                   <span className="flex-1 text-xs text-text-secondary">{label}</span>
                   <input
                     type="number" min={0} max={100} value={capSplit[key]}
                     onChange={(e) => setCapSplit((p) => ({ ...p, [key]: Number(e.target.value) }))}
-                    className="w-14 rounded border border-border bg-bg-card px-1.5 py-0.5 text-right font-mono text-xs text-text-primary focus:border-accent-blue/50 focus:outline-none"
+                    className="w-14 rounded-sm border border-border bg-bg-card px-1.5 py-0.5 text-right font-mono text-xs text-text-primary focus:border-accent-blue/50 focus:outline-hidden"
                   />
                   <span className="text-[10px] text-text-muted">%</span>
                 </label>
@@ -149,12 +149,12 @@ export function AllocationBuilder({ onBuilt }: { onBuilt: (plan: BuiltPortfolio)
           </span>
           <div className="grid gap-2 sm:grid-cols-3">
             {TILTABLE_SECTORS.map((s) => (
-              <label key={s} className="flex items-center gap-2 rounded border border-border bg-bg-elevated px-2 py-1.5">
+              <label key={s} className="flex items-center gap-2 rounded-sm border border-border bg-bg-elevated px-2 py-1.5">
                 <span className="flex-1 truncate text-xs text-text-secondary">{SECTOR_INFO[s].label}</span>
                 <input
                   type="number" min={0} max={100} value={sectorWeights[s] ?? 0}
                   onChange={(e) => setSectorWeights((p) => ({ ...p, [s]: Number(e.target.value) }))}
-                  className="w-14 rounded border border-border bg-bg-card px-1.5 py-0.5 text-right font-mono text-xs text-text-primary focus:border-accent-blue/50 focus:outline-none"
+                  className="w-14 rounded-sm border border-border bg-bg-card px-1.5 py-0.5 text-right font-mono text-xs text-text-primary focus:border-accent-blue/50 focus:outline-hidden"
                 />
                 <span className="text-[10px] text-text-muted">%</span>
               </label>
@@ -170,7 +170,7 @@ export function AllocationBuilder({ onBuilt }: { onBuilt: (plan: BuiltPortfolio)
           <select
             value={bondStyle}
             onChange={(e) => setBondStyle(e.target.value as BondStyle)}
-            className="mt-1 block w-full rounded border border-border bg-bg-elevated px-2 py-1.5 text-sm text-text-primary focus:border-accent-blue/50 focus:outline-none sm:w-72"
+            className="mt-1 block w-full rounded-sm border border-border bg-bg-elevated px-2 py-1.5 text-sm text-text-primary focus:border-accent-blue/50 focus:outline-hidden sm:w-72"
           >
             {(Object.entries(BOND_STYLES) as Array<[BondStyle, { label: string; note: string }]>)
               .map(([id, meta]) => <option key={id} value={id}>{meta.label}</option>)}
@@ -180,7 +180,7 @@ export function AllocationBuilder({ onBuilt }: { onBuilt: (plan: BuiltPortfolio)
       )}
 
       {validation.errors.length > 0 && (
-        <ul className="space-y-1 rounded border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-300">
+        <ul className="space-y-1 rounded-sm border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-300">
           {validation.errors.map((e) => <li key={e}>{e}</li>)}
         </ul>
       )}

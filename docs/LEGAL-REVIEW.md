@@ -138,14 +138,27 @@ applied to a different feature. It blocks the tax estimator outright.
 > this"* (D47). It stays live, and T-059 is closed. The review still gates the tax
 > estimator (T-058) and contribution modeling (T-067). Neither is built, and no reviewer
 > is engaged (D30).
+>
+> **Update 2026-10-04 (D67).** The tax estimator (T-058) is parked with the Transfer Fees
+> page, which is hidden from the suite (T-028): the question comes back when that page is
+> restored. D4's review still gates building it.
 
 **E. Affiliate programmes.** T-119, T-120, T-124, T-125. FTC disclosure and other
 jurisdictions (UK FCA), plus per-programme terms on placement, comparison tables and
 ranking. Nothing here ships before B and C.
+**2026-10-04 update:** none of it ships at launch either. D49 (2026-09-30) ruled out paid and
+affiliate links at launch on both products and parked T-120 and T-125; D69 parked T-123 (referral
+sign-ups on the Coins pages) and T-124 beside them. T-119 closed on 2026-10-04 (D50's About page
+carries its launch copy). All four parked items come back together after launch.
 
 **F. Enterprise and SOC 2.** T-196, T-203, T-210, T-211, T-216. All blocked behind the
 2026-09-05 "not ready for rollout" ruling and the hosting decision. Deliberately parked —
 listed so it is not rediscovered as new.
+**2026-10-04 update:** the whole group now waits on one trigger, D5's: the first paying
+customer or the first conversation with a business buyer. The SOC 2 items were parked under
+it on 2026-09-30; D71 parked T-216 there too, with T-190 (company sign-in), T-212 (an uptime
+guarantee), T-213 (data residency) and T-214 (separate customer environments), beside T-217.
+D72 added T-195 (running in more than one region), which data residency would need.
 
 **G. Tokenized securities** (opened 2026-09-21). Full record:
 `docs/assessments/tokenized-securities-2026-09-21.md`. The SEC's five-year "innovation
@@ -174,6 +187,23 @@ answered:
 The app already carries one tokenized security misfiled as a stablecoin (Ondo USDY, coin
 registry); that is an engineering item in the assessment, listed here only because the
 misfile is also a disclosure defect.
+
+**H. Risk ratings by asset type** (opened 2026-10-07, T-419). Full record:
+`docs/assessments/risk-ratings-by-asset-type-2026-10-07.md`. D64 switched every risk rating
+off until the engine is rebuilt (T-420), and asked first whether and how risk can be rated for
+each asset type. The memo's answer, from public sources: in US law the line is personal versus
+impersonal, and the asset type only decides which regulator draws it. A rating that is the
+same for every reader, published regularly, with its method shown and no paid interest, is the
+publisher's form (*Lowe v. SEC*, 1985; *Lingley v. Seeking Alpha*, S.D.N.Y. 2024, which covered
+ratings). A figure worked out from the user's own holdings is the personal form, outside that
+exclusion and outside the CFTC's matching exemption for futures and forex (Rule 4.14(a)(9)).
+For crypto that is not a security under the SEC's 2026-03-17 interpretation, neither
+registration system reaches an impersonal rating. Recommended: an impersonal rating on the
+asset's own page for crypto coins and stocks only, facts everywhere else, never a rating of a
+portfolio as a whole. **The owner took every recommendation on 2026-10-07 (D92)**; its twelve
+questions go to the review before launch (D4), as the investment-adviser part of T-289's brief.
+Nothing is shown until counsel confirms the impersonal form. Like G, it was written without
+opening the primary documents.
 
 ---
 
@@ -204,6 +234,10 @@ This note is not on a timer, because the triggers are events rather than dates:
    can load a page. **Bitget is the exception and does not wait for either** — its §1
    Prohibited-Countries clause names the United States while the owner is US-resident, and
    that is a question about whether the app may call the host at all, today.
+
+7. **Before any risk rating returns** (added 2026-10-07). Group H's answers, the owner's (D92)
+   and then the lawyer's, are what T-420 rebuilds to and what decides whether anything shows. Check the Second Circuit's
+   decision in the Seeking Alpha appeal (No. 24-2437) first: the memo could not confirm it.
 
 ⚠ `npm run staleness:check` does **not** watch any of this. It watches curated *data*
 tables (`*_LAST_VERIFIED`), not terms verdicts or legal workstreams. Extending it to the

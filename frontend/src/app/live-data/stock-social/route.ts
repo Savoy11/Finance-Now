@@ -312,11 +312,12 @@ export async function GET(request: NextRequest) {
     signals: deduped,
     summaries: computeSentimentSummaries(deduped, labelForSymbol, symbol),
     providers,
+    // D58 (2026-10-04): Reddit access is a post-launch project (T-245).
     ...(redditAllowed ? {} : {
       withheld: [{
         id: 'reddit-stocks',
         name: 'Reddit',
-        reason: 'Reddit\'s robots.txt disallows this app\'s agent. Configure REDDIT_CLIENT_ID (OAuth) to read it through the supported path.',
+        reason: 'Reddit is not read: its robots.txt disallows this app\'s agent, and its API needs Reddit\'s approval, which is planned for after launch.',
       }],
     }),
   } satisfies StockSocialResponse)

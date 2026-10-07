@@ -208,7 +208,7 @@ function ScannerPanel() {
               onClick={() => setHistoryWindow(w.key)}
               title={w.hint}
               className={clsx('px-3 py-1 rounded-md text-xs font-medium transition-colors',
-                historyWindow === w.key ? 'bg-bg-card text-text-primary shadow-sm' : 'text-text-muted hover:text-text-secondary')}
+                historyWindow === w.key ? 'bg-bg-card text-text-primary shadow-xs' : 'text-text-muted hover:text-text-secondary')}
             >
               {w.label}
             </button>
@@ -218,7 +218,7 @@ function ScannerPanel() {
         <select
           value={sector}
           onChange={(e) => setSector(e.target.value as SectorId | 'all')}
-          className="rounded border border-border bg-bg-elevated px-2 py-1 text-xs text-text-primary focus:border-accent-blue/50 focus:outline-none"
+          className="rounded-sm border border-border bg-bg-elevated px-2 py-1 text-xs text-text-primary focus:border-accent-blue/50 focus:outline-hidden"
           aria-label="Sector filter"
         >
           <option value="all">All sectors</option>
@@ -230,7 +230,7 @@ function ScannerPanel() {
         <select
           value={sortKey}
           onChange={(e) => setSortKey(e.target.value as SortKey)}
-          className="rounded border border-border bg-bg-elevated px-2 py-1 text-xs text-text-primary focus:border-accent-blue/50 focus:outline-none"
+          className="rounded-sm border border-border bg-bg-elevated px-2 py-1 text-xs text-text-primary focus:border-accent-blue/50 focus:outline-hidden"
           aria-label="Sort"
         >
           {SORT_OPTIONS.map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}
@@ -239,7 +239,7 @@ function ScannerPanel() {
         <select
           value={signalFilter}
           onChange={(e) => setSignalFilter(e.target.value as Signal | 'all')}
-          className="rounded border border-border bg-bg-elevated px-2 py-1 text-xs text-text-primary focus:border-accent-blue/50 focus:outline-none"
+          className="rounded-sm border border-border bg-bg-elevated px-2 py-1 text-xs text-text-primary focus:border-accent-blue/50 focus:outline-hidden"
           aria-label="Signal filter"
         >
           <option value="all">Any signal</option>
@@ -254,7 +254,7 @@ function ScannerPanel() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search stock…"
-          className="w-32 rounded border border-border bg-bg-elevated px-2 py-1 text-xs text-text-primary placeholder:text-text-muted/60 focus:border-accent-blue/50 focus:outline-none"
+          className="w-32 rounded-sm border border-border bg-bg-elevated px-2 py-1 text-xs text-text-primary placeholder:text-text-muted/60 focus:border-accent-blue/50 focus:outline-hidden"
         />
 
         <button
@@ -360,7 +360,7 @@ function ScannerPanel() {
                     {row.setups.length === 0
                       ? <span className="text-[11px] text-text-muted">{row.status === 'loading' ? '…' : 'none'}</span>
                       : row.setups.map((s) => (
-                        <span key={s.key} className={clsx('rounded border px-1.5 py-0.5 text-[10px] font-medium', SETUP_META[s.key].tone)} title={s.detail}>
+                        <span key={s.key} className={clsx('rounded-sm border px-1.5 py-0.5 text-[10px] font-medium', SETUP_META[s.key].tone)} title={s.detail}>
                           {SETUP_META[s.key].label}
                         </span>
                       ))}
@@ -377,7 +377,7 @@ function ScannerPanel() {
 
 function EquityScannerInner() {
   return (
-    <div className="max-w-screen-2xl mx-auto space-y-5">
+    <div className="max-w-(--breakpoint-2xl) mx-auto space-y-5">
       <div className="flex items-center gap-3">
         <Telescope className="h-6 w-6 text-accent-blue" aria-hidden />
         <PageHeader

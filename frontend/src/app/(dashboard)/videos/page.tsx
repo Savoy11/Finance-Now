@@ -118,11 +118,11 @@ function VideoCard({ video, eager = false, canAnalyze = false }: { video: VideoI
           </div>
         )}
         {video.isNew && (
-          <span className="absolute top-2 left-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/90 text-black uppercase tracking-wider">
+          <span className="absolute top-2 left-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm text-[10px] font-bold bg-amber-500/90 text-black uppercase tracking-wider">
             <Sparkles size={9} aria-hidden /> New
           </span>
         )}
-        <span className={clsx('absolute top-2 right-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold border backdrop-blur-sm uppercase tracking-wider', meta.badge)}>
+        <span className={clsx('absolute top-2 right-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm text-[10px] font-semibold border backdrop-blur-xs uppercase tracking-wider', meta.badge)}>
           <meta.icon size={9} aria-hidden />
           {meta.label}
         </span>
@@ -139,7 +139,7 @@ function VideoCard({ video, eager = false, canAnalyze = false }: { video: VideoI
 
         <div className="flex items-center justify-between gap-2 pt-1 mt-auto border-t border-border/60">
           <span className="text-[11px] text-text-muted font-medium truncate">{video.channel}</span>
-          <div className="flex items-center gap-1.5 flex-shrink-0">
+          <div className="flex items-center gap-1.5 shrink-0">
             <span className="flex items-center gap-1 text-[11px] text-text-muted font-mono">
               <Clock size={10} aria-hidden />
               {timeAgoCompact(video.publishedAt)}
@@ -319,7 +319,7 @@ export default function VideosPage() {
             ]}
           />
         </div>
-        <div className="flex items-center gap-3 flex-shrink-0">
+        <div className="flex items-center gap-3 shrink-0">
           {!isLoading && <span className="text-xs text-text-muted font-mono">{videos.length} videos</span>}
           <button
             onClick={() => refetch()}
@@ -340,7 +340,7 @@ export default function VideosPage() {
         <div className="flex flex-col items-center justify-center py-16 text-text-muted text-center">
           <Video size={36} className="mb-3 opacity-30" aria-hidden />
           <p className="text-sm">No video-carrying modules are enabled in your bundle.</p>
-          <Link href="/settings" className="mt-3 px-3 py-1.5 rounded text-xs bg-bg-elevated border border-border text-text-secondary hover:text-text-primary transition-colors">
+          <Link href="/settings" className="mt-3 px-3 py-1.5 rounded-sm text-xs bg-bg-elevated border border-border text-text-secondary hover:text-text-primary transition-colors">
             Open Integrations
           </Link>
         </div>
@@ -361,7 +361,7 @@ export default function VideosPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Filter loaded videos — or press Search YouTube…"
-                className="w-full bg-bg-secondary border border-border rounded pl-7 pr-7 py-1.5 text-xs text-text-secondary placeholder:text-text-muted/60 focus:outline-none focus:border-accent-blue/60"
+                className="w-full bg-bg-secondary border border-border rounded-sm pl-7 pr-7 py-1.5 text-xs text-text-secondary placeholder:text-text-muted/60 focus:outline-hidden focus:border-accent-blue/60"
               />
               {search && (
                 <button
@@ -378,7 +378,7 @@ export default function VideosPage() {
               type="submit"
               disabled={!search.trim() || searchQuery.isFetching}
               title="Search all of YouTube (uses API quota)"
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium border border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-40 disabled:hover:bg-red-500/10"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm text-xs font-medium border border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-40 disabled:hover:bg-red-500/10"
             >
               {searchQuery.isFetching
                 ? <Loader2 size={12} className="animate-spin" aria-hidden />
@@ -397,7 +397,7 @@ export default function VideosPage() {
                     ? 'Restrict to news & politics with market context — filters out sport and local news'
                     : 'Raw YouTube search, no scoping'}
                   className={clsx(
-                    'px-2 py-1.5 rounded text-xs font-medium border transition-all capitalize',
+                    'px-2 py-1.5 rounded-sm text-xs font-medium border transition-all capitalize',
                     scope === s
                       ? 'bg-accent-blue/15 text-accent-blue border-accent-blue/30'
                       : 'text-text-muted border-border hover:text-text-secondary hover:bg-bg-elevated'
@@ -413,7 +413,7 @@ export default function VideosPage() {
               <button
                 type="button"
                 onClick={clearFilters}
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded text-xs text-text-muted border border-border hover:text-text-secondary hover:bg-bg-elevated transition-colors"
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-sm text-xs text-text-muted border border-border hover:text-text-secondary hover:bg-bg-elevated transition-colors"
               >
                 <X size={11} aria-hidden />
                 Clear {activeFilterCount}
@@ -425,7 +425,7 @@ export default function VideosPage() {
           {isSearchMode && (
             <div className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg border border-red-500/25 bg-red-500/5">
               <div className="flex items-center gap-2 min-w-0">
-                <MonitorPlay size={13} className="text-red-400 flex-shrink-0" aria-hidden />
+                <MonitorPlay size={13} className="text-red-400 shrink-0" aria-hidden />
                 <span className="text-xs text-text-secondary truncate">
                   {searchQuery.isFetching
                     ? <>Searching YouTube for <span className="text-text-primary font-medium">“{ytQuery}”</span>…</>
@@ -442,7 +442,7 @@ export default function VideosPage() {
                 // Clears the text too: leaving it set would re-apply it as a
                 // local filter, so "Back to feed" would land on an empty grid.
                 onClick={() => { setYtQuery(''); setSearch('') }}
-                className="text-[11px] text-text-muted hover:text-text-secondary transition-colors flex-shrink-0"
+                className="text-[11px] text-text-muted hover:text-text-secondary transition-colors shrink-0"
               >
                 Back to feed
               </button>
@@ -452,7 +452,7 @@ export default function VideosPage() {
           {/* Not-configured / error notice for YouTube search */}
           {isSearchMode && !searchQuery.isFetching && (!searchConfigured || searchQuery.data?.error) && (
             <div className="flex items-start gap-2 px-3 py-2 rounded-lg border border-amber-500/25 bg-amber-500/5">
-              <AlertCircle size={13} className="text-amber-400 flex-shrink-0 mt-0.5" aria-hidden />
+              <AlertCircle size={13} className="text-amber-400 shrink-0 mt-0.5" aria-hidden />
               <p className="text-xs text-text-secondary leading-relaxed">
                 {!searchConfigured ? (
                   <>
@@ -476,7 +476,7 @@ export default function VideosPage() {
                     key={r.value}
                     onClick={() => setRecency(r.value)}
                     className={clsx(
-                      'px-2 py-1 rounded text-xs font-medium border transition-all',
+                      'px-2 py-1 rounded-sm text-xs font-medium border transition-all',
                       recency === r.value
                         ? 'bg-accent-blue/15 text-accent-blue border-accent-blue/30'
                         : 'text-text-muted border-border hover:text-text-secondary hover:bg-bg-elevated'
@@ -491,7 +491,7 @@ export default function VideosPage() {
                 <select
                   value={ytOrder}
                   onChange={(e) => setYtOrder(e.target.value as SearchOrder)}
-                  className="bg-bg-secondary border border-border rounded px-2 py-1 text-xs text-text-secondary focus:outline-none focus:border-accent-blue/60"
+                  className="bg-bg-secondary border border-border rounded-sm px-2 py-1 text-xs text-text-secondary focus:outline-hidden focus:border-accent-blue/60"
                 >
                   <option value="relevance">Most relevant</option>
                   <option value="date">Newest</option>
@@ -504,7 +504,7 @@ export default function VideosPage() {
                 <select
                   value={ytDuration}
                   onChange={(e) => setYtDuration(e.target.value as SearchDuration)}
-                  className="bg-bg-secondary border border-border rounded px-2 py-1 text-xs text-text-secondary focus:outline-none focus:border-accent-blue/60"
+                  className="bg-bg-secondary border border-border rounded-sm px-2 py-1 text-xs text-text-secondary focus:outline-hidden focus:border-accent-blue/60"
                 >
                   <option value="any">Any length</option>
                   <option value="short">Under 4 min</option>
@@ -528,7 +528,7 @@ export default function VideosPage() {
                       onClick={() => setMarketFilter(value)}
                       disabled={value === 'crypto' ? !cryptoOn : value === 'equities' ? !marketsOn : false}
                       className={clsx(
-                        'px-2 py-1 rounded text-xs font-medium border transition-all disabled:opacity-30',
+                        'px-2 py-1 rounded-sm text-xs font-medium border transition-all disabled:opacity-30',
                         marketFilter === value
                           ? 'bg-accent-blue/15 text-accent-blue border-accent-blue/30'
                           : 'text-text-muted border-border hover:text-text-secondary hover:bg-bg-elevated'
@@ -547,7 +547,7 @@ export default function VideosPage() {
                       key={r.value}
                       onClick={() => setRecency(r.value)}
                       className={clsx(
-                        'px-2 py-1 rounded text-xs font-medium border transition-all',
+                        'px-2 py-1 rounded-sm text-xs font-medium border transition-all',
                         recency === r.value
                           ? 'bg-accent-blue/15 text-accent-blue border-accent-blue/30'
                           : 'text-text-muted border-border hover:text-text-secondary hover:bg-bg-elevated'
@@ -564,7 +564,7 @@ export default function VideosPage() {
                   <select
                     value={sort}
                     onChange={(e) => setSort(e.target.value as SortKey)}
-                    className="bg-bg-secondary border border-border rounded px-2 py-1 text-xs text-text-secondary focus:outline-none focus:border-accent-blue/60"
+                    className="bg-bg-secondary border border-border rounded-sm px-2 py-1 text-xs text-text-secondary focus:outline-hidden focus:border-accent-blue/60"
                   >
                     {SORTS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
                   </select>
@@ -576,7 +576,7 @@ export default function VideosPage() {
                 <button
                   onClick={() => setSelectedChannels(new Set())}
                   className={clsx(
-                    'px-2.5 py-1 rounded text-xs font-medium border transition-all',
+                    'px-2.5 py-1 rounded-sm text-xs font-medium border transition-all',
                     selectedChannels.size === 0
                       ? 'bg-accent-blue/15 text-accent-blue border-accent-blue/30'
                       : 'text-text-muted border-border hover:text-text-secondary hover:bg-bg-elevated'
@@ -589,7 +589,7 @@ export default function VideosPage() {
                     key={c.provider}
                     onClick={() => toggleChannel(c.provider)}
                     className={clsx(
-                      'px-2.5 py-1 rounded text-xs font-medium border transition-all',
+                      'px-2.5 py-1 rounded-sm text-xs font-medium border transition-all',
                       selectedChannels.has(c.provider)
                         ? 'bg-accent-blue/15 text-accent-blue border-accent-blue/30'
                         : 'text-text-muted border-border hover:text-text-secondary hover:bg-bg-elevated'
@@ -638,7 +638,7 @@ export default function VideosPage() {
           {!isSearchMode && activeFilterCount > 0 && (
             <button
               onClick={clearFilters}
-              className="mt-3 px-3 py-1.5 rounded text-xs bg-bg-elevated border border-border text-text-secondary hover:text-text-primary transition-colors"
+              className="mt-3 px-3 py-1.5 rounded-sm text-xs bg-bg-elevated border border-border text-text-secondary hover:text-text-primary transition-colors"
             >
               Clear filters
             </button>

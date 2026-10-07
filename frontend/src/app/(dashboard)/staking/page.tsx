@@ -191,12 +191,12 @@ function ProviderCard({
                 </span>
               )}
               {provider.defunct && (
-                <span className="px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded bg-red-500/20 text-red-300 border border-red-500/30">
+                <span className="px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-sm bg-red-500/20 text-red-300 border border-red-500/30">
                   DEFUNCT {provider.defunctDate}
                 </span>
               )}
               {!provider.defunct && (
-                <span className={clsx('px-1.5 py-0.5 text-[10px] font-medium rounded border', categoryBadgeClass(provider.category))}>
+                <span className={clsx('px-1.5 py-0.5 text-[10px] font-medium rounded-sm border', categoryBadgeClass(provider.category))}>
                   {categoryLabel(provider.category)}
                 </span>
               )}
@@ -286,7 +286,7 @@ function ProviderCard({
                   </span>
                   {live && !provider.defunct && (
                     <span
-                      className="ml-1 text-[9px] font-semibold uppercase tracking-wide px-1 py-0.5 rounded border bg-emerald-500/10 text-emerald-400/90 border-emerald-500/25"
+                      className="ml-1 text-[9px] font-semibold uppercase tracking-wide px-1 py-0.5 rounded-sm border bg-emerald-500/10 text-emerald-400/90 border-emerald-500/25"
                       title="Live rate — fetched from a protocol/network feed"
                     >
                       live
@@ -338,7 +338,7 @@ function ProviderCard({
                 {/* Yield type — distinguishes native/liquid/cefi/restaking from
                     governance-token or lending yield that doesn't stake the coin */}
                 <span
-                  className={clsx('ml-auto px-1.5 py-0.5 text-[10px] font-medium rounded border shrink-0', yieldMeta.badge)}
+                  className={clsx('ml-auto px-1.5 py-0.5 text-[10px] font-medium rounded-sm border shrink-0', yieldMeta.badge)}
                   title={yieldMeta.description}
                 >
                   {yieldMeta.label}
@@ -351,7 +351,7 @@ function ProviderCard({
               <div className="mt-2 flex flex-wrap gap-1">
                 {asset.features.map(f => (
                   <span key={f} className={clsx(
-                    'text-[10px] px-1.5 py-0.5 rounded border',
+                    'text-[10px] px-1.5 py-0.5 rounded-sm border',
                     provider.defunct
                       ? 'bg-red-900/20 text-red-300/50 border-red-500/20'
                       : 'bg-bg-elevated text-text-muted border-border'
@@ -391,19 +391,19 @@ function ProviderCard({
               <p className="text-xs text-text-muted leading-relaxed">{provider.description}</p>
 
               {provider.custodyModel === 'custodial' && (
-                <div className="flex items-start gap-2 text-xs text-amber-300/70 bg-amber-500/5 border border-amber-500/15 rounded p-2">
+                <div className="flex items-start gap-2 text-xs text-amber-300/70 bg-amber-500/5 border border-amber-500/15 rounded-sm p-2">
                   <AlertTriangle size={12} className="shrink-0 mt-0.5" />
                   <span>Custodial — {provider.name} controls your private keys.</span>
                 </div>
               )}
               {provider.custodyModel === 'non-custodial' && (
-                <div className="flex items-start gap-2 text-xs text-emerald-300/70 bg-emerald-500/5 border border-emerald-500/15 rounded p-2">
+                <div className="flex items-start gap-2 text-xs text-emerald-300/70 bg-emerald-500/5 border border-emerald-500/15 rounded-sm p-2">
                   <CheckCircle size={12} className="shrink-0 mt-0.5" />
                   <span>Non-custodial — you control your private keys at all times.</span>
                 </div>
               )}
               {provider.custodyModel === 'smart-contract' && (
-                <div className="flex items-start gap-2 text-xs text-cyan-300/70 bg-cyan-500/5 border border-cyan-500/15 rounded p-2">
+                <div className="flex items-start gap-2 text-xs text-cyan-300/70 bg-cyan-500/5 border border-cyan-500/15 rounded-sm p-2">
                   <Layers size={12} className="shrink-0 mt-0.5" />
                   <span>Smart contract — assets are held by audited on-chain code. You hold the receipt token in your own wallet.</span>
                 </div>
@@ -482,7 +482,7 @@ function AssetDropdown({
           {selected ? (
             <>
               <span
-                className="w-2 h-2 rounded-full flex-shrink-0"
+                className="w-2 h-2 rounded-full shrink-0"
                 style={{ backgroundColor: selected.color }}
               />
               <span className="flex-1 text-left">{selected.symbol} — {selected.name}</span>
@@ -490,7 +490,7 @@ function AssetDropdown({
           ) : (
             <span className="flex-1 text-left">All Assets</span>
           )}
-          <ChevronDown size={12} className={`flex-shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
+          <ChevronDown size={12} className={`shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
         </button>
 
         {open && (
@@ -504,7 +504,7 @@ function AssetDropdown({
                   : 'text-text-secondary hover:bg-bg-elevated'
               )}
             >
-              <span className="w-2 h-2 rounded-full bg-text-muted flex-shrink-0" />
+              <span className="w-2 h-2 rounded-full bg-text-muted shrink-0" />
               <span>All Assets</span>
               {coinFilter === 'all' && <span className="ml-auto text-[10px]">✓</span>}
             </button>
@@ -523,7 +523,7 @@ function AssetDropdown({
                   )}
                   style={coinFilter === coin ? { backgroundColor: info.color + '18', color: info.color } : {}}
                 >
-                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: info.color }} />
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: info.color }} />
                   <span className="font-mono font-semibold w-10">{info.symbol}</span>
                   <span className="text-text-muted truncate">{info.name}</span>
                   {coinFilter === coin && <span className="ml-auto text-[10px]">✓</span>}
@@ -670,7 +670,7 @@ function StakingPageInner() {
             key={t}
             onClick={() => setTab(t)}
             className={clsx('px-4 py-1.5 rounded-md text-sm font-medium transition-colors',
-              tab === t ? 'bg-bg-card text-text-primary shadow-sm' : 'text-text-muted hover:text-text-secondary')}
+              tab === t ? 'bg-bg-card text-text-primary shadow-xs' : 'text-text-muted hover:text-text-secondary')}
           >
             {label}
           </button>

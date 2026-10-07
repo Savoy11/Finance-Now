@@ -44,6 +44,12 @@ interface Story {
   category: string
   /** Asset ids (crypto) or ticker symbols (markets). */
   tags: string[]
+  /**
+   * Stock tickers a crypto story about tokenized securities names (TS-13).
+   * Empty for every other story, and always empty on market stories, whose
+   * tickers are already their tags.
+   */
+  stockTags: string[]
   isBreaking: boolean
   module: StoryModule
 }
@@ -82,6 +88,7 @@ function rank(a: Story, b: Story): number {
 
 function StoryCard({ story, showModule = false, onWatchlist = false }: { story: Story; showModule?: boolean; onWatchlist?: boolean }) {
   const meta = MODULE_META[story.module]
+  const equitiesOn = useEntitlementStore((s) => s.isEnabled('equities'))
 
   return (
     <article
@@ -93,7 +100,7 @@ function StoryCard({ story, showModule = false, onWatchlist = false }: { story: 
       <div className="flex items-start justify-between gap-3">
         <div className="flex flex-wrap items-center gap-1.5 min-w-0">
           {showModule && (
-            <span className={clsx('inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold border uppercase tracking-wider', meta.badge)}>
+            <span className={clsx('inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm text-[10px] font-semibold border uppercase tracking-wider', meta.badge)}>
               <meta.icon size={9} aria-hidden />
               {meta.label}
             </span>
@@ -101,21 +108,21 @@ function StoryCard({ story, showModule = false, onWatchlist = false }: { story: 
           {/* Makes the bias visible — otherwise reordering looks like chance. */}
           {onWatchlist && (
             <span
-              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-400/10 text-amber-300 border border-amber-400/25 uppercase tracking-wider"
+              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm text-[10px] font-semibold bg-amber-400/10 text-amber-300 border border-amber-400/25 uppercase tracking-wider"
               title="Mentions an asset on your watchlist"
             >
               <Star size={9} aria-hidden /> Watchlist
             </span>
           )}
           {story.isBreaking && (
-            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30 uppercase tracking-wider">
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30 uppercase tracking-wider">
               <Zap size={9} aria-hidden /> Breaking
             </span>
           )}
-          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border text-slate-400 bg-slate-400/10 border-slate-500/20">
+          <span className="inline-flex items-center px-1.5 py-0.5 rounded-sm text-[10px] font-medium border text-slate-400 bg-slate-400/10 border-slate-500/20">
             {story.category}
           </span>
-          <span className={clsx('inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border capitalize', SENTIMENT_STYLES[story.sentiment])}>
+          <span className={clsx('inline-flex items-center px-1.5 py-0.5 rounded-sm text-[10px] font-medium border capitalize', SENTIMENT_STYLES[story.sentiment])}>
             {story.sentiment}
           </span>
         </div>
@@ -123,7 +130,7 @@ function StoryCard({ story, showModule = false, onWatchlist = false }: { story: 
           href={story.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-text-muted hover:text-accent-blue transition-colors flex-shrink-0 mt-0.5"
+          className="text-text-muted hover:text-accent-blue transition-colors shrink-0 mt-0.5"
           aria-label="Open article"
         >
           <ExternalLink size={13} aria-hidden />
@@ -140,24 +147,35 @@ function StoryCard({ story, showModule = false, onWatchlist = false }: { story: 
 
       <div className="flex items-center justify-between gap-2 pt-1 border-t border-border/60">
         <div className="flex items-center gap-1.5 min-w-0">
-          {story.tags.length > 0 && (
+          {(story.tags.length > 0 || story.stockTags.length > 0) && (
             <>
-              <Tag size={10} className="text-text-muted flex-shrink-0" aria-hidden />
+              <Tag size={10} className="text-text-muted shrink-0" aria-hidden />
               <div className="flex flex-wrap gap-1">
                 {story.tags.slice(0, 4).map((tag) => (
                   <Link
                     key={tag}
                     href={meta.tagHref(tag)}
-                    className="px-1.5 py-0.5 rounded bg-accent-blue/10 border border-accent-blue/20 text-[10px] font-mono text-accent-blue hover:bg-accent-blue/20 transition-colors uppercase"
+                    className="px-1.5 py-0.5 rounded-sm bg-accent-blue/10 border border-accent-blue/20 text-[10px] font-mono text-accent-blue hover:bg-accent-blue/20 transition-colors uppercase"
                   >
                     {tag}
                   </Link>
                 ))}
+                {story.stockTags.slice(0, 4).map((symbol) => {
+                  const label = `${symbol} stock, named in this story about tokenized securities`
+                  const chip = 'px-1.5 py-0.5 rounded-sm bg-fuchsia-500/10 border border-fuchsia-500/20 text-[10px] font-mono text-fuchsia-300'
+                  return equitiesOn ? (
+                    <Link key={`stock:${symbol}`} href={`/equities/${symbol.toLowerCase()}`} title={label} aria-label={label} className={clsx(chip, 'hover:bg-fuchsia-500/20 transition-colors')}>
+                      {symbol}
+                    </Link>
+                  ) : (
+                    <span key={`stock:${symbol}`} title={label} className={chip}>{symbol}</span>
+                  )
+                })}
               </div>
             </>
           )}
         </div>
-        <div className="flex items-center gap-1.5 flex-shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0">
           <span className="text-[11px] text-text-muted font-medium">{story.source}</span>
           <span className="text-text-muted/40">·</span>
           <span className="flex items-center gap-1 text-[11px] text-text-muted font-mono">
@@ -181,10 +199,13 @@ export default function HeadlinesPage() {
   const watchlist = useWatchlistBias()
   const biasStrength = useFeedBiasStore((s) => s.getStrength('headlines'))
 
-  /** Story → matchable shape. Crypto tags are asset ids, market tags are tickers. */
+  /**
+   * Story → matchable shape. Crypto tags are asset ids, market tags are tickers,
+   * and a crypto story about tokenized securities also carries stock tickers.
+   */
   const toBiasable = (s: Story) => ({
     assetIds: s.module === 'crypto' ? s.tags : undefined,
-    symbols: s.module === 'markets' ? s.tags : undefined,
+    symbols: s.module === 'markets' ? s.tags : s.stockTags,
     text: `${s.title} ${s.summary}`,
   })
 
@@ -223,6 +244,7 @@ export default function HeadlinesPage() {
       category: a.category,
       // 'general' is the route's catch-all bucket, not a real asset tag.
       tags: a.relatedAssets.filter((t) => t !== 'general'),
+      stockTags: a.relatedSymbols ?? [],
       isBreaking: a.isBreaking,
       module: 'crypto' as const,
     }))
@@ -241,6 +263,7 @@ export default function HeadlinesPage() {
       sentiment: a.sentiment,
       category: a.category,
       tags: a.relatedSymbols,
+      stockTags: [],
       isBreaking: a.isBreaking,
       module: 'markets' as const,
     }))
@@ -353,7 +376,7 @@ export default function HeadlinesPage() {
         <div className="flex flex-col items-center justify-center py-16 text-text-muted text-center">
           <Newspaper size={36} className="mb-3 opacity-30" aria-hidden />
           <p className="text-sm">No news-carrying modules are enabled in your bundle.</p>
-          <Link href="/settings" className="mt-3 px-3 py-1.5 rounded text-xs bg-bg-elevated border border-border text-text-secondary hover:text-text-primary transition-colors">
+          <Link href="/settings" className="mt-3 px-3 py-1.5 rounded-sm text-xs bg-bg-elevated border border-border text-text-secondary hover:text-text-primary transition-colors">
             Open Integrations
           </Link>
         </div>

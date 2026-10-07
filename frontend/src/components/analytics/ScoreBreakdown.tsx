@@ -31,7 +31,7 @@ function ScoreBar({ label, score, weight, description }: ScoreBarProps) {
       <div className="flex items-center justify-between mb-1.5">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium text-text-primary">{label}</span>
-          <span className="text-[10px] text-text-muted bg-bg-elevated px-1.5 py-0.5 rounded border border-border">
+          <span className="text-[10px] text-text-muted bg-bg-elevated px-1.5 py-0.5 rounded-sm border border-border">
             {weight}% weight
           </span>
         </div>

@@ -26,6 +26,7 @@ const SENTIMENT_STYLES = {
 }
 
 const CATEGORY_STYLES: Record<MarketNewsCategory, string> = {
+  tokenization: 'text-fuchsia-400 bg-fuchsia-400/10 border-fuchsia-500/20',
   earnings: 'text-cyan-400 bg-cyan-400/10 border-cyan-500/20',
   analyst:  'text-violet-400 bg-violet-400/10 border-violet-500/20',
   macro:    'text-amber-400 bg-amber-400/10 border-amber-500/20',
@@ -43,11 +44,12 @@ const CATEGORIES: Array<{ value: MarketNewsCategory | 'all'; label: string }> = 
   { value: 'ma', label: 'M&A' },
   { value: 'dividend', label: 'Dividends & Buybacks' },
   { value: 'market', label: 'Market' },
+  { value: 'tokenization', label: 'Tokenization' },
   { value: 'general', label: 'General' },
 ]
 
 const CATEGORY_LABELS: Record<MarketNewsCategory, string> = {
-  earnings: 'earnings', analyst: 'analyst', macro: 'macro',
+  tokenization: 'tokenization', earnings: 'earnings', analyst: 'analyst', macro: 'macro',
   ma: 'M&A', dividend: 'dividend', market: 'market', general: 'general',
 }
 
@@ -62,14 +64,14 @@ function ArticleCard({ article }: { article: MarketArticle }) {
       <div className="flex items-start justify-between gap-3">
         <div className="flex flex-wrap items-center gap-1.5 min-w-0">
           {article.isBreaking && (
-            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30 uppercase tracking-wider">
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30 uppercase tracking-wider">
               <Zap size={9} aria-hidden /> Breaking
             </span>
           )}
-          <span className={clsx('inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border', CATEGORY_STYLES[article.category])}>
+          <span className={clsx('inline-flex items-center px-1.5 py-0.5 rounded-sm text-[10px] font-medium border', CATEGORY_STYLES[article.category])}>
             {CATEGORY_LABELS[article.category]}
           </span>
-          <span className={clsx('inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border capitalize', SENTIMENT_STYLES[article.sentiment])}>
+          <span className={clsx('inline-flex items-center px-1.5 py-0.5 rounded-sm text-[10px] font-medium border capitalize', SENTIMENT_STYLES[article.sentiment])}>
             {article.sentiment}
           </span>
         </div>
@@ -77,7 +79,7 @@ function ArticleCard({ article }: { article: MarketArticle }) {
           href={article.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-text-muted hover:text-accent-blue transition-colors flex-shrink-0 mt-0.5"
+          className="text-text-muted hover:text-accent-blue transition-colors shrink-0 mt-0.5"
           aria-label="Open article"
         >
           <ExternalLink size={13} aria-hidden />
@@ -96,13 +98,13 @@ function ArticleCard({ article }: { article: MarketArticle }) {
         <div className="flex items-center gap-1.5 min-w-0">
           {article.relatedSymbols.length > 0 && (
             <>
-              <Tag size={10} className="text-text-muted flex-shrink-0" aria-hidden />
+              <Tag size={10} className="text-text-muted shrink-0" aria-hidden />
               <div className="flex flex-wrap gap-1">
                 {article.relatedSymbols.slice(0, 4).map((sym) => (
                   <Link
                     key={sym}
                     href={`/equities/${sym.toLowerCase()}`}
-                    className="px-1.5 py-0.5 rounded bg-accent-blue/10 border border-accent-blue/20 text-[10px] font-mono text-accent-blue hover:bg-accent-blue/20 transition-colors"
+                    className="px-1.5 py-0.5 rounded-sm bg-accent-blue/10 border border-accent-blue/20 text-[10px] font-mono text-accent-blue hover:bg-accent-blue/20 transition-colors"
                   >
                     {sym}
                   </Link>
@@ -111,7 +113,7 @@ function ArticleCard({ article }: { article: MarketArticle }) {
             </>
           )}
         </div>
-        <div className="flex items-center gap-1.5 flex-shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0">
           <span className="text-[11px] text-text-muted font-medium">{article.source}</span>
           <span className="text-text-muted/40">·</span>
           <span className="flex items-center gap-1 text-[11px] text-text-muted font-mono">
@@ -251,7 +253,7 @@ function SymbolSearch({ value, selectedName, onChange }: { value: string; select
         onBlur={() => setTimeout(() => setOpen(false), 150)}
         placeholder="Search any US-listed stock, ETF, or fund…"
         aria-label="Filter news by symbol"
-        className="w-60 rounded-lg border border-border bg-bg-secondary py-1.5 pl-8 pr-3 text-xs text-text-primary placeholder:text-text-muted focus:border-accent-blue/60 focus:outline-none"
+        className="w-60 rounded-lg border border-border bg-bg-secondary py-1.5 pl-8 pr-3 text-xs text-text-primary placeholder:text-text-muted focus:border-accent-blue/60 focus:outline-hidden"
       />
       {open && query.trim().length > 0 && (
         <div className="absolute left-0 top-full z-20 mt-1 max-h-64 w-80 overflow-y-auto rounded-lg border border-border bg-bg-card shadow-lg divide-y divide-border/50">
@@ -260,9 +262,9 @@ function SymbolSearch({ value, selectedName, onChange }: { value: string; select
               className="flex w-full items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-bg-elevated">
               <span className="text-xs font-semibold text-text-primary">{o.symbol}</span>
               <span className="min-w-0 flex-1 truncate text-xs text-text-muted">{o.name}</span>
-              <span className="rounded border border-border bg-bg-secondary px-1.5 py-0.5 text-[10px] text-text-muted">{o.kind}</span>
+              <span className="rounded-sm border border-border bg-bg-secondary px-1.5 py-0.5 text-[10px] text-text-muted">{o.kind}</span>
               {o.remote && (
-                <span className="rounded bg-accent-blue/10 px-1.5 py-0.5 text-[10px] text-accent-blue/80"
+                <span className="rounded-sm bg-accent-blue/10 px-1.5 py-0.5 text-[10px] text-accent-blue/80"
                   title="From the live listing directories (every US-listed security), not the curated catalogs.">
                   listed
                 </span>
@@ -369,7 +371,7 @@ function EquityNewsContent() {
             subtitle="Earnings, analyst actions, macro, and market stories with ticker tagging"
             description="Aggregates stock-market headlines from the CNBC RSS feed. Each article is classified by category, scored for sentiment from headline keywords, and tagged with catalog tickers it mentions."
             details={[
-              { label: 'Ticker detection', text: 'Company-name matching plus $CASHTAG / uppercase ticker matching against the equity catalog. Ticker chips link to the stock detail page.' },
+              { label: 'Ticker detection', text: 'Company-name matching plus $CASHTAG / uppercase ticker matching against the equity catalog. A tokenized-stock symbol counts as its company: TSLAx (Kraken xStocks) and TSLAon (Ondo) both tag TSLA, and stories about tokenized securities are filed under Tokenization. Ticker chips link to the stock detail page.' },
               { label: 'Symbol search', text: 'Search any stock, ETF, or mutual fund — catalog names match on company/fund name and ticker; a ticker outside the catalogs matches on explicit mention ($SYM or the bare symbol) only, since there is no name to look for. Finance Now has no per-ticker news feed — the only free one was withdrawn on terms grounds — so a symbol with no coverage today returns nothing rather than general market stories relabelled as its own.' },
             ]}
           />
@@ -405,7 +407,7 @@ function EquityNewsContent() {
                   key={s}
                   onClick={() => setSentimentFilter(s)}
                   className={clsx(
-                    'px-2.5 py-1 rounded text-xs font-medium border transition-all capitalize',
+                    'px-2.5 py-1 rounded-sm text-xs font-medium border transition-all capitalize',
                     sentimentFilter === s
                       ? s === 'positive' ? 'bg-emerald-400/15 text-emerald-400 border-emerald-500/30'
                         : s === 'negative' ? 'bg-red-400/15 text-red-400 border-red-500/30'
@@ -430,13 +432,13 @@ function EquityNewsContent() {
                 value={keywordInput}
                 onChange={(e) => setKeywordInput(e.target.value)}
                 placeholder="Add keyword filter…"
-                className="w-full bg-bg-secondary border border-border rounded pl-6 pr-2 py-1.5 text-xs text-text-secondary placeholder:text-text-muted/60 focus:outline-none focus:border-accent-blue/60"
+                className="w-full bg-bg-secondary border border-border rounded-sm pl-6 pr-2 py-1.5 text-xs text-text-secondary placeholder:text-text-muted/60 focus:outline-hidden focus:border-accent-blue/60"
               />
             </div>
             <button
               type="submit"
               disabled={!keywordInput.trim()}
-              className="px-2.5 py-1 rounded text-xs font-medium border border-border bg-bg-secondary text-text-muted hover:text-text-secondary hover:bg-bg-elevated transition-colors disabled:opacity-40"
+              className="px-2.5 py-1 rounded-sm text-xs font-medium border border-border bg-bg-secondary text-text-muted hover:text-text-secondary hover:bg-bg-elevated transition-colors disabled:opacity-40"
             >
               Add
             </button>
@@ -463,7 +465,7 @@ function EquityNewsContent() {
               key={cat.value}
               onClick={() => setCategoryFilter(cat.value)}
               className={clsx(
-                'px-2.5 py-1 rounded text-xs font-medium border transition-all',
+                'px-2.5 py-1 rounded-sm text-xs font-medium border transition-all',
                 categoryFilter === cat.value
                   ? 'bg-accent-blue/15 text-accent-blue border-accent-blue/30'
                   : 'text-text-muted border-border hover:text-text-secondary hover:bg-bg-elevated'

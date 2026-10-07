@@ -25,6 +25,9 @@ import { formatCompact, formatCurrency, formatPercent } from '@/lib/utils/format
 import { STALE_TIME_LONG, STALE_TIME_SHORT } from '@/lib/constants'
 import type { SecurityQuotesResponse } from '@/app/live-data/security-quotes/route'
 import type { FundUniverseResponse } from '@/app/live-data/fund-universe/route'
+import { RISK_RATINGS_SHOWN } from '@/lib/risk/visibility'
+import { fundStructureFacts } from '@/lib/data/fundStructure'
+import { FeatureNotice } from '@/components/legal/FeatureNotice'
 
 // ─── Fee drag analyzer ────────────────────────────────────────────────────────
 // Projects what this fund's expense ratio costs versus a 0.03% benchmark fund
@@ -66,7 +69,7 @@ function FeeDragCard({ expenseRatioPct, symbol, salesCharge, website }: {
       </p>
 
       {salesCharge && (
-        <div className={clsx('mb-4 rounded border px-3 py-2 text-[11px] leading-relaxed',
+        <div className={clsx('mb-4 rounded-sm border px-3 py-2 text-[11px] leading-relaxed',
           unverifiedLoad ? 'border-amber-400/40 bg-amber-400/5 text-amber-200' : 'border-orange-400/40 bg-orange-400/5 text-orange-200')}>
           {loadPct != null ? (
             <>
@@ -96,7 +99,7 @@ function FeeDragCard({ expenseRatioPct, symbol, salesCharge, website }: {
       <div className="grid grid-cols-2 gap-3 mb-4">
         <label className="block">
           <span className="text-[11px] text-text-muted uppercase tracking-wider">Investment</span>
-          <div className="mt-1 flex items-center rounded border border-border bg-bg-elevated px-2">
+          <div className="mt-1 flex items-center rounded-sm border border-border bg-bg-elevated px-2">
             <span className="text-xs text-text-muted">$</span>
             <input
               type="number"
@@ -104,7 +107,7 @@ function FeeDragCard({ expenseRatioPct, symbol, salesCharge, website }: {
               step={1000}
               value={principal}
               onChange={(e) => setPrincipal(Math.max(0, Number(e.target.value)))}
-              className="w-full bg-transparent px-1.5 py-1.5 text-sm font-mono text-text-primary focus:outline-none"
+              className="w-full bg-transparent px-1.5 py-1.5 text-sm font-mono text-text-primary focus:outline-hidden"
             />
           </div>
         </label>
@@ -117,7 +120,7 @@ function FeeDragCard({ expenseRatioPct, symbol, salesCharge, website }: {
             step={0.5}
             value={annualReturn}
             onChange={(e) => setAnnualReturn(Math.min(20, Math.max(0, Number(e.target.value))))}
-            className="mt-1 w-full rounded border border-border bg-bg-elevated px-2.5 py-1.5 text-sm font-mono text-text-primary focus:border-accent-blue/50 focus:outline-none"
+            className="mt-1 w-full rounded-sm border border-border bg-bg-elevated px-2.5 py-1.5 text-sm font-mono text-text-primary focus:border-accent-blue/50 focus:outline-hidden"
           />
         </label>
       </div>
@@ -134,7 +137,7 @@ function FeeDragCard({ expenseRatioPct, symbol, salesCharge, website }: {
           // negative that reads as a cost when it is a saving.
           const cheaper = final.feesPaid < 0
           return (
-            <div key={years} className="rounded border border-border/60 bg-bg-elevated/40 px-3 py-2">
+            <div key={years} className="rounded-sm border border-border/60 bg-bg-elevated/40 px-3 py-2">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-text-muted">{years} years</span>
                 <span className="font-mono tabular-nums text-text-primary">{formatCurrency(final.withFee, 0)}</span>
@@ -150,6 +153,8 @@ function FeeDragCard({ expenseRatioPct, symbol, salesCharge, website }: {
           )
         })}
       </div>
+
+      <FeatureNotice feature="calculators" className="mt-3" />
     </div>
   )
 }
@@ -193,7 +198,7 @@ function FundDetailInner() {
 
   if (!entry && uniLoading) {
     return (
-      <div className="space-y-4 max-w-screen-xl mx-auto">
+      <div className="space-y-4 max-w-(--breakpoint-xl) mx-auto">
         <div className="h-16 animate-pulse rounded-card bg-bg-elevated/60" />
         <div className="h-80 animate-pulse rounded-card bg-bg-elevated/60" />
       </div>
@@ -230,9 +235,10 @@ function FundDetailInner() {
       explain: 'ETFs trade all day on an exchange at market prices and are generally more tax-efficient; mutual funds price once daily at NAV and may carry investment minimums.' },
     { label: 'Strategy', value: FUND_STRATEGY_INFO[fundStrategy(entry)].label,
       explain: FUND_STRATEGY_INFO[fundStrategy(entry)].description },
-    { label: 'Risk Profile', value: FUND_RISK_INFO[fundRiskLevel(entry)].label,
-      explain: 'A coarse suitability band derived from the fund’s category and strategy — leveraged/inverse and crypto funds rank Speculative, bond funds Conservative. Not a market-data risk score.' },
-    ...(entry.focusSector ? [{ label: 'Target Sector', value: SECTOR_INFO[entry.focusSector].label,
+    // Switched off with every other risk rating until the risk engine is
+    // rebuilt (D64): a risk label on the page of the fund being viewed.
+    ...(RISK_RATINGS_SHOWN ? [{ label: 'Risk Profile', value: FUND_RISK_INFO[fundRiskLevel(entry)].label,
+      explain: 'A coarse suitability band derived from the fund’s category and strategy — leveraged/inverse and crypto funds rank Speculative, bond funds Conservative. Not a market-data risk score.' }] : []),    ...(entry.focusSector ? [{ label: 'Target Sector', value: SECTOR_INFO[entry.focusSector].label,
       explain: 'The single sector this fund concentrates in. Sector funds trade diversification for focused exposure — expect bigger swings than broad-market funds.' }] : []),
     ...(entry.focusIndustry ? [{ label: 'Industry Focus', value: entry.focusIndustry,
       explain: 'The industries within that sector where the fund’s holdings actually sit — narrower focus means the fund lives and dies with this slice of the market.' }] : []),
@@ -249,7 +255,7 @@ function FundDetailInner() {
   ] : []
 
   return (
-    <div className="space-y-6 max-w-screen-xl mx-auto">
+    <div className="space-y-6 max-w-(--breakpoint-xl) mx-auto">
       {/* Header */}
       <div>
         <Link href="/funds" className="inline-flex items-center gap-1 text-xs text-text-muted hover:text-text-secondary transition-colors">
@@ -260,14 +266,14 @@ function FundDetailInner() {
             <div className="flex flex-wrap items-center gap-3">
               <h1 className="text-2xl font-semibold text-text-primary">{name}</h1>
               <span className="font-mono text-sm text-text-muted">{symbol}</span>
-              <span className={clsx('px-1.5 py-0.5 rounded text-[10px] font-bold border',
+              <span className={clsx('px-1.5 py-0.5 rounded-sm text-[10px] font-bold border',
                 type === 'etf'
                   ? 'text-accent-blue bg-accent-blue/10 border-accent-blue/20'
                   : 'text-violet-400 bg-violet-400/10 border-violet-500/20')}>
                 {type === 'etf' ? 'ETF' : 'MUTUAL FUND'}
               </span>
               {category && (
-                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-medium border border-border text-text-secondary">
+                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-sm text-[11px] font-medium border border-border text-text-secondary">
                   <span className="size-1.5 rounded-full" style={{ backgroundColor: category.color }} aria-hidden />
                   {category.label}
                 </span>
@@ -316,7 +322,7 @@ function FundDetailInner() {
         if (!restriction) return null
         return (
           <div className="flex items-start gap-3 rounded-card border border-amber-500/20 bg-amber-500/5 px-4 py-3">
-            <Clock size={14} className="mt-0.5 text-amber-400/80 flex-shrink-0" aria-hidden />
+            <Clock size={14} className="mt-0.5 text-amber-400/80 shrink-0" aria-hidden />
             <div>
               <p className="text-xs font-medium text-amber-400">Trading restrictions apply</p>
               <p className="mt-0.5 text-xs text-text-muted leading-relaxed">{restriction}</p>
@@ -340,7 +346,7 @@ function FundDetailInner() {
                 <dl className="space-y-2.5">
                   {facts.map(({ label, value, explain }) => (
                     <div key={label} className="flex items-center justify-between gap-3 text-sm">
-                      <dt className="text-text-muted flex-shrink-0">
+                      <dt className="text-text-muted shrink-0">
                         <ExplainedLabel label={label} explain={explain} />
                       </dt>
                       {/* No link here — the header already links the issuer's
@@ -351,6 +357,27 @@ function FundDetailInner() {
                   ))}
                 </dl>
               </div>
+              {/* What replaces the switched-off Risk Profile label (D92, T-420):
+                  facts about how the fund is built, from the catalog's own
+                  fields. Shown in full, not behind a hover, since they are the
+                  point of the card. */}
+              {(() => {
+                const structure = fundStructureFacts(entry)
+                if (structure.length === 0) return null
+                return (
+                  <div className="rounded-card border border-border bg-bg-card p-4">
+                    <h2 className="text-sm font-medium text-text-secondary mb-3">How It&rsquo;s Built</h2>
+                    <dl className="space-y-2.5">
+                      {structure.map(({ label, text }) => (
+                        <div key={label}>
+                          <dt className="text-xs font-medium text-text-primary">{label}</dt>
+                          <dd className="mt-0.5 text-xs text-text-muted leading-relaxed">{text}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </div>
+                )
+              })()}
               {/* Always visible, not only when stale — the fee figures above and
                   the 30-year projection below are computed on this table, and a
                   notice that only appears past a threshold teaches readers to

@@ -14,6 +14,7 @@ import { LIVE_DATA } from '@/lib/constants'
 import type { LiveNewsArticle } from '@/app/live-data/news/route'
 import { useAssetList } from '@/lib/hooks/useAssetList'
 import { useTierStore } from '@/store/useTierStore'
+import { useEntitlementStore } from '@/store/useEntitlementStore'
 import { useFeedBiasStore } from '@/store/useFeedBiasStore'
 import { useWatchlistBias } from '@/lib/watchlist/useWatchlistBias'
 import { applyBias, shouldAugmentFetch, fetchTerms } from '@/lib/watchlist/bias'
@@ -38,6 +39,7 @@ const CATEGORY_STYLES: Record<string, string> = {
   adoption:   'text-emerald-400 bg-emerald-400/10 border-emerald-500/20',
   macro:      'text-amber-400 bg-amber-400/10 border-amber-500/20',
   global:     'text-teal-400 bg-teal-400/10 border-teal-500/20',
+  tokenization: 'text-fuchsia-400 bg-fuchsia-400/10 border-fuchsia-500/20',
   general:    'text-slate-400 bg-slate-400/10 border-slate-500/20',
 }
 
@@ -82,7 +84,7 @@ function ShareButton({ url, title }: { url: string; title: string }) {
   return (
     <button
       onClick={handleShare}
-      className="text-text-muted hover:text-accent-blue transition-colors flex-shrink-0 mt-0.5"
+      className="text-text-muted hover:text-accent-blue transition-colors shrink-0 mt-0.5"
       aria-label={copied ? 'Link copied' : 'Share article'}
     >
       {copied ? <Check size={13} className="text-emerald-400" aria-hidden /> : <Share2 size={13} aria-hidden />}
@@ -91,6 +93,10 @@ function ShareButton({ url, title }: { url: string; title: string }) {
 }
 
 function ArticleCard({ article }: { article: AnyArticle }) {
+  // Stocks a tokenized-securities story names (TS-13). They link to the stock's
+  // page while the Equities module is on, and stay plain labels while it is off.
+  const stocks = 'relatedSymbols' in article ? article.relatedSymbols : []
+  const equitiesOn = useEntitlementStore((s) => s.isEnabled('equities'))
   const provider = 'provider' in article ? article.provider : 'unknown'
   const providerLabel = 'providerLabel' in article ? article.providerLabel : null
   const providerStyle = PROVIDER_STYLES[provider] ?? PROVIDER_STYLES.unknown
@@ -107,24 +113,24 @@ function ArticleCard({ article }: { article: AnyArticle }) {
       <div className="flex items-start justify-between gap-3">
         <div className="flex flex-wrap items-center gap-1.5 min-w-0">
           {article.isBreaking && (
-            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30 uppercase tracking-wider">
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30 uppercase tracking-wider">
               <Zap size={9} aria-hidden /> Breaking
             </span>
           )}
-          <span className={clsx('inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border capitalize', categoryStyle)}>
+          <span className={clsx('inline-flex items-center px-1.5 py-0.5 rounded-sm text-[10px] font-medium border capitalize', categoryStyle)}>
             {article.category}
           </span>
-          <span className={clsx('inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border capitalize', SENTIMENT_STYLES[article.sentiment])}>
+          <span className={clsx('inline-flex items-center px-1.5 py-0.5 rounded-sm text-[10px] font-medium border capitalize', SENTIMENT_STYLES[article.sentiment])}>
             {article.sentiment}
           </span>
           {/* Provider service badge */}
           {providerLabel && (
-            <span className={clsx('inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border', providerStyle)}>
+            <span className={clsx('inline-flex items-center px-1.5 py-0.5 rounded-sm text-[10px] font-medium border', providerStyle)}>
               via {providerLabel}
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2 flex-shrink-0 mt-0.5">
+        <div className="flex items-center gap-2 shrink-0 mt-0.5">
           <ShareButton url={article.url} title={article.headline} />
           <a
             href={article.url}
@@ -152,16 +158,27 @@ function ArticleCard({ article }: { article: AnyArticle }) {
       {/* Footer */}
       <div className="flex items-center justify-between gap-2 pt-1 border-t border-border/60">
         <div className="flex items-center gap-1.5">
-          <Tag size={10} className="text-text-muted flex-shrink-0" aria-hidden />
+          <Tag size={10} className="text-text-muted shrink-0" aria-hidden />
           <div className="flex flex-wrap gap-1">
             {article.relatedAssets.map((id) => (
-              <span key={id} className="px-1.5 py-0.5 rounded bg-accent-blue/10 border border-accent-blue/20 text-[10px] font-mono text-accent-blue uppercase">
+              <span key={id} className="px-1.5 py-0.5 rounded-sm bg-accent-blue/10 border border-accent-blue/20 text-[10px] font-mono text-accent-blue uppercase">
                 {id}
               </span>
             ))}
+            {stocks.map((symbol) => {
+              const label = `${symbol} stock, named in this story about tokenized securities`
+              const chip = 'px-1.5 py-0.5 rounded-sm bg-fuchsia-500/10 border border-fuchsia-500/20 text-[10px] font-mono text-fuchsia-300'
+              return equitiesOn ? (
+                <Link key={symbol} href={`/equities/${symbol.toLowerCase()}`} title={label} aria-label={label} className={clsx(chip, 'hover:bg-fuchsia-500/20 transition-colors')}>
+                  {symbol}
+                </Link>
+              ) : (
+                <span key={symbol} title={label} className={chip}>{symbol}</span>
+              )
+            })}
           </div>
         </div>
-        <div className="flex items-center gap-1.5 flex-shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0">
           <span className="text-[11px] text-text-muted font-medium">{article.source}</span>
           <span className="text-text-muted/40">·</span>
           <span className="flex items-center gap-1 text-[11px] text-text-muted font-mono">
@@ -223,9 +240,10 @@ function NewsPageInner() {
 
   const watchlist = useWatchlistBias()
   const biasStrength = useFeedBiasStore((s) => s.getStrength('crypto-news'))
-  /** Crypto articles carry asset-id tags; text is the fallback. */
+  /** Crypto articles carry asset-id tags, plus stock tickers on tokenized-securities stories; text is the fallback. */
   const toBiasable = (a: AnyArticle) => ({
     assetIds: a.relatedAssets,
+    symbols: 'relatedSymbols' in a ? a.relatedSymbols : undefined,
     text: `${a.headline} ${a.summary}`,
   })
 
@@ -274,6 +292,7 @@ function NewsPageInner() {
           a.sentiment,
           a.source,
           ...a.relatedAssets,
+          ...('relatedSymbols' in a ? a.relatedSymbols : []),
         ].join(' ').toLowerCase()
         if (!keywords.every((kw) => topic.includes(kw))) return false
       }
@@ -300,7 +319,8 @@ function NewsPageInner() {
                 : 'Regulatory, protocol, and market updates for tracked assets'}
               description="News & Analysis aggregates regulatory, protocol, and market stories from multiple providers. Each article is tagged with the assets it mentions and a sentiment score so you can filter by coin or quickly spot negative coverage."
               details={[
-                { label: 'Asset detection', text: 'Articles are tagged using coin name/ticker matching, issuer mapping (e.g. Circle → USDC), and regulatory inference (e.g. MiCA → USDC, USDT).' },
+                { label: 'Asset detection', text: 'Articles are tagged using coin name/ticker matching, issuer mapping (e.g. Circle → USDC), and regulatory inference (e.g. MiCA → USDC, USDT). The CLARITY Act and other US market-structure bills bear on every coin, so those stories appear in every coin’s feed.' },
+                { label: 'Tokenized securities', text: 'A story about tokenized stocks, funds or bonds is filed under Tokenization. If it names a stock in the equity catalog, by company name, ticker or token symbol (TSLAx from Kraken xStocks, TSLAon from Ondo), that stock gets its own tag, which links to the stock’s page while the Equities module is on. A tokenized share is a separate product from the share itself, with its own price, hours and eligibility rules.' },
                 { label: 'Sentiment', text: 'Positive (green dot) · Neutral (grey) · Negative (red). Sentiment is inferred from headline keywords.' },
                 { label: 'Sources', text: 'Finance Now aggregates live RSS and JSON feeds from The Block, CoinDesk, Cointelegraph, and others. There is no mock mode — if no feed is reachable the list is shown as empty rather than seeded with fabricated articles.' },
                 { label: 'Keyword filter', text: 'Type a word or phrase to filter the feed by topic. Keywords match against each story’s headline, summary, classified category, tagged assets, sentiment, and source — so terms like "regulation" or "btc" match relevant stories even when the word isn’t in the title. Multiple keywords are combined with AND (every keyword must match); matching is case-insensitive. Adding a keyword also queries the news providers (NewsAPI, GNews) for fresh stories on that term, so the feed pulls in matching coverage rather than only filtering what is already loaded.' },
@@ -387,7 +407,7 @@ function NewsPageInner() {
               <select
                 value={assetFilter}
                 onChange={(e) => setAssetFilter(e.target.value)}
-                className="bg-bg-secondary border border-border rounded px-2 py-1.5 text-xs text-text-secondary focus:outline-none focus:border-accent-blue/60"
+                className="bg-bg-secondary border border-border rounded-sm px-2 py-1.5 text-xs text-text-secondary focus:outline-hidden focus:border-accent-blue/60"
               >
                 <option value="all">All Assets</option>
                 {assetList.map((a) => (
@@ -404,7 +424,7 @@ function NewsPageInner() {
                     key={s}
                     onClick={() => setSentimentFilter(s)}
                     className={clsx(
-                      'px-2.5 py-1 rounded text-xs font-medium border transition-all capitalize',
+                      'px-2.5 py-1 rounded-sm text-xs font-medium border transition-all capitalize',
                       sentimentFilter === s
                         ? s === 'positive' ? 'bg-emerald-400/15 text-emerald-400 border-emerald-500/30'
                           : s === 'negative' ? 'bg-red-400/15 text-red-400 border-red-500/30'
@@ -432,13 +452,13 @@ function NewsPageInner() {
                     value={keywordInput}
                     onChange={(e) => setKeywordInput(e.target.value)}
                     placeholder="Add keyword filter…"
-                    className="w-full bg-bg-secondary border border-border rounded pl-6 pr-2 py-1.5 text-xs text-text-secondary placeholder:text-text-muted/60 focus:outline-none focus:border-accent-blue/60"
+                    className="w-full bg-bg-secondary border border-border rounded-sm pl-6 pr-2 py-1.5 text-xs text-text-secondary placeholder:text-text-muted/60 focus:outline-hidden focus:border-accent-blue/60"
                   />
                 </div>
                 <button
                   type="submit"
                   disabled={!keywordInput.trim()}
-                  className="px-2.5 py-1 rounded text-xs font-medium border border-border bg-bg-secondary text-text-muted hover:text-text-secondary hover:bg-bg-elevated transition-colors disabled:opacity-40"
+                  className="px-2.5 py-1 rounded-sm text-xs font-medium border border-border bg-bg-secondary text-text-muted hover:text-text-secondary hover:bg-bg-elevated transition-colors disabled:opacity-40"
                 >
                   Add
                 </button>
@@ -488,7 +508,7 @@ function NewsPageInner() {
                 onClick={() => setCategoryFilter(categoryFilter === cat.value ? 'all' : (cat.value as NewsCategory))}
                 title={categoryFilter === cat.value ? 'Click again to show all categories' : undefined}
                 className={clsx(
-                  'px-2.5 py-1 rounded text-xs font-medium border transition-all',
+                  'px-2.5 py-1 rounded-sm text-xs font-medium border transition-all',
                   categoryFilter === cat.value
                     ? 'bg-accent-blue/15 text-accent-blue border-accent-blue/30'
                     : 'text-text-muted border-border hover:text-text-secondary hover:border-border/80 hover:bg-bg-elevated'
