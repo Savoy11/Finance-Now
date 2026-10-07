@@ -160,8 +160,24 @@ export interface SourceTermsEntry {
  * A verdict older than this is reported stale. 180 days is deliberately shorter
  * than nothing and longer than the 120 used for price/fee snapshots: terms move
  * less often than markets, but a two-year-old reading is not a reading.
+ *
+ * It is also a clock `npm run staleness:check` watches (T-250, D88, 2026-10-07),
+ * under the `*_STALE_AFTER_DAYS` name that check discovers. Until then only a
+ * READER learned the registry was ageing (the /data-sources notice); nothing told
+ * a maintainer that a re-read was due.
  */
-export const SOURCE_TERMS_REVIEW_AFTER_DAYS = 180
+export const TERMS_REREAD_STALE_AFTER_DAYS = 180
+export const SOURCE_TERMS_REVIEW_AFTER_DAYS = TERMS_REREAD_STALE_AFTER_DAYS
+
+/**
+ * The date of the OLDEST reading in the registry: the clock's anchor. The check
+ * warns three weeks before that reading turns 180 days old and fails on the day
+ * it does, unless the oldest entries are re-read (then set this to the new oldest
+ * `reviewedAt`) or the lapse is recorded as a decision with a STALENESS-ACK line
+ * in this comment block. Typed rather than computed because the check reads
+ * source text; sourceTerms.test.ts fails if it stops matching the registry.
+ */
+export const TERMS_REREAD_OLDEST_READING = '2026-08-05'
 
 /**
  * The registry was seeded on this date as part of the Yahoo removal. Entries

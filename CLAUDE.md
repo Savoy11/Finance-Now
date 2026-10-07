@@ -936,7 +936,11 @@ that no summary site is ungated. No source is `headline-link` today.
 
 Verdicts go **stale** (180 days) rather than expiring — terms change, but breaking the app
 because nobody re-read a document is the wrong failure. The registry is dated by its
-**oldest** entry, not its newest, exactly like the hand-maintained data catalogs.
+**oldest** entry, not its newest, exactly like the hand-maintained data catalogs. Since
+2026-10-07 (T-250, D88) that oldest date is also a `npm run staleness:check` clock
+(`TERMS_REREAD_OLDEST_READING`), so the re-read is announced three weeks ahead instead of
+waiting for someone to notice; a test keeps the anchor equal to the registry's oldest
+`reviewedAt`.
 
 ---
 
