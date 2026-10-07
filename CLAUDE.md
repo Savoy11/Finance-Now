@@ -859,7 +859,9 @@ site nobody has reviewed. Full design: `docs/architecture/source-terms.md`.
 > to get wrong: **a tokenized share is a *representation* of an existing instrument, not a
 > coin and not a new asset class** (the same Tesla share can carry several prices, hours,
 > rights and eligibility rules at once); **USDY in the coin registry is a tokenized Treasury
-> note filed as a stablecoin**, whose yield accrual the catalog records as a 282 bps depeg;
+> note, not a stablecoin** (its false 282 bps "depeg" went 2026-09-22, and since 2026-10-07 it
+> is filed as `assetType: 'tokenized'`, which fills the Coins page's "Tokenized" filter — TS-1,
+> TS-2; `assetTypeChips.test.ts` holds both and fails on a filter chip that can match no coin);
 > and the SEC's 2026-09-17 innovation exemption relieves venues and liquidity providers,
 > **not information services**, so the app's analytics-only posture holds while it labels
 > truthfully. `docs/LEGAL-REVIEW.md` §3.G carries the open legal questions.
