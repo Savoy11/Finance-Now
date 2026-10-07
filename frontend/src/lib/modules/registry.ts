@@ -1,4 +1,5 @@
 import type { LucideIcon } from 'lucide-react'
+import type { FeatureNoticeId } from '@/lib/legal/featureNotices'
 import {
   Flame,
   ShieldAlert,
@@ -91,6 +92,12 @@ export interface SuiteModule {
   /** Whether the module can be disabled. Core is always on. */
   optional: boolean
   navItems: ModuleNavItem[]
+  /**
+   * A line every page of the module carries under its content. ModuleGate
+   * renders it, so a new page inherits it. Only crypto has one: the disclosure
+   * draft's "Crypto pages" line (T-293).
+   */
+  pageNotice?: FeatureNoticeId
 }
 
 export const MODULES: SuiteModule[] = [
@@ -166,6 +173,7 @@ export const MODULES: SuiteModule[] = [
       // the prefix here would be harmless but misleading — nothing owns it.
     ],
     optional: true,
+    pageNotice: 'crypto',
     navItems: [
       // Deliberately no "Reserves" entry. The Reserve Transparency Monitor is
       // a tab inside Coins (/assets?tab=reserves) as of 2026-07-29 — it used to

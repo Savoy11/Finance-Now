@@ -51,6 +51,9 @@ structure, regulatory research, disclosures and tax compliance are decided once,
         and "recommendations" at scale is exactly the line flagged in
         `docs/MARKET-ASSESSMENT.md`'s risk register. Keep framing informational; know where the
         line actually is.
+        Risk ratings, asset by asset: `docs/assessments/risk-ratings-by-asset-type-2026-10-07.md`
+        (T-419, 2026-10-07). The owner answered the same day (D92); the legal review (D4) is
+        next.
       - **Broker-dealer** — triggered only if the brokerage-linking work goes beyond read-only.
       - **FTC** — affiliate disclosure, endorsement rules, "clear and conspicuous".
       - **Data licensing / redistribution** — serving third-party data from our keys.
@@ -100,7 +103,9 @@ structure, regulatory research, disclosures and tax compliance are decided once,
       own footer link. The short "not investment advice" lines stay beside the features they
       qualify. **Built 2026-10-01 for Finance Now (T-293):** the footer is on every page, sign-in
       included, and Settings → About & Legal replaced How We Make Money, whose address redirects.
-      Still to do: the short lines beside the features (drafted in the disclosure set).
+      **The short lines beside the features followed on 2026-10-07 (T-293):** the draft's six
+      Finance Now lines sit beside Portfolio Builder, the calculators, the AI features, the Pump
+      Report, video answers and every crypto page, copied as written, and a test pins each place.
 - [x] Keep one canonical copy per document, shared by both products where the text is identical,
       so they can't drift.
       ✅ **DECIDED 2026-10-04 (D60, `docs/decisions/2026-10-04-owner-decisions.md`):** for now

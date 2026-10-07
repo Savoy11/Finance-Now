@@ -32,7 +32,7 @@ describe('parseTradeInput', () => {
       ok: true,
       value: {
         instrumentKey: 'bitcoin', nameHint: '', side: 'buy', quantity: '0.5', pricePerUnit: '60000',
-        feeUsd: '0', executedAt: new Date('2026-03-14T00:00:00Z'), opening: false, note: null,
+        feeUsd: '0', executedAt: new Date('2026-03-14T00:00:00Z'), opening: false, note: null, split: null,
       },
     })
   })
@@ -67,7 +67,7 @@ describe('parseTradeInput', () => {
   })
 
   it('refuses a kind of trade the ledger does not know', () => {
-    expect(refusal({ side: 'split' })).toMatch(/buy, sell, transfer_in, transfer_out/)
+    expect(refusal({ side: 'dividend' })).toMatch(/buy, sell, transfer_in, transfer_out, split/)
   })
 
   it('takes amounts only as decimal strings, so no digit is lost', () => {
@@ -110,6 +110,58 @@ describe('parseTradeInput', () => {
   })
 })
 
+describe('parseTradeInput — splits (T-421)', () => {
+  const aaplSplit = { instrument: 'sec:AAPL', side: 'split', unitsAfter: 4, unitsBefore: 1, executedAt: '2020-08-31' }
+  const parseSplit = (over: Record<string, unknown> = {}) => parseTradeInput({ ...aaplSplit, ...over }, NOW)
+  const splitRefusal = (over: Record<string, unknown>) => {
+    const r = parseSplit(over)
+    if (r.ok) throw new Error(`expected a refusal for ${JSON.stringify(over)}`)
+    return r.error
+  }
+
+  it('lets a split in as a ratio and a date, with no units, price or fee of its own', () => {
+    expect(parseSplit()).toEqual({
+      ok: true,
+      value: {
+        instrumentKey: 'sec:AAPL', nameHint: '', side: 'split', quantity: '0', pricePerUnit: '0', feeUsd: '0',
+        executedAt: new Date('2020-08-31T00:00:00Z'), opening: false, note: null,
+        split: { unitsAfter: 4, unitsBefore: 1, cashInLieuUsd: null },
+      },
+    })
+  })
+
+  it('takes the ratio as numbers or digits, and keeps cash paid for a fraction', () => {
+    expect(parseSplit({ unitsAfter: '1', unitsBefore: '10', cashInLieuUsd: '12.5' })).toMatchObject({
+      value: { split: { unitsAfter: 1, unitsBefore: 10, cashInLieuUsd: '12.5' } },
+    })
+    expect(parseSplit({ cashInLieuUsd: '' })).toMatchObject({ value: { split: { cashInLieuUsd: null } } })
+  })
+
+  it('refuses a ratio that is not two different whole numbers in range', () => {
+    expect(splitRefusal({ unitsAfter: undefined })).toBe('The units after must be a whole number from 1 to 1,000,000.')
+    for (const unitsAfter of [0, 1.5, '1.5', '-2', 1_000_001, 'two']) expect(parseSplit({ unitsAfter }).ok, String(unitsAfter)).toBe(false)
+    expect(splitRefusal({ unitsBefore: 0 })).toMatch(/units before must be a whole number/)
+    expect(splitRefusal({ unitsAfter: 3, unitsBefore: 3 })).toMatch(/cannot be the same/)
+  })
+
+  it('refuses units, a price or a fee on a split, and a ratio on anything else', () => {
+    expect(splitRefusal({ quantity: '10' })).toMatch(/no units, price or fee of its own/)
+    expect(splitRefusal({ pricePerUnit: '0' })).toMatch(/no units, price or fee of its own/)
+    expect(refusal({ unitsAfter: 2, unitsBefore: 1 })).toBe('Only a split has a ratio or cash for a fraction.')
+    expect(refusal({ cashInLieuUsd: '1.00' })).toBe('Only a split has a ratio or cash for a fraction.')
+  })
+
+  it('needs the date the split took effect, and is never a starting position', () => {
+    expect(splitRefusal({ executedAt: undefined })).toMatch(/needs the date it took effect/)
+    expect(splitRefusal({ opening: true })).toBe('A starting position is recorded as a transfer in.')
+  })
+
+  it('takes cash for a fraction only as dollars and cents', () => {
+    expect(splitRefusal({ cashInLieuUsd: 7.5 })).toMatch(/decimal string/)
+    expect(splitRefusal({ cashInLieuUsd: '7.505' })).toMatch(/cash for a fraction "7.505" has more than 2 decimal places/)
+  })
+})
+
 describe('parsePortfolioInput', () => {
   it('needs a name to create a portfolio, and an id must be a UUID', () => {
     expect(parsePortfolioInput({ name: '  Brokerage  ', description: ' taxable ' })).toEqual({ ok: true, value: { name: 'Brokerage', description: 'taxable' } })
@@ -142,7 +194,7 @@ describe('buildLedgerView', () => {
     return {
       id: `t${n}`, instrumentKey, symbol: instrumentKey === 'bitcoin' ? 'BTC' : instrumentKey.replace('sec:', ''),
       name: instrumentKey, side, quantity, pricePerUnit: price, feeUsd: '0', executedAt: at(date),
-      opening: false, note: null, createdAt: new Date(`2026-10-01T00:00:0${n % 10}Z`), ...extra,
+      opening: false, note: null, createdAt: new Date(`2026-10-01T00:00:0${n % 10}Z`), split: null, ...extra,
     }
   }
   const cancel = (tradeId: string): StoredCancellation => ({ tradeId, reason: 'wrong price', createdAt: new Date('2026-10-02T00:00:00Z') })
@@ -181,6 +233,21 @@ describe('buildLedgerView', () => {
     expect(view.holdings[1].basis.lots[0]).toMatchObject({ tradeId: start.id, startingPosition: true, acquiredAt: null })
   })
 
+  it('carries a split into its holding and its row, and a cancelled split counts for nothing (T-421)', () => {
+    const b = stored('sec:NVDA', 'buy', '10', '400', '2024-01-02')
+    const x = stored('sec:NVDA', 'split', '0', '0', '2024-06-10', { split: { unitsAfter: 10, unitsBefore: 1, cashInLieuUsd: null } })
+    const view = buildLedgerView([x, b], [], NOW)
+    expect(view.trades.map((t) => [t.id, t.side, t.split])).toEqual([
+      [b.id, 'buy', null],
+      [x.id, 'split', { unitsAfter: 10, unitsBefore: 1, cashInLieuUsd: null }],
+    ])
+    expect([view.holdings[0].basis.quantityHeld, view.holdings[0].basis.averageCostUsd]).toEqual(['100', '40'])
+
+    const undone = buildLedgerView([x, b], [cancel(x.id)], NOW)
+    expect(undone.trades[1].cancelled).not.toBeNull()
+    expect([undone.holdings[0].basis.quantityHeld, undone.holdings[0].basis.averageCostUsd]).toEqual(['10', '400'])
+  })
+
   it('shows what cancelling a purchase does to a later sale, rather than hiding it', () => {
     const b = stored('sec:MSFT', 'buy', '4', '300', '2026-01-01')
     const s = stored('sec:MSFT', 'sell', '4', '350', '2026-02-01')
@@ -198,7 +265,7 @@ describe('valueLedger', () => {
     return {
       id: `v${n}`, instrumentKey, symbol, name: symbol, side, quantity, pricePerUnit: price, feeUsd: '0',
       executedAt: date === null ? null : new Date(`${date}T15:00:00Z`), opening: false, note: null,
-      createdAt: new Date('2026-10-01T00:00:00Z'), ...extra,
+      createdAt: new Date('2026-10-01T00:00:00Z'), split: null, ...extra,
     }
   }
   const view = buildLedgerView([
@@ -278,8 +345,14 @@ describe('formatting for the screen', () => {
 
   it('names every kind of trade, and a starting position as one', () => {
     expect(tradeKindLabel({ side: 'transfer_in', opening: true })).toBe('Starting position')
-    expect(['buy', 'sell', 'transfer_in', 'transfer_out'].map((side) => tradeKindLabel({ side: side as StoredTrade['side'], opening: false })))
-      .toEqual(['Buy', 'Sell', 'Transfer in', 'Transfer out'])
+    expect(['buy', 'sell', 'transfer_in', 'transfer_out', 'split'].map((side) => tradeKindLabel({ side: side as StoredTrade['side'], opening: false })))
+      .toEqual(['Buy', 'Sell', 'Transfer in', 'Transfer out', 'Split'])
+  })
+
+  it('names a split by its ratio, and one that leaves fewer units as a reverse split (T-421)', () => {
+    const label = (unitsAfter: number, unitsBefore: number) =>
+      tradeKindLabel({ side: 'split', opening: false, split: { unitsAfter, unitsBefore, cashInLieuUsd: null } })
+    expect([label(2, 1), label(3, 2), label(1, 10)]).toEqual(['Split, 2 for 1', 'Split, 3 for 2', 'Reverse split, 1 for 10'])
   })
 })
 

@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { Bot, X, Send, Loader2, Sparkles, Wrench } from 'lucide-react'
 import { useWatchlistBias } from '@/lib/watchlist/useWatchlistBias'
 import { agentWatchlistPayload } from '@/lib/watchlist/bias'
+import { FeatureNotice } from '@/components/legal/FeatureNotice'
 
 interface ChatMessage {
   role: 'user' | 'assistant'
@@ -186,6 +187,7 @@ export function AssistantWidget() {
                 <Send size={16} />
               </button>
             </div>
+            <FeatureNotice feature="aiAnswers" className="mt-2 text-center" />
           </div>
         </div>
       )}

@@ -7,7 +7,7 @@ import {
   type LedgerView, type TradeView,
 } from '@/lib/data/tradeLedger'
 import {
-  countTrades, dbUnavailable, hasStartingPosition, insertTrade, loadTrades, notMigrated,
+  countTrades, dbUnavailable, hasStartingPosition, insertTrade, loadTrades, notMigrated, notMigratedForSplits,
   ownedTrackedPortfolio, resolveTradeInstrument,
 } from '@/lib/server/trackedPortfolios'
 
@@ -16,7 +16,9 @@ import {
 //        included, and per holding the FIFO lots, gains and issues
 //   POST /api/user/tracked-portfolios/[id]/trades  → record one trade
 //        {instrument, side, quantity, pricePerUnit, feeUsd?, executedAt?,
-//         opening?, note?, name?}
+//         opening?, note?, name?}, or a split (T-421):
+//        {instrument, side: 'split', unitsAfter, unitsBefore, cashInLieuUsd?,
+//         executedAt, note?, name?}
 // Amounts travel as decimal strings, as the database stores them, so nothing
 // is lost to floating point. A trade is never changed or removed; a mistake is
 // cancelled (./[tradeId]/cancel) and the right trade recorded.
@@ -92,7 +94,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const saved = await insertTrade(userId, id, instrumentId, trade)
     return NextResponse.json<LedgerResponse>({ ok: true, trade: toTradeView(saved) }, { status: 201 })
   } catch (e) {
-    if (isSchemaBehindError(e)) return notMigrated()
+    if (isSchemaBehindError(e)) return trade.split ? notMigratedForSplits() : notMigrated()
     throw e
   }
 }

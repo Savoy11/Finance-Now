@@ -69,13 +69,22 @@ export function TradesTable({ trades, onCancel, busyId }: {
           <tbody>
             {trades.map((t) => {
               const cancelled = !!t.cancelled
-              const priced = t.side !== 'transfer_out'
+              // A split is a ratio, so it has no units, price or fee of its own (T-421).
+              const isSplit = t.side === 'split'
+              const priced = t.side !== 'transfer_out' && !isSplit
               return (
                 <tr key={t.id} className={clsx('border-b border-border/50 last:border-0 align-top', cancelled && 'opacity-60')}>
                   <td className={clsx('px-4 py-2.5 whitespace-nowrap text-text-secondary', cancelled && 'line-through')}>{formatTradeDate(t.executedAt)}</td>
-                  <td className={clsx('px-3 py-2.5 whitespace-nowrap text-text-primary', cancelled && 'line-through')}>{tradeKindLabel(t)}</td>
+                  <td className={clsx('px-3 py-2.5 whitespace-nowrap text-text-primary', cancelled && 'line-through')}>
+                    {tradeKindLabel(t)}
+                    {t.split?.cashInLieuUsd && (
+                      <div className="text-[11px] text-text-muted">Cash for a fraction: {formatUsd(t.split.cashInLieuUsd)}</div>
+                    )}
+                  </td>
                   <td className={clsx('px-3 py-2.5 whitespace-nowrap font-semibold text-text-primary', cancelled && 'line-through')}>{t.symbol}</td>
-                  <td className={clsx('px-3 py-2.5 text-right font-mono whitespace-nowrap', cancelled && 'line-through')}>{formatUnits(trimDecimal(t.quantity))}</td>
+                  <td className={clsx('px-3 py-2.5 text-right font-mono whitespace-nowrap', cancelled && 'line-through')}>
+                    {isSplit ? '—' : formatUnits(trimDecimal(t.quantity))}
+                  </td>
                   <td className={clsx('px-3 py-2.5 text-right font-mono whitespace-nowrap text-text-secondary', cancelled && 'line-through')}>
                     {priced ? formatUnitPrice(trimDecimal(t.pricePerUnit)) : '—'}
                   </td>

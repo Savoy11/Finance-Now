@@ -26,6 +26,8 @@ import { STALE_TIME_LONG, STALE_TIME_SHORT } from '@/lib/constants'
 import type { SecurityQuotesResponse } from '@/app/live-data/security-quotes/route'
 import type { FundUniverseResponse } from '@/app/live-data/fund-universe/route'
 import { RISK_RATINGS_SHOWN } from '@/lib/risk/visibility'
+import { fundStructureFacts } from '@/lib/data/fundStructure'
+import { FeatureNotice } from '@/components/legal/FeatureNotice'
 
 // ─── Fee drag analyzer ────────────────────────────────────────────────────────
 // Projects what this fund's expense ratio costs versus a 0.03% benchmark fund
@@ -151,6 +153,8 @@ function FeeDragCard({ expenseRatioPct, symbol, salesCharge, website }: {
           )
         })}
       </div>
+
+      <FeatureNotice feature="calculators" className="mt-3" />
     </div>
   )
 }
@@ -234,8 +238,7 @@ function FundDetailInner() {
     // Switched off with every other risk rating until the risk engine is
     // rebuilt (D64): a risk label on the page of the fund being viewed.
     ...(RISK_RATINGS_SHOWN ? [{ label: 'Risk Profile', value: FUND_RISK_INFO[fundRiskLevel(entry)].label,
-      explain: 'A coarse suitability band derived from the fund’s category and strategy — leveraged/inverse and crypto funds rank Speculative, bond funds Conservative. Not a market-data risk score.' }] : []),
-    ...(entry.focusSector ? [{ label: 'Target Sector', value: SECTOR_INFO[entry.focusSector].label,
+      explain: 'A coarse suitability band derived from the fund’s category and strategy — leveraged/inverse and crypto funds rank Speculative, bond funds Conservative. Not a market-data risk score.' }] : []),    ...(entry.focusSector ? [{ label: 'Target Sector', value: SECTOR_INFO[entry.focusSector].label,
       explain: 'The single sector this fund concentrates in. Sector funds trade diversification for focused exposure — expect bigger swings than broad-market funds.' }] : []),
     ...(entry.focusIndustry ? [{ label: 'Industry Focus', value: entry.focusIndustry,
       explain: 'The industries within that sector where the fund’s holdings actually sit — narrower focus means the fund lives and dies with this slice of the market.' }] : []),
@@ -354,6 +357,27 @@ function FundDetailInner() {
                   ))}
                 </dl>
               </div>
+              {/* What replaces the switched-off Risk Profile label (D92, T-420):
+                  facts about how the fund is built, from the catalog's own
+                  fields. Shown in full, not behind a hover, since they are the
+                  point of the card. */}
+              {(() => {
+                const structure = fundStructureFacts(entry)
+                if (structure.length === 0) return null
+                return (
+                  <div className="rounded-card border border-border bg-bg-card p-4">
+                    <h2 className="text-sm font-medium text-text-secondary mb-3">How It&rsquo;s Built</h2>
+                    <dl className="space-y-2.5">
+                      {structure.map(({ label, text }) => (
+                        <div key={label}>
+                          <dt className="text-xs font-medium text-text-primary">{label}</dt>
+                          <dd className="mt-0.5 text-xs text-text-muted leading-relaxed">{text}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </div>
+                )
+              })()}
               {/* Always visible, not only when stale — the fee figures above and
                   the 30-year projection below are computed on this table, and a
                   notice that only appears past a threshold teaches readers to
