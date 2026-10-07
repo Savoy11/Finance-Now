@@ -62,9 +62,9 @@
   "total_verified": 398,
   "outstanding": 369,
   "by_status": {
-   "closed": 205,
-   "open": 21,
-   "parked": 136,
+   "closed": 207,
+   "open": 20,
+   "parked": 135,
    "blocked": 6,
    "unclear": 1
   },
@@ -75,7 +75,7 @@
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 205,
+  "closed_by_annotation": 207,
   "counts_recomputed_on": "2026-10-07",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 369
@@ -13408,7 +13408,7 @@
   {
    "id": "T-416",
    "title": "Make the three readings T-414 could not: Teucrium fact sheets, IBIT/ETHA waiver status, SIVR's gross fee",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "data-verification",
@@ -13440,6 +13440,20 @@
     "evidence": [
      "docs/decisions/2026-09-30-owner-decisions.md"
     ]
+   },
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-10-07",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "All three readings agree with the catalog, so the item closes on its own criterion. Read on the owner's machine on 2026-10-07 from each issuer's own page. IBIT: BlackRock's product page states \"Sponsor Fee: Fees as stated in the prospectus 0.25%\", with no waiver in effect today (its waiver language describes past performance periods), so under D36 the catalog's 0.25 stands. ETHA: the same page wording, 0.25%, no waiver today; the catalog's 0.25 stands. SIVR: abrdn's product page states \"Since inception, the fund has always charged 30bps. There has been a voluntary waiver that has been in effect since the formation of the trust. The Sponsor has continued to waive a portion of its fee (0.15%) and will continue to do so until further notice.\" That is 0.30% net of a 0.15% waiver, 0.45% gross, which is what the catalog records (0.30, description \"0.45% gross\"). The Teucrium fact-sheet check was dropped by the owner on 2026-09-30.",
+    "evidence": [
+     "https://www.ishares.com/us/products/333011/ishares-bitcoin-trust-etf",
+     "https://www.ishares.com/us/products/337614/ishares-ethereum-trust-etf",
+     "https://www.aberdeeninvestments.com/en-us/investor/investment-solutions/commodities/sivr",
+     "frontend/src/lib/data/fundCatalog.ts"
+    ],
+    "approved_by": "owner, 2026-10-07: \"start with #265 and the two small checks\""
    }
   },
   {
@@ -13655,8 +13669,7 @@
   {
    "id": "T-422",
    "title": "Confirm the live deposit-status fields with npm run fee-probe on the owner's machine (D66)",
-   "status": "parked",
-   "parked_on": "2026-10-07",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "data-verification",
@@ -13681,6 +13694,18 @@
     "on": "2026-10-04",
     "by": "session steward",
     "why": "Opened with D66: the deposit-status parsers are built and tested against documented payload shapes, and only a run from the owner's machine can confirm the live field names."
+   },
+   "closure": {
+    "status_was": "parked",
+    "closed_on": "2026-10-07",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "Closes on its own criterion: npm run fee-probe, run on the owner's machine on 2026-10-07, read deposit status on every row of all four feeds D66 reads (KuCoin 48 of 48, HTX 53 of 53, Bitget 42 of 42, XT.com 41 of 41), so the field names taken from the exchanges' documentation are the ones the feeds send. 92 of the 115 overlay routes carry a live deposit status. The probe listed nine routes as deposits-closed (KuCoin: MATIC on Polygon and ERC-20, BTC on Arbitrum, and two more; HTX: USDC on Avalanche and Optimism, ETH on Optimism, and one more); these were not checked against the exchanges' own status pages, and the KuCoin MATIC rows are consistent with MATIC's move to POL. The page these feeds serve stays hidden (D89); T-428's rebuild reads the same feeds.",
+    "evidence": [
+     "frontend/scripts/probe-exchange-fee-apis.mjs",
+     "docs/decisions/2026-10-04-owner-decisions.md"
+    ],
+    "approved_by": "owner, 2026-10-07: \"start with #265 and the two small checks\""
    }
   },
   {
@@ -39368,6 +39393,14 @@
     "evidence": [
      "frontend/src/lib/server/__tests__/tokenizedSecurities.test.ts",
      "docs/audits/tokenized-securities-probe-2026-10-07.md"
+    ]
+   },
+   {
+    "on": "2026-10-07",
+    "what": "T-416 and T-422 closed on their own criteria after readings on the owner's machine: the IBIT, ETHA and SIVR fees agree with the catalog; all four deposit-status feeds parse.",
+    "evidence": [
+     "frontend/src/lib/data/fundCatalog.ts",
+     "frontend/scripts/probe-exchange-fee-apis.mjs"
     ]
    }
   ]
