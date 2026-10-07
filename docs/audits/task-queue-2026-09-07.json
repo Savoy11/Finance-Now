@@ -13597,8 +13597,9 @@
    },
    "progress": {
     "noted_on": "2026-10-07",
-    "note": "2026-10-07: scope item (3) is built: each Treasury yield page shows what a 1-point rise or fall in yield does to the price of a Treasury at that maturity (exact repricing) and its duration, worked out from the official par yield by lib/utils/parBondDuration.ts. Futures pages do not show it, since a contract tracks whichever bond is cheapest to deliver. 2026-10-07: scope item (2) is built: fund pages show a How It’s Built box in place of the switched-off Risk Profile label, read from the catalog’s own fields (strategy, category, tracked index) by lib/data/fundStructure.ts, with a test that bars risk-tolerance words. Bond duration and the prospectus link are not in the catalog, so they are not shown yet. 2026-10-07 (D92): T-419 is answered, so this moves from blocked to open with the scope above. The showing still waits on counsel; the building does not. 2026-10-05: D77 (2026-10-05) closed T-357 (risk scores through /api/v1/risk/* and a score_equity MCP tool) into this item, as superseded by D64. Its question, whether risk figures may reach the outside connections, is decided here with the app's own pages.",
+    "note": "2026-10-07: the coin catalog now marks USDY as a tokenized security (assetType tokenized), the first of the marks item (1) needs before any coin is rated; TS-3 (finding others in Coin Discovery) still waits on owner-machine probes. 2026-10-07: scope item (3) is built: each Treasury yield page shows what a 1-point rise or fall in yield does to the price of a Treasury at that maturity (exact repricing) and its duration, worked out from the official par yield by lib/utils/parBondDuration.ts. Futures pages do not show it, since a contract tracks whichever bond is cheapest to deliver. 2026-10-07: scope item (2) is built: fund pages show a How It’s Built box in place of the switched-off Risk Profile label, read from the catalog’s own fields (strategy, category, tracked index) by lib/data/fundStructure.ts, with a test that bars risk-tolerance words. Bond duration and the prospectus link are not in the catalog, so they are not shown yet. 2026-10-07 (D92): T-419 is answered, so this moves from blocked to open with the scope above. The showing still waits on counsel; the building does not. 2026-10-05: D77 (2026-10-05) closed T-357 (risk scores through /api/v1/risk/* and a score_equity MCP tool) into this item, as superseded by D64. Its question, whether risk figures may reach the outside connections, is decided here with the app's own pages.",
     "evidence": [
+     "frontend/src/lib/data/__tests__/assetTypeChips.test.ts",
      "frontend/src/lib/utils/parBondDuration.ts",
      "frontend/src/lib/data/fundStructure.ts",
      "docs/decisions/2026-10-07-owner-decisions.md",
@@ -39345,6 +39346,13 @@
     "what": "T-420 scope item (3): Treasury yield pages show duration as arithmetic (D92).",
     "evidence": [
      "frontend/src/lib/utils/parBondDuration.ts"
+    ]
+   },
+   {
+    "on": "2026-10-07",
+    "what": "TS-1 and TS-2: USDY filed as a tokenized security; the empty CBDC chip removed from the Coins page. Noted on T-420.",
+    "evidence": [
+     "frontend/src/lib/data/__tests__/assetTypeChips.test.ts"
     ]
    }
   ]

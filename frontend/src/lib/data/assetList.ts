@@ -6,7 +6,7 @@ export interface AssetEntry {
   id: string
   name: string
   symbol: string
-  category: 'stablecoin' | 'l1' | 'defi' | 'other'
+  category: 'stablecoin' | 'tokenized' | 'l1' | 'defi' | 'other'
 }
 
 export const ASSET_LIST: AssetEntry[] = [
@@ -27,7 +27,7 @@ export const ASSET_LIST: AssetEntry[] = [
   { id: 'usdd',   name: 'USDD',                  symbol: 'USDD',   category: 'stablecoin' },
   { id: 'eurc',   name: 'Euro Coin',             symbol: 'EURC',   category: 'stablecoin' },
   { id: 'fdusd',  name: 'First Digital USD',     symbol: 'FDUSD',  category: 'stablecoin' },
-  { id: 'usdy',   name: 'Ondo US Dollar Yield',  symbol: 'USDY',   category: 'stablecoin' },
+  { id: 'usdy',   name: 'Ondo US Dollar Yield',  symbol: 'USDY',   category: 'tokenized' }, // a tokenized Treasury note, not a stablecoin (TS-1)
   { id: 'gho',    name: 'GHO',                   symbol: 'GHO',    category: 'stablecoin' },
   { id: 'usd0',   name: 'Usual USD',             symbol: 'USD0',   category: 'stablecoin' },
   { id: 'ampl',   name: 'Ampleforth',            symbol: 'AMPL',   category: 'stablecoin' },

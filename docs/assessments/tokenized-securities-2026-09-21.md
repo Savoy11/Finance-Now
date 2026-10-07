@@ -580,6 +580,16 @@ adds a paid tier, or touches key custody. IDs are provisional.
 | TS-16 | Affiliate integrity rule: no placement for a security the viewer's jurisdiction may not hold (7I) | P1 | XS | decision 6 |
 | TS-17 | Regulatory-watch entries for §3.3's dates in the steward's ledger; re-read this document at each | P1 | XS | — |
 
+> **Done 2026-10-07 — TS-1, TS-2, and TS-4 found already settled.** USDY is filed as
+> `assetType: 'tokenized'` in `assetCatalog.ts` and `category: 'tokenized'` in `assetList.ts`; its
+> false 282 bps depeg had already gone on 2026-09-22, when its peg fields were removed. That fills
+> the Coins page's "Tokenized" filter (TS-2). The registry's "CBDC" chip, which could match no
+> coin since the CBDC page went under D10, was removed rather than left as a filter that always
+> shows an empty table. `assetTypeChips.test.ts` holds all three: USDY's type, no peg on any
+> tokenized entry, and that every type chip can match at least one coin. TS-4 needed nothing:
+> `README.md` no longer claims "tokenized assets". TS-3 (spotting tokenized securities in Coin
+> Discovery) still waits on the owner-machine probes in §10.
+
 > **Built 2026-10-01 — TS-9, at the owner's request, outside the queue.** `lib/utils/marketHours.ts`
 > now holds the "When it trades" answers and Nasdaq's overnight schedule (start **reported** for
 > 2026-12-06, SEC Rel. 34-105199). Compare's class profiles and its weekend caveat read from it:
