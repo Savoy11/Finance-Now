@@ -15,6 +15,12 @@ export default defineConfig({
       'server-only': path.resolve(__dirname, './test/stubs/server-only.ts'),
     },
   },
+  // Vitest 4 runs on Vite 8, whose transformer (oxc) honours tsconfig's
+  // `"jsx": "preserve"` — the setting Next.js requires, because Next compiles the
+  // JSX itself. Left alone, every test that imports a component fails to parse.
+  // Vitest 3's esbuild transform ignored it. Transforming JSX here affects tests
+  // only; the app's own build never reads this file (2026-10-07).
+  oxc: { jsx: { runtime: 'automatic' } },
   test: {
     include: ['src/**/*.{test,spec}.{ts,tsx}'],
     coverage: {
