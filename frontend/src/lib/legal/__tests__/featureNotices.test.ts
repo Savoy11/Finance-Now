@@ -102,7 +102,9 @@ describe('the placement', () => {
   it('shows each line only where this file lists it', () => {
     const found: string[] = []
     for (const f of sourceFiles()) {
-      const rel = path.relative(ROOT, f)
+      // PLACEMENTS uses forward slashes; Windows paths come back with
+      // backslashes, which made this test fail on the owner's machine only.
+      const rel = path.relative(ROOT, f).split(path.sep).join('/')
       for (const m of fs.readFileSync(f, 'utf8').matchAll(/<FeatureNotice feature="(\w+)"/g)) {
         const listed = PLACEMENTS[m[1] as FeatureNoticeId] ?? []
         if (!listed.includes(rel)) found.push(`${rel} → ${m[1]}`)
