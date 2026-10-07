@@ -66,7 +66,10 @@ export const trackedPortfolios = pgTable('tracked_portfolios', {
   userIdx: index('tracked_portfolios_user_idx').on(t.userId),
 }))
 
-export const TRADE_SIDES = ['buy', 'sell', 'transfer_in', 'transfer_out'] as const
+// 'split' (T-421) is a stock split or reverse split: its row moves no units and
+// no money by itself (quantity, price and fee are 0), and its ratio is in
+// trade_splits below. side is text, so adding a kind needs no migration.
+export const TRADE_SIDES = ['buy', 'sell', 'transfer_in', 'transfer_out', 'split'] as const
 export type TradeSide = (typeof TRADE_SIDES)[number]
 
 // The append-only ledger cost basis and realized P&L derive from. Nothing here
@@ -108,6 +111,23 @@ export const tradeCancellations = pgTable('trade_cancellations', {
   userIdx: index('trade_cancellations_user_idx').on(t.userId),
 }))
 
+// A split's terms (T-421): units_after held after it for every units_before
+// held before it (2 and 1 for a 2-for-1 split, 1 and 10 for a 1-for-10 reverse
+// split), and any cash paid instead of a fraction of a unit. One row per split
+// trade, written with it. It is a table of its own rather than columns on
+// trade_transactions so that recording and reading every other trade keeps
+// working before migration 0006 is applied; only a split needs it.
+export const tradeSplits = pgTable('trade_splits', {
+  tradeId: uuid('trade_id').primaryKey().references(() => tradeTransactions.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  unitsAfter: integer('units_after').notNull(),
+  unitsBefore: integer('units_before').notNull(),
+  cashInLieuUsd: numeric('cash_in_lieu_usd', { precision: 20, scale: 2 }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  userIdx: index('trade_splits_user_idx').on(t.userId),
+}))
+
 export const watchlists = pgTable('watchlists', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
@@ -136,5 +156,6 @@ export type Holding = typeof holdings.$inferSelect
 export type TradeTransaction = typeof tradeTransactions.$inferSelect
 export type TrackedPortfolio = typeof trackedPortfolios.$inferSelect
 export type TradeCancellation = typeof tradeCancellations.$inferSelect
+export type TradeSplit = typeof tradeSplits.$inferSelect
 export type Watchlist = typeof watchlists.$inferSelect
 export type WatchlistItem = typeof watchlistItems.$inferSelect

@@ -22,7 +22,7 @@ export class TrackedApiError extends Error {
     this.name = 'TrackedApiError'
   }
 
-  /** The database has not had migration 0005 yet (or is not configured): nothing on the screen can work until it has. */
+  /** The database is not configured, or is missing an update (0005 for everything here, 0006 for recording a split). */
   get needsSetup(): boolean {
     return this.status === 503
   }
@@ -51,12 +51,17 @@ export interface TradeInput {
   instrument: string
   name?: string
   side: TradeView['side']
-  quantity: string
-  pricePerUnit: string
+  /** Left out on a split, which is a ratio rather than an amount. */
+  quantity?: string
+  pricePerUnit?: string
   feeUsd?: string
   executedAt?: string
   opening?: boolean
   note?: string
+  /** On a split only (T-421): units after it for every unitsBefore before it, and any cash paid for a fraction. */
+  unitsAfter?: number | string
+  unitsBefore?: number | string
+  cashInLieuUsd?: string
 }
 
 export const trackedApi = {

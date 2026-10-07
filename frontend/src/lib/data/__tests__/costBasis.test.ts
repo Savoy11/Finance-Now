@@ -296,6 +296,165 @@ describe('computeCostBasis — exact arithmetic', () => {
   })
 })
 
+describe('computeCostBasis — splits (T-421)', () => {
+  const split = (id: string, unitsAfter: number | string, unitsBefore: number | string, d: string, cash: string | null = null): LedgerTrade => ({
+    id, side: 'split', quantity: '0', pricePerUnit: '0', feeUsd: '0', executedAt: iso(d),
+    split: { unitsAfter, unitsBefore, cashInLieuUsd: cash },
+  })
+  const lotsOf = (r: ReturnType<typeof run>) => r.lots.map((l) => [l.tradeId, l.quantity, l.costUsd])
+
+  it('multiplies the units held and keeps their cost, so a later sale is in the new units', () => {
+    const r = run([
+      buy('b1', '10', '100', '2026-01-05'),
+      split('x1', 2, 1, '2026-02-02'),
+      sell('s1', '5', '60', '2026-03-02'),
+    ])
+    // 20 units costing 1000 after the split: 5 of them cost 250 and sold for 300.
+    expect(r.sales.map((m) => [m.lotId, m.quantity, m.costUsd, m.proceedsUsd, m.gainUsd])).toEqual([['b1', '5', '250', '300', '50']])
+    expect(lotsOf(r)).toEqual([['b1', '15', '750']])
+    expect([r.quantityHeld, r.costHeldUsd, r.averageCostUsd]).toEqual(['15', '750', '50'])
+    expect(r.splits).toEqual([{ tradeId: 'x1', quantityBefore: '10', quantityAfter: '20', fractionSold: null }])
+    expect(r.issues).toEqual([])
+  })
+
+  it('divides the units on a reverse split, and the cost per unit rises with it', () => {
+    const r = run([buy('b1', '100', '1.5', '2026-01-05'), split('x1', 1, 10, '2026-02-02')])
+    expect([r.quantityHeld, r.costHeldUsd, r.averageCostUsd]).toEqual(['10', '150', '15'])
+    expect(r.realizedGainUsd).toBe('0')
+  })
+
+  it('takes effect before the trades dated the same day, which are already in the new units', () => {
+    const r = run([
+      buy('b1', '10', '100', '2026-01-05'),
+      split('x1', 2, 1, '2026-02-02'),
+      buy('b2', '5', '55', '2026-02-02'),
+      sell('s1', '20', '52', '2026-02-02'),
+    ])
+    // The purchase that day is not doubled, and the sale that day uses b1's 20 new units.
+    expect(r.sales.map((m) => [m.lotId, m.quantity, m.costUsd])).toEqual([['b1', '20', '1000']])
+    expect(lotsOf(r)).toEqual([['b2', '5', '275']])
+  })
+
+  it('applies to an undated starting position, which counts as held before every date', () => {
+    const r = run([start('o1', '10', '20', null), split('x1', 3, 2, '2026-02-02')])
+    expect(r.lots).toEqual([{ tradeId: 'o1', acquiredAt: null, startingPosition: true, quantity: '15', costUsd: '200' }])
+    // 200 ÷ 15, rounded to 8 decimals.
+    expect(r.averageCostUsd).toBe('13.33333333')
+  })
+
+  it('leaves a starting position dated that day or later as entered, and says so', () => {
+    const r = run([
+      start('o1', '10', '50', '2026-03-02'),
+      buy('b1', '4', '80', '2026-01-05'),
+      split('x1', 2, 1, '2026-02-02'),
+    ])
+    // The starting position was entered in the new units; the earlier purchase was not.
+    expect(lotsOf(r)).toEqual([['o1', '10', '500'], ['b1', '8', '320']])
+    expect(r.issues.map((i) => [i.code, i.tradeId])).toEqual([
+      ['dated-before-starting-position', 'b1'],
+      ['split-before-starting-position', 'x1'],
+    ])
+
+    // Dated the day the split took effect: already in the new units, so nothing was held before it.
+    const sameDay = run([start('o1', '10', '50', '2026-02-02'), split('x1', 2, 1, '2026-02-02')])
+    expect(lotsOf(sameDay)).toEqual([['o1', '10', '500']])
+    expect(sameDay.issues.map((i) => [i.code, i.tradeId])).toEqual([['split-nothing-held', 'x1']])
+  })
+
+  it('sells a fraction for the cash paid instead of it, oldest units first', () => {
+    const r = run([
+      buy('b1', '15', '4', '2026-01-05'),
+      buy('b2', '10', '6', '2026-01-06'),
+      split('x1', 1, 10, '2026-02-02', '7.50'),
+    ])
+    // 25 units become 2.5. The half unit comes out of b1 (1.5 units costing 60), so it cost 20 and sold for 7.50.
+    expect(r.sales).toEqual([{
+      saleId: 'x1', lotId: 'b1', quantity: '0.5', proceedsUsd: '7.5', costUsd: '20', gainUsd: '-12.5', fromStartingPosition: false,
+    }])
+    expect(lotsOf(r)).toEqual([['b1', '1', '40'], ['b2', '1', '60']])
+    expect([r.quantityHeld, r.costHeldUsd, r.averageCostUsd, r.realizedGainUsd]).toEqual(['2', '100', '50', '-12.5'])
+    expect(r.splits).toEqual([{ tradeId: 'x1', quantityBefore: '25', quantityAfter: '2.5', fractionSold: '0.5' }])
+  })
+
+  it('keeps the lots adding up to the exact new total when the ratio does not divide them', () => {
+    const r = run([
+      buy('b1', '1', '10', '2026-01-05'), buy('b2', '1', '20', '2026-01-06'), buy('b3', '1', '30', '2026-01-07'),
+      split('x1', 1, 3, '2026-02-02'),
+    ])
+    expect(lotsOf(r)).toEqual([
+      ['b1', '0.333333333333333333', '10'], ['b2', '0.333333333333333333', '20'], ['b3', '0.333333333333333334', '30'],
+    ])
+    expect([r.quantityHeld, r.costHeldUsd, r.averageCostUsd]).toEqual(['1', '60', '60'])
+  })
+
+  it('changes nothing when nothing was held, and says so', () => {
+    const r = run([buy('b1', '5', '10', '2026-01-05'), sell('s1', '5', '12', '2026-01-06'), split('x1', 2, 1, '2026-02-02', '3.00')])
+    expect(r.quantityHeld).toBe('0')
+    expect(r.splits).toEqual([])
+    expect(r.issues).toEqual([{
+      code: 'split-nothing-held', tradeId: 'x1',
+      message: 'Nothing was held before this split took effect, so it changed nothing and its cash is not counted.',
+    }])
+  })
+
+  it('does not count cash for a fraction when the split left whole units only, and says so', () => {
+    const r = run([buy('b1', '10', '10', '2026-01-05'), split('x1', 2, 1, '2026-02-02', '1.00')])
+    expect([r.quantityHeld, r.realizedGainUsd, r.sales]).toEqual(['20', '0', []])
+    expect(r.issues.map((i) => i.code)).toEqual(['split-cash-without-fraction'])
+  })
+
+  it('leaves out a split it cannot read, says why, and works out the rest', () => {
+    const bad: Array<[LedgerTrade, RegExp]> = [
+      [{ ...split('x1', 2, 1, '2026-02-02'), split: undefined }, /needs its ratio/],
+      [split('x2', 0, 1, '2026-02-02'), /two whole numbers from 1 to 1,000,000/],
+      [split('x3', '1.5', 1, '2026-02-02'), /two whole numbers/],
+      [split('x4', 1_000_001, 1, '2026-02-02'), /two whole numbers/],
+      [split('x5', 2, 2, '2026-02-02'), /cannot be the same/],
+      [{ ...split('x6', 2, 1, '2026-02-02'), executedAt: null }, /needs the date it took effect/],
+      [{ ...split('x7', 2, 1, '2026-02-02'), opening: true }, /not a starting position/],
+      [split('x8', 2, 1, '2026-02-02', '-1'), /not an amount of dollars/],
+      [split('x9', 2, 1, '2026-02-02', '1.005'), /not an amount of dollars/],
+      [buy('b9', '1', '1', '2026-01-09', { split: { unitsAfter: 2, unitsBefore: 1, cashInLieuUsd: null } }), /only a split carries a ratio/],
+    ]
+    const r = run([buy('b1', '10', '10', '2026-01-05'), ...bad.map(([t]) => t)])
+    expect(r.quantityHeld).toBe('10')
+    expect(r.splits).toEqual([])
+    expect(r.issues.map((i) => i.tradeId)).toEqual(bad.map(([t]) => t.id))
+    r.issues.forEach((issue, k) => {
+      expect(issue.code).toBe('invalid-trade')
+      expect(issue.message).toMatch(bad[k][1])
+    })
+  })
+
+  it('gives the same answer whatever order the trades arrive in, splits included', () => {
+    const trades = [
+      start('o1', '3', '40', null),
+      buy('b1', '7', '50', '2026-01-05', { feeUsd: '1' }),
+      split('x1', 3, 2, '2026-02-02', '12.00'),
+      buy('b2', '4', '35', '2026-02-02'),
+      sell('s1', '6', '45', '2026-03-02', { feeUsd: '0.50' }),
+      split('x2', 1, 4, '2026-04-02'),
+    ]
+    expect(run([...trades].reverse())).toEqual(run(trades))
+  })
+
+  it('never gains or loses a fraction of a cent through splits and their cash', () => {
+    const trades = [
+      buy('b1', '7', '33.33333333', '2026-01-05', { feeUsd: '0.07' }),
+      buy('b2', '11', '17.5', '2026-01-09'),
+      split('x1', 3, 7, '2026-02-02', '9.99'),
+      sell('s1', '2.5', '80.12345678', '2026-03-02', { feeUsd: '0.01' }),
+      split('x2', 5, 1, '2026-04-02'),
+    ]
+    const r = run(trades)
+    // What was paid in = what is still held + the cost of everything sold.
+    const paidIn = sum('233.33333331', '0.07', '192.5')
+    expect(dec(r.costHeldUsd) + sum(...r.sales.map((m) => m.costUsd))).toBe(paidIn)
+    // What came out = the sale's proceeds after its fee + the cash for the fraction.
+    expect(sum(...r.sales.map((m) => m.proceedsUsd))).toBe(sum('200.30864195', '-0.01', '9.99'))
+  })
+})
+
 describe('toCents', () => {
   it('rounds to cents, halves away from zero, and shows both decimals', () => {
     expect(toCents('347')).toBe('347.00')

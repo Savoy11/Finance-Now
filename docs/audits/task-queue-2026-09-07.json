@@ -60,9 +60,9 @@
  },
  "counts": {
   "total_verified": 398,
-  "outstanding": 368,
+  "outstanding": 369,
   "by_status": {
-   "closed": 203,
+   "closed": 204,
    "open": 21,
    "parked": 136,
    "blocked": 7,
@@ -72,13 +72,13 @@
    "remote-dev": 92,
    "either": 43,
    "owner-decision": 148,
-   "owner-machine": 85
+   "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 203,
+  "closed_by_annotation": 204,
   "counts_recomputed_on": "2026-10-07",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
-  "total": 368
+  "total": 369
  },
  "blocking_decisions": [
   {
@@ -13580,7 +13580,7 @@
   {
    "id": "T-421",
    "title": "Stock splits in tracked portfolios: record a split so each lot's units and per-unit cost follow it",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "feature",
@@ -13603,6 +13603,22 @@
     "on": "2026-10-04",
     "by": "session steward",
     "why": "Split off from T-027 when it closed: D65's notes name stock splits as the one part of trade history still unbuilt, and the tracked-portfolio page tells readers they are not handled yet."
+   },
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-10-07",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "DONE (D90, 2026-10-07). A split or reverse split is now its own kind of entry in a tracked portfolio: a ratio and the date it took effect, entered and cancelled like any trade. Every unit acquired before that date changes by the ratio and keeps its cost, so the units and the cost per unit follow the broker's; trades dated that day are already in the new units, and a starting position dated that day or later is left as entered. Cash paid instead of a fraction of a unit counts as a sale of that fraction, oldest units first. The ratio is kept in a new table, trade_splits (migration 0006), read only for split rows, so every other page and trade keeps working before the owner runs npm run db:migrate; until then saving a split is refused with that instruction and nothing is saved. The engine tests cover each case this item named (a split between a buy and a sale, a reverse split, a split after an undated starting position, cash for a fraction) plus trades on the split's day, exact totals and input order, and each rule was broken on purpose to see a test fail. Checked in a browser against a local database before and after the migration, including cancelling a split. T-429 holds the migration run on the owner's machine.",
+    "approved_by": "owner, 2026-10-07: \"go with the recommendations\" (D90), then \"merge and continue with T-421\"",
+    "evidence": [
+     "frontend/src/lib/data/costBasis.ts",
+     "frontend/src/lib/data/__tests__/costBasis.test.ts",
+     "frontend/src/lib/data/tradeLedger.ts",
+     "frontend/drizzle/0006_trade-splits.sql",
+     "frontend/src/components/portfolio/tracked/TradeForm.tsx",
+     "docs/decisions/2026-10-07-owner-decisions.md"
+    ]
    }
   },
   {
@@ -13821,6 +13837,35 @@
     "on": "2026-10-07",
     "by": "session steward",
     "why": "Filed under D91 from a row the business chat recorded on the ledger page on 1 Oct, which had no number; it carries the owner's 1 Oct decision that Transfer Fees stays hidden for launch."
+   }
+  },
+  {
+   "id": "T-429",
+   "title": "Run npm run db:migrate on your machine to apply the database updates waiting there (0004 to 0006)",
+   "status": "open",
+   "confidence": "high",
+   "owner_role": "owner-machine",
+   "category": "ops-infra",
+   "effort": "small",
+   "blocking_decision": null,
+   "related_ids": [
+    "T-421",
+    "T-027",
+    "T-065"
+   ],
+   "summary": "Three features each added a database update: 0004 (saved drift checks in Portfolio Builder, T-065), 0005 (tracked portfolios, T-027) and 0006 (splits in tracked portfolios, T-421). Each update is applied on the machine that holds the database, which the cloud session cannot reach. Until one runs, its feature answers with an instruction to run it and every other page is unaffected. The command applies only the updates that are missing, so running it when some are already in is safe.",
+   "next_action": "In frontend/, run npm run db:migrate (it reads DATABASE_URL from frontend/.env.local). Notices that the drizzle schema or its migrations table already exist are normal. Then open Portfolios -> Tracked and record a split to confirm 0006 is in.",
+   "sources": [
+    {
+     "file": "frontend/drizzle/0006_trade-splits.sql",
+     "lines": "1-12",
+     "quote": "CREATE TABLE \"trade_splits\" ("
+    }
+   ],
+   "opened": {
+    "on": "2026-10-07",
+    "by": "session steward",
+    "why": "T-421 closed with a new database update (0006). No item tracked running the updates on the owner's machine, and 0004 and 0005 had no such item either."
    }
   }
  ],
@@ -39233,6 +39278,14 @@
     "evidence": [
      "frontend/src/lib/legal/featureNotices.ts",
      "frontend/src/lib/legal/__tests__/featureNotices.test.ts"
+    ]
+   },
+   {
+    "on": "2026-10-07",
+    "what": "T-421 closed (D90's third item): splits and reverse splits are recorded in tracked portfolios, and every unit held before a split's date follows it. Opened T-429 for running the waiting database updates (0004 to 0006) on the owner's machine.",
+    "evidence": [
+     "frontend/src/lib/data/costBasis.ts",
+     "frontend/drizzle/0006_trade-splits.sql"
     ]
    }
   ]

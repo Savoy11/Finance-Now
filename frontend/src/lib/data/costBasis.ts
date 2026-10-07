@@ -15,6 +15,12 @@
 //     repurchase stays a loss here (no wash-sale adjustment), and nothing is
 //     split into short and long term. Tax-adjusted figures wait on D4's review.
 //
+// A split (T-421) is entered like a trade: a ratio and the date it took effect.
+// Every unit acquired before that date is multiplied by the ratio and keeps its
+// cost, so the cost per unit changes and nothing is gained or lost. Where the
+// broker paid cash for a fraction of a unit instead, that fraction is sold for
+// the cash, oldest units first, like any sale.
+//
 // The arithmetic is exact. The database returns quantities (18 decimals),
 // prices (8) and fees (2) as strings so that nothing loses precision in
 // JavaScript (lib/db/schema/invest.ts), and this file keeps that promise:
@@ -51,7 +57,24 @@ export interface LedgerTrade {
   executedAt: Date | string | null
   /** A starting position (D65), recorded as a transfer in. */
   opening?: boolean
+  /** A split's terms (T-421). Only a split carries them; its quantity, price and fee are not used. */
+  split?: SplitTerms | null
 }
+
+/**
+ * How a split changed the units: `unitsAfter` held after it for every
+ * `unitsBefore` held before it. A 2-for-1 split is 2 and 1; a 1-for-10 reverse
+ * split is 1 and 10. Whole numbers, as splits are announced.
+ */
+export interface SplitTerms {
+  unitsAfter: number | string
+  unitsBefore: number | string
+  /** Cash paid instead of a fraction of a unit, in dollars; null when none was. */
+  cashInLieuUsd: string | null
+}
+
+/** The largest number either side of a split's ratio may be. Real splits are far smaller; this only stops a typo. */
+export const MAX_SPLIT_UNITS = 1_000_000
 
 export interface OpenLot {
   /** The trade that opened the lot. */
@@ -97,6 +120,17 @@ export interface TransferOut {
   feeUsd: string
 }
 
+/** What a split did to the units held when it took effect. */
+export interface SplitApplied {
+  tradeId: string
+  /** Units it applied to: everything acquired before its date. */
+  quantityBefore: string
+  /** The same units after the ratio, before any fraction was paid out in cash. */
+  quantityAfter: string
+  /** The fraction of a unit sold for the cash paid instead of it, or null. Its gain or loss is in `sales`. */
+  fractionSold: string | null
+}
+
 export type LedgerIssueCode =
   | 'invalid-trade'
   | 'sold-more-than-held'
@@ -104,6 +138,9 @@ export type LedgerIssueCode =
   | 'second-starting-position'
   | 'dated-before-starting-position'
   | 'future-date'
+  | 'split-before-starting-position'
+  | 'split-nothing-held'
+  | 'split-cash-without-fraction'
 
 export interface LedgerIssue {
   code: LedgerIssueCode
@@ -127,6 +164,8 @@ export interface CostBasis {
   realizedFromStartingPositionUsd: string
   unmatched: UnmatchedSale[]
   transfersOut: TransferOut[]
+  /** Oldest first. A split also appears in `sales` when cash was paid for a fraction. */
+  splits: SplitApplied[]
   /** Rows left out (invalid-trade) and anything else the screen should point out. */
   issues: LedgerIssue[]
 }
@@ -144,6 +183,8 @@ const ONE = BigInt(1)
 const TWO = BigInt(2)
 const pow10 = (n: number) => BigInt(`1${'0'.repeat(n)}`)
 const FEE_TO_USD = pow10(USD_DP - FEE_DP)
+/** One whole unit, at the scale quantities are kept. */
+const UNIT = pow10(QTY_DP)
 
 /** A plain decimal string as a count of 10^-dp, or null if it is not one or needs more than dp decimals. */
 function parseScaled(text: string, dp: number): bigint | null {
@@ -224,11 +265,12 @@ export function differenceUsd(a: string, b: string): string {
 // ─── Lots ────────────────────────────────────────────────────────────────────
 
 /** What each kind of trade does to the lots. A side added to the table fails to compile here until it is placed. */
-const EFFECT: Record<TradeSide, 'acquire' | 'dispose'> = {
+const EFFECT: Record<TradeSide, 'acquire' | 'dispose' | 'split'> = {
   buy: 'acquire',
   sell: 'dispose',
   transfer_in: 'acquire',
   transfer_out: 'dispose',
+  split: 'split',
 }
 
 /** Every kind of trade the ledger knows, in the table's order. */
@@ -243,19 +285,55 @@ interface Row {
   /** Milliseconds since 1970, or null for an undated starting position. */
   at: number | null
   opening: boolean
+  /** A split's ratio and cash (cents), on a split only. */
+  split: { after: bigint; before: bigint; cash: bigint | null } | null
 }
 
 interface Lot {
   tradeId: string
   acquiredAt: string | null
+  /** acquiredAt in milliseconds, for comparing with a split's date. */
+  at: number | null
   startingPosition: boolean
   qty: bigint
   cost: bigint
 }
 
+/** One side of a split's ratio: a whole number from 1 to MAX_SPLIT_UNITS, or null. */
+function readRatioPart(v: unknown): bigint | null {
+  const text = typeof v === 'number' ? (Number.isSafeInteger(v) ? String(v) : '') : typeof v === 'string' ? v.trim() : ''
+  if (!/^\d{1,9}$/.test(text)) return null
+  const n = BigInt(text)
+  return n >= ONE && n <= BigInt(MAX_SPLIT_UNITS) ? n : null
+}
+
+/** A split's own rules, or the reason it has to be left out. Its quantity, price and fee are not read. */
+function readSplit(t: LedgerTrade): Row | string {
+  if (t.opening === true) return 'Left out: a split is not a starting position.'
+  const s = t.split
+  if (!s) return 'Left out: a split needs its ratio, such as 2 for 1.'
+  const after = readRatioPart(s.unitsAfter)
+  const before = readRatioPart(s.unitsBefore)
+  if (after === null || before === null) {
+    return `Left out: a split's ratio is two whole numbers from 1 to ${MAX_SPLIT_UNITS.toLocaleString('en-US')}, such as 2 for 1 or 1 for 10.`
+  }
+  if (after === before) return 'Left out: a split changes how many units there are, so its two numbers cannot be the same.'
+  let cash: bigint | null = null
+  if (s.cashInLieuUsd != null) {
+    cash = parseScaled(String(s.cashInLieuUsd), FEE_DP)
+    if (cash === null || cash < ZERO) return `Left out: the cash for a fraction "${s.cashInLieuUsd}" is not an amount of dollars (0 or more, at most ${FEE_DP} decimals).`
+  }
+  if (t.executedAt === null) return 'Left out: a split needs the date it took effect.'
+  const at = (t.executedAt instanceof Date ? t.executedAt : new Date(t.executedAt)).getTime()
+  if (Number.isNaN(at)) return `Left out: "${String(t.executedAt)}" is not a date.`
+  return { id: t.id, side: t.side, qty: ZERO, price: ZERO, fee: ZERO, at, opening: false, split: { after, before, cash } }
+}
+
 /** The trade as exact numbers, or the reason it has to be left out. */
 function readTrade(t: LedgerTrade): Row | string {
   if (!Object.prototype.hasOwnProperty.call(EFFECT, t.side)) return `Left out: "${t.side}" is not a kind of trade the ledger knows.`
+  if (EFFECT[t.side] === 'split') return readSplit(t)
+  if (t.split != null) return 'Left out: only a split carries a ratio.'
   const qty = parseScaled(String(t.quantity), QTY_DP)
   if (qty === null || qty <= ZERO) return `Left out: the quantity "${t.quantity}" is not a positive number with at most ${QTY_DP} decimals.`
   const price = parseScaled(String(t.pricePerUnit), PRICE_DP)
@@ -271,7 +349,7 @@ function readTrade(t: LedgerTrade): Row | string {
     at = (t.executedAt instanceof Date ? t.executedAt : new Date(t.executedAt)).getTime()
     if (Number.isNaN(at)) return `Left out: "${String(t.executedAt)}" is not a date.`
   }
-  return { id: t.id, side: t.side, qty, price, fee, at, opening }
+  return { id: t.id, side: t.side, qty, price, fee, at, opening, split: null }
 }
 
 /**
@@ -284,11 +362,16 @@ export function tradeProblem(t: LedgerTrade): string | null {
   return typeof row === 'string' ? row.replace(/^Left out: (.)/, (_, c: string) => c.toUpperCase()) : null
 }
 
+/** At the same moment: a split, then purchases, then sales. */
+const SAME_MOMENT_ORDER = { split: 0, acquire: 1, dispose: 2 } as const
+
 /**
  * The order FIFO works in: starting positions first (an undated one before any
- * dated one), then everything else by date. At the same moment a purchase
- * counts before a sale, since units cannot be sold before they arrive; the id
- * settles anything left, so the input's order never changes the answer.
+ * dated one), then everything else by date. At the same moment a split counts
+ * first, because trades dated the day a split takes effect are made in the new
+ * units; then a purchase before a sale, since units cannot be sold before they
+ * arrive. The id settles anything left, so the input's order never changes the
+ * answer.
  */
 function compareRows(a: Row, b: Row): number {
   if (a.opening !== b.opening) return a.opening ? -1 : 1
@@ -297,8 +380,8 @@ function compareRows(a: Row, b: Row): number {
     if (b.at === null) return 1
     return a.at - b.at
   }
-  const ea = EFFECT[a.side] === 'acquire' ? 0 : 1
-  const eb = EFFECT[b.side] === 'acquire' ? 0 : 1
+  const ea = SAME_MOMENT_ORDER[EFFECT[a.side]]
+  const eb = SAME_MOMENT_ORDER[EFFECT[b.side]]
   if (ea !== eb) return ea - eb
   return a.id < b.id ? -1 : a.id > b.id ? 1 : 0
 }
@@ -352,10 +435,15 @@ export function computeCostBasis(trades: readonly LedgerTrade[], now: Date = new
   const latestStart = starts.reduce<number | null>((m, r) => (r.at !== null && (m === null || r.at > m) ? r.at : m), null)
   for (const r of rows) {
     if (!r.opening && latestStart !== null && r.at !== null && r.at < latestStart) {
-      issues.push({
-        code: 'dated-before-starting-position', tradeId: r.id,
-        message: 'Dated before the starting position. The starting position still counts as the oldest units, so FIFO sells it first.',
-      })
+      issues.push(r.split
+        ? {
+          code: 'split-before-starting-position', tradeId: r.id,
+          message: 'Dated before the starting position, so it does not change the starting position: those units are entered as they were on its date.',
+        }
+        : {
+          code: 'dated-before-starting-position', tradeId: r.id,
+          message: 'Dated before the starting position. The starting position still counts as the oldest units, so FIFO sells it first.',
+        })
     }
     if (r.at !== null && r.at > now.getTime()) {
       issues.push({ code: 'future-date', tradeId: r.id, message: 'Dated in the future. It is counted, but check the date.' })
@@ -366,15 +454,79 @@ export function computeCostBasis(trades: readonly LedgerTrade[], now: Date = new
   const matches: Array<{ saleId: string; lot: Lot; qty: bigint; proceeds: bigint; cost: bigint }> = []
   const unmatched: UnmatchedSale[] = []
   const transfersOut: TransferOut[] = []
+  const splits: SplitApplied[] = []
 
   for (const r of rows) {
     if (EFFECT[r.side] === 'acquire') {
       lots.push({
         tradeId: r.id,
         acquiredAt: r.at === null ? null : new Date(r.at).toISOString(),
+        at: r.at,
         startingPosition: r.opening,
         qty: r.qty,
         cost: r.qty * r.price + r.fee * FEE_TO_USD,
+      })
+      continue
+    }
+
+    if (r.split) {
+      // Units acquired before the date. An undated starting position counts as
+      // before every date; a dated one from that day or later was entered in
+      // the new units already.
+      const splitAt = r.at as number
+      const affected = lots.filter((l) => l.at === null || l.at < splitAt)
+      const before = affected.reduce((s, l) => s + l.qty, ZERO)
+      if (before === ZERO) {
+        issues.push({
+          code: 'split-nothing-held', tradeId: r.id,
+          message: r.split.cash === null
+            ? 'Nothing was held before this split took effect, so it changed nothing.'
+            : 'Nothing was held before this split took effect, so it changed nothing and its cash is not counted.',
+        })
+        continue
+      }
+      // The new total, to the 18 decimals a quantity keeps (rounded down), spread
+      // over the lots by their units. Each lot's share is cut from what is left,
+      // so the lots add up to the total exactly. Cost does not move.
+      const after = (before * r.split.after) / r.split.before
+      let restNew = after
+      let restOld = before
+      for (const l of affected) {
+        const q = (restNew * l.qty) / restOld
+        restNew -= q
+        restOld -= l.qty
+        l.qty = q
+      }
+
+      let fractionSold: bigint | null = null
+      if (r.split.cash !== null) {
+        const fraction = after % UNIT
+        if (fraction === ZERO) {
+          issues.push({
+            code: 'split-cash-without-fraction', tradeId: r.id,
+            message: 'Cash was entered for a fraction of a unit, but the split left whole units only, so the cash is not counted.',
+          })
+        } else {
+          // The fraction is sold for the cash, oldest units first, like any sale.
+          const pool = [...affected]
+          const { parts } = takeOldest(pool, fraction)
+          const kept = new Set(pool)
+          const used = new Set(affected.filter((l) => !kept.has(l)))
+          for (let i = lots.length - 1; i >= 0; i--) if (used.has(lots[i])) lots.splice(i, 1)
+          let restUsd = r.split.cash * FEE_TO_USD
+          let restQty = fraction
+          for (const p of parts) {
+            const proceeds = (restUsd * p.qty) / restQty
+            restUsd -= proceeds
+            restQty -= p.qty
+            matches.push({ saleId: r.id, lot: p.lot, qty: p.qty, proceeds, cost: p.cost })
+          }
+          fractionSold = fraction
+        }
+      }
+      splits.push({
+        tradeId: r.id, quantityBefore: units(before), quantityAfter: units(after),
+        fractionSold: fractionSold === null ? null : units(fractionSold),
       })
       continue
     }
@@ -439,6 +591,7 @@ export function computeCostBasis(trades: readonly LedgerTrade[], now: Date = new
     realizedFromStartingPositionUsd: usd(matches.filter((m) => m.lot.startingPosition).reduce((s, m) => s + gain(m), ZERO)),
     unmatched,
     transfersOut,
+    splits,
     issues,
   }
 }
