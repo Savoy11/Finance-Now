@@ -24,6 +24,7 @@ const PLACEMENTS: Record<FeatureNoticeId, string[]> = {
   portfolioBuilder: ['src/app/(dashboard)/portfolio-builder/page.tsx'],
   calculators: [
     'src/app/(dashboard)/equities/options/page.tsx', // Trade Risk Scorer — switched off (D64), kept for its return
+    'src/app/(dashboard)/equities/options-calculator/page.tsx', // Options Calculator (D93)
     'src/app/(dashboard)/funds/[symbol]/page.tsx', // Fee Drag Analyzer
     'src/components/markets/TaxEquivalentYieldCard.tsx',
   ],

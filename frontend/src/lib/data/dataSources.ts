@@ -459,6 +459,17 @@ export const DATA_SOURCES: DataSourceEntry[] = [
     notes: 'SWITCHED OFF 2026-10-04 (D64): the endpoint answers 503 and the page redirects, with every other risk rating, until the risk engine is rebuilt and reviewed. When on: every option-level figure is entered by the user — Finance Now carries NO options chain, because no source it may use publishes one (Cboe’s terms prohibit auto-extraction; Yahoo’s options endpoint required auth and Yahoo is now blocked outright on terms grounds). See docs/assessments/P2-O1-options-data.md. Only the underlying price is fetched, through the shared quote ladder, which is keyed. The score itself is this app’s computation, not any provider’s figure.',
   },
   {
+    id: 'options-calculator', surface: 'Options Calculator (payoff, breakevens, Greeks)', module: 'equities',
+    route: '/live-data/security-quotes (underlying price only)', status: 'derived',
+    providers: [
+      { name: 'Finance Now arithmetic (lib/options/payoff.ts, lib/options/greeks.ts)', role: 'derived', auth: 'none' },
+      { name: 'User-entered strikes, premiums and volatility (from their broker chain)', role: 'primary', auth: 'none' },
+      FMP,
+    ],
+    cadence: 'on demand',
+    notes: 'Added 2026-10-07 (D93, T-420 item 4). Arithmetic only: payoff at expiry, maximum gain and loss, breakevens, and Black-Scholes Greeks from the volatility the user enters. No grade or score; the graded Trade Risk Scorer stays switched off (D64, D92). Finance Now carries no options chain (docs/assessments/P2-O1-options-data.md), so every option figure is typed in by the user. Only the underlying price is fetched, through the shared quote ladder, which is keyed.',
+  },
+  {
     id: 'portfolio-builder', surface: 'Portfolio Builder (allocations, drift, suitability)', module: 'shared',
     route: '/live-data/portfolio-prices + /live-data/security-quotes (drift monitoring)', status: 'derived',
     providers: [
