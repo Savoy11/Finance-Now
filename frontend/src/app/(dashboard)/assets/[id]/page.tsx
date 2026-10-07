@@ -57,6 +57,7 @@ import type { NewsCategory } from '@/lib/data/newsCategories'
 import type { LiveNewsArticle } from '@/app/live-data/news/route'
 import type { LiveReserveAsset } from '@/app/live-data/reserves/route'
 import { Loader2 } from 'lucide-react'
+import { FeatureNotice } from '@/components/legal/FeatureNotice'
 
 type Tab = 'overview' | 'news' | 'technical-analysis' | 'reserves' | 'pump-report'
 
@@ -1123,6 +1124,7 @@ function AssetDetailPageInner() {
         )}
         {activeTab === 'pump-report' && (
           <ErrorBoundary>
+            <FeatureNotice feature="pumpReport" className="mb-4" />
             <PumpReportTab
               targets={[{ type: 'coin', id: asset.id, label: `${asset.name} (${asset.symbol})` }]}
               coinId={asset.id}

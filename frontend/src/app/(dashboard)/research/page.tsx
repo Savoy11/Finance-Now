@@ -6,6 +6,7 @@ import { clsx } from 'clsx'
 import { Microscope, Loader2, Wrench, Sparkles, AlertCircle, Bitcoin, LineChart, Globe2 } from 'lucide-react'
 import { useWatchlistBias } from '@/lib/watchlist/useWatchlistBias'
 import { agentWatchlistPayload } from '@/lib/watchlist/bias'
+import { FeatureNotice } from '@/components/legal/FeatureNotice'
 
 type Market = 'crypto' | 'equities' | 'macro'
 
@@ -347,6 +348,7 @@ function ResearchInner() {
               </div>
             )}
           </div>
+          <FeatureNotice feature="aiAnswers" className="px-5 pt-3" />
           <div className="px-5 py-4 text-sm text-slate-200 leading-relaxed whitespace-pre-wrap">{result.report}</div>
         </div>
       )}

@@ -100,7 +100,9 @@ structure, regulatory research, disclosures and tax compliance are decided once,
       own footer link. The short "not investment advice" lines stay beside the features they
       qualify. **Built 2026-10-01 for Finance Now (T-293):** the footer is on every page, sign-in
       included, and Settings → About & Legal replaced How We Make Money, whose address redirects.
-      Still to do: the short lines beside the features (drafted in the disclosure set).
+      **The short lines beside the features followed on 2026-10-07 (T-293):** the draft's six
+      Finance Now lines sit beside Portfolio Builder, the calculators, the AI features, the Pump
+      Report, video answers and every crypto page, copied as written, and a test pins each place.
 - [x] Keep one canonical copy per document, shared by both products where the text is identical,
       so they can't drift.
       ✅ **DECIDED 2026-10-04 (D60, `docs/decisions/2026-10-04-owner-decisions.md`):** for now
