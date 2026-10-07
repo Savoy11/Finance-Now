@@ -114,11 +114,15 @@ const cgPacer = createCoinGeckoPacer({
  *                                                      default; raise this if
  *                                                      the audit ever passes
  *                                                      ?limit= above 250
+ *                   + TOKENIZED_SECURITY_CATEGORIES  — 7 category pages (TS-3,
+ *                     (lib/server/tokenizedSecurities)  2026-10-07), cached a day,
+ *                                                      so 8 is a cold-cache bound
  * Anything absent counts as 1. Over-counting only costs the run time; see the
  * module's note on why that asymmetry is deliberate.
  */
 const COINGECKO_CALL_WEIGHT = {
   '/live-data/coin-list': 3,
+  '/live-data/coin-discovery': 8,
 }
 const coinGeckoWeight = (t) => {
   const hit = Object.entries(COINGECKO_CALL_WEIGHT).find(([r]) => t.path.startsWith(r))
@@ -244,7 +248,11 @@ const tests = [
   { group: 'crypto/market', path: '/live-data/coin-discovery', name: 'coin-discovery', check: (j) => {
     const arr = j.candidates ?? []
     if (!Array.isArray(arr) || arr.length === 0) throw new Error('no candidates')
-    return `${arr.length} candidates`
+    // TS-3: candidates served without the tokenized-security check may include
+    // tokenized stocks and funds, so that is a fallback, not a pass.
+    const ts = j.tokenizedSecurities
+    if (!ts?.checked) return fallback(`${arr.length} candidates, tokenized-security check did not run`)
+    return `${arr.length} candidates, ${ts.excluded.length} tokenized securities left out${ts.partial ? ' (partial check)' : ''}`
   }},
 
   { group: 'crypto/market', path: '/live-data/assets/list', name: 'assets/list', check: (j) => {

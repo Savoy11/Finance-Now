@@ -590,6 +590,16 @@ adds a paid tier, or touches key custody. IDs are provisional.
 > `README.md` no longer claims "tokenized assets". TS-3 (spotting tokenized securities in Coin
 > Discovery) still waits on the owner-machine probes in §10.
 
+> **Done 2026-10-07 — TS-3, after the §10 probes.** Run on the owner's machine (residential egress);
+> results in `docs/audits/tokenized-securities-probe-2026-10-07.md`. F3 was live: 22 tokens from
+> CoinGecko's broad tokenized category sat in Coin Discovery's default top 250, the highest at rank 9.
+> `lib/server/tokenizedSecurities.ts` reads CoinGecko's seven security categories with members in the
+> top 750 (stocks, ETFs, Treasuries, money-market funds, credit, private credit, pre-IPO), cached a
+> day; Coin Discovery leaves their members out and lists them, and says when the check could not run.
+> Tokenized gold and silver stay in: commodity tokens, not securities. One correction to the TS-3 row:
+> the crypto scanner sweeps the app's own 80-coin catalog, not CoinGecko's top 750, so its badge reads
+> the catalog's `assetType` (USDY only) and needs no request.
+
 > **Built 2026-10-01 — TS-9, at the owner's request, outside the queue.** `lib/utils/marketHours.ts`
 > now holds the "When it trades" answers and Nasdaq's overnight schedule (start **reported** for
 > 2026-12-06, SEC Rel. 34-105199). Compare's class profiles and its weekend caveat read from it:

@@ -141,6 +141,7 @@ export const DATA_SOURCES: DataSourceEntry[] = [
   {
     id: 'coin-discovery', surface: 'Coin discovery candidates', module: 'crypto',
     route: '/live-data/coin-discovery', status: 'live', providers: [COINGECKO], cadence: 'on demand',
+    notes: 'Since 2026-10-07 (TS-3) tokenized securities are left out of the candidates and listed on the page: members of CoinGecko’s tokenized stock, ETF, Treasury, money-market, credit, private-credit and pre-IPO categories (lib/server/tokenizedSecurities.ts, refreshed daily). If those categories cannot be read, nothing is left out and the page says the check did not run.',
   },
   {
     id: 'fear-greed', surface: 'Fear & Greed Index', module: 'crypto',

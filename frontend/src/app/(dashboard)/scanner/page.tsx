@@ -19,6 +19,7 @@ import { runPool } from '@/lib/utils/runPool'
 import { SignalBadge } from '@/components/charts/SignalBadge'
 import { COINGECKO_IDS } from '@/lib/api/live/coingeckoIds'
 import type { CoinListResponse } from '@/lib/types/coinList'
+import { ASSET_CATALOG } from '@/lib/data/assetCatalog'
 
 // ─── Crypto Scanner ───────────────────────────────────────────────────────────
 //
@@ -33,6 +34,11 @@ import type { CoinListResponse } from '@/lib/types/coinList'
 // macro scanners are measured against (the review's E14-E16 note).
 
 const SUPPORTED_IDS = Object.keys(COINGECKO_IDS)
+
+// TS-3: a tokenized security in the universe is still charted, but labelled for
+// what it is. The universe is the app's own catalog, so the catalog's assetType
+// (USDY since TS-1) decides it, with no extra request.
+const TOKENIZED_IDS = new Set(ASSET_CATALOG.filter(a => a.assetType === 'tokenized').map(a => a.id))
 
 // ─── Scanner (multi-asset setup detection) ──────────────────────────────────────
 
@@ -505,6 +511,14 @@ function ScannerPanel() {
                     <div className="flex items-center gap-2">
                       <span className="font-mono font-bold text-text-primary">{row.meta?.symbol ?? row.assetId.toUpperCase()}</span>
                       <span className="text-text-muted">{row.meta?.label ?? ''}</span>
+                      {TOKENIZED_IDS.has(row.assetId) && (
+                        <span
+                          className="px-1.5 py-0.5 rounded-sm border border-border text-[10px] text-text-secondary"
+                          title="A tokenized security: a token representing an existing security, not a crypto project"
+                        >
+                          Tokenized security
+                        </span>
+                      )}
                     </div>
                   </td>
                   <td className="px-3 py-3 text-right font-mono text-sm text-text-primary whitespace-nowrap">
