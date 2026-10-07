@@ -188,6 +188,22 @@ The app already carries one tokenized security misfiled as a stablecoin (Ondo US
 registry); that is an engineering item in the assessment, listed here only because the
 misfile is also a disclosure defect.
 
+**H. Risk ratings by asset type** (opened 2026-10-07, T-419). Full record:
+`docs/assessments/risk-ratings-by-asset-type-2026-10-07.md`. D64 switched every risk rating
+off until the engine is rebuilt (T-420), and asked first whether and how risk can be rated for
+each asset type. The memo's answer, from public sources: in US law the line is personal versus
+impersonal, and the asset type only decides which regulator draws it. A rating that is the
+same for every reader, published regularly, with its method shown and no paid interest, is the
+publisher's form (*Lowe v. SEC*, 1985; *Lingley v. Seeking Alpha*, S.D.N.Y. 2024, which covered
+ratings). A figure worked out from the user's own holdings is the personal form, outside that
+exclusion and outside the CFTC's matching exemption for futures and forex (Rule 4.14(a)(9)).
+For crypto that is not a security under the SEC's 2026-03-17 interpretation, neither
+registration system reaches an impersonal rating. Recommended: an impersonal rating on the
+asset's own page for crypto coins and stocks only, facts everywhere else, never a rating of a
+portfolio as a whole. **The owner's answers per asset type are pending**; its twelve questions
+then go to the review before launch (D4). Like G, it was written without opening the primary
+documents.
+
 ---
 
 ## 4. When to revisit
@@ -217,6 +233,10 @@ This note is not on a timer, because the triggers are events rather than dates:
    can load a page. **Bitget is the exception and does not wait for either** — its §1
    Prohibited-Countries clause names the United States while the owner is US-resident, and
    that is a question about whether the app may call the host at all, today.
+
+7. **Before any risk rating returns** (added 2026-10-07). Group H's answers, the owner's per
+   asset type and then the lawyer's, are what T-420 rebuilds to. Check the Second Circuit's
+   decision in the Seeking Alpha appeal (No. 24-2437) first: the memo could not confirm it.
 
 ⚠ `npm run staleness:check` does **not** watch any of this. It watches curated *data*
 tables (`*_LAST_VERIFIED`), not terms verdicts or legal workstreams. Extending it to the

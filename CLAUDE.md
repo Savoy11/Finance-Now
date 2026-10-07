@@ -864,6 +864,14 @@ site nobody has reviewed. Full design: `docs/architecture/source-terms.md`.
 > **not information services**, so the app's analytics-only posture holds while it labels
 > truthfully. `docs/LEGAL-REVIEW.md` §3.G carries the open legal questions.
 
+> **Risk ratings by asset type** — `docs/assessments/risk-ratings-by-asset-type-2026-10-07.md`
+> (T-419, 2026-10-07) is the research D64 asked for before any rating returns (T-420). Read it
+> before restoring anything behind `lib/risk/visibility.ts`. Its line, from public sources and
+> not yet a lawyer's: a rating that is the same for every reader, with its method shown, is the
+> publisher's form; a figure worked out from a user's own holdings is the personal form, and the
+> draft disclosures promise the app offers none. The owner's answers per asset type and the
+> legal review (D4) are still to come. `docs/LEGAL-REVIEW.md` §3.H.
+
 **To close it:** `npm run terms:report -- --seeded` (or `--news`) from a machine
 > that can reach these sites writes a review worksheet — current verdict, what the
 > probe saw, a link to the document, and a conclusion box per host. Read the

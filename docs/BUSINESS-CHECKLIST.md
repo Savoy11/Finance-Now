@@ -51,6 +51,9 @@ structure, regulatory research, disclosures and tax compliance are decided once,
         and "recommendations" at scale is exactly the line flagged in
         `docs/MARKET-ASSESSMENT.md`'s risk register. Keep framing informational; know where the
         line actually is.
+        Risk ratings, asset by asset: `docs/assessments/risk-ratings-by-asset-type-2026-10-07.md`
+        (T-419, 2026-10-07). The owner's answers per asset type are pending, then the legal
+        review (D4).
       - **Broker-dealer** — triggered only if the brokerage-linking work goes beyond read-only.
       - **FTC** — affiliate disclosure, endorsement rules, "clear and conspicuous".
       - **Data licensing / redistribution** — serving third-party data from our keys.

@@ -13521,7 +13521,7 @@
     "D64"
    ],
    "summary": "D64 switched off every risk rating the app shows until the risk engine is rebuilt. The owner set this as the first step: \"This project will also require significant compliance and regulatory research to determine if and how risk can be assessed for each asset type.\" The answer may differ by asset type (crypto, stocks, ETFs and funds, commodities, currencies, interest rates, options) and by form: a score on an asset's own page, a rating of holdings the user added, or only the standard statistics D14 kept.",
-   "next_action": "Draft a memo per asset type: what a risk rating would say, which rules could treat it as advice or a recommendation, what disclosures it would need, and what can be shown instead. Build on the regulatory posture work (T-289) and take it to the legal review before launch (D4). Record the owner's answer for each asset type; T-420 builds on it.",
+   "next_action": "Owner: answer per asset type in §7 of docs/assessments/risk-ratings-by-asset-type-2026-10-07.md (A: facts and standard statistics only; B: an impersonal rating on the asset's own page with its method shown, after the lawyer confirms it; C: B plus ratings of the user's own holdings, only if the lawyer clears the personal form). Record the answers as a dated decision. Then take the memo to the legal review before launch (D4), starting with its §8 questions, and record the lawyer's answers; T-420 builds the engine to both.",
    "sources": [
     {
      "file": "docs/decisions/2026-10-04-owner-decisions.md",
@@ -13533,6 +13533,13 @@
     "on": "2026-10-04",
     "by": "session steward",
     "why": "Opened with D64 at the owner's request, as the research the risk engine rebuild depends on."
+   },
+   "progress": {
+    "noted_on": "2026-10-07",
+    "note": "The memo is written (D90's fourth item): docs/assessments/risk-ratings-by-asset-type-2026-10-07.md. Its finding: in US law the line is personal versus impersonal, not asset type. A rating that is the same for every reader, published regularly, with its method shown and no paid interest, sits inside the publisher's exclusion (Lowe v. SEC, 1985; Lingley v. Seeking Alpha, S.D.N.Y. 2024, which covered ratings); a figure worked out from the user's own holdings is the personal form. The asset type decides the regulator: the SEC and the states for stocks, funds, options and crypto tokens that are securities; the CFTC for futures, options on futures and retail forex, whose Rule 4.14(a)(9) draws the same line in so many words; neither registration system for an impersonal rating of crypto that is not a security under the SEC's 2026-03-17 interpretation. Recommended: B for crypto coins and stocks, A everywhere else, no portfolio-level rating. Written from web-search summaries; the government and legal sites were blocked from the session, so the lawyer works from the primary texts the memo lists. Two points are marked unverified: the Second Circuit's decision in the Seeking Alpha appeal, and whether Rule 4.14(a)(9) covers retail-forex advice.",
+    "evidence": [
+     "docs/assessments/risk-ratings-by-asset-type-2026-10-07.md"
+    ]
    }
   },
   {
@@ -39286,6 +39293,13 @@
     "evidence": [
      "frontend/src/lib/data/costBasis.ts",
      "frontend/drizzle/0006_trade-splits.sql"
+    ]
+   },
+   {
+    "on": "2026-10-07",
+    "what": "T-419 (D90's fourth item): the memo on whether and how risk can be rated for each asset type is written, with a recommended answer per asset type and twelve questions for the legal review. T-419 stays open for the owner's answers and then the review (D4).",
+    "evidence": [
+     "docs/assessments/risk-ratings-by-asset-type-2026-10-07.md"
     ]
    }
   ]
