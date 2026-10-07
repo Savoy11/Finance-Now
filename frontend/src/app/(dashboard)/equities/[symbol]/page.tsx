@@ -100,7 +100,7 @@ function EquityDetailInner() {
   const sector = SECTOR_INFO[entry.sector]
 
   return (
-    <div className="space-y-6 max-w-screen-xl mx-auto">
+    <div className="space-y-6 max-w-(--breakpoint-xl) mx-auto">
       {/* Header */}
       <div>
         <Link href="/equities" className="inline-flex items-center gap-1 text-xs text-text-muted hover:text-text-secondary transition-colors">
@@ -111,7 +111,7 @@ function EquityDetailInner() {
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-semibold text-text-primary">{entry.name}</h1>
               <span className="font-mono text-sm text-text-muted">{symbol}</span>
-              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-medium border border-border text-text-secondary">
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-sm text-[11px] font-medium border border-border text-text-secondary">
                 <span className="size-1.5 rounded-full" style={{ backgroundColor: sector.color }} aria-hidden />
                 {sector.label}
               </span>

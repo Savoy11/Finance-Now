@@ -110,7 +110,7 @@ function CandidateCard({ coin, compact = false }: { coin: CandidateCoin; compact
   if (compact) {
     return (
       <div className="bg-bg-card border border-border rounded-lg flex items-center gap-3 px-3 py-2">
-        <img src={coin.image} alt={coin.name} className="w-7 h-7 rounded-full flex-shrink-0" onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
+        <img src={coin.image} alt={coin.name} className="w-7 h-7 rounded-full shrink-0" onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
         {/* Compact rows have no room for an About panel, so the name links
             straight to the project site. The profile request fires on hover —
             one request, only for a row the reader is actually pointing at. */}
@@ -125,25 +125,25 @@ function CandidateCard({ coin, compact = false }: { coin: CandidateCoin; compact
         >
           {coin.name}
         </a>
-        <span className="text-xs text-text-muted flex-shrink-0">{coin.symbol}</span>
-        {coin.marketCapRank && <span className="text-xs text-text-muted flex-shrink-0 hidden sm:inline">#{coin.marketCapRank}</span>}
-        <span className="text-xs text-text-muted flex-shrink-0 hidden md:inline">{fmtMcap(coin.marketCap)}</span>
-        <span className={`text-xs flex-shrink-0 hidden lg:inline ${changeColor}`}>{change >= 0 ? '+' : ''}{fmt(change)}%</span>
-        <div className="flex-shrink-0 ml-auto"><LiquidityBadge ratio={coin.liquidityRatio} /></div>
+        <span className="text-xs text-text-muted shrink-0">{coin.symbol}</span>
+        {coin.marketCapRank && <span className="text-xs text-text-muted shrink-0 hidden sm:inline">#{coin.marketCapRank}</span>}
+        <span className="text-xs text-text-muted shrink-0 hidden md:inline">{fmtMcap(coin.marketCap)}</span>
+        <span className={`text-xs shrink-0 hidden lg:inline ${changeColor}`}>{change >= 0 ? '+' : ''}{fmt(change)}%</span>
+        <div className="shrink-0 ml-auto"><LiquidityBadge ratio={coin.liquidityRatio} /></div>
         {added ? (
-          <span className="text-xs text-emerald-400 flex items-center gap-1 flex-shrink-0"><Star className="w-3 h-3" /></span>
+          <span className="text-xs text-emerald-400 flex items-center gap-1 shrink-0"><Star className="w-3 h-3" /></span>
         ) : (
-          <div className="flex items-center gap-1 flex-shrink-0">
+          <div className="flex items-center gap-1 shrink-0">
             <button
               onClick={handleAdd}
-              className="px-2 py-1 bg-accent-blue hover:bg-blue-600 text-white text-xs rounded font-medium flex items-center gap-1 transition-colors"
+              className="px-2 py-1 bg-accent-blue hover:bg-blue-600 text-white text-xs rounded-sm font-medium flex items-center gap-1 transition-colors"
               title="Add to list"
             >
               <Plus className="w-3 h-3" />
             </button>
             <button
               onClick={() => dismissCandidate(coin.cgId)}
-              className="p-1 text-text-muted hover:text-text-secondary rounded transition-colors"
+              className="p-1 text-text-muted hover:text-text-secondary rounded-sm transition-colors"
               title="Dismiss"
             >
               <X className="w-3 h-3" />
@@ -159,7 +159,7 @@ function CandidateCard({ coin, compact = false }: { coin: CandidateCoin; compact
     <div className="bg-bg-card border border-border rounded-xl overflow-hidden">
       {/* Header row */}
       <div className="p-4 flex items-start gap-3">
-        <img src={coin.image} alt={coin.name} className="w-9 h-9 rounded-full flex-shrink-0" onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
+        <img src={coin.image} alt={coin.name} className="w-9 h-9 rounded-full shrink-0" onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             {homepage ? (
@@ -193,7 +193,7 @@ function CandidateCard({ coin, compact = false }: { coin: CandidateCoin; compact
             <span className="text-text-secondary">${coin.price < 0.01 ? coin.price.toFixed(6) : coin.price < 1 ? coin.price.toFixed(4) : coin.price.toLocaleString()}</span>
             <span className={changeColor}>{change >= 0 ? '+' : ''}{fmt(change)}%</span>
             <span className="text-text-muted">{fmtMcap(coin.marketCap)}</span>
-            <span className="px-1.5 py-0.5 rounded text-xs" style={{ backgroundColor: coin.categoryColor + '22', color: coin.categoryColor }}>
+            <span className="px-1.5 py-0.5 rounded-sm text-xs" style={{ backgroundColor: coin.categoryColor + '22', color: coin.categoryColor }}>
               {coin.categoryLabel}
             </span>
           </div>
@@ -274,7 +274,7 @@ function CandidateCard({ coin, compact = false }: { coin: CandidateCoin; compact
             {!!profile?.categories.length && (
               <div className="flex flex-wrap gap-1">
                 {profile.categories.map((c) => (
-                  <span key={c} className="px-1.5 py-0.5 rounded bg-bg-elevated border border-border text-[10px] text-text-muted">
+                  <span key={c} className="px-1.5 py-0.5 rounded-sm bg-bg-elevated border border-border text-[10px] text-text-muted">
                     {c}
                   </span>
                 ))}
@@ -341,17 +341,17 @@ function CandidateCard({ coin, compact = false }: { coin: CandidateCoin; compact
             <input
               type="text" placeholder="Notes (optional)" value={notes}
               onChange={e => setNotes(e.target.value)}
-              className="flex-1 text-xs bg-bg-elevated border border-border rounded px-2 py-1.5 text-text-secondary placeholder:text-text-muted focus:outline-none focus:border-accent-blue"
+              className="flex-1 text-xs bg-bg-elevated border border-border rounded-sm px-2 py-1.5 text-text-secondary placeholder:text-text-muted focus:outline-hidden focus:border-accent-blue"
             />
             <button
               onClick={handleAdd}
-              className="px-3 py-1.5 bg-accent-blue hover:bg-blue-600 text-white text-xs rounded font-medium flex items-center gap-1 transition-colors"
+              className="px-3 py-1.5 bg-accent-blue hover:bg-blue-600 text-white text-xs rounded-sm font-medium flex items-center gap-1 transition-colors"
             >
               <Plus className="w-3 h-3" /> Add
             </button>
             <button
               onClick={() => dismissCandidate(coin.cgId)}
-              className="p-1.5 text-text-muted hover:text-text-secondary rounded transition-colors"
+              className="p-1.5 text-text-muted hover:text-text-secondary rounded-sm transition-colors"
               title="Dismiss"
             >
               <X className="w-3 h-3" />
@@ -392,7 +392,7 @@ function SearchTab() {
         <input
           type="text" placeholder="Search for any coin by name or ticker…" value={query}
           onChange={e => debounce(e.target.value)}
-          className="w-full pl-9 pr-4 py-2.5 bg-bg-elevated border border-border rounded-lg text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-blue"
+          className="w-full pl-9 pr-4 py-2.5 bg-bg-elevated border border-border rounded-lg text-sm text-text-primary placeholder:text-text-muted focus:outline-hidden focus:border-accent-blue"
         />
         {isFetching && <div className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-accent-blue border-t-transparent rounded-full animate-spin" />}
       </div>
@@ -403,7 +403,7 @@ function SearchTab() {
             const added = isAdded(coin.cgId)
             return (
               <div key={coin.cgId} className="flex items-center gap-3 p-3 bg-bg-card border border-border rounded-lg">
-                <img src={coin.thumb} alt={coin.name} className="w-8 h-8 rounded-full flex-shrink-0" onError={e => { (e.target as HTMLImageElement).src = '' }} />
+                <img src={coin.thumb} alt={coin.name} className="w-8 h-8 rounded-full shrink-0" onError={e => { (e.target as HTMLImageElement).src = '' }} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-text-primary text-sm">{coin.name}</span>
@@ -422,7 +422,7 @@ function SearchTab() {
                       marketCapRank: coin.marketCapRank ?? 0,
                       addedAt: new Date().toISOString(), addedBy: 'manual', notes: '',
                     })}
-                    className="px-3 py-1 bg-accent-blue hover:bg-blue-600 text-white text-xs rounded font-medium flex items-center gap-1 transition-colors"
+                    className="px-3 py-1 bg-accent-blue hover:bg-blue-600 text-white text-xs rounded-sm font-medium flex items-center gap-1 transition-colors"
                   >
                     <Plus className="w-3 h-3" /> Add
                   </button>
@@ -463,7 +463,7 @@ function AddedCoinsTab() {
     <div className="space-y-3">
       {addedCoins.map(coin => (
         <div key={coin.cgId} className="flex items-center gap-3 p-3 bg-bg-card border border-border rounded-xl">
-          <img src={coin.image} alt={coin.name} className="w-9 h-9 rounded-full flex-shrink-0" onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
+          <img src={coin.image} alt={coin.name} className="w-9 h-9 rounded-full shrink-0" onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <a
@@ -476,7 +476,7 @@ function AddedCoinsTab() {
                 <ExternalLink size={10} className="text-text-muted group-hover:text-accent-blue shrink-0" />
               </a>
               <span className="text-xs text-text-muted">{coin.symbol}</span>
-              <span className="text-xs px-1.5 py-0.5 rounded bg-bg-elevated text-text-muted">
+              <span className="text-xs px-1.5 py-0.5 rounded-sm bg-bg-elevated text-text-muted">
                 {coin.addedBy === 'manual' ? 'Manual' : 'From candidates'}
               </span>
             </div>
@@ -489,7 +489,7 @@ function AddedCoinsTab() {
             </div>
             {coin.notes && <p className="text-xs text-text-secondary mt-1 italic">&quot;{coin.notes}&quot;</p>}
           </div>
-          <button onClick={() => removeCoin(coin.cgId)} className="p-1.5 text-text-muted hover:text-red-400 rounded transition-colors" title="Remove">
+          <button onClick={() => removeCoin(coin.cgId)} className="p-1.5 text-text-muted hover:text-red-400 rounded-sm transition-colors" title="Remove">
             <Trash2 className="w-4 h-4" />
           </button>
         </div>
@@ -719,7 +719,7 @@ function CoinDiscoveryPageInner() {
             key={t}
             onClick={() => setTab(t)}
             className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
-              tab === t ? 'bg-bg-card text-text-primary shadow-sm' : 'text-text-muted hover:text-text-secondary'
+              tab === t ? 'bg-bg-card text-text-primary shadow-xs' : 'text-text-muted hover:text-text-secondary'
             }`}
           >
             {TAB_LABELS[t]}
@@ -752,7 +752,7 @@ function CoinDiscoveryPageInner() {
               <select
                 value={typeFilter}
                 onChange={e => setTypeFilter(e.target.value)}
-                className="bg-bg-elevated border border-border rounded-lg px-2 py-1.5 text-xs text-text-primary focus:outline-none focus:border-accent-blue"
+                className="bg-bg-elevated border border-border rounded-lg px-2 py-1.5 text-xs text-text-primary focus:outline-hidden focus:border-accent-blue"
               >
                 {TYPE_OPTIONS.map(opt => (
                   <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -765,7 +765,7 @@ function CoinDiscoveryPageInner() {
               <select
                 value={sortBy}
                 onChange={e => setSortBy(e.target.value as SortKey)}
-                className="bg-bg-elevated border border-border rounded-lg px-2 py-1.5 text-xs text-text-primary focus:outline-none focus:border-accent-blue"
+                className="bg-bg-elevated border border-border rounded-lg px-2 py-1.5 text-xs text-text-primary focus:outline-hidden focus:border-accent-blue"
               >
                 {SORT_OPTIONS.map(opt => (
                   <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -787,7 +787,7 @@ function CoinDiscoveryPageInner() {
               <input
                 type="text" placeholder="Filter by name…" value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="w-full pl-8 pr-3 py-1.5 bg-bg-elevated border border-border rounded-lg text-xs text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-blue"
+                className="w-full pl-8 pr-3 py-1.5 bg-bg-elevated border border-border rounded-lg text-xs text-text-primary placeholder:text-text-muted focus:outline-hidden focus:border-accent-blue"
               />
             </div>
             {dismissedIds.length > 0 && (
@@ -842,7 +842,7 @@ function CoinDiscoveryPageInner() {
 
           {error && (
             <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl flex items-center gap-2 text-red-400 text-sm">
-              <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+              <AlertTriangle className="w-4 h-4 shrink-0" />
               Failed to load candidates. CoinGecko may be rate-limiting — try again in a minute.
             </div>
           )}

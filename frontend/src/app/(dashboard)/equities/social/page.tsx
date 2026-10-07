@@ -75,18 +75,18 @@ function SignalCard({ signal }: { signal: StockSocialSignal }) {
     <article className="group bg-bg-card border border-border rounded-lg p-4 flex flex-col gap-3 transition-all hover:border-violet-500/30 hover:bg-bg-elevated">
       <div className="flex items-start justify-between gap-3">
         <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-          <span className={clsx('inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border', platform.color)}>
+          <span className={clsx('inline-flex items-center px-1.5 py-0.5 rounded-sm text-[10px] font-medium border', platform.color)}>
             {platform.label}
             {signal.subreddit && <span className="ml-1 opacity-70">r/{signal.subreddit}</span>}
           </span>
-          <span className={clsx('inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border capitalize', SENTIMENT_STYLES[signal.sentiment])}>
+          <span className={clsx('inline-flex items-center px-1.5 py-0.5 rounded-sm text-[10px] font-medium border capitalize', SENTIMENT_STYLES[signal.sentiment])}>
             {signal.sentiment === 'positive' ? 'bullish' : signal.sentiment === 'negative' ? 'bearish' : 'neutral'}
           </span>
           {signal.symbols.slice(0, 3).map((sym) => (
             <Link
               key={sym}
               href={`/equities/${sym.toLowerCase()}`}
-              className="px-1.5 py-0.5 rounded bg-accent-blue/10 border border-accent-blue/20 text-[10px] font-mono text-accent-blue hover:bg-accent-blue/20 transition-colors"
+              className="px-1.5 py-0.5 rounded-sm bg-accent-blue/10 border border-accent-blue/20 text-[10px] font-mono text-accent-blue hover:bg-accent-blue/20 transition-colors"
             >
               ${sym}
             </Link>
@@ -96,7 +96,7 @@ function SignalCard({ signal }: { signal: StockSocialSignal }) {
           href={signal.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-text-muted hover:text-violet-400 transition-colors flex-shrink-0 mt-0.5"
+          className="text-text-muted hover:text-violet-400 transition-colors shrink-0 mt-0.5"
           aria-label="Open post"
         >
           <ExternalLink size={13} />
@@ -125,7 +125,7 @@ function SignalCard({ signal }: { signal: StockSocialSignal }) {
             </span>
           )}
         </div>
-        <div className="flex items-center gap-1.5 flex-shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0">
           <span className="text-[11px] text-text-muted">{signal.platform === 'reddit' ? 'u/' : '@'}{signal.author}</span>
           <span className="text-text-muted/40">·</span>
           <span className="flex items-center gap-1 text-[11px] text-text-muted font-mono">
@@ -197,7 +197,7 @@ function EquitySocialContent() {
         <select
           value={symbolFilter}
           onChange={(e) => setSymbolFilter(e.target.value)}
-          className="bg-bg-secondary border border-border rounded px-2 py-1.5 text-xs text-text-secondary focus:outline-none focus:border-violet-500/60"
+          className="bg-bg-secondary border border-border rounded-sm px-2 py-1.5 text-xs text-text-secondary focus:outline-hidden focus:border-violet-500/60"
         >
           <option value="all">All Stocks (trending)</option>
           {EQUITY_CATALOG.map((e) => (

@@ -29,7 +29,7 @@ export function TradeRiskReport({ risk }: { risk: CompositeRisk }) {
           <span className={clsx('font-mono text-4xl font-bold tabular-nums', bandStyle.text)}>
             {risk.score.toFixed(0)}
           </span>
-          <span className={clsx('px-2 py-0.5 rounded text-xs font-bold', bandStyle.badge)}>
+          <span className={clsx('px-2 py-0.5 rounded-sm text-xs font-bold', bandStyle.badge)}>
             {risk.band.toUpperCase()} RISK
           </span>
           <span className="ml-auto text-xs text-text-muted font-mono tabular-nums">
@@ -46,7 +46,7 @@ export function TradeRiskReport({ risk }: { risk: CompositeRisk }) {
       {/* Dimensions */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {risk.dimensions.map((dim) => (
-          <div key={dim.key} className="rounded border border-border/60 bg-bg-card px-3 py-2">
+          <div key={dim.key} className="rounded-sm border border-border/60 bg-bg-card px-3 py-2">
             <div className="flex items-center justify-between gap-2">
               <span className="text-xs font-medium text-text-secondary">{dim.label}</span>
               <span className="text-[10px] text-text-muted font-mono">w {(dim.weight * 100).toFixed(0)}%</span>
@@ -71,7 +71,7 @@ export function TradeRiskReport({ risk }: { risk: CompositeRisk }) {
         <ul className="space-y-1">
           {risk.warnings.map((w, j) => (
             <li key={j} className="flex items-start gap-1.5 text-[11px] text-text-muted">
-              <AlertTriangle size={11} className="mt-0.5 flex-shrink-0 text-amber-400" aria-hidden />
+              <AlertTriangle size={11} className="mt-0.5 shrink-0 text-amber-400" aria-hidden />
               {w}
             </li>
           ))}

@@ -106,7 +106,7 @@ function PortfolioCard({ portfolio, onSelect, onDelete }: {
           {portfolio.description && <p className="text-xs text-text-muted mt-0.5 line-clamp-1">{portfolio.description}</p>}
         </div>
         <button onClick={e => { e.stopPropagation(); onDelete() }}
-          className="p-1.5 text-text-muted hover:text-red-400 rounded opacity-0 group-hover:opacity-100 transition-all">
+          className="p-1.5 text-text-muted hover:text-red-400 rounded-sm opacity-0 group-hover:opacity-100 transition-all">
           <Trash2 size={14} />
         </button>
       </div>
@@ -128,7 +128,7 @@ function PortfolioCard({ portfolio, onSelect, onDelete }: {
         {portfolio.holdings.slice(0, 6).map(h => {
           const meta = INSTRUMENT_BY_KEY[h.cgId]
           return (
-            <span key={h.cgId} className="text-[10px] px-1.5 py-0.5 rounded border border-border bg-bg-elevated text-text-muted font-mono">
+            <span key={h.cgId} className="text-[10px] px-1.5 py-0.5 rounded-sm border border-border bg-bg-elevated text-text-muted font-mono">
               {h.symbol} {h.targetAlloc.toFixed(0)}%
             </span>
           )
@@ -172,7 +172,7 @@ function HoldingRow({ holding, total, onUpdate, onRemove, disabled }: {
             onChange={e => onUpdate('targetAlloc', parseFloat(e.target.value) || 0)}
             disabled={disabled}
             className={clsx(
-              'w-full bg-bg-elevated border rounded px-2 py-1 text-xs text-text-primary text-right focus:outline-none',
+              'w-full bg-bg-elevated border rounded-sm px-2 py-1 text-xs text-text-primary text-right focus:outline-hidden',
               warn ? 'border-amber-500/50' : 'border-border focus:border-accent-blue'
             )} />
           <span className="text-xs text-text-muted">%</span>
@@ -186,7 +186,7 @@ function HoldingRow({ holding, total, onUpdate, onRemove, disabled }: {
             value={holding.entryPrice ?? ''}
             onChange={e => onUpdate('entryPrice', e.target.value === '' ? null : parseFloat(e.target.value))}
             disabled={disabled}
-            className="w-full bg-bg-elevated border border-border rounded px-2 py-1 text-xs text-text-primary focus:outline-none focus:border-accent-blue" />
+            className="w-full bg-bg-elevated border border-border rounded-sm px-2 py-1 text-xs text-text-primary focus:outline-hidden focus:border-accent-blue" />
         </div>
       </div>
       {/* Remove */}
@@ -260,13 +260,13 @@ function PortfolioEditor({ existing, onSave, onCancel }: {
     onSave({ name: name.trim(), description: desc.trim(), startingCapital: cap, holdings })
   }
 
-  const inputCls = 'w-full bg-bg-elevated border border-border rounded px-2.5 py-1.5 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-blue'
+  const inputCls = 'w-full bg-bg-elevated border border-border rounded-sm px-2.5 py-1.5 text-sm text-text-primary placeholder:text-text-muted focus:outline-hidden focus:border-accent-blue'
   const labelCls = 'block text-xs text-text-muted mb-1 font-medium'
 
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-3">
-        <button onClick={onCancel} className="p-1.5 text-text-muted hover:text-text-primary rounded transition-colors">
+        <button onClick={onCancel} className="p-1.5 text-text-muted hover:text-text-primary rounded-sm transition-colors">
           <ArrowLeft size={18} />
         </button>
         <h2 className="text-xl font-bold text-text-primary">{existing ? 'Edit Portfolio' : 'New Portfolio'}</h2>
@@ -324,7 +324,7 @@ function PortfolioEditor({ existing, onSave, onCancel }: {
         {/* Search to add */}
         <div className="relative">
           <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted" />
-          <input className="w-full pl-8 pr-3 py-2 bg-bg-elevated border border-border rounded-lg text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-blue"
+          <input className="w-full pl-8 pr-3 py-2 bg-bg-elevated border border-border rounded-lg text-sm text-text-primary placeholder:text-text-muted focus:outline-hidden focus:border-accent-blue"
             placeholder="Search to add a coin, stock, ETF, fund, commodity, currency, or rate…"
             value={coinSearch} onChange={e => setCoinSearch(e.target.value)} />
         </div>
@@ -346,11 +346,11 @@ function PortfolioEditor({ existing, onSave, onCancel }: {
                   {/* Class, not crypto-category: the old chip indexed
                       CATEGORY_META with a crypto key, rendering blank for
                       stocks/funds and "Unknown" for macro. */}
-                  <span className="text-[10px] text-text-muted px-1.5 py-0.5 rounded bg-bg-card border border-border">
+                  <span className="text-[10px] text-text-muted px-1.5 py-0.5 rounded-sm bg-bg-card border border-border">
                     {CLASS_LABELS[coin.class]}
                   </span>
                   {coin.remote && (
-                    <span className="text-[10px] text-accent-blue/80 px-1.5 py-0.5 rounded bg-accent-blue/10"
+                    <span className="text-[10px] text-accent-blue/80 px-1.5 py-0.5 rounded-sm bg-accent-blue/10"
                       title={RISK_RATINGS_SHOWN
                         ? 'Found by live lookup rather than the curated catalogs — no vetted risk tier, so it is excluded from the weighted risk figure, not defaulted.'
                         : 'Found by live lookup rather than the curated catalogs.'}>
@@ -436,10 +436,10 @@ function BacktestPanel({ portfolio }: { portfolio: Portfolio }) {
             <label className="block text-xs text-text-muted mb-1">Start Date</label>
             <input type="date" min={minDate} max={today}
               value={startDate} onChange={e => setStartDate(e.target.value)}
-              className="bg-bg-elevated border border-border rounded px-3 py-1.5 text-sm text-text-primary focus:outline-none focus:border-accent-blue" />
+              className="bg-bg-elevated border border-border rounded-sm px-3 py-1.5 text-sm text-text-primary focus:outline-hidden focus:border-accent-blue" />
           </div>
           <button onClick={() => setRunDate(startDate)}
-            className="px-4 py-1.5 bg-accent-blue hover:bg-blue-600 text-white text-sm rounded font-medium flex items-center gap-2 transition-colors">
+            className="px-4 py-1.5 bg-accent-blue hover:bg-blue-600 text-white text-sm rounded-sm font-medium flex items-center gap-2 transition-colors">
             <Activity size={14} /> Run Backtest
           </button>
         </div>
@@ -605,7 +605,7 @@ function PortfolioDetail({ portfolio, onEdit, onBack }: {
     <div className="space-y-5">
       {/* Header */}
       <div className="flex items-start gap-3 flex-wrap">
-        <button onClick={onBack} className="p-1.5 text-text-muted hover:text-text-primary rounded transition-colors mt-0.5">
+        <button onClick={onBack} className="p-1.5 text-text-muted hover:text-text-primary rounded-sm transition-colors mt-0.5">
           <ArrowLeft size={18} />
         </button>
         <div className="flex-1 min-w-0">
@@ -693,7 +693,7 @@ function PortfolioDetail({ portfolio, onEdit, onBack }: {
       <div className="flex gap-1 bg-bg-elevated p-1 rounded-lg w-fit">
         {(['overview', 'analysis', 'look-through'] as DetailTab[]).map(t => (
           <button key={t} onClick={() => setTab(t)}
-            className={clsx('px-4 py-1.5 rounded-md text-sm font-medium transition-colors', tab === t ? 'bg-bg-card text-text-primary shadow-sm' : 'text-text-muted hover:text-text-secondary')}>
+            className={clsx('px-4 py-1.5 rounded-md text-sm font-medium transition-colors', tab === t ? 'bg-bg-card text-text-primary shadow-xs' : 'text-text-muted hover:text-text-secondary')}>
             {TAB_LABELS[t]}
           </button>
         ))}
@@ -947,7 +947,7 @@ export default function PortfoliosPage() {
     <div className="p-6 max-w-6xl mx-auto space-y-6">
       {syncError && (
         <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 flex items-start gap-3">
-          <AlertTriangle size={16} className="text-red-400 flex-shrink-0 mt-0.5" aria-hidden />
+          <AlertTriangle size={16} className="text-red-400 shrink-0 mt-0.5" aria-hidden />
           <div className="text-xs text-text-secondary leading-relaxed">
             <span className="font-medium text-red-300">Portfolios are unavailable</span>
             {' '}— {syncError}. Changes made now will not be saved.

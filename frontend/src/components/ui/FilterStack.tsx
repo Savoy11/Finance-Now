@@ -69,7 +69,7 @@ export function FilterStack<T>({
               value={r.operator}
               onChange={e => updateRule(r.id, { operator: e.target.value as 'gte' | 'lte' })}
               aria-label={`${def.label} comparison`}
-              className="rounded border border-border bg-bg-card px-2 py-1 text-xs text-text-primary focus:border-accent-blue/40 focus:outline-none"
+              className="rounded-sm border border-border bg-bg-card px-2 py-1 text-xs text-text-primary focus:border-accent-blue/40 focus:outline-hidden"
             >
               <option value="gte">at least</option>
               <option value="lte">at most</option>
@@ -80,7 +80,7 @@ export function FilterStack<T>({
               value={Number.isFinite(r.value) ? r.value : ''}
               onChange={e => updateRule(r.id, { value: e.target.value === '' ? NaN : Number(e.target.value) })}
               aria-label={`${def.label} value`}
-              className="w-32 rounded border border-border bg-bg-card px-2 py-1 font-mono text-xs text-text-primary focus:border-accent-blue/40 focus:outline-none"
+              className="w-32 rounded-sm border border-border bg-bg-card px-2 py-1 font-mono text-xs text-text-primary focus:border-accent-blue/40 focus:outline-hidden"
             />
             <span className="text-[10px] text-text-muted">
               {def.unit === 'usd' ? 'USD' : def.unit === 'percent' ? '%' : def.unit === 'ratio' ? '×' : ''}
@@ -107,7 +107,7 @@ export function FilterStack<T>({
                   key={f.key}
                   onClick={() => addRule(f.key)}
                   title={f.hint}
-                  className="rounded border border-border px-2 py-0.5 text-[11px] text-text-secondary transition-colors hover:border-accent-blue/40 hover:text-accent-blue"
+                  className="rounded-sm border border-border px-2 py-0.5 text-[11px] text-text-secondary transition-colors hover:border-accent-blue/40 hover:text-accent-blue"
                 >
                   + {f.label}
                 </button>
@@ -121,7 +121,7 @@ export function FilterStack<T>({
         {rules.length > 0 && (
           <button
             onClick={() => onChange([])}
-            className="rounded border border-border px-2 py-1 text-text-muted transition-colors hover:bg-bg-elevated hover:text-text-secondary"
+            className="rounded-sm border border-border px-2 py-1 text-text-muted transition-colors hover:bg-bg-elevated hover:text-text-secondary"
           >
             Clear conditions
           </button>

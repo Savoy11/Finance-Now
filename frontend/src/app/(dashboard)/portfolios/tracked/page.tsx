@@ -15,7 +15,7 @@ import { MAX_DESCRIPTION_LENGTH, MAX_NAME_LENGTH } from '@/lib/data/tradeLedger'
 // apart from the what-if portfolios on /portfolios, which are never converted.
 // This page lists them and makes new ones; one opens in TrackedPortfolioDetail.
 
-const inputCls = 'w-full bg-bg-elevated border border-border rounded px-2.5 py-1.5 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-blue'
+const inputCls = 'w-full bg-bg-elevated border border-border rounded-sm px-2.5 py-1.5 text-sm text-text-primary placeholder:text-text-muted focus:outline-hidden focus:border-accent-blue'
 
 export default function TrackedPortfoliosPage() {
   const uid = useId()
@@ -73,7 +73,7 @@ export default function TrackedPortfoliosPage() {
         />
         {!selected && !setupError && !creating && (
           <button type="button" onClick={() => setCreating(true)}
-            className="px-4 py-2 bg-accent-blue hover:bg-blue-600 text-white rounded-lg font-medium text-sm flex items-center gap-2 transition-colors flex-shrink-0">
+            className="px-4 py-2 bg-accent-blue hover:bg-blue-600 text-white rounded-lg font-medium text-sm flex items-center gap-2 transition-colors shrink-0">
             <Plus size={16} aria-hidden /> New tracked portfolio
           </button>
         )}
@@ -86,7 +86,7 @@ export default function TrackedPortfoliosPage() {
 
       {setupError && (
         <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 flex items-start gap-3" role="alert">
-          <AlertTriangle size={16} className="text-amber-400 flex-shrink-0 mt-0.5" aria-hidden />
+          <AlertTriangle size={16} className="text-amber-400 shrink-0 mt-0.5" aria-hidden />
           <div className="text-xs text-text-secondary leading-relaxed space-y-1">
             <p className="font-medium text-amber-300">Tracked portfolios can’t be used yet</p>
             <p>{setupError.message}</p>
@@ -95,7 +95,7 @@ export default function TrackedPortfoliosPage() {
       )}
       {list.isError && !setupError && (
         <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 flex items-start gap-3" role="alert">
-          <AlertTriangle size={16} className="text-red-400 flex-shrink-0 mt-0.5" aria-hidden />
+          <AlertTriangle size={16} className="text-red-400 shrink-0 mt-0.5" aria-hidden />
           <p className="text-xs text-text-secondary leading-relaxed">
             {list.error instanceof Error && list.error.message ? list.error.message : 'Tracked portfolios could not be loaded.'}
           </p>
@@ -144,7 +144,7 @@ export default function TrackedPortfoliosPage() {
                 <button key={p.id} type="button" onClick={() => setSelectedId(p.id)}
                   className="text-left bg-bg-card border border-border hover:border-border-hover rounded-xl p-4 transition-colors min-w-0">
                   <div className="font-semibold text-text-primary truncate">{p.name}</div>
-                  {p.description && <div className="text-xs text-text-muted mt-1 line-clamp-2 break-words">{p.description}</div>}
+                  {p.description && <div className="text-xs text-text-muted mt-1 line-clamp-2 wrap-break-word">{p.description}</div>}
                   <div className="text-[11px] text-text-muted mt-3">
                     {p.tradeCount} {p.tradeCount === 1 ? 'trade' : 'trades'} · started {formatRecordedDate(p.createdAt)}
                   </div>

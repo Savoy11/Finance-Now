@@ -84,7 +84,7 @@ export function DataStatusBanner() {
         {' · '}derived metrics (risk, reserves) show N/A
       </span>
       {updatedAt && (
-        <span className="ml-auto text-emerald-300/50 font-mono flex-shrink-0">
+        <span className="ml-auto text-emerald-300/50 font-mono shrink-0">
           updated {(() => { try { return formatDistanceToNow(parseISO(updatedAt), { addSuffix: true }) } catch { return '—' } })()}
         </span>
       )}

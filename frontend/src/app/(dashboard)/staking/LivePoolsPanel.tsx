@@ -81,13 +81,13 @@ function LiveOpportunities({ search }: { search: string }) {
           </span>
         )}
         {data?.stale && (
-          <span className="px-1.5 py-0.5 text-[10px] rounded border font-medium bg-amber-500/15 text-amber-300 border-amber-500/30">
+          <span className="px-1.5 py-0.5 text-[10px] rounded-sm border font-medium bg-amber-500/15 text-amber-300 border-amber-500/30">
             cached — discovery sources unreachable
           </span>
         )}
         {data?.degraded && failedUpstreams.length > 0 && (
           <span
-            className="px-1.5 py-0.5 text-[10px] rounded border font-medium bg-amber-500/15 text-amber-300 border-amber-500/30"
+            className="px-1.5 py-0.5 text-[10px] rounded-sm border font-medium bg-amber-500/15 text-amber-300 border-amber-500/30"
             title={Object.entries(data.upstreams).map(([k, v]) => `${k}: ${v}`).join('\n')}
           >
             {failedUpstreams.join(', ')} unreachable — showing the rest
@@ -167,7 +167,7 @@ function LiveOpportunities({ search }: { search: string }) {
                   </td>
                   <td className="py-2.5 px-2 text-xs font-mono text-text-secondary">{fmtUsd(p.tvlUsd)}</td>
                   <td className="py-2.5 pl-2 pr-4">
-                    <span className="text-[10px] text-text-muted bg-bg-elevated border border-border px-1.5 py-0.5 rounded">
+                    <span className="text-[10px] text-text-muted bg-bg-elevated border border-border px-1.5 py-0.5 rounded-sm">
                       {SOURCE_LABELS[p.source]}
                     </span>
                   </td>
@@ -206,7 +206,7 @@ export function LivePoolsPanel() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search pools, assets, chains…"
-          className="w-full rounded-lg border border-border bg-bg-elevated py-1.5 pl-8 pr-3 text-xs text-text-primary placeholder:text-text-muted/60 focus:border-accent-blue/50 focus:outline-none"
+          className="w-full rounded-lg border border-border bg-bg-elevated py-1.5 pl-8 pr-3 text-xs text-text-primary placeholder:text-text-muted/60 focus:border-accent-blue/50 focus:outline-hidden"
         />
       </div>
       <LiveOpportunities search={search} />

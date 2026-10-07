@@ -64,7 +64,7 @@ function Converter() {
   // extended-tier leg must disclose the community source, not just the date.
   const usesExtended = extendedCodes.has(from) || extendedCodes.has(to)
 
-  const selectClass = 'rounded border border-border bg-bg-elevated px-2 py-1.5 text-sm font-mono text-text-primary focus:border-accent-blue/50 focus:outline-none max-w-[7rem]'
+  const selectClass = 'rounded-sm border border-border bg-bg-elevated px-2 py-1.5 text-sm font-mono text-text-primary focus:border-accent-blue/50 focus:outline-hidden max-w-28'
   const options = (
     <>
       <optgroup label="Official (ECB)">
@@ -87,7 +87,7 @@ function Converter() {
         <input
           type="number" min={0} value={amount}
           onChange={(e) => setAmount(e.target.value)}
-          className="w-32 rounded border border-border bg-bg-elevated px-3 py-1.5 text-sm font-mono tabular-nums text-text-primary focus:border-accent-blue/50 focus:outline-none"
+          className="w-32 rounded-sm border border-border bg-bg-elevated px-3 py-1.5 text-sm font-mono tabular-nums text-text-primary focus:border-accent-blue/50 focus:outline-hidden"
           aria-label="Amount"
         />
         <select value={from} onChange={(e) => setFrom(e.target.value)} className={selectClass} aria-label="From currency">
@@ -95,7 +95,7 @@ function Converter() {
         </select>
         <button
           onClick={() => { setFrom(to); setTo(from) }}
-          className="p-1.5 rounded border border-border text-text-muted hover:text-accent-blue hover:border-accent-blue/40 transition-colors"
+          className="p-1.5 rounded-sm border border-border text-text-muted hover:text-accent-blue hover:border-accent-blue/40 transition-colors"
           aria-label="Swap currencies"
         >
           <ArrowLeftRight size={13} aria-hidden />
@@ -200,7 +200,7 @@ export function CurrenciesClient() {
   )
 
   return (
-    <div className="space-y-6 max-w-screen-xl mx-auto">
+    <div className="space-y-6 max-w-(--breakpoint-xl) mx-auto">
       <div className="flex items-center gap-3">
         <div className="size-9 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
           <Banknote size={18} className="text-emerald-400" aria-hidden />
@@ -260,7 +260,7 @@ export function CurrenciesClient() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search pairs…"
-            className="w-52 rounded border border-border bg-bg-elevated pl-8 pr-3 py-1.5 text-xs text-text-primary placeholder:text-text-muted focus:border-accent-blue/50 focus:outline-none"
+            className="w-52 rounded-sm border border-border bg-bg-elevated pl-8 pr-3 py-1.5 text-xs text-text-primary placeholder:text-text-muted focus:border-accent-blue/50 focus:outline-hidden"
           />
         </div>
       </div>

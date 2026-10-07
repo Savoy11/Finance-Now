@@ -158,7 +158,7 @@ export function FundFactsSection({ symbols }: { symbols: string[] }) {
               {funds.map((f) => (
                 <th key={f.symbol} className="px-4 py-2 text-left font-medium">
                   <span className="font-mono font-semibold text-text-primary">{f.symbol}</span>
-                  <span className="block max-w-[14rem] truncate text-[10px] font-normal text-text-muted">{f.name}</span>
+                  <span className="block max-w-56 truncate text-[10px] font-normal text-text-muted">{f.name}</span>
                 </th>
               ))}
             </tr>

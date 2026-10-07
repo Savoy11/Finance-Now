@@ -125,7 +125,7 @@ function WatchlistBiasPanel() {
                 <p className="text-sm font-medium text-slate-200">{feed.label}</p>
                 <p className="text-[11px] text-slate-500">{feed.description}</p>
               </div>
-              <div className="flex gap-1 flex-shrink-0">
+              <div className="flex gap-1 shrink-0">
                 {BIAS_STRENGTHS.map((s) => (
                   <button
                     key={s.value}
@@ -229,7 +229,7 @@ function AiAgentsPanel() {
                       role="switch"
                       aria-checked={enabled}
                       aria-label={`${enabled ? 'Disable' : 'Enable'} ${a.name}`}
-                      className={`relative h-5 w-9 rounded-full transition-colors flex-shrink-0 ${enabled ? 'bg-accent-blue' : 'bg-slate-700'}`}
+                      className={`relative h-5 w-9 rounded-full transition-colors shrink-0 ${enabled ? 'bg-accent-blue' : 'bg-slate-700'}`}
                     >
                       <span className={`absolute top-0.5 size-4 rounded-full bg-white transition-all ${enabled ? 'left-[18px]' : 'left-0.5'}`} />
                     </button>
@@ -286,7 +286,7 @@ function SubredditPanel() {
         <p className="text-[11px] text-slate-500 mb-1.5">Built-in (always active)</p>
         <div className="flex flex-wrap gap-1.5">
           {BUILTIN_SUBREDDITS.map((sub) => (
-            <span key={sub} className="px-2 py-0.5 rounded text-[11px] bg-slate-800 text-slate-400 border border-slate-700">
+            <span key={sub} className="px-2 py-0.5 rounded-sm text-[11px] bg-slate-800 text-slate-400 border border-slate-700">
               r/{sub}
             </span>
           ))}
@@ -304,7 +304,7 @@ function SubredditPanel() {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
               placeholder="subredditname"
-              className="w-full pl-7 pr-3 py-2 rounded-lg border border-slate-700 bg-slate-800 text-sm text-slate-200 placeholder-slate-600 focus:border-orange-500/50 focus:outline-none"
+              className="w-full pl-7 pr-3 py-2 rounded-lg border border-slate-700 bg-slate-800 text-sm text-slate-200 placeholder-slate-600 focus:border-orange-500/50 focus:outline-hidden"
             />
           </div>
           <button
@@ -318,7 +318,7 @@ function SubredditPanel() {
         {custom.length > 0 ? (
           <div className="flex flex-wrap gap-1.5">
             {custom.map((sub) => (
-              <span key={sub} className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-medium bg-orange-500/10 text-orange-300 border border-orange-500/20">
+              <span key={sub} className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-sm text-[11px] font-medium bg-orange-500/10 text-orange-300 border border-orange-500/20">
                 r/{sub}
                 <button onClick={() => save(custom.filter((s) => s !== sub))} className="text-orange-400/60 hover:text-orange-300 transition-colors" aria-label={`Remove r/${sub}`}>
                   <X size={10} />
@@ -521,10 +521,10 @@ function ProviderCard({ provider, onUpdate, hideToggle }: { provider: BuiltinPro
           <button
             onClick={handleToggle}
             disabled={saving}
-            className={`relative w-9 h-5 rounded-full transition-colors flex-shrink-0 ${enabled ? 'bg-accent-blue' : 'bg-slate-700'}`}
+            className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${enabled ? 'bg-accent-blue' : 'bg-slate-700'}`}
             aria-label={`${enabled ? 'Disable' : 'Enable'} ${provider.name}`}
           >
-            <span className={`absolute top-0.5 left-0.5 size-4 rounded-full bg-white shadow transition-transform ${enabled ? 'translate-x-4' : ''}`} />
+            <span className={`absolute top-0.5 left-0.5 size-4 rounded-full bg-white shadow-sm transition-transform ${enabled ? 'translate-x-4' : ''}`} />
           </button>
         )}
         <div className="flex-1 min-w-0">
@@ -549,7 +549,7 @@ function ProviderCard({ provider, onUpdate, hideToggle }: { provider: BuiltinPro
             <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-2">What this unlocks</p>
             <div className="flex flex-wrap gap-1.5">
               {provider.features.map((f) => (
-                <span key={f} className="px-2 py-0.5 rounded text-[11px] bg-slate-800 text-slate-300 border border-slate-700">{f}</span>
+                <span key={f} className="px-2 py-0.5 rounded-sm text-[11px] bg-slate-800 text-slate-300 border border-slate-700">{f}</span>
               ))}
             </div>
           </div>
@@ -569,7 +569,7 @@ function ProviderCard({ provider, onUpdate, hideToggle }: { provider: BuiltinPro
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
                   placeholder={hasKey ? '••••••••  (key saved — enter new to replace)' : 'Paste your API key here'}
-                  className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 pr-8 text-sm text-slate-200 placeholder-slate-600 focus:border-accent-blue/60 focus:outline-none font-mono"
+                  className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 pr-8 text-sm text-slate-200 placeholder-slate-600 focus:border-accent-blue/60 focus:outline-hidden font-mono"
                 />
                 <button type="button" onClick={() => setShowKey(!showKey)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
                   {showKey ? <EyeOff size={13} /> : <Eye size={13} />}
@@ -586,7 +586,7 @@ function ProviderCard({ provider, onUpdate, hideToggle }: { provider: BuiltinPro
             </div>
             {testResult && (
               <div className={`mt-2 flex items-start gap-2 text-xs rounded-lg px-3 py-2 ${testResult.ok ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
-                {testResult.ok ? <CheckCircle2 size={12} className="mt-0.5 flex-shrink-0" /> : <XCircle size={12} className="mt-0.5 flex-shrink-0" />}
+                {testResult.ok ? <CheckCircle2 size={12} className="mt-0.5 shrink-0" /> : <XCircle size={12} className="mt-0.5 shrink-0" />}
                 {testResult.ok ? (testResult.detail ?? 'Connection successful') : (testResult.error ?? 'Connection failed')}
               </div>
             )}
@@ -723,16 +723,16 @@ function CustomProviderCard({ provider, onUpdate }: { provider: CustomProviderVi
       <div className="flex items-center gap-4 px-5 py-4">
         <button
           onClick={handleToggle}
-          className={`relative w-9 h-5 rounded-full transition-colors flex-shrink-0 ${enabled ? 'bg-violet-500' : 'bg-slate-700'}`}
+          className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${enabled ? 'bg-violet-500' : 'bg-slate-700'}`}
           aria-label={`${enabled ? 'Disable' : 'Enable'} ${provider.name}`}
         >
-          <span className={`absolute top-0.5 left-0.5 size-4 rounded-full bg-white shadow transition-transform ${enabled ? 'translate-x-4' : ''}`} />
+          <span className={`absolute top-0.5 left-0.5 size-4 rounded-full bg-white shadow-sm transition-transform ${enabled ? 'translate-x-4' : ''}`} />
         </button>
-        <Globe size={14} className="text-violet-400 flex-shrink-0" />
+        <Globe size={14} className="text-violet-400 shrink-0" />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-semibold text-sm text-slate-100">{provider.name}</span>
-            <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-violet-500/10 text-violet-400 border border-violet-500/20">Custom</span>
+            <span className="px-1.5 py-0.5 rounded-sm text-[10px] font-medium bg-violet-500/10 text-violet-400 border border-violet-500/20">Custom</span>
             <StatusBadge status={status} />
           </div>
           <p className="text-xs text-slate-500 mt-0.5 font-mono truncate">{provider.url}</p>
@@ -767,7 +767,7 @@ function CustomProviderCard({ provider, onUpdate }: { provider: CustomProviderVi
       {/* Test result banner */}
       {testResult && !editing && (
         <div className={`mx-5 mb-4 flex items-start gap-2 text-xs rounded-lg px-3 py-2 ${testResult.ok ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
-          {testResult.ok ? <CheckCircle2 size={12} className="mt-0.5 flex-shrink-0" /> : <XCircle size={12} className="mt-0.5 flex-shrink-0" />}
+          {testResult.ok ? <CheckCircle2 size={12} className="mt-0.5 shrink-0" /> : <XCircle size={12} className="mt-0.5 shrink-0" />}
           {testResult.ok ? (testResult.detail ?? 'Endpoint reachable') : (testResult.error ?? 'Connection failed')}
         </div>
       )}
@@ -784,7 +784,7 @@ function CustomProviderCard({ provider, onUpdate }: { provider: CustomProviderVi
                 value={form.name}
                 onChange={(e) => setField('name', e.target.value)}
                 required
-                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:border-violet-500/60 focus:outline-none"
+                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:border-violet-500/60 focus:outline-hidden"
               />
             </div>
             <div className="col-span-2 sm:col-span-1">
@@ -792,7 +792,7 @@ function CustomProviderCard({ provider, onUpdate }: { provider: CustomProviderVi
               <select
                 value={form.format}
                 onChange={(e) => setField('format', e.target.value)}
-                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 focus:border-violet-500/60 focus:outline-none"
+                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 focus:border-violet-500/60 focus:outline-hidden"
               >
                 {FORMAT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
@@ -805,7 +805,7 @@ function CustomProviderCard({ provider, onUpdate }: { provider: CustomProviderVi
                 value={form.url}
                 onChange={(e) => setField('url', e.target.value)}
                 required
-                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:border-violet-500/60 focus:outline-none font-mono"
+                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:border-violet-500/60 focus:outline-hidden font-mono"
               />
             </div>
             <div className="col-span-2">
@@ -814,7 +814,7 @@ function CustomProviderCard({ provider, onUpdate }: { provider: CustomProviderVi
                 value={form.description}
                 onChange={(e) => setField('description', e.target.value)}
                 placeholder="Short description (optional)"
-                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:border-violet-500/60 focus:outline-none"
+                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:border-violet-500/60 focus:outline-hidden"
               />
             </div>
           </div>
@@ -825,7 +825,7 @@ function CustomProviderCard({ provider, onUpdate }: { provider: CustomProviderVi
             <select
               value={form.authMethod}
               onChange={(e) => setField('authMethod', e.target.value)}
-              className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 focus:border-violet-500/60 focus:outline-none"
+              className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 focus:border-violet-500/60 focus:outline-hidden"
             >
               {AUTH_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
@@ -834,7 +834,7 @@ function CustomProviderCard({ provider, onUpdate }: { provider: CustomProviderVi
                 value={form.authHeaderName}
                 onChange={(e) => setField('authHeaderName', e.target.value)}
                 placeholder="Header name, e.g. X-Api-Key"
-                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:border-violet-500/60 focus:outline-none font-mono"
+                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:border-violet-500/60 focus:outline-hidden font-mono"
               />
             )}
             {form.authMethod === 'query' && (
@@ -842,7 +842,7 @@ function CustomProviderCard({ provider, onUpdate }: { provider: CustomProviderVi
                 value={form.authQueryParam}
                 onChange={(e) => setField('authQueryParam', e.target.value)}
                 placeholder="Query param name, e.g. api_key"
-                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:border-violet-500/60 focus:outline-none font-mono"
+                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:border-violet-500/60 focus:outline-hidden font-mono"
               />
             )}
             {form.authMethod !== 'none' && (
@@ -852,7 +852,7 @@ function CustomProviderCard({ provider, onUpdate }: { provider: CustomProviderVi
                   value={form.apiKey}
                   onChange={(e) => setField('apiKey', e.target.value)}
                   placeholder={provider.config.hasKey ? '••••••••  (key saved — enter new to replace)' : 'API key / token'}
-                  className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 pr-8 text-sm text-slate-200 placeholder-slate-600 focus:border-violet-500/60 focus:outline-none font-mono"
+                  className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 pr-8 text-sm text-slate-200 placeholder-slate-600 focus:border-violet-500/60 focus:outline-hidden font-mono"
                 />
                 <button type="button" onClick={() => setShowKey(!showKey)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
                   {showKey ? <EyeOff size={13} /> : <Eye size={13} />}
@@ -871,7 +871,7 @@ function CustomProviderCard({ provider, onUpdate }: { provider: CustomProviderVi
                 value={form.jsonArrayPath}
                 onChange={(e) => setField('jsonArrayPath', e.target.value)}
                 placeholder="data.articles"
-                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:border-violet-500/60 focus:outline-none font-mono"
+                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:border-violet-500/60 focus:outline-hidden font-mono"
               />
             </div>
           )}
@@ -1124,11 +1124,11 @@ function AddCustomSourceForm({ category, market = 'crypto', onAdd }: { category:
       <div className="grid grid-cols-2 gap-3">
         <div className="col-span-2 sm:col-span-1">
           <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Name *</label>
-          <input value={form.name} onChange={(e) => set('name', e.target.value)} placeholder="e.g. My Crypto Feed" required className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:border-accent-blue/60 focus:outline-none" />
+          <input value={form.name} onChange={(e) => set('name', e.target.value)} placeholder="e.g. My Crypto Feed" required className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:border-accent-blue/60 focus:outline-hidden" />
         </div>
         <div className="col-span-2 sm:col-span-1">
           <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Format *</label>
-          <select value={form.format} onChange={(e) => set('format', e.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 focus:border-accent-blue/60 focus:outline-none">
+          <select value={form.format} onChange={(e) => set('format', e.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 focus:border-accent-blue/60 focus:outline-hidden">
             {FORMAT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
           <p className="text-[11px] text-slate-600 mt-0.5">{FORMAT_OPTIONS.find((o) => o.value === form.format)?.hint}</p>
@@ -1139,28 +1139,28 @@ function AddCustomSourceForm({ category, market = 'crypto', onAdd }: { category:
               {market === 'equities' ? <>(use {'{symbol}'} per-symbol or {'{symbols}'} for batch)</> : market === 'macro' ? <>(plain feed URL — articles are pillar-classified automatically)</> : <>(use {'{asset}'} as placeholder for asset ID)</>}
             </span>
           </label>
-          <input value={form.url} onChange={(e) => set('url', e.target.value)} placeholder={market === 'equities' ? 'https://example.com/api/quote/{symbol}' : market === 'macro' ? 'https://example.com/rss' : 'https://example.com/api/news?q={asset}'} required className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:border-accent-blue/60 focus:outline-none font-mono" />
+          <input value={form.url} onChange={(e) => set('url', e.target.value)} placeholder={market === 'equities' ? 'https://example.com/api/quote/{symbol}' : market === 'macro' ? 'https://example.com/rss' : 'https://example.com/api/news?q={asset}'} required className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:border-accent-blue/60 focus:outline-hidden font-mono" />
         </div>
         <div className="col-span-2">
           <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Description</label>
-          <input value={form.description} onChange={(e) => set('description', e.target.value)} placeholder="Short description (optional)" className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:border-accent-blue/60 focus:outline-none" />
+          <input value={form.description} onChange={(e) => set('description', e.target.value)} placeholder="Short description (optional)" className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:border-accent-blue/60 focus:outline-hidden" />
         </div>
       </div>
 
       {/* Auth */}
       <div className="space-y-2">
         <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-500">Authentication</label>
-        <select value={form.authMethod} onChange={(e) => set('authMethod', e.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 focus:border-accent-blue/60 focus:outline-none">
+        <select value={form.authMethod} onChange={(e) => set('authMethod', e.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 focus:border-accent-blue/60 focus:outline-hidden">
           {AUTH_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
         {form.authMethod === 'header' && (
-          <input value={form.authHeaderName} onChange={(e) => set('authHeaderName', e.target.value)} placeholder="Header name, e.g. X-Api-Key" className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:border-accent-blue/60 focus:outline-none font-mono" />
+          <input value={form.authHeaderName} onChange={(e) => set('authHeaderName', e.target.value)} placeholder="Header name, e.g. X-Api-Key" className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:border-accent-blue/60 focus:outline-hidden font-mono" />
         )}
         {form.authMethod === 'query' && (
-          <input value={form.authQueryParam} onChange={(e) => set('authQueryParam', e.target.value)} placeholder="Query param name, e.g. apikey" className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:border-accent-blue/60 focus:outline-none font-mono" />
+          <input value={form.authQueryParam} onChange={(e) => set('authQueryParam', e.target.value)} placeholder="Query param name, e.g. apikey" className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:border-accent-blue/60 focus:outline-hidden font-mono" />
         )}
         {form.authMethod !== 'none' && (
-          <input type="password" value={form.apiKey} onChange={(e) => set('apiKey', e.target.value)} placeholder="API key / token (saved server-side)" className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:border-accent-blue/60 focus:outline-none font-mono" />
+          <input type="password" value={form.apiKey} onChange={(e) => set('apiKey', e.target.value)} placeholder="API key / token (saved server-side)" className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:border-accent-blue/60 focus:outline-hidden font-mono" />
         )}
       </div>
 
@@ -1170,7 +1170,7 @@ function AddCustomSourceForm({ category, market = 'crypto', onAdd }: { category:
           <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1">
             JSON array path <span className="normal-case font-normal text-slate-600">(optional — e.g. data.articles)</span>
           </label>
-          <input value={form.jsonArrayPath} onChange={(e) => set('jsonArrayPath', e.target.value)} placeholder="data.articles" className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:border-accent-blue/60 focus:outline-none font-mono" />
+          <input value={form.jsonArrayPath} onChange={(e) => set('jsonArrayPath', e.target.value)} placeholder="data.articles" className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:border-accent-blue/60 focus:outline-hidden font-mono" />
           <p className="text-[11px] text-slate-600 mt-0.5">
             For JSON news: headline/title, url/link, publishedAt/date, source, summary/description are auto-detected.
           </p>
@@ -1206,7 +1206,7 @@ function AddCustomSourceForm({ category, market = 'crypto', onAdd }: { category:
               type="checkbox"
               checked={acknowledged}
               onChange={(e) => setAcknowledged(e.target.checked)}
-              className="mt-0.5 accent-violet-500"
+              className="mt-0.5 accent-accent-purple"
             />
             <span>
               I have read {termsReport.host}’s terms and they permit an application like Finance Now to

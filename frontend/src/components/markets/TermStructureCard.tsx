@@ -72,7 +72,7 @@ export function TermStructureCard({ slug, kind = 'commodity' }: { slug: string; 
     <div className="rounded-card border border-border bg-bg-card p-4">
       <div className="flex flex-wrap items-center gap-2">
         <h2 className="text-sm font-medium text-text-secondary">Forward curve</h2>
-        <span className={clsx('inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold border', style.chip)}>
+        <span className={clsx('inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-[11px] font-semibold border', style.chip)}>
           <style.Icon size={11} aria-hidden /> {style.label}
         </span>
         <span className="ml-auto font-mono tabular-nums text-xs text-text-muted">

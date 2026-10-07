@@ -54,10 +54,10 @@ function SleeveRow({ label, appetite, onAppetite, styleValue, onStyle, styleOpti
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-xs text-text-muted uppercase tracking-wider w-24">{label}</span>
         {appetite !== undefined && onAppetite ? (
-          <div className="flex items-center gap-0.5 bg-bg-elevated border border-border rounded p-0.5">
+          <div className="flex items-center gap-0.5 bg-bg-elevated border border-border rounded-sm p-0.5">
             {(['none', 'small', 'moderate'] as const).map((v) => (
               <button key={v} onClick={() => onAppetite(v)}
-                className={clsx('px-2.5 py-1 rounded text-xs font-medium capitalize transition-colors',
+                className={clsx('px-2.5 py-1 rounded-sm text-xs font-medium capitalize transition-colors',
                   appetite === v ? 'bg-accent-blue/20 text-accent-blue' : 'text-text-muted hover:text-text-secondary')}>
                 {v}
               </button>
@@ -71,7 +71,7 @@ function SleeveRow({ label, appetite, onAppetite, styleValue, onStyle, styleOpti
           onChange={(e) => onStyle(e.target.value)}
           disabled={off}
           aria-label={`${label} style`}
-          className="rounded border border-border bg-bg-elevated px-2 py-1.5 text-xs text-text-primary focus:border-accent-blue/50 focus:outline-none disabled:opacity-40"
+          className="rounded-sm border border-border bg-bg-elevated px-2 py-1.5 text-xs text-text-primary focus:border-accent-blue/50 focus:outline-hidden disabled:opacity-40"
         >
           {styleOptions.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
         </select>
@@ -235,7 +235,7 @@ function BuilderContent() {
   const deletePlan = (id: string) => deleteMutation.mutate(id)
 
   return (
-    <div className="space-y-6 max-w-screen-xl mx-auto">
+    <div className="space-y-6 max-w-(--breakpoint-xl) mx-auto">
       <div className="flex items-center gap-3">
         <div className="size-9 rounded-lg bg-accent-blue/10 border border-accent-blue/20 flex items-center justify-center">
           <Compass size={18} className="text-accent-blue" aria-hidden />
@@ -257,7 +257,7 @@ function BuilderContent() {
       {/* Persistence trouble — the builder still works, saving doesn't */}
       {plansQuery.isError && (
         <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 flex items-start gap-3">
-          <AlertTriangle size={16} className="text-red-400 flex-shrink-0 mt-0.5" aria-hidden />
+          <AlertTriangle size={16} className="text-red-400 shrink-0 mt-0.5" aria-hidden />
           <div className="text-xs text-text-secondary leading-relaxed">
             <span className="font-medium text-red-300">Saved plans are unavailable</span>
             {' '}— {(plansQuery.error as Error)?.message ?? 'the plans API could not be reached'}.
@@ -269,7 +269,7 @@ function BuilderContent() {
       {/* Review reminders */}
       {dueReviews.length > 0 && (
         <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 flex items-start gap-3">
-          <BellRing size={16} className="text-amber-400 flex-shrink-0 mt-0.5" aria-hidden />
+          <BellRing size={16} className="text-amber-400 shrink-0 mt-0.5" aria-hidden />
           <div className="text-xs text-text-secondary leading-relaxed">
             <span className="font-medium text-amber-300">{dueReviews.length} plan{dueReviews.length > 1 ? 's' : ''} due for review</span>
             {' '}— confirm the allocation still fits your horizon and risk, then mark reviewed below.
@@ -284,7 +284,7 @@ function BuilderContent() {
             key={id}
             onClick={() => { setMode(id); setResult(null) }}
             className={clsx('rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
-              mode === id ? 'bg-bg-card text-text-primary shadow-sm' : 'text-text-muted hover:text-text-secondary')}
+              mode === id ? 'bg-bg-card text-text-primary shadow-xs' : 'text-text-muted hover:text-text-secondary')}
           >
             {label}
           </button>
@@ -303,28 +303,28 @@ function BuilderContent() {
               <span className="text-text-muted uppercase tracking-wider">Risk tolerance</span>
               <span className="font-medium text-accent-blue">{risk}/10 · {RISK_LABELS[risk]}</span>
             </div>
-            <input type="range" min={1} max={10} value={risk} onChange={(e) => setRisk(Number(e.target.value))} className="w-full accent-blue-500" />
+            <input type="range" min={1} max={10} value={risk} onChange={(e) => setRisk(Number(e.target.value))} className="w-full accent-accent-blue" />
           </label>
           <label className="block">
             <div className="flex justify-between text-xs mb-1">
               <span className="text-text-muted uppercase tracking-wider">Investment amount</span>
               <span className="font-mono text-text-primary">{formatCurrency(amount, 0)}</span>
             </div>
-            <input type="range" min={1000} max={500000} step={1000} value={amount} onChange={(e) => setAmount(Number(e.target.value))} className="w-full accent-blue-500" />
+            <input type="range" min={1000} max={500000} step={1000} value={amount} onChange={(e) => setAmount(Number(e.target.value))} className="w-full accent-accent-blue" />
           </label>
           <label className="block">
             <div className="flex justify-between text-xs mb-1">
               <span className="text-text-muted uppercase tracking-wider">Years to retirement</span>
               <span className="font-mono text-text-primary">{yearsToRetirement}y</span>
             </div>
-            <input type="range" min={0} max={45} value={yearsToRetirement} onChange={(e) => setYearsToRetirement(Number(e.target.value))} className="w-full accent-blue-500" />
+            <input type="range" min={0} max={45} value={yearsToRetirement} onChange={(e) => setYearsToRetirement(Number(e.target.value))} className="w-full accent-accent-blue" />
           </label>
           <label className="block">
             <div className="flex justify-between text-xs mb-1">
               <span className="text-text-muted uppercase tracking-wider">Years until this money is used</span>
               <span className="font-mono text-text-primary">{yearsToFirstUse}y</span>
             </div>
-            <input type="range" min={0} max={45} value={yearsToFirstUse} onChange={(e) => setYearsToFirstUse(Number(e.target.value))} className="w-full accent-blue-500" />
+            <input type="range" min={0} max={45} value={yearsToFirstUse} onChange={(e) => setYearsToFirstUse(Number(e.target.value))} className="w-full accent-accent-blue" />
           </label>
         </div>
 
@@ -461,8 +461,8 @@ function BuilderContent() {
               {result.notes.map((n, i) => (
                 <p key={i} className="flex items-start gap-2 text-xs text-text-secondary leading-relaxed">
                   {n.level === 'warn'
-                    ? <AlertTriangle size={13} className="text-amber-400 flex-shrink-0 mt-0.5" aria-hidden />
-                    : <Info size={13} className="text-accent-blue flex-shrink-0 mt-0.5" aria-hidden />}
+                    ? <AlertTriangle size={13} className="text-amber-400 shrink-0 mt-0.5" aria-hidden />
+                    : <Info size={13} className="text-accent-blue shrink-0 mt-0.5" aria-hidden />}
                   {n.message}
                 </p>
               ))}
@@ -475,7 +475,7 @@ function BuilderContent() {
               value={planName}
               onChange={(e) => setPlanName(e.target.value)}
               placeholder="Name this plan (e.g. Retirement 2050)…"
-              className="w-72 rounded border border-border bg-bg-elevated px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-blue/50 focus:outline-none"
+              className="w-72 rounded-sm border border-border bg-bg-elevated px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-blue/50 focus:outline-hidden"
             />
             <button onClick={savePlan} disabled={saveMutation.isPending}
               className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border bg-bg-elevated text-sm text-text-secondary hover:text-text-primary transition-colors disabled:opacity-50">
@@ -508,11 +508,11 @@ function BuilderContent() {
                       </p>
                     </div>
                     {due ? (
-                      <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                      <span className="flex items-center gap-1 px-2 py-0.5 rounded-sm text-[11px] font-medium bg-amber-500/15 text-amber-400 border border-amber-500/30">
                         <BellRing size={11} aria-hidden /> Review due
                       </span>
                     ) : (
-                      <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                      <span className="flex items-center gap-1 px-2 py-0.5 rounded-sm text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                         <CheckCircle2 size={11} aria-hidden /> Current
                       </span>
                     )}

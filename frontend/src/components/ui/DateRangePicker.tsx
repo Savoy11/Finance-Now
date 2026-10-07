@@ -14,7 +14,7 @@ interface DateRangePickerProps {
 export function DateRangePicker({ value, onChange, options = TIME_RANGE_OPTIONS, className }: DateRangePickerProps) {
   return (
     <div
-      className={clsx('flex items-center gap-0.5 bg-bg-secondary rounded border border-border p-0.5', className)}
+      className={clsx('flex items-center gap-0.5 bg-bg-secondary rounded-sm border border-border p-0.5', className)}
       role="group"
       aria-label="Select time range"
     >
@@ -23,7 +23,7 @@ export function DateRangePicker({ value, onChange, options = TIME_RANGE_OPTIONS,
           key={opt.value}
           onClick={() => onChange(opt.value as TimeRange)}
           className={clsx(
-            'px-2.5 py-1 text-xs font-mono rounded transition-colors',
+            'px-2.5 py-1 text-xs font-mono rounded-sm transition-colors',
             value === opt.value
               ? 'bg-accent-blue/20 text-accent-blue border border-accent-blue/30'
               : 'text-text-muted hover:text-text-secondary hover:bg-bg-elevated'

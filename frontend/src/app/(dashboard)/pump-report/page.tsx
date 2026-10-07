@@ -94,7 +94,7 @@ function PumpReportPageInner() {
             onKeyDown={e => { if (e.key === 'Enter') addDraft() }}
             placeholder="Paste a public wallet address…"
             aria-label="Wallet address to scan"
-            className="min-w-64 flex-1 rounded-lg border border-border bg-bg-elevated px-3 py-2 font-mono text-xs text-text-primary placeholder:text-text-muted focus:border-accent-blue focus:outline-none"
+            className="min-w-64 flex-1 rounded-lg border border-border bg-bg-elevated px-3 py-2 font-mono text-xs text-text-primary placeholder:text-text-muted focus:border-accent-blue focus:outline-hidden"
           />
           <button
             onClick={addDraft}

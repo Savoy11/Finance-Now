@@ -54,13 +54,13 @@ function ArticleRow({ article }: { article: MacroNewsArticle }) {
             <span className="text-text-muted">{article.source}</span>
             <span className="text-text-muted">{timeAgo(article.publishedAt)}</span>
             {article.isBreaking && (
-              <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-red-500/15 text-red-400 border border-red-500/30 font-medium">
+              <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-sm bg-red-500/15 text-red-400 border border-red-500/30 font-medium">
                 <Zap size={10} aria-hidden /> Breaking
               </span>
             )}
             {article.related.map((r) => (
               <Link key={r.href} href={r.href}
-                className="px-1.5 py-0.5 rounded border border-border text-text-secondary hover:text-accent-blue hover:border-accent-blue/40 transition-colors">
+                className="px-1.5 py-0.5 rounded-sm border border-border text-text-secondary hover:text-accent-blue hover:border-accent-blue/40 transition-colors">
                 {r.label}
               </Link>
             ))}
@@ -100,7 +100,7 @@ export function MacroNewsClient() {
   }, [data])
 
   return (
-    <div className="space-y-6 max-w-screen-xl mx-auto">
+    <div className="space-y-6 max-w-(--breakpoint-xl) mx-auto">
       <div className="flex items-center gap-3">
         <div className="size-9 rounded-lg bg-accent-blue/10 border border-accent-blue/20 flex items-center justify-center">
           <Newspaper size={18} className="text-accent-blue" aria-hidden />
@@ -138,7 +138,7 @@ export function MacroNewsClient() {
           </button>
         ))}
         <button onClick={() => refetch()} aria-label="Refresh news"
-          className="ml-auto flex items-center gap-1.5 px-2.5 py-1 rounded border border-border text-xs text-text-muted hover:text-text-secondary transition-colors">
+          className="ml-auto flex items-center gap-1.5 px-2.5 py-1 rounded-sm border border-border text-xs text-text-muted hover:text-text-secondary transition-colors">
           <RefreshCw size={12} className={clsx(isRefetching && 'animate-spin')} aria-hidden /> Refresh
         </button>
       </div>

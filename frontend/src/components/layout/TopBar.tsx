@@ -60,7 +60,7 @@ function IntervalSelector() {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(v => !v)}
-        className="flex items-center gap-1 text-[11px] font-medium text-text-muted hover:text-text-secondary transition-colors px-1.5 py-1 rounded hover:bg-bg-elevated"
+        className="flex items-center gap-1 text-[11px] font-medium text-text-muted hover:text-text-secondary transition-colors px-1.5 py-1 rounded-sm hover:bg-bg-elevated"
         title="Auto-refresh interval"
       >
         <span>{current.ms ? `Auto ${current.label}` : 'Auto: Off'}</span>
@@ -112,7 +112,7 @@ function AlertsBell() {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(v => !v)}
-        className="relative p-2 rounded hover:bg-bg-elevated transition-colors text-text-secondary hover:text-text-primary"
+        className="relative p-2 rounded-sm hover:bg-bg-elevated transition-colors text-text-secondary hover:text-text-primary"
         aria-label={`Alerts${activeCount > 0 ? `, ${activeCount} active` : ''}`}
         title="Alerts"
       >
@@ -184,7 +184,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
       {/* Hamburger — mobile only */}
       <button
         onClick={onMenuClick}
-        className="p-2 mr-2 -ml-1 rounded hover:bg-bg-elevated transition-colors text-text-secondary hover:text-text-primary lg:hidden"
+        className="p-2 mr-2 -ml-1 rounded-sm hover:bg-bg-elevated transition-colors text-text-secondary hover:text-text-primary lg:hidden"
         aria-label="Open navigation menu"
       >
         <Menu size={18} aria-hidden />
@@ -198,7 +198,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
       {/* Right controls */}
       <div className="flex items-center gap-2 ml-4">
         {/* Live indicator */}
-        <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded bg-emerald-500/10 border border-emerald-500/20">
+        <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-sm bg-emerald-500/10 border border-emerald-500/20">
           <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" aria-hidden />
           <span className="text-xs font-mono text-emerald-400">LIVE</span>
         </div>
@@ -221,7 +221,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
             onClick={refresh}
             disabled={isRefreshing}
             title="Refresh all data"
-            className="p-1.5 rounded hover:bg-bg-elevated transition-colors text-text-muted hover:text-text-primary disabled:opacity-50"
+            className="p-1.5 rounded-sm hover:bg-bg-elevated transition-colors text-text-muted hover:text-text-primary disabled:opacity-50"
           >
             <RefreshCw
               size={14}
@@ -238,7 +238,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
             prominent settings affordance in the app did nothing. */}
         <Link
           href="/settings"
-          className="p-2 rounded hover:bg-bg-elevated transition-colors text-text-secondary hover:text-text-primary"
+          className="p-2 rounded-sm hover:bg-bg-elevated transition-colors text-text-secondary hover:text-text-primary"
           aria-label="Settings"
         >
           <Settings size={16} aria-hidden />

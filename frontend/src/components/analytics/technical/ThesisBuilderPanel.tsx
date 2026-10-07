@@ -47,13 +47,13 @@ export function ThesisBuilderPanel({ assetId, symbol, range, price, signal }: {
             value={entryThesis} onChange={e => setEntryThesis(e.target.value)}
             placeholder="Entry thesis — why this setup? (required)"
             rows={2}
-            className="w-full text-xs bg-bg-card border border-border rounded px-2 py-1.5 text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-blue resize-none"
+            className="w-full text-xs bg-bg-card border border-border rounded-sm px-2 py-1.5 text-text-primary placeholder:text-text-muted focus:outline-hidden focus:border-accent-blue resize-none"
           />
           <div className="grid grid-cols-2 gap-2">
-            <input value={target} onChange={e => setTarget(e.target.value)} placeholder="Target (e.g. 75000)" className="text-xs bg-bg-card border border-border rounded px-2 py-1.5 text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-blue" />
-            <input value={invalidation} onChange={e => setInvalidation(e.target.value)} placeholder="Invalidation (e.g. 58000)" className="text-xs bg-bg-card border border-border rounded px-2 py-1.5 text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-blue" />
+            <input value={target} onChange={e => setTarget(e.target.value)} placeholder="Target (e.g. 75000)" className="text-xs bg-bg-card border border-border rounded-sm px-2 py-1.5 text-text-primary placeholder:text-text-muted focus:outline-hidden focus:border-accent-blue" />
+            <input value={invalidation} onChange={e => setInvalidation(e.target.value)} placeholder="Invalidation (e.g. 58000)" className="text-xs bg-bg-card border border-border rounded-sm px-2 py-1.5 text-text-primary placeholder:text-text-muted focus:outline-hidden focus:border-accent-blue" />
           </div>
-          <input value={notes} onChange={e => setNotes(e.target.value)} placeholder="Notes (optional)" className="text-xs bg-bg-card border border-border rounded px-2 py-1.5 text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-blue" />
+          <input value={notes} onChange={e => setNotes(e.target.value)} placeholder="Notes (optional)" className="text-xs bg-bg-card border border-border rounded-sm px-2 py-1.5 text-text-primary placeholder:text-text-muted focus:outline-hidden focus:border-accent-blue" />
           <div className="flex items-center justify-between">
             <span className="text-[10px] text-text-muted">
               {rr != null ? <>Risk/Reward <span className={clsx('font-semibold', rr >= 2 ? 'text-emerald-400' : rr >= 1 ? 'text-amber-400' : 'text-red-400')}>{rr.toFixed(2)}:1</span></> : 'Enter numeric target + invalidation for R/R'}

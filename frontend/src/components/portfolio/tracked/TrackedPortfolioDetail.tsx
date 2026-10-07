@@ -32,7 +32,7 @@ const isZero = (usd: string) => formatUsd(usd) === '$0.00'
 const toneCls = (usd: string) => (isZero(usd) ? 'text-text-primary' : usd.startsWith('-') ? 'text-red-400' : 'text-emerald-400')
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
 
-const inputCls = 'w-full bg-bg-elevated border border-border rounded px-2.5 py-1.5 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-blue'
+const inputCls = 'w-full bg-bg-elevated border border-border rounded-sm px-2.5 py-1.5 text-sm text-text-primary placeholder:text-text-muted focus:outline-hidden focus:border-accent-blue'
 
 function Tile({ label, value, valueCls, children }: {
   label: string
@@ -43,7 +43,7 @@ function Tile({ label, value, valueCls, children }: {
   return (
     <div className="bg-bg-card border border-border rounded-xl p-4 min-w-0">
       <div className="text-[11px] text-text-muted uppercase tracking-wider">{label}</div>
-      <div className={clsx('text-xl font-semibold font-mono mt-1 break-words', valueCls ?? 'text-text-primary')}>{value}</div>
+      <div className={clsx('text-xl font-semibold font-mono mt-1 wrap-break-word', valueCls ?? 'text-text-primary')}>{value}</div>
       {children && <div className="text-[11px] text-text-muted mt-1 leading-snug">{children}</div>}
     </div>
   )
@@ -193,10 +193,10 @@ export function TrackedPortfolioDetail({ portfolio, onBack }: {
       ) : (
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <h2 className="text-xl font-semibold text-text-primary break-words">{details.name}</h2>
-            {details.description && <p className="text-sm text-text-muted mt-1 break-words">{details.description}</p>}
+            <h2 className="text-xl font-semibold text-text-primary wrap-break-word">{details.name}</h2>
+            {details.description && <p className="text-sm text-text-muted mt-1 wrap-break-word">{details.description}</p>}
           </div>
-          <div className="flex gap-1 flex-shrink-0">
+          <div className="flex gap-1 shrink-0">
             <button type="button" onClick={startEditing} aria-label="Rename this portfolio" title="Rename"
               className="p-2 rounded-lg text-text-muted hover:text-text-primary hover:bg-bg-elevated transition-colors">
               <Edit2 size={15} aria-hidden />
@@ -213,7 +213,7 @@ export function TrackedPortfolioDetail({ portfolio, onBack }: {
       {ledger.isPending && <p className="text-xs text-text-muted">Loading trades…</p>}
       {ledger.isError && (
         <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 flex items-start gap-3" role="alert">
-          <AlertTriangle size={16} className="text-red-400 flex-shrink-0 mt-0.5" aria-hidden />
+          <AlertTriangle size={16} className="text-red-400 shrink-0 mt-0.5" aria-hidden />
           <p className="text-xs text-text-secondary leading-relaxed">{errorText(ledger.error, 'The trades could not be loaded.')}</p>
         </div>
       )}
@@ -249,7 +249,7 @@ export function TrackedPortfolioDetail({ portfolio, onBack }: {
 
           {!pricesPending && totals.unpriced.length > 0 && (
             <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 flex items-start gap-2.5">
-              <AlertTriangle size={14} className="text-amber-400 flex-shrink-0 mt-0.5" aria-hidden />
+              <AlertTriangle size={14} className="text-amber-400 shrink-0 mt-0.5" aria-hidden />
               <p className="text-xs text-text-secondary leading-relaxed">
                 No live price right now for {totals.unpriced.join(', ')}, so {totals.unpriced.length === 1 ? 'it is' : 'they are'} left
                 out of Value now and Unrealized. A holding is never valued at its cost.

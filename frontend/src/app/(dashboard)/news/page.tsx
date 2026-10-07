@@ -84,7 +84,7 @@ function ShareButton({ url, title }: { url: string; title: string }) {
   return (
     <button
       onClick={handleShare}
-      className="text-text-muted hover:text-accent-blue transition-colors flex-shrink-0 mt-0.5"
+      className="text-text-muted hover:text-accent-blue transition-colors shrink-0 mt-0.5"
       aria-label={copied ? 'Link copied' : 'Share article'}
     >
       {copied ? <Check size={13} className="text-emerald-400" aria-hidden /> : <Share2 size={13} aria-hidden />}
@@ -113,24 +113,24 @@ function ArticleCard({ article }: { article: AnyArticle }) {
       <div className="flex items-start justify-between gap-3">
         <div className="flex flex-wrap items-center gap-1.5 min-w-0">
           {article.isBreaking && (
-            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30 uppercase tracking-wider">
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30 uppercase tracking-wider">
               <Zap size={9} aria-hidden /> Breaking
             </span>
           )}
-          <span className={clsx('inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border capitalize', categoryStyle)}>
+          <span className={clsx('inline-flex items-center px-1.5 py-0.5 rounded-sm text-[10px] font-medium border capitalize', categoryStyle)}>
             {article.category}
           </span>
-          <span className={clsx('inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border capitalize', SENTIMENT_STYLES[article.sentiment])}>
+          <span className={clsx('inline-flex items-center px-1.5 py-0.5 rounded-sm text-[10px] font-medium border capitalize', SENTIMENT_STYLES[article.sentiment])}>
             {article.sentiment}
           </span>
           {/* Provider service badge */}
           {providerLabel && (
-            <span className={clsx('inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border', providerStyle)}>
+            <span className={clsx('inline-flex items-center px-1.5 py-0.5 rounded-sm text-[10px] font-medium border', providerStyle)}>
               via {providerLabel}
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2 flex-shrink-0 mt-0.5">
+        <div className="flex items-center gap-2 shrink-0 mt-0.5">
           <ShareButton url={article.url} title={article.headline} />
           <a
             href={article.url}
@@ -158,16 +158,16 @@ function ArticleCard({ article }: { article: AnyArticle }) {
       {/* Footer */}
       <div className="flex items-center justify-between gap-2 pt-1 border-t border-border/60">
         <div className="flex items-center gap-1.5">
-          <Tag size={10} className="text-text-muted flex-shrink-0" aria-hidden />
+          <Tag size={10} className="text-text-muted shrink-0" aria-hidden />
           <div className="flex flex-wrap gap-1">
             {article.relatedAssets.map((id) => (
-              <span key={id} className="px-1.5 py-0.5 rounded bg-accent-blue/10 border border-accent-blue/20 text-[10px] font-mono text-accent-blue uppercase">
+              <span key={id} className="px-1.5 py-0.5 rounded-sm bg-accent-blue/10 border border-accent-blue/20 text-[10px] font-mono text-accent-blue uppercase">
                 {id}
               </span>
             ))}
             {stocks.map((symbol) => {
               const label = `${symbol} stock, named in this story about tokenized securities`
-              const chip = 'px-1.5 py-0.5 rounded bg-fuchsia-500/10 border border-fuchsia-500/20 text-[10px] font-mono text-fuchsia-300'
+              const chip = 'px-1.5 py-0.5 rounded-sm bg-fuchsia-500/10 border border-fuchsia-500/20 text-[10px] font-mono text-fuchsia-300'
               return equitiesOn ? (
                 <Link key={symbol} href={`/equities/${symbol.toLowerCase()}`} title={label} aria-label={label} className={clsx(chip, 'hover:bg-fuchsia-500/20 transition-colors')}>
                   {symbol}
@@ -178,7 +178,7 @@ function ArticleCard({ article }: { article: AnyArticle }) {
             })}
           </div>
         </div>
-        <div className="flex items-center gap-1.5 flex-shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0">
           <span className="text-[11px] text-text-muted font-medium">{article.source}</span>
           <span className="text-text-muted/40">·</span>
           <span className="flex items-center gap-1 text-[11px] text-text-muted font-mono">
@@ -407,7 +407,7 @@ function NewsPageInner() {
               <select
                 value={assetFilter}
                 onChange={(e) => setAssetFilter(e.target.value)}
-                className="bg-bg-secondary border border-border rounded px-2 py-1.5 text-xs text-text-secondary focus:outline-none focus:border-accent-blue/60"
+                className="bg-bg-secondary border border-border rounded-sm px-2 py-1.5 text-xs text-text-secondary focus:outline-hidden focus:border-accent-blue/60"
               >
                 <option value="all">All Assets</option>
                 {assetList.map((a) => (
@@ -424,7 +424,7 @@ function NewsPageInner() {
                     key={s}
                     onClick={() => setSentimentFilter(s)}
                     className={clsx(
-                      'px-2.5 py-1 rounded text-xs font-medium border transition-all capitalize',
+                      'px-2.5 py-1 rounded-sm text-xs font-medium border transition-all capitalize',
                       sentimentFilter === s
                         ? s === 'positive' ? 'bg-emerald-400/15 text-emerald-400 border-emerald-500/30'
                           : s === 'negative' ? 'bg-red-400/15 text-red-400 border-red-500/30'
@@ -452,13 +452,13 @@ function NewsPageInner() {
                     value={keywordInput}
                     onChange={(e) => setKeywordInput(e.target.value)}
                     placeholder="Add keyword filter…"
-                    className="w-full bg-bg-secondary border border-border rounded pl-6 pr-2 py-1.5 text-xs text-text-secondary placeholder:text-text-muted/60 focus:outline-none focus:border-accent-blue/60"
+                    className="w-full bg-bg-secondary border border-border rounded-sm pl-6 pr-2 py-1.5 text-xs text-text-secondary placeholder:text-text-muted/60 focus:outline-hidden focus:border-accent-blue/60"
                   />
                 </div>
                 <button
                   type="submit"
                   disabled={!keywordInput.trim()}
-                  className="px-2.5 py-1 rounded text-xs font-medium border border-border bg-bg-secondary text-text-muted hover:text-text-secondary hover:bg-bg-elevated transition-colors disabled:opacity-40"
+                  className="px-2.5 py-1 rounded-sm text-xs font-medium border border-border bg-bg-secondary text-text-muted hover:text-text-secondary hover:bg-bg-elevated transition-colors disabled:opacity-40"
                 >
                   Add
                 </button>
@@ -508,7 +508,7 @@ function NewsPageInner() {
                 onClick={() => setCategoryFilter(categoryFilter === cat.value ? 'all' : (cat.value as NewsCategory))}
                 title={categoryFilter === cat.value ? 'Click again to show all categories' : undefined}
                 className={clsx(
-                  'px-2.5 py-1 rounded text-xs font-medium border transition-all',
+                  'px-2.5 py-1 rounded-sm text-xs font-medium border transition-all',
                   categoryFilter === cat.value
                     ? 'bg-accent-blue/15 text-accent-blue border-accent-blue/30'
                     : 'text-text-muted border-border hover:text-text-secondary hover:border-border/80 hover:bg-bg-elevated'

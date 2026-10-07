@@ -103,7 +103,7 @@ export function AffiliateClicksPanel() {
     <section className="rounded-card border border-border bg-bg-card p-5 space-y-3">
       <h2 className="flex items-center gap-2 text-sm font-semibold text-text-primary">
         <Coins size={15} className="text-amber-400" aria-hidden /> Affiliate clicks
-        <span className="ml-1 rounded border border-border px-1.5 py-0.5 text-[10px] font-normal uppercase tracking-wider text-text-muted">
+        <span className="ml-1 rounded-sm border border-border px-1.5 py-0.5 text-[10px] font-normal uppercase tracking-wider text-text-muted">
           owner only
         </span>
       </h2>

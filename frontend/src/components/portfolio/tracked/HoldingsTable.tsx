@@ -46,12 +46,12 @@ export function HoldingsTable({ holdings, methodLabel }: { holdings: HoldingValu
                 <tr key={h.instrumentKey} className="border-b border-border/50 last:border-0 align-top">
                   <th scope="row" className="text-left font-normal px-4 py-2.5">
                     <div className="font-semibold text-text-primary">{h.symbol}</div>
-                    <div className="text-xs text-text-muted max-w-[12rem] truncate" title={h.name}>{h.name}</div>
+                    <div className="text-xs text-text-muted max-w-48 truncate" title={h.name}>{h.name}</div>
                     {h.issues.length > 0 && (
                       <ul className="mt-1.5 space-y-1">
                         {h.issues.map((i, n) => (
                           <li key={`${i.code}-${i.tradeId}-${n}`} className="flex items-start gap-1.5 text-[11px] text-amber-300 leading-snug">
-                            <AlertTriangle size={11} className="flex-shrink-0 mt-0.5" aria-hidden />
+                            <AlertTriangle size={11} className="shrink-0 mt-0.5" aria-hidden />
                             <span>{i.message}</span>
                           </li>
                         ))}
@@ -71,7 +71,7 @@ export function HoldingsTable({ holdings, methodLabel }: { holdings: HoldingValu
                   <td className="text-right px-4 py-2.5">
                     <div className={clsx('font-mono whitespace-nowrap', changeCls(h.realizedGainUsd))}>{formatUsdChange(h.realizedGainUsd)}</div>
                     {fromStart && (
-                      <div className="text-[10px] text-text-muted mt-0.5 ml-auto max-w-[7.5rem] leading-snug" title="This part rests on the average price you entered for your starting position.">
+                      <div className="text-[10px] text-text-muted mt-0.5 ml-auto max-w-30 leading-snug" title="This part rests on the average price you entered for your starting position.">
                         {formatUsdChange(h.realizedFromStartingPositionUsd)} from starting position
                       </div>
                     )}

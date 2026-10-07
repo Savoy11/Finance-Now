@@ -83,12 +83,12 @@ export function TierSwitch() {
               <p className="text-xs font-medium text-text-primary">{cat.label}</p>
               <p className="text-[10px] text-text-muted">{cat.description}</p>
             </div>
-            <span className="flex-shrink-0 text-[10px] font-mono text-text-muted">{enabled.length} active</span>
+            <span className="shrink-0 text-[10px] font-mono text-text-muted">{enabled.length} active</span>
           </div>
           {enabled.length > 0 ? (
             <div className="mt-2 flex flex-wrap gap-1">
               {enabled.map((p) => (
-                <span key={p.id} className="text-[10px] px-1.5 py-0.5 rounded bg-bg-elevated text-text-secondary border border-border/60">
+                <span key={p.id} className="text-[10px] px-1.5 py-0.5 rounded-sm bg-bg-elevated text-text-secondary border border-border/60">
                   {p.name}
                 </span>
               ))}
@@ -124,12 +124,12 @@ export function TierSwitch() {
             <p className="text-xs font-medium text-text-primary">{cat.label}</p>
             <p className="text-[10px] text-text-muted">{cat.description}</p>
           </div>
-          <div className="flex-shrink-0 text-right">
+          <div className="shrink-0 text-right">
             {mode === 'custom' && !cat.multi ? (
               <select
                 value={customSources[key] ?? cat.freeSource}
                 onChange={(e) => setCustomSource(key, e.target.value)}
-                className="text-[10px] bg-bg-secondary border border-border rounded px-1.5 py-0.5 text-text-secondary focus:outline-none focus:border-accent-blue/60"
+                className="text-[10px] bg-bg-secondary border border-border rounded-sm px-1.5 py-0.5 text-text-secondary focus:outline-hidden focus:border-accent-blue/60"
               >
                 <option value={cat.freeSource}>{cat.freeSourceLabel}</option>
                 {cat.paidSource !== cat.freeSource && (
@@ -142,7 +142,7 @@ export function TierSwitch() {
               </span>
             ) : (
               <span className={clsx(
-                'inline-flex items-center gap-1 text-[10px] font-mono px-1.5 py-0.5 rounded',
+                'inline-flex items-center gap-1 text-[10px] font-mono px-1.5 py-0.5 rounded-sm',
                 isSame ? 'text-text-muted bg-bg-elevated' : mode === 'paid' ? 'text-amber-400 bg-amber-400/10' : 'text-emerald-400 bg-emerald-400/10',
               )}>
                 {activeLabel}
@@ -170,7 +170,7 @@ export function TierSwitch() {
                           toggleOption(opt.id)
                         }
                       }}
-                      className="accent-blue-500 size-3"
+                      className="accent-accent-blue size-3"
                     />
                     {opt.label}
                   </label>
@@ -193,7 +193,7 @@ export function TierSwitch() {
       <button
         onClick={() => setOpen((o) => !o)}
         className={clsx(
-          'flex items-center gap-1.5 px-2.5 py-1 rounded border text-xs font-medium transition-colors',
+          'flex items-center gap-1.5 px-2.5 py-1 rounded-sm border text-xs font-medium transition-colors',
           TIER_COLORS[mode],
           'hover:opacity-80',
         )}

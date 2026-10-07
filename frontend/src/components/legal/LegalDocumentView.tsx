@@ -11,9 +11,9 @@ export function LegalDocumentView({ doc }: { doc: LegalDocument }) {
   return (
     <article className="space-y-6">
       <div className="space-y-2">
-        <Link href={LEGAL_PATHS.about} className="inline-flex items-center gap-1 text-xs text-text-muted hover:text-accent-blue">
+        <div><Link href={LEGAL_PATHS.about} className="inline-flex items-center gap-1 text-xs text-text-muted hover:text-accent-blue">
           <ArrowLeft size={12} aria-hidden /> About &amp; Legal
-        </Link>
+        </Link></div>
         <h1 className="text-2xl font-semibold text-text-primary">{doc.title}</h1>
         {doc.effective && (
           <p className="text-xs text-text-muted"><LegalText text={doc.effective} /></p>

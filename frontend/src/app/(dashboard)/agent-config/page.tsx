@@ -160,19 +160,19 @@ function AgentCard({
     <div className="rounded-xl border border-slate-700 bg-slate-900/60 transition-all">
       {/* Header */}
       <div className="flex items-center gap-4 px-5 py-4">
-        <div className="size-9 rounded-lg bg-violet-500/10 border border-violet-500/20 flex items-center justify-center flex-shrink-0">
+        <div className="size-9 rounded-lg bg-violet-500/10 border border-violet-500/20 flex items-center justify-center shrink-0">
           <Bot size={18} className="text-violet-400" aria-hidden />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-semibold text-sm text-slate-100">{agent.name}</span>
-            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-800 text-slate-400 border border-slate-700">
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm text-[10px] font-medium bg-slate-800 text-slate-400 border border-slate-700">
               <RuntimeIcon size={9} /> {agent.runtime}
             </span>
             {agent.isCustomized ? (
-              <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">Customized</span>
+              <span className="px-1.5 py-0.5 rounded-sm text-[10px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">Customized</span>
             ) : (
-              <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-800 text-slate-500 border border-slate-700">Default</span>
+              <span className="px-1.5 py-0.5 rounded-sm text-[10px] font-medium bg-slate-800 text-slate-500 border border-slate-700">Default</span>
             )}
           </div>
           <p className="text-xs text-slate-400 mt-0.5 line-clamp-1">{agent.description}</p>
@@ -192,7 +192,7 @@ function AgentCard({
             <select
               value={provider}
               onChange={(e) => handleProviderChange(e.target.value as ProviderId)}
-              className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 focus:border-violet-500/60 focus:outline-none"
+              className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 focus:border-violet-500/60 focus:outline-hidden"
             >
               {providers.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
             </select>
@@ -203,7 +203,7 @@ function AgentCard({
                   href={providerDocs}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-1 text-[11px] text-violet-500 hover:text-violet-400 transition-colors flex-shrink-0 ml-2"
+                  className="flex items-center gap-1 text-[11px] text-violet-500 hover:text-violet-400 transition-colors shrink-0 ml-2"
                 >
                   Get API key <ExternalLink size={10} />
                 </a>
@@ -220,7 +220,7 @@ function AgentCard({
               <select
                 value={model}
                 onChange={(e) => setModel(e.target.value)}
-                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 focus:border-violet-500/60 focus:outline-none"
+                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 focus:border-violet-500/60 focus:outline-hidden"
               >
                 {models.map((m) => <option key={m.id} value={m.id}>{m.label}</option>)}
               </select>
@@ -234,7 +234,7 @@ function AgentCard({
                 type="range" min={0} max={1} step={0.05}
                 value={temperature}
                 onChange={(e) => setTemperature(Number(e.target.value))}
-                className="w-full accent-violet-500 mt-2"
+                className="w-full accent-accent-purple mt-2"
               />
               <div className="flex justify-between text-[10px] text-slate-600 mt-0.5">
                 <span>Precise (0)</span><span>Creative (1)</span>
@@ -250,7 +250,7 @@ function AgentCard({
               onChange={(e) => setPrompt(e.target.value)}
               rows={14}
               spellCheck={false}
-              className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:border-violet-500/60 focus:outline-none font-mono leading-relaxed resize-y"
+              className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:border-violet-500/60 focus:outline-hidden font-mono leading-relaxed resize-y"
             />
             <p className="text-[11px] text-slate-600 mt-1">
               {prompt.length.toLocaleString()} characters
@@ -260,7 +260,7 @@ function AgentCard({
 
           {result && (
             <div className={`flex items-start gap-2 text-xs rounded-lg px-3 py-2 ${result.ok ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
-              {result.ok ? <CheckCircle2 size={12} className="mt-0.5 flex-shrink-0" /> : <XCircle size={12} className="mt-0.5 flex-shrink-0" />}
+              {result.ok ? <CheckCircle2 size={12} className="mt-0.5 shrink-0" /> : <XCircle size={12} className="mt-0.5 shrink-0" />}
               {result.msg}
             </div>
           )}
@@ -358,7 +358,7 @@ export default function AgentConfigPage() {
               <Icon size={14} />
               {label}
               {tabCustomized > 0 && (
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" title="Customized" />
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" title="Customized" />
               )}
             </button>
           )
@@ -414,13 +414,13 @@ export default function AgentConfigPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1">
           {providers.map((p) => (
             <div key={p.id} className="flex items-center gap-1.5">
-              <span className="text-slate-400 font-medium w-28 flex-shrink-0">{p.label.split(' ')[0]}:</span>
+              <span className="text-slate-400 font-medium w-28 shrink-0">{p.label.split(' ')[0]}:</span>
               <span className="font-mono text-slate-500">{p.envVar}</span>
               <a
                 href={p.docsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="ml-auto text-violet-500 hover:text-violet-400 transition-colors flex items-center gap-0.5 flex-shrink-0"
+                className="ml-auto text-violet-500 hover:text-violet-400 transition-colors flex items-center gap-0.5 shrink-0"
               >
                 Get key <ExternalLink size={9} />
               </a>

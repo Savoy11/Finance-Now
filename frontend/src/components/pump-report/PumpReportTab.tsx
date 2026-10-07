@@ -369,7 +369,7 @@ function AgentChat({
             placeholder="Ask for deeper investigation, specific evidence, or follow-up searches…"
             rows={2}
             disabled={streaming}
-            className="flex-1 bg-bg-elevated border border-border rounded-lg px-3 py-2 text-xs text-text-primary placeholder:text-text-muted resize-none focus:outline-none focus:border-accent-blue/50 disabled:opacity-50"
+            className="flex-1 bg-bg-elevated border border-border rounded-lg px-3 py-2 text-xs text-text-primary placeholder:text-text-muted resize-none focus:outline-hidden focus:border-accent-blue/50 disabled:opacity-50"
           />
           <button
             onClick={() => send(input)}
@@ -397,7 +397,7 @@ function MetricRow({ m, onAsk }: { m: PumpMetric; onAsk: (q: string) => void }) 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-xs font-semibold text-text-primary">Live Heuristic Signal</span>
-            <span className={clsx('text-[10px] font-bold px-1.5 py-0.5 rounded border', riskBg(m.collapseRisk), riskColor(m.collapseRisk))}>
+            <span className={clsx('text-[10px] font-bold px-1.5 py-0.5 rounded-sm border', riskBg(m.collapseRisk), riskColor(m.collapseRisk))}>
               {riskLabel(m.collapseRisk)}
             </span>
             {m.priceChange24h !== null && (
@@ -414,7 +414,7 @@ function MetricRow({ m, onAsk }: { m: PumpMetric; onAsk: (q: string) => void }) 
           </div>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
-          <button onClick={() => onAsk(`Explain the heuristic pump signals detected for ${m.symbol} and what they mean`)} className="text-[10px] px-2 py-1 rounded bg-accent-blue/10 border border-accent-blue/20 text-accent-blue hover:bg-accent-blue/20 transition-colors">Ask AI</button>
+          <button onClick={() => onAsk(`Explain the heuristic pump signals detected for ${m.symbol} and what they mean`)} className="text-[10px] px-2 py-1 rounded-sm bg-accent-blue/10 border border-accent-blue/20 text-accent-blue hover:bg-accent-blue/20 transition-colors">Ask AI</button>
           {m.signals.length > 0 && (
             <button onClick={() => setExpanded(e => !e)} className="text-text-muted hover:text-text-secondary p-1">
               {expanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}

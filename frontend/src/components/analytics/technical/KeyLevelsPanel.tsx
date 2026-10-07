@@ -28,7 +28,7 @@ export function KeyLevelsPanel({ candles }: { candles: OhlcvCandle[] }) {
             const isAbove = l.price > last
             const isCurrent = Math.abs(l.price - last) / last < 0.005
             return (
-              <div key={l.ratio} className={clsx('flex items-center justify-between px-2 py-1 rounded text-[11px]', isCurrent ? 'bg-accent-blue/10 border border-accent-blue/30' : 'hover:bg-bg-elevated')}>
+              <div key={l.ratio} className={clsx('flex items-center justify-between px-2 py-1 rounded-sm text-[11px]', isCurrent ? 'bg-accent-blue/10 border border-accent-blue/30' : 'hover:bg-bg-elevated')}>
                 <span className={clsx('font-mono text-text-muted', isCurrent && 'text-accent-blue')}>{l.label}</span>
                 <span className={clsx('font-mono font-semibold', isAbove ? 'text-red-400' : 'text-emerald-400', isCurrent && 'text-accent-blue')}>
                   ${l.price.toLocaleString(undefined, { maximumFractionDigits: l.price > 100 ? 2 : 4 })}
@@ -48,7 +48,7 @@ export function KeyLevelsPanel({ candles }: { candles: OhlcvCandle[] }) {
             { label: 'EMA 50', value: ema50Now, color: '#8b5cf6' },
             { label: 'EMA 200', value: ema200Now, color: '#ec4899' },
           ].map(({ label, value, color }) => value !== null && (
-            <div key={label} className="flex items-center justify-between px-2 py-1 rounded hover:bg-bg-elevated text-[11px]">
+            <div key={label} className="flex items-center justify-between px-2 py-1 rounded-sm hover:bg-bg-elevated text-[11px]">
               <div className="flex items-center gap-1.5">
                 <span className="inline-block size-2 rounded-full" style={{ background: color }} />
                 <span className="text-text-muted">{label}</span>

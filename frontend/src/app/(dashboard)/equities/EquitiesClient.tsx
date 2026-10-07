@@ -296,7 +296,7 @@ export function EquitiesClient() {
   // possible. Cells still show the live quote, so order and display can differ
   // slightly intraday; the tooltip states it (review E-note-1).
   return (
-    <div className="space-y-6 max-w-screen-2xl mx-auto">
+    <div className="space-y-6 max-w-(--breakpoint-2xl) mx-auto">
       <div className="flex items-start justify-between gap-4">
         <PageHeader
           title="Stock Registry"
@@ -313,12 +313,12 @@ export function EquitiesClient() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search symbol or name…"
-              className="w-64 rounded border border-border bg-bg-elevated pl-8 pr-3 py-1.5 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-blue/50 focus:outline-none"
+              className="w-64 rounded-sm border border-border bg-bg-elevated pl-8 pr-3 py-1.5 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-blue/50 focus:outline-hidden"
             />
           </div>
           <button
             onClick={() => refetch()}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-border bg-bg-elevated text-xs text-text-secondary hover:text-text-primary transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm border border-border bg-bg-elevated text-xs text-text-secondary hover:text-text-primary transition-colors"
           >
             <RefreshCw size={12} className={isFetching ? 'animate-spin' : undefined} aria-hidden /> Refresh
           </button>
@@ -389,7 +389,7 @@ export function EquitiesClient() {
         <RangeFilter label="Yield %" min={minYield} max={maxYield} setMin={setMinYield} setMax={setMaxYield} />
         <RangeFilter label="Beta" min={minBeta} max={maxBeta} setMin={setMinBeta} setMax={setMaxBeta} />
         <label className="flex items-center gap-1.5 text-xs text-text-muted">
-          <input type="checkbox" checked={payersOnly} onChange={(e) => setPayersOnly(e.target.checked)} className="rounded border-border" />
+          <input type="checkbox" checked={payersOnly} onChange={(e) => setPayersOnly(e.target.checked)} className="rounded-sm border-border" />
           Dividend payers only
         </label>
         {anyFilter && (
@@ -427,7 +427,7 @@ export function EquitiesClient() {
         <div className="divide-y divide-border/60">
           {uniLoading && universe.length === 0
             ? Array.from({ length: 12 }, (_, i) => (
-                <div key={i} className="h-12 animate-shimmer bg-shimmer-gradient bg-[length:200%_100%]" />
+                <div key={i} className="h-12 animate-shimmer bg-shimmer-gradient bg-size-[200%_100%]" />
               ))
             : rows.map((row) => {
                 const info = SECTOR_INFO[row.sector]
@@ -443,7 +443,7 @@ export function EquitiesClient() {
                       <span className="ml-2 text-xs text-text-muted truncate">{row.name}</span>
                     </div>
                     <div className="min-w-0">
-                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-medium border border-border text-text-secondary truncate">
+                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-sm text-[11px] font-medium border border-border text-text-secondary truncate">
                         <span className="size-1.5 rounded-full shrink-0" style={{ backgroundColor: info.color }} aria-hidden />
                         <span className="truncate">{info.label}</span>
                       </span>
@@ -483,7 +483,7 @@ export function EquitiesClient() {
               <button
                 onClick={() => setPage((p) => Math.max(0, p - 1))}
                 disabled={safePage === 0}
-                className="flex items-center gap-1 px-2 py-1 rounded border border-border text-xs text-text-secondary hover:text-text-primary hover:bg-bg-elevated transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                className="flex items-center gap-1 px-2 py-1 rounded-sm border border-border text-xs text-text-secondary hover:text-text-primary hover:bg-bg-elevated transition-colors disabled:opacity-40 disabled:pointer-events-none"
               >
                 <ChevronLeft size={13} aria-hidden /> Prev
               </button>
@@ -491,7 +491,7 @@ export function EquitiesClient() {
               <button
                 onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
                 disabled={safePage >= totalPages - 1}
-                className="flex items-center gap-1 px-2 py-1 rounded border border-border text-xs text-text-secondary hover:text-text-primary hover:bg-bg-elevated transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                className="flex items-center gap-1 px-2 py-1 rounded-sm border border-border text-xs text-text-secondary hover:text-text-primary hover:bg-bg-elevated transition-colors disabled:opacity-40 disabled:pointer-events-none"
               >
                 Next <ChevronRight size={13} aria-hidden />
               </button>
@@ -524,7 +524,7 @@ function NumInput({ value, onChange, placeholder }: { value: string; onChange: (
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className="w-16 rounded border border-border bg-bg-elevated px-2 py-1 text-xs font-mono text-text-primary placeholder:text-text-muted/60 focus:border-accent-blue/50 focus:outline-none"
+      className="w-16 rounded-sm border border-border bg-bg-elevated px-2 py-1 text-xs font-mono text-text-primary placeholder:text-text-muted/60 focus:border-accent-blue/50 focus:outline-hidden"
     />
   )
 }

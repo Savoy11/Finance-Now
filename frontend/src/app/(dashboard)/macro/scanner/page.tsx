@@ -93,7 +93,7 @@ function ScannerTab() {
           <button
             key={g}
             onClick={() => setGroup(g)}
-            className={clsx('px-2.5 py-1 rounded text-xs font-medium border transition-colors',
+            className={clsx('px-2.5 py-1 rounded-sm text-xs font-medium border transition-colors',
               group === g
                 ? 'bg-accent-blue/15 text-accent-blue border-accent-blue/30'
                 : 'text-text-muted border-border hover:text-text-secondary')}
@@ -172,7 +172,7 @@ function ScannerTab() {
 
 function MacroScannerInner() {
   return (
-    <div className="space-y-5 max-w-screen-2xl mx-auto">
+    <div className="space-y-5 max-w-(--breakpoint-2xl) mx-auto">
       <div className="flex items-center gap-3">
         <Activity className="h-6 w-6 text-accent-blue" aria-hidden />
         <PageHeader

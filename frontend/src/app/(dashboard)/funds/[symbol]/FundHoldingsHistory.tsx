@@ -56,7 +56,7 @@ export function FundHoldingsHistory({ symbol }: { symbol: string }) {
     return (
       <div className="rounded-card border border-border bg-bg-card p-4">
         <h2 className="text-sm font-medium text-text-secondary mb-3">Holdings Change History</h2>
-        <div className="h-32 animate-pulse rounded bg-bg-elevated/60" />
+        <div className="h-32 animate-pulse rounded-sm bg-bg-elevated/60" />
       </div>
     )
   }
@@ -64,13 +64,13 @@ export function FundHoldingsHistory({ symbol }: { symbol: string }) {
   if (!data) return null
 
   const sourcePills = (
-    <div className="flex items-center gap-0.5 bg-bg-elevated border border-border rounded p-0.5" role="group" aria-label="History data source">
+    <div className="flex items-center gap-0.5 bg-bg-elevated border border-border rounded-sm p-0.5" role="group" aria-label="History data source">
       {HISTORY_SOURCES.map(([value, label, hint]) => (
         <button
           key={value}
           onClick={() => setSourceChoice(value)}
           title={hint}
-          className={clsx('px-2 py-0.5 rounded text-[11px] font-medium transition-colors',
+          className={clsx('px-2 py-0.5 rounded-sm text-[11px] font-medium transition-colors',
             sourceChoice === value ? 'bg-accent-blue/20 text-accent-blue' : 'text-text-muted hover:text-text-secondary')}
         >
           {label}
@@ -87,8 +87,8 @@ export function FundHoldingsHistory({ symbol }: { symbol: string }) {
           <h2 className="text-sm font-medium text-text-secondary">Holdings Change History</h2>
           {sourcePills}
         </div>
-        <div className="flex items-start gap-3 rounded border border-amber-500/20 bg-amber-500/5 px-4 py-3">
-          <KeyRound size={14} className="mt-0.5 text-amber-400/70 flex-shrink-0" aria-hidden />
+        <div className="flex items-start gap-3 rounded-sm border border-amber-500/20 bg-amber-500/5 px-4 py-3">
+          <KeyRound size={14} className="mt-0.5 text-amber-400/70 shrink-0" aria-hidden />
           <p className="text-xs text-text-muted leading-relaxed">
             Quarter-over-quarter changes are built from SEC N-PORT disclosures, fetched directly
             from EDGAR with no API key. EDGAR couldn&rsquo;t match this ticker to a disclosure
@@ -109,7 +109,7 @@ export function FundHoldingsHistory({ symbol }: { symbol: string }) {
         <div className="flex items-center gap-2">
           <History size={14} className="text-text-muted" aria-hidden />
           <h2 className="text-sm font-medium text-text-secondary">Holdings Change History</h2>
-          <span className="px-1.5 py-0.5 rounded text-[10px] font-medium border border-border bg-bg-elevated text-text-muted">
+          <span className="px-1.5 py-0.5 rounded-sm text-[10px] font-medium border border-border bg-bg-elevated text-text-muted">
             SEC N-PORT disclosures
           </span>
           {sourcePills}
@@ -120,7 +120,7 @@ export function FundHoldingsHistory({ symbol }: { symbol: string }) {
             <select
               value={data.previous?.label ?? ''}
               onChange={(e) => setPreviousPeriod(e.target.value)}
-              className="rounded border border-border bg-bg-elevated px-2 py-1.5 text-xs text-text-primary focus:border-accent-blue/50 focus:outline-none"
+              className="rounded-sm border border-border bg-bg-elevated px-2 py-1.5 text-xs text-text-primary focus:border-accent-blue/50 focus:outline-hidden"
               aria-label="Previous disclosure period"
             >
               {data.periods.map((p) => (
@@ -131,7 +131,7 @@ export function FundHoldingsHistory({ symbol }: { symbol: string }) {
             <select
               value={data.current?.label ?? ''}
               onChange={(e) => setCurrentPeriod(e.target.value)}
-              className="rounded border border-border bg-bg-elevated px-2 py-1.5 text-xs text-text-primary focus:border-accent-blue/50 focus:outline-none"
+              className="rounded-sm border border-border bg-bg-elevated px-2 py-1.5 text-xs text-text-primary focus:border-accent-blue/50 focus:outline-hidden"
               aria-label="Current disclosure period"
             >
               {data.periods.map((p) => (
@@ -148,23 +148,23 @@ export function FundHoldingsHistory({ symbol }: { symbol: string }) {
         <div className={clsx(isFetching && 'opacity-60 transition-opacity')}>
           {/* Summary strip */}
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-4">
-            <div className="rounded border border-border/60 bg-bg-elevated/40 px-3 py-2">
+            <div className="rounded-sm border border-border/60 bg-bg-elevated/40 px-3 py-2">
               <p className="text-[10px] uppercase tracking-wider text-text-muted">New Positions</p>
               <p className="mt-0.5 font-mono text-sm tabular-nums text-emerald-400">{data.summary.added}</p>
             </div>
-            <div className="rounded border border-border/60 bg-bg-elevated/40 px-3 py-2">
+            <div className="rounded-sm border border-border/60 bg-bg-elevated/40 px-3 py-2">
               <p className="text-[10px] uppercase tracking-wider text-text-muted">Exited</p>
               <p className="mt-0.5 font-mono text-sm tabular-nums text-red-400">{data.summary.exited}</p>
             </div>
-            <div className="rounded border border-border/60 bg-bg-elevated/40 px-3 py-2">
+            <div className="rounded-sm border border-border/60 bg-bg-elevated/40 px-3 py-2">
               <p className="text-[10px] uppercase tracking-wider text-text-muted">Increased</p>
               <p className="mt-0.5 font-mono text-sm tabular-nums text-text-primary">{data.summary.increased}</p>
             </div>
-            <div className="rounded border border-border/60 bg-bg-elevated/40 px-3 py-2">
+            <div className="rounded-sm border border-border/60 bg-bg-elevated/40 px-3 py-2">
               <p className="text-[10px] uppercase tracking-wider text-text-muted">Trimmed</p>
               <p className="mt-0.5 font-mono text-sm tabular-nums text-text-primary">{data.summary.decreased}</p>
             </div>
-            <div className="rounded border border-border/60 bg-bg-elevated/40 px-3 py-2">
+            <div className="rounded-sm border border-border/60 bg-bg-elevated/40 px-3 py-2">
               <p className="text-[10px] uppercase tracking-wider text-text-muted">Est. Turnover</p>
               <p className="mt-0.5 font-mono text-sm tabular-nums text-text-primary">{data.summary.turnoverPct}%</p>
             </div>
@@ -195,7 +195,7 @@ export function FundHoldingsHistory({ symbol }: { symbol: string }) {
                       return (
                         <tr key={`${c.symbol ?? c.name}-${i}`} className="border-b border-border/40 last:border-0">
                           <td className="py-1.5 pr-3">
-                            <span className={clsx('px-1.5 py-0.5 rounded text-[10px] font-bold border', style.className)}>
+                            <span className={clsx('px-1.5 py-0.5 rounded-sm text-[10px] font-bold border', style.className)}>
                               {style.label}
                             </span>
                           </td>
@@ -205,12 +205,12 @@ export function FundHoldingsHistory({ symbol }: { symbol: string }) {
                                 inEquities ? (
                                   <Link
                                     href={`/equities/${c.symbol.toLowerCase()}`}
-                                    className="font-mono text-xs font-medium text-accent-blue hover:underline flex-shrink-0"
+                                    className="font-mono text-xs font-medium text-accent-blue hover:underline shrink-0"
                                   >
                                     {c.symbol}
                                   </Link>
                                 ) : (
-                                  <span className="font-mono text-xs font-medium text-text-primary flex-shrink-0">{c.symbol}</span>
+                                  <span className="font-mono text-xs font-medium text-text-primary shrink-0">{c.symbol}</span>
                                 )
                               )}
                               <span className="text-xs text-text-muted truncate">{c.name}</span>
@@ -236,7 +236,7 @@ export function FundHoldingsHistory({ symbol }: { symbol: string }) {
               {changes.length > COLLAPSED_ROWS && (
                 <button
                   onClick={() => setExpanded((v) => !v)}
-                  className="mt-3 flex w-full items-center justify-center gap-1 rounded border border-border bg-bg-elevated/40 py-2 text-xs text-text-secondary hover:bg-bg-elevated transition-colors"
+                  className="mt-3 flex w-full items-center justify-center gap-1 rounded-sm border border-border bg-bg-elevated/40 py-2 text-xs text-text-secondary hover:bg-bg-elevated transition-colors"
                 >
                   {expanded ? (
                     <>Show top {COLLAPSED_ROWS} changes <ChevronUp size={12} aria-hidden /></>

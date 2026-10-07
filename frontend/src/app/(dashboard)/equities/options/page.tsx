@@ -124,7 +124,7 @@ function parseInputs(form: {
 // ─── Shared field bits ────────────────────────────────────────────────────────
 
 const FIELD =
-  'w-full rounded border border-border bg-bg-elevated px-2 py-1.5 text-sm font-mono tabular-nums text-text-primary placeholder:text-text-muted/60 focus:border-accent-blue/50 focus:outline-none'
+  'w-full rounded-sm border border-border bg-bg-elevated px-2 py-1.5 text-sm font-mono tabular-nums text-text-primary placeholder:text-text-muted/60 focus:border-accent-blue/50 focus:outline-hidden'
 const LABEL = 'text-[11px] text-text-muted uppercase tracking-wider'
 
 function Toggle<T extends string>({ value, options, onChange }: {
@@ -133,13 +133,13 @@ function Toggle<T extends string>({ value, options, onChange }: {
   onChange: (v: T) => void
 }) {
   return (
-    <div className="flex items-center gap-0.5 bg-bg-elevated border border-border rounded p-0.5">
+    <div className="flex items-center gap-0.5 bg-bg-elevated border border-border rounded-sm p-0.5">
       {options.map(({ v, label }) => (
         <button
           key={v}
           type="button"
           onClick={() => onChange(v)}
-          className={clsx('px-2 py-1 rounded text-[11px] font-medium transition-colors',
+          className={clsx('px-2 py-1 rounded-sm text-[11px] font-medium transition-colors',
             value === v ? 'bg-accent-blue/20 text-accent-blue' : 'text-text-muted hover:text-text-secondary')}
         >
           {label}
@@ -230,7 +230,7 @@ function OptionsScorerInner() {
   }, [inputs])
 
   return (
-    <div className="space-y-6 max-w-screen-xl mx-auto">
+    <div className="space-y-6 max-w-(--breakpoint-xl) mx-auto">
       <div className="flex items-center gap-3">
         <Sigma className="h-6 w-6 text-accent-blue" aria-hidden />
         <PageHeader
@@ -268,7 +268,7 @@ function OptionsScorerInner() {
                     onClick={prefillFromQuote}
                     disabled={!cleanSymbol || quoteLoading}
                     title="Fetch the current price"
-                    className="px-2 rounded border border-border bg-bg-elevated text-text-muted hover:text-text-primary disabled:opacity-40 transition-colors"
+                    className="px-2 rounded-sm border border-border bg-bg-elevated text-text-muted hover:text-text-primary disabled:opacity-40 transition-colors"
                   >
                     <Search size={13} aria-hidden />
                   </button>
@@ -324,13 +324,13 @@ function OptionsScorerInner() {
                 type="button"
                 onClick={() => setLegs((prev) => [...prev, emptyLeg()])}
                 disabled={legs.length >= 4}
-                className="flex items-center gap-1 px-2 py-1 rounded border border-border bg-bg-elevated text-xs text-text-secondary hover:text-text-primary disabled:opacity-40 transition-colors"
+                className="flex items-center gap-1 px-2 py-1 rounded-sm border border-border bg-bg-elevated text-xs text-text-secondary hover:text-text-primary disabled:opacity-40 transition-colors"
               >
                 <Plus size={12} aria-hidden /> Add leg
               </button>
             </div>
             {legs.map((leg, i) => (
-              <div key={i} className="rounded border border-border/60 bg-bg-elevated/40 p-3 space-y-2">
+              <div key={i} className="rounded-sm border border-border/60 bg-bg-elevated/40 p-3 space-y-2">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-[11px] font-mono text-text-muted">#{i + 1}</span>
                   <Toggle value={leg.side} options={[{ v: 'long', label: 'Long' }, { v: 'short', label: 'Short' }]} onChange={(v) => setLeg(i, { side: v })} />
@@ -340,7 +340,7 @@ function OptionsScorerInner() {
                       type="button"
                       onClick={() => setLegs((prev) => prev.filter((_, j) => j !== i))}
                       title="Remove leg"
-                      className="ml-auto p-1 rounded text-text-muted hover:text-red-400 transition-colors"
+                      className="ml-auto p-1 rounded-sm text-text-muted hover:text-red-400 transition-colors"
                     >
                       <Trash2 size={13} aria-hidden />
                     </button>

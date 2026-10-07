@@ -50,7 +50,7 @@ export class ErrorBoundary extends Component<Props, State> {
           </div>
           <button
             onClick={this.handleReset}
-            className="flex items-center gap-2 px-3 py-1.5 rounded text-xs bg-bg-elevated border border-border text-text-secondary hover:text-text-primary hover:border-border-strong transition-colors"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-sm text-xs bg-bg-elevated border border-border text-text-secondary hover:text-text-primary hover:border-border-strong transition-colors"
           >
             <RefreshCw size={12} aria-hidden />
             Try Again
@@ -78,7 +78,7 @@ export function QueryError({ message = 'Failed to load data', onRetry }: QueryEr
       {onRetry && (
         <button
           onClick={onRetry}
-          className="flex items-center gap-1.5 px-3 py-1 rounded text-xs bg-bg-elevated border border-border text-text-secondary hover:text-text-primary transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1 rounded-sm text-xs bg-bg-elevated border border-border text-text-secondary hover:text-text-primary transition-colors"
           aria-label="Retry loading data"
         >
           <RefreshCw size={11} aria-hidden />

@@ -140,8 +140,8 @@ export function DataGapNote({
         onFocus={() => setOpen(true)}
         onBlur={() => setOpen(false)}
         className={clsx(
-          'inline-flex items-center gap-1 rounded border leading-none cursor-help',
-          'focus:outline-none focus-visible:ring-1 focus-visible:ring-accent-blue',
+          'inline-flex items-center gap-1 rounded-sm border leading-none cursor-help',
+          'focus:outline-hidden focus-visible:ring-1 focus-visible:ring-accent-blue',
           iconOnly ? 'p-1' : 'px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide',
           style.chip
         )}
@@ -173,7 +173,7 @@ export function DataGapNote({
           {showKeyLink && (
             <Link
               href="/settings"
-              className="mt-2 inline-flex items-center gap-1 rounded border border-amber-500/30 bg-amber-500/10 px-2 py-1 text-[10px] font-medium text-amber-300 transition-colors hover:bg-amber-500/20"
+              className="mt-2 inline-flex items-center gap-1 rounded-sm border border-amber-500/30 bg-amber-500/10 px-2 py-1 text-[10px] font-medium text-amber-300 transition-colors hover:bg-amber-500/20"
             >
               <KeyRound size={10} aria-hidden /> Open Integrations
             </Link>

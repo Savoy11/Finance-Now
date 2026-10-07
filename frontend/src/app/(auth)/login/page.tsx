@@ -81,7 +81,7 @@ export default function LoginPage() {
         </div>
 
         {error && (
-          <div className="flex items-center gap-2 px-3 py-2.5 rounded bg-red-500/10 border border-red-500/30 text-sm text-red-400">
+          <div className="flex items-center gap-2 px-3 py-2.5 rounded-sm bg-red-500/10 border border-red-500/30 text-sm text-red-400">
             <AlertTriangle size={14} aria-hidden />
             {error}
           </div>
@@ -99,7 +99,7 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-3 py-2.5 bg-bg-secondary border border-border rounded text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-accent-blue/60 focus:ring-1 focus:ring-accent-blue/30 transition-colors"
+              className="w-full px-3 py-2.5 bg-bg-secondary border border-border rounded-sm text-sm text-text-primary placeholder-text-muted focus:outline-hidden focus:border-accent-blue/60 focus:ring-1 focus:ring-accent-blue/30 transition-colors"
               placeholder="analyst@institution.com"
             />
           </div>
@@ -116,7 +116,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full px-3 py-2.5 pr-10 bg-bg-secondary border border-border rounded text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-accent-blue/60 focus:ring-1 focus:ring-accent-blue/30 transition-colors"
+                className="w-full px-3 py-2.5 pr-10 bg-bg-secondary border border-border rounded-sm text-sm text-text-primary placeholder-text-muted focus:outline-hidden focus:border-accent-blue/60 focus:ring-1 focus:ring-accent-blue/30 transition-colors"
                 placeholder="••••••••"
               />
               <button
@@ -135,10 +135,10 @@ export default function LoginPage() {
           type="submit"
           disabled={isLoading}
           className={clsx(
-            'flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded font-medium text-sm transition-all',
+            'flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-sm font-medium text-sm transition-all',
             'bg-accent-blue hover:bg-accent-blue-dim text-white',
             'disabled:opacity-60 disabled:cursor-not-allowed',
-            'focus:outline-none focus:ring-2 focus:ring-accent-blue/50'
+            'focus:outline-hidden focus:ring-2 focus:ring-accent-blue/50'
           )}
         >
           {isLoading ? (
