@@ -60,25 +60,25 @@
  },
  "counts": {
   "total_verified": 398,
-  "outstanding": 362,
+  "outstanding": 368,
   "by_status": {
-   "closed": 195,
-   "open": 46,
-   "parked": 113,
+   "closed": 202,
+   "open": 22,
+   "parked": 136,
    "blocked": 7,
    "unclear": 1
   },
   "by_owner_role": {
-   "remote-dev": 89,
-   "either": 42,
-   "owner-decision": 146,
+   "remote-dev": 92,
+   "either": 43,
+   "owner-decision": 148,
    "owner-machine": 85
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 195,
-  "counts_recomputed_on": "2026-10-05",
+  "closed_by_annotation": 202,
+  "counts_recomputed_on": "2026-10-07",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
-  "total": 362
+  "total": 368
  },
  "blocking_decisions": [
   {
@@ -1688,7 +1688,7 @@
   {
    "id": "T-181",
    "title": "Quarterly review of the production-readiness scorecard (next ~2026-10-29)",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "process",
@@ -1703,7 +1703,20 @@
      "lines": "260-263, 144-151",
      "quote": "This document should be reviewed and updated quarterly. Last verified against the tree: 2026-07-29 — claim-by-claim, not by re-reading the previous summary."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-10-07",
+    "basis": "owner-ruling",
+    "verdict": "moot",
+    "reason": "MOOT (D87, 2026-10-07), on the reasoning D81 used to close T-180 on 2026-10-05: the scorecard rates the retired backend (D2, 2026-09-14) and the release bar adopted under D23 does not use it, so a quarterly review of it checks nothing that matters. Its own method was greps over backend/app. The note at the top of docs/audits/production-readiness-scorecard.md already points readers to docs/assessments/P3-production-review.md.",
+    "approved_by": "owner, 2026-10-07: \"go with the recommendations\"",
+    "evidence": [
+     "docs/audits/production-readiness-scorecard.md",
+     "docs/decisions/2026-10-05-owner-decisions.md",
+     "docs/decisions/2026-10-07-owner-decisions.md"
+    ]
+   }
   },
   {
    "id": "T-239",
@@ -5016,13 +5029,18 @@
   {
    "id": "T-366",
    "title": "Decide whether to provision production or stop at staging",
-   "status": "open",
+   "status": "parked",
+   "parked_on": "2026-10-07",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "decision",
    "effort": "small",
-   "blocking_decision": "Owner: provision production or stop at staging; production apply also depends on T-363 completing and a real domain (T-378)",
-   "related_ids": [],
+   "blocking_decision": "PARKED 2026-10-07 — D88 (2026-10-07): parked with the hosting choice (T-112), beside T-363, T-365, T-368 and T-378, which D78 parked on 2026-10-05. Stopping at a test copy or going on to a live site on AWS only arises if AWS is the host. Was: \"Owner: provision production or stop at staging; production apply also depends on T-363 completing and a real domain (T-378)\"",
+   "related_ids": [
+    "T-112",
+    "T-363",
+    "T-378"
+   ],
    "summary": "Must reuse staging's OIDC provider.",
    "next_action": "Owner decides 'staging only until near release' vs 'provision production'; record it in docs/deployment/aws-provisioning.md step 3. If staging-only, consider gating cd-production.yml's triggers so it cannot fire; if production, run step 3 after T-363 with `-var=\"manage_github_oidc_provider=false\"`.",
    "sources": [
@@ -5059,13 +5077,20 @@
   {
    "id": "T-215",
    "title": "Enterprise — API versioning / deprecation policy",
-   "status": "open",
+   "status": "parked",
+   "parked_on": "2026-10-07",
    "confidence": "medium",
    "owner_role": "owner-decision",
    "category": "docs",
    "effort": "small",
-   "blocking_decision": "none for a draft; publishing the guarantee waits on D2 (/api/v1 exposure) and D5 (MCP distribution)",
-   "related_ids": [],
+   "blocking_decision": "PARKED 2026-10-07 — D88 (2026-10-07): parked with its business-tier siblings T-212, T-213, T-214 and T-216 (D71, 2026-10-04) until D5's trigger, a decision to offer a business tier. A public versioning promise also waits on whether /api/v1 opens to outsiders (T-087). Was: \"none for a draft; publishing the guarantee waits on D2 (/api/v1 exposure) and D5 (MCP distribution)\"",
+   "related_ids": [
+    "T-212",
+    "T-213",
+    "T-214",
+    "T-216",
+    "T-087"
+   ],
    "summary": "Applies to /api/v1 and MCP.",
    "next_action": "Draft docs/architecture/api-versioning.md (version scheme for /api/v1 + MCP tool contract, notice period, sunset headers) and put it to the owner for approval alongside the D2 decision; do not publish a guarantee before /api/v1 exposure is decided.",
    "sources": [
@@ -5388,18 +5413,20 @@
   {
    "id": "T-031",
    "title": "Manual withdrawal-fee worksheet pass over the 428 unreached rows (CORE 45 first) and move TRANSFER_FEES_LAST_VERIFIED",
-   "status": "open",
+   "status": "parked",
+   "parked_on": "2026-10-07",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "data-verification",
    "effort": "large",
-   "blocking_decision": null,
+   "blocking_decision": "PARKED 2026-10-07 — D89 (2026-10-07): Transfer Fees stays hidden for launch, the owner's decision of 2026-10-01, recorded in this repository by D89. The fee check that day found that most exchanges now show withdrawal fees only on the logged-in withdrawal screen and change them with network costs, so a hand pass cannot finish the table. Waits on T-428: after launch, rebuild Transfer Fees from the live fee feeds six exchanges publish, with a 'check on the exchange' link for the rest.",
    "related_ids": [
     "#108",
     "M4",
     "S3",
     "T1",
-    "T8"
+    "T8",
+    "T-428"
    ],
    "summary": "115/543 rows machine-verified on 2026-08-22; remaining 428 (Binance, Coinbase, Kraken, OKX, Bybit…) need a human on `npm run fee-worksheet` from the owner's machine; LAST_VERIFIED stays 2025-06-01 until every exchange is done (M4/T8).",
    "next_action": "On the owner's machine: `cd frontend && npm run fee-reconcile && npm run fee-worksheet`, fill the core-45 rows of transfer-fee-worksheet.csv from each exchange's fee page, then `npm run fee-apply -- --dry-run` before applying; LAST_VERIFIED moves only when every exchange is done.",
@@ -5451,9 +5478,10 @@
     }
    ],
    "progress": {
-    "noted_on": "2026-10-01",
-    "note": "WORKING IT NOW, PAGE STILL HIDDEN (D52, 2026-10-01). The owner chose to work this item while Transfer Fees stays withheld from the suite, so T-028's restore is not part of it. This environment's network policy refuses every exchange host — the fee pages and the keyless fee feeds alike — so the reading is the owner's and everything else is the session's: `npm run fee-check-page -- <out.html>` builds a check page from transferFees.ts (one card per exchange with its fee-page link and rows; the 45 highest-impact rows on exchanges without a keyless fee feed first; each exchange's entry-tier trading fee; the fee leads of T-037–T-053 on the exchanges they name). Each answer — matches, different, not offered, can't see it — is saved in that page's own database; the session reads them and applies them in a pull request, a changed fee through `npm run fee-apply` and its guards. Rows on the six exchanges with a keyless feed stay with `npm run fee-reconcile` on the owner's machine. TRANSFER_FEES_LAST_VERIFIED moves only when every row is checked. Nothing has been checked through the page yet. Carried forward from 2026-09-24: MACHINE HALF RE-RUN on the owner's machine over clean egress; MANUAL HALF PREPARED. `npm run fee-reconcile`: 106 of 534 rows reconcile against live keyless exchange APIs — 65 confirmed, 22 changed, 8 dynamic, 11 suspended. 20 of the 22 changes were applied via `npm run fee-apply` (keyed on exchange/coin/network, current-value guard passed); the two `→ 0` proposals — Bitfinex DOT/Polkadot and Bitget USDC/BEP-20 — were deliberately held back because they are T-056's subject, the two zero-fee rows a prior pass already held for hand verification. `npm run fee-worksheet`: 447 entries still need a human across 29 exchanges, core-45 called out first; transfer-fee-worksheet.csv and .md are generated and gitignored, ready to fill. TRANSFER_FEES_LAST_VERIFIED stays 2025-06-01 (480 days) — only a completed pass over every exchange moves it, and the page is held out of rollout with the staleness acknowledged.",
+    "noted_on": "2026-10-07",
+    "note": "2026-10-07 (D89): parked behind T-428. The 1 Oct fee check, recorded on the ledger page that day and copied here, could not confirm any of the 45 priority withdrawal rows: most exchanges now show withdrawal fees only on the logged-in withdrawal screen and change them with network costs (Gate hourly; Gemini, Bybit, Kraken and OKX say so too). Gemini's USDC ERC-20 withdrawal is no longer free. No answer was saved on the Transfer Fee Check page. TRANSFER_FEES_LAST_VERIFIED stays 2025-06-01, acknowledged as stale. Carried forward from 2026-10-01: WORKING IT NOW, PAGE STILL HIDDEN (D52, 2026-10-01). The owner chose to work this item while Transfer Fees stays withheld from the suite, so T-028's restore is not part of it. This environment's network policy refuses every exchange host — the fee pages and the keyless fee feeds alike — so the reading is the owner's and everything else is the session's: `npm run fee-check-page -- <out.html>` builds a check page from transferFees.ts (one card per exchange with its fee-page link and rows; the 45 highest-impact rows on exchanges without a keyless fee feed first; each exchange's entry-tier trading fee; the fee leads of T-037–T-053 on the exchanges they name). Each answer — matches, different, not offered, can't see it — is saved in that page's own database; the session reads them and applies them in a pull request, a changed fee through `npm run fee-apply` and its guards. Rows on the six exchanges with a keyless feed stay with `npm run fee-reconcile` on the owner's machine. TRANSFER_FEES_LAST_VERIFIED moves only when every row is checked. Nothing has been checked through the page yet. Carried forward from 2026-09-24: MACHINE HALF RE-RUN on the owner's machine over clean egress; MANUAL HALF PREPARED. `npm run fee-reconcile`: 106 of 534 rows reconcile against live keyless exchange APIs — 65 confirmed, 22 changed, 8 dynamic, 11 suspended. 20 of the 22 changes were applied via `npm run fee-apply` (keyed on exchange/coin/network, current-value guard passed); the two `→ 0` proposals — Bitfinex DOT/Polkadot and Bitget USDC/BEP-20 — were deliberately held back because they are T-056's subject, the two zero-fee rows a prior pass already held for hand verification. `npm run fee-worksheet`: 447 entries still need a human across 29 exchanges, core-45 called out first; transfer-fee-worksheet.csv and .md are generated and gitignored, ready to fill. TRANSFER_FEES_LAST_VERIFIED stays 2025-06-01 (480 days) — only a completed pass over every exchange moves it, and the page is held out of rollout with the staleness acknowledged.",
     "evidence": [
+     "docs/decisions/2026-10-07-owner-decisions.md",
      "docs/decisions/2026-10-01-owner-decisions.md",
      "frontend/scripts/gen-fee-check-page.ts",
      "frontend/src/lib/data/transferFees.ts",
@@ -5465,14 +5493,16 @@
   {
    "id": "T-036",
    "title": "Verify SPOT_TRADING_FEES seeded maker/taker rates (LOW confidence) per exchange",
-   "status": "open",
+   "status": "parked",
+   "parked_on": "2026-10-07",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "data-verification",
    "effort": "medium",
-   "blocking_decision": null,
+   "blocking_decision": "PARKED 2026-10-07 — D89 (2026-10-07): Transfer Fees stays hidden for launch, the owner's decision of 2026-10-01, recorded in this repository by D89. The fee check that day found that most exchanges now show withdrawal fees only on the logged-in withdrawal screen and change them with network costs, so a hand pass cannot finish the table. Waits on T-428: after launch, rebuild Transfer Fees from the live fee feeds six exchanges publish, with a 'check on the exchange' link for the rest.",
    "related_ids": [
-    "S3"
+    "S3",
+    "T-428"
    ],
    "summary": "Default-tier rates for the exchanges were seeded from posture; worksheet's trading-fee section must be checked on the owner's machine before the LOW pin lifts.",
    "next_action": "On the owner's machine, while doing the T-031 worksheet: fill the 'Spot trading fees' section's Observed maker/taker columns from each exchange's spot fee schedule page, then update SPOT_TRADING_FEES, bump TRADING_FEES_COMPILED, lift the confidence pin and update saleCost.test.ts:56-59 in the same PR.",
@@ -5494,9 +5524,10 @@
     }
    ],
    "progress": {
-    "noted_on": "2026-09-24",
-    "note": "WORKSHEET GENERATED (with T-031's): transfer-fee-worksheet.csv carries the Spot trading fees section with Observed maker/taker columns blank, ready to fill from each exchange's fee schedule page. Nothing here is automatable — the schedules are HTML pages behind terms this app has not been granted to scrape — so the item stays open on its original terms.",
+    "noted_on": "2026-10-07",
+    "note": "2026-10-07 (D89): parked behind T-428. Trading fees confirmed on the exchanges' own pages on 1 Oct, for whenever fees return: Bitfinex 0%/0% since 17 Dec 2025; Hyperliquid base tier spot 0.040%/0.070%, perpetuals 0.015%/0.045%; Kraken Pro entry 0.40%/0.80% since 9 Jul 2026; Coinbase Advanced US entry 0.50%/0.90% since 16 Sep 2026 (a logged-in check is still needed for a lower Intro tier). Bybit, Crypto.com Exchange and Gate trading fees still match the table. Not applied while the page is hidden. Carried forward from 2026-09-24: WORKSHEET GENERATED (with T-031's): transfer-fee-worksheet.csv carries the Spot trading fees section with Observed maker/taker columns blank, ready to fill from each exchange's fee schedule page. Nothing here is automatable — the schedules are HTML pages behind terms this app has not been granted to scrape — so the item stays open on its original terms.",
     "evidence": [
+     "docs/decisions/2026-10-07-owner-decisions.md",
      "frontend/scripts/gen-transfer-fee-worksheet.ts"
     ]
    }
@@ -5504,15 +5535,17 @@
   {
    "id": "T-055",
    "title": "Flip TAX_GUIDANCE_REVIEW from seeded to verified after reading primary tax sources",
-   "status": "open",
+   "status": "parked",
+   "parked_on": "2026-10-07",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "terms-review",
    "effort": "small",
-   "blocking_decision": null,
+   "blocking_decision": "PARKED 2026-10-07 — D89 (2026-10-07): the tax notes it would verify appear only on the Transfer Fees page, which stays hidden for launch (the owner's decision of 2026-10-01, recorded by D89). Waits on T-428, the rebuild after launch; read the sources before the page returns.",
    "related_ids": [
     "S3",
-    "S5"
+    "S5",
+    "T-428"
    ],
    "summary": "Owner to read §1.1001-7, §1.1012-1(h)/(j), Rev. Proc. etc.; two of three reviewers could not reach irs.gov/eCFR.",
    "next_action": "Owner reads 26 CFR §1.1001-7, §1.1012-1(h)/(j), Rev. Proc. 2024-28 and current IRC §67 on a machine that can reach irs.gov/eCFR; then a PR flipping taxCharacter.ts:53 to 'verified' (with reviewedAt date), updating the pinned assertion in taxCharacter.test.ts:96-97, and recording the two cite checks in a dated docs/audits note.",
@@ -5532,16 +5565,18 @@
   {
    "id": "T-056",
    "title": "Hand-verify the two held-back zero-fee rows (Bitfinex DOT, Bitget USDC/BEP-20)",
-   "status": "open",
+   "status": "parked",
+   "parked_on": "2026-10-07",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "data-verification",
    "effort": "small",
-   "blocking_decision": null,
+   "blocking_decision": "PARKED 2026-10-07 — D89 (2026-10-07): Transfer Fees stays hidden for launch, the owner's decision of 2026-10-01, recorded in this repository by D89. The fee check that day found that most exchanges now show withdrawal fees only on the logged-in withdrawal screen and change them with network costs, so a hand pass cannot finish the table. Waits on T-428: after launch, rebuild Transfer Fees from the live fee feeds six exchanges publish, with a 'check on the exchange' link for the rest. The two zero-fee rows stay held.",
    "related_ids": [
     "#108",
     "M4",
-    "S3"
+    "S3",
+    "T-428"
    ],
    "summary": "Reconcile proposed exactly 0; held because 0 renders as 'Free' and is indistinguishable from an absent field.",
    "next_action": "Owner opens Bitfinex's and Bitget's own withdrawal-fee pages for DOT (Polkadot) and USDC (BEP-20); if genuinely 0, apply via `npm run fee-apply` with a filled worksheet CSV row (never hand-edit to 0 from the API reading alone) and annotate the fee-reconcile audit; if not 0, record 'held rows confirmed non-zero' in docs/audits/fee-reconcile-2026-08-22.md.",
@@ -5563,9 +5598,10 @@
     }
    ],
    "progress": {
-    "noted_on": "2026-09-24",
-    "note": "RE-SURFACED, STILL HELD. The 2026-09-24 machine reconcile read both rows as 0 again from the exchanges' public APIs (Bitfinex DOT/Polkadot 0.1 → 0; Bitget USDC/BEP-20 1 → 0, min 9.9977). Two independent reads agreeing on 0 is stronger evidence than one — but a zero withdrawal fee is the row a user is most likely to act on and the row an API is most likely to report as 0 when it means \"unknown\", so the hand check this item asks for still stands. Not applied.",
+    "noted_on": "2026-10-07",
+    "note": "2026-10-07 (D89): parked behind T-428; the two zero-fee rows stay held. Carried forward from 2026-09-24: RE-SURFACED, STILL HELD. The 2026-09-24 machine reconcile read both rows as 0 again from the exchanges' public APIs (Bitfinex DOT/Polkadot 0.1 → 0; Bitget USDC/BEP-20 1 → 0, min 9.9977). Two independent reads agreeing on 0 is stronger evidence than one — but a zero withdrawal fee is the row a user is most likely to act on and the row an API is most likely to report as 0 when it means \"unknown\", so the hand check this item asks for still stands. Not applied.",
     "evidence": [
+     "docs/decisions/2026-10-07-owner-decisions.md",
      "frontend/scripts/reconcile-transfer-fees.ts"
     ]
    }
@@ -5734,7 +5770,7 @@
   {
    "id": "T-106",
    "title": "Configure free provider API keys on the Integrations page for key-gated surfaces",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "ops-infra",
@@ -5749,7 +5785,19 @@
      "lines": "429-444, 588-594",
      "quote": "The fix for any of the key-gated rows is a free API key on the Integrations page — **not a substitute scraper.**"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-10-07",
+    "basis": "owner-ruling",
+    "verdict": "already-done",
+    "reason": "ALREADY DONE (D87, 2026-10-07). The owner's machine has held FMP and Finnhub keys since 2026-09-09 and Tiingo and Alpha Vantage keys since 2026-09-19, and the owner-machine audits recorded stock quotes, charts and candles as REAL on those keys (DATA-AVAILABILITY.md, the note under its Yahoo-removal block). What stays key-gated is the macro symbols (GC=F, EURUSD=X, ZN=F), which no configured free key quotes. That is a separate question, deferred under D21, not this item.",
+    "approved_by": "owner, 2026-10-07: \"go with the recommendations\"",
+    "evidence": [
+     "DATA-AVAILABILITY.md",
+     "docs/decisions/2026-10-07-owner-decisions.md"
+    ]
+   }
   },
   {
    "id": "T-130",
@@ -6507,7 +6555,7 @@
   {
    "id": "T-250",
    "title": "Recurring: re-read source verdicts before the 180-day window (oldest 2026-08-06) and quarterly licence re-checks",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "process",
@@ -6527,7 +6575,21 @@
      "lines": "55-63",
      "quote": "🔁 **Standing item: re-check data-source licensing on a cadence, for both products.** Not a one-time gate. A licence change is *silent* — a broken feed announces itself, but a provider changing its terms breaks nothing: the code keeps fetching while the business becomes non-compliant."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-10-07",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "DONE (D88, 2026-10-07): the re-read is now a clock that `npm run staleness:check` watches in CI. TERMS_REREAD_STALE_AFTER_DAYS (180) and TERMS_REREAD_OLDEST_READING (2026-08-05, Cboe's reading) in sourceTerms.ts make the check warn three weeks before the oldest reading turns 180 days old and fail on the day it does (first: 2027-02-02), unless the oldest entries are re-read or the lapse is recorded as a decision. sourceTerms.test.ts fails if the anchor stops matching the registry's oldest reviewedAt; moving the anchor by one day turned two of its tests red. The quarterly licence re-check stays where it is, as the standing item in docs/BUSINESS-CHECKLIST.md: it is a business habit, not a date in the code.",
+    "approved_by": "owner, 2026-10-07: \"go with the recommendations\"",
+    "evidence": [
+     "frontend/src/lib/server/sourceTerms.ts",
+     "frontend/src/lib/server/__tests__/sourceTerms.test.ts",
+     "docs/architecture/source-terms.md",
+     "docs/decisions/2026-10-07-owner-decisions.md"
+    ]
+   }
   },
   {
    "id": "T-251",
@@ -6696,7 +6758,7 @@
   {
    "id": "T-282",
    "title": "Browser click-through of screener deep-link filters on the owner's machine",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "data-verification",
@@ -6713,7 +6775,21 @@
      "lines": "58-61 (test URLs 24-28)",
      "quote": "**Verification limit:** URL application is client-side; this container verified the pages render (200) with deep-link params and that types/lint/build pass, but a real browser click-through should confirm filter application end-to-end on the owner's machine."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-10-07",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "DONE (D90, 2026-10-07), and it found a bug. Clicked through in a real browser (headless Chromium driving `npm run dev`) in the cloud session rather than on the owner's machine: both screeners filter their built-in lists (79 stocks, 140 funds), which need no live data. The funds link and the stocks link this item names both applied in full, and changing a filter rewrote the link. But the stock screener dropped five filters from a link (max yield, min beta, the price range and 'dividend payers only'): they were written into the link and never read back, so the link opened on all 79 stocks. Fixed in EquitiesClient.tsx; the same link now shows the 7 expected stocks. screenerUrlKeys.test.ts fails for any screener whose link carries a filter that opening the link does not restore, and run against main's old file it names exactly those five.",
+    "approved_by": "owner, 2026-10-07: \"go with the recommendations\"",
+    "evidence": [
+     "docs/assessments/screener-consistency-2026-07-30.md",
+     "frontend/src/app/(dashboard)/equities/EquitiesClient.tsx",
+     "frontend/src/lib/hooks/__tests__/screenerUrlKeys.test.ts",
+     "docs/decisions/2026-10-07-owner-decisions.md"
+    ]
+   }
   },
   {
    "id": "T-305",
@@ -6753,13 +6829,17 @@
   {
    "id": "T-367",
    "title": "Set SLACK_BOT_TOKEN, SLACK_DEPLOY_CHANNEL_ID, STAGING_SMOKE_TEST_KEY secrets",
-   "status": "open",
+   "status": "parked",
+   "parked_on": "2026-10-07",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "ops-infra",
    "effort": "small",
-   "blocking_decision": null,
-   "related_ids": [],
+   "blocking_decision": "PARKED 2026-10-07 — D88 (2026-10-07): parked with the hosting choice (T-112). The secrets serve the AWS deploy workflow (cd-staging.yml), which is skipped on every push today and runs only once the AWS test copy exists (T-363, parked under D78), so the Notify job it names is not failing.",
+   "related_ids": [
+    "T-112",
+    "T-363"
+   ],
    "summary": "Non-blocking but Notify job fails.",
    "next_action": "After T-363, in GitHub Settings → Secrets and variables → Actions add `SLACK_BOT_TOKEN`, `SLACK_DEPLOY_CHANNEL_ID`, `STAGING_SMOKE_TEST_KEY` (alongside `AWS_ACCOUNT_ID` from `aws sts get-caller-identity`), then re-run 'CD — Deploy to Staging' and confirm the Notify job no longer fails with 'Need to provide at least one botToken or webhookUrl'.",
    "sources": [
@@ -6997,7 +7077,7 @@
   {
    "id": "T-102",
    "title": "18b — enable 'Require review from Code Owners' on the default branch",
-   "status": "open",
+   "status": "closed",
    "confidence": "medium",
    "owner_role": "owner-machine",
    "category": "process",
@@ -7014,7 +7094,19 @@
      "lines": "776, 885-888",
      "quote": "CODEOWNERS requests review but does not gate a merge until \"Require review from Code Owners\" is enabled on the default branch — stated in the file so its presence is not mistaken for enforcement"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-10-07",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "NOT ENABLED (D87, 2026-10-07). The owner is the only code owner in .github/CODEOWNERS and the author of every pull request, and GitHub does not let an author approve their own pull request, so requiring code-owner review on main would block every merge or need a bypass each time. CODEOWNERS keeps requesting review, and its header now says why the rule is off. Revisit if a second person works on the code.",
+    "approved_by": "owner, 2026-10-07: \"go with the recommendations\"",
+    "evidence": [
+     ".github/CODEOWNERS",
+     "docs/decisions/2026-10-07-owner-decisions.md"
+    ]
+   }
   },
   {
    "id": "T-120",
@@ -7147,7 +7239,7 @@
   {
    "id": "T-371",
    "title": "Rename pre-rename local databases/users on existing installs (caep→fn)",
-   "status": "open",
+   "status": "closed",
    "confidence": "medium",
    "owner_role": "owner-machine",
    "category": "ops-infra",
@@ -7162,12 +7254,25 @@
      "lines": "32-62",
      "quote": "Installs with data created before this rename have three options per database — rename the DB, keep the old name via `DATABASE_URL`, or start over."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-10-07",
+    "basis": "owner-ruling",
+    "verdict": "moot",
+    "reason": "MOOT (D87, 2026-10-07). It asked for each install's caep_app database to be renamed, or kept through DATABASE_URL, so that the old-address lookup could be retired. D75 retired that lookup on 2026-10-04, and docs/deployment/caep-db-rename.md keeps the recovery steps. A database still named caep_app keeps working through DATABASE_URL, which the same document gives as one of its three options, so nothing is left to schedule.",
+    "approved_by": "owner, 2026-10-07: \"go with the recommendations\"",
+    "evidence": [
+     "docs/deployment/caep-db-rename.md",
+     "docs/decisions/2026-10-04-owner-decisions.md",
+     "docs/decisions/2026-10-07-owner-decisions.md"
+    ]
+   }
   },
   {
    "id": "T-392",
    "title": "Refresh fundFacts.generated.json quarterly from SEC N-PORT",
-   "status": "open",
+   "status": "closed",
    "confidence": "medium",
    "owner_role": "owner-machine",
    "category": "process",
@@ -7182,7 +7287,20 @@
      "lines": "1-17",
      "quote": "Re-run quarterly when a new dataset is published; the file is committed so the app never depends on this script at runtime."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-10-07",
+    "basis": "verified-here",
+    "verdict": "moot",
+    "reason": "MOOT, found while building its reminder (D88, 2026-10-07). Nothing in the app reads fundFacts.generated.json: no file under frontend/src imports it or the netAssetsB field it holds (checked 2026-10-07), and fundFacts.test.ts tests the fund comparison table, which reads FUND_CATALOG. A quarterly refresh would change nothing a user sees, so the date check the owner approved was not built for it: it would only point at unused data. The 2 MB file stays where it is (the no-deletion rule); wiring it into the fund pages, or removing it, would be its own item if wanted.",
+    "approved_by": "owner, 2026-10-07: \"go with the recommendations\"",
+    "evidence": [
+     "frontend/scripts/build-fund-facts.mjs",
+     "frontend/src/lib/data/fundFacts.generated.json",
+     "docs/decisions/2026-10-07-owner-decisions.md"
+    ]
+   }
   },
   {
    "id": "T-061",
@@ -8305,7 +8423,9 @@
    "category": "decision",
    "effort": "unknown",
    "blocking_decision": null,
-   "related_ids": [],
+   "related_ids": [
+    "T-383"
+   ],
    "summary": "/equities/calendar would go dark; stock-universe collapses to the curated catalog.",
    "next_action": "No action until T-152 returns a restrictive reading; then the owner decides whether /equities/calendar goes dark and the Stock Registry ships on the curated catalog, or a paid FMP plan is bought at release (consistent with the 'free-tier until near release' constraint).",
    "sources": [
@@ -8316,9 +8436,10 @@
     }
    ],
    "progress": {
-    "noted_on": "2026-09-23",
-    "note": "UNBLOCKED, and this is the sharper of the two. The blocker was \"FMP terms reading (T-152): is free-tier use restricted to personal/non-commercial, and does it vary by plan?\" That reading happened on 2026-09-13 (docs/audits/terms-review-fmp-2026-09-13.md) and T-152 closed today. ⚠ It did not come back permissive. §2.2.1 grants personal, non-business, non-commercial use only, and §2.2.2 bars multi-user deployment \"irrespective of whether such usage is complimentary or paid\". This item's own title is \"…if the reading is restrictive\" — so its condition is MET and the decision it describes is now owed rather than contingent. Two things keep it from being urgent today. Under D22 State 1 nobody but the owner can load a page, so the free tier is within licence AS THE APP STANDS and /equities/calendar does NOT need to go dark now. And D21 defers the paid half. What is NOT deferred is the design half: whether the Stock Registry ships on the 79-name curated catalog and the calendar goes dark, or an Order Form is obtained. §2.2.2 means a plan upgrade is not one of the options — broader rights come from an Order Form under §2.1, which is enquiry #1 in docs/licensing/2026-09-20-provider-enquiries.md and is unsent.",
+    "noted_on": "2026-10-07",
+    "note": "2026-10-07 (D91): the IPO calendar joins this decision (Vendor Pass build item 7, 30 Sep, filed here): keep it on a public site only if its data's terms allow public display, otherwise hide it. Its source today is Alpha Vantage's free tier, under that source's own terms entry; the Vendor Pass tied it to FMP because the planned paid source is FMP's (T-383, parked). Carried forward from 2026-09-23: UNBLOCKED, and this is the sharper of the two. The blocker was \"FMP terms reading (T-152): is free-tier use restricted to personal/non-commercial, and does it vary by plan?\" That reading happened on 2026-09-13 (docs/audits/terms-review-fmp-2026-09-13.md) and T-152 closed today. ⚠ It did not come back permissive. §2.2.1 grants personal, non-business, non-commercial use only, and §2.2.2 bars multi-user deployment \"irrespective of whether such usage is complimentary or paid\". This item's own title is \"…if the reading is restrictive\" — so its condition is MET and the decision it describes is now owed rather than contingent. Two things keep it from being urgent today. Under D22 State 1 nobody but the owner can load a page, so the free tier is within licence AS THE APP STANDS and /equities/calendar does NOT need to go dark now. And D21 defers the paid half. What is NOT deferred is the design half: whether the Stock Registry ships on the 79-name curated catalog and the calendar goes dark, or an Order Form is obtained. §2.2.2 means a plan upgrade is not one of the options — broader rights come from an Order Form under §2.1, which is enquiry #1 in docs/licensing/2026-09-20-provider-enquiries.md and is unsent.",
     "evidence": [
+     "docs/decisions/2026-10-07-owner-decisions.md",
      "docs/audits/terms-review-fmp-2026-09-13.md",
      "docs/decisions/2026-09-23-owner-decisions.md",
      "docs/licensing/2026-09-20-provider-enquiries.md"
@@ -10248,15 +10369,17 @@
   {
    "id": "T-043",
    "title": "Check MATIC→POL migration across exchange rows",
-   "status": "open",
+   "status": "parked",
+   "parked_on": "2026-10-07",
    "confidence": "medium",
    "owner_role": "either",
    "category": "data-verification",
    "effort": "small",
-   "blocking_decision": null,
+   "blocking_decision": "PARKED 2026-10-07 — D89 (2026-10-07): Transfer Fees stays hidden for launch, the owner's decision of 2026-10-01, recorded in this repository by D89. The fee check that day found that most exchanges now show withdrawal fees only on the logged-in withdrawal screen and change them with network costs, so a hand pass cannot finish the table. Waits on T-428: after launch, rebuild Transfer Fees from the live fee feeds six exchanges publish, with a 'check on the exchange' link for the rest.",
    "related_ids": [
     "S3",
-    "T-031"
+    "T-031",
+    "T-428"
    ],
    "summary": "Priority 6; table still keys the coin as `matic` on polygon/erc20.",
    "next_action": "Answer it on the Transfer Fee Check page (T-031, D52), where it is listed under its exchange; then: During the owner-machine worksheet pass, for each non-live exchange (Binance, Coinbase, Kraken, OKX, Bybit, Gemini, Crypto.com, Gate.io, MEXC, Upbit...) check the POL withdrawal networks and mark the `matic`/erc20 row `delisted` in the CSV if retired — `npm run fee-apply` skips delisted rows, so retire them by hand in frontend/src/lib/data/transferFees.ts (matic blocks at lines 456, 545, 688, 777, 902...). No CoinId rename is needed; the adapters already map POL→matic.",
@@ -10268,9 +10391,10 @@
     }
    ],
    "progress": {
-    "noted_on": "2026-10-05",
-    "note": "Moved from parked to open under D83. It had no reason to wait: D52 (2026-10-01) put it on the Transfer Fee Check page as a lead on the exchange it names, and that page's checks are the owner's to do now while Transfer Fees stays hidden. It stays not-closed until answered, since the page lists only open leads.",
+    "noted_on": "2026-10-07",
+    "note": "2026-10-07 (D89): parked behind T-428. The 1 Oct check recorded nothing on the MATIC to POL change; the rebuild reads each exchange's own network list. Carried forward from 2026-10-05: moved from parked to open under D83, which D89 overtakes.",
     "evidence": [
+     "docs/decisions/2026-10-07-owner-decisions.md",
      "docs/decisions/2026-10-05-owner-decisions.md",
      "frontend/scripts/lib/feeCheckData.ts"
     ]
@@ -10902,7 +11026,14 @@
      "lines": "102-104, 611, 810, 897",
      "quote": "Public `/api/v1` exposure — no rate limit, no auth, CORS `*` | May ship against an enterprise provider key, which changes the quota calculus entirely | The same planning session; revisit when the key and hosting are settled"
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-10-07",
+    "note": "2026-10-07 (D91): the Vendor Pass of 30 Sep (build item 1, recorded on the ledger page and filed here) adds the licensing side of this question. /api/v1 and the MCP server pass on CoinGecko prices (/prices), stock quotes and charts (/securities/*), publisher headlines (/news) and DefiLlama yields (/staking/opportunities), and _cors.ts allows every origin. Before the first outside visitor, lock them to the owner or strip the licensed data from them; licensing the data is the other way.",
+    "evidence": [
+     "docs/decisions/2026-10-07-owner-decisions.md"
+    ]
+   }
   },
   {
    "id": "T-095",
@@ -11862,15 +11993,17 @@
   {
    "id": "T-038",
    "title": "Re-check Bitfinex trading fees (reportedly 0%/0% since 2025-12-17)",
-   "status": "open",
+   "status": "parked",
+   "parked_on": "2026-10-07",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "data-verification",
    "effort": "small",
-   "blocking_decision": null,
+   "blocking_decision": "PARKED 2026-10-07 — D89 (2026-10-07): Transfer Fees stays hidden for launch, the owner's decision of 2026-10-01, recorded in this repository by D89. The fee check that day found that most exchanges now show withdrawal fees only on the logged-in withdrawal screen and change them with network costs, so a hand pass cannot finish the table. Waits on T-428: after launch, rebuild Transfer Fees from the live fee feeds six exchanges publish, with a 'check on the exchange' link for the rest.",
    "related_ids": [
     "S3",
-    "T-031"
+    "T-031",
+    "T-428"
    ],
    "summary": "Priority 1; confirm on bitfinex.com/fees and update SPOT_TRADING_FEES.bitfinex.",
    "next_action": "Answer it on the Transfer Fee Check page (T-031, D52), where it is listed under its exchange; then: On the owner machine open bitfinex.com/fees; if 0/0 is confirmed edit SPOT_TRADING_FEES.bitfinex in frontend/src/lib/data/transferFees.ts:109 to 0/0 with a dated note (file convention: zero-commission venues carry a 'not free — spread' note and a reviewed-by date).",
@@ -11882,9 +12015,10 @@
     }
    ],
    "progress": {
-    "noted_on": "2026-10-05",
-    "note": "Moved from parked to open under D83. It had no reason to wait: D52 (2026-10-01) put it on the Transfer Fee Check page as a lead on the exchange it names, and that page's checks are the owner's to do now while Transfer Fees stays hidden. It stays not-closed until answered, since the page lists only open leads.",
+    "noted_on": "2026-10-07",
+    "note": "2026-10-07 (D89): parked behind T-428. The 1 Oct check confirmed on Bitfinex's own fee page that trading has been 0% maker / 0% taker since 17 Dec 2025. Not applied while the page is hidden; apply it when fees return. Carried forward from 2026-10-05: moved from parked to open under D83, which D89 overtakes.",
     "evidence": [
+     "docs/decisions/2026-10-07-owner-decisions.md",
      "docs/decisions/2026-10-05-owner-decisions.md",
      "frontend/scripts/lib/feeCheckData.ts"
     ]
@@ -11893,15 +12027,17 @@
   {
    "id": "T-039",
    "title": "Re-check Hyperliquid fee tier framing (table looks like $25M+ tier)",
-   "status": "open",
+   "status": "parked",
+   "parked_on": "2026-10-07",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "data-verification",
    "effort": "small",
-   "blocking_decision": null,
+   "blocking_decision": "PARKED 2026-10-07 — D89 (2026-10-07): Transfer Fees stays hidden for launch, the owner's decision of 2026-10-01, recorded in this repository by D89. The fee check that day found that most exchanges now show withdrawal fees only on the logged-in withdrawal screen and change them with network costs, so a hand pass cannot finish the table. Waits on T-428: after launch, rebuild Transfer Fees from the live fee feeds six exchanges publish, with a 'check on the exchange' link for the rest.",
    "related_ids": [
     "S3",
-    "T-031"
+    "T-031",
+    "T-428"
    ],
    "summary": "Priority 2; base tier reported 0.040/0.070 spot vs table 0.01/0.035.",
    "next_action": "Answer it on the Transfer Fee Check page (T-031, D52), where it is listed under its exchange; then: On the owner machine read the official Hyperliquid fees page (hyperliquid.gitbook.io); if base tier differs, set SPOT_TRADING_FEES.hyperliquid at transferFees.ts:133 to the entry tier and note the tier framing.",
@@ -11913,9 +12049,10 @@
     }
    ],
    "progress": {
-    "noted_on": "2026-10-05",
-    "note": "Moved from parked to open under D83. It had no reason to wait: D52 (2026-10-01) put it on the Transfer Fee Check page as a lead on the exchange it names, and that page's checks are the owner's to do now while Transfer Fees stays hidden. It stays not-closed until answered, since the page lists only open leads.",
+    "noted_on": "2026-10-07",
+    "note": "2026-10-07 (D89): parked behind T-428. The 1 Oct check confirmed Hyperliquid's base tier on its official fee page: 0.040%/0.070% for spot and 0.015%/0.045% for perpetuals. The table's 0.01/0.035 is a higher-volume tier. Not applied while the page is hidden. Carried forward from 2026-10-05: moved from parked to open under D83, which D89 overtakes.",
     "evidence": [
+     "docs/decisions/2026-10-07-owner-decisions.md",
      "docs/decisions/2026-10-05-owner-decisions.md",
      "frontend/scripts/lib/feeCheckData.ts"
     ]
@@ -11924,15 +12061,17 @@
   {
    "id": "T-040",
    "title": "Re-check Coinbase Advanced entry-tier maker/taker",
-   "status": "open",
+   "status": "parked",
+   "parked_on": "2026-10-07",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "data-verification",
    "effort": "small",
-   "blocking_decision": null,
+   "blocking_decision": "PARKED 2026-10-07 — D89 (2026-10-07): Transfer Fees stays hidden for launch, the owner's decision of 2026-10-01, recorded in this repository by D89. The fee check that day found that most exchanges now show withdrawal fees only on the logged-in withdrawal screen and change them with network costs, so a hand pass cannot finish the table. Waits on T-428: after launch, rebuild Transfer Fees from the live fee feeds six exchanges publish, with a 'check on the exchange' link for the rest.",
    "related_ids": [
     "S3",
-    "T-031"
+    "T-031",
+    "T-428"
    ],
    "summary": "Priority 3; possible Intro 1 at 0.60/1.20 vs table 0.4/0.6.",
    "next_action": "Answer it on the Transfer Fee Check page (T-031, D52), where it is listed under its exchange; then: On the owner machine open coinbase.com/advanced-fees; if Intro 1 is 0.60/1.20, edit SPOT_TRADING_FEES.coinbase at transferFees.ts:105.",
@@ -11944,9 +12083,10 @@
     }
    ],
    "progress": {
-    "noted_on": "2026-10-05",
-    "note": "Moved from parked to open under D83. It had no reason to wait: D52 (2026-10-01) put it on the Transfer Fee Check page as a lead on the exchange it names, and that page's checks are the owner's to do now while Transfer Fees stays hidden. It stays not-closed until answered, since the page lists only open leads.",
+    "noted_on": "2026-10-07",
+    "note": "2026-10-07 (D89): parked behind T-428. The 1 Oct check found Coinbase Advanced's US entry tier at 0.50% maker / 0.90% taker since 16 Sep 2026, against the table's 0.4/0.6; a logged-in check is still needed for a lower Intro tier. Not applied while the page is hidden. Carried forward from 2026-10-05: moved from parked to open under D83, which D89 overtakes.",
     "evidence": [
+     "docs/decisions/2026-10-07-owner-decisions.md",
      "docs/decisions/2026-10-05-owner-decisions.md",
      "frontend/scripts/lib/feeCheckData.ts"
     ]
@@ -11955,15 +12095,17 @@
   {
    "id": "T-041",
    "title": "Re-check Gate.io fee section after the 2026-04-09 update",
-   "status": "open",
+   "status": "parked",
+   "parked_on": "2026-10-07",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "data-verification",
    "effort": "small",
-   "blocking_decision": null,
+   "blocking_decision": "PARKED 2026-10-07 — D89 (2026-10-07): Transfer Fees stays hidden for launch, the owner's decision of 2026-10-01, recorded in this repository by D89. The fee check that day found that most exchanges now show withdrawal fees only on the logged-in withdrawal screen and change them with network costs, so a hand pass cannot finish the table. Waits on T-428: after launch, rebuild Transfer Fees from the live fee feeds six exchanges publish, with a 'check on the exchange' link for the rest.",
    "related_ids": [
     "S3",
-    "T-031"
+    "T-031",
+    "T-428"
    ],
    "summary": "Priority 4; confirm gate.io vs gate.com canonical page.",
    "next_action": "Answer it on the Transfer Fee Check page (T-031, D52), where it is listed under its exchange; then: On the owner machine open the canonical Gate fee page (gate.io vs gate.com) and update SPOT_TRADING_FEES.gateio and the Gate.io EXCHANGES block (transferFees.ts:1065-1129) as needed.",
@@ -11975,9 +12117,10 @@
     }
    ],
    "progress": {
-    "noted_on": "2026-10-05",
-    "note": "Moved from parked to open under D83. It had no reason to wait: D52 (2026-10-01) put it on the Transfer Fee Check page as a lead on the exchange it names, and that page's checks are the owner's to do now while Transfer Fees stays hidden. It stays not-closed until answered, since the page lists only open leads.",
+    "noted_on": "2026-10-07",
+    "note": "2026-10-07 (D89): parked behind T-428. The 1 Oct check found Gate's trading fees still match the table; its withdrawal fees change hourly with network costs. Carried forward from 2026-10-05: moved from parked to open under D83, which D89 overtakes.",
     "evidence": [
+     "docs/decisions/2026-10-07-owner-decisions.md",
      "docs/decisions/2026-10-05-owner-decisions.md",
      "frontend/scripts/lib/feeCheckData.ts"
     ]
@@ -11986,15 +12129,17 @@
   {
    "id": "T-042",
    "title": "Check whether Kraken ERC-20 withdrawal fees are dynamic; add notes",
-   "status": "open",
+   "status": "parked",
+   "parked_on": "2026-10-07",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "data-verification",
    "effort": "small",
-   "blocking_decision": null,
+   "blocking_decision": "PARKED 2026-10-07 — D89 (2026-10-07): Transfer Fees stays hidden for launch, the owner's decision of 2026-10-01, recorded in this repository by D89. The fee check that day found that most exchanges now show withdrawal fees only on the logged-in withdrawal screen and change them with network costs, so a hand pass cannot finish the table. Waits on T-428: after launch, rebuild Transfer Fees from the live fee feeds six exchanges publish, with a 'check on the exchange' link for the rest.",
    "related_ids": [
     "S3",
-    "T-031"
+    "T-031",
+    "T-428"
    ],
    "summary": "Priority 5; reported up to 10 USDT vs flat 2.5.",
    "next_action": "Answer it on the Transfer Fee Check page (T-031, D52), where it is listed under its exchange; then: On the owner machine check kraken.com/features/fee-schedule (withdrawal section) for dynamic ERC-20 fees and add a note to each affected row in the Kraken block of transferFees.ts (575-636).",
@@ -12006,9 +12151,10 @@
     }
    ],
    "progress": {
-    "noted_on": "2026-10-05",
-    "note": "Moved from parked to open under D83. It had no reason to wait: D52 (2026-10-01) put it on the Transfer Fee Check page as a lead on the exchange it names, and that page's checks are the owner's to do now while Transfer Fees stays hidden. It stays not-closed until answered, since the page lists only open leads.",
+    "noted_on": "2026-10-07",
+    "note": "2026-10-07 (D89): parked behind T-428. The 1 Oct check found that Kraken says its withdrawal fees change with network costs, so its rows need the 'dynamic' note this item asks for. Also confirmed: Kraken Pro's entry trading fee is 0.40%/0.80% since 9 Jul 2026. Carried forward from 2026-10-05: moved from parked to open under D83, which D89 overtakes.",
     "evidence": [
+     "docs/decisions/2026-10-07-owner-decisions.md",
      "docs/decisions/2026-10-05-owner-decisions.md",
      "frontend/scripts/lib/feeCheckData.ts"
     ]
@@ -12017,16 +12163,18 @@
   {
    "id": "T-045",
    "title": "Close Gemini 'legacy free-tier' caveat on remaining zero-fee rows",
-   "status": "open",
+   "status": "parked",
+   "parked_on": "2026-10-07",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "data-verification",
    "effort": "small",
-   "blocking_decision": null,
+   "blocking_decision": "PARKED 2026-10-07 — D89 (2026-10-07): Transfer Fees stays hidden for launch, the owner's decision of 2026-10-01, recorded in this repository by D89. The fee check that day found that most exchanges now show withdrawal fees only on the logged-in withdrawal screen and change them with network costs, so a hand pass cannot finish the table. Waits on T-428: after launch, rebuild Transfer Fees from the live fee feeds six exchanges publish, with a 'check on the exchange' link for the rest.",
    "related_ids": [
     "S3",
     "T8",
-    "T-031"
+    "T-031",
+    "T-428"
    ],
    "summary": "Priority 8; USDC ERC-20/Polygon, LTC, DOGE rows carry the pass-through caveat since T8.",
    "next_action": "Answer it on the Transfer Fee Check page (T-031, D52), where it is listed under its exchange; then: On the owner machine open gemini.com/fees (transfer-fee article) and set the four rows at transferFees.ts:860-867 to the pass-through values, or keep 0 with a dated confirmation note.",
@@ -12043,9 +12191,10 @@
     }
    ],
    "progress": {
-    "noted_on": "2026-10-05",
-    "note": "Moved from parked to open under D83. It had no reason to wait: D52 (2026-10-01) put it on the Transfer Fee Check page as a lead on the exchange it names, and that page's checks are the owner's to do now while Transfer Fees stays hidden. It stays not-closed until answered, since the page lists only open leads.",
+    "noted_on": "2026-10-07",
+    "note": "2026-10-07 (D89): parked behind T-428. The 1 Oct check found Gemini's USDC ERC-20 withdrawal is no longer free, and Gemini says its withdrawal fees change with network costs, so the 'legacy free-tier' rows are wrong as they stand. Not applied while the page is hidden. Carried forward from 2026-10-05: moved from parked to open under D83, which D89 overtakes.",
     "evidence": [
+     "docs/decisions/2026-10-07-owner-decisions.md",
      "docs/decisions/2026-10-05-owner-decisions.md",
      "frontend/scripts/lib/feeCheckData.ts"
     ]
@@ -12054,15 +12203,17 @@
   {
    "id": "T-046",
    "title": "Re-check Upbit BTC withdrawal fee (0.0005 vs 0.0009)",
-   "status": "open",
+   "status": "parked",
+   "parked_on": "2026-10-07",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "data-verification",
    "effort": "small",
-   "blocking_decision": null,
+   "blocking_decision": "PARKED 2026-10-07 — D89 (2026-10-07): Transfer Fees stays hidden for launch, the owner's decision of 2026-10-01, recorded in this repository by D89. The fee check that day found that most exchanges now show withdrawal fees only on the logged-in withdrawal screen and change them with network costs, so a hand pass cannot finish the table. Waits on T-428: after launch, rebuild Transfer Fees from the live fee feeds six exchanges publish, with a 'check on the exchange' link for the rest.",
    "related_ids": [
     "S3",
-    "T-031"
+    "T-031",
+    "T-428"
    ],
    "summary": "Group D re-check item.",
    "next_action": "Answer it on the Transfer Fee Check page (T-031, D52), where it is listed under its exchange; then: On the owner machine read Upbit's withdrawal-fee page for BTC and apply via `npm run fee-apply` from a filled worksheet row (exchange upbit, coin btc, network bitcoin).",
@@ -12074,9 +12225,10 @@
     }
    ],
    "progress": {
-    "noted_on": "2026-10-05",
-    "note": "Moved from parked to open under D83. It had no reason to wait: D52 (2026-10-01) put it on the Transfer Fee Check page as a lead on the exchange it names, and that page's checks are the owner's to do now while Transfer Fees stays hidden. It stays not-closed until answered, since the page lists only open leads.",
+    "noted_on": "2026-10-07",
+    "note": "2026-10-07 (D89): parked behind T-428. The 1 Oct check recorded nothing on Upbit's BTC withdrawal fee. Carried forward from 2026-10-05: moved from parked to open under D83, which D89 overtakes.",
     "evidence": [
+     "docs/decisions/2026-10-07-owner-decisions.md",
      "docs/decisions/2026-10-05-owner-decisions.md",
      "frontend/scripts/lib/feeCheckData.ts"
     ]
@@ -12085,15 +12237,17 @@
   {
    "id": "T-047",
    "title": "Extend Upbit trading-fee note with the 0.25% BTC/USDT-market rate if verified",
-   "status": "open",
+   "status": "parked",
+   "parked_on": "2026-10-07",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "data-verification",
    "effort": "small",
-   "blocking_decision": null,
+   "blocking_decision": "PARKED 2026-10-07 — D89 (2026-10-07): Transfer Fees stays hidden for launch, the owner's decision of 2026-10-01, recorded in this repository by D89. The fee check that day found that most exchanges now show withdrawal fees only on the logged-in withdrawal screen and change them with network costs, so a hand pass cannot finish the table. Waits on T-428: after launch, rebuild Transfer Fees from the live fee feeds six exchanges publish, with a 'check on the exchange' link for the rest.",
    "related_ids": [
     "S3",
-    "T-031"
+    "T-031",
+    "T-428"
    ],
    "summary": "Table notes KRW-market only.",
    "next_action": "Answer it on the Transfer Fee Check page (T-031, D52), where it is listed under its exchange; then: Fold into the Upbit page read for T-046: if 0.25% BTC/USDT-market is on the official page, extend the note at transferFees.ts:117.",
@@ -12105,9 +12259,10 @@
     }
    ],
    "progress": {
-    "noted_on": "2026-10-05",
-    "note": "Moved from parked to open under D83. It had no reason to wait: D52 (2026-10-01) put it on the Transfer Fee Check page as a lead on the exchange it names, and that page's checks are the owner's to do now while Transfer Fees stays hidden. It stays not-closed until answered, since the page lists only open leads.",
+    "noted_on": "2026-10-07",
+    "note": "2026-10-07 (D89): parked behind T-428. The 1 Oct check recorded nothing on Upbit's BTC/USDT-market trading rate. Carried forward from 2026-10-05: moved from parked to open under D83, which D89 overtakes.",
     "evidence": [
+     "docs/decisions/2026-10-07-owner-decisions.md",
      "docs/decisions/2026-10-05-owner-decisions.md",
      "frontend/scripts/lib/feeCheckData.ts"
     ]
@@ -12116,16 +12271,18 @@
   {
    "id": "T-049",
    "title": "Re-check Bybit ETH/erc20 0.005 fee and 'free via Mantle' note",
-   "status": "open",
+   "status": "parked",
+   "parked_on": "2026-10-07",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "data-verification",
    "effort": "small",
-   "blocking_decision": null,
+   "blocking_decision": "PARKED 2026-10-07 — D89 (2026-10-07): Transfer Fees stays hidden for launch, the owner's decision of 2026-10-01, recorded in this repository by D89. The fee check that day found that most exchanges now show withdrawal fees only on the logged-in withdrawal screen and change them with network costs, so a hand pass cannot finish the table. Waits on T-428: after launch, rebuild Transfer Fees from the live fee feeds six exchanges publish, with a 'check on the exchange' link for the rest.",
    "related_ids": [
     "S3",
     "T8",
-    "T-031"
+    "T-031",
+    "T-428"
    ],
    "summary": "Single-source value from 2026-07-20; verify on Bybit's live withdrawal screen.",
    "next_action": "Answer it on the Transfer Fee Check page (T-031, D52), where it is listed under its exchange; then: On the owner machine open Bybit's ETH withdrawal screen (logged in), confirm the ERC-20 fee and the Mantle free route, and update transferFees.ts:743 via fee-apply.",
@@ -12142,9 +12299,10 @@
     }
    ],
    "progress": {
-    "noted_on": "2026-10-05",
-    "note": "Moved from parked to open under D83. It had no reason to wait: D52 (2026-10-01) put it on the Transfer Fee Check page as a lead on the exchange it names, and that page's checks are the owner's to do now while Transfer Fees stays hidden. It stays not-closed until answered, since the page lists only open leads.",
+    "noted_on": "2026-10-07",
+    "note": "2026-10-07 (D89): parked behind T-428. The 1 Oct check found Bybit's trading fees still match the table, and that Bybit says its withdrawal fees change with network costs. Carried forward from 2026-10-05: moved from parked to open under D83, which D89 overtakes.",
     "evidence": [
+     "docs/decisions/2026-10-07-owner-decisions.md",
      "docs/decisions/2026-10-05-owner-decisions.md",
      "frontend/scripts/lib/feeCheckData.ts"
     ]
@@ -12153,15 +12311,17 @@
   {
    "id": "T-050",
    "title": "Distinguish Crypto.com App vs Exchange fee schedules on the re-run",
-   "status": "open",
+   "status": "parked",
+   "parked_on": "2026-10-07",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "data-verification",
    "effort": "small",
-   "blocking_decision": null,
+   "blocking_decision": "PARKED 2026-10-07 — D89 (2026-10-07): Transfer Fees stays hidden for launch, the owner's decision of 2026-10-01, recorded in this repository by D89. The fee check that day found that most exchanges now show withdrawal fees only on the logged-in withdrawal screen and change them with network costs, so a hand pass cannot finish the table. Waits on T-428: after launch, rebuild Transfer Fees from the live fee feeds six exchanges publish, with a 'check on the exchange' link for the rest.",
    "related_ids": [
     "S3",
-    "T-031"
+    "T-031",
+    "T-428"
    ],
    "summary": "Table may mix the two schedules.",
    "next_action": "Answer it on the Transfer Fee Check page (T-031, D52), where it is listed under its exchange; then: On the owner machine read crypto.com/exchange/document/fees-limits and the App fee page, decide which schedule the table represents, and add a note to the Crypto.com entry and SPOT_TRADING_FEES.cryptocom.",
@@ -12173,9 +12333,10 @@
     }
    ],
    "progress": {
-    "noted_on": "2026-10-05",
-    "note": "Moved from parked to open under D83. It had no reason to wait: D52 (2026-10-01) put it on the Transfer Fee Check page as a lead on the exchange it names, and that page's checks are the owner's to do now while Transfer Fees stays hidden. It stays not-closed until answered, since the page lists only open leads.",
+    "noted_on": "2026-10-07",
+    "note": "2026-10-07 (D89): parked behind T-428. The 1 Oct check found Crypto.com Exchange's trading fees still match the table, so the table follows the Exchange schedule; the App schedule was not read. Carried forward from 2026-10-05: moved from parked to open under D83, which D89 overtakes.",
     "evidence": [
+     "docs/decisions/2026-10-07-owner-decisions.md",
      "docs/decisions/2026-10-05-owner-decisions.md",
      "frontend/scripts/lib/feeCheckData.ts"
     ]
@@ -12184,15 +12345,17 @@
   {
    "id": "T-052",
    "title": "Re-confirm Kraken has no BEP-20 support",
-   "status": "open",
+   "status": "parked",
+   "parked_on": "2026-10-07",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "data-verification",
    "effort": "small",
-   "blocking_decision": null,
+   "blocking_decision": "PARKED 2026-10-07 — D89 (2026-10-07): Transfer Fees stays hidden for launch, the owner's decision of 2026-10-01, recorded in this repository by D89. The fee check that day found that most exchanges now show withdrawal fees only on the logged-in withdrawal screen and change them with network costs, so a hand pass cannot finish the table. Waits on T-428: after launch, rebuild Transfer Fees from the live fee feeds six exchanges publish, with a 'check on the exchange' link for the rest.",
    "related_ids": [
     "S3",
-    "T-031"
+    "T-031",
+    "T-428"
    ],
    "summary": "Absence of rows is historically correct; re-confirm on the re-run.",
    "next_action": "Answer it on the Transfer Fee Check page (T-031, D52), where it is listed under its exchange; then: On the owner machine check Kraken's deposit/withdrawal network list for BNB Smart Chain; if still absent, no code change — record the confirmation in the worksheet CSV.",
@@ -12204,9 +12367,10 @@
     }
    ],
    "progress": {
-    "noted_on": "2026-10-05",
-    "note": "Moved from parked to open under D83. It had no reason to wait: D52 (2026-10-01) put it on the Transfer Fee Check page as a lead on the exchange it names, and that page's checks are the owner's to do now while Transfer Fees stays hidden. It stays not-closed until answered, since the page lists only open leads.",
+    "noted_on": "2026-10-07",
+    "note": "2026-10-07 (D89): parked behind T-428. The 1 Oct check recorded nothing on Kraken's BEP-20 support. Carried forward from 2026-10-05: moved from parked to open under D83, which D89 overtakes.",
     "evidence": [
+     "docs/decisions/2026-10-07-owner-decisions.md",
      "docs/decisions/2026-10-05-owner-decisions.md",
      "frontend/scripts/lib/feeCheckData.ts"
     ]
@@ -12215,15 +12379,17 @@
   {
    "id": "T-053",
    "title": "Verify OKX dynamic BTC/ETH withdrawal-fee notes",
-   "status": "open",
+   "status": "parked",
+   "parked_on": "2026-10-07",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "data-verification",
    "effort": "small",
-   "blocking_decision": null,
+   "blocking_decision": "PARKED 2026-10-07 — D89 (2026-10-07): Transfer Fees stays hidden for launch, the owner's decision of 2026-10-01, recorded in this repository by D89. The fee check that day found that most exchanges now show withdrawal fees only on the logged-in withdrawal screen and change them with network costs, so a hand pass cannot finish the table. Waits on T-428: after launch, rebuild Transfer Fees from the live fee feeds six exchanges publish, with a 'check on the exchange' link for the rest.",
    "related_ids": [
     "S3",
-    "T-031"
+    "T-031",
+    "T-428"
    ],
    "summary": "okx.com was egress-blocked on 08-20.",
    "next_action": "Answer it on the Transfer Fee Check page (T-031, D52), where it is listed under its exchange; then: On the owner machine open OKX's BTC/ETH withdrawal screens; confirm the dynamic-fee wording and whether MATIC is listed as POL, and update the notes at transferFees.ts:640/644 if needed.",
@@ -12235,9 +12401,10 @@
     }
    ],
    "progress": {
-    "noted_on": "2026-10-05",
-    "note": "Moved from parked to open under D83. It had no reason to wait: D52 (2026-10-01) put it on the Transfer Fee Check page as a lead on the exchange it names, and that page's checks are the owner's to do now while Transfer Fees stays hidden. It stays not-closed until answered, since the page lists only open leads. Heads-up, 2026-10-05: okx.com has been prohibited in sourceTerms.ts since D40 (2026-09-30). That ruling covered OKX's API Agreement, which licenses its market data (funding rates, OHLCV) for personal trading only, and stopped the app fetching from OKX. Reading the fee figures OKX shows on its own pages by hand was not part of that reading, and OKX's rows remain in the fee table (transferFees.ts). If in doubt, leave this lead unanswered on the page until OKX's website terms are read.",
+    "noted_on": "2026-10-07",
+    "note": "2026-10-07 (D89): parked behind T-428. The 1 Oct check found that OKX says its withdrawal fees change with network costs. Carried forward from 2026-10-05: moved from parked to open under D83, which D89 overtakes. Heads-up, 2026-10-05: okx.com has been prohibited in sourceTerms.ts since D40 (2026-09-30). That ruling covered OKX's API Agreement, which licenses its market data (funding rates, OHLCV) for personal trading only, and stopped the app fetching from OKX. Reading the fee figures OKX shows on its own pages by hand was not part of that reading, and OKX's rows remain in the fee table (transferFees.ts). If in doubt, leave this lead unanswered on the page until OKX's website terms are read.",
     "evidence": [
+     "docs/decisions/2026-10-07-owner-decisions.md",
      "docs/decisions/2026-10-05-owner-decisions.md",
      "frontend/scripts/lib/feeCheckData.ts",
      "frontend/src/lib/server/sourceTerms.ts",
@@ -12358,9 +12525,10 @@
     }
    ],
    "progress": {
-    "noted_on": "2026-10-05",
-    "note": "Re-anchored under D82; status unchanged. Title was: \"Rotate all API keys from .env.example defaults\". Summary was: \"Backend hardening.\".",
+    "noted_on": "2026-10-07",
+    "note": "2026-10-07 (D91): Vendor Pass build item 8 (30 Sep, recorded on the ledger page and filed here): leave the Finnhub, Messari, Santiment and LunarCrush keys unset on the public site. None of the four allows public display on the plan held; put it on the host's deployment checklist. Carried forward from 2026-10-05: Re-anchored under D82; status unchanged. Title was: \"Rotate all API keys from .env.example defaults\". Summary was: \"Backend hardening.\".",
     "evidence": [
+     "docs/decisions/2026-10-07-owner-decisions.md",
      "docs/decisions/2026-10-05-owner-decisions.md",
      "docs/architecture/security.md"
     ]
@@ -13424,16 +13592,18 @@
   {
    "id": "T-422",
    "title": "Confirm the live deposit-status fields with npm run fee-probe on the owner's machine (D66)",
-   "status": "open",
+   "status": "parked",
+   "parked_on": "2026-10-07",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "data-verification",
    "effort": "small",
-   "blocking_decision": null,
+   "blocking_decision": "PARKED 2026-10-07 — D89 (2026-10-07): the deposit-status fields are read from feeds used only by the hidden Transfer Fees page, which stays hidden for launch (D89). Waits on T-428: the rebuild reads the same feeds, so the probe runs then.",
    "related_ids": [
     "T-054",
     "T-031",
-    "D66"
+    "D66",
+    "T-428"
    ],
    "summary": "D66 reads deposit status from KuCoin (isDepositEnabled), HTX (depositStatus), Bitget (rechargeable) and XT.com (depositEnabled), field names taken from each exchange's API documentation because this cloud environment refuses every exchange host. If a name is wrong nothing false is shown (the status stays unknown and the stored assumption stands), but the live check would silently do nothing.",
    "next_action": "In PowerShell, in the frontend folder: npm run fee-probe. For each of the four feeds, the probe prints 'deposit status on N of M rows (K closed)'. Close this item if N is above zero for all four. A line starting with ⚠ 'documented to report deposit status, but none parsed' means that exchange renamed its field: save the JSON the probe names and the parser gets fixed. Spot-check any 'deposits closed' line against that exchange's own status page. It can be done in the same sitting as T-031's fee-reconcile run.",
@@ -13448,6 +13618,193 @@
     "on": "2026-10-04",
     "by": "session steward",
     "why": "Opened with D66: the deposit-status parsers are built and tested against documented payload shapes, and only a run from the owner's machine can confirm the live field names."
+   }
+  },
+  {
+   "id": "T-423",
+   "title": "Move the backup crypto price feeds from Binance.US and Binance to CoinGecko",
+   "status": "open",
+   "confidence": "medium",
+   "owner_role": "remote-dev",
+   "category": "feature",
+   "effort": "medium",
+   "blocking_decision": null,
+   "related_ids": [
+    "T-424",
+    "T-425"
+   ],
+   "summary": "Vendor Pass build item 5 (30 Sep): Binance.US came off the enquiry list because its terms name no route to public use, so before the first outside visitor its rungs, and the Binance (global) ones, come out of the crypto price and chart ladders in favour of CoinGecko for charts and the coin list. Binance.com's own terms could not be read (its entry is still seeded).",
+   "next_action": "Before the first outside visitor: list every Binance and Binance.US call (/live-data/ohlcv, /live-data/markets, /live-data/coin-list, lib/utils/ohlcvSource.ts, the agent tools and the Integrations settings that name them) and move each to CoinGecko. Check CoinGecko's call budget against the crypto scanner's sweep first, and mind D21: CoinGecko would then be the only source for these, so look for a second keyless source whose terms allow public display.",
+   "sources": [
+    {
+     "file": "docs/decisions/2026-10-07-owner-decisions.md",
+     "lines": "D91",
+     "quote": "Move the Binance.US and Binance (global) backup price feeds to CoinGecko"
+    }
+   ],
+   "opened": {
+    "on": "2026-10-07",
+    "by": "session steward",
+    "why": "Filed under D91 from a row the business chat recorded on the ledger page on 30 Sep (Vendor Pass build item 5), which had no number."
+   }
+  },
+  {
+   "id": "T-424",
+   "title": "Check that the 'Powered by CoinGecko' credit appears everywhere CoinGecko data does",
+   "status": "open",
+   "confidence": "high",
+   "owner_role": "remote-dev",
+   "category": "legal",
+   "effort": "small",
+   "blocking_decision": null,
+   "related_ids": [
+    "T-423"
+   ],
+   "summary": "Vendor Pass build item 2 (30 Sep): CoinGecko's API Terms (§4.4) require the credit, on a paid plan too. SourceLine already renders 'Powered by CoinGecko' at 10px or larger; nothing yet checks that every surface showing CoinGecko data carries a SourceLine.",
+   "next_action": "List every route that fetches CoinGecko and every page or panel that shows its data, confirm each renders the credit through SourceLine, and add it where it is missing; then add a test that fails when a CoinGecko-backed surface has no credit.",
+   "sources": [
+    {
+     "file": "docs/decisions/2026-10-07-owner-decisions.md",
+     "lines": "D91",
+     "quote": "Check the 'Powered by CoinGecko' credit (10px or larger) appears everywhere CoinGecko data does"
+    }
+   ],
+   "opened": {
+    "on": "2026-10-07",
+    "by": "session steward",
+    "why": "Filed under D91 from a row the business chat recorded on the ledger page on 30 Sep (Vendor Pass build item 2), which had no number."
+   }
+  },
+  {
+   "id": "T-425",
+   "title": "Send the data-provider enquiries: DefiLlama now; FMP, CoinDesk, Investing.com and Tiingo near build completion",
+   "status": "open",
+   "confidence": "medium",
+   "owner_role": "owner-decision",
+   "category": "legal",
+   "effort": "small",
+   "blocking_decision": null,
+   "related_ids": [
+    "T-154",
+    "T-407",
+    "T-314",
+    "T-423"
+   ],
+   "summary": "The Vendor Pass (30 Sep) drafted the enquiries, signed with the owner's name: DefiLlama now (its terms entry has no document to read), and FMP, CoinDesk, Investing.com and Tiingo near build completion. Twelve Data and Dow Jones are on hold; Finnhub and Binance.US are suggested drops, and trimming the 23 Sep list needs the owner's OK. A reply is evidence, not a licence.",
+   "next_action": "Owner: send the DefiLlama enquiry from the Vendor Pass; decide whether to drop Finnhub and Binance.US from the list; send the other four near build completion. Record each reply in docs/licensing/ and on the item it settles (T-154 for FMP, T-407 for CoinDesk and Investing.com).",
+   "sources": [
+    {
+     "file": "docs/decisions/2026-10-07-owner-decisions.md",
+     "lines": "D91",
+     "quote": "Send the vendor enquiries: DefiLlama now; FMP, CoinDesk, Investing.com and Tiingo near build completion"
+    }
+   ],
+   "opened": {
+    "on": "2026-10-07",
+    "by": "session steward",
+    "why": "Filed under D91 from a row the business chat recorded on the ledger page on 30 Sep (Vendor Pass), which had no number."
+   }
+  },
+  {
+   "id": "T-426",
+   "title": "Write a one-page data-breach plan (North Carolina and California notice rules)",
+   "status": "open",
+   "confidence": "medium",
+   "owner_role": "either",
+   "category": "legal",
+   "effort": "small",
+   "blocking_decision": null,
+   "related_ids": [
+    "T-291"
+   ],
+   "summary": "From the Insurance & State Privacy Scan (30 Sep): what to check, who to notify and by when if the app's account data were exposed: the people affected; the North Carolina Attorney General's Consumer Protection Division (§75-65); California's 30-day deadline and, above 500 Californians, its Attorney General (§1798.82). The asset at risk is the account table (emails and bcrypt password hashes).",
+   "next_action": "Draft the one page (the business chat or a session can write it) and keep it with the business documents; have it read in the lawyer review before launch (D4).",
+   "sources": [
+    {
+     "file": "docs/decisions/2026-10-07-owner-decisions.md",
+     "lines": "D91",
+     "quote": "Write a one-page breach runbook (North Carolina and California notice rules)"
+    }
+   ],
+   "opened": {
+    "on": "2026-10-07",
+    "by": "session steward",
+    "why": "Filed under D91 from a row the business chat recorded on the ledger page on 1 Oct (Insurance & State Privacy Scan), which had no number."
+   }
+  },
+  {
+   "id": "T-427",
+   "title": "Buy insurance before the first outside visitor: tech E&O, media liability and cyber",
+   "status": "parked",
+   "parked_on": "2026-10-07",
+   "confidence": "medium",
+   "owner_role": "owner-decision",
+   "category": "legal",
+   "effort": "small",
+   "blocking_decision": "PARKED 2026-10-07 — D91 (2026-10-07): a purchase timed to the launch. D21 defers paid decisions until closer to the end of production, and D1 keeps launch work parked until the launch is planned. The cover has to be in force before the first outside visitor.",
+   "related_ids": [
+    "T-287",
+    "T-112"
+   ],
+   "summary": "From the Insurance & State Privacy Scan (30 Sep): E&O and cyber cover are claims-made, so cover bought after launch leaves out the time before it. Insureon's typical prices put a bundle of tech E&O, media liability and cyber at about $320–$370 a month. Buy it in the owner's name if launch comes before the LLC, then move it at formation. Describe Finance Now as an information tool that gives no advice: standard E&O excludes investment-advisory activity. News Charts' side is in its own ledger.",
+   "next_action": "At launch planning: get quotes for the bundle, with the app described as above, and have it in force before the first outside visitor.",
+   "sources": [
+    {
+     "file": "docs/decisions/2026-10-07-owner-decisions.md",
+     "lines": "D91",
+     "quote": "Buy insurance before the first outside visitor: one bundle of tech E&O, media liability and cyber"
+    }
+   ],
+   "opened": {
+    "on": "2026-10-07",
+    "by": "session steward",
+    "why": "Filed under D91 from a row the business chat recorded on the ledger page on 1 Oct (Insurance & State Privacy Scan), which had no number."
+   }
+  },
+  {
+   "id": "T-428",
+   "title": "After launch: rebuild Transfer Fees from live fee feeds instead of a hand-checked table",
+   "status": "parked",
+   "parked_on": "2026-10-07",
+   "confidence": "medium",
+   "owner_role": "remote-dev",
+   "category": "feature",
+   "effort": "large",
+   "blocking_decision": "PARKED 2026-10-07 — D89 (2026-10-07): after launch. Transfer Fees stays hidden for launch, the owner's decision of 2026-10-01, recorded by D89.",
+   "related_ids": [
+    "T-028",
+    "T-031",
+    "T-036",
+    "T-038",
+    "T-039",
+    "T-040",
+    "T-041",
+    "T-042",
+    "T-043",
+    "T-045",
+    "T-046",
+    "T-047",
+    "T-049",
+    "T-050",
+    "T-052",
+    "T-053",
+    "T-055",
+    "T-056",
+    "T-422"
+   ],
+   "summary": "The 1 Oct fee check could not confirm any of the 45 priority withdrawal rows: most exchanges now show withdrawal fees only on the logged-in withdrawal screen and change them with network costs (Gate hourly; Gemini, Bybit, Kraken and OKX say so too). The rebuild idea: take live fees from the six exchanges with a public fee feed (Bitget, HTX, Bitfinex, KuCoin, LBank and XT.com, which `npm run fee-reconcile` already reads) and show 'check on the exchange' with a link for the rest. The eighteen Transfer Fees items D89 parked wait on it, each carrying what the 1 Oct check found.",
+   "next_action": "After launch: decide with the owner whether Transfer Fees returns. If it does, design the page around the live feeds (WITHDRAW_FEE_SOURCES) and a link out for every other exchange. Settle the feeds' terms first: Bitget's is open under T-407, and HTX's and XT.com's could not be read. Then confirm the deposit-status fields (T-422), apply the confirmed trading fees (T-036), and only then restore the page (T-028).",
+   "sources": [
+    {
+     "file": "docs/decisions/2026-10-07-owner-decisions.md",
+     "lines": "D91",
+     "quote": "After launch: revisit rebuilding Transfer Fees from live fee feeds instead of a hand-checked table"
+    }
+   ],
+   "opened": {
+    "on": "2026-10-07",
+    "by": "session steward",
+    "why": "Filed under D91 from a row the business chat recorded on the ledger page on 1 Oct, which had no number; it carries the owner's 1 Oct decision that Transfer Fees stays hidden for launch."
    }
   }
  ],
@@ -38845,6 +39202,13 @@
     "what": "D85: every parked item now carries parked_on, the date it became parked (113 items: 2026-09-07 × 61, 2026-09-26 × 2, 2026-09-29 × 1, 2026-09-30 × 24, 2026-10-04 × 18, 2026-10-05 × 7). Dates come from the park notes, checked against the ledger's git history; 17 park notes now lead with the date the item was parked: nine led with a later re-wording date (T-245 and the eight D82 items), and the eight D84 notes had none. queue:check C13 warns on a parked item without the date.",
     "evidence": [
      "docs/decisions/2026-10-05-owner-decisions.md"
+    ]
+   },
+   {
+    "on": "2026-10-07",
+    "what": "D86–D91, the open-items review (owner: \"go with the recommendations\"). Closed seven: T-106 (keys already set), T-181 and T-371 (moot), T-102 (not enabled), T-250 (now a staleness:check clock), T-392 (moot: nothing reads the file) and T-282 (clicked through; it found and fixed five filters the stock screener dropped from a link). Parked twenty-one: T-366, T-367 and T-215 with their groups, and the eighteen Transfer Fees items behind T-428 under D89, each carrying the 1 Oct fee findings. Filed six from the ledger page (T-423 to T-428) and folded three into T-087, T-340 and T-154.",
+    "evidence": [
+     "docs/decisions/2026-10-07-owner-decisions.md"
     ]
    }
   ]

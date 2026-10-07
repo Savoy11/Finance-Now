@@ -138,6 +138,15 @@ nobody re-read a document is the wrong failure. `getSourceTermsProvenance()` dat
 registry by its **oldest** entry — re-reading one site's terms does not refresh the
 other forty, the same rule the hand-maintained data catalogs follow.
 
+**The re-read is a CI clock (T-250, D88, 2026-10-07).** `TERMS_REREAD_STALE_AFTER_DAYS`
+and `TERMS_REREAD_OLDEST_READING` in `sourceTerms.ts` are the window and the date of the
+oldest reading, under the names `npm run staleness:check` discovers. The check warns three
+weeks before that reading turns 180 days old and fails on the day it does, unless the oldest
+entries are re-read (the anchor then moves to the new oldest `reviewedAt`) or the lapse is
+recorded as a decision with a `STALENESS-ACK` line. `sourceTerms.test.ts` fails if the anchor
+stops matching the registry. The first re-read falls due on 2027-02-02, for Cboe's reading
+of 2026-08-05.
+
 ---
 
 ## Two assertion forms, and why the split matters
