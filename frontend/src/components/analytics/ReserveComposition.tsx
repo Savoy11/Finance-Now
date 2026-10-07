@@ -78,13 +78,13 @@ export function ReserveComposition({
           <div key={item.category} className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">
               <span
-                className="size-2.5 rounded-sm flex-shrink-0"
+                className="size-2.5 rounded-xs shrink-0"
                 style={{ backgroundColor: RESERVE_COMPOSITION_COLORS[item.category] ?? '#64748b' }}
                 aria-hidden
               />
               <span className="text-xs text-text-secondary truncate">{item.category}</span>
             </div>
-            <div className="flex items-center gap-3 flex-shrink-0">
+            <div className="flex items-center gap-3 shrink-0">
               <span className="text-xs text-text-muted font-mono">{formatCompact(item.amount)}</span>
               <span className="text-xs font-mono text-text-primary w-12 text-right">
                 {item.percentage.toFixed(1)}%

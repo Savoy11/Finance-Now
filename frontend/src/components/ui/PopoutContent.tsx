@@ -40,7 +40,7 @@ function LivePrices() {
       {TRACKED_COINS.map(({ id, symbol }) => {
         const price = data?.prices?.[id] ?? null
         return (
-          <div key={id} className="flex items-center justify-between px-2 py-1.5 rounded hover:bg-bg-elevated transition-colors">
+          <div key={id} className="flex items-center justify-between px-2 py-1.5 rounded-sm hover:bg-bg-elevated transition-colors">
             <span className="font-mono text-xs font-semibold text-text-primary w-12">{symbol}</span>
             <span className="font-mono text-xs text-text-secondary tabular-nums">
               {isLoading ? '—' : price != null ? `$${price.toLocaleString(undefined, { maximumFractionDigits: price > 1 ? 2 : 6 })}` : 'N/A'}
@@ -113,7 +113,7 @@ function NewsFeed() {
         <button
           onClick={() => refetch()}
           disabled={isFetching}
-          className="flex items-center gap-1 px-2 py-0.5 rounded border border-border text-[10px] text-text-muted hover:text-text-secondary hover:bg-bg-elevated transition-colors disabled:opacity-50"
+          className="flex items-center gap-1 px-2 py-0.5 rounded-sm border border-border text-[10px] text-text-muted hover:text-text-secondary hover:bg-bg-elevated transition-colors disabled:opacity-50"
         >
           <RefreshCw size={9} className={isFetching ? 'animate-spin' : ''} />
           Refresh
@@ -128,7 +128,7 @@ function NewsFeed() {
           rel="noopener noreferrer"
           className="flex gap-2 px-3 py-2.5 hover:bg-bg-elevated transition-colors group"
         >
-          <span className={clsx('mt-1.5 size-1.5 rounded-full flex-shrink-0', SENTIMENT_DOT[a.sentiment] ?? 'bg-slate-400')} />
+          <span className={clsx('mt-1.5 size-1.5 rounded-full shrink-0', SENTIMENT_DOT[a.sentiment] ?? 'bg-slate-400')} />
           <div className="min-w-0">
             <p className="text-xs text-text-primary leading-snug line-clamp-2 group-hover:text-accent-blue transition-colors">{a.headline}</p>
             <p className="text-[10px] text-text-muted mt-0.5">{a.source}</p>
@@ -182,10 +182,10 @@ function StakingRates() {
       <div className="space-y-0.5">
         {isLoading
           ? Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="h-8 rounded bg-bg-elevated animate-pulse" />
+              <div key={i} className="h-8 rounded-sm bg-bg-elevated animate-pulse" />
             ))
           : rows.map((r) => (
-              <div key={r.key} className="grid grid-cols-3 items-center px-2 py-1.5 rounded hover:bg-bg-elevated transition-colors">
+              <div key={r.key} className="grid grid-cols-3 items-center px-2 py-1.5 rounded-sm hover:bg-bg-elevated transition-colors">
                 <span className="font-mono text-xs font-semibold text-text-primary">{r.symbol}</span>
                 <span className="text-xs text-text-muted truncate">{r.protocol}</span>
                 <span className="font-mono text-xs text-emerald-400 text-right">{r.apy.toFixed(2)}%</span>

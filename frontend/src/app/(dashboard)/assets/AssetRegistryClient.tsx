@@ -146,7 +146,7 @@ export function AssetRegistryClient() {
     !!filters.search
 
   return (
-    <div className="space-y-6 max-w-screen-2xl mx-auto">
+    <div className="space-y-6 max-w-(--breakpoint-2xl) mx-auto">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         <PageHeader
@@ -167,16 +167,16 @@ export function AssetRegistryClient() {
               value={filters.search}
               onChange={(e) => setFilters({ search: e.target.value })}
               placeholder="Search symbol or name…"
-              className="w-56 rounded border border-border bg-bg-elevated pl-8 pr-3 py-1.5 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-blue/50 focus:outline-none"
+              className="w-56 rounded-sm border border-border bg-bg-elevated pl-8 pr-3 py-1.5 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-blue/50 focus:outline-hidden"
             />
           </div>
 
           {tab === 'coins' && (
-            <div className="flex items-center gap-0.5 bg-bg-secondary border border-border rounded p-0.5">
+            <div className="flex items-center gap-0.5 bg-bg-secondary border border-border rounded-sm p-0.5">
               <button
                 onClick={() => setViewMode('table')}
                 className={clsx(
-                  'p-1.5 rounded transition-colors',
+                  'p-1.5 rounded-sm transition-colors',
                   viewMode === 'table' ? 'bg-accent-blue/20 text-accent-blue' : 'text-text-muted hover:text-text-secondary'
                 )}
                 aria-label="Table view"
@@ -186,7 +186,7 @@ export function AssetRegistryClient() {
               <button
                 onClick={() => setViewMode('grid')}
                 className={clsx(
-                  'p-1.5 rounded transition-colors',
+                  'p-1.5 rounded-sm transition-colors',
                   viewMode === 'grid' ? 'bg-accent-blue/20 text-accent-blue' : 'text-text-muted hover:text-text-secondary'
                 )}
                 aria-label="Grid view"
@@ -342,7 +342,7 @@ export function AssetRegistryClient() {
               <p className="text-sm text-text-muted mb-3">Failed to load coins</p>
               <button
                 onClick={() => refetch()}
-                className="px-3 py-1.5 rounded text-xs bg-bg-elevated border border-border text-text-secondary hover:text-text-primary transition-colors"
+                className="px-3 py-1.5 rounded-sm text-xs bg-bg-elevated border border-border text-text-secondary hover:text-text-primary transition-colors"
               >
                 Retry
               </button>
@@ -355,7 +355,7 @@ export function AssetRegistryClient() {
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
               {isLoading
                 ? Array.from({ length: 9 }, (_, i) => (
-                    <div key={i} className="h-40 rounded-card border border-border bg-bg-card animate-shimmer bg-shimmer-gradient bg-[length:200%_100%]" />
+                    <div key={i} className="h-40 rounded-card border border-border bg-bg-card animate-shimmer bg-shimmer-gradient bg-size-[200%_100%]" />
                   ))
                 : (data?.data ?? []).length === 0
                   ? <p className="col-span-full px-4 py-8 text-center text-sm text-text-muted">No coins match the current filters.</p>

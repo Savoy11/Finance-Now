@@ -207,7 +207,7 @@ function TechnicalAnalysisContent() {
   const asset = chartAssets.find((a) => a.id === assetId) ?? { id: assetId, symbol: assetId.toUpperCase(), label: assetId.toUpperCase(), rank: 9999 }
 
   return (
-    <div className="flex flex-col gap-4 p-6 max-w-screen-2xl mx-auto w-full">
+    <div className="flex flex-col gap-4 p-6 max-w-(--breakpoint-2xl) mx-auto w-full">
       <PageHeader
         title="Technical Analysis"
         subtitle="Professional-grade charting, indicators, and pattern recognition"
@@ -232,7 +232,7 @@ function TechnicalAnalysisContent() {
             <select
               value={assetId}
               onChange={(e) => setAssetId(e.target.value)}
-              className="appearance-none bg-bg-secondary border border-border rounded-lg pl-3 pr-7 py-1.5 text-sm text-text-primary focus:outline-none focus:border-accent-blue/60 cursor-pointer"
+              className="appearance-none bg-bg-secondary border border-border rounded-lg pl-3 pr-7 py-1.5 text-sm text-text-primary focus:outline-hidden focus:border-accent-blue/60 cursor-pointer"
             >
               {chartAssets.map((a) => (
                 <option key={a.id} value={a.id}>{a.symbol} — {a.label}{a.rank < 9999 ? ` (#${a.rank})` : ''}</option>

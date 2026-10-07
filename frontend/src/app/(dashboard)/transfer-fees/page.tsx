@@ -101,7 +101,7 @@ function NetworkBadge({ networkId, size = 'sm' }: { networkId: string; size?: 's
   return (
     <span
       className={clsx(
-        'inline-flex items-center rounded font-mono font-semibold border',
+        'inline-flex items-center rounded-sm font-mono font-semibold border',
         size === 'sm' ? 'px-2 py-0.5 text-xs' : 'px-1.5 py-0.5 text-[10px]'
       )}
       style={{ color: network.color, borderColor: `${network.color}40`, background: `${network.color}15` }}
@@ -121,7 +121,7 @@ function WarningBanner({ warning }: { warning: TransferWarning }) {
   const Icon = s.icon
   return (
     <div className={clsx('rounded-lg border px-3 py-2.5 flex gap-2.5', s.bg)}>
-      <Icon size={14} className={clsx('flex-shrink-0 mt-0.5', s.color)} />
+      <Icon size={14} className={clsx('shrink-0 mt-0.5', s.color)} />
       <div className="min-w-0">
         <p className={clsx('text-xs font-semibold', s.titleColor)}>{warning.title}</p>
         <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">{warning.message}</p>
@@ -140,11 +140,11 @@ function HopRow({ hop, coinId, coinPrices }: {
   return (
     <div className="rounded-lg bg-slate-800/60 border border-slate-700/50 p-3">
       <div className="flex items-center gap-2 mb-2.5">
-        <span className="size-5 rounded-full bg-slate-700 border border-slate-600 flex items-center justify-center text-[10px] font-bold text-slate-300 flex-shrink-0">
+        <span className="size-5 rounded-full bg-slate-700 border border-slate-600 flex items-center justify-center text-[10px] font-bold text-slate-300 shrink-0">
           {hop.step}
         </span>
         <span className="text-xs font-medium text-slate-200">{hop.from}</span>
-        <ArrowRight size={12} className="text-slate-500 flex-shrink-0" />
+        <ArrowRight size={12} className="text-slate-500 shrink-0" />
         <span className="text-xs font-medium text-slate-200">{hop.to}</span>
         <NetworkBadge networkId={hop.networkId} size="xs" />
       </div>
@@ -158,7 +158,7 @@ function HopRow({ hop, coinId, coinPrices }: {
               <p className="text-slate-200 font-mono">
                 {hop.exchangeFee} {coinInfo.symbol}
                 {hop.feeLive && (
-                  <span className="ml-1.5 rounded px-1 py-px text-[9px] font-semibold uppercase tracking-wide bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                  <span className="ml-1.5 rounded-sm px-1 py-px text-[9px] font-semibold uppercase tracking-wide bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
                     live
                   </span>
                 )}
@@ -274,7 +274,7 @@ function TaxCharacterPanel({ notes }: { notes: TaxNote[] }) {
               <div key={n.id} className="rounded-md bg-bg-elevated border border-border/60 px-3 py-2.5">
                 <div className="flex items-start gap-2 flex-wrap">
                   <span className={clsx('text-[10px] font-bold uppercase tracking-wide', c.cls)}>{c.label}</span>
-                  <span className={clsx('rounded px-1.5 py-px text-[9px] font-semibold uppercase tracking-wide border', conf.cls)}>
+                  <span className={clsx('rounded-sm px-1.5 py-px text-[9px] font-semibold uppercase tracking-wide border', conf.cls)}>
                     {conf.label}
                   </span>
                 </div>
@@ -345,7 +345,7 @@ function PathCard({ path, coinId, amount, coinPrices }: {
         className={clsx('w-full text-left px-4 py-3 flex items-center gap-3', headerBg)}
       >
         {/* Recommended / viable / not-viable badge */}
-        <div className="flex-shrink-0">
+        <div className="shrink-0">
           {path.isRecommended && path.isViable ? (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-[10px] font-bold text-emerald-400 uppercase tracking-wide">
               <CheckCircle2 size={10} /> Best
@@ -378,7 +378,7 @@ function PathCard({ path, coinId, amount, coinPrices }: {
         </div>
 
         {/* Fee summary */}
-        <div className="text-right flex-shrink-0">
+        <div className="text-right shrink-0">
           {path.isViable ? (
             <>
               <p className={clsx('font-mono text-sm font-bold', path.isRecommended ? 'text-emerald-400' : 'text-slate-200')}>
@@ -393,7 +393,7 @@ function PathCard({ path, coinId, amount, coinPrices }: {
           )}
         </div>
 
-        <div className="flex-shrink-0 text-slate-500">
+        <div className="shrink-0 text-slate-500">
           {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
         </div>
       </button>
@@ -502,7 +502,7 @@ function SafetyPanel() {
       <div className="space-y-3">
         {rules.map((r, i) => (
           <div key={i} className="flex gap-2.5">
-            <span className="text-sm flex-shrink-0 leading-tight">{r.icon}</span>
+            <span className="text-sm shrink-0 leading-tight">{r.icon}</span>
             <div>
               <p className="text-[11px] font-semibold text-slate-200">{r.title}</p>
               <p className="text-[10px] text-slate-400 mt-0.5 leading-relaxed">{r.desc}</p>
@@ -536,7 +536,7 @@ function WrongNetworkExplainer() {
           { net: 'TRC-20', addr: 'TDkf…4s8',   color: '#FF0013' },
           { net: 'Solana', addr: '7xKX…AsU',   color: '#9945FF' },
         ].map(({ net, addr, color, danger }) => (
-          <div key={net} className="flex items-center justify-between text-[10px] font-mono bg-slate-800/60 rounded px-2 py-1">
+          <div key={net} className="flex items-center justify-between text-[10px] font-mono bg-slate-800/60 rounded-sm px-2 py-1">
             <span style={{ color }}>{net}</span>
             <span className={clsx('text-slate-400', danger && 'text-amber-400')}>{addr} {danger && '← same 0x format!'}</span>
           </div>
@@ -824,7 +824,7 @@ function TransferFeesPageInner() {
                     if (info) setAmount(String(info.defaultAmount))
                     else setAmount('100')
                   }}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-7 pr-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500/50 appearance-none"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-7 pr-3 py-2 text-sm text-slate-200 focus:outline-hidden focus:border-blue-500/50 appearance-none"
                 >
                   {coinListLoading && (
                     <option disabled>Loading coin list…</option>
@@ -888,7 +888,7 @@ function TransferFeesPageInner() {
                   step="any"
                   value={amount}
                   onChange={e => setAmount(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-slate-200 text-sm font-mono focus:outline-none focus:border-blue-500/50 pr-16"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-slate-200 text-sm font-mono focus:outline-hidden focus:border-blue-500/50 pr-16"
                   placeholder="0"
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500 font-mono">
@@ -921,7 +921,7 @@ function TransferFeesPageInner() {
                         <select
                           value={stopId}
                           onChange={e => updateStop(i, e.target.value)}
-                          className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500/50"
+                          className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-hidden focus:border-blue-500/50"
                         >
                           <option value={PERSONAL_WALLET_ID}>🔐 Personal Wallet</option>
                           {EXCHANGES.map(ex => (
@@ -932,7 +932,7 @@ function TransferFeesPageInner() {
                       {isVia && (
                         <button
                           onClick={() => removeStop(i)}
-                          className="mt-5 p-2 rounded-lg border border-slate-700 bg-slate-800 text-slate-500 hover:text-red-400 hover:border-red-500/30 transition-colors flex-shrink-0"
+                          className="mt-5 p-2 rounded-lg border border-slate-700 bg-slate-800 text-slate-500 hover:text-red-400 hover:border-red-500/30 transition-colors shrink-0"
                           title="Remove this stop"
                         >
                           <X size={13} />
@@ -942,7 +942,7 @@ function TransferFeesPageInner() {
                     {/* Add stop connector */}
                     {!isLast && (
                       <div className="flex items-center gap-2 my-1 pl-1">
-                        <div className="w-px h-3 bg-slate-700 ml-3 flex-shrink-0" />
+                        <div className="w-px h-3 bg-slate-700 ml-3 shrink-0" />
                         <button
                           onClick={() => addStop(i)}
                           className="text-[10px] text-slate-600 hover:text-blue-400 flex items-center gap-1 transition-colors py-0.5"
@@ -988,7 +988,7 @@ function TransferFeesPageInner() {
           {!isSupportedCoin && coinId && (
             <div className="rounded-xl border border-slate-600/50 bg-slate-800/30 p-5 space-y-3">
               <div className="flex items-center gap-2">
-                <Info size={14} className="text-blue-400 flex-shrink-0" />
+                <Info size={14} className="text-blue-400 shrink-0" />
                 <p className="text-sm font-semibold text-slate-200">
                   No exchange withdrawal data for {coinId.toUpperCase()}
                   {liveCoin && ` (${liveCoin.name})`}
@@ -1088,7 +1088,7 @@ function TransferFeesPageInner() {
                     type="checkbox"
                     checked={includeSale}
                     onChange={(e) => setIncludeSale(e.target.checked)}
-                    className="mt-0.5 rounded border-border"
+                    className="mt-0.5 rounded-sm border-border"
                   />
                   <span>
                     <span className="font-medium text-text-secondary">I&rsquo;m selling first</span> — include the
@@ -1107,19 +1107,19 @@ function TransferFeesPageInner() {
                 {saleCost && (
                   <div className="space-y-1">
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-                      <div className="rounded bg-bg-elevated px-2 py-1.5">
+                      <div className="rounded-sm bg-bg-elevated px-2 py-1.5">
                         <div className="text-text-muted text-[10px]">Trade fee ({saleCost.takerPct}% taker, est.)</div>
                         <div className="font-mono text-text-primary">${saleCost.tradeFeeUsd.toFixed(2)}</div>
                       </div>
-                      <div className="rounded bg-bg-elevated px-2 py-1.5">
+                      <div className="rounded-sm bg-bg-elevated px-2 py-1.5">
                         <div className="text-text-muted text-[10px]">Withdrawal</div>
                         <div className="font-mono text-text-primary">${saleCost.withdrawFeeUsd.toFixed(2)}</div>
                       </div>
-                      <div className="rounded bg-bg-elevated px-2 py-1.5">
+                      <div className="rounded-sm bg-bg-elevated px-2 py-1.5">
                         <div className="text-text-muted text-[10px]">Network</div>
                         <div className="font-mono text-text-primary">${saleCost.networkFeeUsd.toFixed(2)}</div>
                       </div>
-                      <div className="rounded bg-accent-blue/10 border border-accent-blue/30 px-2 py-1.5">
+                      <div className="rounded-sm bg-accent-blue/10 border border-accent-blue/30 px-2 py-1.5">
                         <div className="text-accent-blue text-[10px] font-medium">All-in cost of sale</div>
                         <div className="font-mono font-bold text-accent-blue">
                           ${saleCost.totalUsd.toFixed(2)} <span className="font-normal text-[10px]">({saleCost.totalPct.toFixed(2)}%)</span>
@@ -1180,7 +1180,7 @@ function TransferFeesPageInner() {
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Leg {i + 1}</span>
                         <span className="text-xs text-slate-400">{fromName}</span>
-                        <ArrowRight size={10} className="text-slate-600 flex-shrink-0" />
+                        <ArrowRight size={10} className="text-slate-600 shrink-0" />
                         <span className="text-xs text-slate-400">{toName}</span>
                       </div>
                     )}
@@ -1266,7 +1266,7 @@ function TransferFeesPageInner() {
                         <div className="flex items-center gap-1.5">
                           <span className="size-1.5 rounded-full" style={{ background: net.color }} />
                           <span className="text-slate-400">{net.shortName}</span>
-                          {net.isL2 && <span className="text-[9px] text-blue-400 border border-blue-400/30 rounded px-1">L2</span>}
+                          {net.isL2 && <span className="text-[9px] text-blue-400 border border-blue-400/30 rounded-sm px-1">L2</span>}
                         </div>
                         <span className="font-mono text-slate-300">~${fee.feeUsd.toFixed(3)}</span>
                       </div>

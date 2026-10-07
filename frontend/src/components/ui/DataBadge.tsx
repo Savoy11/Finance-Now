@@ -62,7 +62,7 @@ export function DataBadge({ status, source, asOf, className, iconOnly }: DataBad
   return (
     <span
       title={title}
-      className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[10px] font-medium leading-none ${cls} ${className ?? ''}`}
+      className={`inline-flex items-center gap-1 rounded-sm border px-1.5 py-0.5 text-[10px] font-medium leading-none ${cls} ${className ?? ''}`}
     >
       <Icon size={10} aria-hidden className={status === 'live' ? 'animate-pulse' : ''} />
       {!iconOnly && <span>{label}</span>}

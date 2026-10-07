@@ -113,7 +113,7 @@ export default function WatchlistPage() {
               value={newListName}
               onChange={(e) => setNewListName(e.target.value)}
               placeholder="List name…"
-              className="w-40 rounded-lg border border-border bg-bg-elevated px-3 py-1.5 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-blue/50 focus:outline-none"
+              className="w-40 rounded-lg border border-border bg-bg-elevated px-3 py-1.5 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-blue/50 focus:outline-hidden"
             />
             <button type="submit" className="px-2.5 py-1.5 rounded-lg bg-accent-blue text-xs font-medium text-white hover:bg-blue-500">Add</button>
             <button type="button" onClick={() => setCreating(false)} className="p-1.5 text-text-muted hover:text-text-secondary"><X size={14} aria-hidden /></button>
@@ -156,7 +156,7 @@ export default function WatchlistPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Add coin, stock, ETF, or fund…"
-              className="w-full rounded-lg border border-slate-700 bg-slate-800 pl-9 pr-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+              className="w-full rounded-lg border border-slate-700 bg-slate-800 pl-9 pr-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:border-blue-500 focus:outline-hidden"
             />
             {matches.length > 0 && (
               <div className="absolute top-full left-0 right-0 mt-1 rounded-lg border border-border bg-bg-card shadow-xl shadow-black/40 z-20 overflow-hidden">
@@ -167,7 +167,7 @@ export default function WatchlistPage() {
                     className="w-full flex items-center justify-between px-3 py-2 text-left text-sm text-text-secondary hover:bg-bg-elevated hover:text-text-primary transition-colors"
                   >
                     <span className="truncate"><span className="font-mono font-medium">{i.symbol}</span> — {i.name}</span>
-                    <span className="text-[10px] text-text-muted flex-shrink-0 ml-2">{CLASS_LABELS[i.class]}</span>
+                    <span className="text-[10px] text-text-muted shrink-0 ml-2">{CLASS_LABELS[i.class]}</span>
                   </button>
                 ))}
               </div>

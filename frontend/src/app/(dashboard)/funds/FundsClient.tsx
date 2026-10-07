@@ -126,7 +126,7 @@ function RangeField({ label, unit, range, onChange }: {
   label: string; unit?: string; range: { min: string; max: string }
   onChange: (next: { min: string; max: string }) => void
 }) {
-  const inputClass = 'w-full min-w-0 rounded border border-border bg-bg-elevated px-2 py-1 text-xs font-mono text-text-primary placeholder:text-text-muted/50 focus:border-accent-blue/50 focus:outline-none'
+  const inputClass = 'w-full min-w-0 rounded-sm border border-border bg-bg-elevated px-2 py-1 text-xs font-mono text-text-primary placeholder:text-text-muted/50 focus:border-accent-blue/50 focus:outline-hidden'
   return (
     <div>
       <p className={clsx('text-[11px] mb-1', rangeActive(range) ? 'text-accent-blue' : 'text-text-muted')}>
@@ -135,7 +135,7 @@ function RangeField({ label, unit, range, onChange }: {
       <div className="flex items-center gap-1.5">
         <input type="number" value={range.min} placeholder="Min"
           onChange={(e) => onChange({ ...range, min: e.target.value })} className={inputClass} />
-        <span className="text-text-muted/50 text-xs flex-shrink-0">–</span>
+        <span className="text-text-muted/50 text-xs shrink-0">–</span>
         <input type="number" value={range.max} placeholder="Max"
           onChange={(e) => onChange({ ...range, max: e.target.value })} className={inputClass} />
       </div>
@@ -422,7 +422,7 @@ export function FundsClient() {
   const discovered = universeData?.discovered ?? 0
 
   return (
-    <div className="space-y-6 max-w-screen-2xl mx-auto">
+    <div className="space-y-6 max-w-(--breakpoint-2xl) mx-auto">
       <div className="flex items-center justify-between gap-4">
         <PageHeader
           title="Fund Registry"
@@ -443,12 +443,12 @@ export function FundsClient() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search symbol, name, issuer…"
-              className="w-64 rounded border border-border bg-bg-elevated pl-8 pr-3 py-1.5 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-blue/50 focus:outline-none"
+              className="w-64 rounded-sm border border-border bg-bg-elevated pl-8 pr-3 py-1.5 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-blue/50 focus:outline-hidden"
             />
           </div>
           <button
             onClick={() => refetch()}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-border bg-bg-elevated text-xs text-text-secondary hover:text-text-primary transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm border border-border bg-bg-elevated text-xs text-text-secondary hover:text-text-primary transition-colors"
           >
             <RefreshCw size={12} className={isFetching ? 'animate-spin' : undefined} aria-hidden /> Refresh
           </button>
@@ -460,7 +460,7 @@ export function FundsClient() {
 
       {/* Per-directory outage notices — a silent half-universe looks like a bug */}
       {universeData?.etfError && (
-        <div className="flex items-start gap-2 rounded border border-amber-500/20 bg-amber-500/5 px-4 py-2.5">
+        <div className="flex items-start gap-2 rounded-sm border border-amber-500/20 bg-amber-500/5 px-4 py-2.5">
           <p className="text-xs text-text-muted leading-relaxed">
             <span className="font-medium text-amber-400">ETF directory unreachable</span> — only curated ETFs
             are searchable right now. <span className="text-text-muted/80">{universeData.etfError}</span>{' '}
@@ -469,7 +469,7 @@ export function FundsClient() {
         </div>
       )}
       {universeData?.mutualError && (
-        <div className="flex items-start gap-2 rounded border border-amber-500/20 bg-amber-500/5 px-4 py-2.5">
+        <div className="flex items-start gap-2 rounded-sm border border-amber-500/20 bg-amber-500/5 px-4 py-2.5">
           <p className="text-xs text-text-muted leading-relaxed">
             <span className="font-medium text-amber-400">SEC mutual fund dataset unreachable</span> — only curated
             mutual funds are searchable right now. <span className="text-text-muted/80">{universeData.mutualError}</span>{' '}
@@ -516,7 +516,7 @@ export function FundsClient() {
 
       {/* Screener sidebar + results (ETFdb-style) */}
       <div className="flex flex-col lg:flex-row gap-6 items-start">
-        <aside className="w-full lg:w-64 flex-shrink-0 rounded-card border border-border bg-bg-card overflow-hidden lg:sticky lg:top-[calc(theme(spacing.topbar)+1rem)]">
+        <aside className="w-full lg:w-64 shrink-0 rounded-card border border-border bg-bg-card overflow-hidden lg:sticky lg:top-[calc(var(--spacing-topbar)+1rem)]">
           <div className="flex items-center gap-2 px-3 py-2.5 border-b border-border bg-bg-elevated/40">
             <SlidersHorizontal size={13} className="text-text-muted" aria-hidden />
             <span className="text-xs font-semibold uppercase tracking-wider text-text-secondary">Screener</span>
@@ -535,12 +535,12 @@ export function FundsClient() {
           <FilterGroup title="Structure" defaultOpen active={(type !== 'all' ? 1 : 0) + (style !== 'all' ? 1 : 0) + (issuer !== 'all' ? 1 : 0) + (curatedOnly ? 1 : 0)}>
             <div>
               <p className="text-[11px] text-text-muted mb-1">Fund type</p>
-              <div className="flex items-center gap-0.5 bg-bg-elevated border border-border rounded p-0.5">
+              <div className="flex items-center gap-0.5 bg-bg-elevated border border-border rounded-sm p-0.5">
                 {([['all', 'All'], ['etf', 'ETFs'], ['mutual', 'Mutual']] as Array<[FundType | 'all', string]>).map(([value, label]) => (
                   <button
                     key={value}
                     onClick={() => setType(value)}
-                    className={clsx('flex-1 px-2 py-1 rounded text-[11px] font-medium transition-colors',
+                    className={clsx('flex-1 px-2 py-1 rounded-sm text-[11px] font-medium transition-colors',
                       type === value ? 'bg-accent-blue/20 text-accent-blue' : 'text-text-muted hover:text-text-secondary')}
                   >
                     {label}
@@ -550,12 +550,12 @@ export function FundsClient() {
             </div>
             <div>
               <p className="text-[11px] text-text-muted mb-1">Management style</p>
-              <div className="flex items-center gap-0.5 bg-bg-elevated border border-border rounded p-0.5">
+              <div className="flex items-center gap-0.5 bg-bg-elevated border border-border rounded-sm p-0.5">
                 {([['all', 'All'], ['index', 'Index'], ['active', 'Active']] as Array<[FundStyle, string]>).map(([value, label]) => (
                   <button
                     key={value}
                     onClick={() => setStyle(value)}
-                    className={clsx('flex-1 px-2 py-1 rounded text-[11px] font-medium transition-colors',
+                    className={clsx('flex-1 px-2 py-1 rounded-sm text-[11px] font-medium transition-colors',
                       style === value ? 'bg-accent-blue/20 text-accent-blue' : 'text-text-muted hover:text-text-secondary')}
                   >
                     {label}
@@ -568,7 +568,7 @@ export function FundsClient() {
               <select
                 value={issuer}
                 onChange={(e) => setIssuer(e.target.value)}
-                className="w-full rounded border border-border bg-bg-elevated px-2 py-1.5 text-xs text-text-primary focus:border-accent-blue/50 focus:outline-none"
+                className="w-full rounded-sm border border-border bg-bg-elevated px-2 py-1.5 text-xs text-text-primary focus:border-accent-blue/50 focus:outline-hidden"
               >
                 <option value="all">All issuers</option>
                 {issuers.map((i) => <option key={i} value={i}>{i}</option>)}
@@ -579,7 +579,7 @@ export function FundsClient() {
                 type="checkbox"
                 checked={curatedOnly}
                 onChange={(e) => setCuratedOnly(e.target.checked)}
-                className="accent-blue-500"
+                className="accent-accent-blue"
               />
               Curated funds only (full reference facts)
             </label>
@@ -591,7 +591,7 @@ export function FundsClient() {
               <select
                 value={industry}
                 onChange={(e) => setIndustry(e.target.value)}
-                className="w-full rounded border border-border bg-bg-elevated px-2 py-1.5 text-xs text-text-primary focus:border-accent-blue/50 focus:outline-none"
+                className="w-full rounded-sm border border-border bg-bg-elevated px-2 py-1.5 text-xs text-text-primary focus:border-accent-blue/50 focus:outline-hidden"
               >
                 <option value="all">All industries</option>
                 {industries.map((i) => <option key={i} value={i}>{i}</option>)}
@@ -602,7 +602,7 @@ export function FundsClient() {
               <select
                 value={riskLevel}
                 onChange={(e) => setRiskLevel(e.target.value as FundRiskLevel | 'all')}
-                className="w-full rounded border border-border bg-bg-elevated px-2 py-1.5 text-xs text-text-primary focus:border-accent-blue/50 focus:outline-none"
+                className="w-full rounded-sm border border-border bg-bg-elevated px-2 py-1.5 text-xs text-text-primary focus:border-accent-blue/50 focus:outline-hidden"
               >
                 <option value="all">All risk profiles</option>
                 {(Object.entries(FUND_RISK_INFO) as Array<[FundRiskLevel, { label: string }]>).map(([id, info]) => (
@@ -615,7 +615,7 @@ export function FundsClient() {
               <select
                 value={strategy}
                 onChange={(e) => setStrategy(e.target.value as FundStrategy | 'all')}
-                className="w-full rounded border border-border bg-bg-elevated px-2 py-1.5 text-xs text-text-primary focus:border-accent-blue/50 focus:outline-none"
+                className="w-full rounded-sm border border-border bg-bg-elevated px-2 py-1.5 text-xs text-text-primary focus:border-accent-blue/50 focus:outline-hidden"
                 title={strategy !== 'all' ? FUND_STRATEGY_INFO[strategy].description : undefined}
               >
                 <option value="all">All strategies</option>
@@ -662,12 +662,12 @@ export function FundsClient() {
         <div className="flex-1 min-w-0 space-y-4 w-full">
           {/* Column set tabs + match count */}
           <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-0.5 bg-bg-elevated border border-border rounded p-0.5 w-fit">
+            <div className="flex items-center gap-0.5 bg-bg-elevated border border-border rounded-sm p-0.5 w-fit">
               {([['overview', 'Overview'], ['returns', 'Returns'], ['fees', 'Fee impact']] as Array<[ColumnTab, string]>).map(([value, label]) => (
                 <button
                   key={value}
                   onClick={() => setColumnTab(value)}
-                  className={clsx('px-2.5 py-1 rounded text-xs font-medium transition-colors',
+                  className={clsx('px-2.5 py-1 rounded-sm text-xs font-medium transition-colors',
                     columnTab === value ? 'bg-accent-blue/20 text-accent-blue' : 'text-text-muted hover:text-text-secondary')}
                 >
                   {label}
@@ -686,7 +686,7 @@ export function FundsClient() {
                 <input
                   type="number" min={100} step={1000} value={feeParams.principal}
                   onChange={(e) => setFeeParams((p) => ({ ...p, principal: Math.max(100, Number(e.target.value) || 100) }))}
-                  className="w-24 rounded border border-border bg-bg-elevated px-1.5 py-0.5 font-mono text-xs text-text-primary focus:border-accent-blue/50 focus:outline-none"
+                  className="w-24 rounded-sm border border-border bg-bg-elevated px-1.5 py-0.5 font-mono text-xs text-text-primary focus:border-accent-blue/50 focus:outline-hidden"
                 />
               </label>
               <label className="flex items-center gap-1.5">
@@ -694,7 +694,7 @@ export function FundsClient() {
                 <select
                   value={feeParams.years}
                   onChange={(e) => setFeeParams((p) => ({ ...p, years: Number(e.target.value) }))}
-                  className="rounded border border-border bg-bg-elevated px-1.5 py-0.5 font-mono text-xs text-text-primary focus:border-accent-blue/50 focus:outline-none"
+                  className="rounded-sm border border-border bg-bg-elevated px-1.5 py-0.5 font-mono text-xs text-text-primary focus:border-accent-blue/50 focus:outline-hidden"
                 >
                   {[5, 10, 20, 30].map((y) => <option key={y} value={y}>{y} years</option>)}
                 </select>
@@ -704,7 +704,7 @@ export function FundsClient() {
                 <input
                   type="number" min={0} max={20} step={0.5} value={feeParams.annualReturnPct}
                   onChange={(e) => setFeeParams((p) => ({ ...p, annualReturnPct: Math.min(20, Math.max(0, Number(e.target.value) || 0)) }))}
-                  className="w-16 rounded border border-border bg-bg-elevated px-1.5 py-0.5 font-mono text-xs text-text-primary focus:border-accent-blue/50 focus:outline-none"
+                  className="w-16 rounded-sm border border-border bg-bg-elevated px-1.5 py-0.5 font-mono text-xs text-text-primary focus:border-accent-blue/50 focus:outline-hidden"
                 />
               </label>
             </div>
@@ -745,7 +745,7 @@ export function FundsClient() {
             <div className="divide-y divide-border/60">
               {isLoading && rows.length === 0
                 ? Array.from({ length: 10 }, (_, i) => (
-                    <div key={i} className="h-12 animate-shimmer bg-shimmer-gradient bg-[length:200%_100%]" />
+                    <div key={i} className="h-12 animate-shimmer bg-shimmer-gradient bg-size-[200%_100%]" />
                   ))
                 : rows.map((row) => {
                     const change = row.changePercent
@@ -756,13 +756,13 @@ export function FundsClient() {
                         className="grid grid-cols-12 gap-2 px-4 py-2.5 text-sm items-center hover:bg-bg-elevated/40 transition-colors"
                       >
                         <div className="col-span-4 min-w-0 flex items-center gap-2">
-                          <span className={clsx('px-1.5 py-0.5 rounded text-[9px] font-bold border flex-shrink-0',
+                          <span className={clsx('px-1.5 py-0.5 rounded-sm text-[9px] font-bold border shrink-0',
                             row.type === 'etf'
                               ? 'text-accent-blue bg-accent-blue/10 border-accent-blue/20'
                               : 'text-violet-400 bg-violet-400/10 border-violet-500/20')}>
                             {row.type === 'etf' ? 'ETF' : 'MF'}
                           </span>
-                          <span className="font-mono font-semibold text-text-primary flex-shrink-0">{row.symbol}</span>
+                          <span className="font-mono font-semibold text-text-primary shrink-0">{row.symbol}</span>
                           {/* Official issuer page. Nested inside the row Link, so
                               stopPropagation is required or the row navigation
                               swallows the click. Curated funds only — the listing
@@ -775,14 +775,14 @@ export function FundsClient() {
                               onClick={(e) => e.stopPropagation()}
                               title={`Official ${row.symbol} page on the issuer's site`}
                               aria-label={`Official ${row.symbol} page on the issuer's site`}
-                              className="flex-shrink-0 text-text-muted hover:text-accent-blue transition-colors"
+                              className="shrink-0 text-text-muted hover:text-accent-blue transition-colors"
                             >
                               <ExternalLink size={11} aria-hidden />
                             </a>
                           )}
                           {(row.strategy === 'leveraged' || row.strategy === 'inverse') && (
                             <span
-                              className={clsx('px-1 py-0.5 rounded text-[9px] font-bold border flex-shrink-0',
+                              className={clsx('px-1 py-0.5 rounded-sm text-[9px] font-bold border shrink-0',
                                 row.strategy === 'leveraged'
                                   ? 'text-amber-400 bg-amber-400/10 border-amber-400/20'
                                   : 'text-red-400 bg-red-400/10 border-red-500/20')}
@@ -792,18 +792,18 @@ export function FundsClient() {
                             </span>
                           )}
                           {row.tradingRestriction && (
-                            <Clock size={11} className="text-amber-400/80 flex-shrink-0" aria-label="Trading restriction" />
+                            <Clock size={11} className="text-amber-400/80 shrink-0" aria-label="Trading restriction" />
                           )}
                           <span className="text-xs text-text-muted truncate" title={row.tradingRestriction ?? undefined}>{row.name}</span>
                         </div>
                         <div className="col-span-2 min-w-0">
                           {row.category ? (
                             <span
-                              className="inline-flex max-w-full items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-medium border border-border text-text-secondary"
+                              className="inline-flex max-w-full items-center gap-1.5 px-2 py-0.5 rounded-sm text-[11px] font-medium border border-border text-text-secondary"
                               title={row.focusIndustry ? `${categoryLabel(row)} — ${row.focusIndustry}` : undefined}
                             >
                               <span
-                                className="size-1.5 rounded-full flex-shrink-0"
+                                className="size-1.5 rounded-full shrink-0"
                                 style={{ backgroundColor: row.focusSector ? SECTOR_INFO[row.focusSector].color : FUND_CATEGORY_INFO[row.category].color }}
                                 aria-hidden
                               />
@@ -915,7 +915,7 @@ export function FundsClient() {
                   <button
                     onClick={() => setPage(Math.max(0, safePage - 1))}
                     disabled={safePage === 0}
-                    className="flex items-center gap-1 px-2 py-1 rounded border border-border text-xs text-text-secondary hover:text-text-primary hover:bg-bg-elevated disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    className="flex items-center gap-1 px-2 py-1 rounded-sm border border-border text-xs text-text-secondary hover:text-text-primary hover:bg-bg-elevated disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   >
                     <ChevronLeft size={12} aria-hidden /> Prev
                   </button>
@@ -925,7 +925,7 @@ export function FundsClient() {
                   <button
                     onClick={() => setPage(Math.min(totalPages - 1, safePage + 1))}
                     disabled={safePage >= totalPages - 1}
-                    className="flex items-center gap-1 px-2 py-1 rounded border border-border text-xs text-text-secondary hover:text-text-primary hover:bg-bg-elevated disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    className="flex items-center gap-1 px-2 py-1 rounded-sm border border-border text-xs text-text-secondary hover:text-text-primary hover:bg-bg-elevated disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   >
                     Next <ChevronRight size={12} aria-hidden />
                   </button>

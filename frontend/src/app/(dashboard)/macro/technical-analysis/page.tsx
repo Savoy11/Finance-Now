@@ -138,7 +138,7 @@ function ChartTab() {
           // Drawings are anchored to price levels, so they are meaningless once
           // the instrument changes — gold's trendline on a EUR/USD chart.
           onChange={(e) => { setSymbol(e.target.value); setDrawings([]) }}
-          className="bg-bg-secondary border border-border rounded px-2 py-1.5 text-xs text-text-primary focus:outline-none focus:border-accent-blue/60 min-w-[220px]"
+          className="bg-bg-secondary border border-border rounded-sm px-2 py-1.5 text-xs text-text-primary focus:outline-hidden focus:border-accent-blue/60 min-w-[220px]"
           aria-label="Macro instrument"
         >
           {GROUPS.map((group) => (
@@ -156,12 +156,12 @@ function ChartTab() {
           <span className="font-mono tabular-nums text-sm text-text-primary">{fmtLevel(entry, last)}</span>
         )}
 
-        <div className="flex items-center gap-0.5 bg-bg-elevated border border-border rounded p-0.5">
+        <div className="flex items-center gap-0.5 bg-bg-elevated border border-border rounded-sm p-0.5">
           {RANGES.map((r) => (
             <button
               key={r}
               onClick={() => setRange(r)}
-              className={clsx('px-2 py-1 rounded text-[11px] font-mono font-medium transition-colors',
+              className={clsx('px-2 py-1 rounded-sm text-[11px] font-mono font-medium transition-colors',
                 range === r ? 'bg-accent-blue/20 text-accent-blue' : 'text-text-muted hover:text-text-secondary')}
             >
               {r}
@@ -172,7 +172,7 @@ function ChartTab() {
         <select
           value={chartType}
           onChange={(e) => setChartType(e.target.value as ChartType)}
-          className="bg-bg-secondary border border-border rounded px-2 py-1.5 text-xs text-text-secondary focus:outline-none focus:border-accent-blue/60"
+          className="bg-bg-secondary border border-border rounded-sm px-2 py-1.5 text-xs text-text-secondary focus:outline-hidden focus:border-accent-blue/60"
           aria-label="Chart type"
         >
           {CHART_TYPES.map(({ type, label }) => (
@@ -182,7 +182,7 @@ function ChartTab() {
 
         <button
           onClick={() => refetch()}
-          className="ml-auto flex items-center gap-1.5 px-2.5 py-1.5 rounded border border-border bg-bg-elevated text-xs text-text-secondary hover:text-text-primary transition-colors"
+          className="ml-auto flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm border border-border bg-bg-elevated text-xs text-text-secondary hover:text-text-primary transition-colors"
         >
           <RefreshCw size={12} className={isFetching ? 'animate-spin' : undefined} aria-hidden /> Refresh
         </button>
@@ -252,15 +252,15 @@ function ChartTab() {
                   )
                 })()}
                 <div className="flex gap-2 text-center text-xs mb-3">
-                  <div className="flex-1 rounded bg-emerald-500/10 border border-emerald-500/20 py-1.5">
+                  <div className="flex-1 rounded-sm bg-emerald-500/10 border border-emerald-500/20 py-1.5">
                     <div className="font-mono font-bold text-emerald-400">{summary.buy}</div>
                     <div className="text-text-muted text-[10px]">Buy</div>
                   </div>
-                  <div className="flex-1 rounded bg-slate-500/10 border border-slate-500/20 py-1.5">
+                  <div className="flex-1 rounded-sm bg-slate-500/10 border border-slate-500/20 py-1.5">
                     <div className="font-mono font-bold text-slate-300">{summary.neutral}</div>
                     <div className="text-text-muted text-[10px]">Neutral</div>
                   </div>
-                  <div className="flex-1 rounded bg-red-500/10 border border-red-500/20 py-1.5">
+                  <div className="flex-1 rounded-sm bg-red-500/10 border border-red-500/20 py-1.5">
                     <div className="font-mono font-bold text-red-400">{summary.sell}</div>
                     <div className="text-text-muted text-[10px]">Sell</div>
                   </div>
@@ -332,7 +332,7 @@ export default function MacroTechnicalAnalysisPage() {
 
 function MacroTechnicalAnalysisInner() {
   return (
-    <div className="space-y-6 max-w-screen-2xl mx-auto">
+    <div className="space-y-6 max-w-(--breakpoint-2xl) mx-auto">
       <div className="flex items-center gap-3">
         <Activity className="h-6 w-6 text-accent-blue" aria-hidden />
         <PageHeader

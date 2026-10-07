@@ -74,7 +74,7 @@ export function AgentScanPanel({ scan }: { scan: AgentScan }) {
           {loading && (
             <div className="space-y-2 py-1">
               <p className="text-xs text-text-muted flex items-center gap-2"><Loader2 size={13} className="animate-spin text-violet-400" aria-hidden /> {scan.progress}</p>
-              {[1, 2, 3].map((i) => <div key={i} className="h-3 rounded bg-bg-elevated animate-pulse" style={{ width: `${88 - i * 10}%` }} />)}
+              {[1, 2, 3].map((i) => <div key={i} className="h-3 rounded-sm bg-bg-elevated animate-pulse" style={{ width: `${88 - i * 10}%` }} />)}
             </div>
           )}
 
@@ -96,7 +96,7 @@ export function AgentScanPanel({ scan }: { scan: AgentScan }) {
                 {tools.length > 0 && (
                   <div className="ml-auto flex flex-wrap gap-1 justify-end">
                     {tools.map((name) => (
-                      <span key={name} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] bg-bg-elevated text-text-muted border border-border">
+                      <span key={name} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm text-[10px] bg-bg-elevated text-text-muted border border-border">
                         <Wrench size={9} aria-hidden /> {name}
                       </span>
                     ))}

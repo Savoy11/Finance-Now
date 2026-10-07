@@ -17,7 +17,7 @@ export function LegalText({ text }: { text: string }) {
             return <strong key={i} className="font-semibold text-text-primary">{t.text}</strong>
           case 'blank':
             return (
-              <mark key={i} className="rounded bg-amber-500/15 px-1 font-mono text-[0.85em] text-amber-300" title="Blank in the draft — not filled in yet">
+              <mark key={i} className="rounded-sm bg-amber-500/15 px-1 font-mono text-[0.85em] text-amber-300" title="Blank in the draft — not filled in yet">
                 {t.text}
               </mark>
             )

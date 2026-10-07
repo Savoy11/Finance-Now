@@ -100,12 +100,12 @@ function SourceTermsPanel() {
 
       {/* Prohibited first, always visible — these explain gaps elsewhere. */}
       {prohibited.map((e) => (
-        <div key={e.domain} className="p-4 border-b border-border bg-red-500/[0.04]">
+        <div key={e.domain} className="p-4 border-b border-border bg-red-500/4">
           <div className="flex items-center gap-2 flex-wrap">
             <ShieldAlert size={13} className="text-red-400 shrink-0" />
             <span className="text-sm font-semibold text-text-primary">{e.name}</span>
             <span className="font-mono text-[11px] text-text-muted">{e.domain}</span>
-            <span className={clsx('px-1.5 py-0.5 text-[10px] font-semibold rounded border', VERDICT_META.prohibited.cls)}>
+            <span className={clsx('px-1.5 py-0.5 text-[10px] font-semibold rounded-sm border', VERDICT_META.prohibited.cls)}>
               {VERDICT_META.prohibited.label}
             </span>
           </div>
@@ -134,11 +134,11 @@ function SourceTermsPanel() {
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-sm font-medium text-text-primary">{e.name}</span>
                   <span className="font-mono text-[11px] text-text-muted">{e.domain}</span>
-                  <span className={clsx('px-1.5 py-0.5 text-[10px] font-semibold rounded border', meta.cls)}>{meta.label}</span>
+                  <span className={clsx('px-1.5 py-0.5 text-[10px] font-semibold rounded-sm border', meta.cls)}>{meta.label}</span>
                   {e.review === 'seeded' && (
                     <span
                       title="Written from the provider's documented posture; the terms document has not been read for this project."
-                      className="px-1.5 py-0.5 text-[10px] font-semibold rounded border text-amber-400/90 bg-amber-400/5 border-amber-500/20"
+                      className="px-1.5 py-0.5 text-[10px] font-semibold rounded-sm border text-amber-400/90 bg-amber-400/5 border-amber-500/20"
                     >
                       unread
                     </span>
@@ -178,7 +178,7 @@ const STATUS_ORDER: SourceStatus[] = ['live', 'partial', 'key-gated', 'derived',
 
 function StatusChip({ status }: { status: SourceStatus }) {
   const m = SOURCE_STATUS_META[status]
-  return <span className={clsx('px-1.5 py-0.5 text-[10px] font-semibold rounded border', m.cls)}>{m.label}</span>
+  return <span className={clsx('px-1.5 py-0.5 text-[10px] font-semibold rounded-sm border', m.cls)}>{m.label}</span>
 }
 
 function SourceRow({ e }: { e: DataSourceEntry }) {

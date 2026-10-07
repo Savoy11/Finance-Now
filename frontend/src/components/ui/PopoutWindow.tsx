@@ -78,15 +78,15 @@ export function PopoutWindow({ popout }: { popout: PopoutInstance }) {
     >
       {/* Title bar */}
       <div
-        className="flex items-center gap-2 px-3 py-2 bg-bg-elevated border-b border-border cursor-grab active:cursor-grabbing select-none flex-shrink-0"
+        className="flex items-center gap-2 px-3 py-2 bg-bg-elevated border-b border-border cursor-grab active:cursor-grabbing select-none shrink-0"
         onMouseDown={onTitleMouseDown}
       >
-        <GripHorizontal size={12} className="text-text-muted flex-shrink-0" aria-hidden />
+        <GripHorizontal size={12} className="text-text-muted shrink-0" aria-hidden />
         <span className="flex-1 text-xs font-semibold text-text-primary truncate">{popout.title}</span>
         <button
           onMouseDown={(e) => e.stopPropagation()}
           onClick={() => toggleMinimize(popout.id)}
-          className="text-text-muted hover:text-text-secondary p-0.5 rounded transition-colors"
+          className="text-text-muted hover:text-text-secondary p-0.5 rounded-sm transition-colors"
           title={popout.minimized ? 'Restore' : 'Minimize'}
         >
           <Minus size={12} aria-hidden />
@@ -94,7 +94,7 @@ export function PopoutWindow({ popout }: { popout: PopoutInstance }) {
         <button
           onMouseDown={(e) => e.stopPropagation()}
           onClick={() => close(popout.id)}
-          className="text-text-muted hover:text-red-400 p-0.5 rounded transition-colors"
+          className="text-text-muted hover:text-red-400 p-0.5 rounded-sm transition-colors"
           title="Close"
         >
           <X size={12} aria-hidden />

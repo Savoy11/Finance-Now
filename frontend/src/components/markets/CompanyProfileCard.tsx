@@ -44,7 +44,7 @@ export function CompanyProfileCard({ symbol, name }: { symbol: string; name: str
       {isLoading && (
         <div className="space-y-2.5">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="h-5 rounded bg-bg-elevated animate-pulse" />
+            <div key={i} className="h-5 rounded-sm bg-bg-elevated animate-pulse" />
           ))}
         </div>
       )}

@@ -82,7 +82,7 @@ export function RatesClient() {
   const shape = curve?.ok ? curve.shape : undefined
 
   return (
-    <div className="space-y-6 max-w-screen-xl mx-auto">
+    <div className="space-y-6 max-w-(--breakpoint-xl) mx-auto">
       <div className="flex items-center gap-3">
         <div className="size-9 rounded-lg bg-slate-500/10 border border-slate-500/20 flex items-center justify-center">
           <Percent size={18} className="text-slate-400" aria-hidden />
@@ -241,9 +241,9 @@ export function RatesClient() {
                     if (!fund) return null
                     return (
                       <Link key={symbol} href={`/funds/${symbol.toLowerCase()}`} className="flex items-start gap-2.5 text-xs group">
-                        <span className="font-mono font-semibold text-text-primary group-hover:text-accent-blue transition-colors w-10 flex-shrink-0">{symbol}</span>
+                        <span className="font-mono font-semibold text-text-primary group-hover:text-accent-blue transition-colors w-10 shrink-0">{symbol}</span>
                         <span className="text-text-muted flex-1 leading-snug">{role}</span>
-                        <ExternalLink size={11} className="text-text-muted group-hover:text-accent-blue transition-colors flex-shrink-0 mt-0.5" aria-hidden />
+                        <ExternalLink size={11} className="text-text-muted group-hover:text-accent-blue transition-colors shrink-0 mt-0.5" aria-hidden />
                       </Link>
                     )
                   })}

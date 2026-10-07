@@ -169,18 +169,18 @@ export function PlanMonitor({ saved }: { saved: SavedPlan }) {
       {/* Source picker */}
       <div className="flex flex-wrap items-center gap-3">
         <span className="text-xs text-text-muted uppercase tracking-wider">Compare against</span>
-        <div className="flex items-center gap-0.5 bg-bg-elevated border border-border rounded p-0.5">
+        <div className="flex items-center gap-0.5 bg-bg-elevated border border-border rounded-sm p-0.5">
           <button
             onClick={() => { sourceTouched.current = true; setSource('portfolio') }}
             disabled={portfolios.length === 0}
-            className={clsx('px-2.5 py-1 rounded text-xs font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed',
+            className={clsx('px-2.5 py-1 rounded-sm text-xs font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed',
               source === 'portfolio' ? 'bg-accent-blue/20 text-accent-blue' : 'text-text-muted hover:text-text-secondary')}
           >
             A portfolio
           </button>
           <button
             onClick={() => { sourceTouched.current = true; setSource('manual') }}
-            className={clsx('px-2.5 py-1 rounded text-xs font-medium transition-colors',
+            className={clsx('px-2.5 py-1 rounded-sm text-xs font-medium transition-colors',
               source === 'manual' ? 'bg-accent-blue/20 text-accent-blue' : 'text-text-muted hover:text-text-secondary')}
           >
             Enter weights
@@ -192,7 +192,7 @@ export function PlanMonitor({ saved }: { saved: SavedPlan }) {
             <select
               value={portfolioId}
               onChange={(e) => selectPortfolio(e.target.value)}
-              className="rounded border border-border bg-bg-card px-2 py-1 text-xs text-text-primary focus:border-accent-blue/50 focus:outline-none"
+              className="rounded-sm border border-border bg-bg-card px-2 py-1 text-xs text-text-primary focus:border-accent-blue/50 focus:outline-hidden"
             >
               {portfolios.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
@@ -220,7 +220,7 @@ export function PlanMonitor({ saved }: { saved: SavedPlan }) {
                   value={manual[h.symbol] ?? ''}
                   onChange={(e) => setManual((m) => ({ ...m, [h.symbol]: e.target.value }))}
                   placeholder={h.weightPct.toFixed(1)}
-                  className="w-20 rounded border border-border bg-bg-card px-2 py-1 font-mono tabular-nums text-text-primary placeholder:text-text-muted focus:border-accent-blue/50 focus:outline-none"
+                  className="w-20 rounded-sm border border-border bg-bg-card px-2 py-1 font-mono tabular-nums text-text-primary placeholder:text-text-muted focus:border-accent-blue/50 focus:outline-hidden"
                 />
                 <span className="text-text-muted">%</span>
               </label>
@@ -265,7 +265,7 @@ export function PlanMonitor({ saved }: { saved: SavedPlan }) {
       {drift && (
         <>
           <div className="flex flex-wrap items-center gap-4 text-xs">
-            <span className={clsx('flex items-center gap-1.5 px-2 py-0.5 rounded font-medium border',
+            <span className={clsx('flex items-center gap-1.5 px-2 py-0.5 rounded-sm font-medium border',
               drift.rebalanceDue
                 ? 'bg-amber-500/15 text-amber-400 border-amber-500/30'
                 : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20')}>
@@ -337,14 +337,14 @@ export function PlanMonitor({ saved }: { saved: SavedPlan }) {
             <button
               onClick={() => saveCheck.mutate()}
               disabled={!checkUsable || saveCheck.isPending}
-              className="flex items-center gap-1.5 rounded border border-border bg-bg-card px-2.5 py-1 text-xs font-medium text-text-secondary transition-colors hover:border-accent-blue/50 hover:text-accent-blue disabled:cursor-not-allowed disabled:opacity-40"
+              className="flex items-center gap-1.5 rounded-sm border border-border bg-bg-card px-2.5 py-1 text-xs font-medium text-text-secondary transition-colors hover:border-accent-blue/50 hover:text-accent-blue disabled:cursor-not-allowed disabled:opacity-40"
             >
               <Save size={12} aria-hidden /> {saveCheck.isPending ? 'Saving…' : 'Save this check'}
             </button>
             <button
               onClick={printRebalanceNotes}
               disabled={!checkUsable}
-              className="flex items-center gap-1.5 rounded border border-border bg-bg-card px-2.5 py-1 text-xs font-medium text-text-secondary transition-colors hover:border-accent-blue/50 hover:text-accent-blue disabled:cursor-not-allowed disabled:opacity-40"
+              className="flex items-center gap-1.5 rounded-sm border border-border bg-bg-card px-2.5 py-1 text-xs font-medium text-text-secondary transition-colors hover:border-accent-blue/50 hover:text-accent-blue disabled:cursor-not-allowed disabled:opacity-40"
             >
               <Printer size={12} aria-hidden /> Print rebalance notes
             </button>
@@ -442,8 +442,8 @@ export function PlanMonitor({ saved }: { saved: SavedPlan }) {
         ) : findings.map((f) => (
           <div key={f.id} className="flex items-start gap-2 text-xs leading-relaxed">
             {f.level === 'warn'
-              ? <AlertTriangle size={13} className="text-amber-400 flex-shrink-0 mt-0.5" aria-hidden />
-              : <Info size={13} className="text-accent-blue flex-shrink-0 mt-0.5" aria-hidden />}
+              ? <AlertTriangle size={13} className="text-amber-400 shrink-0 mt-0.5" aria-hidden />
+              : <Info size={13} className="text-accent-blue shrink-0 mt-0.5" aria-hidden />}
             <span>
               <span className="font-medium text-text-primary">{f.title}.</span>{' '}
               <span className="text-text-secondary">{f.message}</span>

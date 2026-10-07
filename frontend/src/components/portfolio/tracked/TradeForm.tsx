@@ -30,7 +30,7 @@ function localToday(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
-const inputCls = 'w-full bg-bg-elevated border border-border rounded px-2.5 py-1.5 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-blue'
+const inputCls = 'w-full bg-bg-elevated border border-border rounded-sm px-2.5 py-1.5 text-sm text-text-primary placeholder:text-text-muted focus:outline-hidden focus:border-accent-blue'
 const labelCls = 'block text-xs text-text-muted mb-1 font-medium'
 
 export function TradeForm({ view, onSubmit, busy }: {
@@ -144,12 +144,12 @@ export function TradeForm({ view, onSubmit, busy }: {
           <div className="flex items-center gap-2 bg-bg-elevated border border-border rounded-lg px-3 py-2">
             <span className="text-sm font-semibold text-text-primary">{instrument.symbol}</span>
             <span className="text-xs text-text-muted truncate">{instrument.name}</span>
-            <span className="text-[10px] text-text-muted px-1.5 py-0.5 rounded bg-bg-card border border-border">{CLASS_LABELS[instrument.class]}</span>
+            <span className="text-[10px] text-text-muted px-1.5 py-0.5 rounded-sm bg-bg-card border border-border">{CLASS_LABELS[instrument.class]}</span>
             {holding && holding.basis.quantityHeld !== '0' && (
               <span className="text-xs text-text-secondary ml-auto whitespace-nowrap">You hold {formatUnits(holding.basis.quantityHeld)}</span>
             )}
             <button type="button" onClick={() => setInstrument(null)}
-              className={clsx('p-1 text-text-muted hover:text-text-primary rounded', !holding && 'ml-auto')}
+              className={clsx('p-1 text-text-muted hover:text-text-primary rounded-sm', !holding && 'ml-auto')}
               aria-label={`Change from ${instrument.symbol}`}>
               <X size={14} />
             </button>
@@ -171,7 +171,7 @@ export function TradeForm({ view, onSubmit, busy }: {
                       className="w-full flex items-center gap-3 px-3 py-2 hover:bg-bg-elevated transition-colors text-left">
                       <span className="text-xs font-semibold text-text-primary">{c.symbol}</span>
                       <span className="text-xs text-text-muted truncate flex-1">{c.name}</span>
-                      <span className="text-[10px] text-text-muted px-1.5 py-0.5 rounded bg-bg-card border border-border">{CLASS_LABELS[c.class]}</span>
+                      <span className="text-[10px] text-text-muted px-1.5 py-0.5 rounded-sm bg-bg-card border border-border">{CLASS_LABELS[c.class]}</span>
                     </button>
                   ))}
               </div>

@@ -154,7 +154,7 @@ export function CommandPalette() {
 
   return (
     <div
-      className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-start justify-center pt-[15vh]"
+      className="fixed inset-0 z-100 bg-black/60 backdrop-blur-xs flex items-start justify-center pt-[15vh]"
       onMouseDown={(e) => { if (e.target === e.currentTarget) setOpen(false) }}
       role="dialog"
       aria-modal="true"
@@ -162,16 +162,16 @@ export function CommandPalette() {
     >
       <div className="w-full max-w-xl rounded-xl border border-border bg-bg-card shadow-2xl shadow-black/50 overflow-hidden">
         <div className="flex items-center gap-2.5 px-4 py-3 border-b border-border">
-          <Search size={16} className="text-text-muted flex-shrink-0" aria-hidden />
+          <Search size={16} className="text-text-muted shrink-0" aria-hidden />
           <input
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={onKeyDown}
             placeholder="Jump to a page, stock, fund, or coin…"
-            className="flex-1 bg-transparent text-sm text-text-primary placeholder:text-text-muted focus:outline-none"
+            className="flex-1 bg-transparent text-sm text-text-primary placeholder:text-text-muted focus:outline-hidden"
           />
-          <kbd className="px-1.5 py-0.5 rounded border border-border text-[10px] font-mono text-text-muted">esc</kbd>
+          <kbd className="px-1.5 py-0.5 rounded-sm border border-border text-[10px] font-mono text-text-muted">esc</kbd>
         </div>
 
         <div ref={listRef} className="max-h-[50vh] overflow-y-auto p-1.5">
@@ -194,14 +194,14 @@ export function CommandPalette() {
                   onClick={() => go(item)}
                   onMouseEnter={() => setSelected(i)}
                   className={clsx(
-                    'w-full flex items-center gap-2.5 px-3 py-2 rounded text-left text-sm transition-colors',
+                    'w-full flex items-center gap-2.5 px-3 py-2 rounded-sm text-left text-sm transition-colors',
                     i === selected ? 'bg-accent-blue/15 text-accent-blue' : 'text-text-secondary'
                   )}
                 >
                   <Icon size={14} className={i === selected ? 'text-accent-blue' : 'text-text-muted'} aria-hidden />
                   <span className="flex-1 min-w-0 truncate font-medium">{item.label}</span>
-                  <span className="text-[11px] text-text-muted flex-shrink-0">{item.sub}</span>
-                  {i === selected && <CornerDownLeft size={12} className="text-accent-blue/70 flex-shrink-0" aria-hidden />}
+                  <span className="text-[11px] text-text-muted shrink-0">{item.sub}</span>
+                  {i === selected && <CornerDownLeft size={12} className="text-accent-blue/70 shrink-0" aria-hidden />}
                 </button>
               </div>
             )

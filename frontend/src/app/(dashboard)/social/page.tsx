@@ -130,18 +130,18 @@ function SignalCard({ signal }: { signal: SocialSignal }) {
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-          <span className={clsx('inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border', platform.color)}>
+          <span className={clsx('inline-flex items-center px-1.5 py-0.5 rounded-sm text-[10px] font-medium border', platform.color)}>
             {platform.label}
             {signal.subreddit && <span className="ml-1 opacity-70">r/{signal.subreddit}</span>}
           </span>
-          <span className={clsx('inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border capitalize', SENTIMENT_STYLES[signal.sentiment])}>
+          <span className={clsx('inline-flex items-center px-1.5 py-0.5 rounded-sm text-[10px] font-medium border capitalize', SENTIMENT_STYLES[signal.sentiment])}>
             {signal.sentiment}
           </span>
-          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border border-slate-700 text-slate-400 bg-slate-800">
+          <span className="inline-flex items-center px-1.5 py-0.5 rounded-sm text-[10px] font-medium border border-slate-700 text-slate-400 bg-slate-800">
             via {signal.providerLabel}
           </span>
         </div>
-        <div className="flex items-center gap-2 flex-shrink-0 mt-0.5">
+        <div className="flex items-center gap-2 shrink-0 mt-0.5">
           <ShareButton url={signal.url} title={signal.title} />
           <a
             href={signal.url}
@@ -181,7 +181,7 @@ function SignalCard({ signal }: { signal: SocialSignal }) {
             </span>
           )}
         </div>
-        <div className="flex items-center gap-1.5 flex-shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0">
           {signal.author && (
             <span className="text-[11px] text-text-muted">u/{signal.author}</span>
           )}
@@ -275,7 +275,7 @@ function SocialPageInner() {
           <select
             value={assetFilter}
             onChange={(e) => setAssetFilter(e.target.value)}
-            className="bg-bg-secondary border border-border rounded px-2 py-1.5 text-xs text-text-secondary focus:outline-none focus:border-violet-500/60"
+            className="bg-bg-secondary border border-border rounded-sm px-2 py-1.5 text-xs text-text-secondary focus:outline-hidden focus:border-violet-500/60"
           >
               <option value="all">All Assets</option>
               {assetList.map((a) => (
@@ -349,7 +349,7 @@ function SocialPageInner() {
           <MessageSquare size={36} className="opacity-30" />
           <p className="text-sm">Social feed unreachable — the fetch failed, this is not an empty feed.</p>
           <button onClick={() => refetch()}
-            className="px-3 py-1.5 rounded text-xs bg-bg-elevated border border-border text-text-secondary hover:text-text-primary transition-colors">
+            className="px-3 py-1.5 rounded-sm text-xs bg-bg-elevated border border-border text-text-secondary hover:text-text-primary transition-colors">
             Retry
           </button>
         </div>

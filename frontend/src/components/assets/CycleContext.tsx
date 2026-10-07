@@ -193,7 +193,7 @@ export function CycleContext() {
                 <span className={clsx('text-[11px] font-mono text-right', r.label === 'BTC now' ? 'text-accent-blue font-semibold' : 'text-text-muted')}>
                   {r.label}
                 </span>
-                <div className="h-3 rounded bg-bg-elevated overflow-hidden">
+                <div className="h-3 rounded-sm bg-bg-elevated overflow-hidden">
                   <div className={clsx('h-full rounded-r', r.label === 'BTC now' ? 'bg-accent-blue/60' : r.open ? 'bg-amber-500/40' : 'bg-red-500/35')}
                     style={{ width: `${Math.min(100, Math.abs(r.drawdownPct))}%` }} />
                 </div>
@@ -217,7 +217,7 @@ export function CycleContext() {
                 <span className={clsx('text-[11px] font-mono text-right', r.live ? 'text-accent-blue font-semibold' : 'text-text-muted')}>
                   {r.label}
                 </span>
-                <div className="h-3 rounded bg-bg-elevated overflow-hidden">
+                <div className="h-3 rounded-sm bg-bg-elevated overflow-hidden">
                   <div className={clsx('h-full rounded-r', r.live ? 'bg-accent-blue' : 'bg-slate-500')}
                     style={{ width: `${growthBarPct(r.multiple, growthDecades)}%` }} />
                 </div>

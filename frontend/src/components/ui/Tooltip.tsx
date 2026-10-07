@@ -54,7 +54,7 @@ export function Tooltip({ content, children, position = 'top', className, delay 
         <div
           role="tooltip"
           className={clsx(
-            'absolute z-50 whitespace-nowrap px-2.5 py-1.5 rounded text-xs text-text-primary bg-bg-elevated border border-border shadow-card-hover animate-fade-in pointer-events-none',
+            'absolute z-50 whitespace-nowrap px-2.5 py-1.5 rounded-sm text-xs text-text-primary bg-bg-elevated border border-border shadow-card-hover animate-fade-in pointer-events-none',
             pos.tooltip
           )}
         >

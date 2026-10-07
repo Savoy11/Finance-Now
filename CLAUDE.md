@@ -1678,7 +1678,9 @@ and also reads the CI step. `mcp-server/` keeps its plain `npm audit`.
 
 The first exception, granted 2026-10-03 until 2026-11-03: GHSA-vfj7-8cjw-p6xm, braces ≤ 3.0.3,
 which has no patched release. braces only sees file patterns written in this repo (Tailwind's
-content paths, ESLint's file globs). T-418 tracks its removal.
+content paths, ESLint's file globs). T-418 tracks its removal. Since the Tailwind 4 upgrade
+(2026-10-07) Tailwind no longer depends on it; the only path left is
+`eslint-config-next` → `@next/eslint-plugin-next` → `fast-glob` → `micromatch` → braces.
 
 ---
 

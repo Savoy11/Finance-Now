@@ -103,11 +103,11 @@ function WatchRow({ w }: { w: WatchedWallet }) {
       </div>
       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
         <button onClick={refresh} title="Refresh"
-          className="p-1 rounded hover:bg-bg-elevated text-text-muted hover:text-text-primary">
+          className="p-1 rounded-sm hover:bg-bg-elevated text-text-muted hover:text-text-primary">
           <RefreshCw size={13} />
         </button>
         <button onClick={() => removeWatched(w.id)} title="Remove"
-          className="p-1 rounded hover:bg-red-500/10 text-text-muted hover:text-red-400">
+          className="p-1 rounded-sm hover:bg-red-500/10 text-text-muted hover:text-red-400">
           <Trash2 size={13} />
         </button>
       </div>
@@ -138,18 +138,18 @@ function AddWatchForm() {
   return (
     <div className="p-4 border-t border-border/60 space-y-3">
       <input
-        className="w-full bg-bg-primary border border-border rounded-lg px-3 py-2 text-sm font-mono text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-blue/60"
+        className="w-full bg-bg-primary border border-border rounded-lg px-3 py-2 text-sm font-mono text-text-primary placeholder:text-text-muted focus:outline-hidden focus:border-accent-blue/60"
         placeholder="Wallet address (0x… / bc1… / Solana pubkey)"
         value={address} onChange={e => setAddress(e.target.value)}
       />
       <div className="grid grid-cols-2 gap-2">
         <input
-          className="bg-bg-primary border border-border rounded-lg px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-blue/60"
+          className="bg-bg-primary border border-border rounded-lg px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:outline-hidden focus:border-accent-blue/60"
           placeholder="Label (optional)"
           value={label} onChange={e => setLabel(e.target.value)}
         />
         <select
-          className="bg-bg-primary border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent-blue/60"
+          className="bg-bg-primary border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-hidden focus:border-accent-blue/60"
           value={chain} onChange={e => setChain(e.target.value as ChainId)}
         >
           {ALL_CHAINS.map(c => <option key={c} value={c}>{CHAIN_META[c].label}</option>)}
@@ -228,12 +228,12 @@ function ConnectedRow({ w }: { w: ConnectedWallet }) {
       <div className="flex-1">
         <div className="flex items-center gap-2 mb-0.5">
           <span className="text-sm font-medium text-text-primary">{w.label}</span>
-          <span className="text-[10px] text-text-muted bg-bg-elevated px-1.5 py-0.5 rounded">{w.provider}</span>
+          <span className="text-[10px] text-text-muted bg-bg-elevated px-1.5 py-0.5 rounded-sm">{w.provider}</span>
         </div>
         <span className="text-xs font-mono text-text-muted">{shortAddr(w.address)}</span>
       </div>
       <button onClick={() => removeConnected(w.id)}
-        className="p-1 rounded hover:bg-red-500/10 text-text-muted hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all">
+        className="p-1 rounded-sm hover:bg-red-500/10 text-text-muted hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all">
         <Trash2 size={13} />
       </button>
     </div>
@@ -357,7 +357,7 @@ function WalletsPageInner() {
             className={clsx(
               'flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all',
               tab === t.id
-                ? 'bg-bg-card shadow-sm text-text-primary border border-border/60'
+                ? 'bg-bg-card shadow-xs text-text-primary border border-border/60'
                 : 'text-text-muted hover:text-text-secondary',
             )}
           >

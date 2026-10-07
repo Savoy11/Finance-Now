@@ -178,7 +178,7 @@ export function PegMechBadge({ mech }: { mech: string }) {
   }
   const style = styles[key] ?? 'text-slate-400 bg-slate-400/10 border-slate-500/20'
   return (
-    <span className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium border ${style}`}>
+    <span className={`inline-flex px-1.5 py-0.5 rounded-sm text-[10px] font-medium border ${style}`}>
       {label[key] ?? mech}
     </span>
   )
@@ -372,7 +372,7 @@ export function ReserveMonitorPanel() {
             </div>
 
             {selected && (
-              <div className="w-80 flex-shrink-0 flex flex-col gap-4">
+              <div className="w-80 shrink-0 flex flex-col gap-4">
                 <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-4">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-sm font-medium text-slate-200">{selected.symbol} Composition</h3>
@@ -401,7 +401,7 @@ export function ReserveMonitorPanel() {
                   )}
                   {selected.chains.length > 0 && (
                     <div className="flex justify-between items-start gap-2">
-                      <span className="text-slate-400 flex-shrink-0">Chains</span>
+                      <span className="text-slate-400 shrink-0">Chains</span>
                       <span className="text-slate-300 text-xs text-right">{selected.chains.slice(0, 5).join(', ')}</span>
                     </div>
                   )}

@@ -297,7 +297,7 @@ function ScannerPanel() {
           <select
             value={sortKey}
             onChange={(e) => setSortKey(e.target.value as SortKey)}
-            className="bg-bg-elevated border border-border rounded-lg px-2 py-1 text-xs text-text-secondary focus:outline-none focus:border-accent-blue/40"
+            className="bg-bg-elevated border border-border rounded-lg px-2 py-1 text-xs text-text-secondary focus:outline-hidden focus:border-accent-blue/40"
           >
             {SORT_OPTIONS.map(o => <option key={o.key} value={o.key}>{o.label}</option>)}
           </select>
@@ -307,7 +307,7 @@ function ScannerPanel() {
           value={signalFilter}
           onChange={(e) => setSignalFilter(e.target.value as Signal | 'all')}
           aria-label="Signal filter"
-          className="bg-bg-elevated border border-border rounded-lg px-2 py-1 text-xs text-text-secondary focus:outline-none focus:border-accent-blue/40"
+          className="bg-bg-elevated border border-border rounded-lg px-2 py-1 text-xs text-text-secondary focus:outline-hidden focus:border-accent-blue/40"
         >
           {SIGNAL_FILTER_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
@@ -316,7 +316,7 @@ function ScannerPanel() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search coin…"
-          className="w-32 rounded-lg border border-border bg-bg-elevated px-2 py-1 text-xs text-text-primary placeholder:text-text-muted/60 focus:border-accent-blue/40 focus:outline-none"
+          className="w-32 rounded-lg border border-border bg-bg-elevated px-2 py-1 text-xs text-text-primary placeholder:text-text-muted/60 focus:border-accent-blue/40 focus:outline-hidden"
         />
 
         <button
@@ -371,7 +371,7 @@ function ScannerPanel() {
               <select
                 value={filters.topN ?? ''}
                 onChange={(e) => setFilters(f => ({ ...f, topN: e.target.value ? Number(e.target.value) : null }))}
-                className="w-full bg-bg-elevated border border-border rounded-lg px-2 py-1.5 text-xs text-text-primary focus:outline-none focus:border-accent-blue/40"
+                className="w-full bg-bg-elevated border border-border rounded-lg px-2 py-1.5 text-xs text-text-primary focus:outline-hidden focus:border-accent-blue/40"
               >
                 <option value="">All {SUPPORTED_IDS.length}</option>
                 {[10, 25, 50].map(n => <option key={n} value={n}>Top {n} by rank</option>)}
@@ -401,7 +401,7 @@ function ScannerPanel() {
                         }))}
                         placeholder={bound === 'min' ? 'Min' : 'Max'}
                         aria-label={`${label} ${bound}`}
-                        className="w-full rounded-lg border border-border bg-bg-elevated px-2 py-1.5 pr-6 text-xs text-text-primary placeholder:text-text-muted/60 focus:border-accent-blue/40 focus:outline-none"
+                        className="w-full rounded-lg border border-border bg-bg-elevated px-2 py-1.5 pr-6 text-xs text-text-primary placeholder:text-text-muted/60 focus:border-accent-blue/40 focus:outline-hidden"
                       />
                       <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-text-muted">{unit}</span>
                     </div>
@@ -535,7 +535,7 @@ function ScannerPanel() {
                         .filter(s => activeScan === 'all' || s.key === activeScan)
                         .map((s, i) => (
                           <div key={i} className="flex items-center gap-2">
-                            <span className={clsx('px-1.5 py-0.5 rounded border text-[10px] font-medium shrink-0', SETUP_META[s.key].tone)}>
+                            <span className={clsx('px-1.5 py-0.5 rounded-sm border text-[10px] font-medium shrink-0', SETUP_META[s.key].tone)}>
                               {SETUP_META[s.key].label}
                             </span>
                             <span className="text-[11px] text-text-muted">{s.detail}</span>

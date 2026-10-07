@@ -60,7 +60,7 @@ export function SourceLine({ id, asOf, className }: SourceLineProps) {
 
   return (
     <div className={clsx('flex items-center gap-1.5 flex-wrap text-[11px] text-text-muted', className)}>
-      <span className={clsx('px-1 py-0.5 rounded border text-[9px] font-semibold leading-none', status.cls)}>{status.label}</span>
+      <span className={clsx('px-1 py-0.5 rounded-sm border text-[9px] font-semibold leading-none', status.cls)}>{status.label}</span>
       <span>
         <span className="text-text-secondary">{lead}</span>
         {names.length > 0 && ` ${names.slice(0, 4).join(', ')}`}

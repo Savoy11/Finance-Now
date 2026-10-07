@@ -85,8 +85,8 @@ function SymbolSearch({ symbol, onSelect }: { symbol: string; onSelect: (s: stri
 
   return (
     <div className="relative">
-      <div className="flex items-center gap-1.5 bg-bg-secondary border border-border rounded px-2 py-1.5 focus-within:border-accent-blue/60">
-        <Search size={13} className="text-text-muted flex-shrink-0" aria-hidden />
+      <div className="flex items-center gap-1.5 bg-bg-secondary border border-border rounded-sm px-2 py-1.5 focus-within:border-accent-blue/60">
+        <Search size={13} className="text-text-muted shrink-0" aria-hidden />
         <input
           value={query}
           onChange={(e) => { setQuery(e.target.value); setOpen(true); setHighlight(0) }}
@@ -102,7 +102,7 @@ function SymbolSearch({ symbol, onSelect }: { symbol: string; onSelect: (s: stri
           }}
           placeholder={symbol}
           aria-label="Search any ticker"
-          className="w-40 bg-transparent text-sm text-text-primary font-mono placeholder:text-text-primary focus:outline-none"
+          className="w-40 bg-transparent text-sm text-text-primary font-mono placeholder:text-text-primary focus:outline-hidden"
         />
       </div>
       {open && query.trim() && (
@@ -115,7 +115,7 @@ function SymbolSearch({ symbol, onSelect }: { symbol: string; onSelect: (s: stri
               className={clsx('w-full flex items-center gap-2.5 px-3 py-2 text-left text-sm transition-colors',
                 i === highlight ? 'bg-accent-blue/10' : 'hover:bg-bg-elevated')}
             >
-              <span className="font-mono font-semibold text-text-primary w-16 flex-shrink-0">{m.symbol}</span>
+              <span className="font-mono font-semibold text-text-primary w-16 shrink-0">{m.symbol}</span>
               <span className="text-xs text-text-muted flex-1 truncate">{m.name}</span>
               <span className="text-[10px] uppercase tracking-wider text-text-muted">{m.kind}</span>
             </button>
@@ -215,12 +215,12 @@ function ChartTab() {
         <SymbolSearch symbol={symbol} onSelect={(s) => { setSymbol(s); setDrawings([]) }} />
         {entry && <span className="text-xs text-text-muted hidden md:inline">{entry.name}</span>}
 
-        <div className="flex items-center gap-0.5 bg-bg-elevated border border-border rounded p-0.5">
+        <div className="flex items-center gap-0.5 bg-bg-elevated border border-border rounded-sm p-0.5">
           {RANGES.map((r) => (
             <button
               key={r}
               onClick={() => setRange(r)}
-              className={clsx('px-2 py-1 rounded text-[11px] font-mono font-medium transition-colors',
+              className={clsx('px-2 py-1 rounded-sm text-[11px] font-mono font-medium transition-colors',
                 range === r ? 'bg-accent-blue/20 text-accent-blue' : 'text-text-muted hover:text-text-secondary')}
             >
               {r}
@@ -231,7 +231,7 @@ function ChartTab() {
         <select
           value={chartType}
           onChange={(e) => setChartType(e.target.value as ChartType)}
-          className="bg-bg-secondary border border-border rounded px-2 py-1.5 text-xs text-text-secondary focus:outline-none focus:border-accent-blue/60"
+          className="bg-bg-secondary border border-border rounded-sm px-2 py-1.5 text-xs text-text-secondary focus:outline-hidden focus:border-accent-blue/60"
         >
           {CHART_TYPES.map(({ type, label }) => (
             <option key={type} value={type}>{label}</option>
@@ -240,7 +240,7 @@ function ChartTab() {
 
         <button
           onClick={() => refetch()}
-          className="ml-auto flex items-center gap-1.5 px-2.5 py-1.5 rounded border border-border bg-bg-elevated text-xs text-text-secondary hover:text-text-primary transition-colors"
+          className="ml-auto flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm border border-border bg-bg-elevated text-xs text-text-secondary hover:text-text-primary transition-colors"
         >
           <RefreshCw size={12} className={isFetching ? 'animate-spin' : undefined} aria-hidden /> Refresh
         </button>
@@ -314,15 +314,15 @@ function ChartTab() {
                   )
                 })()}
                 <div className="flex gap-2 text-center text-xs mb-3">
-                  <div className="flex-1 rounded bg-emerald-500/10 border border-emerald-500/20 py-1.5">
+                  <div className="flex-1 rounded-sm bg-emerald-500/10 border border-emerald-500/20 py-1.5">
                     <div className="font-mono font-bold text-emerald-400">{summary.buy}</div>
                     <div className="text-text-muted text-[10px]">Buy</div>
                   </div>
-                  <div className="flex-1 rounded bg-slate-500/10 border border-slate-500/20 py-1.5">
+                  <div className="flex-1 rounded-sm bg-slate-500/10 border border-slate-500/20 py-1.5">
                     <div className="font-mono font-bold text-slate-300">{summary.neutral}</div>
                     <div className="text-text-muted text-[10px]">Neutral</div>
                   </div>
-                  <div className="flex-1 rounded bg-red-500/10 border border-red-500/20 py-1.5">
+                  <div className="flex-1 rounded-sm bg-red-500/10 border border-red-500/20 py-1.5">
                     <div className="font-mono font-bold text-red-400">{summary.sell}</div>
                     <div className="text-text-muted text-[10px]">Sell</div>
                   </div>
@@ -394,7 +394,7 @@ function ChartTab() {
 function EquityTaContent() {
 
   return (
-    <div className="space-y-6 max-w-screen-2xl mx-auto">
+    <div className="space-y-6 max-w-(--breakpoint-2xl) mx-auto">
       <PageHeader
         title="Equity Technical Analysis"
         subtitle={`Candlestick charting, ${ALL_INDICATORS.length} indicators from the shared registry, and pattern detection`}

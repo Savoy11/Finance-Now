@@ -521,7 +521,7 @@ function CompareInner() {
   const anyStats = perf.some((p) => p.stats !== null)
 
   return (
-    <div className="space-y-6 max-w-screen-xl mx-auto">
+    <div className="space-y-6 max-w-(--breakpoint-xl) mx-auto">
       <div className="flex items-center gap-3">
         <GitCompareArrows className="h-6 w-6 text-accent-blue" aria-hidden />
         <PageHeader
@@ -556,7 +556,7 @@ function CompareInner() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Add stock, fund or coin…"
-              className="w-56 rounded-lg border border-border bg-bg-elevated pl-8 pr-3 py-1.5 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-blue/50 focus:outline-none"
+              className="w-56 rounded-lg border border-border bg-bg-elevated pl-8 pr-3 py-1.5 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-blue/50 focus:outline-hidden"
             />
             {matches.length > 0 && (
               <div className="absolute top-full left-0 mt-1 w-72 rounded-lg border border-border bg-bg-card shadow-xl shadow-black/40 z-20 overflow-hidden">
@@ -571,10 +571,10 @@ function CompareInner() {
             )}
           </div>
         )}
-        <div className="ml-auto flex items-center gap-0.5 bg-bg-elevated border border-border rounded p-0.5">
+        <div className="ml-auto flex items-center gap-0.5 bg-bg-elevated border border-border rounded-sm p-0.5">
           {RANGES.map(({ value, label }) => (
             <button key={value} onClick={() => setRange(value)}
-              className={clsx('px-2.5 py-1 rounded text-[11px] font-mono font-medium transition-colors',
+              className={clsx('px-2.5 py-1 rounded-sm text-[11px] font-mono font-medium transition-colors',
                 range === value ? 'bg-accent-blue/20 text-accent-blue' : 'text-text-muted hover:text-text-secondary')}>
               {label}
             </button>
@@ -586,7 +586,7 @@ function CompareInner() {
       <div className="rounded-card border border-border bg-bg-card p-4">
         <h2 className="text-sm font-medium text-text-secondary mb-3">Growth of 100 — common start date</h2>
         {loading ? (
-          <div className="h-64 animate-shimmer bg-shimmer-gradient bg-[length:200%_100%] rounded" />
+          <div className="h-64 animate-shimmer bg-shimmer-gradient bg-size-[200%_100%] rounded-sm" />
         ) : chartData.rows.length > 1 ? (
           <LineChart
             data={chartData.rows}
@@ -603,7 +603,7 @@ function CompareInner() {
           <LiveUnavailable reason="needs-api-key" message="No live history source is reachable for the selected symbols. Crypto history is keyless (CoinGecko); stock, fund and macro history now needs a Tiingo or FMP key, since the keyless source was withdrawn on terms grounds." />
         )}
         {!loading && chartData.rows.length > 1 && missing.length > 0 && (
-          <p className="mt-3 rounded border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[11px] leading-relaxed text-amber-300">
+          <p className="mt-3 rounded-sm border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[11px] leading-relaxed text-amber-300">
             <span className="font-medium">Charted {chartData.present.length} of {symbols.length}.</span>{' '}
             No history returned for{' '}
             <span className="font-mono">{missing.join(', ')}</span>
@@ -680,7 +680,7 @@ function CompareInner() {
                       value={benchmark}
                       onChange={(e) => setBenchmark(e.target.value)}
                       aria-label="Beta benchmark"
-                      className="rounded border border-border bg-bg-elevated px-1.5 py-0.5 text-xs font-sans text-text-primary focus:border-accent-blue/50 focus:outline-none"
+                      className="rounded-sm border border-border bg-bg-elevated px-1.5 py-0.5 text-xs font-sans text-text-primary focus:border-accent-blue/50 focus:outline-hidden"
                     >
                       {BENCHMARKS.map((b) => (
                         <option key={b.symbol} value={b.symbol}>{b.label}</option>

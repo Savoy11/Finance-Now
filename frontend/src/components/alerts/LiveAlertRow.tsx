@@ -9,14 +9,14 @@ export function LiveAlertRow({ alert }: { alert: LiveAlert }) {
   return (
     <div className="px-4 py-2.5 flex items-start gap-2.5">
       <span
-        className="mt-1 size-2 rounded-full flex-shrink-0"
+        className="mt-1 size-2 rounded-full shrink-0"
         style={{ background: severityColor(alert.severity) }}
         aria-hidden
       />
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between gap-2">
           <span className="text-xs font-medium text-text-primary truncate">{alert.title}</span>
-          <span className="text-[10px] text-text-muted font-mono flex-shrink-0">
+          <span className="text-[10px] text-text-muted font-mono shrink-0">
             {new Date(alert.triggeredAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </span>
         </div>

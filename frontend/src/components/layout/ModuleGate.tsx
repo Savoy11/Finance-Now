@@ -41,7 +41,7 @@ export function ModuleGate({ module, children }: { module: ModuleId; children: R
       </p>
       <Link
         href="/settings"
-        className="inline-block mt-4 px-3 py-1.5 rounded text-xs bg-bg-elevated border border-border text-text-secondary hover:text-text-primary transition-colors"
+        className="inline-block mt-4 px-3 py-1.5 rounded-sm text-xs bg-bg-elevated border border-border text-text-secondary hover:text-text-primary transition-colors"
       >
         Open Integrations
       </Link>

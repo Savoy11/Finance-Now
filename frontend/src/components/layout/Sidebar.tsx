@@ -117,7 +117,7 @@ function PopoutLauncher() {
       <button
         onClick={() => setOpen((o) => !o)}
         className={clsx(
-          'w-full flex items-center gap-2 px-3 py-2 rounded text-sm transition-all',
+          'w-full flex items-center gap-2 px-3 py-2 rounded-sm text-sm transition-all',
           open
             ? 'bg-accent-blue/10 text-accent-blue border border-accent-blue/20'
             : 'text-text-secondary hover:text-text-primary hover:bg-bg-elevated'
@@ -147,7 +147,7 @@ function PopoutLauncher() {
                   key={key}
                   onClick={() => { openPopout(key); setOpen(false) }}
                   className={clsx(
-                    'w-full flex items-center gap-2.5 px-2.5 py-2 rounded text-sm transition-colors text-left',
+                    'w-full flex items-center gap-2.5 px-2.5 py-2 rounded-sm text-sm transition-colors text-left',
                     isOpen
                       ? 'bg-accent-blue/10 text-accent-blue'
                       : 'text-text-secondary hover:text-text-primary hover:bg-bg-elevated'
@@ -339,7 +339,7 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
     >
       {/* Logo */}
       <div className="flex items-center gap-3 px-4 py-4 border-b border-border">
-        <div className="size-8 rounded bg-accent-blue/20 border border-accent-blue/30 flex items-center justify-center flex-shrink-0">
+        <div className="size-8 rounded-sm bg-accent-blue/20 border border-accent-blue/30 flex items-center justify-center shrink-0">
           <Activity size={16} className="text-accent-blue" aria-hidden />
         </div>
         <div className="flex-1 min-w-0">
@@ -351,7 +351,7 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
           onClick={() => setReordering((r) => !r)}
           title={reordering ? 'Done reordering' : 'Reorder navigation'}
           className={clsx(
-            'flex-shrink-0 p-1.5 rounded transition-colors',
+            'shrink-0 p-1.5 rounded-sm transition-colors',
             reordering
               ? 'bg-accent-blue/20 text-accent-blue border border-accent-blue/30'
               : 'text-text-muted hover:text-text-secondary hover:bg-bg-elevated'
@@ -362,7 +362,7 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
         {/* Close button — mobile drawer only */}
         <button
           onClick={onClose}
-          className="flex-shrink-0 p-1.5 rounded text-text-muted hover:text-text-primary hover:bg-bg-elevated transition-colors lg:hidden"
+          className="shrink-0 p-1.5 rounded-sm text-text-muted hover:text-text-primary hover:bg-bg-elevated transition-colors lg:hidden"
           aria-label="Close navigation menu"
         >
           <X size={16} aria-hidden />
@@ -396,15 +396,15 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
                 onClick={() => toggleSection(mod)}
                 aria-expanded={expanded}
                 className={clsx(
-                  'w-full flex items-center gap-1.5 px-3 py-1.5 rounded text-[10px] font-semibold uppercase tracking-wider transition-colors',
+                  'w-full flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-[10px] font-semibold uppercase tracking-wider transition-colors',
                   containsActive && !expanded
                     ? 'text-accent-blue hover:bg-bg-elevated'
                     : 'text-text-muted hover:text-text-secondary hover:bg-bg-elevated'
                 )}
               >
                 {expanded
-                  ? <ChevronDown size={11} className="flex-shrink-0" aria-hidden />
-                  : <ChevronRight size={11} className="flex-shrink-0" aria-hidden />}
+                  ? <ChevronDown size={11} className="shrink-0" aria-hidden />
+                  : <ChevronRight size={11} className="shrink-0" aria-hidden />}
                 <span>{mod.label}</span>
                 {!expanded && (
                   <span className="ml-auto font-mono text-[9px] text-text-muted/70 normal-case tracking-normal">
@@ -437,7 +437,7 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
                     onDrop={reordering ? (e) => handleDrop(e, mod, index) : undefined}
                     onDragEnd={reordering ? handleDragEnd : undefined}
                     className={clsx(
-                      'rounded transition-all',
+                      'rounded-sm transition-all',
                       reordering && 'cursor-grab active:cursor-grabbing',
                       isDragging && 'opacity-40',
                       isDropTarget && 'ring-1 ring-accent-blue/50 ring-offset-1 ring-offset-transparent'
@@ -446,7 +446,7 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
                     {reordering ? (
                       <div
                         className={clsx(
-                          'flex items-center justify-between px-3 py-2 rounded text-sm select-none',
+                          'flex items-center justify-between px-3 py-2 rounded-sm text-sm select-none',
                           isActive
                             ? 'bg-accent-blue/10 text-accent-blue border border-accent-blue/20'
                             : 'text-text-secondary hover:bg-bg-elevated'
@@ -456,7 +456,7 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
                           <Icon size={16} aria-hidden className={isActive ? 'text-accent-blue' : 'text-text-muted'} />
                           <span className="font-medium">{label}</span>
                         </div>
-                        <GripVertical size={14} className="text-text-muted flex-shrink-0" aria-hidden />
+                        <GripVertical size={14} className="text-text-muted shrink-0" aria-hidden />
                       </div>
                     ) : (
                       // Link and chevron are SIBLINGS, not nested. A button
@@ -468,7 +468,7 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
                         href={href}
                         onClick={onClose}
                         className={clsx(
-                          'flex flex-1 items-center justify-between px-3 py-2 rounded text-sm transition-all',
+                          'flex flex-1 items-center justify-between px-3 py-2 rounded-sm text-sm transition-all',
                           isActive
                             ? 'bg-accent-blue/10 text-accent-blue border border-accent-blue/20'
                             : childActive && !groupOpen
@@ -496,7 +496,7 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
                           onClick={() => toggleGroup(item)}
                           aria-expanded={groupOpen}
                           aria-label={`${groupOpen ? 'Collapse' : 'Expand'} ${label}`}
-                          className="ml-0.5 rounded p-1 text-text-muted transition-colors hover:bg-bg-elevated hover:text-text-primary"
+                          className="ml-0.5 rounded-sm p-1 text-text-muted transition-colors hover:bg-bg-elevated hover:text-text-primary"
                         >
                           {groupOpen
                             ? <ChevronDown size={13} aria-hidden />
@@ -520,7 +520,7 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
                                 href={child.href}
                                 onClick={onClose}
                                 className={clsx(
-                                  'flex items-center gap-2.5 px-2.5 py-1.5 rounded text-[13px] transition-all',
+                                  'flex items-center gap-2.5 px-2.5 py-1.5 rounded-sm text-[13px] transition-all',
                                   childIsActive
                                     ? 'bg-accent-blue/10 text-accent-blue'
                                     : 'text-text-secondary hover:text-text-primary hover:bg-bg-elevated',
@@ -553,7 +553,7 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
         {/* Connection status */}
         <div className="flex items-center gap-2 px-1">
           <span
-            className={clsx('size-2 rounded-full flex-shrink-0', STATUS_COLORS[feedStatus])}
+            className={clsx('size-2 rounded-full shrink-0', STATUS_COLORS[feedStatus])}
             aria-label={`Data feeds: ${STATUS_LABELS[feedStatus]}`}
           />
           <span
@@ -574,7 +574,7 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
         {user && (
           <div className="flex items-center justify-between gap-2 px-1">
             <div className="flex items-center gap-2 min-w-0">
-              <div className="size-7 rounded-full bg-accent-blue/20 border border-accent-blue/30 flex items-center justify-center flex-shrink-0">
+              <div className="size-7 rounded-full bg-accent-blue/20 border border-accent-blue/30 flex items-center justify-center shrink-0">
                 <User size={12} className="text-accent-blue" aria-hidden />
               </div>
               <div className="min-w-0">

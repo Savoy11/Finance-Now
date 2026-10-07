@@ -39,7 +39,7 @@ export function AssetCard({ asset, selected, onSelect, className }: AssetCardPro
           <div className="flex items-center gap-2">
             <span className="font-mono font-bold text-base text-text-primary">{asset.symbol}</span>
             {!asset.isActive && (
-              <span className="px-1.5 py-0.5 text-[10px] rounded bg-slate-500/10 text-slate-400 border border-slate-500/30 font-mono">
+              <span className="px-1.5 py-0.5 text-[10px] rounded-sm bg-slate-500/10 text-slate-400 border border-slate-500/30 font-mono">
                 INACTIVE
               </span>
             )}
@@ -81,10 +81,10 @@ export function AssetCard({ asset, selected, onSelect, className }: AssetCardPro
 
       {/* Footer tags */}
       <div className="flex items-center gap-1.5 flex-wrap">
-        <span className="px-1.5 py-0.5 text-[10px] rounded bg-bg-elevated text-text-muted border border-border font-mono capitalize">
+        <span className="px-1.5 py-0.5 text-[10px] rounded-sm bg-bg-elevated text-text-muted border border-border font-mono capitalize">
           {ASSET_TYPE_LABELS[asset.assetType] ?? asset.assetType}
         </span>
-        <span className="px-1.5 py-0.5 text-[10px] rounded bg-bg-elevated text-text-muted border border-border font-mono capitalize">
+        <span className="px-1.5 py-0.5 text-[10px] rounded-sm bg-bg-elevated text-text-muted border border-border font-mono capitalize">
           {BLOCKCHAIN_LABELS[asset.blockchain] ?? asset.blockchain}
         </span>
       </div>

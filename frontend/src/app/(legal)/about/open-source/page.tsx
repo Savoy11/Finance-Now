@@ -27,9 +27,9 @@ export default function OpenSourcePage() {
   return (
     <article className="space-y-6">
       <div className="space-y-2">
-        <Link href={LEGAL_PATHS.about} className="inline-flex items-center gap-1 text-xs text-text-muted hover:text-accent-blue">
+        <div><Link href={LEGAL_PATHS.about} className="inline-flex items-center gap-1 text-xs text-text-muted hover:text-accent-blue">
           <ArrowLeft size={12} aria-hidden /> About &amp; Legal
-        </Link>
+        </Link></div>
         <h1 className="text-2xl font-semibold text-text-primary">Open-source notices</h1>
       </div>
 
@@ -52,7 +52,7 @@ export default function OpenSourcePage() {
             <h2 className="text-base font-semibold text-text-primary">Licences</h2>
             <ul className="flex flex-wrap gap-2 text-xs">
               {inventory.byLicense.map((l) => (
-                <li key={String(l.license)} className="rounded border border-border bg-bg-card px-2 py-1 text-text-secondary">
+                <li key={String(l.license)} className="rounded-sm border border-border bg-bg-card px-2 py-1 text-text-secondary">
                   {l.license ?? 'Not stated'} <span className="text-text-muted">· {l.count}</span>
                 </li>
               ))}

@@ -43,7 +43,7 @@ export function MetricCard({
       <div className="flex items-start justify-between gap-2">
         <span className="text-xs font-medium text-text-secondary uppercase tracking-wider">{title}</span>
         {icon && (
-          <span className="text-text-muted flex-shrink-0" style={{ color: accentColor }}>
+          <span className="text-text-muted shrink-0" style={{ color: accentColor }}>
             {icon}
           </span>
         )}

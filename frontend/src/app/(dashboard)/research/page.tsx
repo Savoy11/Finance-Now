@@ -272,7 +272,7 @@ function ResearchInner() {
             : market === 'macro'
             ? 'e.g. Analyze gold: level vs the 1Y range, drivers, and how the ETF proxies compare.'
             : 'e.g. Compare the risk-adjusted staking yield of ETH vs SOL and recommend which fits a conservative holder.'}
-          className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2.5 text-sm text-slate-200 placeholder-slate-600 focus:border-violet-500/60 focus:outline-none resize-y leading-relaxed"
+          className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2.5 text-sm text-slate-200 placeholder-slate-600 focus:border-violet-500/60 focus:outline-hidden resize-y leading-relaxed"
         />
         <div className="flex items-center justify-between">
           <p className="text-[11px] text-slate-600">
@@ -315,7 +315,7 @@ function ResearchInner() {
           </div>
           <div className="space-y-2 pt-1">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-3 rounded bg-slate-800 animate-pulse" style={{ width: `${90 - i * 8}%` }} />
+              <div key={i} className="h-3 rounded-sm bg-slate-800 animate-pulse" style={{ width: `${90 - i * 8}%` }} />
             ))}
           </div>
         </div>
@@ -324,7 +324,7 @@ function ResearchInner() {
       {/* Error */}
       {error && (
         <div className="flex items-start gap-2 text-sm rounded-xl px-4 py-3 bg-red-500/10 text-red-300 border border-red-500/20">
-          <AlertCircle size={16} className="mt-0.5 flex-shrink-0" />
+          <AlertCircle size={16} className="mt-0.5 shrink-0" />
           <div>
             <p className="font-medium">Research failed</p>
             <p className="text-red-400/90 text-xs mt-0.5">{error}</p>
@@ -341,7 +341,7 @@ function ResearchInner() {
             {result.toolsUsed.length > 0 && (
               <div className="ml-auto flex flex-wrap gap-1 justify-end">
                 {Array.from(new Set(result.toolsUsed.map((t) => t.name))).map((name) => (
-                  <span key={name} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] bg-slate-800 text-slate-400 border border-slate-700">
+                  <span key={name} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm text-[10px] bg-slate-800 text-slate-400 border border-slate-700">
                     <Wrench size={9} /> {name}
                   </span>
                 ))}

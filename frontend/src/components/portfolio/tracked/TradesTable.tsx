@@ -91,7 +91,7 @@ export function TradesTable({ trades, onCancel, busyId }: {
                   <td className={clsx('px-3 py-2.5 text-right font-mono whitespace-nowrap text-text-secondary', cancelled && 'line-through')}>
                     {/^0(\.0+)?$/.test(t.feeUsd) ? '—' : formatUsd(t.feeUsd)}
                   </td>
-                  <td className="px-3 py-2.5 text-xs text-text-muted max-w-[14rem]">
+                  <td className="px-3 py-2.5 text-xs text-text-muted max-w-56">
                     {t.note}
                     {cancelled && (
                       <div className="text-amber-300 not-italic">
@@ -108,16 +108,16 @@ export function TradesTable({ trades, onCancel, busyId }: {
                       </button>
                     )}
                     {!cancelled && confirming === t.id && (
-                      <div className="flex flex-col items-end gap-1.5 min-w-[14rem]">
+                      <div className="flex flex-col items-end gap-1.5 min-w-56">
                         <input autoFocus maxLength={MAX_REASON_LENGTH} placeholder="Reason (optional)"
                           aria-label="Why this trade is being cancelled"
-                          className="w-full bg-bg-elevated border border-border rounded px-2 py-1 text-xs text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-blue"
+                          className="w-full bg-bg-elevated border border-border rounded-sm px-2 py-1 text-xs text-text-primary placeholder:text-text-muted focus:outline-hidden focus:border-accent-blue"
                           value={reason} onChange={(e) => setReason(e.target.value)} />
                         <div className="flex gap-2">
                           <button type="button" onClick={() => openConfirm(null)}
                             className="text-xs text-text-muted hover:text-text-primary px-2 py-1">Keep it</button>
                           <button type="button" disabled={busyId === t.id} onClick={() => void confirm(t.id)}
-                            className="text-xs bg-red-500/15 text-red-300 hover:bg-red-500/25 disabled:opacity-50 rounded px-2 py-1">
+                            className="text-xs bg-red-500/15 text-red-300 hover:bg-red-500/25 disabled:opacity-50 rounded-sm px-2 py-1">
                             {busyId === t.id ? 'Cancelling…' : 'Cancel trade'}
                           </button>
                         </div>

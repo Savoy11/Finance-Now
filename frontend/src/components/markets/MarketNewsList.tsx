@@ -63,8 +63,8 @@ export function MarketNewsList({ symbol, limit = 10 }: { symbol?: string; limit?
                     {formatDistanceToNow(new Date(article.publishedAt), { addSuffix: true })}
                   </p>
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0 pt-0.5">
-                  <span className={clsx('px-1.5 py-0.5 rounded text-[10px] font-medium border capitalize', SENTIMENT_STYLES[article.sentiment])}>
+                <div className="flex items-center gap-2 shrink-0 pt-0.5">
+                  <span className={clsx('px-1.5 py-0.5 rounded-sm text-[10px] font-medium border capitalize', SENTIMENT_STYLES[article.sentiment])}>
                     {article.sentiment}
                   </span>
                   <ExternalLink size={12} className="text-text-muted opacity-0 group-hover:opacity-100 transition-opacity" aria-hidden />

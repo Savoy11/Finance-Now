@@ -68,7 +68,7 @@ export function AssetTable({ assets, loading, total }: AssetTableProps) {
               <div className="text-xs text-text-muted truncate max-w-28">{row.name}</div>
             </div>
             {!row.isActive && (
-              <span className="px-1 py-0.5 text-[9px] rounded bg-slate-500/10 text-slate-500 border border-slate-600/30 font-mono uppercase">
+              <span className="px-1 py-0.5 text-[9px] rounded-sm bg-slate-500/10 text-slate-500 border border-slate-600/30 font-mono uppercase">
                 Off
               </span>
             )}
@@ -199,7 +199,7 @@ export function AssetTable({ assets, loading, total }: AssetTableProps) {
               e.stopPropagation()
               router.push(`/assets/${row.id}`)
             }}
-            className="p-1.5 rounded hover:bg-bg-elevated text-text-muted hover:text-accent-blue transition-colors"
+            className="p-1.5 rounded-sm hover:bg-bg-elevated text-text-muted hover:text-accent-blue transition-colors"
             aria-label={`View details for ${row.symbol}`}
           >
             <ExternalLink size={13} aria-hidden />
@@ -233,7 +233,7 @@ export function AssetTable({ assets, loading, total }: AssetTableProps) {
             <select
               value={pageSize}
               onChange={(e) => setPageSize(Number(e.target.value))}
-              className="bg-bg-secondary border border-border rounded px-2 py-1 text-xs text-text-secondary focus:outline-none focus:border-accent-blue/60"
+              className="bg-bg-secondary border border-border rounded-sm px-2 py-1 text-xs text-text-secondary focus:outline-hidden focus:border-accent-blue/60"
               aria-label="Rows per page"
             >
               {PAGE_SIZE_OPTIONS.map((o) => (
@@ -249,7 +249,7 @@ export function AssetTable({ assets, loading, total }: AssetTableProps) {
               <button
                 onClick={() => setPage(Math.max(1, page - 1))}
                 disabled={page === 1}
-                className="px-2 py-1 rounded text-xs border border-border text-text-secondary hover:text-text-primary hover:bg-bg-elevated disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="px-2 py-1 rounded-sm text-xs border border-border text-text-secondary hover:text-text-primary hover:bg-bg-elevated disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 aria-label="Previous page"
               >
                 Prev
@@ -261,7 +261,7 @@ export function AssetTable({ assets, loading, total }: AssetTableProps) {
                     key={p}
                     onClick={() => setPage(p)}
                     className={clsx(
-                      'size-7 rounded text-xs font-mono transition-colors',
+                      'size-7 rounded-sm text-xs font-mono transition-colors',
                       p === page
                         ? 'bg-accent-blue/10 text-accent-blue border border-accent-blue/30'
                         : 'text-text-muted hover:text-text-primary hover:bg-bg-elevated'
@@ -275,7 +275,7 @@ export function AssetTable({ assets, loading, total }: AssetTableProps) {
               <button
                 onClick={() => setPage(Math.min(totalPages, page + 1))}
                 disabled={page >= totalPages}
-                className="px-2 py-1 rounded text-xs border border-border text-text-secondary hover:text-text-primary hover:bg-bg-elevated disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="px-2 py-1 rounded-sm text-xs border border-border text-text-secondary hover:text-text-primary hover:bg-bg-elevated disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 aria-label="Next page"
               >
                 Next
