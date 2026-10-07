@@ -13597,8 +13597,9 @@
    },
    "progress": {
     "noted_on": "2026-10-07",
-    "note": "2026-10-07 (D92): T-419 is answered, so this moves from blocked to open with the scope above. The showing still waits on counsel; the building does not. 2026-10-05: D77 (2026-10-05) closed T-357 (risk scores through /api/v1/risk/* and a score_equity MCP tool) into this item, as superseded by D64. Its question, whether risk figures may reach the outside connections, is decided here with the app's own pages.",
+    "note": "2026-10-07: scope item (2) is built: fund pages show a How It’s Built box in place of the switched-off Risk Profile label, read from the catalog’s own fields (strategy, category, tracked index) by lib/data/fundStructure.ts, with a test that bars risk-tolerance words. Bond duration and the prospectus link are not in the catalog, so they are not shown yet. 2026-10-07 (D92): T-419 is answered, so this moves from blocked to open with the scope above. The showing still waits on counsel; the building does not. 2026-10-05: D77 (2026-10-05) closed T-357 (risk scores through /api/v1/risk/* and a score_equity MCP tool) into this item, as superseded by D64. Its question, whether risk figures may reach the outside connections, is decided here with the app's own pages.",
     "evidence": [
+     "frontend/src/lib/data/fundStructure.ts",
      "docs/decisions/2026-10-07-owner-decisions.md",
      "docs/assessments/risk-ratings-by-asset-type-2026-10-07.md",
      "docs/decisions/2026-10-05-owner-decisions.md"
@@ -39329,6 +39330,13 @@
     "evidence": [
      "docs/decisions/2026-10-07-owner-decisions.md",
      "docs/assessments/risk-ratings-by-asset-type-2026-10-07.md"
+    ]
+   },
+   {
+    "on": "2026-10-07",
+    "what": "T-420 scope item (2): fund pages show how each fund is built in place of the switched-off risk label (D92).",
+    "evidence": [
+     "frontend/src/lib/data/fundStructure.ts"
     ]
    }
   ]
