@@ -28,6 +28,14 @@
  * owner kept both as an alert that an asset is being targeted by pump and meme
  * traders, not a rating of how risky it is to own.
  *
+ * D92 (2026-10-07) narrows what may come back, after the research in
+ * docs/assessments/risk-ratings-by-asset-type-2026-10-07.md: a rating on crypto
+ * coins' and stocks' own pages, once counsel confirms it, and nothing else.
+ * Portfolios' ratings and Weighted Risk do not return, the fund label gives way
+ * to facts and the options scorer to an ungraded calculator. So setting this
+ * to true as it stands would bring back surfaces D92 rules out: the rebuild
+ * (T-420) replaces it first.
+ *
  * TO RESTORE, after the rebuild and the compliance research (see D64's items in
  * docs/audits/task-queue-2026-09-07.json): set this to true, re-add the nav
  * entry, delete the redirect, un-comment the MCP tool, and revisit

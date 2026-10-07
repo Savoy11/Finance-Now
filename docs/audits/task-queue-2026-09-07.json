@@ -62,10 +62,10 @@
   "total_verified": 398,
   "outstanding": 369,
   "by_status": {
-   "closed": 204,
+   "closed": 205,
    "open": 21,
    "parked": 136,
-   "blocked": 7,
+   "blocked": 6,
    "unclear": 1
   },
   "by_owner_role": {
@@ -75,7 +75,7 @@
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 204,
+  "closed_by_annotation": 205,
   "counts_recomputed_on": "2026-10-07",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 369
@@ -3112,7 +3112,7 @@
    "owner_role": "remote-dev",
    "category": "feature",
    "effort": "medium",
-   "blocking_decision": "D18 (2026-09-14): defer until a consumer exists — trigger is a surface approved to render the score. Parked by ruling; the ledger carried it as open for twelve days.",
+   "blocking_decision": "D18 (2026-09-14): defer until a consumer exists — trigger is a surface approved to render the score. Parked by ruling; the ledger carried it as open for twelve days. 2026-10-07 (D92): interest rates and bonds get facts only, with duration shown as arithmetic, so no surface will render this score unless D92 is revisited.",
    "related_ids": [
     "P5",
     "§6.1"
@@ -3995,7 +3995,7 @@
    "owner_role": "either",
    "category": "feature",
    "effort": "medium",
-   "blocking_decision": "D18 (2026-09-14): defer until a consumer exists — trigger is a surface approved to render the score. Parked by ruling; the ledger carried it as open for twelve days.",
+   "blocking_decision": "D18 (2026-09-14): defer until a consumer exists — trigger is a surface approved to render the score. Parked by ruling; the ledger carried it as open for twelve days. 2026-10-07 (D92): funds get facts from their own documents in place of a rating, so no surface will render this score unless D92 is revisited.",
    "related_ids": [
     "§4"
    ],
@@ -4072,7 +4072,7 @@
    "owner_role": "owner-decision",
    "category": "decision",
    "effort": "small",
-   "blocking_decision": "PARKED 2026-09-30 — D9 (2026-09-14): the S4 options subproject is deferred with the rollout (D1), and behind the D4 legal review since it expands an advice-adjacent tool. D9 names T-061, T-062 and T-063; T-060 is S4's first decision. The ledger carried it as open until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md). 2026-10-05 (D82): it also waits on the risk engine rebuild (T-420). S4 extends the options Trade Risk Scorer, which D64 (2026-10-04) switched off until the engine is rebuilt.",
+   "blocking_decision": "PARKED 2026-09-30 — D9 (2026-09-14): the S4 options subproject is deferred with the rollout (D1), and behind the D4 legal review since it expands an advice-adjacent tool. D9 names T-061, T-062 and T-063; T-060 is S4's first decision. The ledger carried it as open until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md). 2026-10-05 (D82): it also waits on the risk engine rebuild (T-420). S4 extends the options Trade Risk Scorer, which D64 (2026-10-04) switched off until the engine is rebuilt. 2026-10-07 (D92): the options scorer stays off; T-420 may build an ungraded calculator (maximum loss and gain, breakevens, payoff) only after counsel answers the T-419 memo's §8 question 7.",
    "related_ids": [
     "P2-O2",
     "S4",
@@ -4687,7 +4687,14 @@
      "lines": "40-51",
      "quote": "**Federal regulations applicable to the website and the software.** Priority areas: - **Investment advice vs. information** — SEC/state investment-adviser rules. Risk scores and \"recommendations\" at scale is exactly the line flagged in `docs/MARKET-ASSESSMENT.md`'s risk register."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-10-07",
+    "note": "The investment-adviser part of the brief for counsel is written: §8 of the T-419 memo (twelve questions), with §3 as the background (docs/assessments/risk-ratings-by-asset-type-2026-10-07.md). D92 (2026-10-07) shows no risk rating until counsel confirms the impersonal form.",
+    "evidence": [
+     "docs/assessments/risk-ratings-by-asset-type-2026-10-07.md"
+    ]
+   }
   },
   {
    "id": "T-290",
@@ -7311,7 +7318,7 @@
    "owner_role": "remote-dev",
    "category": "feature",
    "effort": "small",
-   "blocking_decision": "PARKED 2026-09-30 — D9 (2026-09-14): the S4 options subproject is deferred with the rollout (D1), and behind the D4 legal review since it expands an advice-adjacent tool. D9 names T-061, T-062 and T-063; T-060 is S4's first decision. The ledger carried it as blocked until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md). Was: \"Owner activation of subproject S4 (charter proposed 2026-08-20, not activated).\" 2026-10-05 (D82): it also waits on the risk engine rebuild (T-420). S4 extends the options Trade Risk Scorer, which D64 (2026-10-04) switched off until the engine is rebuilt.",
+   "blocking_decision": "PARKED 2026-09-30 — D9 (2026-09-14): the S4 options subproject is deferred with the rollout (D1), and behind the D4 legal review since it expands an advice-adjacent tool. D9 names T-061, T-062 and T-063; T-060 is S4's first decision. The ledger carried it as blocked until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md). Was: \"Owner activation of subproject S4 (charter proposed 2026-08-20, not activated).\" 2026-10-05 (D82): it also waits on the risk engine rebuild (T-420). S4 extends the options Trade Risk Scorer, which D64 (2026-10-04) switched off until the engine is rebuilt. 2026-10-07 (D92): the options scorer stays off; T-420 may build an ungraded calculator (maximum loss and gain, breakevens, payoff) only after counsel answers the T-419 memo's §8 question 7.",
    "related_ids": [
     "RP-1",
     "S4",
@@ -7336,7 +7343,7 @@
    "owner_role": "remote-dev",
    "category": "feature",
    "effort": "small",
-   "blocking_decision": "PARKED 2026-09-30 — D9 (2026-09-14): the S4 options subproject is deferred with the rollout (D1), and behind the D4 legal review since it expands an advice-adjacent tool. D9 names T-061, T-062 and T-063; T-060 is S4's first decision. The ledger carried it as blocked until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md). Was: \"Owner activation of subproject S4.\" 2026-10-05 (D82): it also waits on the risk engine rebuild (T-420). S4 extends the options Trade Risk Scorer, which D64 (2026-10-04) switched off until the engine is rebuilt.",
+   "blocking_decision": "PARKED 2026-09-30 — D9 (2026-09-14): the S4 options subproject is deferred with the rollout (D1), and behind the D4 legal review since it expands an advice-adjacent tool. D9 names T-061, T-062 and T-063; T-060 is S4's first decision. The ledger carried it as blocked until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md). Was: \"Owner activation of subproject S4.\" 2026-10-05 (D82): it also waits on the risk engine rebuild (T-420). S4 extends the options Trade Risk Scorer, which D64 (2026-10-04) switched off until the engine is rebuilt. 2026-10-07 (D92): the options scorer stays off; T-420 may build an ungraded calculator (maximum loss and gain, breakevens, payoff) only after counsel answers the T-419 memo's §8 question 7.",
    "related_ids": [
     "S4",
     "T-420"
@@ -7360,7 +7367,7 @@
    "owner_role": "remote-dev",
    "category": "feature",
    "effort": "small",
-   "blocking_decision": "PARKED 2026-09-30 — D9 (2026-09-14): the S4 options subproject is deferred with the rollout (D1), and behind the D4 legal review since it expands an advice-adjacent tool. D9 names T-061, T-062 and T-063; T-060 is S4's first decision. The ledger carried it as blocked until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md). Was: \"S4 activation (owner)\" 2026-10-05 (D82): it also waits on the risk engine rebuild (T-420). S4 extends the options Trade Risk Scorer, which D64 (2026-10-04) switched off until the engine is rebuilt.",
+   "blocking_decision": "PARKED 2026-09-30 — D9 (2026-09-14): the S4 options subproject is deferred with the rollout (D1), and behind the D4 legal review since it expands an advice-adjacent tool. D9 names T-061, T-062 and T-063; T-060 is S4's first decision. The ledger carried it as blocked until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md). Was: \"S4 activation (owner)\" 2026-10-05 (D82): it also waits on the risk engine rebuild (T-420). S4 extends the options Trade Risk Scorer, which D64 (2026-10-04) switched off until the engine is rebuilt. 2026-10-07 (D92): the options scorer stays off; T-420 may build an ungraded calculator (maximum loss and gain, breakevens, payoff) only after counsel answers the T-419 memo's §8 question 7.",
    "related_ids": [
     "RP-3",
     "S4",
@@ -9534,7 +9541,7 @@
    "owner_role": "owner-decision",
    "category": "feature",
    "effort": "large",
-   "blocking_decision": "PARKED 2026-10-05 — D76 (2026-10-05): parked under D18 (2026-09-14) beside T-352 and T-353, which D18 deferred with it until a surface is approved to render the score; it was the one of the three still marked blocked. Since D64 (2026-10-04) every risk rating is switched off until the risk engine is rebuilt (T-420) after the compliance research (T-419), so a futures profile can come back only through that rebuild. Was: \"Owner backlog: build the Options/futures position tool (ROADMAP.md owner backlog, undecided)\"",
+   "blocking_decision": "PARKED 2026-10-05 — D76 (2026-10-05): parked under D18 (2026-09-14) beside T-352 and T-353, which D18 deferred with it until a surface is approved to render the score; it was the one of the three still marked blocked. Since D64 (2026-10-04) every risk rating is switched off until the risk engine is rebuilt (T-420) after the compliance research (T-419), so a futures profile can come back only through that rebuild. Was: \"Owner backlog: build the Options/futures position tool (ROADMAP.md owner backlog, undecided)\" 2026-10-07 (D92): commodities, currencies and rate futures get facts only, so no surface will render a futures rating unless D92 is revisited.",
    "related_ids": [
     "§6.3",
     "T-352",
@@ -13507,7 +13514,7 @@
   {
    "id": "T-419",
    "title": "Research whether and how risk can be assessed for each asset type (compliance and regulatory)",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "either",
    "category": "legal",
@@ -13521,7 +13528,7 @@
     "D64"
    ],
    "summary": "D64 switched off every risk rating the app shows until the risk engine is rebuilt. The owner set this as the first step: \"This project will also require significant compliance and regulatory research to determine if and how risk can be assessed for each asset type.\" The answer may differ by asset type (crypto, stocks, ETFs and funds, commodities, currencies, interest rates, options) and by form: a score on an asset's own page, a rating of holdings the user added, or only the standard statistics D14 kept.",
-   "next_action": "Draft a memo per asset type: what a risk rating would say, which rules could treat it as advice or a recommendation, what disclosures it would need, and what can be shown instead. Build on the regulatory posture work (T-289) and take it to the legal review before launch (D4). Record the owner's answer for each asset type; T-420 builds on it.",
+   "next_action": "Owner: answer per asset type in §7 of docs/assessments/risk-ratings-by-asset-type-2026-10-07.md (A: facts and standard statistics only; B: an impersonal rating on the asset's own page with its method shown, after the lawyer confirms it; C: B plus ratings of the user's own holdings, only if the lawyer clears the personal form). Record the answers as a dated decision. Then take the memo to the legal review before launch (D4), starting with its §8 questions, and record the lawyer's answers; T-420 builds the engine to both.",
    "sources": [
     {
      "file": "docs/decisions/2026-10-04-owner-decisions.md",
@@ -13533,17 +13540,36 @@
     "on": "2026-10-04",
     "by": "session steward",
     "why": "Opened with D64 at the owner's request, as the research the risk engine rebuild depends on."
+   },
+   "progress": {
+    "noted_on": "2026-10-07",
+    "note": "The memo is written (D90's fourth item): docs/assessments/risk-ratings-by-asset-type-2026-10-07.md. Its finding: in US law the line is personal versus impersonal, not asset type. A rating that is the same for every reader, published regularly, with its method shown and no paid interest, sits inside the publisher's exclusion (Lowe v. SEC, 1985; Lingley v. Seeking Alpha, S.D.N.Y. 2024, which covered ratings); a figure worked out from the user's own holdings is the personal form. The asset type decides the regulator: the SEC and the states for stocks, funds, options and crypto tokens that are securities; the CFTC for futures, options on futures and retail forex, whose Rule 4.14(a)(9) draws the same line in so many words; neither registration system for an impersonal rating of crypto that is not a security under the SEC's 2026-03-17 interpretation. Recommended: B for crypto coins and stocks, A everywhere else, no portfolio-level rating. Written from web-search summaries; the government and legal sites were blocked from the session, so the lawyer works from the primary texts the memo lists. Two points are marked unverified: the Second Circuit's decision in the Seeking Alpha appeal, and whether Rule 4.14(a)(9) covers retail-forex advice.",
+    "evidence": [
+     "docs/assessments/risk-ratings-by-asset-type-2026-10-07.md"
+    ]
+   },
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-10-07",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "D92: the owner took the memo's recommendation for every asset type. An impersonal rating on the asset's own page, the same for every reader with its method shown, for crypto coins and stocks only (B), built in the rebuild and shown only once counsel confirms it. Facts and standard statistics everywhere else (A): stablecoins, commodities and currencies; funds get facts from their own documents in place of the switched-off label; interest rates and bonds get duration as arithmetic; options keep the scorer off, with an ungraded calculator only after counsel answers. No rating of a user's holdings or of a portfolio as a whole. The legal half moves to the review before launch (D4): the memo's §8 questions are the investment-adviser part of T-289's brief. T-420 rebuilds to this scope.",
+    "approved_by": "owner, 2026-10-07: \"go with the recommendations and merge\"",
+    "evidence": [
+     "docs/assessments/risk-ratings-by-asset-type-2026-10-07.md",
+     "docs/decisions/2026-10-07-owner-decisions.md"
+    ]
    }
   },
   {
    "id": "T-420",
    "title": "Rebuild the risk engine before launch, then decide whether and where risk ratings return",
-   "status": "blocked",
+   "status": "open",
    "confidence": "high",
    "owner_role": "either",
    "category": "feature",
    "effort": "large",
-   "blocking_decision": "T-419: whether and how risk can be assessed for each asset type. The rebuild follows that answer, and is a pre-launch item (owner, 2026-10-04).",
+   "blocking_decision": null,
    "related_ids": [
     "T-419",
     "T-012",
@@ -13556,7 +13582,7 @@
     "T-357"
    ],
    "summary": "D64 switched off every risk rating until the engine is rebuilt: Portfolios' ratings and weighted risk, the fund-page risk label, and the options Trade Risk Scorer with its API, agent and MCP tools. The code stays, switched off behind RISK_RATINGS_SHOWN in frontend/src/lib/risk/visibility.ts. This item is the rebuild, and bringing ratings back where the research allows.",
-   "next_action": "After T-419: rebuild lib/risk to the asset types and forms the research allows. Then restore surfaces one at a time, each on the owner's say-so, following lib/risk/visibility.ts (the switch, the nav entry, the redirect, the MCP tool) and revisiting lib/risk/__tests__/riskRatingsHidden.test.ts and RP-8. Update the agent prompts and the Methodology Guide's Section 3 (T-359), which still describes the switched-off ratings. The outside connections are surfaces too (D77): whether any risk figure reaches the public data connection (/api/v1) or the AI tools (agent and MCP) is decided here the same way, with D26's finding in view, that a score read out by an AI agent is where a reference number most easily becomes advice.",
+   "next_action": "Rebuild to D92's scope (2026-10-07; docs/assessments/risk-ratings-by-asset-type-2026-10-07.md §7). (1) Crypto coins and stocks: an impersonal rating on each asset's own page, the same for every reader, with the disclosures in the memo's §6, behind RISK_RATINGS_SHOWN. Before any coin is rated, the coin catalog marks which tokens are securities (USDY first: the tokenized-securities assessment's F2). Nothing is shown until counsel confirms this form in the review before launch (D4; the memo's §8, through T-289), and then only on the owner's say-so. (2) Funds: replace the switched-off Risk Profile label with facts from each fund's own documents (a leveraged or inverse fund's daily reset, the asset mix, duration for bond funds, a link to the prospectus). (3) Interest rates and bonds: show duration as arithmetic. (4) Options: the scorer stays off; an ungraded calculator (maximum loss and gain, breakevens, payoff) only after counsel answers the memo's §8 question 7. (5) Stablecoins, commodities and currencies: facts only. (6) Never: a rating beside the user's holdings or of a portfolio as a whole. Portfolios' per-holding ratings, its Weighted Risk and the two warnings stay off (code kept, D64). When anything returns, follow lib/risk/visibility.ts and revisit lib/risk/__tests__/riskRatingsHidden.test.ts and RP-8; update the agent prompts and the Methodology Guide's Section 3 (T-359). The outside connections are surfaces too (D77): whether any rating reaches /api/v1 or the AI tools is decided the same way, with D26's finding in view, that a score read out by an AI agent is where a reference number most easily becomes advice.",
    "sources": [
     {
      "file": "frontend/src/lib/risk/visibility.ts",
@@ -13570,9 +13596,11 @@
     "why": "Opened with D64 at the owner's request: \"We can add an item for a pre launch rebuild of the risk engine and to address applying risk scores again later.\""
    },
    "progress": {
-    "noted_on": "2026-10-05",
-    "note": "D77 (2026-10-05) closed T-357 (risk scores through /api/v1/risk/* and a score_equity MCP tool) into this item, as superseded by D64. Its question, whether risk figures may reach the outside connections, is decided here with the app's own pages.",
+    "noted_on": "2026-10-07",
+    "note": "2026-10-07 (D92): T-419 is answered, so this moves from blocked to open with the scope above. The showing still waits on counsel; the building does not. 2026-10-05: D77 (2026-10-05) closed T-357 (risk scores through /api/v1/risk/* and a score_equity MCP tool) into this item, as superseded by D64. Its question, whether risk figures may reach the outside connections, is decided here with the app's own pages.",
     "evidence": [
+     "docs/decisions/2026-10-07-owner-decisions.md",
+     "docs/assessments/risk-ratings-by-asset-type-2026-10-07.md",
      "docs/decisions/2026-10-05-owner-decisions.md"
     ]
    }
@@ -39286,6 +39314,21 @@
     "evidence": [
      "frontend/src/lib/data/costBasis.ts",
      "frontend/drizzle/0006_trade-splits.sql"
+    ]
+   },
+   {
+    "on": "2026-10-07",
+    "what": "T-419 (D90's fourth item): the memo on whether and how risk can be rated for each asset type is written, with a recommended answer per asset type and twelve questions for the legal review. T-419 stays open for the owner's answers and then the review (D4).",
+    "evidence": [
+     "docs/assessments/risk-ratings-by-asset-type-2026-10-07.md"
+    ]
+   },
+   {
+    "on": "2026-10-07",
+    "what": "D92: the owner took the T-419 memo's recommendation for every asset type. T-419 closes; T-420 moves from blocked to open with D92's scope (nothing shown until counsel confirms); T-289 notes that the memo's §8 is the investment-adviser part of its brief; T-352, T-353, T-355 and T-060 to T-063 stay parked with a note on what D92 settles for them.",
+    "evidence": [
+     "docs/decisions/2026-10-07-owner-decisions.md",
+     "docs/assessments/risk-ratings-by-asset-type-2026-10-07.md"
     ]
    }
   ]
