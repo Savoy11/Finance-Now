@@ -16,9 +16,12 @@
 // config against Next 15.x). It declares no `next` peer dependency; it is a
 // rule set, not a runtime, and the 16 line is the one that ships flat config
 // and carries patched transitive deps. Its `next/typescript` block brings
-// typescript-eslint in already, so there is no separate parser wiring here.
+// typescript-eslint in for .ts/.tsx; since ESLint 10 (2026-10-07) the plain
+// JavaScript files use that parser too — see the block below `next`.
 
+import { fixupConfigRules } from '@eslint/compat'
 import next from 'eslint-config-next/core-web-vitals'
+import tseslint from 'typescript-eslint'
 
 export default [
   {
@@ -33,7 +36,31 @@ export default [
       'src/app/globals.compiled.css',
     ],
   },
-  ...next,
+  // ── ESLint 10: older plugins wrapped by @eslint/compat ──────────────────────
+  //
+  // eslint-config-next 16 brings eslint-plugin-react, -import and -jsx-a11y,
+  // whose newest releases support ESLint 9 at most. They call context methods
+  // ESLint 10 removed (react/display-name: "contextOrFilename.getFilename is
+  // not a function"). fixupConfigRules is ESLint's own shim for this: it puts
+  // the removed methods back for those plugins only. Drop it when the plugins
+  // publish ESLint 10 support.
+  ...fixupConfigRules(next),
+  {
+    // ── ESLint 10: plain JavaScript goes through typescript-eslint's parser ──
+    //
+    // eslint-config-next parses every file with its own parser, a wrapper over
+    // the Babel parser bundled inside Next, then hands .ts/.tsx to
+    // typescript-eslint. The bundled Babel parser predates ESLint 10: its scope
+    // manager has no `addGlobals`, so ESLint 10 crashed on the first .js/.mjs
+    // file ("scopeManager.addGlobals is not a function", 2026-10-07). The
+    // TypeScript files were never affected.
+    //
+    // typescript-eslint's parser reads plain JavaScript and JSX too, and 8.71+
+    // supports ESLint 10, so the remaining files use it. Remove this block once
+    // eslint-config-next ships a parser that supports ESLint 10.
+    files: ['**/*.{js,jsx,mjs,cjs}'],
+    languageOptions: { parser: tseslint.parser },
+  },
   {
     // ── eslint-plugin-react-hooks v7: warn, don't block ──────────────────────
     //
