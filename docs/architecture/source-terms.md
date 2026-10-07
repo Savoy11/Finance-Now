@@ -20,8 +20,9 @@ Integrations page.
 > ⚠ **Part of the registry is still `seeded`, and that is a deliberate,
 > visible state — not a claim of review.** It was authored in an environment whose
 > network policy blocked every publisher and provider host at the gateway, so no
-> terms document could be opened. **9 of 56 entries** are still starting positions
-> drawn from documented posture. **47 are `verified`** — the document was actually
+> terms document could be opened. **10 of 57 entries** are still starting positions
+> drawn from documented posture (the 57th, the **Federal Reserve Board**, was added
+> 2026-10-03 for the Market Calendar's FOMC dates: read that day, not yet ratified). **47 are `verified`** — the document was actually
 > opened and read. Four sit outside the big batch: **Cboe** (P2-O1, 2026-08-05),
 > **CoinGecko** (the first real probe run, 2026-08-29 — see
 > `docs/audits/terms-review-2026-08-29.md`), and **Poloniex** and **LBank** (both
@@ -35,10 +36,11 @@ Integrations page.
 > 2026-09-26 (`docs/audits/terms-review-seeded-2026-09-26.md`) and marked `verified` on
 > 2026-10-04 under D54 and D55 (`docs/decisions/2026-10-04-owner-decisions.md`).
 >
-> By verdict, the 56 are 14 `approved`, 37 `conditional`, **5 `prohibited`** — Yahoo,
-> Cboe, **Poloniex** (since 2026-09-15, whose §9 grants an API licence solely for the
-> purpose of trading on Poloniex, which this app does not do), and since **2026-09-20**
-> **`dowjones.io` and `marketwatch.com`**. The last two are the first prohibition to
+> By verdict (recounted 2026-10-03), the 57 are 11 `approved`, 40 `conditional`,
+> **6 `prohibited`** — Yahoo, Cboe, **Poloniex** (since 2026-09-15, whose §9 grants an API
+> licence solely for the purpose of trading on Poloniex, which this app does not do),
+> **OKX** (since 2026-09-30, D40), and since **2026-09-20** **`dowjones.io` and
+> `marketwatch.com`**. The last two are the first prohibition to
 > remove a *working* feed rather than a broken one: Dow Jones's Terms of Use §9.4.1
 > bars ingesting Content "whether directly or through an intermediary, using any
 > automated means … API client, AI agent or assistant … without our prior written
@@ -46,7 +48,8 @@ Integrations page.
 > The fetchers were removed in the same commit, because `sourceTerms.test.ts` fails
 > while a prohibited host remains in `DATA_SOURCES` — the guard forcing the code to
 > match the verdict. See `docs/audits/terms-review-news-2026-09-20.md`.
-> *(Counts refreshed 2026-09-19. They read 54 of 56 seeded / 2 verified and
+> *(Review counts refreshed 2026-10-03; the verdict line had drifted to 14 / 37 / 5 by
+> then and was recounted the same day. Counts refreshed 2026-09-19. They read 54 of 56 seeded / 2 verified and
 > 14 `approved` / 40 `conditional` / 2 `prohibited` when refreshed 2026-09-08 —
 > each correct on its own date — and 47 of 48 with Cboe the only verified entry,
 > written 2026-08-06.)*

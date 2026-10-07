@@ -2,12 +2,23 @@ import { NextRequest, NextResponse } from 'next/server'
 import { EQUITY_BY_SYMBOL } from '@/lib/data/equityCatalog'
 import { getProviderKey } from '@/lib/api/live/providers'
 import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
+import { fomcEventsBetween, mergeEconomicEvents, type EconomicEvent } from '@/lib/server/marketCalendar'
+import { fomcScheduleThrough } from '@/lib/data/fomcCalendar'
 
-// Earnings + economic calendar for the equities module. Requires FMP_API_KEY
-// (free tier covers both endpoints); returns ok:false without a key so the UI
-// shows an honest setup notice instead of fabricated dates.
+// Earnings + economic calendar for the equities module.
+//
+// - Earnings: FMP, free key.
+// - US economic releases: FMP's economic calendar, a PAID endpoint (402 on free).
+// - FOMC meetings: keyless — the hand-maintained table in lib/data/fomcCalendar.ts,
+//   copied from the Federal Reserve Board's calendar (added 2026-10-03). Returned on
+//   every plan, including with no FMP key at all.
+//
+// Without an FMP key the route reports configured:false so the UI shows an honest setup
+// notice for earnings, and still returns the FOMC rows.
 
 export const dynamic = 'force-dynamic'
+
+export type { EconomicEvent }
 
 export interface EarningsEvent {
   symbol: string
@@ -18,20 +29,21 @@ export interface EarningsEvent {
   inCatalog: boolean
 }
 
-export interface EconomicEvent {
-  event: string
-  date: string
-  country: string
-  impact: string | null
-}
-
 export interface MarketCalendarResponse {
+  /**
+   * FMP returned at least one row. FOMC rows do NOT count: they are always present, so
+   * counting them would make a dead FMP leg read as "no earnings scheduled" (the research
+   * agent's get_market_calendar tool relies on this).
+   */
   ok: boolean
+  /** An FMP key is configured. */
   configured: boolean
   from: string
   to: string
   earnings: EarningsEvent[]
   economic: EconomicEvent[]
+  /** Last date the FOMC table covers. Past it, no FOMC row means "not published yet". */
+  fomcThrough: string
   updatedAt: string
 }
 
@@ -56,12 +68,15 @@ export async function GET(req: NextRequest) {
     from = new Date().toISOString().slice(0, 10)
     to = new Date(Date.now() + days * 86_400_000).toISOString().slice(0, 10)
   }
-  const base = { from, to, updatedAt: new Date().toISOString() }
+  const base = { from, to, fomcThrough: fomcScheduleThrough(), updatedAt: new Date().toISOString() }
+
+  // Keyless, so computed before the key check: these show on every plan.
+  const fomc = fomcEventsBetween(from, to)
 
   // UI-saved key (Integrations page) or FMP_API_KEY env var
   const FMP_KEY = getProviderKey('fmp')
   if (!FMP_KEY) {
-    return NextResponse.json({ ok: false, configured: false, earnings: [], economic: [], ...base } satisfies MarketCalendarResponse)
+    return NextResponse.json({ ok: false, configured: false, earnings: [], economic: fomc, ...base } satisfies MarketCalendarResponse)
   }
 
   // FMP /stable API. Earnings works on the free tier; the economic calendar is
@@ -91,22 +106,23 @@ export async function GET(req: NextRequest) {
     earnings.sort((a, b) => Number(b.inCatalog) - Number(a.inCatalog) || a.date.localeCompare(b.date))
   }
 
-  const economic: EconomicEvent[] = []
+  // Every US medium/high row; mergeEconomicEvents applies the cap (high impact first)
+  // and drops FMP's copy of an FOMC decision the table already carries.
+  const fmpEconomic: EconomicEvent[] = []
   if (econRes.status === 'fulfilled' && econRes.value.ok) {
     const rows = await econRes.value.json() as Array<{ event: string; date: string; country: string; impact?: string }>
     for (const row of rows) {
       if (row.country !== 'US') continue
       if ((row.impact ?? '').toLowerCase() === 'low') continue
-      economic.push({ event: row.event, date: row.date, country: row.country, impact: row.impact ?? null })
-      if (economic.length >= 40) break
+      fmpEconomic.push({ event: row.event, date: row.date, country: row.country, impact: row.impact ?? null, source: 'fmp' })
     }
   }
 
   return NextResponse.json({
-    ok: earnings.length > 0 || economic.length > 0,
+    ok: earnings.length > 0 || fmpEconomic.length > 0,
     configured: true,
     earnings: earnings.slice(0, 120),
-    economic,
+    economic: mergeEconomicEvents(fmpEconomic, fomc),
     ...base,
   } satisfies MarketCalendarResponse)
 }
