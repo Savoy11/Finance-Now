@@ -1,4 +1,5 @@
 import type { LucideIcon } from 'lucide-react'
+import type { FeatureNoticeId } from '@/lib/legal/featureNotices'
 import {
   Flame,
   ShieldAlert,
@@ -12,6 +13,7 @@ import {
   Search,
   CandlestickChart,
   Briefcase,
+  ReceiptText,
   FlaskConical,
   Settings,
   Bot,
@@ -29,7 +31,6 @@ import {
   Network,
   Activity,
   Radar,
-  Sigma,
   Info,
 } from 'lucide-react'
 
@@ -91,6 +92,12 @@ export interface SuiteModule {
   /** Whether the module can be disabled. Core is always on. */
   optional: boolean
   navItems: ModuleNavItem[]
+  /**
+   * A line every page of the module carries under its content. ModuleGate
+   * renders it, so a new page inherits it. Only crypto has one: the disclosure
+   * draft's "Crypto pages" line (T-293).
+   */
+  pageNotice?: FeatureNoticeId
 }
 
 export const MODULES: SuiteModule[] = [
@@ -104,7 +111,16 @@ export const MODULES: SuiteModule[] = [
       { href: '/videos', label: 'Videos', icon: Video },
       { href: '/brief', label: 'Daily Brief', icon: Sunrise },
       { href: '/watchlist', label: 'Watchlist', icon: Star },
-      { href: '/portfolios', label: 'Portfolios', icon: Briefcase },
+      {
+        href: '/portfolios',
+        label: 'Portfolios',
+        icon: Briefcase,
+        // T-027 (D65): records of real trades, beside the what-if portfolios
+        // the parent page holds. The two are separate kinds and never convert.
+        children: [
+          { href: '/portfolios/tracked', label: 'Tracked', icon: ReceiptText },
+        ],
+      },
       { href: '/compare', label: 'Compare', icon: GitCompareArrows },
       { href: '/research', label: 'Research', icon: Microscope },
       // Item 1 (2026-08-19), unblocked by the nested-nav primitive items 6/7
@@ -157,6 +173,7 @@ export const MODULES: SuiteModule[] = [
       // the prefix here would be harmless but misleading — nothing owns it.
     ],
     optional: true,
+    pageNotice: 'crypto',
     navItems: [
       // Deliberately no "Reserves" entry. The Reserve Transparency Monitor is
       // a tab inside Coins (/assets?tab=reserves) as of 2026-07-29 — it used to
@@ -219,7 +236,13 @@ export const MODULES: SuiteModule[] = [
       { href: '/equities/social', label: 'Stock Social', icon: MessageSquare },
       { href: '/equities/technical-analysis', label: 'Technical Analysis', icon: CandlestickChart },
       { href: '/equities/scanner', label: 'Scanner', icon: Radar },
-      { href: '/equities/options', label: 'Options Scorer', icon: Sigma },
+      // Options Scorer HIDDEN 2026-10-04 (D64): every risk rating is switched off
+      // until the risk engine is rebuilt and the compliance research is done.
+      // The page and engine stay; /equities/options redirects in next.config.mjs,
+      // the v1 route answers 503, and the agent and MCP tools are withheld (see
+      // lib/risk/visibility.ts). To restore: put this entry back (and Sigma in
+      // the lucide-react import) and delete the redirect.
+      // { href: '/equities/options', label: 'Options Scorer', icon: Sigma },
       // Backtests HIDDEN 2026-08-20 (owner: "hide the back testing tool …
       // I may revisit back testing"). The page, lib/utils/equityBacktest.ts,
       // its tests and subproject P3-W2-S1 are all retained — /equities/backtests

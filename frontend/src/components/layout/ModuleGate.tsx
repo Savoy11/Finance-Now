@@ -5,16 +5,28 @@ import { Lock } from 'lucide-react'
 import type { ModuleId } from '@/lib/modules/registry'
 import { MODULES } from '@/lib/modules/registry'
 import { useEntitlementStore } from '@/store/useEntitlementStore'
+import { FeatureNotice } from '@/components/legal/FeatureNotice'
 
 // Wraps a module's pages so a disabled module shows an unlock notice instead
 // of its content. Client-side only for now — becomes a server-side entitlement
 // check when real auth lands.
+//
+// A module with a pageNotice in the registry gets that line under every page
+// (T-293: the crypto line). Placing it here means a new page carries it
+// without anyone remembering to add it.
 
 export function ModuleGate({ module, children }: { module: ModuleId; children: React.ReactNode }) {
   const isEnabled = useEntitlementStore((s) => s.isEnabled(module))
   const meta = MODULES.find((m) => m.id === module)
 
-  if (isEnabled) return <>{children}</>
+  if (isEnabled) {
+    return (
+      <>
+        {children}
+        {meta?.pageNotice && <FeatureNotice feature={meta.pageNotice} className="mt-8 text-center" />}
+      </>
+    )
+  }
 
   return (
     <div className="max-w-md mx-auto mt-24 rounded-card border border-border bg-bg-card p-8 text-center">

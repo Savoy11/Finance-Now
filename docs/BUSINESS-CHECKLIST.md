@@ -51,6 +51,9 @@ structure, regulatory research, disclosures and tax compliance are decided once,
         and "recommendations" at scale is exactly the line flagged in
         `docs/MARKET-ASSESSMENT.md`'s risk register. Keep framing informational; know where the
         line actually is.
+        Risk ratings, asset by asset: `docs/assessments/risk-ratings-by-asset-type-2026-10-07.md`
+        (T-419, 2026-10-07). The owner answered the same day (D92); the legal review (D4) is
+        next.
       - **Broker-dealer** — triggered only if the brokerage-linking work goes beyond read-only.
       - **FTC** — affiliate disclosure, endorsement rules, "clear and conspicuous".
       - **Data licensing / redistribution** — serving third-party data from our keys.
@@ -100,9 +103,18 @@ structure, regulatory research, disclosures and tax compliance are decided once,
       own footer link. The short "not investment advice" lines stay beside the features they
       qualify. **Built 2026-10-01 for Finance Now (T-293):** the footer is on every page, sign-in
       included, and Settings → About & Legal replaced How We Make Money, whose address redirects.
-      Still to do: the short lines beside the features (drafted in the disclosure set).
-- [ ] Keep one canonical copy per document, shared by both products where the text is identical,
+      **The short lines beside the features followed on 2026-10-07 (T-293):** the draft's six
+      Finance Now lines sit beside Portfolio Builder, the calculators, the AI features, the Pump
+      Report, video answers and every crypto page, copied as written, and a test pins each place.
+- [x] Keep one canonical copy per document, shared by both products where the text is identical,
       so they can't drift.
+      ✅ **DECIDED 2026-10-04 (D60, `docs/decisions/2026-10-04-owner-decisions.md`):** for now
+      the documents live in the two ledgers' file libraries, the Finance Now Ledger and the
+      News Charts Ledger pages on the owner's account. A document both products share is the
+      same file in both libraries; when it changes, both get the new version in the same pass
+      and the old one is archived. A session changing either product's legal pages compares
+      the two libraries first, and each app records which upload it copied. Not yet done:
+      nothing is uploaded, and News Charts has no legal pages (its NC-124).
 
 ## 4. Tax & ongoing compliance
 
@@ -190,7 +202,7 @@ work at v1; it does **not** move the line onto the fence, which takes a decision
 - Quotes, price chart, OHLCV/TA, trailing returns — *accepted 🔑: keyed; catalog `ref` prices with the amber tag when no key is held; returns `source: none` rather than fabricated*
 - `/equities/news` — *accepted 🟡: CNBC only (MarketWatch removed on terms), no per-ticker feed*
 - `/equities/social` — *accepted 🟡: StockTwits only*
-- `/equities/scanner` · `/equities/options` (Trade Risk Scorer) · `/equities/calendar` — *accepted 🟡: earnings live, economic calendar empty on the free tier*
+- `/equities/scanner` · ~~`/equities/options` (Trade Risk Scorer)~~ *switched off under D64 (2026-10-04) until the risk engine is rebuilt (T-420), its address redirecting to `/equities`* · `/equities/calendar` — *accepted 🟡: earnings live, economic calendar empty on the free tier*
 
 **Macro Markets module**
 - `/macro/news` · `/macro/currencies` with the two-tier converter · `/macro/rates` with the Treasury curve — all 🟢 keyless
@@ -202,7 +214,7 @@ work at v1; it does **not** move the line onto the fence, which takes a decision
 
 **Portfolio Builder (premium)** — both modes, saved plans, the drift monitor
 
-**Programmatic surfaces** — `/api/v1/*` (every listed endpoint answers; `transfer/routes` answers 503 by decision) and the MCP server's tools, less `find_transfer_routes` (withheld) and with `run_audit`'s shipping status still open (D5)
+**Programmatic surfaces** — `/api/v1/*` (every listed endpoint answers; `transfer/routes` and, since D64, `options/score` answer 503 by decision) and the MCP server's tools, less `find_transfer_routes` and `score_options_trade` (both withheld; the second since D64). `run_audit` was removed on 2026-10-04 (D68), which settles the P3 review's D5: every tool left reads `/api/v1` and nothing else
 
 **Deliberately absent from this list, and why:** Transfer Fees and Wallets (hidden — fence) ·
 every backtest surface (hidden — fence) · futures term structure and CUSIP bond quotes (🔴, no
@@ -236,12 +248,13 @@ bug report.**
 
 **Deferred to post-launch by decision, not by capacity**
 - SOC 2 — *D5, trigger: first paying customer or first enterprise conversation*
+- A business (enterprise) tier: company sign-in (SSO), an uptime guarantee, data-residency choice, separate customer environments, business contracts, and running in more than one region — *D71 and D72, same trigger as SOC 2*
 - Affiliate links and their disclosure — *D7*; none on either product at launch, revisited after it — *D49*
 - Reddit OAuth — *D8* · S4 options subproject — *D9* · new risk profiles — *D18*
 - Business entity formation — *D13*
 
 **Gated on external review**
-- S5 contribution modeling and the federal sale-tax estimator — *D4: not built; a qualified legal review clears them before they are built.* Until 2026-09-30 this line also named build-by-allocation and called all three "built, dark". Only build-by-allocation was built, and it was live. The owner then ruled that it needs no review (D47), so it stays live and is off this list.
+- S5 contribution modeling and the federal sale-tax estimator — *D4: not built; a qualified legal review clears them before they are built.* The estimator (T-058) is also parked with the hidden Transfer Fees page since 2026-10-04 (D67). Until 2026-09-30 this line also named build-by-allocation and called all three "built, dark". Only build-by-allocation was built, and it was live. The owner then ruled that it needs no review (D47), so it stays live and is off this list.
 
 ## 6. Documentation accuracy
 

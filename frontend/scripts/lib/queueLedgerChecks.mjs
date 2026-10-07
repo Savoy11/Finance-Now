@@ -155,6 +155,20 @@ export function runChecks(ledger, { registrySource = '', exists = (_repoRelative
     'A misspelled status silently drops an item from every filter and count.',
     items.filter((i) => !STATUSES.includes(i.status) || !ROLES.includes(i.owner_role)).map((i) => `${i.id} — status '${i.status}', role '${i.owner_role}'`))
 
+  {
+    const f = []
+    for (const i of items) {
+      if (i.status === 'parked') {
+        if (i.parked_on == null) f.push(`${i.id} — no parked_on`)
+        else if (!/^\d{4}-\d{2}-\d{2}$/.test(String(i.parked_on))) f.push(`${i.id} — parked_on '${i.parked_on}' is not a YYYY-MM-DD date`)
+      } else if (i.parked_on != null) {
+        f.push(`${i.id} — has parked_on but status is '${i.status}'`)
+      }
+    }
+    check('C13', 'Every parked item carries the date it was parked', 'warn',
+      'Until 2026-10-05 nothing said when an item was parked, so one parked the day before read the same as one parked when the ledger began (owner, D85).', f)
+  }
+
   const count = (sev) => checks.filter((c) => c.severity === sev).reduce((n, c) => n + c.findings.length, 0)
   return { checks, fails: count('fail'), warns: count('warn'), reviews: count('review') }
 }

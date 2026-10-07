@@ -417,6 +417,16 @@ export const DATA_SOURCES: DataSourceEntry[] = [
     notes: 'Prices split by instrument class: CoinGecko ids price through portfolio-prices, sec:-keyed stocks/funds/macro through the security-quotes ladder. Lists themselves are user data (Postgres), not a provider feed.',
   },
   {
+    id: 'tracked-portfolios', surface: 'Tracked portfolios (trade history, FIFO gains)', module: 'shared',
+    route: '/live-data/portfolio-prices + /live-data/security-quotes', status: 'derived',
+    providers: [
+      { name: 'Finance Now engine (lib/data/costBasis.ts)', role: 'derived', auth: 'none' },
+      COINGECKO,
+      { name: 'Equity quote ladder (FMP → Finnhub → Twelve Data → Tiingo → Alpha Vantage)', role: 'fallback', auth: 'key' },
+    ],
+    notes: 'Trades are user data (Postgres, /api/user/tracked-portfolios). Cost, average cost and realized gains are Finance Now’s own FIFO computation over those trades, not provider figures and not tax figures (D65). Live prices enter only for value and unrealized gain; a holding with no live price is left out of the totals, never valued at cost.',
+  },
+  {
     id: 'compare', surface: 'Compare (growth-of-100, window stats, correlation)', module: 'shared',
     route: '/live-data/security-chart + /live-data/chart', status: 'derived',
     providers: [
@@ -446,7 +456,7 @@ export const DATA_SOURCES: DataSourceEntry[] = [
       FMP,
     ],
     cadence: 'on demand',
-    notes: 'Every option-level figure is entered by the user — Finance Now carries NO options chain, because no source it may use publishes one (Cboe’s terms prohibit auto-extraction; Yahoo’s options endpoint required auth and Yahoo is now blocked outright on terms grounds). See docs/assessments/P2-O1-options-data.md. Only the underlying price is fetched, through the shared quote ladder, which is keyed. The score itself is this app’s computation, not any provider’s figure.',
+    notes: 'SWITCHED OFF 2026-10-04 (D64): the endpoint answers 503 and the page redirects, with every other risk rating, until the risk engine is rebuilt and reviewed. When on: every option-level figure is entered by the user — Finance Now carries NO options chain, because no source it may use publishes one (Cboe’s terms prohibit auto-extraction; Yahoo’s options endpoint required auth and Yahoo is now blocked outright on terms grounds). See docs/assessments/P2-O1-options-data.md. Only the underlying price is fetched, through the shared quote ladder, which is keyed. The score itself is this app’s computation, not any provider’s figure.',
   },
   {
     id: 'portfolio-builder', surface: 'Portfolio Builder (allocations, drift, suitability)', module: 'shared',

@@ -621,7 +621,7 @@ routes. All agent-run routes are `guardSensitiveRoute`-protected.
 | X2 | research-analyst / equity-research / equity-screener / macro-research | READY | Whitelisted, invocable, honest 503s naming the fix surface. |
 | X3 | pump-report-investigator / pump-report-chat | NEEDS-FIX | Their routes **ignore the per-agent `enabled` toggle** — a "disabled" pump agent still runs (exposure bounded by localhost/token guard, but the Integrations toggle is a lie for these two). Also return 500 instead of 503 on missing key. |
 | X4 | data-scraper / equity-data-scraper / equity-diligence | **NEEDS-OWNER-DECISION** | Confirmed unreachable: no invocation path exists. Configurable and toggleable, described in `/agent-config` as "runs autonomously…". Standing owner-backlog decision: give them a trigger UI or retire them. |
-| X5 | macro-screener | NEEDS-FIX (small) | Whitelisted and functional but reachable only via `?agent=` deep link — its equity twin has a panel. Add the panel or note the deep link in UI. |
+| X5 | macro-screener | NEEDS-FIX (small) | Whitelisted and functional but reachable only via `?agent=` deep link — its equity twin has a panel. Add the panel or note the deep link in UI. **Done 2026-10-01:** the AI Movers Scan panel on `/macro/scanner`. |
 
 ### Public /api/v1 (12 endpoints + OpenAPI spec)
 
@@ -655,6 +655,10 @@ today's surface is market-data-only, as Phase 6 assumes.
 > deprecated), P3 ✅ (counts no longer hand-typed), P4 ✅ (post-rebrand
 > self-description, README created, `zod` declared). P5 remains the open D5
 > decision — the README warns against external distribution until it is made.
+>
+> **2026-10-04: P5 is settled.** `run_audit` was removed (owner decision D68,
+> `docs/decisions/2026-10-04-owner-decisions.md`) and the server is data-only.
+> See the note under "D5 — why 'dev-machine only' is the operative constraint".
 
 | # | Finding | Verdict |
 |---|---------|---------|
@@ -839,6 +843,17 @@ The hard guard, if the constraint ever needs enforcing in code rather than
 discipline: refuse to run unless `FN_BASE_URL` is localhost **and** an explicit
 opt-in env var is set. Not built — the owner's decision is the constraint itself.
 
+> **Settled 2026-10-04 (D68): `run_audit` was removed, not hard-guarded**
+> (`docs/decisions/2026-10-04-owner-decisions.md`). Read against the code that day,
+> exposure 1 held: npm assumes `--yes`, and so installs a missing package unasked,
+> when standard input is not a terminal, which is how an MCP server runs. Exposure 2
+> did not: the route probes were a fixed list of eight public market-data routes, none
+> behind `apiGuard`, and the tool took no argument that could change them; the source
+> walk read only `.ts`/`.tsx` files under `frontend/src` and printed file names and
+> counts, never the secret stores, which are JSON files in `frontend/`. Exposure 3
+> went with the tool. The server is now data-only, held by
+> `frontend/src/lib/server/__tests__/mcpDataOnly.test.ts`.
+
 ### OPEN — deferred, with the unblocker named
 
 | # | Item | Why it is open | Unblocked by |
@@ -875,6 +890,10 @@ checks on entry.
 | ~~PB-1~~ | ✅ **DONE 2026-08-18.** Unpriced holdings leave the totals; P&L% divides by the priced-with-entry capital; `pricedPct`/`pricedCapital` added to `PortfolioMetrics` and disclosed on the P&L card below 99.5%. The test that pinned the old behaviour was rewritten to enforce the invariant |
 | ~~PB-2~~ | ✅ **DONE 2026-08-18.** New `quoteKind: 'fx'` + `quoteCurrency` on currency instruments, sourced from the catalog's existing `quote` ISO code; `formatFxQuote()` renders ¥147.26 / CHF 0.8923 / C$1.3651, ISO-suffixed for codes with no unambiguous symbol. Uses an explicit symbol map, **not** `Intl` currency mode, which would round JPY to zero decimals and destroy FX precision |
 | S1-1 | Equity backtest Sharpe annualized at 52/12 bars-per-year against data that is daily on every range. **Owned by P3-W2-S1** and deliberately not fixed here: the fix depends on S1's first decision (resample server-side vs relabel to daily), which the owner delegated to the subproject on 2026-08-17 |
+
+> ⚠ **OVERTAKEN 2026-08-20 — annotation added 2026-10-05 (owner decision D80, T-395).**
+> Surfaces hidden 2026-08-20 and P3-W2-S1 suspended — S1-1 no longer gates rollout; the
+> fix lands with the S1 restore.
 
 ### Approved build work — queued, not built
 

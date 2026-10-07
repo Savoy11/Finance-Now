@@ -698,10 +698,13 @@ Two structural notes:
 
 ### 6.3 Futures
 
-> **Still a draft — nothing ships.** `lib/risk/profiles/` holds eight profiles and
-> none of them is futures (commodity, cryptoAsset, currency, equity, optionsTrade,
-> rateInstrument, stablecoin, stakingAdapter). Unlike §6.1 and §6.2 above, there is
-> no shipped code for this table to contradict.
+> **Still a draft — nothing ships.** `lib/risk/profiles/` holds no futures profile. It
+> holds commodity, cryptoAsset, currency, equity, optionsTrade, rateInstrument and
+> stablecoin; `stakingAdapter` was deleted under D26 on 2026-09-25, though this line still
+> listed it until 2026-10-05. Unlike §6.1 and §6.2 above, there is no shipped code for this
+> table to contradict. Its ledger item, T-355, is parked under D18 (D76, 2026-10-05): a
+> futures profile comes back only through the risk engine rebuild (T-420), and every risk
+> rating is switched off until then (D64).
 
 Futures are **positions, not assets** — closer in kind to `optionsTrade` than to `equity`.
 Their dominant risk is leverage/margin, which is a property of the position, not the

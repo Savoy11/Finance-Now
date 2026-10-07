@@ -157,7 +157,16 @@ export function EquitiesClient() {
       if (p.peMin) setMinPe(p.peMin)
       if (p.peMax) setMaxPe(p.peMax)
       if (p.yieldMin) setMinYield(p.yieldMin)
+      // The five below were written into the link from W3-5 on but never read back,
+      // so a shared link dropped them and showed the unfiltered list (found by the
+      // T-282 click-through, 2026-10-07). equitiesScreenerUrl.test.ts now fails if a
+      // key written above is not read here.
+      if (p.yieldMax) setMaxYield(p.yieldMax)
+      if (p.betaMin) setMinBeta(p.betaMin)
       if (p.betaMax) setMaxBeta(p.betaMax)
+      if (p.priceMin) setMinPrice(p.priceMin)
+      if (p.priceMax) setMaxPrice(p.priceMax)
+      if (p.payers === '1') setPayersOnly(true)
     },
   )
 

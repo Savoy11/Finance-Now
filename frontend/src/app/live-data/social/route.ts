@@ -167,12 +167,15 @@ export async function GET(req: NextRequest) {
 function withheldReason(provider: AnyActiveProvider): string | null {
   switch (provider.id) {
     // Reddit's robots.txt disallows our agent (observed 2026-08-29). Gated
-    // rather than deleted: registering OAuth credentials is the supported way
-    // back in, and the entry in sourceTerms.ts names the variable that does it.
+    // rather than deleted: registered OAuth access is the supported way back in,
+    // and the entry in sourceTerms.ts names the variable that lifts the gate.
+    // Setting it alone is not enough, since this route still reads the anonymous
+    // .rss feeds; the OAuth reader has to be built first (T-245, a post-launch
+    // project under D58, now that Reddit approves every API user).
     case 'reddit':
       return robotsPermits('https://www.reddit.com/')
         ? null
-        : "Reddit's robots.txt disallows this app's agent. Configure REDDIT_CLIENT_ID (OAuth) to read it through the supported path."
+        : "Reddit is not read: its robots.txt disallows this app's agent, and its API needs Reddit's approval, which is planned for after launch."
     // Both carry social VOLUME, which is key-gated. Without a key the signal is
     // absent, not zero — so say so rather than letting it read as "no chatter".
     case 'lunarcrush':

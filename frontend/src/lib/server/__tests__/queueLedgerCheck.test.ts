@@ -46,7 +46,7 @@ function clean(): Ledger {
     item('T-001', 'open'),
     item('T-002', 'blocked', { blocking_decision: 'Owner: something', owner_role: 'owner-decision' }),
     item('T-003', 'closed', { closure: closure() }),
-    item('T-004', 'parked'),
+    item('T-004', 'parked', { parked_on: '2026-09-07' }),
     item('T-005', 'unclear'),
     item('T-006', 'closed', { closure: closure({ evidence: ['docs/present.md — the section'] }), related_ids: ['T-001'] }),
   ]
@@ -63,7 +63,7 @@ const findings = (l: Ledger, id: string) => run(l).checks.find((c: any) => c.id 
 describe('queue ledger checks — clean fixture', () => {
   it('passes every check', () => {
     const r = run(clean())
-    expect(r.checks.map((c: any) => c.id)).toEqual(['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10', 'C11', 'C12'])
+    expect(r.checks.map((c: any) => c.id)).toEqual(['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10', 'C11', 'C12', 'C13'])
     for (const c of r.checks) expect(c.findings, c.id).toEqual([])
     expect(r.fails + r.warns + r.reviews).toBe(0)
   })
@@ -137,6 +137,17 @@ describe('queue ledger checks — each check goes red under its mutation', () =>
   it('C12: a status or role outside the vocabulary', () => {
     const l = clean(); l.outstanding[0].status = 'done'; l.outstanding[3].owner_role = 'someone'
     expect(findings(l, 'C12')).toHaveLength(2)
+  })
+  it('C13: a parked item with no date, a malformed date, and a date left on an item no longer parked', () => {
+    const l = clean()
+    delete l.outstanding[3].parked_on
+    expect(findings(l, 'C13')).toEqual(['T-004 — no parked_on'])
+    l.outstanding[3].parked_on = '7 Sept 2026'
+    l.outstanding[0].parked_on = '2026-09-07' // open item still carrying its old park date
+    expect(findings(l, 'C13')).toEqual([
+      "T-001 — has parked_on but status is 'open'",
+      "T-004 — parked_on '7 Sept 2026' is not a YYYY-MM-DD date",
+    ])
   })
   it('severity totals count findings, not checks', () => {
     const l = clean(); l.counts.total = 1; l.counts.outstanding = 1; l.outstanding[1].blocking_decision = null

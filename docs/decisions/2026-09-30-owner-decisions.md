@@ -178,3 +178,17 @@ that page as a short launch version ("no link on either site pays us"); that cop
 awaiting the owner's approval, and is not recorded as a ruling here. T-123 (affiliate
 sign-ups on the Coin Registry) and T-124 (brokerage referrals) are also affiliate surfaces,
 but the owner confirmed parking the two items named, so these two were left as they are.
+
+## Pointers appended 2026-10-04
+
+> The rulings above are left as made.
+>
+> - **D46's hold was lifted by D54** (`2026-10-04-owner-decisions.md`). The owner chose
+>   option 1, "All 17 fully read and settled", and those seventeen readings are now
+>   `verified`.
+> - **T-119 closed the same day.** The launch copy that the note on D49 says was waiting for
+>   the owner's approval became the How we make money section of `/about` (D50, T-293). It is
+>   approved, or not, together with the rest of the disclosure set under T-291.
+> - **T-123 and T-124 joined D49's park** under D69 (`2026-10-04-owner-decisions.md`). The note
+>   on D49 above says these two were left as they were because only T-120 and T-125 had been
+>   confirmed; the owner has now confirmed them too.

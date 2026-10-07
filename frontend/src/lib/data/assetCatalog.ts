@@ -1,4 +1,4 @@
-﻿// Static asset metadata catalog.
+// Static asset metadata catalog.
 //
 // This file carries ONLY stable reference facts about each asset — id, symbol,
 // name, type, blockchain, contract address, issuer, description, links, and the
@@ -451,13 +451,14 @@ const RAW_CATALOG: Omit<Asset, 'riskScore' | 'riskBand'>[] = [
     // returns the muted class and the column reads N/A. That is honest — this
     // asset has no peg to deviate from.
     //
-    // assetType is deliberately LEFT as 'stablecoin'. It is wrong — the type
-    // already permits 'tokenized' and nothing uses it — but reclassifying moves
-    // catalog counts and the registry's type chips, and it is §7B of
-    // docs/assessments/tokenized-securities-2026-09-21.md, which carries eight
-    // owner decisions. Stopping the false red flag does not require pre-empting
-    // that, and the two should not ride in together.
-    assetType: 'stablecoin',
+    // assetType is 'tokenized' since 2026-10-07 (TS-1, the first item of §7B of
+    // docs/assessments/tokenized-securities-2026-09-21.md). Until then it was
+    // filed as a stablecoin, which it is not: it is a security, offered by Ondo
+    // only outside the US. D92 also needs the catalog to say which tokens are
+    // securities before any coin rating can return (T-420), and this is that
+    // mark for USDY. It leaves the stablecoin count and the Cycle Context
+    // stablecoin share, and fills the registry's "Tokenized" filter.
+    assetType: 'tokenized',
     blockchain: 'ethereum',
     contractAddress: '0x96f6ef951840721adbf46ac996b59e0235cb985c',
     isActive: true,

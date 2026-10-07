@@ -17,11 +17,11 @@ Integrations page.
 > to make that reading explicit, dated, enforced, and re-checkable — not to be right
 > about the law on its own.
 
-> ⚠ **Most of the registry is still `seeded`, and that is a deliberate,
+> ⚠ **Part of the registry is still `seeded`, and that is a deliberate,
 > visible state — not a claim of review.** It was authored in an environment whose
 > network policy blocked every publisher and provider host at the gateway, so no
-> terms document could be opened. **30 of 56 entries** are still starting positions
-> drawn from documented posture. **26 are `verified`** — the document was actually
+> terms document could be opened. **9 of 56 entries** are still starting positions
+> drawn from documented posture. **47 are `verified`** — the document was actually
 > opened and read. Four sit outside the big batch: **Cboe** (P2-O1, 2026-08-05),
 > **CoinGecko** (the first real probe run, 2026-08-29 — see
 > `docs/audits/terms-review-2026-08-29.md`), and **Poloniex** and **LBank** (both
@@ -31,7 +31,9 @@ Integrations page.
 > `docs/audits/terms-review-apis-2026-09-14.md`) and ratified on 2026-09-18 under
 > `docs/decisions/2026-09-18-terms-ratification-proposal.md` — which also records
 > four of those ratifications **reverted** to `seeded` on 2026-09-19, because the
-> audits did not support them.
+> audits did not support them. Twenty-one more were read on the owner's machine on
+> 2026-09-26 (`docs/audits/terms-review-seeded-2026-09-26.md`) and marked `verified` on
+> 2026-10-04 under D54 and D55 (`docs/decisions/2026-10-04-owner-decisions.md`).
 >
 > By verdict, the 56 are 14 `approved`, 37 `conditional`, **5 `prohibited`** — Yahoo,
 > Cboe, **Poloniex** (since 2026-09-15, whose §9 grants an API licence solely for the
@@ -135,6 +137,15 @@ is reported stale; it is *not* disallowed. Terms change, but breaking the app be
 nobody re-read a document is the wrong failure. `getSourceTermsProvenance()` dates the
 registry by its **oldest** entry — re-reading one site's terms does not refresh the
 other forty, the same rule the hand-maintained data catalogs follow.
+
+**The re-read is a CI clock (T-250, D88, 2026-10-07).** `TERMS_REREAD_STALE_AFTER_DAYS`
+and `TERMS_REREAD_OLDEST_READING` in `sourceTerms.ts` are the window and the date of the
+oldest reading, under the names `npm run staleness:check` discovers. The check warns three
+weeks before that reading turns 180 days old and fails on the day it does, unless the oldest
+entries are re-read (the anchor then moves to the new oldest `reviewedAt`) or the lapse is
+recorded as a decision with a `STALENESS-ACK` line. `sourceTerms.test.ts` fails if the anchor
+stops matching the registry. The first re-read falls due on 2027-02-02, for Cboe's reading
+of 2026-08-05.
 
 ---
 

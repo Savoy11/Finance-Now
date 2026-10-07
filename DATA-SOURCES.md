@@ -5,7 +5,7 @@ change the registry and regenerate. This is the "where does the data come from" 
 `DATA-AVAILABILITY.md` (which tracks whether each surface is live). The same registry powers the
 in-app **/data-sources** page and the per-page provenance badges, so the app and the docs never diverge._
 
-_Last generated: **2026-09-30**_
+_Last generated: **2026-10-04**_
 
 ## Legend
 
@@ -92,7 +92,7 @@ Provider tags: `key` = needs an API key · `paid` = needs a paid plan · untagge
 - **Equity screener / outliers** — Sector z-scores over whatever universe stock-universe returns — inherits its narrowness on the catalog fallback.
 - **IPO calendar** — IPO_CALENDAR is on Alpha Vantage’s free tier — the only free source publishing forward listing DATES (SEC S-1 filings show intent, not timing). Reports configured:false without a key. Its 25 requests/day is a terms CONDITION, so the route caches 6h. Price ranges arrive as 0 when the issuer has not set one and are rendered as “not set”, never $0.
 - **Market calendar (earnings / econ)** — Earnings needs a free FMP key; economic calendar needs a paid one. Reports configured:false without one.
-- **Trade Risk Scorer (options)** — Every option-level figure is entered by the user — Finance Now carries NO options chain, because no source it may use publishes one (Cboe’s terms prohibit auto-extraction; Yahoo’s options endpoint required auth and Yahoo is now blocked outright on terms grounds). See docs/assessments/P2-O1-options-data.md. Only the underlying price is fetched, through the shared quote ladder, which is keyed. The score itself is this app’s computation, not any provider’s figure.
+- **Trade Risk Scorer (options)** — SWITCHED OFF 2026-10-04 (D64): the endpoint answers 503 and the page redirects, with every other risk rating, until the risk engine is rebuilt and reviewed. When on: every option-level figure is entered by the user — Finance Now carries NO options chain, because no source it may use publishes one (Cboe’s terms prohibit auto-extraction; Yahoo’s options endpoint required auth and Yahoo is now blocked outright on terms grounds). See docs/assessments/P2-O1-options-data.md. Only the underlying price is fetched, through the shared quote ladder, which is keyed. The score itself is this app’s computation, not any provider’s figure.
 
 ## ETFs & Funds
 
@@ -130,12 +130,14 @@ Provider tags: `key` = needs an API key · `paid` = needs a paid plan · untagge
 |---------|--------|-------------|---------|-------|
 | Headlines (cross-module landing feed) | Live | Crypto + equity news feeds (merged client-side) | — | `/live-data/news + /live-data/market-news` |
 | Watchlist (cross-module live prices) | Live | [CoinGecko](https://www.coingecko.com/en/api) `api.coingecko.com`<br>Equity quote ladder (FMP → Finnhub → Twelve Data → Tiingo → Alpha Vantage) _(key)_ | — | `/live-data/portfolio-prices + /live-data/security-quotes` |
+| Tracked portfolios (trade history, FIFO gains) | Derived | Finance Now engine (lib/data/costBasis.ts)<br>[CoinGecko](https://www.coingecko.com/en/api) `api.coingecko.com`<br>Equity quote ladder (FMP → Finnhub → Twelve Data → Tiingo → Alpha Vantage) _(key)_ | — | `/live-data/portfolio-prices + /live-data/security-quotes` |
 | Compare (growth-of-100, window stats, correlation) | Derived | [Tiingo](https://www.tiingo.com/documentation/general/overview) `api.tiingo.com` _(key)_<br>[FMP](https://site.financialmodelingprep.com/developer/docs) `financialmodelingprep.com` _(key)_<br>[CoinGecko](https://www.coingecko.com/en/api) `api.coingecko.com`<br>[Twelve Data](https://twelvedata.com/docs) `api.twelvedata.com` _(key)_<br>Finance Now computation (alignment, stats, correlation) | — | `/live-data/security-chart + /live-data/chart` |
 | AI Daily Brief | Derived | Finance Now AI agent (LLM, BYOK) _(key)_<br>Live-data routes (same feeds the UI reads) | — | `/api/agents/research` |
 | Portfolio Builder (allocations, drift, suitability) | Derived | Finance Now engine (lib/data/portfolioBuilder.ts)<br>[CoinGecko](https://www.coingecko.com/en/api) `api.coingecko.com`<br>Equity quote ladder (FMP → Finnhub → Twelve Data → Tiingo → Alpha Vantage) _(key)_ | — | `/live-data/portfolio-prices + /live-data/security-quotes (drift monitoring)` |
 | Integrations connectivity test | Derived | Every configured provider (crypto + equity + LLM) _(key)_ | — | `/live-data/config` |
 
 - **Watchlist (cross-module live prices)** — Prices split by instrument class: CoinGecko ids price through portfolio-prices, sec:-keyed stocks/funds/macro through the security-quotes ladder. Lists themselves are user data (Postgres), not a provider feed.
+- **Tracked portfolios (trade history, FIFO gains)** — Trades are user data (Postgres, /api/user/tracked-portfolios). Cost, average cost and realized gains are Finance Now’s own FIFO computation over those trades, not provider figures and not tax figures (D65). Live prices enter only for value and unrealized gain; a holding with no live price is left out of the totals, never valued at cost.
 - **Compare (growth-of-100, window stats, correlation)** — Price series are provider data (Tiingo, FMP or Twelve Data for stocks/funds — the third rung added 2026-09-18 to catch FMP’s 402s on ETFs and mutual funds; CoinGecko closes for crypto); the growth-of-100 normalization, window statistics, and correlation matrix are computed by Finance Now, not published figures. Comparing a stock against a macro instrument may now come back one-sided — the equity leg is keyed and the macro leg often uncovered since the Yahoo removal.
 - **AI Daily Brief** — AI-generated text grounded in the user’s holdings and the same /live-data routes the UI reads. This is Finance Now’s own computation — not a publisher’s analysis — and inherits the freshness of whatever feeds the agent’s tools returned.
 - **Portfolio Builder (allocations, drift, suitability)** — Allocations, bond ladders, diversification and suitability scores are Finance Now’s own computation (pure engine, vitest-tested) — not provider figures. Live prices enter only for drift-vs-actual monitoring; unpriced positions are excluded, never valued at cost. Reference/fallback data: `lib/data/portfolioBuilder.ts`, `lib/data/fundCatalog.ts`.
@@ -143,4 +145,4 @@ Provider tags: `key` = needs an API key · `paid` = needs a paid plan · untagge
 
 ---
 
-_51 surfaces catalogued. Regenerate with `npm run data-sources`; verify against the route code with `npm run data-sources -- --verify`._
+_52 surfaces catalogued. Regenerate with `npm run data-sources`; verify against the route code with `npm run data-sources -- --verify`._

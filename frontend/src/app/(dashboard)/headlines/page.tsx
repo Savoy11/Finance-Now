@@ -44,6 +44,12 @@ interface Story {
   category: string
   /** Asset ids (crypto) or ticker symbols (markets). */
   tags: string[]
+  /**
+   * Stock tickers a crypto story about tokenized securities names (TS-13).
+   * Empty for every other story, and always empty on market stories, whose
+   * tickers are already their tags.
+   */
+  stockTags: string[]
   isBreaking: boolean
   module: StoryModule
 }
@@ -82,6 +88,7 @@ function rank(a: Story, b: Story): number {
 
 function StoryCard({ story, showModule = false, onWatchlist = false }: { story: Story; showModule?: boolean; onWatchlist?: boolean }) {
   const meta = MODULE_META[story.module]
+  const equitiesOn = useEntitlementStore((s) => s.isEnabled('equities'))
 
   return (
     <article
@@ -140,7 +147,7 @@ function StoryCard({ story, showModule = false, onWatchlist = false }: { story: 
 
       <div className="flex items-center justify-between gap-2 pt-1 border-t border-border/60">
         <div className="flex items-center gap-1.5 min-w-0">
-          {story.tags.length > 0 && (
+          {(story.tags.length > 0 || story.stockTags.length > 0) && (
             <>
               <Tag size={10} className="text-text-muted flex-shrink-0" aria-hidden />
               <div className="flex flex-wrap gap-1">
@@ -153,6 +160,17 @@ function StoryCard({ story, showModule = false, onWatchlist = false }: { story: 
                     {tag}
                   </Link>
                 ))}
+                {story.stockTags.slice(0, 4).map((symbol) => {
+                  const label = `${symbol} stock, named in this story about tokenized securities`
+                  const chip = 'px-1.5 py-0.5 rounded bg-fuchsia-500/10 border border-fuchsia-500/20 text-[10px] font-mono text-fuchsia-300'
+                  return equitiesOn ? (
+                    <Link key={`stock:${symbol}`} href={`/equities/${symbol.toLowerCase()}`} title={label} aria-label={label} className={clsx(chip, 'hover:bg-fuchsia-500/20 transition-colors')}>
+                      {symbol}
+                    </Link>
+                  ) : (
+                    <span key={`stock:${symbol}`} title={label} className={chip}>{symbol}</span>
+                  )
+                })}
               </div>
             </>
           )}
@@ -181,10 +199,13 @@ export default function HeadlinesPage() {
   const watchlist = useWatchlistBias()
   const biasStrength = useFeedBiasStore((s) => s.getStrength('headlines'))
 
-  /** Story → matchable shape. Crypto tags are asset ids, market tags are tickers. */
+  /**
+   * Story → matchable shape. Crypto tags are asset ids, market tags are tickers,
+   * and a crypto story about tokenized securities also carries stock tickers.
+   */
   const toBiasable = (s: Story) => ({
     assetIds: s.module === 'crypto' ? s.tags : undefined,
-    symbols: s.module === 'markets' ? s.tags : undefined,
+    symbols: s.module === 'markets' ? s.tags : s.stockTags,
     text: `${s.title} ${s.summary}`,
   })
 
@@ -223,6 +244,7 @@ export default function HeadlinesPage() {
       category: a.category,
       // 'general' is the route's catch-all bucket, not a real asset tag.
       tags: a.relatedAssets.filter((t) => t !== 'general'),
+      stockTags: a.relatedSymbols ?? [],
       isBreaking: a.isBreaking,
       module: 'crypto' as const,
     }))
@@ -241,6 +263,7 @@ export default function HeadlinesPage() {
       sentiment: a.sentiment,
       category: a.category,
       tags: a.relatedSymbols,
+      stockTags: [],
       isBreaking: a.isBreaking,
       module: 'markets' as const,
     }))

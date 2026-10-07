@@ -51,6 +51,9 @@ describe('D26 — the six staking risk dimensions stay removed', () => {
     expect(mcp).not.toMatch(/riskBreakdown/)
     expect(mcp).not.toMatch(/Risk dimensions \(1–10/)
     expect(mcp).not.toMatch(/const DIMENSIONS = \['custody'/)
+    // The server's README described the six as carried until 2026-10-04 (D68 PR).
+    const mcpReadme = readFileSync(join(process.cwd(), '..', 'mcp-server', 'README.md'), 'utf8')
+    expect(mcpReadme).not.toMatch(/six curated risk dimensions/i)
     const tools = strip(read('lib/agents/tools.ts'))
     expect(tools).not.toMatch(/six curated risk/i)
     expect(tools).toMatch(/NO risk scores, ratings or dimensions/)

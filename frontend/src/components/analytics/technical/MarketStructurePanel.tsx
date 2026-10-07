@@ -129,6 +129,10 @@ export function MarketStructurePanel({ symbol }: { symbol: string }) {
               {fg.previousClose != null && (
                 <span className="text-text-muted font-normal"> (prev {fg.previousClose})</span>
               )}
+              {/* alternative.me allows commercial use "as long as the attribution is given right
+                  next to the display of the data" (read 2026-09-26, sourceTerms.ts) — beside the
+                  figure, not only in the panel's source badge. */}
+              <span className="text-text-muted font-normal font-sans"> · alternative.me</span>
             </span>
           ) : <span className="text-text-muted">n/a</span>}
         </div>

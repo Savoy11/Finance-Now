@@ -30,14 +30,16 @@ import { auth } from './config'
 // sessions simply start winning, and setting FN_ALLOW_LOCAL_USER=false turns
 // the fallback off entirely.
 
-// Renamed local@caep.local → local@fn.local in the 2026-08 pre-production
-// identity sweep (docs/deployment/caep-db-rename.md). The row id is what every
-// portfolio/watchlist/builder-plan points at, so getOrCreateLocalUser() adopts
-// an existing legacy row by renaming it IN PLACE — never by creating a fresh
-// row, which would orphan all existing data. Keep the legacy lookup until
-// every install has run a post-rename build once. Never shown in the UI.
+// The local user's sentinel email, never shown in the UI. Its row id is what
+// every portfolio, watchlist and builder plan points at.
+//
+// Until the 2026-08-12 identity rename it was local@caep.local, and a lookup
+// here adopted a row under the old address by renaming it in place. That
+// lookup was removed on 2026-10-04 by owner decision D75, once every install
+// had run a post-rename build. A database still holding the old row would now
+// get a fresh, empty local user, with the data left on the old row; the two
+// UPDATEs that reconnect it are in docs/deployment/caep-db-rename.md.
 const LOCAL_USER_EMAIL = 'local@fn.local'
-const LEGACY_LOCAL_USER_EMAIL = 'local@caep.local'
 
 function localUserFlag(): string | undefined {
   return process.env.FN_ALLOW_LOCAL_USER ?? process.env.CAEP_ALLOW_LOCAL_USER
@@ -60,19 +62,6 @@ async function getOrCreateLocalUser(): Promise<string> {
     .where(eq(sql`lower(${users.email})`, LOCAL_USER_EMAIL))
     .limit(1)
   if (existing) return existing.id
-
-  // Pre-rename installs have the row under the legacy email. Rename it in
-  // place so it keeps its id (and everything hanging off it). Concurrent
-  // requests may both run this update; it is idempotent.
-  const [legacy] = await db
-    .select({ id: users.id })
-    .from(users)
-    .where(eq(sql`lower(${users.email})`, LEGACY_LOCAL_USER_EMAIL))
-    .limit(1)
-  if (legacy) {
-    await db.update(users).set({ email: LOCAL_USER_EMAIL }).where(eq(users.id, legacy.id))
-    return legacy.id
-  }
 
   const [created] = await db
     .insert(users)

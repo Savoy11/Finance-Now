@@ -110,14 +110,16 @@ export const BUILTIN_PROVIDERS: BuiltinProviderDef[] = [
     priority: 3,
   },
   // ── Social ──
+  // Reddit is gated off by its robots.txt, and its API now needs Reddit's approval:
+  // a post-launch project (D58, 2026-10-04; T-245). Both Reddit rows say so.
   {
     id: 'reddit',
     name: 'Reddit',
     category: 'social',
-    description: 'Public Reddit posts from r/CryptoCurrency, r/stablecoins, r/defi, and related subreddits. No API key required.',
+    description: 'Public Reddit posts from r/CryptoCurrency, r/stablecoins, r/defi, and related subreddits. Not read until Reddit grants API access, planned for after launch.',
     features: ['Post sentiment', 'Community discussion', 'Subreddit coverage'],
     requiresKey: false,
-    freeTierLabel: 'Public API — no key needed',
+    freeTierLabel: 'Not in use: needs Reddit API access (after launch)',
     keyUrl: 'https://www.reddit.com/wiki/api',
     priority: 1,
   },
@@ -677,10 +679,10 @@ export const BUILTIN_PROVIDERS: BuiltinProviderDef[] = [
     name: 'Reddit Finance',
     category: 'social',
     market: 'equities',
-    description: 'Public posts from r/stocks, r/investing, r/StockMarket, and r/wallstreetbets with cashtag detection and keyword sentiment.',
+    description: 'Public posts from r/stocks, r/investing, r/StockMarket, and r/wallstreetbets with cashtag detection and keyword sentiment. Not read until Reddit grants API access, planned for after launch.',
     features: ['Post sentiment', 'Cashtag detection', 'Four finance subreddits'],
     requiresKey: false,
-    freeTierLabel: 'Public API — no key needed',
+    freeTierLabel: 'Not in use: needs Reddit API access (after launch)',
     keyUrl: 'https://www.reddit.com/wiki/api',
     priority: 1,
   },

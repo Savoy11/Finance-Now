@@ -32,3 +32,25 @@ export const builderPlans = pgTable('builder_plans', {
 }))
 
 export type BuilderPlanRow = typeof builderPlans.$inferSelect
+
+// ─── Plan history (T-065, D56) ───────────────────────────────────────────────
+//
+// One row per drift check the user chose to save ("Save this check" in
+// PlanMonitor). `snapshot` is lib/data/planHistory.ts's PlanSnapshot exactly as
+// parsePlanSnapshot returned it — a document, for the same reason a plan is.
+// Rows go when their plan or user goes (CASCADE); history of a deleted plan
+// describes nothing the user can still open. Nothing else removes a row: a plan's
+// history is capped at MAX_SAVED_CHECKS_PER_PLAN by refusing new saves, never by
+// pruning old ones.
+
+export const builderPlanSnapshots = pgTable('builder_plan_snapshots', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  planId: uuid('plan_id').notNull().references(() => builderPlans.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  capturedAt: timestamp('captured_at', { withTimezone: true }).notNull().defaultNow(),
+  snapshot: jsonb('snapshot').notNull(),
+}, (t) => ({
+  planIdx: index('builder_plan_snapshots_plan_idx').on(t.planId, t.capturedAt),
+}))
+
+export type BuilderPlanSnapshotRow = typeof builderPlanSnapshots.$inferSelect

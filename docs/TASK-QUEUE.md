@@ -1651,6 +1651,18 @@ unlabelled realized P&L is the same class of defect as an undated static table. 
 whether the method is per-portfolio rather than global; a user with holdings in two
 jurisdictions may need both.
 
+> **Decided (2026-10-04).** FIFO, for every portfolio: D12 (2026-09-14) chose FIFO, and D65
+> chose one method over one per portfolio, since trades are kept as made and a second method
+> can be added later without changing saved data. Today's what-if portfolios are not
+> converted: trades go in a new kind of tracked portfolio, where anything already owned is
+> entered once as a starting position, the oldest lot. Gains are plain, labelled
+> `REALIZED_METHOD_LABEL`, with no tax adjustments. All three steps are built: the lot
+> engine (`frontend/src/lib/data/costBasis.ts`), saving trades (routes under
+> `/api/user/tracked-portfolios`, migration 0005), and the screen, `/portfolios/tracked`.
+> T-027 closed 2026-10-04; stock splits are T-421. Migration 0005 must be run on the
+> owner's machine (`npm run db:migrate`) before tracked portfolios work. Record:
+> `docs/decisions/2026-10-04-owner-decisions.md`.
+
 **Scope:** `/api/user/trades` CRUD (dynamic segments — must live under `/api/user/`, see
 the `next.config.mjs` rewrite note) · a pure cost-basis engine in `lib/` · an entry UI on
 `/portfolios`.
@@ -1771,12 +1783,21 @@ of totals that are being corrected means doing the reconciliation twice.
 > disclosure that the MCP tool relays verbatim, so an agent cannot tell a user a
 > transfer will go through.
 >
-> **Still open — deposit status.** The mirror gap: `depositEnabled` is also
+> ~~**Still open — deposit status.** The mirror gap: `depositEnabled` is also
 > all-true from the snapshot, a closed deposit still silently removes a route,
 > and no keyless source reports deposit status. A suspended deposit strands
 > funds the same way. The page copy covers availability on both sides rather
 > than implying only withdrawals are uncertain; closing it needs a
-> deposit-status source.
+> deposit-status source.~~
+>
+> **Closed 2026-10-04 (D66, T-054).** No keyless source *was being read* for
+> deposit status, but four of the feeds already read for withdrawal fees publish
+> it (KuCoin, HTX, Bitget, XT.com, per their API documentation). The parsers now
+> read it strictly, a closed deposit at the receiving exchange is listed as a
+> blocked route with who reported it instead of vanishing, and an open one
+> reported live is tagged on the route. Every other exchange's deposit status
+> stays the stored assumption, and the page says so per route. The field names
+> are confirmed by `npm run fee-probe` on the owner's machine (T-422).
 >
 > **Tax character, part 1 (2026-08-21):** `lib/data/taxCharacter.ts` — pure +
 > 14 tests — tags the route the user built with what KIND of event each leg is:
@@ -1925,6 +1946,10 @@ of totals that are being corrected means doing the reconciliation twice.
 > table, so nothing goes stale) and is the piece that touches the owner's
 > advice-adjacent caution in the S5 charter: surface the legality question
 > before building it.
+>
+> **Parked 2026-10-04 (D67, T-058).** It is decided with the Transfer Fees page
+> (T-028): the question comes back when that page is restored. D4's legal
+> review still gates building it.
 
 **State:** the strongest data asset in the app — 30 exchanges × 22 coins × 18
 networks, hand-maintained with provenance, path-finding (`findTransferPaths`),
@@ -1978,6 +2003,16 @@ before building further advice-adjacent features.
 > D47 (2026-09-30) then cleared build-by-allocation, which is item 16: *"A lawyer doesn't
 > need to review this."* It stays live, and T-059 is closed. The review still gates (3)
 > contribution modeling and the federal sale-tax estimator. Neither is built.
+
+> **Status 2026-10-04: (1) and (2) built under D56.** The owner chose to start just these
+> two: *"merge and go with option 1."* (1) A drift check is saved to the plan's history only
+> when the user presses **Save this check** (`builder_plan_snapshots`, migration 0004,
+> `/api/user/builder-plans/[id]/snapshots`, `lib/data/planHistory.ts`). (2) **Print
+> rebalance notes** prints the drift table through the browser's print dialog
+> (`lib/data/rebalanceNotes.ts`, `RebalanceNotesPrint.tsx`). T-065 and T-066 are closed.
+> (3) contribution modeling (T-067) still waits on the scope boundary (T-064), and (4) asset
+> location (T-068) on T-064 and D4's legal review. Drift-breach reminders (T-116) are not on
+> this list yet and keep their own two questions.
 
 #### S6 — Fund Registry
 **State:** 126-fund catalog with provenance, live quotes, N-PORT holdings +
@@ -2057,6 +2092,10 @@ subproject owns.
 | S1-5 | `equities/technical-analysis/page.tsx:504` | Spillover from the same commit — still describes "daily/weekly stock candles" — **RESOLVED 2026-09-08 in `046ae69`**: the line moved to 401 and now reads "daily stock candles"; re-verified 2026-09-19 at HEAD `ea4c976` (0 case-insensitive hits for "weekly" in that file) |
 | S1-6 | Portfolios Backtest tab | Growth summary + return-by-holding math computed in-component, untested (part of D-24) |
 | S1-7 | Crypto TA | `patternProjection`, `detectSetups`, `computeRiskReward` untested while emitting dollar levels users trade against (CR-note-11, part of D-24) |
+
+> ⚠ **OVERTAKEN 2026-08-20 — annotation added 2026-10-05 (owner decision D80, T-395).**
+> Surfaces hidden 2026-08-20 and P3-W2-S1 suspended — S1-1 no longer gates rollout; the
+> fix lands with the S1 restore.
 
 **Why the existing tests didn't catch S1-1:** `equityBacktest.test.ts`'s 7 tests take
 `barsPerYear` as a **parameter**, so by construction they cannot detect that the caller's

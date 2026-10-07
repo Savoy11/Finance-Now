@@ -49,7 +49,8 @@
     "staking:refresh-fallbacks": "node scripts/refresh-staking-fallbacks.mjs",
     "docs:check": "tsx scripts/check-doc-facts.ts",
     "queue:check": "node scripts/check-queue-ledger.mjs",
-    "staleness:check": "tsx scripts/check-staleness-horizon.ts"
+    "staleness:check": "tsx scripts/check-staleness-horizon.ts",
+    "deps:check": "node scripts/check-dependency-audit.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.125.0",
@@ -85,11 +86,11 @@
     "@types/node": "^20.12.0",
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
-    "@vitest/coverage-v8": "^3.2.6",
+    "@vitest/coverage-v8": "^4.1.11",
     "drizzle-kit": "^0.31.10",
     "eslint": "^9.39.5",
     "eslint-config-next": "^16.3.4",
     "js-yaml": "^5.4.1",
-    "vitest": "^3.0.0"
+    "vitest": "^4.1.11"
   }
 }

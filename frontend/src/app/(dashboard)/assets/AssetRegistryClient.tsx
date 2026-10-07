@@ -46,7 +46,9 @@ const TYPE_CHIPS: Array<{ value: AssetType | 'all'; label: string; color: string
   { value: 'stablecoin', label: 'Stablecoin', color: '#10b981' },
   { value: 'defi',       label: 'DeFi',       color: '#f59e0b' },
   { value: 'tokenized',  label: 'Tokenized',  color: '#14b8a6' },
-  { value: 'cbdc',       label: 'CBDC',       color: '#ec4899' },
+  // No CBDC chip (removed 2026-10-07, TS-2): the catalog holds no CBDC, so it
+  // filtered the table to nothing. The CBDC page went under D10. A test in
+  // assetTypeChips.test.ts fails if a chip can match no coin.
 ]
 
 // Item 4 (2026-08-18): the risk-band filter, the safety-score range screener

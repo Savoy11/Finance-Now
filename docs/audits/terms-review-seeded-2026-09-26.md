@@ -294,3 +294,45 @@ Rulings: `docs/decisions/2026-09-30-owner-decisions.md`.
 
 One correction to this audit: it says **nine** findings, but rows 10, 11, 12, 16, 17, 19,
 21, 24, 25 and 28 are **ten** hosts.
+
+## Answered 2026-10-04 — D54 (T-005 closed)
+
+Ruling: `docs/decisions/2026-10-04-owner-decisions.md`. The owner chose question 7's first
+option, "All 17 fully read and settled". Seventeen entries go `seeded` → `verified`, each
+dated 2026-09-26, the day it was read:
+
+- **The eleven clean readings:** rows 1–7 (SEC, Treasury, Frankfurter, Wikipedia, jsDelivr,
+  alternative.me, mempool.space), 20 (LunarCrush), 22–23 (Lido, Marinade), and 30 (Yahoo,
+  which stays `prohibited`).
+- **The six ruled on in the first batch:** rows 10–12 (Nasdaq Trader, OKX, KuCoin), 16
+  (Alpha Vantage), 19 (Messari) and 21 (Santiment).
+
+That leaves 13 of 56 `seeded`: rows 8, 9, 13–15, 17, 18, 24–29. Each one's reason is in the
+D54 notes.
+
+Three corrections came with the change, because marking an entry verified next to text
+the reading had overtaken would put the wrong thing on record:
+
+- **Findings.** Each of the seventeen `finding`s now quotes the document. The old text was
+  written from public descriptions before anyone had read the terms. One of them had it
+  backwards: Alpha Vantage's said its free key was "offered for third-party application
+  use". §2(a) licenses it for personal, non-commercial use only.
+- **alternative.me** goes from `approved` to `conditional`. The attribution clause quoted
+  above is its condition. The Market Structure panel now credits alternative.me beside the
+  figure. Before, it named alternative.me only in the panel's header badge. The Cycle
+  Context card already credited it in the caption under the figure.
+- **Addresses.**
+  - Treasury's `termsUrl` now names the live policy page, as recommended above.
+  - OKX's now names the API Agreement, which was not recorded on the 26th.
+  - Nasdaq Trader's now names the Copyright & Disclaimer page.
+  - KuCoin's now names its Terms of Use.
+
+  The last three addresses were found by web search on 2026-10-04 and could not be opened
+  from that cloud session, so confirm them at the next reading on the owner's machine.
+
+**Later the same day: D55.** The four read and ruled on after the seventeen were drawn up
+are marked `verified` too, each dated 2026-09-26: rows 17 (CoinMarketCap), 24 (Jito), 25
+(Rocket Pool) and 28 (Pendle). Their findings now quote the clauses above, and the narrow
+reading of D45 stays recorded as a judgement in each condition. CoinMarketCap's `termsUrl`
+now names the Personal API agreement that D44 applies, also found by web search and marked
+to confirm. That leaves 9 of 56 `seeded`: rows 8, 9, 13–15, 18, 26, 27 and 29.

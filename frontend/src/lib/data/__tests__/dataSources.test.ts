@@ -100,14 +100,15 @@ describe('the registry itself', () => {
       // that passed it (RP-6, 2026-08-29) — no page passes that id any more.
       'macro-quotes', 'options-score', 'futures-curve',
       'compare', 'portfolio-builder', 'brief', 'security-quotes',
+      'tracked-portfolios',
     ]
     for (const id of usedByPages) {
       expect(getSource(id), `${id} is passed by a page but missing from the registry`).toBeDefined()
     }
   })
 
-  it('marks the scores users act on as derived, not as provider figures', () => {
-    for (const id of ['compare', 'portfolio-builder', 'options-score']) {
+  it('marks the scores and gains users act on as derived, not as provider figures', () => {
+    for (const id of ['compare', 'portfolio-builder', 'options-score', 'tracked-portfolios']) {
       expect(getSource(id)!.status, `${id} should be derived`).toBe('derived')
     }
   })

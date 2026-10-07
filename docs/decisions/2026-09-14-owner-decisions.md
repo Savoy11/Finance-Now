@@ -365,3 +365,22 @@ commercial when it supports an employer, startup, agency… or client". The reme
 vendors name is an authorised commercial evaluation licence, usually free. That
 is the cheapest item on the whole agenda and it is worth doing whichever
 distribution model wins.
+
+## Pointers appended 2026-10-04
+
+> The rulings above are left as made.
+>
+> - **D8 was refined by D58** (`2026-10-04-owner-decisions.md`). Reddit access is now a
+>   post-launch project rather than part of the launch vendor pass: the owner will apply to
+>   Reddit after launch, so Reddit can see how the app is used. Reddit now approves every API
+>   user, personal projects included. T-246 (Reddit vote counts) was parked beside T-245.
+
+## Pointers appended 2026-10-05
+
+> The rulings above are left as made.
+>
+> - **D18's third item is now parked too** (`2026-10-05-owner-decisions.md`, D76). T-352
+>   and T-353 were parked under D18 in September; T-355 (a futures risk score) stayed
+>   marked as blocked until the owner parked it beside them. All three can now come back
+>   only through the risk engine rebuild (T-420), since D64 (2026-10-04) switched off
+>   every risk rating until then.

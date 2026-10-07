@@ -98,8 +98,10 @@ export async function GET(req: NextRequest) {
 
   const routes = paths.map(p => ({
     viable:          p.isViable,
-    // Why a blocked route is blocked. 'withdrawals-suspended' is reported by an
-    // exchange's live API; 'below-minimum' is arithmetic on the amount asked for.
+    // Why a blocked route is blocked. 'withdrawals-suspended' and
+    // 'deposits-suspended' are an exchange's closed door (live-reported, or the
+    // stored table's flag, as the warning says); 'below-minimum' is arithmetic
+    // on the amount asked for.
     blockedReason:   p.blockedReason ?? null,
     recommended:     p.isRecommended ?? false,
     network:         p.networkId ?? null,
@@ -126,6 +128,9 @@ export async function GET(req: NextRequest) {
       // per (exchange, coin, network) row, so an exchange-level claim would
       // present a stored "open" as a checked one.
       availabilityLive: h.availabilityLive ?? false,
+      // Whether the RECEIVING exchange's deposit status for this hop was
+      // live-reported (D66). False on a hop into a personal wallet.
+      depositAvailabilityLive: h.depositAvailabilityLive ?? false,
     })),
     warnings: p.warnings.map(w => ({
       severity: w.type,
@@ -137,6 +142,9 @@ export async function GET(req: NextRequest) {
   // Networks whose status was live-reported in THIS response.
   const routesWithLiveStatus = [...new Set(
     paths.flatMap(p => p.hops.filter(h => h.availabilityLive).map(h => h.networkId)),
+  )]
+  const routesWithLiveDepositStatus = [...new Set(
+    paths.flatMap(p => p.hops.filter(h => h.depositAvailabilityLive).map(h => h.networkId)),
   )]
 
   const viable   = routes.filter(r => r.viable)
@@ -174,6 +182,13 @@ export async function GET(req: NextRequest) {
       checkedForNetworks: routesWithLiveStatus,
       assumedOpenFrom: TRANSFER_FEES_LAST_VERIFIED,
       note: `Withdrawal status was live-reported for ${routesWithLiveStatus.length ? `these networks only: ${routesWithLiveStatus.join(', ')}` : 'none of the routes in this response'} (see each hop's availabilityLive). For every other route the open/closed state is a stored value from ${TRANSFER_FEES_LAST_VERIFIED}, not a current check — exchanges suspend withdrawals on a network without notice, and coverage is per coin and network, not per exchange. A route appearing here is NOT a confirmation that the withdrawal will go through; do not tell a user a transfer will succeed on the strength of this response.`,
+    },
+    // The receiving side's half of the same claim (D66): whether the
+    // destination is accepting deposits on the route's network.
+    depositAvailability: {
+      checkedForNetworks: routesWithLiveDepositStatus,
+      assumedOpenFrom: TRANSFER_FEES_LAST_VERIFIED,
+      note: `Deposit status at the receiving exchange was live-reported for ${routesWithLiveDepositStatus.length ? `these networks only: ${routesWithLiveDepositStatus.join(', ')}` : 'none of the routes in this response'} (see each hop's depositAvailabilityLive). For every other route it is a stored value from ${TRANSFER_FEES_LAST_VERIFIED}, not a current check. Coins sent while deposits are closed can sit uncredited until they reopen.`,
     },
     priceSource,
     // Every USD figure above is derived from `priceSource`. On 'fallback' the

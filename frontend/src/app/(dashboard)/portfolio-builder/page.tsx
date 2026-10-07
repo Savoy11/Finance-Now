@@ -21,6 +21,8 @@ import {
 } from '@/lib/data/portfolioBuilder'
 import { AllocationBuilder } from '@/components/portfolio-builder/AllocationBuilder'
 import { formatCurrency } from '@/lib/utils/format'
+import { FeatureNotice } from '@/components/legal/FeatureNotice'
+import { FEATURE_NOTICES } from '@/lib/legal/featureNotices'
 
 type SectorStance = 'focus' | 'exclude'
 
@@ -245,7 +247,7 @@ function BuilderContent() {
           details={[
             { label: 'Rebalancing', text: 'Plans use ±5% absolute drift bands. Expand a saved plan to compare it against a real portfolio (live-priced) or weights you enter, and see the exact trades that close the gap.' },
             { label: 'Monitoring', text: 'Saved plans are checked for an ageing glide path, risk drift, fee creep, concentration, and holdings that fall outside the plan.' },
-            { label: 'Not advice', text: 'Educational tooling. Allocations are rules-based models, not personalized investment advice.' },
+            { label: 'Not advice', text: FEATURE_NOTICES.portfolioBuilder },
           ]}
         />
       </div>
@@ -396,6 +398,7 @@ function BuilderContent() {
       {/* Result */}
       {result && (
         <>
+          <FeatureNotice feature="portfolioBuilder" />
           <div className="grid grid-cols-2 xl:grid-cols-5 gap-4">
             <MetricCard title="Diversification" value={`${result.diversificationScore}/100`} subtitle={`${result.classMix.length} asset classes`} accentColor="#10b981" />
             <MetricCard title="Growth / Defensive" value={`${Math.round(result.classMix.filter(c => GROWTH_SIDE.includes(c.assetClass)).reduce((s,c)=>s+c.pct,0))} / ${Math.round(result.classMix.filter(c => !GROWTH_SIDE.includes(c.assetClass)).reduce((s,c)=>s+c.pct,0))}`} subtitle="growth vs stability split" accentColor="#3b82f6" />
@@ -535,9 +538,8 @@ function BuilderContent() {
       )}
 
       <p className="text-[11px] text-text-muted text-center leading-relaxed">
-        Educational tooling, not investment advice. Allocations are rules-based models using approximate
-        catalog data; consult a fiduciary adviser for personalized recommendations. Saved plans persist to
-        the local database and survive browser wipes.
+        Allocations use approximate catalog data; consult a fiduciary adviser for personalized
+        recommendations. Saved plans persist to the local database and survive browser wipes.
       </p>
     </div>
   )
