@@ -540,6 +540,56 @@ const LIMIT_OPTIONS = [
   { value: 750,  label: 'Top 750' },
 ]
 
+/**
+ * TS-3: tokenized stocks, funds, Treasuries and credit are securities, not
+ * crypto projects, so the route leaves them out of the candidates. This says
+ * how many, which, and where the list comes from, and says plainly when the
+ * check could not run, so their absence is never silent and neither is their
+ * presence.
+ */
+function TokenizedSecuritiesNote({ info }: { info: CoinDiscoveryResponse['tokenizedSecurities'] }) {
+  const [open, setOpen] = useState(false)
+  if (!info) return null
+  if (!info.checked) {
+    return (
+      <p className="text-xs text-amber-400/90 bg-bg-card border border-amber-500/20 rounded-lg px-3 py-2">
+        Couldn&rsquo;t check for tokenized securities: CoinGecko&rsquo;s categories did not answer. Some
+        candidates below may be tokenized stocks or funds rather than crypto projects.
+      </p>
+    )
+  }
+  const n = info.excluded.length
+  return (
+    <div className="text-xs text-text-muted bg-bg-card border border-border rounded-lg px-3 py-2">
+      <p>
+        {n === 0
+          ? 'No tokenized securities in this range.'
+          : <>{n} tokenized {n === 1 ? 'security is' : 'securities are'} left out.</>}{' '}
+        Tokenized stocks, funds, Treasuries and credit represent existing securities, so they
+        aren&rsquo;t crypto candidates. The list comes from CoinGecko&rsquo;s own categories
+        {info.partial ? ', and some of those could not be read, so it may be incomplete' : ''}.
+        {n > 0 && (
+          <button onClick={() => setOpen(v => !v)} className="ml-1 text-accent-blue hover:underline">
+            {open ? 'Hide them' : 'Show them'}
+          </button>
+        )}
+      </p>
+      {open && n > 0 && (
+        <ul className="mt-2 grid sm:grid-cols-2 gap-x-6 gap-y-0.5">
+          {info.excluded.map(e => (
+            <li key={e.cgId} className="flex items-baseline gap-2">
+              <span className="font-mono text-text-secondary w-10 text-right">#{e.marketCapRank}</span>
+              <span className="text-text-secondary truncate">{e.name}</span>
+              <span className="font-mono">{e.symbol}</span>
+              <span className="truncate">· {e.kinds.join(', ')}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
 function CoinDiscoveryPageInner() {
   const [tab, setTab]             = useState<Tab>('candidates')
   const [rules, setRules] = useState<FilterRule[]>([])
@@ -656,6 +706,8 @@ function CoinDiscoveryPageInner() {
 
       {/* Data provenance */}
       <SourceLine id="coin-discovery" />
+
+      {data && <TokenizedSecuritiesNote info={data.tokenizedSecurities} />}
 
       {/* Source selector */}
       <div className="flex items-center gap-3 flex-wrap">
