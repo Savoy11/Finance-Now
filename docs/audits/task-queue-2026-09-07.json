@@ -60,17 +60,17 @@
  },
  "counts": {
   "total_verified": 398,
-  "outstanding": 369,
+  "outstanding": 370,
   "by_status": {
    "closed": 207,
-   "open": 20,
+   "open": 21,
    "parked": 135,
    "blocked": 6,
    "unclear": 1
   },
   "by_owner_role": {
    "remote-dev": 92,
-   "either": 43,
+   "either": 44,
    "owner-decision": 148,
    "owner-machine": 86
   },
@@ -78,7 +78,7 @@
   "closed_by_annotation": 207,
   "counts_recomputed_on": "2026-10-07",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
-  "total": 369
+  "total": 370
  },
  "blocking_decisions": [
   {
@@ -13922,6 +13922,35 @@
     "on": "2026-10-07",
     "by": "session steward",
     "why": "T-421 closed with a new database update (0006). No item tracked running the updates on the owner's machine, and 0004 and 0005 had no such item either."
+   }
+  },
+  {
+   "id": "T-430",
+   "title": "Add Marketaux as a news source for company-specific articles on stock pages",
+   "status": "open",
+   "confidence": "high",
+   "owner_role": "either",
+   "category": "feature",
+   "effort": "medium",
+   "blocking_decision": null,
+   "related_ids": [
+    "T-151",
+    "T-247",
+    "T-245"
+   ],
+   "summary": "Stock pages have had no company-specific news source since Yahoo was removed on terms grounds (2026-08-06): its per-ticker RSS feed was the only free one. Today /live-data/market-news?symbol= reads the general wires (CNBC is the only built-in since MarketWatch went on terms, 2026-09-20) and keeps the articles that name the company, so a stock the wires did not mention that day shows little or nothing. Marketaux is a news API that tags articles with the companies they mention and can be asked for one ticker's articles. The owner asked for it specifically to source articles on a company when it is viewed from the Stock Registry.",
+   "next_action": "(1) Terms first, on the owner's machine: read Marketaux's terms of use and API terms (what the free tier allows, attribution, whether headlines, summaries and links may be shown, any personal or non-commercial limit) and record the verdict in frontend/src/lib/server/sourceTerms.ts and frontend/src/lib/data/dataSources.ts, with whatMayBeDisplayed (T-247). The test suite fails on an unregistered host, so nothing fetches it before this. (2) The owner signs up for a free key; it goes in Integrations or MARKETAUX_API_KEY. (3) Build: a keyed 'marketaux' news provider in the equities registry (lib/api/live/providers.ts), used by market-news symbol mode for the requested ticker, cached so a day's browsing stays inside the free tier's request limit, with each article's own publisher shown. Keep the CNBC filter as the fallback, so losing the key or the source thins the page rather than emptying it (D21). Run every summary through summaryPermitted(). (4) Confirm on a stock page that a company the wires skipped now shows its own articles.",
+   "sources": [
+    {
+     "file": "frontend/src/app/live-data/market-news/route.ts",
+     "lines": "58-61",
+     "quote": "`yahoo-news` was here until 2026-08-06, and with it the ONLY free per-ticker RSS feed"
+    }
+   ],
+   "opened": {
+    "on": "2026-10-07",
+    "by": "owner request, filed by the session",
+    "why": "Owner, 2026-10-07: \"I need to add an action item to address adding marketaux to the news sources specifically to help with sourceing articles on specific companies when viewing them from the stock registry\"."
    }
   }
  ],
@@ -39416,6 +39445,13 @@
     "what": "D95: T-420 class labels decided; the weights and curves and the holdings policy parked in the methodology. Noted on T-420.",
     "evidence": [
      "docs/architecture/risk-ratings-methodology.md"
+    ]
+   },
+   {
+    "on": "2026-10-07",
+    "what": "T-430 filed at the owner's request: Marketaux for company-specific news on stock pages.",
+    "evidence": [
+     "frontend/src/app/live-data/market-news/route.ts"
     ]
    }
   ]
