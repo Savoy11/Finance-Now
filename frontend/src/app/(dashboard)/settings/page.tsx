@@ -703,7 +703,7 @@ function CustomProviderCard({ provider, onUpdate }: { provider: CustomProviderVi
           format: form.format,
           jsonArrayPath: form.jsonArrayPath.trim() || undefined,
         },
-        ...(form.apiKey ? { apiKey: form.apiKey } : {}),
+        ...(form.apiKey && form.authMethod !== 'none' ? { apiKey: form.apiKey } : {}),
       }),
     })
     const data = await res.json()
@@ -845,20 +845,27 @@ function CustomProviderCard({ provider, onUpdate }: { provider: CustomProviderVi
                 className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:border-violet-500/60 focus:outline-hidden font-mono"
               />
             )}
-            {form.authMethod !== 'none' && (
-              <div className="relative">
-                <input
-                  type={showKey ? 'text' : 'password'}
-                  value={form.apiKey}
-                  onChange={(e) => setField('apiKey', e.target.value)}
-                  placeholder={provider.config.hasKey ? '••••••••  (key saved — enter new to replace)' : 'API key / token'}
-                  className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 pr-8 text-sm text-slate-200 placeholder-slate-600 focus:border-violet-500/60 focus:outline-hidden font-mono"
-                />
+            {/* Always visible (2026-10-07): hidden until a method was chosen, the
+                box read as missing. Disabled under "None", so a key is never
+                saved without a way to send it. */}
+            <div className="relative">
+              <input
+                type={showKey ? 'text' : 'password'}
+                value={form.apiKey}
+                onChange={(e) => setField('apiKey', e.target.value)}
+                disabled={form.authMethod === 'none'}
+                aria-label="API key"
+                placeholder={form.authMethod === 'none'
+                  ? 'API key: first choose how it is sent (above)'
+                  : provider.config.hasKey ? '••••••••  (key saved — enter new to replace)' : 'API key / token'}
+                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 pr-8 text-sm text-slate-200 placeholder-slate-600 focus:border-violet-500/60 focus:outline-hidden font-mono disabled:opacity-50 disabled:cursor-not-allowed"
+              />
+              {form.authMethod !== 'none' && (
                 <button type="button" onClick={() => setShowKey(!showKey)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
                   {showKey ? <EyeOff size={13} /> : <Eye size={13} />}
                 </button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
           {/* JSON-specific */}
@@ -1049,7 +1056,7 @@ function AddCustomSourceForm({ category, market = 'crypto', onAdd }: { category:
           format: form.format,
           jsonArrayPath: form.jsonArrayPath.trim() || undefined,
         },
-        ...(form.apiKey ? { apiKey: form.apiKey } : {}),
+        ...(form.apiKey && form.authMethod !== 'none' ? { apiKey: form.apiKey } : {}),
       }),
     })
     const data = await res.json()
@@ -1062,7 +1069,7 @@ function AddCustomSourceForm({ category, market = 'crypto', onAdd }: { category:
       return
     }
     // Save API key if provided
-    if (form.apiKey && data.id) {
+    if (form.apiKey && form.authMethod !== 'none' && data.id) {
       await fetch('/live-data/config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1159,8 +1166,20 @@ function AddCustomSourceForm({ category, market = 'crypto', onAdd }: { category:
         {form.authMethod === 'query' && (
           <input value={form.authQueryParam} onChange={(e) => set('authQueryParam', e.target.value)} placeholder="Query param name, e.g. apikey" className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:border-accent-blue/60 focus:outline-hidden font-mono" />
         )}
-        {form.authMethod !== 'none' && (
-          <input type="password" value={form.apiKey} onChange={(e) => set('apiKey', e.target.value)} placeholder="API key / token (saved server-side)" className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:border-accent-blue/60 focus:outline-hidden font-mono" />
+        {/* Always visible (2026-10-07): hidden until a method was chosen, the
+            box read as missing. Disabled under "None", so a key is never saved
+            without a way to send it. */}
+        <input
+          type="password"
+          value={form.apiKey}
+          onChange={(e) => set('apiKey', e.target.value)}
+          disabled={form.authMethod === 'none'}
+          aria-label="API key"
+          placeholder={form.authMethod === 'none' ? 'API key: first choose how it is sent (above)' : 'API key / token (saved server-side)'}
+          className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:border-accent-blue/60 focus:outline-hidden font-mono disabled:opacity-50 disabled:cursor-not-allowed"
+        />
+        {form.authMethod === 'none' && (
+          <p className="text-[11px] text-slate-600">Needs an API key? Choose how the provider takes it: as a query parameter (e.g. <code className="font-mono">api_token</code>), a header, or a bearer token.</p>
         )}
       </div>
 
