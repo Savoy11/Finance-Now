@@ -337,6 +337,23 @@ export const BUILTIN_PROVIDERS: BuiltinProviderDef[] = [
     keyUrl: 'https://www.cnbc.com/markets/',
     priority: 2,
   },
+  // Company news (T-430, 2026-10-07). Used only when a stock page asks for one
+  // ticker's news, never by the general Market News feed, so the free plan's 100
+  // requests a day go where nothing else can answer. Marketaux's terms allow
+  // personal, non-commercial use; a public app needs its written approval
+  // (lib/server/sourceTerms.ts). See lib/server/marketauxNews.ts.
+  {
+    id: 'marketaux',
+    name: 'Marketaux',
+    category: 'news',
+    market: 'equities',
+    description: 'Company-specific news for stock pages: articles Marketaux has tagged with the ticker, credited to their own publishers.',
+    features: ['Per-company articles', 'Tagged by ticker', 'Cached 6 hours per stock'],
+    requiresKey: true,
+    freeTierLabel: 'Free tier: 100 requests/day, 3 articles each',
+    keyUrl: 'https://www.marketaux.com/pricing',
+    priority: 3,
+  },
 
   // ── Macro data (market: 'macro', category: 'price') ── keyless official/
   // community sources behind the FX converter and yield curve. Quotes for
@@ -849,6 +866,7 @@ function envKey(providerId: string): string | undefined {
     'twelve-data': 'TWELVE_DATA_API_KEY',
     tiingo: 'TIINGO_API_KEY',
     'alpha-vantage': 'ALPHA_VANTAGE_API_KEY',
+    marketaux: 'MARKETAUX_API_KEY',
     // LLM providers (agent keys)
     anthropic: 'ANTHROPIC_API_KEY',
     openai: 'OPENAI_API_KEY',

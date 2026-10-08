@@ -480,6 +480,38 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     confidence: 'high',
   },
   {
+    // READ 2026-10-07 on the owner's machine (T-430; https://www.marketaux.com/tos, "Last updated
+    // January 10, 2021", a generic template). Review stays seeded until the owner ratifies (D46).
+    // The owner chose on 2026-10-07 to build for personal use now and ask Marketaux in writing
+    // (docs/licensing/marketaux-enquiry-2026-10-07.md, not sent) to (a) confirm the "automated
+    // means" representation does not apply to its own API and (b) approve use in a public app.
+    // Under D22 the trigger is the first page load by anyone other than the owner.
+    domain: 'marketaux.com',
+    name: 'Marketaux',
+    verdict: 'conditional',
+    termsUrl: 'https://www.marketaux.com/tos',
+    finding:
+      'Financial news API (keyed; free plan 100 requests a day, 3 articles per request, per its ' +
+      'pricing page). READ 2026-10-07. Licence: "you are granted a limited license to access and use ' +
+      'the Site and to download or print a copy of any portion of the Content … solely for your ' +
+      'personal, non-commercial use." Prohibited activities: "The Site may not be used in connection ' +
+      'with any commercial endeavors except those that are specifically endorsed or approved by us." ' +
+      'User representations (6): "you will not access the Site through automated or non-human means, ' +
+      'whether through a bot, script or otherwise", which read literally excludes using the API, and ' +
+      'is most likely template text never adapted to an API business; only Marketaux can say. The ' +
+      'FAQ: "We only provide a short snippet of articles along with their links." No attribution ' +
+      'requirement is stated.',
+    conditions: [
+      'Personal, non-commercial use only until Marketaux approves otherwise in writing (Intellectual Property Rights; Prohibited Activities). Under D22 the trigger is the first page load by anyone other than the owner',
+      'Confirm with Marketaux that the "automated or non-human means" representation (User Representations, 6) does not apply to its own API (docs/licensing/marketaux-enquiry-2026-10-07.md)',
+      'Show the headline, snippet and link only, as its FAQ describes, crediting each article to its own publisher',
+      'Stay within the plan\'s daily request limit (free: 100 a day); responses are cached six hours per ticker',
+    ],
+    reviewedAt: '2026-10-07',
+    review: 'seeded',
+    confidence: 'medium',
+  },
+  {
     domain: 'finnhub.io',
     name: 'Finnhub',
     verdict: 'conditional',

@@ -13964,6 +13964,10 @@
     "on": "2026-10-07",
     "by": "owner request, filed by the session",
     "why": "Owner, 2026-10-07: \"I need to add an action item to address adding marketaux to the news sources specifically to help with sourceing articles on specific companies when viewing them from the stock registry\"."
+   },
+   "progress": {
+    "noted_on": "2026-10-07",
+    "note": "2026-10-07: steps (1) and (3) done. Terms read on the owner's machine (https://www.marketaux.com/tos, last updated 2021-01-10): personal, non-commercial use only; commercial use needs Marketaux's approval; and a template clause forbidding 'automated or non-human means' that read literally excludes the API. The owner chose to build for personal use now and ask in writing (draft: docs/licensing/marketaux-enquiry-2026-10-07.md, not sent). Registered as conditional, review seeded, in sourceTerms.ts. Built: a keyed 'marketaux' news provider used only for a stock page's company news, cached six hours per ticker, each article credited to its own publisher, CNBC kept as the fallback. Free plan: 100 requests a day, 3 articles per request. Open: the owner enters the key and step (4), the check on a stock page; and sending the enquiry."
    }
   }
  ],
@@ -39472,6 +39476,14 @@
     "what": "T-429 closed: migrations 0004 to 0006 confirmed applied on the owner's machine (tables present, 7 migrations recorded).",
     "evidence": [
      "frontend/drizzle"
+    ]
+   },
+   {
+    "on": "2026-10-07",
+    "what": "T-430: Marketaux terms read and registered; the company-news source built. Noted on T-430.",
+    "evidence": [
+     "frontend/src/lib/server/marketauxNews.ts",
+     "docs/licensing/marketaux-enquiry-2026-10-07.md"
     ]
    }
   ]

@@ -20,9 +20,10 @@ Integrations page.
 > ⚠ **Part of the registry is still `seeded`, and that is a deliberate,
 > visible state — not a claim of review.** It was authored in an environment whose
 > network policy blocked every publisher and provider host at the gateway, so no
-> terms document could be opened. **10 of 57 entries** are still starting positions
+> terms document could be opened. **11 of 58 entries** are still starting positions
 > drawn from documented posture (the 57th, the **Federal Reserve Board**, was added
-> 2026-10-03 for the Market Calendar's FOMC dates: read that day, not yet ratified). **47 are `verified`** — the document was actually
+> 2026-10-03 for the Market Calendar's FOMC dates: read that day, not yet ratified; the 58th,
+> **Marketaux**, was read 2026-10-07 for company news on stock pages, T-430). **47 are `verified`** — the document was actually
 > opened and read. Four sit outside the big batch: **Cboe** (P2-O1, 2026-08-05),
 > **CoinGecko** (the first real probe run, 2026-08-29 — see
 > `docs/audits/terms-review-2026-08-29.md`), and **Poloniex** and **LBank** (both
