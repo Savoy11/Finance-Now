@@ -35,17 +35,19 @@ measured risk, the engine's canonical scale), and every part that produced it.
 
 | Score | Class | Label shown |
 |---|---|---|
-| 86–100 | 1 | Lowest measured risk |
-| 72–85 | 2 | Low measured risk |
-| 58–71 | 3 | Moderately low measured risk |
-| 44–57 | 4 | Moderate measured risk |
-| 30–43 | 5 | Moderately high measured risk |
-| 15–29 | 6 | High measured risk |
-| 0–14 | 7 | Highest measured risk |
+| 86–100 | 1 | Very low |
+| 72–85 | 2 | Low |
+| 58–71 | 3 | Moderately low |
+| 44–57 | 4 | Moderate |
+| 30–43 | 5 | Moderately high |
+| 15–29 | 6 | High |
+| 0–14 | 7 | Very high |
 
-The labels describe the measurement, never a kind of investor (no "conservative" or "aggressive"),
-and there are no letter grades or stars, which commercial raters use for buy and sell (survey §2,
-item 10).
+**The labels are decided (owner, 2026-10-07, D95).** The panel heading says what is measured once,
+"Measured risk: Class 4 of 7", and the label follows it ("Moderate"), so each label stays short. A
+label is never shown without that heading. The labels describe the measurement, never a kind of
+investor (no "conservative" or "aggressive"), and there are no letter grades or stars, which
+commercial raters use for buy and sell (survey §2, item 10).
 
 **One absolute scale for coins and stocks.** The same thresholds apply to both, as on the EU's
 scales, so a class means the same thing on every page. Most coins will sit in classes 5 to 7 because
@@ -186,7 +188,7 @@ The wording follows the regulators' phrasing (survey §2, item 9) and FINRA Rule
 | 5. No suitability words | §2 labels; a test fails on "conservative", "aggressive", "suitable", "safe" or "recommend" in the rating's copy |
 | 6. Provenance | Source and as-of date on the panel |
 | 7. Not timed | §5 items 6 and 7 |
-| 8. No paid interest | No paid placement (D49); the owner's holdings policy (§9) on the methodology page |
+| 8. No paid interest | No paid placement (D49); the owner's holdings policy (§11, parked until before anything is shown) on the methodology page |
 | 9. The not-advice text | The existing crypto line on crypto pages, and a short line beside the rating; wording reviewed with T-291 |
 
 ## 8. Validation before anything is shown
@@ -218,8 +220,8 @@ The build is not finished until these have run and their results are written up 
    MCP or agent path reads a rating, while it is false.
 7. The validation in §8, written up.
 
-Shown only after counsel confirms the form (D4; the memo's §8, questions 1, 2 and 6) and the owner
-says so.
+Shown only after counsel confirms the form (D4; the memo's §8, questions 1, 2 and 6), the holdings
+policy is written (§11), and the owner says so.
 
 ## 10. Candidates for v2
 
@@ -227,12 +229,17 @@ Possible with free data, deliberately not in v1: trading age as a scored factor 
 number of exchanges and the share of volume on the top two (from CoinGecko's tickers); free float
 (circulating ÷ total supply); Amihud's illiquidity ratio; Altman's Z-score for stocks.
 
-## 11. Still open for the owner
+## 11. Owner decisions
 
-1. **The class labels** in §2, as worded.
-2. **The final weights and curves**, after the validation in §8.
-3. **The holdings policy** (the memo's §6, item 8): a written policy on the owner's own holdings and
-   trading in rated assets, to go on the methodology page.
+**Decided:** the class labels (§2), on 2026-10-07 (D95).
+
+**Parked on 2026-10-07 (D95), each with what brings it back:**
+1. **The final weights and curves.** Parked until the validation in §8 has run and been written up;
+   that write-up is the point to confirm or change them. Until then the numbers in §3 and §4 stand
+   as the provisional v1.
+2. **The holdings policy** (the memo's §6, item 8): a written policy on the owner's own holdings and
+   trading in rated assets, for the methodology page. Parked until before anything is shown: it is a
+   precondition of turning `ASSET_PAGE_RATINGS_SHOWN` on, alongside counsel's confirmation (D4).
 
 ## Changelog
 
@@ -244,3 +251,6 @@ number of exchanges and the share of volume on the top two (from CoinGecko's tic
   30-day medians; a one-year minimum history; the cap rule; financial companies left out of the
   fundamentals dimension; regulator-style disclosure wording and a published version and track record;
   validation before anything is shown.
+- **2026-10-07 (D95):** class labels decided (Very low … Very high, under the heading "Measured risk:
+  Class N of 7"); the final weights and curves parked until validation, and the holdings policy parked
+  until before anything is shown.
