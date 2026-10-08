@@ -13611,7 +13611,7 @@
    },
    "progress": {
     "noted_on": "2026-10-07",
-    "note": "2026-10-07: TS-3 is built, after the owner-machine probes (docs/audits/tokenized-securities-probe-2026-10-07.md): Coin Discovery leaves out members of CoinGecko's seven tokenized-security categories and lists them on the page (14 on the first run, the highest at rank 9), and the crypto scanner labels catalog entries filed as tokenized. 2026-10-07 (D93): scope item (4) is built and shown: /equities/options-calculator works out payoff at expiry, maximum gain and loss, breakevens and Black-Scholes Greeks for a position the user enters (lib/options/payoff.ts, lib/options/greeks.ts, tested against textbook values). No grade or score, and a test fails if the page imports the risk engine. The owner chose to show it before counsel answers the memo's §8 question 7. The scorer stays off. 2026-10-07: the coin catalog now marks USDY as a tokenized security (assetType tokenized), the first of the marks item (1) needs before any coin is rated; TS-3 followed the same day. 2026-10-07: scope item (3) is built: each Treasury yield page shows what a 1-point rise or fall in yield does to the price of a Treasury at that maturity (exact repricing) and its duration, worked out from the official par yield by lib/utils/parBondDuration.ts. Futures pages do not show it, since a contract tracks whichever bond is cheapest to deliver. 2026-10-07: scope item (2) is built: fund pages show a How It’s Built box in place of the switched-off Risk Profile label, read from the catalog’s own fields (strategy, category, tracked index) by lib/data/fundStructure.ts, with a test that bars risk-tolerance words. Bond duration and the prospectus link are not in the catalog, so they are not shown yet. 2026-10-07 (D92): T-419 is answered, so this moves from blocked to open with the scope above. The showing still waits on counsel; the building does not. 2026-10-05: D77 (2026-10-05) closed T-357 (risk scores through /api/v1/risk/* and a score_equity MCP tool) into this item, as superseded by D64. Its question, whether risk figures may reach the outside connections, is decided here with the app's own pages.",
+    "note": "2026-10-07 (D95): class labels decided (1 Very low to 7 Very high, under 'Measured risk: Class N of 7'); the final weights and curves parked until the methodology's validation is written up, and the owner's holdings policy parked until before anything is shown. 2026-10-07 (D94): the methodology for item (1) is drafted (docs/architecture/risk-ratings-methodology.md, v1 draft) after a survey of how regulators, rating firms, crypto raters and index providers rate single-asset risk (docs/assessments/risk-rating-methods-survey-2026-10-07.md); the owner adopted every change the survey proposed. Open for the owner: the class labels, the final weights and curves after validation, and the holdings policy. Nothing built yet. 2026-10-07: TS-3 is built, after the owner-machine probes (docs/audits/tokenized-securities-probe-2026-10-07.md): Coin Discovery leaves out members of CoinGecko's seven tokenized-security categories and lists them on the page (14 on the first run, the highest at rank 9), and the crypto scanner labels catalog entries filed as tokenized. 2026-10-07 (D93): scope item (4) is built and shown: /equities/options-calculator works out payoff at expiry, maximum gain and loss, breakevens and Black-Scholes Greeks for a position the user enters (lib/options/payoff.ts, lib/options/greeks.ts, tested against textbook values). No grade or score, and a test fails if the page imports the risk engine. The owner chose to show it before counsel answers the memo's §8 question 7. The scorer stays off. 2026-10-07: the coin catalog now marks USDY as a tokenized security (assetType tokenized), the first of the marks item (1) needs before any coin is rated; TS-3 followed the same day. 2026-10-07: scope item (3) is built: each Treasury yield page shows what a 1-point rise or fall in yield does to the price of a Treasury at that maturity (exact repricing) and its duration, worked out from the official par yield by lib/utils/parBondDuration.ts. Futures pages do not show it, since a contract tracks whichever bond is cheapest to deliver. 2026-10-07: scope item (2) is built: fund pages show a How It’s Built box in place of the switched-off Risk Profile label, read from the catalog’s own fields (strategy, category, tracked index) by lib/data/fundStructure.ts, with a test that bars risk-tolerance words. Bond duration and the prospectus link are not in the catalog, so they are not shown yet. 2026-10-07 (D92): T-419 is answered, so this moves from blocked to open with the scope above. The showing still waits on counsel; the building does not. 2026-10-05: D77 (2026-10-05) closed T-357 (risk scores through /api/v1/risk/* and a score_equity MCP tool) into this item, as superseded by D64. Its question, whether risk figures may reach the outside connections, is decided here with the app's own pages.",
     "evidence": [
      "frontend/src/lib/data/__tests__/assetTypeChips.test.ts",
      "frontend/src/lib/utils/parBondDuration.ts",
@@ -39401,6 +39401,21 @@
     "evidence": [
      "frontend/src/lib/data/fundCatalog.ts",
      "frontend/scripts/probe-exchange-fee-apis.mjs"
+    ]
+   },
+   {
+    "on": "2026-10-07",
+    "what": "D94: T-420 methodology drafted and revised after the risk-rating methods survey. Noted on T-420.",
+    "evidence": [
+     "docs/architecture/risk-ratings-methodology.md",
+     "docs/assessments/risk-rating-methods-survey-2026-10-07.md"
+    ]
+   },
+   {
+    "on": "2026-10-07",
+    "what": "D95: T-420 class labels decided; the weights and curves and the holdings policy parked in the methodology. Noted on T-420.",
+    "evidence": [
+     "docs/architecture/risk-ratings-methodology.md"
     ]
    }
   ]
