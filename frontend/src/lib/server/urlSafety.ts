@@ -61,6 +61,14 @@ const PRIVATE_ADDRESS_ERROR =
  * passes here. Use validatePublicHttpUrlResolved() before fetching.
  */
 export function validatePublicHttpUrl(raw: string): string | null {
+  // A space inside the address is never part of a feed URL. It is what you get
+  // from copying a documentation line such as "GET https://… HTTP/1.1": the URL
+  // parser would encode it as %20 and the feed would save and then fail on
+  // every fetch (2026-10-07, a Marketaux feed saved that way). Leading and
+  // trailing spaces are trimmed by the parser and are harmless.
+  if (/\s/.test(raw.trim())) {
+    return 'The address contains a space. Paste only the URL itself, without words like "GET" or "HTTP/1.1" copied from documentation.'
+  }
   let url: URL
   try {
     url = new URL(raw.replace('{asset}', 'bitcoin'))

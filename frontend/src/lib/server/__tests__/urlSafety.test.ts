@@ -48,6 +48,16 @@ describe('validatePublicHttpUrl (string layer)', () => {
     expect(validatePublicHttpUrl('https://example.com/feed.json')).toBeNull()
   })
 
+  it('rejects a space inside the address, the "HTTP/1.1" copied from documentation (2026-10-07)', () => {
+    expect(validatePublicHttpUrl('https://api.marketaux.com/v1/news/all HTTP/1.1')).toMatch(/contains a space/)
+    expect(validatePublicHttpUrl('GET https://api.marketaux.com/v1/news/all')).toMatch(/contains a space/)
+    expect(validatePublicHttpUrl('https://example.com/a\tb')).toMatch(/contains a space/)
+  })
+
+  it('accepts spaces only around the address, which the parser trims', () => {
+    expect(validatePublicHttpUrl('  https://api.marketaux.com/v1/news/all?symbols={symbol}  ')).toBeNull()
+  })
+
   it('rejects non-http protocols', () => {
     expect(validatePublicHttpUrl('file:///etc/passwd')).toMatch(/Unsupported protocol/)
     expect(validatePublicHttpUrl('gopher://example.com')).toMatch(/Unsupported protocol/)
