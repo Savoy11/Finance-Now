@@ -62,8 +62,8 @@
   "total_verified": 398,
   "outstanding": 370,
   "by_status": {
-   "closed": 207,
-   "open": 21,
+   "closed": 208,
+   "open": 20,
    "parked": 135,
    "blocked": 6,
    "unclear": 1
@@ -75,7 +75,7 @@
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 207,
+  "closed_by_annotation": 208,
   "counts_recomputed_on": "2026-10-07",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 370
@@ -13898,7 +13898,7 @@
   {
    "id": "T-429",
    "title": "Run npm run db:migrate on your machine to apply the database updates waiting there (0004 to 0006)",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "ops-infra",
@@ -13922,6 +13922,19 @@
     "on": "2026-10-07",
     "by": "session steward",
     "why": "T-421 closed with a new database update (0006). No item tracked running the updates on the owner's machine, and 0004 and 0005 had no such item either."
+   },
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-10-07",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "Done on the owner's machine. npm run db:migrate ran there earlier on 2026-10-07 and again before closing, reporting 'migrations applied' with only the expected 'already exists' notices. A read-only check of the database then found the three tables these updates create present (builder_plan_snapshots from 0004, tracked_portfolios from 0005, trade_splits from 0006) and 7 migrations recorded, matching the 7 files in frontend/drizzle.",
+    "approved_by": "owner, 2026-10-07: \"merge #312 and close T-429\"",
+    "evidence": [
+     "frontend/drizzle/0004_builder-plan-snapshots.sql",
+     "frontend/drizzle/0005_trade-ledger.sql",
+     "frontend/drizzle/0006_trade-splits.sql"
+    ]
    }
   },
   {
@@ -39452,6 +39465,13 @@
     "what": "T-430 filed at the owner's request: Marketaux for company-specific news on stock pages.",
     "evidence": [
      "frontend/src/app/live-data/market-news/route.ts"
+    ]
+   },
+   {
+    "on": "2026-10-07",
+    "what": "T-429 closed: migrations 0004 to 0006 confirmed applied on the owner's machine (tables present, 7 migrations recorded).",
+    "evidence": [
+     "frontend/drizzle"
     ]
    }
   ]
