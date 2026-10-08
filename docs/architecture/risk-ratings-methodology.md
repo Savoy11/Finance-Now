@@ -4,6 +4,12 @@
 here is built yet, and nothing built from it is shown until counsel confirms the form and the owner
 says so (D92, D4). Every number below is a proposal to be changed.
 
+**Read with the survey.** `docs/assessments/risk-rating-methods-survey-2026-10-07.md` compares this
+draft with how regulators, rating firms, crypto raters and index providers do it, and its §3 lists
+the changes the research suggests (one-year windows for both classes, a stability rule, turnover as
+a floor, a minimum history, a cap rule, validation before launch). This draft is unchanged until the
+owner decides on them.
+
 **How later iterations work.** The build will keep every weight, window, curve and threshold in one
 file, `frontend/src/lib/risk/methodology/v1.ts`, and the public methodology section will be
 rendered from that same file, so the page can never describe numbers the code does not use. A
