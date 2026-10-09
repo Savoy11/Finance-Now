@@ -293,8 +293,11 @@ export const DATA_SOURCES: DataSourceEntry[] = [
   {
     id: 'market-news', surface: 'Stock market news', module: 'equities',
     route: '/live-data/market-news', status: 'partial',
-    providers: [{ name: 'CNBC RSS', role: 'primary', auth: 'none' }],
-    notes: 'ONE general market wire. Two feeds have now gone on terms grounds, not availability: Yahoo’s per-ticker RSS (2026-08-06) and MarketWatch (2026-09-20 — Dow Jones ToU §9.4.1 bars automated ingestion "whether directly or through an intermediary" without prior written consent). Symbol news is CNBC filtered to articles that actually name the company, and an empty result is the honest answer when they haven’t covered it. ⚠ This surface is now single-sourced: losing CNBC would empty it rather than thin it.',
+    providers: [
+      { name: 'CNBC RSS', role: 'primary', auth: 'none' },
+      { name: 'Marketaux (company news, keyed)', host: 'api.marketaux.com', url: 'https://www.marketaux.com/documentation', role: 'primary', auth: 'key' },
+    ],
+    notes: 'Since 2026-10-07 (T-430), with a Marketaux key, a stock page’s company news also asks Marketaux for that ticker’s articles (headline, snippet and link, credited to each article’s own publisher), cached six hours to stay inside the free plan’s 100 requests a day; the general Market News page does not spend requests on it. Marketaux’s terms allow personal, non-commercial use and need its written approval for a public app (lib/server/sourceTerms.ts). ONE general market wire. Two feeds have now gone on terms grounds, not availability: Yahoo’s per-ticker RSS (2026-08-06) and MarketWatch (2026-09-20 — Dow Jones ToU §9.4.1 bars automated ingestion "whether directly or through an intermediary" without prior written consent). Symbol news is CNBC filtered to articles that actually name the company, and an empty result is the honest answer when they haven’t covered it. ⚠ This surface is now single-sourced: losing CNBC would empty it rather than thin it.',
   },
   {
     id: 'stock-social', surface: 'Stock social sentiment', module: 'equities',

@@ -5,7 +5,7 @@ change the registry and regenerate. This is the "where does the data come from" 
 `DATA-AVAILABILITY.md` (which tracks whether each surface is live). The same registry powers the
 in-app **/data-sources** page and the per-page provenance badges, so the app and the docs never diverge._
 
-_Last generated: **2026-10-07**_
+_Last generated: **2026-10-08**_
 
 ## Legend
 
@@ -72,7 +72,7 @@ Provider tags: `key` = needs an API key · `paid` = needs a paid plan · untagge
 | Stock / ETF / fund quotes | Key-gated | [FMP](https://site.financialmodelingprep.com/developer/docs) `financialmodelingprep.com` _(key)_<br>Finnhub / Twelve Data / Tiingo / Alpha Vantage _(key)_<br>Catalog reference prices | — | `/live-data/security-quotes` |
 | Stock OHLCV / TA / backtests | Key-gated | [Tiingo](https://www.tiingo.com/documentation/general/overview) `api.tiingo.com` _(key)_<br>[FMP](https://site.financialmodelingprep.com/developer/docs) `financialmodelingprep.com` _(key)_ | — | `/live-data/security-ohlcv` |
 | Trailing returns (1M/3M/YTD/1Y) | Key-gated | [Tiingo](https://www.tiingo.com/documentation/general/overview) `api.tiingo.com` _(key)_ | — | `/live-data/security-returns` |
-| Stock market news | Partial | CNBC RSS | — | `/live-data/market-news` |
+| Stock market news | Partial | CNBC RSS<br>[Marketaux (company news, keyed)](https://www.marketaux.com/documentation) `api.marketaux.com` _(key)_ | — | `/live-data/market-news` |
 | Stock social sentiment | Partial | StockTwits `api.stocktwits.com`<br>Reddit (Atom/RSS) `www.reddit.com` | — | `/live-data/stock-social` |
 | SEC filings (10-K/10-Q/8-K) | Live | [SEC EDGAR](https://www.sec.gov/edgar) `data.sec.gov`<br>SEC archives `www.sec.gov` | — | `/live-data/sec-filings` |
 | Company fundamentals / ratios | Live | [SEC EDGAR XBRL](https://www.sec.gov/edgar) `data.sec.gov` | — | `/live-data/company-facts` |
@@ -87,7 +87,7 @@ Provider tags: `key` = needs an API key · `paid` = needs a paid plan · untagge
 - **Stock / ETF / fund quotes** — Registry-driven provider ladder (Integrations page). EVERY live rung needs an API key since the keyless one was withdrawn on terms grounds (2026-08-06) — with no key, stocks and funds fall to catalog reference prices behind an amber `ref` tag, and macro instruments (no reference price by design) show a dash. Reference/fallback data: `lib/data/equityCatalog.ts`, `lib/data/fundCatalog.ts`.
 - **Stock OHLCV / TA / backtests** — Both rungs are keyed. Without one the route returns source:"none" and the TA, backtest and candlestick surfaces show their no-live-source state rather than synthetic candles.
 - **Trailing returns (1M/3M/YTD/1Y)** — One request per symbol now (the batched source was withdrawn), so the route serves up to 60 named symbols and REFUSES whole-universe requests rather than silently truncating. Screening and sorting funds by trailing return is off as a result; the Returns columns are still live for the visible page.
-- **Stock market news** — ONE general market wire. Two feeds have now gone on terms grounds, not availability: Yahoo’s per-ticker RSS (2026-08-06) and MarketWatch (2026-09-20 — Dow Jones ToU §9.4.1 bars automated ingestion "whether directly or through an intermediary" without prior written consent). Symbol news is CNBC filtered to articles that actually name the company, and an empty result is the honest answer when they haven’t covered it. ⚠ This surface is now single-sourced: losing CNBC would empty it rather than thin it.
+- **Stock market news** — Since 2026-10-07 (T-430), with a Marketaux key, a stock page’s company news also asks Marketaux for that ticker’s articles (headline, snippet and link, credited to each article’s own publisher), cached six hours to stay inside the free plan’s 100 requests a day; the general Market News page does not spend requests on it. Marketaux’s terms allow personal, non-commercial use and need its written approval for a public app (lib/server/sourceTerms.ts). ONE general market wire. Two feeds have now gone on terms grounds, not availability: Yahoo’s per-ticker RSS (2026-08-06) and MarketWatch (2026-09-20 — Dow Jones ToU §9.4.1 bars automated ingestion "whether directly or through an intermediary" without prior written consent). Symbol news is CNBC filtered to articles that actually name the company, and an empty result is the honest answer when they haven’t covered it. ⚠ This surface is now single-sourced: losing CNBC would empty it rather than thin it.
 - **Stock social sentiment** — Reddit 403s from datacenter IPs without OAuth — expect StockTwits-heavy results server-side. Budget allocated round-robin so one active source still fills the limit.
 - **Company fundamentals / ratios** — AAPL rev/net-margin sanity-checked against reported figures.
 - **Stock Registry universe** — FMP screener is PAID-only; without a key the registry falls back to ~79 curated names. P/E backfilled from SEC XBRL frames on the FMP path only. Reference/fallback data: `lib/data/equityCatalog.ts (~79 names)`.

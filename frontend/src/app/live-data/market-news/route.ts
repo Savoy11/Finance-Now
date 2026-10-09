@@ -3,7 +3,8 @@ import { summaryPermitted } from '@/lib/server/sourceTerms'
 import { detectSymbols, requestedMatcher } from '@/lib/server/marketNewsSymbols'
 import { isTokenizedSecuritiesStory } from '@/lib/server/tokenizedNews'
 import { FUND_CATALOG } from '@/lib/data/fundCatalog'
-import { getEquityProviders, recordProviderFetch, type AnyActiveProvider } from '@/lib/api/live/providers'
+import { getEquityProviders, getProviderKey, recordProviderFetch, type AnyActiveProvider } from '@/lib/api/live/providers'
+import { fetchMarketauxNews } from '@/lib/server/marketauxNews'
 import { fetchCustomUrl, findArray, pickDate, pickString, type ActiveCustom } from '@/lib/server/customFeeds'
 import { parseFeedItems } from '@/lib/server/feedParse'
 import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
@@ -200,7 +201,9 @@ export async function GET(request: NextRequest) {
 
   // Symbol mode: every general wire + symbol-aware customs, then filtered to
   // articles that actually mention the company (see `symbolMatches` below).
-  type Task = { providerId: string; run: () => Promise<Omit<MarketArticle, 'sentiment' | 'category' | 'relatedSymbols' | 'isBreaking'>[]> }
+  // `taggedSymbols`: tickers a source itself identified in the article (Marketaux's entity tags).
+  type Fetched = Omit<MarketArticle, 'sentiment' | 'category' | 'relatedSymbols' | 'isBreaking'> & { taggedSymbols?: string[] }
+  type Task = { providerId: string; run: () => Promise<Fetched[]> }
   const tasks: Task[] = []
   const fetchBuiltin = (url: string, source: string) => async () => {
     const res = await fetch(url, {
@@ -214,6 +217,10 @@ export async function GET(request: NextRequest) {
   // Both modes now read the same set of general wires — there is no per-ticker
   // feed left to make symbol mode fetch anything different.
   for (const p of builtins) tasks.push({ providerId: p.id, run: fetchBuiltin(BUILTIN_FEEDS[p.id].url, BUILTIN_FEEDS[p.id].source) })
+  // Company news (T-430): with a key, a stock page also asks Marketaux for that ticker.
+  // Symbol mode only, so the general feed never spends the free plan's daily requests.
+  const marketauxKey = symbol && active.some((p) => p.id === 'marketaux') ? getProviderKey('marketaux') : undefined
+  if (symbol && marketauxKey) tasks.push({ providerId: 'marketaux', run: () => fetchMarketauxNews(symbol, marketauxKey) })
   for (const p of customs) {
     if (symbol && !p.url.includes('{symbol}') && tasks.length > 0) continue // general-only custom feeds skip symbol mode
     tasks.push({ providerId: p.id, run: () => fetchCustomNews(p, symbol) })
@@ -235,7 +242,7 @@ export async function GET(request: NextRequest) {
   const articles: MarketArticle[] = []
   for (const result of results) {
     if (result.status !== 'fulfilled') continue
-    for (const article of result.value) {
+    for (const { taggedSymbols, ...article } of result.value) {
       const key = article.title.toLowerCase()
       if (seen.has(key)) continue
       seen.add(key)
@@ -250,7 +257,11 @@ export async function GET(request: NextRequest) {
         ...article,
         sentiment: scoreSentiment(text),
         category: classifyCategory(text),
-        relatedSymbols: detectSymbols(text, extraMatcher),
+        // A Marketaux article counts for the requested stock when Marketaux itself tagged it
+        // with that ticker: the source's own identification, not a link made here.
+        relatedSymbols: symbol && taggedSymbols?.includes(symbol)
+          ? [...new Set([...detectSymbols(text, extraMatcher), symbol])]
+          : detectSymbols(text, extraMatcher),
         isBreaking: Date.now() - new Date(article.publishedAt).getTime() < 60 * 60 * 1000,
       })
     }
@@ -272,7 +283,9 @@ export async function GET(request: NextRequest) {
     articles: shown.slice(0, limit),
     ...(symbol && shown.length === 0
       ? {
-          error: `No current headline on the general market wires mentions ${symbol}. Finance Now no longer has a per-ticker news feed — the only free one was withdrawn on terms grounds — so symbol news is whatever the market wires happen to cover.`,
+          error: marketauxKey
+            ? `Neither the general market wires nor Marketaux has a current article on ${symbol}.`
+            : `No current headline on the general market wires mentions ${symbol}. Without a Marketaux key (Integrations → Equity Market Data → News) there is no per-company news source, so symbol news is whatever the market wires happen to cover.`,
         }
       : {}),
   } satisfies MarketNewsResponse)
