@@ -811,6 +811,15 @@ site nobody has reviewed. Full design: `docs/architecture/source-terms.md`.
 > resolve (T-151). `verified` means the document was read — never that the permission
 > it grants is adequate.
 >
+> **D96 (2026-10-09): everything before launch is personal use, for every source.** Owner:
+> *"Consider anything done pre launch as personal use; revaluate and apply that to all of the
+> current sources."* Launch is still D22's trigger, the first page load by anyone other than the
+> owner. Every source was re-read (`docs/assessments/source-terms-prelaunch-2026-10-09.md`):
+> fifteen personal-use licences are fine before launch and each entry names its launch step;
+> Yahoo, Cboe, Poloniex, Dow Jones and MarketWatch stay blocked because their bans are not about
+> who uses them; OKX stays blocked by the owner's choice (its terms bar building an analytics
+> platform). ⚠ A personal-use rule never reopens a ban on automated access.
+>
 > **FMP is the load-bearing one, and it was missed until now.** Its entry is
 > `seeded`, and its finding asserts the permission is *tier-dependent* (free =
 > personal/development, redistribution on a higher plan). A 2026-09-01 fund-fee

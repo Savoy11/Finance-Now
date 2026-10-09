@@ -13032,14 +13032,8 @@
     "why": "Owner, 2026-09-23: \"I have some concerns around coindesk which will require some additional research, for now annotate and we will revisit this and any similar cases.\" Scanning the registry for \"similar cases\" found three more, and a D22 gap alongside them."
    },
    "progress": {
-    "noted_on": "2026-09-26",
-    "note": "MECHANISM READY (T-247): CoinDesk and Investing.com carry whatMayBeDisplayed: unclear. Resolving either toward headline-and-link is now setting that field to headline-link — the three news routes blank the summary automatically — plus updating displayGrant.test.ts's \"no source is headline-link today\" assertion with the decision. The question itself is unchanged and still the owner's (or a professional's).",
-    "evidence": [
-     "frontend/src/lib/server/sourceTerms.ts"
-    ],
-    "corrections": [
-     "2026-09-30: NASDAQ TRADER JOINS THIS ITEM (D41). Its Copyright & Disclaimer (read 2026-09-26) says its \"Content\" may not be copied, reproduced, displayed or otherwise used without Nasdaq's prior written consent, and that \"Nasdaq stock symbols are proprietary to Nasdaq, Inc.\" The app downloads the plain-text symbol directory (nasdaqtraded.txt) to discover funds beyond the 140 curated ones in /live-data/fund-universe. Whether a list of facts is \"Content\" is the same scope question as CoinDesk and Investing.com, so it is decided with them. Kept in use meanwhile; the entry went approved → conditional with the question as its condition. If it resolves toward prohibited, the fund list falls back to the 140 curated funds."
-    ]
+    "noted_on": "2026-10-09",
+    "note": "2026-10-09 (D96): the owner ruled that anything done before launch is personal use, for every source. Under it, CoinDesk (viewing 'for personal, informational, and non-commercial purposes') and Nasdaq Trader ('one temporary copy for personal and non-commercial use') are satisfied before launch, and their question becomes a launch step, recorded on each registry entry. Investing.com (automated extraction forbidden 'for any purpose'), publicnode (re-use barred 'commercially and non-commercially') and Bitget (the United States a Prohibited Country) stay open: their limits are not about who the user is. See docs/assessments/source-terms-prelaunch-2026-10-09.md. MECHANISM READY (T-247): CoinDesk and Investing.com carry whatMayBeDisplayed: unclear. Resolving either toward headline-and-link is now setting that field to headline-link — the three news routes blank the summary automatically — plus updating displayGrant.test.ts's \"no source is headline-link today\" assertion with the decision. The question itself is unchanged and still the owner's (or a professional's)."
    }
   },
   {
@@ -39472,6 +39466,14 @@
     "what": "T-429 closed: migrations 0004 to 0006 confirmed applied on the owner's machine (tables present, 7 migrations recorded).",
     "evidence": [
      "frontend/drizzle"
+    ]
+   },
+   {
+    "on": "2026-10-09",
+    "what": "D96: every source re-read under \"pre-launch use is personal use\"; four registry entries marked; OKX kept blocked; noted on T-407.",
+    "evidence": [
+     "docs/assessments/source-terms-prelaunch-2026-10-09.md",
+     "docs/decisions/2026-10-09-owner-decisions.md"
     ]
    }
   ]

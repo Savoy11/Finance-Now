@@ -341,3 +341,18 @@ to match. Nothing is withheld today; this is the mechanism, not a decision.
 **Nothing here is an emergency and nothing here should be quietly closed.** Three of the
 four were the owner's deliberate 2026-09-20 calls made *with* the readings in hand; this
 section exists so those calls stay visible rather than ageing into apparent settledness.
+
+## 8. What changed on 2026-10-09 (D96)
+
+The owner ruled that **anything done before launch is personal use, for every source**, not only
+the eight D22 named. Launch is still the first page load by anyone other than the owner.
+
+Every source was re-read under the rule: `docs/assessments/source-terms-prelaunch-2026-10-09.md`.
+
+- **Fine before launch, with a named launch step (15, plus Marketaux in #313):** the eleven D22
+  already marked, and CoinDesk, Nasdaq Trader, LBank and Bitfinex, now marked too. Their launch
+  steps, with CoinGecko's §7 user agreement and privacy policy, are the launch list.
+- **Unchanged, blocked whatever the user:** Yahoo, Cboe, Poloniex, Dow Jones, MarketWatch.
+- **Unchanged, kept blocked by the owner:** OKX (§9.4 bars building an analytics platform).
+- **§7's four sources:** CoinDesk becomes a launch step. Investing.com, publicnode and Bitget's US
+  clause stay open, because personal use does not answer them.
