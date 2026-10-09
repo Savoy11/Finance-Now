@@ -502,7 +502,7 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
       'FAQ: "We only provide a short snippet of articles along with their links." No attribution ' +
       'requirement is stated.',
     conditions: [
-      'Personal, non-commercial use only until Marketaux approves otherwise in writing (Intellectual Property Rights; Prohibited Activities). Under D22 the trigger is the first page load by anyone other than the owner',
+      '⚠ PERSONAL USE — satisfied PRE-LAUNCH, blocking AT LAUNCH (D96, 2026-10-09; extends D22). The licence is "solely for your personal, non-commercial use", and everything done before launch is personal use. The FIRST NON-OWNER PAGE LOAD ends that. At launch: Marketaux\'s written approval ("except those that are specifically endorsed or approved by us"; enquiry drafted, docs/licensing/marketaux-enquiry-2026-10-07.md)',
       'Confirm with Marketaux that the "automated or non-human means" representation (User Representations, 6) does not apply to its own API (docs/licensing/marketaux-enquiry-2026-10-07.md)',
       'Show the headline, snippet and link only, as its FAQ describes, crediting each article to its own publisher',
       'Stay within the plan\'s daily request limit (free: 100 a day); responses are cached six hours per ticker',
