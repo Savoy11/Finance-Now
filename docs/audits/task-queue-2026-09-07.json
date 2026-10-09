@@ -62,8 +62,8 @@
   "total_verified": 398,
   "outstanding": 370,
   "by_status": {
-   "closed": 208,
-   "open": 20,
+   "closed": 209,
+   "open": 19,
    "parked": 135,
    "blocked": 6,
    "unclear": 1
@@ -75,8 +75,8 @@
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 208,
-  "counts_recomputed_on": "2026-10-07",
+  "closed_by_annotation": 209,
+  "counts_recomputed_on": "2026-10-09",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 370
  },
@@ -13032,14 +13032,8 @@
     "why": "Owner, 2026-09-23: \"I have some concerns around coindesk which will require some additional research, for now annotate and we will revisit this and any similar cases.\" Scanning the registry for \"similar cases\" found three more, and a D22 gap alongside them."
    },
    "progress": {
-    "noted_on": "2026-09-26",
-    "note": "MECHANISM READY (T-247): CoinDesk and Investing.com carry whatMayBeDisplayed: unclear. Resolving either toward headline-and-link is now setting that field to headline-link — the three news routes blank the summary automatically — plus updating displayGrant.test.ts's \"no source is headline-link today\" assertion with the decision. The question itself is unchanged and still the owner's (or a professional's).",
-    "evidence": [
-     "frontend/src/lib/server/sourceTerms.ts"
-    ],
-    "corrections": [
-     "2026-09-30: NASDAQ TRADER JOINS THIS ITEM (D41). Its Copyright & Disclaimer (read 2026-09-26) says its \"Content\" may not be copied, reproduced, displayed or otherwise used without Nasdaq's prior written consent, and that \"Nasdaq stock symbols are proprietary to Nasdaq, Inc.\" The app downloads the plain-text symbol directory (nasdaqtraded.txt) to discover funds beyond the 140 curated ones in /live-data/fund-universe. Whether a list of facts is \"Content\" is the same scope question as CoinDesk and Investing.com, so it is decided with them. Kept in use meanwhile; the entry went approved → conditional with the question as its condition. If it resolves toward prohibited, the fund list falls back to the 140 curated funds."
-    ]
+    "noted_on": "2026-10-09",
+    "note": "2026-10-09 (D96): the owner ruled that anything done before launch is personal use, for every source. Under it, CoinDesk (viewing 'for personal, informational, and non-commercial purposes') and Nasdaq Trader ('one temporary copy for personal and non-commercial use') are satisfied before launch, and their question becomes a launch step, recorded on each registry entry. Investing.com (automated extraction forbidden 'for any purpose'), publicnode (re-use barred 'commercially and non-commercially') and Bitget (the United States a Prohibited Country) stay open: their limits are not about who the user is. See docs/assessments/source-terms-prelaunch-2026-10-09.md. MECHANISM READY (T-247): CoinDesk and Investing.com carry whatMayBeDisplayed: unclear. Resolving either toward headline-and-link is now setting that field to headline-link — the three news routes blank the summary automatically — plus updating displayGrant.test.ts's \"no source is headline-link today\" assertion with the decision. The question itself is unchanged and still the owner's (or a professional's)."
    }
   },
   {
@@ -13791,6 +13785,10 @@
     "on": "2026-10-07",
     "by": "session steward",
     "why": "Filed under D91 from a row the business chat recorded on the ledger page on 30 Sep (Vendor Pass), which had no number."
+   },
+   "progress": {
+    "noted_on": "2026-10-09",
+    "note": "2026-10-09: a further enquiry joins this list: Marketaux (docs/licensing/marketaux-enquiry-2026-10-07.md, drafted 2026-10-07 for T-430), asking it to confirm its 'automated or non-human means' clause does not cover its own API and what approval a public app needs. Under D96 it is a launch step, so it can go with the others near build completion."
    }
   },
   {
@@ -13940,7 +13938,7 @@
   {
    "id": "T-430",
    "title": "Add Marketaux as a news source for company-specific articles on stock pages",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "either",
    "category": "feature",
@@ -13968,6 +13966,19 @@
    "progress": {
     "noted_on": "2026-10-07",
     "note": "2026-10-07: steps (1) and (3) done. Terms read on the owner's machine (https://www.marketaux.com/tos, last updated 2021-01-10): personal, non-commercial use only; commercial use needs Marketaux's approval; and a template clause forbidding 'automated or non-human means' that read literally excludes the API. The owner chose to build for personal use now and ask in writing (draft: docs/licensing/marketaux-enquiry-2026-10-07.md, not sent). Registered as conditional, review seeded, in sourceTerms.ts. Built: a keyed 'marketaux' news provider used only for a stock page's company news, cached six hours per ticker, each article credited to its own publisher, CNBC kept as the fallback. Free plan: 100 requests a day, 3 articles per request. Open: the owner enters the key and step (4), the check on a stock page; and sending the enquiry."
+   },
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-10-09",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "Built and verified live on the owner's machine on 2026-10-09 with the owner's key. Company news for AAPL, CAT and DE each returned three Marketaux articles (the free plan's per-request limit), credited to their own publishers (business-standard.com, seekingalpha.com, insurancejournal.com and others) and tagged with the ticker, where the CNBC wire had nothing on those companies; a repeat call was served from the six-hour cache; /equities/CAT showed the headlines and publishers with no page errors. Two things carry on elsewhere: the enquiry to Marketaux (drafted, unsent) moves to T-425 with the other provider enquiries, and relevance (Marketaux tags articles that mention a company in passing) is a possible follow-up, not a defect.",
+    "approved_by": "owner, 2026-10-09: \"The key is entered; merge and test\"",
+    "evidence": [
+     "frontend/src/lib/server/marketauxNews.ts",
+     "frontend/src/lib/server/__tests__/marketauxNews.test.ts",
+     "docs/licensing/marketaux-enquiry-2026-10-07.md"
+    ]
    }
   }
  ],
@@ -39479,11 +39490,26 @@
     ]
    },
    {
+    "on": "2026-10-09",
+    "what": "D96: every source re-read under \"pre-launch use is personal use\"; four registry entries marked; OKX kept blocked; noted on T-407.",
+    "evidence": [
+     "docs/assessments/source-terms-prelaunch-2026-10-09.md",
+     "docs/decisions/2026-10-09-owner-decisions.md"
+    ]
+   },
+   {
     "on": "2026-10-07",
     "what": "T-430: Marketaux terms read and registered; the company-news source built. Noted on T-430.",
     "evidence": [
      "frontend/src/lib/server/marketauxNews.ts",
      "docs/licensing/marketaux-enquiry-2026-10-07.md"
+    ]
+   },
+   {
+    "on": "2026-10-09",
+    "what": "T-430 closed after a live check with the owner's key; the Marketaux enquiry moved to T-425.",
+    "evidence": [
+     "frontend/src/lib/server/marketauxNews.ts"
     ]
    }
   ]

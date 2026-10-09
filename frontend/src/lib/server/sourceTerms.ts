@@ -274,6 +274,10 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     domain: 'okx.com',
     name: 'OKX',
     verdict: 'prohibited',
+    // RECONSIDERED 2026-10-09 under D96 ("anything done pre launch is personal use"): KEPT BLOCKED,
+    // owner's choice. §9.4 allows Market Data only for "your own personal, non-commercial trading
+    // and account management purposes" and bars using it "to build, operate, or contribute to any
+    // … analytics platform"; pre-launch work is building one, so personal use does not reach it.
     // RULED 2026-09-30 (T-413, owner decision D40): STOP USING IT. Read 2026-09-26 on the owner's
     // machine — docs/audits/terms-review-seeded-2026-09-26.md — and marked verified 2026-10-04 (D54).
     //
@@ -1009,7 +1013,8 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     finding:
       'The symbol directory publishes nasdaqlisted.txt and otherlisted.txt, plain-text listing files (symbol, name, exchange; no quotes), on pages that carry no terms of their own. The site\'s Copyright & Disclaimer, read 2026-09-26, says its "Content" "may not be copied, reproduced, transmitted, displayed, performed, distributed, rented, sublicensed, altered, stored for subsequent use or otherwise used" without Nasdaq\'s prior written consent, beyond fair use and one temporary copy for personal and non-commercial use, and that "Nasdaq stock symbols are proprietary to Nasdaq, Inc." Whether the listing files are "Content" in that sense is open (T-407).',
     conditions: [
-      '⚠ OPEN — decided with CoinDesk and Investing.com under T-407 (D41, 2026-09-30). The site\'s Copyright & Disclaimer (read 2026-09-26) says its "Content" "may not be copied, reproduced, transmitted, displayed, performed, distributed, rented, sublicensed, altered, stored for subsequent use or otherwise used" without Nasdaq\'s prior written consent, and that "Nasdaq stock symbols are proprietary to Nasdaq, Inc." Whether the plain-text symbol directory — listing facts, not design, text or images — is "Content" in that sense is undecided. Used meanwhile, for fund discovery only.',
+      '⚠ PERSONAL USE — satisfied PRE-LAUNCH, blocking AT LAUNCH (D96, 2026-10-09; extends D22). Everything done before launch is personal use, and the Copyright & Disclaimer allows "one temporary copy for personal and non-commercial use", so the owner\'s own fund discovery is inside it today. The FIRST NON-OWNER PAGE LOAD ends that. At launch: decide whether the plain-text symbol directory is "Content" (T-407, D41), or obtain Nasdaq\'s written consent, before the listing files feed anything others see.',
+      'The site\'s Copyright & Disclaimer (read 2026-09-26) says its "Content" "may not be copied, reproduced, transmitted, displayed, performed, distributed, rented, sublicensed, altered, stored for subsequent use or otherwise used" without Nasdaq\'s prior written consent, and that "Nasdaq stock symbols are proprietary to Nasdaq, Inc." Used for fund discovery only.',
     ],
     reviewedAt: '2026-09-26',
     review: 'verified',
@@ -1125,6 +1130,7 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
       'Respect documented rate limits',
       'Keyless public endpoints only — no authenticated endpoints (RP-5)',
       'No commercial reproduction or distribution of the data: LBank claims database IP independently of the user agreement, and that claim binds without registration',
+      '⚠ PERSONAL USE — satisfied PRE-LAUNCH, blocking AT LAUNCH (D96, 2026-10-09; extends D22). Everything done before launch is personal use, which the IP section leaves "untouched". The FIRST NON-OWNER PAGE LOAD ends that. At launch: ask LBank, or stop showing its fees to others. (Its only consumer, Transfer Fees, is hidden for launch, D89.)',
     ],
     reviewedAt: '2026-09-15',
     review: 'verified',
@@ -1150,7 +1156,11 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     termsUrl: 'https://www.bitfinex.com/legal/general/market-data/',
     finding:
       'Market Data Terms of Use (updated 2022-07-06) READ IN FULL on the owner\'s machine 2026-09-14. They are the operative document, not the API Terms of Service: the API Terms require an account we do not hold ("you must first sign up for an Account"), and point onward to the Market Data Terms for what we actually consume. Those bind on ACCESS rather than on holding an account — "By accessing or using the Bitfinex Market Data, you agree to be legally bound". Permitted Use is "personal and/or internal use", "general informational purposes", or price/market analysis; Prohibited Use (g) bars distributing or disseminating the data "to any party for any reason" absent written consent, and (b)/(c) bar building a financial benchmark, reference rate or index. Internal use is expressly permitted; whether showing the data to the app\'s own users is "disseminating to a party" is the open question shared with every other source. `review` was ratified `verified` on 2026-09-18, recording that the document has been read; that open question is unaffected and remains the owner\'s.',
-    conditions: ['Respect documented rate limits', 'Keyless public endpoints only — no authenticated endpoints (RP-5)'],
+    conditions: [
+      'Respect documented rate limits',
+      'Keyless public endpoints only — no authenticated endpoints (RP-5)',
+      '⚠ PERSONAL USE — satisfied PRE-LAUNCH, blocking AT LAUNCH (D96, 2026-10-09; extends D22). The Market Data Terms permit "personal and/or internal use", and everything done before launch is personal use. The FIRST NON-OWNER PAGE LOAD ends that: Prohibited Use (g) bars distributing the data "to any party for any reason" without written consent. At launch: obtain Bitfinex\'s consent or stop showing its fees. (Its only consumer, Transfer Fees, is hidden for launch, D89.)',
+    ],
     reviewedAt: '2026-09-14',
     review: 'verified',
     confidence: 'medium',
@@ -1587,6 +1597,7 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
       'Do not remove copyright, trademark or other proprietary notices from the material',
       'Do not use the CoinDesk mark as a hyperlink — the Terms bar it without prior written approval',
       'Personal, non-commercial use only',
+      '⚠ PERSONAL USE — satisfied PRE-LAUNCH, blocking AT LAUNCH (D96, 2026-10-09; extends D22). Everything done before launch is personal use, and the Terms authorise viewing "for personal, informational, and non-commercial purposes", so the owner reading CoinDesk headlines in the app is inside them today. The FIRST NON-OWNER PAGE LOAD ends that. At launch: the Terms grant no display to others — obtain CoinDesk\'s written consent or stop showing its headlines (T-407).',
     ],
     // ✅ READ 2026-09-20 from a structure-preserving capture; every quote verified verbatim
     // AND contiguous by an adversarial pass, which sustained the reading.
