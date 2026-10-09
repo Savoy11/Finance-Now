@@ -206,11 +206,13 @@ The build is not finished until these have run and their results are written up 
    the final v1 numbers. No source supports any particular weights; the page says they are Finance
    Now's choice.
 
-## 9. The build (for agreement, not started)
+## 9. The build (started 2026-10-09)
 
-1. `lib/risk/methodology/v1.ts`: every number and rule in §2–§5, with its version.
-2. Rework `profiles/cryptoAsset.ts` and `profiles/equity.ts` to read it, and add the cap and stability
-   rules, with tests that recompute ratings by hand.
+1. ✅ `lib/risk/methodology/v1.ts`: every number and rule in §2–§5, with its version.
+2. ✅ The engine, `lib/risk/assetRating.ts`, reading only `v1.ts`, with the cap and stability rules
+   and tests that recompute ratings by hand (`__tests__/assetRating.test.ts`). Built as a new file
+   rather than a rework of `profiles/cryptoAsset.ts` and `profiles/equity.ts`: nothing imports
+   those two, and removing them is the owner's call, so they stay until then.
 3. A database table for the weekly readings the stability rule needs (a migration the owner runs).
 4. A daily rating route for each class, cached 24 hours.
 5. The rating panel on `/assets/[id]` and `/equities/[symbol]`, and the methodology section, rendered
@@ -254,3 +256,5 @@ number of exchanges and the share of volume on the top two (from CoinGecko's tic
 - **2026-10-07 (D95):** class labels decided (Very low … Very high, under the heading "Measured risk:
   Class N of 7"); the final weights and curves parked until validation, and the holdings policy parked
   until before anything is shown.
+- **2026-10-09:** the numbers in §2–§5 moved into `lib/risk/methodology/v1.ts`, which is now the
+  single source; this note describes them and must change with it. No number changed.
