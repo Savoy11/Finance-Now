@@ -12,11 +12,14 @@
     .\setup.ps1 -Help            # show this help
 
   MODES
-    frontend (default)  Frontend only, live data from free public APIs. Needs: Node.js 18.17+.
-                     No backend, database, or API keys required. Opens http://localhost:3000
-    full             Frontend + FastAPI backend + TimescaleDB + Redis (+ monitoring) via
-                     Docker Compose. Needs: Docker Desktop. First run downloads images and
-                     builds, so it can take several minutes.
+    frontend (default)  Frontend only, live data from free public APIs. Needs: Node.js 24+
+                     (frontend/package.json engines). No database or API keys required.
+                     Opens http://localhost:3000
+    full             Frontend + TimescaleDB + Redis (+ monitoring) via Docker Compose, which
+                     also builds the legacy FastAPI backend. That backend is RETIRED and
+                     frozen (owner decision D2, backend/FROZEN.md): nothing in the app calls
+                     it. Needs: Docker Desktop. First run downloads images and builds, so it
+                     can take several minutes.
 #>
 
 [CmdletBinding()]
@@ -35,8 +38,10 @@ $ENV_FILE      = Join-Path $FRONTEND_DIR '.env.local'
 $COMPOSE_DIR   = Join-Path $ROOT 'infrastructure\docker'
 $COMPOSE_FILE  = Join-Path $COMPOSE_DIR 'docker-compose.yml'
 $DOCKER_ENV    = Join-Path $COMPOSE_DIR '.env'
-$MIN_NODE_MAJOR = 18
-$MIN_NODE_MINOR = 17
+# Mirrors frontend/package.json "engines": ">=24.0.0". Was 18.17 until 2026-10-09,
+# which let Node 18-22 pass this check and then fail at install or start.
+$MIN_NODE_MAJOR = 24
+$MIN_NODE_MINOR = 0
 
 # ----- pretty output (ASCII only, no Unicode to avoid PS 5.1 encoding issues) -----
 function Write-Header {
@@ -80,7 +85,7 @@ function Test-NodeVersion {
 
 # ----- prerequisites -----
 function Install-Node {
-    Write-Step 'Checking for Node.js (18.17+)...'
+    Write-Step "Checking for Node.js ($MIN_NODE_MAJOR.$MIN_NODE_MINOR+)..."
 
     if (Test-NodeVersion) {
         Write-Ok "Node.js present: $(node --version)"
@@ -164,7 +169,8 @@ function Set-FrontendEnv {
 #   FMP_API_KEY=            # full ETF holdings, stock universe, market calendar
 #   ANTHROPIC_API_KEY=      # AI agents, Research page, Daily Brief
 #   FINNHUB_API_KEY=        # extra equity quote provider
-NEXT_PUBLIC_API_URL=http://localhost:8000
+# (NEXT_PUBLIC_API_URL is no longer written: the backend it pointed at is retired
+#  under owner decision D2, and nothing reads the variable.)
 "@ | Set-Content -Encoding UTF8 $ENV_FILE
     Write-Ok '.env.local created (live data via public APIs; optional keys commented).'
 }
@@ -224,8 +230,7 @@ function Start-Full {
     Write-Step 'Building and starting the full stack (Docker Compose)...'
     Write-Host ''
     Write-Host '  Frontend:   ' -NoNewline; Write-Host 'http://localhost:3000' -ForegroundColor Green
-    Write-Host '  Backend API:' -NoNewline; Write-Host ' http://localhost:8000' -ForegroundColor Green
-    Write-Host '  API docs:   ' -NoNewline; Write-Host 'http://localhost:8000/docs' -ForegroundColor Green
+    Write-Host '  Legacy backend (retired, D2 - the app does not call it): http://localhost:8000' -ForegroundColor DarkGray
     Write-Host '  Grafana:    ' -NoNewline; Write-Host 'http://localhost:3001 (admin/admin)' -ForegroundColor Green
     Write-Host '  First run downloads images and builds - this can take several minutes.' -ForegroundColor DarkGray
     Write-Host '  Press Ctrl+C to stop; run "docker compose -f `"$COMPOSE_FILE`" down" to remove.' -ForegroundColor DarkGray

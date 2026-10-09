@@ -13,10 +13,13 @@
 #   ./setup.sh --help          # show this help
 #
 # MODES
-#   frontend (default)  Frontend only, live data from free public APIs. Needs: Node.js 18.17+.
-#                   No backend, database, or API keys required. http://localhost:3000
-#   full            Frontend + FastAPI backend + TimescaleDB + Redis (+ monitoring) via
-#                   Docker Compose. Needs: Docker. First run downloads images and builds.
+#   frontend (default)  Frontend only, live data from free public APIs. Needs: Node.js 24+
+#                   (frontend/package.json engines). No database or API keys required.
+#                   http://localhost:3000
+#   full            Frontend + TimescaleDB + Redis (+ monitoring) via Docker Compose, which
+#                   also builds the legacy FastAPI backend. That backend is RETIRED and frozen
+#                   (owner decision D2, backend/FROZEN.md): nothing in the app calls it.
+#                   Needs: Docker. First run downloads images and builds.
 
 set -euo pipefail
 
@@ -38,8 +41,10 @@ FRONTEND_DIR="$SCRIPT_DIR/frontend"
 ENV_FILE="$FRONTEND_DIR/.env.local"
 COMPOSE_FILE="$SCRIPT_DIR/infrastructure/docker/docker-compose.yml"
 DOCKER_ENV="$SCRIPT_DIR/infrastructure/docker/.env"
-MIN_NODE_MAJOR=18
-MIN_NODE_MINOR=17
+# Mirrors frontend/package.json "engines": ">=24.0.0". Was 18.17 until 2026-10-09,
+# which let Node 18-22 pass this check and then fail at install or start.
+MIN_NODE_MAJOR=24
+MIN_NODE_MINOR=0
 
 CYAN='\033[0;36m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; GRAY='\033[0;90m'; RESET='\033[0m'
 header() {
@@ -88,7 +93,7 @@ install_node() {
   [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
 
   if ! has nvm; then
-    fail "Could not install nvm. Install Node.js 18.17+ from https://nodejs.org and re-run."
+    fail "Could not install nvm. Install Node.js ${MIN_NODE_MAJOR}+ from https://nodejs.org and re-run."
   fi
   nvm install --lts
   nvm use --lts
@@ -124,7 +129,8 @@ setup_frontend_env() {
 #   FMP_API_KEY=            # full ETF holdings, stock universe, market calendar
 #   ANTHROPIC_API_KEY=      # AI agents, Research page, Daily Brief
 #   FINNHUB_API_KEY=        # extra equity quote provider
-NEXT_PUBLIC_API_URL=http://localhost:8000
+# (NEXT_PUBLIC_API_URL is no longer written: the backend it pointed at is retired
+#  under owner decision D2, and nothing reads the variable.)
 EOF
   ok ".env.local created (live data via public APIs; optional keys commented)."
 }
@@ -161,8 +167,7 @@ start_full() {
   step "Building and starting the full stack (Docker Compose)..."
   echo ""
   echo -e "  Frontend:    ${GREEN}http://localhost:3000${RESET}"
-  echo -e "  Backend API: ${GREEN}http://localhost:8000${RESET}"
-  echo -e "  API docs:    ${GREEN}http://localhost:8000/docs${RESET}"
+  echo -e "  ${GRAY}Legacy backend (retired, D2 - the app does not call it): http://localhost:8000${RESET}"
   echo -e "  Grafana:     ${GREEN}http://localhost:3001${RESET} (admin/admin)"
   echo -e "  ${GRAY}First run downloads images and builds - can take several minutes.${RESET}"
   echo ""
