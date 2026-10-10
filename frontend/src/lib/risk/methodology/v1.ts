@@ -90,7 +90,7 @@ export const METHODOLOGY_V1 = {
         description: 'Largest fall from a peak to a later low in daily closes.' },
       { key: 'liquidity', label: 'Liquidity', weight: 0.25, window: '30 days', source: 'CoinGecko daily history',
         description: 'The stronger of median daily dollar volume and turnover (median daily volume ÷ market cap). Turnover earns no extra credit above 5%, because very high turnover is a sign of wash trading.' },
-      { key: 'scale', label: 'Scale', weight: 0.25, window: 'latest day', source: 'CoinGecko markets',
+      { key: 'scale', label: 'Scale', weight: 0.25, window: 'latest day', source: 'CoinGecko daily history',
         description: 'Market capitalisation.' },
     ],
     curves: {
@@ -118,7 +118,7 @@ export const METHODOLOGY_V1 = {
         description: 'Largest fall from a peak to a later low in daily closes.' },
       { key: 'liquidity', label: 'Liquidity', weight: 0.2, window: '30 trading days', source: 'Daily closes and volume',
         description: 'Median daily dollar volume (close × volume).' },
-      { key: 'size', label: 'Size', weight: 0.15, window: 'latest', source: 'Quote ladder / catalog',
+      { key: 'size', label: 'Size', weight: 0.15, window: 'latest', source: 'Catalog reference figure (dated)',
         description: 'Market capitalisation.' },
       { key: 'fundamentals', label: 'Fundamentals', weight: 0.2, window: 'latest annual filing', source: 'SEC XBRL company facts',
         description: 'The average of two components of standard financial-strength models: long-term debt ÷ shareholders’ equity, and net margin. Not applied to financial companies.' },

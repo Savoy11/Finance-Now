@@ -205,6 +205,15 @@ questions go to the review before launch (D4), as the investment-adviser part of
 Nothing is shown until counsel confirms the impersonal form. Like G, it was written without
 opening the primary documents.
 
+*Open, 2026-10-10 (T-420 item 4): a stored score derived from Tiingo prices.* The stability
+rule keeps one weekly reading per stock (`asset_rating_readings`): the score and its classes,
+never a price. On Tiingo's Starter plan that score is computed partly from Tiingo's daily
+prices, and §1.6(a) bars keeping "Tiingo Data" in persistent storage past the calculation. The
+build treats a Finance Now score as our own output, not Tiingo Data, and stores it; the prices
+themselves are never cached, matching `security-ohlcv`. Whether a derived score counts is the
+owner's or counsel's reading, not the build's. If it does, the cure is to read stock prices from
+FMP for ratings, or to stop storing stock readings and drop the stability rule for stocks.
+
 ---
 
 ## 4. When to revisit
