@@ -66,6 +66,13 @@ function Install-Node {
 
     if (Get-Command node -ErrorAction SilentlyContinue) {
         Write-Ok "Node.js $(node --version)  /  npm $(npm --version)"
+        # frontend/package.json requires Node 24+; say so here rather than let the
+        # install or the dev server fail with a less readable error.
+        $major = [int](((node --version) -replace '^v', '').Split('.')[0])
+        if ($major -lt 24) {
+            Write-Host "   Node.js $(node --version) is older than the v24 Finance Now needs (frontend/package.json engines)." -ForegroundColor Yellow
+            Write-Host "   Install the current LTS from https://nodejs.org (or: winget install OpenJS.NodeJS.LTS), then re-run." -ForegroundColor Yellow
+        }
         return
     }
 
@@ -111,18 +118,17 @@ function Setup-Env {
         Copy-Item -Path $ENV_EXAMPLE -Destination $ENV_FILE
         Write-Ok ".env.local created from .env.example — every variable annotated with what it unlocks"
     } else {
-        # Fallback only if the example is missing. NEXT_PUBLIC_API_URL is inert
-        # since 2026-09-14 (owner decision D2): the /api/* proxy rewrite that
-        # consumed it was removed from next.config.mjs and the API_BASE_URL
-        # constant was deleted, so nothing reads it and the value below has no
-        # effect. Written only so this minimal file matches .env.example. If a
-        # proxy to a backend ever returns, this must be the ORIGIN only — a /api
-        # or /api/v1 suffix plus an appended /api/:path is what produced
-        # /api/v1/api/v1/... .
+        # Fallback only if the example is missing. It no longer writes
+        # NEXT_PUBLIC_API_URL (2026-10-09): the backend is retired under owner
+        # decision D2 and nothing reads the variable, and .env.example keeps it
+        # commented out, so an active line here was the one thing that did not
+        # match. If a proxy to a backend ever returns, the value must be the ORIGIN
+        # only: a /api or /api/v1 suffix is what once produced /api/v1/api/v1/... .
         Write-Warn ".env.example not found — writing a minimal .env.local instead"
         @"
-# The legacy Python backend is OPTIONAL and dormant; the app runs live-only without it.
-NEXT_PUBLIC_API_URL=http://localhost:8000
+# Nothing here is required: Finance Now runs live-only against public providers.
+# Optional keys (DATABASE_URL, AUTH_SECRET, provider and AI keys) unlock specific
+# surfaces; see frontend/.env.example and CLAUDE.md, Environment Variables.
 "@ | Set-Content -Path $ENV_FILE -Encoding utf8
         Write-Ok ".env.local created (minimal; the app runs live-only — there is no mock data path)"
     }
