@@ -50,7 +50,8 @@
     "docs:check": "tsx scripts/check-doc-facts.ts",
     "queue:check": "node scripts/check-queue-ledger.mjs",
     "staleness:check": "tsx scripts/check-staleness-horizon.ts",
-    "deps:check": "node scripts/check-dependency-audit.mjs"
+    "deps:check": "node scripts/check-dependency-audit.mjs",
+    "ratings:validate": "tsx scripts/validate-ratings.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.131.0",
