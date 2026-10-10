@@ -43,3 +43,26 @@
  * is decided again.
  */
 export const RISK_RATINGS_SHOWN = false
+
+/**
+ * Whether the asset-page ratings (T-420; D92, D94, D95) are shown. OFF.
+ *
+ * Separate from RISK_RATINGS_SHOWN, which keeps governing the surfaces D92 ruled
+ * out. This one governs only what D92 allows: the measured-risk rating on a crypto
+ * coin's own page and a stock's own page (docs/architecture/risk-ratings-methodology.md).
+ *
+ * While it is false:
+ *   - /live-data/coin-rating and /live-data/stock-rating answer only on the owner's
+ *     own machine (a localhost request) or to a caller holding FN_ADMIN_TOKEN, through
+ *     guardSensitiveRoute, the guard the AI routes use. Anyone else gets 403/401. That
+ *     keeps a deployed build closed while the owner runs the methodology's §8
+ *     validation locally.
+ *   - No page renders a rating, and no /api/v1 route, MCP tool or agent tool reads one
+ *     (lib/risk/__tests__/assetRatingsHidden.test.ts).
+ *
+ * TO TURN ON: counsel confirms the form (D4; the risk-ratings memo's §8, questions
+ * 1, 2 and 6), the owner's holdings policy is written (methodology §11), and the owner
+ * says so. Then revisit assetRatingsHidden.test.ts, which fails until each surface is
+ * decided again.
+ */
+export const ASSET_PAGE_RATINGS_SHOWN = false

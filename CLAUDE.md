@@ -113,7 +113,7 @@ frontend/src/
 │   │                               #   so bookmarks land. This row said "page
 │   │                               #   retained" until 2026-09-22; what is actually
 │   │                               #   retained is an empty directory, nothing else.
-│   └── live-data/                  # Server-side API proxy routes (no API keys exposed) — 58 routes
+│   └── live-data/                  # Server-side API proxy routes (no API keys exposed) — 60 routes
 │       ├── markets/route.ts        # CoinGecko price data
 │       ├── news/route.ts           # Multi-provider crypto news (RSS + JSON feeds)
 │       ├── social/route.ts         # Social sentiment data
@@ -144,6 +144,11 @@ frontend/src/
 │       ├── sec-filings/route.ts     # SEC EDGAR filings feed (ticker→CIK→submissions; tabbed 10-K/10-Q/8-K on equity detail)
 │       ├── company-facts/route.ts   # SEC EDGAR XBRL fundamentals → financial ratios + annual trend on equity detail
 │       ├── company-profile/route.ts # SEC EDGAR registrant metadata (SIC, HQ, incorporation) + Wikipedia summary
+│       ├── coin-rating/route.ts     # T-420 measured-risk rating, one catalog coin (CoinGecko daily chart, day-cached)
+│       ├── stock-rating/route.ts    # T-420 measured-risk rating, one catalog stock (reads security-ohlcv + company-facts;
+│       │                            #   never cached, Tiingo §1.6(a)). ⚠ BOTH HIDDEN: while ASSET_PAGE_RATINGS_SHOWN
+│       │                            #   (lib/risk/visibility.ts) is false they answer only on localhost / FN_ADMIN_TOKEN.
+│       │                            #   Weekly readings need migration 0007 (`npm run db:migrate`)
 │       ├── stock-universe/route.ts  # Stock Registry universe — FMP stock-screener (daily-cached) w/ curated fallback; ?symbol= single lookup
 │       ├── stock-outliers/route.ts  # Sector-relative z-score outliers over the universe (cheap/expensive/highYield/high-lowBeta) — backs the Equity Screener agent
 │       ├── fund-holdings/route.ts   # Full ETF/fund portfolio: SEC N-PORT direct (keyless, authoritative) → FMP → catalog.

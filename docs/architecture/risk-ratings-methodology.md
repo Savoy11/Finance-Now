@@ -69,10 +69,19 @@ younger coins show "Not enough history to rate (needs one year of prices)".
 
 | Dimension | Weight | Input | Window | Source |
 |---|---:|---|---|---|
-| Volatility | 0.30 | Annualised standard deviation of daily log returns (sample, × √365) | 365 days | CoinGecko daily history (`/live-data/ohlcv`, keyless; Binance.US fallback) |
+| Volatility | 0.30 | Annualised standard deviation of daily log returns (sample, × √365) | 365 days | CoinGecko daily history (`market_chart`, keyless) |
 | Drawdown | 0.20 | Largest peak-to-trough fall in daily closes | 365 days | same |
-| Liquidity | 0.25 | Median daily dollar volume, and median daily volume ÷ market cap (turnover); the stronger of the two | 30 days | CoinGecko markets / history |
-| Scale | 0.25 | Market capitalisation | latest daily | CoinGecko markets |
+| Liquidity | 0.25 | Median daily dollar volume, and median daily volume ÷ market cap (turnover); the stronger of the two | 30 days | same (volume across all exchanges) |
+| Scale | 0.25 | Market capitalisation | latest daily | same |
+
+**One source, one request (2026-10-10).** CoinGecko's daily chart carries the closes, the volume
+across all exchanges and the market cap together, so a coin's rating is one request. Not
+`/live-data/ohlcv`, which asks Binance first: Binance's volume is one exchange's, and liquidity
+measures the total. There is no fallback, because without CoinGecko's volume and market cap, liquidity
+and scale would both be missing, below the 70% coverage floor (§5), so a second price source could
+not produce a rating. That makes coin ratings single-sourced, a D21 gap recorded here rather than
+chased now. The free tier serves exactly 365 daily closes, which is exactly the minimum: a day missing
+from CoinGecko's data leaves a coin unrated until it ages out.
 
 **Curves** (value → sub-score; straight lines between points, flat beyond the ends):
 
@@ -103,8 +112,18 @@ only, and the page says so. **A stock must have at least one year of daily price
 | Volatility | 0.25 | Annualised standard deviation of daily log returns (sample, × √252) | 1 year | Daily closes (`/live-data/security-ohlcv`: Tiingo, then FMP; keyed) |
 | Drawdown | 0.20 | Largest peak-to-trough fall in daily closes | 1 year | same |
 | Liquidity | 0.20 | Median daily dollar volume (close × volume) | 30 trading days | same |
-| Size | 0.15 | Market capitalisation | latest | Quote ladder / catalog |
+| Size | 0.15 | Market capitalisation | latest | Catalog reference figure, shown with its date (the quote ladder carries no market cap) |
 | Fundamentals | 0.20 | Long-term debt ÷ shareholders' equity, and net margin (net income ÷ revenue), averaged | latest annual filing (within 15 months) | SEC XBRL company facts (`/live-data/company-facts`, keyless) |
+
+**Where the stock figures come from (2026-10-10).** The rating reads the app's own routes, so each
+figure matches what the stock page shows: daily candles from `/live-data/security-ohlcv` and the
+filing from `/live-data/company-facts`. That route takes income and revenue from the latest full
+fiscal year and debt and equity from the latest balance sheet (a 10-K or 10-Q); the 15-month rule
+applies to the fiscal year. Size uses the catalog's reference market cap because no source the app
+uses quotes one. The figure is dated on the panel, and on this coarse curve a few months' drift
+rarely moves the sub-score. A company with no usable SEC filing is rated without fundamentals, with
+the reason shown; SEC being unreachable is not rated at all, so a passing outage never becomes the
+week's stored reading.
 
 **Curves:**
 
@@ -161,8 +180,13 @@ rated, because volatility and drawdown are required (§5). It degrades to facts,
    so a week with no reading holds the class rather than helping it move; and only readings under
    the **current methodology version** count, so a new version starts every asset at its current
    class.
-7. **Recompute schedule.** Once a day from the previous day's daily data, cached 24 hours, shown "as
-   of" that date. Never intraday, never on a price move, never as a notification.
+7. **Recompute schedule.** Once a day from the previous day's daily data, shown "as of" that date.
+   Never intraday, never on a price move, never as a notification. Both routes drop anything dated
+   today (UTC), so every computation during a day reads the same inputs. Coin ratings are also
+   cached for the day (one CoinGecko request per coin per day). Stock ratings are recomputed on
+   each request instead, because Tiingo's Starter terms (§1.6(a)) bar keeping its data past the
+   calculation. Their result does not change within a day either, since the inputs stop at
+   yesterday.
 
 ## 6. What the page says
 
@@ -222,12 +246,21 @@ The build is not finished until these have run and their results are written up 
    turns an asset's stored readings into the stability rule's input and the row to store
    (`__tests__/ratingReadings.test.ts`). ⚠ **Run `npm run db:migrate` on the owner's machine**;
    nothing reads the table until item 4, so nothing changes before then.
-4. A daily rating route for each class, cached 24 hours.
+4. ✅ A daily rating route for each class: `/live-data/coin-rating?id=` and
+   `/live-data/stock-rating?symbol=`. `lib/risk/ratingInputs.ts` decides the universe and turns the
+   feeds into the engine's inputs, `lib/server/ratingStore.ts` loads and stores the weekly readings,
+   and `lib/server/assetRatingRoute.ts` holds what the two share (`__tests__/ratingInputs.test.ts`,
+   `lib/server/__tests__/assetRatingRoutes.test.ts`). An outage answers 503 and is never cached or
+   stored; a missing key or filing is answered, with the reason. ⚠ The database part is not yet run
+   against Postgres: it needs migration 0007 (`npm run db:migrate`) on the owner's machine.
 5. The rating panel on `/assets/[id]` and `/equities/[symbol]`, and the methodology section, rendered
    from `v1.ts`.
-6. **A new switch, `ASSET_PAGE_RATINGS_SHOWN = false`**, separate from D64's `RISK_RATINGS_SHOWN`,
-   which keeps governing the surfaces D92 ruled out. Tests hold that nothing renders, and that no API,
-   MCP or agent path reads a rating, while it is false.
+6. ✅ (switch and routes; the panels follow in item 5) **A new switch, `ASSET_PAGE_RATINGS_SHOWN =
+   false`** (`lib/risk/visibility.ts`), separate from D64's `RISK_RATINGS_SHOWN`, which keeps governing
+   the surfaces D92 ruled out. While it is false the two routes answer only on the owner's machine (a
+   localhost request) or to `FN_ADMIN_TOKEN`, through the guard the AI routes use, so the §8
+   validation can run locally while a deployed build stays closed. `__tests__/assetRatingsHidden.test.ts`
+   holds that, and that no page, `/api/v1` route, MCP tool or agent tool reads a rating.
 7. The validation in §8, written up.
 
 Shown only after counsel confirms the form (D4; the memo's §8, questions 1, 2 and 6), the holdings
@@ -269,3 +302,9 @@ number of exchanges and the share of volume on the top two (from CoinGecko's tic
 - **2026-10-09:** §5 item 6 now states how weekly readings are kept: the first rating of each week,
   16 consecutive weeks, and only readings under the current version. These settle questions the
   rule left open; they change no number.
+- **2026-10-10:** the sources as built (§3, §4, §5 item 7). Coins read CoinGecko's daily chart
+  alone, not `/live-data/ohlcv` with a Binance.US fallback, because Binance's volume is one
+  exchange's. Stock size uses the catalog's dated reference market cap, because the quote ladder
+  carries none, and debt and equity come from the latest balance sheet. Stock ratings are not cached
+  across requests, under Tiingo's terms. The two `source` labels in `v1.ts` changed to match; no
+  number changed.
