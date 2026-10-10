@@ -480,6 +480,29 @@ export const DATA_SOURCES: DataSourceEntry[] = [
     notes: 'Added 2026-10-07 (D93, T-420 item 4). Arithmetic only: payoff at expiry, maximum gain and loss, breakevens, and Black-Scholes Greeks from the volatility the user enters. No grade or score; the graded Trade Risk Scorer stays switched off (D64, D92). Finance Now carries no options chain (docs/assessments/P2-O1-options-data.md), so every option figure is typed in by the user. Only the underlying price is fetched, through the shared quote ladder, which is keyed.',
   },
   {
+    id: 'coin-rating', surface: 'Measured-risk rating (coin pages)', module: 'crypto',
+    route: '/live-data/coin-rating', status: 'derived',
+    providers: [
+      { name: 'Finance Now rating engine (lib/risk/assetRating.ts)', role: 'derived', auth: 'none' },
+      COINGECKO,
+    ],
+    cadence: 'daily, from the previous day’s data',
+    notes: 'HIDDEN until ASSET_PAGE_RATINGS_SHOWN is turned on (lib/risk/visibility.ts; T-420, D92): counsel’s confirmation, the owner’s holdings policy and the owner’s word come first. When on: a 1–7 class and its 0–100 score, worked out by Finance Now from CoinGecko’s daily chart (closes, volume across all exchanges, market cap), under the method published at /about/risk-ratings. The rating is Finance Now’s computation, not CoinGecko’s figure. Single-sourced on purpose: without CoinGecko’s volume and market cap no rating is possible (docs/architecture/risk-ratings-methodology.md §3).',
+  },
+  {
+    id: 'stock-rating', surface: 'Measured-risk rating (stock pages)', module: 'equities',
+    route: '/live-data/stock-rating', status: 'derived',
+    providers: [
+      { name: 'Finance Now rating engine (lib/risk/assetRating.ts)', role: 'derived', auth: 'none' },
+      TIINGO,
+      FMP,
+      SEC_EDGAR,
+    ],
+    cadence: 'daily, from the previous day’s data',
+    staticData: ['lib/data/equityCatalog.ts'],
+    notes: 'HIDDEN until ASSET_PAGE_RATINGS_SHOWN is turned on (lib/risk/visibility.ts; T-420, D92). When on: a 1–7 class and its 0–100 score for the curated catalog’s stocks, worked out by Finance Now from daily candles (Tiingo, then FMP; keyed), SEC filings, and the catalog’s dated reference market cap, under the method published at /about/risk-ratings. Never cached across requests, under Tiingo’s Starter terms §1.6(a). With no Tiingo or FMP key no stock is rated.',
+  },
+  {
     id: 'portfolio-builder', surface: 'Portfolio Builder (allocations, drift, suitability)', module: 'shared',
     route: '/live-data/portfolio-prices + /live-data/security-quotes (drift monitoring)', status: 'derived',
     providers: [

@@ -234,6 +234,46 @@ The build is not finished until these have run and their results are written up 
    the final v1 numbers. No source supports any particular weights; the page says they are Finance
    Now's choice.
 
+### First sanity reading, 2026-10-10 (item 1, partial)
+
+The end-to-end check after migration 0007 ran on the owner's machine, under `v1 (draft, 2026-10-09)`,
+on data to 2026-10-09. Bitcoin and Apple went through the routes and stored this week's readings, two
+rows; the other coins ran through the same engine in memory only, from CoinGecko's daily chart.
+Chainlink was skipped when CoinGecko's free tier refused the request (HTTP 429).
+
+| Asset | Class (label) | Score | Price behaviour alone (class) | Volatility | Largest fall | Price behaviour alone, on the **stock** curves |
+|---|---|---:|---:|---:|---:|---|
+| Bitcoin | 2 (Low) | 81.3 | 70 (3) | 44% | 49% | 45.9, class 4 |
+| Ethereum | 3 (Moderately low) | 71 | 57 (4) | 62% | 63% | 29.9, class 6 |
+| Solana | 3 (Moderately low) | 69 | 52.6 (4) | 66% | 70% | 25.3, class 6 |
+| Dogecoin | 3 (Moderately low) | 65.5 | 52.8 (4) | 68% | 68% | 25.3, class 6 |
+| Cardano | 4 (Moderate) | 57 | 42 (5) | 79% | 80% | 19.4, class 6 |
+| Apple | 1 (Very low) | 88 | 81 (2) | 25% | 14% | (already the stock curves) |
+
+**Finding: the coins rate far lower than this note expects.** Every coin lands in classes 2–4, and
+Dogecoin, a meme coin, shares Ethereum's class. §2 expects most coins in classes 5 to 7, and a regulated
+Bitcoin fund's own EU document puts Bitcoin at 6 of 7. For comparison only, since both regulators
+measure differently from this rating (the UCITS indicator uses five years of weekly volatility, the
+PRIIPs indicator a VaR-equivalent volatility that counts fat tails; survey §1.1): the PRIIPs scale puts
+30–80% in class 6 and 20–30% in class 5, and the UCITS scale puts 25% and above in class 7. Apple at
+class 1, "Very low", needs the same check.
+
+**Cause, in two parts:**
+1. **Coins are scored on gentler curves than stocks.** The class boundaries are shared, but each asset
+   class turns volatility and drawdown into a sub-score with its own curve, and the coin curves are far
+   more lenient: 44% volatility scores 79 on the coin curve and about 54 on the stock curve. Shared
+   boundaries do not make the "one absolute scale" §2 promises when the curves differ. On the stock
+   curves, Bitcoin's price behaviour alone would be class 4 and the other four coins' class 6.
+2. **Size and liquidity then lift each coin one class.** They carry half a coin's weight, and the cap
+   rule (§5 item 4) allows exactly a one-class lift over price behaviour alone. Every coin above took it.
+
+**Not acted on.** The weights and curves are parked until this validation is written up (§11, D95), so
+no number changed. The options for the owner then: (a) one set of price curves for coins and stocks,
+which restores §2's one absolute scale; (b) re-tune the coin curves against the regulators' bands;
+(c) tighten the cap rule so size and liquidity cannot lift the class; and in each case check Apple's
+class 1 against the same bands. The two stored readings are under the draft version, so they stop
+counting once the numbers change and the version moves on; nothing needs removing.
+
 ## 9. The build (started 2026-10-09)
 
 1. ✅ `lib/risk/methodology/v1.ts`: every number and rule in §2–§5, with its version.
@@ -253,14 +293,23 @@ The build is not finished until these have run and their results are written up 
    `lib/server/__tests__/assetRatingRoutes.test.ts`). An outage answers 503 and is never cached or
    stored; a missing key or filing is answered, with the reason. ⚠ The database part is not yet run
    against Postgres: it needs migration 0007 (`npm run db:migrate`) on the owner's machine.
-5. The rating panel on `/assets/[id]` and `/equities/[symbol]`, and the methodology section, rendered
-   from `v1.ts`.
-6. ✅ (switch and routes; the panels follow in item 5) **A new switch, `ASSET_PAGE_RATINGS_SHOWN =
-   false`** (`lib/risk/visibility.ts`), separate from D64's `RISK_RATINGS_SHOWN`, which keeps governing
-   the surfaces D92 ruled out. While it is false the two routes answer only on the owner's machine (a
-   localhost request) or to `FN_ADMIN_TOKEN`, through the guard the AI routes use, so the §8
-   validation can run locally while a deployed build stays closed. `__tests__/assetRatingsHidden.test.ts`
-   holds that, and that no page, `/api/v1` route, MCP tool or agent tool reads a rating.
+5. ✅ The rating panel on `/assets/[id]` and `/equities/[symbol]` (`components/markets/AssetRatingPanel.tsx`)
+   and the methodology page at `/about/risk-ratings` (`components/legal/RatingMethodology.tsx`), both
+   rendered from `v1.ts` and `lib/risk/ratingCopy.ts`, which holds the §1, §5 and §6 wording with
+   every number read from `v1.ts`. The panel shows the class under "Measured risk: Class N of 7" on a
+   1–7 row with the class marked (neutral colour, as on the EU's indicator), the held-class and
+   cap-rule sentences when they apply, every part with its raw figure, sub-score, weight, window and
+   source, the as-of date, and the §6 disclosures. Tests render both with ratings from the real
+   engine (`__tests__/assetRatingPanel.test.tsx`) and fail on a suitability word anywhere in the
+   rating's copy except the not-a-recommendation sentence (`__tests__/ratingCopy.test.ts`). The
+   holdings policy (§11) shows as not yet written.
+6. ✅ **A new switch, `ASSET_PAGE_RATINGS_SHOWN = false`** (`lib/risk/visibility.ts`), separate from
+   D64's `RISK_RATINGS_SHOWN`, which keeps governing the surfaces D92 ruled out. While it is false the
+   panel renders nothing and mounts nothing, the methodology page answers 404, and the two routes
+   answer only on the owner's machine (a localhost request) or to `FN_ADMIN_TOKEN`, through the guard
+   the AI routes use, so the §8 validation can run locally while a deployed build stays closed.
+   `__tests__/assetRatingsHidden.test.ts` holds all of that, that no `/api/v1` route, MCP tool or
+   agent tool reads a rating, and that the switch cannot be on while the holdings policy is unwritten.
 7. The validation in §8, written up.
 
 Shown only after counsel confirms the form (D4; the memo's §8, questions 1, 2 and 6), the holdings
@@ -279,7 +328,8 @@ number of exchanges and the share of volume on the top two (from CoinGecko's tic
 **Parked on 2026-10-07 (D95), each with what brings it back:**
 1. **The final weights and curves.** Parked until the validation in §8 has run and been written up;
    that write-up is the point to confirm or change them. Until then the numbers in §3 and §4 stand
-   as the provisional v1.
+   as the provisional v1. ⚠ The first sanity reading (§8, 2026-10-10) already shows the coin curves
+   cannot stand as they are: they rate Bitcoin class 2 and Dogecoin class 3.
 2. **The holdings policy** (the memo's §6, item 8): a written policy on the owner's own holdings and
    trading in rated assets, for the methodology page. Parked until before anything is shown: it is a
    precondition of turning `ASSET_PAGE_RATINGS_SHOWN` on, alongside counsel's confirmation (D4).
@@ -308,3 +358,8 @@ number of exchanges and the share of volume on the top two (from CoinGecko's tic
   carries none, and debt and equity come from the latest balance sheet. Stock ratings are not cached
   across requests, under Tiingo's terms. The two `source` labels in `v1.ts` changed to match; no
   number changed.
+- **2026-10-10:** the panel and the methodology page built (§9 item 5), hidden. The page's wording
+  is this note's §1, §5 and §6, with the regulators' phrasing kept; no number changed.
+- **2026-10-10:** first sanity reading recorded (§8): coins rate in classes 2–4, far below §2's
+  expectation, because the coin curves are gentler than the stock curves and size and liquidity lift
+  each coin a class. Recorded, not acted on; no number changed.

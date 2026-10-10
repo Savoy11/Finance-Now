@@ -5,7 +5,7 @@ change the registry and regenerate. This is the "where does the data come from" 
 `DATA-AVAILABILITY.md` (which tracks whether each surface is live). The same registry powers the
 in-app **/data-sources** page and the per-page provenance badges, so the app and the docs never diverge._
 
-_Last generated: **2026-10-08**_
+_Last generated: **2026-10-10**_
 
 ## Legend
 
@@ -46,6 +46,7 @@ Provider tags: `key` = needs an API key · `paid` = needs a paid plan · untagge
 | Portfolio prices | Live | [CoinGecko](https://www.coingecko.com/en/api) `api.coingecko.com`<br>[DefiLlama](https://defillama.com/docs/api) `coins.llama.fi` | on demand | `/live-data/portfolio-prices` |
 | Portfolio history | Live | [CoinGecko](https://www.coingecko.com/en/api) `api.coingecko.com` | — | `/live-data/portfolio-history` |
 | On-chain wallet balances (BTC/ETH/SOL/TRON/XRP + EVM) | Live | Public explorers + JSON-RPC ladders | — | `/live-data/wallet/*` |
+| Measured-risk rating (coin pages) | Derived | Finance Now rating engine (lib/risk/assetRating.ts)<br>[CoinGecko](https://www.coingecko.com/en/api) `api.coingecko.com` | daily, from the previous day’s data | `/live-data/coin-rating` |
 
 - **Crypto prices, market cap, volume, 24h change** — Prices live; coin metadata (name, chain, contract) is static reference data, not fabricated. Reference/fallback data: `lib/data/assetCatalog.ts (metadata)`.
 - **Crypto OHLCV / candlestick charts** — Binance.com is 451 (geo-blocked) from many hosts, so candles come from the US mirror — a different venue. Serving venue recorded in the `venue` field.
@@ -64,6 +65,7 @@ Provider tags: `key` = needs an API key · `paid` = needs a paid plan · untagge
 - **Videos / video search** — RSS video list works keyless; search/analyze report configured:false without a key rather than fabricating.
 - **Portfolio history** — Requires ids + date; returns HTTP 400 on missing/invalid params.
 - **On-chain wallet balances (BTC/ETH/SOL/TRON/XRP + EVM)** — Each chain walks a fallback ladder of public RPC/explorer endpoints and reports the serving endpoint in `rpc`.
+- **Measured-risk rating (coin pages)** — HIDDEN until ASSET_PAGE_RATINGS_SHOWN is turned on (lib/risk/visibility.ts; T-420, D92): counsel’s confirmation, the owner’s holdings policy and the owner’s word come first. When on: a 1–7 class and its 0–100 score, worked out by Finance Now from CoinGecko’s daily chart (closes, volume across all exchanges, market cap), under the method published at /about/risk-ratings. The rating is Finance Now’s computation, not CoinGecko’s figure. Single-sourced on purpose: without CoinGecko’s volume and market cap no rating is possible (docs/architecture/risk-ratings-methodology.md §3).
 
 ## Equities
 
@@ -83,6 +85,7 @@ Provider tags: `key` = needs an API key · `paid` = needs a paid plan · untagge
 | Market calendar (earnings / econ / FOMC) | Key-gated | FMP `financialmodelingprep.com` _(key)_<br>[Federal Reserve Board](https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm) `www.federalreserve.gov` | — | `/live-data/market-calendar` |
 | Trade Risk Scorer (options) | Derived | Finance Now risk engine (lib/risk/profiles/optionsTrade.ts)<br>User-entered option quotes (from their broker chain)<br>[FMP](https://site.financialmodelingprep.com/developer/docs) `financialmodelingprep.com` _(key)_ | on demand | `/api/v1/options/score` |
 | Options Calculator (payoff, breakevens, Greeks) | Derived | Finance Now arithmetic (lib/options/payoff.ts, lib/options/greeks.ts)<br>User-entered strikes, premiums and volatility (from their broker chain)<br>[FMP](https://site.financialmodelingprep.com/developer/docs) `financialmodelingprep.com` _(key)_ | on demand | `/live-data/security-quotes (underlying price only)` |
+| Measured-risk rating (stock pages) | Derived | Finance Now rating engine (lib/risk/assetRating.ts)<br>[Tiingo](https://www.tiingo.com/documentation/general/overview) `api.tiingo.com` _(key)_<br>[FMP](https://site.financialmodelingprep.com/developer/docs) `financialmodelingprep.com` _(key)_<br>[SEC EDGAR](https://www.sec.gov/edgar) `data.sec.gov` | daily, from the previous day’s data | `/live-data/stock-rating` |
 
 - **Stock / ETF / fund quotes** — Registry-driven provider ladder (Integrations page). EVERY live rung needs an API key since the keyless one was withdrawn on terms grounds (2026-08-06) — with no key, stocks and funds fall to catalog reference prices behind an amber `ref` tag, and macro instruments (no reference price by design) show a dash. Reference/fallback data: `lib/data/equityCatalog.ts`, `lib/data/fundCatalog.ts`.
 - **Stock OHLCV / TA / backtests** — Both rungs are keyed. Without one the route returns source:"none" and the TA, backtest and candlestick surfaces show their no-live-source state rather than synthetic candles.
@@ -96,6 +99,7 @@ Provider tags: `key` = needs an API key · `paid` = needs a paid plan · untagge
 - **Market calendar (earnings / econ / FOMC)** — Earnings needs a free FMP key; other US economic releases need a paid one. FOMC meeting dates are KEYLESS and NOT FETCHED: a dated table copied by hand from the Federal Reserve Board’s calendar (public domain; the Board asks to be cited), returned on every plan — including with no FMP key, where the route still reports configured:false — and never counted against the 40-row FMP cap, which keeps high-impact rows first. `ok` counts FMP rows only, so a dead FMP leg still reads ok:false. Reference/fallback data: `lib/data/fomcCalendar.ts (FOMC meeting dates, copied from the Board’s calendar; 90-day review clock)`.
 - **Trade Risk Scorer (options)** — SWITCHED OFF 2026-10-04 (D64): the endpoint answers 503 and the page redirects, with every other risk rating, until the risk engine is rebuilt and reviewed. When on: every option-level figure is entered by the user — Finance Now carries NO options chain, because no source it may use publishes one (Cboe’s terms prohibit auto-extraction; Yahoo’s options endpoint required auth and Yahoo is now blocked outright on terms grounds). See docs/assessments/P2-O1-options-data.md. Only the underlying price is fetched, through the shared quote ladder, which is keyed. The score itself is this app’s computation, not any provider’s figure.
 - **Options Calculator (payoff, breakevens, Greeks)** — Added 2026-10-07 (D93, T-420 item 4). Arithmetic only: payoff at expiry, maximum gain and loss, breakevens, and Black-Scholes Greeks from the volatility the user enters. No grade or score; the graded Trade Risk Scorer stays switched off (D64, D92). Finance Now carries no options chain (docs/assessments/P2-O1-options-data.md), so every option figure is typed in by the user. Only the underlying price is fetched, through the shared quote ladder, which is keyed.
+- **Measured-risk rating (stock pages)** — HIDDEN until ASSET_PAGE_RATINGS_SHOWN is turned on (lib/risk/visibility.ts; T-420, D92). When on: a 1–7 class and its 0–100 score for the curated catalog’s stocks, worked out by Finance Now from daily candles (Tiingo, then FMP; keyed), SEC filings, and the catalog’s dated reference market cap, under the method published at /about/risk-ratings. Never cached across requests, under Tiingo’s Starter terms §1.6(a). With no Tiingo or FMP key no stock is rated. Reference/fallback data: `lib/data/equityCatalog.ts`.
 
 ## ETFs & Funds
 
@@ -148,4 +152,4 @@ Provider tags: `key` = needs an API key · `paid` = needs a paid plan · untagge
 
 ---
 
-_53 surfaces catalogued. Regenerate with `npm run data-sources`; verify against the route code with `npm run data-sources -- --verify`._
+_55 surfaces catalogued. Regenerate with `npm run data-sources`; verify against the route code with `npm run data-sources -- --verify`._

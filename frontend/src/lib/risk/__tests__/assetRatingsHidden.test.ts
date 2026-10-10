@@ -3,6 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { NextRequest } from 'next/server'
 import { ASSET_PAGE_RATINGS_SHOWN } from '../visibility'
+import { HOLDINGS_POLICY } from '../ratingCopy'
 import { GET as coinRating } from '@/app/live-data/coin-rating/route'
 import { GET as stockRating } from '@/app/live-data/stock-rating/route'
 
@@ -72,11 +73,38 @@ describe('T-420: asset-page ratings are hidden', () => {
     expect(offenders).toEqual([])
   })
 
-  it('no page or component renders a rating yet (T-420 item 5 adds the panel behind the switch)', () => {
-    const offenders = [...sources('src/app/(dashboard)'), ...sources('src/components')]
+  it('one component reads a rating, and it checks the switch before anything else', () => {
+    // Allowed, each for its reason: the panel reads a rating and is gated, below; the
+    // methodology describes the method from v1.ts and reads no rating, and its page is gated.
+    const ALLOWED = [
+      path.join('src', 'components', 'markets', 'AssetRatingPanel.tsx'),
+      path.join('src', 'components', 'legal', 'RatingMethodology.tsx'),
+    ]
+    const readers = [...sources('src/app/(dashboard)'), ...sources('src/app/(legal)'), ...sources('src/components')]
       .filter((s) => READS_A_RATING.test(s.code))
       .map((s) => s.file)
-    expect(offenders).toEqual([])
+    expect(readers.sort()).toEqual([...ALLOWED].sort())
+
+    const panel = sources('src/components/markets').find((s) => s.file.endsWith('AssetRatingPanel.tsx'))!
+    expect(panel.code).toMatch(/export function AssetRatingPanel\([^)]*\)[^{]*\{\s*if \(!ASSET_PAGE_RATINGS_SHOWN\) return null/)
+    const methodology = sources('src/components/legal').find((s) => s.file.endsWith('RatingMethodology.tsx'))!
+    expect(methodology.code).not.toMatch(/coin-rating|stock-rating|useQuery|fetch\(/)
+  })
+
+  it('the coin and stock pages show the rating only through the gated panel', () => {
+    for (const page of ['src/app/(dashboard)/assets/[id]/page.tsx', 'src/app/(dashboard)/equities/[symbol]/page.tsx']) {
+      const code = fs.readFileSync(repo(page), 'utf8')
+      expect(code, page).toMatch(/<AssetRatingPanel kind="(crypto|stock)"/)
+    }
+  })
+
+  it('the methodology page checks the switch before rendering', () => {
+    const code = fs.readFileSync(repo('src/app/(legal)/about/risk-ratings/page.tsx'), 'utf8')
+    expect(code).toMatch(/if \(!ASSET_PAGE_RATINGS_SHOWN\) notFound\(\)\s*return <RatingMethodology \/>/)
+  })
+
+  it('the switch cannot be on while the owner’s holdings policy is unwritten (methodology §11)', () => {
+    expect(ASSET_PAGE_RATINGS_SHOWN && HOLDINGS_POLICY === null).toBe(false)
   })
 
   it('guards the guard: the walkers find files, and the pattern matches a real use', () => {
