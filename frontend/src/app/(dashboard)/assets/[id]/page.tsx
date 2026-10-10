@@ -58,6 +58,7 @@ import type { LiveNewsArticle } from '@/app/live-data/news/route'
 import type { LiveReserveAsset } from '@/app/live-data/reserves/route'
 import { Loader2 } from 'lucide-react'
 import { FeatureNotice } from '@/components/legal/FeatureNotice'
+import { AssetRatingPanel } from '@/components/markets/AssetRatingPanel'
 
 type Tab = 'overview' | 'news' | 'technical-analysis' | 'reserves' | 'pump-report'
 
@@ -1079,6 +1080,12 @@ function AssetDetailPageInner() {
           while every registry page did, so the page with the most specific
           numbers was the one with no attribution. */}
       <SourceLine id="markets" />
+
+      {/* Measured-risk rating (T-420, D92). Renders nothing while
+          ASSET_PAGE_RATINGS_SHOWN is false (lib/risk/visibility.ts). */}
+      <ErrorBoundary>
+        <AssetRatingPanel kind="crypto" id={asset.id} />
+      </ErrorBoundary>
 
       {/* Tabs */}
       <div className="flex items-center gap-0.5 border-b border-border" role="tablist">

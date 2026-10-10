@@ -14,6 +14,7 @@ import { FinancialRatios } from '@/components/markets/FinancialRatios'
 import { FundamentalsTrend } from '@/components/markets/FundamentalsTrend'
 import { CompanyProfileCard } from '@/components/markets/CompanyProfileCard'
 import { SectorPeers } from '@/components/markets/SectorPeers'
+import { AssetRatingPanel } from '@/components/markets/AssetRatingPanel'
 import { getEquity, secFilingsUrl, EQUITY_REFERENCE_AS_OF, equityReferenceAgeDays, SECTOR_INFO, type SectorId } from '@/lib/data/equityCatalog'
 import { formatCurrency, formatPercent } from '@/lib/utils/format'
 import { STALE_TIME_SHORT } from '@/lib/constants'
@@ -155,6 +156,10 @@ function EquityDetailInner() {
           while every registry page did, so the page with the most specific
           numbers was the one with no attribution. */}
       <SourceLine id="security-quotes" />
+
+      {/* Measured-risk rating (T-420, D92). Renders nothing while
+          ASSET_PAGE_RATINGS_SHOWN is false (lib/risk/visibility.ts). */}
+      <AssetRatingPanel kind="stock" id={symbol} />
 
       {/* Chart + stats */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">

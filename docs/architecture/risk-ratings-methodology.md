@@ -253,14 +253,23 @@ The build is not finished until these have run and their results are written up 
    `lib/server/__tests__/assetRatingRoutes.test.ts`). An outage answers 503 and is never cached or
    stored; a missing key or filing is answered, with the reason. ⚠ The database part is not yet run
    against Postgres: it needs migration 0007 (`npm run db:migrate`) on the owner's machine.
-5. The rating panel on `/assets/[id]` and `/equities/[symbol]`, and the methodology section, rendered
-   from `v1.ts`.
-6. ✅ (switch and routes; the panels follow in item 5) **A new switch, `ASSET_PAGE_RATINGS_SHOWN =
-   false`** (`lib/risk/visibility.ts`), separate from D64's `RISK_RATINGS_SHOWN`, which keeps governing
-   the surfaces D92 ruled out. While it is false the two routes answer only on the owner's machine (a
-   localhost request) or to `FN_ADMIN_TOKEN`, through the guard the AI routes use, so the §8
-   validation can run locally while a deployed build stays closed. `__tests__/assetRatingsHidden.test.ts`
-   holds that, and that no page, `/api/v1` route, MCP tool or agent tool reads a rating.
+5. ✅ The rating panel on `/assets/[id]` and `/equities/[symbol]` (`components/markets/AssetRatingPanel.tsx`)
+   and the methodology page at `/about/risk-ratings` (`components/legal/RatingMethodology.tsx`), both
+   rendered from `v1.ts` and `lib/risk/ratingCopy.ts`, which holds the §1, §5 and §6 wording with
+   every number read from `v1.ts`. The panel shows the class under "Measured risk: Class N of 7" on a
+   1–7 row with the class marked (neutral colour, as on the EU's indicator), the held-class and
+   cap-rule sentences when they apply, every part with its raw figure, sub-score, weight, window and
+   source, the as-of date, and the §6 disclosures. Tests render both with ratings from the real
+   engine (`__tests__/assetRatingPanel.test.tsx`) and fail on a suitability word anywhere in the
+   rating's copy except the not-a-recommendation sentence (`__tests__/ratingCopy.test.ts`). The
+   holdings policy (§11) shows as not yet written.
+6. ✅ **A new switch, `ASSET_PAGE_RATINGS_SHOWN = false`** (`lib/risk/visibility.ts`), separate from
+   D64's `RISK_RATINGS_SHOWN`, which keeps governing the surfaces D92 ruled out. While it is false the
+   panel renders nothing and mounts nothing, the methodology page answers 404, and the two routes
+   answer only on the owner's machine (a localhost request) or to `FN_ADMIN_TOKEN`, through the guard
+   the AI routes use, so the §8 validation can run locally while a deployed build stays closed.
+   `__tests__/assetRatingsHidden.test.ts` holds all of that, that no `/api/v1` route, MCP tool or
+   agent tool reads a rating, and that the switch cannot be on while the holdings policy is unwritten.
 7. The validation in §8, written up.
 
 Shown only after counsel confirms the form (D4; the memo's §8, questions 1, 2 and 6), the holdings
@@ -308,3 +317,5 @@ number of exchanges and the share of volume on the top two (from CoinGecko's tic
   carries none, and debt and equity come from the latest balance sheet. Stock ratings are not cached
   across requests, under Tiingo's terms. The two `source` labels in `v1.ts` changed to match; no
   number changed.
+- **2026-10-10:** the panel and the methodology page built (§9 item 5), hidden. The page's wording
+  is this note's §1, §5 and §6, with the regulators' phrasing kept; no number changed.

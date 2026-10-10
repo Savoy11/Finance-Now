@@ -62,7 +62,10 @@ frontend/src/
 │   │                               #   not-investment-advice/ hold the full documents and
 │   │                               #   open-source/ the licence list built from package-lock.json.
 │   │                               #   Text: lib/legal/disclosures.ts — Draft v1, shown under a
-│   │                               #   "Draft — not yet in force" notice until approved + no blanks
+│   │                               #   "Draft — not yet in force" notice until approved + no blanks.
+│   │                               #   risk-ratings/ is the T-420 rating methodology, rendered from
+│   │                               #   lib/risk/methodology/v1.ts; a 404 while ASSET_PAGE_RATINGS_SHOWN
+│   │                               #   is false
 │   ├── (dashboard)/                # All main pages (use Sidebar layout)
 │   │   ├── layout.tsx              # Dashboard shell with Sidebar
 │   │   │
@@ -191,12 +194,15 @@ frontend/src/
 │   │   └── SiteFooter.tsx          # Not-advice line + About · Terms · Privacy · Not investment
 │   │                               #   advice. In all three layouts — a test fails if one drops it
 │   ├── legal/                      # About & Legal rendering: LegalDocumentView, DraftNotice…;
-│   │                               #   FeatureNotice, the short not-advice line beside a feature
+│   │                               #   FeatureNotice, the short not-advice line beside a feature;
+│   │                               #   RatingMethodology, the /about/risk-ratings content (T-420)
 │   ├── ui/                         # Generic reusable components (incl. SourceLine, ProvenanceNotice)
 │   ├── charts/                     # Recharts wrappers + CandlestickChart/indicatorRegistry (shared TA engine)
 │   ├── markets/                    # Shared equities/funds UI (PriceChartCard, MarketNewsList) and
 │   │                               #   AgentScanPanel — the AI scan button on the Equity and Macro
-│   │                               #   scanners; scans are listed in agentScans.ts
+│   │                               #   scanners; scans are listed in agentScans.ts. AssetRatingPanel is
+│   │                               #   the T-420 rating card on coin and stock pages: it renders and
+│   │                               #   fetches nothing while ASSET_PAGE_RATINGS_SHOWN is false
 │   ├── agents/                     # AssistantWidget + agent chat UI
 │   ├── portfolio-builder/          # PlanMonitor and questionnaire UI
 │   ├── pump-report/                # PumpReportTab (used by /pump-report)
@@ -890,6 +896,10 @@ site nobody has reviewed. Full design: `docs/architecture/source-terms.md`.
 > rating on the asset's own page for crypto coins and stocks only, facts everywhere else, never a
 > rating of a user's holdings or portfolio, and nothing shown until counsel confirms it in the
 > legal review (D4). T-420 rebuilds to that scope. `docs/LEGAL-REVIEW.md` §3.H.
+> **Build status (2026-10-10):** the engine, the weekly readings, the two rating routes, the panel
+> and the methodology page are built, all behind `ASSET_PAGE_RATINGS_SHOWN = false`
+> (`lib/risk/visibility.ts`); the methodology's §8 validation is next. The method and every build
+> decision are in `docs/architecture/risk-ratings-methodology.md`.
 
 **To close it:** `npm run terms:report -- --seeded` (or `--news`) from a machine
 > that can reach these sites writes a review worksheet — current verdict, what the
