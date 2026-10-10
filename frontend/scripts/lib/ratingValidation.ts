@@ -64,6 +64,35 @@ export function priipsBandClass(volatility: number): number {
   return 1 + PRIIPS_EDGES.filter((edge) => volatility >= edge).length
 }
 
+/**
+ * The largest fall a driftless random walk with annual volatility σ typically shows over one
+ * year: E[max drawdown] = σ·√(π/2) in log terms (Magdon-Ismail et al., 2004), as a fraction.
+ */
+export function typicalDrawdown(sigma: number): number {
+  return 1 - Math.exp(-sigma * Math.sqrt(Math.PI / 2))
+}
+
+/**
+ * Variant B (validation, 2026-10-10): one set of price curves for coins and stocks, tuned to
+ * the PRIIPs bands. Each band edge sits half a point under the matching class boundary, so
+ * volatility alone lands in the class PRIIPs would give it (the edge itself in the higher
+ * class, as PRIIPs counts it). PRIIPs has no drawdown measure, so the drawdown curve puts
+ * each boundary at the fall a random walk at that band edge typically shows in a year.
+ * Derived from the edges and the class boundaries, never typed.
+ *
+ * @param classMins the lowest score in each class, class 1 first (METHODOLOGY_V1.classes)
+ */
+export function euCalibratedCurves(classMins: readonly number[]): { volatility: [number, number][]; drawdown: [number, number][] } {
+  if (classMins.length !== PRIIPS_EDGES.length + 1) throw new RangeError('one class boundary per PRIIPs edge, plus the last class')
+  const top = 2 * PRIIPS_EDGES[PRIIPS_EDGES.length - 1]
+  const volatility: [number, number][] = [
+    [0, 100],
+    ...PRIIPS_EDGES.map((edge, k): [number, number] => [edge, classMins[k] - 0.5]),
+    [top, 0],
+  ]
+  return { volatility, drawdown: volatility.map(([sigma, score]): [number, number] => [typicalDrawdown(sigma), score]) }
+}
+
 // ── dates (UTC) ──────────────────────────────────────────────────────────────
 
 const DAY_MS = 86_400_000

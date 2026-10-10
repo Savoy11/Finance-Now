@@ -253,8 +253,15 @@ Written up in `docs/assessments/risk-ratings-validation-2026-10-10.md`, from `np
 4. **Stability:** the 16-week rule cuts class changes from 0.96 to 0.56 a year for stocks and from
    0.89 to 0.35 for coins.
 
-Item 5, the owner's confirmation or change of the numbers, is open; the write-up's last section sets
-out the four decisions and recommends the EU-aligned reading of the scale.
+Item 5, the owner's confirmation or change of the numbers, is open; the write-up's §6 sets out the four
+decisions and recommends the EU-aligned reading of the scale.
+
+**EU-tuned curves, tested the same evening (write-up §7).** One shared set of volatility and drawdown
+curves derived from the PRIIPs band edges (variant B), with no lift from size and liquidity (C), puts
+every rated coin and stock within one class of its PRIIPs band (mean gaps −0.05 for coins, 0.29 for
+stocks) and keeps the ordering (stocks −0.76, coins −0.75, pooled −0.93). Bitcoin rates 6, as in the
+regulated Bitcoin fund's own document; Apple 4. The cost is a compressed scale on this site: no asset in
+classes 1 or 2, and 39 of 55 coins in class 7. It is the variant recommended for the EU-aligned reading.
 
 ### First sanity reading, 2026-10-10 (item 1, partial)
 
@@ -355,7 +362,8 @@ number of exchanges and the share of volume on the top two (from CoinGecko's tic
    cannot stand as they are: they rate Bitcoin class 2 and Dogecoin class 3. **Ready for decision
    since 2026-10-10:** the full validation is written up (`docs/assessments/risk-ratings-validation-2026-10-10.md`),
    and its last section sets out what to decide: what the scale means (EU-aligned or relative to this
-   site), the coin curves (A, C, or both), the universe (vBUSD, Ampleforth), and the role of size,
+   site), the curves (for the EU-aligned reading, the tested variant is B and C: shared curves derived
+   from the PRIIPs bands, and no lift), the universe (vBUSD, Ampleforth), and the role of size,
    liquidity and fundamentals.
 2. **The holdings policy** (the memo's §6, item 8): a written policy on the owner's own holdings and
    trading in rated assets, for the methodology page. Parked until before anything is shown: it is a
@@ -393,3 +401,6 @@ number of exchanges and the share of volume on the top two (from CoinGecko's tic
 - **2026-10-10:** the full §8 validation run and written up (items 1–4): good ordering, a level too
   low for stocks and coins against the EU scale, robust to ±20% changes, the stability rule halving
   class changes. The owner's decision (item 5) is open; no number changed.
+- **2026-10-10:** EU-tuned curves tested (validation write-up §7): shared curves derived from the
+  PRIIPs bands, with no lift, line up coins and stocks with the regulators' scale and keep the
+  ordering, at the cost of a compressed scale. Tested, not adopted; no number changed.

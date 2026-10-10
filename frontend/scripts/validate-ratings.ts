@@ -36,7 +36,7 @@ import { coinEligibility, coinInputsFromChart, stockInputsFrom, type MarketChart
 import type { OhlcvCandle } from '../src/lib/utils/indicators'
 import type { CompanyFactsResponse } from '../src/app/live-data/company-facts/route'
 import {
-  countChanges, mean, median, mondays, monthlySamples, priipsBandClass, quarterStarts, spearman, withPatch,
+  countChanges, euCalibratedCurves, mean, median, mondays, monthlySamples, priipsBandClass, quarterStarts, spearman, withPatch,
 } from './lib/ratingValidation'
 
 const DAY = 86_400_000
@@ -188,7 +188,20 @@ const VARIANTS: Array<{ key: string; label: string; patch: (m: MethodShape) => v
     VARIANTS[1].patch(m)
     VARIANTS[2].patch(m)
   } },
+  { key: 'B', label: 'B: one set of price curves tuned to the EU PRIIPs bands', patch: (m) => {
+    const eu = euCalibratedCurves(m.classes.map((c) => c.min))
+    const mm = m as unknown as Record<'crypto' | 'stock', { curves: Record<string, unknown> }>
+    for (const kind of ['crypto', 'stock'] as const) {
+      mm[kind].curves.volatility = structuredClone(eu.volatility)
+      mm[kind].curves.drawdown = structuredClone(eu.drawdown)
+    }
+  } },
+  { key: 'BC', label: 'B and C together', patch: (m) => {
+    VARIANTS[4].patch(m)
+    VARIANTS[2].patch(m)
+  } },
 ]
+const variant = (key: string) => VARIANTS.find((v) => v.key === key)!
 
 // ── report ───────────────────────────────────────────────────────────────────
 
@@ -272,22 +285,24 @@ async function main() {
   out()
   out(`### Every coin`)
   out()
-  table(['Coin', 'Class (as built)', 'Score', 'Price alone (class)', 'Capped', 'Volatility', 'Largest fall', 'PRIIPs band', 'A', 'C', 'A+C', 'Note'],
+  table(['Coin', 'Class (as built)', 'Score', 'Price alone (class)', 'Capped', 'Volatility', 'Largest fall', 'PRIIPs band', 'A', 'C', 'A+C', 'B', 'B+C', 'Note'],
     sanity.filter((r) => r.kind === 'crypto').map((r) => {
       const b = r.byVariant.base
       return [r.name, b ? `${b.cls} (${b.label})` : 'not rated', b?.score ?? '—', b ? `${b.coreScore} (${b.coreCls})` : '—', b?.capped ? 'yes' : '',
-        pct(r.vol), pct(r.dd), r.band ?? '—', r.byVariant.A?.cls ?? '—', r.byVariant.C?.cls ?? '—', r.byVariant.AC?.cls ?? '—', b ? '' : (r.reason ?? '')]
+        pct(r.vol), pct(r.dd), r.band ?? '—', r.byVariant.A?.cls ?? '—', r.byVariant.C?.cls ?? '—', r.byVariant.AC?.cls ?? '—',
+        r.byVariant.B?.cls ?? '—', r.byVariant.BC?.cls ?? '—', b ? '' : (r.reason ?? '')]
     }))
   out(`### Every stock`)
   out()
   out(`Classes and scores only: stock prices may come from Tiingo, whose terms bar keeping its data, so no price-derived figure is written here.`)
   out()
-  table(['Stock', 'Class (as built)', 'Score', 'Price alone (class)', 'Capped', 'PRIIPs band', 'A', 'C', 'A+C', 'Prices from', 'Note'],
+  table(['Stock', 'Class (as built)', 'Score', 'Price alone (class)', 'Capped', 'PRIIPs band', 'A', 'C', 'A+C', 'B', 'B+C', 'Prices from', 'Note'],
     sanity.filter((r) => r.kind === 'stock').map((r) => {
       const b = r.byVariant.base
       const s = stocks.find((x) => `stock:${x.entry.symbol}` === r.key)!
       return [r.name, b ? `${b.cls} (${b.label})` : 'not rated', b?.score ?? '—', b ? `${b.coreScore} (${b.coreCls})` : '—', b?.capped ? 'yes' : '',
-        r.band ?? '—', r.byVariant.A?.cls ?? '—', r.byVariant.C?.cls ?? '—', r.byVariant.AC?.cls ?? '—', s.source, b ? '' : (r.reason ?? s.notes.join('; '))]
+        r.band ?? '—', r.byVariant.A?.cls ?? '—', r.byVariant.C?.cls ?? '—', r.byVariant.AC?.cls ?? '—',
+        r.byVariant.B?.cls ?? '—', r.byVariant.BC?.cls ?? '—', s.source, b ? '' : (r.reason ?? s.notes.join('; '))]
     }))
 
   // ── 2. backtest ──
@@ -299,27 +314,33 @@ async function main() {
   const coinSpan = coins.filter((c) => c.history).map((c) => [c.history![0].time * 1000, c.history![c.history!.length - 1].time * 1000])
   const backRows: (string | number)[][] = []
   for (const horizon of [182, 365]) {
-    // Stocks: the full score and the price-only core.
+    // Stocks: the full score and the price-only core, as built and under the EU-tuned candidates.
     const sDates = stockSpan.length ? quarterStarts(new Date(median(stockSpan.map((x) => x[0]))! + 366 * DAY), new Date(NOW.getTime() - horizon * DAY)) : []
-    const res = { score: { vol: [] as number[], dd: [] as number[] }, core: { vol: [] as number[], dd: [] as number[] }, n: [] as number[] }
-    for (const d of sDates) {
-      const pts = stocks.filter((s) => s.candles).map((s) => ({ r: rateStockAt(s, d), f: forward(s.candles!, d, horizon, 252) }))
-        .filter((p): p is { r: Rated; f: { vol: number; dd: number } } => !!p.r && !!p.f && p.f.vol != null && p.f.dd != null)
-      if (pts.length < 10) continue
-      res.n.push(pts.length)
-      const push = (arr: number[], v: number | null) => { if (v != null) arr.push(v) }
-      push(res.score.vol, spearman(pts.map((p) => p.r.score), pts.map((p) => p.f.vol)))
-      push(res.score.dd, spearman(pts.map((p) => p.r.score), pts.map((p) => p.f.dd)))
-      push(res.core.vol, spearman(pts.map((p) => p.r.coreScore), pts.map((p) => p.f.vol)))
-      push(res.core.dd, spearman(pts.map((p) => p.r.coreScore), pts.map((p) => p.f.dd)))
-    }
     const months = horizon === 182 ? '6 months' : '12 months'
-    backRows.push([`Stocks, full score`, months, res.n.length, f2(median(res.n)), f2(mean(res.score.vol)), f2(mean(res.score.dd))])
-    backRows.push([`Stocks, price alone`, months, res.n.length, f2(median(res.n)), f2(mean(res.core.vol)), f2(mean(res.core.dd))])
+    const tag = (key: string) => (key === 'base' ? 'as built' : `variant ${key === 'BC' ? 'B+C' : key}`)
+    for (const v of [variant('base'), variant('B'), variant('BC')]) {
+      const res = { score: { vol: [] as number[], dd: [] as number[] }, core: { vol: [] as number[], dd: [] as number[] }, n: [] as number[] }
+      withPatch(M, v.patch, () => {
+        for (const d of sDates) {
+          const pts = stocks.filter((s) => s.candles).map((s) => ({ r: rateStockAt(s, d), f: forward(s.candles!, d, horizon, 252) }))
+            .filter((p): p is { r: Rated; f: { vol: number; dd: number } } => !!p.r && !!p.f && p.f.vol != null && p.f.dd != null)
+          if (pts.length < 10) continue
+          res.n.push(pts.length)
+          const push = (arr: number[], x: number | null) => { if (x != null) arr.push(x) }
+          push(res.score.vol, spearman(pts.map((p) => p.r.score), pts.map((p) => p.f.vol)))
+          push(res.score.dd, spearman(pts.map((p) => p.r.score), pts.map((p) => p.f.dd)))
+          push(res.core.vol, spearman(pts.map((p) => p.r.coreScore), pts.map((p) => p.f.vol)))
+          push(res.core.dd, spearman(pts.map((p) => p.r.coreScore), pts.map((p) => p.f.dd)))
+        }
+      })
+      backRows.push([`Stocks, full score (${tag(v.key)})`, months, res.n.length, f2(median(res.n)), f2(mean(res.score.vol)), f2(mean(res.score.dd))])
+      // C changes only the full score, so price alone is shown once per set of curves.
+      if (v.key !== 'BC') backRows.push([`Stocks, price alone (${tag(v.key)})`, months, res.n.length, f2(median(res.n)), f2(mean(res.core.vol)), f2(mean(res.core.dd))])
+    }
 
-    // Coins: price alone only (no free history of total volume or market cap), as built and on variant A's curves.
+    // Coins: price alone only (no free history of total volume or market cap), on each set of curves.
     const cDates = coinSpan.length ? quarterStarts(new Date(median(coinSpan.map((x) => x[0]))! + 366 * DAY), new Date(NOW.getTime() - horizon * DAY)) : []
-    for (const v of [VARIANTS[0], VARIANTS[1]]) {
+    for (const v of [variant('base'), variant('A'), variant('B')]) {
       const cr = { vol: [] as number[], dd: [] as number[], n: [] as number[] }
       const pooled = { vol: [] as number[], n: [] as number[] }
       withPatch(M, v.patch, () => {
@@ -340,8 +361,8 @@ async function main() {
           }
         }
       })
-      backRows.push([`Coins, price alone (${v.key === 'base' ? 'as built' : 'variant A'})`, months, cr.n.length, f2(median(cr.n)), f2(mean(cr.vol)), f2(mean(cr.dd))])
-      backRows.push([`Coins and stocks pooled, price alone (${v.key === 'base' ? 'as built' : 'variant A'})`, months, pooled.n.length, f2(median(pooled.n)), f2(mean(pooled.vol)), '—'])
+      backRows.push([`Coins, price alone (${tag(v.key)})`, months, cr.n.length, f2(median(cr.n)), f2(mean(cr.vol)), f2(mean(cr.dd))])
+      backRows.push([`Coins and stocks pooled, price alone (${tag(v.key)})`, months, pooled.n.length, f2(median(pooled.n)), f2(mean(pooled.vol)), '—'])
     }
   }
   table(['Set', 'Horizon', 'Quarter starts', 'Median assets', 'ρ with later volatility', 'ρ with later largest fall'], backRows)
@@ -421,16 +442,20 @@ async function main() {
     const perYear = (n: number) => (monthsTotal ? (n / monthsTotal * 12).toFixed(2) : '—')
     stab.push([label, series.length, monthsTotal, raw, perYear(raw), held, perYear(held)])
   }
-  summarise('Stocks, class', stocks.filter((s) => s.candles).map((s) => {
-    const ds = mondays(new Date(s.candles![0].time * 1000 + 366 * DAY), NOW)
-    const pairs = ds.map((d) => ({ d, r: rateStockAt(s, d) })).filter((p): p is { d: Date; r: Rated } => !!p.r)
-    return { dates: pairs.map((p) => p.d), classes: pairs.map((p) => p.r.cls) }
-  }).filter((s) => s.classes.length > 8))
-  summarise('Coins, price-alone class', coins.filter((c) => c.history).map((c) => {
-    const ds = mondays(new Date(c.history![0].time * 1000 + 366 * DAY), NOW)
-    const pairs = ds.map((d) => ({ d, r: coinCoreAt(c, d) })).filter((p): p is { d: Date; r: { core: number; coreCls: RatingClassNumber } } => !!p.r)
-    return { dates: pairs.map((p) => p.d), classes: pairs.map((p) => p.r.coreCls) }
-  }).filter((s) => s.classes.length > 8))
+  for (const v of [variant('base'), variant('BC')]) {
+    withPatch(M, v.patch, () => summarise(`Stocks, class (${v.key === 'base' ? 'as built' : 'variant B+C'})`, stocks.filter((s) => s.candles).map((s) => {
+      const ds = mondays(new Date(s.candles![0].time * 1000 + 366 * DAY), NOW)
+      const pairs = ds.map((d) => ({ d, r: rateStockAt(s, d) })).filter((p): p is { d: Date; r: Rated } => !!p.r)
+      return { dates: pairs.map((p) => p.d), classes: pairs.map((p) => p.r.cls) }
+    }).filter((s) => s.classes.length > 8)))
+  }
+  for (const v of [variant('base'), variant('B')]) {
+    withPatch(M, v.patch, () => summarise(`Coins, price-alone class (${v.key === 'base' ? 'as built' : 'variant B'})`, coins.filter((c) => c.history).map((c) => {
+      const ds = mondays(new Date(c.history![0].time * 1000 + 366 * DAY), NOW)
+      const pairs = ds.map((d) => ({ d, r: coinCoreAt(c, d) })).filter((p): p is { d: Date; r: { core: number; coreCls: RatingClassNumber } } => !!p.r)
+      return { dates: pairs.map((p) => p.d), classes: pairs.map((p) => p.r.coreCls) }
+    }).filter((s) => s.classes.length > 8)))
+  }
   table(['Set', 'Assets', 'Asset-months', 'Changes, no rule', 'Per asset per year', 'Changes, 16-week rule', 'Per asset per year'], stab)
   out(`Weekly ratings from each asset's second year of history to today, sampled on the first Monday of each month. The rule is simulated with a reading every week.`)
   out()

@@ -34,8 +34,13 @@ The full generated report is the appendix.
    (price behaviour) from 0.89 to 0.35.
 6. **Two tokens are rated that should not be** (vBUSD, Ampleforth), and **21 stocks went unrated** in
    this run when Tiingo stopped answering after 50 requests.
+7. **Price curves tuned to the EU bands work for both** (§7, tested the same evening). One shared set
+   of volatility and drawdown curves derived from the PRIIPs band edges, with no lift (variants B and
+   C together), puts every rated coin and stock within one class of its PRIIPs band, with mean gaps
+   near zero, and keeps the ordering. The cost: the scale compresses here, with no asset in classes 1
+   or 2 and 39 of 55 coins in class 7.
 
-The owner's decisions this leaves are in the last section.
+The owner's decisions this leaves are in §6, with §7's results.
 
 ## 1. Sanity order
 
@@ -161,17 +166,18 @@ someone opens the page, and a missing week holds the class, so real changes woul
    sentence calls the rating "a guide to the level of measured price risk compared with other assets on
    this site". The data shows these pull apart:
    - **EU-aligned:** most stocks would rate 4 to 6 and most coins 6 to 7, leaving classes 1 to 3
-     nearly empty on this site; no single stock would read "Very low". This needs one shared set of
-     price curves calibrated to the PRIIPs bands, which this run did not test.
+     nearly empty on this site; no single stock would read "Very low". §7 tests the curves that do
+     it: B and C together.
    - **Relative to this site:** the stock calibration can stay, coins move up with A, and the whole
      1–7 range is used; but "Very low" and "Low" for single stocks sit three classes below what the
      regulators' own scales would say, and §2 and the labels would need rewording to match.
    My recommendation is the EU-aligned reading: §2 already promises it, the survey grounded the scale
    in the regulators' practice, and it cannot understate a single stock's risk against the regulators'
-   own scale. The cost is a compressed scale here. The next step on that route is to evaluate one
-   shared, PRIIPs-calibrated set of curves the same way.
-2. **The coin curves:** A, C, or A and C. Whichever reading wins, A and C together are the only variant
-   that brings coins within reach of the EU bands, and A improves how coins are ordered against stocks.
+   own scale. The cost is a compressed scale here. On that reading, adopt **B and C** (§7): the only
+   variant tested that lines up coins and stocks alike, with the ordering intact.
+2. **The curves.** On the EU-aligned reading, B and C settle both asset classes at once. On the
+   relative reading, A (or A and C) for coins, and the stock curves stay. B alone sits between them:
+   about one class under the bands, with more spread among coins.
 3. **The universe:** leave out assets that are not measurably traded and tokens whose price is steered
    by supply. One rule would do it: no rating when median daily volume over the window is zero (vBUSD),
    plus a named exclusion for rebasing tokens (Ampleforth); or re-file both in the catalog.
@@ -182,15 +188,76 @@ someone opens the page, and a missing week holds the class, so real changes woul
 The two readings stored during the end-to-end check (Bitcoin and Apple, week of 2026-10-05) are under
 the draft version and stop counting when the numbers change and the version moves on.
 
+## 7. Price curves tuned to the EU bands (variant B), tested the same evening
+
+Requested after §6, and run at 21:44 UTC on the same day's data. The as-built figures matched the first
+run exactly, and the same 58 stocks were rated, so the variants compare like for like.
+
+**The curves.** One set for coins and stocks, computed by `euCalibratedCurves`
+(`scripts/lib/ratingValidation.ts`, tested) from the PRIIPs band edges and this method's class
+boundaries. Nothing in it is a choice beyond that rule; the weights are unchanged.
+
+| Volatility (annualised) | Largest fall in a year | Sub-score | Class boundary it marks |
+|---:|---:|---:|---|
+| 0% | 0% | 100 | |
+| 0.5% | 0.62% | 85.5 | 1 / 2 |
+| 5% | 6.07% | 71.5 | 2 / 3 |
+| 12% | 13.96% | 57.5 | 3 / 4 |
+| 20% | 22.17% | 43.5 | 4 / 5 |
+| 30% | 31.34% | 29.5 | 5 / 6 |
+| 80% | 63.31% | 14.5 | 6 / 7 |
+| 160% | 86.54% | 0 | |
+
+Each volatility edge sits half a point under its class boundary, so volatility alone lands in the class
+PRIIPs gives it (the edge itself in the higher class, as PRIIPs counts it). PRIIPs has no drawdown
+measure, so the drawdown column is the fall a random walk at that volatility typically shows over a
+year, 1 − e^(−σ·√(π/2)) (the expected maximum drawdown of a driftless walk, Magdon-Ismail et al., 2004).
+Both price measures then speak the same scale.
+
+**Results**, beside the method as built and the best variant from §1:
+
+| | Coins: classes 1 · 2 · 3 · 4 · 5 · 6 · 7 | Median | Same as PRIIPs | Within one | Mean gap | Stocks: classes 1 · 2 · 3 · 4 · 5 · 6 · 7 | Median | Same as PRIIPs | Within one | Mean gap |
+|---|---|---:|---:|---:|---:|---|---:|---:|---:|---:|
+| As built | 0 · 2 · 11 · 20 · 14 · 7 · 1 | 4 | 1/55 | 10/55 | 2.35 | 11 · 31 · 12 · 4 · 0 · 0 · 0 | 2 | 0/58 | 0/58 | 3.21 |
+| A and C | 0 · 1 · 0 · 1 · 3 · 28 · 22 | 6 | 36/55 | 53/55 | 0.40 | 3 · 25 · 17 · 9 · 4 · 0 · 0 | 3 | 0/58 | 4/58 | 2.60 |
+| B | 0 · 0 · 0 · 1 · 13 · 37 · 4 | 6 | 10/55 | 54/55 | 0.84 | 0 · 1 · 11 · 29 · 17 · 0 · 0 | 4 | 1/58 | 40/58 | 1.29 |
+| **B and C** | 0 · 0 · 0 · 0 · 1 · 15 · 39 | 7 | 46/55 | 55/55 | −0.05 | 0 · 0 · 1 · 11 · 29 · 17 · 0 | 5 | 39/58 | 58/58 | 0.29 |
+
+- **B and C line up both asset classes with the regulators' scale.** Every rated coin and stock lands
+  within one class of its PRIIPs band, and the mean gaps are near zero. Since the band is a lower bound
+  (PRIIPs counts fat tails), a small negative gap for coins is in the expected direction.
+- **The ordering survives.** Over 6 months, the full stock score ranks later volatility at −0.77 under
+  B and −0.76 under B and C, against −0.75 as built. Coins' price behaviour ranks it at −0.75 under B,
+  the same as built, so B does not lose what A lost: its curve runs to 160% volatility. Coins and stocks
+  pooled: −0.93 (−0.94 over 12 months), as under A.
+- **Stability.** Stocks under B and C change class 0.58 times a year with the 16-week rule (0.56 as
+  built). Coins' price-behaviour class under B changes 0.13 times a year (0.35 as built), because most
+  coins now sit in the broad 30–80% band.
+- **Examples under B and C:**
+  - Coins: Bitcoin 6, matching the regulated Bitcoin fund's own EU document; Ethereum, Solana and
+    Dogecoin 6; Tron 5; Memecore and Celestia 7.
+  - Stocks: Berkshire Hathaway 3; Apple, Coca-Cola, Johnson & Johnson, Procter & Gamble and JPMorgan 4;
+    Nvidia 5; Microsoft, Oracle, Palantir and Tesla 6.
+
+**The cost.** The scale compresses on this site. Under B and C no asset rates 1 or 2, and 39 of 55 coins
+rate 7, so the coin classes say little about one coin against another: Dogecoin and Ethereum share
+class 6. The 0–100 score underneath and its parts still tell them apart, and the panel shows both. B
+alone keeps more spread (37 coins in class 6, 13 in class 5), at the price of sitting about one class
+under the bands.
+
+**What adopting B and C would change in `v1.ts`:** the volatility and drawdown curves for both asset
+classes become the table above, `capClassesAboveCore` becomes 0, and the version moves on. The weights,
+the other curves and every other rule stay. The universe decision (§6 item 3) is separate.
+
 ---
 
 ## Appendix: the generated report
 
-The output of `npm run ratings:validate`, as written on 2026-10-10 at 20:39 UTC.
+The output of `npm run ratings:validate` from the second run, 2026-10-10 at 21:44 UTC, which adds variants B and B+C. Its as-built figures are identical to the first run's (20:39 UTC), on which sections 1 to 6 were written.
 
 ### Rating validation report
 
-Generated 2026-10-10T20:39:52.346Z by `scripts/validate-ratings.ts`, method `v1 (draft, 2026-10-09)`. Reads only; stores nothing.
+Generated 2026-10-10T21:43:53.582Z by `scripts/validate-ratings.ts`, method `v1 (draft, 2026-10-09)`. Reads only; stores nothing.
 
 #### 1. Sanity order
 
@@ -202,6 +269,8 @@ Generated 2026-10-10T20:39:52.346Z by `scripts/validate-ratings.ts`, method `v1 
 | A: one set of price curves (coins on the stock curves) | 1: 0 · 2: 1 · 3: 1 · 4: 3 · 5: 21 · 6: 27 · 7: 2 | 6 | 3/55 | 42/55 | 1.22 |
 | C: no lift (size and liquidity may only lower the class) | 1: 0 · 2: 1 · 3: 3 · 4: 15 · 5: 24 · 6: 11 · 7: 1 | 5 | 1/55 | 15/55 | 1.84 |
 | A and C together | 1: 0 · 2: 1 · 3: 0 · 4: 1 · 5: 3 · 6: 28 · 7: 22 | 6 | 36/55 | 53/55 | 0.40 |
+| B: one set of price curves tuned to the EU PRIIPs bands | 1: 0 · 2: 0 · 3: 0 · 4: 1 · 5: 13 · 6: 37 · 7: 4 | 6 | 10/55 | 54/55 | 0.84 |
+| B and C together | 1: 0 · 2: 0 · 3: 0 · 4: 0 · 5: 1 · 6: 15 · 7: 39 | 7 | 46/55 | 55/55 | -0.05 |
 
 **Stocks: 58 of 79 rated.**
 
@@ -211,154 +280,156 @@ Generated 2026-10-10T20:39:52.346Z by `scripts/validate-ratings.ts`, method `v1 
 | A: one set of price curves (coins on the stock curves) | 1: 11 · 2: 31 · 3: 12 · 4: 4 · 5: 0 · 6: 0 · 7: 0 | 2 | 0/58 | 0/58 | 3.21 |
 | C: no lift (size and liquidity may only lower the class) | 1: 3 · 2: 25 · 3: 17 · 4: 9 · 5: 4 · 6: 0 · 7: 0 | 3 | 0/58 | 4/58 | 2.60 |
 | A and C together | 1: 3 · 2: 25 · 3: 17 · 4: 9 · 5: 4 · 6: 0 · 7: 0 | 3 | 0/58 | 4/58 | 2.60 |
+| B: one set of price curves tuned to the EU PRIIPs bands | 1: 0 · 2: 1 · 3: 11 · 4: 29 · 5: 17 · 6: 0 · 7: 0 | 4 | 1/58 | 40/58 | 1.29 |
+| B and C together | 1: 0 · 2: 0 · 3: 1 · 4: 11 · 5: 29 · 6: 17 · 7: 0 | 5 | 39/58 | 58/58 | 0.29 |
 
 PRIIPs band = the class plain one-year volatility falls in on the EU PRIIPs scale (survey §1.1). Indicative, and a lower bound: PRIIPs counts fat tails.
 
 ##### Every coin
 
-| Coin | Class (as built) | Score | Price alone (class) | Capped | Volatility | Largest fall | PRIIPs band | A | C | A+C | Note |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| vBUSD (vbusd) | 7 (Very high) | 13.3 | 15 (6) |  | 282% | 86% | 7 | 7 | 7 | 7 |  |
-| AMPL (ampl) | 5 (Moderately high) | 38.4 | 58.3 (3) |  | 101% | 31% | 7 | 6 | 5 | 6 |  |
-| BTC (btc) | 2 (Low) | 81.3 | 70 (3) |  | 44% | 49% | 6 | 3 | 3 | 4 |  |
-| ETH (eth) | 3 (Moderately low) | 71 | 57 (4) | yes | 62% | 63% | 6 | 4 | 4 | 5 |  |
-| SOL (sol) | 3 (Moderately low) | 69 | 52.6 (4) |  | 66% | 70% | 6 | 5 | 4 | 6 |  |
-| BNB (bnb) | 3 (Moderately low) | 67.6 | 64.4 (3) |  | 49% | 58% | 6 | 4 | 3 | 5 |  |
-| AVAX (avax) | 3 (Moderately low) | 58.8 | 46.9 (4) |  | 73% | 75% | 6 | 5 | 4 | 6 |  |
-| ADA (ada) | 4 (Moderate) | 57 | 42 (5) | yes | 79% | 80% | 6 | 5 | 5 | 6 |  |
-| DOT (dot) | 4 (Moderate) | 55 | 42.4 (5) |  | 82% | 78% | 7 | 5 | 5 | 6 |  |
-| POL (pol) | 4 (Moderate) | 56.2 | 51.1 (4) |  | 73% | 67% | 6 | 5 | 4 | 6 |  |
-| TRX (trx) | 2 (Low) | 77.8 | 90 (1) |  | 24% | 17% | 5 | 2 | 2 | 2 |  |
-| HYPE (hype) | 3 (Moderately low) | 64.1 | 49.3 (4) |  | 91% | 56% | 7 | 5 | 4 | 6 |  |
-| ZEC (zec) | 4 (Moderate) | 55.1 | 30.8 (5) |  | 142% | 72% | 7 | 6 | 5 | 7 |  |
-| XMR (xmr) | 4 (Moderate) | 55.5 | 50.7 (4) |  | 83% | 59% | 7 | 5 | 4 | 6 |  |
-| TON (ton) | 4 (Moderate) | 54.2 | 55.9 (4) |  | 76% | 52% | 6 | 5 | 4 | 6 |  |
-| BCH (bch) | 3 (Moderately low) | 58.4 | 48.1 (4) |  | 76% | 71% | 6 | 5 | 4 | 6 |  |
-| M (memecore) | 6 (High) | 23.5 | 19 (6) |  | 173% | 87% | 7 | 6 | 6 | 7 |  |
-| HBAR (hbar) | 3 (Moderately low) | 58.1 | 51.8 (4) |  | 70% | 68% | 6 | 5 | 4 | 6 |  |
-| LTC (ltc) | 3 (Moderately low) | 64.9 | 58.7 (3) |  | 58% | 63% | 6 | 4 | 3 | 5 |  |
-| SUI (sui) | 4 (Moderate) | 55.7 | 40.9 (5) |  | 86% | 78% | 7 | 5 | 5 | 6 |  |
-| CRO (cro) | 5 (Moderately high) | 42.9 | 48.4 (4) |  | 72% | 73% | 6 | 5 | 5 | 6 |  |
-| NEAR (near) | 4 (Moderate) | 56.7 | 40.3 (5) |  | 104% | 68% | 7 | 6 | 5 | 7 |  |
-| TAO (tao) | 4 (Moderate) | 54.4 | 40 (5) |  | 104% | 69% | 7 | 6 | 5 | 7 |  |
-| PI (pi) | 5 (Moderately high) | 37.3 | 44.3 (4) |  | 86% | 72% | 7 | 6 | 5 | 6 |  |
-| ICP (icp) | 4 (Moderate) | 49.5 | 36.3 (5) |  | 102% | 77% | 7 | 6 | 5 | 7 |  |
-| ETC (etc) | 4 (Moderate) | 57.7 | 52.4 (4) |  | 70% | 66% | 6 | 5 | 4 | 6 |  |
-| KAS (kas) | 5 (Moderately high) | 41 | 32.2 (5) |  | 163% | 61% | 7 | 6 | 5 | 7 |  |
-| ALGO (algo) | 4 (Moderate) | 47.5 | 33.8 (5) |  | 145% | 64% | 7 | 6 | 5 | 7 |  |
-| FLR (flr) | 6 (High) | 25.2 | 22.2 (6) |  | 204% | 72% | 7 | 6 | 6 | 7 |  |
-| XDC (xdc) | 4 (Moderate) | 50.3 | 54.8 (4) |  | 71% | 60% | 6 | 5 | 4 | 6 |  |
-| FIL (fil) | 4 (Moderate) | 45.1 | 30 (5) |  | 116% | 82% | 7 | 6 | 5 | 7 |  |
-| APT (apt) | 4 (Moderate) | 45.1 | 31.4 (5) |  | 105% | 87% | 7 | 6 | 5 | 7 |  |
-| INJ (inj) | 4 (Moderate) | 48.8 | 38.8 (5) |  | 103% | 72% | 7 | 6 | 5 | 7 |  |
-| VET (vet) | 5 (Moderately high) | 41.2 | 31.6 (5) |  | 117% | 78% | 7 | 6 | 5 | 7 |  |
-| SEI (sei) | 5 (Moderately high) | 36.6 | 15.7 (6) |  | 237% | 84% | 7 | 6 | 6 | 7 |  |
-| TIA (tia) | 5 (Moderately high) | 38.7 | 19.8 (6) |  | 268% | 76% | 7 | 6 | 6 | 7 |  |
-| CHZ (chz) | 4 (Moderate) | 48.2 | 38.9 (5) |  | 88% | 81% | 7 | 5 | 5 | 6 |  |
-| GNO (gno) | 5 (Moderately high) | 42 | 56.5 (4) |  | 88% | 43% | 7 | 6 | 5 | 6 |  |
-| XTZ (xtz) | 5 (Moderately high) | 37.1 | 46.7 (4) |  | 77% | 73% | 6 | 6 | 5 | 6 |  |
-| TEL (tel) | 6 (High) | 22.8 | 29.2 (6) |  | 126% | 79% | 7 | 7 | 6 | 7 |  |
-| KAIA (kaia) | 6 (High) | 29.2 | 31 (5) |  | 113% | 81% | 7 | 6 | 6 | 7 |  |
-| CFX (cfx) | 6 (High) | 25.2 | 22.8 (6) |  | 220% | 70% | 7 | 6 | 6 | 7 |  |
-| IOTA (iota) | 5 (Moderately high) | 31.6 | 35.6 (5) |  | 100% | 80% | 7 | 6 | 5 | 6 |  |
-| DCR (dcr) | 6 (High) | 28.8 | 30.1 (5) |  | 125% | 78% | 7 | 6 | 6 | 7 |  |
-| THETA (theta) | 5 (Moderately high) | 34.1 | 40.6 (5) |  | 84% | 79% | 7 | 6 | 5 | 6 |  |
-| XRP (xrp) | 3 (Moderately low) | 69 | 56 (4) |  | 65% | 62% | 6 | 5 | 4 | 6 |  |
-| DOGE (doge) | 3 (Moderately low) | 65.5 | 52.8 (4) |  | 68% | 68% | 6 | 5 | 4 | 6 |  |
-| UNI (uni) | 4 (Moderate) | 55.1 | 39.4 (5) |  | 97% | 75% | 7 | 5 | 5 | 6 |  |
-| AAVE (aave) | 4 (Moderate) | 54.9 | 41.5 (5) |  | 87% | 77% | 7 | 5 | 5 | 6 |  |
-| LINK (link) | 3 (Moderately low) | 64.6 | 52.6 (4) |  | 72% | 64% | 6 | 5 | 4 | 6 |  |
-| MKR (mkr) | 5 (Moderately high) | 40 | 55.1 (4) |  | 92% | 43% | 7 | 6 | 5 | 6 |  |
-| SNX (snx) | 6 (High) | 28.6 | 29.6 (6) |  | 111% | 92% | 7 | 6 | 6 | 7 |  |
-| CRV (crv) | 4 (Moderate) | 51.1 | 44.3 (4) |  | 87% | 71% | 7 | 5 | 4 | 6 |  |
-| LDO (ldo) | 5 (Moderately high) | 38.5 | 19.5 (6) |  | 215% | 77% | 7 | 6 | 6 | 7 |  |
-| GRT (grt) | 5 (Moderately high) | 42.4 | 28 (6) |  | 124% | 82% | 7 | 6 | 6 | 7 |  |
+| Coin | Class (as built) | Score | Price alone (class) | Capped | Volatility | Largest fall | PRIIPs band | A | C | A+C | B | B+C | Note |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| vBUSD (vbusd) | 7 (Very high) | 13.3 | 15 (6) |  | 282% | 86% | 7 | 7 | 7 | 7 | 7 | 7 |  |
+| AMPL (ampl) | 5 (Moderately high) | 38.4 | 58.3 (3) |  | 101% | 31% | 7 | 6 | 5 | 6 | 6 | 6 |  |
+| BTC (btc) | 2 (Low) | 81.3 | 70 (3) |  | 44% | 49% | 6 | 3 | 3 | 4 | 5 | 6 |  |
+| ETH (eth) | 3 (Moderately low) | 71 | 57 (4) | yes | 62% | 63% | 6 | 4 | 4 | 5 | 5 | 6 |  |
+| SOL (sol) | 3 (Moderately low) | 69 | 52.6 (4) |  | 66% | 70% | 6 | 5 | 4 | 6 | 5 | 6 |  |
+| BNB (bnb) | 3 (Moderately low) | 67.6 | 64.4 (3) |  | 49% | 58% | 6 | 4 | 3 | 5 | 5 | 6 |  |
+| AVAX (avax) | 3 (Moderately low) | 58.8 | 46.9 (4) |  | 73% | 75% | 6 | 5 | 4 | 6 | 6 | 7 |  |
+| ADA (ada) | 4 (Moderate) | 57 | 42 (5) | yes | 79% | 80% | 6 | 5 | 5 | 6 | 6 | 7 |  |
+| DOT (dot) | 4 (Moderate) | 55 | 42.4 (5) |  | 82% | 78% | 7 | 5 | 5 | 6 | 6 | 7 |  |
+| POL (pol) | 4 (Moderate) | 56.2 | 51.1 (4) |  | 73% | 67% | 6 | 5 | 4 | 6 | 6 | 7 |  |
+| TRX (trx) | 2 (Low) | 77.8 | 90 (1) |  | 24% | 17% | 5 | 2 | 2 | 2 | 4 | 5 |  |
+| HYPE (hype) | 3 (Moderately low) | 64.1 | 49.3 (4) |  | 91% | 56% | 7 | 5 | 4 | 6 | 6 | 7 |  |
+| ZEC (zec) | 4 (Moderate) | 55.1 | 30.8 (5) |  | 142% | 72% | 7 | 6 | 5 | 7 | 6 | 7 |  |
+| XMR (xmr) | 4 (Moderate) | 55.5 | 50.7 (4) |  | 83% | 59% | 7 | 5 | 4 | 6 | 5 | 6 |  |
+| TON (ton) | 4 (Moderate) | 54.2 | 55.9 (4) |  | 76% | 52% | 6 | 5 | 4 | 6 | 5 | 6 |  |
+| BCH (bch) | 3 (Moderately low) | 58.4 | 48.1 (4) |  | 76% | 71% | 6 | 5 | 4 | 6 | 6 | 7 |  |
+| M (memecore) | 6 (High) | 23.5 | 19 (6) |  | 173% | 87% | 7 | 6 | 6 | 7 | 7 | 7 |  |
+| HBAR (hbar) | 3 (Moderately low) | 58.1 | 51.8 (4) |  | 70% | 68% | 6 | 5 | 4 | 6 | 5 | 6 |  |
+| LTC (ltc) | 3 (Moderately low) | 64.9 | 58.7 (3) |  | 58% | 63% | 6 | 4 | 3 | 5 | 5 | 6 |  |
+| SUI (sui) | 4 (Moderate) | 55.7 | 40.9 (5) |  | 86% | 78% | 7 | 5 | 5 | 6 | 6 | 7 |  |
+| CRO (cro) | 5 (Moderately high) | 42.9 | 48.4 (4) |  | 72% | 73% | 6 | 5 | 5 | 6 | 6 | 7 |  |
+| NEAR (near) | 4 (Moderate) | 56.7 | 40.3 (5) |  | 104% | 68% | 7 | 6 | 5 | 7 | 6 | 7 |  |
+| TAO (tao) | 4 (Moderate) | 54.4 | 40 (5) |  | 104% | 69% | 7 | 6 | 5 | 7 | 6 | 7 |  |
+| PI (pi) | 5 (Moderately high) | 37.3 | 44.3 (4) |  | 86% | 72% | 7 | 6 | 5 | 6 | 6 | 7 |  |
+| ICP (icp) | 4 (Moderate) | 49.5 | 36.3 (5) |  | 102% | 77% | 7 | 6 | 5 | 7 | 6 | 7 |  |
+| ETC (etc) | 4 (Moderate) | 57.7 | 52.4 (4) |  | 70% | 66% | 6 | 5 | 4 | 6 | 5 | 6 |  |
+| KAS (kas) | 5 (Moderately high) | 41 | 32.2 (5) |  | 163% | 61% | 7 | 6 | 5 | 7 | 6 | 7 |  |
+| ALGO (algo) | 4 (Moderate) | 47.5 | 33.8 (5) |  | 145% | 64% | 7 | 6 | 5 | 7 | 6 | 7 |  |
+| FLR (flr) | 6 (High) | 25.2 | 22.2 (6) |  | 204% | 72% | 7 | 6 | 6 | 7 | 6 | 7 |  |
+| XDC (xdc) | 4 (Moderate) | 50.3 | 54.8 (4) |  | 71% | 60% | 6 | 5 | 4 | 6 | 5 | 6 |  |
+| FIL (fil) | 4 (Moderate) | 45.1 | 30 (5) |  | 116% | 82% | 7 | 6 | 5 | 7 | 6 | 7 |  |
+| APT (apt) | 4 (Moderate) | 45.1 | 31.4 (5) |  | 105% | 87% | 7 | 6 | 5 | 7 | 6 | 7 |  |
+| INJ (inj) | 4 (Moderate) | 48.8 | 38.8 (5) |  | 103% | 72% | 7 | 6 | 5 | 7 | 6 | 7 |  |
+| VET (vet) | 5 (Moderately high) | 41.2 | 31.6 (5) |  | 117% | 78% | 7 | 6 | 5 | 7 | 6 | 7 |  |
+| SEI (sei) | 5 (Moderately high) | 36.6 | 15.7 (6) |  | 237% | 84% | 7 | 6 | 6 | 7 | 6 | 7 |  |
+| TIA (tia) | 5 (Moderately high) | 38.7 | 19.8 (6) |  | 268% | 76% | 7 | 6 | 6 | 7 | 6 | 7 |  |
+| CHZ (chz) | 4 (Moderate) | 48.2 | 38.9 (5) |  | 88% | 81% | 7 | 5 | 5 | 6 | 6 | 7 |  |
+| GNO (gno) | 5 (Moderately high) | 42 | 56.5 (4) |  | 88% | 43% | 7 | 6 | 5 | 6 | 6 | 6 |  |
+| XTZ (xtz) | 5 (Moderately high) | 37.1 | 46.7 (4) |  | 77% | 73% | 6 | 6 | 5 | 6 | 6 | 7 |  |
+| TEL (tel) | 6 (High) | 22.8 | 29.2 (6) |  | 126% | 79% | 7 | 7 | 6 | 7 | 7 | 7 |  |
+| KAIA (kaia) | 6 (High) | 29.2 | 31 (5) |  | 113% | 81% | 7 | 6 | 6 | 7 | 6 | 7 |  |
+| CFX (cfx) | 6 (High) | 25.2 | 22.8 (6) |  | 220% | 70% | 7 | 6 | 6 | 7 | 6 | 7 |  |
+| IOTA (iota) | 5 (Moderately high) | 31.6 | 35.6 (5) |  | 100% | 80% | 7 | 6 | 5 | 6 | 6 | 7 |  |
+| DCR (dcr) | 6 (High) | 28.8 | 30.1 (5) |  | 125% | 78% | 7 | 6 | 6 | 7 | 6 | 7 |  |
+| THETA (theta) | 5 (Moderately high) | 34.1 | 40.6 (5) |  | 84% | 79% | 7 | 6 | 5 | 6 | 6 | 7 |  |
+| XRP (xrp) | 3 (Moderately low) | 69 | 56 (4) |  | 65% | 62% | 6 | 5 | 4 | 6 | 5 | 6 |  |
+| DOGE (doge) | 3 (Moderately low) | 65.5 | 52.8 (4) |  | 68% | 68% | 6 | 5 | 4 | 6 | 5 | 6 |  |
+| UNI (uni) | 4 (Moderate) | 55.1 | 39.4 (5) |  | 97% | 75% | 7 | 5 | 5 | 6 | 6 | 7 |  |
+| AAVE (aave) | 4 (Moderate) | 54.9 | 41.5 (5) |  | 87% | 77% | 7 | 5 | 5 | 6 | 6 | 7 |  |
+| LINK (link) | 3 (Moderately low) | 64.6 | 52.6 (4) |  | 72% | 64% | 6 | 5 | 4 | 6 | 5 | 6 |  |
+| MKR (mkr) | 5 (Moderately high) | 40 | 55.1 (4) |  | 92% | 43% | 7 | 6 | 5 | 6 | 7 | 7 |  |
+| SNX (snx) | 6 (High) | 28.6 | 29.6 (6) |  | 111% | 92% | 7 | 6 | 6 | 7 | 6 | 7 |  |
+| CRV (crv) | 4 (Moderate) | 51.1 | 44.3 (4) |  | 87% | 71% | 7 | 5 | 4 | 6 | 6 | 7 |  |
+| LDO (ldo) | 5 (Moderately high) | 38.5 | 19.5 (6) |  | 215% | 77% | 7 | 6 | 6 | 7 | 6 | 7 |  |
+| GRT (grt) | 5 (Moderately high) | 42.4 | 28 (6) |  | 124% | 82% | 7 | 6 | 6 | 7 | 6 | 7 |  |
 
 ##### Every stock
 
 Classes and scores only: stock prices may come from Tiingo, whose terms bar keeping its data, so no price-derived figure is written here.
 
-| Stock | Class (as built) | Score | Price alone (class) | Capped | PRIIPs band | A | C | A+C | Prices from | Note |
-|---|---|---|---|---|---|---|---|---|---|---|
-| AAPL | 1 (Very low) | 88 | 81 (2) |  | 5 | 1 | 2 | 2 | tiingo |  |
-| MSFT | 2 (Low) | 80.7 | 62.5 (3) |  | 6 | 2 | 3 | 3 | tiingo |  |
-| NVDA | 2 (Low) | 82.8 | 67.1 (3) |  | 6 | 2 | 3 | 3 | tiingo |  |
-| AVGO | 3 (Moderately low) | 71 | 56 (4) | yes | 6 | 3 | 4 | 4 | tiingo |  |
-| ORCL | 4 (Moderate) | 57 | 32.8 (5) | yes | 6 | 4 | 5 | 5 | tiingo |  |
-| CRM | 3 (Moderately low) | 71 | 48.1 (4) | yes | 6 | 3 | 4 | 4 | tiingo |  |
-| AMD | 3 (Moderately low) | 71 | 46.4 (4) | yes | 6 | 3 | 4 | 4 | tiingo |  |
-| ADBE | 3 (Moderately low) | 71 | 49.4 (4) | yes | 6 | 3 | 4 | 4 | tiingo |  |
-| CSCO | 2 (Low) | 83.6 | 70.6 (3) |  | 6 | 2 | 3 | 3 | tiingo |  |
-| INTC | 4 (Moderate) | 57 | 34.3 (5) | yes | 6 | 4 | 5 | 5 | tiingo |  |
-| QCOM | 3 (Moderately low) | 71 | 45.2 (4) | yes | 6 | 3 | 4 | 4 | tiingo |  |
-| TXN | 2 (Low) | 79.4 | 62.6 (3) |  | 6 | 2 | 3 | 3 | tiingo |  |
-| IBM | 3 (Moderately low) | 70.3 | 49.1 (4) |  | 6 | 3 | 4 | 4 | tiingo |  |
-| NOW | 4 (Moderate) | 57 | 35.1 (5) | yes | 6 | 4 | 5 | 5 | tiingo |  |
-| PLTR | 4 (Moderate) | 57 | 38.4 (5) | yes | 6 | 4 | 5 | 5 | tiingo |  |
-| GOOGL | 2 (Low) | 84.6 | 71.3 (3) |  | 6 | 2 | 3 | 3 | tiingo |  |
-| META | 2 (Low) | 78.8 | 58.6 (3) |  | 6 | 2 | 3 | 3 | tiingo |  |
-| NFLX | 3 (Moderately low) | 71 | 52.7 (4) | yes | 6 | 3 | 4 | 4 | tiingo |  |
-| DIS | 2 (Low) | 84.9 | 75 (2) |  | 5 | 2 | 2 | 2 | tiingo |  |
-| TMUS | 2 (Low) | 76.2 | 62.2 (3) |  | 6 | 2 | 3 | 3 | tiingo |  |
-| VZ | 2 (Low) | 84.4 | 77.2 (2) |  | 5 | 2 | 2 | 2 | tiingo |  |
-| T | 2 (Low) | 80.9 | 70 (3) |  | 5 | 2 | 3 | 3 | tiingo |  |
-| AMZN | 2 (Low) | 82.1 | 68.9 (3) |  | 6 | 2 | 3 | 3 | tiingo |  |
-| TSLA | 3 (Moderately low) | 71 | 51.1 (4) | yes | 6 | 3 | 4 | 4 | tiingo |  |
-| HD | 2 (Low) | 77.5 | 72.2 (2) |  | 5 | 2 | 2 | 2 | tiingo |  |
-| MCD | 2 (Low) | 78.8 | 75.5 (2) |  | 4 | 2 | 2 | 2 | tiingo |  |
-| NKE | 3 (Moderately low) | 71 | 50.6 (4) | yes | 6 | 3 | 4 | 4 | tiingo |  |
-| SBUX | 2 (Low) | 76 | 77.5 (2) |  | 5 | 2 | 2 | 2 | tiingo |  |
-| LOW | 3 (Moderately low) | 71.4 | 64.7 (3) |  | 5 | 3 | 3 | 3 | tiingo |  |
-| BKNG | 3 (Moderately low) | 68.7 | 61.4 (3) |  | 6 | 3 | 3 | 3 | tiingo |  |
-| WMT | 2 (Low) | 82.1 | 73.4 (2) |  | 5 | 2 | 2 | 2 | tiingo |  |
-| PG | 1 (Very low) | 89.5 | 84.5 (2) |  | 4 | 1 | 2 | 2 | tiingo |  |
-| KO | 1 (Very low) | 90.7 | 89.2 (1) |  | 4 | 1 | 1 | 1 | tiingo |  |
-| PEP | 2 (Low) | 81.7 | 77.3 (2) |  | 5 | 2 | 2 | 2 | tiingo |  |
-| COST | 1 (Very low) | 86.6 | 82.8 (2) |  | 4 | 1 | 2 | 2 | tiingo |  |
-| PM | 2 (Low) | 78.8 | 75.4 (2) |  | 5 | 2 | 2 | 2 | tiingo |  |
-| MDLZ | 2 (Low) | 84 | 80.3 (2) |  | 5 | 2 | 2 | 2 | tiingo |  |
-| BRK-B | 1 (Very low) | 94.5 | 92.8 (1) |  | 4 | 1 | 1 | 1 | tiingo |  |
-| JPM | 1 (Very low) | 88.4 | 82 (2) |  | 5 | 1 | 2 | 2 | tiingo |  |
-| V | 1 (Very low) | 88 | 81.3 (2) |  | 5 | 1 | 2 | 2 | tiingo |  |
-| MA | 1 (Very low) | 87.3 | 80 (2) |  | 5 | 1 | 2 | 2 | tiingo |  |
-| BAC | 1 (Very low) | 87.6 | 80.5 (2) |  | 5 | 1 | 2 | 2 | tiingo |  |
-| WFC | 2 (Low) | 83.7 | 73.6 (2) |  | 5 | 2 | 2 | 2 | tiingo |  |
-| GS | 2 (Low) | 81.5 | 69.6 (3) |  | 6 | 2 | 3 | 3 | tiingo |  |
-| MS | 2 (Low) | 84.4 | 74.8 (2) |  | 5 | 2 | 2 | 2 | tiingo |  |
-| AXP | 2 (Low) | 83.4 | 73 (2) |  | 5 | 2 | 2 | 2 | tiingo |  |
-| BLK | 2 (Low) | 83.2 | 73.5 (2) |  | 5 | 2 | 2 | 2 | tiingo |  |
-| C | 2 (Low) | 85.1 | 76.9 (2) |  | 5 | 2 | 2 | 2 | tiingo |  |
-| LLY | 2 (Low) | 80.2 | 67.9 (3) |  | 6 | 2 | 3 | 3 | tiingo |  |
-| UNH | 2 (Low) | 76.9 | 63.7 (3) |  | 6 | 2 | 3 | 3 | tiingo |  |
-| JNJ | 1 (Very low) | 91.8 | 88.2 (1) |  | 4 | 1 | 1 | 1 | fmp |  |
-| ABBV | 2 (Low) | 78 | 78.7 (2) |  | 5 | 2 | 2 | 2 | fmp |  |
-| MRK | not rated | — | — |  | — | — | — | — | none | prices: fetch_failed |
-| TMO | not rated | — | — |  | — | — | — | — | none | prices: fetch_failed |
-| ABT | not rated | — | — |  | — | — | — | — | none | prices: fetch_failed |
-| PFE | 1 (Very low) | 86.6 | 82.1 (2) |  | 5 | 1 | 2 | 2 | fmp |  |
-| AMGN | not rated | — | — |  | — | — | — | — | none | prices: fetch_failed |
-| ISRG | not rated | — | — |  | — | — | — | — | none | prices: fetch_failed |
-| XOM | 2 (Low) | 84.8 | 75.5 (2) |  | 5 | 2 | 2 | 2 | fmp |  |
-| CVX | 2 (Low) | 84.8 | 76.8 (2) |  | 5 | 2 | 2 | 2 | fmp |  |
-| COP | not rated | — | — |  | — | — | — | — | none | prices: fetch_failed |
-| SLB | not rated | — | — |  | — | — | — | — | none | prices: fetch_failed |
-| CAT | not rated | — | — |  | — | — | — | — | none | prices: fetch_failed |
-| GE | 2 (Low) | 81.1 | 70 (3) |  | 6 | 2 | 3 | 3 | fmp |  |
-| HON | not rated | — | — |  | — | — | — | — | none | prices: fetch_failed |
-| UPS | not rated | — | — |  | — | — | — | — | none | prices: fetch_failed |
-| BA | 3 (Moderately low) | 70.4 | 65.9 (3) |  | 6 | 3 | 3 | 3 | fmp |  |
-| DE | not rated | — | — |  | — | — | — | — | none | prices: fetch_failed |
-| LMT | 2 (Low) | 76.1 | 69.9 (3) |  | 5 | 2 | 3 | 3 | fmp |  |
-| RTX | not rated | — | — |  | — | — | — | — | none | prices: fetch_failed |
-| LIN | not rated | — | — |  | — | — | — | — | none | prices: fetch_failed |
-| SHW | not rated | — | — |  | — | — | — | — | none | prices: fetch_failed |
-| FCX | not rated | — | — |  | — | — | — | — | none | prices: fetch_failed |
-| NEE | not rated | — | — |  | — | — | — | — | none | prices: fetch_failed |
-| DUK | not rated | — | — |  | — | — | — | — | none | prices: fetch_failed |
-| SO | not rated | — | — |  | — | — | — | — | none | prices: fetch_failed |
-| PLD | not rated | — | — |  | — | — | — | — | none | prices: fetch_failed |
-| AMT | not rated | — | — |  | — | — | — | — | none | prices: fetch_failed |
-| O | not rated | — | — |  | — | — | — | — | none | prices: fetch_failed |
+| Stock | Class (as built) | Score | Price alone (class) | Capped | PRIIPs band | A | C | A+C | B | B+C | Prices from | Note |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| AAPL | 1 (Very low) | 88 | 81 (2) |  | 5 | 1 | 2 | 2 | 3 | 4 | tiingo |  |
+| MSFT | 2 (Low) | 80.7 | 62.5 (3) |  | 6 | 2 | 3 | 3 | 5 | 6 | tiingo |  |
+| NVDA | 2 (Low) | 82.8 | 67.1 (3) |  | 6 | 2 | 3 | 3 | 4 | 5 | tiingo |  |
+| AVGO | 3 (Moderately low) | 71 | 56 (4) | yes | 6 | 3 | 4 | 4 | 5 | 6 | tiingo |  |
+| ORCL | 4 (Moderate) | 57 | 32.8 (5) | yes | 6 | 4 | 5 | 5 | 5 | 6 | tiingo |  |
+| CRM | 3 (Moderately low) | 71 | 48.1 (4) | yes | 6 | 3 | 4 | 4 | 5 | 6 | tiingo |  |
+| AMD | 3 (Moderately low) | 71 | 46.4 (4) | yes | 6 | 3 | 4 | 4 | 5 | 6 | tiingo |  |
+| ADBE | 3 (Moderately low) | 71 | 49.4 (4) | yes | 6 | 3 | 4 | 4 | 5 | 6 | tiingo |  |
+| CSCO | 2 (Low) | 83.6 | 70.6 (3) |  | 6 | 2 | 3 | 3 | 4 | 5 | tiingo |  |
+| INTC | 4 (Moderate) | 57 | 34.3 (5) | yes | 6 | 4 | 5 | 5 | 5 | 6 | tiingo |  |
+| QCOM | 3 (Moderately low) | 71 | 45.2 (4) | yes | 6 | 3 | 4 | 4 | 5 | 6 | tiingo |  |
+| TXN | 2 (Low) | 79.4 | 62.6 (3) |  | 6 | 2 | 3 | 3 | 4 | 5 | tiingo |  |
+| IBM | 3 (Moderately low) | 70.3 | 49.1 (4) |  | 6 | 3 | 4 | 4 | 5 | 6 | tiingo |  |
+| NOW | 4 (Moderate) | 57 | 35.1 (5) | yes | 6 | 4 | 5 | 5 | 5 | 6 | tiingo |  |
+| PLTR | 4 (Moderate) | 57 | 38.4 (5) | yes | 6 | 4 | 5 | 5 | 5 | 6 | tiingo |  |
+| GOOGL | 2 (Low) | 84.6 | 71.3 (3) |  | 6 | 2 | 3 | 3 | 4 | 5 | tiingo |  |
+| META | 2 (Low) | 78.8 | 58.6 (3) |  | 6 | 2 | 3 | 3 | 5 | 6 | tiingo |  |
+| NFLX | 3 (Moderately low) | 71 | 52.7 (4) | yes | 6 | 3 | 4 | 4 | 5 | 6 | tiingo |  |
+| DIS | 2 (Low) | 84.9 | 75 (2) |  | 5 | 2 | 2 | 2 | 4 | 5 | tiingo |  |
+| TMUS | 2 (Low) | 76.2 | 62.2 (3) |  | 6 | 2 | 3 | 3 | 5 | 6 | tiingo |  |
+| VZ | 2 (Low) | 84.4 | 77.2 (2) |  | 5 | 2 | 2 | 2 | 4 | 5 | tiingo |  |
+| T | 2 (Low) | 80.9 | 70 (3) |  | 5 | 2 | 3 | 3 | 4 | 5 | tiingo |  |
+| AMZN | 2 (Low) | 82.1 | 68.9 (3) |  | 6 | 2 | 3 | 3 | 4 | 5 | tiingo |  |
+| TSLA | 3 (Moderately low) | 71 | 51.1 (4) | yes | 6 | 3 | 4 | 4 | 5 | 6 | tiingo |  |
+| HD | 2 (Low) | 77.5 | 72.2 (2) |  | 5 | 2 | 2 | 2 | 4 | 5 | tiingo |  |
+| MCD | 2 (Low) | 78.8 | 75.5 (2) |  | 4 | 2 | 2 | 2 | 4 | 5 | tiingo |  |
+| NKE | 3 (Moderately low) | 71 | 50.6 (4) | yes | 6 | 3 | 4 | 4 | 5 | 6 | tiingo |  |
+| SBUX | 2 (Low) | 76 | 77.5 (2) |  | 5 | 2 | 2 | 2 | 4 | 5 | tiingo |  |
+| LOW | 3 (Moderately low) | 71.4 | 64.7 (3) |  | 5 | 3 | 3 | 3 | 4 | 5 | tiingo |  |
+| BKNG | 3 (Moderately low) | 68.7 | 61.4 (3) |  | 6 | 3 | 3 | 3 | 5 | 6 | tiingo |  |
+| WMT | 2 (Low) | 82.1 | 73.4 (2) |  | 5 | 2 | 2 | 2 | 4 | 5 | tiingo |  |
+| PG | 1 (Very low) | 89.5 | 84.5 (2) |  | 4 | 1 | 2 | 2 | 3 | 4 | tiingo |  |
+| KO | 1 (Very low) | 90.7 | 89.2 (1) |  | 4 | 1 | 1 | 1 | 3 | 4 | tiingo |  |
+| PEP | 2 (Low) | 81.7 | 77.3 (2) |  | 5 | 2 | 2 | 2 | 4 | 5 | tiingo |  |
+| COST | 1 (Very low) | 86.6 | 82.8 (2) |  | 4 | 1 | 2 | 2 | 3 | 4 | tiingo |  |
+| PM | 2 (Low) | 78.8 | 75.4 (2) |  | 5 | 2 | 2 | 2 | 4 | 5 | tiingo |  |
+| MDLZ | 2 (Low) | 84 | 80.3 (2) |  | 5 | 2 | 2 | 2 | 3 | 4 | tiingo |  |
+| BRK-B | 1 (Very low) | 94.5 | 92.8 (1) |  | 4 | 1 | 1 | 1 | 2 | 3 | tiingo |  |
+| JPM | 1 (Very low) | 88.4 | 82 (2) |  | 5 | 1 | 2 | 2 | 3 | 4 | tiingo |  |
+| V | 1 (Very low) | 88 | 81.3 (2) |  | 5 | 1 | 2 | 2 | 3 | 4 | tiingo |  |
+| MA | 1 (Very low) | 87.3 | 80 (2) |  | 5 | 1 | 2 | 2 | 3 | 4 | tiingo |  |
+| BAC | 1 (Very low) | 87.6 | 80.5 (2) |  | 5 | 1 | 2 | 2 | 3 | 4 | tiingo |  |
+| WFC | 2 (Low) | 83.7 | 73.6 (2) |  | 5 | 2 | 2 | 2 | 4 | 5 | tiingo |  |
+| GS | 2 (Low) | 81.5 | 69.6 (3) |  | 6 | 2 | 3 | 3 | 4 | 5 | tiingo |  |
+| MS | 2 (Low) | 84.4 | 74.8 (2) |  | 5 | 2 | 2 | 2 | 4 | 5 | tiingo |  |
+| AXP | 2 (Low) | 83.4 | 73 (2) |  | 5 | 2 | 2 | 2 | 4 | 5 | tiingo |  |
+| BLK | 2 (Low) | 83.2 | 73.5 (2) |  | 5 | 2 | 2 | 2 | 4 | 5 | tiingo |  |
+| C | 2 (Low) | 85.1 | 76.9 (2) |  | 5 | 2 | 2 | 2 | 4 | 5 | tiingo |  |
+| LLY | 2 (Low) | 80.2 | 67.9 (3) |  | 6 | 2 | 3 | 3 | 4 | 5 | tiingo |  |
+| UNH | 2 (Low) | 76.9 | 63.7 (3) |  | 6 | 2 | 3 | 3 | 4 | 5 | tiingo |  |
+| JNJ | 1 (Very low) | 91.8 | 88.2 (1) |  | 4 | 1 | 1 | 1 | 3 | 4 | fmp |  |
+| ABBV | 2 (Low) | 78 | 78.7 (2) |  | 5 | 2 | 2 | 2 | 4 | 5 | fmp |  |
+| MRK | not rated | — | — |  | — | — | — | — | — | — | none | prices: fetch_failed |
+| TMO | not rated | — | — |  | — | — | — | — | — | — | none | prices: fetch_failed |
+| ABT | not rated | — | — |  | — | — | — | — | — | — | none | prices: fetch_failed |
+| PFE | 1 (Very low) | 86.6 | 82.1 (2) |  | 5 | 1 | 2 | 2 | 3 | 4 | fmp |  |
+| AMGN | not rated | — | — |  | — | — | — | — | — | — | none | prices: fetch_failed |
+| ISRG | not rated | — | — |  | — | — | — | — | — | — | none | prices: fetch_failed |
+| XOM | 2 (Low) | 84.8 | 75.5 (2) |  | 5 | 2 | 2 | 2 | 4 | 5 | fmp |  |
+| CVX | 2 (Low) | 84.8 | 76.8 (2) |  | 5 | 2 | 2 | 2 | 4 | 5 | fmp |  |
+| COP | not rated | — | — |  | — | — | — | — | — | — | none | prices: fetch_failed |
+| SLB | not rated | — | — |  | — | — | — | — | — | — | none | prices: fetch_failed |
+| CAT | not rated | — | — |  | — | — | — | — | — | — | none | prices: fetch_failed |
+| GE | 2 (Low) | 81.1 | 70 (3) |  | 6 | 2 | 3 | 3 | 4 | 5 | fmp |  |
+| HON | not rated | — | — |  | — | — | — | — | — | — | none | prices: fetch_failed |
+| UPS | not rated | — | — |  | — | — | — | — | — | — | none | prices: fetch_failed |
+| BA | 3 (Moderately low) | 70.4 | 65.9 (3) |  | 6 | 3 | 3 | 3 | 4 | 5 | fmp |  |
+| DE | not rated | — | — |  | — | — | — | — | — | — | none | prices: fetch_failed |
+| LMT | 2 (Low) | 76.1 | 69.9 (3) |  | 5 | 2 | 3 | 3 | 4 | 5 | fmp |  |
+| RTX | not rated | — | — |  | — | — | — | — | — | — | none | prices: fetch_failed |
+| LIN | not rated | — | — |  | — | — | — | — | — | — | none | prices: fetch_failed |
+| SHW | not rated | — | — |  | — | — | — | — | — | — | none | prices: fetch_failed |
+| FCX | not rated | — | — |  | — | — | — | — | — | — | none | prices: fetch_failed |
+| NEE | not rated | — | — |  | — | — | — | — | — | — | none | prices: fetch_failed |
+| DUK | not rated | — | — |  | — | — | — | — | — | — | none | prices: fetch_failed |
+| SO | not rated | — | — |  | — | — | — | — | — | — | none | prices: fetch_failed |
+| PLD | not rated | — | — |  | — | — | — | — | — | — | none | prices: fetch_failed |
+| AMT | not rated | — | — |  | — | — | — | — | — | — | none | prices: fetch_failed |
+| O | not rated | — | — |  | — | — | — | — | — | — | none | prices: fetch_failed |
 
 #### 2. Backtest
 
@@ -366,18 +437,28 @@ Spearman rank correlation, per quarter start, between the score and what followe
 
 | Set | Horizon | Quarter starts | Median assets | ρ with later volatility | ρ with later largest fall |
 |---|---|---|---|---|---|
-| Stocks, full score | 6 months | 16 | 58.00 | -0.75 | -0.50 |
-| Stocks, price alone | 6 months | 16 | 58.00 | -0.82 | -0.56 |
+| Stocks, full score (as built) | 6 months | 16 | 58.00 | -0.75 | -0.50 |
+| Stocks, price alone (as built) | 6 months | 16 | 58.00 | -0.82 | -0.56 |
+| Stocks, full score (variant B) | 6 months | 16 | 58.00 | -0.77 | -0.52 |
+| Stocks, price alone (variant B) | 6 months | 16 | 58.00 | -0.80 | -0.54 |
+| Stocks, full score (variant B+C) | 6 months | 16 | 58.00 | -0.76 | -0.51 |
 | Coins, price alone (as built) | 6 months | 5 | 32.00 | -0.75 | -0.59 |
 | Coins and stocks pooled, price alone (as built) | 6 months | 5 | 90.00 | -0.89 | — |
 | Coins, price alone (variant A) | 6 months | 5 | 32.00 | -0.68 | -0.55 |
 | Coins and stocks pooled, price alone (variant A) | 6 months | 5 | 90.00 | -0.93 | — |
-| Stocks, full score | 12 months | 14 | 58.00 | -0.76 | -0.54 |
-| Stocks, price alone | 12 months | 14 | 58.00 | -0.83 | -0.59 |
+| Coins, price alone (variant B) | 6 months | 5 | 32.00 | -0.75 | -0.60 |
+| Coins and stocks pooled, price alone (variant B) | 6 months | 5 | 90.00 | -0.93 | — |
+| Stocks, full score (as built) | 12 months | 14 | 58.00 | -0.76 | -0.54 |
+| Stocks, price alone (as built) | 12 months | 14 | 58.00 | -0.83 | -0.59 |
+| Stocks, full score (variant B) | 12 months | 14 | 58.00 | -0.77 | -0.55 |
+| Stocks, price alone (variant B) | 12 months | 14 | 58.00 | -0.81 | -0.58 |
+| Stocks, full score (variant B+C) | 12 months | 14 | 58.00 | -0.76 | -0.54 |
 | Coins, price alone (as built) | 12 months | 3 | 32.00 | -0.74 | -0.65 |
 | Coins and stocks pooled, price alone (as built) | 12 months | 3 | 90.00 | -0.89 | — |
 | Coins, price alone (variant A) | 12 months | 3 | 32.00 | -0.66 | -0.61 |
 | Coins and stocks pooled, price alone (variant A) | 12 months | 3 | 90.00 | -0.94 | — |
+| Coins, price alone (variant B) | 12 months | 3 | 32.00 | -0.75 | -0.66 |
+| Coins and stocks pooled, price alone (variant B) | 12 months | 3 | 90.00 | -0.94 | — |
 
 Stocks at past dates: market cap is today's reference figure scaled by price, net margin is each fiscal year's from SEC filings (filed 90 days after year end), and debt ÷ equity is left out (the route carries no history of it). Coins: Binance.US closes, price behaviour only.
 
@@ -457,8 +538,10 @@ Each parameter moved −20% and +20% alone; the count is how many rated assets c
 
 | Set | Assets | Asset-months | Changes, no rule | Per asset per year | Changes, 16-week rule | Per asset per year |
 |---|---|---|---|---|---|---|
-| Stocks, class | 58 | 2984 | 239 | 0.96 | 140 | 0.56 |
-| Coins, price-alone class | 35 | 757 | 56 | 0.89 | 22 | 0.35 |
+| Stocks, class (as built) | 58 | 2984 | 239 | 0.96 | 140 | 0.56 |
+| Stocks, class (variant B+C) | 58 | 2984 | 230 | 0.92 | 145 | 0.58 |
+| Coins, price-alone class (as built) | 35 | 757 | 56 | 0.89 | 22 | 0.35 |
+| Coins, price-alone class (variant B) | 35 | 757 | 13 | 0.21 | 8 | 0.13 |
 
 Weekly ratings from each asset's second year of history to today, sampled on the first Monday of each month. The rule is simulated with a reading every week.
 

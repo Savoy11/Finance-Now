@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
-  countChanges, mean, median, mondays, monthlySamples, priipsBandClass, quarterStarts, ranks, spearman, withPatch,
+  PRIIPS_EDGES, countChanges, euCalibratedCurves, mean, median, mondays, monthlySamples, priipsBandClass, quarterStarts,
+  ranks, spearman, typicalDrawdown, withPatch,
 } from '../../../../scripts/lib/ratingValidation'
 import { METHODOLOGY_V1 as M } from '@/lib/risk/methodology/v1'
-import { rateAsset } from '@/lib/risk/assetRating'
+import { classForScore, rateAsset } from '@/lib/risk/assetRating'
+import { piecewise } from '@/lib/risk/normalize'
 
 // The helpers behind scripts/validate-ratings.ts (T-420 item 7). Their numbers decide the
 // owner's choice of weights and curves, so each is checked against a hand-worked answer.
@@ -47,6 +49,39 @@ describe('the PRIIPs band (survey §1.1)', () => {
     expect(priipsBandClass(0.44)).toBe(6)
     expect(priipsBandClass(0.8)).toBe(7)
     expect(priipsBandClass(1.5)).toBe(7)
+  })
+})
+
+describe('variant B: price curves tuned to the PRIIPs bands', () => {
+  const eu = euCalibratedCurves(M.classes.map((c) => c.min))
+  const classOf = (score: number) => classForScore(score).cls
+
+  it('puts volatility in the class PRIIPs gives it, on both sides of every band edge', () => {
+    PRIIPS_EDGES.forEach((edge) => {
+      for (const v of [edge * 0.95, edge * 1.02]) {
+        expect(classOf(piecewise(v, eu.volatility)), `volatility ${v}`).toBe(priipsBandClass(v))
+      }
+    })
+    expect(classOf(piecewise(0.001, eu.volatility))).toBe(1)
+    expect(classOf(piecewise(2, eu.volatility))).toBe(7)
+  })
+
+  it('places the drawdown boundaries at the fall a random walk at each edge typically shows in a year', () => {
+    expect(typicalDrawdown(0.2)).toBeCloseTo(1 - Math.exp(-0.2 * Math.sqrt(Math.PI / 2)), 10)
+    expect(typicalDrawdown(0.2)).toBeCloseTo(0.222, 3)
+    expect(typicalDrawdown(0.8)).toBeCloseTo(0.633, 3)
+    expect(eu.drawdown.map(([, s]) => s)).toEqual(eu.volatility.map(([, s]) => s))
+    eu.volatility.forEach(([sigma], i) => expect(eu.drawdown[i][0]).toBeCloseTo(typicalDrawdown(sigma), 12))
+  })
+
+  it('both curves rise in value and fall in score, as the engine’s interpolation needs', () => {
+    for (const curve of [eu.volatility, eu.drawdown]) {
+      for (let i = 1; i < curve.length; i++) {
+        expect(curve[i][0]).toBeGreaterThan(curve[i - 1][0])
+        expect(curve[i][1]).toBeLessThan(curve[i - 1][1])
+      }
+    }
+    expect(() => euCalibratedCurves([86, 72])).toThrow(RangeError)
   })
 })
 
