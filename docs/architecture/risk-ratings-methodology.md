@@ -155,8 +155,12 @@ rated, because volatility and drawdown are required (§5). It degrades to facts,
    past 16 weeks lies outside the class shown**; it then moves to the class matched at most of those
    readings. A new rating starts at its current class. The score itself is always current, and the
    page says when the stability rule is holding the class ("Class held at 4 by the stability rule;
-   today's score alone would be class 5"). Storing the weekly readings needs a database table, added
-   with the build.
+   today's score alone would be class 5"). The readings are kept in the `asset_rating_readings`
+   table (migration 0007), under three rules: a week's reading is the **first** rating computed
+   that week (Monday to Sunday, UTC), and is never rewritten; the 16 weeks must be **consecutive**,
+   so a week with no reading holds the class rather than helping it move; and only readings under
+   the **current methodology version** count, so a new version starts every asset at its current
+   class.
 7. **Recompute schedule.** Once a day from the previous day's daily data, cached 24 hours, shown "as
    of" that date. Never intraday, never on a price move, never as a notification.
 
@@ -206,12 +210,18 @@ The build is not finished until these have run and their results are written up 
    the final v1 numbers. No source supports any particular weights; the page says they are Finance
    Now's choice.
 
-## 9. The build (for agreement, not started)
+## 9. The build (started 2026-10-09)
 
-1. `lib/risk/methodology/v1.ts`: every number and rule in §2–§5, with its version.
-2. Rework `profiles/cryptoAsset.ts` and `profiles/equity.ts` to read it, and add the cap and stability
-   rules, with tests that recompute ratings by hand.
-3. A database table for the weekly readings the stability rule needs (a migration the owner runs).
+1. ✅ `lib/risk/methodology/v1.ts`: every number and rule in §2–§5, with its version.
+2. ✅ The engine, `lib/risk/assetRating.ts`, reading only `v1.ts`, with the cap and stability rules
+   and tests that recompute ratings by hand (`__tests__/assetRating.test.ts`). Built as a new file
+   rather than a rework of `profiles/cryptoAsset.ts` and `profiles/equity.ts`: nothing imports
+   those two, and removing them is the owner's call, so they stay until then.
+3. ✅ The `asset_rating_readings` table for the weekly readings (`lib/db/schema/ratings.ts`,
+   migration `drizzle/0007_asset-rating-readings.sql`), and `lib/risk/ratingReadings.ts`, which
+   turns an asset's stored readings into the stability rule's input and the row to store
+   (`__tests__/ratingReadings.test.ts`). ⚠ **Run `npm run db:migrate` on the owner's machine**;
+   nothing reads the table until item 4, so nothing changes before then.
 4. A daily rating route for each class, cached 24 hours.
 5. The rating panel on `/assets/[id]` and `/equities/[symbol]`, and the methodology section, rendered
    from `v1.ts`.
@@ -254,3 +264,8 @@ number of exchanges and the share of volume on the top two (from CoinGecko's tic
 - **2026-10-07 (D95):** class labels decided (Very low … Very high, under the heading "Measured risk:
   Class N of 7"); the final weights and curves parked until validation, and the holdings policy parked
   until before anything is shown.
+- **2026-10-09:** the numbers in §2–§5 moved into `lib/risk/methodology/v1.ts`, which is now the
+  single source; this note describes them and must change with it. No number changed.
+- **2026-10-09:** §5 item 6 now states how weekly readings are kept: the first rating of each week,
+  16 consecutive weeks, and only readings under the current version. These settle questions the
+  rule left open; they change no number.
