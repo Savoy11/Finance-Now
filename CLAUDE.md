@@ -898,8 +898,10 @@ site nobody has reviewed. Full design: `docs/architecture/source-terms.md`.
 > legal review (D4). T-420 rebuilds to that scope. `docs/LEGAL-REVIEW.md` §3.H.
 > **Build status (2026-10-10):** the engine, the weekly readings, the two rating routes, the panel
 > and the methodology page are built, all behind `ASSET_PAGE_RATINGS_SHOWN = false`
-> (`lib/risk/visibility.ts`); the methodology's §8 validation is next. The method and every build
-> decision are in `docs/architecture/risk-ratings-methodology.md`.
+> (`lib/risk/visibility.ts`). The §8 validation has run (`npm run ratings:validate`, written up in
+> `docs/assessments/risk-ratings-validation-2026-10-10.md`): good ordering, but classes three below the
+> EU scale for stocks and two for coins; the owner's decision on the scale and curves is next. The
+> method and every build decision are in `docs/architecture/risk-ratings-methodology.md`.
 
 **To close it:** `npm run terms:report -- --seeded` (or `--news`) from a machine
 > that can reach these sites writes a review worksheet — current verdict, what the
