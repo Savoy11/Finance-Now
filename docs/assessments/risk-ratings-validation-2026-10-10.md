@@ -40,8 +40,13 @@ The full generated report is the appendix.
    near zero, and keeps the ordering. The cost: the scale compresses here, with no asset in classes 1
    or 2 and 39 of 55 coins in class 7.
 
+8. **The adopted method reproduces those results** (§8, 2026-10-11). It also shows the cap holding the
+   score of every rated stock and 49 of 55 coins at the top of the price class, so the headline score no
+   longer tells assets in one class apart. Their classes are unaffected.
+
 The owner's decisions this leaves are in §6, with §7's results. **Decided 2026-10-11 (D97):** the
-EU-aligned reading, with B and C adopted; the universe question stays open.
+EU-aligned reading, with B and C adopted. The universe question stays open, and so does §8's question
+on the headline score.
 
 ## 1. Sanity order
 
@@ -246,7 +251,9 @@ Both price measures then speak the same scale.
 
 **The cost.** The scale compresses on this site. Under B and C no asset rates 1 or 2, and 39 of 55 coins
 rate 7, so the coin classes say little about one coin against another: Dogecoin and Ethereum share
-class 6. The 0–100 score underneath and its parts still tell them apart, and the panel shows both. B
+class 6. The 0–100 score underneath and its parts still tell them apart, and the panel shows both
+(**corrected 2026-10-11, §8:** the parts and the price-behaviour score do, but the headline score mostly
+does not, because the cap holds it at the top of the class). B
 alone keeps more spread (37 coins in class 6, 13 in class 5), at the price of sitting about one class
 under the bands.
 
@@ -258,9 +265,56 @@ the other curves and every other rule stay. The universe decision (§6 item 3) i
 the drawdown points to 0.01% and a test holding them to `euCalibratedCurves`; `capClassesAboveCore` is
 0; the version is `v1 (2026-10-11)`.
 
+## 8. Confirmation on the adopted method, 2026-10-11
+
+Run at 09:26 UTC on the owner's machine under `v1 (2026-10-11)`, after D97. The harness now sets the
+method beside the first draft it replaced. Stocks had the same data as the second run, since the last
+trading day was still Friday 2026-10-09, and the same 58 were rated: Tiingo again stopped after 50
+requests, and 21 went unrated. Coins had one more day of data. The full report is Appendix B.
+
+| | Coins: classes 1 · 2 · 3 · 4 · 5 · 6 · 7 | Same as PRIIPs | Within one | Mean gap | Stocks: classes 1 · 2 · 3 · 4 · 5 · 6 · 7 | Same as PRIIPs | Within one | Mean gap |
+|---|---|---:|---:|---:|---|---:|---:|---:|
+| The method | 0 · 0 · 0 · 0 · 1 · 15 · 39 | 45/55 | 55/55 | −0.07 | 0 · 0 · 1 · 11 · 29 · 17 · 0 | 39/58 | 58/58 | 0.29 |
+| First draft | 0 · 2 · 11 · 21 · 13 · 7 · 1 | 1/55 | 11/55 | 2.35 | 11 · 31 · 12 · 4 · 0 · 0 · 0 | 0/58 | 0/58 | 3.21 |
+
+- **It reproduces §7's B and C**: the stocks exactly, the coins within a day's movement (45 exactly on
+  their band rather than 46).
+- **Ordering, over 6 months:**
+  - stocks: full score −0.76 and price alone −0.80;
+  - coins: −0.75;
+  - coins and stocks pooled: −0.93 (−0.94 over 12 months), against −0.89 for the first draft.
+- **Sensitivity:** no parameter moved ±20% changes more than 8 of 55 coins or 8 of 58 stocks, and 55 of
+  76 parameters change nothing. That includes the liquidity, size and fundamentals weights for stocks.
+- **Stability:**
+  - stocks change class 0.58 times a year with the 16-week rule (0.92 without);
+  - coins' price-behaviour class changes 0.13 times a year (0.21 without).
+- **Examples:**
+  - Coins: Bitcoin, Ethereum, Solana and Dogecoin 6; Tron 5; Celestia 7.
+  - Stocks: Berkshire Hathaway 3; Apple, Coca-Cola, Johnson & Johnson, Procter & Gamble and JPMorgan 4;
+    Nvidia 5; Microsoft, Oracle, Palantir and Tesla 6.
+  - The universe question is still open: vBUSD rates 7 and Ampleforth 6.
+
+**Finding: the cap now sets almost every score.** It holds the score of all 58 rated stocks and 49 of
+55 coins at the top of the price class: 57 in class 4, 43 in class 5, 29 in class 6 and 14 in class 7.
+Large, deeply traded assets score high on liquidity and size, so their weighted score always lands above
+their price class, and with no lift it is cut back to that class's top. Two consequences:
+
+1. **Within a class, the headline score is one number.** Bitcoin, Ethereum, Solana and Dogecoin all
+   score 29. §7 said the score and its parts would still tell assets apart. That holds for the parts and
+   for price behaviour alone, which the panel's cap sentence gives (23.6, 17.8, 15.4 and 15.6), but not
+   for the headline score. Corrected in §7.
+2. **For these assets the other parts change nothing.** Their weights move no stock's class. They still
+   lower a small or thinly traded asset's class; the six uncapped coins are where that shows.
+
+**Not acted on.** One option for the owner: lower a score that is too high to the price score itself,
+not to the top of its class. The score would be the smaller of the weighted score and the price score.
+No class would change, since the price score already sits in the class the cap allows, and the headline
+score would again differ between assets. It changes §5 item 4 of the methodology, so it waits for the
+owner.
+
 ---
 
-## Appendix: the generated report
+## Appendix A: the second run's report (2026-10-10)
 
 The output of `npm run ratings:validate` from the second run, 2026-10-10 at 21:44 UTC, which adds variants B and B+C. Its as-built figures are identical to the first run's (20:39 UTC), on which sections 1 to 6 were written.
 
@@ -551,6 +605,338 @@ Each parameter moved −20% and +20% alone; the count is how many rated assets c
 | Stocks, class (variant B+C) | 58 | 2984 | 230 | 0.92 | 145 | 0.58 |
 | Coins, price-alone class (as built) | 35 | 757 | 56 | 0.89 | 22 | 0.35 |
 | Coins, price-alone class (variant B) | 35 | 757 | 13 | 0.21 | 8 | 0.13 |
+
+Weekly ratings from each asset's second year of history to today, sampled on the first Monday of each month. The rule is simulated with a reading every week.
+
+#### Data notes
+
+- vbusd: Binance history: no-source
+- ampl: Binance history: no-source
+- hype: Binance history: no-source
+- xmr: Binance history: Error: binance-400
+- ton: Binance history: Error: binance-400
+- memecore: Binance history: no-source
+- cro: Binance history: no-source
+- tao: Binance history: Error: binance-400
+- pi: Binance history: no-source
+- kas: Binance history: no-source
+- flr: Binance history: Error: binance-400
+- xdc: Binance history: no-source
+- gno: Binance history: no-source
+- tel: Binance history: no-source
+- kaia: Binance history: no-source
+- cfx: Binance history: Error: binance-400
+- dcr: Binance history: no-source
+- MRK: prices: fetch_failed
+- TMO: prices: fetch_failed
+- ABT: prices: fetch_failed
+- AMGN: prices: fetch_failed
+- ISRG: prices: fetch_failed
+- COP: prices: fetch_failed
+- SLB: prices: fetch_failed
+- CAT: prices: fetch_failed
+- HON: prices: fetch_failed
+- UPS: prices: fetch_failed
+- DE: prices: fetch_failed
+- RTX: prices: fetch_failed
+- LIN: prices: fetch_failed
+- SHW: prices: fetch_failed
+- FCX: prices: fetch_failed
+- NEE: prices: fetch_failed
+- DUK: prices: fetch_failed
+- SO: prices: fetch_failed
+- PLD: prices: fetch_failed
+- AMT: prices: fetch_failed
+- O: prices: fetch_failed
+
+## Appendix B: the confirmation run's report (2026-10-11)
+
+The output of `npm run ratings:validate` on the adopted method, 2026-10-11 at 09:26 UTC (§8). "First draft" is the method before D97.
+
+### Rating validation report
+
+Generated 2026-10-11T09:26:10.322Z by `scripts/validate-ratings.ts`, method `v1 (2026-10-11)`. Reads only; stores nothing.
+
+#### 1. Sanity order
+
+**Coins: 55 of 55 rated.**
+
+| Variant | Classes (1 … 7) | Median class | Same as PRIIPs band | Within one | Mean gap (PRIIPs − ours) |
+|---|---|---|---|---|---|
+| The method | 1: 0 · 2: 0 · 3: 0 · 4: 0 · 5: 1 · 6: 15 · 7: 39 | 7 | 45/55 | 55/55 | -0.07 |
+| First draft (hand-set price curves, a one-class lift) | 1: 0 · 2: 2 · 3: 11 · 4: 21 · 5: 13 · 6: 7 · 7: 1 | 4 | 1/55 | 11/55 | 2.35 |
+
+**Stocks: 58 of 79 rated.**
+
+| Variant | Classes (1 … 7) | Median class | Same as PRIIPs band | Within one | Mean gap (PRIIPs − ours) |
+|---|---|---|---|---|---|
+| The method | 1: 0 · 2: 0 · 3: 1 · 4: 11 · 5: 29 · 6: 17 · 7: 0 | 5 | 39/58 | 58/58 | 0.29 |
+| First draft (hand-set price curves, a one-class lift) | 1: 11 · 2: 31 · 3: 12 · 4: 4 · 5: 0 · 6: 0 · 7: 0 | 2 | 0/58 | 0/58 | 3.21 |
+
+PRIIPs band = the class plain one-year volatility falls in on the EU PRIIPs scale (survey §1.1). Indicative, and a lower bound: PRIIPs counts fat tails.
+
+##### Every coin
+
+| Coin | Class | Score | Price alone (class) | Capped | Volatility | Largest fall | PRIIPs band | First draft | Note |
+|---|---|---|---|---|---|---|---|---|---|
+| vBUSD (vbusd) | 7 (Very high) | 3.4 | 0 (7) |  | 282% | 86% | 7 | 7 |  |
+| AMPL (ampl) | 6 (High) | 18.4 | 18.4 (6) |  | 103% | 31% | 7 | 5 |  |
+| BTC (btc) | 6 (High) | 29 | 23.6 (6) | yes | 44% | 49% | 6 | 2 |  |
+| ETH (eth) | 6 (High) | 29 | 17.8 (6) | yes | 62% | 63% | 6 | 3 |  |
+| SOL (sol) | 6 (High) | 29 | 15.4 (6) | yes | 65% | 70% | 6 | 3 |  |
+| BNB (bnb) | 6 (High) | 29 | 21.1 (6) | yes | 49% | 58% | 6 | 3 |  |
+| AVAX (avax) | 7 (Very high) | 14 | 12.8 (7) | yes | 73% | 75% | 6 | 3 |  |
+| ADA (ada) | 7 (Very high) | 14 | 10.4 (7) | yes | 79% | 80% | 6 | 4 |  |
+| DOT (dot) | 7 (Very high) | 14 | 10.7 (7) | yes | 82% | 78% | 7 | 4 |  |
+| POL (pol) | 7 (Very high) | 14 | 14.8 (7) | yes | 73% | 67% | 6 | 4 |  |
+| TRX (trx) | 5 (Moderately high) | 43 | 43.7 (5) | yes | 24% | 17% | 5 | 2 |  |
+| HYPE (hype) | 7 (Very high) | 14 | 14.7 (7) | yes | 91% | 56% | 7 | 3 |  |
+| ZEC (zec) | 7 (Very high) | 14 | 5.9 (7) | yes | 139% | 72% | 7 | 4 |  |
+| XMR (xmr) | 6 (High) | 29 | 15 (6) | yes | 83% | 59% | 7 | 4 |  |
+| TON (ton) | 6 (High) | 29 | 17.4 (6) | yes | 76% | 52% | 6 | 4 |  |
+| BCH (bch) | 7 (Very high) | 14 | 13.3 (7) | yes | 76% | 71% | 6 | 3 |  |
+| M (memecore) | 7 (Very high) | 14 | 0 (7) |  | 173% | 87% | 7 | 6 |  |
+| HBAR (hbar) | 6 (High) | 29 | 15.1 (6) | yes | 70% | 68% | 6 | 3 |  |
+| LTC (ltc) | 6 (High) | 29 | 18.6 (6) | yes | 58% | 63% | 6 | 3 |  |
+| SUI (sui) | 7 (Very high) | 14 | 10.2 (7) | yes | 86% | 78% | 7 | 4 |  |
+| CRO (cro) | 7 (Very high) | 14 | 13.5 (7) | yes | 72% | 73% | 6 | 5 |  |
+| NEAR (near) | 7 (Very high) | 14 | 10.5 (7) | yes | 105% | 68% | 7 | 4 |  |
+| TAO (tao) | 7 (Very high) | 14 | 10.3 (7) | yes | 104% | 69% | 7 | 4 |  |
+| PI (pi) | 7 (Very high) | 14 | 11.7 (7) | yes | 86% | 72% | 7 | 5 |  |
+| ICP (icp) | 7 (Very high) | 14 | 8.5 (7) | yes | 102% | 77% | 7 | 4 |  |
+| ETC (etc) | 6 (High) | 29 | 15.6 (6) | yes | 70% | 66% | 6 | 4 |  |
+| KAS (kas) | 7 (Very high) | 14 | 6.2 (7) | yes | 162% | 61% | 7 | 5 |  |
+| ALGO (algo) | 7 (Very high) | 14 | 7.4 (7) | yes | 145% | 64% | 7 | 4 |  |
+| FLR (flr) | 7 (Very high) | 14 | 3.8 (7) | yes | 204% | 72% | 7 | 6 |  |
+| XDC (xdc) | 6 (High) | 29 | 16.9 (6) | yes | 71% | 60% | 6 | 4 |  |
+| FIL (fil) | 7 (Very high) | 14 | 6 (7) | yes | 116% | 82% | 7 | 4 |  |
+| APT (apt) | 7 (Very high) | 14 | 5.9 (7) | yes | 106% | 87% | 7 | 4 |  |
+| INJ (inj) | 7 (Very high) | 14 | 9.7 (7) | yes | 104% | 72% | 7 | 4 |  |
+| VET (vet) | 7 (Very high) | 14 | 6.8 (7) | yes | 117% | 78% | 7 | 5 |  |
+| SEI (sei) | 7 (Very high) | 14 | 0.7 (7) | yes | 237% | 84% | 7 | 5 |  |
+| TIA (tia) | 7 (Very high) | 14 | 6.9 (7) | yes | 121% | 76% | 7 | 4 |  |
+| CHZ (chz) | 7 (Very high) | 14 | 9.3 (7) | yes | 87% | 81% | 7 | 4 |  |
+| GNO (gno) | 6 (High) | 22.5 | 17.5 (6) |  | 88% | 43% | 7 | 5 |  |
+| XTZ (xtz) | 7 (Very high) | 14 | 12.7 (7) | yes | 77% | 73% | 6 | 5 |  |
+| TEL (tel) | 7 (Very high) | 7 | 5.6 (7) |  | 126% | 79% | 7 | 6 |  |
+| KAIA (kaia) | 7 (Very high) | 14 | 6.3 (7) | yes | 113% | 81% | 7 | 6 |  |
+| CFX (cfx) | 7 (Very high) | 14 | 4 (7) | yes | 221% | 70% | 7 | 6 |  |
+| IOTA (iota) | 7 (Very high) | 14 | 11.3 (7) | yes | 74% | 80% | 6 | 5 |  |
+| DCR (dcr) | 7 (Very high) | 14 | 6 (7) | yes | 125% | 78% | 7 | 6 |  |
+| THETA (theta) | 7 (Very high) | 14 | 10 (7) | yes | 84% | 79% | 7 | 5 |  |
+| XRP (xrp) | 6 (High) | 29 | 17.4 (6) | yes | 65% | 62% | 6 | 3 |  |
+| DOGE (doge) | 6 (High) | 29 | 15.6 (6) | yes | 68% | 68% | 6 | 3 |  |
+| UNI (uni) | 7 (Very high) | 14 | 9.8 (7) | yes | 97% | 75% | 7 | 4 |  |
+| AAVE (aave) | 7 (Very high) | 14 | 10.5 (7) | yes | 87% | 77% | 7 | 4 |  |
+| LINK (link) | 6 (High) | 29 | 15.8 (6) | yes | 72% | 64% | 6 | 3 |  |
+| MKR (mkr) | 7 (Very high) | 14.7 | 17 (6) |  | 92% | 43% | 7 | 5 |  |
+| SNX (snx) | 7 (Very high) | 14 | 5.3 (7) | yes | 111% | 92% | 7 | 6 |  |
+| CRV (crv) | 7 (Very high) | 14 | 11.8 (7) | yes | 87% | 71% | 7 | 4 |  |
+| LDO (ldo) | 7 (Very high) | 14 | 2.5 (7) | yes | 215% | 77% | 7 | 5 |  |
+| GRT (grt) | 7 (Very high) | 14 | 5.1 (7) | yes | 124% | 82% | 7 | 5 |  |
+
+##### Every stock
+
+Classes and scores only: stock prices may come from Tiingo, whose terms bar keeping its data, so no price-derived figure is written here.
+
+| Stock | Class | Score | Price alone (class) | Capped | PRIIPs band | First draft | Prices from | Note |
+|---|---|---|---|---|---|---|---|---|
+| AAPL | 4 (Moderate) | 57 | 46.1 (4) | yes | 5 | 1 | tiingo |  |
+| MSFT | 6 (High) | 29 | 28.4 (6) | yes | 6 | 2 | tiingo |  |
+| NVDA | 5 (Moderately high) | 43 | 35.9 (5) | yes | 6 | 2 | tiingo |  |
+| AVGO | 6 (High) | 29 | 27.9 (6) | yes | 6 | 3 | tiingo |  |
+| ORCL | 6 (High) | 29 | 18.5 (6) | yes | 6 | 4 | tiingo |  |
+| CRM | 6 (High) | 29 | 24.2 (6) | yes | 6 | 3 | tiingo |  |
+| AMD | 6 (High) | 29 | 25.6 (6) | yes | 6 | 3 | tiingo |  |
+| ADBE | 6 (High) | 29 | 24.6 (6) | yes | 6 | 3 | tiingo |  |
+| CSCO | 5 (Moderately high) | 43 | 38.2 (5) | yes | 6 | 2 | tiingo |  |
+| INTC | 6 (High) | 29 | 19.6 (6) | yes | 6 | 4 | tiingo |  |
+| QCOM | 6 (High) | 29 | 23.4 (6) | yes | 6 | 3 | tiingo |  |
+| TXN | 5 (Moderately high) | 43 | 32.9 (5) | yes | 6 | 2 | tiingo |  |
+| IBM | 6 (High) | 29 | 24.7 (6) | yes | 6 | 3 | tiingo |  |
+| NOW | 6 (High) | 29 | 19.7 (6) | yes | 6 | 4 | tiingo |  |
+| PLTR | 6 (High) | 29 | 21.2 (6) | yes | 6 | 4 | tiingo |  |
+| GOOGL | 5 (Moderately high) | 43 | 36.3 (5) | yes | 6 | 2 | tiingo |  |
+| META | 6 (High) | 29 | 28.5 (6) | yes | 6 | 2 | tiingo |  |
+| NFLX | 6 (High) | 29 | 25.3 (6) | yes | 6 | 3 | tiingo |  |
+| DIS | 5 (Moderately high) | 43 | 39.5 (5) | yes | 5 | 2 | tiingo |  |
+| TMUS | 6 (High) | 29 | 28.4 (6) | yes | 6 | 2 | tiingo |  |
+| VZ | 5 (Moderately high) | 43 | 42 (5) | yes | 5 | 2 | tiingo |  |
+| T | 5 (Moderately high) | 43 | 33.5 (5) | yes | 5 | 2 | tiingo |  |
+| AMZN | 5 (Moderately high) | 43 | 35.4 (5) | yes | 6 | 2 | tiingo |  |
+| TSLA | 6 (High) | 29 | 25.3 (6) | yes | 6 | 3 | tiingo |  |
+| HD | 5 (Moderately high) | 43 | 36 (5) | yes | 5 | 2 | tiingo |  |
+| MCD | 5 (Moderately high) | 43 | 38.1 (5) | yes | 4 | 2 | tiingo |  |
+| NKE | 6 (High) | 29 | 24.6 (6) | yes | 6 | 3 | tiingo |  |
+| SBUX | 5 (Moderately high) | 43 | 42.3 (5) | yes | 5 | 2 | tiingo |  |
+| LOW | 5 (Moderately high) | 43 | 30.2 (5) | yes | 5 | 3 | tiingo |  |
+| BKNG | 6 (High) | 29 | 29.3 (6) | yes | 6 | 3 | tiingo |  |
+| WMT | 5 (Moderately high) | 43 | 37.5 (5) | yes | 5 | 2 | tiingo |  |
+| PG | 4 (Moderate) | 57 | 48.6 (4) | yes | 4 | 1 | tiingo |  |
+| KO | 4 (Moderate) | 57 | 55.7 (4) | yes | 4 | 1 | tiingo |  |
+| PEP | 5 (Moderately high) | 43 | 40.6 (5) | yes | 5 | 2 | tiingo |  |
+| COST | 4 (Moderate) | 57 | 46.7 (4) | yes | 4 | 1 | tiingo |  |
+| PM | 5 (Moderately high) | 43 | 40 (5) | yes | 5 | 2 | tiingo |  |
+| MDLZ | 4 (Moderate) | 57 | 44.8 (4) | yes | 5 | 2 | tiingo |  |
+| BRK-B | 3 (Moderately low) | 71 | 58.5 (3) | yes | 4 | 1 | tiingo |  |
+| JPM | 4 (Moderate) | 57 | 46.6 (4) | yes | 5 | 1 | tiingo |  |
+| V | 4 (Moderate) | 57 | 45.6 (4) | yes | 5 | 1 | tiingo |  |
+| MA | 4 (Moderate) | 57 | 44.2 (4) | yes | 5 | 1 | tiingo |  |
+| BAC | 4 (Moderate) | 57 | 44.9 (4) | yes | 5 | 1 | tiingo |  |
+| WFC | 5 (Moderately high) | 43 | 37.6 (5) | yes | 5 | 2 | tiingo |  |
+| GS | 5 (Moderately high) | 43 | 34.8 (5) | yes | 6 | 2 | tiingo |  |
+| MS | 5 (Moderately high) | 43 | 39.4 (5) | yes | 5 | 2 | tiingo |  |
+| AXP | 5 (Moderately high) | 43 | 37 (5) | yes | 5 | 2 | tiingo |  |
+| BLK | 5 (Moderately high) | 43 | 37.6 (5) | yes | 5 | 2 | tiingo |  |
+| C | 5 (Moderately high) | 43 | 41.8 (5) | yes | 5 | 2 | tiingo |  |
+| LLY | 5 (Moderately high) | 43 | 34.3 (5) | yes | 6 | 2 | tiingo |  |
+| UNH | 5 (Moderately high) | 43 | 30.5 (5) | yes | 6 | 2 | tiingo |  |
+| JNJ | 4 (Moderate) | 57 | 52.8 (4) | yes | 4 | 1 | fmp |  |
+| ABBV | 5 (Moderately high) | 43 | 43.6 (5) | yes | 5 | 2 | fmp |  |
+| MRK | not rated | — | — |  | — | — | none | prices: fetch_failed |
+| TMO | not rated | — | — |  | — | — | none | prices: fetch_failed |
+| ABT | not rated | — | — |  | — | — | none | prices: fetch_failed |
+| PFE | 4 (Moderate) | 57 | 46.4 (4) | yes | 5 | 1 | fmp |  |
+| AMGN | not rated | — | — |  | — | — | none | prices: fetch_failed |
+| ISRG | not rated | — | — |  | — | — | none | prices: fetch_failed |
+| XOM | 5 (Moderately high) | 43 | 40 (5) | yes | 5 | 2 | fmp |  |
+| CVX | 5 (Moderately high) | 43 | 40.9 (5) | yes | 5 | 2 | fmp |  |
+| COP | not rated | — | — |  | — | — | none | prices: fetch_failed |
+| SLB | not rated | — | — |  | — | — | none | prices: fetch_failed |
+| CAT | not rated | — | — |  | — | — | none | prices: fetch_failed |
+| GE | 5 (Moderately high) | 43 | 36.1 (5) | yes | 6 | 2 | fmp |  |
+| HON | not rated | — | — |  | — | — | none | prices: fetch_failed |
+| UPS | not rated | — | — |  | — | — | none | prices: fetch_failed |
+| BA | 5 (Moderately high) | 43 | 31.9 (5) | yes | 6 | 3 | fmp |  |
+| DE | not rated | — | — |  | — | — | none | prices: fetch_failed |
+| LMT | 5 (Moderately high) | 43 | 33.5 (5) | yes | 5 | 2 | fmp |  |
+| RTX | not rated | — | — |  | — | — | none | prices: fetch_failed |
+| LIN | not rated | — | — |  | — | — | none | prices: fetch_failed |
+| SHW | not rated | — | — |  | — | — | none | prices: fetch_failed |
+| FCX | not rated | — | — |  | — | — | none | prices: fetch_failed |
+| NEE | not rated | — | — |  | — | — | none | prices: fetch_failed |
+| DUK | not rated | — | — |  | — | — | none | prices: fetch_failed |
+| SO | not rated | — | — |  | — | — | none | prices: fetch_failed |
+| PLD | not rated | — | — |  | — | — | none | prices: fetch_failed |
+| AMT | not rated | — | — |  | — | — | none | prices: fetch_failed |
+| O | not rated | — | — |  | — | — | none | prices: fetch_failed |
+
+#### 2. Backtest
+
+Spearman rank correlation, per quarter start, between the score and what followed. Negative means higher scores (lower measured risk) went with lower later volatility or smaller later falls; −1 is a perfect ordering, 0 none.
+
+| Set | Horizon | Quarter starts | Median assets | ρ with later volatility | ρ with later largest fall |
+|---|---|---|---|---|---|
+| Stocks, full score (the method) | 6 months | 16 | 58.00 | -0.76 | -0.51 |
+| Stocks, price alone (the method) | 6 months | 16 | 58.00 | -0.80 | -0.54 |
+| Stocks, full score (first draft) | 6 months | 16 | 58.00 | -0.75 | -0.50 |
+| Stocks, price alone (first draft) | 6 months | 16 | 58.00 | -0.82 | -0.56 |
+| Coins, price alone (the method) | 6 months | 5 | 32.00 | -0.75 | -0.60 |
+| Coins and stocks pooled, price alone (the method) | 6 months | 5 | 90.00 | -0.93 | — |
+| Coins, price alone (first draft) | 6 months | 5 | 32.00 | -0.75 | -0.59 |
+| Coins and stocks pooled, price alone (first draft) | 6 months | 5 | 90.00 | -0.89 | — |
+| Stocks, full score (the method) | 12 months | 14 | 58.00 | -0.76 | -0.54 |
+| Stocks, price alone (the method) | 12 months | 14 | 58.00 | -0.81 | -0.58 |
+| Stocks, full score (first draft) | 12 months | 14 | 58.00 | -0.76 | -0.54 |
+| Stocks, price alone (first draft) | 12 months | 14 | 58.00 | -0.83 | -0.59 |
+| Coins, price alone (the method) | 12 months | 3 | 32.00 | -0.75 | -0.66 |
+| Coins and stocks pooled, price alone (the method) | 12 months | 3 | 90.00 | -0.94 | — |
+| Coins, price alone (first draft) | 12 months | 3 | 32.00 | -0.74 | -0.65 |
+| Coins and stocks pooled, price alone (first draft) | 12 months | 3 | 90.00 | -0.89 | — |
+
+Stocks at past dates: market cap is today's reference figure scaled by price, net margin is each fiscal year's from SEC filings (filed 90 days after year end), and debt ÷ equity is left out (the route carries no history of it). Coins: Binance.US closes, price behaviour only.
+
+#### 3. Sensitivity
+
+Each parameter moved −20% and +20% alone; the count is how many rated assets change class. All 76 parameters, most sensitive first:
+
+| Parameter | −20% | +20% |
+|---|---|---|
+| crypto curve: volatility point 7 (0.8 → 14.5) | 8/55 | 5/55 |
+| stock curve: volatility point 6 (0.3 → 29.5) | 8/58 | 6/58 |
+| crypto curve: drawdown point 7 (0.6331 → 14.5) | 7/55 | 7/55 |
+| stock curve: drawdown point 5 (0.2217 → 43.5) | 7/58 | 2/58 |
+| stock curve: volatility point 5 (0.2 → 43.5) | 6/58 | 1/58 |
+| crypto curve: drawdown point 8 (0.8654 → 0) | 4/55 | 1/55 |
+| stock curve: drawdown point 6 (0.3134 → 29.5) | 3/58 | 4/58 |
+| crypto weight: Volatility (0.3) | 3/55 | 2/55 |
+| crypto weight: Drawdown (0.2) | 2/55 | 3/55 |
+| stock curve: drawdown point 4 (0.1396 → 57.5) | 3/58 | 2/58 |
+| crypto curve: volatility point 6 (0.3 → 29.5) | 1/55 | 2/55 |
+| crypto curve: drawdown point 6 (0.3134 → 29.5) | 1/55 | 2/55 |
+| stock weight: Volatility (0.25) | 2/58 | 2/58 |
+| stock weight: Drawdown (0.2) | 2/58 | 2/58 |
+| crypto weight: Liquidity (0.25) | 1/55 | 0/55 |
+| crypto curve: volatility point 5 (0.2 → 43.5) | 0/55 | 1/55 |
+| crypto curve: volatility point 8 (1.6 → 0) | 1/55 | 1/55 |
+| crypto curve: drawdown point 4 (0.1396 → 57.5) | 0/55 | 1/55 |
+| crypto curve: drawdown point 5 (0.2217 → 43.5) | 0/55 | 1/55 |
+| stock curve: volatility point 4 (0.12 → 57.5) | 1/58 | 0/58 |
+| stock curve: drawdown point 7 (0.6331 → 14.5) | 1/58 | 0/58 |
+| crypto weight: Scale (0.25) | 0/55 | 0/55 |
+| crypto curve: volatility point 1 (0 → 100) | 0/55 | 0/55 |
+| crypto curve: volatility point 2 (0.005 → 85.5) | 0/55 | 0/55 |
+| crypto curve: volatility point 3 (0.05 → 71.5) | 0/55 | 0/55 |
+| crypto curve: volatility point 4 (0.12 → 57.5) | 0/55 | 0/55 |
+| crypto curve: drawdown point 1 (0 → 100) | 0/55 | 0/55 |
+| crypto curve: drawdown point 2 (0.0062 → 85.5) | 0/55 | 0/55 |
+| crypto curve: drawdown point 3 (0.0607 → 71.5) | 0/55 | 0/55 |
+| crypto curve: turnover point 1 (0.0005 → 10) | 0/55 | 0/55 |
+| crypto curve: turnover point 2 (0.005 → 40) | 0/55 | 0/55 |
+| crypto curve: turnover point 3 (0.02 → 75) | 0/55 | 0/55 |
+| crypto curve: turnover point 4 (0.05 → 90) | 0/55 | 0/55 |
+| crypto curve: dollarVolume point 1 (10000000 → 10) | 0/55 | 0/55 |
+| crypto curve: dollarVolume point 2 (100000000 → 35) | 0/55 | 0/55 |
+| crypto curve: dollarVolume point 3 (1000000000 → 60) | 0/55 | 0/55 |
+| crypto curve: dollarVolume point 4 (10000000000 → 80) | 0/55 | 0/55 |
+| crypto curve: dollarVolume point 5 (30000000000 → 90) | 0/55 | 0/55 |
+| crypto curve: scale point 1 (500000000 → 25) | 0/55 | 0/55 |
+| crypto curve: scale point 2 (2000000000 → 45) | 0/55 | 0/55 |
+| crypto curve: scale point 3 (10000000000 → 65) | 0/55 | 0/55 |
+| crypto curve: scale point 4 (50000000000 → 80) | 0/55 | 0/55 |
+| crypto curve: scale point 5 (200000000000 → 90) | 0/55 | 0/55 |
+| crypto curve: scale point 6 (1000000000000 → 95) | 0/55 | 0/55 |
+| stock weight: Liquidity (0.2) | 0/58 | 0/58 |
+| stock weight: Size (0.15) | 0/58 | 0/58 |
+| stock weight: Fundamentals (0.2) | 0/58 | 0/58 |
+| stock curve: volatility point 1 (0 → 100) | 0/58 | 0/58 |
+| stock curve: volatility point 2 (0.005 → 85.5) | 0/58 | 0/58 |
+| stock curve: volatility point 3 (0.05 → 71.5) | 0/58 | 0/58 |
+| stock curve: volatility point 7 (0.8 → 14.5) | 0/58 | 0/58 |
+| stock curve: volatility point 8 (1.6 → 0) | 0/58 | 0/58 |
+| stock curve: drawdown point 1 (0 → 100) | 0/58 | 0/58 |
+| stock curve: drawdown point 2 (0.0062 → 85.5) | 0/58 | 0/58 |
+| stock curve: drawdown point 3 (0.0607 → 71.5) | 0/58 | 0/58 |
+| stock curve: drawdown point 8 (0.8654 → 0) | 0/58 | 0/58 |
+| stock curve: dollarVolume point 1 (100000 → 10) | 0/58 | 0/58 |
+| stock curve: dollarVolume point 2 (1000000 → 45) | 0/58 | 0/58 |
+| stock curve: dollarVolume point 3 (10000000 → 75) | 0/58 | 0/58 |
+| stock curve: dollarVolume point 4 (50000000 → 90) | 0/58 | 0/58 |
+| stock curve: dollarVolume point 5 (500000000 → 98) | 0/58 | 0/58 |
+| stock curve: size point 1 (50000000 → 10) | 0/58 | 0/58 |
+| stock curve: size point 2 (300000000 → 40) | 0/58 | 0/58 |
+| stock curve: size point 3 (2000000000 → 65) | 0/58 | 0/58 |
+| stock curve: size point 4 (10000000000 → 82) | 0/58 | 0/58 |
+| stock curve: size point 5 (200000000000 → 95) | 0/58 | 0/58 |
+| stock curve: debtToEquity point 1 (0.25 → 92) | 0/58 | 0/58 |
+| stock curve: debtToEquity point 2 (0.75 → 80) | 0/58 | 0/58 |
+| stock curve: debtToEquity point 3 (1.5 → 60) | 0/58 | 0/58 |
+| stock curve: debtToEquity point 4 (3 → 35) | 0/58 | 0/58 |
+| stock curve: debtToEquity point 5 (6 → 12) | 0/58 | 0/58 |
+| stock curve: netMargin point 1 (-0.3 → 10) | 0/58 | 0/58 |
+| stock curve: netMargin point 2 (-0.05 → 35) | 0/58 | 0/58 |
+| stock curve: netMargin point 3 (0.02 → 60) | 0/58 | 0/58 |
+| stock curve: netMargin point 4 (0.1 → 80) | 0/58 | 0/58 |
+| stock curve: netMargin point 5 (0.25 → 95) | 0/58 | 0/58 |
+
+#### 4. Stability
+
+| Set | Assets | Asset-months | Changes, no rule | Per asset per year | Changes, 16-week rule | Per asset per year |
+|---|---|---|---|---|---|---|
+| Stocks, class (the method) | 58 | 2984 | 230 | 0.92 | 145 | 0.58 |
+| Stocks, class (first draft) | 58 | 2984 | 239 | 0.96 | 140 | 0.56 |
+| Coins, price-alone class (the method) | 35 | 757 | 13 | 0.21 | 8 | 0.13 |
+| Coins, price-alone class (first draft) | 35 | 757 | 56 | 0.89 | 22 | 0.35 |
 
 Weekly ratings from each asset's second year of history to today, sampled on the first Monday of each month. The rule is simulated with a reading every week.
 

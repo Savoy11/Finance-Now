@@ -79,8 +79,9 @@ alike on both, and one that fell further scores worse on drawdown.
 figure is a VaR-equivalent volatility that counts fat tails, usually at or above plain volatility, so
 an asset's class on an EU document can be higher than here; the page says so. The bands keep classes
 1 and 2 for volatility under 5%, which no asset this site rates reaches, and class 6 spans 30–80%, so
-on this site the classes gather at the top (validation write-up §7). The score and its parts tell
-assets apart within a class.
+on this site the classes gather at the top (validation write-up §7). Within a class, the parts and
+the price-behaviour score tell assets apart; the headline score mostly does not, because the cap rule
+holds it at the top of the class (§8, the confirmation run; open in §11).
 
 **Every part is shown:** each dimension's raw value, its sub-score, its weight, the window, the
 source, the as-of date, and whether the stability rule (§5) is holding the class. A reader can
@@ -308,6 +309,21 @@ the other curves and every other rule are unchanged. The two readings stored und
 counting; nothing was removed. The universe question (vBUSD, Ampleforth; write-up §6 item 3) was not
 part of it and is open (§11).
 
+### Confirmation run, 2026-10-11
+
+The validation re-run on the adopted method (write-up §8) reproduces §7's results:
+- **Coins:** all 55 within one class of their PRIIPs band, mean gap −0.07.
+- **Stocks:** all 58 rated stocks within one class, mean gap 0.29.
+- **Ordering:** stocks −0.76, coins −0.75, coins and stocks pooled −0.93.
+- **Stability:** stocks change class 0.58 times a year with the 16-week rule.
+
+**It also found that the cap rule now sets almost every score.** It holds the score of every rated
+stock and 49 of 55 coins at the top of the price class, because large, deeply traded assets score high
+on liquidity and size. So Bitcoin, Ethereum, Solana and Dogecoin all score 29, and the liquidity, size
+and fundamentals weights move no stock's class. Classes are unaffected. One option is open for the
+owner (§11): lower an over-high score to the price score rather than to the top of its class, which
+changes no class.
+
 ### First sanity reading, 2026-10-10 (item 1, partial)
 
 The end-to-end check after migration 0007 ran on the owner's machine, under `v1 (draft, 2026-10-09)`,
@@ -407,6 +423,11 @@ bands (§2), no lift from the other parts (§5 item 4), and the weights and othe
 steers its price) are rated; the write-up's §6 item 3 suggests a no-rating rule for zero median daily
 volume plus a named exclusion for rebasing tokens, or re-filing both in the catalog.
 
+**Open:** the headline score under the cap rule (§8, confirmation run). With no lift, the cap holds the
+score of every rated stock and most coins at the top of the price class, so assets in one class show
+one score. The option: lower a score that is too high to the price score itself (the smaller of the
+weighted score and the price score), not to the top of its class. No class changes; §5 item 4 does.
+
 **Parked on 2026-10-07 (D95), each with what brings it back:**
 1. ~~**The final weights and curves.**~~ **Decided 2026-10-11 (D97), above.** Parked until the validation in §8 has run and been written up;
    that write-up is the point to confirm or change them. Until then the numbers in §3 and §4 stand
@@ -461,3 +482,6 @@ volume plus a named exclusion for rebasing tokens, or re-filing both in the cata
   class but never raise it (§5 item 4, was one class); the method is no longer provisional. The
   weights and the other curves are unchanged. Version `v1 (2026-10-11)`, replacing
   `v1 (draft, 2026-10-09)`.
+- **2026-10-11:** confirmation run recorded (§8): the adopted method reproduces the tested results, and
+  the cap rule holds the score of every rated stock and most coins at the top of the price class. The
+  question this raises about the headline score is open (§11); no number changed.
