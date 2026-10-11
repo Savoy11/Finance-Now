@@ -1,10 +1,13 @@
-# Risk ratings methodology, v1 (draft for the owner)
+# Risk ratings methodology, v1
 
-**Status: DRAFT v1, second revision, 2026-10-07.** T-420 item (1). This revision adopts every change
-proposed in `docs/assessments/risk-rating-methods-survey-2026-10-07.md` §3 (owner, 2026-10-07:
-*"adopt all the proposed changes and update the draft"*; D94). Nothing is built yet, and nothing
-built from it is shown until counsel confirms the form and the owner says so (D92, D4). The weights
-and curves are Finance Now's choices and remain provisional until the validation in §8 has run.
+**Status: v1, numbers decided 2026-10-11 (D97, D98, D99).** T-420 item (1). The draft's second revision
+(2026-10-07) adopted every change proposed in `docs/assessments/risk-rating-methods-survey-2026-10-07.md`
+§3 (owner: *"adopt all the proposed changes and update the draft"*; D94). After the validation in §8,
+the owner adopted one set of price curves for coins and stocks derived from the EU PRIIPs bands, and no
+lift from the other parts (D97), with the score held at the price score itself (D98), and left out
+coins nobody trades or whose supply steers their price (D99); the weights and the other curves are
+Finance Now's choices, kept.
+Nothing built from this note is shown until counsel confirms the form and the owner says so (D92, D4).
 
 **How later iterations work.** The build keeps every weight, window, curve, threshold and rule in one
 file, `frontend/src/lib/risk/methodology/v1.ts`, and the public methodology section is rendered from
@@ -54,6 +57,34 @@ scales, so a class means the same thing on every page. Most coins will sit in cl
 they are far more volatile than most stocks. That is the measurement, not a flaw, and the methodology
 section says so. (A regulated bitcoin fund's own EU document puts it at 6 of 7.)
 
+**One set of price curves for coins and stocks (D97, 2026-10-11).** Volatility and drawdown become
+sub-scores through the same curves for both, worked out from the EU PRIIPs market-risk bands rather
+than chosen: each band edge sits half a point under the matching class boundary, so volatility alone
+lands in the class whose band holds it (the edge itself in the higher class, as PRIIPs counts it).
+PRIIPs has no drawdown measure, so each drawdown point is the fall a random walk at that volatility
+typically shows in a year, 1 − e^(−σ·√(π/2)) (Magdon-Ismail et al., 2004), to 0.01%. The two price
+measures then speak one scale: an asset whose largest fall is what its volatility suggests scores
+alike on both, and one that fell further scores worse on drawdown.
+
+| Volatility (annualised) | Largest fall | Sub-score | Class boundary it marks |
+|---:|---:|---:|---|
+| 0% | 0% | 100 | |
+| 0.5% | 0.62% | 85.5 | 1 / 2 |
+| 5% | 6.07% | 71.5 | 2 / 3 |
+| 12% | 13.96% | 57.5 | 3 / 4 |
+| 20% | 22.17% | 43.5 | 4 / 5 |
+| 30% | 31.34% | 29.5 | 5 / 6 |
+| 80% | 63.31% | 14.5 | 6 / 7 |
+| 160% | 86.54% | 0 | |
+
+`PRICE_CURVES` in `v1.ts` writes these out, and a test recomputes them from the bands. The EU's own
+figure is a VaR-equivalent volatility that counts fat tails, usually at or above plain volatility, so
+an asset's class on an EU document can be higher than here; the page says so. The bands keep classes
+1 and 2 for volatility under 5%, which no asset this site rates reaches, and class 6 spans 30–80%, so
+on this site the classes gather at the top (validation write-up §7). Within a class, the score tells
+assets apart: the cap rule holds it at the price-behaviour score, not at the top of the class (D98,
+§5 item 4).
+
 **Every part is shown:** each dimension's raw value, its sub-score, its weight, the window, the
 source, the as-of date, and whether the stability rule (§5) is holding the class. A reader can
 recompute the score.
@@ -63,9 +94,15 @@ as context, because it reacts faster than the one-year figure. It never changes 
 
 ## 3. Crypto coins
 
-**Universe:** coins in the app's catalog, excluding stablecoins (facts only, D92) and tokenized
-securities (USDY; TS-1, TS-3). **A coin must have at least 365 days of daily prices** to be rated;
-younger coins show "Not enough history to rate (needs one year of prices)".
+**Universe:** coins in the app's catalog, excluding stablecoins (facts only, D92), tokenized
+securities (USDY; TS-1, TS-3), and coins whose supply is adjusted to steer their price, named in
+`v1.ts` (`rebasingCoins`: Ampleforth; D99). Their price movement does not measure what it measures for
+other coins. **A coin must have at least 365 days of daily prices** to be rated; younger coins show
+"Not enough history to rate (needs one year of prices)". **And it must have traded:** a coin with a
+median daily volume of zero over the 30-day volume window is not rated, because its price is not a
+market's (D99, `tradedAboveUsd`). Venus BUSD, a lending receipt for a retired stablecoin, reported no
+volume on any of the 365 days to 2026-10-10, and one bad price gave it 282% volatility. A coin with no
+volume figure at all is a different case: liquidity is missing and the coverage floor (§5) decides.
 
 | Dimension | Weight | Input | Window | Source |
 |---|---:|---|---|---|
@@ -87,8 +124,8 @@ from CoinGecko's data leaves a coin unrated until it ages out.
 
 | Dimension | Points |
 |---|---|
-| Volatility (annualised) | 30% → 90 · 50% → 75 · 80% → 55 · 120% → 35 · 200% → 15 |
-| Drawdown | 20% → 90 · 35% → 75 · 50% → 55 · 70% → 35 · 85% → 15 |
+| Volatility (annualised) | The shared price curve (§2) |
+| Drawdown | The shared price curve (§2) |
 | Turnover (median volume ÷ cap) | 0.05% → 10 · 0.5% → 40 · 2% → 75 · 5% → 90, **flat above 5%** |
 | Median dollar volume | $10M → 10 · $100M → 35 · $1B → 60 · $10B → 80 · $30B → 90 (capped at 30 under $10M) |
 | Scale | $0.5B → 25 · $2B → 45 · $10B → 65 · $50B → 80 · $200B → 90 · $1T → 95 |
@@ -105,7 +142,8 @@ separate reward index, not in risk).
 ## 4. Stocks
 
 **Universe:** the 79 stocks in the curated catalog (`equityCatalog.ts`). Other tickers show facts
-only, and the page says so. **A stock must have at least one year of daily prices** to be rated.
+only, and the page says so. **A stock must have at least one year of daily prices** to be rated, and
+reported trading over the last 30 trading days (the coins' rule, D99).
 
 | Dimension | Weight | Input | Window | Source |
 |---|---:|---|---|---|
@@ -129,8 +167,8 @@ week's stored reading.
 
 | Dimension | Points |
 |---|---|
-| Volatility (annualised) | 15% → 95 · 25% → 78 · 40% → 58 · 60% → 38 · 80% → 22 · 120% → 8 |
-| Drawdown | 10% → 90 · 20% → 75 · 35% → 55 · 50% → 35 · 70% → 15 |
+| Volatility (annualised) | The shared price curve (§2) |
+| Drawdown | The shared price curve (§2) |
 | Median dollar volume | $0.1M → 10 · $1M → 45 · $10M → 75 · $50M → 90 · $500M → 98 |
 | Size | $50M → 10 · $300M → 40 · $2B → 65 · $10B → 82 · $200B → 95 |
 | Debt ÷ equity | 0.25 → 92 · 0.75 → 80 · 1.5 → 60 · 3 → 35 · 6 → 12 |
@@ -156,18 +194,24 @@ rated, because volatility and drawdown are required (§5). It degrades to facts,
 ## 5. How the score becomes a class
 
 1. **Required inputs.** Volatility and drawdown must both be present, which the one-year history
-   rule ensures. Without them the asset is not rated.
+   rule ensures. Without them the asset is not rated. Nor is an asset whose median daily volume over
+   the volume window is zero (§3, D99): "No trading reported over the last 30 days, so there is no
+   market price to measure."
 2. **Coverage.** Other missing dimensions are dropped and the weights renormalise over the rest,
    provided the dimensions present carry **at least 70% of the weight**. Below that: "Not enough data
    to rate this asset", with the facts available.
 3. **Weighted score.** The weighted mean of the sub-scores present.
-4. **Cap rule (size and liquidity cannot outweigh price risk).** The **core score** is the weighted
+4. **Cap rule (the other parts cannot outweigh price risk).** The **core score** is the weighted
    mean of volatility and drawdown alone (0.60/0.40 for coins, 0.56/0.44 for stocks, their relative
-   weights). The final score may not sit more than **one class better** than the core score's class:
-   if it would, it is lowered to the highest score of the class one better than the core's. For
-   example, a core score in class 5 (30–43) caps the final score at 57, the top of class 4. Large size and deep trading can improve
-   the rating by at most one class over what price behaviour alone shows; they can always lower it.
-   (After S&P's practice of letting secondary factors only hold or lower a result.)
+   weights). The final score may not be **higher than the core score**: if it would be, it is lowered
+   to the core score. For example, a coin whose price behaviour scores 32.9 scores at most 32.9,
+   however large and deeply traded it is. The other parts (liquidity and scale for coins; liquidity,
+   size and fundamentals for stocks) can lower the score and the class but never raise either above
+   what price behaviour alone shows (D97, D98). Both scores are rounded to one decimal before they are
+   compared, and each class is the class of a score as shown. The draft let the other parts raise the
+   class by one, which lifted every coin in the first sanity reading; D97 removed that lift but still
+   let them raise the score to the top of the core's class, which held almost every asset at one score
+   per class (§8). After S&P's practice of letting secondary factors only hold or lower a result.
 5. **Class from score**, using the table in §2.
 6. **Stability rule (after the EU's four-month rule).** Scores are recomputed daily and recorded
    weekly. The **class shown changes only when the class computed at every weekly reading over the
@@ -201,7 +245,13 @@ The wording follows the regulators' phrasing (survey §2, item 9) and FINRA Rule
   recommendation to buy, sell or hold."
 - What it does not assess (the list in §1), and that reported crypto volume is not vetted.
 - The universe: which assets are rated, and why the others are not (stablecoins, tokenized
-  securities, too little history, stocks outside the catalog, missing data).
+  securities, coins whose supply steers their price, no reported trading, too little history, stocks
+  outside the catalog, missing data).
+- Where the numbers come from (D97): "Volatility and drawdown use one set of curves for coins and
+  stocks, worked out from the EU's PRIIPs risk bands so that volatility alone lands in the class whose
+  band holds it. The EU's own figure counts sharp falls more heavily, so an asset's EU class can be
+  higher. The weights and the other curves are Finance Now's choice; no published source supports any
+  particular weights."
 - The methodology **version** and date; and once ratings have been shown for a year, their track
   record (how well each class matched the volatility and drawdown that followed).
 
@@ -232,7 +282,8 @@ The build is not finished until these have run and their results are written up 
    stability rule.
 5. **The weights and curves are then confirmed or changed by the owner**, and the result recorded as
    the final v1 numbers. No source supports any particular weights; the page says they are Finance
-   Now's choice.
+   Now's choice. ✅ **2026-10-11 (D97):** the price curves changed to the shared EU-derived set (§2),
+   the lift went (§5 item 4), and the weights and other curves stayed; recorded as `v1 (2026-10-11)`.
 
 ### The full run, 2026-10-10 (items 1–4)
 
@@ -253,8 +304,9 @@ Written up in `docs/assessments/risk-ratings-validation-2026-10-10.md`, from `np
 4. **Stability:** the 16-week rule cuts class changes from 0.96 to 0.56 a year for stocks and from
    0.89 to 0.35 for coins.
 
-Item 5, the owner's confirmation or change of the numbers, is open; the write-up's §6 sets out the four
-decisions and recommends the EU-aligned reading of the scale.
+Item 5, the owner's confirmation or change of the numbers, was open at the time; the write-up's §6 set
+out the four decisions and recommended the EU-aligned reading of the scale. Decided 2026-10-11 (D97),
+below.
 
 **EU-tuned curves, tested the same evening (write-up §7).** One shared set of volatility and drawdown
 curves derived from the PRIIPs band edges (variant B), with no lift from size and liquidity (C), puts
@@ -262,6 +314,60 @@ every rated coin and stock within one class of its PRIIPs band (mean gaps −0.0
 stocks) and keeps the ordering (stocks −0.76, coins −0.75, pooled −0.93). Bitcoin rates 6, as in the
 regulated Bitcoin fund's own document; Apple 4. The cost is a compressed scale on this site: no asset in
 classes 1 or 2, and 39 of 55 coins in class 7. It is the variant recommended for the EU-aligned reading.
+
+### The owner's decision, 2026-10-11 (item 5, D97)
+
+The owner adopted the recommendation: the EU-aligned reading, with B and C. In `v1.ts` the volatility
+and drawdown curves of both asset classes became `PRICE_CURVES` (§2), `capClassesAboveCore` went from 1
+to 0 (§5 item 4), `provisional` became false, and the version became `v1 (2026-10-11)`. The weights,
+the other curves and every other rule are unchanged. The two readings stored under the draft stop
+counting; nothing was removed. The universe question (vBUSD, Ampleforth; write-up §6 item 3) was not
+part of it; it was decided the same day (D99, §3, §11).
+
+### Confirmation run, 2026-10-11
+
+The validation re-run on the adopted method (write-up §8) reproduces §7's results:
+- **Coins:** all 55 within one class of their PRIIPs band, mean gap −0.07.
+- **Stocks:** all 58 rated stocks within one class, mean gap 0.29.
+- **Ordering:** stocks −0.76, coins −0.75, coins and stocks pooled −0.93.
+- **Stability:** stocks change class 0.58 times a year with the 16-week rule.
+
+**It also found that the cap rule now sets almost every score.** It holds the score of every rated
+stock and 49 of 55 coins at the top of the price class, because large, deeply traded assets score high
+on liquidity and size. So Bitcoin, Ethereum, Solana and Dogecoin all score 29, and the liquidity, size
+and fundamentals weights move no stock's class. Classes are unaffected. The option it raised, to
+lower an over-high score to the price score rather than to the top of its class, was decided the same
+day (D98, below).
+
+### The owner's decision on the score, 2026-10-11 (D98)
+
+The owner adopted the recommendation: an over-high score is lowered to the price score itself (§5
+item 4). The version stays `v1 (2026-10-11)`: the decision came before that version merged or stored a
+reading (the readings table held only the draft's two). Classes do not change, with one exception
+the rule had to settle. D97 put the price score in a class by its unrounded value but showed it
+rounded, so a price score of 85.96 showed as 86.0, which starts class 1, and was filed in class 2.
+Capping at that score would carry the 86.0 into the final score. Both scores are now rounded before
+they are compared or classed, so a class is always the class of the number shown.
+`__tests__/assetRating.test.ts` checks the rule on 4,000 generated assets against D97's.
+
+**Re-run on it, 2026-10-11 (write-up §9).**
+- **Classes:** all 113 rated assets keep their class, compared asset by asset with the confirmation
+  run. None was in the rounding case.
+- **Scores:** 111 are held at their price score, so scores differ within a class again (Bitcoin 23.6,
+  Ethereum 17.8, Solana 15.4, Dogecoin 15.6). Five rose a little, because D97's ceiling was a whole
+  number below their price score (Polygon 14 to 14.8, for instance).
+- **Ordering:** the stocks' full score now ranks later volatility as well as price alone, −0.80 over
+  6 months (was −0.76).
+- **Stability:** unchanged with the 16-week rule. Without it, the rounding rule moved a few past weekly
+  readings (stocks 228 class changes instead of 230, coins 15 instead of 13).
+- **The other parts:** for 111 of the 113, liquidity, size, scale and fundamentals now change neither
+  class nor score; they act only on an asset weak on them (Maker, class 6 on price alone, rates 7).
+
+**The universe (D99), re-run the same evening (write-up §10).** Ampleforth leaves the universe and
+vBUSD is not rated, with the reason. Nothing else moved:
+- coins: 53 of 53 within one class of their PRIIPs band, mean gap −0.09;
+- every other asset keeps its class and score;
+- the backtest and stability are unchanged, since neither token had the Binance history they use.
 
 ### First sanity reading, 2026-10-10 (item 1, partial)
 
@@ -339,8 +445,9 @@ counting once the numbers change and the version moves on; nothing needs removin
    the AI routes use, so the §8 validation can run locally while a deployed build stays closed.
    `__tests__/assetRatingsHidden.test.ts` holds all of that, that no `/api/v1` route, MCP tool or
    agent tool reads a rating, and that the switch cannot be on while the holdings policy is unwritten.
-7. ✅ (items 1–4; item 5, the owner's decision, open) The validation in §8, written up:
-   `docs/assessments/risk-ratings-validation-2026-10-10.md`, re-runnable with `npm run ratings:validate`.
+7. ✅ The validation in §8, written up: `docs/assessments/risk-ratings-validation-2026-10-10.md`,
+   re-runnable with `npm run ratings:validate`, which now compares the method with the first draft it
+   replaced. Item 5, the owner's decision, was taken on 2026-10-11 (D97) and is in `v1.ts`.
 
 Shown only after counsel confirms the form (D4; the memo's §8, questions 1, 2 and 6), the holdings
 policy is written (§11), and the owner says so.
@@ -353,10 +460,19 @@ number of exchanges and the share of volume on the top two (from CoinGecko's tic
 
 ## 11. Owner decisions
 
-**Decided:** the class labels (§2), on 2026-10-07 (D95).
+**Decided:** the class labels (§2), on 2026-10-07 (D95). The numbers, on 2026-10-11 (D97): the
+EU-aligned reading of the scale, one set of price curves for coins and stocks derived from the PRIIPs
+bands (§2), no lift from the other parts (§5 item 4), and the weights and other curves as they were.
+The score under the cap rule, the same day (D98): held at the price score itself, not at the top of
+its class (§5 item 4, §8).
+
+The universe, the same day (D99): no rating for an asset with no reported trading over the volume
+window, which leaves out vBUSD, and Ampleforth left out by name as a coin whose supply steers its price
+(§3). Chosen over re-filing both as stablecoins in the catalog, which would call neither what it is
+and would count and filter both as stablecoins on the Coins page.
 
 **Parked on 2026-10-07 (D95), each with what brings it back:**
-1. **The final weights and curves.** Parked until the validation in §8 has run and been written up;
+1. ~~**The final weights and curves.**~~ **Decided 2026-10-11 (D97), above.** Parked until the validation in §8 has run and been written up;
    that write-up is the point to confirm or change them. Until then the numbers in §3 and §4 stand
    as the provisional v1. ⚠ The first sanity reading (§8, 2026-10-10) already shows the coin curves
    cannot stand as they are: they rate Bitcoin class 2 and Dogecoin class 3. **Ready for decision
@@ -404,3 +520,20 @@ number of exchanges and the share of volume on the top two (from CoinGecko's tic
 - **2026-10-10:** EU-tuned curves tested (validation write-up §7): shared curves derived from the
   PRIIPs bands, with no lift, line up coins and stocks with the regulators' scale and keep the
   ordering, at the cost of a compressed scale. Tested, not adopted; no number changed.
+- **v1, 2026-10-11 (D97):** the numbers decided. The volatility and drawdown curves for coins and
+  stocks are now one set derived from the PRIIPs bands (§2, §3, §4); the other parts can lower a
+  class but never raise it (§5 item 4, was one class); the method is no longer provisional. The
+  weights and the other curves are unchanged. Version `v1 (2026-10-11)`, replacing
+  `v1 (draft, 2026-10-09)`.
+- **2026-10-11:** confirmation run recorded (§8): the adopted method reproduces the tested results, and
+  the cap rule holds the score of every rated stock and most coins at the top of the price class. The
+  question this raises about the headline score is open (§11); no number changed.
+- **v1, 2026-10-11 (D98):** the cap rule holds an over-high score at the price score itself, not at
+  the top of its class (§5 item 4), and both scores are rounded before they are compared or classed.
+  No class changes except where a price score within 0.05 under a class line was shown as the start
+  of the class above while filed below it; none of the rated assets was, and the re-run (§8) found all
+  113 classes unchanged. Version unchanged: nothing had merged or been stored under `v1 (2026-10-11)`.
+- **v1, 2026-10-11 (D99):** the universe. An asset with a median daily volume of zero over the
+  volume window is not rated (`tradedAboveUsd`), which leaves out vBUSD, and coins whose supply
+  steers their price are left out by name (`rebasingCoins`: Ampleforth) (§3, §4, §5 item 1). Version
+  unchanged, for the same reason as D98.

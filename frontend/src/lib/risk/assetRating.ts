@@ -243,6 +243,13 @@ export function rateAsset(inputs: AssetRatingInputs, now: Date = new Date()): As
   if (CORE_DIMENSIONS.some((k) => byKey(k).subScore == null)) {
     return { ...base, rated: false, reason: 'Not enough history to rate (needs one year of prices).', dimensions: dims }
   }
+  // Traded (D99): with no reported trading over the volume window, the price is not a market's.
+  // No volume figure at all is a different case: liquidity is missing and coverage decides.
+  const medianVolume = byKey('liquidity').raw.medianDollarVolume
+  if (medianVolume != null && medianVolume <= M.tradedAboveUsd) {
+    const span = `${method.volumeWindowDays} ${inputs.kind === 'crypto' ? 'days' : 'trading days'}`
+    return { ...base, rated: false, reason: `No trading reported over the last ${span}, so there is no market price to measure.`, dimensions: dims }
+  }
 
   // 2. Coverage: dimensions present must carry the floor share of the applicable weight.
   const applicable = dims.filter((d) => d.weight > 0)
@@ -257,22 +264,26 @@ export function rateAsset(inputs: AssetRatingInputs, now: Date = new Date()): As
   // 3. Weighted score.
   const weighted = present.reduce((a, d) => a + d.weight * (d.subScore as number), 0) / presentWeight
 
-  // 4. Cap rule: no more than `capClassesAboveCore` classes better than price risk alone.
+  // 4. Cap rule. At capClassesAboveCore 0 (D98) the score is no higher than price risk alone
+  // scores; above 0, no higher than the top of the class that many better. Both scores are
+  // rounded before they are compared or classed, so every class is the class of a score as shown.
   const core = CORE_DIMENSIONS.map(byKey)
   const coreWeight = core.reduce((a, d) => a + d.weight, 0)
-  const coreScore = core.reduce((a, d) => a + d.weight * (d.subScore as number), 0) / coreWeight
+  const coreScore = round1(core.reduce((a, d) => a + d.weight * (d.subScore as number), 0) / coreWeight)
   const coreCls = classForScore(coreScore).cls
-  const bestAllowed = Math.max(1, coreCls - M.capClassesAboveCore) as RatingClassNumber
-  const ceiling = topOfClass(bestAllowed)
-  const capped = weighted > ceiling
-  const score = round1(capped ? ceiling : weighted)
+  const ceiling = M.capClassesAboveCore === 0
+    ? coreScore
+    : topOfClass(Math.max(1, coreCls - M.capClassesAboveCore) as RatingClassNumber)
+  const uncapped = round1(weighted)
+  const capped = uncapped > ceiling
+  const score = capped ? ceiling : uncapped
 
   // 5. Class from score.
   const { cls, label } = classForScore(score)
 
   const recentVolatility = annualisedVolatility((inputs.closes ?? []).slice(-M.recentVolatilityDays), method.periodsPerYear)
 
-  return { ...base, rated: true, score, cls, label, coreScore: round1(coreScore), coreCls, capped, dimensions: dims, recentVolatility }
+  return { ...base, rated: true, score, cls, label, coreScore, coreCls, capped, dimensions: dims, recentVolatility }
 }
 
 // ── stability rule (§5 item 6) ───────────────────────────────────────────────

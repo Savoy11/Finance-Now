@@ -1,9 +1,12 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import * as copy from '../ratingCopy'
 import { classRanges, curveRows, describeRaw, formatValue, wholePercent } from '../ratingFormat'
 import { METHODOLOGY_V1 as M } from '../methodology/v1'
 import { EQUITY_CATALOG } from '@/lib/data/equityCatalog'
 import { SUITABILITY_WORDS } from './suitabilityWords'
+import { withPatch } from '../../../../scripts/lib/ratingValidation'
 
 /** Every string the copy module produces, its functions called with sample values. */
 function allCopy(): string[] {
@@ -53,10 +56,34 @@ describe('the rating’s copy', () => {
     expect(copy.UNIVERSE.crypto).toContain(`${M.crypto.minHistoryDays} days`)
     expect(copy.UNIVERSE.stock).toContain(`${EQUITY_CATALOG.length} stocks`)
     expect(copy.UNIVERSE.stock).toContain(`${M.stock.minHistoryDays} trading days`)
+    // D99: the traded rule and the named coins, read from the methodology.
+    expect(copy.UNIVERSE.crypto).toContain(`reported trading over the last ${M.crypto.volumeWindowDays} days`)
+    expect(copy.UNIVERSE.stock).toContain(`reported trading over the last ${M.stock.volumeWindowDays} trading days`)
+    for (const c of M.rebasingCoins) expect(copy.UNIVERSE.crypto).toContain(c.name)
+    expect(copy.HOW_IT_BECOMES_A_CLASS[0]).toMatch(/no reported trading/)
+    // The names come from the list, never typed into the copy, so a change to the list reaches the page.
+    const source = readFileSync(resolve(__dirname, '../ratingCopy.ts'), 'utf8')
+    for (const c of M.rebasingCoins) expect(source, c.name).not.toContain(c.name)
     const steps = copy.HOW_IT_BECOMES_A_CLASS.join(' ')
     expect(steps).toContain(wholePercent(M.coverageFloor))
     expect(steps).toContain(`${M.stabilityWeeks} weeks`)
     expect(copy.recentVolatilitySentence('40%')).toContain(`${M.recentVolatilityDays} days`)
+  })
+
+  it('states the cap rule as decided (no lift, D97; capped at the price score, D98), and would follow a change to it', () => {
+    expect(M.capClassesAboveCore).toBe(0)
+    const rule = 'The other parts cannot raise the score above what price behaviour alone scores'
+    expect(copy.HOW_IT_BECOMES_A_CLASS.join(' ')).toContain(`${rule}; they can always lower it.`)
+    expect(copy.cappedSentence(32.9, 32.9, 5)).toBe(`${rule}, so the score is capped at 32.9.`)
+    const withLift = withPatch(M, (m) => { (m as unknown as { capClassesAboveCore: number }).capClassesAboveCore = 1 }, () => copy.cappedSentence(57, 40, 5))
+    expect(withLift).toBe('The other parts can improve the class by at most 1 over price behaviour alone, so the score is capped at 57. Price behaviour alone scores 40, class 5.')
+  })
+
+  it('says where the numbers come from, whether or not the method is provisional', () => {
+    expect(copy.CHOICES_SENTENCE).toMatch(/one set of curves for coins and stocks/)
+    expect(copy.CHOICES_SENTENCE).toMatch(/PRIIPs/)
+    expect(copy.CHOICES_SENTENCE).toMatch(/The weights and the other curves are Finance Now’s choice/)
+    expect(M.provisional).toBe(false)
   })
 
   it('names everything the rating does not assess, in one sentence', () => {
@@ -91,7 +118,8 @@ describe('how the numbers read', () => {
   it('lists every curve with its points in order', () => {
     const crypto = curveRows('crypto')
     expect(crypto.map((r) => r.key)).toEqual(Object.keys(M.crypto.curves))
-    expect(crypto.find((r) => r.key === 'volatility')!.points[0]).toBe('30% → 90')
+    expect(crypto.find((r) => r.key === 'volatility')!.points.slice(0, 3)).toEqual(['0% → 100', '0.5% → 85.5', '5% → 71.5'])
+    expect(crypto.find((r) => r.key === 'drawdown')!.points[1]).toBe('0.62% → 85.5')
     expect(curveRows('stock').find((r) => r.key === 'debtToEquity')!.points[0]).toBe('0.25× → 92')
   })
 

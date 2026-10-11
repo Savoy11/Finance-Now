@@ -55,6 +55,20 @@ describe('the coin universe (methodology §3)', () => {
     }
   })
 
+  it('leaves out, by name, a coin whose supply steers its price (D99), saying why', () => {
+    expect(M.rebasingCoins.map((c) => c.id)).toContain('ampl')
+    for (const c of M.rebasingCoins) {
+      // Each named coin is a catalog coin with a history source, so the name is what stops it:
+      // a renamed id would otherwise stop excluding without anything failing.
+      const asset = ASSET_CATALOG.find((a) => a.id === c.id)
+      expect(asset, c.id).toBeDefined()
+      expect(asset!.name).toBe(c.name)
+      expect(COINGECKO_IDS[c.id], c.id).toBeDefined()
+      expect(['stablecoin', 'tokenized', 'cbdc']).not.toContain(asset!.assetType)
+      expect(coinEligibility(c.id)).toEqual({ eligible: false, reason: expect.stringMatching(new RegExp(`^${c.name} adjusts its supply to steer its price`)) })
+    }
+  })
+
   it('a catalog coin with no history source is not rated, and one outside the catalog is not either', () => {
     const noHistory = ASSET_CATALOG.find((a) => a.assetType === 'layer1' && !COINGECKO_IDS[a.id])
     expect(noHistory).toBeDefined()

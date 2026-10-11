@@ -8,7 +8,8 @@ import { rateAsset, type AssetRating, type AssetRatingInputs } from '../assetRat
 import { METHODOLOGY_V1 as M } from '../methodology/v1'
 import { classRanges, curveRows, wholePercent } from '../ratingFormat'
 import {
-  CRYPTO_VOLUME_CAVEAT, METHODOLOGY_PATH, NOT_ADVICE_LINE, NOT_RATED_HEADING, RATING_DISCLOSURES, heldSentence, ratingHeading,
+  CHOICES_SENTENCE, CRYPTO_VOLUME_CAVEAT, METHODOLOGY_PATH, NOT_ADVICE_LINE, NOT_RATED_HEADING, PROVISIONAL_SENTENCE, RATING_DISCLOSURES,
+  cappedSentence, heldSentence, ratingHeading,
 } from '../ratingCopy'
 import type { AssetRatingResponse } from '../ratingResponse'
 import { SUITABILITY_WORDS } from './suitabilityWords'
@@ -106,8 +107,10 @@ describe('the rating panel', () => {
   it('says when the cap rule lowered the score', () => {
     expect(CAPPED_COIN.capped).toBe(true)
     const t = text(<AssetRatingView kind="crypto" data={response('crypto', CAPPED_COIN)} />)
-    expect(t).toContain(`capped at ${CAPPED_COIN.score}`)
-    expect(t).toContain(`Price behaviour alone scores ${CAPPED_COIN.coreScore}, class ${CAPPED_COIN.coreCls}`)
+    // With no lift the capped score is the price-alone score (D98), and the sentence says so.
+    expect(CAPPED_COIN.score).toBe(CAPPED_COIN.coreScore)
+    expect(t).toContain(cappedSentence(CAPPED_COIN.score, CAPPED_COIN.coreScore, CAPPED_COIN.coreCls))
+    expect(t).toContain(`cannot raise the score above what price behaviour alone scores, so the score is capped at ${CAPPED_COIN.score}`)
   })
 
   it('a stock shows its dated market cap and filing, and no crypto caveat', () => {
@@ -159,10 +162,11 @@ describe('the methodology page', () => {
     expect(t).toContain(`Methodology ${M.version}`)
   })
 
-  it('carries the disclosures, the provisional notice, and an unwritten holdings policy as unwritten', () => {
+  it('carries the disclosures, where the numbers come from, and an unwritten holdings policy as unwritten', () => {
     for (const s of RATING_DISCLOSURES) expect(t).toContain(s)
     expect(t).toContain(NOT_ADVICE_LINE)
-    expect(t).toContain('provisional')
+    expect(t).toContain(CHOICES_SENTENCE)
+    expect(t.includes(PROVISIONAL_SENTENCE)).toBe(M.provisional)
     expect(t).toContain('Not yet written. Ratings are not shown until it is.')
   })
 

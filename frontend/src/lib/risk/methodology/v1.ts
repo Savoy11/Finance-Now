@@ -7,9 +7,14 @@
  * the code does not use. A change to the method is an edit here plus a new `version`,
  * and a line in the methodology note's changelog.
  *
- * ⚠ PROVISIONAL. The weights and curves are Finance Now's choices, parked by the owner
- * (D95) until the validation in the methodology's §8 has run. No source supports any
- * particular weights (docs/assessments/risk-rating-methods-survey-2026-10-07.md).
+ * The numbers were decided by the owner on 2026-10-11 (D97), after the validation in the
+ * methodology's §8 (docs/assessments/risk-ratings-validation-2026-10-10.md): the volatility
+ * and drawdown curves come from the EU PRIIPs bands and are shared by coins and stocks
+ * (PRICE_CURVES), and the other parts may lower the rating but never raise it above price
+ * behaviour alone (capClassesAboveCore: 0; D98, the same day, capped the score at the price
+ * score itself rather than at the top of its class). The weights and the other curves are
+ * Finance Now's choices, kept by that decision; no source supports any particular weights
+ * (docs/assessments/risk-rating-methods-survey-2026-10-07.md).
  *
  * Nothing here is shown to anyone: ASSET_PAGE_RATINGS_SHOWN stays false until counsel
  * confirms the form (D4), the owner's holdings policy is written, and the owner says so.
@@ -49,9 +54,27 @@ export interface AssetClassMethod {
   curves: Record<string, Curve>
 }
 
+/**
+ * Volatility and drawdown → sub-score, the same for coins and stocks (D97). Worked out from
+ * the EU PRIIPs market-risk bands (< 0.5%, 0.5–5%, 5–12%, 12–20%, 20–30%, 30–80%, > 80%
+ * annualised volatility): each band edge sits half a point under the matching class
+ * boundary, so volatility alone lands in the class whose band holds it. PRIIPs has no
+ * drawdown measure, so each drawdown point is the fall a random walk at that volatility
+ * typically shows in a year, 1 − e^(−σ·√(π/2)) (Magdon-Ismail et al., 2004), to 0.01%.
+ *
+ * Written out rather than computed, so a version's numbers can never move under it:
+ * __tests__/assetRating.test.ts recomputes them from the bands (euCalibratedCurves in
+ * scripts/lib/ratingValidation.ts) and fails if they drift.
+ */
+export const PRICE_CURVES = {
+  volatility: [[0, 100], [0.005, 85.5], [0.05, 71.5], [0.12, 57.5], [0.2, 43.5], [0.3, 29.5], [0.8, 14.5], [1.6, 0]],
+  drawdown: [[0, 100], [0.0062, 85.5], [0.0607, 71.5], [0.1396, 57.5], [0.2217, 43.5], [0.3134, 29.5], [0.6331, 14.5], [0.8654, 0]],
+} as const satisfies Record<'volatility' | 'drawdown', Curve>
+
 export const METHODOLOGY_V1 = {
-  version: 'v1 (draft, 2026-10-09)',
-  provisional: true,
+  version: 'v1 (2026-10-11)',
+  /** True while the weights and curves await the §8 validation; false since D97. */
+  provisional: false,
 
   /** Panel heading; a label is never shown without it (D95). */
   heading: 'Measured risk',
@@ -69,11 +92,30 @@ export const METHODOLOGY_V1 = {
   /** Dimensions present must carry at least this share of the weight, or nothing is rated. */
   coverageFloor: 0.7,
 
+  /**
+   * An asset is rated only when its median daily dollar volume over the volume window is above
+   * this (D99). At zero nothing traded, so its price is not a market's: Venus BUSD reported no
+   * volume on any of the 365 days to 2026-10-10, and one bad price gave it 282% volatility.
+   */
+  tradedAboveUsd: 0,
+
+  /**
+   * Coins whose supply is adjusted to steer their price, left out by name (D99): their price
+   * movement does not measure what it measures for other coins. Ids are the catalog's.
+   */
+  rebasingCoins: [{ id: 'ampl', name: 'Ampleforth' }] as ReadonlyArray<{ id: string; name: string }>,
+
   /** The shown class changes only after this many consecutive weekly readings outside it. */
   stabilityWeeks: 16,
 
-  /** Size and liquidity may lift the class at most this many classes above price risk alone. */
-  capClassesAboveCore: 1,
+  /**
+   * How far the parts other than volatility and drawdown may lift the rating above price risk
+   * alone. 0 means no lift at all: the score is capped at the price-alone score, so they can
+   * lower the score and the class but never raise either (D97 set 0, D98 moved its cap from the
+   * top of the price class to the price score itself). Above 0, the score may reach the top of
+   * the class that many better (the first draft's rule was 1).
+   */
+  capClassesAboveCore: 0,
 
   /** Shown beside the rating as context; never part of the score. */
   recentVolatilityDays: 90,
@@ -94,8 +136,8 @@ export const METHODOLOGY_V1 = {
         description: 'Market capitalisation.' },
     ],
     curves: {
-      volatility: [[0.3, 90], [0.5, 75], [0.8, 55], [1.2, 35], [2.0, 15]],
-      drawdown: [[0.2, 90], [0.35, 75], [0.5, 55], [0.7, 35], [0.85, 15]],
+      volatility: PRICE_CURVES.volatility,
+      drawdown: PRICE_CURVES.drawdown,
       turnover: [[0.0005, 10], [0.005, 40], [0.02, 75], [0.05, 90]],
       dollarVolume: [[1e7, 10], [1e8, 35], [1e9, 60], [1e10, 80], [3e10, 90]],
       scale: [[5e8, 25], [2e9, 45], [1e10, 65], [5e10, 80], [2e11, 90], [1e12, 95]],
@@ -124,8 +166,8 @@ export const METHODOLOGY_V1 = {
         description: 'The average of two components of standard financial-strength models: long-term debt ÷ shareholders’ equity, and net margin. Not applied to financial companies.' },
     ],
     curves: {
-      volatility: [[0.15, 95], [0.25, 78], [0.4, 58], [0.6, 38], [0.8, 22], [1.2, 8]],
-      drawdown: [[0.1, 90], [0.2, 75], [0.35, 55], [0.5, 35], [0.7, 15]],
+      volatility: PRICE_CURVES.volatility,
+      drawdown: PRICE_CURVES.drawdown,
       dollarVolume: [[1e5, 10], [1e6, 45], [1e7, 75], [5e7, 90], [5e8, 98]],
       size: [[5e7, 10], [3e8, 40], [2e9, 65], [1e10, 82], [2e11, 95]],
       debtToEquity: [[0.25, 92], [0.75, 80], [1.5, 60], [3, 35], [6, 12]],

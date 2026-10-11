@@ -73,12 +73,14 @@ export function typicalDrawdown(sigma: number): number {
 }
 
 /**
- * Variant B (validation, 2026-10-10): one set of price curves for coins and stocks, tuned to
- * the PRIIPs bands. Each band edge sits half a point under the matching class boundary, so
- * volatility alone lands in the class PRIIPs would give it (the edge itself in the higher
- * class, as PRIIPs counts it). PRIIPs has no drawdown measure, so the drawdown curve puts
- * each boundary at the fall a random walk at that band edge typically shows in a year.
- * Derived from the edges and the class boundaries, never typed.
+ * One set of price curves for coins and stocks, tuned to the PRIIPs bands: variant B in the
+ * validation of 2026-10-10, adopted on 2026-10-11 (D97). v1's PRICE_CURVES writes these
+ * numbers out, and assetRating.test.ts holds them to this. Each band edge sits half a point
+ * under the matching class boundary, so volatility alone lands in the class PRIIPs would
+ * give it (the edge itself in the higher class, as PRIIPs counts it). PRIIPs has no
+ * drawdown measure, so the drawdown curve puts each boundary at the fall a random walk at
+ * that band edge typically shows in a year. Derived from the edges and the class
+ * boundaries, never typed.
  *
  * @param classMins the lowest score in each class, class 1 first (METHODOLOGY_V1.classes)
  */
@@ -92,6 +94,23 @@ export function euCalibratedCurves(classMins: readonly number[]): { volatility: 
   ]
   return { volatility, drawdown: volatility.map(([sigma, score]): [number, number] => [typicalDrawdown(sigma), score]) }
 }
+
+/**
+ * The numbers D97 replaced (v1 draft, 2026-10-09): hand-set price curves for each asset class
+ * and a one-class lift. A dated record, not a candidate, kept so a re-run of the validation
+ * can still show the method beside what it replaced (validation write-up §1 and §7).
+ */
+export const FIRST_DRAFT = {
+  capClassesAboveCore: 1,
+  crypto: {
+    volatility: [[0.3, 90], [0.5, 75], [0.8, 55], [1.2, 35], [2.0, 15]],
+    drawdown: [[0.2, 90], [0.35, 75], [0.5, 55], [0.7, 35], [0.85, 15]],
+  },
+  stock: {
+    volatility: [[0.15, 95], [0.25, 78], [0.4, 58], [0.6, 38], [0.8, 22], [1.2, 8]],
+    drawdown: [[0.1, 90], [0.2, 75], [0.35, 55], [0.5, 35], [0.7, 15]],
+  },
+} as const
 
 // ── dates (UTC) ──────────────────────────────────────────────────────────────
 

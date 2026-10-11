@@ -5,7 +5,7 @@ import { LEGAL_PATHS } from '@/lib/legal/links'
 import { METHODOLOGY_V1 as M, type DimensionSpec } from '@/lib/risk/methodology/v1'
 import { classRanges, curveRows, formatValue, wholePercent } from '@/lib/risk/ratingFormat'
 import {
-  CRYPTO_VOLUME_CAVEAT, HOLDINGS_POLICY, HOW_IT_BECOMES_A_CLASS, NOT_ADVICE_LINE, NOT_ASSESSED_SENTENCE,
+  CHOICES_SENTENCE, CRYPTO_VOLUME_CAVEAT, HOLDINGS_POLICY, HOW_IT_BECOMES_A_CLASS, NOT_ADVICE_LINE, NOT_ASSESSED_SENTENCE,
   PROVISIONAL_SENTENCE, RATING_DISCLOSURES, TRACK_RECORD_SENTENCE, UNIVERSE, WHAT_IT_IS,
 } from '@/lib/risk/ratingCopy'
 import type { RatedAssetKind } from '@/lib/risk/assetRating'
@@ -101,6 +101,7 @@ export function RatingMethodology() {
           share one scale, so a class means the same thing on every page. Most coins sit in the higher classes because their
           prices move far more than most stocks&rsquo;: that is the measurement.
         </P>
+        <P>{CHOICES_SENTENCE}</P>
         <div className="overflow-x-auto rounded-lg border border-border">
           <table className="w-full text-left text-xs">
             <thead className="bg-bg-elevated text-text-primary">
