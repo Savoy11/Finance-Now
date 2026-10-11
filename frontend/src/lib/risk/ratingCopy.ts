@@ -34,10 +34,17 @@ export function scoreSentence(score: number): string {
   return `Score ${score} of 100. A higher score means lower measured risk.`
 }
 
+/** §5 item 4 in words, read from capClassesAboveCore so the copy follows a change there. */
+function otherPartsRule(): string {
+  return M.capClassesAboveCore === 0
+    ? 'cannot raise the class above price behaviour alone'
+    : `can improve the class by at most ${M.capClassesAboveCore} over price behaviour alone`
+}
+
 /** §5 item 4: the cap rule, when it lowered the score. */
 export function cappedSentence(score: number, coreScore: number, coreCls: RatingClassNumber): string {
-  return `Size and liquidity can improve the class by at most ${M.capClassesAboveCore} over price behaviour alone, `
-    + `so the score is capped at ${score}. Price behaviour alone scores ${coreScore}, class ${coreCls}.`
+  return `The other parts ${otherPartsRule()}, so the score is capped at ${score}. `
+    + `Price behaviour alone scores ${coreScore}, class ${coreCls}.`
 }
 
 /** §2: shown beside the rating, never part of it. */
@@ -92,14 +99,21 @@ export const HOW_IT_BECOMES_A_CLASS: readonly string[] = [
   'Volatility and drawdown must both be present; without a year of prices the asset is not rated.',
   `Other missing parts are dropped and the weights spread over the rest, provided the parts present carry at least ${wholePercent(M.coverageFloor)} of the weight. Below that, the asset is not rated.`,
   'The score is the weighted mean of the parts present.',
-  `Size and liquidity can improve the class by at most ${M.capClassesAboveCore} over what price behaviour alone shows; they can always lower it. Price behaviour alone means volatility and drawdown, in proportion to their weights.`,
+  `Price behaviour alone means volatility and drawdown, in proportion to their weights. The other parts ${otherPartsRule()}; they can always lower it.`,
   'The class comes from the score, using the table above.',
   `The class shown changes only when the class at every weekly reading over the past ${M.stabilityWeeks} weeks lies outside it; it then moves to the class matched at most of those readings. A week’s reading is the first rating worked out that week (Monday to Sunday, UTC), the weeks must be consecutive, and only readings under the current methodology version count. A new rating starts at its current class.`,
   'Ratings are worked out once a day from the previous day’s data and shown as of that date. Never intraday, never on a price move, never as a notification.',
 ]
 
+/** §2 and §8 item 5: where the numbers come from. Always shown. */
+export const CHOICES_SENTENCE =
+  'Volatility and drawdown use one set of curves for coins and stocks, worked out from the EU’s PRIIPs risk bands so that volatility alone lands in the class whose band holds it. '
+  + 'The EU’s own figure counts sharp falls more heavily, so an asset’s EU class can be higher. '
+  + 'The weights and the other curves are Finance Now’s choice; no published source supports any particular weights.'
+
+/** Shown only while METHODOLOGY_V1.provisional is true. */
 export const PROVISIONAL_SENTENCE =
-  'The weights and curves are Finance Now’s choice. No published source supports any particular weights, and these are provisional until the validation described in the methodology note is complete.'
+  'These numbers are provisional until the validation described in the methodology note is complete.'
 
 export const TRACK_RECORD_SENTENCE =
   'Once ratings have been shown for a year, this page will report how well each class matched the volatility and drawdown that followed.'

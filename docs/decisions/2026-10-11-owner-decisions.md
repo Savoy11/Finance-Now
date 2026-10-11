@@ -1,0 +1,8 @@
+# Owner decisions — 2026-10-11
+
+Continuing from `2026-10-09-owner-decisions.md`, which ends at D96. Same form: one row per ruling,
+what it cascades to, and what was actually done.
+
+| # | Decision | Ruling | Cascades to |
+|---|---|---|---|
+| D97 | The rating's numbers (T-420; methodology §8 item 5, parked under D95 until the validation ran). The validation (`docs/assessments/risk-ratings-validation-2026-10-10.md`) found the first draft's classes about three below the EU PRIIPs scale for stocks and two for coins, and its §6 set four questions: what the scale means, the curves, the universe, and the role of size, liquidity and fundamentals. Recommended: the EU-aligned reading, with one set of price curves for coins and stocks derived from the PRIIPs bands (variant B, write-up §7) and no lift from the other parts (C) | **Owner, verbatim:** *"Lets go with your recommendation"* → APPLIED | `lib/risk/methodology/v1.ts`: the volatility and drawdown curves for both asset classes become `PRICE_CURVES` (write-up §7's table), and `capClassesAboveCore` goes from 1 to 0, so liquidity, size and fundamentals can lower a class but never raise it (question 4). The weights and the other curves are kept, `provisional` becomes false, and the version becomes `v1 (2026-10-11)`, so the two readings stored under the draft on 2026-10-10 stop counting; nothing is removed. The page and panel wording follow (`lib/risk/ratingCopy.ts`), and the validation harness now compares the method with the first draft it replaced. The universe question (vBUSD, Ampleforth) was not part of the recommendation and stays open. Nothing is shown: `ASSET_PAGE_RATINGS_SHOWN` stays false until counsel confirms the form (D4), the holdings policy is written, and the owner says so |

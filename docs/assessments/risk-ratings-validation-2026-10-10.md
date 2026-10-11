@@ -40,7 +40,8 @@ The full generated report is the appendix.
    near zero, and keeps the ordering. The cost: the scale compresses here, with no asset in classes 1
    or 2 and 39 of 55 coins in class 7.
 
-The owner's decisions this leaves are in §6, with §7's results.
+The owner's decisions this leaves are in §6, with §7's results. **Decided 2026-10-11 (D97):** the
+EU-aligned reading, with B and C adopted; the universe question stays open.
 
 ## 1. Sanity order
 
@@ -162,6 +163,10 @@ someone opens the page, and a missing week holds the class, so real changes woul
 
 ## 6. The owner's decisions (D95 item 1, now ready)
 
+**Decided 2026-10-11 (D97):** the owner adopted the recommendation (*"Lets go with your
+recommendation"*): the EU-aligned reading (item 1), B and C (item 2), so the other parts can only
+lower a class (item 4). Item 3, the universe, was not part of it and stays open.
+
 1. **What the scale means.** §2 promises "one absolute scale ... as on the EU's scales"; §6's first
    sentence calls the rating "a guide to the level of measured price risk compared with other assets on
    this site". The data shows these pull apart:
@@ -248,6 +253,10 @@ under the bands.
 **What adopting B and C would change in `v1.ts`:** the volatility and drawdown curves for both asset
 classes become the table above, `capClassesAboveCore` becomes 0, and the version moves on. The weights,
 the other curves and every other rule stay. The universe decision (§6 item 3) is separate.
+
+**Adopted 2026-10-11 (D97), exactly so.** `PRICE_CURVES` in `v1.ts` writes out the table above, with
+the drawdown points to 0.01% and a test holding them to `euCalibratedCurves`; `capClassesAboveCore` is
+0; the version is `v1 (2026-10-11)`.
 
 ---
 

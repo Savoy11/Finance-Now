@@ -116,15 +116,15 @@ describe('trying a variant of the method', () => {
   })
 
   it('the engine sees the patch while it runs, and the baseline is back afterwards', () => {
-    // A coin whose price falls hard but trades deeply: the cap rule lifts it one class.
+    // A coin whose price falls hard but trades deeply: a one-class lift would raise it a class.
     const closes = Array.from({ length: 365 }, (_, i) => 100 * Math.exp(-1.9 * i / 364) * (1 + 0.08 * (i % 2 ? -1 : 1)))
     const inputs = { kind: 'crypto' as const, closes, dollarVolumes: Array(30).fill(3e10), marketCapUsd: 1e12 }
     const before = rateAsset(inputs)
-    const during = withPatch(M, (m) => { (m as unknown as { capClassesAboveCore: number }).capClassesAboveCore = 0 }, () => rateAsset(inputs))
+    const during = withPatch(M, (m) => { (m as unknown as { capClassesAboveCore: number }).capClassesAboveCore = 1 }, () => rateAsset(inputs))
     const after = rateAsset(inputs)
     if (!before.rated || !during.rated || !after.rated) throw new Error('fixture not rated')
-    expect(during.cls).toBeGreaterThan(before.cls) // no lift → a higher class
+    expect(during.cls).toBeLessThan(before.cls) // a lift → a lower class
     expect(after).toEqual(before)
-    expect(M.capClassesAboveCore).toBe(1)
+    expect(M.capClassesAboveCore).toBe(0)
   })
 })

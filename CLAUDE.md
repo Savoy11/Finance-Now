@@ -896,12 +896,15 @@ site nobody has reviewed. Full design: `docs/architecture/source-terms.md`.
 > rating on the asset's own page for crypto coins and stocks only, facts everywhere else, never a
 > rating of a user's holdings or portfolio, and nothing shown until counsel confirms it in the
 > legal review (D4). T-420 rebuilds to that scope. `docs/LEGAL-REVIEW.md` §3.H.
-> **Build status (2026-10-10):** the engine, the weekly readings, the two rating routes, the panel
+> **Build status (2026-10-11):** the engine, the weekly readings, the two rating routes, the panel
 > and the methodology page are built, all behind `ASSET_PAGE_RATINGS_SHOWN = false`
 > (`lib/risk/visibility.ts`). The §8 validation has run (`npm run ratings:validate`, written up in
-> `docs/assessments/risk-ratings-validation-2026-10-10.md`): good ordering, but classes three below the
-> EU scale for stocks and two for coins; the owner's decision on the scale and curves is next. The
-> method and every build decision are in `docs/architecture/risk-ratings-methodology.md`.
+> `docs/assessments/risk-ratings-validation-2026-10-10.md`): good ordering, but the draft's classes sat
+> three below the EU scale for stocks and two for coins. **The owner then decided the numbers (D97):**
+> one set of volatility and drawdown curves for coins and stocks, worked out from the EU PRIIPs bands
+> (`PRICE_CURVES` in `methodology/v1.ts`), and no lift from the other parts, which can lower a class but
+> never raise it. Version `v1 (2026-10-11)`. Open: whether vBUSD and Ampleforth are rated. The method
+> and every build decision are in `docs/architecture/risk-ratings-methodology.md`.
 
 **To close it:** `npm run terms:report -- --seeded` (or `--news`) from a machine
 > that can reach these sites writes a review worksheet — current verdict, what the

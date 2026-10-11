@@ -8,7 +8,9 @@ import {
   topOfClass,
   type AssetRatingInputs,
 } from '../assetRating'
-import { METHODOLOGY_V1 as M } from '../methodology/v1'
+import { METHODOLOGY_V1 as M, PRICE_CURVES } from '../methodology/v1'
+import { piecewise } from '../normalize'
+import { euCalibratedCurves, priipsBandClass, typicalDrawdown } from '../../../../scripts/lib/ratingValidation'
 
 const NOW = new Date('2026-10-09T00:00:00Z')
 const flat = (n: number, p = 100) => Array.from({ length: n }, () => p)
@@ -60,6 +62,34 @@ describe('methodology v1 is internally consistent', () => {
   })
 })
 
+describe('price curves from the EU PRIIPs bands, and no lift (D97)', () => {
+  const eu = euCalibratedCurves(M.classes.map((c) => c.min))
+
+  it('coins and stocks share one set of volatility and drawdown curves', () => {
+    for (const key of ['volatility', 'drawdown'] as const) {
+      expect(M.crypto.curves[key], `crypto ${key}`).toEqual(PRICE_CURVES[key])
+      expect(M.stock.curves[key], `stock ${key}`).toEqual(PRICE_CURVES[key])
+    }
+  })
+
+  it('the written-out points are the ones the bands give, drawdown to 0.01%', () => {
+    expect(PRICE_CURVES.volatility).toEqual(eu.volatility)
+    expect(PRICE_CURVES.drawdown.map(([, s]) => s)).toEqual(eu.drawdown.map(([, s]) => s))
+    PRICE_CURVES.drawdown.forEach(([x], i) => expect(x, `drawdown point ${i + 1}`).toBeCloseTo(eu.drawdown[i][0], 4))
+  })
+
+  it('volatility alone, and the typical fall at that volatility, land in the PRIIPs class', () => {
+    for (const v of [0.003, 0.03, 0.08, 0.15, 0.25, 0.5, 1, 2]) {
+      expect(classForScore(piecewise(v, PRICE_CURVES.volatility)).cls, `volatility ${v}`).toBe(priipsBandClass(v))
+      expect(classForScore(piecewise(typicalDrawdown(v), PRICE_CURVES.drawdown)).cls, `fall at ${v}`).toBe(priipsBandClass(v))
+    }
+  })
+
+  it('the other parts cannot lift the class', () => {
+    expect(M.capClassesAboveCore).toBe(0)
+  })
+})
+
 describe('building blocks', () => {
   it('classForScore and topOfClass follow the class table', () => {
     expect(classForScore(100)).toEqual({ cls: 1, label: 'Very low' })
@@ -88,13 +118,13 @@ describe('stocks', () => {
     expect(r.rated).toBe(true)
     if (!r.rated) return
     const sub = Object.fromEntries(r.dimensions.map((d) => [d.key, d.subScore]))
-    expect(sub.volatility).toBe(95) // 0 vol: flat beyond the first point
-    expect(sub.drawdown).toBe(90)
+    expect(sub.volatility).toBe(100) // 0 volatility: the price curve's first point
+    expect(sub.drawdown).toBe(100) // no fall: likewise
     expect(sub.liquidity).toBeCloseTo(90.9, 1) // $100M: 90 + (5e7 / 4.5e8) × 8
     expect(sub.size).toBe(95)
     expect(sub.fundamentals).toBe(88) // D/E 0.5 → 86; margin 20% → 90
-    // 0.25×95 + 0.2×90 + 0.2×90.89 + 0.15×95 + 0.2×88 = 91.78
-    expect(r.score).toBeCloseTo(91.8, 1)
+    // 0.25×100 + 0.2×100 + 0.2×90.89 + 0.15×95 + 0.2×88 = 95.03
+    expect(r.score).toBeCloseTo(95.0, 1)
     expect(r.cls).toBe(1)
     expect(r.label).toBe('Very low')
     expect(r.capped).toBe(false)
@@ -132,6 +162,20 @@ describe('stocks', () => {
     expect(r).toMatchObject({ rated: false, reason: 'Not enough data to rate this asset.' })
   })
 
+  it('the other parts still lower the class: a calm price on a small, thinly traded, loss-making company', () => {
+    const r = rateAsset(stock({
+      volumes: flat(260, 1e3), // × $100 = $100K a day → 10
+      marketCapUsd: 1e8, // → 16
+      fundamentals: { longTermDebt: 500, shareholdersEquity: 100, netIncome: -20, revenue: 100, periodEnd: '2026-06-30' }, // → 19.8
+    }), NOW)
+    if (!r.rated) throw new Error('expected a rating')
+    expect(r.coreCls).toBe(1)
+    // 0.25×100 + 0.2×100 + 0.2×10 + 0.15×16 + 0.2×19.8 = 53.36
+    expect(r.score).toBeCloseTo(53.4, 1)
+    expect(r.cls).toBe(4)
+    expect(r.capped).toBe(false)
+  })
+
   it('under a year of prices, nothing is rated', () => {
     const r = rateAsset(stock({ closes: flat(200), volumes: flat(200, 1e6) }), NOW)
     expect(r).toMatchObject({ rated: false })
@@ -141,18 +185,21 @@ describe('stocks', () => {
 })
 
 describe('crypto', () => {
-  it('the cap rule stops size and liquidity lifting a volatile coin more than one class', () => {
+  it('the cap rule stops size and liquidity lifting a volatile coin above its price class (D97)', () => {
     const r = rateAsset({
       kind: 'crypto',
-      closes: zigzag(366, 1.2 / Math.sqrt(365)), // ~120% annualised volatility
+      closes: zigzag(366, 1.2 / Math.sqrt(365)), // ~120% annualised volatility, a 6% largest fall
       dollarVolumes: flat(366, 5e10),
       marketCapUsd: 1e12,
     }, NOW)
     if (!r.rated) throw new Error('expected a rating')
-    expect(r.coreCls).toBe(4)
+    // Price alone: 0.6×7.2 + 0.4×71.5 = 32.9, class 5. With liquidity 90 and scale 95 the
+    // weighted score would be 62.7, class 3; with no lift it stops at the top of class 5.
+    expect(r.coreScore).toBeCloseTo(32.9, 1)
+    expect(r.coreCls).toBe(5)
     expect(r.capped).toBe(true)
-    expect(r.score).toBe(topOfClass(3))
-    expect(r.cls).toBe(3)
+    expect(r.score).toBe(topOfClass(5))
+    expect(r.cls).toBe(5)
   })
 
   it('turnover earns nothing above 5%, and thin volume caps liquidity', () => {

@@ -4,6 +4,7 @@ import { classRanges, curveRows, describeRaw, formatValue, wholePercent } from '
 import { METHODOLOGY_V1 as M } from '../methodology/v1'
 import { EQUITY_CATALOG } from '@/lib/data/equityCatalog'
 import { SUITABILITY_WORDS } from './suitabilityWords'
+import { withPatch } from '../../../../scripts/lib/ratingValidation'
 
 /** Every string the copy module produces, its functions called with sample values. */
 function allCopy(): string[] {
@@ -59,6 +60,22 @@ describe('the rating’s copy', () => {
     expect(copy.recentVolatilitySentence('40%')).toContain(`${M.recentVolatilityDays} days`)
   })
 
+  it('states the cap rule as decided (no lift, D97), and would follow a change to it', () => {
+    expect(M.capClassesAboveCore).toBe(0)
+    const rule = 'The other parts cannot raise the class above price behaviour alone'
+    expect(copy.HOW_IT_BECOMES_A_CLASS.join(' ')).toContain(`${rule}; they can always lower it.`)
+    expect(copy.cappedSentence(43, 32.9, 5)).toBe(`${rule}, so the score is capped at 43. Price behaviour alone scores 32.9, class 5.`)
+    const withLift = withPatch(M, (m) => { (m as unknown as { capClassesAboveCore: number }).capClassesAboveCore = 1 }, () => copy.cappedSentence(57, 40, 5))
+    expect(withLift).toContain('can improve the class by at most 1 over price behaviour alone')
+  })
+
+  it('says where the numbers come from, whether or not the method is provisional', () => {
+    expect(copy.CHOICES_SENTENCE).toMatch(/one set of curves for coins and stocks/)
+    expect(copy.CHOICES_SENTENCE).toMatch(/PRIIPs/)
+    expect(copy.CHOICES_SENTENCE).toMatch(/The weights and the other curves are Finance Now’s choice/)
+    expect(M.provisional).toBe(false)
+  })
+
   it('names everything the rating does not assess, in one sentence', () => {
     for (const item of copy.NOT_ASSESSED) expect(copy.NOT_ASSESSED_SENTENCE).toContain(item)
     expect(copy.NOT_ASSESSED_SENTENCE).toMatch(/, or future prices\.$/)
@@ -91,7 +108,8 @@ describe('how the numbers read', () => {
   it('lists every curve with its points in order', () => {
     const crypto = curveRows('crypto')
     expect(crypto.map((r) => r.key)).toEqual(Object.keys(M.crypto.curves))
-    expect(crypto.find((r) => r.key === 'volatility')!.points[0]).toBe('30% → 90')
+    expect(crypto.find((r) => r.key === 'volatility')!.points.slice(0, 3)).toEqual(['0% → 100', '0.5% → 85.5', '5% → 71.5'])
+    expect(crypto.find((r) => r.key === 'drawdown')!.points[1]).toBe('0.62% → 85.5')
     expect(curveRows('stock').find((r) => r.key === 'debtToEquity')!.points[0]).toBe('0.25× → 92')
   })
 
