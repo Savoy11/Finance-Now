@@ -904,8 +904,9 @@ site nobody has reviewed. Full design: `docs/architecture/source-terms.md`.
 > one set of volatility and drawdown curves for coins and stocks, worked out from the EU PRIIPs bands
 > (`PRICE_CURVES` in `methodology/v1.ts`), and no lift from the other parts, which can lower a class but
 > never raise it; the same day (D98) the cap moved from the top of the price class to the price score
-> itself, so scores within a class differ again. Version `v1 (2026-10-11)`. Open: whether vBUSD and Ampleforth are rated. The method
-> and every build decision are in `docs/architecture/risk-ratings-methodology.md`.
+> itself, so scores within a class differ again. Version `v1 (2026-10-11)`. Not rated (D99): an asset
+> with no reported trading over the volume window (vBUSD), and coins whose supply steers their price
+> (Ampleforth). The method and every build decision are in `docs/architecture/risk-ratings-methodology.md`.
 
 **To close it:** `npm run terms:report -- --seeded` (or `--news`) from a machine
 > that can reach these sites writes a review worksheet — current verdict, what the

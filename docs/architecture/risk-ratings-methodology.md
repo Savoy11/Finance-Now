@@ -1,11 +1,12 @@
 # Risk ratings methodology, v1
 
-**Status: v1, numbers decided 2026-10-11 (D97, D98).** T-420 item (1). The draft's second revision
+**Status: v1, numbers decided 2026-10-11 (D97, D98, D99).** T-420 item (1). The draft's second revision
 (2026-10-07) adopted every change proposed in `docs/assessments/risk-rating-methods-survey-2026-10-07.md`
 §3 (owner: *"adopt all the proposed changes and update the draft"*; D94). After the validation in §8,
 the owner adopted one set of price curves for coins and stocks derived from the EU PRIIPs bands, and no
-lift from the other parts (D97), with the score held at the price score itself (D98); the weights and
-the other curves are Finance Now's choices, kept.
+lift from the other parts (D97), with the score held at the price score itself (D98), and left out
+coins nobody trades or whose supply steers their price (D99); the weights and the other curves are
+Finance Now's choices, kept.
 Nothing built from this note is shown until counsel confirms the form and the owner says so (D92, D4).
 
 **How later iterations work.** The build keeps every weight, window, curve, threshold and rule in one
@@ -93,9 +94,15 @@ as context, because it reacts faster than the one-year figure. It never changes 
 
 ## 3. Crypto coins
 
-**Universe:** coins in the app's catalog, excluding stablecoins (facts only, D92) and tokenized
-securities (USDY; TS-1, TS-3). **A coin must have at least 365 days of daily prices** to be rated;
-younger coins show "Not enough history to rate (needs one year of prices)".
+**Universe:** coins in the app's catalog, excluding stablecoins (facts only, D92), tokenized
+securities (USDY; TS-1, TS-3), and coins whose supply is adjusted to steer their price, named in
+`v1.ts` (`rebasingCoins`: Ampleforth; D99). Their price movement does not measure what it measures for
+other coins. **A coin must have at least 365 days of daily prices** to be rated; younger coins show
+"Not enough history to rate (needs one year of prices)". **And it must have traded:** a coin with a
+median daily volume of zero over the 30-day volume window is not rated, because its price is not a
+market's (D99, `tradedAboveUsd`). Venus BUSD, a lending receipt for a retired stablecoin, reported no
+volume on any of the 365 days to 2026-10-10, and one bad price gave it 282% volatility. A coin with no
+volume figure at all is a different case: liquidity is missing and the coverage floor (§5) decides.
 
 | Dimension | Weight | Input | Window | Source |
 |---|---:|---|---|---|
@@ -135,7 +142,8 @@ separate reward index, not in risk).
 ## 4. Stocks
 
 **Universe:** the 79 stocks in the curated catalog (`equityCatalog.ts`). Other tickers show facts
-only, and the page says so. **A stock must have at least one year of daily prices** to be rated.
+only, and the page says so. **A stock must have at least one year of daily prices** to be rated, and
+reported trading over the last 30 trading days (the coins' rule, D99).
 
 | Dimension | Weight | Input | Window | Source |
 |---|---:|---|---|---|
@@ -186,7 +194,9 @@ rated, because volatility and drawdown are required (§5). It degrades to facts,
 ## 5. How the score becomes a class
 
 1. **Required inputs.** Volatility and drawdown must both be present, which the one-year history
-   rule ensures. Without them the asset is not rated.
+   rule ensures. Without them the asset is not rated. Nor is an asset whose median daily volume over
+   the volume window is zero (§3, D99): "No trading reported over the last 30 days, so there is no
+   market price to measure."
 2. **Coverage.** Other missing dimensions are dropped and the weights renormalise over the rest,
    provided the dimensions present carry **at least 70% of the weight**. Below that: "Not enough data
    to rate this asset", with the facts available.
@@ -235,7 +245,8 @@ The wording follows the regulators' phrasing (survey §2, item 9) and FINRA Rule
   recommendation to buy, sell or hold."
 - What it does not assess (the list in §1), and that reported crypto volume is not vetted.
 - The universe: which assets are rated, and why the others are not (stablecoins, tokenized
-  securities, too little history, stocks outside the catalog, missing data).
+  securities, coins whose supply steers their price, no reported trading, too little history, stocks
+  outside the catalog, missing data).
 - Where the numbers come from (D97): "Volatility and drawdown use one set of curves for coins and
   stocks, worked out from the EU's PRIIPs risk bands so that volatility alone lands in the class whose
   band holds it. The EU's own figure counts sharp falls more heavily, so an asset's EU class can be
@@ -311,7 +322,7 @@ and drawdown curves of both asset classes became `PRICE_CURVES` (§2), `capClass
 to 0 (§5 item 4), `provisional` became false, and the version became `v1 (2026-10-11)`. The weights,
 the other curves and every other rule are unchanged. The two readings stored under the draft stop
 counting; nothing was removed. The universe question (vBUSD, Ampleforth; write-up §6 item 3) was not
-part of it and is open (§11).
+part of it; it was decided the same day (D99, §3, §11).
 
 ### Confirmation run, 2026-10-11
 
@@ -351,6 +362,12 @@ they are compared or classed, so a class is always the class of the number shown
   readings (stocks 228 class changes instead of 230, coins 15 instead of 13).
 - **The other parts:** for 111 of the 113, liquidity, size, scale and fundamentals now change neither
   class nor score; they act only on an asset weak on them (Maker, class 6 on price alone, rates 7).
+
+**The universe (D99), re-run the same evening (write-up §10).** Ampleforth leaves the universe and
+vBUSD is not rated, with the reason. Nothing else moved:
+- coins: 53 of 53 within one class of their PRIIPs band, mean gap −0.09;
+- every other asset keeps its class and score;
+- the backtest and stability are unchanged, since neither token had the Binance history they use.
 
 ### First sanity reading, 2026-10-10 (item 1, partial)
 
@@ -449,9 +466,10 @@ bands (§2), no lift from the other parts (§5 item 4), and the weights and othe
 The score under the cap rule, the same day (D98): held at the price score itself, not at the top of
 its class (§5 item 4, §8).
 
-**Open:** the universe. Whether vBUSD (untraded, rated on a pricing glitch) and Ampleforth (supply
-steers its price) are rated; the write-up's §6 item 3 suggests a no-rating rule for zero median daily
-volume plus a named exclusion for rebasing tokens, or re-filing both in the catalog.
+The universe, the same day (D99): no rating for an asset with no reported trading over the volume
+window, which leaves out vBUSD, and Ampleforth left out by name as a coin whose supply steers its price
+(§3). Chosen over re-filing both as stablecoins in the catalog, which would call neither what it is
+and would count and filter both as stablecoins on the Coins page.
 
 **Parked on 2026-10-07 (D95), each with what brings it back:**
 1. ~~**The final weights and curves.**~~ **Decided 2026-10-11 (D97), above.** Parked until the validation in §8 has run and been written up;
@@ -515,3 +533,7 @@ volume plus a named exclusion for rebasing tokens, or re-filing both in the cata
   No class changes except where a price score within 0.05 under a class line was shown as the start
   of the class above while filed below it; none of the rated assets was, and the re-run (§8) found all
   113 classes unchanged. Version unchanged: nothing had merged or been stored under `v1 (2026-10-11)`.
+- **v1, 2026-10-11 (D99):** the universe. An asset with a median daily volume of zero over the
+  volume window is not rated (`tradedAboveUsd`), which leaves out vBUSD, and coins whose supply
+  steers their price are left out by name (`rebasingCoins`: Ampleforth) (§3, §4, §5 item 1). Version
+  unchanged, for the same reason as D98.

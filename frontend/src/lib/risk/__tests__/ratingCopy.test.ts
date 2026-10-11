@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import * as copy from '../ratingCopy'
 import { classRanges, curveRows, describeRaw, formatValue, wholePercent } from '../ratingFormat'
@@ -54,6 +56,14 @@ describe('the rating’s copy', () => {
     expect(copy.UNIVERSE.crypto).toContain(`${M.crypto.minHistoryDays} days`)
     expect(copy.UNIVERSE.stock).toContain(`${EQUITY_CATALOG.length} stocks`)
     expect(copy.UNIVERSE.stock).toContain(`${M.stock.minHistoryDays} trading days`)
+    // D99: the traded rule and the named coins, read from the methodology.
+    expect(copy.UNIVERSE.crypto).toContain(`reported trading over the last ${M.crypto.volumeWindowDays} days`)
+    expect(copy.UNIVERSE.stock).toContain(`reported trading over the last ${M.stock.volumeWindowDays} trading days`)
+    for (const c of M.rebasingCoins) expect(copy.UNIVERSE.crypto).toContain(c.name)
+    expect(copy.HOW_IT_BECOMES_A_CLASS[0]).toMatch(/no reported trading/)
+    // The names come from the list, never typed into the copy, so a change to the list reaches the page.
+    const source = readFileSync(resolve(__dirname, '../ratingCopy.ts'), 'utf8')
+    for (const c of M.rebasingCoins) expect(source, c.name).not.toContain(c.name)
     const steps = copy.HOW_IT_BECOMES_A_CLASS.join(' ')
     expect(steps).toContain(wholePercent(M.coverageFloor))
     expect(steps).toContain(`${M.stabilityWeeks} weeks`)

@@ -46,10 +46,12 @@ The full generated report is the appendix.
 9. **Holding the score at the price score fixes that** (§9, D98). Every class is unchanged, scores
    within a class differ again, and the stocks' full score orders later volatility as well as price
    alone (−0.80).
+10. **vBUSD and Ampleforth are no longer rated** (§10, D99): one by a rule (no reported trading), one
+    by name (its supply steers its price). Nothing else moves.
 
 The owner's decisions this leaves are in §6, with §7's results. **Decided 2026-10-11 (D97):** the
-EU-aligned reading, with B and C adopted. **And the same day (D98):** the score held at the price
-score. The universe question stays open.
+EU-aligned reading, with B and C adopted. **And the same day:** the score held at the price score
+(D98), and the universe (D99).
 
 ## 1. Sanity order
 
@@ -173,7 +175,7 @@ someone opens the page, and a missing week holds the class, so real changes woul
 
 **Decided 2026-10-11 (D97):** the owner adopted the recommendation (*"Lets go with your
 recommendation"*): the EU-aligned reading (item 1), B and C (item 2), so the other parts can only
-lower a class (item 4). Item 3, the universe, was not part of it and stays open.
+lower a class (item 4). Item 3, the universe, was not part of it; it was decided the same day (D99).
 
 1. **What the scale means.** §2 promises "one absolute scale ... as on the EU's scales"; §6's first
    sentence calls the rating "a guide to the level of measured price risk compared with other assets on
@@ -194,6 +196,7 @@ lower a class (item 4). Item 3, the universe, was not part of it and stays open.
 3. **The universe:** leave out assets that are not measurably traded and tokens whose price is steered
    by supply. One rule would do it: no rating when median daily volume over the window is zero (vBUSD),
    plus a named exclusion for rebasing tokens (Ampleforth); or re-file both in the catalog.
+   **Decided 2026-10-11 (D99): the rule and the named exclusion**, §10.
 4. **Size, liquidity and fundamentals.** They do not improve the backtest. Keep them for what they
    measure, and say on the methodology page that they are not predictive; or reduce their weight. Under
    C they can only lower a class.
@@ -352,6 +355,29 @@ Appendix C.
 fundamentals now change neither the class nor the score; they act only on an asset that is weak on
 them, as for Maker. That sharpens the write-up's §6 item 4 (keep them for what they measure and say so, or reduce
 their weight), which D97 left as it was.
+
+## 10. The universe (D99), re-run 2026-10-11
+
+The owner chose §6 item 3's rule (D99):
+- an asset whose median daily dollar volume over the volume window is zero is not rated
+  (`tradedAboveUsd` in `v1.ts`, for stocks too);
+- coins whose supply is adjusted to steer their price are left out by name (`rebasingCoins`:
+  Ampleforth).
+
+vBUSD reported no volume on any of the 365 days to 2026-10-10 (CoinGecko's daily chart, read that
+evening), so the rule catches it without a threshold to tune.
+
+Re-run at 21:10 UTC on the owner's machine, on the same data as §9's. The report is not appended,
+because it matches Appendix C line for line except:
+- **Coins: 53 of 54 rated.** Ampleforth has left the universe, and vBUSD shows "not rated" with the
+  new reason ("No trading reported over the last 30 days, so there is no market price to measure").
+- **The coins' sanity row:** classes 0 · 0 · 0 · 0 · 1 · 14 · 38, 44 of 53 on their PRIIPs band and
+  53 of 53 within one class, mean gap −0.09 (from −0.07 with the two). The first draft's row is now
+  0 of 53 on the band and 10 of 53 within one.
+- **Sensitivity:** every coin count is unchanged, now out of 53.
+
+Every other asset keeps its class and its score. The backtest and stability figures are identical,
+because neither token had Binance history, so neither was ever in them.
 
 ---
 

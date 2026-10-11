@@ -89,17 +89,25 @@ export const WHAT_IT_IS =
   'A measurement of how much an asset’s price has moved and fallen over the past year, how easily it trades, how large it is, '
   + 'and, for stocks, how its balance sheet stands, combined by a fixed, published formula. The same for every reader; it takes no input from you.'
 
+/** "A", "A and B", "A, B and C". */
+function listOf(names: readonly string[]): string {
+  return names.length < 2 ? names.join('') : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`
+}
+
 /** §3, §4, §6: which assets are rated, and why the others are not. */
 export const UNIVERSE = {
-  crypto: `Coins in the app’s catalog with at least ${M.crypto.minHistoryDays} days of daily prices. `
-    + 'Stablecoins and tokenized securities are not rated, and neither is a coin with no daily price history.',
+  crypto: `Coins in the app’s catalog with at least ${M.crypto.minHistoryDays} days of daily prices and reported trading `
+    + `over the last ${M.crypto.volumeWindowDays} days. Stablecoins and tokenized securities are not rated, and neither is a coin whose supply `
+    + `is adjusted to steer its price (${listOf(M.rebasingCoins.map((c) => c.name))}) or a coin with no daily price history.`,
   stock: `The ${EQUITY_CATALOG.length} stocks in the curated catalog, each with at least one year of daily prices `
-    + `(${M.stock.minHistoryDays} trading days). Other tickers show facts only. Daily prices need a Tiingo or FMP key; without one, no stock is rated.`,
+    + `(${M.stock.minHistoryDays} trading days) and reported trading over the last ${M.stock.volumeWindowDays} trading days. `
+    + 'Other tickers show facts only. Daily prices need a Tiingo or FMP key; without one, no stock is rated.',
 } as const
 
 /** §5 items 1–3 and 6–7, with their numbers. */
 export const HOW_IT_BECOMES_A_CLASS: readonly string[] = [
-  'Volatility and drawdown must both be present; without a year of prices the asset is not rated.',
+  'Volatility and drawdown must both be present; without a year of prices the asset is not rated. '
+    + 'Nor is an asset with no reported trading over the liquidity window: its price is not a market’s.',
   `Other missing parts are dropped and the weights spread over the rest, provided the parts present carry at least ${wholePercent(M.coverageFloor)} of the weight. Below that, the asset is not rated.`,
   'The score is the weighted mean of the parts present.',
   `Price behaviour alone means volatility and drawdown, in proportion to their weights. The other parts ${otherPartsRule()}; they can always lower it.`,

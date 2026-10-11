@@ -92,6 +92,19 @@ export const METHODOLOGY_V1 = {
   /** Dimensions present must carry at least this share of the weight, or nothing is rated. */
   coverageFloor: 0.7,
 
+  /**
+   * An asset is rated only when its median daily dollar volume over the volume window is above
+   * this (D99). At zero nothing traded, so its price is not a market's: Venus BUSD reported no
+   * volume on any of the 365 days to 2026-10-10, and one bad price gave it 282% volatility.
+   */
+  tradedAboveUsd: 0,
+
+  /**
+   * Coins whose supply is adjusted to steer their price, left out by name (D99): their price
+   * movement does not measure what it measures for other coins. Ids are the catalog's.
+   */
+  rebasingCoins: [{ id: 'ampl', name: 'Ampleforth' }] as ReadonlyArray<{ id: string; name: string }>,
+
   /** The shown class changes only after this many consecutive weekly readings outside it. */
   stabilityWeeks: 16,
 

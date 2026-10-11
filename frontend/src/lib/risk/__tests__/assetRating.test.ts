@@ -260,6 +260,13 @@ describe('stocks', () => {
     expect(r.capped).toBe(false)
   })
 
+  it('with no reported trading over the volume window, nothing is rated (D99)', () => {
+    const r = rateAsset(stock({ volumes: flat(260, 0) }), NOW)
+    expect(r).toMatchObject({ rated: false, reason: `No trading reported over the last ${M.stock.volumeWindowDays} trading days, so there is no market price to measure.` })
+    // One share a day is trading; the rule is about none at all, and liquidity scores the rest.
+    expect(rateAsset(stock({ volumes: flat(260, 1) }), NOW).rated).toBe(true)
+  })
+
   it('under a year of prices, nothing is rated', () => {
     const r = rateAsset(stock({ closes: flat(200), volumes: flat(200, 1e6) }), NOW)
     expect(r).toMatchObject({ rated: false })
@@ -285,6 +292,21 @@ describe('crypto', () => {
     expect(r.capped).toBe(true)
     expect(r.score).toBe(32.9)
     expect(r.cls).toBe(5)
+  })
+
+  it('a coin nobody traded is not rated, however wild its price (D99: vBUSD)', () => {
+    // vBUSD: no volume on any day of the year, and one bad price that made 282% volatility.
+    const closes = flat(366, 0.022).map((p, i) => (i === 200 ? 0.003 : p))
+    const r = rateAsset({ kind: 'crypto', closes, dollarVolumes: flat(366, 0), marketCapUsd: 6e7 }, NOW)
+    expect(r).toMatchObject({ rated: false, reason: `No trading reported over the last ${M.crypto.volumeWindowDays} days, so there is no market price to measure.` })
+    // Only the window counts: volume a year ago does not make a coin traded today.
+    const lapsed = rateAsset({ kind: 'crypto', closes, dollarVolumes: [...flat(336, 1e6), ...flat(30, 0)], marketCapUsd: 6e7 }, NOW)
+    expect(lapsed.rated).toBe(false)
+    // No volume figure at all is missing data, not "untraded": coverage decides that case, and
+    // here the parts present carry 75% of the weight, so it is rated without liquidity.
+    const unknown = rateAsset({ kind: 'crypto', closes, marketCapUsd: 6e7 }, NOW)
+    expect(unknown.rated).toBe(true)
+    expect(unknown.dimensions.find((d) => d.key === 'liquidity')!.subScore).toBeNull()
   })
 
   it('turnover earns nothing above 5%, and thin volume caps liquidity', () => {

@@ -243,6 +243,13 @@ export function rateAsset(inputs: AssetRatingInputs, now: Date = new Date()): As
   if (CORE_DIMENSIONS.some((k) => byKey(k).subScore == null)) {
     return { ...base, rated: false, reason: 'Not enough history to rate (needs one year of prices).', dimensions: dims }
   }
+  // Traded (D99): with no reported trading over the volume window, the price is not a market's.
+  // No volume figure at all is a different case: liquidity is missing and coverage decides.
+  const medianVolume = byKey('liquidity').raw.medianDollarVolume
+  if (medianVolume != null && medianVolume <= M.tradedAboveUsd) {
+    const span = `${method.volumeWindowDays} ${inputs.kind === 'crypto' ? 'days' : 'trading days'}`
+    return { ...base, rated: false, reason: `No trading reported over the last ${span}, so there is no market price to measure.`, dimensions: dims }
+  }
 
   // 2. Coverage: dimensions present must carry the floor share of the applicable weight.
   const applicable = dims.filter((d) => d.weight > 0)

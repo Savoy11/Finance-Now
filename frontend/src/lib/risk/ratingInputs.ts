@@ -14,6 +14,7 @@ import type { AssetType } from '@/types/asset'
 import type { OhlcvCandle } from '@/lib/utils/indicators'
 import type { CompanyFundamentals } from '@/lib/utils/companyRatios'
 import type { AssetRatingInputs } from './assetRating'
+import { METHODOLOGY_V1 as M } from './methodology/v1'
 
 const DAY_MS = 86_400_000
 
@@ -39,12 +40,19 @@ export type CoinEligibility =
   | { eligible: true; coingeckoId: string }
   | { eligible: false; reason: string }
 
-/** Which coins are rated: catalog coins that are not stablecoins or tokenized securities, with a daily history source. */
+/**
+ * Which coins are rated: catalog coins that are not stablecoins, tokenized securities or
+ * coins whose supply steers their price (named in the methodology), with a daily history source.
+ */
 export function coinEligibility(id: string): CoinEligibility {
   const asset = ASSET_CATALOG.find((a) => a.id === id)
   if (!asset) return { eligible: false, reason: 'Only coins in the app’s catalog are rated.' }
   const excluded = COIN_EXCLUDED[asset.assetType]
   if (excluded) return { eligible: false, reason: excluded }
+  const rebasing = M.rebasingCoins.find((c) => c.id === id)
+  if (rebasing) {
+    return { eligible: false, reason: `${rebasing.name} adjusts its supply to steer its price, so its price movement does not measure what it measures for other coins. It is not rated.` }
+  }
   const coingeckoId = COINGECKO_IDS[id]
   if (!coingeckoId) return { eligible: false, reason: 'No daily price history is available for this coin, so it is not rated.' }
   return { eligible: true, coingeckoId }
