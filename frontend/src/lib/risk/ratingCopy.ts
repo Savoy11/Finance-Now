@@ -37,14 +37,17 @@ export function scoreSentence(score: number): string {
 /** §5 item 4 in words, read from capClassesAboveCore so the copy follows a change there. */
 function otherPartsRule(): string {
   return M.capClassesAboveCore === 0
-    ? 'cannot raise the class above price behaviour alone'
+    ? 'cannot raise the score above what price behaviour alone scores'
     : `can improve the class by at most ${M.capClassesAboveCore} over price behaviour alone`
 }
 
-/** §5 item 4: the cap rule, when it lowered the score. */
+/**
+ * §5 item 4: the cap rule, when it lowered the score. With no lift the capped score IS the
+ * price-alone score, so only a lift above 0 needs the second sentence.
+ */
 export function cappedSentence(score: number, coreScore: number, coreCls: RatingClassNumber): string {
-  return `The other parts ${otherPartsRule()}, so the score is capped at ${score}. `
-    + `Price behaviour alone scores ${coreScore}, class ${coreCls}.`
+  const capped = `The other parts ${otherPartsRule()}, so the score is capped at ${score}.`
+  return M.capClassesAboveCore === 0 ? capped : `${capped} Price behaviour alone scores ${coreScore}, class ${coreCls}.`
 }
 
 /** §2: shown beside the rating, never part of it. */

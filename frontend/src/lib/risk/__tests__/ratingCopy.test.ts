@@ -60,13 +60,13 @@ describe('the rating’s copy', () => {
     expect(copy.recentVolatilitySentence('40%')).toContain(`${M.recentVolatilityDays} days`)
   })
 
-  it('states the cap rule as decided (no lift, D97), and would follow a change to it', () => {
+  it('states the cap rule as decided (no lift, D97; capped at the price score, D98), and would follow a change to it', () => {
     expect(M.capClassesAboveCore).toBe(0)
-    const rule = 'The other parts cannot raise the class above price behaviour alone'
+    const rule = 'The other parts cannot raise the score above what price behaviour alone scores'
     expect(copy.HOW_IT_BECOMES_A_CLASS.join(' ')).toContain(`${rule}; they can always lower it.`)
-    expect(copy.cappedSentence(43, 32.9, 5)).toBe(`${rule}, so the score is capped at 43. Price behaviour alone scores 32.9, class 5.`)
+    expect(copy.cappedSentence(32.9, 32.9, 5)).toBe(`${rule}, so the score is capped at 32.9.`)
     const withLift = withPatch(M, (m) => { (m as unknown as { capClassesAboveCore: number }).capClassesAboveCore = 1 }, () => copy.cappedSentence(57, 40, 5))
-    expect(withLift).toContain('can improve the class by at most 1 over price behaviour alone')
+    expect(withLift).toBe('The other parts can improve the class by at most 1 over price behaviour alone, so the score is capped at 57. Price behaviour alone scores 40, class 5.')
   })
 
   it('says where the numbers come from, whether or not the method is provisional', () => {

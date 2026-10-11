@@ -85,8 +85,92 @@ describe('price curves from the EU PRIIPs bands, and no lift (D97)', () => {
     }
   })
 
-  it('the other parts cannot lift the class', () => {
+  it('the other parts cannot lift the rating', () => {
     expect(M.capClassesAboveCore).toBe(0)
+  })
+})
+
+describe('the cap rule holds the score at the price score (§5 item 4; D98)', () => {
+  type Rated = Extract<ReturnType<typeof rateAsset>, { rated: true }>
+  const round1 = (x: number) => Math.round(x * 10) / 10
+  const mean = (ds: Rated['dimensions']) =>
+    ds.reduce((a, d) => a + d.weight * (d.subScore as number), 0) / ds.reduce((a, d) => a + d.weight, 0)
+
+  /** A seeded generator, so every run tests the same assets. */
+  function rng(seed: number) {
+    return () => {
+      seed = (seed + 0x6d2b79f5) | 0
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed)
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+    }
+  }
+
+  function randomAsset(r: () => number): AssetRatingInputs {
+    const between = (lo: number, hi: number) => lo * (hi / lo) ** r()
+    const kind = r() < 0.5 ? 'crypto' : 'stock'
+    const n = kind === 'crypto' ? 366 : 260
+    const sigma = between(0.0003, 0.12)
+    const closes = [100]
+    for (let i = 1; i < n; i++) closes.push(closes[i - 1] * Math.exp(sigma * (r() * 2 - 1) * Math.sqrt(3)))
+    const marketCapUsd = between(1e6, 3e12)
+    if (kind === 'crypto') return { kind, closes, dollarVolumes: closes.map(() => between(1e4, 1e11)), marketCapUsd }
+    return {
+      kind, closes, volumes: closes.map(() => between(1e2, 1e9)), marketCapUsd, sector: r() < 0.15 ? 'financials' : 'technology',
+      fundamentals: { longTermDebt: between(1, 1e3), shareholdersEquity: r() < 0.1 ? -10 : between(1, 1e3), netIncome: (r() - 0.4) * 50, revenue: 100, periodEnd: '2026-06-30' },
+    }
+  }
+
+  /** 4,000 generated assets, rated, with the two raw means the engine rounds. */
+  const generated = (() => {
+    const next = rng(20261011)
+    const out: Array<{ r: Rated; weighted: number; rawCore: number }> = []
+    for (let i = 0; i < 4000; i++) {
+      const r = rateAsset(randomAsset(next), NOW)
+      if (!r.rated) continue
+      out.push({
+        r,
+        weighted: mean(r.dimensions.filter((d) => d.weight > 0 && d.subScore != null)),
+        rawCore: mean(r.dimensions.filter((d) => d.key === 'volatility' || d.key === 'drawdown')),
+      })
+    }
+    return out
+  })()
+  /** The price score sat within 0.05 under a class line: shown as the score that starts a class. */
+  const roundingCase = (rawCore: number) => classForScore(rawCore).cls !== classForScore(round1(rawCore)).cls
+
+  it('on 4,000 generated assets: never above the price score, every class from a shown score, and the same classes as D97 bar one rounding case', () => {
+    expect(generated.length).toBeGreaterThan(3000)
+    const seen = { capped: 0, notCapped: 0, scoreMovedClassKept: 0, roundingCase: 0 }
+    for (const [i, { r, weighted, rawCore }] of generated.entries()) {
+      expect(r.coreScore).toBe(round1(rawCore))
+      expect(r.coreCls).toBe(classForScore(r.coreScore).cls)
+      expect(r.score).toBe(Math.min(round1(weighted), r.coreScore))
+      expect(r.cls).toBe(classForScore(r.score).cls)
+      expect(r.capped).toBe(round1(weighted) > r.coreScore)
+      expect(r.cls).toBeGreaterThanOrEqual(r.coreCls)
+      seen[r.capped ? 'capped' : 'notCapped']++
+
+      // D97 capped at the top of the price class, and classed the price score unrounded.
+      const d97Score = round1(Math.min(weighted, topOfClass(classForScore(rawCore).cls)))
+      if (roundingCase(rawCore)) { seen.roundingCase++; continue }
+      expect(r.cls, `asset ${i}`).toBe(classForScore(d97Score).cls)
+      if (r.score !== d97Score) seen.scoreMovedClassKept++
+    }
+    // Each branch is exercised, or the comparison above proves nothing.
+    expect(seen.capped).toBeGreaterThan(100)
+    expect(seen.notCapped).toBeGreaterThan(100)
+    expect(seen.scoreMovedClassKept).toBeGreaterThan(100)
+    expect(seen.roundingCase).toBeGreaterThan(0)
+  })
+
+  it('the rounding case: a price score shown as the start of a class is in that class', () => {
+    const { r, rawCore } = generated.find((g) => roundingCase(g.rawCore))!
+    // D97 showed this price score as, say, "86" and filed it in class 2, the class of 85.96.
+    expect(M.classes.map((c) => c.min as number)).toContain(r.coreScore)
+    expect(classForScore(rawCore).cls).toBe(r.coreCls + 1)
+    expect(r.coreCls).toBe(classForScore(r.coreScore).cls)
+    expect(r.score).toBeLessThanOrEqual(r.coreScore)
   })
 })
 
@@ -185,7 +269,7 @@ describe('stocks', () => {
 })
 
 describe('crypto', () => {
-  it('the cap rule stops size and liquidity lifting a volatile coin above its price class (D97)', () => {
+  it('the cap rule stops size and liquidity lifting a volatile coin above its price score (D97, D98)', () => {
     const r = rateAsset({
       kind: 'crypto',
       closes: zigzag(366, 1.2 / Math.sqrt(365)), // ~120% annualised volatility, a 6% largest fall
@@ -194,11 +278,12 @@ describe('crypto', () => {
     }, NOW)
     if (!r.rated) throw new Error('expected a rating')
     // Price alone: 0.6×7.2 + 0.4×71.5 = 32.9, class 5. With liquidity 90 and scale 95 the
-    // weighted score would be 62.7, class 3; with no lift it stops at the top of class 5.
-    expect(r.coreScore).toBeCloseTo(32.9, 1)
+    // weighted score would be 62.7, class 3; with no lift it stops at the price score itself
+    // (D97 stopped it at 43, the top of class 5, as it did every capped coin in class 5).
+    expect(r.coreScore).toBe(32.9)
     expect(r.coreCls).toBe(5)
     expect(r.capped).toBe(true)
-    expect(r.score).toBe(topOfClass(5))
+    expect(r.score).toBe(32.9)
     expect(r.cls).toBe(5)
   })
 

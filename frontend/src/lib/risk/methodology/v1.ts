@@ -10,9 +10,10 @@
  * The numbers were decided by the owner on 2026-10-11 (D97), after the validation in the
  * methodology's §8 (docs/assessments/risk-ratings-validation-2026-10-10.md): the volatility
  * and drawdown curves come from the EU PRIIPs bands and are shared by coins and stocks
- * (PRICE_CURVES), and the other parts may lower the class but never raise it above price
- * behaviour alone (capClassesAboveCore: 0). The weights and the other curves are Finance
- * Now's choices, kept by that decision; no source supports any particular weights
+ * (PRICE_CURVES), and the other parts may lower the rating but never raise it above price
+ * behaviour alone (capClassesAboveCore: 0; D98, the same day, capped the score at the price
+ * score itself rather than at the top of its class). The weights and the other curves are
+ * Finance Now's choices, kept by that decision; no source supports any particular weights
  * (docs/assessments/risk-rating-methods-survey-2026-10-07.md).
  *
  * Nothing here is shown to anyone: ASSET_PAGE_RATINGS_SHOWN stays false until counsel
@@ -95,8 +96,11 @@ export const METHODOLOGY_V1 = {
   stabilityWeeks: 16,
 
   /**
-   * The parts other than volatility and drawdown may lift the class at most this many classes
-   * above price risk alone. 0 since D97: they can lower the class, never raise it (it was 1).
+   * How far the parts other than volatility and drawdown may lift the rating above price risk
+   * alone. 0 means no lift at all: the score is capped at the price-alone score, so they can
+   * lower the score and the class but never raise either (D97 set 0, D98 moved its cap from the
+   * top of the price class to the price score itself). Above 0, the score may reach the top of
+   * the class that many better (the first draft's rule was 1).
    */
   capClassesAboveCore: 0,
 
