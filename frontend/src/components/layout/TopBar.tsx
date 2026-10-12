@@ -152,10 +152,12 @@ function AlertsBell() {
             </div>
           )}
 
-          {/* The bell was the one CoinGecko-fed surface with no provenance
-              line anywhere above it — every other one sits under a page that
-              renders SourceLine. Attribution is the app's obligation wherever
-              the data shows, and a dropdown is a surface. */}
+          {/* The bell sits outside every page, so no page's SourceLine covers
+              it. Attribution is the app's obligation wherever the data shows,
+              and a dropdown is a surface. (This comment once called the bell the
+              only such surface; the pop-outs and the price-alert toast were two
+              more, credited 2026-10-12, T-424. lib/data/__tests__/
+              coingeckoCredit.test.ts now finds them.) */}
           <div className="px-4 py-2 border-t border-border">
             <SourceLine id="alerts" asOf={checkedAt ?? undefined} />
           </div>

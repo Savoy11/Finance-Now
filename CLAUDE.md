@@ -798,6 +798,11 @@ site nobody has reviewed. Full design: `docs/architecture/source-terms.md`.
 >   prescribes the attribution **message**, so `SourceProvider.attribution`
 >   carries "Powered by CoinGecko" verbatim with a 10px floor and `SourceLine`
 >   renders it — a test parses the rendered class and fails below the floor.
+>   **Where it renders is checked too (T-424, 2026-10-12):**
+>   `lib/data/__tests__/coingeckoCredit.test.ts` follows imports, not URLs, and fails when a
+>   route reaching CoinGecko has no entry naming it, or when a page or a part of the app
+>   shell reads such a route without a SourceLine (or `attributionText()`, for a toast)
+>   carrying the credit. It cannot see tabs: a tabbed page keeps its SourceLine above the tabs.
 > - **Reddit's robots.txt disallows this app's agent**, so reddit.com is gated
 >   off unless `REDDIT_CLIENT_ID` is set, enforced in `pinnedFetch` so a new
 >   call site inherits it. `SourceTermsEntry.robotsDisallowed` records that as a

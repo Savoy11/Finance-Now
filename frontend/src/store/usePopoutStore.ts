@@ -4,7 +4,7 @@ export type PopoutKey = 'prices' | 'market-overview' | 'news-feed' | 'staking-ra
 
 export const POPOUT_META: Record<PopoutKey, { title: string; defaultWidth: number; defaultHeight: number }> = {
   'prices':          { title: 'Live Prices',      defaultWidth: 360, defaultHeight: 400 },
-  'market-overview': { title: 'Market Overview',  defaultWidth: 520, defaultHeight: 220 },
+  'market-overview': { title: 'Market Overview',  defaultWidth: 520, defaultHeight: 260 },
   'news-feed':       { title: 'News Feed',         defaultWidth: 440, defaultHeight: 520 },
   'staking-rates':   { title: 'Staking Rates',    defaultWidth: 380, defaultHeight: 340 },
 }
