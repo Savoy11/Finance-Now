@@ -1,9 +1,10 @@
 import Anthropic from '@anthropic-ai/sdk'
 import OpenAI from 'openai'
-import { toolsForAgent, runTool } from './tools'
+import { toolsForAgent, runToolWithCredits } from './tools'
 import { type ProviderId } from './prompts'
 import { loadAgentConfig } from './config'
 import { getProviderKey } from '@/lib/api/live/providers'
+import type { RequiredCredit } from '@/lib/data/dataSources'
 
 // Alias so existing call-sites below don't need renaming
 const getAgentConfig = loadAgentConfig
@@ -13,7 +14,25 @@ const getAgentConfig = loadAgentConfig
 export interface AgentRunResult {
   text: string
   toolsUsed: { name: string; input: unknown }[]
+  /**
+   * Credits the data behind the answer requires wherever it is shown, gathered from
+   * every tool the run called (D101): "Powered by CoinGecko" when it read a coin price.
+   * The agent routes send them with the answer and the page shows them under it.
+   */
+  credits: RequiredCredit[]
   stopReason: string | null
+}
+
+/** Run one tool and add its credits to the run's, once each. */
+async function runToolInto(
+  credits: RequiredCredit[],
+  name: string,
+  input: Record<string, unknown>,
+  opts: RunAgentOptions,
+): Promise<unknown> {
+  const out = await runToolWithCredits(name, input, opts.origin, opts.watchlist?.terms)
+  for (const c of out.credits) if (!credits.some((x) => x.text === c.text)) credits.push(c)
+  return out.result
 }
 
 const PROVIDER_ENV_VARS: Record<ProviderId, string> = {
@@ -103,6 +122,7 @@ async function runAgentAnthropic(
 
   const tools: any[] = [...toolsForAgent(cfg.toolset), webSearchTool(opts.webSearchMaxUses ?? 5)]
   const toolsUsed: { name: string; input: unknown }[] = []
+  const credits: RequiredCredit[] = []
   const maxIterations = opts.maxIterations ?? 8
   let stopReason: string | null = null
 
@@ -132,7 +152,7 @@ async function runAgentAnthropic(
         .map((b) => b.text)
         .join('\n')
         .trim()
-      return { text, toolsUsed, stopReason }
+      return { text, toolsUsed, credits, stopReason }
     }
 
     // Client-side tool_use blocks only — server_tool_use (web_search) is
@@ -143,14 +163,14 @@ async function runAgentAnthropic(
     const toolResults = await Promise.all(
       toolUses.map(async (tu) => {
         toolsUsed.push({ name: tu.name, input: tu.input })
-        const result = await runTool(tu.name, tu.input as Record<string, unknown>, opts.origin, opts.watchlist?.terms)
+        const result = await runToolInto(credits, tu.name, tu.input as Record<string, unknown>, opts)
         return { type: 'tool_result' as const, tool_use_id: tu.id, content: JSON.stringify(result) }
       })
     )
     messages.push({ role: 'user', content: toolResults })
   }
 
-  return { text: 'I reached the maximum number of steps before finishing. Please narrow the question and try again.', toolsUsed, stopReason }
+  return { text: 'I reached the maximum number of steps before finishing. Please narrow the question and try again.', toolsUsed, credits, stopReason }
 }
 
 // ─── OpenAI/Gemini runner ─────────────────────────────────────────────────────
@@ -206,6 +226,7 @@ async function runAgentOpenAI(
   // switched to a non-Anthropic provider lose web search but keep data tools.
   const openaiTools = toOpenAITools(toolsForAgent(cfg.toolset))
   const toolsUsed: { name: string; input: unknown }[] = []
+  const credits: RequiredCredit[] = []
   const maxIterations = opts.maxIterations ?? 8
   let stopReason: string | null = null
 
@@ -227,7 +248,7 @@ async function runAgentOpenAI(
     chatMessages.push(assistantMsg)
 
     if (choice.finish_reason !== 'tool_calls' || !assistantMsg.tool_calls?.length) {
-      return { text: assistantMsg.content?.trim() ?? '', toolsUsed, stopReason }
+      return { text: assistantMsg.content?.trim() ?? '', toolsUsed, credits, stopReason }
     }
 
     // Execute all tool calls in parallel
@@ -237,7 +258,7 @@ async function runAgentOpenAI(
         const fn = (tc as any).function as { name: string; arguments: string }
         const input = JSON.parse(fn.arguments || '{}')
         toolsUsed.push({ name: fn.name, input })
-        const result = await runTool(fn.name, input, opts.origin, opts.watchlist?.terms)
+        const result = await runToolInto(credits, fn.name, input, opts)
         return {
           role: 'tool' as const,
           tool_call_id: tc.id,
@@ -248,7 +269,7 @@ async function runAgentOpenAI(
     chatMessages.push(...toolResultMessages)
   }
 
-  return { text: 'I reached the maximum number of steps before finishing. Please narrow the question and try again.', toolsUsed, stopReason }
+  return { text: 'I reached the maximum number of steps before finishing. Please narrow the question and try again.', toolsUsed, credits, stopReason }
 }
 
 // ─── Dispatcher ───────────────────────────────────────────────────────────────

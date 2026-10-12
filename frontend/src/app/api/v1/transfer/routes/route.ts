@@ -7,6 +7,7 @@ import {
 import { computeNetworkFees, FALLBACK_PRICES_AS_OF } from '@/lib/data/networkFees'
 import { fetchLiveFeeOverlay, OVERLAY_EXCHANGE_IDS } from '@/lib/server/withdrawFeeOverlay'
 import { TRANSFER_FEES_LAST_VERIFIED } from '@/lib/data/transferFees'
+import { getSource, requiredAttributions } from '@/lib/data/dataSources'
 
 export const dynamic = 'force-dynamic'
 export { options as OPTIONS }
@@ -165,6 +166,9 @@ export async function GET(req: NextRequest) {
       cheapestFeePercent: best?.feePercent ?? null,
     },
     routes,
+    // D100: USD figures here use CoinGecko's token prices (the shared network-fees
+    // computation), so the credit its terms require travels with them.
+    attributions: requiredAttributions(getSource('network-fees')!),
     // Which exchanges' fees/availability in this response are live vs stored.
     liveOverlay: {
       liveExchanges: liveExchangeIds,

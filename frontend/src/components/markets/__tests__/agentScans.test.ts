@@ -37,8 +37,15 @@ describe('running a scan', () => {
     const tools = [{ name: 'get_macro_quote' }, { name: 'get_yield_curve' }, { name: 'get_macro_quote' }]
     const f = fakeFetch(() => json({ ok: true, report: 'Top movers…', toolsUsed: tools, agentId: 'macro-screener' }))
     const out = await runAgentScan(MACRO_MOVERS_SCAN, f.impl)
-    expect(out).toEqual({ ok: true, report: 'Top movers…', toolsUsed: tools })
+    expect(out).toEqual({ ok: true, report: 'Top movers…', toolsUsed: tools, credits: [] })
     if (out.ok) expect(distinctToolNames(out.toolsUsed)).toEqual(['get_macro_quote', 'get_yield_curve'])
+  })
+
+  it('returns the credits the answer carries, dropping anything not shaped like one (D101)', async () => {
+    const credit = { text: 'Powered by CoinGecko', href: 'https://www.coingecko.com/en/api', minFontPx: 10 }
+    const f = fakeFetch(() => json({ ok: true, report: 'r', toolsUsed: [], credits: [credit, { href: 'x' }, 'Powered by'] }))
+    const out = await runAgentScan(EQUITY_OUTLIER_SCAN, f.impl)
+    expect(out.ok && out.credits).toEqual([credit])
   })
 
   it('passes the route’s own refusal through — a missing key or a disabled agent', async () => {

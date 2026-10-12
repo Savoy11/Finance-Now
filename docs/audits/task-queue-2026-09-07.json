@@ -60,17 +60,17 @@
  },
  "counts": {
   "total_verified": 398,
-  "outstanding": 370,
+  "outstanding": 371,
   "by_status": {
    "closed": 210,
    "parked": 135,
-   "open": 18,
+   "open": 19,
    "blocked": 6,
    "unclear": 1
   },
   "by_owner_role": {
    "remote-dev": 92,
-   "either": 44,
+   "either": 45,
    "owner-decision": 148,
    "owner-machine": 86
   },
@@ -78,7 +78,7 @@
   "closed_by_annotation": 210,
   "counts_recomputed_on": "2026-10-12",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
-  "total": 370
+  "total": 371
  },
  "blocking_decisions": [
   {
@@ -13988,6 +13988,43 @@
      "frontend/src/lib/server/__tests__/marketauxNews.test.ts",
      "docs/licensing/marketaux-enquiry-2026-10-07.md"
     ]
+   }
+  },
+  {
+   "id": "T-431",
+   "title": "Carry CoinGecko’s credit in the agent API, the MCP server and AI answers (D100, D101)",
+   "status": "open",
+   "confidence": "high",
+   "owner_role": "either",
+   "category": "legal",
+   "effort": "medium",
+   "blocking_decision": null,
+   "related_ids": [
+    "T-424",
+    "T-423"
+   ],
+   "summary": "T-424 left two questions with the owner: whether the agent API and the MCP server must carry \"Powered by CoinGecko\" (they named no provider), and whether AI answers quoting CoinGecko figures must show it. The owner answered yes to both on 2026-10-12 (D100, D101).",
+   "next_action": "Built on branch credit-api-ai: /api/v1 responses serving CoinGecko figures carry `attributions`, the MCP tools relay them, and AI answers show the credits their tools gathered. Close when the PR merges on the owner’s word.",
+   "sources": [
+    {
+     "file": "docs/decisions/2026-10-12-owner-decisions.md",
+     "lines": "D100",
+     "quote": "Yes credit should be shown"
+    },
+    {
+     "file": "docs/decisions/2026-10-12-owner-decisions.md",
+     "lines": "D101",
+     "quote": "Still show credit"
+    }
+   ],
+   "opened": {
+    "on": "2026-10-12",
+    "by": "owner decision, filed by the session",
+    "why": "Owner, 2026-10-12, answering the two questions T-424’s closure recorded: \"1. Yes credit should be shown. 2. Still show credit\"."
+   },
+   "progress": {
+    "noted_on": "2026-10-12",
+    "note": "2026-10-12: built and checked on branch credit-api-ai; the PR waits for the owner’s merge. Agent API: /api/v1/prices, /network-fees and /transfer/routes carry `attributions`, documented in the OpenAPI spec. MCP: get_coin_prices and get_network_fees end with the credit (creditNote). AI answers: the tools gather credits through the one fetch every tool uses, the runner returns them once each, the agent routes send them, and the Brief, Research, the Assistant and the AI scans render them with RequiredCredits, which SourceLine now uses too. Guard: lib/data/__tests__/coingeckoCredit.test.ts and lib/agents/__tests__/runnerCredits.test.ts; 13 deliberate breaks, all caught."
    }
   }
  ],
@@ -39616,6 +39653,15 @@
     "what": "T-424 closed on the owner’s word (\"merge #321\"): CoinGecko’s credit shows wherever its data does, held by lib/data/__tests__/coingeckoCredit.test.ts.",
     "evidence": [
      "frontend/src/lib/data/__tests__/coingeckoCredit.test.ts"
+    ]
+   },
+   {
+    "on": "2026-10-12",
+    "what": "T-431 opened from the owner’s answers to T-424’s two questions (D100, D101), and built: CoinGecko’s credit in the agent API, the MCP server and AI answers.",
+    "evidence": [
+     "docs/decisions/2026-10-12-owner-decisions.md",
+     "frontend/src/lib/data/__tests__/coingeckoCredit.test.ts",
+     "frontend/src/lib/agents/__tests__/runnerCredits.test.ts"
     ]
    }
   ]

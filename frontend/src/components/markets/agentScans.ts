@@ -12,6 +12,8 @@
 // panel reaches both. lib/agents/__tests__/researchAgents.test.ts holds every scan
 // here to the run route's whitelist and to its agent's market.
 
+import { parseCredits, type RequiredCredit } from '@/lib/data/dataSources'
+
 export type AgentScanMarket = 'equities' | 'macro'
 
 export interface AgentScan {
@@ -65,7 +67,8 @@ export interface AgentScanTool {
 }
 
 export type AgentScanResult =
-  | { ok: true; report: string; toolsUsed: AgentScanTool[] }
+  /** credits: what the data behind the report requires on screen (D101). */
+  | { ok: true; report: string; toolsUsed: AgentScanTool[]; credits: RequiredCredit[] }
   | { ok: false; error: string }
 
 /**
@@ -85,7 +88,7 @@ export async function runAgentScan(scan: AgentScan, fetchImpl: typeof fetch = fe
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Network error' }
   }
-  let data: { error?: unknown; report?: unknown; toolsUsed?: unknown }
+  let data: { error?: unknown; report?: unknown; toolsUsed?: unknown; credits?: unknown }
   try {
     data = await res.json()
   } catch {
@@ -100,7 +103,7 @@ export async function runAgentScan(scan: AgentScan, fetchImpl: typeof fetch = fe
   const toolsUsed = Array.isArray(data.toolsUsed)
     ? data.toolsUsed.filter((t): t is AgentScanTool => !!t && typeof (t as AgentScanTool).name === 'string')
     : []
-  return { ok: true, report: data.report, toolsUsed }
+  return { ok: true, report: data.report, toolsUsed, credits: parseCredits(data.credits) }
 }
 
 /** Each tool the agent called, once, in the order it was first called. */

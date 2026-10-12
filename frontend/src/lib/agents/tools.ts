@@ -6,6 +6,7 @@ import { CURRENCY_CATALOG, CURRENCY_CATEGORY_INFO } from '@/lib/data/currencyCat
 import { RATES_CATALOG, RATES_CATEGORY_INFO } from '@/lib/data/ratesCatalog'
 import { ohlcvSourceLabel } from '@/lib/utils/ohlcvSource'
 import { RISK_RATINGS_SHOWN } from '@/lib/risk/visibility'
+import { parseCredits, requiredAttributions, sourceForRoute, type RequiredCredit } from '@/lib/data/dataSources'
 
 // ─── Agent tool registry ──────────────────────────────────────────────────────
 //
@@ -459,7 +460,7 @@ export function toolsForAgent(toolset: ToolSet = 'crypto'): Anthropic.Tool[] {
  * `if (!data.ok) return { error: data.error }` branch downstream was
  * unreachable because this threw first.
  */
-async function getJson(origin: string, path: string): Promise<unknown> {
+async function getJson(origin: string, path: string, credits?: RequiredCredit[]): Promise<unknown> {
   const res = await fetch(origin + path, { headers: { Accept: 'application/json' } })
   const body = await res.json().catch(() => null)
   if (!res.ok) {
@@ -468,7 +469,27 @@ async function getJson(origin: string, path: string): Promise<unknown> {
       : `HTTP ${res.status}`
     throw new Error(`${detail} (${path})`)
   }
+  if (credits) {
+    for (const c of creditsFor(path, body)) if (!credits.some((x) => x.text === c.text)) credits.push(c)
+  }
   return body
+}
+
+/**
+ * The credits an answer built on this response must carry (D101). A response that
+ * states its own (`attributions`, the agent API under D100) is taken at its word; a
+ * /live-data route's come from the registry entry that owns it, which is where its
+ * SourceLine on a page reads them. A route that reported failure (`ok: false`)
+ * supplied no data, so it adds none.
+ */
+function creditsFor(path: string, body: unknown): RequiredCredit[] {
+  if (body && typeof body === 'object') {
+    if ((body as { ok?: unknown }).ok === false) return []
+    const own = (body as { attributions?: unknown }).attributions
+    if (Array.isArray(own)) return parseCredits(own)
+  }
+  const entry = sourceForRoute(path)
+  return entry ? requiredAttributions(entry) : []
 }
 
 /**
@@ -491,8 +512,29 @@ function routeFailed(data: unknown): string | null {
 
 type ToolInput = Record<string, unknown>
 
+/** What a tool returned, and the credits its data's licences require (D101). */
+export interface ToolOutcome {
+  result: unknown
+  credits: RequiredCredit[]
+}
+
 /** Execute a tool by name and return a JSON-serializable result for the model. */
+export async function runTool(
+  name: string,
+  input: ToolInput,
+  origin: string,
+  watchlistTerms?: string[]
+): Promise<unknown> {
+  return (await runToolWithCredits(name, input, origin, watchlistTerms)).result
+}
+
 /**
+ * runTool, plus the credits an answer built on its result must carry: "Powered by
+ * CoinGecko" for a coin price, and whatever else a source's licence requires. The
+ * runner gathers them across a run and the agent routes send them with the answer,
+ * for the page to show under it (D101). Every fetch goes through `get` below, so a
+ * new tool collects its credits without doing anything.
+ *
  * Watchlist terms forwarded from the client, OR-matched by the news routes.
  *
  * Agents run server-side and the watchlist lives in localStorage, so the server
@@ -500,12 +542,25 @@ type ToolInput = Record<string, unknown>
  * "what's in the news" would answer from a different, unbiased feed than the one
  * the user is looking at, which is more confusing than no biasing at all.
  */
-export async function runTool(
+export async function runToolWithCredits(
   name: string,
   input: ToolInput,
   origin: string,
   watchlistTerms?: string[]
+): Promise<ToolOutcome> {
+  const credits: RequiredCredit[] = []
+  const result = await execute(name, input, origin, credits, watchlistTerms)
+  return { result, credits }
+}
+
+async function execute(
+  name: string,
+  input: ToolInput,
+  origin: string,
+  credits: RequiredCredit[],
+  watchlistTerms?: string[]
 ): Promise<unknown> {
+  const get = (path: string) => getJson(origin, path, credits)
   const watchlistParam = watchlistTerms?.length ? watchlistTerms.join(',') : null
   // A model can name a tool it was not offered. A withheld one answers with the
   // reason instead of running, so the reply says it is switched off.
@@ -516,16 +571,16 @@ export async function runTool(
     switch (name) {
       case 'get_prices': {
         const coins = (input.coins as string[] | undefined)?.join(',') ?? ''
-        return await getJson(origin, `/api/v1/prices?coins=${encodeURIComponent(coins)}`)
+        return await get(`/api/v1/prices?coins=${encodeURIComponent(coins)}`)
       }
       case 'get_market_overview':
-        return await getJson(origin, `/live-data/markets`)
+        return await get(`/live-data/markets`)
       case 'list_exchanges': {
         const tier = input.tier ? `?tier=${input.tier}` : ''
-        return await getJson(origin, `/api/v1/exchanges${tier}`)
+        return await get(`/api/v1/exchanges${tier}`)
       }
       case 'get_network_fees':
-        return await getJson(origin, `/api/v1/network-fees`)
+        return await get(`/api/v1/network-fees`)
       // find_transfer_routes handler — hidden with its tool definition above.
       // case 'find_transfer_routes': {
       //   const p = new URLSearchParams({
@@ -534,14 +589,14 @@ export async function runTool(
       //     coin: String(input.coin ?? ''),
       //   })
       //   if (input.amount != null) p.set('amount', String(input.amount))
-      //   return await getJson(origin, `/api/v1/transfer/routes?${p.toString()}`)
+      //   return await get(`/api/v1/transfer/routes?${p.toString()}`)
       // }
       case 'get_staking_opportunities': {
         const p = new URLSearchParams({ coin: String(input.coin ?? '') })
         if (input.category) p.set('category', String(input.category))
         // No max_risk: the upstream route stopped serving a composite under D14,
         // so forwarding the param would set a filter the API silently ignores.
-        return await getJson(origin, `/api/v1/staking/opportunities?${p.toString()}`)
+        return await get(`/api/v1/staking/opportunities?${p.toString()}`)
       }
       case 'get_news': {
         const p = new URLSearchParams({ coin: String(input.coin ?? '') })
@@ -550,12 +605,12 @@ export async function runTool(
         // Only when the agent hasn't asked for a specific coin — an explicit
         // "news about SOL" must not be silently narrowed to the watchlist.
         if (watchlistParam && !input.coin) p.set('watchlist', watchlistParam)
-        return await getJson(origin, `/api/v1/news?${p.toString()}`)
+        return await get(`/api/v1/news?${p.toString()}`)
       }
       case 'get_price_history': {
         const coin = String(input.coin ?? '')
         const range = String(input.range ?? '1Y')
-        const data = (await getJson(origin, `/live-data/ohlcv?id=${encodeURIComponent(coin)}&range=${encodeURIComponent(range)}`)) as {
+        const data = (await get(`/live-data/ohlcv?id=${encodeURIComponent(coin)}&range=${encodeURIComponent(range)}`)) as {
           ok?: boolean; candles?: { time: number; open: number; high: number; low: number; close: number }[]; source?: string; venue?: string
         }
         const candles = data.candles ?? []
@@ -627,14 +682,14 @@ export async function runTool(
       // ── Equity tools ──────────────────────────────────────────────────────────
       case 'get_stock_quote': {
         const symbols = (input.symbols as string[] | undefined)?.map((s) => s.toUpperCase()).join(',') ?? ''
-        const data = (await getJson(origin, `/live-data/security-quotes?symbols=${encodeURIComponent(symbols)}`)) as {
+        const data = (await get(`/live-data/security-quotes?symbols=${encodeURIComponent(symbols)}`)) as {
           source?: string; quotes?: Record<string, { price: number; changePercent: number | null; marketCap: number | null; volume: number | null; reference?: boolean }>
         }
         return { source: data.source, quotes: data.quotes ?? {} }
       }
       case 'get_stock_financials': {
         const symbol = String(input.symbol ?? '').toUpperCase()
-        const data = (await getJson(origin, `/live-data/company-facts?symbol=${encodeURIComponent(symbol)}`)) as {
+        const data = (await get(`/live-data/company-facts?symbol=${encodeURIComponent(symbol)}`)) as {
           ok?: boolean; error?: string; company?: string; fiscalYearEnd?: string; fundamentals?: unknown; ratios?: unknown
         }
         if (!data.ok) return { error: data.error ?? 'no fundamentals available', symbol }
@@ -643,7 +698,7 @@ export async function runTool(
       }
       case 'get_stock_profile': {
         const symbol = String(input.symbol ?? '').toUpperCase()
-        const data = (await getJson(origin, `/live-data/company-profile?symbol=${encodeURIComponent(symbol)}`)) as {
+        const data = (await get(`/live-data/company-profile?symbol=${encodeURIComponent(symbol)}`)) as {
           ok?: boolean; error?: string; profile?: unknown; wiki?: { extract?: string } | null
         }
         if (!data.ok) return { error: data.error ?? 'no profile available', symbol }
@@ -653,7 +708,7 @@ export async function runTool(
         const symbol = String(input.symbol ?? '').toUpperCase()
         const form = String(input.form ?? '8-K')
         const limit = Number(input.limit ?? 8)
-        const data = (await getJson(origin, `/live-data/sec-filings?symbol=${encodeURIComponent(symbol)}&form=${encodeURIComponent(form)}&limit=${limit}`)) as {
+        const data = (await get(`/live-data/sec-filings?symbol=${encodeURIComponent(symbol)}&form=${encodeURIComponent(form)}&limit=${limit}`)) as {
           ok?: boolean; error?: string; company?: string; filings?: Array<{ form: string; filedAt: string; reportDate: string | null; itemLabels: string[]; url: string }>
         }
         if (!data.ok) return { error: data.error ?? 'no filings available', symbol }
@@ -665,7 +720,7 @@ export async function runTool(
       case 'get_stock_news': {
         const symbol = String(input.symbol ?? '').toUpperCase()
         const limit = Number(input.limit ?? 10)
-        const data = (await getJson(origin, `/live-data/market-news?symbol=${encodeURIComponent(symbol)}&limit=${limit}`)) as {
+        const data = (await get(`/live-data/market-news?symbol=${encodeURIComponent(symbol)}&limit=${limit}`)) as {
           ok?: boolean; articles?: Array<{ title: string; source: string; publishedAt: string; sentiment: string; category: string; url: string }>
         }
         const failure = routeFailed(data)
@@ -705,7 +760,7 @@ export async function runTool(
       case 'get_stock_social': {
         const symbol = String(input.symbol ?? '').toUpperCase()
         const limit = Number(input.limit ?? 20)
-        const data = (await getJson(origin, `/live-data/stock-social?symbol=${encodeURIComponent(symbol)}&limit=${limit}`)) as {
+        const data = (await get(`/live-data/stock-social?symbol=${encodeURIComponent(symbol)}&limit=${limit}`)) as {
           ok?: boolean; summaries?: unknown; providers?: Array<{ name: string }>
           signals?: Array<{ platform: string; title: string; sentiment: string; score: number; url: string }>
         }
@@ -721,7 +776,7 @@ export async function runTool(
       case 'get_stock_price_history': {
         const symbol = String(input.symbol ?? '').toUpperCase()
         const range = String(input.range ?? '1Y')
-        const data = (await getJson(origin, `/live-data/security-ohlcv?symbol=${encodeURIComponent(symbol)}&range=${range}`)) as {
+        const data = (await get(`/live-data/security-ohlcv?symbol=${encodeURIComponent(symbol)}&range=${range}`)) as {
           ok?: boolean; candles?: { time: number; open: number; high: number; low: number; close: number }[]; source?: string
         }
         const candles = data.candles ?? []
@@ -748,7 +803,7 @@ export async function runTool(
           .map((t) => t.toUpperCase())
         const p = new URLSearchParams({ limit: String(limit) })
         if (wlSymbols.length > 0) p.set('watchlist', wlSymbols.slice(0, 6).join(','))
-        const data = (await getJson(origin, `/live-data/market-news?${p.toString()}`)) as {
+        const data = (await get(`/live-data/market-news?${p.toString()}`)) as {
           ok?: boolean
           articles?: { title: string; url: string; source: string; publishedAt: string; summary: string; sentiment: string; category: string; relatedSymbols: string[] }[]
         }
@@ -764,7 +819,7 @@ export async function runTool(
       }
       case 'get_market_calendar': {
         const days = Math.min(Number(input.days ?? 14) || 14, 30)
-        const data = (await getJson(origin, `/live-data/market-calendar?days=${days}`)) as {
+        const data = (await get(`/live-data/market-calendar?days=${days}`)) as {
           ok?: boolean; configured?: boolean; earnings?: unknown[]; economic?: unknown[]; from?: string; to?: string
         }
         if (data.configured === false) {
@@ -792,7 +847,7 @@ export async function runTool(
       }
       case 'get_stock_outliers': {
         const minMcap = input.min_mcap != null ? Number(input.min_mcap) : 2
-        const data = (await getJson(origin, `/live-data/stock-outliers?min_mcap=${minMcap}`)) as {
+        const data = (await get(`/live-data/stock-outliers?min_mcap=${minMcap}`)) as {
           ok?: boolean; configured?: boolean; universeSize?: number; evaluated?: number
           sectorsEvaluated?: number; peCoverage?: number; note?: string; categories?: unknown
         }
@@ -848,7 +903,7 @@ export async function runTool(
       }
       case 'get_macro_quote': {
         const symbols = (input.symbols as string[] | undefined)?.map((s) => s.toUpperCase()).join(',') ?? ''
-        const data = (await getJson(origin, `/live-data/security-quotes?symbols=${encodeURIComponent(symbols)}`)) as {
+        const data = (await get(`/live-data/security-quotes?symbols=${encodeURIComponent(symbols)}`)) as {
           source?: string; quotes?: Record<string, { price: number; changePercent: number | null; volume: number | null; reference?: boolean }>
         }
         return { source: data.source, quotes: data.quotes ?? {} }
@@ -856,7 +911,7 @@ export async function runTool(
       case 'get_macro_price_history': {
         const symbol = String(input.symbol ?? '').toUpperCase()
         const range = String(input.range ?? '1Y')
-        const data = (await getJson(origin, `/live-data/security-ohlcv?symbol=${encodeURIComponent(symbol)}&range=${range}`)) as {
+        const data = (await get(`/live-data/security-ohlcv?symbol=${encodeURIComponent(symbol)}&range=${range}`)) as {
           ok?: boolean; candles?: { time: number; open: number; high: number; low: number; close: number }[]; source?: string
         }
         const candles = data.candles ?? []
@@ -874,7 +929,7 @@ export async function runTool(
         }
       }
       case 'get_yield_curve': {
-        const data = (await getJson(origin, `/live-data/treasury-yield-curve`)) as {
+        const data = (await get(`/live-data/treasury-yield-curve`)) as {
           ok?: boolean; error?: string; latest?: unknown; monthAgo?: unknown; yearStart?: unknown
           spread2s10s?: number; spread3m10y?: number; shape?: string
         }
@@ -889,14 +944,14 @@ export async function runTool(
         const wanted = (input.currencies as string[] | undefined)?.map((c) => c.toUpperCase())
         const pick = (rates: Record<string, number>) =>
           wanted?.length ? Object.fromEntries(Object.entries(rates).filter(([k]) => wanted.includes(k))) : rates
-        const official = (await getJson(origin, `/live-data/fx-rates`)) as {
+        const official = (await get(`/live-data/fx-rates`)) as {
           ok?: boolean; error?: string; date?: string; rates?: Record<string, number>
         }
         const out: Record<string, unknown> = official.ok
           ? { officialDate: official.date, officialSource: 'ECB reference rates', officialRates: pick(official.rates ?? {}) }
           : { officialError: official.error ?? 'official rates unavailable' }
         if (input.include_extended === true) {
-          const ext = (await getJson(origin, `/live-data/fx-rates-extended`)) as {
+          const ext = (await get(`/live-data/fx-rates-extended`)) as {
             ok?: boolean; error?: string; date?: string; rates?: Record<string, number>
           }
           if (ext.ok) {
@@ -914,7 +969,7 @@ export async function runTool(
         const limit = Math.min(Number(input.limit ?? 10) || 10, 25)
         const p = new URLSearchParams({ limit: String(limit) })
         if (input.pillar) p.set('pillar', String(input.pillar))
-        const data = (await getJson(origin, `/live-data/macro-news?${p.toString()}`)) as {
+        const data = (await get(`/live-data/macro-news?${p.toString()}`)) as {
           ok?: boolean
           articles?: { title: string; url: string; source: string; publishedAt: string; summary: string; sentiment: string; pillar: string; related: { label: string }[] }[]
         }

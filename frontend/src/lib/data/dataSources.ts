@@ -77,12 +77,19 @@ export interface DataSourceEntry {
 
 // Convenience provider presets (kept inline where one-off).
 const SEC_EDGAR: SourceProvider = { name: 'SEC EDGAR', host: 'data.sec.gov', url: 'https://www.sec.gov/edgar', role: 'primary', auth: 'none' }
+/** A credit a licence requires on screen, verbatim. */
+export type RequiredCredit = NonNullable<SourceProvider['attribution']>
+
 // Attribution per CoinGecko API Terms clause 4 (read 2026-08-29): the message
-// is prescribed, as is a minimum font size of 10.
+// is prescribed, as is a minimum font size of 10. Exported for the agent API,
+// whose /api/v1/prices calls CoinGecko itself and has no registry entry (D100).
+export const COINGECKO_ATTRIBUTION: RequiredCredit = {
+  text: 'Powered by CoinGecko', href: 'https://www.coingecko.com/en/api', minFontPx: 10,
+}
 const COINGECKO: SourceProvider = {
   name: 'CoinGecko', host: 'api.coingecko.com', url: 'https://www.coingecko.com/en/api',
   role: 'primary', auth: 'none',
-  attribution: { text: 'Powered by CoinGecko', href: 'https://www.coingecko.com/en/api', minFontPx: 10 },
+  attribution: COINGECKO_ATTRIBUTION,
 }
 const DEFILLAMA = (host: string): SourceProvider => ({ name: 'DefiLlama', host, url: 'https://defillama.com/docs/api', role: 'primary', auth: 'none' })
 // Yahoo Finance was the `YAHOO` preset here — the keyless primary on six of the
@@ -545,6 +552,23 @@ export function getSource(id: string): DataSourceEntry | undefined {
 }
 
 /**
+ * The entry that owns a /live-data route, given the path a caller fetched
+ * ("/live-data/pump-report/metrics?x=1"): the entry with that id, else the one that
+ * covers it, else the one whose `route` names it. Undefined for anything else. The
+ * agent tools use it to find the credits their answers carry (D101), and the credit
+ * guard to check that every CoinGecko route has an owner naming CoinGecko.
+ */
+export function sourceForRoute(fetchedPath: string): DataSourceEntry | undefined {
+  const m = fetchedPath.match(/^\/live-data\/([a-z0-9-]+(?:\/[a-z0-9-]+)*)/)
+  if (!m) return undefined
+  const route = m[1]
+  const named = new RegExp(`/live-data/${route.replace(/[-/]/g, (c) => `\\${c}`)}(?![a-z0-9/-])`)
+  return BY_ID.get(route)
+    ?? DATA_SOURCES.find((e) => e.covers?.includes(route))
+    ?? DATA_SOURCES.find((e) => named.test(e.route ?? ''))
+}
+
+/**
  * How a surface's provenance should READ, given its status.
  *
  * The distinction this exists to enforce: a derived value is Finance Now's own
@@ -586,6 +610,17 @@ export function requiredAttributions(entry: DataSourceEntry): NonNullable<Source
     out.push(p.attribution)
   }
   return out
+}
+
+/**
+ * Credits read from a response body: the agent API's `attributions` (D100), the agent
+ * routes' `credits` (D101). Anything not shaped like a credit is dropped, never shown.
+ */
+export function parseCredits(value: unknown): RequiredCredit[] {
+  if (!Array.isArray(value)) return []
+  return value.filter((c): c is RequiredCredit =>
+    !!c && typeof c === 'object' && typeof (c as RequiredCredit).text === 'string'
+      && ((c as RequiredCredit).href === undefined || typeof (c as RequiredCredit).href === 'string'))
 }
 
 /**

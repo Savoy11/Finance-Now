@@ -58,6 +58,21 @@ async function post<T>(path: string, body: unknown): Promise<T> {
   return json as T
 }
 
+/**
+ * The credits a response's licences require (D100), relayed with the figures they cover.
+ * CoinGecko's API Terms clause 4 prescribes "Powered by CoinGecko" wherever its data is
+ * shown, and this server cannot show anything itself, so it hands the words on to the
+ * client with the request to show them. The API sends them as `attributions`; a response
+ * with none adds nothing.
+ */
+function creditNote(data: { attributions?: Array<{ text?: unknown; href?: unknown }> }): string {
+  const credits = (data.attributions ?? [])
+    .filter((a): a is { text: string; href?: unknown } => !!a && typeof a.text === 'string')
+    .map((a) => (typeof a.href === 'string' ? `${a.text} (${a.href})` : a.text))
+  if (credits.length === 0) return ''
+  return `\n\n${credits.join(' · ')}. These figures' licence requires this credit wherever they are shown.`
+}
+
 // ─── Server setup ─────────────────────────────────────────────────────────────
 
 const server = new McpServer({
@@ -80,14 +95,14 @@ server.tool(
   },
   async ({ coins }) => {
     const qs  = coins ? `?coins=${encodeURIComponent(coins)}` : ''
-    const data = await get<{ prices: Record<string, number>; source: string; updatedAt: string }>(`/prices${qs}`)
+    const data = await get<{ prices: Record<string, number>; source: string; updatedAt: string; attributions?: Array<{ text?: unknown; href?: unknown }> }>(`/prices${qs}`)
     const lines = Object.entries(data.prices)
       .map(([coin, price]) => `${coin.toUpperCase()}: $${price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`)
       .join('\n')
     return {
       content: [{
         type: 'text',
-        text: `**Coin Prices** (source: ${data.source}, updated: ${new Date(data.updatedAt).toLocaleTimeString()})\n\n${lines}`,
+        text: `**Coin Prices** (source: ${data.source}, updated: ${new Date(data.updatedAt).toLocaleTimeString()})\n\n${lines}${creditNote(data)}`,
       }],
     }
   }
@@ -150,6 +165,7 @@ server.tool(
 //         blockedReason?: string | null
 //       }>
 //       withdrawalAvailability?: { checkedForNetworks: string[]; assumedOpenFrom: string; note: string }
+//       attributions?: Array<{ text?: unknown; href?: unknown }>
 //     }>(`/transfer/routes?${params}`)
 
 //     const { summary, routes } = data
@@ -211,6 +227,7 @@ server.tool(
 //     if (data.withdrawalAvailability) {
 //       text += `\n**Withdrawal availability:** ${data.withdrawalAvailability.note}\n`
 //     }
+//     text += creditNote(data)   // D100: USD figures use CoinGecko prices
 
 //     return { content: [{ type: 'text', text }] }
 //   }
@@ -226,6 +243,7 @@ server.tool(
     const data = await get<{
       fees: Record<string, { feeNative: number; nativeToken: string; feeUsd: number; source: string }>
       btcSatPerVbyte: number | null; priceSource: string; updatedAt: string
+      attributions?: Array<{ text?: unknown; href?: unknown }>
     }>('/network-fees')
 
     const sorted = Object.entries(data.fees).sort(([, a], [, b]) => a.feeUsd - b.feeUsd)
@@ -235,7 +253,7 @@ server.tool(
 
     let text = `**Network Fees** — sorted cheapest to most expensive\n(prices: ${data.priceSource}, updated: ${new Date(data.updatedAt).toLocaleTimeString()})\n`
     if (data.btcSatPerVbyte) text += `BTC: ${data.btcSatPerVbyte} sat/vByte (live from mempool.space)\n`
-    text += `\n${lines}`
+    text += `\n${lines}${creditNote(data)}`
 
     return { content: [{ type: 'text', text }] }
   }
