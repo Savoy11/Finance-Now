@@ -7,6 +7,7 @@ import { useMarketOverview } from '@/hooks/useMarketData'
 import { useAlertStats } from '@/hooks/useAlerts'
 import { formatCompact, formatOrNA, NA_LABEL } from '@/lib/utils/format'
 import { getScoreColor } from '@/lib/utils/risk'
+import { SourceLine } from './SourceLine'
 import type { PopoutKey } from '@/store/usePopoutStore'
 
 // ─── Live Prices ──────────────────────────────────────────────────────────────
@@ -48,6 +49,8 @@ function LivePrices() {
           </div>
         )
       })}
+      {/* A pop-out sits outside every page, so it carries its own credit (T-424). */}
+      <SourceLine id="portfolio-prices" className="px-2 pt-2" />
     </div>
   )
 }
@@ -72,13 +75,17 @@ function MarketOverviewPopout() {
   ]
 
   return (
-    <div className="p-4 grid grid-cols-2 gap-3">
-      {items.map(({ label, value }) => (
-        <div key={label} className="rounded-lg border border-border bg-bg-elevated p-3">
-          <p className="text-[10px] text-text-muted uppercase tracking-wide">{label}</p>
-          <p className="mt-1 text-lg font-mono font-bold text-text-primary">{value}</p>
-        </div>
-      ))}
+    <div className="p-4 space-y-3">
+      <div className="grid grid-cols-2 gap-3">
+        {items.map(({ label, value }) => (
+          <div key={label} className="rounded-lg border border-border bg-bg-elevated p-3">
+            <p className="text-[10px] text-text-muted uppercase tracking-wide">{label}</p>
+            <p className="mt-1 text-lg font-mono font-bold text-text-primary">{value}</p>
+          </div>
+        ))}
+      </div>
+      {/* Market cap and volume are sums over the CoinGecko markets feed (T-424). */}
+      <SourceLine id="markets" />
     </div>
   )
 }

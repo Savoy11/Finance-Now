@@ -174,6 +174,20 @@ export const DATA_SOURCES: DataSourceEntry[] = [
     notes: 'Generated from live price/peg movement thresholds, not a stored backend.',
   },
   {
+    // Added 2026-10-12 (T-424). The route reaches CoinGecko through coingeckoBase(), so no
+    // CoinGecko URL appears in its source, and it sits one folder down, where the drift check
+    // (scripts/gen-data-sources.ts --verify) does not look. So it had no entry, and the signal
+    // block it feeds had no provenance line of its own.
+    id: 'pump-report-metrics', surface: 'Pump Report price and volume signal (coin tab)', module: 'crypto',
+    route: '/live-data/pump-report/metrics', status: 'derived',
+    providers: [
+      { name: 'Finance Now pump heuristic (computeSignal in the route)', role: 'derived', auth: 'none' },
+      COINGECKO,
+    ],
+    cadence: '2 min client poll · 120s revalidate',
+    notes: 'A 0–10 signal and a collapse-risk grade worked out from CoinGecko’s 24h price change, volume and market cap, for the fixed list of coins in the route. Kept outside D64’s risk-ratings switch under D70. The Pump Report’s AI investigation and chat are separate routes and not part of this entry.',
+  },
+  {
     id: 'network-fees', surface: `Network / gas fees (${Object.keys(NETWORK_GAS).length} chains)`, module: 'crypto',
     route: '/live-data/network-fees', status: 'partial',
     providers: [
@@ -572,6 +586,17 @@ export function requiredAttributions(entry: DataSourceEntry): NonNullable<Source
     out.push(p.attribution)
   }
   return out
+}
+
+/**
+ * A source's required attributions as one line of plain text, for a surface that cannot
+ * render <SourceLine/>: a toast, a browser notification (T-424). Empty when no licence
+ * behind the source asks for wording, and for an unknown id; the credit guard
+ * (__tests__/coingeckoCredit.test.ts) checks that every id passed here resolves.
+ */
+export function attributionText(id: string): string {
+  const entry = getSource(id)
+  return entry ? requiredAttributions(entry).map((a) => a.text).join(' · ') : ''
 }
 
 export function describeSource(entry: DataSourceEntry): SourceDescription {

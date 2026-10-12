@@ -12,6 +12,7 @@ import { clsx } from 'clsx'
 import type { PumpMetric } from '@/app/live-data/pump-report/metrics/route'
 import type { ScanTarget } from '@/app/live-data/pump-report/scan/route'
 import { riskColor, riskBg, riskLabel } from './riskStyles'
+import { SourceLine } from '@/components/ui/SourceLine'
 import type { InvestigationReport, ReportFinding, EvidenceLink } from '@/app/live-data/pump-report/investigate/route'
 
 // ─── Chat types ───────────────────────────────────────────────────────────────
@@ -550,6 +551,9 @@ export function PumpReportTab({ targets, coinId, symbol, agentIntro }: PumpRepor
               ? <MetricRow m={coinMetric} onAsk={q => setPendingQuestion(q)} />
               : <p className="text-xs text-text-muted italic">No heuristic data available.</p>
           }
+          {/* The signal is our computation from CoinGecko's figures (T-424): this says so,
+              and carries the credit CoinGecko's API Terms clause 4 requires. */}
+          <SourceLine id="pump-report-metrics" asOf={metricsData?.updatedAt} className="mt-2" />
         </div>
       )}
 
