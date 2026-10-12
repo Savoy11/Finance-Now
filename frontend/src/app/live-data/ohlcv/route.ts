@@ -2,8 +2,19 @@ import { NextRequest, NextResponse } from 'next/server'
 import { coingeckoIdFor } from '@/lib/api/live/coingeckoIds'
 import { coingeckoBase, coingeckoHeaders } from '@/lib/api/live/coingecko'
 import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
+import { describeThrottle } from '@/lib/server/coingeckoThrottle'
+import { candleGranularity } from '@/lib/utils/candleGranularity'
 
 // OHLCV proxy — Binance is primary, CoinGecko is fallback.
+//
+// ⚠ The Binance rungs must go before launch (T-423, owner decision D102,
+// 2026-10-12). Binance.US licenses its data "personal to you" and names no route
+// to public use; Binance.com's terms could not be read. Before launch is personal
+// use (D96), so they stay until a second chart source is read and approved.
+// CoinGecko alone cannot carry this route on its free service: it refuses
+// history older than 365 days, sends 4-day candles for any window over 30 days,
+// and a scanner sweep needs about 160 calls against fewer than 10 a minute.
+//
 // Query params:
 //   id     = internal asset id (e.g. "btc")
 //   range  = 1H | 4H | 1M | 3M | 6M | YTD | 1Y | 3Y | 5Y | 10Y | MAX  (default "1Y")
@@ -11,6 +22,9 @@ import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 //   source = "auto" (default) | "binance" | "coingecko"
 //
 // Response: { ok, range, candles: OhlcvCandle[], granularity, source }
+// `granularity` is measured from the candles (lib/utils/candleGranularity), not
+// typed per range: the same range is 1-hour bars from Binance and 30-minute bars
+// from CoinGecko, and daily from Binance but 4-day from CoinGecko past 30 days.
 
 export const dynamic = 'force-dynamic'
 
@@ -34,7 +48,6 @@ interface RangeConfig {
   resample: 'none' | 'daily' | 'weekly'
   sliceDays?: number
   ytd?: true
-  candleSize: string
   revalidate: number
   binanceInterval: string
   binanceLimit: number
@@ -43,20 +56,23 @@ interface RangeConfig {
 const RANGE_CONFIG: Record<string, RangeConfig> = {
   // Backtest-only: a long DAILY series (~2.7y) so 200-period strategies have a
   // real usable window. Not exposed in the chart range picker.
-  'BT':  { cgDays: 'max', resample: 'daily',  candleSize: '1D',  revalidate: 3600, binanceInterval: '1d',  binanceLimit: 1000 },
-  '15m': { cgDays: '1',   resample: 'none',   candleSize: '15m', revalidate: 60,   binanceInterval: '15m', binanceLimit: 200  },
-  '1H':  { cgDays: '1',   resample: 'none',   candleSize: '30m', revalidate: 60,   binanceInterval: '1h',  binanceLimit: 168  },
-  '4H':  { cgDays: '7',   resample: 'none',   candleSize: '4H',  revalidate: 300,  binanceInterval: '4h',  binanceLimit: 540  },
-  '1M':  { cgDays: '30',  resample: 'none',   candleSize: '4H',  revalidate: 300,  binanceInterval: '4h',  binanceLimit: 180  },
-  '3M':  { cgDays: '90',  resample: 'daily',  candleSize: '1D',  revalidate: 900,  binanceInterval: '1d',  binanceLimit: 90   },
-  '6M':  { cgDays: '180', resample: 'daily',  candleSize: '1D',  revalidate: 900,  binanceInterval: '1d',  binanceLimit: 180  },
-  'YTD': { cgDays: '365', resample: 'daily',  ytd: true, candleSize: '1D', revalidate: 900, binanceInterval: '1d', binanceLimit: 365 },
-  '1Y':  { cgDays: '365', resample: 'daily',  candleSize: '1D',  revalidate: 900,  binanceInterval: '1d',  binanceLimit: 365  },
-  '3Y':  { cgDays: 'max', resample: 'weekly', sliceDays: 1095, candleSize: '1W',  revalidate: 3600, binanceInterval: '1w', binanceLimit: 157 },
-  '5Y':  { cgDays: 'max', resample: 'weekly', sliceDays: 1825, candleSize: '1W',  revalidate: 3600, binanceInterval: '1w', binanceLimit: 261 },
-  '10Y': { cgDays: 'max', resample: 'weekly', sliceDays: 3650, candleSize: '1W',  revalidate: 3600, binanceInterval: '1w', binanceLimit: 522 },
-  'MAX': { cgDays: 'max', resample: 'weekly', candleSize: '1W',  revalidate: 3600, binanceInterval: '1w',  binanceLimit: 1000 },
+  'BT':  { cgDays: 'max', resample: 'daily',  revalidate: 3600, binanceInterval: '1d',  binanceLimit: 1000 },
+  '15m': { cgDays: '1',   resample: 'none',   revalidate: 60,   binanceInterval: '15m', binanceLimit: 200  },
+  '1H':  { cgDays: '1',   resample: 'none',   revalidate: 60,   binanceInterval: '1h',  binanceLimit: 168  },
+  '4H':  { cgDays: '7',   resample: 'none',   revalidate: 300,  binanceInterval: '4h',  binanceLimit: 540  },
+  '1M':  { cgDays: '30',  resample: 'none',   revalidate: 300,  binanceInterval: '4h',  binanceLimit: 180  },
+  '3M':  { cgDays: '90',  resample: 'daily',  revalidate: 900,  binanceInterval: '1d',  binanceLimit: 90   },
+  '6M':  { cgDays: '180', resample: 'daily',  revalidate: 900,  binanceInterval: '1d',  binanceLimit: 180  },
+  'YTD': { cgDays: '365', resample: 'daily',  ytd: true, revalidate: 900, binanceInterval: '1d', binanceLimit: 365 },
+  '1Y':  { cgDays: '365', resample: 'daily',  revalidate: 900,  binanceInterval: '1d',  binanceLimit: 365  },
+  '3Y':  { cgDays: 'max', resample: 'weekly', sliceDays: 1095, revalidate: 3600, binanceInterval: '1w', binanceLimit: 157 },
+  '5Y':  { cgDays: 'max', resample: 'weekly', sliceDays: 1825, revalidate: 3600, binanceInterval: '1w', binanceLimit: 261 },
+  '10Y': { cgDays: 'max', resample: 'weekly', sliceDays: 3650, revalidate: 3600, binanceInterval: '1w', binanceLimit: 522 },
+  'MAX': { cgDays: 'max', resample: 'weekly', revalidate: 3600, binanceInterval: '1w',  binanceLimit: 1000 },
 }
+// `daily` resampling cannot make daily candles out of 4-day ones: past 30 days
+// CoinGecko's free service sends one candle per four days, and grouping them by
+// day leaves them as they are. The granularity the response reports says so.
 
 // ─── Resamplers ────────────────────────────────────────────────────────────────
 
@@ -191,7 +207,10 @@ async function fetchCoinGecko(id: string, cfg: RangeConfig): Promise<OhlcvCandle
     }),
   ])
 
-  if (!ohlcRes.ok) throw new Error(`cg-${ohlcRes.status}`)
+  // CoinGecko's own words go in the error: past 365 days its free service answers
+  // "Public API users are limited to querying historical data within the past
+  // 365 days", which is the reason a 3Y chart is empty, and a bare status hides it.
+  if (!ohlcRes.ok) throw new Error(`CoinGecko HTTP ${ohlcRes.status}${await describeThrottle(ohlcRes)}`)
 
   const ohlcRaw = (await ohlcRes.json()) as [number, number, number, number, number][]
 
@@ -250,7 +269,7 @@ export async function GET(request: NextRequest) {
       // therefore its own prices. Anything comparing Finance Now candles against a
       // Binance.com reference needs to know which one it got.
       return NextResponse.json({
-        ok: true, range, candles, granularity: cfg.candleSize, source: 'binance',
+        ok: true, range, candles, granularity: candleGranularity(candles.map((c) => c.time)), source: 'binance',
         venue: host.includes('binance.us') ? 'binance-us' : 'binance-com',
       })
     } catch (err) {
@@ -264,7 +283,7 @@ export async function GET(request: NextRequest) {
   if (source !== 'binance') {
     try {
       const candles = await fetchCoinGecko(id, cfg)
-      return NextResponse.json({ ok: true, range, candles, granularity: cfg.candleSize, source: 'coingecko' })
+      return NextResponse.json({ ok: true, range, candles, granularity: candleGranularity(candles.map((c) => c.time)), source: 'coingecko' })
     } catch (err) {
       return NextResponse.json({ ok: false, candles: [], error: String(err) })
     }

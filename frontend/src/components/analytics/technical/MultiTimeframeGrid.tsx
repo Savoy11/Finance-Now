@@ -5,6 +5,7 @@ import { clsx } from 'clsx'
 import { computeSignalSummary, type OhlcvCandle, type SignalSummary } from '@/lib/utils/indicators'
 import { confluenceLabel, CONFLUENCE_MIN_LOADED } from '@/lib/utils/confluence'
 import { SignalBadge } from '@/components/charts/SignalBadge'
+import { candleGranularity, candleSizeWords } from '@/lib/utils/candleGranularity'
 
 // ─── Multi-Timeframe Confluence Grid ──────────────────────────────────────────
 
@@ -21,6 +22,13 @@ interface TFRow {
   range: string
   summary: SignalSummary | null
   loading: boolean
+  /**
+   * Set when candles came back at another size than the row's label: CoinGecko's
+   * free service answers the 1D row with 4-day candles and the 15m row with
+   * 30-minute ones. Such a row gets no verdict and does not count toward the
+   * confluence, rather than reading as the timeframe it is labelled (T-423).
+   */
+  servedSize?: string
 }
 
 const loadingRows = (): TFRow[] => TF_ROWS.map(r => ({ ...r, summary: null, loading: true }))
@@ -60,8 +68,11 @@ export function MultiTimeframeGrid({ assetId }: { assetId: string }) {
         const res  = await fetch(`/live-data/ohlcv?id=${assetId}&range=${tf.range}`)
         const json = await res.json()
         const candles: OhlcvCandle[] = json.candles ?? []
-        const summary = candles.length >= 50 ? computeSignalSummary(candles) : null
-        if (!cancelled) setState(prev => mergeRow(prev, assetId, tf.range, { summary, loading: false }))
+        const size = candleGranularity(candles.map(c => c.time))
+        const wrongSize = candles.length > 0 && size !== tf.label
+        const summary = !wrongSize && candles.length >= 50 ? computeSignalSummary(candles) : null
+        const servedSize = wrongSize ? (size ?? undefined) : undefined
+        if (!cancelled) setState(prev => mergeRow(prev, assetId, tf.range, { summary, servedSize, loading: false }))
       } catch {
         if (!cancelled) setState(prev => mergeRow(prev, assetId, tf.range, { loading: false }))
       }
@@ -93,11 +104,12 @@ export function MultiTimeframeGrid({ assetId }: { assetId: string }) {
   // REASON rather than an empty space (`/live-data/futures-curve` answers
   // ok:false with its reason and TermStructureCard prints it).
   const stillLoading = rows.some(r => r.loading)
+  const wrongSize = rows.filter(r => r.servedSize).length
   const absence = confluence || stillLoading
     ? null
-    : loaded.length === 0
+    : loaded.length === 0 && wrongSize === 0
       ? 'No candles for this asset on any timeframe — no exchange pair on the OHLCV ladder'
-      : `Only ${loaded.length} of ${TF_ROWS.length} timeframes returned candles — ${CONFLUENCE_MIN_LOADED} are needed for a confluence read`
+      : `Only ${loaded.length} of ${TF_ROWS.length} timeframes could be read${wrongSize > 0 ? ` (${wrongSize} came back at another candle size)` : ''} — ${CONFLUENCE_MIN_LOADED} are needed for a confluence read`
 
   // Plain-English per-timeframe agreement, e.g. "1D bullish · 4H overbought · 1H weakening"
   function tfPhrase(summary: SignalSummary): { word: string; color: string } {
@@ -172,6 +184,10 @@ export function MultiTimeframeGrid({ assetId }: { assetId: string }) {
                     <span className="text-red-400">{row.summary.sell}S</span>
                   </div>
                 </>
+              ) : row.servedSize ? (
+                <span className="text-[10px] text-center text-text-muted" title={`The source sent ${candleSizeWords(row.servedSize) ?? row.servedSize} candles, not ${row.label} ones, so this row is not read as ${row.label}.`}>
+                  only {candleSizeWords(row.servedSize) ?? row.servedSize}
+                </span>
               ) : (
                 <span className="text-[10px] text-text-muted">N/A</span>
               )}

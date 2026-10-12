@@ -16,6 +16,7 @@ import { detectSetups, type SetupKey, type DetectedSetup } from '@/lib/utils/sca
 import { computeTechnicals } from '@/lib/technicals/sweep'
 import { formatAdaptivePrice } from '@/lib/utils/format'
 import { runPool } from '@/lib/utils/runPool'
+import { candleGranularity, candleSizeWords } from '@/lib/utils/candleGranularity'
 import { SignalBadge } from '@/components/charts/SignalBadge'
 import { COINGECKO_IDS } from '@/lib/api/live/coingeckoIds'
 import type { CoinListResponse } from '@/lib/types/coinList'
@@ -54,7 +55,11 @@ const SETUP_META: Record<SetupKey, { label: string; tone: string }> = {
 
 const SETUP_KEYS = Object.keys(SETUP_META) as SetupKey[]
 
-type ScanStatus = 'loading' | 'ok' | 'error'
+// 'wrong-size': candles came back, but not at the timeframe's size. CoinGecko's
+// free service sends 4-day candles for any window over 30 days, so on the 1D
+// timeframe a coin it serves would be read as daily: RSI 14 over 56 days under a
+// "1D" heading. Such a coin is left out and counted, never scanned (T-423).
+type ScanStatus = 'loading' | 'ok' | 'error' | 'wrong-size'
 
 interface ScanRow {
   assetId: string
@@ -65,6 +70,8 @@ interface ScanRow {
   rsi14: number | null
   vsSma50Pct: number | null
   status: ScanStatus
+  /** The candle size the route measured, when it was not the one asked for. */
+  servedSize?: string
 }
 
 const SIGNAL_SCORE: Record<Signal, number> = {
@@ -195,8 +202,11 @@ function ScannerPanel() {
         const res = await fetch(`/live-data/ohlcv?id=${id}&range=${tf.range}`)
         const json = await res.json()
         const candles: OhlcvCandle[] = json.candles ?? []
+        const size = candleGranularity(candles.map(c => c.time))
         if (!json.ok || candles.length === 0) {
           patch = { status: 'error' }
+        } else if (size !== tf.key) {
+          patch = { status: 'wrong-size', servedSize: size ?? undefined }
         } else {
           // Shared with the Coins screener (lib/technicals/sweep.ts) so the two
           // surfaces cannot disagree about what RSI 30 means. The scanner keeps
@@ -241,6 +251,8 @@ function ScannerPanel() {
   }, {})
 
   const failed = rows.filter(r => r.status === 'error').length
+  const wrongSize = rows.filter(r => r.status === 'wrong-size')
+  const servedWords = [...new Set(wrongSize.map(r => candleSizeWords(r.servedSize) ?? 'other'))].join(' or ')
 
   const q = search.trim().toLowerCase()
   // Filters apply to the table immediately, so narrowing feels instant. Coins a
@@ -364,7 +376,11 @@ function ScannerPanel() {
           {scanning
             ? <span className="flex items-center gap-1.5"><RefreshCw size={11} className="animate-spin" /> Scanned {done}/{total}</span>
             : lastScan
-              ? <span>Scanned {total} assets{failed > 0 ? ` · ${failed} unavailable` : ''} · {lastScan.toLocaleTimeString()}</span>
+              ? <span>
+                  Scanned {total} assets{failed > 0 ? ` · ${failed} unavailable` : ''}
+                  {wrongSize.length > 0 ? ` · ${wrongSize.length} left out: only ${servedWords} candles, not ${timeframe}` : ''}
+                  {' · '}{lastScan.toLocaleTimeString()}
+                </span>
               : null}
         </div>
       </div>
@@ -578,7 +594,7 @@ function CryptoScannerInner() {
         details={[
           { label: 'What it is', text: 'A discovery tool: it looks across assets to find candidates. Technical Analysis is the other half — it charts the one asset you picked.' },
           { label: 'Setups', text: 'Seven detectors run per asset on real OHLCV history. A setup is a pattern the data shows, not a view on whether to trade it.' },
-          { label: 'Timeframes', text: '4H, 1D and 1W. The detectors read the same way on each; only the bar spacing changes.' },
+          { label: 'Timeframes', text: '4H, 1D and 1W. The detectors read the same way on each; only the bar spacing changes. A coin whose candles come back at another size is left out and counted, not scanned as if they were the size you picked.' },
         ]}
       />
       <ScannerPanel />

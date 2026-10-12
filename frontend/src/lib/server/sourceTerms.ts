@@ -804,8 +804,13 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     // an ANALYTICS app whose whole purpose is computing indicators from price data. On a
     // strict reading, the core use may sit outside the grant even solo. It is left at
     // 'conditional' because 'prohibited' is a pinnedFetch SOCKET BLOCK and Binance.US is
-    // the steady-state crypto price source for a US egress (binance.com 451s on US IPs,
+    // the steady-state crypto CHART source for a US egress (binance.com 451s on US IPs,
     // see CLAUDE.md) — not because the challenge was answered. It was not.
+    //
+    // 2026-10-12 (T-423, D102): the price backup on /live-data/markets and the coin-list
+    // ordering no longer call it. Only /live-data/ohlcv still does, and it must stop
+    // before launch; it stays until a second chart source is read, because CoinGecko's
+    // free service alone serves no history older than 365 days.
     //
     // ⚠ THIS IS THE ONLY ONE OF THE FOUR WITH NO STATED ROUTE THROUGH. FMP names an Order
     // Form, Finnhub names written approval, Twelve Data names a Redistribution Rights

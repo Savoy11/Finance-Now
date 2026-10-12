@@ -26,6 +26,7 @@
 
 import { rsi, sma, type OhlcvCandle } from '@/lib/utils/indicators'
 import { runPool } from '@/lib/utils/runPool'
+import { candleGranularity } from '@/lib/utils/candleGranularity'
 
 /** Matches /scanner's cap. Raising it rate-limits the provider, not speeds it up. */
 export const SWEEP_CONCURRENCY = 5
@@ -39,6 +40,16 @@ export const SWEEP_UNIVERSE_LIMIT = 250
 
 /** Daily candles over a year — enough history for a 200-period average. */
 export const SWEEP_RANGE = '1Y'
+
+/**
+ * The candle size every figure below assumes: RSI over 14 days, averages over 50
+ * and 200 days, volatility over 30 days annualised by √365. A coin whose candles
+ * come back at another size is left out of the map (not tested), because on
+ * CoinGecko's free service a one-year window is 4-day candles, and reading them
+ * as daily turns a 14-day RSI into a 56-day one and doubles the volatility
+ * (T-423, 2026-10-12).
+ */
+export const SWEEP_CANDLE_SIZE = '1D'
 
 export interface TechnicalRow {
   /** Relative Strength Index, 14 periods. Null when history is too short. */
@@ -181,7 +192,8 @@ export async function sweepTechnicals(
       const res = await fetchImpl(`/live-data/ohlcv?id=${encodeURIComponent(id)}&range=${range}`)
       const json = await res.json()
       const candles: OhlcvCandle[] = json?.candles ?? []
-      if (json?.ok && candles.length > 0) out.set(id, computeTechnicals(candles))
+      const daily = candleGranularity(candles.map(c => c.time)) === SWEEP_CANDLE_SIZE
+      if (json?.ok && candles.length > 0 && daily) out.set(id, computeTechnicals(candles))
     } catch {
       // Left out of the map on purpose — see the doc comment above.
     }

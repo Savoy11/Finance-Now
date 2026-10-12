@@ -23,7 +23,7 @@ export interface PaginatedResponse<T> {
   /**
    * Which upstream actually served these rows, when the list came from a
    * provider ladder that can fall back. `/live-data/markets` walks
-   * CoinGecko → Binance → CoinMarketCap and suffixes `-fallback` when the first
+   * CoinGecko → CoinMarketCap and suffixes `-fallback` when the first
    * choice did not answer.
    *
    * Carried here because dropping it is how a page ends up naming a provider in

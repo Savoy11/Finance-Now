@@ -3,14 +3,13 @@ import { marketsSourceLabel } from '../marketsSource'
 
 /**
  * The Coins page said "live prices via CoinGecko" unconditionally while
- * /live-data/markets ladders CoinGecko → Binance → CoinMarketCap and reports
+ * /live-data/markets ladders CoinGecko → CoinMarketCap and reports
  * which rung answered. These assertions are what stops that regressing: each
  * one fails if the label stops tracking the response's own `source` field.
  */
 describe('marketsSourceLabel', () => {
   it('names each rung of the ladder', () => {
     expect(marketsSourceLabel('coingecko')).toBe('CoinGecko')
-    expect(marketsSourceLabel('binance')).toBe('Binance')
     expect(marketsSourceLabel('coinmarketcap')).toBe('CoinMarketCap')
   })
 
@@ -18,7 +17,7 @@ describe('marketsSourceLabel', () => {
     // The route suffixes `-fallback` whenever the first choice failed. Hiding
     // that would restate the original bug in a subtler form: the reader would
     // see a correct provider name and still not know it was the second choice.
-    expect(marketsSourceLabel('binance-fallback')).toBe('Binance (fallback)')
+    expect(marketsSourceLabel('coingecko-fallback')).toBe('CoinGecko (fallback)')
     expect(marketsSourceLabel('coinmarketcap-fallback')).toBe('CoinMarketCap (fallback)')
   })
 
