@@ -21,7 +21,7 @@ async function fetchActiveProviders(): Promise<ProviderInfo[]> {
     return (data.providers ?? []).filter(
       (p: ProviderInfo) =>
         p.config.enabled &&
-        (p.config.hasKey || !p.config.lastStatus || p.config.lastStatus === 'active' || ['coingecko', 'binance'].includes(p.id))
+        (p.config.hasKey || !p.config.lastStatus || p.config.lastStatus === 'active' || p.id === 'coingecko')
     )
   } catch {
     return []
@@ -51,7 +51,7 @@ export function DataStatusBanner() {
   // Report the provider that ACTUALLY served the last price fetch (from the
   // markets response), not merely the providers that are enabled.
   const SOURCE_NAMES: Record<string, string> = {
-    coingecko: 'CoinGecko', binance: 'Binance', coinmarketcap: 'CoinMarketCap',
+    coingecko: 'CoinGecko', coinmarketcap: 'CoinMarketCap',
   }
   const rawSource = marketData?.source ?? 'coingecko'
   const isFallback = rawSource.endsWith('-fallback')

@@ -4,7 +4,7 @@ import { COINGECKO_IDS } from '@/lib/api/live/coingeckoIds'
 import type { OhlcvCandle } from '@/lib/utils/indicators'
 
 const candles = (closes: number[]): OhlcvCandle[] =>
-  closes.map((c, i) => ({ time: i, open: c, high: c, low: c, close: c, volume: 0 }))
+  closes.map((c, i) => ({ time: 1_700_000_000 + i * 86_400, open: c, high: c, low: c, close: c, volume: 0 }))
 
 /** n closes rising by 1 — a clean uptrend, so price sits above every average. */
 const rising = (n: number) => candles(Array.from({ length: n }, (_, i) => 100 + i))
@@ -94,6 +94,20 @@ describe('sweepTechnicals', () => {
       fetchImpl, concurrency: 1, onProgress: d => seen.push(d),
     })
     expect(seen).toEqual([1, 2, 3])
+  })
+
+  it('leaves out a coin whose candles are not daily, rather than reading them as daily', async () => {
+    // CoinGecko's free one-year window is 4-day candles (measured 2026-10-12, T-423).
+    // Read as daily, a 14-day RSI covers 56 days and the volatility doubles, so
+    // the coin goes untested instead of being screened on figures it never had.
+    const fourDay = rising(92).map((c, i) => ({ ...c, time: 1_700_000_000 + i * 4 * 86_400 }))
+    const fetchImpl = vi.fn(async (url: string) => ({
+      ok: true,
+      json: async () => ({ ok: true, candles: url.includes('btc') ? rising(250) : fourDay }),
+    })) as unknown as typeof fetch
+    const out = await sweepTechnicals(['btc', 'xyz'], { fetchImpl })
+    expect(out.has('btc')).toBe(true)
+    expect(out.has('xyz')).toBe(false)
   })
 
   it('makes exactly one request per coin', async () => {

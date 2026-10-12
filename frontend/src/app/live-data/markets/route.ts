@@ -7,11 +7,16 @@ import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 // Server-side proxy for market data.
 // Supports multiple sources via ?source= query param:
 //   "coingecko" (default) — CoinGecko free/paid tier
-//   "binance"             — Binance public API (no key, higher rate limits)
 //   "coinmarketcap"       — CoinMarketCap Pro (requires key from Integrations)
 //
-// Each source falls back to the others on failure; the response's `source`
+// Each source falls back to the other on failure; the response's `source`
 // field reports which provider actually served the data.
+//
+// Binance was the middle rung until 2026-10-12 and came out under T-423 (D91,
+// D102): Binance.US licenses its data "personal to you" with no route to public
+// use, and Binance.com's terms could not be read. It never carried market cap,
+// supply or FDV, so it was always the thinnest rung. A `?source=binance` from
+// an old client is served by CoinGecko like any other.
 //
 // Response shape:
 //   { ok, updatedAt, quotes: Record<assetId, LiveQuote>, source }
@@ -19,14 +24,6 @@ import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 
 export const dynamic = 'force-dynamic'
 
-
-// Binance symbol → internal asset id
-const BINANCE_SYMBOL_MAP: Record<string, string> = {
-  BTCUSDT: 'btc', ETHUSDT: 'eth', SOLUSDT: 'sol', BNBUSDT: 'bnb',
-  XRPUSDT: 'xrp', ADAUSDT: 'ada', DOGEUSDT: 'doge', AVAXUSDT: 'avax',
-  DOTUSDT: 'dot', POLUSDT: 'pol', LTCUSDT: 'ltc', LINKUSDT: 'link',
-  UNIUSDT: 'uni', AAVEUSDT: 'aave', ATOMUSDT: 'atom', NEARUSDT: 'near',
-}
 
 async function fetchCoinGecko(): Promise<Record<string, unknown>> {
   const params = new URLSearchParams({
@@ -59,7 +56,7 @@ async function fetchCoinGecko(): Promise<Record<string, unknown>> {
       price: row.current_price ?? null, marketCap: row.market_cap ?? null,
       volume24h: row.total_volume ?? null, priceChange24h: row.price_change_percentage_24h ?? null,
       circulatingSupply: row.circulating_supply ?? null,
-      // FDV is CoinGecko-only. The Binance and CMC fallback legs below do not
+      // FDV is CoinGecko-only. The CMC fallback leg below does not
       // carry it, so it stays absent there rather than being derived — a
       // computed FDV from a partial supply figure would be a fabricated number
       // on a field users filter by.
@@ -77,40 +74,13 @@ async function fetchCoinGecko(): Promise<Record<string, unknown>> {
   return quotes
 }
 
-async function fetchBinance(): Promise<Record<string, unknown>> {
-  const symbols = Object.keys(BINANCE_SYMBOL_MAP)
-  const res = await fetch(
-    `https://api.binance.com/api/v3/ticker/24hr?symbols=${JSON.stringify(symbols)}`,
-    { next: { revalidate: 30 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) }
-  )
-  if (!res.ok) throw new Error(`Binance ${res.status}`)
-
-  const rows = await res.json() as Array<{
-    symbol: string; lastPrice: string; quoteVolume: string
-    priceChangePercent: string; weightedAvgPrice: string
-  }>
-  const quotes: Record<string, unknown> = {}
-  for (const row of rows) {
-    const assetId = BINANCE_SYMBOL_MAP[row.symbol]
-    if (!assetId) continue
-    quotes[assetId] = {
-      price: parseFloat(row.lastPrice),
-      marketCap: null, // Binance doesn't provide market cap
-      volume24h: parseFloat(row.quoteVolume),
-      priceChange24h: parseFloat(row.priceChangePercent),
-      circulatingSupply: null,
-    }
-  }
-  return quotes
-}
-
 async function fetchCoinMarketCap(): Promise<Record<string, unknown>> {
   const key = getProviderKey('coinmarketcap')
   if (!key) throw new Error('CoinMarketCap key not configured')
 
   // Internal asset ids are lowercase ticker symbols — query CMC by symbol.
-  // skip_invalid tolerates symbols CMC doesn't recognise (parity with the
-  // Binance source, which also covers a subset of the universe).
+  // skip_invalid tolerates symbols CMC doesn't recognise, so one unknown ticker
+  // does not fail the whole request.
   const symbols = Object.keys(COINGECKO_IDS).map((id) => id.toUpperCase()).join(',')
   const url = `https://pro-api.coinmarketcap.com/v2/cryptocurrency/quotes/latest?symbol=${symbols}&skip_invalid=true&aux=circulating_supply`
   const res = await fetch(url, {
@@ -148,11 +118,10 @@ async function fetchCoinMarketCap(): Promise<Record<string, unknown>> {
   return quotes
 }
 
-type SourceId = 'coingecko' | 'binance' | 'coinmarketcap'
+type SourceId = 'coingecko' | 'coinmarketcap'
 
 const FETCHERS: Record<SourceId, () => Promise<Record<string, unknown>>> = {
   coingecko: fetchCoinGecko,
-  binance: fetchBinance,
   coinmarketcap: fetchCoinMarketCap,
 }
 
@@ -160,8 +129,8 @@ export async function GET(request: NextRequest) {
   const source = request.nextUrl.searchParams.get('source') ?? 'coingecko'
 
   // Requested source first, then the others as fallbacks.
-  const requested: SourceId = source === 'binance' || source === 'coinmarketcap' ? source : 'coingecko'
-  const chain: SourceId[] = [requested, ...(['coingecko', 'binance', 'coinmarketcap'] as SourceId[]).filter((s) => s !== requested)]
+  const requested: SourceId = source === 'coinmarketcap' ? source : 'coingecko'
+  const chain: SourceId[] = [requested, ...(['coingecko', 'coinmarketcap'] as SourceId[]).filter((s) => s !== requested)]
 
   for (let i = 0; i < chain.length; i++) {
     const src = chain[i]

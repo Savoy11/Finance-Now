@@ -186,7 +186,6 @@ async function testProvider(provider: { id: string; isCustom?: boolean; url?: st
   switch (provider.id) {
     case 'coingecko':     return testCoinGecko(key)
     case 'coinmarketcap': return testCoinMarketCap(key)
-    case 'binance':       return testBinance()
     case 'cryptopanic':   return testCryptoPanic(key)
     case 'messari':       return testMessari(key)
     case 'newsapi':       return testNewsAPI(key)
@@ -265,12 +264,6 @@ async function testCoinMarketCap(key?: string): Promise<TestResult> {
   const data = await res.json()
   const plan = data.data?.plan?.credit_limit_monthly_reset_timestamp ? 'Pro' : 'Basic'
   return { ok: true, detail: `Connected — ${plan} plan` }
-}
-
-async function testBinance(): Promise<TestResult> {
-  const res = await fetch('https://api.binance.com/api/v3/ping', { signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) })
-  if (!res.ok) return { ok: false, error: `HTTP ${res.status}` }
-  return { ok: true, detail: 'Binance public API reachable' }
 }
 
 async function testCryptoPanic(key?: string): Promise<TestResult> {

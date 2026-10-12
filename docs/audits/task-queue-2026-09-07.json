@@ -13708,7 +13708,7 @@
     "T-425"
    ],
    "summary": "Vendor Pass build item 5 (30 Sep): Binance.US came off the enquiry list because its terms name no route to public use, so before the first outside visitor its rungs, and the Binance (global) ones, come out of the crypto price and chart ladders in favour of CoinGecko for charts and the coin list. Binance.com's own terms could not be read (its entry is still seeded).",
-   "next_action": "Before the first outside visitor: list every Binance and Binance.US call (/live-data/ohlcv, /live-data/markets, /live-data/coin-list, lib/utils/ohlcvSource.ts, the agent tools and the Integrations settings that name them) and move each to CoinGecko. Check CoinGecko's call budget against the crypto scanner's sweep first, and mind D21: CoinGecko would then be the only source for these, so look for a second keyless source whose terms allow public display.",
+   "next_action": "Before the first outside visitor: replace the two Binance rungs on /live-data/ohlcv (lib/utils/ohlcvSource.ts, the agent tool get_price_history, tier.ts’s “Binance Klines” row and scripts/validate-ratings.ts name them). First read the terms of keyless exchange chart feeds not yet in the registry (candidates: Kraken, Coinbase Exchange, Bitstamp, Gemini, CoinPaprika) on the owner’s machine and bring the readings to the owner: a source must allow public display and serve daily candles past 365 days. CoinGecko alone cannot carry the route on its free service (D102), and D21 asks for a second source either way.",
    "sources": [
     {
      "file": "docs/decisions/2026-10-07-owner-decisions.md",
@@ -13720,6 +13720,10 @@
     "on": "2026-10-07",
     "by": "session steward",
     "why": "Filed under D91 from a row the business chat recorded on the ledger page on 30 Sep (Vendor Pass build item 5), which had no number."
+   },
+   "progress": {
+    "noted_on": "2026-10-12",
+    "note": "2026-10-12, D102 (owner: “1. a 2. yes”). Measured first, as the next action asked: CoinGecko’s free service refuses history older than 365 days (“Public API users are limited to querying historical data within the past 365 days”), sends 4-day candles for any window over 30 days (92 for a year of Bitcoin), and allows fewer than 10 calls a minute while a scanner sweep of 80 coins needs about 160. Binance.US served the charts for 47 of the 80. No exchange already read in the registry allows public display. Done on branch binance-price-fallback: /live-data/markets ladders CoinGecko → CoinMarketCap; /live-data/coin-list is market-cap order (Binance.US listings were sorted first); the Binance price provider and its connection test are gone from Integrations. Left, as a launch step: the two Binance rungs on /live-data/ohlcv, kept under D96 until a second chart source is read. Fixed with it (D102 question 2): the chart route measures its candle size from the candles (lib/utils/candleGranularity.ts) instead of typing one per range, which called CoinGecko’s 4-day candles “1D” and Binance’s 1-hour bars “30m”; the scanner, the multi-timeframe grid and the Coins screener leave out and count a coin whose candles are not the size they asked for; the technical analysis page and the agent’s price-history tool name the size; a CoinGecko refusal now carries its own message, which the shared reporter used to cut off at 180 characters of raw JSON."
    }
   },
   {
@@ -39683,6 +39687,15 @@
     "what": "T-431 closed on the owner’s word (\"merge\"): CoinGecko’s credit travels in the agent API and the MCP server, and shows under AI answers (D100, D101).",
     "evidence": [
      "frontend/src/lib/data/__tests__/coingeckoCredit.test.ts"
+    ]
+   },
+   {
+    "on": "2026-10-12",
+    "what": "T-423 progress under D102 (owner: “1. a 2. yes”): Binance out of the price backup, the coin-list order and Integrations; the chart route keeps its Binance rungs until a second chart source is read, and measures its candle size instead of typing it.",
+    "evidence": [
+     "frontend/src/lib/utils/candleGranularity.ts",
+     "frontend/src/lib/server/__tests__/ohlcvRoute.test.ts",
+     "docs/decisions/2026-10-12-owner-decisions.md"
     ]
    }
   ]

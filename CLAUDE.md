@@ -474,6 +474,18 @@ Client component
 | `kobe.mainnet.jito.network/api/v1/apy` | Live jitoSOL APY | `staking-rates` |
 | Various RSS/JSON feeds | News articles | `news` |
 
+> ⚠ **Binance and Binance.US leave the crypto data before launch (T-423, D102, 2026-10-12).**
+> Binance.US licenses its data "personal to you" with no route to public use, and Binance.com's
+> terms could not be read. The price backup (`/live-data/markets`, now CoinGecko → CoinMarketCap)
+> and the coin list's order (now market-cap rank) are already off them, and Binance is gone from
+> Integrations. **`/live-data/ohlcv` keeps both until a second keyless chart source is read and
+> approved**, because CoinGecko's free service alone cannot carry it, measured that day: it
+> refuses history older than 365 days, sends 4-day candles for any window over 30 days, and
+> allows fewer than 10 calls a minute against a scanner sweep of about 160. The route's
+> `granularity` is measured from the candles (`lib/utils/candleGranularity.ts`), never typed per
+> range; the scanner, the multi-timeframe grid and the Coins screener leave out, and count, a coin
+> whose candles are not the size they asked for.
+
 ### React Query patterns on the client:
 ```typescript
 const { data } = useQuery({
@@ -1038,7 +1050,7 @@ FMP_API_KEY=...                             # Uses FMP's /stable API (legacy /ap
 COINGECKO_API_KEY=…                         # Paid tier; COINGECKO_BASE_URL overrides the endpoint
 # Equity quotes:  FINNHUB_API_KEY, TWELVE_DATA_API_KEY, TIINGO_API_KEY, ALPHA_VANTAGE_API_KEY
 # Equity news:    MARKETAUX_API_KEY (company news on stock pages, T-430; personal use only, see sourceTerms.ts)
-# Crypto/news:    COINMARKETCAP_API_KEY, BINANCE_API_KEY, CRYPTOPANIC_API_KEY, MESSARI_API_KEY,
+# Crypto/news:    COINMARKETCAP_API_KEY, CRYPTOPANIC_API_KEY, MESSARI_API_KEY,
 #                 NEWSAPI_API_KEY, GNEWS_API_KEY, LUNARCRUSH_API_KEY, SANTIMENT_API_KEY
 # Full env-var mapping lives in getProviderKey() (src/lib/api/live/providers.ts).
 

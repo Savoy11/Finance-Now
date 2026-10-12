@@ -155,7 +155,7 @@ export function AssetRegistryClient() {
           icon={<CoinsIcon size={20} aria-hidden />}
           description="The Coin Registry tracks every monitored crypto asset with live prices and market data. The Reserve Monitor tab shows stablecoin collateralization; the Cycle Context tab shows where past-cycle metrics currently read — descriptive history, not a signal."
           details={[
-            { label: 'Data source', text: `Prices refresh via ${marketsSourceLabel(data?.source)} every 30 seconds; reserve data pulls from DefiLlama. The ladder is CoinGecko → Binance → CoinMarketCap; this names the rung that answered.` },
+            { label: 'Data source', text: `Prices refresh via ${marketsSourceLabel(data?.source)} every 30 seconds; reserve data pulls from DefiLlama. The ladder is CoinGecko, then CoinMarketCap when a key is set; this names the rung that answered.` },
             { label: 'Coin types', text: 'Fiat-backed & algorithmic stablecoins, Layer-1 networks, DeFi and tokenized assets, and CBDCs.' },
           ]}
         />

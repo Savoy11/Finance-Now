@@ -5,6 +5,7 @@ import { COMMODITY_CATALOG, COMMODITY_CATEGORY_INFO } from '@/lib/data/commodity
 import { CURRENCY_CATALOG, CURRENCY_CATEGORY_INFO } from '@/lib/data/currencyCatalog'
 import { RATES_CATALOG, RATES_CATEGORY_INFO } from '@/lib/data/ratesCatalog'
 import { ohlcvSourceLabel } from '@/lib/utils/ohlcvSource'
+import { candleGranularity, candleSizeWords } from '@/lib/utils/candleGranularity'
 import { RISK_RATINGS_SHOWN } from '@/lib/risk/visibility'
 import { parseCredits, requiredAttributions, sourceForRoute, type RequiredCredit } from '@/lib/data/dataSources'
 
@@ -611,10 +612,12 @@ async function execute(
         const coin = String(input.coin ?? '')
         const range = String(input.range ?? '1Y')
         const data = (await get(`/live-data/ohlcv?id=${encodeURIComponent(coin)}&range=${encodeURIComponent(range)}`)) as {
-          ok?: boolean; candles?: { time: number; open: number; high: number; low: number; close: number }[]; source?: string; venue?: string
+          ok?: boolean; candles?: { time: number; open: number; high: number; low: number; close: number }[]; source?: string; venue?: string; error?: string
         }
         const candles = data.candles ?? []
-        if (!data.ok || candles.length === 0) return { error: 'no candle data available', coin, range }
+        // The route's reason travels with the refusal: past 365 days CoinGecko's free
+        // service refuses outright, and "no data" alone reads as a coin with no history.
+        if (!data.ok || candles.length === 0) return { error: 'no candle data available', reason: data.error, coin, range }
         const first = candles[0], last = candles[candles.length - 1]
         const high = Math.max(...candles.map((c) => c.high))
         const low = Math.min(...candles.map((c) => c.low))
@@ -634,6 +637,9 @@ async function execute(
           coin, range,
           source: data.source,
           venue: ohlcvSourceLabel(data.source, data.venue),
+          // Measured, not assumed: a 1Y range is daily from Binance but 4-day from
+          // CoinGecko, and candleCount means nothing without it (T-423).
+          candleSize: candleSizeWords(candleGranularity(candles.map((c) => c.time))),
           candleCount: candles.length,
           firstClose: first.close, lastClose: last.close,
           periodHigh: high, periodLow: low,

@@ -1,7 +1,8 @@
 /**
  * Provenance label for the crypto market-quote ladder.
  *
- * `/live-data/markets` walks CoinGecko → Binance → CoinMarketCap and reports
+ * `/live-data/markets` walks CoinGecko → CoinMarketCap (Binance was the middle rung
+ * until T-423 took it out, 2026-10-12) and reports
  * which rung actually answered, suffixing `-fallback` when it was not the first
  * choice (`markets/route.ts`: `source: i === 0 ? src : \`${src}-fallback\``).
  *
@@ -16,7 +17,6 @@
  */
 const NAMES: Record<string, string> = {
   coingecko: 'CoinGecko',
-  binance: 'Binance',
   coinmarketcap: 'CoinMarketCap',
 }
 

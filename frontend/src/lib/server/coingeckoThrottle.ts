@@ -28,7 +28,7 @@ const RATE_LIMIT_HEADERS = [
  * A one-line description of what the upstream said about its own limit.
  *
  * Returns a parenthesised suffix to append to an existing status string, e.g.
- * `HTTP 429 (retry-after=58, x-ratelimit-limit=30, body="…")`. Kept to one line
+ * `HTTP 429 (retry-after=58, x-ratelimit-limit=30, message="…")`. Kept to one line
  * because it lands in an audit row and in a route's `upstreamFailures`.
  *
  * The body is read from a CLONE. Reading the original would leave the caller
@@ -46,10 +46,26 @@ export async function describeThrottle(res: Response): Promise<string> {
   }
   try {
     const body = (await res.clone().text()).replace(/\s+/g, ' ').trim()
-    // CoinGecko's free tier states the allowance in status.error_message.
-    if (body) parts.push(`body="${body.slice(0, 180)}"`)
+    // CoinGecko states the reason in status.error_message, at the top level on a
+    // 429 and under `error` on a plan refusal. The message is taken out whole: a
+    // 180-character excerpt of the raw body spent its length on the JSON wrapper,
+    // and the 365-day refusal arrived cut off at "within the past 365 da" (T-423).
+    const message = errorMessageOf(body)
+    if (message) parts.push(`message="${message.slice(0, 300)}"`)
+    else if (body) parts.push(`body="${body.slice(0, 180)}"`)
   } catch { /* body already consumed or unreadable — headers still stand */ }
 
   // "No headers" must not be mistakable for "headers nobody looked at".
   return parts.length ? ` (${parts.join(', ')})` : ' (upstream stated no limit headers)'
+}
+
+/** CoinGecko's `status.error_message`, wherever the body nests it, or undefined. */
+function errorMessageOf(body: string): string | undefined {
+  try {
+    const parsed = JSON.parse(body) as { status?: { error_message?: unknown }; error?: { status?: { error_message?: unknown } } }
+    const message = parsed?.status?.error_message ?? parsed?.error?.status?.error_message
+    return typeof message === 'string' && message.trim() ? message.trim() : undefined
+  } catch {
+    return undefined
+  }
 }

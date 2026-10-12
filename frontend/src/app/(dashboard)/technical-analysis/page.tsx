@@ -29,6 +29,7 @@ import {
 import { detectSetups, type SetupKey, type DetectedSetup } from '@/lib/utils/scanSetups'
 import { DataBadge } from '@/components/ui/DataBadge'
 import { ohlcvSourceLabel } from '@/lib/utils/ohlcvSource'
+import { candleGranularity, candleSizeWords } from '@/lib/utils/candleGranularity'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { SignalBadge } from '@/components/charts/SignalBadge'
 import { formatAdaptivePrice } from '@/lib/utils/format'
@@ -188,6 +189,9 @@ function TechnicalAnalysisContent() {
   })
 
   const ohlcvSource = ohlcvSourceLabel(data?.source, data?.venue)
+  // Measured from the candles, so a 1Y view CoinGecko answers in 4-day candles
+  // says "4-day" rather than leaving the reader to assume daily (T-423).
+  const candleWords = candleSizeWords(candleGranularity((data?.candles ?? []).map(c => c.time)))
 
   // News-derived event markers for the chart (feature #4)
   const candles = useMemo<OhlcvCandle[]>(() => data?.candles ?? [], [data])
@@ -389,7 +393,7 @@ function TechnicalAnalysisContent() {
                     source={ohlcvSource ? `${ohlcvSource} OHLCV` : undefined}
                   />
                   <span className="text-[10px] text-text-muted">
-                    {candles.length} candles · indicators derived
+                    {candles.length} {candleWords ? `${candleWords} ` : ''}candles · indicators derived
                   </span>
                 </div>
               )}

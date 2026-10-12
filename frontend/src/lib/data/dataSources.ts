@@ -105,22 +105,23 @@ export const DATA_SOURCES: DataSourceEntry[] = [
   {
     id: 'markets', surface: 'Crypto prices, market cap, volume, 24h change', module: 'crypto',
     route: '/live-data/markets', status: 'live',
-    providers: [COINGECKO, { name: 'Binance', host: 'api.binance.com', url: 'https://binance.com', role: 'fallback', auth: 'none' }, { name: 'CoinMarketCap', host: 'pro-api.coinmarketcap.com', url: 'https://coinmarketcap.com/api', role: 'fallback', auth: 'paid', attribution: { text: 'Data by CoinMarketCap', href: 'https://coinmarketcap.com/api' } }],
+    providers: [COINGECKO, { name: 'CoinMarketCap', host: 'pro-api.coinmarketcap.com', url: 'https://coinmarketcap.com/api', role: 'fallback', auth: 'paid', attribution: { text: 'Data by CoinMarketCap', href: 'https://coinmarketcap.com/api' } }],
     cadence: '30s client poll · sequential fallback ladder', staticData: ['lib/data/assetCatalog.ts (metadata)'],
-    notes: 'Prices live; coin metadata (name, chain, contract) is static reference data, not fabricated.',
+    notes: 'Prices live; coin metadata (name, chain, contract) is static reference data, not fabricated. Binance was the middle rung until 2026-10-12 (T-423, D102).',
   },
   {
     id: 'ohlcv', surface: 'Crypto OHLCV / candlestick charts', module: 'crypto',
     route: '/live-data/ohlcv', status: 'partial',
     providers: [{ name: 'Binance', host: 'api.binance.com', url: 'https://binance.com', role: 'primary', auth: 'none' }, { name: 'Binance.US', host: 'api.binance.us', url: 'https://binance.us', role: 'fallback', auth: 'none' }, COINGECKO],
     cadence: 'on demand · 60s–15m stale by range',
-    notes: 'Binance.com is 451 (geo-blocked) from many hosts, so candles come from the US mirror — a different venue. Serving venue recorded in the `venue` field.',
+    notes: 'Binance.com is 451 (geo-blocked) from many hosts, so candles come from the US mirror — a different venue. Serving venue recorded in the `venue` field. Both Binance rungs must go before launch (T-423, D102): CoinGecko alone serves no history older than 365 days on its free service and sends 4-day candles past 30 days, so a second chart source is being looked for first. `granularity` is measured from the candles.',
   },
   {
     id: 'coin-list', surface: 'Coin list / search / discovery', module: 'crypto',
     route: '/live-data/coin-list', covers: ['coin-search'], status: 'live',
-    providers: [COINGECKO, { name: 'Binance.US', host: 'api.binance.us', role: 'fallback', auth: 'none' }],
+    providers: [COINGECKO],
     cadence: 'on demand',
+    notes: 'Market-cap rank order. Binance.US listings were sorted first until 2026-10-12 (T-423, D102).',
   },
   {
     // Added 2026-08-30: this route shipped in #120 with no registry entry, so

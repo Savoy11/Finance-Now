@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { CoinListEntry, CoinListResponse } from '@/lib/types/coinList'
 import { fetchCoinGeckoPages } from '@/lib/server/coingeckoPages'
-import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 
 export type { CoinListEntry, CoinListResponse }
 
@@ -35,21 +34,6 @@ function toEntry(c: CoinGeckoMarketRow): CoinListEntry {
   }
 }
 
-// Binance.US public exchange info as a fallback/supplement symbol list
-async function fetchBinanceSymbols(): Promise<string[]> {
-  try {
-    const res = await fetch('https://api.binance.us/api/v3/exchangeInfo', {
-      headers: { Accept: 'application/json' },
-      next: { revalidate: 600 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS),
-    })
-    if (!res.ok) return []
-    const data = await res.json() as { symbols: Array<{ baseAsset: string }> }
-    return [...new Set(data.symbols.map(s => s.baseAsset.toUpperCase()))]
-  } catch {
-    return []
-  }
-}
-
 export async function GET() {
   try {
     const { pages, errors } = await fetchCoinGeckoPages<CoinGeckoMarketRow>(3, marketsUrl)
@@ -75,17 +59,12 @@ export async function GET() {
       )
     }
 
-    // Try to supplement with Binance symbols — mark coins listed on Binance
-    const binanceSymbols = await fetchBinanceSymbols()
-    const binanceSet = new Set(binanceSymbols)
-
-    // Sort: Binance-listed first (within same rank band), then by market cap rank
-    const sorted = [...coins].sort((a, b) => {
-      const aOnBinance = binanceSet.has(a.symbol) ? 0 : 1
-      const bOnBinance = binanceSet.has(b.symbol) ? 0 : 1
-      if (aOnBinance !== bOnBinance) return aOnBinance - bOnBinance
-      return a.rank - b.rank
-    })
+    // Market-cap rank order, and nothing else. Until 2026-10-12 coins listed on
+    // Binance.US were moved ahead of every coin that is not, which put one
+    // exchange's listing decisions above the market's own ordering in every list
+    // built from this one. That lookup came out under T-423 (D91, D102):
+    // Binance.US licenses its data "personal to you", with no route to public use.
+    const sorted = [...coins].sort((a, b) => a.rank - b.rank)
 
     return NextResponse.json({
       ok: true,

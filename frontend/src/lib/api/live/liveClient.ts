@@ -14,8 +14,8 @@ export interface LiveQuote {
   priceChange24h: number | null
   circulatingSupply: number | null
   /**
-   * Valuation/technical extras. CoinGecko-only — the Binance and CMC fallback
-   * legs do not carry them, so they stay null there rather than being derived.
+   * Valuation/technical extras. CoinGecko-only — the CMC fallback leg does not
+   * carry them, so they stay null there rather than being derived.
    * A screener filtering on a fabricated figure is worse than one that reports
    * the coin as untested.
    */

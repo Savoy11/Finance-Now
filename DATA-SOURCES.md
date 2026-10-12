@@ -23,9 +23,9 @@ Provider tags: `key` = needs an API key · `paid` = needs a paid plan · untagge
 
 | Surface | Status | Provider(s) | Cadence | Route |
 |---------|--------|-------------|---------|-------|
-| Crypto prices, market cap, volume, 24h change | Live | [CoinGecko](https://www.coingecko.com/en/api) `api.coingecko.com`<br>[Binance](https://binance.com) `api.binance.com`<br>[CoinMarketCap](https://coinmarketcap.com/api) `pro-api.coinmarketcap.com` _(paid)_ | 30s client poll · sequential fallback ladder | `/live-data/markets` |
+| Crypto prices, market cap, volume, 24h change | Live | [CoinGecko](https://www.coingecko.com/en/api) `api.coingecko.com`<br>[CoinMarketCap](https://coinmarketcap.com/api) `pro-api.coinmarketcap.com` _(paid)_ | 30s client poll · sequential fallback ladder | `/live-data/markets` |
 | Crypto OHLCV / candlestick charts | Partial | [Binance](https://binance.com) `api.binance.com`<br>[Binance.US](https://binance.us) `api.binance.us`<br>[CoinGecko](https://www.coingecko.com/en/api) `api.coingecko.com` | on demand · 60s–15m stale by range | `/live-data/ohlcv` |
-| Coin list / search / discovery | Live | [CoinGecko](https://www.coingecko.com/en/api) `api.coingecko.com`<br>Binance.US `api.binance.us` | on demand | `/live-data/coin-list` |
+| Coin list / search / discovery | Live | [CoinGecko](https://www.coingecko.com/en/api) `api.coingecko.com` | on demand | `/live-data/coin-list` |
 | Coin project profile (website, description) | Live | [CoinMarketCap](https://coinmarketcap.com/api) `pro-api.coinmarketcap.com` _(paid)_<br>[CoinGecko](https://www.coingecko.com/en/api) `api.coingecko.com` | on demand · 24h cache | `/live-data/coin-profile` |
 | Global crypto aggregates (BTC dominance, total cap) | Live | [CoinGecko](https://www.coingecko.com/en/api) `api.coingecko.com` | 10m revalidate | `/live-data/global` |
 | Coin discovery candidates | Live | [CoinGecko](https://www.coingecko.com/en/api) `api.coingecko.com` | on demand | `/live-data/coin-discovery` |
@@ -49,8 +49,9 @@ Provider tags: `key` = needs an API key · `paid` = needs a paid plan · untagge
 | On-chain wallet balances (BTC/ETH/SOL/TRON/XRP + EVM) | Live | Public explorers + JSON-RPC ladders | — | `/live-data/wallet/*` |
 | Measured-risk rating (coin pages) | Derived | Finance Now rating engine (lib/risk/assetRating.ts)<br>[CoinGecko](https://www.coingecko.com/en/api) `api.coingecko.com` | daily, from the previous day’s data | `/live-data/coin-rating` |
 
-- **Crypto prices, market cap, volume, 24h change** — Prices live; coin metadata (name, chain, contract) is static reference data, not fabricated. Reference/fallback data: `lib/data/assetCatalog.ts (metadata)`.
-- **Crypto OHLCV / candlestick charts** — Binance.com is 451 (geo-blocked) from many hosts, so candles come from the US mirror — a different venue. Serving venue recorded in the `venue` field.
+- **Crypto prices, market cap, volume, 24h change** — Prices live; coin metadata (name, chain, contract) is static reference data, not fabricated. Binance was the middle rung until 2026-10-12 (T-423, D102). Reference/fallback data: `lib/data/assetCatalog.ts (metadata)`.
+- **Crypto OHLCV / candlestick charts** — Binance.com is 451 (geo-blocked) from many hosts, so candles come from the US mirror — a different venue. Serving venue recorded in the `venue` field. Both Binance rungs must go before launch (T-423, D102): CoinGecko alone serves no history older than 365 days on its free service and sends 4-day candles past 30 days, so a second chart source is being looked for first. `granularity` is measured from the candles.
+- **Coin list / search / discovery** — Market-cap rank order. Binance.US listings were sorted first until 2026-10-12 (T-423, D102).
 - **Coin project profile (website, description)** — Two-rung ladder: CoinMarketCap when keyed (bulk, 1 credit/100 coins, identity resolved by lib/utils/coinIdentity.ts which declines rather than guesses), else CoinGecko per coin. The keyless rung is switchable off with FN_ALLOW_KEYLESS_COIN_PROFILES=false. Descriptions are sanitized to plain text, never rendered as HTML.
 - **Global crypto aggregates (BTC dominance, total cap)** — Feeds the Cycle Context tab's dominance card. Nullable field by field, so a partial upstream answer serves what it carries.
 - **Coin discovery candidates** — Since 2026-10-07 (TS-3) tokenized securities are left out of the candidates and listed on the page: members of CoinGecko’s tokenized stock, ETF, Treasury, money-market, credit, private-credit and pre-IPO categories (lib/server/tokenizedSecurities.ts, refreshed daily). If those categories cannot be read, nothing is left out and the page says the check did not run.
