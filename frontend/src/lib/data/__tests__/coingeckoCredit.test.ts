@@ -1,9 +1,12 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import fs from 'node:fs'
 import path from 'node:path'
+import { NextRequest } from 'next/server'
 import { stripComments } from '../../../../scripts/lib/stripComments.mjs'
-import { DATA_SOURCES, getSource, requiredAttributions, attributionText } from '../dataSources'
+import { getSource, requiredAttributions, attributionText, sourceForRoute, COINGECKO_ATTRIBUTION } from '../dataSources'
 import { priceAlertMessage } from '@/hooks/usePriceAlertMonitor'
+import { runToolWithCredits } from '@/lib/agents/tools'
+import { GET as v1Prices } from '@/app/api/v1/prices/route'
 import type { PriceAlert } from '@/store/usePriceAlertStore'
 
 /**
@@ -144,10 +147,21 @@ const NOT_DATA: Record<string, string> = {
   config: 'Integrations health check: it pings CoinGecko’s /ping and returns up or down, no CoinGecko figure.',
 }
 
-function ownerOf(route: string) {
-  const own = new RegExp(`/live-data/${route.replace(/[-/]/g, (c) => `\\${c}`)}(?![a-z0-9/-])`)
-  return DATA_SOURCES.find((e) => e.id === route || e.covers?.includes(route) || own.test(e.route ?? ''))
-}
+/** The same lookup the agent tools use to find a route's credits (D101). */
+const ownerOf = (route: string) => sourceForRoute(`/live-data/${route}`)
+
+describe('sourceForRoute finds a route’s owner as fetched', () => {
+  it('by id, by covers, and by the route string, ignoring the query', () => {
+    expect(sourceForRoute('/live-data/markets?ids=bitcoin')?.id).toBe('markets')
+    expect(sourceForRoute('/live-data/coin-search?query=sol')?.id).toBe('coin-list')
+    expect(sourceForRoute('/live-data/pump-report/metrics')?.id).toBe('pump-report-metrics')
+  })
+
+  it('owns nothing outside /live-data, and no prefix of a longer route', () => {
+    expect(sourceForRoute('/api/v1/prices')).toBeUndefined()
+    expect(sourceForRoute('/live-data/pump-report')).toBeUndefined()
+  })
+})
 
 describe('every route that fetches CoinGecko is registered with the credit', () => {
   it('finds the CoinGecko routes at all (a check that sees none proves nothing)', () => {
@@ -169,17 +183,60 @@ describe('every route that fetches CoinGecko is registered with the credit', () 
   })
 })
 
-// The agent API answers scripts, agents and the MCP server, not a page, and today names no
-// provider: /api/v1/prices says only `source: 'live'`. Whether CoinGecko's credit must travel
-// in its JSON was put to the owner on 2026-10-12 (T-424) and is not decided here. Until it
-// is, the set is pinned, so a new route serving CoinGecko data to callers is not added unseen.
-describe('the agent API routes that reach CoinGecko are the known ones', () => {
-  it('lists them', () => {
-    const api = walk(path.join(APP, 'api'), 'route.ts')
-      .filter((f) => closure(f).some(fetchesCoinGecko))
-      .map((f) => rel(path.dirname(f)).replace(/^app\//, ''))
-      .sort()
-    expect(api).toEqual(['api/v1/network-fees', 'api/v1/prices', 'api/v1/transfer/routes'])
+// ── the agent API and the MCP server (D100) ────────────────────────────────────
+//
+// The agent API answers scripts, agents and the MCP server, not a page. The owner ruled on
+// 2026-10-12 (D100, "Yes credit should be shown") that the credit travels with the data:
+// each response serving CoinGecko figures carries `attributions`, and the MCP server hands
+// them on with its answer.
+
+// /api/v1 only: the agent routes (/api/agents/*) reach CoinGecko through the agent tools,
+// and their answers are held to D101 below.
+const apiRoutes = walk(path.join(APP, 'api', 'v1'), 'route.ts')
+  .filter((f) => closure(f).some(fetchesCoinGecko))
+  .map((f) => ({ file: f, path: rel(path.dirname(f)).replace(/^app\/api\/v1/, '') }))
+
+describe('every agent API route serving CoinGecko data carries the credit (D100)', () => {
+  it('finds them (a check that sees none proves nothing)', () => {
+    expect(apiRoutes.map((r) => r.path)).toContain('/prices')
+  })
+
+  it.each(apiRoutes.map((r) => r.path))('%s puts `attributions` in its JSON', (p) => {
+    const src = read(apiRoutes.find((r) => r.path === p)!.file)
+    expect(src, `${p} serves CoinGecko data and sends no attributions`).toMatch(/\battributions:\s*(?:\[COINGECKO_ATTRIBUTION\]|requiredAttributions\()/)
+  })
+
+  describe('/api/v1/prices, run', () => {
+    afterEach(() => vi.unstubAllGlobals())
+
+    it('answers with CoinGecko’s credit, verbatim', async () => {
+      vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ bitcoin: { usd: 101.5 } }), { status: 200 })))
+      const res = await v1Prices(new NextRequest('http://localhost/api/v1/prices?coins=btc'))
+      const body = await res.json()
+      expect(body.prices.btc).toBe(101.5)
+      expect(body.attributions).toEqual([COINGECKO_ATTRIBUTION])
+    })
+  })
+})
+
+describe('every MCP tool relaying CoinGecko data passes the credit on (D100)', () => {
+  const mcp = stripComments(fs.readFileSync(path.join(process.cwd(), '..', 'mcp-server', 'src', 'index.ts'), 'utf8')) as string
+  const tools = mcp.split(/\bserver\.tool\(/).slice(1)
+  const readersOf = (p: string) =>
+    tools.filter((t) => new RegExp(`get<[\\s\\S]*?>\\(\\s*[\`'"]${p.replace(/[/]/g, '\\/')}(?![a-z0-9/-])`).test(t))
+
+  it('finds the tools and the readers (a check that sees none proves nothing)', () => {
+    expect(tools.length).toBeGreaterThan(5)
+    expect(readersOf('/prices').length, 'get_coin_prices should read /prices').toBe(1)
+    expect(readersOf('/network-fees').length, 'get_network_fees should read /network-fees').toBe(1)
+  })
+
+  it.each(apiRoutes.map((r) => r.path))('a tool reading %s calls creditNote', (p) => {
+    // A switched-off tool is commented out and stripped above, so it has no reader here.
+    for (const t of readersOf(p)) {
+      const name = t.match(/^\s*'([a-z_]+)'/)?.[1]
+      expect(t, `MCP tool ${name} relays ${p} without its credit`).toMatch(/\bcreditNote\(data\)/)
+    }
   })
 })
 
@@ -221,6 +278,74 @@ describe('every surface showing CoinGecko data renders the credit', () => {
     for (const f of Object.keys(SHOWS_NO_FIGURE)) {
       expect(cgRoutesReadBy(path.join(SRC, f)).length, `${f} no longer reads CoinGecko; drop its exemption`).toBeGreaterThan(0)
     }
+  })
+})
+
+// ── AI answers (D101) ──────────────────────────────────────────────────────────
+//
+// The owner ruled on 2026-10-12 (D101, "Still show credit") that an AI answer quoting
+// CoinGecko figures shows the credit too. The agent tools gather it from every response
+// they read (runToolWithCredits), the runner returns it with the answer, the agent routes
+// send it, and every surface showing an answer renders it under the answer.
+
+describe('agent tools gather the credits their data requires (D101)', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  const respond = (bodies: Record<string, unknown>) =>
+    vi.fn(async (url: string) => {
+      const key = Object.keys(bodies).find((k) => url.includes(k))
+      return new Response(JSON.stringify(key ? bodies[key] : {}), { status: 200 })
+    })
+
+  it('takes the agent API’s own attributions', async () => {
+    vi.stubGlobal('fetch', respond({ '/api/v1/prices': { prices: { btc: 1 }, attributions: [COINGECKO_ATTRIBUTION] } }))
+    const out = await runToolWithCredits('get_prices', { coins: ['btc'] }, 'http://x')
+    expect(out.credits.map((c) => c.text)).toEqual([CREDIT])
+  })
+
+  it('reads a /live-data route’s from the registry, as its SourceLine does', async () => {
+    vi.stubGlobal('fetch', respond({ '/live-data/markets': { ok: true, quotes: {} } }))
+    const out = await runToolWithCredits('get_market_overview', {}, 'http://x')
+    expect(out.credits).toEqual(requiredAttributions(getSource('markets')!))
+    expect(out.credits.map((c) => c.text)).toContain(CREDIT)
+  })
+
+  it('adds none for a source whose licence asks for none', async () => {
+    vi.stubGlobal('fetch', respond({ '/live-data/security-quotes': { quotes: {} } }))
+    const out = await runToolWithCredits('get_stock_quote', { symbols: 'AAPL' }, 'http://x')
+    expect(out.credits).toEqual([])
+  })
+
+  it('adds none when the route reported failure and supplied no data', async () => {
+    vi.stubGlobal('fetch', respond({ '/live-data/markets': { ok: false, error: 'upstream down' } }))
+    const out = await runToolWithCredits('get_market_overview', {}, 'http://x')
+    expect(out.credits).toEqual([])
+  })
+})
+
+describe('the agent routes send the credits with the answer (D101)', () => {
+  it.each(['research', 'chat'])('/api/agents/%s', (r) => {
+    expect(read(path.join(APP, 'api', 'agents', r, 'route.ts'))).toMatch(/\bcredits:\s*result\.credits\b/)
+  })
+})
+
+describe('every surface showing an AI answer renders its credits (D101)', () => {
+  const callsAgents = (unit: string) =>
+    closure(unit).some((f) => !LABELS_ONLY.has(rel(f)) && /['"`]\/api\/agents\/(?:research|chat)['"`]/.test(read(f)))
+  const units = [...pages, ...shellParts].filter(callsAgents)
+
+  it('finds them (a check that sees none proves nothing)', () => {
+    const names = units.map(rel)
+    for (const u of ['app/(dashboard)/brief/page.tsx', 'app/(dashboard)/research/page.tsx', 'components/agents/AssistantWidget.tsx']) {
+      expect(names).toContain(u)
+    }
+  })
+
+  it.each(units.map(rel))('%s', (unitRel) => {
+    // SourceLine renders RequiredCredits for a page's own source; that is not the answer's.
+    const rendered = closure(path.join(SRC, unitRel))
+      .some((f) => rel(f) !== 'components/ui/SourceLine.tsx' && /<RequiredCredits\s+credits=\{/.test(read(f)))
+    expect(rendered, `${unitRel} shows an AI answer and renders no <RequiredCredits credits={…}>`).toBe(true)
   })
 })
 

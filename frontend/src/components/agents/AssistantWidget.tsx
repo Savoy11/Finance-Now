@@ -6,11 +6,15 @@ import { Bot, X, Send, Loader2, Sparkles, Wrench } from 'lucide-react'
 import { useWatchlistBias } from '@/lib/watchlist/useWatchlistBias'
 import { agentWatchlistPayload } from '@/lib/watchlist/bias'
 import { FeatureNotice } from '@/components/legal/FeatureNotice'
+import { RequiredCredits } from '@/components/ui/RequiredCredits'
+import { parseCredits, type RequiredCredit } from '@/lib/data/dataSources'
 
 interface ChatMessage {
   role: 'user' | 'assistant'
   content: string
   toolsUsed?: { name: string; input: unknown }[]
+  /** What the data behind this reply requires on screen (D101). */
+  credits?: RequiredCredit[]
   error?: boolean
 }
 
@@ -64,7 +68,7 @@ export function AssistantWidget() {
       if (!res.ok || data.error) {
         setMessages((m) => [...m, { role: 'assistant', content: data.error ?? 'Something went wrong.', error: true }])
       } else {
-        setMessages((m) => [...m, { role: 'assistant', content: data.reply, toolsUsed: data.toolsUsed }])
+        setMessages((m) => [...m, { role: 'assistant', content: data.reply, toolsUsed: data.toolsUsed, credits: parseCredits(data.credits) }])
       }
     } catch (e) {
       setMessages((m) => [...m, { role: 'assistant', content: e instanceof Error ? e.message : 'Network error', error: true }])
@@ -150,6 +154,9 @@ export function AssistantWidget() {
                         </span>
                       ))}
                     </div>
+                  )}
+                  {m.credits && m.credits.length > 0 && (
+                    <RequiredCredits credits={m.credits} className="mt-2 flex" />
                   )}
                 </div>
               </div>

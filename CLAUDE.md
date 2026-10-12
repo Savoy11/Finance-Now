@@ -803,6 +803,9 @@ site nobody has reviewed. Full design: `docs/architecture/source-terms.md`.
 >   route reaching CoinGecko has no entry naming it, or when a page or a part of the app
 >   shell reads such a route without a SourceLine (or `attributionText()`, for a toast)
 >   carrying the credit. It cannot see tabs: a tabbed page keeps its SourceLine above the tabs.
+>   **And beyond the pages (D100, D101, 2026-10-12):** the agent API sends the credit as
+>   `attributions`, the MCP server relays it, and AI answers built on CoinGecko figures show
+>   it — see "Agent API Layer" and "AI Agents" below. The same guard holds all three.
 > - **Reddit's robots.txt disallows this app's agent**, so reddit.com is gated
 >   off unless `REDDIT_CLIENT_ID` is set, enforced in `pinnedFetch` so a new
 >   call site inherits it. `SourceTermsEntry.robotsDisallowed` records that as a
@@ -1563,6 +1566,8 @@ All agents run through one loop (`runner.ts`, Anthropic + OpenAI-compatible). De
 
 **LLM keys** resolve via `getProviderKey(provider)` — UI-saved key (Integrations → AI Providers, the `llm`-category providers in `providers.ts`) first, then the env var. The pump-report routes resolve the Anthropic key the same way.
 
+**Credits under AI answers (D101, 2026-10-12).** An answer built on CoinGecko figures shows "Powered by CoinGecko". `runToolWithCredits` (`tools.ts`) gathers the credits of every response a tool reads, through the one `get` every tool fetches with: a response's own `attributions` (the agent API, D100), else the registry entry owning the `/live-data` route. The runner returns them once each as `AgentRunResult.credits`, the agent routes send them, and the Brief, Research, the Assistant and the AI scans render them under the answer with `RequiredCredits` (`components/ui/RequiredCredits.tsx`, which also renders SourceLine's credits, so the licence's size lives in one place). A new tool collects its credits without doing anything; a new surface showing an answer must render them, or the credit guard fails.
+
 **Control surfaces:** the **AI Agents tab** (`/agent-config`) edits model/temperature/prompt per agent (tabs grouped shared/crypto/equity); **Integrations** (`/settings`) holds the AI Providers key section and per-agent enable toggles. The **Research page** (`/research`) has a Crypto/Equities selector and accepts `?symbol=` / `?agent=equity-research` deep links; stock detail pages have an **Analyze with AI** button → `/research?symbol=…`. Disabled agents throw `AgentDisabledError` (503) from the run routes.
 
 ## News Feed Architecture (`src/app/live-data/news/route.ts`)
@@ -1601,6 +1606,10 @@ A separate, agent-optimised REST API lives at `/api/v1/`. It is distinct from `/
 - Responses are flat and descriptive (no UI-specific shape)
 - Proper HTTP 400 errors with human-readable messages for bad params
 - Every response includes `updatedAt` and `source` metadata
+- A response serving data whose licence requires a credit carries `attributions` (D100, 2026-10-12):
+  today the three serving CoinGecko figures (`/prices`, `/network-fees`, `/transfer/routes`). Read
+  from the registry, never typed; a new route serving CoinGecko data without it fails
+  `lib/data/__tests__/coingeckoCredit.test.ts`
 - OpenAPI 3.0 spec available at `GET /api/v1/openapi.json`
 
 ### Available endpoints
@@ -1638,10 +1647,10 @@ A standalone Node.js MCP server at `mcp-server/` (repo root) that exposes Financ
 ### Tools exposed
 | Tool | Description |
 |------|-------------|
-| `get_coin_prices` | Live prices for one or more coins |
+| `get_coin_prices` | Live prices for one or more coins; ends with "Powered by CoinGecko" from the API's `attributions` (D100) |
 | `list_exchanges` | All supported exchanges with coin/network support |
 | ~~`find_transfer_routes`~~ | ⚪ **WITHHELD 2026-08-22** — Transfer Fees held out of the initial rollout; tool commented out in mcp-server, `/api/v1/transfer/routes` answers 503 |
-| `get_network_fees` | Gas fees for all **18** networks (same `NETWORK_GAS` set as the v1 route) |
+| `get_network_fees` | Gas fees for all **18** networks (same `NETWORK_GAS` set as the v1 route); ends with CoinGecko's credit, as above |
 | `get_staking_opportunities` | Staking options filtered by coin and category; reports facts only — APY, lock-up, custody model, receipt token, TVL, audits. No risk score, rating or dimension (D14 + D26) |
 | `get_crypto_news` | Recent news with sentiment, category, and coin tags, plus the stocks a story about tokenized securities names |
 | `get_security_quotes` | Stock/ETF/fund/macro quotes (reference prices flagged) |

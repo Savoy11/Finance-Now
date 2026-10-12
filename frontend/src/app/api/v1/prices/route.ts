@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { CORS, options } from '../../_cors'
 import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
+import { COINGECKO_ATTRIBUTION } from '@/lib/data/dataSources'
 
 export const dynamic = 'force-dynamic'
 export { options as OPTIONS }
@@ -61,6 +62,9 @@ export async function GET(req: NextRequest) {
     // On fallback, updatedAt describes the RESPONSE, not the prices — the
     // constants' own compile date is what a consumer needs to judge them.
     ...(source === 'fallback' ? { fallbackPricesAsOf: FALLBACK_AS_OF, warning: `CoinGecko unreachable — prices are static fallback constants compiled ${FALLBACK_AS_OF}, not quotes.` } : {}),
+    // D100: the credit CoinGecko's API Terms clause 4 requires wherever its prices are
+    // shown travels with them, so a caller showing these prices can show it too.
+    attributions: [COINGECKO_ATTRIBUTION],
     updatedAt: new Date().toISOString(),
   }, { headers: CORS })
 }

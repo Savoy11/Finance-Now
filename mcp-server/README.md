@@ -51,6 +51,12 @@ Market data — crypto: `get_coin_prices`, `list_exchanges`,
 `get_crypto_news`. Securities & macro: `get_security_quotes`, `get_security_history`,
 `get_yield_curve`, `get_fx_rates`.
 
+**Credits travel with the figures** (2026-10-12, owner decision D100). `get_coin_prices`
+and `get_network_fees` end their answer with "Powered by CoinGecko" and its link, taken
+from the API's `attributions` field: CoinGecko's API Terms clause 4 requires that credit
+wherever its data is shown, and this server shows nothing itself, so whatever presents
+these figures should show the credit with them.
+
 ⚠ **`score_options_trade` is withheld** (2026-10-04, owner decision D64). Every
 risk rating the app shows is off until the risk engine is rebuilt and the compliance
 research on whether and how risk can be rated is done, so the tool is commented out

@@ -10,6 +10,8 @@ import { INSTRUMENT_BY_KEY } from '@/lib/data/instruments'
 import { migrateStorageKey } from '@/lib/utils/storageMigration'
 import { FeatureNotice } from '@/components/legal/FeatureNotice'
 import { FEATURE_NOTICES } from '@/lib/legal/featureNotices'
+import { RequiredCredits } from '@/components/ui/RequiredCredits'
+import { parseCredits, type RequiredCredit } from '@/lib/data/dataSources'
 
 // One-time key migration for the Finance Now rename — runs before any read below.
 migrateStorageKey('caep:daily-brief:v1', 'fn:daily-brief:v1')
@@ -22,7 +24,12 @@ migrateStorageKey('caep:daily-brief:v1', 'fn:daily-brief:v1')
 
 const LAST_BRIEF_KEY = 'fn:daily-brief:v1'
 
-interface StoredBrief { text: string; generatedAt: string }
+/**
+ * `credits` is what the data behind the brief requires on screen (D101). It is stored
+ * with the text because the brief is shown again from here, long after the run; a brief
+ * saved before 2026-10-12 has none.
+ */
+interface StoredBrief { text: string; generatedAt: string; credits?: RequiredCredit[] }
 
 function collectContext(
   portfolios: ReturnType<typeof usePortfolioStore.getState>['portfolios'],
@@ -86,7 +93,7 @@ export default function DailyBriefPage() {
       // the server's own message, which distinguishes the two.
       if (res.status === 503) { setNeedsKey(data.error ?? 'The research agent is unavailable — check Settings → Integrations.'); return }
       if (!res.ok || !data.ok) throw new Error(data.error ?? 'Agent error')
-      const next: StoredBrief = { text: data.report, generatedAt: new Date().toISOString() }
+      const next: StoredBrief = { text: data.report, generatedAt: new Date().toISOString(), credits: parseCredits(data.credits) }
       setBrief(next)
       try { localStorage.setItem(LAST_BRIEF_KEY, JSON.stringify(next)) } catch { /* quota */ }
     } catch (e) {
@@ -142,6 +149,7 @@ export default function DailyBriefPage() {
           </p>
           <FeatureNotice feature="aiAnswers" className="mb-4" />
           <div className="text-sm text-text-secondary leading-relaxed whitespace-pre-wrap">{brief.text}</div>
+          <RequiredCredits credits={parseCredits(brief.credits)} className="mt-4" />
         </article>
       )}
 

@@ -9,7 +9,7 @@ const SPEC = {
   info: {
     title: 'Finance Now API',
     version: '1.0.0',
-    description: 'Finance Now — programmatic access to transfer fee routing, staking opportunity analysis, live network fees, coin prices, and crypto news with sentiment. Designed for AI agents and automated workflows.',
+    description: 'Finance Now — programmatic access to transfer fee routing, staking opportunity analysis, live network fees, coin prices, and crypto news with sentiment. Designed for AI agents and automated workflows. A response carrying data whose licence requires a credit includes `attributions`: show those credits wherever you show the data.',
     contact: { name: 'Finance Now', url: 'http://localhost:3000' },
   },
   servers: [
@@ -272,11 +272,25 @@ const SPEC = {
           updatedAt: { type: 'string', format: 'date-time' },
         },
       },
+      Attributions: {
+        type: 'array',
+        description: 'Credits the data’s licences require wherever it is shown (D100). Show each `text` verbatim, linked to `href` when present, at `minFontPx` or larger, alongside the figures. CoinGecko’s API Terms clause 4 is why: the message "Powered by CoinGecko" is prescribed.',
+        items: {
+          type: 'object',
+          required: ['text'],
+          properties: {
+            text:      { type: 'string', example: 'Powered by CoinGecko' },
+            href:      { type: 'string', format: 'uri', example: 'https://www.coingecko.com/en/api' },
+            minFontPx: { type: 'number', example: 10 },
+          },
+        },
+      },
       PricesResponse: {
         type: 'object',
         properties: {
           prices:    { type: 'object', additionalProperties: { type: 'number' }, example: { btc: 95000, eth: 3200, usdt: 1.0 } },
           source:    { type: 'string', enum: ['live', 'fallback'] },
+          attributions: { $ref: '#/components/schemas/Attributions' },
           updatedAt: { type: 'string', format: 'date-time' },
         },
       },
@@ -316,12 +330,14 @@ const SPEC = {
           },
           btcSatPerVbyte: { type: 'number', nullable: true },
           priceSource:    { type: 'string', enum: ['live', 'fallback'] },
+          attributions:   { $ref: '#/components/schemas/Attributions' },
           updatedAt:      { type: 'string', format: 'date-time' },
         },
       },
       TransferRoutesResponse: {
         type: 'object',
         properties: {
+          attributions: { $ref: '#/components/schemas/Attributions' },
           liveOverlay: {
             type: 'object',
             description: 'Which exchanges in this response carry live-fetched withdrawal fees.',

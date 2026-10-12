@@ -64,7 +64,8 @@ export async function POST(req: NextRequest) {
       maxIterations: 12,
       webSearchMaxUses: 8, // research does multi-angle web lookups
     })
-    return NextResponse.json({ ok: true, report: result.text, toolsUsed: result.toolsUsed, agentId })
+    // credits: what the data behind the report requires on screen (D101); the page shows them under it.
+    return NextResponse.json({ ok: true, report: result.text, toolsUsed: result.toolsUsed, credits: result.credits, agentId })
   } catch (e) {
     if (e instanceof MissingApiKeyError || e instanceof AgentDisabledError) {
       return NextResponse.json({ error: e.message }, { status: 503 })

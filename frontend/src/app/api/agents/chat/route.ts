@@ -50,7 +50,8 @@ export async function POST(req: NextRequest) {
       systemSuffix,
       maxTokens: 1536,
     })
-    return NextResponse.json({ ok: true, reply: result.text, toolsUsed: result.toolsUsed })
+    // credits: what the data behind the reply requires on screen (D101); the widget shows them under it.
+    return NextResponse.json({ ok: true, reply: result.text, toolsUsed: result.toolsUsed, credits: result.credits })
   } catch (e) {
     if (e instanceof MissingApiKeyError || e instanceof AgentDisabledError) {
       return NextResponse.json({ error: e.message }, { status: 503 })

@@ -7,6 +7,8 @@ import { Microscope, Loader2, Wrench, Sparkles, AlertCircle, Bitcoin, LineChart,
 import { useWatchlistBias } from '@/lib/watchlist/useWatchlistBias'
 import { agentWatchlistPayload } from '@/lib/watchlist/bias'
 import { FeatureNotice } from '@/components/legal/FeatureNotice'
+import { RequiredCredits } from '@/components/ui/RequiredCredits'
+import { parseCredits, type RequiredCredit } from '@/lib/data/dataSources'
 
 type Market = 'crypto' | 'equities' | 'macro'
 
@@ -133,6 +135,8 @@ const AGENT_EXAMPLES: Record<string, string[]> = {
 interface ReportResult {
   report: string
   toolsUsed: { name: string; input: unknown }[]
+  /** What the data behind the report requires on screen (D101). */
+  credits: RequiredCredit[]
 }
 
 function ResearchInner() {
@@ -194,7 +198,7 @@ function ResearchInner() {
       })
       const data = await res.json()
       if (!res.ok || data.error) setError(data.error ?? 'Research failed')
-      else setResult({ report: data.report, toolsUsed: data.toolsUsed ?? [] })
+      else setResult({ report: data.report, toolsUsed: data.toolsUsed ?? [], credits: parseCredits(data.credits) })
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Network error')
     }
@@ -350,6 +354,7 @@ function ResearchInner() {
           </div>
           <FeatureNotice feature="aiAnswers" className="px-5 pt-3" />
           <div className="px-5 py-4 text-sm text-slate-200 leading-relaxed whitespace-pre-wrap">{result.report}</div>
+          <RequiredCredits credits={result.credits} className="px-5 pb-3" />
         </div>
       )}
     </div>

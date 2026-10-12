@@ -5,15 +5,19 @@ import Link from 'next/link'
 import { AlertCircle, ChevronDown, Loader2, Sparkles, Telescope, Wrench } from 'lucide-react'
 import { runAgentScan, distinctToolNames, type AgentScan, type AgentScanTool } from './agentScans'
 import { FeatureNotice } from '@/components/legal/FeatureNotice'
+import { RequiredCredits } from '@/components/ui/RequiredCredits'
+import type { RequiredCredit } from '@/lib/data/dataSources'
 
 // One panel for every AI scan on a market page (agentScans.ts lists them): a
 // collapsed header, a run button, and the agent's report with the tools it called.
 // The tool chips matter: a thin report off a feed with no data is a data problem,
-// and the chips are how a reader can tell.
+// and the chips are how a reader can tell. Under the report go the credits its
+// data requires (D101); neither scan reads CoinGecko today, so usually there are none.
 
 interface ScanReport {
   report: string
   toolsUsed: AgentScanTool[]
+  credits: RequiredCredit[]
 }
 
 export function AgentScanPanel({ scan }: { scan: AgentScan }) {
@@ -28,7 +32,7 @@ export function AgentScanPanel({ scan }: { scan: AgentScan }) {
     setError(null)
     setResult(null)
     const out = await runAgentScan(scan)
-    if (out.ok) setResult({ report: out.report, toolsUsed: out.toolsUsed })
+    if (out.ok) setResult({ report: out.report, toolsUsed: out.toolsUsed, credits: out.credits })
     else setError(out.error)
     setLoading(false)
   }
@@ -105,6 +109,7 @@ export function AgentScanPanel({ scan }: { scan: AgentScan }) {
               </div>
               <FeatureNotice feature="aiAnswers" className="px-4 pt-2.5" />
               <div className="px-4 py-3 text-sm text-text-secondary leading-relaxed whitespace-pre-wrap">{result.report}</div>
+              <RequiredCredits credits={result.credits} className="px-4 pb-3" />
             </div>
           )}
         </div>

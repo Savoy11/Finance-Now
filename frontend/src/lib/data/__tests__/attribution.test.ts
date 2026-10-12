@@ -56,16 +56,19 @@ describe('requiredAttributions', () => {
 
 describe('SourceLine renders it at or above the licensed floor', () => {
   const src = fs.readFileSync(path.join(process.cwd(), 'src/components/ui/SourceLine.tsx'), 'utf8')
+  // Every credit in the app renders through RequiredCredits (D101), so the size lives there.
+  const credits = fs.readFileSync(path.join(process.cwd(), 'src/components/ui/RequiredCredits.tsx'), 'utf8')
 
   it('renders the attribution list', () => {
     expect(src).toContain('requiredAttributions')
-    expect(src).toContain('attributions.map')
+    expect(src).toMatch(/<RequiredCredits\s+credits=\{attributions\}/)
+    expect(credits).toContain('credits.map')
   })
 
   it('uses a font size at or above every licensed minimum', () => {
     // Parse the class actually applied to the attribution element, rather than
     // trusting that someone kept it in step with the clause.
-    const block = src.slice(src.indexOf('attributions.map'))
+    const block = credits.slice(credits.indexOf('credits.map'))
     const px = block.match(/text-\[(\d+)px\]/)
     expect(px, 'attribution element has no explicit px size to check').not.toBeNull()
     const floor = Math.max(

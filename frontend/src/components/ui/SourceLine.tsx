@@ -5,6 +5,7 @@ import { Info } from 'lucide-react'
 import { clsx } from 'clsx'
 import { formatDistanceToNow, parseISO } from 'date-fns'
 import { describeSource, getSource, requiredAttributions, SOURCE_STATUS_META } from '@/lib/data/dataSources'
+import { RequiredCredits } from './RequiredCredits'
 
 interface SourceLineProps {
   /** Registry id — usually the /live-data route folder (see dataSources.ts). */
@@ -74,19 +75,10 @@ export function SourceLine({ id, asOf, className }: SourceLineProps) {
           sets. Rendered as its own element rather than folded into the
           provenance sentence above: CoinGecko's API Terms clause 4 prescribes
           the MESSAGE ("Powered by CoinGecko"), and "Source: CoinGecko, Binance"
-          is not that message however accurate it is. 11px clears the stated
-          10px floor with a margin, and text-text-secondary keeps it legible
-          rather than the muted grey the rest of this line uses. */}
-      {attributions.map((a) => (
-        <span key={a.text} className="text-[11px] leading-none text-text-secondary">
-          ·{' '}
-          {a.href ? (
-            <a href={a.href} target="_blank" rel="noopener noreferrer" className="hover:text-accent-blue">
-              {a.text}
-            </a>
-          ) : a.text}
-        </span>
-      ))}
+          is not that message however accurate it is. RequiredCredits sets the
+          size, in one place for every credit in the app. */}
+      <RequiredCredits credits={attributions} separated />
+
     </div>
   )
 }
