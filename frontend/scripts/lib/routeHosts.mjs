@@ -91,8 +91,9 @@ function isBundled(host, registered) {
 
 /**
  * Drift items: a route fetching a host with no owning entry, or one its entry does not name.
- * An entry with a hostless provider is still skipped, as it always was; that exemption is
- * wider than it needs to be and is recorded under T-432.
+ * An entry with a hostless provider is still skipped, as it always was. That exemption is
+ * wider than it needs to be: it keeps newsapi.org, gnews.io and eight LLM key-test hosts
+ * from ever reaching the terms check (T-433).
  *
  * @param {{ id: string, route?: string, covers?: string[], providers: { host?: string }[] }[]} entries
  * @param {{ id: string, hosts: Set<string> }[]} routes
