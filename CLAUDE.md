@@ -493,11 +493,17 @@ Client component
 > back to each coin's listing, but **one price per interval: no high, low or volume**. So
 > `/live-data/ohlcv` serves it **only to a caller that sends `closes=1`**, marked `bars: 'close'`
 > (real candles are `bars: 'ohlc'`). Only a caller that reads nothing but closes may send it:
-> today the Coins screener's sweep (78 of 80 coins daily, against 39 before) and Cycle Context's
-> Pi Cycle. **Do not add `closes=1` to a chart, a pattern finder or a setup detector.** Fed one
-> price as a candle, each computes a zero range without complaint; `ohlcvRoute.test.ts` fails if
-> a candle request ever reaches DefiLlama. The Binance rungs stay on the candle ladder until the
-> pages reading candles run on the launch sources; T-423 lists those steps.
+> the Coins screener's sweep (78 of 80 coins daily, against 39 before) and Cycle Context's Pi
+> Cycle. **The two crypto charts** (the TA page and the coin page) ask for candles first and
+> switch to closing prices only where the candles are missing or 4-day ones, through
+> `hooks/useCryptoChartSeries.ts`; on closes they draw a line, offer only the indicators that
+> read closes alone (`indicatorsFor(false, false)`, flags **measured** by
+> `indicatorInputs.test.ts`), withhold the signal summary, patterns, support/resistance and key
+> levels, and say so (`ClosingPricesNotice`). **Do not add `closes=1` anywhere else** that reads
+> a high, a low or a volume: fed one price as a candle, each computes a zero range without
+> complaint, and `ohlcvRoute.test.ts` fails if a candle request ever reaches DefiLlama. The
+> Binance rungs stay on the candle ladder until the scanner, the multi-timeframe grid and the
+> assistant's price history run on the launch sources; T-423 lists those steps.
 
 ### React Query patterns on the client:
 ```typescript

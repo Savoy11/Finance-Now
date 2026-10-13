@@ -16,7 +16,9 @@ import {
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import type { ChartType, DrawingTool, Drawing } from '@/components/charts/CandlestickChart'
-import { ALL_INDICATORS, type IndicatorKey } from '@/components/charts/indicatorRegistry'
+import { ALL_INDICATORS, indicatorsFor, type IndicatorKey } from '@/components/charts/indicatorRegistry'
+import { ClosingPricesNotice } from '@/components/charts/ClosingPricesNotice'
+import { useCryptoChartSeries, drawableChartType, RANGE_CHART_TYPES } from '@/hooks/useCryptoChartSeries'
 import { IndicatorPicker } from '@/components/charts/IndicatorPicker'
 import { DrawingToolbar } from '@/components/charts/DrawingToolbar'
 import type { LucideIcon } from 'lucide-react'
@@ -72,6 +74,13 @@ const CHART_TYPES: { type: ChartType; label: string; desc: string; Icon: LucideI
 // same set and the same explanations. This page was the only one that had all
 // 62; the others had 18 and 16 purely because the list was declared three times.
 const INDICATORS = ALL_INDICATORS
+
+// What a series of closing prices can carry (T-423, D103): the indicators that
+// read closes alone. Measured, not listed — see indicatorInputs.test.ts.
+const CLOSE_INDICATORS = indicatorsFor(false, false)
+
+// The panels a series of closing prices switches off, named in the notice.
+const PANELS_OFF_FOR_CLOSES = ['the signal summary', 'patterns', 'support and resistance', 'key levels'] as const
 
 
 // ─── Panels ───────────────────────────────────────────────────────────────────
@@ -178,26 +187,35 @@ function TechnicalAnalysisContent() {
     return () => document.removeEventListener('mousedown', handleClick)
   }, [indicatorMenuOpen, chartTypeMenuOpen])
 
-  const { data, isFetching, refetch } = useQuery({
-    queryKey: ['ta-ohlcv', assetId, range],
-    queryFn: async () => {
-      const res = await fetch(`/live-data/ohlcv?id=${assetId}&range=${range}`)
-      if (!res.ok) throw new Error('fetch failed')
-      return res.json() as Promise<{ ok: boolean; candles: OhlcvCandle[]; source?: string; venue?: string; granularity?: string }>
-    },
+  // Candles first; DefiLlama's closing prices where the candles are missing or
+  // only 4-day ones (T-423, D103). See useCryptoChartSeries.
+  const { data, closeOnly, closesReason, candleError, isFetching, refetch } = useCryptoChartSeries(assetId, range, {
     staleTime: range === '1H' ? 60_000 : range === '4H' || range === '1M' ? 300_000 : 900_000,
   })
 
   const ohlcvSource = ohlcvSourceLabel(data?.source, data?.venue)
   // Measured from the candles, so a 1Y view CoinGecko answers in 4-day candles
   // says "4-day" rather than leaving the reader to assume daily (T-423).
-  const candleWords = candleSizeWords(candleGranularity((data?.candles ?? []).map(c => c.time)))
+  const candleSize = candleGranularity((data?.candles ?? []).map(c => c.time))
+  const candleWords = candleSizeWords(candleSize)
 
   // News-derived event markers for the chart (feature #4)
   const candles = useMemo<OhlcvCandle[]>(() => data?.candles ?? [], [data])
 
-  const summary = useMemo(() => candles.length >= 50 ? computeSignalSummary(candles) : null, [candles])
-  const patterns = useMemo(() => candles.length >= 20 ? detectPatterns(candles) : [], [candles])
+  // A series of closing prices carries no ranges or volume. Everything below that
+  // reads them is withheld rather than computed on the flat stand-ins: the signal
+  // summary mixes in ATR, Williams %R, ADX and money flow, and the patterns,
+  // support/resistance and key levels all read highs and lows.
+  const summary = useMemo(() => !closeOnly && candles.length >= 50 ? computeSignalSummary(candles) : null, [candles, closeOnly])
+  const patterns = useMemo(() => !closeOnly && candles.length >= 20 ? detectPatterns(candles) : [], [candles, closeOnly])
+  const offeredIndicators = closeOnly ? CLOSE_INDICATORS : INDICATORS
+  // The reader's choices are kept, so switching back to a candle range restores
+  // them; only what this series can support is drawn.
+  const drawnIndicators = useMemo(() => {
+    if (!closeOnly) return activeIndicators
+    const offered = new Set<string>(CLOSE_INDICATORS.map((i) => i.key))
+    return new Set([...activeIndicators].filter((k) => offered.has(k)))
+  }, [activeIndicators, closeOnly])
 
   function toggleIndicator(key: IndicatorKey) {
     setActiveIndicators((prev) => {
@@ -277,7 +295,7 @@ function TechnicalAnalysisContent() {
         {/* Chart type dropdown */}
         <div className="relative" ref={chartTypeMenuRef}>
           {(() => {
-            const current = CHART_TYPES.find((c) => c.type === chartType) ?? CHART_TYPES[0]
+            const current = CHART_TYPES.find((c) => c.type === drawableChartType(chartType, closeOnly)) ?? CHART_TYPES[0]
             return (
               <button
                 onClick={() => setChartTypeMenuOpen((v) => !v)}
@@ -293,21 +311,28 @@ function TechnicalAnalysisContent() {
           })()}
           {chartTypeMenuOpen && (
             <div className="absolute top-full left-0 mt-1.5 z-50 bg-bg-card border border-border rounded-xl shadow-2xl w-56 p-1.5">
-              {CHART_TYPES.map(({ type, label, desc, Icon }) => (
-                <button
-                  key={type}
-                  onClick={() => { setChartType(type); setChartTypeMenuOpen(false) }}
-                  className={clsx('w-full flex items-start gap-2.5 px-3 py-2 rounded-lg text-left transition-colors',
-                    chartType === type ? 'bg-accent-blue/10 text-accent-blue' : 'text-text-secondary hover:bg-bg-elevated hover:text-text-primary'
-                  )}
-                >
-                  <Icon size={13} className="mt-0.5 shrink-0" />
-                  <div>
-                    <div className="text-xs font-medium">{label}</div>
-                    <div className="text-[10px] text-text-muted leading-tight mt-0.5">{desc}</div>
-                  </div>
-                </button>
-              ))}
+              {CHART_TYPES.map(({ type, label, desc, Icon }) => {
+                const unavailable = closeOnly && RANGE_CHART_TYPES.has(type)
+                return (
+                  <button
+                    key={type}
+                    disabled={unavailable}
+                    onClick={() => { setChartType(type); setChartTypeMenuOpen(false) }}
+                    className={clsx('w-full flex items-start gap-2.5 px-3 py-2 rounded-lg text-left transition-colors',
+                      unavailable ? 'opacity-40 cursor-not-allowed text-text-muted'
+                        : drawableChartType(chartType, closeOnly) === type ? 'bg-accent-blue/10 text-accent-blue' : 'text-text-secondary hover:bg-bg-elevated hover:text-text-primary'
+                    )}
+                  >
+                    <Icon size={13} className="mt-0.5 shrink-0" />
+                    <div>
+                      <div className="text-xs font-medium">{label}</div>
+                      <div className="text-[10px] text-text-muted leading-tight mt-0.5">
+                        {unavailable ? 'Needs each period’s open, high and low' : desc}
+                      </div>
+                    </div>
+                  </button>
+                )
+              })}
             </div>
           )}
         </div>
@@ -341,11 +366,24 @@ function TechnicalAnalysisContent() {
         <div className="flex flex-col gap-3">
           {/* Indicators — shared picker, same control on all three TA surfaces */}
           <IndicatorPicker
-            indicators={INDICATORS}
-            active={activeIndicators}
+            indicators={offeredIndicators}
+            active={drawnIndicators}
             onToggle={(k) => toggleIndicator(k as IndicatorKey)}
             onClearAll={() => setActiveIndicators(new Set())}
+            footnote={closeOnly
+              ? `Not offered on closing prices: the ${INDICATORS.length - CLOSE_INDICATORS.length} indicators that read a period's high, low or volume.`
+              : undefined}
           />
+
+          {closeOnly && closesReason && (
+            <ClosingPricesNotice
+              reason={closesReason}
+              size={candleSize}
+              source={ohlcvSource}
+              candleError={candleError}
+              panelsOff={PANELS_OFF_FOR_CLOSES}
+            />
+          )}
 
           {/* Drawing toolbar — shared component; this page was its origin */}
           <DrawingToolbar
@@ -366,8 +404,8 @@ function TechnicalAnalysisContent() {
               ) : candles.length > 0 ? (
                 <CandlestickChart
                   candles={candles}
-                  activeIndicators={activeIndicators}
-                  chartType={chartType}
+                  activeIndicators={drawnIndicators}
+                  chartType={drawableChartType(chartType, closeOnly)}
                   drawingTool={drawingTool}
                   drawings={drawings}
                   onDrawingComplete={(d) => {
@@ -390,18 +428,18 @@ function TechnicalAnalysisContent() {
                 <div className="flex items-center justify-between gap-2 rounded-lg border border-border bg-bg-card px-3 py-2">
                   <DataBadge
                     status={ohlcvSource ? 'live' : 'unavailable'}
-                    source={ohlcvSource ? `${ohlcvSource} OHLCV` : undefined}
+                    source={ohlcvSource ? `${ohlcvSource} ${closeOnly ? 'closing prices' : 'OHLCV'}` : undefined}
                   />
                   <span className="text-[10px] text-text-muted">
-                    {candles.length} {candleWords ? `${candleWords} ` : ''}candles · indicators derived
+                    {candles.length} {candleWords ? `${candleWords} ` : ''}{closeOnly ? 'closes' : 'candles'} · indicators derived
                   </span>
                 </div>
               )}
               {summary && <TechnicalReadPanel candles={candles} summary={summary} />}
               <MarketStructurePanel symbol={asset.symbol} />
               {summary && <SignalSummaryPanel summary={summary} />}
-              {candles.length > 0 && <SupportResistancePanel candles={candles} />}
-              {candles.length > 0 && <KeyLevelsPanel candles={candles} />}
+              {candles.length > 0 && !closeOnly && <SupportResistancePanel candles={candles} />}
+              {candles.length > 0 && !closeOnly && <KeyLevelsPanel candles={candles} />}
             </div>
           </div>
 
@@ -420,7 +458,17 @@ function TechnicalAnalysisContent() {
       )}
 
       {/* ── Patterns Tab ── */}
-      {tab === 'patterns' && (
+      {tab === 'patterns' && (closeOnly && closesReason ? (
+        // An empty pattern list would read as "no patterns found"; on closing
+        // prices the truth is that none could be looked for.
+        <ClosingPricesNotice
+          reason={closesReason}
+          size={candleSize}
+          source={ohlcvSource}
+          candleError={candleError}
+          panelsOff={PANELS_OFF_FOR_CLOSES}
+        />
+      ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="flex flex-col gap-4">
             <PatternsPanel patterns={patterns} candles={candles} />
@@ -431,7 +479,7 @@ function TechnicalAnalysisContent() {
             {summary && <SignalSummaryPanel summary={summary} />}
           </div>
         </div>
-      )}
+      ))}
 
       {/* ── Backtest Tab ── */}
       {/* Backtest tab hidden 2026-08-20 — panel code retained below. */}
