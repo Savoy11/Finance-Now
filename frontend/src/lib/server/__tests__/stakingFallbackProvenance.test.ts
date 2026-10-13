@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { planFallbackRefresh } from '../../../../scripts/lib/stakingFallbackRefresh.mjs'
 
 /**
  * FALLBACK carries two kinds of number, and the difference is the whole point:
@@ -76,11 +77,12 @@ describe('staking FALLBACK provenance', () => {
     expect(routeSrc).toContain('measuredKeys: FALLBACK_MEASURED.size')
   })
 
-  it('the refresh script refuses to write a live zero as a measured value', () => {
-    // The guard below would catch a 0 after the fact; this pins the script so it
-    // never writes one. A live 0 is 'no rate reported', kept as a skip with a reason.
+  it('the refresh script reads its rules from the tested module', () => {
+    // The tests below exercise planFallbackRefresh; they prove nothing about the
+    // command unless the command actually calls it.
     const script = readFileSync(join(process.cwd(), 'scripts/refresh-staking-fallbacks.mjs'), 'utf8')
-    expect(script).toMatch(/if \(value <= 0\) \{[\s\S]*?skipped\.push/)
+    expect(script).toMatch(/import \{ planFallbackRefresh \} from '\.\/lib\/stakingFallbackRefresh\.mjs'/)
+    expect(script).toMatch(/if \(refusal\) \{[\s\S]*?process\.exit\(1\)/)
   })
 
   it('keeps every measured value plausible for a staking APR', () => {
@@ -92,5 +94,59 @@ describe('staking FALLBACK provenance', () => {
       expect(table[k], `${k} = ${table[k]}`).toBeGreaterThan(0)
       expect(table[k], `${k} = ${table[k]}`).toBeLessThan(60)
     }
+  })
+})
+
+describe('the fallback refresh writes only a whole reading (2026-10-13)', () => {
+  // FALLBACK_MEASURED_ON is one date for every measured key. Run against the real
+  // route source, so a change to its shape fails here rather than on the day the
+  // refresh is needed.
+  const keys = measuredKeys()
+  const TODAY = '2099-01-02'
+  const reading = (overrides: Record<string, { rate?: number; source?: string }> = {}) => {
+    const rates: Record<string, number> = {}
+    const sources: Record<string, string> = {}
+    for (const k of keys) {
+      rates[k] = overrides[k]?.rate ?? 3.21
+      sources[k] = overrides[k]?.source ?? 'live'
+    }
+    return { rates, sources, upstreams: { 'lido-eth': 'live (1/1)' } }
+  }
+
+  it('writes, and dates, a reading where every measured key came back live', () => {
+    const plan = planFallbackRefresh(routeSrc, reading(), TODAY)
+    expect(plan.measured).toEqual(keys)
+    expect(plan.refusal).toBeNull()
+    expect(plan.next).toContain(`const FALLBACK_MEASURED_ON = '${TODAY}'`)
+    expect(plan.next).toMatch(new RegExp(`^\\s*${keys[0]}:\\s*3\\.21,`, 'm'))
+  })
+
+  it('refuses when some keys were not read live, rather than re-dating their old values', () => {
+    // The case that prompted this: Stride and Injective down, four keys unread.
+    const unread = keys.slice(0, 4)
+    const plan = planFallbackRefresh(
+      routeSrc,
+      reading(Object.fromEntries(unread.map((k) => [k, { source: 'estimate' }]))),
+      TODAY,
+    )
+    expect(plan.skipped).toEqual(unread)
+    expect(plan.refusal).toContain(`4 of the ${keys.length} measured keys were not read live`)
+  })
+
+  it('refuses when nothing came back live', () => {
+    const plan = planFallbackRefresh(
+      routeSrc,
+      reading(Object.fromEntries(keys.map((k) => [k, { source: 'estimate' }]))),
+      TODAY,
+    )
+    expect(plan.refusal).toBe('not one measured key came back live.')
+  })
+
+  it('treats a live zero as no rate: skipped with a reason, never written, and the write refused', () => {
+    // A live 0 is "no rate reported". Writing it would publish 0% APR as measured.
+    const plan = planFallbackRefresh(routeSrc, reading({ [keys[0]]: { rate: 0 } }), TODAY)
+    expect(plan.skipped).toEqual([`${keys[0]} (live upstream reported 0 — no rate, prior value kept)`])
+    expect(plan.changed.map((c) => c.key)).not.toContain(keys[0])
+    expect(plan.refusal).not.toBeNull()
   })
 })

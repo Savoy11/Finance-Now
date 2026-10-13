@@ -17,6 +17,11 @@
 // a cloud or CI run measures that host's egress, not a user's, and would write
 // the wrong numbers into the table with a fresh date on them.
 //
+// ⚠ IT WRITES ONLY A WHOLE READING (2026-10-13). FALLBACK_MEASURED_ON is one date
+// for every measured key, so a key whose upstream did not answer would have its
+// old value re-dated as measured today. With any measured key unread, --write
+// refuses and writes nothing. The rules live in scripts/lib/stakingFallbackRefresh.mjs.
+//
 // ── It REPORTS what it changed, and that is not decoration ───────────────────
 // The first hand-run of this refresh matched ZERO keys and bumped the date
 // anyway — a table claiming a measurement it never had, which is precisely the
@@ -27,6 +32,7 @@
 
 import fs from 'node:fs'
 import path from 'node:path'
+import { planFallbackRefresh } from './lib/stakingFallbackRefresh.mjs'
 
 const ROUTE_FILE = path.resolve(process.cwd(), 'src/lib/server/stakingRates.ts')
 const BASE = process.env.BASE_URL ?? process.env.FN_BASE_URL ?? 'http://localhost:3000'
@@ -44,60 +50,17 @@ async function readLive() {
 
 const live = await readLive()
 const src = fs.readFileSync(ROUTE_FILE, 'utf8')
-
-// The measured set is the contract: refresh exactly those keys, so the date
-// bump covers precisely what it claims to and the 24 undated legacy estimates
-// stay undated.
-const setMatch = src.match(/const FALLBACK_MEASURED: ReadonlySet<string> = new Set\(\[([\s\S]*?)\]\)/)
-if (!setMatch) throw new Error('FALLBACK_MEASURED not found — has the route changed shape?')
-const measured = [...setMatch[1].matchAll(/'([a-z0-9_]+)'/g)].map((m) => m[1])
-
-const liveCount = Object.values(live.sources ?? {}).filter((s) => s === 'live').length
-const upstreams = Object.entries(live.upstreams ?? {})
-const failed = upstreams.filter(([, v]) => !String(v).startsWith('live'))
-
-let next = src
-const changed = []
-const skipped = []
-
-for (const key of measured) {
-  const value = live.rates?.[key]
-  if (live.sources?.[key] !== 'live' || typeof value !== 'number') {
-    skipped.push(key)
-    continue
-  }
-  // A live ZERO is "no rate reported", not a rate — the same verdict the upstream
-  // probe calls `no-rate`. Writing it would publish "0% APR" as a measured fallback
-  // the moment the upstream goes quiet, and stakingFallbackProvenance.test.ts
-  // rightly refuses a measured value of 0. First seen 2026-09-24: DefiLlama
-  // reported the LBTC pool at 0 while every other key was live. Keep the prior
-  // value and say so, exactly as a non-live upstream is handled.
-  if (value <= 0) {
-    skipped.push(`${key} (live upstream reported ${value} — no rate, prior value kept)`)
-    continue
-  }
-  const fresh = parseFloat(value.toFixed(2))
-  const re = new RegExp(`(^\\s*${key}:\\s*)([0-9.]+)(,)`, 'm')
-  const found = next.match(re)
-  if (!found) {
-    skipped.push(`${key} (no FALLBACK row)`)
-    continue
-  }
-  const old = parseFloat(found[2])
-  if (old !== fresh) changed.push({ key, old, fresh })
-  next = next.replace(re, `$1${fresh}$3`)
-}
-
 const today = new Date().toISOString().slice(0, 10)
-next = next.replace(/const FALLBACK_MEASURED_ON = '[0-9-]+'/, `const FALLBACK_MEASURED_ON = '${today}'`)
+const { measured, changed, skipped, failedUpstreams, liveCount, next, refusal } = planFallbackRefresh(src, live, today)
+const upstreamCount = Object.keys(live.upstreams ?? {}).length
 
 console.log(`\n═══ staking fallback refresh ${WRITE ? '(WRITE)' : '(report only)'} → ${FROM ?? BASE} ═══\n`)
-console.log(`  upstreams      ${upstreams.length - failed.length}/${upstreams.length} live`)
+console.log(`  upstreams      ${upstreamCount - failedUpstreams.length}/${upstreamCount} live`)
 console.log(`  live keys      ${liveCount} of ${Object.keys(live.rates ?? {}).length}`)
 console.log(`  measured set   ${measured.length} keys · ${changed.length} would change · ${skipped.length} skipped`)
-if (failed.length > 0) {
+if (failedUpstreams.length > 0) {
   console.log('\n  ⚠ upstreams NOT live — their keys are skipped, not zeroed:')
-  for (const [name, why] of failed) console.log(`      ${name.padEnd(22)} ${String(why).slice(0, 80)}`)
+  for (const [name, why] of failedUpstreams) console.log(`      ${name.padEnd(22)} ${String(why).slice(0, 80)}`)
 }
 if (skipped.length > 0) console.log(`\n  skipped: ${skipped.join(', ')}`)
 
@@ -116,15 +79,15 @@ if (changed.length > 0) {
 }
 
 if (!WRITE) {
+  // Said here too, so a report run tells the owner before --write whether today
+  // is a day a refresh can happen at all.
+  if (refusal) console.log(`\n  ⚠ --write would refuse today: ${refusal}`)
   console.log('\nREPORT ONLY — nothing written. Re-run with --write to apply.\n')
   process.exit(0)
 }
 
-// Refuse to stamp a fresh date on a table nothing was read into. A skipped key
-// is a key whose upstream did not answer, and dating those as "measured today"
-// is the exact lie this script exists to avoid.
-if (skipped.length === measured.length) {
-  console.error('\nREFUSED: not one measured key came back live. Nothing written.\n')
+if (refusal) {
+  console.error(`\nREFUSED: ${refusal} Nothing written.\n`)
   process.exit(1)
 }
 
