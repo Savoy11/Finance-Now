@@ -60,25 +60,25 @@
  },
  "counts": {
   "total_verified": 398,
-  "outstanding": 371,
+  "outstanding": 372,
   "by_status": {
    "closed": 211,
    "parked": 135,
-   "open": 18,
+   "open": 19,
    "blocked": 6,
    "unclear": 1
   },
   "by_owner_role": {
    "remote-dev": 92,
-   "either": 45,
+   "either": 46,
    "owner-decision": 148,
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
   "closed_by_annotation": 211,
-  "counts_recomputed_on": "2026-10-12",
+  "counts_recomputed_on": "2026-10-13",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
-  "total": 371
+  "total": 372
  },
  "blocking_decisions": [
   {
@@ -14053,6 +14053,39 @@
      "frontend/src/lib/agents/__tests__/runnerCredits.test.ts",
      "frontend/src/components/ui/RequiredCredits.tsx"
     ]
+   }
+  },
+  {
+   "id": "T-432",
+   "title": "Put the wallet routes’ RPC and explorer hosts under the source-terms registry",
+   "status": "open",
+   "confidence": "high",
+   "owner_role": "either",
+   "category": "legal",
+   "effort": "medium",
+   "blocking_decision": null,
+   "related_ids": [
+    "T-251",
+    "T-423"
+   ],
+   "summary": "The five /live-data/wallet/* routes (btc, eth, sol, tron, xrp) fetch 20 hosts, measured 2026-10-13 from the route files. Their dataSources.ts entry names its provider as “Public explorers + JSON-RPC ladders” with no host, so sourceTerms.test.ts, which walks every host in dataSources.ts, never sees them. 7 are covered anyway by the verified publicnode.com entry (T-251); 13 have no entry at all: 1rpc.io, api.avax.network, api.mainnet-beta.solana.com, apilist.tronscanapi.com, arb1.arbitrum.io, blockstream.info, bsc-dataseed.binance.org, cloudflare-eth.com, eth.drpc.org, mainnet.base.org, mainnet.optimism.io, polygon-rpc.com and s1.ripple.com. The routes also call plain fetch rather than pinnedFetch, so the prohibited-host block and the robots gate do not apply to them either. None of the 13 is known to be prohibited; nobody has read their terms. bsc-dataseed.binance.org is BNB Chain’s public RPC, not the Binance or Binance.US exchange T-423 removes, and needs its own reading. Only the Wallets page calls these routes, and it is hidden from rollout (2026-08-22), so before launch this is personal use (D96) and a launch step only if Wallets returns.",
+   "next_action": "(1) Name each host in the wallet entry of frontend/src/lib/data/dataSources.ts (one provider per operator), so sourceTerms.test.ts walks them; it will then fail on the 13 until (2) each operator’s terms are read on the owner’s machine and entered in frontend/src/lib/server/sourceTerms.ts (seeded where there is no document to read, as DefiLlama is). (3) Route the five wallet routes’ fetches through pinnedFetch, as every other route does, so a prohibited host or a robots disallow binds them too. Do (1) and (2) in one change so the suite never goes red on main.",
+   "sources": [
+    {
+     "file": "frontend/src/lib/data/dataSources.ts",
+     "lines": "286-289",
+     "quote": "providers: [{ name: 'Public explorers + JSON-RPC ladders', role: 'primary', auth: 'none' }],"
+    },
+    {
+     "file": "frontend/src/app/live-data/wallet/{btc,eth,sol,tron,xrp}/route.ts",
+     "lines": "btc:7, eth:54-61, sol:6, tron:7, xrp:7",
+     "quote": "The hard-coded endpoint lists, fetched with fetch(), not pinnedFetch()."
+    }
+   ],
+   "opened": {
+    "on": "2026-10-13",
+    "by": "owner request, filed by the session",
+    "why": "Owner, 2026-10-13: “Lets log the gap and begin working on t423 using the recommended solution”. The gap was first reported, not filed, during the T-424 credit inventory on 2026-10-12."
    }
   }
  ],
@@ -39737,6 +39770,14 @@
     "evidence": [
      "frontend/src/hooks/useCryptoChartSeries.ts",
      "frontend/src/components/charts/__tests__/indicatorInputs.test.ts"
+    ]
+   },
+   {
+    "on": "2026-10-13",
+    "what": "T-432 opened at the owner’s request: the wallet routes’ 20 hosts never reach the source-terms check; 13 have no registry entry, and none go through pinnedFetch.",
+    "evidence": [
+     "frontend/src/lib/data/dataSources.ts",
+     "frontend/src/app/live-data/wallet"
     ]
    }
   ]
