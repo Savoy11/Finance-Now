@@ -1176,7 +1176,28 @@ export interface SignalSummary {
   signals: IndicatorSignal[]
 }
 
-export function computeSignalSummary(candles: OhlcvCandle[]): SignalSummary {
+/**
+ * What a candle series carries: real candles ('ohlc'), or one closing price per
+ * period ('close'), in which open, high and low equal the close and volume is 0.
+ * /live-data/ohlcv marks every answer with it (`bars`).
+ */
+export type CandleBars = 'ohlc' | 'close'
+
+/**
+ * The signal-summary votes computed from closing prices alone, by name. On a
+ * series of closing prices the summary counts only these (T-423, D103): every
+ * other vote reads a high, a low or a volume, and on closes it would still vote,
+ * from a zero range or no volume, without any error.
+ *
+ * MEASURED, not judged: signalSummaryInputs.test.ts computes every vote with and
+ * without real ranges and volume, and fails if this set disagrees with what moved.
+ */
+export const SIGNALS_FROM_CLOSES: ReadonlySet<string> = new Set([
+  'RSI (14)', 'MACD (12,26,9)', 'Bollinger Bands (20,2)', 'EMA 20', 'EMA 50', 'EMA 200',
+  'Stoch RSI K', 'ROC (12)', 'TSI (25,13)', 'PPO (12,26,9)', 'Connors RSI',
+])
+
+export function computeSignalSummary(candles: OhlcvCandle[], bars: CandleBars = 'ohlc'): SignalSummary {
   const closes = candles.map((c) => c.close)
   const n = candles.length
   const last = closes[n - 1]
@@ -1414,17 +1435,20 @@ export function computeSignalSummary(candles: OhlcvCandle[]): SignalSummary {
     signals.push({ name: 'Connors RSI', value: crsiNow, signal: sig, description: `${crsiNow.toFixed(1)} — ${crsiNow < 25 ? 'Oversold (composite)' : crsiNow > 75 ? 'Overbought (composite)' : 'Neutral'}` })
   }
 
-  const score = signals.reduce((s, sig) => {
+  // On closing prices, only the votes that read closes alone are counted.
+  const counted = bars === 'close' ? signals.filter((s) => SIGNALS_FROM_CLOSES.has(s.name)) : signals
+
+  const score = counted.reduce((s, sig) => {
     if (sig.signal === 'strong_buy') return s + 2
     if (sig.signal === 'buy') return s + 1
     if (sig.signal === 'sell') return s - 1
     if (sig.signal === 'strong_sell') return s - 2
     return s
-  }, 0) / Math.max(signals.filter((s) => s.signal !== 'neutral').length, 1)
+  }, 0) / Math.max(counted.filter((s) => s.signal !== 'neutral').length, 1)
 
-  const buy = signals.filter((s) => s.signal === 'buy' || s.signal === 'strong_buy').length
-  const sell = signals.filter((s) => s.signal === 'sell' || s.signal === 'strong_sell').length
-  const neutral = signals.filter((s) => s.signal === 'neutral').length
+  const buy = counted.filter((s) => s.signal === 'buy' || s.signal === 'strong_buy').length
+  const sell = counted.filter((s) => s.signal === 'sell' || s.signal === 'strong_sell').length
+  const neutral = counted.filter((s) => s.signal === 'neutral').length
 
   const overall: Signal =
     score >= 1.5 ? 'strong_buy' :
@@ -1432,7 +1456,7 @@ export function computeSignalSummary(candles: OhlcvCandle[]): SignalSummary {
     score <= -1.5 ? 'strong_sell' :
     score <= -0.5 ? 'sell' : 'neutral'
 
-  return { overall, score, buy, neutral, sell, signals }
+  return { overall, score, buy, neutral, sell, signals: counted }
 }
 
 // ─── Pattern Detection ────────────────────────────────────────────────────────
