@@ -193,7 +193,7 @@ function TechnicalAnalysisContent() {
     staleTime: range === '1H' ? 60_000 : range === '4H' || range === '1M' ? 300_000 : 900_000,
   })
 
-  const ohlcvSource = ohlcvSourceLabel(data?.source, data?.venue)
+  const ohlcvSource = ohlcvSourceLabel(data?.source)
   // Measured from the candles, so a 1Y view CoinGecko answers in 4-day candles
   // says "4-day" rather than leaving the reader to assume daily (T-423).
   const candleSize = candleGranularity((data?.candles ?? []).map(c => c.time))

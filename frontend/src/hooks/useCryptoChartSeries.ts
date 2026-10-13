@@ -23,7 +23,6 @@ export interface ChartSeries {
   ok: boolean
   candles: OhlcvCandle[]
   source?: string
-  venue?: string
   granularity?: string | null
   bars?: 'ohlc' | 'close'
   error?: string

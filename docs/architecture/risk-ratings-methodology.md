@@ -113,8 +113,9 @@ volume figure at all is a different case: liquidity is missing and the coverage 
 
 **One source, one request (2026-10-10).** CoinGecko's daily chart carries the closes, the volume
 across all exchanges and the market cap together, so a coin's rating is one request. Not
-`/live-data/ohlcv`, which asks Binance first: Binance's volume is one exchange's, and liquidity
-measures the total. There is no fallback, because without CoinGecko's volume and market cap, liquidity
+`/live-data/ohlcv`: its candles cost two CoinGecko requests and carry no market cap, and until
+2026-10-13 it asked Binance first, whose volume is one exchange's while liquidity measures the
+total. There is no fallback, because without CoinGecko's volume and market cap, liquidity
 and scale would both be missing, below the 70% coverage floor (§5), so a second price source could
 not produce a rating. That makes coin ratings single-sourced, a D21 gap recorded here rather than
 chased now. The free tier serves exactly 365 daily closes, which is exactly the minimum: a day missing
@@ -537,3 +538,8 @@ and would count and filter both as stablecoins on the Coins page.
   volume window is not rated (`tradedAboveUsd`), which leaves out vBUSD, and coins whose supply
   steers their price are left out by name (`rebasingCoins`: Ampleforth) (§3, §4, §5 item 1). Version
   unchanged, for the same reason as D98.
+- **2026-10-13 (T-423):** the validation's coin backtest and stability read DefiLlama's daily closes
+  (`/live-data/ohlcv`, `source=defillama`) instead of Binance.US closes, which the app no longer
+  fetches. A re-run of §8 therefore reads a different price history for coins than the 2026-10-10
+  and 2026-10-11 runs did; DefiLlama's is a price across markets, not one exchange's. The rating
+  itself is unaffected: it reads CoinGecko's daily chart, as before. No number changed.

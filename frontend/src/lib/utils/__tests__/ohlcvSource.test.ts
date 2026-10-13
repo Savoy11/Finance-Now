@@ -2,17 +2,13 @@ import { describe, expect, it } from 'vitest'
 import { ohlcvSourceLabel } from '../ohlcvSource'
 
 describe('ohlcvSourceLabel', () => {
-  it('names the venue that actually answered, not the family', () => {
-    expect(ohlcvSourceLabel('binance', 'binance-us')).toBe('Binance.US')
-    expect(ohlcvSourceLabel('binance', 'binance-com')).toBe('Binance')
-  })
-
-  it('falls back to the family when a cached response carries no venue', () => {
-    expect(ohlcvSourceLabel('binance')).toBe('Binance')
-  })
-
-  it('labels the CoinGecko rung', () => {
+  it('labels the two launch sources', () => {
     expect(ohlcvSourceLabel('coingecko')).toBe('CoinGecko')
+    expect(ohlcvSourceLabel('defillama')).toBe('DefiLlama')
+  })
+
+  it('no longer names Binance: the rung is gone, and a stale key gets no label (T-423)', () => {
+    expect(ohlcvSourceLabel('binance')).toBeUndefined()
   })
 
   it('returns undefined for an unknown or missing source', () => {

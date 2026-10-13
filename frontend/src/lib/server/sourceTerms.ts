@@ -365,8 +365,10 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     // NO DOCUMENT — the API docs publish a free server (api.llama.fi) and a $300/mo plan for higher
     // limits; no terms-of-use text exists anywhere. The most load-bearing keyless source has no
     // licence to point at.
-    // 2026-10-13 (D103, T-423): coins.llama.fi also serves the chart route's closing prices now
-    // (Coins screener, Cycle Context), and charts launch on it. Still no document to read.
+    // 2026-10-13 (D103, T-423): coins.llama.fi also serves the chart route's closing prices now,
+    // to every closes-only reader (lib/technicals/__tests__/closesReaders.test.ts lists them), and
+    // with Binance gone it is the only source of crypto price history older than 365 days on the
+    // free tier. Charts launch on it. Still no document to read.
     domain: 'llama.fi',
     name: 'DefiLlama',
     verdict: 'conditional',
@@ -751,6 +753,9 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     confidence: 'medium',
   },
   {
+    // No longer fetched since 2026-10-13 (T-423, D102, D103): /live-data/ohlcv was the last route
+    // calling api.binance.com, and its candles now come from CoinGecko, its closing prices from
+    // DefiLlama. Entry kept as the record of the verdict; nothing in dataSources.ts names it.
     // READ 2026-09-26 (T-005; docs/audits/terms-review-seeded-2026-09-26.md) — review stays seeded until the owner ratifies:
     // UNREAD — /en/terms serves only navigation to curl, headless Chrome and the Chrome extension.
     // Moot for a US deployment: api.binance.com answers 451 (geo-block); Binance.US is verified.
@@ -766,6 +771,9 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     confidence: 'medium',
   },
   {
+    // No longer fetched since 2026-10-13 (T-423, D102, D103): /live-data/ohlcv was the last route
+    // calling api.binance.us. Entry kept as the record of the verdict, and of the contest below;
+    // nothing in dataSources.ts names it.
     domain: 'binance.us',
     name: 'Binance.US',
     verdict: 'conditional',
@@ -810,9 +818,10 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     // see CLAUDE.md) — not because the challenge was answered. It was not.
     //
     // 2026-10-12 (T-423, D102): the price backup on /live-data/markets and the coin-list
-    // ordering no longer call it. Only /live-data/ohlcv still does, and it must stop
-    // before launch; it stays until a second chart source is read, because CoinGecko's
-    // free service alone serves no history older than 365 days.
+    // ordering no longer call it. 2026-10-13 (T-423 step d, D103): nor does
+    // /live-data/ohlcv, the last caller. Charts read CoinGecko's candles and DefiLlama's
+    // closing prices, which cover the history older than 365 days that CoinGecko's free
+    // service refuses.
     //
     // ⚠ THIS IS THE ONLY ONE OF THE FOUR WITH NO STATED ROUTE THROUGH. FMP names an Order
     // Form, Finnhub names written approval, Twelve Data names a Redistribution Rights

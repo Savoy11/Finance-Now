@@ -154,8 +154,9 @@ what is — and is not — backed by real data, with no fabricated figures prese
 > datacenter run produces different, systematically worse answers.
 >
 > But two of the gaps below are **permanent, not IP artifacts**, so a re-run will not clear them
-> (2026-09-09): Binance.com's 451 is a **US geo-block**, so the Binance.US fallback is the steady
-> state for this owner; and Reddit is absent because **its robots.txt disallows our agent** and we
+> (2026-09-09): Binance.com's 451 is a **US geo-block**, so the Binance.US fallback was the steady
+> state for this owner (moot since 2026-10-13, when the chart route stopped calling either host,
+> T-423); and Reddit is absent because **its robots.txt disallows our agent** and we
 > honour that — it is not a rate limit, and it lifts only with `REDDIT_CLIENT_ID`.
 
 ## Legend
@@ -248,8 +249,8 @@ field will treat catalog/reference/estimate values as live readings.
 
 | Route | Looks like | Actually is | Provenance field |
 |-------|-----------|-------------|------------------|
-| `ohlcv` | `source: "binance"` | **Binance.US**, a different venue with its own liquidity and prices | `venue: "binance-us"` (added 2026-07-20) |
-| `ohlcv` with `closes=1` | Candles | **DefiLlama closing prices** in the candle shape: `open==high==low==close`, volume 0. Served **only** to a caller that sends `closes=1` (the Coins screener's sweep, Cycle Context's Pi Cycle, the Crypto Scanner and the TA page's multi-timeframe grid, both running only the setups and signal votes that read a close, and the two crypto charts where candles are missing or 4-day, drawn as a line with only the closes-only indicators), never to one asking for candles (T-423, D103, 2026-10-13). Measured that day: daily prices for **78 of the 80** catalog coins in a 10-second sweep, against 39 by the candle ladder | `source: "defillama"`, `bars: "close"` (real candles say `bars: "ohlc"`) |
+| `ohlcv` past 30 days | Candles at the range's size | **4-day candles** from CoinGecko's free service (about 92 for a year); past 365 days it refuses, in its own words. Candles come from CoinGecko alone since 2026-10-13 (T-423). Until then this row was Binance.US answering as "binance", a different venue with its own prices | `granularity: "4D"`, measured from the candles; the charts and the assistant switch to closing prices |
+| `ohlcv` with `closes=1` | Candles | **DefiLlama closing prices** in the candle shape: `open==high==low==close`, volume 0. Served **only** to a caller that sends `closes=1` (the Coins screener's sweep, Cycle Context's Pi Cycle, the Crypto Scanner and the TA page's multi-timeframe grid, both running only the setups and signal votes that read a close, the two crypto charts where candles are missing or 4-day, drawn as a line with only the closes-only indicators, and the assistant's price history where candles are refused, reported as the highest and lowest close), never to one asking for candles (T-423, D103, 2026-10-13). Measured that day: daily prices for **78 of the 80** catalog coins in a 10-second sweep, against 39 by the candle ladder | `source: "defillama"`, `bars: "close"` (real candles say `bars: "ohlc"`) |
 | `stock-universe` | 79 stocks, `ok: true` | Curated `equityCatalog.ts` fallback — the real universe is thousands | `source: "catalog"` |
 | `stock-outliers` | Sector z-score screener | Screens the catalog only — **66 of the 79 names, across 7 sectors**, clear the mcap/sector filters, so "outlier" means outlier within a hand-picked large-cap set *(measured 2026-09-19)* | inherits `stock-universe` |
 | `staking-rates` | **51** APRs, `ok: true` | **27 live, 24 estimated** *(re-measured 2026-09-19; unchanged since 2026-09-09, which corrected the 4 live / 47 estimated of 2026-07-29)*. The 24 are **not all sourceless** — #203 splits them by gap reason: `no-upstream` 14, `derived-estimate` 5, `curated-estimate` 3, `needs-api-key` 2 (`native_dot`, `native_ksm` — 🔑, a source exists). Of the 27 checkable against a live reading on 2026-09-09, **22 were ≥25% overstated** (worst: `lombard_btc` 3.2 → 0.17); #203 refreshed the fallbacks and **that spread has not been re-measured since**. A measured fallback older than **14 days** is now withheld outright — gap `estimate-expired`, and the rate deleted from `rates` (`stakingRates.ts:697,705`). | `sources: { key: "live" \| "estimate" }`, `gaps` (per-key reason), and `fallbackProvenance` — **one dated record**, `{ measuredOn: "2026-09-18", measuredKeys: 27, unmeasuredKeys: 24 }`, not per-key rows |
@@ -664,7 +665,7 @@ added 2026-07-29; their rows stay ⬜ **Not measured** until the next run.
 | Feature / Page | Status | Source | Notes |
 |----------------|--------|--------|-------|
 | Asset prices, market cap, volume, 24h change | 🟢 Live | CoinGecko (`/live-data/markets`) | **78 priced** (2026-09-19). Three different denominators circulate for "how many coins are there" and they are not interchangeable: `assetCatalog.ts` carries **108** catalog entries, `COINGECKO_IDS` maps **80** of them to a CoinGecko id, and the route priced **78** on this run. Metadata from the static catalog — reference data, not fabricated. |
-| Asset OHLCV / price charts | 🟡 Partial | **Binance.US** → CoinGecko fallback | Binance.com is 451 here, so candles come from the US mirror — different venue, different prices. `venue` field records which. |
+| Asset OHLCV / price charts | 🟡 Partial | CoinGecko candles; DefiLlama closing prices (`closes=1`) | CoinGecko's free service sends 4-day candles past 30 days and refuses past 365, so the charts, the scanner, the multi-timeframe grid and the assistant read DefiLlama's closes there, with no high, low or volume. Binance.US (Binance.com is 451 here) was the first candle rung until 2026-10-13 (T-423). |
 | Coin list / search / discovery | 🟢 Live | CoinGecko | 750 coins, 209 discovery candidates. |
 | Fear & Greed Index | 🟢 Live | alternative.me | |
 | Funding rates + open interest | 🔴 Not available | — (**OKX withdrawn on terms 2026-09-30, D40**) | OKX's API Agreement §9.4 bars using its market data in an analytics platform, public endpoints included; Binance fapi is 451 here. The route answers `ok:false` with the reason and the Market Structure panel says so. It measured 🟢 from OKX, 10 instruments, on the 2026-09-19 run. |

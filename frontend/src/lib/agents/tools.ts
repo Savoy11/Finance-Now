@@ -126,7 +126,7 @@ const TOOL_REGISTRY: RegisteredTool[] = [
     market: 'crypto',
     tool: {
       name: 'get_price_history',
-      description: 'Get OHLC candle history for a coin over a range. Returns a compact summary (first, last, high, low, change).',
+      description: 'Get price history for a coin over a range. Returns a compact summary (first, last, high, low, change). Built from candles where the candle source serves the range. Past that (CoinGecko’s free service stops at 365 days) it is built from closing prices, one per period, and reports highestClose and lowestClose instead of periodHigh and periodLow: closing prices carry no intraday high or low.',
       input_schema: {
         type: 'object',
         properties: {
@@ -611,39 +611,55 @@ async function execute(
       case 'get_price_history': {
         const coin = String(input.coin ?? '')
         const range = String(input.range ?? '1Y')
-        const data = (await get(`/live-data/ohlcv?id=${encodeURIComponent(coin)}&range=${encodeURIComponent(range)}`)) as {
-          ok?: boolean; candles?: { time: number; open: number; high: number; low: number; close: number }[]; source?: string; venue?: string; error?: string
+        type Series = {
+          ok?: boolean; candles?: { time: number; open: number; high: number; low: number; close: number }[]
+          source?: string; bars?: 'ohlc' | 'close'; error?: string
         }
-        const candles = data.candles ?? []
-        // The route's reason travels with the refusal: past 365 days CoinGecko's free
-        // service refuses outright, and "no data" alone reads as a coin with no history.
-        if (!data.ok || candles.length === 0) return { error: 'no candle data available', reason: data.error, coin, range }
-        const first = candles[0], last = candles[candles.length - 1]
-        const high = Math.max(...candles.map((c) => c.high))
-        const low = Math.min(...candles.map((c) => c.low))
-        const changePct = ((last.close - first.open) / first.open) * 100
-        // Return a compact summary — never dump hundreds of candles into context.
+        const base = `/live-data/ohlcv?id=${encodeURIComponent(coin)}&range=${encodeURIComponent(range)}`
+        // Candles first: a candle's high and low are the period's trading range, and
+        // even CoinGecko's 4-day candles (what it sends past 30 days) carry the true
+        // extremes. Only when the candle request fails (past 365 days on CoinGecko's
+        // free service, or a refusal) does the summary fall back to DefiLlama's
+        // closing prices (T-423, D103), and then it says so in its field names.
+        const candles = (await get(base)) as Series
+        const series = candles.ok && candles.candles?.length ? candles : (await get(`${base}&closes=1`)) as Series
+        const rows = series.candles ?? []
+        // The route's reason travels with the refusal, and "no data" alone reads as a
+        // coin with no history.
+        if (!series.ok || rows.length === 0) {
+          return { error: 'no price history available', reason: series.error ?? candles.error, coin, range }
+        }
+        const first = rows[0], last = rows[rows.length - 1]
+        const size = candleSizeWords(candleGranularity(rows.map((c) => c.time)))
+        const changePct = Number((((last.close - first.open) / first.open) * 100).toFixed(2))
+        // `source` is the provider key and `sourceName` the label to cite. Two fields
+        // rather than the label in `source`: get_stock_price_history also emits
+        // `source`, and one field name with two vocabularies misleads the model.
+        const head = { coin, range, source: series.source, sourceName: ohlcvSourceLabel(series.source) }
+        // Return a compact summary — never dump hundreds of rows into context.
+        if (series.bars === 'close') {
+          const closes = rows.map((c) => c.close)
+          return {
+            ...head,
+            // Separate names, not periodHigh with a caveat beside it: the highest close
+            // is not the period's high, and a reader skimming for "high" must not find one.
+            prices: `closing prices only, ${size ?? 'one per period'}: no intraday high or low`,
+            priceCount: rows.length,
+            firstClose: first.close, lastClose: last.close,
+            highestClose: Math.max(...closes), lowestClose: Math.min(...closes),
+            changePct,
+            candlesUnavailable: candles.error ?? 'the candle source sent none',
+          }
+        }
         return {
-          // `source` is the provider-FAMILY key ('binance'); `venue` is which
-          // host actually answered. api.binance.com is 451 from here, so these
-          // candles are really Binance.US — a different venue with its own
-          // liquidity and therefore its own prices, and an agent citing
-          // "Binance" for them makes a claim the data does not support.
-          //
-          // Reported as TWO fields rather than by overwriting `source` with the
-          // label: get_stock_price_history also emits `source`, so putting a
-          // display label in one and a provider key in the other would give the
-          // model one field name with two vocabularies.
-          coin, range,
-          source: data.source,
-          venue: ohlcvSourceLabel(data.source, data.venue),
-          // Measured, not assumed: a 1Y range is daily from Binance but 4-day from
-          // CoinGecko, and candleCount means nothing without it (T-423).
-          candleSize: candleSizeWords(candleGranularity(candles.map((c) => c.time))),
-          candleCount: candles.length,
+          ...head,
+          // Measured, not assumed: a 1Y range is 4-day candles from CoinGecko, and
+          // candleCount means nothing without it (T-423).
+          candleSize: size,
+          candleCount: rows.length,
           firstClose: first.close, lastClose: last.close,
-          periodHigh: high, periodLow: low,
-          changePct: Number(changePct.toFixed(2)),
+          periodHigh: Math.max(...rows.map((c) => c.high)), periodLow: Math.min(...rows.map((c) => c.low)),
+          changePct,
         }
       }
       case 'search_securities': {

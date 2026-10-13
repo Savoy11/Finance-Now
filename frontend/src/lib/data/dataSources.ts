@@ -112,9 +112,9 @@ export const DATA_SOURCES: DataSourceEntry[] = [
   {
     id: 'ohlcv', surface: 'Crypto OHLCV / candlestick charts', module: 'crypto',
     route: '/live-data/ohlcv', status: 'partial',
-    providers: [{ name: 'Binance', host: 'api.binance.com', url: 'https://binance.com', role: 'primary', auth: 'none' }, { name: 'Binance.US', host: 'api.binance.us', url: 'https://binance.us', role: 'fallback', auth: 'none' }, COINGECKO, DEFILLAMA('coins.llama.fi')],
+    providers: [COINGECKO, DEFILLAMA('coins.llama.fi')],
     cadence: 'on demand · 60s–15m stale by range',
-    notes: 'Charts launch on CoinGecko candles and DefiLlama closing prices (T-423, D103). DefiLlama answers only callers that compute from closes and ask for them (`closes=1`: the Coins screener, Cycle Context, the Crypto Scanner and the multi-timeframe grid, which run only the setups and signal votes that read a close, and the TA and coin-page charts where candles are missing or 4-day, drawn as a line), marked `bars: "close"`; it carries no high, low or volume. Binance.com is 451 (geo-blocked) from many hosts, so candles come from the US mirror — a different venue, recorded in the `venue` field. Both Binance rungs must go before launch (T-423, D102); they stay until the assistant’s price history runs on the launch sources too, since CoinGecko alone serves no history older than 365 days on its free service and sends 4-day candles past 30 days. `granularity` is measured from the candles.',
+    notes: 'Candles from CoinGecko, closing prices from DefiLlama (T-423, D103). CoinGecko’s free service serves no history older than 365 days and sends 4-day candles past 30 days. DefiLlama answers only callers that compute from closes and ask for them (`closes=1`: the Coins screener, Cycle Context, the Crypto Scanner and the multi-timeframe grid, which run only the setups and signal votes that read a close; the TA and coin-page charts where candles are missing or 4-day, drawn as a line; and the assistant’s price history where candles are refused, which then reports the highest and lowest close), marked `bars: "close"`; it carries no high, low or volume. Binance and Binance.US were the first candle rungs until 2026-10-13 (T-423, D102). `granularity` is measured from the candles.',
   },
   {
     id: 'coin-list', surface: 'Coin list / search / discovery', module: 'crypto',

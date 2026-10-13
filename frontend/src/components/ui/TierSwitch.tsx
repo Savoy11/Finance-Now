@@ -29,7 +29,7 @@ const TIER_ICONS: Record<TierMode, React.ReactNode> = {
 }
 
 const TIER_DESCRIPTIONS: Record<TierMode, string> = {
-  free:   'Keyless public APIs — Binance, DefiLlama, Alternative.me',
+  free:   'Keyless public APIs — CoinGecko, DefiLlama, Alternative.me',
   paid:   'Premium APIs using your configured API keys',
   custom: 'Mix and match sources per data category',
 }

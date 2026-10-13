@@ -30,9 +30,9 @@ const json = (body: unknown, status = 200) =>
 const cgOhlc = (count: number, step: number) =>
   Array.from({ length: count }, (_, i) => [START + i * step, 100, 110, 90, 105])
 
-/** Binance klines, `step` ms apart. */
-const klines = (count: number, step: number) =>
-  Array.from({ length: count }, (_, i) => [START + i * step, '100', '110', '90', '105', '1000'])
+/** CoinGecko answering a candle request: `count` /ohlc rows `step` ms apart, and no volumes. */
+const coingecko = (count: number, step: number) => (url: string) =>
+  url.includes('/ohlc?') ? json(cgOhlc(count, step)) : json({ total_volumes: [] })
 
 function stubFetch(handler: (url: string) => Response | Promise<Response>) {
   const fetchMock = vi.fn(async (input: string | URL | Request) => handler(String(input instanceof Request ? input.url : input)))
@@ -58,21 +58,11 @@ describe('/live-data/ohlcv reports the candle size it actually served', () => {
     expect(body.granularity).toBe('4D')
   })
 
-  it('calls Binance’s 1H range 1-hour candles (the typed label said 30m)', async () => {
-    stubFetch((url) => url.includes('binance')
-      ? json(klines(168, HOUR))
-      : json({ error: 'unexpected' }, 500))
+  it('calls CoinGecko’s one-day answer 30-minute candles, which is what a 1H request gets', async () => {
+    // /ohlc?days=1 sends 30-minute candles covering the day.
+    stubFetch(coingecko(48, HOUR / 2))
     const body = await (await GET(req('id=btc&range=1H'))).json()
-    expect(body.source).toBe('binance')
-    expect(body.granularity).toBe('1H')
-  })
-
-  it('calls Binance’s one-year answer daily', async () => {
-    stubFetch((url) => url.includes('binance')
-      ? json(klines(365, DAY))
-      : json({ error: 'unexpected' }, 500))
-    const body = await (await GET(req('id=eth&range=1Y'))).json()
-    expect(body.granularity).toBe('1D')
+    expect(body).toMatchObject({ ok: true, source: 'coingecko', bars: 'ohlc', granularity: '30m' })
   })
 })
 
@@ -127,13 +117,9 @@ describe('/live-data/ohlcv serves DefiLlama closing prices only to callers that 
     // A chart, a pattern finder or a setup detector reads highs, lows and volume.
     // Handed one price dressed as a candle, each computes a zero range without a
     // word, so the price-only source must be unreachable without `closes=1`.
-    for (const query of ['id=btc&range=1Y', 'id=btc&range=1Y&source=coingecko', 'id=btc&range=3Y']) {
+    for (const query of ['id=btc&range=1Y', 'id=btc&range=1Y&source=coingecko', 'id=btc&range=3Y', 'id=btc&range=1Y&source=binance']) {
       const answer = llamaAnswers(86_400, (_, span) => span)
-      const fetchMock = stubFetch((url) => {
-        if (url.includes('coins.llama.fi')) return answer(url)
-        if (url.includes('binance')) return json(klines(365, DAY))
-        return url.includes('/ohlc?') ? json(cgOhlc(92, 4 * DAY)) : json({ total_volumes: [] })
-      })
+      const fetchMock = stubFetch((url) => url.includes('coins.llama.fi') ? answer(url) : coingecko(92, 4 * DAY)(url))
       const body = await (await GET(req(query))).json()
       expect(body.bars, query).toBe('ohlc')
       expect(calledHosts(fetchMock), query).not.toContain('coins.llama.fi')
@@ -162,13 +148,10 @@ describe('/live-data/ohlcv serves DefiLlama closing prices only to callers that 
     expect(end % 900).toBe(0)
   })
 
-  it('falls back to the candle ladder when DefiLlama has no prices for the coin', async () => {
-    stubFetch((url) => {
-      if (url.includes('coins.llama.fi')) return json(llamaBody([]))
-      return url.includes('binance') ? json(klines(365, DAY)) : json({ error: 'unexpected' }, 500)
-    })
+  it('falls back to CoinGecko’s candles when DefiLlama has no prices for the coin', async () => {
+    stubFetch((url) => url.includes('coins.llama.fi') ? json(llamaBody([])) : coingecko(92, 4 * DAY)(url))
     const body = await (await GET(req('id=btc&range=1Y&closes=1'))).json()
-    expect(body).toMatchObject({ ok: true, source: 'binance', bars: 'ohlc' })
+    expect(body).toMatchObject({ ok: true, source: 'coingecko', bars: 'ohlc' })
   })
 
   it.each([
@@ -188,13 +171,12 @@ describe('/live-data/ohlcv serves DefiLlama closing prices only to callers that 
     expect(body).toMatchObject({ ok: true, range, granularity: size })
   })
 
-  it('asks Binance for 15-minute candles when the range is 15m', async () => {
-    const fetchMock = stubFetch((url) => url.includes('binance')
-      ? json(klines(200, HOUR / 4))
-      : json({ error: 'unexpected' }, 500))
+  it('asks CoinGecko for one day of candles when the range is 15m, not a year', async () => {
+    const fetchMock = stubFetch(coingecko(48, HOUR / 2))
     const body = await (await GET(req('id=btc&range=15m'))).json()
-    expect(new URL(String(fetchMock.mock.calls[0][0])).searchParams.get('interval')).toBe('15m')
-    expect(body.granularity).toBe('15m')
+    const ohlc = fetchMock.mock.calls.map(([u]) => new URL(String(u))).find((u) => u.pathname.endsWith('/ohlc'))
+    expect(ohlc?.searchParams.get('days')).toBe('1')
+    expect(body).toMatchObject({ ok: true, range: '15m' })
   })
 
   it('carries DefiLlama’s own reason when it refuses', async () => {
@@ -206,7 +188,30 @@ describe('/live-data/ohlcv serves DefiLlama closing prices only to callers that 
   })
 })
 
-describe('Binance is gone from the price and coin-list routes (T-423)', () => {
+describe('Binance is gone from the chart, price and coin-list routes (T-423)', () => {
+  it.each([
+    'id=btc&range=1H', 'id=btc&range=15m', 'id=eth&range=1Y', 'id=sol&range=MAX', 'id=btc&range=BT',
+    'id=btc&range=1Y&closes=1',
+  ])('the chart route never calls a Binance host (%s)', async (query) => {
+    const answer = llamaAnswers(86_400, (_, span) => span)
+    const fetchMock = stubFetch((url) => url.includes('coins.llama.fi') ? answer(url) : coingecko(92, 4 * DAY)(url))
+    const body = await (await GET(req(query))).json()
+    expect(body.ok).toBe(true)
+    expect(binanceHosts(fetchMock)).toEqual([])
+  })
+
+  it.each([
+    ['id=btc&range=1Y&source=binance', 'coingecko', 'ohlc'],
+    ['id=btc&range=1Y&source=binance&closes=1', 'defillama', 'close'],
+  ] as const)('serves an old client asking for Binance like any other (%s)', async (query, source, bars) => {
+    const answer = llamaAnswers(86_400, (_, span) => span)
+    const fetchMock = stubFetch((url) => url.includes('coins.llama.fi') ? answer(url) : coingecko(92, 4 * DAY)(url))
+    const body = await (await GET(req(query))).json()
+    expect(body).toMatchObject({ ok: true, source, bars })
+    expect(body).not.toHaveProperty('venue')
+    expect(binanceHosts(fetchMock)).toEqual([])
+  })
+
   it('the price route never calls a Binance host, even when asked for Binance', async () => {
     const { GET: markets } = await import('@/app/live-data/markets/route')
     const fetchMock = stubFetch((url) => url.includes('coingecko')
