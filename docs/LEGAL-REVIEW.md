@@ -24,6 +24,13 @@ sent and no vendor has been contacted.** Sending is the owner's act.
 | Twelve Data | Redistribution Rights Add-On; also asks where §2.3(g)'s cache limits actually live | drafted |
 | Binance.US | *not* a permission request — it names no route. Asks which instrument governs API access at all | drafted |
 
+Drafted since, each in its own file in `docs/licensing/`, none sent:
+
+| Provider | File | Asks for | Status |
+|---|---|---|---|
+| Marketaux | `marketaux-enquiry-2026-10-07.md` | approval for a public app; whether the "no automated means" clause reaches its own API | drafted |
+| Kraken | `kraken-enquiry-2026-10-12.md` | permission to display chart data, including through the AI assistant; whether the automation clause reaches the public API; longer daily history (T-423) | drafted |
+
 **Two of the questions are not about launch.** They bear on the app as it runs today, solo:
 
 - **Twelve Data** — "Internal Use" is defined as internal *business* purposes. Whether an
@@ -365,3 +372,14 @@ Every source was re-read under the rule: `docs/assessments/source-terms-prelaunc
 - **Unchanged, kept blocked by the owner:** OKX (§9.4 bars building an analytics platform).
 - **§7's four sources:** CoinDesk becomes a launch step. Investing.com, publicnode and Bitget's US
   clause stay open, because personal use does not answer them.
+
+## 9. What changed on 2026-10-12 (D102, T-423)
+
+- **Binance left the crypto price backup and the coin list** (D102). The charts keep their two
+  Binance rungs until a second chart source is approved; that is now a launch step on T-423.
+- **Five keyless chart feeds were read** (`docs/audits/terms-review-chart-feeds-2026-10-12.md`):
+  Kraken, Coinbase, Bitstamp, Gemini, CoinPaprika. None allows public display on its default
+  terms, which makes eleven exchanges read with the same answer. Coinbase's market data terms
+  also bar any AI use, which would reach the app's assistant even before launch.
+- **A letter to Kraken is drafted, not sent** (`docs/licensing/kraken-enquiry-2026-10-12.md`).
+  Kraken fits best on measurement: 58 of the 80 coins and 720 daily candles.

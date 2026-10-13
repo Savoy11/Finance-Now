@@ -44,7 +44,9 @@ For comparison, Binance.US served the charts for 47 of the 80 coins, and its ter
 display and name no route (`terms-review-twelvedata-binanceus-2026-09-20.md`).
 
 **None of the five passes.** Every one restricts its free path to the reader's own use, the
-same answer the FMP, Finnhub, Twelve Data, Binance.US, Bitget, KuCoin and OKX readings gave. Three name an
+same answer every exchange read before gave (Binance.US, Bitfinex, Bitget, KuCoin, LBank, OKX,
+Poloniex), and FMP, Finnhub and Twelve Data on the stock side. Bitfinex's Market Data Terms
+use the same words as Gemini's: no dissemination "to any party for any reason". Three name an
 address to ask; one sells it; one names nothing.
 
 ---
@@ -220,10 +222,12 @@ custom contract, which D21 defers. Its feed was not measured.
 
 ## What this adds up to
 
-1. **No keyless exchange feed read so far permits public display on its default terms.** Eight
-   venues now (these four, Binance.US, Bitget, KuCoin and OKX) and one aggregator. Market data
-   from a trading venue is licensed separately, and the free path is the reader's own use.
-   Binance.com, HTX and XT.com could not be read (2026-09-26).
+1. **No keyless exchange feed read so far permits public display on its default terms.** Eleven
+   venues now (these four, and Binance.US, Bitfinex, Bitget, KuCoin, LBank, OKX and Poloniex)
+   and one aggregator. Market data from a trading venue is licensed separately, and the free
+   path is the reader's own use. Binance.com, HTX and XT.com could not be read (2026-09-26).
+   *(Corrected the same day: this said "eight venues" and left out Bitfinex, LBank and
+   Poloniex, which were read before. The conclusion is unchanged.)*
 2. **If a licence is pursued, Kraken fits best on measurement:** 58 of the 80 coins against
    Binance.US's 47, and 720 daily candles. Coinbase and Bitstamp go further back but list fewer
    coins; Gemini fails the history test whatever the licence says. Kraken, Coinbase and Gemini
