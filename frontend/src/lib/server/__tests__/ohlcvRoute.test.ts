@@ -171,6 +171,32 @@ describe('/live-data/ohlcv serves DefiLlama closing prices only to callers that 
     expect(body).toMatchObject({ ok: true, source: 'binance', bars: 'ohlc' })
   })
 
+  it.each([
+    // The multi-timeframe grid's five rows and the scanner's three timeframes.
+    ['15m', '15m', 900, '15m'],
+    ['1H', '1h', 3_600, '1H'],
+    ['4H', '4h', 14_400, '4H'],
+    ['1Y', '1d', 86_400, '1D'],
+    ['3Y', '1w', WEEK, '1W'],
+  ] as const)('asks DefiLlama for range %s at its own spacing (%s)', async (range, period, step, size) => {
+    // range=15m used to be upper-cased to 15M, match no range, and come back as a
+    // year of daily prices (found 2026-10-13).
+    const answer = llamaAnswers(step, (_, span) => span)
+    const fetchMock = stubFetch(answer)
+    const body = await (await GET(req(`id=btc&range=${range}&closes=1`))).json()
+    expect(new URL(String(fetchMock.mock.calls[0][0])).searchParams.get('period')).toBe(period)
+    expect(body).toMatchObject({ ok: true, range, granularity: size })
+  })
+
+  it('asks Binance for 15-minute candles when the range is 15m', async () => {
+    const fetchMock = stubFetch((url) => url.includes('binance')
+      ? json(klines(200, HOUR / 4))
+      : json({ error: 'unexpected' }, 500))
+    const body = await (await GET(req('id=btc&range=15m'))).json()
+    expect(new URL(String(fetchMock.mock.calls[0][0])).searchParams.get('interval')).toBe('15m')
+    expect(body.granularity).toBe('15m')
+  })
+
   it('carries DefiLlama’s own reason when it refuses', async () => {
     stubFetch(() => json({ message: 'Requested 1000 data points exceeds the maximum of 500.' }, 400))
     const body = await (await GET(req('id=btc&range=1Y&source=defillama'))).json()

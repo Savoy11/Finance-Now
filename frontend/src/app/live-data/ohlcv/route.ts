@@ -4,6 +4,7 @@ import { coingeckoBase, coingeckoHeaders } from '@/lib/api/live/coingecko'
 import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 import { describeThrottle } from '@/lib/server/coingeckoThrottle'
 import { candleGranularity } from '@/lib/utils/candleGranularity'
+import type { CandleBars } from '@/lib/utils/indicators'
 
 // OHLCV proxy. Which source answers depends on what the caller can use.
 //
@@ -53,7 +54,7 @@ export interface OhlcvCandle {
 }
 
 /** 'ohlc': real candles. 'close': one price per interval, carried in the candle shape. */
-export type OhlcvBars = 'ohlc' | 'close'
+export type OhlcvBars = CandleBars
 
 const CG_HEADERS = coingeckoHeaders
 
@@ -90,6 +91,13 @@ const RANGE_CONFIG: Record<string, RangeConfig> = {
   '10Y': { cgDays: 'max', resample: 'weekly', sliceDays: 3650, revalidate: 3600, interval: '1w', points: 522 },
   'MAX': { cgDays: 'max', resample: 'weekly', revalidate: 3600, interval: '1w',  points: 1000 },
 }
+
+// The requested range is upper-cased so a legacy "1d" still finds "1D", which
+// made "15m" into "15M": no key, so it fell back to a year of daily candles.
+// The multi-timeframe grid's 15m row read daily data under a 15m label until
+// granularity was measured, then said "only daily" (found 2026-10-13). Keys are
+// matched without regard to case instead; no two differ only in case.
+const RANGE_KEY = new Map(Object.keys(RANGE_CONFIG).map((k) => [k.toUpperCase(), k]))
 // `daily` resampling cannot make daily candles out of 4-day ones: past 30 days
 // CoinGecko's free service sends one candle per four days, and grouping them by
 // day leaves them as they are. The granularity the response reports says so.
@@ -339,7 +347,7 @@ export async function GET(request: NextRequest) {
     request.nextUrl.searchParams.get('timeframe') ??
     '1Y'
   ).toUpperCase()
-  const range  = LEGACY_MAP[rawRange] ?? rawRange
+  const range  = LEGACY_MAP[rawRange] ?? RANGE_KEY.get(rawRange) ?? rawRange
   const cfg    = RANGE_CONFIG[range] ?? RANGE_CONFIG['1Y']
   const source = request.nextUrl.searchParams.get('source') ?? 'auto'
   const closesWanted = request.nextUrl.searchParams.get('closes') === '1'

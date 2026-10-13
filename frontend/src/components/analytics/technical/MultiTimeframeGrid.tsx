@@ -2,12 +2,23 @@
 
 import { useState, useEffect } from 'react'
 import { clsx } from 'clsx'
-import { computeSignalSummary, type OhlcvCandle, type SignalSummary } from '@/lib/utils/indicators'
+import { computeSignalSummary, SIGNALS_FROM_CLOSES, type OhlcvCandle, type SignalSummary } from '@/lib/utils/indicators'
 import { confluenceLabel, CONFLUENCE_MIN_LOADED } from '@/lib/utils/confluence'
 import { SignalBadge } from '@/components/charts/SignalBadge'
 import { candleGranularity, candleSizeWords } from '@/lib/utils/candleGranularity'
+import { SWEEP_WANTS } from '@/lib/technicals/sweep'
 
 // ─── Multi-Timeframe Confluence Grid ──────────────────────────────────────────
+//
+// Reads closing prices (`closes=1`) on every row, since 2026-10-13 (T-423,
+// D103). DefiLlama serves all five spacings below, 15-minute to weekly, with no
+// key; measured that day, every point sat on its grid with no repeated prices
+// padding a coarser source. Candles at launch would come from CoinGecko alone,
+// which answers at most the 4H row at its size (30-minute candles for 15m and 1H,
+// 4-day for 1D, nothing past a year for 1W) and allows fewer than 10 calls a
+// minute against five per coin viewed. So each row's verdict counts only the
+// votes that read a close (SIGNALS_FROM_CLOSES), and the grid says so: the
+// page's own Signal Summary counts every vote on candles, and the two can differ.
 
 const TF_ROWS = [
   { label: '15m', range: '15m' },
@@ -65,12 +76,14 @@ export function MultiTimeframeGrid({ assetId }: { assetId: string }) {
 
     Promise.all(TF_ROWS.map(async (tf) => {
       try {
-        const res  = await fetch(`/live-data/ohlcv?id=${assetId}&range=${tf.range}`)
+        const res  = await fetch(`/live-data/ohlcv?id=${assetId}&range=${tf.range}&${SWEEP_WANTS}`)
         const json = await res.json()
         const candles: OhlcvCandle[] = json.candles ?? []
         const size = candleGranularity(candles.map(c => c.time))
         const wrongSize = candles.length > 0 && size !== tf.label
-        const summary = !wrongSize && candles.length >= 50 ? computeSignalSummary(candles) : null
+        // 'close' even when the candle ladder answered, so the five rows are
+        // always counted on the same votes.
+        const summary = !wrongSize && candles.length >= 50 ? computeSignalSummary(candles, 'close') : null
         const servedSize = wrongSize ? (size ?? undefined) : undefined
         if (!cancelled) setState(prev => mergeRow(prev, assetId, tf.range, { summary, servedSize, loading: false }))
       } catch {
@@ -91,14 +104,14 @@ export function MultiTimeframeGrid({ assetId }: { assetId: string }) {
   // WHY THE CHIP CAN BE ABSENT, said out loud.
   //
   // confluenceLabel returns null below CONFLUENCE_MIN_LOADED, and the chip is
-  // rendered conditionally — so for an asset the OHLCV ladder cannot serve, the
-  // panel simply showed nothing. That is honest (far better than a verdict
-  // computed from no data) but it is not informative: the reader cannot tell a
-  // coin with no exchange pair from one whose request is still in flight.
+  // rendered conditionally — so for an asset no source can serve, the panel
+  // simply showed nothing. That is honest (far better than a verdict computed
+  // from no data) but it is not informative: the reader cannot tell a coin with
+  // no prices from one whose request is still in flight.
   //
-  // 36 of the 80 assets selectable on this page have no Binance pair —
-  // SUPPORTED_IDS is built from COINGECKO_IDS (80) while the route's
-  // BINANCE_SYMBOL map has 47 — so this is the common case, not an edge one.
+  // When the grid read candles this was the common case: 36 of the 80 coins had
+  // no Binance pair. On closing prices it is rare (DefiLlama had daily prices for
+  // 78 of the 80 on 2026-10-13), but the reason is still owed when it happens.
   //
   // Same rule the futures-curve route follows: when there is no data, return the
   // REASON rather than an empty space (`/live-data/futures-curve` answers
@@ -108,8 +121,8 @@ export function MultiTimeframeGrid({ assetId }: { assetId: string }) {
   const absence = confluence || stillLoading
     ? null
     : loaded.length === 0 && wrongSize === 0
-      ? 'No candles for this asset on any timeframe — no exchange pair on the OHLCV ladder'
-      : `Only ${loaded.length} of ${TF_ROWS.length} timeframes could be read${wrongSize > 0 ? ` (${wrongSize} came back at another candle size)` : ''} — ${CONFLUENCE_MIN_LOADED} are needed for a confluence read`
+      ? 'No prices for this asset on any timeframe'
+      : `Only ${loaded.length} of ${TF_ROWS.length} timeframes could be read${wrongSize > 0 ? ` (${wrongSize} came back at another spacing)` : ''} — ${CONFLUENCE_MIN_LOADED} are needed for a confluence read`
 
   // Plain-English per-timeframe agreement, e.g. "1D bullish · 4H overbought · 1H weakening"
   function tfPhrase(summary: SignalSummary): { word: string; color: string } {
@@ -157,6 +170,12 @@ export function MultiTimeframeGrid({ assetId }: { assetId: string }) {
           ))}
         </div>
       )}
+
+      <p className="-mt-1 text-[10px] leading-relaxed text-text-muted">
+        Each timeframe is read from closing prices, one per period, and counts the{' '}
+        {SIGNALS_FROM_CLOSES.size} indicator votes that need only a close. The Signal Summary
+        counts every vote when the chart has candles, so the two can differ.
+      </p>
 
       <div className="grid grid-cols-5 gap-2">
         {rows.map((row) => {
