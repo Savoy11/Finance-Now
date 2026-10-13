@@ -14110,7 +14110,7 @@
     "T-432"
    ],
    "summary": "`npm run data-sources -- --verify` (scripts/lib/routeHosts.mjs, driftItems) skips any registry entry that has a provider with no host, and the entries with id config or news outright; 23 of 56 entries carry a hostless provider (measured 2026-10-13, after T-432 gave the wallet entry real hosts). Those entries’ routes are never compared with the registry, so a host they fetch never reaches sourceTerms.test.ts either. Measured the same day, the hosts hidden this way that have no source-terms entry at all: /live-data/news fetches newsapi.org (news/route.ts:613) and gnews.io (:674), the keyed news fallbacks; /live-data/config fetches newsapi.org (:440) and eight LLM providers’ /models endpoints to test a saved key (:379-387: Anthropic, OpenAI, Groq, xAI, DeepSeek, Mistral, Together, Cohere). The same LLM hosts serve the agents through lib/agents/runner.ts, outside /live-data and so outside the drift check entirely. The other exempted routes’ hosts are registered (macro-news, market-news). Two URL literals in the news route are not fetches: github.com is in the User-Agent string and www.congress.gov is an article link the route builds. All of it is personal use before launch (D96).",
-   "next_action": "(1) Decide whether an LLM API the user brings a key for belongs in sourceTerms.ts: the registry asks whether we may use a site’s data, and an LLM provider processes the user’s prompts instead. If not, name the eight hosts in the drift check as exempt, with the reason, rather than leaving them under the blanket rule. (2) In frontend/src/lib/data/dataSources.ts, replace the news entry’s hostless “GNews / NewsAPI” provider with newsapi.org and gnews.io, and in the same change read both terms on the owner’s machine and enter them in frontend/src/lib/server/sourceTerms.ts (seeded until the owner ratifies), so the suite never goes red on main. (3) Narrow driftItems so a hostless provider no longer exempts its entry: check every literal host, with a short named list of literals that are not fetches (the User-Agent’s github.com, congress.gov article links). That also means naming the hosts behind macro-news’s and market-news’s summary providers, which are registered but unnamed. Hold it with a test in dataSourcesDrift.test.ts that fails on an unnamed host behind a hostless provider.",
+   "next_action": "Left for the owner: ratify the two seeded entries in frontend/src/lib/server/sourceTerms.ts (the “Keyed news fallbacks” block: newsapi.org and gnews.io), or not. Both are fine before launch (D96): NewsAPI’s free Developer plan is for a development environment only, and GNews’s Free plan for personal, non-commercial use. At launch each needs a paid plan or its rung dropped.",
    "sources": [
     {
      "file": "frontend/scripts/lib/routeHosts.mjs",
@@ -14132,6 +14132,15 @@
     "on": "2026-10-13",
     "by": "owner request, filed by the session",
     "why": "Owner, 2026-10-13: “merge 333 and 334, and file the news item”. Found while doing T-432 and reported in #333 as found, not fixed."
+   },
+   "progress": {
+    "noted_on": "2026-10-13",
+    "note": "All three steps done 2026-10-13 (owner: “go, and no on the AI providers”). (1) D104: AI providers are not data sources and stay out of sourceTerms.ts. The nine LLM hosts the Integrations Test button calls are named in NOT_DATA_SOURCES (frontend/scripts/lib/routeHosts.mjs), each with that reason; Google’s Gemini endpoint makes nine, not the eight first counted, because its googleapis.com domain matched the YouTube Data API entry and looked registered. (2) The news entry names its hosts one by one, newsapi.org and gnews.io among them; both terms were read on the owner’s machine and entered as seeded. (3) driftItems no longer skips an entry with a hostless provider, nor config and news: every literal host is checked, the Integrations roster (config) against every entry, and the only exceptions are NOT_FETCHED (github.com in the news route’s User-Agent, congress.gov article links) and NOT_DATA_SOURCES, each checked to still match the code. Doing so surfaced three more unnamed sets, all fixed in the same change: finnhub.io, a live equity-quote rung named by no entry (security-quotes now names its four keyed rungs); the four macro-news publishers, under a provider name still listing Dow Jones RSS, removed on terms 2026-09-20, and a note counting 8 feeds; and CNBC in market-news.",
+    "evidence": [
+     "frontend/src/lib/server/__tests__/dataSourcesDrift.test.ts",
+     "frontend/src/lib/server/__tests__/sourceTerms.test.ts",
+     "docs/decisions/2026-10-13-owner-decisions.md"
+    ]
    }
   }
  ],
@@ -39859,6 +39868,14 @@
      "frontend/scripts/lib/routeHosts.mjs",
      "frontend/src/app/live-data/news/route.ts",
      "frontend/src/app/live-data/config/route.ts"
+    ]
+   },
+   {
+    "on": "2026-10-13",
+    "what": "T-433: D104 keeps AI providers out of the terms registry; newsapi.org and gnews.io read and entered as seeded; the drift check’s hostless-provider exemption removed, with two named exception lists. Status stays open for the owner’s ratification of the two entries.",
+    "evidence": [
+     "frontend/src/lib/server/__tests__/dataSourcesDrift.test.ts",
+     "docs/decisions/2026-10-13-owner-decisions.md"
     ]
    }
   ]

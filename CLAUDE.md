@@ -792,7 +792,7 @@ site nobody has reviewed. Full design: `docs/architecture/source-terms.md`.
 > The fix for any of the key-gated rows is a free API key on the Integrations page — **not
 > a substitute scraper.**
 
-> ⚠ **24 of 71 registry entries are `seeded`, not `verified` — check `review` before
+> ⚠ **26 of 73 registry entries are `seeded`, not `verified` — check `review` before
 > trusting one.** The registry was authored in an environment whose network policy
 > blocked every publisher and provider host at the gateway, so not one terms document
 > could be opened. The entries are honest starting positions drawn from each
@@ -837,6 +837,13 @@ site nobody has reviewed. Full design: `docs/architecture/source-terms.md`.
 > (D96) and a launch step only if Wallets returns. Three things need the owner: dRPC's terms
 > require an account its keyless endpoint does not (publicnode's question, D25); Cloudflare
 > is deprecating `cloudflare-eth.com`; and Tronscan's and Arbitrum's terms answered 403.
+>
+> **Two more the same day (T-433), also `seeded`: NewsAPI and GNews**, the news route's keyed
+> fallbacks. The drift check had skipped every entry with a hostless provider (23 of 56),
+> which hid them; it no longer does, and its only exceptions are two named lists in
+> `scripts/lib/routeHosts.mjs`. **AI providers are not data sources and stay out of this
+> registry (D104, owner: *"no on the AI providers"*)**: the nine the Integrations Test button
+> calls are in `NOT_DATA_SOURCES`. Do not add a `sourceTerms.ts` entry for one.
 >
 > A seeded `approved`/`conditional` means *nobody has objected yet*, not *cleared*.
 > Seeded entries still serve data — breaking the app over a documentation gap is the

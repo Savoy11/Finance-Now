@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import path from 'node:path'
-import { listRoutes, hostsInSource, ownerOfRoute, driftItems, readRoutes } from '../../../../scripts/lib/routeHosts.mjs'
+import {
+  listRoutes, hostsInSource, ownerOfRoute, driftItems, readRoutes, NOT_FETCHED, NOT_DATA_SOURCES,
+} from '../../../../scripts/lib/routeHosts.mjs'
 import { DATA_SOURCES } from '@/lib/data/dataSources'
 
 /**
@@ -71,5 +73,61 @@ describe('the registry against the route code', () => {
     expect(driftItems(trimmed, readRoutes(LIVE_DATA))).toEqual([
       '"wallet/btc" fetches blockstream.info not named in "wallet"',
     ])
+  })
+})
+
+/**
+ * T-433 (2026-10-13). Any entry with a hostless provider used to be skipped outright, and so
+ * were config and news: 23 of 56 entries. newsapi.org, gnews.io and the LLM key-test hosts
+ * never reached the terms check, and finnhub.io, a live quote rung, was named by no entry.
+ * A hostless provider is now only a description; the exceptions are two named lists.
+ */
+describe('no blanket exemption', () => {
+  const entry = (id: string, providers: { name: string; host?: string }[], route = `/live-data/${id}`) =>
+    ({ id, route, providers: providers.map((p) => ({ ...p, role: 'primary' as const, auth: 'none' as const })) })
+  // These fake route lists hold no LLM hosts, so the stale-exception check would list all of them.
+  const drift = (...args: Parameters<typeof driftItems>) => driftItems(...args).filter((i) => !i.startsWith('NOT_DATA_SOURCES'))
+
+  it('reports an unnamed host behind a hostless provider', () => {
+    const entries = [entry('feed', [{ name: 'Some RSS feeds' }])]
+    expect(drift(entries, [{ id: 'feed', hosts: new Set(['example.org']) }])).toEqual([
+      '"feed" fetches example.org not named in "feed"',
+    ])
+  })
+
+  it('holds the connectivity test to hosts some other entry names', () => {
+    const entries = [entry('config', [{ name: 'Every configured provider' }]), entry('quotes', [{ name: 'Q', host: 'api.example.com' }])]
+    expect(drift(entries, [{ id: 'config', hosts: new Set(['api.example.com']) }])).toEqual([])
+    expect(drift(entries, [{ id: 'config', hosts: new Set(['api.example.com', 'unnamed.example.net']) }])).toEqual([
+      '"config" checks unnamed.example.net, which no registry entry names',
+    ])
+  })
+
+  it('names every quote rung, Finnhub included', () => {
+    const hosts = DATA_SOURCES.find((e) => e.id === 'security-quotes')!.providers.map((p) => p.host)
+    expect(hosts).toEqual(expect.arrayContaining(['financialmodelingprep.com', 'finnhub.io', 'api.twelvedata.com', 'api.tiingo.com', 'www.alphavantage.co']))
+  })
+})
+
+describe('the two named exceptions', () => {
+  const routes = readRoutes(LIVE_DATA)
+  const config = routes.find((r) => r.id === 'config')!
+
+  it('excuses exactly the LLM providers the Integrations test calls (D104)', () => {
+    const llmHosts = [...config.hosts].filter((h) => h in NOT_DATA_SOURCES)
+    expect(llmHosts.sort()).toEqual(Object.keys(NOT_DATA_SOURCES).sort())
+  })
+
+  it('reports an exception that no longer matches the code', () => {
+    const trimmed = routes.map((r) => (r.id === 'news' ? { ...r, hosts: new Set([...r.hosts].filter((h) => h !== 'www.congress.gov')) } : r))
+    expect(driftItems(DATA_SOURCES, trimmed)).toContain('NOT_FETCHED excuses www.congress.gov in "news", which no longer writes it')
+    const noLlm = routes.map((r) => (r.id === 'config' ? { ...r, hosts: new Set([...r.hosts].filter((h) => h !== 'api.cohere.com')) } : r))
+    expect(driftItems(DATA_SOURCES, noLlm)).toContain('NOT_DATA_SOURCES excuses api.cohere.com, which no route fetches')
+  })
+
+  it('gives every exception a reason', () => {
+    for (const reasons of [NOT_DATA_SOURCES, ...Object.values(NOT_FETCHED)]) {
+      for (const [host, why] of Object.entries(reasons as Record<string, string>)) expect(why.length, host).toBeGreaterThan(20)
+    }
   })
 })
