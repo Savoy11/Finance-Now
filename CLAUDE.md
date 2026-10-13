@@ -752,7 +752,7 @@ Pure engine, no API calls, covered by `__tests__/portfolioBuilder.test.ts` (86 t
 
 - **Quotes** (`fetchSecurityQuotes` → `getEquityQuoteProviders()`): custom `json-quote` feeds first, then FMP → Finnhub → Twelve Data → Tiingo → Alpha Vantage → catalog reference prices. **Every live rung is keyed** since the Yahoo removal (2026-08-06) — see below. `{symbol}` (per-symbol) or `{symbols}` (batch) placeholders. **Stooq used to be the last live rung and is gone** — it 404s on every variant (confirmed in the 2026-07-19 audit) and has been removed from the registry and the quote path; catalog reference is the real last resort. The only remnant is the legacy `'stooq'` value in `PRICE_SOURCES` (db/schema/instruments.ts), which is inert. Don't re-add it as a fallback.
 - **News** (`/live-data/market-news` → `getEquityProviders('news')`): **CNBC is the only built-in**, plus custom `rss`/`atom`/`json-news` feeds, all active sources merged in parallel. ⚠ **MarketWatch was removed 2026-09-20 ON TERMS, not availability** — the feed still serves 200. Dow Jones's Terms of Use §9.4.1 bars automated ingestion "without our prior written consent" and §9.1 names RSS content expressly, so `dowjones.io` and `marketwatch.com` are now `prohibited` in the registry — a `pinnedFetch` socket block, the same class as Yahoo. **Do not reintroduce it**: restoring it needs written consent, not a code change. Equity news is single-sourced on CNBC as a result, which is a known D21 optionality gap rather than a comfortable state. **There is no keyless per-ticker feed** — Yahoo's was the only free one. Symbol mode reads the same general wires and filters to articles that actually name the company, and does **not** force-tag the requested symbol onto unrelated stories. **With a Marketaux key (T-430, 2026-10-07)** symbol mode also asks Marketaux for that ticker (`lib/server/marketauxNews.ts`): headline, snippet and link, credited to each article's own publisher, cached six hours per ticker so the free plan's 100 requests a day go further; an article counts for the stock when Marketaux itself tagged it with the ticker. The general feed never calls it. ⚠ Its terms allow personal, non-commercial use only, and a public app needs its written approval; the enquiry is drafted in `docs/licensing/marketaux-enquiry-2026-10-07.md`, not sent.
-- **Social** (`/live-data/stock-social` → `getEquityProviders('social')`): built-ins Reddit Finance / StockTwits plus custom `json-social` feeds. ⚠ **Reddit's absence is OUR OWN robots gate, not a datacenter-IP block** — this line said the latter, which sends a reader chasing a network fault that is not there. Its robots.txt disallows this app's agent (2026-08-29 terms review), so `pinnedFetch` refuses `reddit.com` unconditionally unless `REDDIT_CLIENT_ID` is set: **that applies on the owner's machine too**, and expecting StockTwits-only is right everywhere, not just in CI. Reddit does separately 403 datacenter IPs and rate-limit its `.rss` feeds, but neither is what you are seeing while the gate is closed. **Lifting the gate is a post-launch project (D58, 2026-10-04):** Reddit now approves every API user, personal projects included, and setting `REDDIT_CLIENT_ID` alone would lift the gate while both routes still read the anonymous `.rss` feeds — the OAuth reader comes first (T-245).
+- **Social** (`/live-data/stock-social` → `getEquityProviders('social')`): built-ins Reddit Finance / StockTwits plus custom `json-social` feeds. ⚠ **Reddit's absence is OUR OWN robots gate, not a datacenter-IP block** — this line said the latter, which sends a reader chasing a network fault that is not there. Its robots.txt disallows this app's agent (2026-08-29 terms review), so both social routes check `robotsPermits` and skip `reddit.com` unless `REDDIT_CLIENT_ID` is set (so does the Integrations Test button, since 2026-10-13): **that applies on the owner's machine too**, and expecting StockTwits-only is right everywhere, not just in CI. Reddit does separately 403 datacenter IPs and rate-limit its `.rss` feeds, but neither is what you are seeing while the gate is closed. **Lifting the gate is a post-launch project (D58, 2026-10-04):** Reddit now approves every API user, personal projects included, and setting `REDDIT_CLIENT_ID` alone would lift the gate while both routes still read the anonymous `.rss` feeds — the OAuth reader comes first (T-245).
 - **OHLCV / TA / backtests** (`/live-data/security-ohlcv` → `getEquityOhlcvProviders()`): custom `json-ohlcv` feeds first, then Tiingo → FMP. Both keyed; with neither the route reports `source: 'none'` and the TA/backtest/candlestick surfaces show their no-live-source state.
 
 UI labels non-live prices with a small amber `ref` tag; KPIs needing live data show "requires live quotes" instead of fabricated values.
@@ -771,8 +771,10 @@ site nobody has reviewed. Full design: `docs/architecture/source-terms.md`.
 > availability.** The `query1/query2.finance.yahoo.com` v8/v10 endpoints are undocumented
 > internals of Yahoo's own web app with no published third-party API terms, while Yahoo's
 > ToS prohibit automated access and redistribution. It is **hard-blocked in code**:
-> `pinnedFetch` refuses `*.yahoo.com` at the socket, so re-adding a fetcher does not bring
-> it back. **Do not reintroduce it** without changing the registry verdict, which means
+> `pinnedFetch` and `termsGatedFetch` refuse `*.yahoo.com` before connecting, and
+> `sourceTerms.test.ts` fails while any data-source entry names it. ⚠ A plain `fetch` is
+> refused by neither: only the drift check stops one, by failing on a host its route's entry
+> does not name (the entries it still skips are T-433). **Do not reintroduce it** without changing the registry verdict, which means
 > re-reading the terms and being able to defend the change.
 >
 > It was the only **keyless** rung on the equity/fund/macro quote, chart and OHLCV paths.
@@ -864,8 +866,13 @@ site nobody has reviewed. Full design: `docs/architecture/source-terms.md`.
 >   `attributions`, the MCP server relays it, and AI answers built on CoinGecko figures show
 >   it — see "Agent API Layer" and "AI Agents" below. The same guard holds all three.
 > - **Reddit's robots.txt disallows this app's agent**, so reddit.com is gated
->   off unless `REDDIT_CLIENT_ID` is set, enforced in `pinnedFetch` so a new
->   call site inherits it. `SourceTermsEntry.robotsDisallowed` records that as a
+>   off unless `REDDIT_CLIENT_ID` is set, enforced in `pinnedFetch`, in
+>   `termsGatedFetch` and by `robotsPermits` checks in the two social routes.
+>   ⚠ This said a new call site "inherits" the gate from `pinnedFetch`; only a
+>   `pinnedFetch` caller does (4 of 60 routes, measured 2026-10-13), and the
+>   Integrations Test button read reddit.com on every click until that day.
+>   `termsGatedFetch.test.ts` now fails on any file that writes a robots-disallowed
+>   host into a URL without one of those checks. `SourceTermsEntry.robotsDisallowed` records that as a
 >   dated **first-hand** observation kept separate from the terms `review`
 >   state: robots.txt is an instruction we either honour or don't, while a terms
 >   verdict is an interpretation — recording one must not launder the other into
@@ -998,8 +1005,9 @@ site nobody has reviewed. Full design: `docs/architecture/source-terms.md`.
 > market data only for "your own personal, non-commercial trading and account management
 > purposes", never in an "analytics platform", public endpoints expressly included;
 > `/live-data/funding-rates` lost its only source and answers `ok:false` with the reason).
-> All six are `pinnedFetch` socket blocks and none has an override, so re-adding a fetcher
-> does not bring one back — it just fails somewhere less obvious. Yahoo is described at
+> All six are refused by `pinnedFetch` and `termsGatedFetch`, with no override, and
+> `sourceTerms.test.ts` fails while a data-source entry names one. A plain `fetch` to one is
+> refused by neither, and is caught only by the drift check (see Yahoo above). Yahoo is described at
 > length above; the other five were only ever recorded in `sourceTerms.ts`, which is why
 > this list exists.
 
