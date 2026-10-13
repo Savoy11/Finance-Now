@@ -22,7 +22,6 @@ import { useCryptoChartSeries, drawableChartType, RANGE_CHART_TYPES } from '@/ho
 import { IndicatorPicker } from '@/components/charts/IndicatorPicker'
 import { DrawingToolbar } from '@/components/charts/DrawingToolbar'
 import type { LucideIcon } from 'lucide-react'
-import { runBacktest, STRATEGIES, type StrategyCategory } from '@/lib/utils/backtest'
 import {
   ema, fibRetracement, computeSignalSummary, detectPatterns,
   buildTechnicalRead, detectSupportResistance, patternProjection,
@@ -89,7 +88,9 @@ const PANELS_OFF_FOR_CLOSES = ['the signal summary', 'patterns', 'support and re
 // lines and the page component itself started at line 964. They moved out
 // unchanged — same props, same behaviour — to components/analytics/technical/.
 // BacktestPanel moved with them but is deliberately NOT imported here: it has no
-// call site while the Backtest tab is hidden, and an unused import fails lint.
+// call site while the Backtest tab is hidden. (This said an unused import fails
+// lint; it does not, since no unused-variable rule is on, which is how the
+// panel's old runBacktest/STRATEGIES import sat here unused until 2026-10-13.)
 // It sits at components/analytics/technical/BacktestPanel.tsx — see the tab
 // union below for what restoring it takes.
 import { TechnicalReadPanel } from '@/components/analytics/technical/TechnicalReadPanel'
@@ -111,8 +112,9 @@ import { MarketStructurePanel } from '@/components/analytics/technical/MarketStr
 // 'backtest' HIDDEN 2026-08-20 (owner decision, revisitable): the tab, its
 // panel and lib/utils/backtest.ts are retained — restore by re-adding the tab
 // to the union and the two lists below, plus the BacktestPanel import at the
-// top (dropped 2026-09-08 with the panel extraction, because an import with no
-// call site fails lint; the component file itself is untouched).
+// top (dropped 2026-09-08 with the panel extraction; the component file itself
+// is untouched). The page's description must not offer backtests while the tab
+// is hidden: it did until 2026-10-13 (technicalAnalysisCopy.test.ts).
 type Tab = 'chart' | 'patterns'
 
 // useSearchParams() forces a CSR bailout, so the page body must sit inside a
@@ -234,7 +236,7 @@ function TechnicalAnalysisContent() {
         title="Technical Analysis"
         subtitle="Professional-grade charting, indicators, and pattern recognition"
         icon={<Activity size={18} className="text-accent-blue" />}
-        description={`A full TA suite combining the best of TradingView, Coinigy, and TrendSpider — candlestick charts with ${ALL_INDICATORS.length} indicators, automated pattern detection, and strategy backtests. The multi-asset scanner has its own page: Scanner in the sidebar.`}
+        description={`A full TA suite combining the best of TradingView, Coinigy, and TrendSpider — candlestick charts with ${ALL_INDICATORS.length} indicators and automated pattern detection. The multi-asset scanner has its own page: Scanner in the sidebar.`}
         details={[
           { label: 'Indicators', text: 'RSI, MACD, Bollinger Bands, EMA/SMA stack, Stochastic RSI, ATR, OBV, VWAP — toggle any combination on the chart.' },
           { label: 'Signal Summary', text: 'Each indicator votes buy/sell/neutral; aggregate score produces an overall signal (Strong Buy → Strong Sell).' },
