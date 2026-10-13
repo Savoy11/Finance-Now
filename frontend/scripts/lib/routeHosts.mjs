@@ -90,10 +90,45 @@ function isBundled(host, registered) {
 }
 
 /**
- * Drift items: a route fetching a host with no owning entry, or one its entry does not name.
- * An entry with a hostless provider is still skipped, as it always was. That exemption is
- * wider than it needs to be: it keeps newsapi.org, gnews.io and eight LLM key-test hosts
- * from ever reaching the terms check (T-433).
+ * URL literals a route writes but never fetches, by route, with the reason. Every one is
+ * checked to still be in its route, so the list cannot outlive the code it excuses.
+ */
+export const NOT_FETCHED = {
+  news: {
+    'github.com': 'the contact link inside the route’s User-Agent string',
+    'www.congress.gov': 'links to bills the route builds for articles; shown, never fetched',
+  },
+}
+
+/**
+ * Hosts a route fetches that are not data sources, and so are kept out of the source-terms
+ * registry on purpose. D104 (2026-10-13), owner: "no on the AI providers". The Integrations
+ * Test button calls each to check a saved key; an LLM provider processes the user's prompts
+ * under the user's own key rather than supplying data the app shows.
+ */
+export const NOT_DATA_SOURCES = Object.fromEntries(
+  [
+    'api.anthropic.com', 'api.openai.com', 'generativelanguage.googleapis.com', 'api.groq.com',
+    'api.x.ai', 'api.deepseek.com', 'api.mistral.ai', 'api.together.xyz', 'api.cohere.com',
+  ].map((host) => [host, 'LLM provider, checked only to test a saved key (D104)']),
+)
+
+/**
+ * Entries whose route checks OTHER entries' providers: the Integrations connectivity test.
+ * Each host it calls must be named by some entry, so the terms check sees it; naming them
+ * all again under this entry would only duplicate the registry.
+ */
+const ROSTER_ENTRIES = new Set(['config'])
+
+/**
+ * Drift items: a route fetching a host with no owning entry, a host its entry does not name,
+ * or an exemption that no longer matches the code.
+ *
+ * Until T-433 (2026-10-13) an entry with any hostless provider was skipped outright, and so
+ * were the config and news entries: 23 of 56 entries, which kept newsapi.org, gnews.io and
+ * the LLM key-test hosts from ever reaching the terms check. A hostless provider is now just
+ * a description; every literal host is checked, and the exceptions are the two named lists
+ * above, each with its reason.
  *
  * @param {{ id: string, route?: string, covers?: string[], providers: { host?: string }[] }[]} entries
  * @param {{ id: string, hosts: Set<string> }[]} routes
@@ -101,17 +136,29 @@ function isBundled(host, registered) {
  */
 export function driftItems(entries, routes) {
   const items = []
+  const everyNamedHost = new Set(entries.flatMap((e) => e.providers.map((p) => p.host).filter(Boolean)))
   for (const { id, hosts } of routes) {
+    for (const host of Object.keys(NOT_FETCHED[id] ?? {})) {
+      if (!hosts.has(host)) items.push(`NOT_FETCHED excuses ${host} in "${id}", which no longer writes it`)
+    }
     const entry = ownerOfRoute(id, entries)
+    const fetched = [...hosts].filter((h) => !(h in (NOT_FETCHED[id] ?? {})) && !(h in NOT_DATA_SOURCES))
     if (!entry) {
-      if (hosts.size) items.push(`route "${id}" has no registry entry (hosts: ${[...hosts].join(', ')})`)
+      if (fetched.length) items.push(`route "${id}" has no registry entry (hosts: ${fetched.join(', ')})`)
       continue
     }
-    const hasSummaryProvider = entry.providers.some((p) => !p.host)
-    if (hasSummaryProvider || entry.id === 'config' || entry.id === 'news') continue
-    const registered = new Set(entry.providers.map((p) => p.host).filter(Boolean))
-    const missing = [...hosts].filter((h) => !registered.has(h) && !isBundled(h, registered))
-    if (missing.length) items.push(`"${id}" fetches ${missing.join(', ')} not named in "${entry.id}"`)
+    const roster = ROSTER_ENTRIES.has(entry.id)
+    const named = roster ? everyNamedHost : new Set(entry.providers.map((p) => p.host).filter(Boolean))
+    const missing = fetched.filter((h) => !named.has(h) && !isBundled(h, named))
+    if (missing.length) {
+      items.push(roster
+        ? `"${id}" checks ${missing.join(', ')}, which no registry entry names`
+        : `"${id}" fetches ${missing.join(', ')} not named in "${entry.id}"`)
+    }
+  }
+  const allHosts = new Set(routes.flatMap((r) => [...r.hosts]))
+  for (const host of Object.keys(NOT_DATA_SOURCES)) {
+    if (!allHosts.has(host)) items.push(`NOT_DATA_SOURCES excuses ${host}, which no route fetches`)
   }
   return items
 }

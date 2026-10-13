@@ -2103,6 +2103,45 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     review: 'seeded',
     confidence: 'medium',
   },
+
+  // ── Keyed news fallbacks (T-433, 2026-10-13) ───────────────────────────────
+  //
+  // /live-data/news falls back to these when a key is saved, and the Integrations page
+  // tests the NewsAPI key. Neither host had an entry: the news entry in dataSources.ts
+  // named them as one hostless "GNews / NewsAPI", which the drift check skipped. Both
+  // documents were READ on the owner's machine on 2026-10-13; `seeded` until ratified.
+  {
+    domain: 'newsapi.org',
+    name: 'NewsAPI',
+    verdict: 'conditional',
+    termsUrl: 'https://newsapi.org/terms',
+    finding:
+      'NewsAPI’s terms, read 2026-10-13, offer a free Developer plan that "may be used for development and testing in a development environment only, and cannot be used in a staging or production environment (including internally)"; once the Service is "integrated outside of a development environment, license to use the Developer plan will be revoked and a paid subscription will be required". Its data licence says the API’s content "may also be subject to intellectual property rights", and forbids misrepresenting "the ownership or the source" or removing copyright notices; the use licence forbids using the service "to reproduce or republish copyrighted material".',
+    conditions: [
+      'Developer plan: a development environment only. The owner’s machine before launch qualifies; any staging or production deployment does not',
+      'Launch step: a paid subscription, or drop the rung',
+      'Keep each article’s source and notices; never republish article text',
+    ],
+    reviewedAt: '2026-10-13',
+    review: 'seeded',
+    confidence: 'high',
+  },
+  {
+    domain: 'gnews.io',
+    name: 'GNews API',
+    verdict: 'conditional',
+    termsUrl: 'https://gnews.io/legal/terms-of-service',
+    finding:
+      'GNews’s Terms of Service (last updated 2026-10-11), read 2026-10-13: without an active paid subscription, "including while using the Free plan", data may be used "for personal, academic, evaluation, and other non-commercial purposes only"; "Developing, testing, and evaluating an integration that has not been published or put into production is not a commercial purpose." Commercial use needs an active paid plan and ends when it lapses. "Reasonable caching of API responses for application performance is permitted." Attribution is "appreciated but not required unless specified in your subscription plan". The Free plan truncates content to a short excerpt, with a 12-hour delay and 100 requests a day (pricing page).',
+    conditions: [
+      'Free plan: personal, non-commercial use, which development before launch is (D96)',
+      'Launch step: an active paid plan for commercial use, or drop the rung',
+      'Do not misrepresent the source of the data',
+    ],
+    reviewedAt: '2026-10-13',
+    review: 'seeded',
+    confidence: 'high',
+  },
 ]
 
 // ─── Lookup + evaluation ──────────────────────────────────────────────────────

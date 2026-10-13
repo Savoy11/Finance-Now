@@ -255,7 +255,20 @@ export const DATA_SOURCES: DataSourceEntry[] = [
   {
     id: 'news', surface: 'Crypto news + sentiment', module: 'crypto',
     route: '/live-data/news', status: 'live',
-    providers: [{ name: 'CryptoPanic', host: 'cryptopanic.com', role: 'primary', auth: 'key' }, { name: 'Messari', host: 'data.messari.io', role: 'primary', auth: 'key' }, { name: 'GNews / NewsAPI', role: 'fallback', auth: 'key' }, { name: 'RSS feeds', role: 'primary', auth: 'none' }],
+    // Hosts named one by one since T-433 (2026-10-13): "GNews / NewsAPI" and "RSS feeds" had no
+    // host, which exempted this entry from the drift check and kept newsapi.org and gnews.io
+    // out of the terms registry.
+    providers: [
+      { name: 'CryptoPanic', host: 'cryptopanic.com', role: 'primary', auth: 'key' },
+      { name: 'Messari', host: 'data.messari.io', role: 'primary', auth: 'key' },
+      { name: 'CoinDesk RSS', host: 'www.coindesk.com', role: 'primary', auth: 'none' },
+      { name: 'Cointelegraph RSS', host: 'cointelegraph.com', role: 'primary', auth: 'none' },
+      { name: 'Decrypt RSS', host: 'decrypt.co', role: 'primary', auth: 'none' },
+      { name: 'Bitcoin Magazine RSS', host: 'bitcoinmagazine.com', role: 'primary', auth: 'none' },
+      { name: 'NewsAPI', host: 'newsapi.org', url: 'https://newsapi.org/docs', role: 'fallback', auth: 'key' },
+      { name: 'GNews', host: 'gnews.io', url: 'https://gnews.io/docs', role: 'fallback', auth: 'key' },
+      { name: 'Feeds added on the Integrations page (terms checked when saved)', role: 'primary', auth: 'none' },
+    ],
     cadence: '1m', notes: 'Multi-provider RSS/JSON merge. Sentiment/category are heuristic classifiers (labeled derived).',
   },
   {
@@ -314,7 +327,13 @@ export const DATA_SOURCES: DataSourceEntry[] = [
     route: '/live-data/security-quotes', status: 'key-gated',
     providers: [
       { name: 'FMP', host: 'financialmodelingprep.com', url: 'https://site.financialmodelingprep.com/developer/docs', role: 'primary', auth: 'key' },
-      { name: 'Finnhub / Twelve Data / Tiingo / Alpha Vantage', role: 'fallback', auth: 'key' },
+      // Named one by one since T-433 (2026-10-13). As a single hostless "Finnhub / Twelve Data
+      // / Tiingo / Alpha Vantage" they never reached sourceTerms.test.ts, and finnhub.io was
+      // named by no entry at all.
+      { name: 'Finnhub', host: 'finnhub.io', url: 'https://finnhub.io/docs/api', role: 'fallback', auth: 'key' },
+      { name: 'Twelve Data', host: 'api.twelvedata.com', url: 'https://twelvedata.com/docs', role: 'fallback', auth: 'key' },
+      { ...TIINGO, role: 'fallback' },
+      { name: 'Alpha Vantage', host: 'www.alphavantage.co', url: 'https://www.alphavantage.co/documentation/', role: 'fallback', auth: 'key' },
       { name: 'Catalog reference prices', role: 'fallback', auth: 'none' },
     ],
     staticData: ['lib/data/equityCatalog.ts', 'lib/data/fundCatalog.ts'],
@@ -335,7 +354,7 @@ export const DATA_SOURCES: DataSourceEntry[] = [
     id: 'market-news', surface: 'Stock market news', module: 'equities',
     route: '/live-data/market-news', status: 'partial',
     providers: [
-      { name: 'CNBC RSS', role: 'primary', auth: 'none' },
+      { name: 'CNBC RSS', host: 'search.cnbc.com', role: 'primary', auth: 'none' },
       { name: 'Marketaux (company news, keyed)', host: 'api.marketaux.com', url: 'https://www.marketaux.com/documentation', role: 'primary', auth: 'key' },
     ],
     notes: 'Since 2026-10-07 (T-430), with a Marketaux key, a stock page’s company news also asks Marketaux for that ticker’s articles (headline, snippet and link, credited to each article’s own publisher), cached six hours to stay inside the free plan’s 100 requests a day; the general Market News page does not spend requests on it. Marketaux’s terms allow personal, non-commercial use and need its written approval for a public app (lib/server/sourceTerms.ts). ONE general market wire. Two feeds have now gone on terms grounds, not availability: Yahoo’s per-ticker RSS (2026-08-06) and MarketWatch (2026-09-20 — Dow Jones ToU §9.4.1 bars automated ingestion "whether directly or through an intermediary" without prior written consent). Symbol news is CNBC filtered to articles that actually name the company, and an empty result is the honest answer when they haven’t covered it. ⚠ This surface is now single-sourced: losing CNBC would empty it rather than thin it.',
@@ -435,8 +454,15 @@ export const DATA_SOURCES: DataSourceEntry[] = [
   {
     id: 'macro-news', surface: 'Macro news (commodities/bonds/FX)', module: 'macro',
     route: '/live-data/macro-news', status: 'live',
-    providers: [{ name: 'Investing.com / OilPrice / FXStreet / CNBC / Dow Jones RSS', role: 'primary', auth: 'none' }],
-    notes: '8 keyless RSS feeds with a content-first pillar classifier.',
+    providers: [
+      { name: 'Investing.com RSS (commodities, bonds, forex)', host: 'www.investing.com', role: 'primary', auth: 'none' },
+      { name: 'OilPrice RSS', host: 'oilprice.com', role: 'primary', auth: 'none' },
+      { name: 'FXStreet RSS', host: 'www.fxstreet.com', role: 'primary', auth: 'none' },
+      { name: 'CNBC RSS', host: 'search.cnbc.com', role: 'primary', auth: 'none' },
+    ],
+    // Until T-433 (2026-10-13) this was one hostless provider still naming "Dow Jones RSS",
+    // whose MarketWatch feed went on terms on 2026-09-20, with a note counting 8 feeds.
+    notes: 'Keyless RSS feeds from the four publishers above, with a content-first pillar classifier. MarketWatch’s feed was removed on terms on 2026-09-20 (Dow Jones ToU §9.4.1).',
   },
   {
     id: 'futures-curve', surface: 'Futures term structure (forward curve)', module: 'macro',
