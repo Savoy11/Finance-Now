@@ -18,6 +18,11 @@ import {
 } from '@/lib/utils/indicators'
 import type { ChartType } from '@/components/charts/CandlestickChart'
 import type { LucideIcon } from 'lucide-react'
+import { NOT_FROM_CLOSES } from '@/components/charts/indicatorRegistry'
+import { ClosingPricesNotice } from '@/components/charts/ClosingPricesNotice'
+import { useCryptoChartSeries, drawableChartType, RANGE_CHART_TYPES } from '@/hooks/useCryptoChartSeries'
+import { ohlcvSourceLabel } from '@/lib/utils/ohlcvSource'
+import { candleGranularity } from '@/lib/utils/candleGranularity'
 
 const TACandlestickChart = dynamic(
   () => import('@/components/charts/CandlestickChart'),
@@ -92,6 +97,12 @@ const EMBED_INDICATORS = [
   { key: 'obv',      label: 'OBV',             group: 'panel' },
   { key: 'atr',      label: 'ATR (14)',        group: 'panel' },
 ] as const
+
+// On DefiLlama's closing prices (T-423, D103) only what reads closes alone is
+// offered; the registry's measured flags decide which those are.
+const NOT_FROM_CLOSES_KEYS = new Set<string>(NOT_FROM_CLOSES.map((i) => i.key))
+const EMBED_CLOSE_INDICATORS = EMBED_INDICATORS.filter((i) => !NOT_FROM_CLOSES_KEYS.has(i.key))
+const EMBED_PANELS_OFF_FOR_CLOSES = ['the signal summary', 'key levels'] as const
 
 const SIG_COLORS: Record<Signal, string> = {
   strong_buy:  'text-emerald-400 bg-emerald-400/10 border-emerald-500/30',
@@ -217,19 +228,22 @@ function TechnicalAnalysisTab({ asset }: { asset: NonNullable<ReturnType<typeof 
     return () => document.removeEventListener('mousedown', handler)
   }, [menuOpen, chartTypeMenuOpen])
 
-  const { data, isFetching } = useQuery({
-    queryKey: ['ta-ohlcv-embed', asset.id, range],
-    queryFn: async () => {
-      const res = await fetch(`/live-data/ohlcv?id=${asset.id}&range=${range}`)
-      if (!res.ok) throw new Error('fetch failed')
-      return res.json() as Promise<{ ok: boolean; candles: OhlcvCandle[] }>
-    },
+  // Candles first; DefiLlama's closing prices where the candles are missing or
+  // only 4-day ones (T-423, D103). Same hook as the TA page.
+  const { data, closeOnly, closesReason, candleError, isFetching } = useCryptoChartSeries(asset.id, range, {
     enabled: canChart,
     staleTime: range === '1M' ? 300_000 : 900_000,
   })
 
   const candles = useMemo<OhlcvCandle[]>(() => data?.candles ?? [], [data])
-  const summary = useMemo(() => candles.length >= 50 ? computeSignalSummary(candles) : null, [candles])
+  // The signal summary mixes in indicators that read ranges and volume, so it is
+  // withheld on closing prices rather than computed on flat stand-ins.
+  const summary = useMemo(() => !closeOnly && candles.length >= 50 ? computeSignalSummary(candles) : null, [candles, closeOnly])
+  const offeredIndicators = closeOnly ? EMBED_CLOSE_INDICATORS : EMBED_INDICATORS
+  const drawnIndicators = useMemo(
+    () => closeOnly ? new Set([...activeIndicators].filter((k) => !NOT_FROM_CLOSES_KEYS.has(k))) : activeIndicators,
+    [activeIndicators, closeOnly],
+  )
 
   function toggleIndicator(key: string) {
     setActiveIndicators((prev) => { const next = new Set(prev); next.has(key) ? next.delete(key) : next.add(key); return next })
@@ -257,7 +271,7 @@ function TechnicalAnalysisTab({ asset }: { asset: NonNullable<ReturnType<typeof 
             {/* Chart type dropdown */}
             <div className="relative" ref={chartTypeMenuRef}>
               {(() => {
-                const current = EMBED_CHART_TYPES.find((c) => c.type === chartType) ?? EMBED_CHART_TYPES[0]
+                const current = EMBED_CHART_TYPES.find((c) => c.type === drawableChartType(chartType, closeOnly)) ?? EMBED_CHART_TYPES[0]
                 return (
                   <button
                     onClick={() => setChartTypeMenuOpen((v) => !v)}
@@ -273,21 +287,28 @@ function TechnicalAnalysisTab({ asset }: { asset: NonNullable<ReturnType<typeof 
               })()}
               {chartTypeMenuOpen && (
                 <div className="absolute top-full left-0 mt-1.5 z-50 bg-bg-card border border-border rounded-xl shadow-2xl w-52 p-1.5">
-                  {EMBED_CHART_TYPES.map(({ type, label, desc, Icon }) => (
-                    <button
-                      key={type}
-                      onClick={() => { setChartType(type); setChartTypeMenuOpen(false) }}
-                      className={clsx('w-full flex items-start gap-2.5 px-3 py-2 rounded-lg text-left transition-colors',
-                        chartType === type ? 'bg-accent-blue/10 text-accent-blue' : 'text-text-secondary hover:bg-bg-elevated hover:text-text-primary'
-                      )}
-                    >
-                      <Icon size={13} className="mt-0.5 shrink-0" />
-                      <div>
-                        <div className="text-xs font-medium">{label}</div>
-                        <div className="text-[10px] text-text-muted leading-tight mt-0.5">{desc}</div>
-                      </div>
-                    </button>
-                  ))}
+                  {EMBED_CHART_TYPES.map(({ type, label, desc, Icon }) => {
+                    const unavailable = closeOnly && RANGE_CHART_TYPES.has(type)
+                    return (
+                      <button
+                        key={type}
+                        disabled={unavailable}
+                        onClick={() => { setChartType(type); setChartTypeMenuOpen(false) }}
+                        className={clsx('w-full flex items-start gap-2.5 px-3 py-2 rounded-lg text-left transition-colors',
+                          unavailable ? 'opacity-40 cursor-not-allowed text-text-muted'
+                            : drawableChartType(chartType, closeOnly) === type ? 'bg-accent-blue/10 text-accent-blue' : 'text-text-secondary hover:bg-bg-elevated hover:text-text-primary'
+                        )}
+                      >
+                        <Icon size={13} className="mt-0.5 shrink-0" />
+                        <div>
+                          <div className="text-xs font-medium">{label}</div>
+                          <div className="text-[10px] text-text-muted leading-tight mt-0.5">
+                            {unavailable ? 'Needs each period’s open, high and low' : desc}
+                          </div>
+                        </div>
+                      </button>
+                    )
+                  })}
                 </div>
               )}
             </div>
@@ -300,9 +321,9 @@ function TechnicalAnalysisTab({ asset }: { asset: NonNullable<ReturnType<typeof 
                 )}>
                 <SlidersHorizontal size={12} />
                 Indicators
-                {activeIndicators.size > 0 && (
+                {drawnIndicators.size > 0 && (
                   <span className="px-1.5 py-0.5 rounded-full bg-accent-blue/20 text-accent-blue text-[10px] font-bold">
-                    {activeIndicators.size}
+                    {drawnIndicators.size}
                   </span>
                 )}
                 <ChevronDown size={11} className={clsx('transition-transform', menuOpen && 'rotate-180')} />
@@ -315,7 +336,7 @@ function TechnicalAnalysisTab({ asset }: { asset: NonNullable<ReturnType<typeof 
                         {grp === 'overlay' ? 'Overlays' : 'Panels'}
                       </div>
                       <div className="flex flex-wrap gap-1.5">
-                        {EMBED_INDICATORS.filter((i) => i.group === grp).map(({ key, label }) => (
+                        {offeredIndicators.filter((i) => i.group === grp).map(({ key, label }) => (
                           <button key={key} onClick={() => toggleIndicator(key)}
                             className={clsx('px-2 py-0.5 rounded-sm border text-[11px] font-medium transition-colors',
                               activeIndicators.has(key)
@@ -338,8 +359,8 @@ function TechnicalAnalysisTab({ asset }: { asset: NonNullable<ReturnType<typeof 
             </div>
 
             {/* Active chips */}
-            {Array.from(activeIndicators).map((key) => {
-              const ind = EMBED_INDICATORS.find((i) => i.key === key)
+            {Array.from(drawnIndicators).map((key) => {
+              const ind = offeredIndicators.find((i) => i.key === key)
               if (!ind) return null
               return (
                 <span key={key} className={clsx('inline-flex items-center gap-1 pl-2 pr-1 py-0.5 rounded-sm border text-[11px] font-medium',
@@ -358,7 +379,7 @@ function TechnicalAnalysisTab({ asset }: { asset: NonNullable<ReturnType<typeof 
           <div className="grid grid-cols-1 xl:grid-cols-[1fr_280px] gap-3">
             <div className="rounded-xl border border-border overflow-hidden" style={{ height: 460 }}>
               {candles.length > 0 ? (
-                <TACandlestickChart candles={candles} activeIndicators={activeIndicators} chartType={chartType} />
+                <TACandlestickChart candles={candles} activeIndicators={drawnIndicators} chartType={drawableChartType(chartType, closeOnly)} />
               ) : (
                 <div className="flex items-center justify-center h-full gap-2 text-text-muted">
                   {isFetching
@@ -368,8 +389,17 @@ function TechnicalAnalysisTab({ asset }: { asset: NonNullable<ReturnType<typeof 
               )}
             </div>
             <div className="flex flex-col gap-3">
+              {closeOnly && closesReason && (
+                <ClosingPricesNotice
+                  reason={closesReason}
+                  size={candleGranularity(candles.map((c) => c.time))}
+                  source={ohlcvSourceLabel(data?.source, data?.venue)}
+                  candleError={candleError}
+                  panelsOff={EMBED_PANELS_OFF_FOR_CLOSES}
+                />
+              )}
               {summary && <EmbedSignalSummary summary={summary} />}
-              {candles.length >= 20 && <EmbedKeyLevels candles={candles} />}
+              {candles.length >= 20 && !closeOnly && <EmbedKeyLevels candles={candles} />}
             </div>
           </div>
         </div>

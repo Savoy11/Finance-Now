@@ -213,6 +213,13 @@ export const INDICATOR_RENDER: Record<string, RenderFn> = {
 // eye). Macro instruments — FX pairs and yield indices — have no meaningful
 // volume, so /macro filters these out and says so on the page. Showing them
 // there would render a flat or nonsense series, which is worse than omitting it.
+//
+// `needsRange` marks the ones that read a candle's open, high or low (2026-10-13,
+// T-423, D103). DefiLlama's closing prices carry one price per period, so the
+// crypto charts offer only those that read closes alone when they draw them.
+// Both flags are MEASURED, not traced: indicatorInputs.test.ts renders every
+// indicator with and without real ranges and volume, and fails when a flag and
+// the measurement disagree.
 export interface IndicatorMeta {
   key: string
   label: string
@@ -220,6 +227,8 @@ export interface IndicatorMeta {
   tip: string
   /** Reads candle volume; unusable on series without it (FX, yield indices). */
   needsVolume?: boolean
+  /** Reads a candle's open, high or low; unusable on a series of closing prices. */
+  needsRange?: boolean
 }
 
 export const ALL_INDICATORS = [
@@ -231,56 +240,56 @@ export const ALL_INDICATORS = [
   { key: 'wma20',    label: 'WMA 20',           group: 'overlay', tip: 'Weighted Moving Average (20). Linearly weights recent candles higher. More responsive than SMA, less "jumpy" than EMA. Use like EMA20 for trend direction.' },
   { key: 'hma20',    label: 'HMA 20',           group: 'overlay', tip: 'Hull Moving Average (20). Uses WMA of WMAs to nearly eliminate lag while staying smooth. Excellent for spotting trend changes early — direction of the HMA is the signal.' },
   { key: 'bb',       label: 'Bollinger Bands',  group: 'overlay', tip: 'Bollinger Bands (20, ±2σ). Upper/lower bands are 2 standard deviations from SMA20. Price touching the lower band = oversold; upper band = overbought. Bands squeezing = breakout imminent.' },
-  { key: 'vwap',     label: 'VWAP',             group: 'overlay', needsVolume: true, tip: 'Volume Weighted Average Price. Resets daily. The "fair value" anchor used by institutional traders. Price above VWAP = buyers in control; below = sellers. Best on intraday timeframes.' },
-  { key: 'keltner',  label: 'Keltner Channels', group: 'overlay', tip: 'Keltner Channels (EMA20 ± 2×ATR10). Volatility-based envelopes. Smoother than Bollinger Bands — less susceptible to short spikes. Useful for spotting breakouts when price exits the channel.' },
-  { key: 'donchian', label: 'Donchian (20)',    group: 'overlay', tip: 'Donchian Channels (20-period high/low). Upper band = highest high; lower = lowest low. Price breaking above the upper band is a new 20-period high — a classic breakout signal used by trend-followers.' },
-  { key: 'psar',     label: 'Parabolic SAR',    group: 'overlay', tip: 'Parabolic Stop and Reverse. Dots appear above price in a downtrend and below in an uptrend. When price crosses the dots, the trend may be reversing. Best used in trending markets — noisy in sideways chop.' },
+  { key: 'vwap',     label: 'VWAP',             group: 'overlay', needsRange: true, needsVolume: true, tip: 'Volume Weighted Average Price. Resets daily. The "fair value" anchor used by institutional traders. Price above VWAP = buyers in control; below = sellers. Best on intraday timeframes.' },
+  { key: 'keltner',  label: 'Keltner Channels', group: 'overlay', needsRange: true, tip: 'Keltner Channels (EMA20 ± 2×ATR10). Volatility-based envelopes. Smoother than Bollinger Bands — less susceptible to short spikes. Useful for spotting breakouts when price exits the channel.' },
+  { key: 'donchian', label: 'Donchian (20)',    group: 'overlay', needsRange: true, tip: 'Donchian Channels (20-period high/low). Upper band = highest high; lower = lowest low. Price breaking above the upper band is a new 20-period high — a classic breakout signal used by trend-followers.' },
+  { key: 'psar',     label: 'Parabolic SAR',    group: 'overlay', needsRange: true, tip: 'Parabolic Stop and Reverse. Dots appear above price in a downtrend and below in an uptrend. When price crosses the dots, the trend may be reversing. Best used in trending markets — noisy in sideways chop.' },
   { key: 'linreg',   label: 'Linear Reg (20)',  group: 'overlay', tip: 'Linear Regression line (20 periods). A best-fit line through recent closes. Shows the statistically "ideal" trend direction. Price deviating far from the line tends to revert back toward it.' },
   // Panels — Momentum
   { key: 'rsi',      label: 'RSI (14)',          group: 'panel', tip: 'Relative Strength Index (14). Oscillates 0–100. Below 30 = oversold (look for buy); above 70 = overbought (look for sell). Divergence between RSI and price is one of the strongest signals in TA.' },
   { key: 'macd',     label: 'MACD',              group: 'panel', tip: 'Moving Average Convergence/Divergence (12,26,9). The MACD line crossing above the signal line is bullish; crossing below is bearish. Histogram growing in the positive = accelerating momentum.' },
   { key: 'stochrsi', label: 'Stoch RSI',         group: 'panel', tip: 'Stochastic RSI (14,14,3,3). RSI applied to RSI — more sensitive than RSI alone. K line below 20 = deeply oversold; above 80 = deeply overbought. K crossing above D is a buy signal.' },
-  { key: 'williamsr',label: 'Williams %R',       group: 'panel', tip: 'Williams %R (14). Oscillates -100 to 0. Above -20 = overbought; below -80 = oversold. Similar to Stochastic but inverted. Use for identifying short-term turning points and confirming reversals.' },
-  { key: 'cci',      label: 'CCI (20)',          group: 'panel', tip: 'Commodity Channel Index (20). Measures how far price is from its statistical average. Above +100 = overbought / strong uptrend; below -100 = oversold / strong downtrend. Works well for spotting cyclical turns.' },
+  { key: 'williamsr',label: 'Williams %R',       group: 'panel', needsRange: true, tip: 'Williams %R (14). Oscillates -100 to 0. Above -20 = overbought; below -80 = oversold. Similar to Stochastic but inverted. Use for identifying short-term turning points and confirming reversals.' },
+  { key: 'cci',      label: 'CCI (20)',          group: 'panel', needsRange: true, tip: 'Commodity Channel Index (20). Measures how far price is from its statistical average. Above +100 = overbought / strong uptrend; below -100 = oversold / strong downtrend. Works well for spotting cyclical turns.' },
   { key: 'roc',      label: 'ROC (12)',          group: 'panel', tip: 'Rate of Change (12). The % change from 12 periods ago. Positive = upward momentum; negative = downward. Crossing zero is a trend signal. Useful for spotting divergence and momentum exhaustion.' },
   { key: 'mom',      label: 'Momentum (10)',     group: 'panel', tip: 'Momentum (10). Raw difference between current close and close 10 periods ago. Rising = accelerating; falling = decelerating. Simple but effective for confirming trend strength. Cross above zero = bullish.' },
   { key: 'cmo',      label: 'CMO (14)',          group: 'panel', tip: 'Chande Momentum Oscillator (14). Oscillates -100 to +100. Above +50 = strong bullish momentum; below -50 = strong bearish. Zero-line crossovers signal trend changes. Less whipsaw than RSI in trending markets.' },
-  { key: 'uo',       label: 'Ultimate Osc',      group: 'panel', tip: 'Ultimate Oscillator (7,14,28). Combines three timeframes into one oscillator to reduce false divergence signals. Above 70 = overbought; below 30 = oversold. Divergence + breakout from the overbought/oversold zone is the key setup.' },
+  { key: 'uo',       label: 'Ultimate Osc',      group: 'panel', needsRange: true, tip: 'Ultimate Oscillator (7,14,28). Combines three timeframes into one oscillator to reduce false divergence signals. Above 70 = overbought; below 30 = oversold. Divergence + breakout from the overbought/oversold zone is the key setup.' },
   // Panels — Trend
-  { key: 'adx',      label: 'ADX (14)',          group: 'panel', tip: 'Average Directional Index (14). ADX measures trend strength (not direction) — above 25 = trending, above 40 = strongly trending. +DI above -DI = uptrend; -DI above +DI = downtrend. Best for filtering out choppy markets.' },
-  { key: 'aroon',    label: 'Aroon (25)',        group: 'panel', tip: 'Aroon (25). Measures how recently the highest high and lowest low occurred. Oscillator above +50 = uptrend strengthening; below -50 = downtrend strengthening. Aroon Up crossing above Aroon Down is a bullish signal.' },
+  { key: 'adx',      label: 'ADX (14)',          group: 'panel', needsRange: true, tip: 'Average Directional Index (14). ADX measures trend strength (not direction) — above 25 = trending, above 40 = strongly trending. +DI above -DI = uptrend; -DI above +DI = downtrend. Best for filtering out choppy markets.' },
+  { key: 'aroon',    label: 'Aroon (25)',        group: 'panel', needsRange: true, tip: 'Aroon (25). Measures how recently the highest high and lowest low occurred. Oscillator above +50 = uptrend strengthening; below -50 = downtrend strengthening. Aroon Up crossing above Aroon Down is a bullish signal.' },
   { key: 'trix',     label: 'TRIX (15)',         group: 'panel', tip: 'TRIX (15). 1-period % change of a triple-smoothed EMA. Filters out market noise effectively. Signal line crossovers and zero-line crossovers are the main signals. Especially good for medium-term trends.' },
   { key: 'kst',      label: 'KST',              group: 'panel', tip: 'Know Sure Thing. A weighted sum of four ROCs at different lengths, smoothed. Designed to clearly show cyclical momentum at multiple timeframes simultaneously. KST crossing its signal line is the key trade trigger.' },
   { key: 'dpo',      label: 'DPO (20)',          group: 'panel', tip: 'Detrended Price Oscillator (20). Removes the long-term trend so you can see price cycles clearly. Oscillates around zero — peaks/troughs of the DPO mark peaks/troughs of the price cycle. Not for trend-following.' },
   // Panels — Volume / Money Flow
   { key: 'volume',   label: 'Volume',            group: 'panel', needsVolume: true, tip: 'Raw trading volume per candle (USD millions). High volume on breakouts = conviction; low volume = suspect. A price move on expanding volume is more reliable than one on declining volume.' },
   { key: 'obv',      label: 'OBV',              group: 'panel', needsVolume: true, tip: 'On-Balance Volume. Adds volume on up days, subtracts on down days. OBV rising ahead of price = smart money accumulating (bullish). OBV diverging from price often leads the next price move.' },
-  { key: 'mfi',      label: 'MFI (14)',          group: 'panel', needsVolume: true, tip: 'Money Flow Index (14). Volume-weighted RSI — considers both price and volume. Below 20 = oversold with selling pressure drying up (bullish); above 80 = overbought. Divergence with price is a high-conviction signal.' },
-  { key: 'cmf',      label: 'Chaikin MF (20)',   group: 'panel', needsVolume: true, tip: 'Chaikin Money Flow (20). Measures buying vs selling pressure by comparing close position within the candle\'s range, weighted by volume. Above 0.1 = buying pressure; below -0.1 = selling pressure. Zero-line crossovers signal trend shifts.' },
-  { key: 'accDist',  label: 'A/D Line',         group: 'panel', needsVolume: true, tip: 'Accumulation/Distribution Line. Cumulative volume indicator based on close position within each candle\'s range. Rising A/D while price falls = accumulation (bullish divergence). Falling A/D while price rises = distribution (bearish).' },
+  { key: 'mfi',      label: 'MFI (14)',          group: 'panel', needsRange: true, needsVolume: true, tip: 'Money Flow Index (14). Volume-weighted RSI — considers both price and volume. Below 20 = oversold with selling pressure drying up (bullish); above 80 = overbought. Divergence with price is a high-conviction signal.' },
+  { key: 'cmf',      label: 'Chaikin MF (20)',   group: 'panel', needsRange: true, needsVolume: true, tip: 'Chaikin Money Flow (20). Measures buying vs selling pressure by comparing close position within the candle\'s range, weighted by volume. Above 0.1 = buying pressure; below -0.1 = selling pressure. Zero-line crossovers signal trend shifts.' },
+  { key: 'accDist',  label: 'A/D Line',         group: 'panel', needsRange: true, needsVolume: true, tip: 'Accumulation/Distribution Line. Cumulative volume indicator based on close position within each candle\'s range. Rising A/D while price falls = accumulation (bullish divergence). Falling A/D while price rises = distribution (bearish).' },
   { key: 'volosc',   label: 'Volume Osc',       group: 'panel', needsVolume: true, tip: 'Volume Oscillator (fast 5, slow 10). Difference between a fast and slow volume moving average. Positive = volume expanding; negative = contracting. Rising volume oscillator during a price move confirms the trend.' },
   { key: 'fi',       label: 'Force Index (13)',  group: 'panel', needsVolume: true, tip: 'Force Index (13). Combines price change and volume into a single momentum measure. Strong positive readings = powerful buying force; strong negative = powerful selling. Zero crossovers and divergence are the key signals.' },
-  { key: 'eom',      label: 'Ease of Move',     group: 'panel', needsVolume: true, tip: 'Ease of Movement. Measures how efficiently price moves relative to volume. High positive value = price rising easily on low volume (bullish); high negative = falling easily. Hovering near zero = price struggling to move.' },
-  { key: 'elderray', label: 'Elder Ray (13)',    group: 'panel', tip: 'Elder Ray Index (EMA 13). Bull Power = high minus EMA (positive = buyers driving price above average). Bear Power = low minus EMA (negative = sellers pushing below). Buy when Bear Power is negative but rising; sell when Bull Power is positive but falling.' },
+  { key: 'eom',      label: 'Ease of Move',     group: 'panel', needsRange: true, needsVolume: true, tip: 'Ease of Movement. Measures how efficiently price moves relative to volume. High positive value = price rising easily on low volume (bullish); high negative = falling easily. Hovering near zero = price struggling to move.' },
+  { key: 'elderray', label: 'Elder Ray (13)',    group: 'panel', needsRange: true, tip: 'Elder Ray Index (EMA 13). Bull Power = high minus EMA (positive = buyers driving price above average). Bear Power = low minus EMA (negative = sellers pushing below). Buy when Bear Power is negative but rising; sell when Bull Power is positive but falling.' },
   // Panels — Volatility
-  { key: 'atr',      label: 'ATR (14)',          group: 'panel', tip: 'Average True Range (14). Measures average volatility (typical daily price swing). Not directional — use for position sizing and stop placement. High ATR = high volatility; low ATR = consolidation, potential breakout building.' },
-  { key: 'chop',     label: 'Choppiness',       group: 'panel', tip: 'Choppiness Index (14). Measures whether the market is trending or ranging. Above 61.8 = choppy/sideways (avoid trend strategies); below 38.2 = strongly trending (use trend-following strategies). Great for filtering other signals.' },
+  { key: 'atr',      label: 'ATR (14)',          group: 'panel', needsRange: true, tip: 'Average True Range (14). Measures average volatility (typical daily price swing). Not directional — use for position sizing and stop placement. High ATR = high volatility; low ATR = consolidation, potential breakout building.' },
+  { key: 'chop',     label: 'Choppiness',       group: 'panel', needsRange: true, tip: 'Choppiness Index (14). Measures whether the market is trending or ranging. Above 61.8 = choppy/sideways (avoid trend strategies); below 38.2 = strongly trending (use trend-following strategies). Great for filtering other signals.' },
   { key: 'bbpctb',   label: 'BB %B',            group: 'panel', tip: 'Bollinger %B. Shows where price is within the Bollinger Bands as a percentage. 1.0 = at upper band; 0 = at lower band; 0.5 = at midline. Below 0 or above 1 = price outside the bands — extreme reading, potential reversal.' },
-  { key: 'massidx',  label: 'Mass Index',       group: 'panel', tip: 'Mass Index (25). Uses the high-low range to identify reversals — regardless of direction. When it rises above 27 then falls below 26.5 ("reversal bulge"), a trend reversal is likely. Direction confirmed by a separate trend indicator.' },
+  { key: 'massidx',  label: 'Mass Index',       group: 'panel', needsRange: true, tip: 'Mass Index (25). Uses the high-low range to identify reversals — regardless of direction. When it rises above 27 then falls below 26.5 ("reversal bulge"), a trend reversal is likely. Direction confirmed by a separate trend indicator.' },
   { key: 'stddev',   label: 'Std Deviation',    group: 'panel', tip: 'Standard Deviation (20). Measures the statistical dispersion of closing prices around their mean. High StdDev = high volatility / trending; low StdDev = compression. Low readings often precede explosive moves.' },
   // Panels — Momentum (additional)
-  { key: 'stoch',    label: 'Stochastic',       group: 'panel', tip: 'Classic Stochastic Oscillator (14,3,3). %K crossing above %D below 20 = buy; crossing below above 80 = sell. The original oscillator developed by George Lane — more stable than Stoch RSI.' },
+  { key: 'stoch',    label: 'Stochastic',       group: 'panel', needsRange: true, tip: 'Classic Stochastic Oscillator (14,3,3). %K crossing above %D below 20 = buy; crossing below above 80 = sell. The original oscillator developed by George Lane — more stable than Stoch RSI.' },
   { key: 'tsi',      label: 'TSI (25,13)',       group: 'panel', tip: 'True Strength Index. Double-smoothed price momentum oscillator. Above zero = bullish; below zero = bearish. Crossing zero or the signal line are the key signals. Less whipsaw than RSI thanks to double smoothing.' },
   { key: 'ppo',      label: 'PPO (12,26,9)',     group: 'panel', tip: 'Percentage Price Oscillator. MACD expressed as a percentage of the slow EMA, making it comparable across different price levels. Use exactly like MACD: signal line crossovers and histogram direction.' },
-  { key: 'fisher',   label: 'Fisher Transform', group: 'panel', tip: 'Fisher Transform (9). Converts prices into a near-Gaussian distribution. Sharp reversals at extreme peaks/troughs signal turning points. Zero-line crossovers signal trend changes. Particularly effective for identifying cycle tops and bottoms.' },
+  { key: 'fisher',   label: 'Fisher Transform', group: 'panel', needsRange: true, tip: 'Fisher Transform (9). Converts prices into a near-Gaussian distribution. Sharp reversals at extreme peaks/troughs signal turning points. Zero-line crossovers signal trend changes. Particularly effective for identifying cycle tops and bottoms.' },
   { key: 'crsi',     label: 'Connors RSI',      group: 'panel', tip: 'Connors RSI (3,2,100). Composite of 3-period RSI, RSI of the current price streak, and a percentile rank. Below 10 = strong buy; above 90 = strong sell. More precise than standard RSI for short-term reversals.' },
   // Panels — Trend (additional)
-  { key: 'vortex',   label: 'Vortex (14)',      group: 'panel', tip: 'Vortex Indicator (14). VI+ measures upward movement; VI− measures downward. VI+ crossing above VI− = bullish; VI− crossing above VI+ = bearish. Both lines rising above 1.0 confirms a strong trend.' },
+  { key: 'vortex',   label: 'Vortex (14)',      group: 'panel', needsRange: true, tip: 'Vortex Indicator (14). VI+ measures upward movement; VI− measures downward. VI+ crossing above VI− = bullish; VI− crossing above VI+ = bearish. Both lines rising above 1.0 confirms a strong trend.' },
   { key: 'coppock',  label: 'Coppock Curve',    group: 'panel', tip: 'Coppock Curve. A long-term momentum oscillator originally designed for monthly charts. Crossing above zero from below = major buy signal. Rare but high-conviction — especially reliable after prolonged downtrends.' },
   // Panels — Volume (additional)
-  { key: 'klinger',  label: 'Klinger Vol Osc',  group: 'panel', needsVolume: true, tip: 'Klinger Volume Oscillator (34,55). Combines price direction, magnitude, and volume. Designed to detect long-term money flow while staying sensitive to short-term fluctuations. Signal line crossovers are the key signals.' },
-  { key: 'bop',      label: 'Balance of Power', group: 'panel', tip: 'Balance of Power (smoothed 14). Measures the strength of buyers vs sellers by comparing where the candle closes within its range. Above zero = buyers winning; below zero = sellers winning. Divergence with price is a powerful signal.' },
-  { key: 'chaikin',  label: 'Chaikin Osc',      group: 'panel', needsVolume: true, tip: 'Chaikin Oscillator (3,10). An EMA of the Accumulation/Distribution line — measures momentum of money flow. Crossing above zero = buying pressure accelerating (bullish); crossing below = selling pressure building (bearish).' },
+  { key: 'klinger',  label: 'Klinger Vol Osc',  group: 'panel', needsRange: true, needsVolume: true, tip: 'Klinger Volume Oscillator (34,55). Combines price direction, magnitude, and volume. Designed to detect long-term money flow while staying sensitive to short-term fluctuations. Signal line crossovers are the key signals.' },
+  { key: 'bop',      label: 'Balance of Power', group: 'panel', needsRange: true, tip: 'Balance of Power (smoothed 14). Measures the strength of buyers vs sellers by comparing where the candle closes within its range. Above zero = buyers winning; below zero = sellers winning. Divergence with price is a powerful signal.' },
+  { key: 'chaikin',  label: 'Chaikin Osc',      group: 'panel', needsRange: true, needsVolume: true, tip: 'Chaikin Oscillator (3,10). An EMA of the Accumulation/Distribution line — measures momentum of money flow. Crossing above zero = buying pressure accelerating (bullish); crossing below = selling pressure building (bearish).' },
   { key: 'disparity',label: 'Disparity Index',  group: 'panel', tip: 'Disparity Index (14). Percentage deviation of price from its 14-period EMA. High positive values = overbought/extended; high negative = oversold/stretched. Useful for mean-reversion setups — price tends to snap back.' },
   // Overlays — additional MAs
   { key: 'ema9',     label: 'EMA 9',            group: 'overlay', tip: 'Exponential Moving Average (9). Ultra-short-term trend — commonly used for intraday and swing trade entries. Price pulling back to EMA9 and bouncing is a classic continuation entry. Very reactive to price changes.' },
@@ -293,7 +302,7 @@ export const ALL_INDICATORS = [
   { key: 'tema',     label: 'TEMA 20',          group: 'overlay', tip: 'Triple Exponential Moving Average (20). Even lower lag than DEMA. Extremely responsive — good for catching early trend changes. Can produce false signals in choppy markets; best combined with ADX to confirm trending conditions.' },
   { key: 'kama',     label: 'KAMA (10)',         group: 'overlay', tip: 'Kaufman Adaptive MA (10). Automatically adjusts its speed based on market noise — moves quickly in trending markets, slowly in ranging ones. A flattening KAMA signals chop; a steep KAMA signals strong trend.' },
   { key: 'mcginley', label: 'McGinley Dyn',     group: 'overlay', tip: 'McGinley Dynamic (14). A self-adjusting MA that corrects for slow/fast EMA movement by adjusting its speed based on the price ratio. More accurate than EMA in both fast and slow markets — stays closer to actual price.' },
-  { key: 'ichimoku', label: 'Ichimoku Cloud',   group: 'overlay', tip: 'Ichimoku Cloud (9,26,52). An all-in-one indicator: Tenkan (conversion), Kijun (base), Senkou A/B (cloud), Chikou (lagging). Price above the cloud = bullish; below = bearish. Cloud thickness shows support/resistance strength.' },
+  { key: 'ichimoku', label: 'Ichimoku Cloud',   group: 'overlay', needsRange: true, tip: 'Ichimoku Cloud (9,26,52). An all-in-one indicator: Tenkan (conversion), Kijun (base), Senkou A/B (cloud), Chikou (lagging). Price above the cloud = bullish; below = bearish. Cloud thickness shows support/resistance strength.' },
 ] as const satisfies readonly IndicatorMeta[]
 
 /**
@@ -304,18 +313,23 @@ export const ALL_INDICATORS = [
 export type IndicatorKey = typeof ALL_INDICATORS[number]['key']
 
 /**
- * Indicators appropriate for a series, given whether it carries real volume.
- * `hasVolume: false` drops the volume-derived set — the honest subset, not a
+ * Indicators appropriate for a series, given whether it carries real volume and
+ * real candle ranges. `hasVolume: false` drops the volume-derived set and
+ * `hasRange: false` the open/high/low-derived one — the honest subset, not a
  * degraded one.
  */
-export function indicatorsFor(hasVolume: boolean): readonly IndicatorMeta[] {
+export function indicatorsFor(hasVolume: boolean, hasRange = true): readonly IndicatorMeta[] {
   // Widened view: `as const` above narrows each entry to its own literal shape,
   // so entries without `needsVolume` genuinely lack the property. Reading it
   // through IndicatorMeta is what makes the optional field addressable.
   const all: readonly IndicatorMeta[] = ALL_INDICATORS
-  return hasVolume ? all : all.filter((i) => !i.needsVolume)
+  return all.filter((i) => (hasVolume || !i.needsVolume) && (hasRange || !i.needsRange))
 }
 
 /** The volume-derived indicators, so a page can name what it is leaving out. */
 export const VOLUME_INDICATORS: readonly IndicatorMeta[] =
   (ALL_INDICATORS as readonly IndicatorMeta[]).filter((i) => i.needsVolume)
+
+/** Everything a series of closing prices cannot support: needs a range, volume or both. */
+export const NOT_FROM_CLOSES: readonly IndicatorMeta[] =
+  (ALL_INDICATORS as readonly IndicatorMeta[]).filter((i) => i.needsRange || i.needsVolume)
