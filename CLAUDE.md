@@ -792,7 +792,7 @@ site nobody has reviewed. Full design: `docs/architecture/source-terms.md`.
 > The fix for any of the key-gated rows is a free API key on the Integrations page — **not
 > a substitute scraper.**
 
-> ⚠ **11 of 58 registry entries are `seeded`, not `verified` — check `review` before
+> ⚠ **24 of 71 registry entries are `seeded`, not `verified` — check `review` before
 > trusting one.** The registry was authored in an environment whose network policy
 > blocked every publisher and provider host at the gateway, so not one terms document
 > could be opened. The entries are honest starting positions drawn from each
@@ -820,10 +820,23 @@ site nobody has reviewed. Full design: `docs/architecture/source-terms.md`.
 > (`docs/audits/terms-review-seeded-2026-09-26.md`). D46 held the sign-off. D54 then marked
 > seventeen of them verified: the eleven clean readings and the six ruled on first (OKX,
 > Nasdaq Trader, KuCoin, Alpha Vantage, Messari, Santiment). D55 added the four ruled on
-> later that day (CoinMarketCap, Jito, Rocket Pool, Pendle). The 11 still `seeded` are
+> later that day (CoinMarketCap, Jito, Rocket Pool, Pendle). The 11 left `seeded` then were
 > CryptoPanic (its API terms would not open), three that could not be read (Binance.com,
 > HTX, XT.com), four with no terms document at all (DefiLlama, Blockchain.com, Stride,
 > Beefy), Yearn, which is no longer fetched, the **Federal Reserve Board**, added 2026-10-03 for the Market Calendar's FOMC dates: read that day, not yet ratified, and **Marketaux**, read 2026-10-07 for company news on stock pages (T-430): personal, non-commercial use only until Marketaux approves otherwise in writing.
+>
+> **Thirteen more on 2026-10-13 (T-432), all `seeded`:** the wallet routes' public RPC and
+> explorer hosts (Blockstream, Solana, Tronscan, Ripple's XRPL server, dRPC, Cloudflare's
+> legacy gateway, 1RPC, polygon-rpc.com, BNB Chain, Avalanche, Arbitrum, Base, Optimism).
+> They had never been checked: the `wallet` entry in `dataSources.ts` named no host, and
+> `npm run data-sources -- --verify` read only top-level route folders, so the nested
+> `wallet/*` routes were invisible to both guards. The check now walks every folder
+> (`scripts/lib/routeHosts.mjs`, `dataSourcesDrift.test.ts`). Each document was read on the
+> owner's machine. Most of the operators offer their public endpoint for development and
+> say to run a node or pay a provider in production, which is personal use before launch
+> (D96) and a launch step only if Wallets returns. Three things need the owner: dRPC's terms
+> require an account its keyless endpoint does not (publicnode's question, D25); Cloudflare
+> is deprecating `cloudflare-eth.com`; and Tronscan's and Arbitrum's terms answered 403.
 >
 > A seeded `approved`/`conditional` means *nobody has objected yet*, not *cleared*.
 > Seeded entries still serve data — breaking the app over a documentation gap is the

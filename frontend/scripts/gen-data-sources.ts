@@ -11,7 +11,7 @@
  * would. Run it whenever a data source is added, removed, or changes status.
  */
 import fs from 'node:fs'
-import { stripComments } from './lib/stripComments.mjs'
+import { driftItems, readRoutes } from './lib/routeHosts.mjs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { DATA_SOURCES, SOURCE_STATUS_META, type DataSourceEntry } from '../src/lib/data/dataSources'
@@ -102,33 +102,13 @@ function renderMarkdown(): string {
 }
 
 /**
- * Extract hosts hardcoded in each route's fetch() URLs.
- *
- * COMMENTS ARE STRIPPED FIRST (2026-09-26). A tombstone recording a removed endpoint is
- * not a fetch: when the Yearn rung went, its comment still named api.yearn.finance and
- * this reported a route fetching an unregistered host — a defect that did not exist. The
- * stripper is string-aware because `https://x` contains `//`, so the obvious regex eats
- * the rest of any line carrying a URL (scripts/lib/stripComments.mjs, unit-tested).
- */
-function hostsInRoute(routeId: string): Set<string> {
-  const f = path.join(liveDataDir, routeId, 'route.ts')
-  const hosts = new Set<string>()
-  if (!fs.existsSync(f)) return hosts
-  const src = stripComments(fs.readFileSync(f, 'utf8'))
-  for (const m of src.matchAll(/https?:\/\/[^'"`\s)]+/g)) {
-    try {
-      const host = new URL(m[0]).host
-      // Skip template-literal hosts (e.g. `https://${host}/…` in custom-feed code).
-      if (host.includes('$') || host.includes('{')) continue
-      hosts.add(host)
-    } catch { /* not a real url literal */ }
-  }
-  return hosts
-}
-
-/**
  * Cross-checks the registry against the route code. Returns the number of drift
  * items so the caller can set a non-zero exit code.
+ *
+ * The walk, the host scan and the owner lookup live in scripts/lib/routeHosts.mjs, where
+ * they are unit-tested. Comments are stripped before scanning (2026-09-26): a tombstone
+ * recording a removed endpoint is not a fetch. Nested route folders are read too
+ * (2026-10-13, T-432): the five wallet routes sit one folder down and were never checked.
  *
  * This used to print its findings and exit 0, which made it advisory in the one
  * situation that matters: a route fetching a host nobody registered. The
@@ -140,45 +120,13 @@ function hostsInRoute(routeId: string): Set<string> {
  */
 function verify(): number {
   console.log('\n── Registry ↔ code drift check ──')
-  // Map every owned route id (own id + covers[] + ids named in `route`) to its entry.
-  const ownerOf = new Map<string, DataSourceEntry>()
-  // Precedence: own id wins over covers, which wins over a route-string mention.
-  for (const e of DATA_SOURCES) ownerOf.set(e.id, e)
-  for (const e of DATA_SOURCES) for (const c of e.covers ?? []) if (!ownerOf.has(c)) ownerOf.set(c, e)
-  for (const e of DATA_SOURCES) {
-    for (const m of (e.route ?? '').matchAll(/[a-z0-9-]+/g)) {
-      const id = m[0]
-      if ((id.includes('-') || id.length > 3) && !ownerOf.has(id)) ownerOf.set(id, e)
-    }
-  }
-  const routeIds = fs.readdirSync(liveDataDir).filter(d => fs.existsSync(path.join(liveDataDir, d, 'route.ts')))
-  let issues = 0
-  for (const id of routeIds) {
-    const codeHosts = hostsInRoute(id)
-    const entry = ownerOf.get(id)
-    if (!entry) {
-      if (codeHosts.size) { console.log(`  ⚠ route "${id}" has no registry entry (hosts: ${[...codeHosts].join(', ')})`); issues++ }
-      continue
-    }
-    // An entry with a summary provider (a named provider with no host, e.g.
-    // "Cosmostation / Subscan / chain LCDs") deliberately folds in extra hosts —
-    // don't flag those. Same for the integrations roster routes.
-    const hasSummaryProvider = entry.providers.some(p => !p.host)
-    if (hasSummaryProvider || entry.id === 'config' || entry.id === 'news') continue
-    const reg = new Set(entry.providers.map(p => p.host).filter(Boolean) as string[])
-    const missing = [...codeHosts].filter(h => !reg.has(h) && !isBundled(h, reg))
-    if (missing.length) { console.log(`  ⚠ "${id}" fetches ${missing.join(', ')} not named in "${entry.id}"`); issues++ }
-  }
-  console.log(issues ? `\n${issues} drift item(s) — reconcile registry with code.` : '  ✓ no drift: every route host is represented in the registry.')
-  return issues
-}
-
-/** Registry entries often summarise several sibling hosts under one label
- * (e.g. "Cosmostation / Subscan / chain LCDs"). Treat a host as covered if the
- * registry lists any host sharing its second-level domain. */
-function isBundled(host: string, reg: Set<string>): boolean {
-  const sld = host.split('.').slice(-2).join('.')
-  return [...reg].some(h => h.endsWith(sld))
+  const routes = readRoutes(liveDataDir)
+  const items = driftItems(DATA_SOURCES, routes)
+  for (const item of items) console.log(`  ⚠ ${item}`)
+  console.log(items.length
+    ? `\n${items.length} drift item(s) — reconcile registry with code.`
+    : `  ✓ no drift: every host in ${routes.length} route files is represented in the registry.`)
+  return items.length
 }
 
 const md = renderMarkdown()

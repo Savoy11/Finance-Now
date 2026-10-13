@@ -1900,6 +1900,208 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     review: 'verified',
     confidence: 'medium',
   },
+
+  // ── Wallet balance endpoints (T-432, 2026-10-13) ───────────────────────────
+  //
+  // The five /live-data/wallet/* routes read balances from public RPCs and explorers.
+  // Until T-432 their dataSources.ts entry named no host, and the drift check did not
+  // open their folder, so none of these had ever been checked against this file.
+  // publicnode.com, the first rung on every EVM chain, has its own entry above (D25).
+  //
+  // Each operator's terms and public-endpoint page were READ on the owner's machine on
+  // 2026-10-13 (residential egress, not a proxy). Every entry stays `seeded` until the
+  // owner ratifies it, as the T-005 readings did. Where a document could not be opened,
+  // or none exists, the entry says so: "couldn't read it" is not permission.
+  //
+  // The pattern across them: an operator offers its public endpoint for development and
+  // light use, and its own page says to run a node or pay a provider for production.
+  // Before launch that is personal use (D96). It becomes a launch step only if the
+  // Wallets page returns: it has been hidden since 2026-08-22, and it is these routes'
+  // only caller.
+  {
+    domain: 'blockstream.info',
+    name: 'Blockstream Esplora (blockstream.info)',
+    verdict: 'conditional',
+    termsUrl: 'https://blockstream.com/terms/',
+    finding:
+      'Blockstream’s Terms of Use cover "any other websites of Blockstream" and "the services and resources available or enabled via the website", which takes in the keyless Esplora API at blockstream.info/api (documented openly in github.com/Blockstream/esplora, API.md). Read 2026-10-13: no clause speaks to the API’s rate, volume or commercial use, and the User Conduct clause bars only a purpose "prohibited by the Agreement or by applicable law". No non-commercial or automated-access restriction was found.',
+    conditions: ['One address lookup per user request: no polling, no bulk crawling', 'Keyless public endpoint only'],
+    reviewedAt: '2026-10-13',
+    review: 'seeded',
+    confidence: 'medium',
+  },
+  {
+    domain: 'api.mainnet-beta.solana.com',
+    name: 'Solana public RPC (mainnet-beta)',
+    verdict: 'conditional',
+    termsUrl: 'https://solana.com/tos',
+    finding:
+      'Solana’s clusters page (solana.com/docs/references/clusters) says "The Solana Labs organization operates a public RPC endpoint for each Cluster", that these "are subject to rate limits, but are available for users and developers", and "For production infrastructure, use the RPC provider guide". The Solana Foundation’s EULA covers the Foundation’s services "including the www.solana.com website", grants "a personal, limited, revocable, non-transferable license to access and use the Service solely for your own use", and says the Service "may not be used in connection with any commercial endeavors except those that are specifically endorsed or approved by us". It does not say whether it reaches an endpoint Solana Labs operates. Both read 2026-10-13.',
+    conditions: [
+      'Personal use before launch (D96)',
+      'Launch step: a production RPC provider, as Solana’s own page advises, unless the EULA is read as not reaching this endpoint',
+    ],
+    reviewedAt: '2026-10-13',
+    review: 'seeded',
+    confidence: 'medium',
+  },
+  {
+    // NOT READ: tronscan.org and docs.tronscan.org answered 403 to the owner's machine.
+    domain: 'tronscanapi.com',
+    name: 'Tronscan API (TRON explorer)',
+    verdict: 'conditional',
+    termsUrl: 'https://tronscan.org/',
+    finding:
+      'Tronscan’s account endpoint (apilist.tronscanapi.com/api/account) answers without a key. Its terms could not be read: tronscan.org and docs.tronscan.org both answered HTTP 403 to the owner’s machine on 2026-10-13. What the endpoint itself states, seen the same day: a refusal reading "request rate exceeded the allowed_rps(3), and the query server is suspended for 32 s".',
+    conditions: ['Under three requests a second, the limit the endpoint states', 'UNREAD: open the terms in a browser before launch'],
+    reviewedAt: '2026-10-13',
+    review: 'seeded',
+    confidence: 'low',
+  },
+  {
+    domain: 's1.ripple.com',
+    name: 'Ripple public XRP Ledger server (s1)',
+    verdict: 'conditional',
+    termsUrl: 'https://xrpl.org/docs/tutorials/public-servers',
+    finding:
+      'xrpl.org lists s1.ripple.com among its "Non-Commercial" public servers, with Ripple’s footnote: "Ripple’s public servers are not for sustained or business use, and they may become unavailable at any time. For regular use, you should run your own xrpld server or contract someone you trust to do so." The same page lists commercial operators. Read 2026-10-13; no separate terms document was found.',
+    conditions: [
+      'Personal use before launch (D96): "not for sustained or business use"',
+      'Launch step: run an xrpld server or contract an operator, as the page says',
+    ],
+    reviewedAt: '2026-10-13',
+    review: 'seeded',
+    confidence: 'medium',
+  },
+  {
+    // Same class as publicnode (D25) and the three T-407 entries: the document does not
+    // plainly permit what the app does, and which reading holds is the owner's call.
+    domain: 'drpc.org',
+    name: 'dRPC (public Ethereum endpoint)',
+    verdict: 'conditional',
+    termsUrl: 'https://drpc.org/terms-of-use',
+    finding:
+      'dRPC advertises keyless public endpoints (eth.drpc.org, listed at drpc.org/chainlist/ethereum-mainnet-rpc), and Polygon’s own docs name polygon.drpc.org as Polygon’s mainnet RPC. Its Terms of Use, read 2026-10-13, grant the Client "a non-transferable, non-exclusive, non-sublicensable limited term worldwide right and license to access and use the Services", and also say "Account registration is required to use the Services". Read literally, the keyless endpoint sits outside that grant; read narrowly, the account clause governs the paid platform.',
+    conditions: [
+      'UNRESOLVED: whether "Account registration is required to use the Services" reaches the advertised keyless endpoint. An owner judgement, as D25 was for publicnode',
+      'Second rung on Ethereum only; read-only calls',
+    ],
+    reviewedAt: '2026-10-13',
+    review: 'seeded',
+    confidence: 'low',
+  },
+  {
+    // DEPRECATED by its operator; still answering on 2026-10-13.
+    domain: 'cloudflare-eth.com',
+    name: 'Cloudflare Ethereum Gateway (legacy public endpoint)',
+    verdict: 'conditional',
+    termsUrl: 'https://developers.cloudflare.com/web3/reference/migration-guide/',
+    finding:
+      'Cloudflare "is deprecating legacy hostnames that point to our public gateway endpoints at cloudflare-eth.com" (migration guide, last updated 2026-05-05). Its current Ethereum Gateway needs a Cloudflare account and a gateway of your own, with usage-based billing past the requests a plan includes. No document read on 2026-10-13 grants keyless use of the legacy endpoint. It still answered eth_chainId from the owner’s machine that day.',
+    conditions: ['DEPRECATED: third rung on Ethereum, behind publicnode and dRPC. Dropping it, or replacing it with an account gateway, is the owner’s call'],
+    reviewedAt: '2026-10-13',
+    review: 'seeded',
+    confidence: 'low',
+  },
+  {
+    // NO DOCUMENT: 1rpc.io links only a privacy policy, /terms-of-service is a 404, and
+    // docs.1rpc.io carries none (2026-10-13).
+    domain: '1rpc.io',
+    name: 'Automata 1RPC',
+    verdict: 'conditional',
+    termsUrl: 'https://www.1rpc.io/',
+    finding:
+      'Automata’s 1RPC is a free, keyless relay in front of other providers’ nodes ("1RPC will always be free"), and Polygon’s docs list https://1rpc.io/matic among Polygon’s public RPCs. No terms document exists to read: the site links only a privacy policy, www.1rpc.io/terms-of-service is a 404, and docs.1rpc.io carries none (all checked 2026-10-13).',
+    conditions: ['Fair use: one balance read per user request', 'Second rung on Polygon only'],
+    reviewedAt: '2026-10-13',
+    review: 'seeded',
+    confidence: 'medium',
+  },
+  {
+    // NO DOCUMENT FOUND that governs this host, and its operator is not stated anywhere read.
+    domain: 'polygon-rpc.com',
+    name: 'polygon-rpc.com (Polygon public RPC, no longer listed)',
+    verdict: 'conditional',
+    termsUrl: 'https://docs.polygon.technology/pos/reference/rpc-endpoints',
+    finding:
+      'Polygon’s RPC page, read 2026-10-13, no longer lists polygon-rpc.com: it names https://polygon.drpc.org as the mainnet endpoint, and lists publicnode and 1rpc.io/matic among the public ones. Polygon Labs’ Terms of Use cover software it "operates or hosts" and grant "a personal, limited, revocable" licence, but nothing read says who operates polygon-rpc.com. From the owner’s machine on 2026-10-13 it failed the TLS handshake (ERR_SSL_WRONG_VERSION_NUMBER); the wallet route records a 403 "tenant disabled" from 2026-09. One egress only, so not evidence the host is gone.',
+    conditions: ['Third rung on Polygon only', 'UNRESOLVED: no document found that governs this host, and its own network’s docs no longer list it'],
+    reviewedAt: '2026-10-13',
+    review: 'seeded',
+    confidence: 'low',
+  },
+  {
+    // BNB Chain's public node, NOT the Binance exchange T-423 removed (binance.com and
+    // binance.us are their own entries above).
+    domain: 'bsc-dataseed.binance.org',
+    name: 'BNB Smart Chain public RPC (bsc-dataseed)',
+    verdict: 'conditional',
+    termsUrl: 'https://docs.bnbchain.org/bnb-smart-chain/developers/json_rpc/json-rpc-endpoint/',
+    finding:
+      'BNB Chain’s RPC page, read 2026-10-13, says "The rate limit of BSC endpoint on Testnet and Mainnet is 10K/5min" and lists its mainnet endpoints under bnbchain.org (bsc-dataseed.bnbchain.org first); the binance.org hostname this app calls is not among them. bnbchain.org/en/terms redirects to a Disclaimer covering the Website only, which bars automated tools used "in a manner that imposes unreasonable load". No document governs the RPC endpoints. From the owner’s machine on 2026-10-13 this host failed the TLS handshake (ERR_SSL_WRONG_VERSION_NUMBER); one egress only.',
+    conditions: ['Under the documented 10,000 requests per five minutes', 'Second rung on BNB Chain only'],
+    reviewedAt: '2026-10-13',
+    review: 'seeded',
+    confidence: 'low',
+  },
+  {
+    // NO DOCUMENT FOUND for this endpoint.
+    domain: 'api.avax.network',
+    name: 'Avalanche public API (C-Chain RPC)',
+    verdict: 'conditional',
+    termsUrl: 'https://www.avalanche.com/legal/terms-of-use',
+    finding:
+      'The Terms of Use at avax.network/terms-of-use (now avalanche.com/legal/terms-of-use) govern "the https://wallet.avax.network/ website and related features and services" and license that Site "solely for your personal, non-commercial use". Nothing read on 2026-10-13 governs the public API at api.avax.network; the docs’ RPC-provider page now redirects to an integrations directory.',
+    conditions: ['Second rung on Avalanche only', 'UNRESOLVED: no document found that governs this endpoint'],
+    reviewedAt: '2026-10-13',
+    review: 'seeded',
+    confidence: 'low',
+  },
+  {
+    // arbitrum.io/tos answered 403 to the owner's machine; the docs page was read.
+    domain: 'arb1.arbitrum.io',
+    name: 'Arbitrum One public RPC',
+    verdict: 'conditional',
+    termsUrl: 'https://docs.arbitrum.io/arbitrum-essentials/reference/node-providers',
+    finding:
+      'Arbitrum’s docs describe https://arb1.arbitrum.io/rpc as a "General-purpose read/write endpoint, useful for development and low-volume reads" with "No uptime, latency, or rate-limit guarantees". The site terms at arbitrum.io/tos answered HTTP 403 to the owner’s machine on 2026-10-13 and were not read.',
+    conditions: ['Low-volume reads, as the docs describe it', 'Second rung on Arbitrum only', 'UNREAD: arbitrum.io/tos'],
+    reviewedAt: '2026-10-13',
+    review: 'seeded',
+    confidence: 'low',
+  },
+  {
+    domain: 'mainnet.base.org',
+    name: 'Base public RPC (Coinbase)',
+    verdict: 'conditional',
+    termsUrl: 'https://docs.base.org/terms-of-service',
+    finding:
+      'Coinbase’s Base terms (last updated 2026-04-08) govern "the Coinbase Sequencer, Base Testnet, Basenames Interface, Basenames Profile Pages, and Dashboard" and say "To use any parts of the contents of the Services other than for personal and non-commercial use, you must seek permission from Coinbase in writing." They do not say whether the public RPC at mainnet.base.org is part of the Sequencer service. Read 2026-10-13.',
+    conditions: [
+      'Personal, non-commercial use before launch (D96)',
+      'Launch step: Coinbase’s written permission or a third-party RPC, unless the terms are read as not reaching this endpoint',
+      'Second rung on Base only',
+    ],
+    reviewedAt: '2026-10-13',
+    review: 'seeded',
+    confidence: 'medium',
+  },
+  {
+    domain: 'mainnet.optimism.io',
+    name: 'OP Mainnet public RPC',
+    verdict: 'conditional',
+    termsUrl: 'https://docs.optimism.io/app-developers/reference/rpc-providers',
+    finding:
+      'Optimism’s docs say its public endpoints "are rate-limited and not suitable for production use, but are perfect for development, testing, and proof-of-concept work". The Optimism Foundation’s Terms of Service (optimism.io/terms, last updated 2024-03-05) license its Services "solely for your own personal, non-commercial use". Both read 2026-10-13.',
+    conditions: [
+      'Personal use before launch (D96): "not suitable for production use"',
+      'Launch step: a production RPC provider',
+      'Second rung on Optimism only',
+    ],
+    reviewedAt: '2026-10-13',
+    review: 'seeded',
+    confidence: 'medium',
+  },
 ]
 
 // ─── Lookup + evaluation ──────────────────────────────────────────────────────

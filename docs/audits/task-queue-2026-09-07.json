@@ -14069,7 +14069,7 @@
     "T-423"
    ],
    "summary": "The five /live-data/wallet/* routes (btc, eth, sol, tron, xrp) fetch 20 hosts, measured 2026-10-13 from the route files. Their dataSources.ts entry names its provider as “Public explorers + JSON-RPC ladders” with no host, so sourceTerms.test.ts, which walks every host in dataSources.ts, never sees them. 7 are covered anyway by the verified publicnode.com entry (T-251); 13 have no entry at all: 1rpc.io, api.avax.network, api.mainnet-beta.solana.com, apilist.tronscanapi.com, arb1.arbitrum.io, blockstream.info, bsc-dataseed.binance.org, cloudflare-eth.com, eth.drpc.org, mainnet.base.org, mainnet.optimism.io, polygon-rpc.com and s1.ripple.com. The routes also call plain fetch rather than pinnedFetch, so the prohibited-host block and the robots gate do not apply to them either. None of the 13 is known to be prohibited; nobody has read their terms. bsc-dataseed.binance.org is BNB Chain’s public RPC, not the Binance or Binance.US exchange T-423 removes, and needs its own reading. Only the Wallets page calls these routes, and it is hidden from rollout (2026-08-22), so before launch this is personal use (D96) and a launch step only if Wallets returns.",
-   "next_action": "(1) Name each host in the wallet entry of frontend/src/lib/data/dataSources.ts (one provider per operator), so sourceTerms.test.ts walks them; it will then fail on the 13 until (2) each operator’s terms are read on the owner’s machine and entered in frontend/src/lib/server/sourceTerms.ts (seeded where there is no document to read, as DefiLlama is). (3) Route the five wallet routes’ fetches through pinnedFetch, as every other route does, so a prohibited host or a robots disallow binds them too. Do (1) and (2) in one change so the suite never goes red on main.",
+   "next_action": "Left for the owner: (a) ratify the thirteen seeded entries in frontend/src/lib/server/sourceTerms.ts (the “Wallet balance endpoints” block), or not; (b) dRPC’s terms say “Account registration is required to use the Services” while it advertises eth.drpc.org as keyless, the same question D25 settled for publicnode; (c) Cloudflare is deprecating cloudflare-eth.com, Ethereum’s third rung: drop it or keep it while it answers; (d) Tronscan’s and Arbitrum’s terms answered 403 to the owner’s machine and want opening in a browser. Before launch all of it is personal use (D96), and a launch step only if the Wallets page returns.",
    "sources": [
     {
      "file": "frontend/src/lib/data/dataSources.ts",
@@ -14086,6 +14086,15 @@
     "on": "2026-10-13",
     "by": "owner request, filed by the session",
     "why": "Owner, 2026-10-13: “Lets log the gap and begin working on t423 using the recommended solution”. The gap was first reported, not filed, during the T-424 credit inventory on 2026-10-12."
+   },
+   "progress": {
+    "noted_on": "2026-10-13",
+    "note": "Steps (1) and (2) done 2026-10-13 (owner: “merge and begin working on the next set of items”). (1): the wallet entry in dataSources.ts now names one provider per operator, fourteen in all with publicnode. (2): each operator’s terms and public-endpoint page were read on the owner’s machine (Spectrum residential egress, proxy false) and entered as seeded: most offer the public endpoint for development and light use and say to run a node or pay a provider in production. Why nothing had caught the gap: `npm run data-sources -- --verify` read only top-level route folders, so the nested wallet/* routes were never opened, and a hostless provider exempts its entry anyway. The walk now reads every folder (scripts/lib/routeHosts.mjs, held by dataSourcesDrift.test.ts) and compares hosts without their port. Step (3) dropped, because its premise was false: it said to route the wallet fetches through pinnedFetch “as every other route does”, but 4 of the 60 route files import pinnedFetch and 43 call plain fetch (measured 2026-10-13). pinnedFetch is the SSRF defence for user-supplied URLs; for a built-in host the binding check is the test-time one, which now sees all thirteen. Seen from this machine only, so not evidence about the hosts: polygon-rpc.com and bsc-dataseed.binance.org failed the TLS handshake, and BNB Chain’s and Polygon’s own RPC pages no longer list either hostname.",
+    "evidence": [
+     "frontend/src/lib/server/__tests__/dataSourcesDrift.test.ts",
+     "frontend/src/lib/server/__tests__/sourceTerms.test.ts",
+     "frontend/scripts/lib/routeHosts.mjs"
+    ]
    }
   }
  ],
@@ -39796,6 +39805,14 @@
      "frontend/src/lib/agents/__tests__/priceHistoryTool.test.ts",
      "frontend/src/lib/server/__tests__/ohlcvRoute.test.ts",
      "frontend/src/lib/technicals/__tests__/closesReaders.test.ts"
+    ]
+   },
+   {
+    "on": "2026-10-13",
+    "what": "T-432: the wallet routes’ thirteen unregistered hosts named in dataSources.ts and entered in sourceTerms.ts as seeded, from readings on the owner’s machine; the drift check now reads nested route folders. Step (3) (pinnedFetch) dropped on a false premise. Status stays open for the owner’s ratification and three judgements.",
+    "evidence": [
+     "frontend/src/lib/server/__tests__/dataSourcesDrift.test.ts",
+     "frontend/src/lib/server/__tests__/sourceTerms.test.ts"
     ]
    }
   ]
