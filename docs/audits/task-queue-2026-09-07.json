@@ -60,17 +60,17 @@
  },
  "counts": {
   "total_verified": 398,
-  "outstanding": 372,
+  "outstanding": 373,
   "by_status": {
    "closed": 211,
    "parked": 135,
-   "open": 19,
+   "open": 20,
    "blocked": 6,
    "unclear": 1
   },
   "by_owner_role": {
    "remote-dev": 92,
-   "either": 46,
+   "either": 47,
    "owner-decision": 148,
    "owner-machine": 86
   },
@@ -78,7 +78,7 @@
   "closed_by_annotation": 211,
   "counts_recomputed_on": "2026-10-13",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
-  "total": 372
+  "total": 373
  },
  "blocking_decisions": [
   {
@@ -14095,6 +14095,43 @@
      "frontend/src/lib/server/__tests__/sourceTerms.test.ts",
      "frontend/scripts/lib/routeHosts.mjs"
     ]
+   }
+  },
+  {
+   "id": "T-433",
+   "title": "Close the drift check’s hostless-provider exemption: the news fallbacks and the LLM key tests never reach the terms check",
+   "status": "open",
+   "confidence": "high",
+   "owner_role": "either",
+   "category": "legal",
+   "effort": "medium",
+   "blocking_decision": null,
+   "related_ids": [
+    "T-432"
+   ],
+   "summary": "`npm run data-sources -- --verify` (scripts/lib/routeHosts.mjs, driftItems) skips any registry entry that has a provider with no host, and the entries with id config or news outright; 23 of 56 entries carry a hostless provider (measured 2026-10-13, after T-432 gave the wallet entry real hosts). Those entries’ routes are never compared with the registry, so a host they fetch never reaches sourceTerms.test.ts either. Measured the same day, the hosts hidden this way that have no source-terms entry at all: /live-data/news fetches newsapi.org (news/route.ts:613) and gnews.io (:674), the keyed news fallbacks; /live-data/config fetches newsapi.org (:440) and eight LLM providers’ /models endpoints to test a saved key (:379-387: Anthropic, OpenAI, Groq, xAI, DeepSeek, Mistral, Together, Cohere). The same LLM hosts serve the agents through lib/agents/runner.ts, outside /live-data and so outside the drift check entirely. The other exempted routes’ hosts are registered (macro-news, market-news). Two URL literals in the news route are not fetches: github.com is in the User-Agent string and www.congress.gov is an article link the route builds. All of it is personal use before launch (D96).",
+   "next_action": "(1) Decide whether an LLM API the user brings a key for belongs in sourceTerms.ts: the registry asks whether we may use a site’s data, and an LLM provider processes the user’s prompts instead. If not, name the eight hosts in the drift check as exempt, with the reason, rather than leaving them under the blanket rule. (2) In frontend/src/lib/data/dataSources.ts, replace the news entry’s hostless “GNews / NewsAPI” provider with newsapi.org and gnews.io, and in the same change read both terms on the owner’s machine and enter them in frontend/src/lib/server/sourceTerms.ts (seeded until the owner ratifies), so the suite never goes red on main. (3) Narrow driftItems so a hostless provider no longer exempts its entry: check every literal host, with a short named list of literals that are not fetches (the User-Agent’s github.com, congress.gov article links). That also means naming the hosts behind macro-news’s and market-news’s summary providers, which are registered but unnamed. Hold it with a test in dataSourcesDrift.test.ts that fails on an unnamed host behind a hostless provider.",
+   "sources": [
+    {
+     "file": "frontend/scripts/lib/routeHosts.mjs",
+     "lines": "driftItems",
+     "quote": "if (hasSummaryProvider || entry.id === 'config' || entry.id === 'news') continue"
+    },
+    {
+     "file": "frontend/src/app/live-data/news/route.ts",
+     "lines": "613, 674",
+     "quote": "const url = `https://newsapi.org/v2/everything?q=… and const url = `https://gnews.io/api/v4/search?q=…"
+    },
+    {
+     "file": "frontend/src/app/live-data/config/route.ts",
+     "lines": "379-387, 440",
+     "quote": "anthropic: { url: 'https://api.anthropic.com/v1/models', auth: 'anthropic' }, … (eight providers)"
+    }
+   ],
+   "opened": {
+    "on": "2026-10-13",
+    "by": "owner request, filed by the session",
+    "why": "Owner, 2026-10-13: “merge 333 and 334, and file the news item”. Found while doing T-432 and reported in #333 as found, not fixed."
    }
   }
  ],
@@ -39813,6 +39850,15 @@
     "evidence": [
      "frontend/src/lib/server/__tests__/dataSourcesDrift.test.ts",
      "frontend/src/lib/server/__tests__/sourceTerms.test.ts"
+    ]
+   },
+   {
+    "on": "2026-10-13",
+    "what": "T-433 opened at the owner’s request: the drift check’s hostless-provider exemption keeps newsapi.org, gnews.io and eight LLM key-test hosts from ever reaching the source-terms check.",
+    "evidence": [
+     "frontend/scripts/lib/routeHosts.mjs",
+     "frontend/src/app/live-data/news/route.ts",
+     "frontend/src/app/live-data/config/route.ts"
     ]
    }
   ]
