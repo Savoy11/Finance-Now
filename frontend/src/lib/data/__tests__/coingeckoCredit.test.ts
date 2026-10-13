@@ -19,7 +19,8 @@ import type { PriceAlert } from '@/store/usePriceAlertStore'
  *
  *   · /live-data/pump-report/metrics fetched CoinGecko with no registry entry. It reaches
  *     CoinGecko through coingeckoBase(), so no URL appears in its source, and it sits one
- *     folder down, where the drift check (scripts/gen-data-sources.ts --verify) does not look.
+ *     folder down, where the drift check (scripts/gen-data-sources.ts --verify) did not look
+ *     until T-432 (2026-10-13). It reads nested folders now, but still only URL literals.
  *   · Shell surfaces outside every page carried no credit: the Live Prices and Market
  *     Overview pop-outs, and the price-alert toast, which shows a coin's price on any page.
  *

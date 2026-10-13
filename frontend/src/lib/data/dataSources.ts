@@ -285,8 +285,27 @@ export const DATA_SOURCES: DataSourceEntry[] = [
   {
     id: 'wallet', surface: 'On-chain wallet balances (BTC/ETH/SOL/TRON/XRP + EVM)', module: 'crypto',
     route: '/live-data/wallet/*', status: 'live',
-    providers: [{ name: 'Public explorers + JSON-RPC ladders', role: 'primary', auth: 'none' }],
-    notes: 'Each chain walks a fallback ladder of public RPC/explorer endpoints and reports the serving endpoint in `rpc`.',
+    // One provider per operator, so sourceTerms.test.ts walks every host (T-432). Until
+    // 2026-10-13 this was a single hostless "Public explorers + JSON-RPC ladders", which
+    // exempted the entry from the drift check and kept thirteen hosts out of the terms
+    // registry; the drift check now also reads the nested wallet/* route folders.
+    providers: [
+      { name: 'Blockstream Esplora (Bitcoin)', host: 'blockstream.info', url: 'https://github.com/Blockstream/esplora/blob/master/API.md', role: 'primary', auth: 'none' },
+      { name: 'Solana public RPC', host: 'api.mainnet-beta.solana.com', url: 'https://solana.com/docs/references/clusters', role: 'primary', auth: 'none' },
+      { name: 'Tronscan API (TRON)', host: 'apilist.tronscanapi.com', role: 'primary', auth: 'none' },
+      { name: 'Ripple public XRP Ledger server', host: 's1.ripple.com', url: 'https://xrpl.org/docs/tutorials/public-servers', role: 'primary', auth: 'none' },
+      { name: 'PublicNode (first rung on every EVM chain)', host: 'publicnode.com', url: 'https://www.publicnode.com/', role: 'primary', auth: 'none' },
+      { name: 'dRPC (Ethereum)', host: 'eth.drpc.org', role: 'fallback', auth: 'none' },
+      { name: 'Cloudflare Ethereum Gateway (legacy, being deprecated)', host: 'cloudflare-eth.com', role: 'fallback', auth: 'none' },
+      { name: 'Automata 1RPC (Polygon)', host: '1rpc.io', role: 'fallback', auth: 'none' },
+      { name: 'polygon-rpc.com (Polygon)', host: 'polygon-rpc.com', role: 'fallback', auth: 'none' },
+      { name: 'BNB Chain public RPC', host: 'bsc-dataseed.binance.org', url: 'https://docs.bnbchain.org/bnb-smart-chain/developers/json_rpc/json-rpc-endpoint/', role: 'fallback', auth: 'none' },
+      { name: 'Avalanche public API', host: 'api.avax.network', role: 'fallback', auth: 'none' },
+      { name: 'Arbitrum One public RPC', host: 'arb1.arbitrum.io', url: 'https://docs.arbitrum.io/arbitrum-essentials/reference/node-providers', role: 'fallback', auth: 'none' },
+      { name: 'Base public RPC', host: 'mainnet.base.org', role: 'fallback', auth: 'none' },
+      { name: 'OP Mainnet public RPC', host: 'mainnet.optimism.io', url: 'https://docs.optimism.io/app-developers/reference/rpc-providers', role: 'fallback', auth: 'none' },
+    ],
+    notes: 'Bitcoin, Solana, TRON and XRP each read one keyless endpoint. The EVM chains walk a ladder, PublicNode first and then that chain’s other public endpoints in order, and report the endpoint that answered in `rpc`. Most of these operators offer their public endpoints for development and light use and say to move to your own node or a paid provider for production: personal use before launch (D96), and a launch step only if the Wallets page, hidden since 2026-08-22 and these routes’ only caller, returns. Each host’s terms reading is in sourceTerms.ts.',
   },
 
   // ── EQUITIES ───────────────────────────────────────────────────────────────
