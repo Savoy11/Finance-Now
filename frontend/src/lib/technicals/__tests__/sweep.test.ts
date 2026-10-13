@@ -110,6 +110,16 @@ describe('sweepTechnicals', () => {
     expect(out.has('xyz')).toBe(false)
   })
 
+  it('asks the chart route for closing prices, which is all it computes from', async () => {
+    // `closes=1` is what lets DefiLlama's daily prices answer (T-423, D103). The
+    // route serves them only on request, so dropping it would quietly put the
+    // screener back on 4-day candles it then has to leave out.
+    const fetchImpl = vi.fn(async () => okResponse(250)) as unknown as typeof fetch
+    await sweepTechnicals(['btc'], { fetchImpl })
+    const url = String((fetchImpl as unknown as { mock: { calls: [string][] } }).mock.calls[0][0])
+    expect(new URL(url, 'http://localhost').searchParams.get('closes')).toBe('1')
+  })
+
   it('makes exactly one request per coin', async () => {
     const fetchImpl = vi.fn(async () => okResponse(250)) as unknown as typeof fetch
     await sweepTechnicals(['a', 'b', 'c', 'd'], { fetchImpl })

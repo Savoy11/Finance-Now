@@ -485,6 +485,19 @@ Client component
 > `granularity` is measured from the candles (`lib/utils/candleGranularity.ts`), never typed per
 > range; the scanner, the multi-timeframe grid and the Coins screener leave out, and count, a coin
 > whose candles are not the size they asked for.
+>
+> **Charts launch on CoinGecko's candles and DefiLlama's closing prices (D103, 2026-10-13).**
+> Owner: *"Lets use the other two options; remember anything we do pre launch is considered
+> personal use"*, so no licence is pursued first and the Kraken letter stays unsent.
+> DefiLlama's price API (`coins.llama.fi`) has no key, 15-minute to weekly spacing and history
+> back to each coin's listing, but **one price per interval: no high, low or volume**. So
+> `/live-data/ohlcv` serves it **only to a caller that sends `closes=1`**, marked `bars: 'close'`
+> (real candles are `bars: 'ohlc'`). Only a caller that reads nothing but closes may send it:
+> today the Coins screener's sweep (78 of 80 coins daily, against 39 before) and Cycle Context's
+> Pi Cycle. **Do not add `closes=1` to a chart, a pattern finder or a setup detector.** Fed one
+> price as a candle, each computes a zero range without complaint; `ohlcvRoute.test.ts` fails if
+> a candle request ever reaches DefiLlama. The Binance rungs stay on the candle ladder until the
+> pages reading candles run on the launch sources; T-423 lists those steps.
 
 ### React Query patterns on the client:
 ```typescript

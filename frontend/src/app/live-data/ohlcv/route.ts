@@ -5,13 +5,24 @@ import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 import { describeThrottle } from '@/lib/server/coingeckoThrottle'
 import { candleGranularity } from '@/lib/utils/candleGranularity'
 
-// OHLCV proxy — Binance is primary, CoinGecko is fallback.
+// OHLCV proxy. Which source answers depends on what the caller can use.
 //
-// ⚠ The Binance rungs must go before launch (T-423, owner decision D102,
-// 2026-10-12). Binance.US licenses its data "personal to you" and names no route
-// to public use; Binance.com's terms could not be read. Before launch is personal
-// use (D96), so they stay until a second chart source is read and approved.
-// CoinGecko alone cannot carry this route on its free service: it refuses
+//   Candles (the default): Binance, then CoinGecko.
+//   Closing prices (`closes=1`): DefiLlama, then the candle ladder.
+//
+// Charts launch on CoinGecko's candles and DefiLlama's closing prices (T-423,
+// owner decision D103, 2026-10-13). DefiLlama's price API (coins.llama.fi) sends
+// one price per interval, with no high, low or volume, so it answers only a
+// caller that computes from closing prices and asks for them. A chart or a
+// pattern finder asking for candles never receives it. Measured 2026-10-13: no
+// key, 15-minute to weekly spacing, history back to each coin's listing
+// (Bitcoin from April 2013), at most 500 prices a request.
+//
+// ⚠ The Binance rungs must go before launch (T-423, D102). Binance.US licenses
+// its data "personal to you" and names no route to public use; Binance.com's
+// terms could not be read. Before launch is personal use (D96, restated by the
+// owner in D103), so they stay until the pages reading candles run on the launch
+// sources. CoinGecko alone cannot carry those on its free service: it refuses
 // history older than 365 days, sends 4-day candles for any window over 30 days,
 // and a scanner sweep needs about 160 calls against fewer than 10 a minute.
 //
@@ -19,12 +30,16 @@ import { candleGranularity } from '@/lib/utils/candleGranularity'
 //   id     = internal asset id (e.g. "btc")
 //   range  = 1H | 4H | 1M | 3M | 6M | YTD | 1Y | 3Y | 5Y | 10Y | MAX  (default "1Y")
 //            (legacy: timeframe=1H|4H|1D|1W is aliased)
-//   source = "auto" (default) | "binance" | "coingecko"
+//   closes = "1" when the caller computes from closing prices only
+//   source = "auto" (default) | "binance" | "coingecko" | "defillama"
 //
-// Response: { ok, range, candles: OhlcvCandle[], granularity, source }
-// `granularity` is measured from the candles (lib/utils/candleGranularity), not
-// typed per range: the same range is 1-hour bars from Binance and 30-minute bars
-// from CoinGecko, and daily from Binance but 4-day from CoinGecko past 30 days.
+// Response: { ok, range, candles: OhlcvCandle[], granularity, source, bars }
+// `bars` is 'ohlc' for real candles and 'close' for DefiLlama's prices, which
+// arrive as candles whose open, high, low and close are the one price, with
+// volume 0. `granularity` is measured from the candles
+// (lib/utils/candleGranularity), not typed per range: the same range is 1-hour
+// bars from Binance and 30-minute bars from CoinGecko, and daily from Binance
+// but 4-day from CoinGecko past 30 days.
 
 export const dynamic = 'force-dynamic'
 
@@ -36,6 +51,9 @@ export interface OhlcvCandle {
   close: number
   volume: number // USD millions
 }
+
+/** 'ohlc': real candles. 'close': one price per interval, carried in the candle shape. */
+export type OhlcvBars = 'ohlc' | 'close'
 
 const CG_HEADERS = coingeckoHeaders
 
@@ -49,26 +67,28 @@ interface RangeConfig {
   sliceDays?: number
   ytd?: true
   revalidate: number
-  binanceInterval: string
-  binanceLimit: number
+  /** The spacing asked of Binance and DefiLlama, in the notation both accept: 15m, 1h, 4h, 1d, 1w. */
+  interval: string
+  /** How many of them. */
+  points: number
 }
 
 const RANGE_CONFIG: Record<string, RangeConfig> = {
   // Backtest-only: a long DAILY series (~2.7y) so 200-period strategies have a
   // real usable window. Not exposed in the chart range picker.
-  'BT':  { cgDays: 'max', resample: 'daily',  revalidate: 3600, binanceInterval: '1d',  binanceLimit: 1000 },
-  '15m': { cgDays: '1',   resample: 'none',   revalidate: 60,   binanceInterval: '15m', binanceLimit: 200  },
-  '1H':  { cgDays: '1',   resample: 'none',   revalidate: 60,   binanceInterval: '1h',  binanceLimit: 168  },
-  '4H':  { cgDays: '7',   resample: 'none',   revalidate: 300,  binanceInterval: '4h',  binanceLimit: 540  },
-  '1M':  { cgDays: '30',  resample: 'none',   revalidate: 300,  binanceInterval: '4h',  binanceLimit: 180  },
-  '3M':  { cgDays: '90',  resample: 'daily',  revalidate: 900,  binanceInterval: '1d',  binanceLimit: 90   },
-  '6M':  { cgDays: '180', resample: 'daily',  revalidate: 900,  binanceInterval: '1d',  binanceLimit: 180  },
-  'YTD': { cgDays: '365', resample: 'daily',  ytd: true, revalidate: 900, binanceInterval: '1d', binanceLimit: 365 },
-  '1Y':  { cgDays: '365', resample: 'daily',  revalidate: 900,  binanceInterval: '1d',  binanceLimit: 365  },
-  '3Y':  { cgDays: 'max', resample: 'weekly', sliceDays: 1095, revalidate: 3600, binanceInterval: '1w', binanceLimit: 157 },
-  '5Y':  { cgDays: 'max', resample: 'weekly', sliceDays: 1825, revalidate: 3600, binanceInterval: '1w', binanceLimit: 261 },
-  '10Y': { cgDays: 'max', resample: 'weekly', sliceDays: 3650, revalidate: 3600, binanceInterval: '1w', binanceLimit: 522 },
-  'MAX': { cgDays: 'max', resample: 'weekly', revalidate: 3600, binanceInterval: '1w',  binanceLimit: 1000 },
+  'BT':  { cgDays: 'max', resample: 'daily',  revalidate: 3600, interval: '1d',  points: 1000 },
+  '15m': { cgDays: '1',   resample: 'none',   revalidate: 60,   interval: '15m', points: 200  },
+  '1H':  { cgDays: '1',   resample: 'none',   revalidate: 60,   interval: '1h',  points: 168  },
+  '4H':  { cgDays: '7',   resample: 'none',   revalidate: 300,  interval: '4h',  points: 540  },
+  '1M':  { cgDays: '30',  resample: 'none',   revalidate: 300,  interval: '4h',  points: 180  },
+  '3M':  { cgDays: '90',  resample: 'daily',  revalidate: 900,  interval: '1d',  points: 90   },
+  '6M':  { cgDays: '180', resample: 'daily',  revalidate: 900,  interval: '1d',  points: 180  },
+  'YTD': { cgDays: '365', resample: 'daily',  ytd: true, revalidate: 900, interval: '1d', points: 365 },
+  '1Y':  { cgDays: '365', resample: 'daily',  revalidate: 900,  interval: '1d',  points: 365  },
+  '3Y':  { cgDays: 'max', resample: 'weekly', sliceDays: 1095, revalidate: 3600, interval: '1w', points: 157 },
+  '5Y':  { cgDays: 'max', resample: 'weekly', sliceDays: 1825, revalidate: 3600, interval: '1w', points: 261 },
+  '10Y': { cgDays: 'max', resample: 'weekly', sliceDays: 3650, revalidate: 3600, interval: '1w', points: 522 },
+  'MAX': { cgDays: 'max', resample: 'weekly', revalidate: 3600, interval: '1w',  points: 1000 },
 }
 // `daily` resampling cannot make daily candles out of 4-day ones: past 30 days
 // CoinGecko's free service sends one candle per four days, and grouping them by
@@ -164,7 +184,7 @@ async function fetchBinance(id: string, cfg: RangeConfig): Promise<{ candles: Oh
   const symbol = BINANCE_SYMBOL[id.toLowerCase()]
   if (!symbol) throw new Error('no-binance-mapping')
 
-  const path = `/api/v3/klines?symbol=${symbol}&interval=${cfg.binanceInterval}&limit=${cfg.binanceLimit}`
+  const path = `/api/v3/klines?symbol=${symbol}&interval=${cfg.interval}&limit=${cfg.points}`
   let res: Response | undefined
   let servedBy = ''
   let lastStatus = 0
@@ -238,6 +258,78 @@ async function fetchCoinGecko(id: string, cfg: RangeConfig): Promise<OhlcvCandle
   return candles
 }
 
+// ─── DefiLlama (closing prices) ────────────────────────────────────────────────
+
+const LLAMA_COINS = 'https://coins.llama.fi'
+
+/** Measured 2026-10-13: "Requested 1000 data points exceeds the maximum of 500." */
+const LLAMA_MAX_POINTS = 500
+/** MAX asks for 1,000 weekly prices, which is two requests; three is the ceiling. */
+const LLAMA_MAX_PAGES = 3
+
+const INTERVAL_SECONDS: Record<string, number> = { '15m': 900, '1h': 3_600, '4h': 14_400, '1d': 86_400, '1w': 604_800 }
+
+/** DefiLlama's refusals carry a `message` ("…exceeds the maximum of 500"); a bare status hides it. */
+async function llamaReason(res: Response): Promise<string> {
+  try {
+    const body = (await res.json()) as { message?: unknown }
+    return typeof body.message === 'string' ? `: ${body.message}` : ''
+  } catch {
+    return ''
+  }
+}
+
+/**
+ * `cfg.points` prices `cfg.interval` apart, ending now, read backwards 500 at a
+ * time. Keyed by CoinGecko id, which DefiLlama takes as `coingecko:<id>`, so
+ * every coin with a CoinGecko id is covered without a second symbol map.
+ */
+async function fetchDefiLlamaCloses(id: string, cfg: RangeConfig): Promise<OhlcvCandle[]> {
+  const cgId = coingeckoIdFor(id)
+  if (!cgId) throw new Error('no-cg-mapping')
+  const step = INTERVAL_SECONDS[cfg.interval]
+  if (!step) throw new Error(`defillama-no-interval-${cfg.interval}`)
+  const key = `coingecko:${cgId}`
+
+  // Rounded to the range's revalidate window so the URL, and with it Next's data
+  // cache, holds still between calls. `end=now` would change every second and
+  // never be served from the cache.
+  let end = Math.floor(Date.now() / 1000 / cfg.revalidate) * cfg.revalidate
+  let remaining = cfg.points
+  const prices = new Map<number, number>()
+
+  for (let page = 0; page < LLAMA_MAX_PAGES && remaining > 0; page++) {
+    const span = Math.min(LLAMA_MAX_POINTS, remaining)
+    const res = await fetch(`${LLAMA_COINS}/chart/${key}?period=${cfg.interval}&span=${span}&end=${end}`, {
+      headers: { Accept: 'application/json' },
+      next: { revalidate: cfg.revalidate }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS),
+    })
+    if (!res.ok) {
+      // A later page failing still leaves the recent history, which is the part
+      // every reader uses; the first failing leaves nothing.
+      if (page === 0) throw new Error(`DefiLlama HTTP ${res.status}${await llamaReason(res)}`)
+      break
+    }
+    const body = (await res.json()) as { coins?: Record<string, { prices?: { timestamp: number; price: number }[] }> }
+    const rows = body.coins?.[key]?.prices ?? []
+    for (const p of rows) {
+      if (Number.isFinite(p.timestamp) && Number.isFinite(p.price) && p.price > 0) prices.set(p.timestamp, p.price)
+    }
+    // The coin's history began inside this page when its earliest price is later
+    // than the page's first slot: asking further back would return nothing.
+    const pageStart = end - (span - 1) * step
+    if (rows.length === 0 || Math.min(...rows.map((p) => p.timestamp)) > pageStart + step) break
+    remaining -= span
+    end -= span * step
+  }
+
+  if (prices.size === 0) throw new Error('defillama-no-prices')
+  const candles = [...prices.entries()]
+    .sort(([a], [b]) => a - b)
+    .map(([time, price]) => ({ time, open: price, high: price, low: price, close: price, volume: 0 }))
+  return applySlice(candles, cfg)
+}
+
 // ─── Handler ───────────────────────────────────────────────────────────────────
 
 export async function GET(request: NextRequest) {
@@ -250,12 +342,30 @@ export async function GET(request: NextRequest) {
   const range  = LEGACY_MAP[rawRange] ?? rawRange
   const cfg    = RANGE_CONFIG[range] ?? RANGE_CONFIG['1Y']
   const source = request.nextUrl.searchParams.get('source') ?? 'auto'
+  const closesWanted = request.nextUrl.searchParams.get('closes') === '1'
 
-  // auto: try Binance first for any coin that has a mapping, fall back to CoinGecko
+  // auto: closing prices from DefiLlama when the caller asked for them; then
+  //       Binance for any coin that has a mapping; then CoinGecko
+  // defillama: DefiLlama only
   // binance: Binance only
   // coingecko: CoinGecko only
 
-  if (source !== 'coingecko' && BINANCE_SYMBOL[id.toLowerCase()]) {
+  if (source === 'defillama' || (source === 'auto' && closesWanted)) {
+    try {
+      const candles = await fetchDefiLlamaCloses(id, cfg)
+      return NextResponse.json({
+        ok: true, range, candles, granularity: candleGranularity(candles.map((c) => c.time)),
+        source: 'defillama', bars: 'close' satisfies OhlcvBars,
+      })
+    } catch (err) {
+      // Falls through to the candle ladder, whose closes serve this caller too.
+      if (source === 'defillama') {
+        return NextResponse.json({ ok: false, candles: [], error: String(err) })
+      }
+    }
+  }
+
+  if ((source === 'auto' || source === 'binance') && BINANCE_SYMBOL[id.toLowerCase()]) {
     try {
       const { candles, host } = await fetchBinance(id, cfg)
       // `source` stays 'binance' — it is the provider-family key that consumers
@@ -270,7 +380,7 @@ export async function GET(request: NextRequest) {
       // Binance.com reference needs to know which one it got.
       return NextResponse.json({
         ok: true, range, candles, granularity: candleGranularity(candles.map((c) => c.time)), source: 'binance',
-        venue: host.includes('binance.us') ? 'binance-us' : 'binance-com',
+        venue: host.includes('binance.us') ? 'binance-us' : 'binance-com', bars: 'ohlc' satisfies OhlcvBars,
       })
     } catch (err) {
       // fall through to CoinGecko unless explicitly forced to Binance
@@ -283,7 +393,10 @@ export async function GET(request: NextRequest) {
   if (source !== 'binance') {
     try {
       const candles = await fetchCoinGecko(id, cfg)
-      return NextResponse.json({ ok: true, range, candles, granularity: candleGranularity(candles.map((c) => c.time)), source: 'coingecko' })
+      return NextResponse.json({
+        ok: true, range, candles, granularity: candleGranularity(candles.map((c) => c.time)),
+        source: 'coingecko', bars: 'ohlc' satisfies OhlcvBars,
+      })
     } catch (err) {
       return NextResponse.json({ ok: false, candles: [], error: String(err) })
     }

@@ -2,7 +2,7 @@
  * Provenance label for a crypto OHLCV series.
  *
  * `/live-data/ohlcv` returns a provider-family `source` ('binance' |
- * 'coingecko') plus, on the Binance rung, a `venue` recording which host
+ * 'coingecko' | 'defillama') plus, on the Binance rung, a `venue` recording which host
  * actually answered. api.binance.com is geo-blocked (451) from some regions, so
  * a flat "Binance" label hid the fact that the candles came from the Binance.US
  * mirror instead — a separate venue with its own liquidity and therefore its own
@@ -18,5 +18,6 @@ export function ohlcvSourceLabel(source?: string, venue?: string): string | unde
     return 'Binance'
   }
   if (source === 'coingecko') return 'CoinGecko'
+  if (source === 'defillama') return 'DefiLlama'
   return undefined
 }

@@ -89,6 +89,97 @@ describe('/live-data/ohlcv carries CoinGecko’s reason when it refuses', () => 
   })
 })
 
+const WEEK = 7 * 86_400
+
+/** DefiLlama /chart prices: `count` of them `step` seconds apart, the last at `end` (unix seconds). */
+const llamaPrices = (count: number, step: number, end: number) =>
+  Array.from({ length: count }, (_, i) => ({ timestamp: end - (count - 1 - i) * step, price: 100 + i }))
+const llamaBody = (prices: unknown[]) =>
+  ({ coins: prices.length ? { 'coingecko:bitcoin': { symbol: 'BTC', confidence: 0.99, prices } } : {} })
+
+/** Answers each DefiLlama request with `count(page)` prices ending at the requested `end`. */
+const llamaAnswers = (step: number, count: (page: number, span: number) => number) => {
+  let page = 0
+  return (url: string) => {
+    const u = new URL(url)
+    const end = Number(u.searchParams.get('end'))
+    const span = Number(u.searchParams.get('span'))
+    return json(llamaBody(llamaPrices(count(page++, span), step, end)))
+  }
+}
+
+const calledHosts = (fetchMock: ReturnType<typeof stubFetch>) =>
+  fetchMock.mock.calls.map(([u]) => new URL(String(u)).hostname)
+
+describe('/live-data/ohlcv serves DefiLlama closing prices only to callers that ask for them (T-423, D103)', () => {
+  it('answers a closes=1 caller from DefiLlama, marked as closing prices, daily for 1Y', async () => {
+    const answer = llamaAnswers(86_400, (_, span) => span)
+    const fetchMock = stubFetch((url) => url.includes('coins.llama.fi') ? answer(url) : json({ error: 'unexpected' }, 500))
+    const body = await (await GET(req('id=btc&range=1Y&closes=1'))).json()
+    expect(body).toMatchObject({ ok: true, source: 'defillama', bars: 'close', granularity: '1D' })
+    expect(body.candles).toHaveLength(365)
+    const last = body.candles.at(-1)
+    expect([last.open, last.high, last.low]).toEqual([last.close, last.close, last.close])
+    expect(calledHosts(fetchMock)).toEqual(['coins.llama.fi'])
+  })
+
+  it('never sends DefiLlama prices to a caller asking for candles', async () => {
+    // A chart, a pattern finder or a setup detector reads highs, lows and volume.
+    // Handed one price dressed as a candle, each computes a zero range without a
+    // word, so the price-only source must be unreachable without `closes=1`.
+    for (const query of ['id=btc&range=1Y', 'id=btc&range=1Y&source=coingecko', 'id=btc&range=3Y']) {
+      const answer = llamaAnswers(86_400, (_, span) => span)
+      const fetchMock = stubFetch((url) => {
+        if (url.includes('coins.llama.fi')) return answer(url)
+        if (url.includes('binance')) return json(klines(365, DAY))
+        return url.includes('/ohlc?') ? json(cgOhlc(92, 4 * DAY)) : json({ total_volumes: [] })
+      })
+      const body = await (await GET(req(query))).json()
+      expect(body.bars, query).toBe('ohlc')
+      expect(calledHosts(fetchMock), query).not.toContain('coins.llama.fi')
+    }
+  })
+
+  it('reads MAX backwards 500 at a time and stops where the coin’s history begins', async () => {
+    // Bitcoin's first DefiLlama price is 28 April 2013 (measured 2026-10-13): about
+    // 700 weeks, so two requests, the second one short.
+    const answer = llamaAnswers(WEEK, (page, span) => page === 0 ? span : 202)
+    const fetchMock = stubFetch((url) => url.includes('coins.llama.fi') ? answer(url) : json({ error: 'unexpected' }, 500))
+    const body = await (await GET(req('id=btc&range=MAX&closes=1'))).json()
+    expect(body).toMatchObject({ ok: true, source: 'defillama', granularity: '1W' })
+    expect(body.candles).toHaveLength(702)
+    expect(calledHosts(fetchMock)).toEqual(['coins.llama.fi', 'coins.llama.fi'])
+    const spans = fetchMock.mock.calls.map(([u]) => new URL(String(u)).searchParams.get('span'))
+    expect(spans).toEqual(['500', '500'])
+  })
+
+  it('asks for an `end` that holds still within the range’s cache window', async () => {
+    // `end=now` would change every second, and Next's data cache is keyed by URL.
+    const answer = llamaAnswers(86_400, (_, span) => span)
+    const fetchMock = stubFetch(answer)
+    await GET(req('id=btc&range=1Y&closes=1'))
+    const end = Number(new URL(String(fetchMock.mock.calls[0][0])).searchParams.get('end'))
+    expect(end % 900).toBe(0)
+  })
+
+  it('falls back to the candle ladder when DefiLlama has no prices for the coin', async () => {
+    stubFetch((url) => {
+      if (url.includes('coins.llama.fi')) return json(llamaBody([]))
+      return url.includes('binance') ? json(klines(365, DAY)) : json({ error: 'unexpected' }, 500)
+    })
+    const body = await (await GET(req('id=btc&range=1Y&closes=1'))).json()
+    expect(body).toMatchObject({ ok: true, source: 'binance', bars: 'ohlc' })
+  })
+
+  it('carries DefiLlama’s own reason when it refuses', async () => {
+    stubFetch(() => json({ message: 'Requested 1000 data points exceeds the maximum of 500.' }, 400))
+    const body = await (await GET(req('id=btc&range=1Y&source=defillama'))).json()
+    expect(body.ok).toBe(false)
+    expect(body.error).toContain('HTTP 400')
+    expect(body.error).toContain('exceeds the maximum of 500')
+  })
+})
+
 describe('Binance is gone from the price and coin-list routes (T-423)', () => {
   it('the price route never calls a Binance host, even when asked for Binance', async () => {
     const { GET: markets } = await import('@/app/live-data/markets/route')

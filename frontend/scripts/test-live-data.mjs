@@ -207,6 +207,18 @@ const tests = [
     return `${j.candles.length} candles, source=${j.source}${j.venue ? ` (${j.venue})` : ''}, last=$${Math.round(c.close).toLocaleString()}`
   }},
 
+  // The closing-price path (T-423, D103). Flat candles are RIGHT here, and only
+  // here: DefiLlama sends one price per day, and `bars: 'close'` must say so.
+  // Anything else answering means the Coins screener is back on candles.
+  { group: 'crypto/market', path: '/live-data/ohlcv?id=btc&range=1Y&closes=1', name: 'ohlcv btc 1Y closes (DefiLlama)', check: (j) => {
+    if (!j.ok || !Array.isArray(j.candles)) throw new Error(`not ok: ${j.error ?? 'no candles'}`)
+    if (j.source !== 'defillama') return fallback(`${j.candles.length} candles from ${j.source} — DefiLlama did not answer`)
+    if (j.bars !== 'close') throw new Error(`DefiLlama prices not marked as closes (bars=${j.bars})`)
+    if (j.granularity !== '1D') throw new Error(`expected daily prices, got ${j.granularity}`)
+    if (j.candles.length < 300) throw new Error(`only ${j.candles.length} daily prices for 1Y`)
+    return `${j.candles.length} daily closes, source=defillama, last=$${Math.round(j.candles.at(-1).close).toLocaleString()}`
+  }},
+
   { group: 'crypto/market', path: '/live-data/ohlcv?id=xrp&range=6M', name: 'ohlcv xrp 6M (regression)', check: (j) => {
     if (!j.ok || !Array.isArray(j.candles) || j.candles.length < 100) throw new Error(`xrp 6M sparse: ${j.candles?.length}`)
     if (j.source === 'binance' && j.venue === 'binance-us') return fallback(`${j.candles.length} candles via Binance.US`)

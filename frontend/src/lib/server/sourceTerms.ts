@@ -365,6 +365,8 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     // NO DOCUMENT — the API docs publish a free server (api.llama.fi) and a $300/mo plan for higher
     // limits; no terms-of-use text exists anywhere. The most load-bearing keyless source has no
     // licence to point at.
+    // 2026-10-13 (D103, T-423): coins.llama.fi also serves the chart route's closing prices now
+    // (Coins screener, Cycle Context), and charts launch on it. Still no document to read.
     domain: 'llama.fi',
     name: 'DefiLlama',
     verdict: 'conditional',
