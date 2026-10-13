@@ -3,7 +3,7 @@
 
 import {
   rsi, ema, obv, bollingerBands,
-  type OhlcvCandle,
+  type CandleBars, type OhlcvCandle,
 } from './indicators'
 
 export type SetupKey =
@@ -12,8 +12,40 @@ export type SetupKey =
 
 export interface DetectedSetup { key: SetupKey; detail: string }
 
-/** Detect named technical setups on a daily candle series. Pure derivation. */
-export function detectSetups(candles: OhlcvCandle[]): DetectedSetup[] {
+/**
+ * What each setup reads besides closing prices (T-423, D103). On a series of
+ * closing prices (open, high and low equal to the close, volume 0) only the
+ * setups needing neither are run, because the others still compute there, with
+ * no error: a breakout measured against the prior closes instead of the prior
+ * highs, and a volume spike or OBV divergence that can never fire.
+ *
+ * MEASURED, not judged: setupInputs.test.ts runs every detector with and without
+ * real ranges and volume, and fails if a flag disagrees with what changed.
+ */
+export const SETUP_INPUTS: Readonly<Record<SetupKey, { needsRange?: true; needsVolume?: true }>> = {
+  breakout: { needsRange: true },
+  oversold_bounce: {},
+  overbought_fade: {},
+  ma_cross: {},
+  volume_spike: { needsVolume: true },
+  obv_divergence: { needsVolume: true },
+  volatility_compression: {},
+}
+
+/** The setups that read closing prices alone, in detector order. */
+export const SETUPS_FROM_CLOSES: readonly SetupKey[] = (Object.keys(SETUP_INPUTS) as SetupKey[])
+  .filter((k) => !SETUP_INPUTS[k].needsRange && !SETUP_INPUTS[k].needsVolume)
+
+/**
+ * Detect named technical setups on a candle series. Pure derivation. With
+ * `bars: 'close'` only SETUPS_FROM_CLOSES are reported.
+ */
+export function detectSetups(candles: OhlcvCandle[], bars: CandleBars = 'ohlc'): DetectedSetup[] {
+  const setups = detectAll(candles)
+  return bars === 'close' ? setups.filter((s) => SETUPS_FROM_CLOSES.includes(s.key)) : setups
+}
+
+function detectAll(candles: OhlcvCandle[]): DetectedSetup[] {
   const n = candles.length
   if (n < 55) return []
   const closes = candles.map(c => c.close)

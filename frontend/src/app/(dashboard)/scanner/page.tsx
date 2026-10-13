@@ -11,9 +11,9 @@ import { RefreshCw, Filter, Activity, TrendingUp, TrendingDown, Minus } from 'lu
 import { ModuleGate } from '@/components/layout/ModuleGate'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { SourceLine } from '@/components/ui/SourceLine'
-import { computeSignalSummary, type OhlcvCandle, type Signal, type SignalSummary } from '@/lib/utils/indicators'
-import { detectSetups, type SetupKey, type DetectedSetup } from '@/lib/utils/scanSetups'
-import { computeTechnicals } from '@/lib/technicals/sweep'
+import { computeSignalSummary, SIGNALS_FROM_CLOSES, type OhlcvCandle, type Signal, type SignalSummary } from '@/lib/utils/indicators'
+import { detectSetups, SETUP_INPUTS, SETUPS_FROM_CLOSES, type SetupKey, type DetectedSetup } from '@/lib/utils/scanSetups'
+import { computeTechnicals, SWEEP_WANTS } from '@/lib/technicals/sweep'
 import { formatAdaptivePrice } from '@/lib/utils/format'
 import { runPool } from '@/lib/utils/runPool'
 import { candleGranularity, candleSizeWords } from '@/lib/utils/candleGranularity'
@@ -33,6 +33,14 @@ import { ASSET_CATALOG } from '@/lib/data/assetCatalog'
 // Unchanged in the move: 7 setup detectors, 3 timeframes, bounded-concurrency
 // scanning and optional auto-refresh. This is the maturity bar the equities and
 // macro scanners are measured against (the review's E14-E16 note).
+//
+// Since 2026-10-13 (T-423, D103) it reads closing prices (`closes=1`), which
+// DefiLlama serves at every timeframe here for nearly every coin, with no key
+// and no per-minute cap seen. Candles at launch would come from CoinGecko alone,
+// whose free service allows fewer than 10 calls a minute against a sweep of the
+// whole catalog, sends 4-day candles past 30 days and refuses past 365. On
+// closes it runs only the setups and signal votes that read a close alone, for
+// every coin, so every row is judged on the same inputs whichever source served it.
 
 const SUPPORTED_IDS = Object.keys(COINGECKO_IDS)
 
@@ -43,17 +51,28 @@ const TOKENIZED_IDS = new Set(ASSET_CATALOG.filter(a => a.assetType === 'tokeniz
 
 // ─── Scanner (multi-asset setup detection) ──────────────────────────────────────
 
-const SETUP_META: Record<SetupKey, { label: string; tone: string }> = {
-  breakout:               { label: 'Breakout',        tone: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' },
-  oversold_bounce:        { label: 'Oversold bounce', tone: 'bg-blue-500/15 text-blue-400 border-blue-500/30' },
-  overbought_fade:        { label: 'Overbought fade', tone: 'bg-red-500/15 text-red-400 border-red-500/30' },
-  ma_cross:               { label: 'MA cross',        tone: 'bg-violet-500/15 text-violet-400 border-violet-500/30' },
-  volume_spike:           { label: 'Volume spike',    tone: 'bg-amber-500/15 text-amber-400 border-amber-500/30' },
-  obv_divergence:         { label: 'OBV divergence',  tone: 'bg-teal-500/15 text-teal-400 border-teal-500/30' },
-  volatility_compression: { label: 'Vol. squeeze',    tone: 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30' },
+const SETUP_META: Record<SetupKey, { label: string; phrase: string; tone: string }> = {
+  breakout:               { label: 'Breakout',        phrase: 'breakouts',              tone: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' },
+  oversold_bounce:        { label: 'Oversold bounce', phrase: 'oversold bounces',       tone: 'bg-blue-500/15 text-blue-400 border-blue-500/30' },
+  overbought_fade:        { label: 'Overbought fade', phrase: 'overbought fades',       tone: 'bg-red-500/15 text-red-400 border-red-500/30' },
+  ma_cross:               { label: 'MA cross',        phrase: 'moving-average crosses', tone: 'bg-violet-500/15 text-violet-400 border-violet-500/30' },
+  volume_spike:           { label: 'Volume spike',    phrase: 'volume spikes',          tone: 'bg-amber-500/15 text-amber-400 border-amber-500/30' },
+  obv_divergence:         { label: 'OBV divergence',  phrase: 'OBV divergence',         tone: 'bg-teal-500/15 text-teal-400 border-teal-500/30' },
+  volatility_compression: { label: 'Vol. squeeze',    phrase: 'volatility compression', tone: 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30' },
 }
 
-const SETUP_KEYS = Object.keys(SETUP_META) as SetupKey[]
+const SETUP_KEYS = SETUPS_FROM_CLOSES
+
+// The setups a closing price cannot feed, each with what it would need. Named on
+// the page rather than dropped, so their absence reads as a limit of the data.
+const SETUPS_NOT_RUN = (Object.keys(SETUP_META) as SetupKey[])
+  .filter(k => !SETUPS_FROM_CLOSES.includes(k))
+  .map(k => ({
+    label: SETUP_META[k].label,
+    needs: SETUP_INPUTS[k].needsRange ? 'each period’s high' : 'trading volume',
+  }))
+
+const listWords = (items: readonly string[]) => new Intl.ListFormat('en', { type: 'conjunction' }).format(items)
 
 // 'wrong-size': candles came back, but not at the timeframe's size. CoinGecko's
 // free service sends 4-day candles for any window over 30 days, so on the 1D
@@ -199,7 +218,7 @@ function ScannerPanel() {
     await runPool(sweep, SCAN_CONCURRENCY, async (id) => {
       let patch: Partial<ScanRow>
       try {
-        const res = await fetch(`/live-data/ohlcv?id=${id}&range=${tf.range}`)
+        const res = await fetch(`/live-data/ohlcv?id=${id}&range=${tf.range}&${SWEEP_WANTS}`)
         const json = await res.json()
         const candles: OhlcvCandle[] = json.candles ?? []
         const size = candleGranularity(candles.map(c => c.time))
@@ -212,10 +231,13 @@ function ScannerPanel() {
           // surfaces cannot disagree about what RSI 30 means. The scanner keeps
           // its own loop because it also detects setups and streams each row in
           // as it lands; only the indicator maths is common.
+          // 'close' whatever served the coin: a coin DefiLlama lacks falls back to
+          // real candles, and reading those in full would give its row more
+          // setups and votes than its neighbours, on inputs they never had.
           const t = computeTechnicals(candles)
           patch = {
-            setups: detectSetups(candles),
-            signal: candles.length >= 50 ? computeSignalSummary(candles) : null,
+            setups: detectSetups(candles, 'close'),
+            signal: candles.length >= 50 ? computeSignalSummary(candles, 'close') : null,
             rsi14: t.rsi14,
             vsSma50Pct: t.vsSma50Pct,
             status: 'ok',
@@ -499,6 +521,15 @@ function ScannerPanel() {
           </button>
         ))}
       </div>
+      <p className="-mt-2 text-[10px] leading-relaxed text-text-muted">
+        Read from closing prices, one per period, so these are not run:{' '}
+        {SETUPS_NOT_RUN.map((s, i) => (
+          <span key={s.label}>
+            {i > 0 && ' · '}<strong className="text-text-secondary">{s.label}</strong> needs {s.needs}
+          </span>
+        ))}
+        . The signal counts the {SIGNALS_FROM_CLOSES.size} indicator votes that read a close alone.
+      </p>
 
       {!scanning && filtered.length === 0 && (
         <div className="text-center py-12 text-text-muted">
@@ -516,7 +547,7 @@ function ScannerPanel() {
                 <th className="text-right px-3 py-2.5 text-text-muted font-medium">Price</th>
                 <th className="text-right px-3 py-2.5 text-text-muted font-medium">RSI 14</th>
                 <th className="text-right px-3 py-2.5 text-text-muted font-medium">vs SMA 50</th>
-                <th className="text-center px-3 py-2.5 text-text-muted font-medium">Signal</th>
+                <th className="text-center px-3 py-2.5 text-text-muted font-medium" title={`From the ${SIGNALS_FROM_CLOSES.size} indicator votes that read closing prices alone`}>Signal</th>
                 <th className="text-left px-4 py-2.5 text-text-muted font-medium">Detected setups</th>
               </tr>
             </thead>
@@ -590,11 +621,11 @@ function CryptoScannerInner() {
       <PageHeader
         title="Crypto Scanner"
         subtitle="Sweep every tracked coin for technical setups"
-        description="Scans the whole monitored universe on the selected timeframe for breakouts, oversold bounces, overbought fades, moving-average crosses, volume spikes, OBV divergence and volatility compression. Rescan manually or leave auto-refresh on."
+        description={`Scans the whole monitored universe on the selected timeframe for ${listWords(SETUPS_FROM_CLOSES.map(k => SETUP_META[k].phrase))}, read from each coin’s closing prices. Rescan manually or leave auto-refresh on.`}
         details={[
           { label: 'What it is', text: 'A discovery tool: it looks across assets to find candidates. Technical Analysis is the other half — it charts the one asset you picked.' },
-          { label: 'Setups', text: 'Seven detectors run per asset on real OHLCV history. A setup is a pattern the data shows, not a view on whether to trade it.' },
-          { label: 'Timeframes', text: '4H, 1D and 1W. The detectors read the same way on each; only the bar spacing changes. A coin whose candles come back at another size is left out and counted, not scanned as if they were the size you picked.' },
+          { label: 'Setups', text: `${SETUPS_FROM_CLOSES.length} detectors run per asset on its closing prices, one per period. ${listWords(SETUPS_NOT_RUN.map(s => s.label))} need each period’s high or its volume, which closing prices do not carry, so they are not run. A setup is a pattern the data shows, not a view on whether to trade it.` },
+          { label: 'Timeframes', text: '4H, 1D and 1W. The detectors read the same way on each; only the spacing changes. A coin whose prices come back at another spacing is left out and counted, not scanned as if it were the one you picked.' },
         ]}
       />
       <ScannerPanel />
