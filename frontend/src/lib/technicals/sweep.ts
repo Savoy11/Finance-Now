@@ -51,6 +51,15 @@ export const SWEEP_RANGE = '1Y'
  */
 export const SWEEP_CANDLE_SIZE = '1D'
 
+/**
+ * Every figure here is computed from closing prices alone, so the sweep asks the
+ * chart route for them (`closes=1`) and is served DefiLlama's daily prices first:
+ * a year of daily closes for any coin with a CoinGecko id, with no key and no
+ * per-minute cap seen (T-423, D103, 2026-10-13). Only a caller that never reads
+ * a high, a low or a volume may ask for this.
+ */
+export const SWEEP_WANTS = 'closes=1'
+
 export interface TechnicalRow {
   /** Relative Strength Index, 14 periods. Null when history is too short. */
   rsi14: number | null
@@ -189,7 +198,7 @@ export async function sweepTechnicals(
 
   await runPool(ids, concurrency, async (id) => {
     try {
-      const res = await fetchImpl(`/live-data/ohlcv?id=${encodeURIComponent(id)}&range=${range}`)
+      const res = await fetchImpl(`/live-data/ohlcv?id=${encodeURIComponent(id)}&range=${range}&${SWEEP_WANTS}`)
       const json = await res.json()
       const candles: OhlcvCandle[] = json?.candles ?? []
       const daily = candleGranularity(candles.map(c => c.time)) === SWEEP_CANDLE_SIZE

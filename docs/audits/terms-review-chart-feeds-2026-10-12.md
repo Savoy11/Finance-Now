@@ -255,3 +255,6 @@ custom contract, which D21 defers. Its feed was not measured.
 
 The Binance rungs stay on `/live-data/ohlcv` under D96 until one of these is chosen; T-423
 stays open as a launch step.
+
+*Answered 2026-10-13 (D103): options 2 and 3. Owner: "Lets use the other two options; remember
+anything we do pre launch is considered personal use". The Kraken letter stays unsent.*

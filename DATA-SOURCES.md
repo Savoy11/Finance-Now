@@ -5,7 +5,7 @@ change the registry and regenerate. This is the "where does the data come from" 
 `DATA-AVAILABILITY.md` (which tracks whether each surface is live). The same registry powers the
 in-app **/data-sources** page and the per-page provenance badges, so the app and the docs never diverge._
 
-_Last generated: **2026-10-12**_
+_Last generated: **2026-10-13**_
 
 ## Legend
 
@@ -24,7 +24,7 @@ Provider tags: `key` = needs an API key · `paid` = needs a paid plan · untagge
 | Surface | Status | Provider(s) | Cadence | Route |
 |---------|--------|-------------|---------|-------|
 | Crypto prices, market cap, volume, 24h change | Live | [CoinGecko](https://www.coingecko.com/en/api) `api.coingecko.com`<br>[CoinMarketCap](https://coinmarketcap.com/api) `pro-api.coinmarketcap.com` _(paid)_ | 30s client poll · sequential fallback ladder | `/live-data/markets` |
-| Crypto OHLCV / candlestick charts | Partial | [Binance](https://binance.com) `api.binance.com`<br>[Binance.US](https://binance.us) `api.binance.us`<br>[CoinGecko](https://www.coingecko.com/en/api) `api.coingecko.com` | on demand · 60s–15m stale by range | `/live-data/ohlcv` |
+| Crypto OHLCV / candlestick charts | Partial | [Binance](https://binance.com) `api.binance.com`<br>[Binance.US](https://binance.us) `api.binance.us`<br>[CoinGecko](https://www.coingecko.com/en/api) `api.coingecko.com`<br>[DefiLlama](https://defillama.com/docs/api) `coins.llama.fi` | on demand · 60s–15m stale by range | `/live-data/ohlcv` |
 | Coin list / search / discovery | Live | [CoinGecko](https://www.coingecko.com/en/api) `api.coingecko.com` | on demand | `/live-data/coin-list` |
 | Coin project profile (website, description) | Live | [CoinMarketCap](https://coinmarketcap.com/api) `pro-api.coinmarketcap.com` _(paid)_<br>[CoinGecko](https://www.coingecko.com/en/api) `api.coingecko.com` | on demand · 24h cache | `/live-data/coin-profile` |
 | Global crypto aggregates (BTC dominance, total cap) | Live | [CoinGecko](https://www.coingecko.com/en/api) `api.coingecko.com` | 10m revalidate | `/live-data/global` |
@@ -50,7 +50,7 @@ Provider tags: `key` = needs an API key · `paid` = needs a paid plan · untagge
 | Measured-risk rating (coin pages) | Derived | Finance Now rating engine (lib/risk/assetRating.ts)<br>[CoinGecko](https://www.coingecko.com/en/api) `api.coingecko.com` | daily, from the previous day’s data | `/live-data/coin-rating` |
 
 - **Crypto prices, market cap, volume, 24h change** — Prices live; coin metadata (name, chain, contract) is static reference data, not fabricated. Binance was the middle rung until 2026-10-12 (T-423, D102). Reference/fallback data: `lib/data/assetCatalog.ts (metadata)`.
-- **Crypto OHLCV / candlestick charts** — Binance.com is 451 (geo-blocked) from many hosts, so candles come from the US mirror — a different venue. Serving venue recorded in the `venue` field. Both Binance rungs must go before launch (T-423, D102): CoinGecko alone serves no history older than 365 days on its free service and sends 4-day candles past 30 days, so a second chart source is being looked for first. `granularity` is measured from the candles.
+- **Crypto OHLCV / candlestick charts** — Charts launch on CoinGecko candles and DefiLlama closing prices (T-423, D103). DefiLlama answers only callers that compute from closes and ask for them (`closes=1`: the Coins screener, Cycle Context), marked `bars: "close"`; it carries no high, low or volume. Binance.com is 451 (geo-blocked) from many hosts, so candles come from the US mirror — a different venue, recorded in the `venue` field. Both Binance rungs must go before launch (T-423, D102); they stay until the pages reading candles run on the launch sources, since CoinGecko alone serves no history older than 365 days on its free service and sends 4-day candles past 30 days. `granularity` is measured from the candles.
 - **Coin list / search / discovery** — Market-cap rank order. Binance.US listings were sorted first until 2026-10-12 (T-423, D102).
 - **Coin project profile (website, description)** — Two-rung ladder: CoinMarketCap when keyed (bulk, 1 credit/100 coins, identity resolved by lib/utils/coinIdentity.ts which declines rather than guesses), else CoinGecko per coin. The keyless rung is switchable off with FN_ALLOW_KEYLESS_COIN_PROFILES=false. Descriptions are sanitized to plain text, never rendered as HTML.
 - **Global crypto aggregates (BTC dominance, total cap)** — Feeds the Cycle Context tab's dominance card. Nullable field by field, so a partial upstream answer serves what it carries.

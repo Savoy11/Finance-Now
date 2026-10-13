@@ -302,7 +302,7 @@ export function AssetRegistryClient() {
               {technicalSweep.isLoading ? (
                 <>
                   <Loader2 size={13} className="animate-spin" />
-                  Sweeping candles — {technicalSweep.progress.done} of{' '}
+                  Sweeping daily prices — {technicalSweep.progress.done} of{' '}
                   {technicalSweep.progress.total || technicalSweep.universe} coins. One
                   request each, so this runs only while a technical condition is set.
                 </>
@@ -313,10 +313,13 @@ export function AssetRegistryClient() {
                   {technicalSweep.universe} coins.
                   {technicalSweep.covered < technicalSweep.universe && (
                     <span className="text-amber-400">
-                      The rest had no candles available and are counted as not tested, never as
-                      non-matches.
+                      The rest had no daily prices available and are counted as not tested, never
+                      as non-matches.
                     </span>
                   )}
+                  {/* The technical columns come from the chart route, not the price
+                      feed the page's own SourceLine names, so they carry their own. */}
+                  <SourceLine id="ohlcv" className="w-full" />
                 </>
               )}
             </div>

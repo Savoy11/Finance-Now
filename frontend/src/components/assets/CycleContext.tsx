@@ -21,6 +21,7 @@ import {
 import { ASSET_CATALOG } from '@/lib/data/assetCatalog'
 import { CYCLE_HISTORY, getCycleHistoryProvenance, peakLabel, troughLabel } from '@/lib/data/cycleHistory'
 import { STALE_TIME_LONG } from '@/lib/constants'
+import { ohlcvSourceLabel } from '@/lib/utils/ohlcvSource'
 import type { BtcStatsData } from '@/app/live-data/btc-stats/route'
 import type { FearGreedData } from '@/app/live-data/fear-greed/route'
 import type { GlobalMarketData } from '@/app/live-data/global/route'
@@ -72,17 +73,19 @@ export function CycleContext() {
   const provenance = useMemo(() => getCycleHistoryProvenance(), [])
 
   // BTC daily closes for the Pi Cycle averages (Phase 3). range=BT is the
-  // backtest range: ~2.7y of daily candles, comfortably past the 350 the long
-  // average needs. Keyless (Binance primary, CoinGecko fallback).
-  const { data: btcDaily } = useQuery<{ ok: boolean; candles?: { close: number }[] }>({
-    queryKey: ['ohlcv', 'btc', 'BT'],
-    queryFn: () => fetch('/live-data/ohlcv?id=btc&range=BT').then(r => r.json()),
+  // backtest range: ~2.7y of daily prices, comfortably past the 350 the long
+  // average needs. Both averages are of closing prices, so this asks for closes
+  // (`closes=1`) and DefiLlama's keyless daily prices answer first (T-423, D103).
+  const { data: btcDaily } = useQuery<{ ok: boolean; candles?: { close: number }[]; source?: string; venue?: string }>({
+    queryKey: ['ohlcv', 'btc', 'BT', 'closes'],
+    queryFn: () => fetch('/live-data/ohlcv?id=btc&range=BT&closes=1').then(r => r.json()),
     staleTime: STALE_TIME_LONG,
   })
   const piCycle = useMemo(
     () => (btcDaily?.ok && btcDaily.candles ? piCycleState(btcDaily.candles.map(c => c.close)) : null),
     [btcDaily],
   )
+  const piCycleSource = ohlcvSourceLabel(btcDaily?.source, btcDaily?.venue)
 
   // Rotation read (Phase 2). Stablecoin flags come from the catalog — the raw
   // quote rows carry no category, and a pegged asset in the denominator would
@@ -324,11 +327,12 @@ export function CycleContext() {
               </div>
               <p className="text-[10px] font-mono text-text-muted">
                 computed from {piCycle.daysOfHistory.toLocaleString()} daily closes
+                {piCycleSource && <> · {piCycleSource}</>}
               </p>
             </>
           ) : (
             <p className="text-[11px] text-amber-400">
-              Needs 350 daily closes of BTC history and the candle feed didn&rsquo;t provide them right now.
+              Needs 350 daily closes of BTC history and the price feed didn&rsquo;t provide them right now.
             </p>
           )}
           <p className="text-[11px] leading-relaxed text-text-muted">{CYCLE_COPY.piCycleCaveat}</p>
