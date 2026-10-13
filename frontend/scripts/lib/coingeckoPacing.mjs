@@ -23,9 +23,10 @@
 // Hence a WEIGHT per check: how many upstream requests it actually issues.
 //
 // ⚠ The weight is an upper bound, not a measurement, and deliberately so. A
-// check on a fallback ladder (`ohlcv`) may be served by Binance and spend no
-// CoinGecko budget at all, and the harness cannot know which rung answered
-// until after the request. Over-counting costs the run some seconds;
+// check on a fallback ladder (`ohlcv` with closes=1) may be served by DefiLlama
+// and spend no CoinGecko budget at all, and the harness cannot know which rung
+// answered until after the request. (Until 2026-10-13 the example was Binance,
+// ohlcv's first candle rung, which came out under T-423.) Over-counting costs the run some seconds;
 // under-counting costs it a 429 that reads as a broken route. Those are not
 // symmetric, so this errs high on purpose — do not "optimise" it by only
 // charging for calls that turned out to be CoinGecko's.

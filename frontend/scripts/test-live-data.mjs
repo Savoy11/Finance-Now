@@ -62,6 +62,9 @@ const fallback = (detail) => ({ verdict: FALLBACK, detail })
 const unconfigured = (detail) => ({ verdict: UNCONFIGURED, detail })
 const empty = (detail) => ({ verdict: EMPTY, detail })
 
+/** Days between a series' first and last candle (unix-second `time`). */
+const spanDays = (candles) => candles.length < 2 ? 0 : Math.round((candles.at(-1).time - candles[0].time) / 86_400)
+
 // ─── CoinGecko pacing ────────────────────────────────────────────────────────
 // The model and its two past mistakes are documented in scripts/lib/
 // coingeckoPacing.mjs, which is where the logic lives so it can be tested.
@@ -117,12 +120,18 @@ const cgPacer = createCoinGeckoPacer({
  *                   + TOKENIZED_SECURITY_CATEGORIES  — 7 category pages (TS-3,
  *                     (lib/server/tokenizedSecurities)  2026-10-07), cached a day,
  *                                                      so 8 is a cold-cache bound
+ *   ohlcv           /ohlc + /market_chart, together  — 2 per candle request since
+ *                                                      the Binance rungs went
+ *                                                      (T-423, 2026-10-13); a
+ *                                                      closes=1 check that DefiLlama
+ *                                                      answers spends none
  * Anything absent counts as 1. Over-counting only costs the run time; see the
  * module's note on why that asymmetry is deliberate.
  */
 const COINGECKO_CALL_WEIGHT = {
   '/live-data/coin-list': 3,
   '/live-data/coin-discovery': 8,
+  '/live-data/ohlcv': 2,
 }
 const coinGeckoWeight = (t) => {
   const hit = Object.entries(COINGECKO_CALL_WEIGHT).find(([r]) => t.path.startsWith(r))
@@ -189,22 +198,23 @@ const tests = [
     return `${entries.length} assets, source=${j.source}, BTC=$${Math.round(px).toLocaleString()}`
   }},
 
+  // Candles come from CoinGecko alone since the Binance rungs went (T-423,
+  // 2026-10-13). Its free service sends 4-day candles past 30 days, so a year is
+  // about 92 of them, not 365: the measured launch state, which the charts answer
+  // by switching to closing prices. So these check the span the candles cover and
+  // name the size, rather than counting candles against a daily expectation.
   { group: 'crypto/market', path: '/live-data/ohlcv?id=btc&range=1Y', name: 'ohlcv btc 1Y', quick: true, check: (j) => {
-    if (!j.ok || !Array.isArray(j.candles)) throw new Error('not ok / no candles')
-    if (j.candles.length < 100) throw new Error(`only ${j.candles.length} candles for 1Y`)
+    if (!j.ok || !Array.isArray(j.candles)) throw new Error(`not ok: ${j.error ?? 'no candles'}`)
+    const days = spanDays(j.candles)
+    if (days < 300) throw new Error(`1Y candles cover only ${days} days`)
     const c = j.candles.at(-1)
     if (!(c.high >= c.low && c.high >= c.open && c.high >= c.close)) throw new Error('OHLC invariant broken')
     // Degenerate candles (o==h==l==c) mean a price series was reshaped to look
     // like OHLCV — real candles must show intra-period range.
     const flat = j.candles.filter((k) => k.open === k.high && k.high === k.low && k.low === k.close).length
     if (flat > j.candles.length * 0.5) throw new Error(`${flat}/${j.candles.length} candles have zero range — not real OHLC`)
-    // Binance.com is geo-blocked (451) from some regions; the route silently
-    // falls back to the Binance.US mirror, which is a DIFFERENT venue with its
-    // own liquidity and prices. `venue` surfaces which one actually served.
-    if (j.source === 'binance' && j.venue === 'binance-us') {
-      return fallback(`${j.candles.length} candles — Binance.com geo-blocked, served by Binance.US (different venue/prices)`)
-    }
-    return `${j.candles.length} candles, source=${j.source}${j.venue ? ` (${j.venue})` : ''}, last=$${Math.round(c.close).toLocaleString()}`
+    if (j.bars !== 'ohlc') throw new Error(`a candle request came back as bars=${j.bars}`)
+    return `${j.candles.length} ${j.granularity} candles over ${days} days, source=${j.source}, last=$${Math.round(c.close).toLocaleString()}`
   }},
 
   // The closing-price path (T-423, D103). Flat candles are RIGHT here, and only
@@ -220,15 +230,29 @@ const tests = [
   }},
 
   { group: 'crypto/market', path: '/live-data/ohlcv?id=xrp&range=6M', name: 'ohlcv xrp 6M (regression)', check: (j) => {
-    if (!j.ok || !Array.isArray(j.candles) || j.candles.length < 100) throw new Error(`xrp 6M sparse: ${j.candles?.length}`)
-    if (j.source === 'binance' && j.venue === 'binance-us') return fallback(`${j.candles.length} candles via Binance.US`)
-    return `${j.candles.length} candles, source=${j.source}`
+    if (!j.ok || !Array.isArray(j.candles)) throw new Error(`xrp 6M: ${j.error ?? 'no candles'}`)
+    const days = spanDays(j.candles)
+    if (days < 150) throw new Error(`xrp 6M sparse: ${j.candles.length} candles over ${days} days`)
+    return `${j.candles.length} ${j.granularity} candles over ${days} days, source=${j.source}`
   }},
 
-  { group: 'crypto/market', path: '/live-data/ohlcv?id=eth&range=MAX', name: 'ohlcv eth MAX', check: (j) => {
-    if (!j.ok || !Array.isArray(j.candles) || j.candles.length < 50) throw new Error(`eth MAX: ${j.candles?.length}`)
-    if (j.source === 'binance' && j.venue === 'binance-us') return fallback(`${j.candles.length} candles via Binance.US`)
-    return `${j.candles.length} candles, source=${j.source}`
+  // Past 365 days CoinGecko's free service refuses candles, in its own words, and
+  // a paid key lifts that. The charts and the assistant read the closes below.
+  { group: 'crypto/market', path: '/live-data/ohlcv?id=eth&range=MAX', name: 'ohlcv eth MAX candles', check: (j) => {
+    if (!j.ok && /365 days/.test(String(j.error))) return unconfigured('CoinGecko’s free service refuses candles past 365 days; a paid key reaches them, and the charts read DefiLlama closes')
+    if (!j.ok || !Array.isArray(j.candles) || j.candles.length < 50) throw new Error(`eth MAX: ${j.error ?? j.candles?.length}`)
+    return `${j.candles.length} ${j.granularity} candles, source=${j.source}`
+  }},
+
+  { group: 'crypto/market', path: '/live-data/ohlcv?id=eth&range=MAX&closes=1', name: 'ohlcv eth MAX closes (DefiLlama)', check: (j) => {
+    if (!j.ok || !Array.isArray(j.candles)) throw new Error(`not ok: ${j.error ?? 'no candles'}`)
+    if (j.source !== 'defillama') return fallback(`${j.candles.length} candles from ${j.source} — DefiLlama did not answer`)
+    if (j.bars !== 'close') throw new Error(`DefiLlama prices not marked as closes (bars=${j.bars})`)
+    if (j.granularity !== '1W') throw new Error(`expected weekly prices, got ${j.granularity}`)
+    // Measured 2026-10-13: 584 weekly prices, back to 12 August 2015, across two
+    // 500-week pages. A short answer means the second page went missing.
+    if (j.candles.length < 400) throw new Error(`only ${j.candles.length} weekly prices for MAX`)
+    return `${j.candles.length} weekly closes over ${spanDays(j.candles)} days, source=defillama`
   }},
 
   { group: 'crypto/market', path: '/live-data/chart?id=btc&days=30', name: 'chart (synthetic OHLC proxy)', check: (j) => {

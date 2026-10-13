@@ -76,7 +76,7 @@ export function CycleContext() {
   // backtest range: ~2.7y of daily prices, comfortably past the 350 the long
   // average needs. Both averages are of closing prices, so this asks for closes
   // (`closes=1`) and DefiLlama's keyless daily prices answer first (T-423, D103).
-  const { data: btcDaily } = useQuery<{ ok: boolean; candles?: { close: number }[]; source?: string; venue?: string }>({
+  const { data: btcDaily } = useQuery<{ ok: boolean; candles?: { close: number }[]; source?: string }>({
     queryKey: ['ohlcv', 'btc', 'BT', 'closes'],
     queryFn: () => fetch('/live-data/ohlcv?id=btc&range=BT&closes=1').then(r => r.json()),
     staleTime: STALE_TIME_LONG,
@@ -85,7 +85,7 @@ export function CycleContext() {
     () => (btcDaily?.ok && btcDaily.candles ? piCycleState(btcDaily.candles.map(c => c.close)) : null),
     [btcDaily],
   )
-  const piCycleSource = ohlcvSourceLabel(btcDaily?.source, btcDaily?.venue)
+  const piCycleSource = ohlcvSourceLabel(btcDaily?.source)
 
   // Rotation read (Phase 2). Stablecoin flags come from the catalog — the raw
   // quote rows carry no category, and a pegged asset in the denominator would

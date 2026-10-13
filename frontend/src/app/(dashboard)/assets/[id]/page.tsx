@@ -393,7 +393,7 @@ function TechnicalAnalysisTab({ asset }: { asset: NonNullable<ReturnType<typeof 
                 <ClosingPricesNotice
                   reason={closesReason}
                   size={candleGranularity(candles.map((c) => c.time))}
-                  source={ohlcvSourceLabel(data?.source, data?.venue)}
+                  source={ohlcvSourceLabel(data?.source)}
                   candleError={candleError}
                   panelsOff={EMBED_PANELS_OFF_FOR_CLOSES}
                 />

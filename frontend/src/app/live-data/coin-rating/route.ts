@@ -16,9 +16,10 @@ import {
 // machine or to FN_ADMIN_TOKEN (lib/risk/visibility.ts).
 //
 // One CoinGecko request per coin per UTC day: the daily chart carries the closes, the
-// cross-exchange volume and the market cap together. Not /live-data/ohlcv, which asks
-// Binance first: Binance's volume is one exchange's, and the liquidity dimension
-// measures the total. No fallback either: without CoinGecko's volume and market cap,
+// cross-exchange volume and the market cap together. Not /live-data/ohlcv: its
+// candles cost two CoinGecko requests and carry no market cap, and until 2026-10-13
+// it asked Binance first, whose volume is one exchange's while the liquidity
+// dimension measures the total. No fallback either: without CoinGecko's volume and market cap,
 // liquidity and scale would both be missing, below the coverage floor, so a second
 // price source could not produce a rating.
 

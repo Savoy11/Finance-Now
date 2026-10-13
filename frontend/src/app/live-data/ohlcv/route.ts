@@ -8,8 +8,8 @@ import type { CandleBars } from '@/lib/utils/indicators'
 
 // OHLCV proxy. Which source answers depends on what the caller can use.
 //
-//   Candles (the default): Binance, then CoinGecko.
-//   Closing prices (`closes=1`): DefiLlama, then the candle ladder.
+//   Candles (the default): CoinGecko.
+//   Closing prices (`closes=1`): DefiLlama, then CoinGecko's candles.
 //
 // Charts launch on CoinGecko's candles and DefiLlama's closing prices (T-423,
 // owner decision D103, 2026-10-13). DefiLlama's price API (coins.llama.fi) sends
@@ -19,28 +19,31 @@ import type { CandleBars } from '@/lib/utils/indicators'
 // key, 15-minute to weekly spacing, history back to each coin's listing
 // (Bitcoin from April 2013), at most 500 prices a request.
 //
-// ⚠ The Binance rungs must go before launch (T-423, D102). Binance.US licenses
-// its data "personal to you" and names no route to public use; Binance.com's
-// terms could not be read. Before launch is personal use (D96, restated by the
-// owner in D103), so they stay until the pages reading candles run on the launch
-// sources. CoinGecko alone cannot carry those on its free service: it refuses
-// history older than 365 days, sends 4-day candles for any window over 30 days,
-// and a scanner sweep needs about 160 calls against fewer than 10 a minute.
+// CoinGecko's free service refuses history older than 365 days and sends 4-day
+// candles for any window over 30 days. So a candle caller gets coarse candles past
+// 30 days and none past 365, and the readers that can use closing prices switch
+// to them there: the two crypto charts (hooks/useCryptoChartSeries.ts) and the
+// assistant's get_price_history. CoinGecko's refusal is addressed to "Public API
+// users"; a paid key (COINGECKO_API_KEY) is not refused the same way.
+//
+// Binance and Binance.US were the first candle rungs until 2026-10-13 and came
+// out under T-423 (D102, D103): Binance.US licenses its data "personal to you"
+// and names no route to public use, and Binance.com's terms could not be read.
+// A `?source=binance` from an old client is served like `auto`.
 //
 // Query params:
 //   id     = internal asset id (e.g. "btc")
 //   range  = 1H | 4H | 1M | 3M | 6M | YTD | 1Y | 3Y | 5Y | 10Y | MAX  (default "1Y")
 //            (legacy: timeframe=1H|4H|1D|1W is aliased)
 //   closes = "1" when the caller computes from closing prices only
-//   source = "auto" (default) | "binance" | "coingecko" | "defillama"
+//   source = "auto" (default) | "coingecko" | "defillama"
 //
 // Response: { ok, range, candles: OhlcvCandle[], granularity, source, bars }
 // `bars` is 'ohlc' for real candles and 'close' for DefiLlama's prices, which
 // arrive as candles whose open, high, low and close are the one price, with
 // volume 0. `granularity` is measured from the candles
-// (lib/utils/candleGranularity), not typed per range: the same range is 1-hour
-// bars from Binance and 30-minute bars from CoinGecko, and daily from Binance
-// but 4-day from CoinGecko past 30 days.
+// (lib/utils/candleGranularity), not typed per range: the same range can be
+// daily from DefiLlama but 4-day from CoinGecko.
 
 export const dynamic = 'force-dynamic'
 
@@ -68,15 +71,18 @@ interface RangeConfig {
   sliceDays?: number
   ytd?: true
   revalidate: number
-  /** The spacing asked of Binance and DefiLlama, in the notation both accept: 15m, 1h, 4h, 1d, 1w. */
+  /** The spacing asked of DefiLlama, in its notation: 15m, 1h, 4h, 1d, 1w. */
   interval: string
   /** How many of them. */
   points: number
 }
 
 const RANGE_CONFIG: Record<string, RangeConfig> = {
-  // Backtest-only: a long DAILY series (~2.7y) so 200-period strategies have a
-  // real usable window. Not exposed in the chart range picker.
+  // A long DAILY series (~2.7y) so 200-period strategies have a real usable
+  // window. Not exposed in the chart range picker. Cycle Context's Pi Cycle reads
+  // it as closes from DefiLlama. The hidden Backtest tab asks for candles, which
+  // have had no source past 365 days on CoinGecko's free service since the
+  // Binance rungs went (T-423, 2026-10-13).
   'BT':  { cgDays: 'max', resample: 'daily',  revalidate: 3600, interval: '1d',  points: 1000 },
   '15m': { cgDays: '1',   resample: 'none',   revalidate: 60,   interval: '15m', points: 200  },
   '1H':  { cgDays: '1',   resample: 'none',   revalidate: 60,   interval: '1h',  points: 168  },
@@ -152,70 +158,10 @@ function applySlice(candles: OhlcvCandle[], cfg: RangeConfig): OhlcvCandle[] {
   // Cap only. CoinGecko's `/ohlc?days=1` returns 30-minute candles covering one
   // day — about 48 bars — so this slice never actually trims. It is a ceiling
   // against a provider that starts serving more, not a window: 168 × 30m would
-  // be 3.5 days, not the week an earlier comment here claimed. (The Binance rung
-  // is unaffected; it asks for 168 × 1h bars directly.)
+  // be 3.5 days, not the week an earlier comment here claimed. DefiLlama's 1H
+  // answer is 168 hourly prices asked for directly, so this does not trim it either.
   if (cfg.cgDays === '1') return candles.slice(-168)
   return candles
-}
-
-// ─── Binance ───────────────────────────────────────────────────────────────────
-
-// Internal id → Binance USDT pair. Tried first (fast, high rate limits); any id
-// without a mapping — or whose pair isn't listed on the reachable host — falls
-// back to CoinGecko automatically. Wrong/unlisted symbols are harmless: the
-// request just fails and we fall through. Kept broad so the scanner can cover
-// the whole monitored universe over Binance wherever a pair exists.
-const BINANCE_SYMBOL: Record<string, string> = {
-  // Majors / L1s
-  btc: 'BTCUSDT', eth: 'ETHUSDT', sol: 'SOLUSDT', bnb: 'BNBUSDT',
-  xrp: 'XRPUSDT', ada: 'ADAUSDT', doge: 'DOGEUSDT', avax: 'AVAXUSDT',
-  dot: 'DOTUSDT', matic: 'MATICUSDT', pol: 'POLUSDT', ltc: 'LTCUSDT',
-  trx: 'TRXUSDT', ton: 'TONUSDT', bch: 'BCHUSDT', hbar: 'HBARUSDT',
-  near: 'NEARUSDT', atom: 'ATOMUSDT', icp: 'ICPUSDT', etc: 'ETCUSDT',
-  algo: 'ALGOUSDT', fil: 'FILUSDT', apt: 'APTUSDT', sui: 'SUIUSDT',
-  sei: 'SEIUSDT', tia: 'TIAUSDT', tao: 'TAOUSDT', flr: 'FLRUSDT',
-  vet: 'VETUSDT', xtz: 'XTZUSDT', iota: 'IOTAUSDT', theta: 'THETAUSDT',
-  cfx: 'CFXUSDT', chz: 'CHZUSDT', zec: 'ZECUSDT', xmr: 'XMRUSDT',
-  // L2s / infra
-  link: 'LINKUSDT', arb: 'ARBUSDT', op: 'OPUSDT', inj: 'INJUSDT',
-  // DeFi
-  uni: 'UNIUSDT', aave: 'AAVEUSDT', mkr: 'MKRUSDT', snx: 'SNXUSDT',
-  crv: 'CRVUSDT', ldo: 'LDOUSDT', grt: 'GRTUSDT',
-}
-
-// Binance hosts, tried in order. api.binance.com is geo-blocked (HTTP 451) in
-// some regions (incl. the US); api.binance.us is the US-accessible mirror with
-// an identical klines API. Trying both makes OHLCV work regardless of region.
-const BINANCE_HOSTS = ['https://api.binance.com', 'https://api.binance.us']
-
-async function fetchBinance(id: string, cfg: RangeConfig): Promise<{ candles: OhlcvCandle[]; host: string }> {
-  const symbol = BINANCE_SYMBOL[id.toLowerCase()]
-  if (!symbol) throw new Error('no-binance-mapping')
-
-  const path = `/api/v3/klines?symbol=${symbol}&interval=${cfg.interval}&limit=${cfg.points}`
-  let res: Response | undefined
-  let servedBy = ''
-  let lastStatus = 0
-  for (const host of BINANCE_HOSTS) {
-    try {
-      const r = await fetch(host + path, { next: { revalidate: cfg.revalidate }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) })
-      if (r.ok) { res = r; servedBy = host; break }
-      lastStatus = r.status // 451 (geo-block), 400 (symbol not on this host), etc. → try next host
-    } catch {
-      // network error → try next host
-    }
-  }
-  if (!res) throw new Error(`binance-${lastStatus || 'unreachable'}`)
-
-  const raw = await res.json() as [number, string, string, string, string, string, ...unknown[]][]
-  let candles: OhlcvCandle[] = raw.map(([openTime, open, high, low, close, volume]) => ({
-    time: Math.floor(openTime / 1000),
-    open: parseFloat(open), high: parseFloat(high),
-    low: parseFloat(low),   close: parseFloat(close),
-    volume: parseFloat(volume) * parseFloat(close) / 1e6,
-  }))
-  candles = applySlice(candles, cfg)
-  return { candles, host: servedBy }
 }
 
 // ─── CoinGecko ─────────────────────────────────────────────────────────────────
@@ -353,12 +299,12 @@ export async function GET(request: NextRequest) {
   const closesWanted = request.nextUrl.searchParams.get('closes') === '1'
 
   // auto: closing prices from DefiLlama when the caller asked for them; then
-  //       Binance for any coin that has a mapping; then CoinGecko
+  //       CoinGecko's candles
   // defillama: DefiLlama only
-  // binance: Binance only
   // coingecko: CoinGecko only
+  // Anything else, `binance` included, is served like auto.
 
-  if (source === 'defillama' || (source === 'auto' && closesWanted)) {
+  if (source === 'defillama' || (source !== 'coingecko' && closesWanted)) {
     try {
       const candles = await fetchDefiLlamaCloses(id, cfg)
       return NextResponse.json({
@@ -366,49 +312,20 @@ export async function GET(request: NextRequest) {
         source: 'defillama', bars: 'close' satisfies OhlcvBars,
       })
     } catch (err) {
-      // Falls through to the candle ladder, whose closes serve this caller too.
+      // Falls through to CoinGecko, whose candles' closes serve this caller too.
       if (source === 'defillama') {
         return NextResponse.json({ ok: false, candles: [], error: String(err) })
       }
     }
   }
 
-  if ((source === 'auto' || source === 'binance') && BINANCE_SYMBOL[id.toLowerCase()]) {
-    try {
-      const { candles, host } = await fetchBinance(id, cfg)
-      // `source` stays 'binance' — it is the provider-family key that consumers
-      // (technical-analysis page, agent tools) switch on, so renaming it would
-      // silently blank their provenance label.
-      //
-      // `venue` is additive and records which host actually served the data.
-      // api.binance.com is geo-blocked (451) from some regions, so the flat
-      // 'binance' label hid the fact that candles were really coming from the
-      // Binance.US mirror — a separate venue with its own liquidity and
-      // therefore its own prices. Anything comparing Finance Now candles against a
-      // Binance.com reference needs to know which one it got.
-      return NextResponse.json({
-        ok: true, range, candles, granularity: candleGranularity(candles.map((c) => c.time)), source: 'binance',
-        venue: host.includes('binance.us') ? 'binance-us' : 'binance-com', bars: 'ohlc' satisfies OhlcvBars,
-      })
-    } catch (err) {
-      // fall through to CoinGecko unless explicitly forced to Binance
-      if (source === 'binance') {
-        return NextResponse.json({ ok: false, candles: [], error: String(err) })
-      }
-    }
+  try {
+    const candles = await fetchCoinGecko(id, cfg)
+    return NextResponse.json({
+      ok: true, range, candles, granularity: candleGranularity(candles.map((c) => c.time)),
+      source: 'coingecko', bars: 'ohlc' satisfies OhlcvBars,
+    })
+  } catch (err) {
+    return NextResponse.json({ ok: false, candles: [], error: String(err) })
   }
-
-  if (source !== 'binance') {
-    try {
-      const candles = await fetchCoinGecko(id, cfg)
-      return NextResponse.json({
-        ok: true, range, candles, granularity: candleGranularity(candles.map((c) => c.time)),
-        source: 'coingecko', bars: 'ohlc' satisfies OhlcvBars,
-      })
-    } catch (err) {
-      return NextResponse.json({ ok: false, candles: [], error: String(err) })
-    }
-  }
-
-  return NextResponse.json({ ok: false, candles: [], error: 'no-source' })
 }

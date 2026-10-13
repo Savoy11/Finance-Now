@@ -100,8 +100,8 @@ export const BUILTIN_PROVIDERS: BuiltinProviderDef[] = [
   },
   // Binance was the third price provider until 2026-10-12. Its only use as a price
   // source was the middle rung of /live-data/markets, which came out under T-423
-  // (D91, D102). Its charts on /live-data/ohlcv never read this registry; they
-  // stay until launch and go with the rest of T-423.
+  // (D91, D102). Its charts on /live-data/ohlcv never read this registry, and
+  // came out on 2026-10-13 with the rest of T-423.
   // ── Social ──
   // Reddit is gated off by its robots.txt, and its API now needs Reddit's approval:
   // a post-launch project (D58, 2026-10-04; T-245). Both Reddit rows say so.

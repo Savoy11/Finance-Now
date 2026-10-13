@@ -22,7 +22,7 @@ sent and no vendor has been contacted.** Sending is the owner's act.
 | FMP | Order Form under §2.1; also flags that §2.6.2's Acceptable Data Use Policy URL 404s | drafted |
 | Finnhub | written approval; also requests two referenced documents nobody can locate | drafted |
 | Twelve Data | Redistribution Rights Add-On; also asks where §2.3(g)'s cache limits actually live | drafted |
-| Binance.US | *not* a permission request — it names no route. Asks which instrument governs API access at all | drafted |
+| Binance.US | *not* a permission request — it names no route. Asks which instrument governs API access at all | drafted; moot since 2026-10-13, when the app stopped fetching Binance.US (§10) |
 
 Drafted since, each in its own file in `docs/licensing/`, none sent:
 
@@ -383,3 +383,17 @@ Every source was re-read under the rule: `docs/assessments/source-terms-prelaunc
   also bar any AI use, which would reach the app's assistant even before launch.
 - **A letter to Kraken is drafted, not sent** (`docs/licensing/kraken-enquiry-2026-10-12.md`).
   Kraken fits best on measurement: 58 of the 80 coins and 720 daily candles.
+
+## 10. What changed on 2026-10-13 (D103, T-423)
+
+- **Charts launch on CoinGecko's candles and DefiLlama's closing prices** (D103). Owner: *"Lets
+  use the other two options; remember anything we do pre launch is considered personal use"*.
+  No licence is pursued first, and the Kraken letter stays drafted and unsent.
+- **Binance and Binance.US are out of the app.** The chart route was their last caller; nothing
+  fetches either host now. That makes the Binance.US enquiry in §1 moot rather than unsent, and
+  it leaves FMP, Finnhub and Twelve Data as the three default licences in §2's table that bar a
+  deployment others can reach.
+- **The weight moves to DefiLlama**, which now carries every closes-only reader of the chart route
+  and is the only free-tier source of crypto price history older than 365 days. Its registry
+  entry stays `seeded`: the 2026-09-26 reading found no terms-of-use document anywhere, so there
+  is still nothing to read or ratify.

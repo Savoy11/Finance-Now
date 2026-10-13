@@ -19,8 +19,11 @@
  * carries classes and scores for stocks, never their prices or price-derived figures.
  *
  * Data limits, stated in the report: CoinGecko's free tier serves 365 days, which is one
- * rating's worth, so coin backtests and stability use Binance.US closes (via /live-data/ohlcv)
- * and measure price behaviour only. Stock backtests scale today's reference market cap by
+ * rating's worth, so coin backtests and stability use DefiLlama's daily closes (via
+ * /live-data/ohlcv, source=defillama) and measure price behaviour only. They used Binance.US
+ * closes until 2026-10-13, when that source came out (T-423); the 2026-10-10 run read those.
+ * DefiLlama alone, not closes=1: that falls through to CoinGecko's candles, which are 4-day
+ * past 30 days, and the backtests count daily periods. Stock backtests scale today's reference market cap by
  * price and use each year's net margin; debt ÷ equity has no history in the route, so it is
  * left out at past dates.
  */
@@ -91,9 +94,9 @@ async function loadCoins(): Promise<Coin[]> {
     const notes: string[] = []
     const chart = await coingeckoChart(e.coingeckoId)
     if (typeof chart === 'string') notes.push(`CoinGecko: ${chart}`)
-    const h = await getJson<{ ok: boolean; candles: OhlcvCandle[]; error?: string }>(`${BASE}/live-data/ohlcv?id=${a.id}&range=BT&source=binance`)
+    const h = await getJson<{ ok: boolean; candles: OhlcvCandle[]; error?: string }>(`${BASE}/live-data/ohlcv?id=${a.id}&range=BT&source=defillama`)
     const history = h.ok && h.body.ok && h.body.candles.length ? h.body.candles : null
-    if (!history) notes.push(`Binance history: ${h.ok ? h.body.error ?? 'none' : h.error}`)
+    if (!history) notes.push(`DefiLlama history: ${h.ok ? h.body.error ?? 'none' : h.error}`)
     out.push({ id: a.id, symbol: a.symbol, chart: typeof chart === 'string' ? null : chart, history, notes })
     await sleep(8_000)
   }
@@ -153,7 +156,7 @@ function rateStockAt(s: Stock, at: Date): Rated | null {
 }
 
 /**
- * A coin's price-behaviour score as of `at`, from Binance.US closes. Liquidity and scale are
+ * A coin's price-behaviour score as of `at`, from DefiLlama's daily closes. Liquidity and scale are
  * filled with placeholders only to clear the coverage floor; the core score the engine
  * returns depends on volatility and drawdown alone.
  */
@@ -349,7 +352,7 @@ async function main() {
     }
   }
   table(['Set', 'Horizon', 'Quarter starts', 'Median assets', 'ρ with later volatility', 'ρ with later largest fall'], backRows)
-  out(`Stocks at past dates: market cap is today's reference figure scaled by price, net margin is each fiscal year's from SEC filings (filed 90 days after year end), and debt ÷ equity is left out (the route carries no history of it). Coins: Binance.US closes, price behaviour only.`)
+  out(`Stocks at past dates: market cap is today's reference figure scaled by price, net margin is each fiscal year's from SEC filings (filed 90 days after year end), and debt ÷ equity is left out (the route carries no history of it). Coins: DefiLlama daily closes, price behaviour only.`)
   out()
 
   // ── 3. sensitivity ──

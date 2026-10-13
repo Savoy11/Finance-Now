@@ -4,8 +4,8 @@
  * `/live-data/ohlcv` used to send a typed `granularity` per range, and it was
  * wrong in both directions. CoinGecko's free service returns 4-DAY candles for
  * any window over 30 days, so a one-year series of 92 candles went out as "1D";
- * and the Binance rung asks for 1-hour bars on the 1H range while the label said
- * "30m". Measured 2026-10-12 (T-423): `/coins/bitcoin/ohlc?days=365` → 92
+ * and the Binance rung (gone since 2026-10-13) asked for 1-hour bars on the 1H
+ * range while the label said "30m". Measured 2026-10-12 (T-423): `/coins/bitcoin/ohlc?days=365` → 92
  * candles, 96 hours apart. A size worked out from the candles cannot disagree
  * with them.
  *

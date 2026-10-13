@@ -37,9 +37,11 @@ const READERS: Record<string, string> = {
   'app/(dashboard)/scanner/page.tsx': "runs detectSetups and computeSignalSummary with 'close'",
   'components/analytics/technical/MultiTimeframeGrid.tsx': "runs computeSignalSummary with 'close'",
   'lib/data/dataSources.ts': 'describes the parameter in the ohlcv entry’s notes; fetches nothing',
+  'lib/agents/tools.ts': 'get_price_history asks for closes only when candles fail, and then reports highestClose and lowestClose, never a high or low',
 }
 
-const askers = walk(SRC).filter((f) => /closes=1|SWEEP_WANTS/.test(code(f))).map(rel).sort()
+// `source=defillama` reaches the same prices without `closes=1`, so it counts as asking too.
+const askers = walk(SRC).filter((f) => /closes=1|SWEEP_WANTS|source=defillama/.test(code(f))).map(rel).sort()
 
 describe('closes=1 readers', () => {
   it('every file asking for closing prices is a known closes-only reader', () => {

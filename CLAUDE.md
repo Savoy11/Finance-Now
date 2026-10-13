@@ -474,14 +474,18 @@ Client component
 | `kobe.mainnet.jito.network/api/v1/apy` | Live jitoSOL APY | `staking-rates` |
 | Various RSS/JSON feeds | News articles | `news` |
 
-> ⚠ **Binance and Binance.US leave the crypto data before launch (T-423, D102, 2026-10-12).**
+> ⚠ **Binance and Binance.US are out of the crypto data (T-423, D102, D103; done 2026-10-13).**
 > Binance.US licenses its data "personal to you" with no route to public use, and Binance.com's
 > terms could not be read. The price backup (`/live-data/markets`, now CoinGecko → CoinMarketCap)
-> and the coin list's order (now market-cap rank) are already off them, and Binance is gone from
-> Integrations. **`/live-data/ohlcv` keeps both until a second keyless chart source is read and
-> approved**, because CoinGecko's free service alone cannot carry it, measured that day: it
-> refuses history older than 365 days, sends 4-day candles for any window over 30 days, and
-> allows fewer than 10 calls a minute against a scanner sweep of about 160. The route's
+> and the coin list's order (now market-cap rank) came off them on 2026-10-12, and Binance went
+> from Integrations. **`/live-data/ohlcv` followed on 2026-10-13**, once DefiLlama's closing
+> prices (below) covered what CoinGecko's free service cannot, measured 2026-10-12: it refuses
+> history older than 365 days, sends 4-day candles for any window over 30 days, and allows fewer
+> than 10 calls a minute against a scanner sweep of about 160. Nothing in the app fetches a
+> Binance host now; `ohlcvRoute.test.ts` fails if the chart route calls one, for any range or a
+> stale `source=binance`, which is served like `auto`. The registry keeps both entries as the
+> record of their verdicts. The hidden Backtest tab's `BT` range asks for candles past 365 days
+> and so has no source on the free tier; `BacktestPanel.tsx` says what restoring it needs. The route's
 > `granularity` is measured from the candles (`lib/utils/candleGranularity.ts`), never typed per
 > range; the scanner, the multi-timeframe grid and the Coins screener leave out, and count, a coin
 > whose candles are not the size they asked for.
@@ -492,9 +496,14 @@ Client component
 > DefiLlama's price API (`coins.llama.fi`) has no key, 15-minute to weekly spacing and history
 > back to each coin's listing, but **one price per interval: no high, low or volume**. So
 > `/live-data/ohlcv` serves it **only to a caller that sends `closes=1`**, marked `bars: 'close'`
-> (real candles are `bars: 'ohlc'`). Only a caller that reads nothing but closes may send it:
-> the Coins screener's sweep (78 of 80 coins daily, against 39 before) and Cycle Context's Pi
-> Cycle. **The two crypto charts** (the TA page and the coin page) ask for candles first and
+> (real candles are `bars: 'ohlc'`), and serves CoinGecko's candles to everyone else. Only a
+> caller that reads nothing but closes may send it: the Coins screener's sweep (78 of 80 coins
+> daily, against 39 before) and Cycle Context's Pi Cycle. **The assistant's `get_price_history`**
+> asks for candles and reads closes only when the candle request fails (past 365 days, or a
+> CoinGecko refusal); its summary then reports `highestClose`/`lowestClose` instead of
+> `periodHigh`/`periodLow`, says the prices are closes, and carries why candles were not used
+> (`priceHistoryTool.test.ts`). It keeps CoinGecko's 4-day candles where they come, since their
+> highs and lows are still the period's real extremes. **The two crypto charts** (the TA page and the coin page) ask for candles first and
 > switch to closing prices only where the candles are missing or 4-day ones, through
 > `hooks/useCryptoChartSeries.ts`; on closes they draw a line, offer only the indicators that
 > read closes alone (`indicatorsFor(false, false)`, flags **measured** by
@@ -506,9 +515,8 @@ Client component
 > `setupInputs.test.ts` and `signalSummaryInputs.test.ts`) and name what they leave out.
 > **Do not add `closes=1` anywhere else** that reads a high, a low or a volume: fed one price as
 > a candle, each computes a zero range without complaint. `closesReaders.test.ts` fails on any
-> file asking for closes that it does not list, and `ohlcvRoute.test.ts` fails if a candle
-> request ever reaches DefiLlama. The Binance rungs stay on the candle ladder until the
-> assistant's price history runs on the launch sources; T-423 lists the remaining steps.
+> file asking for closes (`closes=1`, or `source=defillama`, which reaches the same prices) that
+> it does not list, and `ohlcvRoute.test.ts` fails if a candle request ever reaches DefiLlama.
 
 ### React Query patterns on the client:
 ```typescript
@@ -916,6 +924,8 @@ site nobody has reviewed. Full design: `docs/architecture/source-terms.md`.
 > owner's machine and **all four bar a deployment other people can reach**, with no tier
 > curing it. Three name a route (Order Form / written approval / Redistribution Add-On);
 > Binance.US names none. That is not a pricing question, so D21 does not defer it.
+> (Binance.US has since left the app: nothing fetches it from 2026-10-13, T-423. The other
+> three stand.)
 
 > **Tokenized securities** — `docs/assessments/tokenized-securities-2026-09-21.md` is the
 > dated record (regulation by jurisdiction, live products, data sources, the tree's gaps,
@@ -1175,9 +1185,10 @@ another CoinGecko check — backwards, a rate limit is a rate over a window), th
 *one check = one call* — which fixed `alerts` and `portfolio-history` but not
 `coin-discovery`, because `coin-list` issues **three** upstream page requests
 inside a single check and the budget recorded one. The next check took the 429 that
-belonged to its neighbour. Weights **mirror the routes** (`coin-list` = 3 pages);
+belonged to its neighbour. Weights **mirror the routes** (`coin-list` = 3 pages,
+`ohlcv` = 2 since its candles come only from CoinGecko's `/ohlc` + `/market_chart`);
 keep them in step or the budget drifts back out. The weight is an upper bound on
-purpose — a ladder check like `ohlcv` may be served by Binance and spend no budget
+purpose — an `ohlcv` check with `closes=1` may be served by DefiLlama and spend no budget
 at all, and over-counting costs seconds while under-counting costs a 429 that reads
 as a broken route. The run prints what the pacing cost, so the delay is never
 mistaken for slowness and "optimised" back out.
@@ -1363,7 +1374,8 @@ design, and spec work are fine remotely; "which data sources actually work" is n
 
 Two caveats that are **not** cloud artifacts, so an owner-machine run does not clear them
 (2026-09-09, `docs/audits/live-data-audit-2026-09-09.md`): **Binance.com's 451** is a US
-geo-block, so for a US owner the Binance.US fallback is the steady state, not a degraded run;
+geo-block, so for a US owner the Binance.US fallback was the steady state, not a degraded run
+(moot since 2026-10-13: neither Binance host is fetched, T-423);
 and **Reddit's absence is our own robots gate**, not a rate limit — it lifts only with
 `REDDIT_CLIENT_ID`. Both were previously filed under "datacenter IP", which sent debugging
 after a network fault that was never there.

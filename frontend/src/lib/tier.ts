@@ -1,7 +1,7 @@
 // Data tier configuration.
 // Controls which API source is used for each data category.
 //
-// "free"   — keyless public APIs only (Binance, DefiLlama, Alternative.me, mempool.space)
+// "free"   — keyless public APIs only (CoinGecko, DefiLlama, Alternative.me, mempool.space)
 // "paid"   — premium APIs using stored keys (CoinGecko Pro, CoinMarketCap, Messari, etc.)
 // "custom" — per-category overrides stored separately
 
@@ -43,10 +43,13 @@ export const TIER_CATEGORIES: Record<string, TierCategory> = {
   ohlcv: {
     label: 'OHLCV / Charts',
     description: 'Candlestick data for technical analysis',
-    freeSource: 'binance',
-    freeSourceLabel: 'Binance Klines',
+    // Display only: no caller passes this row's source to /live-data/ohlcv, which
+    // picks by what the reader can use (candles, or closes where it asks).
+    // "Binance Klines" until 2026-10-13, when that rung came out (T-423).
+    freeSource: 'coingecko',
+    freeSourceLabel: 'CoinGecko candles, DefiLlama closes',
     paidSource: 'coingecko',
-    paidSourceLabel: 'CoinGecko OHLC',
+    paidSourceLabel: 'CoinGecko candles, DefiLlama closes (same)',
     queryParam: 'source',
   },
   news: {

@@ -7,6 +7,13 @@
 // union in that page, to its two tab lists, and re-add the import of this file.
 // Do not delete it for being unreferenced — that is the state it is meant to be
 // in.
+//
+// ⚠ Before restoring, give it a source. It asks /live-data/ohlcv for range=BT, a
+// thousand daily CANDLES, and since the Binance rungs came out (T-423,
+// 2026-10-13) only CoinGecko serves candles: its free service refuses history
+// older than 365 days. Either a paid CoinGecko key, or closing prices
+// (`closes=1`, DefiLlama) for the strategies that read nothing else; the
+// volume strategies read volume, which closing prices carry none of.
 
 import { useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
