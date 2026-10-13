@@ -10,6 +10,7 @@ import {
 import { guardSensitiveRoute } from '@/lib/server/apiGuard'
 import { validatePublicHttpUrl } from '@/lib/server/urlSafety'
 import { pinnedFetch } from '@/lib/server/pinnedFetch'
+import { termsGatedFetch } from '@/lib/server/termsGatedFetch'
 import { probeSiteTerms, type TermsProbeReport } from '@/lib/server/termsProbe'
 import { describeThrottle } from '@/lib/server/coingeckoThrottle'
 import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
@@ -210,8 +211,10 @@ async function testProvider(provider: { id: string; isCustom?: boolean; url?: st
     case 'yt-crypto-banter':  return testYouTubeChannel('UCN9Nj4tjXbVTLYWN0EKly_Q', 'Crypto Banter')
     case 'youtube-search':    return testYouTubeSearch(key)
     // 'marketwatch' / 'marketwatch-macro' liveness probes removed 2026-09-20 ON TERMS
-    // (dowjones.io is `prohibited`). Probing a prohibited host is still fetching it, and
-    // pinnedFetch would refuse at the socket anyway.
+    // (dowjones.io is `prohibited`). Probing a prohibited host is still fetching it.
+    // This said pinnedFetch "would refuse at the socket anyway", but these probes used the
+    // platform fetch and nothing refused them; since 2026-10-13 every built-in probe goes
+    // through termsGatedFetch, which runs the same prohibited and robots checks.
     case 'cnbc':          return testRssFeed('https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=100003114', 'CNBC')
     case 'reddit-stocks': return testRedditStocks()
     case 'stocktwits':    return testStocktwits()
@@ -245,7 +248,7 @@ async function testCustomProvider(url: string, key?: string): Promise<TestResult
 async function testCoinGecko(key?: string): Promise<TestResult> {
   const headers: Record<string, string> = { Accept: 'application/json' }
   if (key) headers['x-cg-demo-api-key'] = key
-  const res = await fetch('https://api.coingecko.com/api/v3/ping', { signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS), headers })
+  const res = await termsGatedFetch('https://api.coingecko.com/api/v3/ping', { signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS), headers })
   // A 429 on the connection test is the one place a user can act on the stated
   // limit directly, so report it rather than a bare status. The other providers'
   // tests below keep the plain form — this is the CoinGecko call site, and
@@ -257,7 +260,7 @@ async function testCoinGecko(key?: string): Promise<TestResult> {
 
 async function testCoinMarketCap(key?: string): Promise<TestResult> {
   if (!key) return { ok: false, error: 'API key required' }
-  const res = await fetch('https://pro-api.coinmarketcap.com/v1/key/info', { signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS),
+  const res = await termsGatedFetch('https://pro-api.coinmarketcap.com/v1/key/info', { signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS),
     headers: { 'X-CMC_PRO_API_KEY': key, Accept: 'application/json' },
   })
   if (!res.ok) return { ok: false, error: `HTTP ${res.status} — check your key` }
@@ -268,7 +271,7 @@ async function testCoinMarketCap(key?: string): Promise<TestResult> {
 
 async function testCryptoPanic(key?: string): Promise<TestResult> {
   if (!key) return { ok: false, error: 'Paid API key required — CryptoPanic discontinued its free tier in April 2026' }
-  const res = await fetch(`https://cryptopanic.com/api/v1/posts/?auth_token=${key}&public=true&limit=1`, { signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS),
+  const res = await termsGatedFetch(`https://cryptopanic.com/api/v1/posts/?auth_token=${key}&public=true&limit=1`, { signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS),
     headers: { Accept: 'application/json' },
   })
   if (!res.ok) return { ok: false, error: `HTTP ${res.status} — check your key` }
@@ -278,7 +281,7 @@ async function testCryptoPanic(key?: string): Promise<TestResult> {
 
 async function testMessari(key?: string): Promise<TestResult> {
   if (!key) return { ok: false, error: 'API key required' }
-  const res = await fetch('https://data.messari.io/api/v1/news?limit=1', { signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS),
+  const res = await termsGatedFetch('https://data.messari.io/api/v1/news?limit=1', { signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS),
     headers: { 'x-messari-api-key': key, Accept: 'application/json' },
   })
   if (!res.ok) return { ok: false, error: `HTTP ${res.status} — check your key` }
@@ -290,7 +293,7 @@ async function testMessari(key?: string): Promise<TestResult> {
 async function testFmp(key?: string): Promise<TestResult> {
   if (!key) return { ok: false, error: 'API key required' }
   // FMP /stable API (the legacy /api/v3 endpoints are retired → 403).
-  const res = await fetch(`https://financialmodelingprep.com/stable/quote?symbol=AAPL&apikey=${key}`, { signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) })
+  const res = await termsGatedFetch(`https://financialmodelingprep.com/stable/quote?symbol=AAPL&apikey=${key}`, { signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) })
   if (res.status === 401 || res.status === 403) return { ok: false, error: `HTTP ${res.status} — check your key` }
   if (!res.ok) return { ok: false, error: `HTTP ${res.status}` }
   const data = await res.json() as Array<{ price?: number }>
@@ -301,7 +304,7 @@ async function testFmp(key?: string): Promise<TestResult> {
 
 async function testFinnhub(key?: string): Promise<TestResult> {
   if (!key) return { ok: false, error: 'API key required' }
-  const res = await fetch(`https://finnhub.io/api/v1/quote?symbol=AAPL&token=${key}`, { signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) })
+  const res = await termsGatedFetch(`https://finnhub.io/api/v1/quote?symbol=AAPL&token=${key}`, { signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) })
   if (!res.ok) return { ok: false, error: `HTTP ${res.status} — check your key` }
   const data = await res.json() as { c?: number }
   return data.c ? { ok: true, detail: `Connected — AAPL $${data.c}` } : { ok: false, error: 'No quote returned' }
@@ -309,7 +312,7 @@ async function testFinnhub(key?: string): Promise<TestResult> {
 
 async function testTwelveData(key?: string): Promise<TestResult> {
   if (!key) return { ok: false, error: 'API key required' }
-  const res = await fetch(`https://api.twelvedata.com/quote?symbol=AAPL&apikey=${key}`, { signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) })
+  const res = await termsGatedFetch(`https://api.twelvedata.com/quote?symbol=AAPL&apikey=${key}`, { signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) })
   if (!res.ok) return { ok: false, error: `HTTP ${res.status} — check your key` }
   const data = await res.json() as { close?: string; message?: string }
   return data.close
@@ -329,7 +332,7 @@ async function testTwelveData(key?: string): Promise<TestResult> {
 // validate a key from the Integrations page and the quote is never stored.
 async function testTiingo(key?: string): Promise<TestResult> {
   if (!key) return { ok: false, error: 'API key required' }
-  const res = await fetch(`https://api.tiingo.com/iex/?tickers=aapl&token=${key}`, { signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS), headers: { Accept: 'application/json' }, next: { revalidate: 0 } })
+  const res = await termsGatedFetch(`https://api.tiingo.com/iex/?tickers=aapl&token=${key}`, { signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS), headers: { Accept: 'application/json' }, next: { revalidate: 0 } })
   if (!res.ok) return { ok: false, error: `HTTP ${res.status} — check your key` }
   const data = await res.json() as Array<{ last?: number; tngoLast?: number }>
   const px = data[0]?.last ?? data[0]?.tngoLast
@@ -338,7 +341,7 @@ async function testTiingo(key?: string): Promise<TestResult> {
 
 async function testAlphaVantage(key?: string): Promise<TestResult> {
   if (!key) return { ok: false, error: 'API key required' }
-  const res = await fetch(`https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=AAPL&apikey=${key}`, { signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) })
+  const res = await termsGatedFetch(`https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=AAPL&apikey=${key}`, { signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) })
   if (!res.ok) return { ok: false, error: `HTTP ${res.status}` }
   const data = await res.json() as { 'Global Quote'?: Record<string, string>; Note?: string; Information?: string }
   const px = data['Global Quote']?.['05. price']
@@ -348,7 +351,7 @@ async function testAlphaVantage(key?: string): Promise<TestResult> {
 
 /** Reachability check for a keyless YouTube channel feed. */
 async function testYouTubeChannel(channelId: string, label: string): Promise<TestResult> {
-  const res = await fetch(`https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`, { signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS),
+  const res = await termsGatedFetch(`https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`, { signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS),
     headers: { 'User-Agent': 'Mozilla/5.0 (compatible; FinanceNow/1.0)' },
   })
   if (!res.ok) return { ok: false, error: `HTTP ${res.status}` }
@@ -366,7 +369,7 @@ async function testYouTubeChannel(channelId: string, label: string): Promise<Tes
 async function testYouTubeSearch(key: string | undefined): Promise<TestResult> {
   if (!key) return { ok: false, error: 'No API key set' }
   const url = `https://www.googleapis.com/youtube/v3/videos?part=id&id=dQw4w9WgXcQ&key=${encodeURIComponent(key)}`
-  const res = await fetch(url, { signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS), headers: { Accept: 'application/json' } })
+  const res = await termsGatedFetch(url, { signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS), headers: { Accept: 'application/json' } })
   if (res.status === 403) {
     return { ok: false, error: 'Rejected (403) — key restricted, quota exhausted, or Data API not enabled' }
   }
@@ -394,14 +397,14 @@ async function testLlmProvider(id: string, key?: string): Promise<TestResult> {
   const headers: Record<string, string> = endpoint.auth === 'anthropic'
     ? { 'x-api-key': key, 'anthropic-version': '2023-06-01' }
     : { Authorization: `Bearer ${key}` }
-  const res = await fetch(endpoint.url, { signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS), headers })
+  const res = await termsGatedFetch(endpoint.url, { signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS), headers })
   if (res.status === 401 || res.status === 403) return { ok: false, error: `HTTP ${res.status} — invalid key` }
   if (!res.ok) return { ok: false, error: `HTTP ${res.status}` }
   return { ok: true, detail: 'API key valid — models endpoint reachable' }
 }
 
 async function testRssFeed(url: string, name: string): Promise<TestResult> {
-  const res = await fetch(url, { signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS),
+  const res = await termsGatedFetch(url, { signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS),
     headers: { 'User-Agent': 'Mozilla/5.0 (compatible; FinanceNow/1.0)', Accept: 'application/rss+xml, application/xml, text/xml' },
   })
   if (!res.ok) return { ok: false, error: `HTTP ${res.status}` }
@@ -412,8 +415,11 @@ async function testRssFeed(url: string, name: string): Promise<TestResult> {
     : { ok: false, error: 'Feed reachable but contained no items' }
 }
 
+// reddit.com's robots.txt disallows this app's agent, so until REDDIT_CLIENT_ID is set
+// termsGatedFetch refuses this before it opens anything and the Test button reports why.
+// Until 2026-10-13 it fetched regardless, on every click.
 async function testRedditStocks(): Promise<TestResult> {
-  const res = await fetch('https://www.reddit.com/r/stocks/hot.json?limit=1&raw_json=1', { signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS),
+  const res = await termsGatedFetch('https://www.reddit.com/r/stocks/hot.json?limit=1&raw_json=1', { signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS),
     headers: { 'User-Agent': 'Mozilla/5.0 (compatible; FinanceNow/1.0; market research)' },
   })
   if (!res.ok) return { ok: false, error: `HTTP ${res.status}` }
@@ -424,7 +430,7 @@ async function testRedditStocks(): Promise<TestResult> {
 }
 
 async function testStocktwits(): Promise<TestResult> {
-  const res = await fetch('https://api.stocktwits.com/api/2/streams/trending.json', { signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS),
+  const res = await termsGatedFetch('https://api.stocktwits.com/api/2/streams/trending.json', { signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS),
     headers: { 'User-Agent': 'Mozilla/5.0 (compatible; FinanceNow/1.0; market research)' },
   })
   if (!res.ok) return { ok: false, error: `HTTP ${res.status}` }
@@ -436,7 +442,7 @@ async function testStocktwits(): Promise<TestResult> {
 
 async function testNewsAPI(key?: string): Promise<TestResult> {
   if (!key) return { ok: false, error: 'API key required' }
-  const res = await fetch(
+  const res = await termsGatedFetch(
     `https://newsapi.org/v2/everything?q=cryptocurrency&pageSize=1&apiKey=${key}`,
     { signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS), headers: { Accept: 'application/json' } }
   )

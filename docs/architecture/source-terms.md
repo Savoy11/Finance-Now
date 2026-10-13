@@ -115,11 +115,18 @@ dropped its old `review === 'seeded'` assertion as a stale snapshot. The princip
 is unchanged: a still-`seeded` entry may carry a verified robots reading. Noted
 2026-09-19.)*
 
-When present, `assertRobotsPermits` (inside `pinnedFetch`) refuses the fetch unless
-the named credential is configured — the credential being the thing that moves the
-request off the disallowed anonymous path. Enforcing it at the socket means a new
-call site inherits the block rather than having to remember it. One entry currently
-carries this: **reddit.com**, lifted by `REDDIT_CLIENT_ID`.
+When present, `assertRobotsPermits` (inside `pinnedFetch` and `termsGatedFetch`) refuses
+the fetch unless the named credential is configured — the credential being the thing that
+moves the request off the disallowed anonymous path. One entry currently carries this:
+**reddit.com**, lifted by `REDDIT_CLIENT_ID`.
+
+⚠ **A new call site does not inherit the block** (corrected 2026-10-13). This paragraph said
+it did, but only code that calls `pinnedFetch` goes through it: 4 of 60 `/live-data` routes,
+measured that day. The two social routes check `robotsPermits` themselves; the Integrations
+page's Test button for Reddit Finance checked nothing and read reddit.com on every click
+until it moved to `termsGatedFetch`, the platform fetch behind the same two checks.
+`termsGatedFetch.test.ts` now fails on any file that writes a robots-disallowed host into a
+URL without one of those checks.
 
 Three verdicts, because two would collapse a real distinction:
 
@@ -166,7 +173,10 @@ The distinction is the design, not an accident:
 
 - **`prohibited` is a decision about someone else's terms.** It binds every request,
   forever, with no override. This is what makes the Yahoo removal *stick*: it is not a
-  provider-list edit someone can undo by pasting a URL into Integrations.
+  provider-list edit someone can undo by pasting a URL into Integrations. ⚠ "Every request"
+  means every request through `pinnedFetch` or `termsGatedFetch`; a built-in route on the
+  platform `fetch` is held at test time instead, by `sourceTerms.test.ts` and the drift
+  check (2026-10-13).
 - **`unreviewed` is a decision about us** — nobody has looked yet. Blocking that at the
   socket would break a source the user was shown the terms for and explicitly approved,
   since acknowledging a feed does not add a registry entry. So it is gated where the

@@ -890,8 +890,9 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     // "the Data APIs", with commercial use requiring a separate agreement.
     // /live-data/social reads twelve public .rss endpoints on reddit.com instead, so
     // those terms describe the licence we would need IF REDDIT_CLIENT_ID were ever set.
-    // What binds today is robotsDisallowed + the pinnedFetch gate, already the
-    // conservative state. Consequence for the deferred D8 question: lifting the gate
+    // What binds today is robotsDisallowed, enforced by the robotsPermits checks in the
+    // two social routes and by termsGatedFetch in the Integrations Test button (which
+    // read reddit.com unchecked until 2026-10-13), already the conservative state. Consequence for the deferred D8 question: lifting the gate
     // means ACCEPTING the Data API Terms, not merely registering an app.
     reviewedAt: '2026-09-14',
     review: 'verified',
