@@ -5,8 +5,9 @@ import { planFallbackRefresh } from '../../../../scripts/lib/stakingFallbackRefr
 
 /**
  * FALLBACK carries two kinds of number, and the difference is the whole point:
- * 27 keys were read from a live upstream on FALLBACK_MEASURED_ON, and 24 are
- * undated hand-written estimates that have never been checked.
+ * the keys in FALLBACK_MEASURED were read from a live upstream on
+ * FALLBACK_MEASURED_ON, and the rest are undated hand-written estimates that
+ * have never been checked.
  *
  * That distinction only survives while FALLBACK_MEASURED and FALLBACK agree, so
  * it is asserted here rather than trusted. The failure it guards against is a
@@ -41,6 +42,27 @@ function measuredKeys(): string[] {
   expect(block, 'could not locate FALLBACK_MEASURED').toBeTruthy()
   return [...block![1].matchAll(/'([a-z0-9_]+)'/g)].map((m) => m[1])
 }
+
+describe('the staking catalog’s live-rate keys', () => {
+  // A liveAprKey names a rate this collector publishes. One that names nothing reads as
+  // "no live rate" without saying why; and a defunct provider has no rate to look up at
+  // all. Stride's three keys went with its rung on 2026-10-14, when it was marked defunct.
+  it('each names a key in the FALLBACK table', async () => {
+    const { STAKING_PROVIDERS } = await import('@/lib/data/stakingProviders')
+    const table = fallbackTable()
+    const dangling = STAKING_PROVIDERS.flatMap((p) => Object.entries(p.assets)
+      .filter(([, a]) => a?.liveAprKey && !(a.liveAprKey in table))
+      .map(([coin, a]) => `${p.id}/${coin} → ${a!.liveAprKey}`))
+    expect(dangling).toEqual([])
+  })
+
+  it('no defunct provider points at a live rate', async () => {
+    const { STAKING_PROVIDERS } = await import('@/lib/data/stakingProviders')
+    const live = STAKING_PROVIDERS.filter((p) => p.defunct).flatMap((p) => Object.entries(p.assets)
+      .filter(([, a]) => a?.liveAprKey).map(([coin]) => `${p.id}/${coin}`))
+    expect(live).toEqual([])
+  })
+})
 
 describe('staking FALLBACK provenance', () => {
   it('every measured key exists in the FALLBACK table', () => {

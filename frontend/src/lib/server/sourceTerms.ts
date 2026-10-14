@@ -1530,11 +1530,14 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
   {
     // READ 2026-09-26 (T-005; docs/audits/terms-review-seeded-2026-09-26.md) — review stays seeded until the owner ratifies:
     // NO DOCUMENT EXISTS — no terms on the site, in the docs, or at any conventional path.
+    // NOT FETCHED since 2026-10-14: Stride is winding down (v35, 2026-10-06, "freezes liquid
+    // staking"), edge.stride.zone no longer resolves, and docs.stride.zone no longer does
+    // either. Kept as the record of its verdict.
     domain: 'stride.zone',
     name: 'Stride',
     verdict: 'approved',
     termsUrl: 'https://docs.stride.zone/',
-    finding: 'Protocol publishes documented keyless liquid-staking APY endpoints for public/integrator use.',
+    finding: 'Protocol publishes documented keyless liquid-staking APY endpoints for public/integrator use. Superseded 2026-10-14: Stride is winding down, its liquid staking is closed, and the endpoint is gone; nothing in the app fetches it.',
     reviewedAt: '2026-08-06',
     review: 'seeded',
     confidence: 'medium',

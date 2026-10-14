@@ -5,7 +5,7 @@ change the registry and regenerate. This is the "where does the data come from" 
 `DATA-AVAILABILITY.md` (which tracks whether each surface is live). The same registry powers the
 in-app **/data-sources** page and the per-page provenance badges, so the app and the docs never diverge._
 
-_Last generated: **2026-10-13**_
+_Last generated: **2026-10-14**_
 
 ## Legend
 
@@ -38,7 +38,7 @@ Provider tags: `key` = needs an API key · `paid` = needs a paid plan · untagge
 | Pump Report price and volume signal (coin tab) | Derived | Finance Now pump heuristic (computeSignal in the route)<br>[CoinGecko](https://www.coingecko.com/en/api) `api.coingecko.com` | 2 min client poll · 120s revalidate | `/live-data/pump-report/metrics` |
 | Network / gas fees (18 chains) | Partial | mempool.space `mempool.space`<br>[PublicNode (eth_gasPrice)](https://www.publicnode.com/) `publicnode.com`<br>[CoinGecko](https://www.coingecko.com/en/api) `api.coingecko.com` | — | `/live-data/network-fees` |
 | Live exchange withdrawal fees (Transfer Fee Calculator overlay) | Partial | [KuCoin](https://www.kucoin.com/docs) `api.kucoin.com`<br>[HTX](https://huobiapi.github.io/docs/spot/v1/en/) `api.huobi.pro`<br>[Bitget](https://www.bitget.com/api-doc/spot/market/Get-Coin-List) `api.bitget.com`<br>[LBank](https://www.lbank.com/support/articles/21436496711705) `api.lbkex.com`<br>[Bitfinex](https://docs.bitfinex.com/reference/rest-public-conf) `api-pub.bitfinex.com`<br>[XT.com](https://doc.xt.com/) `sapi.xt.com` | 15m revalidate | `/live-data/withdraw-fees` |
-| Staking APR/APY | Partial | [DefiLlama Yields](https://defillama.com/yields) `yields.llama.fi`<br>Lido `eth-api.lido.fi`<br>Rocket Pool `api.rocketpool.net`<br>Marinade `api.marinade.finance`<br>Jito `kobe.mainnet.jito.network`<br>Stride `edge.stride.zone`<br>Injective LCD (chain inflation) | 20m client poll · 7 parallel upstreams | `/live-data/staking-rates` |
+| Staking APR/APY | Partial | [DefiLlama Yields](https://defillama.com/yields) `yields.llama.fi`<br>Lido `eth-api.lido.fi`<br>Rocket Pool `api.rocketpool.net`<br>Marinade `api.marinade.finance`<br>Jito `kobe.mainnet.jito.network`<br>Injective LCD (chain inflation) | 20m client poll · 6 parallel upstreams | `/live-data/staking-rates` |
 | Staking / yield discovery | Live | [DefiLlama](https://defillama.com/docs/api) `yields.llama.fi`<br>Pendle `api-v2.pendle.finance`<br>Beefy `api.beefy.finance` | on demand · under 2s (3 upstreams) | `/live-data/staking-discovery` |
 | Crypto price chart (legacy, internal) | Derived | [CoinGecko](https://www.coingecko.com/en/api) `api.coingecko.com` | — | `/live-data/chart` |
 | Crypto news + sentiment | Live | CryptoPanic `cryptopanic.com` _(key)_<br>Messari `data.messari.io` _(key)_<br>CoinDesk RSS `www.coindesk.com`<br>Cointelegraph RSS `cointelegraph.com`<br>Decrypt RSS `decrypt.co`<br>Bitcoin Magazine RSS `bitcoinmagazine.com`<br>[NewsAPI](https://newsapi.org/docs) `newsapi.org` _(key)_<br>[GNews](https://gnews.io/docs) `gnews.io` _(key)_<br>Feeds added on the Integrations page (terms checked when saved) | 1m | `/live-data/news` |

@@ -134,8 +134,9 @@ const FALLBACK: Record<string, number> = {
   jito_sol:        4.86,
   native_sol:      6.5,   // generic Solana native staking
 
-  // Cosmos / ATOM
-  stride_atom:     14.3,
+  // Cosmos / ATOM. stride_atom, stride_inj and stride_tia went 2026-10-14: Stride is
+  // winding down and its liquid staking is closed (v35, 2026-10-06), so there is no
+  // rate to publish; the catalog marks Stride defunct.
   native_atom:     13.0,  // Cosmos Hub baseline (~13%)
   osmo_native:     9.0,   // Osmosis
 
@@ -167,11 +168,9 @@ const FALLBACK: Record<string, number> = {
 
   // Injective
   native_inj:      7.33,
-  stride_inj:      7.16,
 
   // Celestia
   native_tia:      17.0,
-  stride_tia:      4.52,
 
   // NEAR Protocol
   native_near:     10.0,
@@ -260,8 +259,7 @@ const FALLBACK_MEASURED: ReadonlySet<string> = new Set([
   'bifrost_dot', 'bifrost_ksm', 'etherfi_eth', 'frax_eth', 'jito_sol',
   'kelp_eth', 'lido_eth', 'lombard_btc', 'marinade_sol', 'native_inj',
   'origin_eth', 'puffer_eth', 'renzo_eth', 'rocketpool_eth', 'sanctum_sol',
-  'stader_eth', 'stader_matic', 'stakewise_eth', 'stride_atom', 'stride_inj',
-  'stride_tia', 'swell_eth',
+  'stader_eth', 'stader_matic', 'stakewise_eth', 'swell_eth',
 ])
 
 /**
@@ -423,7 +421,6 @@ export async function collectStakingRates(): Promise<StakingRatesResponse> {
     rocketRes,
     marinadeRes,
     jitoRes,
-    strideRes,
     injRes,
     llamaRes,
   ] = await Promise.allSettled([
@@ -440,8 +437,10 @@ export async function collectStakingRates(): Promise<StakingRatesResponse> {
     // current endpoint; it returns a time series where `apy` is an array of
     // { data, date } and `data` is a FRACTION (0.0532 = 5.32%).
     timedFetch('https://kobe.mainnet.jito.network/api/v1/stake_pool_stats', { headers: { Accept: 'application/json' } }),
-    // 5. Stride stATOM APY
-    timedFetch('https://edge.stride.zone/api/stake-stats', { headers: { Accept: 'application/json' } }),
+    // 5. Stride — RUNG DROPPED 2026-10-14. edge.stride.zone returned NXDOMAIN from three
+    //    resolvers (docs/audits/live-data-audit-2026-10-14.md), and Stride is winding down:
+    //    its v35 release (2026-10-06) "freezes liquid staking", and its app says liquid
+    //    staking and new redemptions are closed (governance Proposal #286). Nothing to read.
     // ── Nine rungs removed 2026-09-09, each on first-hand evidence from a
     //    sequential owner-machine probe (`npm run staking-upstreams`; results in
     //    docs/audits/live-data-audit-2026-09-09.md). Every coin below keeps its
@@ -564,32 +563,7 @@ export async function collectStakingRates(): Promise<StakingRatesResponse> {
     sources.native_sol = 'estimate' // derived from liquid-staking APYs, not a native-staking reading
   }
 
-  // ── 5. Stride (stATOM, stINJ, stTIA) ──────────────────────────────────────
-  if (strideRes.status === 'fulfilled' && strideRes.value.ok) {
-    try {
-      const d = await strideRes.value.json()
-      // Stride now answers { stats: [ { chainId, name, denom: "ATOM",
-      //   currentYield: 0.1485, strideYield: 0.1429, ... }, … ] } — an ARRAY keyed
-      //   by denom, not the { atom: { apr } } map this used to read. Observed
-      //   2026-09-09; the endpoint was healthy the whole time (HTTP 200) and only
-      //   the shape moved, which is exactly the failure that looks identical to a
-      //   healthy static estimate from outside the route.
-      //
-      //   strideYield, not currentYield: these keys are stATOM/stINJ/stTIA, so the
-      //   number a holder actually earns after Stride's fee is the honest one.
-      //   Both are fractions, so normPct scales them.
-      const strideStats: Array<{ denom?: string; strideYield?: number; currentYield?: number }> =
-        Array.isArray(d?.stats) ? d.stats : []
-      const parseStride = (key: string) => {
-        const row = strideStats.find((r) => (r?.denom ?? '').toUpperCase() === key.toUpperCase())
-        const raw = row?.strideYield ?? row?.currentYield
-        return typeof raw !== 'number' || isNaN(raw) ? null : clamp(normPct(raw), 0, 40)
-      }
-      const atom = parseStride('atom'); if (atom != null) { rates.stride_atom = round2(atom); sources.stride_atom = 'live' }
-      const inj  = parseStride('inj');  if (inj  != null) { rates.stride_inj  = round2(inj);  sources.stride_inj  = 'live' }
-      const tia  = parseStride('tia');  if (tia  != null) { rates.stride_tia  = round2(tia);  sources.stride_tia  = 'live' }
-    } catch { /* fallback */ }
-  }
+  // ── 5. Stride — dropped 2026-10-14 (see the fetch list): winding down, staking closed.
 
   // ── 11. Avalanche — no live source; keeps its static fallback ──────────────
   // AVAX staking APY is stable around 7–9%; no reliable public API without a
@@ -653,7 +627,6 @@ export async function collectStakingRates(): Promise<StakingRatesResponse> {
     { name: 'rocketpool-eth',     res: rocketRes,   keys: ['rocketpool_eth'] },
     { name: 'marinade-sol',       res: marinadeRes, keys: ['marinade_sol'] },
     { name: 'jito-sol',           res: jitoRes,     keys: ['jito_sol'] },
-    { name: 'stride-cosmos-lsts', res: strideRes,   keys: ['stride_atom', 'stride_inj', 'stride_tia'] },
     { name: 'injective-native',   res: injRes,      keys: ['native_inj'] },
     { name: 'defillama-yields',   res: llamaRes,    keys: LLAMA_MAP.map((m) => m.key) },
   ] as const).map(({ name, res, keys }) => {
