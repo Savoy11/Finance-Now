@@ -60,25 +60,25 @@
  },
  "counts": {
   "total_verified": 398,
-  "outstanding": 378,
+  "outstanding": 379,
   "by_status": {
-   "closed": 214,
+   "closed": 215,
    "parked": 135,
    "open": 22,
    "blocked": 6,
    "unclear": 1
   },
   "by_owner_role": {
-   "remote-dev": 92,
+   "remote-dev": 93,
    "either": 50,
    "owner-decision": 150,
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 214,
+  "closed_by_annotation": 215,
   "counts_recomputed_on": "2026-10-14",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
-  "total": 378
+  "total": 379
  },
  "blocking_decisions": [
   {
@@ -13504,18 +13504,19 @@
   },
   {
    "id": "T-418",
-   "title": "Remove the braces audit exception once a fix ships, or decide again by 2026-11-03",
+   "title": "Remove the braces audit exception once a fix ships, or decide again by 2027-01-14",
    "status": "blocked",
    "confidence": "high",
    "owner_role": "either",
    "category": "security",
    "effort": "small",
-   "blocking_decision": "Has npm started reporting a fix for GHSA-vfj7-8cjw-p6xm that needs no major upgrade (most likely a braces 3.0.4), or has the D53 exception reached its 2026-11-03 expiry, when the owner decides again?",
+   "blocking_decision": "Has npm started reporting a fix for GHSA-vfj7-8cjw-p6xm that needs no major upgrade (most likely a braces 3.0.4), or has the D111 exception reached its 2027-01-14 expiry, when the owner decides again?",
    "related_ids": [
-    "D53"
+    "D53",
+    "D111"
    ],
-   "summary": "D53 (2026-10-03) allows one advisory in the CI dependency audit: GHSA-vfj7-8cjw-p6xm, a high-severity crash in braces 3.0.3 and earlier, which has no patched release. braces reaches this app only through tooling that reads file patterns written in the repo (Tailwind's content paths, ESLint's file globs). The exception ends on its own, and the Security Scan goes red again, on whichever comes first: npm reports a fix short of a major upgrade, or 2026-11-03 passes.",
-   "next_action": "When the Security Scan goes red on GHSA-vfj7-8cjw-p6xm, or by 2026-11-03: in frontend/, run `npm run deps:check`. If it says a fix is available, run `npm audit fix` (no `--force`), confirm `npm run deps:check` passes, then remove the braces entry from frontend/audit-exceptions.json by hand and update CLAUDE.md's Dependency audit section. If no fix exists by the expiry, put the choice to the owner again: a new dated exception under a new decision (never an edited expiry), or a Tailwind 4 migration plus an eslint-config-next change, which together remove both paths braces comes in by.",
+   "summary": "D53 (2026-10-03) allowed one advisory in the CI dependency audit: GHSA-vfj7-8cjw-p6xm, a high-severity crash in braces 3.0.3 and earlier, which has no patched release. D111 (2026-10-14) renewed it until 2027-01-14. braces now reaches this app only through eslint-config-next (via @next/eslint-plugin-next, fast-glob and micromatch), which runs it on ESLint’s file globs written in the repo; Tailwind 4 no longer depends on it. The exception ends on its own, and the Security Scan goes red again, on whichever comes first: npm reports a fix short of a major upgrade, or 2027-01-14 passes.",
+   "next_action": "When the Security Scan goes red on GHSA-vfj7-8cjw-p6xm, or by 2027-01-14: in frontend/, run `npm run deps:check`. If it says a fix is available, run `npm audit fix` (no `--force`), confirm `npm run deps:check` passes, then remove the braces entry from frontend/audit-exceptions.json by hand and update CLAUDE.md’s Dependency audit section. If no fix exists by the expiry, put the choice to the owner again: a new dated exception under a new decision (never an edited expiry), or replacing eslint-config-next with the project’s own lint config, which removes the last path braces comes in by.",
    "sources": [
     {
      "file": "docs/decisions/2026-10-03-owner-decisions.md",
@@ -13532,6 +13533,25 @@
     "on": "2026-10-03",
     "by": "session steward",
     "why": "Opened with D53, so the exception's end is on the ledger as well as in CI."
+   },
+   "reworded": {
+    "on": "2026-10-14",
+    "by": "owner decision D111, applied by the session",
+    "why": "The exception was renewed under D111 until 2027-01-14, and Tailwind 4 had already removed one of the two paths braces came in by, so the deadline, the blocker and the paths named here changed.",
+    "was": {
+     "title": "Remove the braces audit exception once a fix ships, or decide again by 2026-11-03",
+     "summary": "D53 (2026-10-03) allows one advisory in the CI dependency audit: GHSA-vfj7-8cjw-p6xm, a high-severity crash in braces 3.0.3 and earlier, which has no patched release. braces reaches this app only through tooling that reads file patterns written in the repo (Tailwind's content paths, ESLint's file globs). The exception ends on its own, and the Security Scan goes red again, on whichever comes first: npm reports a fix short of a major upgrade, or 2026-11-03 passes.",
+     "blocking_decision": "Has npm started reporting a fix for GHSA-vfj7-8cjw-p6xm that needs no major upgrade (most likely a braces 3.0.4), or has the D53 exception reached its 2026-11-03 expiry, when the owner decides again?",
+     "next_action": "When the Security Scan goes red on GHSA-vfj7-8cjw-p6xm, or by 2026-11-03: in frontend/, run `npm run deps:check`. If it says a fix is available, run `npm audit fix` (no `--force`), confirm `npm run deps:check` passes, then remove the braces entry from frontend/audit-exceptions.json by hand and update CLAUDE.md's Dependency audit section. If no fix exists by the expiry, put the choice to the owner again: a new dated exception under a new decision (never an edited expiry), or a Tailwind 4 migration plus an eslint-config-next change, which together remove both paths braces comes in by."
+    }
+   },
+   "progress": {
+    "noted_on": "2026-10-14",
+    "note": "Checked 2026-10-14: braces 3.0.3, published 2024-09-18, is still the newest release, and the advisory covers every version; npm’s suggested fix is a downgrade of eslint-config-next to 14.2.35, a major step back from the 16.3.8 installed, so the gate still treats it as unfixed. The owner renewed the exception under D111 (decided 2026-10-14, expiring 2027-01-14, the 92 days allowed). `npm run deps:check` allows it through 2027-01-14 and blocks it on 2027-01-15. Replacing eslint-config-next was offered and not chosen.",
+    "evidence": [
+     "frontend/audit-exceptions.json",
+     "docs/decisions/2026-10-14-owner-decisions.md"
+    ]
    }
   },
   {
@@ -14223,7 +14243,7 @@
   {
    "id": "T-434",
    "title": "Give crypto price history older than 365 days a second source: DefiLlama alone carries it (D21)",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "either",
    "category": "feature",
@@ -14261,7 +14281,7 @@
    "progress": {
     "noted_on": "2026-10-14",
     "note": "Steps (1) to (3) done. The 2026-10-14 survey, run on the owner’s machine, read each candidate’s terms before measuring it and ranked Coin Metrics’ Community API first: keyless, a daily USD price back to each coin’s start, and a CC BY-NC 4.0 grant, the only one read in this project that permits public display. The owner chose “Build it, credit when used” (D108), built in #349: /live-data/ohlcv asks Coin Metrics after DefiLlama for a closes request on a daily or weekly range, for 69 of the 80 catalog coins on a hand-kept map (COINMETRICS_ASSETS, each series checked against DefiLlama’s prices), never for a candle request or an intraday range; a series more than 4 days old is not served; the credit rides on the responses Coin Metrics served and every closes reader shows it. source=coinmetrics asks for it alone. Confirmed live on the owner’s machine the same day: ETH MAX returned 584 weekly closes, 2015-08-11 to 2026-10-13, credited. Step (4) on the owner’s machine the same afternoon (docs/audits/live-data-audit-2026-10-14-t434.md): the full audit read 76 REAL and no FAIL, its Coin Metrics check REAL; and a sweep with fresh calls asked the chart route for every catalog coin’s MAX history from Coin Metrics alone, as the charts would get it with DefiLlama gone. All 69 mapped coins were served, every one past a year, weekly, credited and current to 2026-10-13; the eleven unmapped answered coinmetrics-no-mapping. The coverage matrix cannot show the result either way: it scores only vendors that could fix a degraded surface, per surface rather than per range, so DefiLlama never appeared in it, before the backup or after.",
-    "remaining_work": "All four steps are done; what is left is the owner’s. (a) Close T-434 with eleven coins still without a second source past 365 days (TON, PI, TEL, MemeCore, EURCV, XSGD, USDM and vBUSD, not carried; MKR, AMPL and USDK, series stopped), or keep it open for a third source (the survey’s question 5). (b) Whether to file the coverage matrix’s blind spot: CLAUDE.md calls its “Strands if dropped” column the D21 measure, but it cannot see a keyless vendor carrying a working surface, the case this item was filed for. At launch Coin Metrics’ non-commercial term is a T-151 question (D96).",
+    "remaining_work": "None: closed 2026-10-14 under D109; see the closure block.",
     "evidence": [
      "PR #349",
      "frontend/src/lib/api/live/coinMetrics.ts",
@@ -14270,6 +14290,21 @@
      "docs/audits/live-data-audit-2026-10-14-t434.md",
      "docs/audits/coinmetrics-sweep-2026-10-14.json"
     ]
+   },
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-10-14",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "All four steps done. Coin Metrics’ Community API backs DefiLlama up for closing prices on daily and weekly ranges (D108, #349), credited where it serves. On the owner’s machine the same day the audit read 76 REAL and no FAIL, and a sweep with fresh calls had Coin Metrics serve all 69 mapped coins’ full history with DefiLlama bypassed: past a year, weekly, credited, current to 2026-10-13. Dropping DefiLlama now thins long-range charts for eleven coins instead of emptying them for all eighty.",
+    "approved_by": "owner, 2026-10-14: chose “Close it” for T-434 (D109)",
+    "evidence": [
+     "docs/audits/live-data-audit-2026-10-14-t434.md",
+     "docs/audits/coinmetrics-sweep-2026-10-14.json",
+     "frontend/src/lib/server/__tests__/ohlcvRoute.test.ts",
+     "docs/decisions/2026-10-14-owner-decisions.md"
+    ],
+    "known_gap": "Eleven catalog coins have no second source for history past 365 days: TON, PI, TEL, MemeCore, EURCV, XSGD, USDM and vBUSD (Coin Metrics does not carry them) and MKR, AMPL and USDK (their series stopped). Within 365 days they still fall through to CoinGecko’s candles. Coin Metrics’ licence is non-commercial, a T-151 question at launch (D96)."
    }
   },
   {
@@ -14401,6 +14436,38 @@
      "file": "docs/audits/task-queue-2026-09-07.json",
      "lines": "T-426 progress",
      "quote": "Draft written 2026-10-14"
+    }
+   ]
+  },
+  {
+   "id": "T-439",
+   "title": "Widen the coverage matrix so “Strands if dropped” sees keyless vendors under working surfaces, and range-level gaps",
+   "status": "open",
+   "confidence": "high",
+   "blocking_decision": null,
+   "opened": {
+    "on": "2026-10-14",
+    "by": "owner decision, filed by the session",
+    "why": "Owner, 2026-10-14 (D110): chose “File it to widen the matrix” after T-434’s step 4 found the blind spot."
+   },
+   "owner_role": "remote-dev",
+   "category": "tooling",
+   "effort": "medium",
+   "related_ids": [
+    "T-434"
+   ],
+   "summary": "T-434’s step 4 (2026-10-14) found that scripts/gen-coverage-matrix.ts cannot see the case D21 was written for. Its “Strands if dropped” column considers only vendors that could fix a surface the audit found degraded, so a keyless vendor carrying a working surface never appears. It also works per surface, so a vendor that is the only source for some ranges of a surface never counts as sole: DefiLlama was the only source of crypto history past 365 days until D108, and appeared in no matrix. CLAUDE.md calls the column the measure D21 asks to drive to zero.",
+   "next_action": "Add a second view over every surface the audit found working: for each vendor, the surfaces where it is the only provider listed, keyless vendors included, so dropping it would empty a working surface. For range-level single-sourcing the registry first needs a way to say which ranges a provider serves (for example a coverage note on a provider in DataSourceEntry, as the ohlcv entry’s “past 365 days” would be); propose that shape to the owner before building it. Test against a fixture audit and mutation-check the new view, re-run it on the owner’s machine, and update CLAUDE.md’s description of the column to match what it measures.",
+   "sources": [
+    {
+     "file": "frontend/scripts/gen-coverage-matrix.ts",
+     "lines": "358-364",
+     "quote": "/** Surfaces this vendor is the ONLY candidate for — what strands if we drop it. */"
+    },
+    {
+     "file": "docs/audits/live-data-audit-2026-10-14-t434.md",
+     "lines": "The coverage matrix cannot see this",
+     "quote": "DefiLlama does not appear in it at all, and it never could have"
     }
    ]
   }
@@ -40199,6 +40266,13 @@
     "what": "T-434 step 4 run on the owner’s machine: audit 76 REAL, no FAIL; Coin Metrics served all 69 mapped coins’ full history with DefiLlama bypassed. Recorded in its progress; the item stays open for the owner’s close-or-continue call. The coverage matrix was found unable to see a keyless vendor under a working surface.",
     "evidence": [
      "docs/audits/live-data-audit-2026-10-14-t434.md"
+    ]
+   },
+   {
+    "on": "2026-10-14",
+    "what": "Owner rulings D109 to D111 applied: T-434 closed with its eleven uncovered coins as the known gap; T-439 filed to widen the coverage matrix to keyless vendors under working surfaces and to range-level gaps; T-418 reworded for the braces exception renewed until 2027-01-14. Counts recomputed.",
+    "evidence": [
+     "docs/decisions/2026-10-14-owner-decisions.md"
     ]
    }
   ]

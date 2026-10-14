@@ -1857,11 +1857,15 @@ on past the date takes a new decision with a new date, never an edited expiry.
 in `scripts/lib/auditGate.mjs`; `lib/server/__tests__/auditGate.test.ts` drives each one red
 and also reads the CI step. `mcp-server/` keeps its plain `npm audit`.
 
-The first exception, granted 2026-10-03 until 2026-11-03: GHSA-vfj7-8cjw-p6xm, braces ≤ 3.0.3,
+The first exception, granted 2026-10-03 until 2026-11-03 (D53): GHSA-vfj7-8cjw-p6xm, braces ≤ 3.0.3,
 which has no patched release. braces only sees file patterns written in this repo (Tailwind's
 content paths, ESLint's file globs). T-418 tracks its removal. Since the Tailwind 4 upgrade
 (2026-10-07) Tailwind no longer depends on it; the only path left is
 `eslint-config-next` → `@next/eslint-plugin-next` → `fast-glob` → `micromatch` → braces.
+**Renewed on 2026-10-14 until 2027-01-14 (D111)**, the 92 days allowed: braces 3.0.3 was still the
+newest release, and npm's suggested fix was a downgrade to `eslint-config-next` 14.2.35. Replacing
+`eslint-config-next` with the project's own lint config would remove the last path; it was offered
+and not chosen.
 
 ---
 
