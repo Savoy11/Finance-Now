@@ -1217,6 +1217,14 @@ and a waiver flag, and the report lists every waiver with whether the catalog de
 the gross (`scripts/lib/feeWaiver.mjs`, unit-tested). A net with no total, or a net above its total,
 is reported as unknown and sent to the filing — never classified by guess.
 
+**And it knows what the data set cannot carry (T-417, 2026-10-14).** The data set stores four
+decimal places while its `dcml` column keeps the filing's own precision, so a fee in thousandths of a
+percent reads short: FXAIX's 0.015% is stored as `0.0001`, which read as 0.010% and was taken for a
+fee cut (D39). A difference under one stored unit, on a row whose filing declared more places than
+were kept, now gets its own section, "read the filing, change nothing"
+(`scripts/lib/datasetPrecision.mjs`, tested). A real change of a hundredth of a percent is a whole
+unit and still reports. Record: `docs/audits/fund-fee-reconcile-2026-10-14.md`.
+
 `scripts/build-fund-fees.mjs` checks `FUND_CATALOG`'s expense ratios and finds its sales-load
 rates against the SEC's quarterly **Risk/Return Summary** data sets — the prospectus fee table as
 structured XBRL. It fills the gap `build-fund-facts.mjs` names: N-PORT carries no expense tag.

@@ -198,19 +198,19 @@ import type { SectorId } from './equityCatalog'
 // VUG's description kept saying "at 4 bps" after its row moved; corrected the same day,
 // and fundCatalog.test.ts now fails any description whose "N bps" disagrees with its row.
 //
-//   FXAIX  0.015 HELD     D39. Its filing's data tag is 0.0001 at six declared decimals —
-//                         0.010% as stated, not a rounding of 0.015% — while Fidelity's own
-//                         literature has long said 0.015%. Both are right only if 0.010% is
-//                         the fee AFTER a waiver — a 0.015% full fee with 0.005% waived —
-//                         and the 2026-09-26 run could not say which line it read. The
-//                         prospectus fee table decides, not the tag: T-417 reads it, from
-//                         0000819118-26-000072 (filed 2026-04-24), on the owner's machine.
+//   FXAIX  0.015 HELD     D39, and RIGHT (T-417, 2026-10-14). The prospectus fee table in
+//                         0000819118-26-000072 (filed 2026-04-24) reads: management fee 0.015%,
+//                         other expenses 0.000%, total 0.015%, with no waiver line. The
+//                         filing's own inline tag is 0.015 at six decimals too. The 0.010% came
+//                         from the SEC's Risk/Return data set, which stores values to four
+//                         decimal places (0.00015 as 0.0001) while still declaring six, so it
+//                         cannot carry a fee in thousandths of a percent. D39 read that 0.0001 as
+//                         "0.010% as stated, not a rounding of 0.015%"; it was the rounding.
 //
-// ⚠ NOT KNOWN: whether any of the sixteen is a waived (net) figure. The reconcile takes
-// net where a filing states a waiver and the total otherwise — D36's first half — but
-// until 2026-09-30 it never said which, so D36's second half (the description states the
-// full fee) could not be checked for these rows. The script now reports both figures and
-// lists every waiver it finds; T-417's re-run shows whether any row here needs its gross.
+// The sixteen were then checked against each fund's own filing at the precision the filing
+// tagged (T-417): every one was tagged to hundredths of a percent, so the data set's four
+// decimal places could not have cut them, and every one matches the row above. None is a
+// waived figure; the re-run's waiver list names none of them.
 //
 // Reconcile: docs/audits/fund-fee-reconcile-2026-09-26.md. Rulings:
 // docs/decisions/2026-09-30-owner-decisions.md. The stamp does not move: sixteen
@@ -601,7 +601,7 @@ export const FUND_CATALOG: FundEntry[] = [
   { symbol: 'SIVR', name: 'abrdn Physical Silver Shares ETF',  type: 'etf', issuer: 'abrdn',        category: 'commodity', expenseRatioPct: 0.30, aumB: 1.5, referencePrice: 56, yieldPct: null, inceptionYear: 2009, indexTracked: 'Silver bullion (LBMA)', topHoldings: [], website: 'https://www.aberdeeninvestments.com/en-us/investor/investment-solutions/commodities/sivr', description: 'Lower-cost physical silver alternative to SLV. Expense ratio is net of a fee waiver (0.45% gross).' },
   { symbol: 'PSLV', name: 'Sprott Physical Silver Trust',      type: 'etf', issuer: 'Sprott',       category: 'commodity', expenseRatioPct: 0.56, aumB: 4,   referencePrice: 19, yieldPct: null, inceptionYear: 2010, indexTracked: 'Silver bullion (allocated, LBMA)', topHoldings: [], website: 'https://sprott.com/investment-strategies/physical-commodity-funds/silver/', description: 'Closed-end trust with an in-kind redemption option — unlike SLV/SIVR, it can trade at a premium or discount to its underlying silver, not just track NAV. Expense ratio is the 2025 management expense ratio from its annual filing (Form 40-F); the contractual management fee is 0.45%, and the ratio has ranged 0.56–0.62% over five years.' },
   { symbol: 'DBC',  name: 'Invesco DB Commodity Index ETF',    type: 'etf', issuer: 'Invesco',      category: 'commodity', expenseRatioPct: 0.87, aumB: 1.5, referencePrice: 22, yieldPct: null, inceptionYear: 2006, indexTracked: 'DBIQ Optimum Yield Diversified Commodity', topHoldings: [], website: 'https://www.invesco.com/us/financial-products/etfs/product-detail?audienceType=Investor&ticker=DBC', description: 'Diversified futures basket: energy, metals, agriculture — a basket, not exposure to any single commodity. Issues a K-1; PDBC is the same strategy without one.' },
-  { symbol: 'PDBC', name: 'Invesco Optimum Yield Diversified Commodity Strategy No K-1 ETF', type: 'etf', issuer: 'Invesco', category: 'commodity', expenseRatioPct: 0.59, aumB: 4.5, referencePrice: 18, yieldPct: null, inceptionYear: 2014, indexTracked: 'DBIQ Optimum Yield Diversified Commodity (actively managed)', topHoldings: [], website: 'https://www.invesco.com/us/financial-products/etfs/product-detail?audienceType=Investor&ticker=PDBC', description: 'Broad commodity basket that issues a 1099 instead of a K-1 — the retail-friendly way to hold diversified commodities, and cheaper than DBC.' },
+  { symbol: 'PDBC', name: 'Invesco Optimum Yield Diversified Commodity Strategy No K-1 ETF', type: 'etf', issuer: 'Invesco', category: 'commodity', expenseRatioPct: 0.59, aumB: 4.5, referencePrice: 18, yieldPct: null, inceptionYear: 2014, indexTracked: 'DBIQ Optimum Yield Diversified Commodity (actively managed)', topHoldings: [], website: 'https://www.invesco.com/us/financial-products/etfs/product-detail?audienceType=Investor&ticker=PDBC', description: 'Broad commodity basket that issues a 1099 instead of a K-1 — the retail-friendly way to hold diversified commodities, and cheaper than DBC. Expense ratio is net of a contractual waiver (0.74% gross, 0.15 of it the fees of the money-market funds it holds, waived through August 31, 2027).' },
   // Single-commodity proxies backing the Macro Markets commodities pillar
   // (lib/data/commodityCatalog.ts etfProxies). Each verified actively trading
   // as of 2026-07-21 — several of the sibling products in these same fund
