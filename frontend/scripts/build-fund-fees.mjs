@@ -63,6 +63,7 @@ import { execFileSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { selectQuarters, mergeFirstHit } from './lib/rrQuarters.mjs'
 import { classifyExpense, grossStatement, catalogDescriptions } from './lib/feeWaiver.mjs'
+import { withinStoredPrecision } from './lib/datasetPrecision.mjs'
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const OUT_JSON = path.join(ROOT, 'fund-fee-reconcile.json')
@@ -500,6 +501,8 @@ async function main() {
   //   run. The assumption was wrong, not the dataset.
   const nOtherDims = requireCol(num.header, 'num', 'otherdims')
   const nUom = requireCol(num.header, 'num', 'uom')
+  // Optional: older archives may lack it, and without it no value is treated as cut.
+  const nDcml = num.header.indexOf('dcml')
   const CLASS_IN_DIMS = /(?:^|;)Class=(C\d{9})/
 
   // Which candidate matched each field, so the report can say where a number
@@ -534,11 +537,17 @@ async function main() {
     if (!classId) continue
     const ticker = classToTicker.get(classId)
     if (!ticker || !wanted.has(ticker)) continue
-    const entry = hits.get(ticker) ?? { adsh: r[nAdsh], raw: {} }
+    const entry = hits.get(ticker) ?? { adsh: r[nAdsh], raw: {}, stored: {} }
     for (const [field, tag] of Object.entries(quarterTag)) {
       if (tag && r[nTag] === tag && entry.raw[field] === undefined) {
         const v = rawRate(r[nValue])
-        if (v != null) { entry.raw[field] = v; uomsSeen.add(String(r[nUom] || '').toLowerCase()) }
+        if (v != null) {
+          entry.raw[field] = v
+          // The value as stored and the precision its filing declared: the data set keeps four
+          // decimal places, so a fee in thousandths of a percent is stored short (T-417).
+          entry.stored[field] = { value: r[nValue], dcml: nDcml >= 0 ? r[nDcml] : undefined }
+          uomsSeen.add(String(r[nUom] || '').toLowerCase())
+        }
       }
     }
     hits.set(ticker, entry)
@@ -628,6 +637,11 @@ async function main() {
     // Both figures, and whether a waiver separates them (D36). secEr above stays the one
     // the catalog is compared against: net where a filing states a waiver, else the total.
     const fee = classifyExpense({ netPct: sec.netExpenseRatio?.pct ?? null, grossPct: sec.grossExpenseRatio?.pct ?? null })
+    // A difference under one stored unit, on a row whose filing declared more places than the
+    // data set kept, cannot be told from the data set's cut (T-417): it goes to the filing.
+    const stored = hit?.stored?.[sec.netExpenseRatio ? 'netExpenseRatio' : 'grossExpenseRatio']
+    const withinDatasetPrecision = Boolean(secEr && catalogued &&
+      withinStoredPrecision(f.expenseRatioPct, secEr.pct, stored?.value, stored?.dcml, unit.mult))
     rows.push({
       symbol: f.symbol,
       type: f.type,
@@ -637,6 +651,9 @@ async function main() {
       secExpenseRatioPct: secEr ? Number(secEr.pct.toFixed(4)) : null,
       secExpenseBasis: secEr?.basis ?? null,
       expenseDeltaPct: secEr && catalogued ? Number((secEr.pct - f.expenseRatioPct).toFixed(4)) : null,
+      secStoredValue: stored?.value ?? null,
+      secDeclaredDecimals: stored?.dcml ?? null,
+      withinDatasetPrecision,
       secNetExpenseRatioPct: round4(fee.netPct),
       secGrossExpenseRatioPct: round4(fee.grossPct),
       secFeeLine: fee.line,
@@ -659,7 +676,9 @@ async function main() {
   // A "material" difference is one that changes a rendered figure: the UI shows
   // two decimals, so anything at or above half a basis point can move it.
   const MATERIAL_PCT = 0.005
-  const differing = matched.filter((r) => r.catalogued && Math.abs(r.expenseDeltaPct) >= MATERIAL_PCT)
+  const differing = matched.filter((r) => r.catalogued && !r.withinDatasetPrecision && Math.abs(r.expenseDeltaPct) >= MATERIAL_PCT)
+  // Differences the data set's four stored places can explain: never a catalog edit on their own.
+  const precisionLimited = matched.filter((r) => r.withinDatasetPrecision)
   const candidates = matched.filter((r) => !r.catalogued)
   const loads = rows.filter((r) => r.secFrontLoadPct || r.secDeferredLoadPct)
   // D36: waived funds, and the matched rows whose data cannot say (net with no total to
@@ -688,6 +707,7 @@ async function main() {
       notFound: rows.filter((r) => r.status === 'not-found-in-dataset').length,
       noExpenseValue: rows.filter((r) => r.status === 'no-expense-value').length,
       differing: differing.length,
+      withinDatasetPrecision: precisionLimited.length,
       withLoads: loads.length,
       waivers: waived.length,
       waiverUnclear: waiverUnclear.length,
@@ -698,13 +718,13 @@ async function main() {
 
   const csv = [
     // The waiver columns are appended, not interleaved, so the older columns keep their positions.
-    'symbol,type,catalog_er,sec_er,delta,front_load,deferred_load,12b1,filed_on,accession,quarter,status,sec_net_er,sec_gross_er,fee_line,waiver,catalog_states_gross',
+    'symbol,type,catalog_er,sec_er,delta,front_load,deferred_load,12b1,filed_on,accession,quarter,status,sec_net_er,sec_gross_er,fee_line,waiver,catalog_states_gross,within_dataset_precision',
     ...rows.map((r) => [
       r.symbol, r.type ?? '', r.catalogExpenseRatioPct ?? '', r.secExpenseRatioPct ?? '', r.expenseDeltaPct ?? '',
       r.secFrontLoadPct ?? '', r.secDeferredLoadPct ?? '', r.sec12b1Pct ?? '',
       r.filedOn ?? '', r.accession ?? '', r.quarter ?? '', r.status,
       r.secNetExpenseRatioPct ?? '', r.secGrossExpenseRatioPct ?? '', r.secFeeLine ?? '',
-      r.waiver == null ? '' : String(r.waiver), r.catalogStatesGross ?? '',
+      r.waiver == null ? '' : String(r.waiver), r.catalogStatesGross ?? '', String(r.withinDatasetPrecision),
     ].join(',')),
   ].join('\n')
   fs.writeFileSync(OUT_CSV, csv)
@@ -718,6 +738,15 @@ async function main() {
       const sign = r.expenseDeltaPct > 0 ? '+' : ''
       log(`   ${r.symbol.padEnd(6)} catalog ${String(r.catalogExpenseRatioPct).padEnd(7)} SEC ${String(r.secExpenseRatioPct).padEnd(7)} (${sign}${r.expenseDeltaPct})  filed ${r.filedOn ?? '?'} [${r.quarter}]`)
     }
+  }
+
+  if (precisionLimited.length) {
+    log("\n══ Differences the data set's rounding can explain — read the filing, change nothing ══")
+    for (const r of precisionLimited) {
+      log(`   ${r.symbol.padEnd(6)} catalog ${String(r.catalogExpenseRatioPct).padEnd(7)} SEC ${String(r.secExpenseRatioPct).padEnd(7)} stored as ${r.secStoredValue}, filed to ${r.secDeclaredDecimals} places  (${r.accession ?? '?'})`)
+    }
+    log('   The data set keeps four decimal places, so a fee in thousandths of a percent reads')
+    log('   short (FXAIX: filed 0.015%, stored 0.0001). Only the filing\'s fee table can say.')
   }
 
   // D36 (owner ruling, 2026-09-30): a row records the fee an investor pays TODAY — the net

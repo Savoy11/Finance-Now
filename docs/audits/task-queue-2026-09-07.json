@@ -62,9 +62,9 @@
   "total_verified": 398,
   "outstanding": 379,
   "by_status": {
-   "closed": 215,
+   "closed": 216,
    "parked": 135,
-   "open": 22,
+   "open": 21,
    "blocked": 6,
    "unclear": 1
   },
@@ -75,7 +75,7 @@
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 215,
+  "closed_by_annotation": 216,
   "counts_recomputed_on": "2026-10-14",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 379
@@ -13468,7 +13468,7 @@
   {
    "id": "T-417",
    "title": "Re-run the fee reconcile after T-412: confirm no differences, check the waiver list, read FXAIX's fee table",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "data-verification",
@@ -13500,6 +13500,29 @@
     "on": "2026-09-30",
     "by": "session steward",
     "why": "Split out of T-412 so its ruling could close: the confirming re-run and the FXAIX reading both need sec.gov, which the cloud environment refuses."
+   },
+   "progress": {
+    "noted_on": "2026-10-14",
+    "note": "Run on the owner’s machine 2026-10-14 (docs/audits/fund-fee-reconcile-2026-10-14.md): 97 of 140 funds matched over four quarters. (1) The sixteen fees from D38 hold: no difference on the re-run, and each confirmed against its own filing’s inline tag at the precision the filing declared; none is a waived figure. (2) FXAIX: the prospectus fee table reads total annual operating expenses 0.015% with no waiver line, outcome (c); the row stays 0.015. The 0.010% was the SEC data set storing four decimal places (0.0001) while declaring six; D39’s reading of it as “not a rounding” was wrong, and the catalog note now says so. The reconcile now reports such a difference apart, “read the filing, change nothing” (scripts/lib/datasetPrecision.mjs, tested). (3) Waivers: HEFA, EMLC and BKLN already stated their gross; PDBC (net 0.59, gross 0.74, a contractual waiver through 2027-08-31) did not, and its description now states it.",
+    "remaining_work": "None: closed 2026-10-14; see the closure block.",
+    "evidence": [
+     "docs/audits/fund-fee-reconcile-2026-10-14.md",
+     "frontend/scripts/lib/datasetPrecision.mjs",
+     "frontend/src/lib/data/fundCatalog.ts"
+    ]
+   },
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-10-14",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "All three asks done on the owner’s machine on 2026-10-14. The sixteen D38 fees hold, confirmed on the re-run and against each filing’s own tag at its declared precision. FXAIX’s prospectus fee table reads 0.015% total with no waiver, so the row stays 0.015 (outcome c); the 0.010% was the SEC data set storing four decimal places, which the reconcile now reports apart. The waiver list named PDBC as the one row not stating its gross, and its description now does (D36).",
+    "approved_by": "owner, 2026-10-14: chose “Close it” for T-417",
+    "evidence": [
+     "docs/audits/fund-fee-reconcile-2026-10-14.md",
+     "frontend/scripts/lib/datasetPrecision.mjs",
+     "frontend/src/lib/server/__tests__/datasetPrecision.test.ts"
+    ]
    }
   },
   {
@@ -40273,6 +40296,20 @@
     "what": "Owner rulings D109 to D111 applied: T-434 closed with its eleven uncovered coins as the known gap; T-439 filed to widen the coverage matrix to keyless vendors under working surfaces and to range-level gaps; T-418 reworded for the braces exception renewed until 2027-01-14. Counts recomputed.",
     "evidence": [
      "docs/decisions/2026-10-14-owner-decisions.md"
+    ]
+   },
+   {
+    "on": "2026-10-14",
+    "what": "T-417 run on the owner’s machine: the sixteen D38 fees confirmed at filing precision; FXAIX’s 0.015% confirmed from its fee table, the 0.010% traced to the SEC data set’s four stored decimal places, and the reconcile taught to report such a difference apart; PDBC’s description now states its 0.74% gross (D36). Progress recorded; status unchanged.",
+    "evidence": [
+     "docs/audits/fund-fee-reconcile-2026-10-14.md"
+    ]
+   },
+   {
+    "on": "2026-10-14",
+    "what": "T-417 closed on the owner’s approval after its run. Counts recomputed.",
+    "evidence": [
+     "docs/audits/fund-fee-reconcile-2026-10-14.md"
     ]
    }
   ]
