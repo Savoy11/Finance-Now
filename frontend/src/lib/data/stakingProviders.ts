@@ -678,6 +678,11 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     id: 'stride',
     name: 'Stride',
     category: 'liquid',
+    // Marked defunct 2026-10-14 (owner): winding down, liquid staking closed. Its rates
+    // stay as the last published figures and render struck through, as Celsius's do.
+    defunct: true,
+    defunctDate: 'October 2026',
+    defunctNote: `Stride is winding down. Its v35 release (published October 6, 2026) "begins the wind-down of the Stride chain" and "freezes liquid staking"; its app says liquid staking and new redemptions are closed, under governance Proposal #286. Stride says existing stTokens are not lost and will be redeemable on Osmosis at a fixed rate, with no deadline. No new stake can be placed, and the rates below are the last ones published, not current yields.`,
     tagline: 'Cosmos ecosystem liquid staking — stATOM, stOSMO, stTIA and more',
     description: 'Stride is the leading liquid staking protocol for the Cosmos ecosystem, supporting ATOM, OSMO, TIA, INJ, and several other IBC-connected chains. You deposit ATOM and receive stATOM, which accrues rewards and can be used across Cosmos DeFi. Stride uses IBC to delegate to validators on the native chain — your ATOM never leaves the Cosmos Hub.',
     custodyModel: 'smart-contract',
@@ -693,7 +698,6 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
         lockupDays: 0,
         receiptToken: 'stATOM',
         liquid: true,
-        liveAprKey: 'stride_atom',
         features: [
           'stATOM — liquid, tradeable on Osmosis DEX and other venues',
           'IBC-based delegation — ATOM stays on Cosmos Hub',
@@ -710,7 +714,6 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
         lockupDays: 0,
         receiptToken: 'stINJ',
         liquid: true,
-        liveAprKey: 'stride_inj',
         features: [
           'stINJ — liquid Injective staking via Stride',
           'IBC-based delegation — INJ stays on Injective chain',
@@ -726,7 +729,6 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
         lockupDays: 0,
         receiptToken: 'stTIA',
         liquid: true,
-        liveAprKey: 'stride_tia',
         features: [
           'stTIA — liquid Celestia staking via Stride',
           'IBC-based delegation — TIA stays on Celestia chain',

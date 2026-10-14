@@ -410,7 +410,8 @@ const tests = [
     const keys = Object.keys(rates)
     if (keys.length === 0) throw new Error('no rates')
     // The DeFiLlama + native-rate expansion added ~23 protocol keys to the
-    // fallback table, so a current route ALWAYS returns ~51 keys regardless of
+    // fallback table, so a current route ALWAYS returns ~48 keys (51 until Stride's
+    // three went, 2026-10-14) regardless of
     // which upstreams the running IP can reach (these are fallback keys — their
     // presence is IP-independent). Far fewer keys means the server is running
     // pre-expansion code (a stale dev server / old checkout) — fail loudly here

@@ -621,7 +621,7 @@ function StakingPageInner() {
               // helpers that computed it were deleted. NT7 (rendering scores
               // here) is closed by that decision, not still open.
               { label: 'No risk scores', text: 'No provider on this page, in the public API or in the MCP tool carries a risk score, rating or per-dimension figure. The six curated 1–10 dimensions that used to sit behind the API were removed on 2026-09-25 (D26): a risk figure attached to the provider you are looking at reads as a recommendation. Custody model, lock-up, liquidity and TVL are facts; the judgement is yours.' },
-              { label: 'Live APY', text: 'Liquid-staking & restaking protocols pull live APY from DeFiLlama plus each protocol’s own API (Lido, Rocket Pool, Marinade, Jito, Stride). Self-custody wallets show the live on-chain network rate for native delegation. CeFi exchange rates are static estimates and may differ from current offerings.' },
+              { label: 'Live APY', text: 'Liquid-staking & restaking protocols pull live APY from DeFiLlama plus each protocol’s own API (Lido, Rocket Pool, Marinade, Jito). Self-custody wallets show the live on-chain network rate for native delegation. CeFi exchange rates are static estimates and may differ from current offerings.' },
               { label: 'Defunct providers', text: 'Failed providers are excluded here. Celsius — the educational cautionary example — is behind the "Show defunct platforms" toggle below.' },
             ]}
           />

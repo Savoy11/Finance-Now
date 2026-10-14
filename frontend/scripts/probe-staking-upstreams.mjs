@@ -102,20 +102,8 @@ const UPSTREAMS = [
       if (typeof latest?.data === 'number') return latest.data * 100
       return typeof d === 'number' ? d : extractNumber(d, 'value', 'apy')
     } },
-  { name: 'stride-cosmos-lsts', url: 'https://edge.stride.zone/api/stake-stats', init: { headers: JSONH },
-    // Shape corrected 2026-09-09: { stats: [ { denom: "ATOM", strideYield, … } ] },
-    // an array keyed by denom rather than the { atom: { apr } } map this read
-    // before. Three keys ride this one response, so report live only if ALL
-    // three parse and name the ones that did not — a partial is a real state.
-    parse: (d) => {
-      const rows = Array.isArray(d?.stats) ? d.stats : []
-      const got = ['ATOM', 'INJ', 'TIA'].filter((denom) => {
-        const row = rows.find((r) => (r?.denom ?? '').toUpperCase() === denom)
-        const raw = row?.strideYield ?? row?.currentYield
-        return typeof raw === 'number' && !isNaN(raw)
-      })
-      return got.length === 3 ? got.length : (got.length ? { partial: got } : null)
-    } },
+  // stride-cosmos-lsts dropped 2026-10-14 with the route's rung: edge.stride.zone is gone
+  // (NXDOMAIN on three resolvers) and Stride's liquid staking is closed (v35, 2026-10-06).
   { name: 'injective-native', url: 'https://lcd.injective.network/cosmos/mint/v1beta1/inflation', init: { headers: JSONH },
     parse: (d) => num(d?.inflation) },
   { name: 'defillama-yields', url: 'https://yields.llama.fi/pools', init: { headers: JSONH },
@@ -168,13 +156,11 @@ async function probe(u) {
     }
     if (typeof value === 'object' && value.partial) {
       return { ...base(u, ms), verdict: 'partial', status: res.status,
-               detail: `only ${value.partial.join(', ')} parsed of atom, inj, tia`, excerpt: excerpt(text, true) }
+               detail: `only ${value.partial.join(', ')} parsed`, excerpt: excerpt(text, true) }
     }
     const reading = u.name === 'defillama-yields'
       ? `${value} pools`
-      : u.name === 'stride-cosmos-lsts'
-        ? `${value}/3 denoms`
-        : `${normPct(Number(value)).toFixed(2)}%`
+      : `${normPct(Number(value)).toFixed(2)}%`
     // Answered, but not inside the window the route allows. Worth separating: the
     // rate exists and the parse works, so no URL or expression needs touching —
     // the route's budget is what would have to move.

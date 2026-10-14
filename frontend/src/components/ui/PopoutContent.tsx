@@ -154,7 +154,6 @@ const PROTOCOL_LABELS: Record<string, { protocol: string; symbol: string }> = {
   rocketpool_eth:{ protocol: 'Rocket Pool', symbol: 'ETH' },
   marinade_sol:  { protocol: 'Marinade',  symbol: 'SOL' },
   jito_sol:      { protocol: 'Jito',      symbol: 'SOL' },
-  stride_atom:   { protocol: 'Stride',    symbol: 'ATOM' },
   ankr_eth:      { protocol: 'Ankr',      symbol: 'ETH' },
   coinbase_eth:  { protocol: 'Coinbase',  symbol: 'ETH' },
   kraken_eth:    { protocol: 'Kraken',    symbol: 'ETH' },

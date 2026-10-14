@@ -133,12 +133,14 @@ frontend/src/
 │       ├── staking-rates/route.ts  # HTTP face of lib/server/stakingRates.ts — the collector moved
 │       │                           #   there 2026-09-18 (landed in 516220f, 2026-09-19) so that
 │       │                           #   /api/v1/staking/opportunities reads the SAME one. Live APR
-│       │                           #   from 7 upstreams onto 51 keys; the rest stay
+│       │                           #   from 6 upstreams onto 48 keys; the rest stay
 │       │                           #   static estimates. Returns `upstreams` — each one's
 │       │                           #   outcome — because "4/51 live" cannot say WHICH failed.
 │       │                           #   Was 17: ten rungs went in the 2026-09-09 audit — nine
 │       │                           #   dead, whose DNS hangs were starving the rest, plus NEAR,
-│       │                           #   whose endpoint is healthy but carries no yield at all
+│       │                           #   whose endpoint is healthy but carries no yield at all.
+│       │                           #   Stride went 2026-10-14 with its three keys: it is
+│       │                           #   winding down, liquid staking closed (catalog: defunct)
 │       ├── security-quotes/route.ts # Stock/ETF/fund quotes (FMP→…→Alpha Vantage→reference; ALL KEYED)
 │       ├── security-chart/route.ts  # Price history (Tiingo→FMP→Twelve Data; all keyed)
 │       ├── security-ohlcv/route.ts  # Full OHLCV candles (Tiingo→FMP; both keyed)
@@ -1298,7 +1300,7 @@ prompt problem. Don't tune a prompt to compensate for a degraded feed.
 **Staking upstream triage (owner machine):**
 
 ```bash
-npm run staking-upstreams          # probe the route's 7 upstreams directly; no dev server
+npm run staking-upstreams          # probe the route's upstreams directly; no dev server
 npm run staking-upstreams -- --json
 ```
 

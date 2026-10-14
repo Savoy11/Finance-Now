@@ -229,10 +229,10 @@ export const DATA_SOURCES: DataSourceEntry[] = [
       { name: 'Rocket Pool', host: 'api.rocketpool.net', role: 'primary', auth: 'none' },
       { name: 'Marinade', host: 'api.marinade.finance', role: 'primary', auth: 'none' },
       { name: 'Jito', host: 'kobe.mainnet.jito.network', role: 'primary', auth: 'none' },
-      { name: 'Stride', host: 'edge.stride.zone', role: 'primary', auth: 'none' },
       { name: 'Injective LCD (chain inflation)', role: 'primary', auth: 'none' },
     ],
-    cadence: '20m client poll · 7 parallel upstreams', staticData: ['lib/data/stakingProviders.ts (provider terms, fallback APRs)'],
+    // Stride went 2026-10-14: winding down, liquid staking closed, endpoint gone.
+    cadence: '20m client poll · 6 parallel upstreams', staticData: ['lib/data/stakingProviders.ts (provider terms, fallback APRs)'],
     notes: 'Liquid-staking/restaking protocols + native network rates are live (DefiLlama + protocol APIs + chain inflation). CeFi exchange rates are static estimates. Each rate carries sources[key] = "live" | "estimate".',
   },
   {
