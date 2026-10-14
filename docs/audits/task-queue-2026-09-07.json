@@ -12995,7 +12995,7 @@
   },
   {
    "id": "T-407",
-   "title": "Revisit the three sources kept conditional on an unresolved judgement (CoinDesk, Investing.com, Bitget) — plus Nasdaq Trader (D41, 2026-09-30)",
+   "title": "Revisit the three sources kept conditional on an unresolved judgement (CoinDesk, Investing.com, Bitget) — plus Nasdaq Trader (D41, 2026-09-30), and KuCoin’s US residency clause (2026-10-14)",
    "status": "open",
    "confidence": "high",
    "owner_role": "owner-decision",
@@ -13013,7 +13013,7 @@
     "D41"
    ],
    "summary": "Four registry entries are `conditional` in a sense the word does not carry anywhere else in the registry. Normally `conditional` means permitted while conditions hold, and the conditions are obligations to honour. In these four it means WE ARE PROCEEDING ON A QUESTION THE DOCUMENT DOES NOT ANSWER — the plain text does not permit what the app does, and the entry is conditional because of an owner judgement about SCOPE. Same word, two different claims, and the registry has no field that separates them. CoinDesk: no display permission; \"rss\"/\"syndicat\"/\"feed\" return zero hits in 300 lines. Investing.com: no display permission and automated extraction expressly forbidden, yet it publishes the feeds and robots.txt permits /rss/. publicnode: bars re-use \"commercially and non-commercially\", which read literally prohibits consuming an RPC provider at all. Bitget: §1 lists the UNITED STATES among Prohibited Countries while the owner is US-resident. Three of the four were the owner's deliberate 2026-09-20 calls made with the readings in hand. This item exists so those calls stay visible rather than ageing into apparent settledness.",
-   "next_action": "NOT a re-read — all four documents have been read carefully and will not say anything different next time. What is owed is a decision on each, and they do not all need the same one. (1) CoinDesk and Investing.com turn on ONE shared question: does a terms document that never mentions feeds govern a feed the publisher deliberately publishes and permits in robots.txt? Answer it once and both resolve; it is a question for a professional, not another careful reading. (2) publicnode needs only a judgement on whether to keep reading an absurdly broad clause narrowly — exposure is one route on a page already hidden from rollout. Also fix its termsUrl, which points at the homepage rather than the document its finding quotes. (3) ⚠ BITGET DOES NOT WAIT FOR EITHER. It is the only source where a clause may bar use OUTRIGHT rather than limit scope, and the owner is US-resident. Everything else here is about what may be SHOWN; this is about whether the app may call the host at all, today. If any resolves toward prohibited, T-247 is the mechanism — a per-source display flag — and the blast radius is recorded on each entry.",
+   "next_action": "NOT a re-read — all four documents have been read carefully and will not say anything different next time. What is owed is a decision on each, and they do not all need the same one. (1) CoinDesk and Investing.com turn on ONE shared question: does a terms document that never mentions feeds govern a feed the publisher deliberately publishes and permits in robots.txt? Answer it once and both resolve; it is a question for a professional, not another careful reading. (2) publicnode needs only a judgement on whether to keep reading an absurdly broad clause narrowly — exposure is one route on a page already hidden from rollout. Also fix its termsUrl, which points at the homepage rather than the document its finding quotes. (3) ⚠ BITGET DOES NOT WAIT FOR EITHER. It is the only source where a clause may bar use OUTRIGHT rather than limit scope, and the owner is US-resident. Everything else here is about what may be SHOWN; this is about whether the app may call the host at all, today. If any resolves toward prohibited, T-247 is the mechanism — a per-source display flag — and the blast radius is recorded on each entry. (4) KUCOIN, ADDED 2026-10-14 (owner: “Record it under T-407”): the T-434 source survey re-read KuCoin’s Terms of Use on the owner’s machine (“Last updated: 09/29/2026”). Article 17(5) has the user undertake that it “is not a resident of or registered in, any of the Restricted Locations”, and “Restricted Locations” include the United States: Bitget’s question in a second place. The undertaking binds on registration (Article 14), the app never registers, and the keyless API answered from the owner’s US IP. KuCoin is called keyless only by the withdrawal-fee overlay behind the hidden Transfer Fees page. Recorded on the kucoin.com entry; no code change.",
    "sources": [
     {
      "file": "frontend/src/lib/server/sourceTerms.ts",
@@ -13024,6 +13024,11 @@
      "file": "docs/LEGAL-REVIEW.md",
      "lines": "§7",
      "quote": "Sources kept conditional on an unresolved judgement"
+    },
+    {
+     "file": "frontend/src/lib/server/sourceTerms.ts",
+     "lines": "kucoin.com entry",
+     "quote": "UNRESOLVED (T-407, owner, 2026-10-14): Article 17(5) lists the United States among Restricted Locations"
     }
    ],
    "opened": {
