@@ -2124,7 +2124,8 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
   // /live-data/news falls back to these when a key is saved, and the Integrations page
   // tests the NewsAPI key. Neither host had an entry: the news entry in dataSources.ts
   // named them as one hostless "GNews / NewsAPI", which the drift check skipped. Both
-  // documents were READ on the owner's machine on 2026-10-13; `seeded` until ratified.
+  // documents were READ on the owner's machine on 2026-10-13, and the owner verified both
+  // on 2026-10-14 (D106), each with its launch step.
   {
     domain: 'newsapi.org',
     name: 'NewsAPI',
@@ -2138,7 +2139,7 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
       'Keep each article’s source and notices; never republish article text',
     ],
     reviewedAt: '2026-10-13',
-    review: 'seeded',
+    review: 'verified',
     confidence: 'high',
   },
   {
@@ -2154,7 +2155,7 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
       'Do not misrepresent the source of the data',
     ],
     reviewedAt: '2026-10-13',
-    review: 'seeded',
+    review: 'verified',
     confidence: 'high',
   },
 ]
