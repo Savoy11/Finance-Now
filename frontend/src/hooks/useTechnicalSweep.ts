@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { sweepTechnicals, SWEEP_RANGE, type TechnicalRow } from '@/lib/technicals/sweep'
+import { mergeCredits, type RequiredCredit } from '@/lib/data/dataSources'
 
 /**
  * React Query wrapper around the shared OHLCV sweep.
@@ -19,6 +20,16 @@ export const TECHNICAL_SWEEP_STALE_MS = 15 * 60 * 1000
 
 export interface SweepProgress { done: number; total: number }
 
+interface SweepResult {
+  rows: Map<string, TechnicalRow>
+  /**
+   * Credits the sweep's responses carried (Coin Metrics, when it served a coin: D108).
+   * Kept in the cached result, not component state, so a sweep served from the cache
+   * still shows them.
+   */
+  credits: RequiredCredit[]
+}
+
 export function useTechnicalSweep(ids: string[], enabled: boolean, range = SWEEP_RANGE) {
   // Progress is component state, not query state: a sweep of ~80 coins takes
   // long enough that a bare spinner reads as a hang. The screener shows
@@ -28,14 +39,17 @@ export function useTechnicalSweep(ids: string[], enabled: boolean, range = SWEEP
   // cache entry rather than sweeping twice for identical data.
   const key = [...ids].sort().join(',')
 
-  const query = useQuery<Map<string, TechnicalRow>>({
+  const query = useQuery<SweepResult>({
     queryKey: ['technical-sweep', range, key],
-    queryFn: () => {
+    queryFn: async () => {
       setProgress({ done: 0, total: ids.length })
-      return sweepTechnicals(ids, {
+      let credits: RequiredCredit[] = []
+      const rows = await sweepTechnicals(ids, {
         range,
         onProgress: (done, total) => setProgress({ done, total }),
+        onCredits: (more) => { credits = mergeCredits(credits, more) },
       })
+      return { rows, credits }
     },
     // Opt-in: a screener nobody opened must not cost a single upstream call.
     enabled: enabled && ids.length > 0,
@@ -49,5 +63,5 @@ export function useTechnicalSweep(ids: string[], enabled: boolean, range = SWEEP
     refetchOnWindowFocus: false,
   })
 
-  return { ...query, progress }
+  return { ...query, data: query.data?.rows, credits: query.data?.credits ?? [], progress }
 }

@@ -27,6 +27,7 @@
 import { rsi, sma, type OhlcvCandle } from '@/lib/utils/indicators'
 import { runPool } from '@/lib/utils/runPool'
 import { candleGranularity } from '@/lib/utils/candleGranularity'
+import { parseCredits, type RequiredCredit } from '@/lib/data/dataSources'
 
 /** Matches /scanner's cap. Raising it rate-limits the provider, not speeds it up. */
 export const SWEEP_CONCURRENCY = 5
@@ -170,6 +171,11 @@ export interface SweepOptions {
   concurrency?: number
   /** Called after each coin resolves, for a progress indicator. */
   onProgress?: (done: number, total: number) => void
+  /**
+   * Called with the credits a response carried: a source whose licence asks for one
+   * sends it with the prices it served (Coin Metrics, D108). The page shows them.
+   */
+  onCredits?: (credits: RequiredCredit[]) => void
   fetchImpl?: typeof fetch
 }
 
@@ -190,6 +196,7 @@ export async function sweepTechnicals(
     range = SWEEP_RANGE,
     concurrency = SWEEP_CONCURRENCY,
     onProgress,
+    onCredits,
     fetchImpl = fetch,
   } = opts
 
@@ -202,7 +209,11 @@ export async function sweepTechnicals(
       const json = await res.json()
       const candles: OhlcvCandle[] = json?.candles ?? []
       const daily = candleGranularity(candles.map(c => c.time)) === SWEEP_CANDLE_SIZE
-      if (json?.ok && candles.length > 0 && daily) out.set(id, computeTechnicals(candles))
+      if (json?.ok && candles.length > 0 && daily) {
+        out.set(id, computeTechnicals(candles))
+        const credits = parseCredits(json.attributions)
+        if (credits.length > 0) onCredits?.(credits)
+      }
     } catch {
       // Left out of the map on purpose — see the doc comment above.
     }

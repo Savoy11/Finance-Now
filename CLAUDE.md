@@ -524,6 +524,19 @@ Client component
 > a candle, each computes a zero range without complaint. `closesReaders.test.ts` fails on any
 > file asking for closes (`closes=1`, or `source=defillama`, which reaches the same prices) that
 > it does not list, and `ohlcvRoute.test.ts` fails if a candle request ever reaches DefiLlama.
+>
+> **Coin Metrics backs DefiLlama up for daily and weekly closes (T-434, D108, 2026-10-14).**
+> DefiLlama was the only source of crypto history past 365 days, the single-vendor state D21
+> rules out. Coin Metrics' Community API (keyless, one daily price per coin back to its start)
+> now answers a closes request on a daily or weekly range when DefiLlama does not, for the coins
+> on a hand-kept map (`COINMETRICS_ASSETS`, `lib/api/live/coinMetrics.ts`: each checked against
+> DefiLlama's prices, never matched by symbol), and never a candle request or an intraday range.
+> A series more than 4 days old is not served, since some stop updating while still answering.
+> Its licence is CC BY-NC 4.0, which asks for a credit: the route sends it as `attributions`
+> only on responses Coin Metrics served (the owner's choice), and every closes reader shows it
+> (`RequiredCredits`, which also links the licence). `closesCredits.test.ts` fails on a closes
+> reader that drops it, including the Coins screener's cached sweep, which keeps the credits
+> inside its query result because a cache hit runs no callback.
 
 ### React Query patterns on the client:
 ```typescript
@@ -801,7 +814,7 @@ site nobody has reviewed. Full design: `docs/architecture/source-terms.md`.
 > The fix for any of the key-gated rows is a free API key on the Integrations page — **not
 > a substitute scraper.**
 
-> ⚠ **17 of 73 registry entries are `seeded`, not `verified` — check `review` before
+> ⚠ **18 of 74 registry entries are `seeded`, not `verified` — check `review` before
 > trusting one.** The registry was authored in an environment whose network policy
 > blocked every publisher and provider host at the gateway, so not one terms document
 > could be opened. The entries are honest starting positions drawn from each
@@ -863,6 +876,10 @@ site nobody has reviewed. Full design: `docs/architecture/source-terms.md`.
 > `scripts/lib/routeHosts.mjs`. **AI providers are not data sources and stay out of this
 > registry (D104, owner: *"no on the AI providers"*)**: the nine the Integrations Test button
 > calls are in `NOT_DATA_SOURCES`. Do not add a `sourceTerms.ts` entry for one.
+>
+> **One more, `seeded`, on 2026-10-14 (T-434, D108): Coin Metrics Community Data**, the chart
+> route's backup for closing prices. Its grant is CC BY-NC 4.0, read that day: non-commercial
+> use with a credit, so personal use before launch (D96) and a T-151 question at launch.
 >
 > A seeded `approved`/`conditional` means *nobody has objected yet*, not *cleared*.
 > Seeded entries still serve data — breaking the app over a documentation gap is the

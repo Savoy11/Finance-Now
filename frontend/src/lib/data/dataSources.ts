@@ -53,6 +53,11 @@ export interface SourceProvider {
     href?: string
     /** Minimum rendered size in CSS px, when the licence sets one. */
     minFontPx?: number
+    /**
+     * The licence itself, when it must be named beside the credit: Creative Commons
+     * BY-NC asks for "a notice that refers to this Public License" (Coin Metrics, D108).
+     */
+    license?: { text: string; href: string }
   }
 }
 
@@ -112,9 +117,15 @@ export const DATA_SOURCES: DataSourceEntry[] = [
   {
     id: 'ohlcv', surface: 'Crypto OHLCV / candlestick charts', module: 'crypto',
     route: '/live-data/ohlcv', status: 'partial',
-    providers: [COINGECKO, DEFILLAMA('coins.llama.fi')],
+    // Coin Metrics carries no `attribution` here on purpose: its CC BY-NC credit is sent
+    // with the responses it served (`attributions`) and shown by the page that read them,
+    // so a chart DefiLlama served does not credit Coin Metrics (owner, D108).
+    providers: [
+      COINGECKO, DEFILLAMA('coins.llama.fi'),
+      { name: 'Coin Metrics Community Data', host: 'community-api.coinmetrics.io', url: 'https://docs.coinmetrics.io/packages/coin-metrics-community-data', role: 'fallback', auth: 'none' },
+    ],
     cadence: 'on demand · 60s–15m stale by range',
-    notes: 'Candles from CoinGecko, closing prices from DefiLlama (T-423, D103). CoinGecko’s free service serves no history older than 365 days and sends 4-day candles past 30 days. DefiLlama answers only callers that compute from closes and ask for them (`closes=1`: the Coins screener, Cycle Context, the Crypto Scanner and the multi-timeframe grid, which run only the setups and signal votes that read a close; the TA and coin-page charts where candles are missing or 4-day, drawn as a line; and the assistant’s price history where candles are refused, which then reports the highest and lowest close), marked `bars: "close"`; it carries no high, low or volume. Binance and Binance.US were the first candle rungs until 2026-10-13 (T-423, D102). `granularity` is measured from the candles.',
+    notes: 'Candles from CoinGecko, closing prices from DefiLlama (T-423, D103), and from Coin Metrics’ Community API when DefiLlama does not answer a daily or weekly range (T-434, D108), credited on the responses it served (CC BY-NC 4.0); `source=coinmetrics` asks for it alone, which the audit does. CoinGecko’s free service serves no history older than 365 days and sends 4-day candles past 30 days. DefiLlama answers only callers that compute from closes and ask for them (`closes=1`: the Coins screener, Cycle Context, the Crypto Scanner and the multi-timeframe grid, which run only the setups and signal votes that read a close; the TA and coin-page charts where candles are missing or 4-day, drawn as a line; and the assistant’s price history where candles are refused, which then reports the highest and lowest close), marked `bars: "close"`; it carries no high, low or volume. Binance and Binance.US were the first candle rungs until 2026-10-13 (T-423, D102). `granularity` is measured from the candles.',
   },
   {
     id: 'coin-list', surface: 'Coin list / search / discovery', module: 'crypto',
@@ -663,9 +674,22 @@ export function requiredAttributions(entry: DataSourceEntry): NonNullable<Source
  */
 export function parseCredits(value: unknown): RequiredCredit[] {
   if (!Array.isArray(value)) return []
-  return value.filter((c): c is RequiredCredit =>
-    !!c && typeof c === 'object' && typeof (c as RequiredCredit).text === 'string'
-      && ((c as RequiredCredit).href === undefined || typeof (c as RequiredCredit).href === 'string'))
+  return value.filter((c): c is RequiredCredit => {
+    if (!c || typeof c !== 'object') return false
+    const credit = c as RequiredCredit
+    const license = credit.license as unknown
+    return typeof credit.text === 'string'
+      && (credit.href === undefined || typeof credit.href === 'string')
+      && (license === undefined || (!!license && typeof license === 'object'
+        && typeof (license as { text?: unknown }).text === 'string'
+        && typeof (license as { href?: unknown }).href === 'string'))
+  })
+}
+
+/** `into` plus the credits in `more` it does not already hold, matched by text. */
+export function mergeCredits(into: readonly RequiredCredit[], more: readonly RequiredCredit[]): RequiredCredit[] {
+  const seen = new Set(into.map((c) => c.text))
+  return [...into, ...more.filter((c) => !seen.has(c.text) && seen.add(c.text))]
 }
 
 /**

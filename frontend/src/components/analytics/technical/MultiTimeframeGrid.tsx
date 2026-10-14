@@ -7,6 +7,8 @@ import { confluenceLabel, CONFLUENCE_MIN_LOADED } from '@/lib/utils/confluence'
 import { SignalBadge } from '@/components/charts/SignalBadge'
 import { candleGranularity, candleSizeWords } from '@/lib/utils/candleGranularity'
 import { SWEEP_WANTS } from '@/lib/technicals/sweep'
+import { mergeCredits, parseCredits, type RequiredCredit } from '@/lib/data/dataSources'
+import { RequiredCredits } from '@/components/ui/RequiredCredits'
 
 // ─── Multi-Timeframe Confluence Grid ──────────────────────────────────────────
 //
@@ -40,6 +42,8 @@ interface TFRow {
    * confluence, rather than reading as the timeframe it is labelled (T-423).
    */
   servedSize?: string
+  /** Credits the row's prices require, when its source sent one (Coin Metrics, D108). */
+  credits?: RequiredCredit[]
 }
 
 const loadingRows = (): TFRow[] => TF_ROWS.map(r => ({ ...r, summary: null, loading: true }))
@@ -85,7 +89,8 @@ export function MultiTimeframeGrid({ assetId }: { assetId: string }) {
         // always counted on the same votes.
         const summary = !wrongSize && candles.length >= 50 ? computeSignalSummary(candles, 'close') : null
         const servedSize = wrongSize ? (size ?? undefined) : undefined
-        if (!cancelled) setState(prev => mergeRow(prev, assetId, tf.range, { summary, servedSize, loading: false }))
+        const credits = summary ? parseCredits(json.attributions) : []
+        if (!cancelled) setState(prev => mergeRow(prev, assetId, tf.range, { summary, servedSize, credits, loading: false }))
       } catch {
         if (!cancelled) setState(prev => mergeRow(prev, assetId, tf.range, { loading: false }))
       }
@@ -116,6 +121,7 @@ export function MultiTimeframeGrid({ assetId }: { assetId: string }) {
   // Same rule the futures-curve route follows: when there is no data, return the
   // REASON rather than an empty space (`/live-data/futures-curve` answers
   // ok:false with its reason and TermStructureCard prints it).
+  const credits = rows.reduce<RequiredCredit[]>((acc, r) => mergeCredits(acc, r.credits ?? []), [])
   const stillLoading = rows.some(r => r.loading)
   const wrongSize = rows.filter(r => r.servedSize).length
   const absence = confluence || stillLoading
@@ -176,6 +182,8 @@ export function MultiTimeframeGrid({ assetId }: { assetId: string }) {
         {SIGNALS_FROM_CLOSES.size} indicator votes that need only a close. The Signal Summary
         counts every vote when the chart has candles, so the two can differ.
       </p>
+      {/* Sent only with the prices a credited source served (D108). */}
+      <RequiredCredits credits={credits} className="-mt-1" />
 
       <div className="grid grid-cols-5 gap-2">
         {rows.map((row) => {

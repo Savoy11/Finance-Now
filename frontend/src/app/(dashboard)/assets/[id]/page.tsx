@@ -230,7 +230,7 @@ function TechnicalAnalysisTab({ asset }: { asset: NonNullable<ReturnType<typeof 
 
   // Candles first; DefiLlama's closing prices where the candles are missing or
   // only 4-day ones (T-423, D103). Same hook as the TA page.
-  const { data, closeOnly, closesReason, candleError, isFetching } = useCryptoChartSeries(asset.id, range, {
+  const { data, closeOnly, closesReason, candleError, credits, isFetching } = useCryptoChartSeries(asset.id, range, {
     enabled: canChart,
     staleTime: range === '1M' ? 300_000 : 900_000,
   })
@@ -396,6 +396,7 @@ function TechnicalAnalysisTab({ asset }: { asset: NonNullable<ReturnType<typeof 
                   source={ohlcvSourceLabel(data?.source)}
                   candleError={candleError}
                   panelsOff={EMBED_PANELS_OFF_FOR_CLOSES}
+                  credits={credits}
                 />
               )}
               {summary && <EmbedSignalSummary summary={summary} />}

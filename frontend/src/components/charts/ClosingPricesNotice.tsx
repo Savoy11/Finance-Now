@@ -1,10 +1,13 @@
 import { candleSizeWords } from '@/lib/utils/candleGranularity'
 import { NOT_FROM_CLOSES } from '@/components/charts/indicatorRegistry'
 import type { ClosesReason } from '@/hooks/useCryptoChartSeries'
+import type { RequiredCredit } from '@/lib/data/dataSources'
+import { RequiredCredits } from '@/components/ui/RequiredCredits'
 
-// Shown wherever a crypto chart draws DefiLlama's closing prices instead of
-// candles (T-423, D103), so the line, the shorter indicator menu and the missing
-// panels read as a stated substitution rather than a broken page.
+// Shown wherever a crypto chart draws closing prices instead of candles (T-423,
+// D103), so the line, the shorter indicator menu and the missing panels read as a
+// stated substitution rather than a broken page. When the prices came from Coin
+// Metrics, its licence's credit sits here too (D108).
 
 const WHY: Record<ClosesReason, string> = {
   'no-candles': 'No candle source answered for this range.',
@@ -17,7 +20,7 @@ function listed(items: readonly string[]): string {
 }
 
 export function ClosingPricesNotice({
-  reason, size, source, candleError, panelsOff, className,
+  reason, size, source, candleError, panelsOff, credits = [], className,
 }: {
   reason: ClosesReason
   /** The measured spacing of the prices drawn, e.g. '1D'. */
@@ -27,6 +30,8 @@ export function ClosingPricesNotice({
   candleError?: string
   /** This page's panels that need ranges, e.g. ['the signal summary', 'key levels']. */
   panelsOff: readonly string[]
+  /** Credits the prices' source requires (useCryptoChartSeries's `credits`). */
+  credits?: readonly RequiredCredit[]
   className?: string
 }) {
   const words = candleSizeWords(size)
@@ -39,6 +44,7 @@ export function ClosingPricesNotice({
     >
       <strong className="font-semibold">{lead}</strong> {WHY[reason]} One price per period has no high,
       low or volume, so {off} are off for this view.
+      {credits.length > 0 && <RequiredCredits credits={credits} className="ml-1" />}
     </div>
   )
 }

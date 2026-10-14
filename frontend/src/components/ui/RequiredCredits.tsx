@@ -27,6 +27,14 @@ export function RequiredCredits({ credits, separated = false, className }: {
               {a.text}
             </a>
           ) : a.text}
+          {a.license?.href.startsWith('https://') && (
+            <>
+              {', '}
+              <a href={a.license.href} target="_blank" rel="noopener noreferrer license" className="hover:text-accent-blue">
+                {a.license.text}
+              </a>
+            </>
+          )}
         </span>
       ))}
     </span>

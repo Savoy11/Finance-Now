@@ -185,6 +185,8 @@ export function useAssetsWithStore(filterRules: FilterRule[] = []) {
       /** Coins the sweep returned values for. The rest read as not tested. */
       covered: sweep.data?.size ?? 0,
       universe: sweepIds.length,
+      /** Credits the swept prices' sources require (Coin Metrics, when it served: D108). */
+      credits: sweep.credits,
     },
   }
 }
