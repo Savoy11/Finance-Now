@@ -1910,9 +1910,14 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
   // publicnode.com, the first rung on every EVM chain, has its own entry above (D25).
   //
   // Each operator's terms and public-endpoint page were READ on the owner's machine on
-  // 2026-10-13 (residential egress, not a proxy). Every entry stays `seeded` until the
-  // owner ratifies it, as the T-005 readings did. Where a document could not be opened,
+  // 2026-10-13 (residential egress, not a proxy). Where a document could not be opened,
   // or none exists, the entry says so: "couldn't read it" is not permission.
+  //
+  // Owner, 2026-10-14 (D105): the five clean readings are verified (Blockstream, Solana,
+  // Ripple, Base, Optimism), and so are dRPC and Arbitrum on the narrow reading, as D25
+  // read publicnode. cloudflare-eth.com is dropped from the Ethereum ladder. Tronscan is
+  // called only with a key. The four with no governing document (1RPC, polygon-rpc.com,
+  // bsc-dataseed, api.avax.network) stay seeded, as D54 left DefiLlama and the others.
   //
   // The pattern across them: an operator offers its public endpoint for development and
   // light use, and its own page says to run a node or pay a provider for production.
@@ -1928,7 +1933,7 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
       'Blockstream’s Terms of Use cover "any other websites of Blockstream" and "the services and resources available or enabled via the website", which takes in the keyless Esplora API at blockstream.info/api (documented openly in github.com/Blockstream/esplora, API.md). Read 2026-10-13: no clause speaks to the API’s rate, volume or commercial use, and the User Conduct clause bars only a purpose "prohibited by the Agreement or by applicable law". No non-commercial or automated-access restriction was found.',
     conditions: ['One address lookup per user request: no polling, no bulk crawling', 'Keyless public endpoint only'],
     reviewedAt: '2026-10-13',
-    review: 'seeded',
+    review: 'verified',
     confidence: 'medium',
   },
   {
@@ -1943,21 +1948,25 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
       'Launch step: a production RPC provider, as Solana’s own page advises, unless the EULA is read as not reaching this endpoint',
     ],
     reviewedAt: '2026-10-13',
-    review: 'seeded',
+    review: 'verified',
     confidence: 'medium',
   },
   {
-    // NOT READ: tronscan.org and docs.tronscan.org answered 403 to the owner's machine.
+    // tronscan.org and docs.tronscan.org answered 403 to a script on 2026-10-13; both read
+    // in the owner's browser on 2026-10-14.
     domain: 'tronscanapi.com',
     name: 'Tronscan API (TRON explorer)',
     verdict: 'conditional',
-    termsUrl: 'https://tronscan.org/',
+    termsUrl: 'https://tronscan.org/aboutUs/termsOfService',
     finding:
-      'Tronscan’s account endpoint (apilist.tronscanapi.com/api/account) answers without a key. Its terms could not be read: tronscan.org and docs.tronscan.org both answered HTTP 403 to the owner’s machine on 2026-10-13. What the endpoint itself states, seen the same day: a refusal reading "request rate exceeded the allowed_rps(3), and the query server is suspended for 32 s".',
-    conditions: ['Under three requests a second, the limit the endpoint states', 'UNREAD: open the terms in a browser before launch'],
-    reviewedAt: '2026-10-13',
+      'Tronscan’s Terms of Service (updated 2022-01-04, read 2026-10-14) say "You must create an account with Company to access the Services", and bar "any robot, spider, crawler, scraper or other automated means or interface not provided by us"; its API is an interface it provides. Its API docs put a key in the TRON-PRO-API-KEY header and say "If your request does not include the correct API Key, TRONSCAN will limit the rate of your request", and its homepage carries an announcement of a mandatory API key. Keyless, the endpoint refused with "request rate exceeded the allowed_rps(3)" on 2026-10-13, and every keyless call from the owner’s IP on 2026-10-14 got HTTP 429.',
+    conditions: [
+      'Called only with a Tronscan API key, sent as TRON-PRO-API-KEY (owner, 2026-10-14, D105). Without TRONSCAN_API_KEY the route does not call Tronscan and says why',
+      'The account and key are the owner’s to create',
+    ],
+    reviewedAt: '2026-10-14',
     review: 'seeded',
-    confidence: 'low',
+    confidence: 'medium',
   },
   {
     domain: 's1.ripple.com',
@@ -1971,7 +1980,7 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
       'Launch step: run an xrpld server or contract an operator, as the page says',
     ],
     reviewedAt: '2026-10-13',
-    review: 'seeded',
+    review: 'verified',
     confidence: 'medium',
   },
   {
@@ -1984,22 +1993,23 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     finding:
       'dRPC advertises keyless public endpoints (eth.drpc.org, listed at drpc.org/chainlist/ethereum-mainnet-rpc), and Polygon’s own docs name polygon.drpc.org as Polygon’s mainnet RPC. Its Terms of Use, read 2026-10-13, grant the Client "a non-transferable, non-exclusive, non-sublicensable limited term worldwide right and license to access and use the Services", and also say "Account registration is required to use the Services". Read literally, the keyless endpoint sits outside that grant; read narrowly, the account clause governs the paid platform.',
     conditions: [
-      'UNRESOLVED: whether "Account registration is required to use the Services" reaches the advertised keyless endpoint. An owner judgement, as D25 was for publicnode',
+      'Narrow reading (owner, 2026-10-14, D105): "Account registration is required to use the Services" governs dRPC’s account platform, not the keyless endpoint it advertises. A judgement, recorded as one, as D25 was for publicnode',
       'Second rung on Ethereum only; read-only calls',
     ],
     reviewedAt: '2026-10-13',
-    review: 'seeded',
+    review: 'verified',
     confidence: 'low',
   },
   {
-    // DEPRECATED by its operator; still answering on 2026-10-13.
+    // DROPPED 2026-10-14 (owner, D105): no longer on the Ethereum wallet ladder. Kept as
+    // the record of its verdict, as Binance's entries are.
     domain: 'cloudflare-eth.com',
     name: 'Cloudflare Ethereum Gateway (legacy public endpoint)',
     verdict: 'conditional',
     termsUrl: 'https://developers.cloudflare.com/web3/reference/migration-guide/',
     finding:
       'Cloudflare "is deprecating legacy hostnames that point to our public gateway endpoints at cloudflare-eth.com" (migration guide, last updated 2026-05-05). Its current Ethereum Gateway needs a Cloudflare account and a gateway of your own, with usage-based billing past the requests a plan includes. No document read on 2026-10-13 grants keyless use of the legacy endpoint. It still answered eth_chainId from the owner’s machine that day.',
-    conditions: ['DEPRECATED: third rung on Ethereum, behind publicnode and dRPC. Dropping it, or replacing it with an account gateway, is the owner’s call'],
+    conditions: ['NOT FETCHED since 2026-10-14: the owner dropped it from the Ethereum wallet ladder (D105), being deprecated and with no document granting keyless use'],
     reviewedAt: '2026-10-13',
     review: 'seeded',
     confidence: 'low',
@@ -2059,17 +2069,22 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     confidence: 'low',
   },
   {
-    // arbitrum.io/tos answered 403 to the owner's machine; the docs page was read.
+    // arbitrum.io/tos answered 403 to a script on 2026-10-13; read in the owner's browser
+    // on 2026-10-14.
     domain: 'arb1.arbitrum.io',
     name: 'Arbitrum One public RPC',
     verdict: 'conditional',
-    termsUrl: 'https://docs.arbitrum.io/arbitrum-essentials/reference/node-providers',
+    termsUrl: 'https://arbitrum.io/tos',
     finding:
-      'Arbitrum’s docs describe https://arb1.arbitrum.io/rpc as a "General-purpose read/write endpoint, useful for development and low-volume reads" with "No uptime, latency, or rate-limit guarantees". The site terms at arbitrum.io/tos answered HTTP 403 to the owner’s machine on 2026-10-13 and were not read.',
-    conditions: ['Low-volume reads, as the docs describe it', 'Second rung on Arbitrum only', 'UNREAD: arbitrum.io/tos'],
-    reviewedAt: '2026-10-13',
-    review: 'seeded',
-    confidence: 'low',
+      'Arbitrum’s docs describe https://arb1.arbitrum.io/rpc as a "General-purpose read/write endpoint, useful for development and low-volume reads" with "No uptime, latency, or rate-limit guarantees" (read 2026-10-13). Offchain Labs’ Terms of Service (arbitrum.io/tos, last revised 2026-03-11, read 2026-10-14) govern its Sites and the Offerings in Appendix I, which include "Application program interfaces and software development kits offered by us", so they plausibly reach this endpoint. They set no commercial, volume or automated-access limit. Their broadest clause: users "agree not to modify, copy, frame, scrape, rent, lease, loan, sell, distribute, or create derivative works based on the Services or the Service Content".',
+    conditions: [
+      'Low-volume reads, as the docs describe it',
+      'Narrow reading (owner, 2026-10-14, D105): the copy/scrape/distribute clause bars re-serving the service, not answering a read, as D25 read publicnode’s',
+      'Second rung on Arbitrum only',
+    ],
+    reviewedAt: '2026-10-14',
+    review: 'verified',
+    confidence: 'medium',
   },
   {
     domain: 'mainnet.base.org',
@@ -2084,7 +2099,7 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
       'Second rung on Base only',
     ],
     reviewedAt: '2026-10-13',
-    review: 'seeded',
+    review: 'verified',
     confidence: 'medium',
   },
   {
@@ -2100,7 +2115,7 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
       'Second rung on Optimism only',
     ],
     reviewedAt: '2026-10-13',
-    review: 'seeded',
+    review: 'verified',
     confidence: 'medium',
   },
 
@@ -2109,7 +2124,8 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
   // /live-data/news falls back to these when a key is saved, and the Integrations page
   // tests the NewsAPI key. Neither host had an entry: the news entry in dataSources.ts
   // named them as one hostless "GNews / NewsAPI", which the drift check skipped. Both
-  // documents were READ on the owner's machine on 2026-10-13; `seeded` until ratified.
+  // documents were READ on the owner's machine on 2026-10-13, and the owner verified both
+  // on 2026-10-14 (D106), each with its launch step.
   {
     domain: 'newsapi.org',
     name: 'NewsAPI',
@@ -2123,7 +2139,7 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
       'Keep each article’s source and notices; never republish article text',
     ],
     reviewedAt: '2026-10-13',
-    review: 'seeded',
+    review: 'verified',
     confidence: 'high',
   },
   {
@@ -2139,7 +2155,7 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
       'Do not misrepresent the source of the data',
     ],
     reviewedAt: '2026-10-13',
-    review: 'seeded',
+    review: 'verified',
     confidence: 'high',
   },
 ]

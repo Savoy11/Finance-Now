@@ -799,13 +799,13 @@ site nobody has reviewed. Full design: `docs/architecture/source-terms.md`.
 > The fix for any of the key-gated rows is a free API key on the Integrations page — **not
 > a substitute scraper.**
 
-> ⚠ **26 of 73 registry entries are `seeded`, not `verified` — check `review` before
+> ⚠ **17 of 73 registry entries are `seeded`, not `verified` — check `review` before
 > trusting one.** The registry was authored in an environment whose network policy
 > blocked every publisher and provider host at the gateway, so not one terms document
 > could be opened. The entries are honest starting positions drawn from each
 > provider's publicly documented posture (published API docs, documented free tiers,
-> openly advertised RSS feeds) — they are **not readings**. **47 entries are
-> `verified`** as of 2026-10-04 (the count was spelled out as a word here until 2026-09-20,
+> openly advertised RSS feeds) — they are **not readings**. **56 entries are
+> `verified`** as of 2026-10-14 (the count was spelled out as a word here until 2026-09-20,
 > which is why no guard could watch it — see `docs:check`): **Cboe** (P2-O1 audit, 2026-08-05) and
 > **CoinGecko** (the 2026-08-29 probe run) were the first two, and sixteen more
 > were **read** on a clean egress on 2026-09-14/15
@@ -841,12 +841,22 @@ site nobody has reviewed. Full design: `docs/architecture/source-terms.md`.
 > (`scripts/lib/routeHosts.mjs`, `dataSourcesDrift.test.ts`). Each document was read on the
 > owner's machine. Most of the operators offer their public endpoint for development and
 > say to run a node or pay a provider in production, which is personal use before launch
-> (D96) and a launch step only if Wallets returns. Three things need the owner: dRPC's terms
-> require an account its keyless endpoint does not (publicnode's question, D25); Cloudflare
-> is deprecating `cloudflare-eth.com`; and Tronscan's and Arbitrum's terms answered 403.
+> (D96) and a launch step only if Wallets returns.
 >
-> **Two more the same day (T-433), also `seeded`: NewsAPI and GNews**, the news route's keyed
-> fallbacks. The drift check had skipped every entry with a hostless provider (23 of 56),
+> **The owner ruled on 2026-10-14 (D105), taking 47 verified to 54.** Verified: the five clean
+> readings (Blockstream, Solana, Ripple, Base, Optimism), and dRPC and Arbitrum on the narrow
+> reading, as D25 read publicnode. Arbitrum's terms and Tronscan's, which answered 403 to a
+> script, were read in the owner's browser. **`cloudflare-eth.com` is dropped** from the
+> Ethereum ladder: Cloudflare is retiring it, and nothing grants keyless use. **Tronscan is
+> called only with a key** (`TRONSCAN_API_KEY`, sent as `TRON-PRO-API-KEY`): its terms require
+> an account and its API rate-limits keyless requests, so without one the TRON route calls
+> nothing and says why (`walletTerms.test.ts`). Still `seeded`: Tronscan, Cloudflare, and the
+> four with no governing document (1RPC, polygon-rpc.com, BNB Chain's dataseed, Avalanche's
+> API), as D54 left DefiLlama and the others.
+>
+> **Two more the same day (T-433): NewsAPI and GNews**, the news route's keyed fallbacks,
+> verified by the owner on 2026-10-14 (D106), taking 54 to 56. Each keeps its launch step: a
+> paid plan at launch, or the fallback dropped. The drift check had skipped every entry with a hostless provider (23 of 56),
 > which hid them; it no longer does, and its only exceptions are two named lists in
 > `scripts/lib/routeHosts.mjs`. **AI providers are not data sources and stay out of this
 > registry (D104, owner: *"no on the AI providers"*)**: the nine the Integrations Test button
@@ -1119,6 +1129,9 @@ COINGECKO_API_KEY=…                         # Paid tier; COINGECKO_BASE_URL ov
 # Equity news:    MARKETAUX_API_KEY (company news on stock pages, T-430; personal use only, see sourceTerms.ts)
 # Crypto/news:    COINMARKETCAP_API_KEY, CRYPTOPANIC_API_KEY, MESSARI_API_KEY,
 #                 NEWSAPI_API_KEY, GNEWS_API_KEY, LUNARCRUSH_API_KEY, SANTIMENT_API_KEY
+# Wallets:        TRONSCAN_API_KEY (TRON balances; env only, sent as TRON-PRO-API-KEY.
+#                 Without it the TRON route calls nothing: Tronscan's terms require an
+#                 account and its API rate-limits keyless requests, D105)
 # Full env-var mapping lives in getProviderKey() (src/lib/api/live/providers.ts).
 
 # ── Admin ──

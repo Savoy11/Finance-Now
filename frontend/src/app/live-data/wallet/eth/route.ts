@@ -51,7 +51,9 @@ export const dynamic = 'force-dynamic'
 //   rung, re-test from a second egress; docs/runbooks/incident-response.md has the
 //   loop.
 const EVM_RPCS: Record<string, { rpcs: string[]; symbol: string }> = {
-  ethereum:  { symbol: 'ETH',  rpcs: ['https://ethereum.publicnode.com', 'https://eth.drpc.org', 'https://cloudflare-eth.com'] },
+  // cloudflare-eth.com, the third rung, dropped 2026-10-14 (owner, D105): Cloudflare is
+  // retiring it, and no document grants keyless use.
+  ethereum:  { symbol: 'ETH',  rpcs: ['https://ethereum.publicnode.com', 'https://eth.drpc.org'] },
   // 1rpc.io/matic added 2026-09-10: Polygon had zero working rungs without it.
   polygon:   { symbol: 'POL',  rpcs: ['https://polygon-bor.publicnode.com', 'https://1rpc.io/matic', 'https://polygon-rpc.com'] },
   bsc:       { symbol: 'BNB',  rpcs: ['https://bsc-rpc.publicnode.com', 'https://bsc-dataseed.binance.org'] },

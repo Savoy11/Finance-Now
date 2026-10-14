@@ -859,6 +859,8 @@ function envKey(providerId: string): string | undefined {
     tiingo: 'TIINGO_API_KEY',
     'alpha-vantage': 'ALPHA_VANTAGE_API_KEY',
     marketaux: 'MARKETAUX_API_KEY',
+    // Wallet balances (no Integrations category for on-chain sources yet; env only)
+    tronscan: 'TRONSCAN_API_KEY',
     // LLM providers (agent keys)
     anthropic: 'ANTHROPIC_API_KEY',
     openai: 'OPENAI_API_KEY',

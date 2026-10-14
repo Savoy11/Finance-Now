@@ -62,9 +62,9 @@
   "total_verified": 398,
   "outstanding": 374,
   "by_status": {
-   "closed": 212,
+   "closed": 214,
    "parked": 135,
-   "open": 20,
+   "open": 18,
    "blocked": 6,
    "unclear": 1
   },
@@ -75,8 +75,8 @@
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 212,
-  "counts_recomputed_on": "2026-10-13",
+  "closed_by_annotation": 214,
+  "counts_recomputed_on": "2026-10-14",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 374
  },
@@ -14073,7 +14073,7 @@
   {
    "id": "T-432",
    "title": "Put the wallet routes’ RPC and explorer hosts under the source-terms registry",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "either",
    "category": "legal",
@@ -14084,7 +14084,7 @@
     "T-423"
    ],
    "summary": "The five /live-data/wallet/* routes (btc, eth, sol, tron, xrp) fetch 20 hosts, measured 2026-10-13 from the route files. Their dataSources.ts entry names its provider as “Public explorers + JSON-RPC ladders” with no host, so sourceTerms.test.ts, which walks every host in dataSources.ts, never sees them. 7 are covered anyway by the verified publicnode.com entry (T-251); 13 have no entry at all: 1rpc.io, api.avax.network, api.mainnet-beta.solana.com, apilist.tronscanapi.com, arb1.arbitrum.io, blockstream.info, bsc-dataseed.binance.org, cloudflare-eth.com, eth.drpc.org, mainnet.base.org, mainnet.optimism.io, polygon-rpc.com and s1.ripple.com. The routes also call plain fetch rather than pinnedFetch, so the prohibited-host block and the robots gate do not apply to them either. None of the 13 is known to be prohibited; nobody has read their terms. bsc-dataseed.binance.org is BNB Chain’s public RPC, not the Binance or Binance.US exchange T-423 removes, and needs its own reading. Only the Wallets page calls these routes, and it is hidden from rollout (2026-08-22), so before launch this is personal use (D96) and a launch step only if Wallets returns.",
-   "next_action": "Left for the owner: (a) ratify the thirteen seeded entries in frontend/src/lib/server/sourceTerms.ts (the “Wallet balance endpoints” block), or not; (b) dRPC’s terms say “Account registration is required to use the Services” while it advertises eth.drpc.org as keyless, the same question D25 settled for publicnode; (c) Cloudflare is deprecating cloudflare-eth.com, Ethereum’s third rung: drop it or keep it while it answers; (d) Tronscan’s and Arbitrum’s terms answered 403 to the owner’s machine and want opening in a browser. Before launch all of it is personal use (D96), and a launch step only if the Wallets page returns.",
+   "next_action": "Owner: close T-432, or not. All four questions were ruled on 2026-10-14 (D105) and applied. What stays seeded does so by design: Tronscan (called only with a key), Cloudflare (dropped, kept as the record), and the four endpoints no document governs (1RPC, polygon-rpc.com, BNB Chain’s dataseed, Avalanche’s API), as D54 left DefiLlama and the others. Optional, the owner’s: a Tronscan account and key (TRONSCAN_API_KEY) for TRON balances.",
    "sources": [
     {
      "file": "frontend/src/lib/data/dataSources.ts",
@@ -14103,19 +14103,35 @@
     "why": "Owner, 2026-10-13: “Lets log the gap and begin working on t423 using the recommended solution”. The gap was first reported, not filed, during the T-424 credit inventory on 2026-10-12."
    },
    "progress": {
-    "noted_on": "2026-10-13",
-    "note": "Steps (1) and (2) done 2026-10-13 (owner: “merge and begin working on the next set of items”). (1): the wallet entry in dataSources.ts now names one provider per operator, fourteen in all with publicnode. (2): each operator’s terms and public-endpoint page were read on the owner’s machine (Spectrum residential egress, proxy false) and entered as seeded: most offer the public endpoint for development and light use and say to run a node or pay a provider in production. Why nothing had caught the gap: `npm run data-sources -- --verify` read only top-level route folders, so the nested wallet/* routes were never opened, and a hostless provider exempts its entry anyway. The walk now reads every folder (scripts/lib/routeHosts.mjs, held by dataSourcesDrift.test.ts) and compares hosts without their port. Step (3) dropped, because its premise was false: it said to route the wallet fetches through pinnedFetch “as every other route does”, but 4 of the 60 route files import pinnedFetch and 43 call plain fetch (measured 2026-10-13). pinnedFetch is the SSRF defence for user-supplied URLs; for a built-in host the binding check is the test-time one, which now sees all thirteen. Seen from this machine only, so not evidence about the hosts: polygon-rpc.com and bsc-dataseed.binance.org failed the TLS handshake, and BNB Chain’s and Polygon’s own RPC pages no longer list either hostname.",
+    "noted_on": "2026-10-14",
+    "note": "Owner’s rulings, 2026-10-14 (D105), applied the same day: (a) the five clean readings verified (Blockstream, Solana, Ripple, Base, Optimism); (b) dRPC kept and verified on the narrow reading, as D25 read publicnode; (c) cloudflare-eth.com dropped from the Ethereum wallet ladder; (d) Arbitrum’s and Tronscan’s terms read in the owner’s Chrome. Arbitrum verified on the narrow reading. Tronscan’s terms require an account and its API rate-limits keyless requests, so the TRON route sends TRONSCAN_API_KEY as TRON-PRO-API-KEY and, without one, calls nothing and says why. Verified went 47 → 54. Steps (1) and (2) done 2026-10-13 (owner: “merge and begin working on the next set of items”). (1): the wallet entry in dataSources.ts now names one provider per operator, fourteen in all with publicnode. (2): each operator’s terms and public-endpoint page were read on the owner’s machine (Spectrum residential egress, proxy false) and entered as seeded: most offer the public endpoint for development and light use and say to run a node or pay a provider in production. Why nothing had caught the gap: `npm run data-sources -- --verify` read only top-level route folders, so the nested wallet/* routes were never opened, and a hostless provider exempts its entry anyway. The walk now reads every folder (scripts/lib/routeHosts.mjs, held by dataSourcesDrift.test.ts) and compares hosts without their port. Step (3) dropped, because its premise was false: it said to route the wallet fetches through pinnedFetch “as every other route does”, but 4 of the 60 route files import pinnedFetch and 43 call plain fetch (measured 2026-10-13). pinnedFetch is the SSRF defence for user-supplied URLs; for a built-in host the binding check is the test-time one, which now sees all thirteen. Seen from this machine only, so not evidence about the hosts: polygon-rpc.com and bsc-dataseed.binance.org failed the TLS handshake, and BNB Chain’s and Polygon’s own RPC pages no longer list either hostname.",
     "evidence": [
+     "docs/decisions/2026-10-14-owner-decisions.md",
+     "frontend/src/lib/server/__tests__/walletTerms.test.ts",
      "frontend/src/lib/server/__tests__/dataSourcesDrift.test.ts",
      "frontend/src/lib/server/__tests__/sourceTerms.test.ts",
      "frontend/scripts/lib/routeHosts.mjs"
     ]
+   },
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-10-14",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "Every host the wallet routes fetch is under the terms registry, and the drift check reads the nested wallet/* folders that had hidden them (#333). The owner ruled on all four open questions (D105, 2026-10-14), applied in #344: the five clean readings verified, and dRPC and Arbitrum on the narrow reading; cloudflare-eth.com dropped from the Ethereum ladder; Arbitrum’s and Tronscan’s terms read in the owner’s browser after a script got 403. Tronscan is called only with a key, since its terms require an account and its API rate-limits keyless requests.",
+    "approved_by": "owner, 2026-10-14: chose “Close it” for T-432",
+    "evidence": [
+     "docs/decisions/2026-10-14-owner-decisions.md",
+     "frontend/src/lib/server/__tests__/walletTerms.test.ts",
+     "frontend/src/lib/server/__tests__/dataSourcesDrift.test.ts"
+    ],
+    "known_gap": "Still seeded by design: Tronscan (read, not ratified; called only with TRONSCAN_API_KEY), cloudflare-eth.com (dropped, kept as the record), and the four endpoints no document governs (1RPC, polygon-rpc.com, BNB Chain’s dataseed, Avalanche’s API), as D54 left DefiLlama and the others. TRON balances need the owner to create a Tronscan account. All of it serves only the Wallets page, hidden since 2026-08-22."
    }
   },
   {
    "id": "T-433",
    "title": "Close the drift check’s hostless-provider exemption: the news fallbacks and the LLM key tests never reach the terms check",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "either",
    "category": "legal",
@@ -14125,7 +14141,7 @@
     "T-432"
    ],
    "summary": "`npm run data-sources -- --verify` (scripts/lib/routeHosts.mjs, driftItems) skips any registry entry that has a provider with no host, and the entries with id config or news outright; 23 of 56 entries carry a hostless provider (measured 2026-10-13, after T-432 gave the wallet entry real hosts). Those entries’ routes are never compared with the registry, so a host they fetch never reaches sourceTerms.test.ts either. Measured the same day, the hosts hidden this way that have no source-terms entry at all: /live-data/news fetches newsapi.org (news/route.ts:613) and gnews.io (:674), the keyed news fallbacks; /live-data/config fetches newsapi.org (:440) and eight LLM providers’ /models endpoints to test a saved key (:379-387: Anthropic, OpenAI, Groq, xAI, DeepSeek, Mistral, Together, Cohere). The same LLM hosts serve the agents through lib/agents/runner.ts, outside /live-data and so outside the drift check entirely. The other exempted routes’ hosts are registered (macro-news, market-news). Two URL literals in the news route are not fetches: github.com is in the User-Agent string and www.congress.gov is an article link the route builds. All of it is personal use before launch (D96).",
-   "next_action": "Left for the owner: ratify the two seeded entries in frontend/src/lib/server/sourceTerms.ts (the “Keyed news fallbacks” block: newsapi.org and gnews.io), or not. Both are fine before launch (D96): NewsAPI’s free Developer plan is for a development environment only, and GNews’s Free plan for personal, non-commercial use. At launch each needs a paid plan or its rung dropped.",
+   "next_action": "Owner: close T-433, or not. Its last open step is done: the owner verified newsapi.org and gnews.io on 2026-10-14 (D106), each keeping its launch step (a paid plan at launch, or the fallback dropped).",
    "sources": [
     {
      "file": "frontend/scripts/lib/routeHosts.mjs",
@@ -14149,13 +14165,28 @@
     "why": "Owner, 2026-10-13: “merge 333 and 334, and file the news item”. Found while doing T-432 and reported in #333 as found, not fixed."
    },
    "progress": {
-    "noted_on": "2026-10-13",
-    "note": "All three steps done 2026-10-13 (owner: “go, and no on the AI providers”). (1) D104: AI providers are not data sources and stay out of sourceTerms.ts. The nine LLM hosts the Integrations Test button calls are named in NOT_DATA_SOURCES (frontend/scripts/lib/routeHosts.mjs), each with that reason; Google’s Gemini endpoint makes nine, not the eight first counted, because its googleapis.com domain matched the YouTube Data API entry and looked registered. (2) The news entry names its hosts one by one, newsapi.org and gnews.io among them; both terms were read on the owner’s machine and entered as seeded. (3) driftItems no longer skips an entry with a hostless provider, nor config and news: every literal host is checked, the Integrations roster (config) against every entry, and the only exceptions are NOT_FETCHED (github.com in the news route’s User-Agent, congress.gov article links) and NOT_DATA_SOURCES, each checked to still match the code. Doing so surfaced three more unnamed sets, all fixed in the same change: finnhub.io, a live equity-quote rung named by no entry (security-quotes now names its four keyed rungs); the four macro-news publishers, under a provider name still listing Dow Jones RSS, removed on terms 2026-09-20, and a note counting 8 feeds; and CNBC in market-news.",
+    "noted_on": "2026-10-14",
+    "note": "Owner, 2026-10-14 (D106): newsapi.org and gnews.io verified, each with its launch step; 54 → 56 verified. All three steps done 2026-10-13 (owner: “go, and no on the AI providers”). (1) D104: AI providers are not data sources and stay out of sourceTerms.ts. The nine LLM hosts the Integrations Test button calls are named in NOT_DATA_SOURCES (frontend/scripts/lib/routeHosts.mjs), each with that reason; Google’s Gemini endpoint makes nine, not the eight first counted, because its googleapis.com domain matched the YouTube Data API entry and looked registered. (2) The news entry names its hosts one by one, newsapi.org and gnews.io among them; both terms were read on the owner’s machine and entered as seeded. (3) driftItems no longer skips an entry with a hostless provider, nor config and news: every literal host is checked, the Integrations roster (config) against every entry, and the only exceptions are NOT_FETCHED (github.com in the news route’s User-Agent, congress.gov article links) and NOT_DATA_SOURCES, each checked to still match the code. Doing so surfaced three more unnamed sets, all fixed in the same change: finnhub.io, a live equity-quote rung named by no entry (security-quotes now names its four keyed rungs); the four macro-news publishers, under a provider name still listing Dow Jones RSS, removed on terms 2026-09-20, and a note counting 8 feeds; and CNBC in market-news.",
     "evidence": [
+     "docs/decisions/2026-10-14-owner-decisions.md",
      "frontend/src/lib/server/__tests__/dataSourcesDrift.test.ts",
      "frontend/src/lib/server/__tests__/sourceTerms.test.ts",
      "docs/decisions/2026-10-13-owner-decisions.md"
     ]
+   },
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-10-14",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "The drift check no longer skips an entry with a hostless provider, and its only exceptions are two named lists checked against the code (#337). AI providers are kept out of the terms registry by the owner’s ruling (D104). NewsAPI and GNews, the news route’s keyed fallbacks, were read on the owner’s machine and verified by the owner (D106, applied in #344), each keeping its launch step.",
+    "approved_by": "owner, 2026-10-14: chose “Close it” for T-433",
+    "evidence": [
+     "frontend/src/lib/server/__tests__/dataSourcesDrift.test.ts",
+     "docs/decisions/2026-10-13-owner-decisions.md",
+     "docs/decisions/2026-10-14-owner-decisions.md"
+    ],
+    "known_gap": "At launch NewsAPI and GNews each need a paid plan, or the fallback dropped; before launch both are personal use (D96)."
    }
   },
   {

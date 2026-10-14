@@ -305,11 +305,10 @@ export const DATA_SOURCES: DataSourceEntry[] = [
     providers: [
       { name: 'Blockstream Esplora (Bitcoin)', host: 'blockstream.info', url: 'https://github.com/Blockstream/esplora/blob/master/API.md', role: 'primary', auth: 'none' },
       { name: 'Solana public RPC', host: 'api.mainnet-beta.solana.com', url: 'https://solana.com/docs/references/clusters', role: 'primary', auth: 'none' },
-      { name: 'Tronscan API (TRON)', host: 'apilist.tronscanapi.com', role: 'primary', auth: 'none' },
+      { name: 'Tronscan API (TRON)', host: 'apilist.tronscanapi.com', url: 'https://docs.tronscan.org/en/api/api-keys', role: 'primary', auth: 'key' },
       { name: 'Ripple public XRP Ledger server', host: 's1.ripple.com', url: 'https://xrpl.org/docs/tutorials/public-servers', role: 'primary', auth: 'none' },
       { name: 'PublicNode (first rung on every EVM chain)', host: 'publicnode.com', url: 'https://www.publicnode.com/', role: 'primary', auth: 'none' },
       { name: 'dRPC (Ethereum)', host: 'eth.drpc.org', role: 'fallback', auth: 'none' },
-      { name: 'Cloudflare Ethereum Gateway (legacy, being deprecated)', host: 'cloudflare-eth.com', role: 'fallback', auth: 'none' },
       { name: 'Automata 1RPC (Polygon)', host: '1rpc.io', role: 'fallback', auth: 'none' },
       { name: 'polygon-rpc.com (Polygon)', host: 'polygon-rpc.com', role: 'fallback', auth: 'none' },
       { name: 'BNB Chain public RPC', host: 'bsc-dataseed.binance.org', url: 'https://docs.bnbchain.org/bnb-smart-chain/developers/json_rpc/json-rpc-endpoint/', role: 'fallback', auth: 'none' },
@@ -318,7 +317,7 @@ export const DATA_SOURCES: DataSourceEntry[] = [
       { name: 'Base public RPC', host: 'mainnet.base.org', role: 'fallback', auth: 'none' },
       { name: 'OP Mainnet public RPC', host: 'mainnet.optimism.io', url: 'https://docs.optimism.io/app-developers/reference/rpc-providers', role: 'fallback', auth: 'none' },
     ],
-    notes: 'Bitcoin, Solana, TRON and XRP each read one keyless endpoint. The EVM chains walk a ladder, PublicNode first and then that chain’s other public endpoints in order, and report the endpoint that answered in `rpc`. Most of these operators offer their public endpoints for development and light use and say to move to your own node or a paid provider for production: personal use before launch (D96), and a launch step only if the Wallets page, hidden since 2026-08-22 and these routes’ only caller, returns. Each host’s terms reading is in sourceTerms.ts.',
+    notes: 'Bitcoin, Solana and XRP each read one keyless endpoint. TRON reads Tronscan only with a Tronscan API key (TRONSCAN_API_KEY): its terms require an account and its API rate-limits keyless requests, so without a key the route says so and calls nothing (D105). The EVM chains walk a ladder, PublicNode first and then that chain’s other public endpoints in order, and report the endpoint that answered in `rpc`. Most of these operators offer their public endpoints for development and light use and say to move to your own node or a paid provider for production: personal use before launch (D96), and a launch step only if the Wallets page, hidden since 2026-08-22 and these routes’ only caller, returns. Each host’s terms reading is in sourceTerms.ts.',
   },
 
   // ── EQUITIES ───────────────────────────────────────────────────────────────

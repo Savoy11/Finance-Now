@@ -20,14 +20,16 @@ Integrations page.
 > ⚠ **Part of the registry is still `seeded`, and that is a deliberate,
 > visible state — not a claim of review.** It was authored in an environment whose
 > network policy blocked every publisher and provider host at the gateway, so no
-> terms document could be opened. **26 of 73 entries** are still starting positions
+> terms document could be opened. **17 of 73 entries** are still starting positions
 > drawn from documented posture, or readings not yet ratified (the 57th, the **Federal Reserve Board**, was added
 > 2026-10-03 for the Market Calendar's FOMC dates: read that day, not yet ratified; the 58th,
-> **Marketaux**, was read 2026-10-07 for company news on stock pages, T-430; the last thirteen are the
-> wallet routes' RPC and explorer hosts, read on the owner's machine on 2026-10-13 under T-432 after the
-> drift check was found never to have opened their folder; and **NewsAPI** and **GNews**, read the
-> same day under T-433 once the drift check stopped skipping entries with a hostless provider).
-> AI providers are deliberately absent: they are not data sources (D104). **47 are `verified`** — the document was actually
+> **Marketaux**, was read 2026-10-07 for company news on stock pages, T-430; six of the wallet
+> routes' thirteen RPC and explorer hosts, read under T-432 after the drift check was found never to
+> have opened their folder, stay seeded under the owner's 2026-10-14 rulings (D105): Tronscan,
+> Cloudflare's dropped gateway, and four with no governing document. **NewsAPI** and **GNews**, read
+> under T-433 once the drift check stopped skipping entries with a hostless provider, were verified
+> on 2026-10-14, D106).
+> AI providers are deliberately absent: they are not data sources (D104). **56 are `verified`** — the document was actually
 > opened and read. Four sit outside the big batch: **Cboe** (P2-O1, 2026-08-05),
 > **CoinGecko** (the first real probe run, 2026-08-29 — see
 > `docs/audits/terms-review-2026-08-29.md`), and **Poloniex** and **LBank** (both
