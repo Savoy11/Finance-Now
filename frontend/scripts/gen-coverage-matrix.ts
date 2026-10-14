@@ -33,7 +33,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { DATA_SOURCES, type DataSourceEntry, type SourceProvider } from '../src/lib/data/dataSources'
-import { lossIfDropped, sourcesOf } from './lib/workingSources'
+import { lossIfDropped, rangeSlices, sourcesOf } from './lib/workingSources'
 
 type Verdict = 'REAL' | 'FALLBACK' | 'UNCONFIGURED' | 'EMPTY' | 'FAIL'
 
@@ -385,6 +385,17 @@ const workingLoss = lossIfDropped(live.map((r) => sourcesOf(r.entry, candidatesO
 const workingEmpties = [...workingLoss.values()].reduce((n, l) => n + l.empties.length, 0)
 const keylessOnly = (vendor: string) => entriesFor(vendor).every((e) => e.auth === 'none')
 
+/**
+ * Ranges a serving surface leaves to one vendor, or none, from the providers' `limits` (D112). A
+ * surface with two vendors can still rest on one for part of what it shows. "Serving" is any probe
+ * live, not every one: the chart route's past-365-day candle probe reads UNCONFIGURED by design,
+ * and a range question about the charts must not wait on that.
+ */
+const serving = rows.filter((r) => r.probes.some((p) => p.verdict === 'REAL'))
+const thinRanges = serving.flatMap((r) =>
+  rangeSlices(r.entry, candidatesOf).filter((s) => s.vendors.length <= 1).map((s) => ({ row: r, ...s })))
+const rangesRecorded = serving.reduce((n, r) => n + rangeSlices(r.entry, candidatesOf).length, 0)
+
 // ── Render ───────────────────────────────────────────────────────────────────
 const ICON: Record<Verdict, string> = {
   REAL: '🟢', FALLBACK: '🟡', UNCONFIGURED: '🔑', EMPTY: '⚪', FAIL: '🔴',
@@ -471,9 +482,8 @@ md.push('"Empties" means nothing stands behind it, so dropping the vendor remove
 md.push('"degrades" means a hand-kept table takes over, which is what D21 asks for. Keyless')
 md.push('vendors count: free is not the same as replaceable.')
 md.push('')
-md.push('⚠ **Per surface, not per range.** A vendor that is the only source for some ranges of a')
-md.push('surface still does not show here (DefiLlama under the crypto charts past 365 days, until')
-md.push('D108). The registry cannot yet say which ranges a provider serves (T-439).')
+md.push('This table counts per surface. A vendor that alone serves some ranges of a surface shows in')
+md.push('the next one instead.')
 md.push('')
 if (workingLoss.size === 0) {
   md.push('None: every working surface has a second vendor or a hand-kept table behind it.')
@@ -484,6 +494,23 @@ if (workingLoss.size === 0) {
   for (const [vendor, loss] of byLoss) {
     const list = (ids: string[]) => (ids.length === 0 ? '— none' : `**${ids.length}**: ${ids.map(esc).join(', ')}`)
     md.push(`| **${esc(vendor)}** | ${keylessOnly(vendor) ? 'keyless' : posture(vendor).label} | ${list(loss.empties)} | ${list(loss.degrades)} |`)
+  }
+}
+md.push('')
+md.push('### Ranges one vendor carries')
+md.push('')
+md.push('A provider\'s `limits` in the registry say what it cannot serve that others on the same')
+md.push('surface can, such as history past 365 days (D112). Each limit marks out a range; these are')
+md.push('the ranges left with one vendor or none, on the surfaces where at least one probe was live.')
+md.push(`${rangesRecorded} range${rangesRecorded === 1 ? ' is' : 's are'} recorded on those surfaces; a limit nobody recorded is not seen.`)
+md.push('')
+if (thinRanges.length === 0) {
+  md.push('None: every recorded range of a serving surface has at least two vendors.')
+} else {
+  md.push('| Surface | Range | Only vendor |')
+  md.push('|---|---|---|')
+  for (const t of thinRanges) {
+    md.push(`| \`${esc(t.row.entry.id)}\` | ${esc(t.range)} | ${t.vendors.length ? `**${esc(t.vendors[0])}**` : '**none**'} |`)
   }
 }
 md.push('')
@@ -597,3 +624,4 @@ console.log(`Coverage matrix → ${OUT}`)
 console.log(`  ${live.length} live · ${degraded.length} degraded (${fixable.length} key-fixable, ${unfixable.length} not) · ${throttled.length} throttled · ${unprobed.length} unprobed`)
 console.log(`  accounts for full coverage: ${accounts.size} (${[...accounts].sort().join(", ")})`)
 console.log(`  working surfaces one vendor alone carries, nothing behind it: ${workingEmpties}`)
+console.log(`  recorded ranges left with one vendor or none: ${thinRanges.length} of ${rangesRecorded}`)

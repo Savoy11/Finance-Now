@@ -2058,6 +2058,27 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     confidence: 'medium',
   },
   {
+    // NO DOCUMENT governs the endpoint (read 2026-10-14, T-439, D113). The staking collector
+    // fetched Injective's LCD for years with no entry here: it lives in lib/server, and the
+    // drift check read only route files until the same day. It also called lcd.injective.network,
+    // a host Injective's docs do not list, which answered 502 or timed out all that day; it now
+    // calls the documented sentry.lcd.injective.network.
+    domain: 'injective.network',
+    name: 'Injective public LCD (sentry.lcd.injective.network)',
+    verdict: 'conditional',
+    termsUrl: 'https://docs.injective.network/infra/public-endpoints',
+    finding:
+      'Injective’s docs list https://sentry.lcd.injective.network:443 as the public mainnet Chain LCD and say: "We do not recommend using these in production for applications having high usage/traffic. There are thousands of developers using the public infrastructure and we cannot promise 100% uptime and reliability." They point to Premium Endpoints for heavier use. No terms document governs the endpoints: the Injective Foundation’s Terms of Use (2026-04-16) cover only “the Site”, https://injective.com/, and say nothing of an API, an endpoint or a node; they do bar UK and Canadian persons and sanctioned persons from the Site and related services. Read on the owner’s machine 2026-10-14.',
+    conditions: [
+      'One inflation read per staking-rates refresh; never a sweep',
+      'Personal use before launch (D96). At launch the docs’ own advice applies: a premium endpoint or our own node for production traffic',
+      'UNRESOLVED: no document governs the public endpoints themselves',
+    ],
+    reviewedAt: '2026-10-14',
+    review: 'seeded',
+    confidence: 'medium',
+  },
+  {
     // NO DOCUMENT FOUND that governs this host, and its operator is not stated anywhere read.
     domain: 'polygon-rpc.com',
     name: 'polygon-rpc.com (Polygon public RPC, no longer listed)',

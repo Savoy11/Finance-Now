@@ -59,6 +59,18 @@ export interface SourceProvider {
      */
     license?: { text: string; href: string }
   }
+  /**
+   * What this provider cannot serve that others on the same surface can (T-439, D112). Set only
+   * where a limit exists. The coverage matrix reads it to find a range one vendor alone carries,
+   * which a per-surface count misses: DefiLlama was the only source of crypto history past 365
+   * days until D108 while CoinGecko served the rest of the charts.
+   */
+  limits?: {
+    /** Serves history only this many days back (CoinGecko's free service: 365). */
+    historyDays?: number
+    /** Serves only these intervals, e.g. ['1d', '1w'] for a daily price series. */
+    intervals?: string[]
+  }
 }
 
 export interface DataSourceEntry {
@@ -120,9 +132,13 @@ export const DATA_SOURCES: DataSourceEntry[] = [
     // Coin Metrics carries no `attribution` here on purpose: its CC BY-NC credit is sent
     // with the responses it served (`attributions`) and shown by the page that read them,
     // so a chart DefiLlama served does not credit Coin Metrics (owner, D108).
+    // `limits` (D112): CoinGecko's free service refuses history past 365 days, and Coin Metrics
+    // serves daily prices only (weekly ranges are built from them), so the matrix can see which
+    // range rests on one vendor.
     providers: [
-      COINGECKO, DEFILLAMA('coins.llama.fi'),
-      { name: 'Coin Metrics Community Data', host: 'community-api.coinmetrics.io', url: 'https://docs.coinmetrics.io/packages/coin-metrics-community-data', role: 'fallback', auth: 'none' },
+      { ...COINGECKO, limits: { historyDays: 365 } },
+      DEFILLAMA('coins.llama.fi'),
+      { name: 'Coin Metrics Community Data', host: 'community-api.coinmetrics.io', url: 'https://docs.coinmetrics.io/packages/coin-metrics-community-data', role: 'fallback', auth: 'none', limits: { intervals: ['1d', '1w'] } },
     ],
     cadence: 'on demand · 60s–15m stale by range',
     notes: 'Candles from CoinGecko, closing prices from DefiLlama (T-423, D103), and from Coin Metrics’ Community API when DefiLlama does not answer a daily or weekly range (T-434, D108), credited on the responses it served (CC BY-NC 4.0); `source=coinmetrics` asks for it alone, which the audit does. CoinGecko’s free service serves no history older than 365 days and sends 4-day candles past 30 days. DefiLlama answers only callers that compute from closes and ask for them (`closes=1`: the Coins screener, Cycle Context, the Crypto Scanner and the multi-timeframe grid, which run only the setups and signal votes that read a close; the TA and coin-page charts where candles are missing or 4-day, drawn as a line; and the assistant’s price history where candles are refused, which then reports the highest and lowest close), marked `bars: "close"`; it carries no high, low or volume. Binance and Binance.US were the first candle rungs until 2026-10-13 (T-423, D102). `granularity` is measured from the candles.',
@@ -240,7 +256,7 @@ export const DATA_SOURCES: DataSourceEntry[] = [
       { name: 'Rocket Pool', host: 'api.rocketpool.net', role: 'primary', auth: 'none' },
       { name: 'Marinade', host: 'api.marinade.finance', role: 'primary', auth: 'none' },
       { name: 'Jito', host: 'kobe.mainnet.jito.network', role: 'primary', auth: 'none' },
-      { name: 'Injective LCD (chain inflation)', role: 'primary', auth: 'none' },
+      { name: 'Injective LCD (chain inflation)', host: 'sentry.lcd.injective.network', url: 'https://docs.injective.network/infra/public-endpoints', role: 'primary', auth: 'none' },
     ],
     // Stride went 2026-10-14: winding down, liquid staking closed, endpoint gone.
     cadence: '20m client poll · 6 parallel upstreams', staticData: ['lib/data/stakingProviders.ts (provider terms, fallback APRs)'],
@@ -483,7 +499,16 @@ export const DATA_SOURCES: DataSourceEntry[] = [
   {
     id: 'macro-quotes', surface: 'Commodity / FX / rate quotes + charts', module: 'macro',
     route: '/live-data/security-quotes · security-chart · security-ohlcv', status: 'key-gated',
-    providers: [FMP, { name: 'Finnhub / Twelve Data / Alpha Vantage', role: 'fallback', auth: 'key' }],
+    providers: [
+      FMP,
+      // Named one by one since 2026-10-14 (D113), as security-quotes' were under T-433. The single
+      // hostless "Finnhub / Twelve Data / Alpha Vantage" named no host, and once the drift check
+      // followed security-chart into lib/api/live/marketData.ts it found these fetched there.
+      { name: 'Finnhub', host: 'finnhub.io', url: 'https://finnhub.io/docs/api', role: 'fallback', auth: 'key' },
+      { name: 'Twelve Data', host: 'api.twelvedata.com', url: 'https://twelvedata.com/docs', role: 'fallback', auth: 'key' },
+      { ...TIINGO, role: 'fallback' },
+      { name: 'Alpha Vantage', host: 'www.alphavantage.co', url: 'https://www.alphavantage.co/documentation/', role: 'fallback', auth: 'key' },
+    ],
     staticData: ['lib/data/commodityCatalog.ts', 'lib/data/currencyCatalog.ts', 'lib/data/ratesCatalog.ts'],
     notes: 'FUTURES and FX PAIRS still price through the equity quote/chart routes (no separate plumbing). The four YIELD INDICES no longer do: since D3 (2026-09-03) ^IRX/^FVX/^TNX/^TYX read the official treasury.gov par curve via lib/data/ratesFromCurve.ts — keyless, plain percent, published daily — after a probe found no free provider quotes them at all (FMP paywalls, Finnhub empty, Twelve Data 404, Alpha Vantage empty, Tiingo has no index space). ⚠ Of what remains, this is still the surface the Yahoo removal hit hardest: GC=F and EURUSD=X were quoted keylessly and are NOT covered by Tiingo, so coverage depends on the keyed provider you configure and is expected to be partial. Catalogs carry no reference prices, so anything unpriced renders an honest dash rather than a stale number. The FX converter and Treasury yield curve are keyless and unaffected.',
   },

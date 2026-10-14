@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import path from 'node:path'
 import {
   listRoutes, hostsInSource, ownerOfRoute, driftItems, readRoutes, NOT_FETCHED, NOT_DATA_SOURCES,
+  moduleClosure, linkOnlyItems, LINK_ONLY_MODULES,
 } from '../../../../scripts/lib/routeHosts.mjs'
 import { DATA_SOURCES } from '@/lib/data/dataSources'
 
@@ -106,6 +107,57 @@ describe('no blanket exemption', () => {
   it('names every quote rung, Finnhub included', () => {
     const hosts = DATA_SOURCES.find((e) => e.id === 'security-quotes')!.providers.map((p) => p.host)
     expect(hosts).toEqual(expect.arrayContaining(['financialmodelingprep.com', 'finnhub.io', 'api.twelvedata.com', 'api.tiingo.com', 'www.alphavantage.co']))
+  })
+})
+
+/**
+ * T-439 / D113 (2026-10-14). The check read route.ts alone, so a host fetched through a module
+ * the route imports was never seen: the staking collector moved to lib/server on 2026-09-18 and
+ * its Injective endpoint had no source-terms entry until 2026-10-14. Routes are now followed into
+ * lib/server and lib/api, the folders that hold request code, and nowhere else.
+ */
+describe('following a route into the modules it imports', () => {
+  const SRC = path.join(process.cwd(), 'src')
+  const closure = (id: string) => moduleClosure(path.join(LIVE_DATA, id, 'route.ts'), SRC)
+
+  it('reads the staking collector the staking route imports', () => {
+    expect(closure('staking-rates')).toContain('lib/server/stakingRates.ts')
+    const hosts = readRoutes(LIVE_DATA).find((r) => r.id === 'staking-rates')!.hosts
+    expect(hosts).toContain('sentry.lcd.injective.network')
+    expect(hosts).not.toContain('lcd.injective.network')
+  })
+
+  it('reports the collector’s host when the registry stops naming it', () => {
+    const trimmed = DATA_SOURCES.map((e) =>
+      e.id === 'staking-rates' ? { ...e, providers: e.providers.filter((p) => p.host !== 'sentry.lcd.injective.network') } : e,
+    )
+    expect(driftItems(trimmed, readRoutes(LIVE_DATA))).toEqual([
+      '"staking-rates" fetches sentry.lcd.injective.network not named in "staking-rates"',
+    ])
+  })
+
+  it('follows into lib/server and lib/api only, so catalogs of website links stay out', () => {
+    const all = listRoutes(LIVE_DATA).flatMap((id) => closure(id))
+    expect(all.filter((m) => m.startsWith('lib/') && !/^lib\/(server|api)\//.test(m))).toEqual([])
+    expect(all).toContain('lib/api/live/marketData.ts')
+  })
+
+  it('never reads a link-only module, even where a route imports it', () => {
+    const all = new Set(listRoutes(LIVE_DATA).flatMap((id) => closure(id)))
+    for (const mod of Object.keys(LINK_ONLY_MODULES)) expect(all.has(mod), mod).toBe(false)
+  })
+
+  it('holds each link-only module to making no request', () => {
+    expect(linkOnlyItems(SRC)).toEqual([])
+    const fetching = (f: string) => (f.endsWith('providers.ts') ? "const r = await fetch('https://api.example.com/v1')" : '')
+    expect(linkOnlyItems(SRC, fetching)).toEqual([
+      'LINK_ONLY_MODULES lists lib/api/live/providers.ts, which now makes a request: take it off the list so its hosts are checked',
+    ])
+    expect(linkOnlyItems(SRC, () => null)).toHaveLength(Object.keys(LINK_ONLY_MODULES).length)
+  })
+
+  it('gives every link-only module a reason', () => {
+    for (const [mod, why] of Object.entries(LINK_ONLY_MODULES)) expect((why as string).length, mod).toBeGreaterThan(20)
   })
 })
 

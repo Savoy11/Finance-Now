@@ -8,10 +8,10 @@
 //
 // Kept pure and separate from the script so the rules are unit-tested.
 //
-// Known limit, stated because it is real: this works per surface. A vendor that is the only
-// source for some RANGES of a surface (DefiLlama for history past 365 days, while CoinGecko served
-// the rest) still does not count as sole. The registry has no way to say which ranges a provider
-// serves; T-439's second half proposes one before anything is built.
+// Per surface first, then per range. A vendor that is the only source for some RANGES of a surface
+// (DefiLlama for history past 365 days, while CoinGecko served the rest) does not count as sole
+// per surface; rangeSlices() finds it from the providers' `limits` (D112). A range is seen only
+// where someone recorded the limit, so an unrecorded limit is still invisible.
 
 import type { SourceProvider } from '../../src/lib/data/dataSources'
 
@@ -68,6 +68,43 @@ export interface LossIfDropped {
   empties: string[]
   /** Working surfaces this vendor alone carries over a hand-kept table: dropping it degrades them. */
   degrades: string[]
+}
+
+// ── Ranges (T-439's second half, D112) ──────────────────────────────────────────
+//
+// A provider's `limits` say what it cannot serve that others on the same surface can. Each limit
+// marks out a range of the surface; the vendors left for that range are the ones without the
+// limit. So a surface with two vendors can still rest on one for part of what it shows.
+
+export interface RangeSlice {
+  /** The range, in words: "history past 365 days", "intervals other than 1d, 1w". */
+  range: string
+  /** The vendors that can serve it. */
+  vendors: string[]
+}
+
+/** The ranges some provider on this surface cannot serve, and who can serve each. */
+export function rangeSlices(surface: WorkingSurface, vendorsOf: (p: SourceProvider) => string[]): RangeSlice[] {
+  const vendorProviders = surface.providers.filter((p) => providerKind(p) === 'vendor')
+  const serving = (can: (p: SourceProvider) => boolean) =>
+    [...new Set(vendorProviders.filter(can).flatMap(vendorsOf))].sort()
+  const slices: RangeSlice[] = []
+  const historyLimits = [...new Set(vendorProviders.map((p) => p.limits?.historyDays).filter((d): d is number => d != null))]
+  for (const days of historyLimits.sort((a, b) => a - b)) {
+    slices.push({
+      range: `history past ${days} days`,
+      vendors: serving((p) => p.limits?.historyDays == null || p.limits.historyDays > days),
+    })
+  }
+  for (const p of vendorProviders) {
+    const only = p.limits?.intervals
+    if (!only?.length) continue
+    slices.push({
+      range: `intervals other than ${only.join(', ')}`,
+      vendors: serving((q) => !q.limits?.intervals?.length || q.limits.intervals.some((i) => !only.includes(i))),
+    })
+  }
+  return slices
 }
 
 /** Per vendor, what dropping it would do to the working surfaces. Vendors with no loss are left out. */

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { SourceProvider } from '@/lib/data/dataSources'
 import { DATA_SOURCES } from '@/lib/data/dataSources'
-import { lossIfDropped, providerKind, sourcesOf } from '../../../../scripts/lib/workingSources'
+import { lossIfDropped, providerKind, rangeSlices, sourcesOf } from '../../../../scripts/lib/workingSources'
 
 // The coverage matrix's view over WORKING surfaces (T-439, D110): which vendor a surface that
 // works would lose everything with. The old column saw only degraded surfaces and keyed vendors.
@@ -74,17 +74,59 @@ describe('what dropping a vendor does to the working surfaces', () => {
   })
 })
 
+describe('ranges one vendor carries (D112)', () => {
+  const coingecko = p({ name: 'CoinGecko', host: 'api.coingecko.com', limits: { historyDays: 365 } })
+  const defillama = p({ name: 'DefiLlama', host: 'coins.llama.fi' })
+  const coinMetrics = p({ name: 'Coin Metrics', host: 'community-api.coinmetrics.io', role: 'fallback', limits: { intervals: ['1d', '1w'] } })
+
+  it('finds the case that started T-434: before D108, DefiLlama alone served history past 365 days', () => {
+    expect(rangeSlices({ id: 'ohlcv', providers: [coingecko, defillama] }, one)).toEqual([
+      { range: 'history past 365 days', vendors: ['DefiLlama'] },
+    ])
+  })
+
+  it('after D108 that range has two vendors, and Coin Metrics’ own limit leaves intraday to the other two', () => {
+    expect(rangeSlices({ id: 'ohlcv', providers: [coingecko, defillama, coinMetrics] }, one)).toEqual([
+      { range: 'history past 365 days', vendors: ['Coin Metrics', 'DefiLlama'] },
+      { range: 'intervals other than 1d, 1w', vendors: ['CoinGecko', 'DefiLlama'] },
+    ])
+  })
+
+  it('a provider with a longer history limit still serves the shorter one’s gap', () => {
+    const twoYears = p({ name: 'Two-year source', host: 'two.example', limits: { historyDays: 730 } })
+    expect(rangeSlices({ id: 's', providers: [coingecko, twoYears] }, one)).toEqual([
+      { range: 'history past 365 days', vendors: ['Two-year source'] },
+      { range: 'history past 730 days', vendors: [] },
+    ])
+  })
+
+  it('a limit on something that is not a source marks out no range', () => {
+    const engine = p({ name: 'Finance Now engine', role: 'derived', limits: { historyDays: 30 } })
+    expect(rangeSlices({ id: 's', providers: [defillama, engine] }, one)).toEqual([])
+  })
+
+  it('a surface with no limits has no ranges to count', () => {
+    expect(rangeSlices({ id: 's', providers: [defillama, p({ name: 'Other', host: 'o.example' })] }, one)).toEqual([])
+  })
+
+  it('the real chart registry: both recorded ranges have two vendors today', () => {
+    const ohlcv = DATA_SOURCES.find((e) => e.id === 'ohlcv')!
+    const slices = rangeSlices(ohlcv, one)
+    expect(slices.map((s) => s.range)).toEqual(['history past 365 days', 'intervals other than 1d, 1w'])
+    for (const s of slices) expect(s.vendors.length, s.range).toBeGreaterThanOrEqual(2)
+  })
+})
+
 describe('the real registry', () => {
   it('every host-less, keyless provider that is not in-app work is named here, so a new one is classified on purpose', () => {
     // A real external source written without a host would be counted as "not a source" and could
-    // hide a single-vendor surface. Injective's LCD is one: its host is missing from the registry.
+    // hide a single-vendor surface. Injective's LCD was one until D113 gave it its host.
     const hostless = [...new Set(DATA_SOURCES.flatMap((e) => e.providers)
       .filter((x) => !x.host && x.auth === 'none' && x.role !== 'derived')
       .map((x) => `${providerKind(x)}: ${x.name}`))].sort()
     expect(hostless).toEqual([
       'other: Crypto + equity news feeds (merged client-side)',
       'other: Feeds added on the Integrations page (terms checked when saved)',
-      'other: Injective LCD (chain inflation)',
       'other: Live-data routes (same feeds the UI reads)',
       'other: None — no reachable source quotes dated contract months',
       'other: None — no source cleared for this use',

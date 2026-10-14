@@ -163,15 +163,99 @@ export function driftItems(entries, routes) {
   return items
 }
 
+// ── Following a route into the modules it imports (T-439, D113, 2026-10-14) ──
+//
+// The check read route.ts alone, so a host a route fetches through a shared module was never
+// seen. The staking collector moved to lib/server/stakingRates.ts on 2026-09-18 and its Injective
+// endpoint had no source-terms entry until 2026-10-14. Following every import would drown the
+// check in display links (the catalogs hold hundreds of company websites), so it follows only
+// into lib/server and lib/api, where the request code lives, and skips the few modules there
+// that hold links rather than requests.
+
+/** The module folders, under src/, a route is followed into. */
+const FOLLOWED = /^lib\/(server|api)\//
+
 /**
- * Reads every route under `liveDataDir` and returns its hosts, ready for driftItems().
+ * Modules under lib/server and lib/api that hold links, not requests. Each must make no request
+ * (linkOnlyItems() checks), so one that starts fetching cannot hide behind its place here.
+ */
+export const LINK_ONLY_MODULES = {
+  'lib/server/sourceTerms.ts': 'the terms registry: each entry links the document it was read from',
+  'lib/api/live/providers.ts': 'the provider registry: the sign-up and documentation links Integrations shows',
+  'lib/api/live/coinMetrics.ts': 'Coin Metrics’ credit and licence links, shown beside its data (D108)',
+}
+
+const FETCH_CALL = /\b(fetch|timedFetch|pinnedFetch|termsGatedFetch)\s*\(/
+
+/** Files a source file imports, resolved under `srcDir` (the `@/` alias) or relative to it. */
+function importsOf(file, srcDir) {
+  const src = stripComments(fs.readFileSync(file, 'utf8'))
+  const specs = [
+    ...[...src.matchAll(/(?:^|[\n;])\s*(?:import|export)\b[^'"`;]*?\bfrom\s*['"]([^'"]+)['"]/g)].map((m) => m[1]),
+    ...[...src.matchAll(/\bimport\(\s*['"]([^'"]+)['"]\s*\)/g)].map((m) => m[1]),
+  ]
+  const out = []
+  for (const spec of specs) {
+    const base = spec.startsWith('@/') ? path.join(srcDir, spec.slice(2)) : spec.startsWith('.') ? path.resolve(path.dirname(file), spec) : null
+    if (!base) continue
+    const hit = [base, `${base}.ts`, `${base}.tsx`, `${base}.mjs`, path.join(base, 'index.ts')]
+      .find((c) => /\.(ts|tsx|mjs)$/.test(c) && fs.existsSync(c))
+    if (hit) out.push(hit)
+  }
+  return out
+}
+
+/**
+ * A route's own file plus every lib/server or lib/api module it reaches through imports, link-only
+ * modules left out, as paths relative to `srcDir` with forward slashes.
+ */
+export function moduleClosure(routeFile, srcDir) {
+  const rel = (f) => path.relative(srcDir, f).split(path.sep).join('/')
+  const seen = new Set([routeFile])
+  const queue = [routeFile]
+  while (queue.length) {
+    for (const next of importsOf(queue.shift(), srcDir)) {
+      const r = rel(next)
+      if (seen.has(next) || !FOLLOWED.test(r) || r in LINK_ONLY_MODULES) continue
+      seen.add(next)
+      queue.push(next)
+    }
+  }
+  return [...seen].map(rel)
+}
+
+/**
+ * A link-only module that is gone, or that now makes a request, is a drift item.
  *
- * @param {string} liveDataDir
+ * @param {string} srcDir
+ * @param {(file: string) => string | null} [read]  the file's text, or null when it does not exist
+ */
+export function linkOnlyItems(srcDir, read = (f) => (fs.existsSync(f) ? fs.readFileSync(f, 'utf8') : null)) {
+  const items = []
+  for (const mod of Object.keys(LINK_ONLY_MODULES)) {
+    const text = read(path.join(srcDir, mod))
+    if (text == null) items.push(`LINK_ONLY_MODULES lists ${mod}, which no longer exists`)
+    else if (FETCH_CALL.test(stripComments(text))) {
+      items.push(`LINK_ONLY_MODULES lists ${mod}, which now makes a request: take it off the list so its hosts are checked`)
+    }
+  }
+  return items
+}
+
+/**
+ * Reads every route under `liveDataDir` and returns the hosts it fetches, from its own file and
+ * from the lib/server and lib/api modules it imports, ready for driftItems().
+ *
+ * @param {string} liveDataDir  src/app/live-data
  * @returns {{ id: string, hosts: Set<string> }[]}
  */
 export function readRoutes(liveDataDir) {
-  return listRoutes(liveDataDir).map((id) => ({
-    id,
-    hosts: hostsInSource(fs.readFileSync(path.join(liveDataDir, id, 'route.ts'), 'utf8')),
-  }))
+  const srcDir = path.resolve(liveDataDir, '..', '..')
+  return listRoutes(liveDataDir).map((id) => {
+    const hosts = new Set()
+    for (const mod of moduleClosure(path.join(liveDataDir, id, 'route.ts'), srcDir)) {
+      for (const h of hostsInSource(fs.readFileSync(path.join(srcDir, mod), 'utf8'))) hosts.add(h)
+    }
+    return { id, hosts }
+  })
 }

@@ -11,7 +11,7 @@
  * would. Run it whenever a data source is added, removed, or changes status.
  */
 import fs from 'node:fs'
-import { driftItems, readRoutes } from './lib/routeHosts.mjs'
+import { driftItems, linkOnlyItems, readRoutes } from './lib/routeHosts.mjs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { DATA_SOURCES, SOURCE_STATUS_META, type DataSourceEntry } from '../src/lib/data/dataSources'
@@ -121,11 +121,12 @@ function renderMarkdown(): string {
 function verify(): number {
   console.log('\n── Registry ↔ code drift check ──')
   const routes = readRoutes(liveDataDir)
-  const items = driftItems(DATA_SOURCES, routes)
+  // Routes are read with the lib/server and lib/api modules they import (T-439, D113).
+  const items = [...driftItems(DATA_SOURCES, routes), ...linkOnlyItems(path.resolve(liveDataDir, '..', '..'))]
   for (const item of items) console.log(`  ⚠ ${item}`)
   console.log(items.length
     ? `\n${items.length} drift item(s) — reconcile registry with code.`
-    : `  ✓ no drift: every host in ${routes.length} route files is represented in the registry.`)
+    : `  ✓ no drift: every host in ${routes.length} routes, and the lib/server and lib/api modules they import, is represented in the registry.`)
   return items.length
 }
 
