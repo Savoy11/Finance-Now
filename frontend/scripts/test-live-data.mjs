@@ -1,10 +1,15 @@
 #!/usr/bin/env node
 // Finance Now live-data audit harness.
 //
-// Hits every /live-data/*, /api/v1/* and agent route against the running dev
-// server (which in turn calls the real upstream APIs), validates response shape,
-// sanity-checks the actual values, and — the part that matters most —
-// classifies the PROVENANCE of what came back.
+// Hits every /live-data/* and /api/v1/* route, plus the agent prompts list,
+// against the running dev server (which in turn calls the real upstream APIs),
+// validates response shape, sanity-checks the actual values, and — the part
+// that matters most — classifies the PROVENANCE of what came back.
+//
+// "Every" is held by a test, not asserted: a route this file does not call must
+// be named in NOT_AUDITED (scripts/lib/auditCoverage.mjs) with the reason, and
+// auditCoverage.test.ts fails otherwise. Until 2026-10-14 this header said
+// "every" while 15 routes went uncalled, the MCP server's four among them.
 //
 // ── Why provenance classification exists ──────────────────────────────────────
 // A route that returns HTTP 200 with stale, reference, or empty data is more
@@ -19,7 +24,11 @@
 //   REAL          — verified live data from the intended upstream
 //   FALLBACK      — HTTP 200, but served from a static catalog / reference /
 //                   estimate path instead of the intended upstream
-//   UNCONFIGURED  — key-gated and honestly reporting it (configured:false)
+//   UNCONFIGURED  — key-gated and honestly reporting it (configured:false), or
+//                   withheld by a recorded decision and saying which (Reddit's
+//                   robots gate; funding rates and futures curves, whose only
+//                   sources went on terms). A decision is not a fault, and a red
+//                   row for one sends the reader to debug a route that is right
 //   EMPTY         — HTTP 200, well-formed, but carries no data
 //   FAIL          — non-2xx, ok:false, or a value that failed a sanity check
 //
@@ -41,6 +50,7 @@
 // folded in below (see the "cross-layer" group) so the two cannot drift apart.
 
 import { createCoinGeckoPacer, derivedMinGapMs } from './lib/coingeckoPacing.mjs'
+import { NOT_AUDITED } from './lib/auditCoverage.mjs'
 
 const BASE = process.env.BASE_URL ?? process.env.FN_BASE_URL ?? process.env.CAEP_BASE_URL ?? 'http://localhost:3000'
 const ARGS = new Set(process.argv.slice(2))
@@ -157,6 +167,11 @@ const COINGECKO_ROUTES = [
   '/live-data/global',
   '/live-data/staking-rates',
   '/live-data/network-fees',
+  // The agent API reads CoinGecko too: /prices calls simple/price itself, and
+  // /network-fees prices its gas through the same module as the route above.
+  // Unpaced until 2026-10-14, each spent budget the window did not count.
+  '/api/v1/prices',
+  '/api/v1/network-fees',
 ]
 const isCoinGeckoBacked = (t) => COINGECKO_ROUTES.some((r) => t.path.startsWith(r))
 
@@ -303,10 +318,17 @@ const tests = [
     return `index=${n}`
   }},
 
-  { group: 'crypto/market', path: '/live-data/funding-rates', name: 'funding-rates', check: (j) => {
+  // No source since 2026-09-30: OKX, the only one, was withdrawn on its API terms
+  // (D40), and the route answers ok:false with the reason. That is a decision, and
+  // this check said 'no rates' → FAIL for two weeks, which failed the whole run.
+  // Rates coming back mean a source was wired in; the check then reads them.
+  { group: 'crypto/market', path: '/live-data/funding-rates', name: 'funding-rates (no source, D40)', check: (j) => {
     const arr = j.rates ?? []
-    if (!Array.isArray(arr) || arr.length === 0) throw new Error('no rates')
-    // Binance fapi is geo-blocked (451) here; the route uses OKX instead.
+    if (j.ok === false && arr.length === 0) {
+      if (!j.reason) throw new Error('ok:false with no reason: the route must say why there is no source')
+      return unconfigured(`no source by decision (D40): ${j.reason}`)
+    }
+    if (!Array.isArray(arr) || arr.length === 0) throw new Error('ok but no rates')
     const srcs = [...new Set(arr.map((r) => r.exchange ?? r.source).filter(Boolean))]
     return `${arr.length} instruments${srcs.length ? ` via ${srcs.join(', ')}` : ''}`
   }},
@@ -331,6 +353,21 @@ const tests = [
     // Only Bitcoin is a live fee; every other chain is static-gas × live-price.
     const live = Object.values(nets).filter((f) => f.source === 'live').length
     return `${count} networks, ${live} live / ${count - live} estimated (by design)`
+  }},
+
+  // The live overlay on the transfer-fee table: keyless exchange fee feeds. The
+  // page is hidden from the rollout (2026-08-22) but the route is live, and
+  // /api/v1/transfer/routes reads the same overlay. A feed that fails leaves its
+  // exchange on the hand-maintained table, which is FALLBACK by definition.
+  { group: 'crypto/market', path: '/live-data/withdraw-fees', name: 'withdraw-fees (live fee overlay)', check: (j) => {
+    const sources = j.sources ?? []
+    if (!Array.isArray(sources) || sources.length === 0) throw new Error('no fee sources reported')
+    const live = sources.filter((s) => s.status === 'live')
+    const down = sources.filter((s) => s.status !== 'live')
+    const detail = `${live.length}/${sources.length} exchange feeds live, ${j.applied ?? 0} fees overlaid`
+    if (live.length === 0) throw new Error(`no exchange fee feed answered: ${down.map((s) => `${s.exchangeId}=${s.error ?? s.status}`).join(', ')}`)
+    if (down.length) return fallback(`${detail}; on the static table: ${down.map((s) => `${s.exchangeId}=${s.error ?? s.status}`).join(', ')}`)
+    return detail
   }},
 
   { group: 'crypto/market', path: '/live-data/reserves', name: 'reserves', check: (j) => {
@@ -379,7 +416,11 @@ const tests = [
     // pre-expansion code (a stale dev server / old checkout) — fail loudly here
     // rather than let the run pass green against code that isn't the branch's.
     const REQUIRED_KEYS = ['frax_eth', 'renzo_eth', 'kelp_eth', 'benqi_avax', 'lombard_btc', 'quicksilver_atom']
-    const missingKeys = REQUIRED_KEYS.filter((k) => !(k in rates))
+    // A measured fallback past its 14-day window is WITHHELD (deleted from
+    // `rates`, marked 'estimate-expired' in `gaps`) when its upstream also failed.
+    // That is the route working, not stale code, so it is reported, not failed.
+    const expired = REQUIRED_KEYS.filter((k) => !(k in rates) && j.gaps?.[k] === 'estimate-expired')
+    const missingKeys = REQUIRED_KEYS.filter((k) => !(k in rates) && !expired.includes(k))
     if (missingKeys.length) throw new Error(`missing expanded staking keys (stale server / old code?): ${missingKeys.join(', ')} — only ${keys.length} keys returned`)
     const bad = keys.filter((k) => !(rates[k] >= 0 && rates[k] < 100))
     if (bad.length) throw new Error(`APR out of [0,100): ${bad.join(', ')}`)
@@ -400,6 +441,7 @@ const tests = [
     const up = j.upstreams ?? {}
     const broken = Object.entries(up).filter(([, v]) => !/^live \(/.test(v))
     const detail = `${live.length}/${keys.length} live APRs; ${Object.keys(up).length - broken.length}/${Object.keys(up).length} upstreams healthy`
+      + (expired.length ? `; withheld past their 14-day window (npm run staking:refresh-fallbacks): ${expired.join(', ')}` : '')
     if (broken.length) {
       return fallback(`${detail} — ${broken.map(([k, v]) => `${k}: ${v}`).join(', ')}`)
     }
@@ -462,6 +504,16 @@ const tests = [
     if (j.configured === false) return unconfigured('no YouTube API key configured (honestly reported)')
     if ((j.videos ?? []).length === 0) return empty('configured but 0 results')
     return `${j.videos.length} videos`
+  }},
+
+  // GET only: it lists the video analyzers and which are configured, and spends
+  // nothing. The POST runs a model over a video on the owner's key and is not
+  // called here.
+  { group: 'crypto/video', path: '/live-data/video-analyze', name: 'video-analyze (analyzers, GET only)', check: (j) => {
+    if (!j.ok || !Array.isArray(j.providers) || j.providers.length === 0) throw new Error('no analyzers listed')
+    const usable = j.providers.filter((p) => p.configured && p.supported)
+    if (usable.length === 0) return unconfigured(`${j.providers.length} analyzers, none configured and supported (needs a provider key)`)
+    return `${usable.length}/${j.providers.length} analyzers usable: ${usable.map((p) => p.label).join(', ')}`
   }},
 
   // ── Portfolio & wallets ─────────────────────────────────────────────────────
@@ -652,13 +704,17 @@ const tests = [
     const platforms = [...new Set(j.signals.map((s) => s.platform))]
     const enabled = (j.providers ?? []).map((p) => p.id)
     const counts = platforms.map((p) => `${p}=${j.signals.filter((s) => s.platform === p).length}`).join(', ')
-    // Reddit is enabled as a provider but its JSON API 403s server-side and its
-    // Atom feeds 429 aggressively — so an all-StockTwits result is a HALF-DEAD
-    // provider set, not a quiet day on Reddit. Flag it rather than pass green.
-    if (enabled.includes('reddit-stocks') && !platforms.includes('reddit')) {
-      return fallback(`${j.signals.length} signals but Reddit returned nothing (enabled but blocked/rate-limited) — StockTwits only`)
+    // Read `withheld`, as the crypto social check does. This check blamed a 403
+    // and rate limits, but `providers` lists only sources that contributed, so
+    // with Reddit's robots gate closed (D58) it never fired and the row passed
+    // green as though StockTwits were the whole feed.
+    // With the gate open and Reddit's fetch empty, the route lists Reddit nowhere,
+    // so that case cannot be told apart here; `providers` names who contributed.
+    const reddit = (j.withheld ?? []).find((w) => w.id === 'reddit-stocks')
+    if (reddit && !platforms.includes('reddit')) {
+      return unconfigured(`${j.signals.length} signals (${counts}); ${reddit.name} withheld — ${reddit.reason}`)
     }
-    return `${j.signals.length} signals (${counts})`
+    return `${j.signals.length} signals (${counts}) from ${enabled.join(', ')}`
   }},
 
   { group: 'equities', path: '/live-data/sec-filings?symbol=AAPL&form=8-K&limit=5', name: 'sec-filings', check: (j) => {
@@ -692,6 +748,17 @@ const tests = [
     const n = (j.earnings ?? []).length + (j.economic ?? []).length
     if (n === 0) return empty('configured but 0 events')
     return `${(j.earnings ?? []).length} earnings, ${(j.economic ?? []).length} economic`
+  }},
+
+  // Alpha Vantage's IPO_CALENDAR, on its free tier (25 requests a day). The route
+  // reports why it has no events (`reason`, `detail`) and never claims "no IPOs
+  // scheduled" on a failed request, so neither does this check.
+  { group: 'equities', path: '/live-data/ipo-calendar', name: 'ipo-calendar', check: (j) => {
+    if (j.configured === false) return unconfigured('no Alpha Vantage key configured (honestly reported)')
+    if (!j.ok) throw new Error(`${j.reason ?? 'not ok'}: ${j.detail ?? 'no detail'}`)
+    const n = (j.events ?? []).length
+    if (n === 0) return empty('configured, answered, and lists 0 upcoming IPOs')
+    return `${n} upcoming IPOs via ${j.source}`
   }},
 
   // ── Funds ───────────────────────────────────────────────────────────────────
@@ -805,6 +872,17 @@ const tests = [
     return `${pts} maturities, 2s10s=${j.spread2s10s}, 3m10y=${j.spread3m10y}, shape=${j.shape}`
   }},
 
+  // No source since 2026-08-06: dated contract months were priced through Yahoo,
+  // removed on terms, and nothing else the app can reach quotes them. The route
+  // still resolves the months and answers ok:false with the reason. Gold is a
+  // liquid contract, so a refusal for thin markets cannot stand in for that.
+  { group: 'macro', path: '/live-data/futures-curve?slug=gold', name: 'futures-curve gold (no source)', check: (j) => {
+    if (j.ok && (j.points ?? []).length > 0) return `${j.points.length} contract months priced — a dated-contract source is back`
+    if (!j.error) throw new Error('ok:false with no reason: the route must say why there is no curve')
+    if (!(j.unresolved ?? []).length) throw new Error(`no contract months resolved, so the failure is not the missing source: ${j.error}`)
+    return unconfigured(`no source (Yahoo removed on terms, 2026-08-06): ${j.unresolved.length} contract months resolved, none priced`)
+  }},
+
   // DATA-AVAILABILITY item 18: macro instrument quotes were the one row still
   // "Not measured". They ride the same security-quotes ladder as equities, but
   // their coverage is a separate question — Tiingo does not carry futures or FX
@@ -851,6 +929,16 @@ const tests = [
     const ids = llm.map((p) => p.id)
     if (!ids.includes('anthropic') || !ids.includes('openai')) throw new Error('missing core llm providers')
     return `${llm.length} llm providers, no keys leaked`
+  }},
+
+  // GET reads the in-repo terms registry, which /data-sources renders. The POST
+  // probes an arbitrary site's robots.txt and terms, and is not called here.
+  { group: 'infra', path: '/live-data/source-terms', name: 'source-terms (registry, GET only)', check: (j) => {
+    const entries = j.entries ?? []
+    if (!j.ok || !Array.isArray(entries) || entries.length === 0) throw new Error('no registry entries')
+    const p = j.provenance ?? {}
+    if (p.total !== entries.length) throw new Error(`provenance counts ${p.total} entries, the registry has ${entries.length}`)
+    return `${entries.length} entries: ${p.verified} verified, ${p.seeded} seeded, ${p.prohibited} prohibited; oldest reading ${p.reviewedAt} (${p.ageDays} days)`
   }},
 
   // ── /api/v1 (agent-facing) ──────────────────────────────────────────────────
@@ -922,6 +1010,60 @@ const tests = [
     throw new Error(`expected 503 (withheld); got ${s}`)
   }},
 
+  // The four routes below are what the MCP server's get_security_quotes,
+  // get_security_history, get_yield_curve and get_fx_rates read. None was called
+  // here before 2026-10-14. Each mirrors its /live-data sibling's check and adds
+  // the CORS header every /api/v1 response must carry.
+  { group: 'api/v1', path: '/api/v1/securities/quotes?symbols=AAPL,VOO', name: 'v1 securities quotes', check: (j, s, h) => {
+    if (h.get('access-control-allow-origin') !== '*') throw new Error('missing CORS header')
+    const all = Object.entries(j.quotes ?? {})
+    if (all.length === 0) throw new Error(`no quotes (missing: ${(j.missing ?? []).join(', ')})`)
+    const ref = all.filter(([, q]) => q.reference)
+    if (j.source === 'reference' || ref.length === all.length) return fallback(`all ${all.length} quotes are catalog reference prices (source=${j.source})`)
+    const aapl = j.quotes.AAPL
+    if (!aapl || !(aapl.price > 10 && aapl.price < 5000)) throw new Error(`AAPL price implausible: ${aapl?.price}`)
+    if (ref.length) return fallback(`${all.length - ref.length}/${all.length} live via ${j.source}; reference: ${ref.map(([k]) => k).join(', ')}`)
+    return `${all.length}/${all.length} live via ${j.source}`
+  }},
+
+  // No reference fallback here: with no price-history key the route answers 502
+  // with the setup instruction, which is honest, so it reads as UNCONFIGURED.
+  { group: 'api/v1', path: '/api/v1/securities/history?symbol=AAPL&range=6mo', name: 'v1 securities history', expectStatus: [200, 502], check: (j, s, h) => {
+    if (h.get('access-control-allow-origin') !== '*') throw new Error('missing CORS header')
+    if (s === 502) {
+      if (/No price-history provider is configured/.test(j.error ?? '')) return unconfigured(j.error)
+      throw new Error(`502: ${j.error ?? 'no error message'}`)
+    }
+    const pts = j.points ?? []
+    if (pts.length < 80) throw new Error(`sparse series: ${pts.length} points`)
+    if (!j.source) throw new Error('no source named (review V4: every public route names its provider)')
+    return `${pts.length} daily closes via ${j.source}`
+  }},
+
+  { group: 'api/v1', path: '/api/v1/macro/yield-curve', name: 'v1 macro yield-curve', check: (j, s, h) => {
+    if (h.get('access-control-allow-origin') !== '*') throw new Error('missing CORS header')
+    if (!j.latest) throw new Error('no latest curve snapshot')
+    if (j.source !== 'treasury-gov') return fallback(`curve from unexpected source=${j.source}`)
+    if (j.spread2s10s == null || j.spread3m10y == null) return fallback(`spreads not computed (2s10s=${j.spread2s10s}, 3m10y=${j.spread3m10y})`)
+    return `date=${j.latest.date}, 2s10s=${j.spread2s10s}, shape=${j.shape}`
+  }},
+
+  { group: 'api/v1', path: '/api/v1/macro/fx-rates?symbols=EUR,JPY', name: 'v1 macro fx-rates', check: (j, s, h) => {
+    if (h.get('access-control-allow-origin') !== '*') throw new Error('missing CORS header')
+    const eur = j.rates?.EUR, jpy = j.rates?.JPY
+    if (!(eur > 0.5 && eur < 2)) throw new Error(`EUR per USD implausible: ${eur}`)
+    if (!(jpy > 50 && jpy < 300)) throw new Error(`JPY per USD implausible: ${jpy}`)
+    if (j.source !== 'frankfurter-ecb') return fallback(`rates from unexpected source=${j.source}`)
+    return `EUR=${eur}, JPY=${jpy}, date=${j.date}`
+  }},
+
+  // Switched off with every risk rating (D64, 2026-10-04): 503 with a reason.
+  { group: 'api/v1', path: '/api/v1/options/score', name: 'v1 options score (withheld, D64)', expectStatus: 503, check: (j, s) => {
+    if (s !== 503) throw new Error(`expected 503 (withheld); got ${s}`)
+    if (!j.reason) throw new Error('503 with no reason: a caller must learn why it is withheld')
+    return 'correctly withheld: risk ratings are switched off (D64)'
+  }},
+
   { group: 'api/v1', path: '/api/v1/openapi.json', name: 'v1 openapi', check: (j) => {
     if (!j.openapi || !j.paths) throw new Error('not a valid openapi doc')
     return `openapi ${j.openapi}, ${Object.keys(j.paths).length} paths`
@@ -930,7 +1072,7 @@ const tests = [
   { group: 'agents', path: '/api/agents/prompts', name: 'agent prompts list', check: (j, s, h) => {
     // Keep in sync with AGENT_DEFAULTS in src/lib/agents/prompts.ts
     const expected = ['app-assistant', 'research-analyst', 'data-scraper', 'pump-report-investigator', 'pump-report-chat',
-      'equity-research', 'equity-data-scraper', 'equity-diligence', 'equity-screener']
+      'equity-research', 'equity-data-scraper', 'equity-diligence', 'equity-screener', 'macro-research', 'macro-screener']
     if (!Array.isArray(j.agents)) throw new Error('no agents array')
     const ids = j.agents.map((a) => a.id)
     const missing = expected.filter((id) => !ids.includes(id))
@@ -1065,6 +1207,7 @@ const run = async () => {
       base: BASE, mode: QUICK ? 'quick' : 'full', ranAt: new Date().toISOString(),
       counts: { real: by(REAL).length, fallback: fallbacks.length, unconfigured: unconf.length, empty: empties.length, fail: fails.length },
       results: results.map((r) => ({ name: r.name, group: r.group, path: r.path, verdict: r.verdict, detail: r.detail, ms: r.ms })),
+      notAudited: Object.entries(NOT_AUDITED).map(([path, reason]) => ({ path, reason })),
     }, null, 2))
     process.exit(fails.length === 0 && (!STRICT || fallbacks.length + empties.length === 0) ? 0 : 1)
   }
@@ -1080,7 +1223,7 @@ const run = async () => {
   console.log('\n────────────────────────── SUMMARY ──────────────────────────')
   console.log(`🟢 REAL          ${by(REAL).length}`)
   console.log(`🟡 FALLBACK      ${fallbacks.length}   (HTTP 200 but NOT the intended live source)`)
-  console.log(`🔑 UNCONFIGURED  ${unconf.length}   (key-gated, honestly reported)`)
+  console.log(`🔑 UNCONFIGURED  ${unconf.length}   (key-gated or withheld by decision, honestly reported)`)
   console.log(`⚪ EMPTY         ${empties.length}`)
   console.log(`🔴 FAIL          ${fails.length}`)
 
@@ -1095,6 +1238,12 @@ const run = async () => {
   if (fails.length) {
     console.log('\n🔴 FAILURES:')
     for (const r of fails) console.log(`   • ${r.name}: ${r.detail}`)
+  }
+
+  // Said on every run, so "0 failing" is never read as covering these.
+  if (!QUICK) {
+    console.log(`\n⊘  NOT CALLED, on purpose (${Object.keys(NOT_AUDITED).length}; scripts/lib/auditCoverage.mjs):`)
+    for (const [path, reason] of Object.entries(NOT_AUDITED)) console.log(`   • ${path}: ${reason}`)
   }
 
   const slow = results.filter((r) => r.ms > 3000).sort((a, b) => b.ms - a.ms)
