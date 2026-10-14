@@ -14260,13 +14260,15 @@
    },
    "progress": {
     "noted_on": "2026-10-14",
-    "note": "Steps (1) to (3) done. The 2026-10-14 survey, run on the owner’s machine, read each candidate’s terms before measuring it and ranked Coin Metrics’ Community API first: keyless, a daily USD price back to each coin’s start, and a CC BY-NC 4.0 grant, the only one read in this project that permits public display. The owner chose “Build it, credit when used” (D108), built in #349: /live-data/ohlcv asks Coin Metrics after DefiLlama for a closes request on a daily or weekly range, for 69 of the 80 catalog coins on a hand-kept map (COINMETRICS_ASSETS, each series checked against DefiLlama’s prices), never for a candle request or an intraday range; a series more than 4 days old is not served; the credit rides on the responses Coin Metrics served and every closes reader shows it. source=coinmetrics asks for it alone. Confirmed live on the owner’s machine the same day: ETH MAX returned 584 weekly closes, 2015-08-11 to 2026-10-13, credited.",
-    "remaining_work": "Step (4): a fresh `npm run audit:json` on the owner’s machine, whose new check “ohlcv eth MAX closes (Coin Metrics)” confirms the rung, then `npx tsx scripts/gen-coverage-matrix.ts <audit.json>` to see that DefiLlama no longer strands ohlcv. Expect partial cover: eleven coins have no second source past 365 days, TON, PI, TEL, MemeCore, EURCV, XSGD, USDM and vBUSD (not carried) and MKR, AMPL and USDK (series stopped). Whether that is enough to close, or a third source is wanted (the survey’s question 5), is the owner’s call. At launch Coin Metrics’ non-commercial term is a T-151 question (D96).",
+    "note": "Steps (1) to (3) done. The 2026-10-14 survey, run on the owner’s machine, read each candidate’s terms before measuring it and ranked Coin Metrics’ Community API first: keyless, a daily USD price back to each coin’s start, and a CC BY-NC 4.0 grant, the only one read in this project that permits public display. The owner chose “Build it, credit when used” (D108), built in #349: /live-data/ohlcv asks Coin Metrics after DefiLlama for a closes request on a daily or weekly range, for 69 of the 80 catalog coins on a hand-kept map (COINMETRICS_ASSETS, each series checked against DefiLlama’s prices), never for a candle request or an intraday range; a series more than 4 days old is not served; the credit rides on the responses Coin Metrics served and every closes reader shows it. source=coinmetrics asks for it alone. Confirmed live on the owner’s machine the same day: ETH MAX returned 584 weekly closes, 2015-08-11 to 2026-10-13, credited. Step (4) on the owner’s machine the same afternoon (docs/audits/live-data-audit-2026-10-14-t434.md): the full audit read 76 REAL and no FAIL, its Coin Metrics check REAL; and a sweep with fresh calls asked the chart route for every catalog coin’s MAX history from Coin Metrics alone, as the charts would get it with DefiLlama gone. All 69 mapped coins were served, every one past a year, weekly, credited and current to 2026-10-13; the eleven unmapped answered coinmetrics-no-mapping. The coverage matrix cannot show the result either way: it scores only vendors that could fix a degraded surface, per surface rather than per range, so DefiLlama never appeared in it, before the backup or after.",
+    "remaining_work": "All four steps are done; what is left is the owner’s. (a) Close T-434 with eleven coins still without a second source past 365 days (TON, PI, TEL, MemeCore, EURCV, XSGD, USDM and vBUSD, not carried; MKR, AMPL and USDK, series stopped), or keep it open for a third source (the survey’s question 5). (b) Whether to file the coverage matrix’s blind spot: CLAUDE.md calls its “Strands if dropped” column the D21 measure, but it cannot see a keyless vendor carrying a working surface, the case this item was filed for. At launch Coin Metrics’ non-commercial term is a T-151 question (D96).",
     "evidence": [
      "PR #349",
      "frontend/src/lib/api/live/coinMetrics.ts",
      "frontend/src/app/live-data/ohlcv/route.ts",
-     "docs/decisions/2026-10-14-owner-decisions.md"
+     "docs/decisions/2026-10-14-owner-decisions.md",
+     "docs/audits/live-data-audit-2026-10-14-t434.md",
+     "docs/audits/coinmetrics-sweep-2026-10-14.json"
     ]
    }
   },
@@ -40190,6 +40192,13 @@
     "evidence": [
      "frontend/src/app/live-data/ohlcv/route.ts",
      "frontend/src/hooks/useCryptoChartSeries.ts"
+    ]
+   },
+   {
+    "on": "2026-10-14",
+    "what": "T-434 step 4 run on the owner’s machine: audit 76 REAL, no FAIL; Coin Metrics served all 69 mapped coins’ full history with DefiLlama bypassed. Recorded in its progress; the item stays open for the owner’s close-or-continue call. The coverage matrix was found unable to see a keyless vendor under a working surface.",
+    "evidence": [
+     "docs/audits/live-data-audit-2026-10-14-t434.md"
     ]
    }
   ]
