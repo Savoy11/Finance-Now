@@ -29,6 +29,7 @@ import { assetsApi } from '@/lib/api/assets'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { SourceLine } from '@/components/ui/SourceLine'
+import { RequiredCredits } from '@/components/ui/RequiredCredits'
 import { formatCompact } from '@/lib/utils/format'
 import { LIVE_DATA, STALE_TIME_SHORT } from '@/lib/constants'
 import type { AssetType, Blockchain } from '@/types/asset'
@@ -320,6 +321,8 @@ export function AssetRegistryClient() {
                   {/* The technical columns come from the chart route, not the price
                       feed the page's own SourceLine names, so they carry their own. */}
                   <SourceLine id="ohlcv" className="w-full" />
+                  {/* Sent only with the prices a credited source served (D108). */}
+                  <RequiredCredits credits={technicalSweep.credits} />
                 </>
               )}
             </div>

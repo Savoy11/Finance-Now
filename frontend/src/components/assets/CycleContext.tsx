@@ -22,6 +22,8 @@ import { ASSET_CATALOG } from '@/lib/data/assetCatalog'
 import { CYCLE_HISTORY, getCycleHistoryProvenance, peakLabel, troughLabel } from '@/lib/data/cycleHistory'
 import { STALE_TIME_LONG } from '@/lib/constants'
 import { ohlcvSourceLabel } from '@/lib/utils/ohlcvSource'
+import { parseCredits } from '@/lib/data/dataSources'
+import { RequiredCredits } from '@/components/ui/RequiredCredits'
 import type { BtcStatsData } from '@/app/live-data/btc-stats/route'
 import type { FearGreedData } from '@/app/live-data/fear-greed/route'
 import type { GlobalMarketData } from '@/app/live-data/global/route'
@@ -76,7 +78,7 @@ export function CycleContext() {
   // backtest range: ~2.7y of daily prices, comfortably past the 350 the long
   // average needs. Both averages are of closing prices, so this asks for closes
   // (`closes=1`) and DefiLlama's keyless daily prices answer first (T-423, D103).
-  const { data: btcDaily } = useQuery<{ ok: boolean; candles?: { close: number }[]; source?: string }>({
+  const { data: btcDaily } = useQuery<{ ok: boolean; candles?: { close: number }[]; source?: string; attributions?: unknown }>({
     queryKey: ['ohlcv', 'btc', 'BT', 'closes'],
     queryFn: () => fetch('/live-data/ohlcv?id=btc&range=BT&closes=1').then(r => r.json()),
     staleTime: STALE_TIME_LONG,
@@ -86,6 +88,8 @@ export function CycleContext() {
     [btcDaily],
   )
   const piCycleSource = ohlcvSourceLabel(btcDaily?.source)
+  // Credits the prices' source requires, sent only when it served them (Coin Metrics, D108).
+  const piCycleCredits = btcDaily?.ok ? parseCredits(btcDaily.attributions) : []
 
   // Rotation read (Phase 2). Stablecoin flags come from the catalog — the raw
   // quote rows carry no category, and a pegged asset in the denominator would
@@ -328,6 +332,7 @@ export function CycleContext() {
               <p className="text-[10px] font-mono text-text-muted">
                 computed from {piCycle.daysOfHistory.toLocaleString()} daily closes
                 {piCycleSource && <> · {piCycleSource}</>}
+                <RequiredCredits credits={piCycleCredits} separated className="ml-1.5 font-sans" />
               </p>
             </>
           ) : (

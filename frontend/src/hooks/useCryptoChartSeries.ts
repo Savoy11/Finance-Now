@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import type { OhlcvCandle } from '@/lib/utils/indicators'
 import type { ChartType } from '@/components/charts/CandlestickChart'
 import { candleGranularity } from '@/lib/utils/candleGranularity'
+import { parseCredits } from '@/lib/data/dataSources'
 
 /**
  * The series a crypto chart draws: candles when there are real ones, DefiLlama's
@@ -26,6 +27,8 @@ export interface ChartSeries {
   granularity?: string | null
   bars?: 'ohlc' | 'close'
   error?: string
+  /** Credits the source's licence requires, sent only with a response that used it (Coin Metrics, D108). */
+  attributions?: unknown
 }
 
 /** Why a chart shows closing prices instead of candles. */
@@ -86,6 +89,8 @@ export function useCryptoChartSeries(
     closesReason: useCloses ? reason : null,
     /** The candle request's own failure, in the route's words, when it failed. */
     candleError: candles.data?.ok === false ? candles.data.error : undefined,
+    /** Credits the drawn series' source requires; empty unless that source asks for one. */
+    credits: parseCredits(data?.attributions),
     isFetching: candles.isFetching || closes.isFetching,
     refetch: () => {
       void candles.refetch()

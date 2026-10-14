@@ -270,6 +270,20 @@ const tests = [
     return `${j.candles.length} weekly closes over ${spanDays(j.candles)} days, source=defillama`
   }},
 
+  // DefiLlama's backup for closing prices (T-434, D108). The chart route reaches it
+  // only when DefiLlama does not answer, so this asks for it by name. Its licence
+  // (CC BY-NC 4.0) needs the credit on every answer it serves.
+  { group: 'crypto/market', path: '/live-data/ohlcv?id=eth&range=MAX&source=coinmetrics', name: 'ohlcv eth MAX closes (Coin Metrics)', check: (j) => {
+    if (!j.ok || !Array.isArray(j.candles)) throw new Error(`not ok: ${j.error ?? 'no candles'}`)
+    if (j.bars !== 'close') throw new Error(`Coin Metrics prices not marked as closes (bars=${j.bars})`)
+    if (j.granularity !== '1W') throw new Error(`expected weekly prices, got ${j.granularity}`)
+    if (j.candles.length < 400) throw new Error(`only ${j.candles.length} weekly prices for MAX`)
+    if (!Array.isArray(j.attributions) || !j.attributions.some((a) => /Coin Metrics/.test(a?.text))) {
+      throw new Error('served without the Coin Metrics credit its licence requires')
+    }
+    return `${j.candles.length} weekly closes over ${spanDays(j.candles)} days, source=coinmetrics, credited`
+  }},
+
   { group: 'crypto/market', path: '/live-data/chart?id=btc&days=30', name: 'chart (synthetic OHLC proxy)', check: (j) => {
     if (!j.ok || !Array.isArray(j.candles) || j.candles.length === 0) throw new Error('no candles')
     const flat = j.candles.filter((k) => k.open === k.high && k.high === k.low && k.low === k.close).length

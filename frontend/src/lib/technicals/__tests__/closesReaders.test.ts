@@ -40,8 +40,9 @@ const READERS: Record<string, string> = {
   'lib/agents/tools.ts': 'get_price_history asks for closes only when candles fail, and then reports highestClose and lowestClose, never a high or low',
 }
 
-// `source=defillama` reaches the same prices without `closes=1`, so it counts as asking too.
-const askers = walk(SRC).filter((f) => /closes=1|SWEEP_WANTS|source=defillama/.test(code(f))).map(rel).sort()
+// `source=defillama` and `source=coinmetrics` (T-434) reach the same prices without
+// `closes=1`, so they count as asking too.
+const askers = walk(SRC).filter((f) => /closes=1|SWEEP_WANTS|source=(defillama|coinmetrics)/.test(code(f))).map(rel).sort()
 
 describe('closes=1 readers', () => {
   it('every file asking for closing prices is a known closes-only reader', () => {

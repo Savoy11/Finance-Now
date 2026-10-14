@@ -367,8 +367,9 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     // licence to point at.
     // 2026-10-13 (D103, T-423): coins.llama.fi also serves the chart route's closing prices now,
     // to every closes-only reader (lib/technicals/__tests__/closesReaders.test.ts lists them), and
-    // with Binance gone it is the only source of crypto price history older than 365 days on the
-    // free tier. Charts launch on it. Still no document to read.
+    // with Binance gone it was the only source of crypto price history older than 365 days on the
+    // free tier, until Coin Metrics backed it up for daily and weekly closes on 2026-10-14 (T-434,
+    // D108; entry below). Charts launch on it. Still no document to read.
     domain: 'llama.fi',
     name: 'DefiLlama',
     verdict: 'conditional',
@@ -377,6 +378,29 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
       'Publishes a free, keyless, openly documented API for TVL, stablecoin supply and yields, offered for third-party use. No registration; fair-use rate limiting. Covers api.llama.fi, stablecoins.llama.fi, coins.llama.fi and yields.llama.fi.',
     conditions: ['Attribute DefiLlama', 'Keep request volume within fair use — no bulk mirroring'],
     reviewedAt: '2026-08-06',
+    review: 'seeded',
+    confidence: 'medium',
+  },
+  {
+    // READ 2026-10-14 on the owner's machine for T-434 (residential egress), and adopted by the
+    // owner the same day (D108). Seeded until the owner ratifies the reading. Its grant is one
+    // sentence and a licence link on a docs page; no Community API terms document exists:
+    // coinmetrics.io/api/terms and the docs' "Community terms" link now redirect to a Talos
+    // marketing page (Talos bought Coin Metrics). Coin Metrics' Master Terms govern Order Form
+    // customers, and Talos's website terms govern talos.com, not this API.
+    domain: 'coinmetrics.io',
+    name: 'Coin Metrics Community Data',
+    verdict: 'conditional',
+    termsUrl: 'https://docs.coinmetrics.io/packages/coin-metrics-community-data',
+    finding:
+      'Coin Metrics’ Community Data page says the community data is "Available to the community under the Creative Commons license", linked to CC BY-NC 4.0, and that it "is a subset of our Network Data Pro and Market Data Pro data available for free for community use"; "API key is not required when accessing community endpoints"; "The community version of API has the limit of 10 requests per 6 seconds sliding window for an IP address." CC BY-NC 4.0 lets licensees "reproduce and Share the Licensed Material, in whole or in part, for NonCommercial purposes only", where Share includes "public display", and requires attribution: the creator, a notice referring to the licence, and a link to the material. It sets no caching or retention limit.',
+    conditions: [
+      'NonCommercial use: personal use before launch (D96); at launch it turns on T-151, whether Finance Now is commercial, and commercial use needs a licence from Coin Metrics/Talos',
+      'Credit on every response it served: "Price history: Coin Metrics Community Data", linked, with "CC BY-NC 4.0" linked to the licence (COINMETRICS_ATTRIBUTION, D108)',
+      'Keyless community endpoints only; under 10 requests per 6 seconds',
+      'Closing prices for daily and weekly ranges, after DefiLlama; never a candle request',
+    ],
+    reviewedAt: '2026-10-14',
     review: 'seeded',
     confidence: 'medium',
   },

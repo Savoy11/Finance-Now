@@ -191,7 +191,7 @@ function TechnicalAnalysisContent() {
 
   // Candles first; DefiLlama's closing prices where the candles are missing or
   // only 4-day ones (T-423, D103). See useCryptoChartSeries.
-  const { data, closeOnly, closesReason, candleError, isFetching, refetch } = useCryptoChartSeries(assetId, range, {
+  const { data, closeOnly, closesReason, candleError, credits, isFetching, refetch } = useCryptoChartSeries(assetId, range, {
     staleTime: range === '1H' ? 60_000 : range === '4H' || range === '1M' ? 300_000 : 900_000,
   })
 
@@ -384,6 +384,7 @@ function TechnicalAnalysisContent() {
               source={ohlcvSource}
               candleError={candleError}
               panelsOff={PANELS_OFF_FOR_CLOSES}
+              credits={credits}
             />
           )}
 
@@ -469,6 +470,7 @@ function TechnicalAnalysisContent() {
           source={ohlcvSource}
           candleError={candleError}
           panelsOff={PANELS_OFF_FOR_CLOSES}
+          credits={credits}
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

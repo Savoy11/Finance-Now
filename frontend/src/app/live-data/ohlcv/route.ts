@@ -5,11 +5,21 @@ import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 import { describeThrottle } from '@/lib/server/coingeckoThrottle'
 import { candleGranularity } from '@/lib/utils/candleGranularity'
 import type { CandleBars } from '@/lib/utils/indicators'
+import { COINMETRICS_ASSETS, COINMETRICS_ATTRIBUTION } from '@/lib/api/live/coinMetrics'
 
 // OHLCV proxy. Which source answers depends on what the caller can use.
 //
 //   Candles (the default): CoinGecko.
-//   Closing prices (`closes=1`): DefiLlama, then CoinGecko's candles.
+//   Closing prices (`closes=1`): DefiLlama, then Coin Metrics (daily and weekly
+//   ranges), then CoinGecko's candles.
+//
+// Coin Metrics' Community API is DefiLlama's backup for closing prices (T-434,
+// owner decision D108, 2026-10-14): until then DefiLlama was the only source of
+// history older than 365 days, the single-vendor state D21 rules out. It serves one
+// daily price per coin, so it answers only a closes request on a daily or weekly
+// range, never a candle request. Its licence (CC BY-NC 4.0) asks for a credit, sent
+// with the response that used it as `attributions` and shown by every page that
+// reads closes; DefiLlama's and CoinGecko's answers carry none.
 //
 // Charts launch on CoinGecko's candles and DefiLlama's closing prices (T-423,
 // owner decision D103, 2026-10-13). DefiLlama's price API (coins.llama.fi) sends
@@ -36,12 +46,15 @@ import type { CandleBars } from '@/lib/utils/indicators'
 //   range  = 1H | 4H | 1M | 3M | 6M | YTD | 1Y | 3Y | 5Y | 10Y | MAX  (default "1Y")
 //            (legacy: timeframe=1H|4H|1D|1W is aliased)
 //   closes = "1" when the caller computes from closing prices only
-//   source = "auto" (default) | "coingecko" | "defillama"
+//   source = "auto" (default) | "coingecko" | "defillama" | "coinmetrics"
+//            (`defillama` means DefiLlama only: no Coin Metrics, no CoinGecko;
+//            `coinmetrics` means Coin Metrics only, closing prices, so the audit
+//            can confirm the backup while DefiLlama is answering)
 //
-// Response: { ok, range, candles: OhlcvCandle[], granularity, source, bars }
-// `bars` is 'ohlc' for real candles and 'close' for DefiLlama's prices, which
-// arrive as candles whose open, high, low and close are the one price, with
-// volume 0. `granularity` is measured from the candles
+// Response: { ok, range, candles: OhlcvCandle[], granularity, source, bars, attributions? }
+// `bars` is 'ohlc' for real candles and 'close' for DefiLlama's and Coin Metrics'
+// prices, which arrive as candles whose open, high, low and close are the one price,
+// with volume 0. `granularity` is measured from the candles
 // (lib/utils/candleGranularity), not typed per range: the same range can be
 // daily from DefiLlama but 4-day from CoinGecko.
 
@@ -284,6 +297,93 @@ async function fetchDefiLlamaCloses(id: string, cfg: RangeConfig): Promise<Ohlcv
   return applySlice(candles, cfg)
 }
 
+// ─── Coin Metrics (closing prices, DefiLlama's backup) ─────────────────────────
+
+const COINMETRICS_API = 'https://community-api.coinmetrics.io/v4/timeseries/asset-metrics'
+/** Ranges whose spacing a daily series can serve: daily, and weekly by taking each week's last close. */
+const COINMETRICS_INTERVALS = new Set(['1d', '1w'])
+/** One request carries 10,000 rows, which is 27 years of daily prices; two pages is the ceiling. */
+const COINMETRICS_MAX_PAGES = 2
+/**
+ * A series whose latest price is older than this is not served. Coin Metrics publishes
+ * about a day behind; MKR's and AMPL's series stopped on 2026-03-25 while still
+ * answering (measured 2026-10-14), and a page that failed after the first would end
+ * the series early. Either would otherwise chart as today's prices.
+ */
+const COINMETRICS_MAX_AGE_DAYS = 4
+
+/**
+ * One close every seven days, counting back from the latest, as DefiLlama's weekly
+ * prices are spaced: calendar weeks would end on a short final week. A missing day
+ * leaves its week out (a 14-day gap the granularity check can see), never a
+ * neighbour's price in its place.
+ */
+function weeklyCloses(daily: OhlcvCandle[]): OhlcvCandle[] {
+  const byDay = new Map(daily.map((c) => [Math.floor(c.time / 86_400), c]))
+  const first = Math.floor(daily[0].time / 86_400)
+  const out: OhlcvCandle[] = []
+  for (let day = Math.floor(daily[daily.length - 1].time / 86_400); day >= first; day -= 7) {
+    const c = byDay.get(day)
+    if (c) out.push(c)
+  }
+  return out.reverse()
+}
+
+/** Coin Metrics' refusals carry `error.message` (or at least `error.type`); a bare status hides it. */
+async function coinMetricsReason(res: Response): Promise<string> {
+  try {
+    const body = (await res.json()) as { error?: { type?: unknown; message?: unknown } }
+    const words = body.error?.message ?? body.error?.type
+    return typeof words === 'string' && words ? `: ${words.slice(0, 200)}` : ''
+  } catch {
+    return ''
+  }
+}
+
+/**
+ * `cfg.points` closes `cfg.interval` apart, ending at Coin Metrics' latest daily price
+ * (yesterday). Only for a coin on the hand-kept map: never matched by symbol.
+ */
+async function fetchCoinMetricsCloses(id: string, cfg: RangeConfig): Promise<OhlcvCandle[]> {
+  const asset = COINMETRICS_ASSETS[id]
+  if (!asset) throw new Error('coinmetrics-no-mapping')
+  if (!COINMETRICS_INTERVALS.has(cfg.interval)) throw new Error(`coinmetrics-no-interval-${cfg.interval}`)
+
+  // Whole days back, so the URL holds still for a day and Next's data cache serves it.
+  const days = cfg.points * (INTERVAL_SECONDS[cfg.interval] / 86_400) + 7
+  const start = new Date((Math.floor(Date.now() / 86_400_000) - days) * 86_400_000).toISOString().slice(0, 10)
+  let url: string | undefined =
+    `${COINMETRICS_API}?assets=${encodeURIComponent(asset)}&metrics=PriceUSD&frequency=1d&start_time=${start}&page_size=10000`
+
+  const daily: OhlcvCandle[] = []
+  for (let page = 0; page < COINMETRICS_MAX_PAGES && url; page++) {
+    const res: Response = await fetch(url, {
+      headers: { Accept: 'application/json' },
+      next: { revalidate: cfg.revalidate }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS),
+    })
+    if (!res.ok) {
+      if (page === 0) throw new Error(`Coin Metrics HTTP ${res.status}${await coinMetricsReason(res)}`)
+      break
+    }
+    const body = (await res.json()) as { data?: { time?: string; PriceUSD?: string }[]; next_page_url?: string }
+    for (const row of body.data ?? []) {
+      const time = Date.parse(row.time ?? '') / 1000
+      const price = Number(row.PriceUSD)
+      if (Number.isFinite(time) && Number.isFinite(price) && price > 0) {
+        daily.push({ time, open: price, high: price, low: price, close: price, volume: 0 })
+      }
+    }
+    url = typeof body.next_page_url === 'string' && body.next_page_url.startsWith(COINMETRICS_API) ? body.next_page_url : undefined
+  }
+
+  if (daily.length === 0) throw new Error('coinmetrics-no-prices')
+  daily.sort((a, b) => a.time - b.time)
+  const ageDays = (Date.now() / 1000 - daily[daily.length - 1].time) / 86_400
+  if (ageDays > COINMETRICS_MAX_AGE_DAYS) throw new Error(`coinmetrics-stale-${Math.floor(ageDays)}d`)
+  const spaced = cfg.interval === '1w' ? weeklyCloses(daily) : daily
+  return applySlice(spaced.slice(-cfg.points), cfg)
+}
+
 // ─── Handler ───────────────────────────────────────────────────────────────────
 
 export async function GET(request: NextRequest) {
@@ -298,11 +398,25 @@ export async function GET(request: NextRequest) {
   const source = request.nextUrl.searchParams.get('source') ?? 'auto'
   const closesWanted = request.nextUrl.searchParams.get('closes') === '1'
 
-  // auto: closing prices from DefiLlama when the caller asked for them; then
-  //       CoinGecko's candles
+  // auto: closing prices from DefiLlama when the caller asked for them, then from
+  //       Coin Metrics on a daily or weekly range; then CoinGecko's candles
   // defillama: DefiLlama only
+  // coinmetrics: Coin Metrics only (closing prices whether or not closes=1 was sent)
   // coingecko: CoinGecko only
   // Anything else, `binance` included, is served like auto.
+
+  if (source === 'coinmetrics') {
+    try {
+      const candles = await fetchCoinMetricsCloses(id, cfg)
+      return NextResponse.json({
+        ok: true, range, candles, granularity: candleGranularity(candles.map((c) => c.time)),
+        source: 'coinmetrics', bars: 'close' satisfies OhlcvBars,
+        attributions: [COINMETRICS_ATTRIBUTION],
+      })
+    } catch (err) {
+      return NextResponse.json({ ok: false, candles: [], error: String(err) })
+    }
+  }
 
   if (source === 'defillama' || (source !== 'coingecko' && closesWanted)) {
     try {
@@ -312,9 +426,23 @@ export async function GET(request: NextRequest) {
         source: 'defillama', bars: 'close' satisfies OhlcvBars,
       })
     } catch (err) {
-      // Falls through to CoinGecko, whose candles' closes serve this caller too.
+      // Falls through to Coin Metrics, then CoinGecko, whose candles' closes serve
+      // this caller too.
       if (source === 'defillama') {
         return NextResponse.json({ ok: false, candles: [], error: String(err) })
+      }
+    }
+
+    if (COINMETRICS_ASSETS[id] && COINMETRICS_INTERVALS.has(cfg.interval)) {
+      try {
+        const candles = await fetchCoinMetricsCloses(id, cfg)
+        return NextResponse.json({
+          ok: true, range, candles, granularity: candleGranularity(candles.map((c) => c.time)),
+          source: 'coinmetrics', bars: 'close' satisfies OhlcvBars,
+          attributions: [COINMETRICS_ATTRIBUTION],
+        })
+      } catch {
+        // Falls through to CoinGecko.
       }
     }
   }

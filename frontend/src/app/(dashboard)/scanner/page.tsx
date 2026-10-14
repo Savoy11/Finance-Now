@@ -11,6 +11,8 @@ import { RefreshCw, Filter, Activity, TrendingUp, TrendingDown, Minus } from 'lu
 import { ModuleGate } from '@/components/layout/ModuleGate'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { SourceLine } from '@/components/ui/SourceLine'
+import { RequiredCredits } from '@/components/ui/RequiredCredits'
+import { mergeCredits, parseCredits, type RequiredCredit } from '@/lib/data/dataSources'
 import { computeSignalSummary, SIGNALS_FROM_CLOSES, type OhlcvCandle, type Signal, type SignalSummary } from '@/lib/utils/indicators'
 import { detectSetups, SETUP_INPUTS, SETUPS_FROM_CLOSES, type SetupKey, type DetectedSetup } from '@/lib/utils/scanSetups'
 import { computeTechnicals, SWEEP_WANTS } from '@/lib/technicals/sweep'
@@ -167,6 +169,8 @@ function ScannerPanel() {
   const [scanning, setScanning] = useState(false)
   const [done, setDone] = useState(0)
   const [lastScan, setLastScan] = useState<Date | null>(null)
+  // Credits the scan's prices require, from the responses that carried them (D108).
+  const [credits, setCredits] = useState<RequiredCredit[]>([])
   const scanIdRef = useRef(0)
 
   const { data: marketsData } = useQuery({
@@ -212,11 +216,13 @@ function ScannerPanel() {
     const tf = SCAN_TIMEFRAMES.find(t => t.key === timeframe) ?? SCAN_TIMEFRAMES[1]
     setScanning(true)
     setDone(0)
+    setCredits([])
     const sweep = scanUniverseRef.current
     setRows(sweep.map(id => ({ assetId: id, setups: [], signal: null, rsi14: null, vsSma50Pct: null, status: 'loading' as ScanStatus })))
 
     await runPool(sweep, SCAN_CONCURRENCY, async (id) => {
       let patch: Partial<ScanRow>
+      let rowCredits: RequiredCredit[] = []
       try {
         const res = await fetch(`/live-data/ohlcv?id=${id}&range=${tf.range}&${SWEEP_WANTS}`)
         const json = await res.json()
@@ -235,6 +241,7 @@ function ScannerPanel() {
           // real candles, and reading those in full would give its row more
           // setups and votes than its neighbours, on inputs they never had.
           const t = computeTechnicals(candles)
+          rowCredits = parseCredits(json.attributions)
           patch = {
             setups: detectSetups(candles, 'close'),
             signal: candles.length >= 50 ? computeSignalSummary(candles, 'close') : null,
@@ -247,6 +254,7 @@ function ScannerPanel() {
         patch = { status: 'error' }
       }
       if (scanIdRef.current !== myScan) return // a newer scan superseded this one
+      if (rowCredits.length > 0) setCredits(prev => mergeCredits(prev, rowCredits))
       setRows(prev => prev.map(r => r.assetId === id ? { ...r, ...patch } : r))
       setDone(d => d + 1)
     })
@@ -404,6 +412,8 @@ function ScannerPanel() {
                   {' · '}{lastScan.toLocaleTimeString()}
                 </span>
               : null}
+          {/* Sent only with the prices a credited source served (D108). */}
+          <RequiredCredits credits={credits} separated className="ml-1" />
         </div>
       </div>
 

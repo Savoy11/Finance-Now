@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 import { GET } from '@/app/live-data/ohlcv/route'
+import { COINMETRICS_ATTRIBUTION } from '@/lib/api/live/coinMetrics'
 
 // The crypto chart route end to end, with only the network replaced (T-423, D102).
 // It used to type a candle size per range, and the typed size was wrong whenever
@@ -148,10 +149,13 @@ describe('/live-data/ohlcv serves DefiLlama closing prices only to callers that 
     expect(end % 900).toBe(0)
   })
 
-  it('falls back to CoinGecko’s candles when DefiLlama has no prices for the coin', async () => {
-    stubFetch((url) => url.includes('coins.llama.fi') ? json(llamaBody([])) : coingecko(92, 4 * DAY)(url))
+  it('falls back to CoinGecko’s candles when neither DefiLlama nor Coin Metrics has prices for the coin', async () => {
+    stubFetch((url) => url.includes('coins.llama.fi') ? json(llamaBody([]))
+      : url.includes(CM_HOST) ? json({ data: [] })
+      : coingecko(92, 4 * DAY)(url))
     const body = await (await GET(req('id=btc&range=1Y&closes=1'))).json()
     expect(body).toMatchObject({ ok: true, source: 'coingecko', bars: 'ohlc' })
+    expect(body).not.toHaveProperty('attributions')
   })
 
   it.each([
@@ -185,6 +189,149 @@ describe('/live-data/ohlcv serves DefiLlama closing prices only to callers that 
     expect(body.ok).toBe(false)
     expect(body.error).toContain('HTTP 400')
     expect(body.error).toContain('exceeds the maximum of 500')
+  })
+})
+
+const CM_HOST = 'community-api.coinmetrics.io'
+const TODAY = () => Math.floor(Date.now() / DAY) * DAY
+
+/** Coin Metrics rows: one PriceUSD at 00:00 UTC for each of the `count` days ending yesterday, in its nanosecond format. */
+const cmRows = (count: number) => Array.from({ length: count }, (_, i) => ({
+  asset: 'btc',
+  time: new Date(TODAY() - (count - i) * DAY).toISOString().replace('.000Z', '.000000000Z'),
+  PriceUSD: String(100 + i),
+}))
+/** Coin Metrics answering with every daily price from the requested start_time to yesterday. */
+const coinMetrics = (url: string) => {
+  const start = Date.parse(`${new URL(url).searchParams.get('start_time')}T00:00:00Z`)
+  return json({ data: cmRows((TODAY() - start) / DAY) })
+}
+/** DefiLlama has nothing, Coin Metrics answers in full, CoinGecko sends 4-day candles. */
+const llamaDownCm = (url: string) => url.includes('coins.llama.fi') ? json(llamaBody([]))
+  : url.includes(CM_HOST) ? coinMetrics(url)
+  : coingecko(92, 4 * DAY)(url)
+
+describe('/live-data/ohlcv falls back to Coin Metrics for closing prices (T-434, D108)', () => {
+  it('serves its daily closes when DefiLlama has none, marked as closing prices and credited', async () => {
+    const fetchMock = stubFetch(llamaDownCm)
+    const body = await (await GET(req('id=btc&range=1Y&closes=1'))).json()
+    expect(body).toMatchObject({ ok: true, source: 'coinmetrics', bars: 'close', granularity: '1D' })
+    expect(body.candles).toHaveLength(365)
+    const last = body.candles.at(-1)
+    expect(last.time * 1000).toBe(TODAY() - DAY)
+    expect([last.open, last.high, last.low, last.volume]).toEqual([last.close, last.close, last.close, 0])
+    expect(body.attributions).toEqual([COINMETRICS_ATTRIBUTION])
+    expect(calledHosts(fetchMock)).toEqual(['coins.llama.fi', CM_HOST])
+  })
+
+  it('spaces weekly ranges exactly seven days apart, ending at its latest price', async () => {
+    stubFetch(llamaDownCm)
+    const body = await (await GET(req('id=btc&range=3Y&closes=1'))).json()
+    expect(body).toMatchObject({ ok: true, source: 'coinmetrics', granularity: '1W' })
+    const times: number[] = body.candles.map((c: { time: number }) => c.time)
+    expect(times.length).toBeGreaterThan(150)
+    expect(new Set(times.slice(1).map((t, i) => t - times[i]))).toEqual(new Set([WEEK]))
+    expect(times.at(-1)! * 1000).toBe(TODAY() - DAY)
+  })
+
+  it('asks for the coin’s mapped asset, from a whole date, in one request', async () => {
+    for (const [id, asset] of [['btc', 'btc'], ['iota', 'miota'], ['tao', 'tao_bittensor']]) {
+      const fetchMock = stubFetch(llamaDownCm)
+      await GET(req(`id=${id}&range=MAX&closes=1`))
+      const cm = fetchMock.mock.calls.map(([u]) => new URL(String(u))).filter((u) => u.hostname === CM_HOST)
+      expect(cm, id).toHaveLength(1)
+      expect(cm[0].searchParams.get('assets'), id).toBe(asset)
+      expect(cm[0].searchParams.get('metrics')).toBe('PriceUSD')
+      expect(cm[0].searchParams.get('frequency')).toBe('1d')
+      // A date, not a time: the URL holds still for a day, so Next's data cache serves it.
+      expect(cm[0].searchParams.get('start_time')).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+    }
+  })
+
+  it.each([
+    // Candle requests: one price per day dressed as a candle would give every reader of a
+    // high, a low or a volume a zero range.
+    'id=btc&range=1Y', 'id=btc&range=3Y', 'id=btc&range=1Y&source=coingecko', 'id=btc&range=MAX&source=binance',
+    // `defillama` means DefiLlama only.
+    'id=btc&range=1Y&source=defillama',
+    // Ranges finer than a day, which a daily series cannot serve.
+    'id=btc&range=15m&closes=1', 'id=btc&range=1H&closes=1', 'id=btc&range=4H&closes=1', 'id=btc&range=1M&closes=1',
+    // A coin it does not carry: never matched by symbol.
+    'id=ton&range=1Y&closes=1',
+  ])('never asks Coin Metrics for %s', async (query) => {
+    const fetchMock = stubFetch(llamaDownCm)
+    const body = await (await GET(req(query))).json()
+    expect(calledHosts(fetchMock), query).not.toContain(CM_HOST)
+    expect(body, query).not.toHaveProperty('attributions')
+  })
+
+  it('carries no credit when DefiLlama served the closes', async () => {
+    const answer = llamaAnswers(86_400, (_, span) => span)
+    const fetchMock = stubFetch((url) => url.includes('coins.llama.fi') ? answer(url) : coinMetrics(url))
+    const body = await (await GET(req('id=btc&range=1Y&closes=1'))).json()
+    expect(body.source).toBe('defillama')
+    expect(body).not.toHaveProperty('attributions')
+    expect(calledHosts(fetchMock)).not.toContain(CM_HOST)
+  })
+
+  it('falls through to CoinGecko, uncredited, when Coin Metrics refuses', async () => {
+    stubFetch((url) => url.includes(CM_HOST) ? json({ error: { type: 'forbidden' } }, 403) : llamaDownCm(url))
+    const body = await (await GET(req('id=btc&range=1Y&closes=1'))).json()
+    expect(body).toMatchObject({ ok: true, source: 'coingecko', bars: 'ohlc' })
+    expect(body).not.toHaveProperty('attributions')
+  })
+
+  it('follows a next page only on Coin Metrics’ own API', async () => {
+    const pages = (next: string) => {
+      let page = 0
+      return (url: string) => {
+        if (!url.includes(CM_HOST) && !url.includes('elsewhere.example')) return llamaDownCm(url)
+        const rows = cmRows(400)
+        return json(page++ === 0 ? { data: rows.slice(0, 200), next_page_url: next } : { data: rows.slice(200) })
+      }
+    }
+    const own = stubFetch(pages(`https://${CM_HOST}/v4/timeseries/asset-metrics?assets=btc&next_page_token=x`))
+    const first = await (await GET(req('id=btc&range=1Y&closes=1'))).json()
+    expect(calledHosts(own).filter((h) => h === CM_HOST)).toHaveLength(2)
+    expect(first.candles).toHaveLength(365)
+
+    // Not followed; the first page alone ends 200 days back, so it is not served either.
+    const other = stubFetch(pages('https://elsewhere.example/v4/timeseries/asset-metrics?next_page_token=x'))
+    const second = await (await GET(req('id=btc&range=1Y&closes=1'))).json()
+    expect(calledHosts(other)).not.toContain('elsewhere.example')
+    expect(second.source).toBe('coingecko')
+  })
+
+  it('answers source=coinmetrics from Coin Metrics alone, so the audit can reach it while DefiLlama answers', async () => {
+    const answer = llamaAnswers(WEEK, (_, span) => span)
+    const fetchMock = stubFetch((url) => url.includes('coins.llama.fi') ? answer(url) : llamaDownCm(url))
+    const body = await (await GET(req('id=btc&range=MAX&source=coinmetrics'))).json()
+    expect(body).toMatchObject({ ok: true, source: 'coinmetrics', bars: 'close', granularity: '1W' })
+    expect(body.attributions).toEqual([COINMETRICS_ATTRIBUTION])
+    expect(calledHosts(fetchMock)).toEqual([CM_HOST])
+  })
+
+  it('carries Coin Metrics’ own reason when source=coinmetrics is refused, and tries nothing else', async () => {
+    const fetchMock = stubFetch((url) => url.includes(CM_HOST)
+      ? json({ error: { type: 'forbidden', message: 'Requested metric is not available with supplied credentials.' } }, 403)
+      : llamaDownCm(url))
+    const body = await (await GET(req('id=btc&range=1Y&source=coinmetrics'))).json()
+    expect(body.ok).toBe(false)
+    expect(body.error).toContain('HTTP 403')
+    expect(body.error).toContain('not available with supplied credentials')
+    expect(calledHosts(fetchMock)).toEqual([CM_HOST])
+  })
+
+  it('does not serve a series that stopped updating', async () => {
+    // MKR's and AMPL's stopped on 2026-03-25 and still answer.
+    const stoppedDaysAgo = (days: number) => (url: string) => url.includes(CM_HOST)
+      ? json({ data: cmRows(400 + days).slice(0, 400) })
+      : llamaDownCm(url)
+    stubFetch(stoppedDaysAgo(30))
+    expect((await (await GET(req('id=btc&range=1Y&closes=1'))).json()).source).toBe('coingecko')
+    // A day or two behind is how it publishes.
+    stubFetch(stoppedDaysAgo(2))
+    expect((await (await GET(req('id=btc&range=1Y&closes=1'))).json()).source).toBe('coinmetrics')
   })
 })
 
