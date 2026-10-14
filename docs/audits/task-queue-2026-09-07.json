@@ -14492,7 +14492,17 @@
      "lines": "The coverage matrix cannot see this",
      "quote": "DefiLlama does not appear in it at all, and it never could have"
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-10-14",
+    "note": "First half built the same day. gen-coverage-matrix.ts prints a second table, “Working surfaces one vendor carries”, over every surface the audit found working, keyless vendors included, split into what dropping the vendor would empty and what it would only degrade to a hand-kept table. Which providers count as sources is in scripts/lib/workingSources.ts: a host or a key makes a vendor; a host-less, keyless fallback is a hand-kept table; in-app work, composites, user input and placeholders are not sources (tested, eight mutations each fail a test). On the 2026-10-14 audit it counts 16 working surfaces with nothing behind their one vendor, five of them CoinGecko’s alone; the regenerated coverage-matrix-2026-10-14.md carries it. Found on the way: the staking collector’s Injective endpoint, lcd.injective.network, has no host in the data-source registry and no source-terms entry, because it is fetched from lib/server/stakingRates.ts and the drift check reads only route files.",
+    "remaining_work": "The range-level half: the registry needs a way to say which ranges a provider serves before the matrix can count a vendor that alone serves some ranges of a surface; its shape goes to the owner before anything is built. Separately, the owner’s call on the Injective host gap.",
+    "evidence": [
+     "frontend/scripts/lib/workingSources.ts",
+     "frontend/src/lib/server/__tests__/workingSources.test.ts",
+     "docs/audits/coverage-matrix-2026-10-14.md"
+    ]
+   }
   }
  ],
  "closed_but_still_listed_as_open_in_docs": [
@@ -40310,6 +40320,13 @@
     "what": "T-417 closed on the owner’s approval after its run. Counts recomputed.",
     "evidence": [
      "docs/audits/fund-fee-reconcile-2026-10-14.md"
+    ]
+   },
+   {
+    "on": "2026-10-14",
+    "what": "T-439’s first half built: the coverage matrix now counts working surfaces carried by one vendor, keyless included (16 on the 2026-10-14 audit). The Injective host gap recorded on it. Status unchanged.",
+    "evidence": [
+     "frontend/scripts/lib/workingSources.ts"
     ]
    }
   ]

@@ -51,8 +51,10 @@ because they can sit on different plans.
 
 Standing rule (owner, 2026-09-18): **decisions that cost money are deferred until
 close to the end of production**, and the app is built so that no single provider is
-load-bearing. This table is how that rule is checked. "Strands" is what would have
-no remaining option at all if that vendor were dropped — the number to drive to zero.
+load-bearing. Two tables check that rule. This first one covers the **degraded**
+surfaces and the keyed vendors that could fix them: "Strands" is what would have no
+remaining option at all if that vendor were dropped. The second, below it, covers the
+surfaces that **work**, keyless vendors included. Both numbers are the ones to drive to zero.
 
 | Vendor | Cost posture | Could serve | Strands if dropped |
 |---|---|---|---|
@@ -65,6 +67,30 @@ no remaining option at all if that vendor were dropped — the number to drive t
 | **Tronscan API (TRON)** | free signup | 1 | **1**: wallet |
 | **Twelve Data** | free signup | 6 | — none |
 | **YouTube Data API** | free signup | 1 | **1**: videos |
+
+### Working surfaces one vendor carries
+
+Of the 32 surfaces this audit found working, these rest on a single external vendor.
+"Empties" means nothing stands behind it, so dropping the vendor removes the surface;
+"degrades" means a hand-kept table takes over, which is what D21 asks for. Keyless
+vendors count: free is not the same as replaceable.
+
+⚠ **Per surface, not per range.** A vendor that is the only source for some ranges of a
+surface still does not show here (DefiLlama under the crypto charts past 365 days, until
+D108). The registry cannot yet say which ranges a provider serves (T-439).
+
+| Vendor | Key | Empties if dropped | Degrades if dropped |
+|---|---|---|---|
+| **CoinGecko** | keyless | **5**: coin-list, coin-discovery, alerts, pump-report-metrics, portfolio-history | — none |
+| **DefiLlama** | keyless | **2**: defi-tvl, reserves | — none |
+| **SEC** | keyless | **2**: sec-filings, company-facts | — none |
+| **Alpha Vantage** | free signup | **1**: ipo-calendar | — none |
+| **alternative.me** | keyless | **1**: fear-greed | — none |
+| **currency-api (community)** | keyless | **1**: fx-rates-extended | — none |
+| **ECB via Frankfurter** | keyless | **1**: fx-rates | — none |
+| **FMP** | free signup · paid tier **deferred** | **1**: options-score | — none |
+| **Tiingo** | free signup | **1**: security-returns | — none |
+| **U.S. Treasury** | keyless | **1**: treasury-yield-curve | — none |
 
 ### Single-sourced surfaces — the optionality risk
 

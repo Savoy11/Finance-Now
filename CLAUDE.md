@@ -1460,6 +1460,17 @@ to zero. Four surfaces were single-sourced when the rule was made; `security-ret
 the only one with no fallback at all. Full reasoning, and the measured provider coverage
 behind it, in `docs/decisions/2026-09-18-owner-decisions.md`.
 
+⚠ **That column sees only degraded surfaces and the keyed vendors that could fix them**, so
+a keyless vendor carrying a surface that works never appeared in it: DefiLlama under the crypto
+charts did not (T-434). Since 2026-10-14 (T-439, D110) the matrix prints a second table,
+"Working surfaces one vendor carries", over every surface the audit found working, keyless
+vendors included, split into what dropping the vendor would empty and what it would only
+degrade to a hand-kept table. Its first run counted **16 working surfaces with nothing behind
+their one vendor, five of them CoinGecko's alone** (`docs/audits/coverage-matrix-2026-10-14.md`).
+Which providers count as sources is in `scripts/lib/workingSources.ts`, tested. Both tables work
+per surface, not per range: a vendor that alone serves some ranges of a surface still does not
+show, and the registry cannot yet say which ranges a provider serves.
+
 **⚠ Data-availability results are IP-dependent — audits MUST run on the owner's machine.**
 LunarCrush blocks datacenter IPs and the cloud gateway blocks most provider hosts outright, so a
 cloud or CI run produces a systematically wrong baseline of "which sources work." Code reading,

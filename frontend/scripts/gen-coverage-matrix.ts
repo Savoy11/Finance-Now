@@ -33,6 +33,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { DATA_SOURCES, type DataSourceEntry, type SourceProvider } from '../src/lib/data/dataSources'
+import { lossIfDropped, sourcesOf } from './lib/workingSources'
 
 type Verdict = 'REAL' | 'FALLBACK' | 'UNCONFIGURED' | 'EMPTY' | 'FAIL'
 
@@ -374,6 +375,16 @@ const paidOnly = fixable.filter((r) => {
 
 const unfixable = degraded.filter((r) => r.noKeyHelps)
 
+/**
+ * The other half of D21 (T-439, D110): what dropping a vendor would do to a surface that WORKS.
+ * `soleFor` above sees only degraded surfaces and the keyed vendors that could fix them, so a
+ * keyless vendor carrying a live surface alone never appeared; DefiLlama under the crypto charts
+ * was exactly that. Per surface, not per range: see scripts/lib/workingSources.ts.
+ */
+const workingLoss = lossIfDropped(live.map((r) => sourcesOf(r.entry, candidatesOf)))
+const workingEmpties = [...workingLoss.values()].reduce((n, l) => n + l.empties.length, 0)
+const keylessOnly = (vendor: string) => entriesFor(vendor).every((e) => e.auth === 'none')
+
 // ── Render ───────────────────────────────────────────────────────────────────
 const ICON: Record<Verdict, string> = {
   REAL: '🟢', FALLBACK: '🟡', UNCONFIGURED: '🔑', EMPTY: '⚪', FAIL: '🔴',
@@ -441,14 +452,39 @@ md.push('## If we walk away from a vendor')
 md.push('')
 md.push('Standing rule (owner, 2026-09-18): **decisions that cost money are deferred until')
 md.push('close to the end of production**, and the app is built so that no single provider is')
-md.push('load-bearing. This table is how that rule is checked. "Strands" is what would have')
-md.push('no remaining option at all if that vendor were dropped — the number to drive to zero.')
+md.push('load-bearing. Two tables check that rule. This first one covers the **degraded**')
+md.push('surfaces and the keyed vendors that could fix them: "Strands" is what would have no')
+md.push('remaining option at all if that vendor were dropped. The second, below it, covers the')
+md.push('surfaces that **work**, keyless vendors included. Both numbers are the ones to drive to zero.')
 md.push('')
 md.push('| Vendor | Cost posture | Could serve | Strands if dropped |')
 md.push('|---|---|---|---|')
 for (const vendor of allCandidates) {
   const stranded = soleFor(vendor)
   md.push(`| **${esc(vendor)}** | ${posture(vendor).label} | ${buys(vendor).length} | ${stranded.length === 0 ? '— none' : `**${stranded.length}**: ${stranded.map((r) => esc(r.entry.id)).join(', ')}`} |`)
+}
+md.push('')
+md.push('### Working surfaces one vendor carries')
+md.push('')
+md.push(`Of the ${live.length} surfaces this audit found working, these rest on a single external vendor.`)
+md.push('"Empties" means nothing stands behind it, so dropping the vendor removes the surface;')
+md.push('"degrades" means a hand-kept table takes over, which is what D21 asks for. Keyless')
+md.push('vendors count: free is not the same as replaceable.')
+md.push('')
+md.push('⚠ **Per surface, not per range.** A vendor that is the only source for some ranges of a')
+md.push('surface still does not show here (DefiLlama under the crypto charts past 365 days, until')
+md.push('D108). The registry cannot yet say which ranges a provider serves (T-439).')
+md.push('')
+if (workingLoss.size === 0) {
+  md.push('None: every working surface has a second vendor or a hand-kept table behind it.')
+} else {
+  md.push('| Vendor | Key | Empties if dropped | Degrades if dropped |')
+  md.push('|---|---|---|---|')
+  const byLoss = [...workingLoss].sort((a, b) => b[1].empties.length - a[1].empties.length || a[0].localeCompare(b[0]))
+  for (const [vendor, loss] of byLoss) {
+    const list = (ids: string[]) => (ids.length === 0 ? '— none' : `**${ids.length}**: ${ids.map(esc).join(', ')}`)
+    md.push(`| **${esc(vendor)}** | ${keylessOnly(vendor) ? 'keyless' : posture(vendor).label} | ${list(loss.empties)} | ${list(loss.degrades)} |`)
+  }
 }
 md.push('')
 if (singleSourced.length > 0) {
@@ -560,3 +596,4 @@ fs.writeFileSync(OUT, md.join('\n'), 'utf-8')
 console.log(`Coverage matrix → ${OUT}`)
 console.log(`  ${live.length} live · ${degraded.length} degraded (${fixable.length} key-fixable, ${unfixable.length} not) · ${throttled.length} throttled · ${unprobed.length} unprobed`)
 console.log(`  accounts for full coverage: ${accounts.size} (${[...accounts].sort().join(", ")})`)
+console.log(`  working surfaces one vendor alone carries, nothing behind it: ${workingEmpties}`)
