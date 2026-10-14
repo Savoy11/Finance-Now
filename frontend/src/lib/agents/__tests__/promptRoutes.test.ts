@@ -51,16 +51,21 @@ describe('agent prompts vs. the redirect list', () => {
     expect(routes).toContain('/wallets')
   })
 
+  /** The route as a whole path, so /equities/options does not match /equities/options-calculator. */
+  const mentionOf = (route: string) => new RegExp(`(^|[\\s(])${route.replace(/\//g, '\\/')}(?![\\w/-])`)
+
   for (const agent of AGENT_DEFAULTS) {
     const prompt = agent.systemPrompt ?? ''
-    const named = routes.filter((r) => new RegExp(`(^|[\\s(])${r.replace(/\//g, '\\/')}(?![\\w/-])`).test(prompt))
+    const named = routes.filter((r) => mentionOf(r).test(prompt))
     if (named.length === 0) continue
 
     it(`${agent.id}: every withdrawn route it names is marked as withdrawn`, () => {
       for (const route of named) {
         // Check the line the route appears on, not the whole prompt — a
-        // "HIDDEN" 40 lines away does not qualify the mention here.
-        const line = prompt.split('\n').find((l) => l.includes(route)) ?? ''
+        // "HIDDEN" 40 lines away does not qualify the mention here. Found with
+        // the same match as above: a substring search took the Options
+        // Calculator line for the switched-off scorer's (2026-10-14).
+        const line = prompt.split('\n').find((l) => mentionOf(route).test(l)) ?? ''
         expect(
           WITHDRAWN_MARKERS.test(line),
           `${agent.id} names ${route}, which redirects away, without saying it is withdrawn:\n  ${line.trim()}`,

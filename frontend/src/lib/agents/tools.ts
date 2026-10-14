@@ -212,7 +212,7 @@ const TOOL_REGISTRY: RegisteredTool[] = [
     market: 'equities',
     tool: {
       name: 'get_stock_social',
-      description: 'Get recent social sentiment for a stock from Reddit finance subreddits and StockTwits, with a bullish/bearish summary.',
+      description: 'Get recent social sentiment for a stock from StockTwits, with a bullish/bearish summary. Reddit is not read while its robots.txt disallows this app; the response\'s withheld list says so.',
       input_schema: {
         type: 'object',
         properties: {
@@ -785,12 +785,16 @@ async function execute(
         const data = (await get(`/live-data/stock-social?symbol=${encodeURIComponent(symbol)}&limit=${limit}`)) as {
           ok?: boolean; summaries?: unknown; providers?: Array<{ name: string }>
           signals?: Array<{ platform: string; title: string; sentiment: string; score: number; url: string }>
+          withheld?: Array<{ name: string; reason: string }>
         }
         const failure = routeFailed(data)
         if (failure) return { error: `social providers unavailable for ${symbol}: ${failure}`, symbol }
         return {
           symbol,
           providers: (data.providers ?? []).map((p) => p.name),
+          // Why a source is missing (Reddit's robots gate), so the agent can say so
+          // instead of reading a StockTwits-only feed as the whole picture.
+          withheld: (data.withheld ?? []).map((w) => ({ name: w.name, reason: w.reason })),
           summary: data.summaries ?? [],
           topPosts: (data.signals ?? []).slice(0, 10).map((s) => ({ platform: s.platform, text: s.title, sentiment: s.sentiment, score: s.score, url: s.url })),
         }
