@@ -62,9 +62,9 @@
   "total_verified": 398,
   "outstanding": 379,
   "by_status": {
-   "closed": 216,
+   "closed": 217,
    "parked": 135,
-   "open": 21,
+   "open": 20,
    "blocked": 6,
    "unclear": 1
   },
@@ -75,7 +75,7 @@
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 216,
+  "closed_by_annotation": 217,
   "counts_recomputed_on": "2026-10-14",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 379
@@ -14465,7 +14465,7 @@
   {
    "id": "T-439",
    "title": "Widen the coverage matrix so “Strands if dropped” sees keyless vendors under working surfaces, and range-level gaps",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "blocking_decision": null,
    "opened": {
@@ -14498,7 +14498,7 @@
    "progress": {
     "noted_on": "2026-10-14",
     "note": "First half built the same day. gen-coverage-matrix.ts prints a second table, “Working surfaces one vendor carries”, over every surface the audit found working, keyless vendors included, split into what dropping the vendor would empty and what it would only degrade to a hand-kept table. Which providers count as sources is in scripts/lib/workingSources.ts: a host or a key makes a vendor; a host-less, keyless fallback is a hand-kept table; in-app work, composites, user input and placeholders are not sources (tested, eight mutations each fail a test). On the 2026-10-14 audit it counts 16 working surfaces with nothing behind their one vendor, five of them CoinGecko’s alone; the regenerated coverage-matrix-2026-10-14.md carries it. Found on the way: the staking collector’s Injective endpoint, lcd.injective.network, has no host in the data-source registry and no source-terms entry, because it is fetched from lib/server/stakingRates.ts and the drift check reads only route files. Second half built the same day under D112: providers carry optional `limits` (historyDays, intervals), set on the chart route’s CoinGecko and Coin Metrics, and the matrix prints “Ranges one vendor carries” for every surface with a live probe; both recorded ranges have two vendors today, and a test holds that before D108 the history range had DefiLlama alone. The Injective gap was settled under D113: the collector now calls the documented sentry.lcd.injective.network (the old host failed all day; the new one serves in under a second, and all six staking upstreams read live), the host has a seeded terms entry, and the drift check follows each route into the lib/server and lib/api modules it imports, which also had the macro quote ladder named host by host.",
-    "remaining_work": "Both halves are built; closing the item is the owner’s call.",
+    "remaining_work": "None: closed 2026-10-14; see the closure block.",
     "evidence": [
      "frontend/scripts/lib/workingSources.ts",
      "frontend/src/lib/server/__tests__/workingSources.test.ts",
@@ -14506,6 +14506,22 @@
      "frontend/scripts/lib/routeHosts.mjs",
      "docs/decisions/2026-10-14-owner-decisions.md"
     ]
+   },
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-10-14",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "Both halves built and merged in #354. The coverage matrix now prints “Working surfaces one vendor carries” over every surface the audit found working, keyless vendors included (D110): on the 2026-10-14 audit, run on the owner’s machine, 16 working surfaces rest on one vendor with nothing behind it, five of them CoinGecko’s alone. Providers carry optional `limits` (D112), and a third table, “Ranges one vendor carries”, lists each range left with one vendor; both recorded ranges have two today, and a test holds that before D108 the history range would have shown DefiLlama alone, the case that opened this item. CLAUDE.md describes all three tables. On the way, the drift check gained the lib/server and lib/api modules a route imports (D113), which registered Injective’s staking endpoint and split the macro quote ladder into its vendors.",
+    "approved_by": "owner, 2026-10-14: chose “Close it” for T-439",
+    "evidence": [
+     "PR #354",
+     "frontend/scripts/lib/workingSources.ts",
+     "frontend/src/lib/server/__tests__/workingSources.test.ts",
+     "docs/audits/coverage-matrix-2026-10-14.md",
+     "docs/decisions/2026-10-14-owner-decisions.md"
+    ],
+    "known_gap": "A range is seen only where someone recorded the provider’s limit in dataSources.ts; an unrecorded limit stays invisible, and CLAUDE.md asks for `limits` to be set when a provider with one is added. The matrix measures single-sourcing and does not reduce it: the 16 surfaces it counts are D21’s standing work, not this item’s."
    }
   }
  ],
@@ -40338,6 +40354,13 @@
     "what": "T-439’s second half (D112, provider limits and ranges) and the Injective ruling (D113: documented host, seeded terms entry, drift check following routes into lib/server and lib/api) applied. Status unchanged.",
     "evidence": [
      "docs/decisions/2026-10-14-owner-decisions.md"
+    ]
+   },
+   {
+    "on": "2026-10-14",
+    "what": "T-439 closed on the owner’s approval after #354 merged. Counts recomputed.",
+    "evidence": [
+     "docs/audits/coverage-matrix-2026-10-14.md"
     ]
    }
   ]
