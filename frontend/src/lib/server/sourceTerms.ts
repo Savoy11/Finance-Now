@@ -1299,13 +1299,15 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     verdict: 'conditional',
     // termsUrl is the Terms of Use the reading quoted. Until 2026-10-04 it named the API documentation.
     // The address was found by web search that day (the top result for the Article 91 text), not
-    // opened from the cloud session that recorded it; confirm it serves the 09/24/2026 version.
+    // opened from the cloud session that recorded it. Opened on the owner's machine 2026-10-14: it
+    // serves the 09/29/2026 version, quoted below.
     termsUrl: 'https://www.kucoin.com/legal/terms-of-use',
     finding:
-      'KuCoin publishes a documented public REST API (www.kucoin.com/docs); the currencies endpoint (incl. per-chain withdrawal fees) is unauthenticated, under public rate limits. The exchange Terms of Use (09/24/2026), read 2026-09-26, Article 91: "The Users are not allowed to resell or make commercial use of the Platform or any content thereof"; they may not "use any data collection robots or similar data collection and extraction tools for other commercial interests"; and "Without the written permission of the Platform, it is strictly prohibited to systematically obtain the content of the Platform to directly or indirectly create or edit collections, compilations, databases".',
+      'KuCoin publishes a documented public REST API (www.kucoin.com/docs); the currencies endpoint (incl. per-chain withdrawal fees) is unauthenticated, under public rate limits. The exchange Terms of Use (09/24/2026), read 2026-09-26, Article 91: "The Users are not allowed to resell or make commercial use of the Platform or any content thereof"; they may not "use any data collection robots or similar data collection and extraction tools for other commercial interests"; and "Without the written permission of the Platform, it is strictly prohibited to systematically obtain the content of the Platform to directly or indirectly create or edit collections, compilations, databases". Read again 2026-10-14 (version "Last updated: 09/29/2026"): Article 91 unchanged, and Article 17(5), not recorded before, has the user undertake that it "is not a resident of or registered in, any of the Restricted Locations", where "“Restricted Locations” shall include the United States". The undertaking binds on registration (Article 14); the app never registers, and the keyless API answered from the owner\'s US residential IP.',
     conditions: [
       'Respect documented rate limits', 'Keyless public endpoints only — no authenticated endpoints (RP-5)',
       '⚠ SINGLE-USER ONLY — satisfied TODAY, blocking AT RELEASE (D22, 2026-09-23; applied 2026-09-30 under T-413 / D42). Nobody but the owner can load a page today, so this licence is currently met. The FIRST NON-OWNER PAGE LOAD — a private beta, a demo link, a shared staging URL — puts the app outside it. To operate beyond that: Terms of Use Article 91 bars commercial use of the Platform or its content, and systematic collection "without the written permission of the Platform" — ask KuCoin for that permission. The one surface it feeds, Transfer Fees, is already hidden from rollout. See docs/decisions/2026-09-30-owner-decisions.md.',
+      'UNRESOLVED (T-407, owner, 2026-10-14): Article 17(5) lists the United States among Restricted Locations, the question Bitget’s §1 raises. Recorded, no code change; the one surface it feeds is hidden',
     ],
     reviewedAt: '2026-09-26',
     review: 'verified',
