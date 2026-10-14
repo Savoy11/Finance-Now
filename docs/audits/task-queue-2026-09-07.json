@@ -39957,7 +39957,7 @@
    },
    {
     "on": "2026-10-14",
-    "what": "Owner-machine live-data audit, residential egress (AS11426, proxy false), the precondition T-001, T-129 and T-130 name. Paced run of record: 75 REAL, 5 FALLBACK, 8 UNCONFIGURED, 1 FAIL (Tronscan rate-limiting this IP). At the default pace CoinGecko refused after five or six keyless calls, which a free Demo key cures (T-105). Found: Stride’s endpoint gone (DNS), Injective answering 502, and the Polygon gas ladder naming the wrong publicnode host. No item closes on it: the agent-output half still needs `npm run agent-eval -- --run`.",
+    "what": "Owner-machine live-data audit, residential egress (AS11426, proxy false), the precondition T-001, T-129 and T-130 name. Paced run of record: 75 REAL, 5 FALLBACK, 8 UNCONFIGURED, 1 FAIL (Tronscan rate-limiting this IP). At the default pace CoinGecko refused after five or six keyless calls, which a free Demo key cures (T-105). Found: Stride’s endpoint gone (DNS), Injective answering 502, and neither name on the Polygon gas ladder answering from this IP, while the wallet route’s polygon-bor.publicnode.com did (ladder fixed the same day, #343). No item closes on it: the agent-output half still needs `npm run agent-eval -- --run`.",
     "evidence": [
      "docs/audits/live-data-audit-2026-10-14.md",
      "docs/audits/live-data-audit-2026-10-14.json"
