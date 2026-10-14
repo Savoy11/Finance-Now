@@ -579,7 +579,10 @@ const tests = [
     return `balance=${j.balance} SOL`
   }},
 
+  // Tronscan is called only with a key since 2026-10-14 (D105): its terms require an
+  // account, and its API rate-limits keyless requests (429 on every keyless call that day).
   { group: 'crypto/wallet', path: '/live-data/wallet/tron?address=TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t', name: 'wallet tron', check: (j) => {
+    if (j.configured === false) return unconfigured(`no Tronscan API key (TRONSCAN_API_KEY), so nothing is called: ${j.error}`)
     if (!j.ok) throw new Error(j.error ?? 'not ok')
     return `balance=${j.balance} TRX`
   }},
