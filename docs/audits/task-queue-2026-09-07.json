@@ -60,25 +60,25 @@
  },
  "counts": {
   "total_verified": 398,
-  "outstanding": 374,
+  "outstanding": 378,
   "by_status": {
    "closed": 214,
    "parked": 135,
-   "open": 18,
+   "open": 22,
    "blocked": 6,
    "unclear": 1
   },
   "by_owner_role": {
    "remote-dev": 92,
-   "either": 48,
-   "owner-decision": 148,
+   "either": 50,
+   "owner-decision": 150,
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
   "closed_by_annotation": 214,
   "counts_recomputed_on": "2026-10-14",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
-  "total": 374
+  "total": 378
  },
  "blocking_decisions": [
   {
@@ -13842,7 +13842,7 @@
     "T-291"
    ],
    "summary": "From the Insurance & State Privacy Scan (30 Sep): what to check, who to notify and by when if the app's account data were exposed: the people affected; the North Carolina Attorney General's Consumer Protection Division (§75-65); California's 30-day deadline and, above 500 Californians, its Attorney General (§1798.82). The asset at risk is the account table (emails and bcrypt password hashes).",
-   "next_action": "Draft the one page (the business chat or a session can write it) and keep it with the business documents; have it read in the lawyer review before launch (D4).",
+   "next_action": "Have the draft read in the lawyer review before launch (D4), with its ten open questions. Confirm the California statute text against leginfo.legislature.ca.gov, which blocked automated reads. Fill the blanks (counsel, insurer, host) once they exist. Its pre-launch gaps are T-435 to T-438.",
    "sources": [
     {
      "file": "docs/decisions/2026-10-07-owner-decisions.md",
@@ -13854,6 +13854,13 @@
     "on": "2026-10-07",
     "by": "session steward",
     "why": "Filed under D91 from a row the business chat recorded on the ledger page on 1 Oct (Insurance & State Privacy Scan), which had no number."
+   },
+   "progress": {
+    "noted_on": "2026-10-14",
+    "note": "Draft written 2026-10-14 (owner picked T-426 to start) and filed in the Finance Now Ledger page’s file library, as D60 places business documents; not in this public repository. About one page: scope and the data the app holds, read from the code (accounts are an email, an optional name and a bcrypt hash; portfolios, trades, watchlists, wallet addresses; the old Budget tables with the owner’s bank history; provider keys in .provider-config.json), roles, detect and contain (rotating AUTH_SECRET is the only way to sign everyone out, sessions being JWTs), assess, a North Carolina vs California notice table, records, after-action review, ten open questions for counsel, and sources with verbatim quotes. North Carolina (G.S. 75-61, 75-65, 14-113.20) was checked against ncleg.gov; California (Civ. Code 1798.82) is quoted from FindLaw. Labelled a draft for counsel, not legal advice.",
+    "evidence": [
+     "Finance Now Ledger page, file library: “Finance Now data-breach response plan - draft for counsel (2026-10-14).md”, linked to T-426"
+    ]
    }
   },
   {
@@ -14226,6 +14233,138 @@
     "by": "owner request, filed by the session",
     "why": "Owner, 2026-10-13: “close T-423 and file the DefiLlama item”. Raised while confirming T-423’s closure, as the one dependency that item left behind."
    }
+  },
+  {
+   "id": "T-435",
+   "title": "Add a password-reset flow, and a way to force resets after a breach",
+   "status": "open",
+   "confidence": "high",
+   "blocking_decision": null,
+   "opened": {
+    "on": "2026-10-14",
+    "by": "owner request, filed by the session",
+    "why": "Owner, 2026-10-14, choosing which of the T-426 draft’s pre-launch gaps to file: all four."
+   },
+   "owner_role": "either",
+   "category": "security",
+   "effort": "medium",
+   "related_ids": [
+    "T-426",
+    "T-436"
+   ],
+   "summary": "The T-426 draft breach plan (in the Finance Now Ledger page’s file library, 2026-10-14) found that sign-in has no password-reset or forced-reset flow. Accounts are Auth.js credentials with a bcrypt hash (cost 12), and sessions are JWTs with no sessions table (frontend/src/lib/auth/config.ts), so after a breach the only lever is rotating AUTH_SECRET: it signs everyone out, but cannot make anyone choose a new password. California lets a breach of login details alone be noticed by an email telling people to change their password, which assumes they can.",
+   "next_action": "Design it before building: a reset link with a short-lived single-use token, and a per-user must-reset flag checked at sign-in. Sending the link needs an email provider, which is a choice for the owner (free or paid, D21). Pure parts tested; the token never logged.",
+   "sources": [
+    {
+     "file": "frontend/src/lib/auth/config.ts",
+     "lines": "24",
+     "quote": "session: { strategy: 'jwt' },"
+    },
+    {
+     "file": "docs/audits/task-queue-2026-09-07.json",
+     "lines": "T-426 progress",
+     "quote": "Draft written 2026-10-14"
+    }
+   ]
+  },
+  {
+   "id": "T-436",
+   "title": "Ask for consent to electronic communications at sign-up",
+   "status": "open",
+   "confidence": "high",
+   "blocking_decision": null,
+   "opened": {
+    "on": "2026-10-14",
+    "by": "owner request, filed by the session",
+    "why": "Owner, 2026-10-14, choosing which of the T-426 draft’s pre-launch gaps to file: all four."
+   },
+   "owner_role": "owner-decision",
+   "category": "legal",
+   "effort": "small",
+   "related_ids": [
+    "T-426",
+    "T-291",
+    "T-435"
+   ],
+   "summary": "The T-426 draft breach plan (in the Finance Now Ledger page’s file library, 2026-10-14) found that sign-up collects no consent to receive communications electronically, and the draft Terms and Privacy Policy carry none. North Carolina allows breach notice by email only \"for those persons for whom it has a valid email address and who have agreed to receive communications electronically\" (G.S. 75-65(e)(2)); without it, a breach notice would need a letter or phone call to each person, and the app holds no postal addresses or phone numbers.",
+   "next_action": "Owner and counsel: the consent wording, edited in the owner’s disclosure document first and then copied in (as the About & Legal rule requires). Then a sign-up checkbox or clause, with the consent and its date stored on the user (a migration).",
+   "sources": [
+    {
+     "file": "frontend/src/app/api/auth/signup/route.ts",
+     "lines": "29",
+     "quote": "const { email: rawEmail, password, name } = (body ?? {}) as Record<string, unknown>"
+    },
+    {
+     "file": "docs/audits/task-queue-2026-09-07.json",
+     "lines": "T-426 progress",
+     "quote": "Draft written 2026-10-14"
+    }
+   ]
+  },
+  {
+   "id": "T-437",
+   "title": "Encrypt provider API keys at rest in .provider-config.json",
+   "status": "open",
+   "confidence": "high",
+   "blocking_decision": null,
+   "opened": {
+    "on": "2026-10-14",
+    "by": "owner request, filed by the session",
+    "why": "Owner, 2026-10-14, choosing which of the T-426 draft’s pre-launch gaps to file: all four."
+   },
+   "owner_role": "either",
+   "category": "security",
+   "effort": "medium",
+   "related_ids": [
+    "T-426"
+   ],
+   "summary": "The T-426 draft breach plan (in the Finance Now Ledger page’s file library, 2026-10-14) found that provider and AI API keys are stored in plain text in .provider-config.json, written with mode 0600 (frontend/src/lib/api/live/providers.ts), which has limited effect on Windows. A copy of that file in a backup, a OneDrive share or a commit hands over every key at once.",
+   "next_action": "Encrypt the stored keys with a key held outside the file (an environment variable, or the OS key store), read a legacy plain-text file once and rewrite it encrypted, and fail plainly when the key is missing. Nothing is deleted: the old file is rewritten in place. Tests for the round trip and the missing-key path.",
+   "sources": [
+    {
+     "file": "frontend/src/lib/api/live/providers.ts",
+     "lines": "837",
+     "quote": "fs.writeFileSync(CONFIG_PATH, JSON.stringify(file, null, 2), { encoding: 'utf8', mode: 0o600 })"
+    },
+    {
+     "file": "docs/audits/task-queue-2026-09-07.json",
+     "lines": "T-426 progress",
+     "quote": "Draft written 2026-10-14"
+    }
+   ]
+  },
+  {
+   "id": "T-438",
+   "title": "Decide how to tell which state’s breach rules apply: record residence, or apply the strictest rule",
+   "status": "open",
+   "confidence": "high",
+   "blocking_decision": null,
+   "opened": {
+    "on": "2026-10-14",
+    "by": "owner request, filed by the session",
+    "why": "Owner, 2026-10-14, choosing which of the T-426 draft’s pre-launch gaps to file: all four."
+   },
+   "owner_role": "owner-decision",
+   "category": "decision",
+   "effort": "small",
+   "related_ids": [
+    "T-426",
+    "T-436"
+   ],
+   "summary": "The T-426 draft breach plan (in the Finance Now Ledger page’s file library, 2026-10-14) found that the app does not ask where users live, so after a breach it cannot tell which state’s notice rules apply. North Carolina and California differ (who counts as affected, the 30-day California deadline, the Attorney General thresholds), and users may come from other states. The draft treats an unknown state as possibly North Carolina or California, and lists this as an open question for counsel.",
+   "next_action": "Owner, with counsel’s answer: either record state of residence at sign-up (a field and a migration), or decide that every notice follows the strictest applicable rule and say so in the plan.",
+   "sources": [
+    {
+     "file": "frontend/src/lib/legal/disclosures.ts",
+     "lines": "297",
+     "quote": "If a breach affects your personal information, we will tell you as the law requires."
+    },
+    {
+     "file": "docs/audits/task-queue-2026-09-07.json",
+     "lines": "T-426 progress",
+     "quote": "Draft written 2026-10-14"
+    }
+   ]
   }
  ],
  "closed_but_still_listed_as_open_in_docs": [
@@ -39992,6 +40131,13 @@
     "evidence": [
      "docs/audits/live-data-audit-2026-10-14.md",
      "docs/audits/live-data-audit-2026-10-14.json"
+    ]
+   },
+   {
+    "on": "2026-10-14",
+    "what": "T-426’s draft breach plan written and filed in the ledger page’s library; its four pre-launch gaps filed as T-435 to T-438 at the owner’s request.",
+    "evidence": [
+     "Finance Now Ledger page, file library: the T-426 draft breach plan (2026-10-14)"
     ]
    }
   ]
