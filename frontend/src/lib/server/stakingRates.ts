@@ -479,8 +479,12 @@ export async function collectStakingRates(): Promise<StakingRatesResponse> {
     //
     //    (11 was Avalanche, removed earlier: api.avax.network/ext/info returns a
     //    node version, never an APY.)
-    // 15. Injective inflation (Cosmos LCD)
-    timedFetch('https://lcd.injective.network/cosmos/mint/v1beta1/inflation', { headers: { Accept: 'application/json' } }),
+    // 15. Injective inflation (Cosmos LCD). The host is the one Injective's docs list as its
+    //     public mainnet LCD (docs.injective.network/infra/public-endpoints). This called
+    //     lcd.injective.network, which the docs do not list, until 2026-10-14: it answered 502
+    //     or timed out all that day while sentry.lcd.injective.network served the same path in
+    //     under a second (D113).
+    timedFetch('https://sentry.lcd.injective.network/cosmos/mint/v1beta1/inflation', { headers: { Accept: 'application/json' } }),
     // (16 was Celestia — removed with the other Cosmostation LCDs above.)
     // (17 was NEAR — removed 2026-09-09. api.nearblocks.io/v1/stats answers HTTP
     //  200 and is perfectly healthy, but the whole response is NETWORK stats:

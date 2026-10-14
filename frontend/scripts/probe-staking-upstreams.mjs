@@ -104,7 +104,7 @@ const UPSTREAMS = [
     } },
   // stride-cosmos-lsts dropped 2026-10-14 with the route's rung: edge.stride.zone is gone
   // (NXDOMAIN on three resolvers) and Stride's liquid staking is closed (v35, 2026-10-06).
-  { name: 'injective-native', url: 'https://lcd.injective.network/cosmos/mint/v1beta1/inflation', init: { headers: JSONH },
+  { name: 'injective-native', url: 'https://sentry.lcd.injective.network/cosmos/mint/v1beta1/inflation', init: { headers: JSONH },
     parse: (d) => num(d?.inflation) },
   { name: 'defillama-yields', url: 'https://yields.llama.fi/pools', init: { headers: JSONH },
     // The load-bearing one: it alone backs ~24 of the route's live keys, so it

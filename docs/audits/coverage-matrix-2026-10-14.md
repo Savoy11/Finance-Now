@@ -51,8 +51,10 @@ because they can sit on different plans.
 
 Standing rule (owner, 2026-09-18): **decisions that cost money are deferred until
 close to the end of production**, and the app is built so that no single provider is
-load-bearing. This table is how that rule is checked. "Strands" is what would have
-no remaining option at all if that vendor were dropped — the number to drive to zero.
+load-bearing. Two tables check that rule. This first one covers the **degraded**
+surfaces and the keyed vendors that could fix them: "Strands" is what would have no
+remaining option at all if that vendor were dropped. The second, below it, covers the
+surfaces that **work**, keyless vendors included. Both numbers are the ones to drive to zero.
 
 | Vendor | Cost posture | Could serve | Strands if dropped |
 |---|---|---|---|
@@ -61,10 +63,42 @@ no remaining option at all if that vendor were dropped — the number to drive t
 | **Finnhub** | free signup | 5 | — none |
 | **LunarCrush** | free signup | 1 | — none |
 | **Santiment** | free signup | 1 | — none |
-| **Tiingo** | free signup | 5 | — none |
+| **Tiingo** | free signup | 6 | — none |
 | **Tronscan API (TRON)** | free signup | 1 | **1**: wallet |
 | **Twelve Data** | free signup | 6 | — none |
 | **YouTube Data API** | free signup | 1 | **1**: videos |
+
+### Working surfaces one vendor carries
+
+Of the 32 surfaces this audit found working, these rest on a single external vendor.
+"Empties" means nothing stands behind it, so dropping the vendor removes the surface;
+"degrades" means a hand-kept table takes over, which is what D21 asks for. Keyless
+vendors count: free is not the same as replaceable.
+
+This table counts per surface. A vendor that alone serves some ranges of a surface shows in
+the next one instead.
+
+| Vendor | Key | Empties if dropped | Degrades if dropped |
+|---|---|---|---|
+| **CoinGecko** | keyless | **5**: coin-list, coin-discovery, alerts, pump-report-metrics, portfolio-history | — none |
+| **DefiLlama** | keyless | **2**: defi-tvl, reserves | — none |
+| **SEC** | keyless | **2**: sec-filings, company-facts | — none |
+| **Alpha Vantage** | free signup | **1**: ipo-calendar | — none |
+| **alternative.me** | keyless | **1**: fear-greed | — none |
+| **currency-api (community)** | keyless | **1**: fx-rates-extended | — none |
+| **ECB via Frankfurter** | keyless | **1**: fx-rates | — none |
+| **FMP** | free signup · paid tier **deferred** | **1**: options-score | — none |
+| **Tiingo** | free signup | **1**: security-returns | — none |
+| **U.S. Treasury** | keyless | **1**: treasury-yield-curve | — none |
+
+### Ranges one vendor carries
+
+A provider's `limits` in the registry say what it cannot serve that others on the same
+surface can, such as history past 365 days (D112). Each limit marks out a range; these are
+the ranges left with one vendor or none, on the surfaces where at least one probe was live.
+2 ranges are recorded on those surfaces; a limit nobody recorded is not seen.
+
+None: every recorded range of a serving surface has at least two vendors.
 
 ### Single-sourced surfaces — the optionality risk
 
@@ -104,7 +138,7 @@ stay as they are until late production. They are not defects to chase now.
 | 🟡 | Stock Registry universe | equities | FALLBACK | FMP company-screener (primary/paid) |
 | 🟡 | ETF / fund holdings | funds | FALLBACK | FMP (fallback/key) |
 | 🔑 | Futures term structure (forward curve) | macro | UNCONFIGURED | **no key fixes this** — keyless providers only |
-| 🔑 | Commodity / FX / rate quotes + charts | macro | UNCONFIGURED | FMP (fallback/key), Finnhub / Twelve Data / Alpha Vantage (fallback/key) |
+| 🔑 | Commodity / FX / rate quotes + charts | macro | UNCONFIGURED | FMP (fallback/key), Finnhub (fallback/key), Twelve Data (fallback/key), Tiingo (fallback/key), Alpha Vantage (fallback/key) |
 | 🟡 | Compare (growth-of-100, window stats, correlation) | shared | FALLBACK | Tiingo (primary/key), FMP (fallback/key), Twelve Data (fallback/key) |
 | 🔑 | Portfolio Builder (allocations, drift, suitability) | shared | UNCONFIGURED | Equity quote ladder (FMP → Finnhub → Twelve Data → Tiingo → Alpha Vantage) (fallback/key) |
 | 🔑 | Tracked portfolios (trade history, FIFO gains) | shared | UNCONFIGURED | Equity quote ladder (FMP → Finnhub → Twelve Data → Tiingo → Alpha Vantage) (fallback/key) |

@@ -14477,7 +14477,9 @@
    "category": "tooling",
    "effort": "medium",
    "related_ids": [
-    "T-434"
+    "T-434",
+    "D112",
+    "D113"
    ],
    "summary": "T-434’s step 4 (2026-10-14) found that scripts/gen-coverage-matrix.ts cannot see the case D21 was written for. Its “Strands if dropped” column considers only vendors that could fix a surface the audit found degraded, so a keyless vendor carrying a working surface never appears. It also works per surface, so a vendor that is the only source for some ranges of a surface never counts as sole: DefiLlama was the only source of crypto history past 365 days until D108, and appeared in no matrix. CLAUDE.md calls the column the measure D21 asks to drive to zero.",
    "next_action": "Add a second view over every surface the audit found working: for each vendor, the surfaces where it is the only provider listed, keyless vendors included, so dropping it would empty a working surface. For range-level single-sourcing the registry first needs a way to say which ranges a provider serves (for example a coverage note on a provider in DataSourceEntry, as the ohlcv entry’s “past 365 days” would be); propose that shape to the owner before building it. Test against a fixture audit and mutation-check the new view, re-run it on the owner’s machine, and update CLAUDE.md’s description of the column to match what it measures.",
@@ -14492,7 +14494,19 @@
      "lines": "The coverage matrix cannot see this",
      "quote": "DefiLlama does not appear in it at all, and it never could have"
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-10-14",
+    "note": "First half built the same day. gen-coverage-matrix.ts prints a second table, “Working surfaces one vendor carries”, over every surface the audit found working, keyless vendors included, split into what dropping the vendor would empty and what it would only degrade to a hand-kept table. Which providers count as sources is in scripts/lib/workingSources.ts: a host or a key makes a vendor; a host-less, keyless fallback is a hand-kept table; in-app work, composites, user input and placeholders are not sources (tested, eight mutations each fail a test). On the 2026-10-14 audit it counts 16 working surfaces with nothing behind their one vendor, five of them CoinGecko’s alone; the regenerated coverage-matrix-2026-10-14.md carries it. Found on the way: the staking collector’s Injective endpoint, lcd.injective.network, has no host in the data-source registry and no source-terms entry, because it is fetched from lib/server/stakingRates.ts and the drift check reads only route files. Second half built the same day under D112: providers carry optional `limits` (historyDays, intervals), set on the chart route’s CoinGecko and Coin Metrics, and the matrix prints “Ranges one vendor carries” for every surface with a live probe; both recorded ranges have two vendors today, and a test holds that before D108 the history range had DefiLlama alone. The Injective gap was settled under D113: the collector now calls the documented sentry.lcd.injective.network (the old host failed all day; the new one serves in under a second, and all six staking upstreams read live), the host has a seeded terms entry, and the drift check follows each route into the lib/server and lib/api modules it imports, which also had the macro quote ladder named host by host.",
+    "remaining_work": "Both halves are built; closing the item is the owner’s call.",
+    "evidence": [
+     "frontend/scripts/lib/workingSources.ts",
+     "frontend/src/lib/server/__tests__/workingSources.test.ts",
+     "docs/audits/coverage-matrix-2026-10-14.md",
+     "frontend/scripts/lib/routeHosts.mjs",
+     "docs/decisions/2026-10-14-owner-decisions.md"
+    ]
+   }
   }
  ],
  "closed_but_still_listed_as_open_in_docs": [
@@ -40310,6 +40324,20 @@
     "what": "T-417 closed on the owner’s approval after its run. Counts recomputed.",
     "evidence": [
      "docs/audits/fund-fee-reconcile-2026-10-14.md"
+    ]
+   },
+   {
+    "on": "2026-10-14",
+    "what": "T-439’s first half built: the coverage matrix now counts working surfaces carried by one vendor, keyless included (16 on the 2026-10-14 audit). The Injective host gap recorded on it. Status unchanged.",
+    "evidence": [
+     "frontend/scripts/lib/workingSources.ts"
+    ]
+   },
+   {
+    "on": "2026-10-14",
+    "what": "T-439’s second half (D112, provider limits and ranges) and the Injective ruling (D113: documented host, seeded terms entry, drift check following routes into lib/server and lib/api) applied. Status unchanged.",
+    "evidence": [
+     "docs/decisions/2026-10-14-owner-decisions.md"
     ]
    }
   ]

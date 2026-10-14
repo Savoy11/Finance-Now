@@ -814,7 +814,7 @@ site nobody has reviewed. Full design: `docs/architecture/source-terms.md`.
 > The fix for any of the key-gated rows is a free API key on the Integrations page — **not
 > a substitute scraper.**
 
-> ⚠ **18 of 74 registry entries are `seeded`, not `verified` — check `review` before
+> ⚠ **19 of 75 registry entries are `seeded`, not `verified` — check `review` before
 > trusting one.** The registry was authored in an environment whose network policy
 > blocked every publisher and provider host at the gateway, so not one terms document
 > could be opened. The entries are honest starting positions drawn from each
@@ -880,6 +880,15 @@ site nobody has reviewed. Full design: `docs/architecture/source-terms.md`.
 > **One more, `seeded`, on 2026-10-14 (T-434, D108): Coin Metrics Community Data**, the chart
 > route's backup for closing prices. Its grant is CC BY-NC 4.0, read that day: non-commercial
 > use with a credit, so personal use before launch (D96) and a T-151 question at launch.
+>
+> **And one found, `seeded`, the same day (T-439, D113): Injective's public LCD.** The staking
+> collector had fetched it with no entry at all: the collector lives in `lib/server`, and the
+> drift check read only route files. It now follows a route into the `lib/server` and `lib/api`
+> modules it imports (`scripts/lib/routeHosts.mjs`), skipping three named modules that hold
+> links rather than requests, and fails if one of those starts making requests. The collector
+> also called `lcd.injective.network`, which Injective's docs do not list and which failed all
+> that day; it now calls the documented `sentry.lcd.injective.network`. No document governs the
+> public endpoints, and the docs advise against them for production traffic: a launch step.
 >
 > A seeded `approved`/`conditional` means *nobody has objected yet*, not *cleared*.
 > Seeded entries still serve data — breaking the app over a documentation gap is the
@@ -1459,6 +1468,20 @@ prints a "Strands if dropped" column per vendor, and those counts are the ones t
 to zero. Four surfaces were single-sourced when the rule was made; `security-returns` is
 the only one with no fallback at all. Full reasoning, and the measured provider coverage
 behind it, in `docs/decisions/2026-09-18-owner-decisions.md`.
+
+⚠ **That column sees only degraded surfaces and the keyed vendors that could fix them**, so
+a keyless vendor carrying a surface that works never appeared in it: DefiLlama under the crypto
+charts did not (T-434). Since 2026-10-14 (T-439, D110) the matrix prints a second table,
+"Working surfaces one vendor carries", over every surface the audit found working, keyless
+vendors included, split into what dropping the vendor would empty and what it would only
+degrade to a hand-kept table. Its first run counted **16 working surfaces with nothing behind
+their one vendor, five of them CoinGecko's alone** (`docs/audits/coverage-matrix-2026-10-14.md`).
+Which providers count as sources is in `scripts/lib/workingSources.ts`, tested. **Ranges are
+counted too (D112):** a provider's optional `limits` in `dataSources.ts` (`historyDays`,
+`intervals`) say what it cannot serve that others on its surface can, and a third table,
+"Ranges one vendor carries", lists each range left with one vendor or none. Before D108 it would
+have shown DefiLlama alone for crypto history past 365 days; a test holds that case. A limit
+nobody records is not seen, so set `limits` when adding a provider that has one.
 
 **⚠ Data-availability results are IP-dependent — audits MUST run on the owner's machine.**
 LunarCrush blocks datacenter IPs and the cloud gateway blocks most provider hosts outright, so a
