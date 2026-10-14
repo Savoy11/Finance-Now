@@ -1206,6 +1206,16 @@ rather than picking a winner, and a mixed or unrecognised `uom` also stops it in
 Both run `scripts/test-live-data.mjs` (the old `scripts/smoke.mjs` was folded into it —
 `smoke` is now just `--quick`).
 
+**It calls every `/live-data` and `/api/v1` route except the ones in `NOT_AUDITED`**
+(`scripts/lib/auditCoverage.mjs`), each named with its reason and printed at the end of every
+run. Today they are the Pump Report's three paid AI routes and the two hidden rating routes,
+which write to the database.
+`auditCoverage.test.ts` fails on a route that is neither called nor named. Until 2026-10-14 the
+script said "every" while 15 routes went uncalled, the MCP server's four among them. **A route
+withheld by a recorded decision reads UNCONFIGURED with the decision named, never FAIL.** That
+covers funding rates (D40), futures curves (Yahoo, on terms) and Reddit's robots gate. The
+funding-rates check had failed the whole run since D40.
+
 ⚠ **The harness throttles its own CoinGecko calls, and the pacing is WEIGHTED per
 check** (`scripts/lib/coingeckoPacing.mjs`, pure + tested with an injectable
 clock). Two earlier models each looked right and weren't, and the symptom both

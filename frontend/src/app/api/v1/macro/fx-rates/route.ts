@@ -3,8 +3,8 @@ import { CORS, options } from '../../../_cors'
 import { fetchEcbFxRates } from '@/lib/server/ecbFxRates'
 
 // Public agent API — daily ECB reference FX rates (frankfurter.dev, keyless).
-// Official tier only: ~30 ECB-published currencies. The UI's extended tier
-// (community currency-api, +127 currencies) is deliberately NOT exposed here —
+// Official tier only: the ECB's published set. The UI's extended tier
+// (the community currency-api) is deliberately NOT exposed here —
 // an agent consuming this endpoint gets central-bank reference data or an
 // error, never a silently blended community source.
 
