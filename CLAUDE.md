@@ -1263,7 +1263,17 @@ mistaken for slowness and "optimised" back out.
 > ⚠ **Known bound as of the seventh run: ~9 real CoinGecko calls in ~60s was still
 > refused**, with `coin-discovery` passing (the derived gap fixed it) and `alerts`
 > + `portfolio-history` taking the 429 instead. So the true allowance is BELOW the
-> 10/min cap, and the next run's error line should say by how much. Run `npm run audit` before trusting any route, and read its
+> 10/min cap, and the next run's error line should say by how much.
+>
+> **Lower again on 2026-10-14: refused at the fifth CoinGecko request, after five or six
+> real calls** (`docs/audits/live-data-audit-2026-10-14.md`). The 429s carried only
+> `retry-after` and the message, no rate-limit headers, so the allowance is still unread,
+> and it moves with CoinGecko's own load. At `AUDIT_CG_PER_MIN=4` all four routes it had
+> failed passed or behaved as designed. Until there is a key, run
+> `$env:AUDIT_CG_PER_MIN='4'; npm run audit`. A free Demo key raises the limit for the
+> app as well (T-105); `coingeckoHeaders()` already sends it as `x-cg-demo-api-key`.
+
+Run `npm run audit` before trusting any route, and read its
 **REAL vs FALLBACK** classification rather than the HTTP status: a 200 carrying fallback data
 is the failure mode that misdirects debugging to the UI layer. An earlier harness reported
 43/43 PASS while several routes were quietly serving static catalogs.
