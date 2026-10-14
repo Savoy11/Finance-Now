@@ -62,9 +62,9 @@
   "total_verified": 398,
   "outstanding": 374,
   "by_status": {
-   "closed": 212,
+   "closed": 214,
    "parked": 135,
-   "open": 20,
+   "open": 18,
    "blocked": 6,
    "unclear": 1
   },
@@ -75,8 +75,8 @@
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 212,
-  "counts_recomputed_on": "2026-10-13",
+  "closed_by_annotation": 214,
+  "counts_recomputed_on": "2026-10-14",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 374
  },
@@ -14073,7 +14073,7 @@
   {
    "id": "T-432",
    "title": "Put the wallet routes’ RPC and explorer hosts under the source-terms registry",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "either",
    "category": "legal",
@@ -14112,12 +14112,26 @@
      "frontend/src/lib/server/__tests__/sourceTerms.test.ts",
      "frontend/scripts/lib/routeHosts.mjs"
     ]
+   },
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-10-14",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "Every host the wallet routes fetch is under the terms registry, and the drift check reads the nested wallet/* folders that had hidden them (#333). The owner ruled on all four open questions (D105, 2026-10-14), applied in #344: the five clean readings verified, and dRPC and Arbitrum on the narrow reading; cloudflare-eth.com dropped from the Ethereum ladder; Arbitrum’s and Tronscan’s terms read in the owner’s browser after a script got 403. Tronscan is called only with a key, since its terms require an account and its API rate-limits keyless requests.",
+    "approved_by": "owner, 2026-10-14: chose “Close it” for T-432",
+    "evidence": [
+     "docs/decisions/2026-10-14-owner-decisions.md",
+     "frontend/src/lib/server/__tests__/walletTerms.test.ts",
+     "frontend/src/lib/server/__tests__/dataSourcesDrift.test.ts"
+    ],
+    "known_gap": "Still seeded by design: Tronscan (read, not ratified; called only with TRONSCAN_API_KEY), cloudflare-eth.com (dropped, kept as the record), and the four endpoints no document governs (1RPC, polygon-rpc.com, BNB Chain’s dataseed, Avalanche’s API), as D54 left DefiLlama and the others. TRON balances need the owner to create a Tronscan account. All of it serves only the Wallets page, hidden since 2026-08-22."
    }
   },
   {
    "id": "T-433",
    "title": "Close the drift check’s hostless-provider exemption: the news fallbacks and the LLM key tests never reach the terms check",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "either",
    "category": "legal",
@@ -14159,6 +14173,20 @@
      "frontend/src/lib/server/__tests__/sourceTerms.test.ts",
      "docs/decisions/2026-10-13-owner-decisions.md"
     ]
+   },
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-10-14",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "The drift check no longer skips an entry with a hostless provider, and its only exceptions are two named lists checked against the code (#337). AI providers are kept out of the terms registry by the owner’s ruling (D104). NewsAPI and GNews, the news route’s keyed fallbacks, were read on the owner’s machine and verified by the owner (D106, applied in #344), each keeping its launch step.",
+    "approved_by": "owner, 2026-10-14: chose “Close it” for T-433",
+    "evidence": [
+     "frontend/src/lib/server/__tests__/dataSourcesDrift.test.ts",
+     "docs/decisions/2026-10-13-owner-decisions.md",
+     "docs/decisions/2026-10-14-owner-decisions.md"
+    ],
+    "known_gap": "At launch NewsAPI and GNews each need a paid plan, or the fallback dropped; before launch both are personal use (D96)."
    }
   },
   {
