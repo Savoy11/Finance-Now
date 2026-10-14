@@ -387,7 +387,7 @@ project file:
 
 | Where | What | Why it is not a violation |
 |---|---|---|
-| `frontend/restart-dev.ps1:11` | `Remove-Item -Recurse -Force ".next"` | Next.js **build output**, gitignored and regenerated on every build. It is also the documented fix for the OneDrive lock that kills the dev server mid-session. Deleting it loses nothing |
+| `frontend/restart-dev.ps1:56` | `Remove-Item -Recurse -Force $buildDir` (`.next`, by full path) | Next.js **build output**, gitignored and regenerated on every build. It is also the documented fix for the OneDrive lock that kills the dev server mid-session. Deleting it loses nothing. Was line 11, a relative `".next"`, until 2026-10-14; the root `restart-dev.ps1` now runs this file and holds no deletion of its own (`restartScript.test.ts`) |
 | `lib/api/__tests__/providerStatus.test.ts:31` | `rmSync(dir, …)` | Removes only the `mkdtempSync` directory that same test created, in teardown |
 
 No CI/CD workflow has a delete, prune or cleanup step; no `package.json` script does
@@ -395,22 +395,26 @@ either. **The line is regenerable build output vs. anything tracked in git** —
 is fine, a tracked file never is. Re-run the audit before adding any deletion:
 
 ```bash
-grep -rnE 'rm -rf|Remove-Item|rmSync|unlinkSync|rimraf' -r . | grep -v node_modules
+grep -rnE 'rm -rf|Remove-Item|rmSync|unlinkSync|rimraf' -r . | grep -v -e node_modules -e '\.claude/'
 grep -rniE 'delete|prune|cleanup' .github/workflows/
 ```
 
 ⚠ **`grep` does not exist in PowerShell, and this repo is maintained from PowerShell.**
 An audit that enforces a standing rule has to run in the shell of the person enforcing
 it, or it is a control on paper. The equivalent, verified 2026-09-20 to return the same
-two benign hits (`restart-dev.ps1:11`, `providerStatus.test.ts:31`) plus `package-lock`
-dependency metadata:
+two benign hits plus `package-lock` dependency metadata, and re-run 2026-10-14
+(`restart-dev.ps1:56`, `providerStatus.test.ts:2` and `:31`, its import and its call):
 
 ```powershell
 Get-ChildItem -Recurse -File -Include *.ts,*.tsx,*.mjs,*.js,*.ps1,*.json,*.yml |
-  Where-Object { $_.FullName -notmatch '\\node_modules\\|\\\.next\\|\\coverage\\' } |
+  Where-Object { $_.FullName -notmatch '\\node_modules\\|\\\.next\\|\\coverage\\|\\\.claude\\' } |
   Select-String -Pattern 'rm -rf|Remove-Item|rmSync|unlinkSync|rimraf'
 Select-String -Path .github/workflows/*.yml -Pattern 'delete|prune|cleanup'
 ```
+
+`.claude\` is left out because it is gitignored and not the project: an old agent worktree
+under `.claude\worktrees\` keeps a copy of the pre-fix restart script, and the audit is about
+files tracked in git.
 
 **Standing rule:** any history-shaping operation — force-pushing or re-rooting a branch,
 deleting branches, archiving a workstream — lands **together with a dated note in
