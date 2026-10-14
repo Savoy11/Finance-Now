@@ -39945,6 +39945,15 @@
      "frontend/src/app/live-data/ohlcv/route.ts",
      "frontend/src/lib/server/sourceTerms.ts"
     ]
+   },
+   {
+    "on": "2026-10-14",
+    "what": "T-001: the app-assistant’s platform context re-read against the code. Every count in it is now computed from its catalog. Stale lines fixed: both scanners’ detector counts after D103, Yearn in Live Pools, Reddit in Stock Social (and in the get_stock_social tool), the fund catalog size, the Stock Registry’s FMP tier. Missing surfaces added. The Equity Scanner page’s copy fixed with it. Status stays open: the output half needs `npm run audit` and `npm run agent-eval -- --run` on the owner’s machine.",
+    "evidence": [
+     "docs/assessments/T6-agent-prompts.md",
+     "frontend/src/lib/server/__tests__/boundaryDrift.test.ts",
+     "frontend/src/lib/utils/__tests__/scannerCopy.test.ts"
+    ]
    }
   ]
  }

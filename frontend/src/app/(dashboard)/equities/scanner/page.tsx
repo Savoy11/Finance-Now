@@ -26,14 +26,17 @@ import type { SecurityOhlcvResponse } from '@/app/live-data/security-ohlcv/route
 // It replaces the "Screener" tab that lived on /equities/technical-analysis and
 // closes the maturity gap the review recorded (E14-E16): that tab ran RSI and
 // vs-SMA over 24 hardcoded large-caps, while the crypto scanner ran seven setup
-// detectors over the whole tracked universe. This runs the SAME seven detectors
-// over the full curated catalog.
+// detectors over the whole tracked universe (2026-08-19). This runs every setup
+// detector over the full curated catalog. Since 2026-10-13 (D103) the crypto
+// scanner reads closing prices and runs only the detectors a close can feed;
+// stocks still come with full daily candles, so this page runs them all. The
+// copy derives both counts (scannerCopy.test.ts).
 //
 // Two deliberate differences from the crypto scanner, both about cost rather
 // than ambition:
 //  - No auto-refresh. Every row is a KEYED provider fetch (Tiingo/FMP); a
 //    scanner that re-runs itself on a timer would quietly drain a free tier.
-//    The crypto scanner refreshes because CoinGecko OHLCV is keyless.
+//    The crypto scanner refreshes because its source (DefiLlama) is keyless.
 //  - Windows, not timeframes. security-ohlcv serves daily bars only, so the
 //    selector changes how much HISTORY the detectors read (3M/6M/1Y), not the
 //    bar size. Labelling these "4H/1D/1W" would be a lie about the data.
@@ -383,9 +386,9 @@ function EquityScannerInner() {
         <PageHeader
           title="Equity Scanner"
           subtitle="Technical setups across the catalog, plus the AI outlier scan"
-          description="One scanner for equities: the same seven setup detectors the crypto scanner runs, over the curated large-cap catalog, alongside the sector-relative outlier scan the Equity Screener agent performs. Technical Analysis charts the one stock you picked; this finds candidates."
+          description={`One scanner for equities: all ${SETUP_KEYS.length} setup detectors over the curated large-cap catalog, alongside the sector-relative outlier scan the Equity Screener agent performs. Technical Analysis charts the one stock you picked; this finds candidates.`}
           details={[
-            { label: 'Setups', text: 'Breakout, oversold bounce, overbought fade, MA cross, volume spike, OBV divergence, volatility squeeze — computed from real daily OHLCV, not reference data.' },
+            { label: 'Setups', text: `${SETUP_KEYS.map((k) => SETUP_META[k].label).join(', ')}: computed from real daily OHLCV, not reference data.` },
             { label: 'Windows', text: 'The provider serves daily bars only, so 3M/6M/1Y changes how much history the detectors read, not the bar size.' },
             { label: 'Why no auto-refresh', text: 'Every row is a keyed provider request. A scanner re-running itself on a timer would drain a free tier; the crypto scanner refreshes because its source is keyless.' },
           ]}

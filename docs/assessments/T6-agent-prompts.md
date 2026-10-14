@@ -186,3 +186,46 @@ copy has been wrong since 2026-08-18.
   the page shows and tells the assistant that nothing on it is scored.
 - The agent-config Data Scraper copy named under "Not fixed" above was checked on the
   same date and no longer says the agent never runs.
+
+## Annotation — 2026-10-14 (platform context re-read against the code; does not amend anything above)
+
+The app-assistant's platform context was read line by line against the code. The lines
+NT12's count checks (`boundaryDrift.test.ts`) read were right. Several lines no check read
+were wrong:
+
+| Line | Said | The app |
+|---|---|---|
+| Crypto scanner | seven setup detectors | four: since D103 (2026-10-13) it reads closing prices and runs only the detectors a close can feed |
+| Equity Scanner | "the same seven setup detectors as crypto" | all seven, and not the same set as crypto's since D103. The page itself said the same and was fixed with it |
+| Live Pools | sources included Yearn | Yearn's rung was dropped 2026-09-26 (T-399) |
+| Stock Social | "Reddit + StockTwits sentiment" | StockTwits only: Reddit's robots gate is closed (D58). The `get_stock_social` tool description told every agent the same thing, and the tool dropped the route's `withheld` list that explains it |
+| Fund Registry | a 126-fund curated catalog | 140, since D27 (2026-09-26) |
+| Stock Registry | the full universe "when an FMP key is configured" | only on a paid FMP plan; a free key shows the curated catalog |
+| Yield indices | "The four yield indices" | a typed count the new mechanism check found on its first run |
+
+Also missing: the coin page's Pump Report and technical-analysis tabs, the closing-price
+charts (D103), the Options Calculator (D93), the keyless FOMC dates, Tracked portfolios
+(T-027), Marketaux on stock pages (T-430) and About & Legal. All are now described.
+
+**The fix is a mechanism, not new numbers.** Every count in the section is now
+interpolated from its catalog (`prompts.ts`, above `AGENT_DEFAULTS`). Where a count or list
+could not be computed there, it was dropped instead:
+- the indicator total, whose registry imports a browser charting library;
+- the macro scanner's universe, which is module-owned (`macro/macroInstruments.ts`,
+  boundary rule 1);
+- Compare's limit, a constant local to its page;
+- the Live Pools source names, which exist only as a type in the route.
+
+**Guards added**, each driven red by a mutation:
+- `boundaryDrift.test.ts` now reads five more counts: funds, commodities, macro
+  instruments and both scanners. It also checks the mechanism: no typed count inside the
+  platform context. It ties the crypto scanner line to the scanner page's
+  `SETUPS_FROM_CLOSES`. And it fails on agent text presenting Reddit as a source while
+  `robotsPermits` refuses reddit.com.
+- `scannerCopy.test.ts` makes both scanner pages derive their detector counts.
+- **A bug in `promptRoutes.test.ts` was fixed along the way.** It detected a withdrawn
+  route with a whole-path match, then found that route's line with a substring search.
+  `/equities/options` therefore resolved to the Options Calculator's line.
+
+**The output half of T6 stays open, on the same precondition as before.** Nothing here
+evaluated agent output.

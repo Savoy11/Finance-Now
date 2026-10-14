@@ -5,6 +5,12 @@ import path from 'node:path'
 import { COIN_INFO, NETWORKS, EXCHANGES } from '@/lib/data/transferFees'
 import { STAKING_PROVIDERS } from '@/lib/data/stakingProviders'
 import { EQUITY_CATALOG } from '@/lib/data/equityCatalog'
+import { FUND_CATALOG } from '@/lib/data/fundCatalog'
+import { COMMODITY_CATALOG } from '@/lib/data/commodityCatalog'
+import { CURRENCY_CATALOG } from '@/lib/data/currencyCatalog'
+import { RATES_CATALOG } from '@/lib/data/ratesCatalog'
+import { SETUP_INPUTS, SETUPS_FROM_CLOSES } from '@/lib/utils/scanSetups'
+import { robotsPermits } from '@/lib/server/sourceTerms'
 import { AGENT_DEFAULTS } from '@/lib/agents/prompts'
 
 /**
@@ -49,6 +55,11 @@ const REAL = {
   // 11 real GICS sectors; SECTOR_INFO also carries an 'other' bucket that no
   // catalog entry uses, so a raw key count would claim 12.
   sectors:   new Set(EQUITY_CATALOG.map(e => e.sector)).size,
+  funds:     FUND_CATALOG.length,
+  commodities: COMMODITY_CATALOG.length,
+  macro:     COMMODITY_CATALOG.length + CURRENCY_CATALOG.length + RATES_CATALOG.length,
+  setups:    Object.keys(SETUP_INPUTS).length,
+  setupsFromCloses: SETUPS_FROM_CLOSES.length,
 }
 
 describe('NT12 — MCP server metadata matches what it ships', () => {
@@ -235,5 +246,67 @@ describe('NT12 — agent prompts match the catalogs they describe', () => {
     const m = prompt.match(/(\d+)-name curated fallback/)
     expect(m, 'the app-assistant prompt no longer states a curated-fallback size').not.toBeNull()
     expect(Number(m![1])).toBe(REAL.equities)
+  })
+
+  // Added 2026-10-14. These four went unread by the rows above, and all four had
+  // drifted: the fund catalog read 126 at 140, and both scanners claimed seven
+  // detectors a day after the crypto scanner moved to closing prices (D103).
+  const PATTERN_CLAIMS: Array<[string, RegExp, number[]]> = [
+    ['curated fund catalog', /(\d+)-fund curated catalog/, [REAL.funds]],
+    ['commodity contracts', /(\d+) futures contracts/, [REAL.commodities]],
+    ['macro instruments', /Macro TA over all (\d+) instruments/, [REAL.macro]],
+    ['crypto scanner detectors', /runs (\d+) of the (\d+) setup detectors/, [REAL.setupsFromCloses, REAL.setups]],
+    ['equity scanner detectors', /runs all (\d+) setup detectors/, [REAL.setups]],
+  ]
+
+  for (const [what, re, real] of PATTERN_CLAIMS) {
+    it(`the assistant's ${what} count matches the code (${real.join(' of ')})`, () => {
+      const m = prompt.match(re)
+      expect(m, `the app-assistant prompt no longer states its ${what} — if that is deliberate, drop this row`).not.toBeNull()
+      expect(m!.slice(1).map(Number)).toEqual(real)
+    })
+  }
+
+  it('the assistant\'s platform context types no count: each is computed from its catalog', () => {
+    // The rows above check today's numbers; this pins the mechanism, the way the
+    // discovery test does. A count typed back into the template literal is right
+    // the day it is typed and wrong after the next catalog change, and the rows
+    // above only cover the counts someone remembered to list.
+    const src = read(path.join(process.cwd(), 'src/lib/agents/prompts.ts'))
+    const start = src.indexOf('PLATFORM CONTEXT (')
+    const end = src.indexOf('YOUR ROLE:', start)
+    expect(start, 'prompts.ts no longer carries the PLATFORM CONTEXT section this test reads').toBeGreaterThan(-1)
+    expect(end).toBeGreaterThan(start)
+    const typed = src.slice(start, end).replace(/\$\{[^}]*\}/g, '${…}')
+    const NOUNS = 'exchanges|coins|networks|curated|providers|sectors|setup|detectors|indicators|futures|contracts|entries|FX|yield|bond|instruments|funds|stocks|names|pairs|liquid'
+    // "of" catches the partial form, "runs 4 of the …".
+    const digits = typed.match(new RegExp(`\\b\\d+(?:-name|-fund)?\\s+(?:${NOUNS}|of)\\b`, 'g')) ?? []
+    const words = typed.match(new RegExp(`\\b(?:two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\\s+(?:${NOUNS})\\b`, 'gi')) ?? []
+    expect([...digits, ...words], 'typed counts in the app-assistant platform context; interpolate them from the catalog instead').toEqual([])
+  })
+
+  it('the assistant describes the crypto scanner as reading closing prices while the scanner page does', () => {
+    // The drift this guards happened on 2026-10-13: the scanner page moved to
+    // SETUPS_FROM_CLOSES (D103) and the prompt kept describing the old scanner.
+    const page = read(path.join(process.cwd(), 'src/app/(dashboard)/scanner/page.tsx'))
+    const line = prompt.split('\n').find(l => l.includes('Crypto Scanner (/scanner)')) ?? ''
+    expect(line, 'the app-assistant prompt no longer carries a Crypto Scanner line').not.toBe('')
+    if (/const SETUP_KEYS\s*=\s*SETUPS_FROM_CLOSES\b/.test(page)) expect(line).toMatch(/closing prices/)
+    else expect(line).not.toMatch(/closing prices/)
+  })
+
+  it('no agent text presents Reddit as a stock-social source while its robots gate is closed', () => {
+    // Reddit's robots.txt disallows this app's agent; without REDDIT_CLIENT_ID the
+    // gate refuses every reddit.com URL (D58: lifting it is post-launch). Both the
+    // assistant and the get_stock_social tool told agents the feed read Reddit.
+    if (robotsPermits('https://www.reddit.com/r/stocks/new/.rss', {} as NodeJS.ProcessEnv)) return
+    const social = prompt.split('\n').find(l => l.includes('Stock Social')) ?? ''
+    expect(social, 'the app-assistant prompt no longer carries a Stock Social line').not.toBe('')
+    expect(social).toMatch(/Reddit is not read/)
+    const tools = read(path.join(process.cwd(), 'src/lib/agents/tools.ts'))
+    const desc = tools.match(/name: 'get_stock_social',\s*description: '((?:[^'\\]|\\.)*)'/)?.[1]
+    expect(desc, 'get_stock_social has no description this test can read').toBeDefined()
+    expect(desc).not.toMatch(/from Reddit/i)
+    expect(desc).toMatch(/Reddit is not read/)
   })
 })

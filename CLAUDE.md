@@ -96,7 +96,8 @@ frontend/src/
 │   │   │  #  /staking-discovery redirects, next.config.mjs)
 │   │   ├── coin-discovery/page.tsx
 │   │   ├── technical-analysis/page.tsx
-│   │   ├── scanner/page.tsx        # Crypto Scanner — 7 setup detectors over the universe
+│   │   ├── scanner/page.tsx        # Crypto Scanner — the setup detectors closing prices can feed
+│   │                               #   (SETUPS_FROM_CLOSES, T-423), over the universe
 │   │   ├── pump-report/page.tsx    # Promoted from a /wallets tab 2026-08-22; carries its own
 │   │   │                           #   address entry so it survives that page being hidden.
 │   │   │                           #   In the Feature Inventory since then, in this tree
