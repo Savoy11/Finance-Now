@@ -14212,7 +14212,8 @@
    "blocking_decision": null,
    "related_ids": [
     "T-423",
-    "T-425"
+    "T-425",
+    "T-151"
    ],
    "summary": "Since D103 (2026-10-13) DefiLlama’s coins.llama.fi is the only source of crypto price history older than 365 days: CoinGecko’s free service refuses anything older. /live-data/ohlcv sends it every request carrying closes=1 first: the TA page and coin page charts where candles fail or come 4-day (always on 3Y and MAX), the Crypto Scanner and the multi-timeframe grid for every coin and timeframe, the Coins screener’s sweep, Cycle Context’s Pi Cycle and the assistant’s get_price_history past 365 days; the ratings validation script reads it with source=defillama and no fallback, by design. If DefiLlama were dropped, ranges within 365 days would fall through to CoinGecko’s candles (route.ts:315), but the sweeps would then meet CoinGecko’s limit of fewer than 10 calls a minute; ranges past 365 days would have no source at all. That is the state D21 rules out: dropping one vendor must degrade a surface, not remove it. DefiLlama publishes no terms document (the llama.fi entry stays seeded), and its enquiry is drafted under T-425, unsent. Measured from dataSources.ts the same day, DefiLlama is also the only provider for the DeFi TVL panel (api.llama.fi) and the reserve monitor’s stablecoin supply (stablecoins.llama.fi); recorded here, outside this item unless the owner widens it. Before launch all of it is personal use (D96), and buying a plan is not in scope (D21).",
    "next_action": "(1) List free sources (keyless, or a free key) of daily crypto closes older than 365 days, and read each candidate’s terms on the owner’s machine before measuring anything. (2) Measure the ones that pass against the coin catalog (COINGECKO_IDS): how many coins, how far back, what spacing, what rate limit. (3) If one fits, add it as a rung after DefiLlama for closes past 365 days in /live-data/ohlcv, held by ohlcvRoute.test.ts, so dropping DefiLlama thins long-range charts instead of emptying them. (4) Confirm with a fresh `npm run audit:json` and `npx tsx scripts/gen-coverage-matrix.ts` that DefiLlama no longer strands ohlcv. If nothing free fits, record that and leave this open under D21 rather than buying a plan.",
@@ -14237,6 +14238,17 @@
     "on": "2026-10-13",
     "by": "owner request, filed by the session",
     "why": "Owner, 2026-10-13: “close T-423 and file the DefiLlama item”. Raised while confirming T-423’s closure, as the one dependency that item left behind."
+   },
+   "progress": {
+    "noted_on": "2026-10-14",
+    "note": "Steps (1) to (3) done. The 2026-10-14 survey, run on the owner’s machine, read each candidate’s terms before measuring it and ranked Coin Metrics’ Community API first: keyless, a daily USD price back to each coin’s start, and a CC BY-NC 4.0 grant, the only one read in this project that permits public display. The owner chose “Build it, credit when used” (D108), built in #349: /live-data/ohlcv asks Coin Metrics after DefiLlama for a closes request on a daily or weekly range, for 69 of the 80 catalog coins on a hand-kept map (COINMETRICS_ASSETS, each series checked against DefiLlama’s prices), never for a candle request or an intraday range; a series more than 4 days old is not served; the credit rides on the responses Coin Metrics served and every closes reader shows it. source=coinmetrics asks for it alone. Confirmed live on the owner’s machine the same day: ETH MAX returned 584 weekly closes, 2015-08-11 to 2026-10-13, credited.",
+    "remaining_work": "Step (4): a fresh `npm run audit:json` on the owner’s machine, whose new check “ohlcv eth MAX closes (Coin Metrics)” confirms the rung, then `npx tsx scripts/gen-coverage-matrix.ts <audit.json>` to see that DefiLlama no longer strands ohlcv. Expect partial cover: eleven coins have no second source past 365 days, TON, PI, TEL, MemeCore, EURCV, XSGD, USDM and vBUSD (not carried) and MKR, AMPL and USDK (series stopped). Whether that is enough to close, or a third source is wanted (the survey’s question 5), is the owner’s call. At launch Coin Metrics’ non-commercial term is a T-151 question (D96).",
+    "evidence": [
+     "PR #349",
+     "frontend/src/lib/api/live/coinMetrics.ts",
+     "frontend/src/app/live-data/ohlcv/route.ts",
+     "docs/decisions/2026-10-14-owner-decisions.md"
+    ]
    }
   },
   {
@@ -40143,6 +40155,14 @@
     "what": "T-426’s draft breach plan written and filed in the ledger page’s library; its four pre-launch gaps filed as T-435 to T-438 at the owner’s request.",
     "evidence": [
      "Finance Now Ledger page, file library: the T-426 draft breach plan (2026-10-14)"
+    ]
+   },
+   {
+    "on": "2026-10-14",
+    "what": "T-434: Coin Metrics built as DefiLlama’s backup for crypto closing prices (D108, #349). Progress recorded; the item stays open for the audit confirmation and the owner’s call on the eleven coins still without a second source.",
+    "evidence": [
+     "PR #349",
+     "docs/decisions/2026-10-14-owner-decisions.md"
     ]
    }
   ]
