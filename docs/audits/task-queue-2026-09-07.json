@@ -60,9 +60,9 @@
  },
  "counts": {
   "total_verified": 398,
-  "outstanding": 373,
+  "outstanding": 374,
   "by_status": {
-   "closed": 211,
+   "closed": 212,
    "parked": 135,
    "open": 20,
    "blocked": 6,
@@ -70,15 +70,15 @@
   },
   "by_owner_role": {
    "remote-dev": 92,
-   "either": 47,
+   "either": 48,
    "owner-decision": 148,
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 211,
+  "closed_by_annotation": 212,
   "counts_recomputed_on": "2026-10-13",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
-  "total": 373
+  "total": 374
  },
  "blocking_decisions": [
   {
@@ -13697,7 +13697,7 @@
   {
    "id": "T-423",
    "title": "Move the backup crypto price feeds from Binance.US and Binance to CoinGecko",
-   "status": "open",
+   "status": "closed",
    "confidence": "medium",
    "owner_role": "remote-dev",
    "category": "feature",
@@ -13734,6 +13734,21 @@
    "progress": {
     "noted_on": "2026-10-12",
     "note": "2026-10-12, D102 (owner: “1. a 2. yes”). Measured first, as the next action asked: CoinGecko’s free service refuses history older than 365 days (“Public API users are limited to querying historical data within the past 365 days”), sends 4-day candles for any window over 30 days (92 for a year of Bitcoin), and allows fewer than 10 calls a minute while a scanner sweep of 80 coins needs about 160. Binance.US served the charts for 47 of the 80. No exchange already read in the registry allows public display. Done on branch binance-price-fallback: /live-data/markets ladders CoinGecko → CoinMarketCap; /live-data/coin-list is market-cap order (Binance.US listings were sorted first); the Binance price provider and its connection test are gone from Integrations. Left, as a launch step: the two Binance rungs on /live-data/ohlcv, kept under D96 until a second chart source is read. Fixed with it (D102 question 2): the chart route measures its candle size from the candles (lib/utils/candleGranularity.ts) instead of typing one per range, which called CoinGecko’s 4-day candles “1D” and Binance’s 1-hour bars “30m”; the scanner, the multi-timeframe grid and the Coins screener leave out and count a coin whose candles are not the size they asked for; the technical analysis page and the agent’s price-history tool name the size; a CoinGecko refusal now carries its own message, which the shared reporter used to cut off at 180 characters of raw JSON. Later the same day (owner: “merge and go”): the terms of the five candidate chart feeds were read on the owner’s machine (docs/audits/terms-review-chart-feeds-2026-10-12.md). None permits public display on its default terms. Kraken (Global Terms, 2026-10-06): “only for your own benefit”, permission from marketdata@kraken.com; 58 of the 80 catalog coins, 720 daily candles. Coinbase (Market Data Terms, 2026-08-07): may not be used to build an application for end users, and bars any use in operating AI, which reaches the app’s agents even before launch; written consent, marketdata@coinbase.com; 44 coins. Bitstamp USA (2026-07-23): data, prices and charts may not be republished, no route named; 46 coins. Gemini (Market Data Agreement, 2025-10-12): no dissemination to any party, Redistribution Agreement via bizdev@gemini.com; 29 coins and only 364 days of daily candles. CoinPaprika: free plan personal only, redistribution on Enterprise alone. Lead outside the five, measured once and not read: DefiLlama’s coins.llama.fi daily prices (already under the llama.fi registry entry, no terms document), back to 2022 but one price a day, not candles. The owner then asked for the Kraken letter (“merge, and draft the Kraken letter”); it is drafted, not sent, at docs/licensing/kraken-enquiry-2026-10-12.md. The reading’s count of exchanges read was corrected from eight to eleven (Bitfinex, LBank and Poloniex had been read before); the conclusion is unchanged. D103 (2026-10-13), owner: “Lets use the other two options; remember anything we do pre launch is considered personal use”. Charts launch on CoinGecko candles and DefiLlama closing prices. First step done: /live-data/ohlcv serves DefiLlama’s prices only to a caller sending closes=1, marked bars: ‘close’; the Coins screener’s sweep (39 → 78 of 80 coins with daily data) and Cycle Context’s Pi Cycle send it. The 2026-10-12 note’s “back to 2022” was the window asked for, not DefiLlama’s limit: Bitcoin’s prices go back to April 2013. Launch step (a) done 2026-10-13 (owner: “move on to the technical analysis stuff”): the TA page and the coin page ask for candles first and, where they are missing or 4-day, draw DefiLlama’s closing prices as a line (hooks/useCryptoChartSeries.ts), offering only the indicators that read closes alone, flagged by a new needsRange that indicatorInputs.test.ts measures for every indicator, and withholding the signal summary, patterns, support/resistance and key levels with a notice saying so. Hyperliquid’s 3Y view, “No data available” before, now shows 98 weekly closes. Launch step (b) done 2026-10-13 (owner: “begin working on t423 using the recommended solution”): the Crypto Scanner and the TA page’s multi-timeframe grid read closing prices (closes=1) for every coin and timeframe, which DefiLlama serves at 15-minute, hourly, 4-hour, daily and weekly spacing (measured that day: every point on its grid, no padded repeats). They run only the setups and signal votes that read a close (detectSetups and computeSignalSummary with 'close'), flagged in SETUP_INPUTS and SIGNALS_FROM_CLOSES and measured by setupInputs.test.ts and signalSummaryInputs.test.ts; the scanner names the setups it leaves out. closesReaders.test.ts now fails on any file asking for closes that it does not list. In the browser all three scanner timeframes swept the 80 coins with at most 2 unavailable and none left out for wrong-size prices, and Hyperliquid’s grid read all five timeframes. Found on the way and fixed: /live-data/ohlcv upper-cased range=15m to 15M, matched no range and served a year of daily data, so the grid’s 15m row had been reading daily prices under a 15m label for every caller. Launch steps (c) and (d) done 2026-10-13 (owner: “Lets finish the remaining two items”). (c): the assistant’s get_price_history asks for candles and, only when that request fails (past 365 days on CoinGecko’s free service, or a refusal), reads DefiLlama’s closing prices; the summary then reports highestClose and lowestClose instead of periodHigh and periodLow, says the prices are closes, and carries why candles were not used (priceHistoryTool.test.ts). It keeps CoinGecko’s 4-day candles where they come, since their highs and lows are the true extremes. (d): the Binance and Binance.US rungs are gone from /live-data/ohlcv; candles come from CoinGecko alone, and an old source=binance is served like auto. ohlcvRoute.test.ts now fails if the chart route calls a Binance host for any range. The ratings validation script reads DefiLlama’s daily closes in place of Binance.US’s; the live-data audit checks span rather than candle count (CoinGecko’s year is 92 four-day candles), charges ohlcv two CoinGecko calls, reports MAX candles as key-gated and checks MAX closes from DefiLlama. closesReaders.test.ts now also counts source=defillama as asking for closes."
+   },
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-10-13",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "All four launch steps under D103 done and merged on 2026-10-13: (a) the TA page and coin page charts draw DefiLlama closing prices where candles fail or come 4-day (#328); (b) the Crypto Scanner and the multi-timeframe grid read closing prices (#330); (c) the assistant’s get_price_history reads closes past 365 days (#332); (d) the Binance and Binance.US rungs are gone from /live-data/ohlcv (#332). The price backup and the coin list’s order had come off Binance on 2026-10-12. Nothing in the app fetches a Binance host; ohlcvRoute.test.ts fails if the chart route calls one, for any range or a stale source=binance. Before closing, the owner was shown what launch looks like as a result: 4-day candles past 30 days, closing-price charts with fewer indicators where candles fail, the scanner and grid on closes-only setups, and DefiLlama as the one source of history past 365 days.",
+    "approved_by": "owner, 2026-10-13: \"close T-423 and file the DefiLlama item\"",
+    "evidence": [
+     "frontend/src/lib/server/__tests__/ohlcvRoute.test.ts",
+     "frontend/src/lib/agents/__tests__/priceHistoryTool.test.ts",
+     "frontend/src/lib/technicals/__tests__/closesReaders.test.ts"
+    ],
+    "known_gap": "DefiLlama is now the only source of crypto price history older than 365 days, against D21: filed as T-434. The hidden crypto Backtest tab’s range=BT candles have no free source past 365 days (BacktestPanel.tsx says what restoring it needs).",
+    "deliberately_not_done": "The Kraken letter stays drafted and unsent (docs/licensing/kraken-enquiry-2026-10-12.md); nothing waited on it."
    }
   },
   {
@@ -14141,6 +14156,44 @@
      "frontend/src/lib/server/__tests__/sourceTerms.test.ts",
      "docs/decisions/2026-10-13-owner-decisions.md"
     ]
+   }
+  },
+  {
+   "id": "T-434",
+   "title": "Give crypto price history older than 365 days a second source: DefiLlama alone carries it (D21)",
+   "status": "open",
+   "confidence": "high",
+   "owner_role": "either",
+   "category": "feature",
+   "effort": "medium",
+   "blocking_decision": null,
+   "related_ids": [
+    "T-423",
+    "T-425"
+   ],
+   "summary": "Since D103 (2026-10-13) DefiLlama’s coins.llama.fi is the only source of crypto price history older than 365 days: CoinGecko’s free service refuses anything older. /live-data/ohlcv sends it every request carrying closes=1 first: the TA page and coin page charts where candles fail or come 4-day (always on 3Y and MAX), the Crypto Scanner and the multi-timeframe grid for every coin and timeframe, the Coins screener’s sweep, Cycle Context’s Pi Cycle and the assistant’s get_price_history past 365 days; the ratings validation script reads it with source=defillama and no fallback, by design. If DefiLlama were dropped, ranges within 365 days would fall through to CoinGecko’s candles (route.ts:315), but the sweeps would then meet CoinGecko’s limit of fewer than 10 calls a minute; ranges past 365 days would have no source at all. That is the state D21 rules out: dropping one vendor must degrade a surface, not remove it. DefiLlama publishes no terms document (the llama.fi entry stays seeded), and its enquiry is drafted under T-425, unsent. Measured from dataSources.ts the same day, DefiLlama is also the only provider for the DeFi TVL panel (api.llama.fi) and the reserve monitor’s stablecoin supply (stablecoins.llama.fi); recorded here, outside this item unless the owner widens it. Before launch all of it is personal use (D96), and buying a plan is not in scope (D21).",
+   "next_action": "(1) List free sources (keyless, or a free key) of daily crypto closes older than 365 days, and read each candidate’s terms on the owner’s machine before measuring anything. (2) Measure the ones that pass against the coin catalog (COINGECKO_IDS): how many coins, how far back, what spacing, what rate limit. (3) If one fits, add it as a rung after DefiLlama for closes past 365 days in /live-data/ohlcv, held by ohlcvRoute.test.ts, so dropping DefiLlama thins long-range charts instead of emptying them. (4) Confirm with a fresh `npm run audit:json` and `npx tsx scripts/gen-coverage-matrix.ts` that DefiLlama no longer strands ohlcv. If nothing free fits, record that and leave this open under D21 rather than buying a plan.",
+   "sources": [
+    {
+     "file": "frontend/src/app/live-data/ohlcv/route.ts",
+     "lines": "307-319",
+     "quote": "if (source === 'defillama' || (source !== 'coingecko' && closesWanted)) { … // Falls through to CoinGecko"
+    },
+    {
+     "file": "frontend/src/lib/server/sourceTerms.ts",
+     "lines": "llama.fi entry",
+     "quote": "with Binance gone it is the only source of crypto price history older than 365 days on the free tier. Charts launch on it. Still no document to read."
+    },
+    {
+     "file": "frontend/src/lib/technicals/__tests__/closesReaders.test.ts",
+     "lines": "5",
+     "quote": "Who may ask /live-data/ohlcv for closing prices (T-423, D103)."
+    }
+   ],
+   "opened": {
+    "on": "2026-10-13",
+    "by": "owner request, filed by the session",
+    "why": "Owner, 2026-10-13: “close T-423 and file the DefiLlama item”. Raised while confirming T-423’s closure, as the one dependency that item left behind."
    }
   }
  ],
@@ -39876,6 +39929,21 @@
     "evidence": [
      "frontend/src/lib/server/__tests__/dataSourcesDrift.test.ts",
      "docs/decisions/2026-10-13-owner-decisions.md"
+    ]
+   },
+   {
+    "on": "2026-10-13",
+    "what": "T-423 closed at the owner’s word: all four D103 launch steps done (#328, #330, #332); nothing in the app fetches a Binance host.",
+    "evidence": [
+     "frontend/src/lib/server/__tests__/ohlcvRoute.test.ts"
+    ]
+   },
+   {
+    "on": "2026-10-13",
+    "what": "T-434 opened at the owner’s request: DefiLlama is the only source of crypto price history older than 365 days, which D21 rules out.",
+    "evidence": [
+     "frontend/src/app/live-data/ohlcv/route.ts",
+     "frontend/src/lib/server/sourceTerms.ts"
     ]
    }
   ]
