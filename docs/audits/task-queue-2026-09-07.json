@@ -6690,17 +6690,27 @@
    "blocking_decision": null,
    "related_ids": [
     "T1",
-    "T10"
+    "T10",
+    "T-423"
    ],
-   "summary": "Against Binance.US; owner network.",
-   "next_action": "On the owner's machine with `npm run dev`, open /technical-analysis for BTC/ETH/SOL on 1H/4H/1D and compare RSI-14, MACD, SMA-50/200 against TradingView's BINANCEUS feed; record results in docs/assessments/T10-crypto-ta-audit.md.",
+   "summary": "A check of the crypto TA page’s indicator maths against TradingView, on the owner’s network. Since T-423 (2026-10-13) the page draws CoinGecko’s candles and, where those are missing or 4-day, DefiLlama’s daily closes (Coin Metrics as the backup, D108); Binance.US is no longer a source. Measured for BTC on 2026-10-14: the 1H range is 48 thirty-minute CoinGecko candles, the 4H range 42 four-hour CoinGecko candles, and the 1Y range 365 DefiLlama daily closes (CoinGecko’s own answer there is 4-day candles, which the page replaces). So SMA-50 and SMA-200 can be compared only on 1Y; the two short ranges carry RSI-14 and MACD.",
+   "next_action": "On the owner’s machine with `npm run dev`, open /technical-analysis for BTC, ETH and SOL on the 1H, 4H and 1Y ranges, and note the candle size and source each one names. Compare RSI-14 and MACD (12, 26, 9) on all three ranges, and SMA-50 and SMA-200 on 1Y, against TradingView at the same candle size on an aggregated feed rather than one exchange (for example CRYPTO:BTCUSD), since CoinGecko’s and DefiLlama’s prices are aggregates too. Expect small gaps: the feeds differ, and DefiLlama’s daily prices fall a day apart counting back from the request time, not at midnight UTC. Record each gap rather than passing or failing on an exact match; a large gap, or a crossover on one side only, is a finding. Record results in docs/assessments/T10-crypto-ta-audit.md.",
    "sources": [
     {
      "file": "docs/assessments/T10-crypto-ta-audit.md",
      "lines": "9-14, 82-86",
      "quote": "Live TradingView cross-check on 2–3 coins across several indicators, comparing against **Binance.US** (or expecting legitimate venue divergence)."
     }
-   ]
+   ],
+   "reworded": {
+    "on": "2026-10-14",
+    "by": "owner request (“reword them”), applied by the session",
+    "why": "The item compared the TA page against TradingView’s BINANCEUS feed, but the page has not read Binance.US since T-423 (2026-10-13), so the comparison would have set two different price feeds side by side.",
+    "was": {
+     "summary": "Against Binance.US; owner network.",
+     "next_action": "On the owner's machine with `npm run dev`, open /technical-analysis for BTC/ETH/SOL on 1H/4H/1D and compare RSI-14, MACD, SMA-50/200 against TradingView's BINANCEUS feed; record results in docs/assessments/T10-crypto-ta-audit.md."
+    }
+   }
   },
   {
    "id": "T-271",
@@ -13815,8 +13825,8 @@
     "T-314",
     "T-423"
    ],
-   "summary": "The Vendor Pass (30 Sep) drafted the enquiries, signed with the owner's name: DefiLlama now (its terms entry has no document to read), and FMP, CoinDesk, Investing.com and Tiingo near build completion. Twelve Data and Dow Jones are on hold; Finnhub and Binance.US are suggested drops, and trimming the 23 Sep list needs the owner's OK. A reply is evidence, not a licence.",
-   "next_action": "Owner: send the DefiLlama enquiry from the Vendor Pass; decide whether to drop Finnhub and Binance.US from the list; send the other four near build completion. Record each reply in docs/licensing/ and on the item it settles (T-154 for FMP, T-407 for CoinDesk and Investing.com).",
+   "summary": "The Vendor Pass (30 Sep) drafted the enquiries, signed with the owner’s name: DefiLlama now (its terms entry has no document to read), and FMP, CoinDesk, Investing.com and Tiingo near build completion. Twelve Data and Dow Jones are on hold. Finnhub is a suggested drop, and trimming the 23 Sep list needs the owner’s OK. Binance.US has left the list: nothing in the app has fetched it since 2026-10-13 (T-423, D102), so there is nothing to ask it. A reply is evidence, not a licence.",
+   "next_action": "Owner: send the DefiLlama enquiry from the Vendor Pass; decide whether to drop Finnhub from the list; send the other four near build completion. Record each reply in docs/licensing/ and on the item it settles (T-154 for FMP, T-407 for CoinDesk and Investing.com).",
    "sources": [
     {
      "file": "docs/decisions/2026-10-07-owner-decisions.md",
@@ -13832,6 +13842,15 @@
    "progress": {
     "noted_on": "2026-10-09",
     "note": "2026-10-09: a further enquiry joins this list: Marketaux (docs/licensing/marketaux-enquiry-2026-10-07.md, drafted 2026-10-07 for T-430), asking it to confirm its 'automated or non-human means' clause does not cover its own API and what approval a public app needs. Under D96 it is a launch step, so it can go with the others near build completion."
+   },
+   "reworded": {
+    "on": "2026-10-14",
+    "by": "owner request (“reword them”), applied by the session",
+    "why": "It still asked the owner whether to drop Binance.US from the enquiry list. Nothing in the app has fetched Binance.US since 2026-10-13 (T-423, D102), so that question is moot; Finnhub’s stays.",
+    "was": {
+     "summary": "The Vendor Pass (30 Sep) drafted the enquiries, signed with the owner's name: DefiLlama now (its terms entry has no document to read), and FMP, CoinDesk, Investing.com and Tiingo near build completion. Twelve Data and Dow Jones are on hold; Finnhub and Binance.US are suggested drops, and trimming the 23 Sep list needs the owner's OK. A reply is evidence, not a licence.",
+     "next_action": "Owner: send the DefiLlama enquiry from the Vendor Pass; decide whether to drop Finnhub and Binance.US from the list; send the other four near build completion. Record each reply in docs/licensing/ and on the item it settles (T-154 for FMP, T-407 for CoinDesk and Investing.com)."
+    }
    }
   },
   {
@@ -40163,6 +40182,14 @@
     "evidence": [
      "PR #349",
      "docs/decisions/2026-10-14-owner-decisions.md"
+    ]
+   },
+   {
+    "on": "2026-10-14",
+    "what": "T-266 and T-425 reworded at the owner’s request: both described Binance.US, which T-423 removed from the app on 2026-10-13. T-266 now compares the TA page against an aggregated TradingView feed at the candle sizes the page measures; T-425 drops the moot Binance.US question. Old text kept in each item’s `reworded` block. Statuses unchanged.",
+    "evidence": [
+     "frontend/src/app/live-data/ohlcv/route.ts",
+     "frontend/src/hooks/useCryptoChartSeries.ts"
     ]
    }
   ]
