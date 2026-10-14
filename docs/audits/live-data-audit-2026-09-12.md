@@ -6,7 +6,7 @@ this a comparison rather than two anecdotes.
 
 | | VPN run | Residential run |
 |---|---|---|
-| Public IP | 64.145.93.77 | 76.39.172.140 |
+| Connection | VPN exit | home connection |
 | AS | AS22781 Strong Technology (Netprotect) | AS11426 Charter / Spectrum |
 | `proxy` / `hosting` | **true / true** | false / false |
 | Started | 18:59 | 19:05 |
@@ -14,6 +14,9 @@ this a comparison rather than two anecdotes.
 | **FALLBACK** | 9 | 9 |
 | **FAIL** | **0** | **1** |
 | Wall time, 67 shared checks | 288.2s | **112.7s** |
+
+_The two public IP addresses this table first gave were removed on 2026-10-14 at the owner's
+request; the network (AS) row carries the comparison. Git history keeps the earlier text._
 
 ## The headline: 67 checks, exactly one difference
 
