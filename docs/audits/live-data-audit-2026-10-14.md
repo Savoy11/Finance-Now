@@ -69,18 +69,19 @@ provoked. The Wallets page is hidden from the rollout, so nothing a user sees de
    timeout in each audit run, then 502 after 8.2s in the probe and 502 after 5.5s when called
    directly (`lcd.injective.network/cosmos/mint/v1beta1/inflation`). It feeds `native_inj`. A 502
    is the server's own error and may pass, so it should be re-checked before the rung is dropped.
-3. **Polygon's gas price is not live, because the gas ladder names the wrong host.**
+3. **Polygon's gas price was not live: neither name on its gas ladder answered from this IP.**
    `network-fees` reported 4 live chains where CLAUDE.md documents 5; Polygon read `estimate`.
-   - `lib/data/networkFees.ts` tries `polygon-bor-rpc.publicnode.com`, then `polygon.publicnode.com`.
+   - `lib/data/networkFees.ts` tried `polygon-bor-rpc.publicnode.com`, then `polygon.publicnode.com`.
    - Both resolve to the same Cloudflare addresses as `ethereum.publicnode.com`, and accept TCP on
      443. **Both fail the TLS handshake** (`SEC_E_INVALID_TOKEN`), while the ETH name answers over
-     the same addresses.
+     the same addresses. So do `ethereum-rpc` and `bsc-rpc`; all three chains' short names answer.
    - **`polygon-bor.publicnode.com` answers `eth_gasPrice` from this IP.** It is the host the
      wallet route uses, and the `wallet eth (polygon)` check passed in both runs.
-   - So the second rung is a name that does not serve Polygon, and the first is refused from this
-     IP, the pattern recorded on 2026-09-10. Replacing `polygon.publicnode.com` with
-     `polygon-bor.publicnode.com` should make Polygon live again.
-   - First read as an IP refusal on both names; the wallet route's hostname showed otherwise.
+   - `polygon.publicnode.com` was never shown serving Polygon, but from one connection its failure
+     cannot be told apart from the refused `-rpc` names. **This record first said it "does not
+     serve Polygon", which the evidence does not show**; corrected the same day.
+   - **Fixed the same day (#343):** the ladder is now `polygon-bor.publicnode.com`, then the `-rpc`
+     name. `npm run gas-probe` read 276 gwei from the first rung, and `network-fees` reported 5 live.
 4. **The crypto Social page is empty**: 0 signals. Reddit is withheld by its robots gate (D58), and
    neither LunarCrush nor Santiment has a key, so every source the route has is withheld. Equity
    Stock Social has StockTwits (30 signals) and is not affected.
@@ -136,7 +137,8 @@ Some of each is first-compile time in the dev server.
 - **Needs the owner:**
   - a CoinGecko Demo key (T-105);
   - Stride's rung, dropped or re-pointed, before 2026-10-22;
-  - Injective re-checked;
-  - the one-line Polygon hostname fix.
+  - Injective re-checked.
+
+  The Polygon ladder was fixed the same day (#343).
 - **Does not:** close T-001, T-129 or T-130. Those need the agent-output half
   (`npm run agent-eval -- --run`), which this harness does not measure.

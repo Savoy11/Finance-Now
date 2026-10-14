@@ -183,8 +183,14 @@ export const EVM_LIVE_GAS: Partial<Record<NetworkKey, EvmLiveGas>> = {
     rpcUrls: ['https://bsc-rpc.publicnode.com', 'https://bsc.publicnode.com'],
     gasLimit: EVM_TOKEN_TRANSFER_GAS,
   },
+  // polygon-bor.publicnode.com, the wallet route's Polygon host, answered from both
+  // egresses on 2026-09-12 and from the residential IP on 2026-10-14. It replaced
+  // polygon.publicnode.com, which no run ever showed serving Polygon: on 2026-10-14 it
+  // failed the TLS handshake exactly as the -rpc name did, and with both down Polygon's
+  // fee fell to the static estimate (docs/audits/live-data-audit-2026-10-14.md).
+  // Short name first, as on the wallet route: it is the one measured on both egresses.
   polygon: {
-    rpcUrls: ['https://polygon-bor-rpc.publicnode.com', 'https://polygon.publicnode.com'],
+    rpcUrls: ['https://polygon-bor.publicnode.com', 'https://polygon-bor-rpc.publicnode.com'],
     gasLimit: EVM_TOKEN_TRANSFER_GAS,
   },
   avalanche: {
