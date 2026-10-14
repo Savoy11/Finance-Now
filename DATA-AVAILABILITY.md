@@ -489,8 +489,8 @@ looked convincing:
 3. ~~"A blackholed route."~~ No — see (1). Packets arrive.
 
 **The actual cause: all traffic was egressing through a VPN.** The active adapter was
-`bdvpnservice_2` (Bitdefender, WireGuard) and the egress IP was `108.171.102.153` —
-Strong Technology / NetProtect, AS62651, which IP intelligence flags `proxy: true`.
+`bdvpnservice_2` (Bitdefender, WireGuard), egressing from Strong Technology /
+NetProtect, AS62651, which IP intelligence flags `proxy: true`.
 mempool.space answers ICMP from that address but **silently drops TCP on both 80 and
 443**, the standard signature of a host blocking VPN/proxy ranges. Bitcoin
 infrastructure does this aggressively because of scraping abuse.
@@ -499,12 +499,15 @@ With the VPN off, the same checks pass immediately:
 
 | | VPN on | VPN off |
 |---|---|---|
-| Egress IP | `108.171.102.153` (`proxy: true`) | `76.39.172.140` (Spectrum, `proxy: false`) |
+| Egress | NetProtect VPN exit, AS62651 (`proxy: true`) | Spectrum residential, AS11426 (`proxy: false`) |
 | Apparent location | Colorado | North Carolina (the real one) |
 | mempool.space `:80` / `:443` | both dropped | **both connect** |
 | `/api/v1/fees/recommended` | 20s timeout | **HTTP 200 in 0.40s** |
 | `btcFeeSource` | `estimate` | **`live`** |
 | `network-fees` check | 🟡 FALLBACK, **10,936ms** | 🟢 **REAL, 129ms** |
+
+_The egress IP addresses this section first gave were removed on 2026-10-14 at the owner's
+request; the network names carry the comparison._
 
 ⚠ **THE BASELINE CAVEAT THIS EXPOSES.** This document tells you to trust an
 owner-machine run because results are IP-dependent. That is right, and it is not
