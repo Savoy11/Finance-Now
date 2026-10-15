@@ -127,6 +127,20 @@ Not touched, and why: `fundFacts.generated.json` records the month its script ra
 than the period its data covers. Nothing in the app reads the file (T-392, closed under D88), so the
 date harms nothing.
 
+## Applied the same day (D114–D118)
+
+The owner answered questions 1, 2, 4 and 5 the same evening
+(`docs/decisions/2026-10-14-owner-decisions.md`). All 101 figures were applied, each with its
+period end and accession, and the four fair-value rows were marked (D114). The eleven multi-class
+mutual funds took the whole fund (D115), and OILK's launch year became 2016 (D116).
+
+The single date was split (D117). The expense ratios have their own verified date, 2026-09-26.
+The approximate figures keep a compile date, 2026-07-20, which still closes on 2026-11-18.
+
+Dating the fee clock turned up six funds whose fees had never been checked against a filing. Five
+were wrong and were corrected (D118). Questions 3 and 6, the hand pass and a repeatable check, are
+still open.
+
 ## Per-row tables
 
 Generated from the comparison's output, worst first. "Catalog ÷ SEC" below 1 means the catalog

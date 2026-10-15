@@ -16,7 +16,8 @@ import { PriceChartCard, FiftyTwoWeekBar } from '@/components/markets/PriceChart
 import { MarketNewsList } from '@/components/markets/MarketNewsList'
 import {
   computeFeeDrag, fundSalesCharge, FUND_CATEGORY_INFO, FUND_RISK_INFO, FUND_STRATEGY_INFO,
-  fundRiskLevel, fundStrategy, fundTradingRestriction, getFund, getFundDataProvenance,
+  fundAssetsFact, fundRiskLevel, fundStrategy, fundTradingRestriction, getFund,
+  getFundFeeProvenance, getFundFiguresProvenance,
 } from '@/lib/data/fundCatalog'
 import type { SalesCharge } from '@/lib/data/fundCatalog'
 import { TaxEquivalentYieldCard } from '@/components/markets/TaxEquivalentYieldCard'
@@ -221,7 +222,10 @@ function FundDetailInner() {
 
   const name = entry?.name ?? uniEntry?.name ?? symbol
   const type = entry?.type ?? uniEntry?.type ?? 'etf'
-  const fundProvenance = getFundDataProvenance()
+  // Two dates since D117: the expense ratio is checked against filings, the other
+  // figures are approximate.
+  const feeProvenance = getFundFeeProvenance()
+  const figuresProvenance = getFundFiguresProvenance()
   const quote = data?.quotes?.[symbol]
   const live = !!quote && data?.source !== 'reference' && !quote.reference
   const price = quote?.price ?? entry?.referencePrice ?? null
@@ -244,9 +248,8 @@ function FundDetailInner() {
       explain: 'The industries within that sector where the fund’s holdings actually sit — narrower focus means the fund lives and dies with this slice of the market.' }] : []),
     { label: 'Expense Ratio', value: `${entry.expenseRatioPct}%`,
       explain: 'The annual fee skimmed from returns, visible or not. The single most reliable predictor of long-run relative performance — compounding works against you here. The Fee Drag Analyzer below shows the dollar cost.' },
-    { label: 'AUM', value: formatCompact(entry.aumB * 1e9),
-      explain: 'Total assets under management. Very small funds risk closure and wide spreads; very large active funds can struggle to trade without moving prices.' },
-    { label: 'Distribution Yield', value: entry.yieldPct != null ? `${entry.yieldPct.toFixed(2)}%` : '—',
+    fundAssetsFact(entry, formatCompact),
+    { label: 'Distribution Yield', value: entry.yieldPct != null ? `≈ ${entry.yieldPct.toFixed(2)}%` : '—',
       explain: 'Income (dividends and interest) paid out over the past year as a percent of the fund’s price — the cash-flow component of your return.' },
     { label: 'Inception', value: String(entry.inceptionYear),
       explain: 'Launch year. A longer track record shows how the fund behaved across full market cycles, not just the recent regime.' },
@@ -357,6 +360,20 @@ function FundDetailInner() {
                   ))}
                 </dl>
               </div>
+              {/* The facts above other than the expense ratio. A figure with a date
+                  comes from that filing; the rest are approximate (D117). Always
+                  visible, for the reason given at the fee notice below. */}
+              <ProvenanceNotice
+                label="Approximate figures"
+                staleLabel="Approximate figures may be out of date"
+                confidence={figuresProvenance.confidence}
+                stale={figuresProvenance.stale}
+              >
+                Assets shown with a date are the fund&rsquo;s SEC filing for that date. Yield, the
+                tracked index and any figure marked &asymp; are approximate: {figuresProvenance.source},
+                the oldest on {figuresProvenance.compiledOn} ({figuresProvenance.ageDays}d ago). Check the
+                issuer&rsquo;s fact sheet for current figures.
+              </ProvenanceNotice>
               {/* What replaces the switched-off Risk Profile label (D92, T-420):
                   facts about how the fund is built, from the catalog's own
                   fields. Shown in full, not behind a hover, since they are the
@@ -383,15 +400,15 @@ function FundDetailInner() {
                   notice that only appears past a threshold teaches readers to
                   treat its absence as "live" (W4-C7). */}
               <ProvenanceNotice
-                label="Fund facts compiled by hand"
-                staleLabel="Fund facts may be out of date"
-                confidence={fundProvenance.confidence}
-                stale={fundProvenance.stale}
+                label="Expense ratio checked against SEC filings"
+                staleLabel="Expense ratio may be out of date"
+                confidence={feeProvenance.confidence}
+                stale={feeProvenance.stale}
               >
-                {fundProvenance.source}, verified {fundProvenance.verifiedAt} ({fundProvenance.ageDays}d ago).
-                Expense ratio, AUM, yield and tracked index are reference snapshots — the Fee Drag
-                projection is only as current as they are. Check the issuer&rsquo;s fact sheet before
-                acting on a fee figure.
+                {feeProvenance.source}. Every fund&rsquo;s fee was checked; the oldest check was on{' '}
+                {feeProvenance.verifiedAt} ({feeProvenance.ageDays}d ago). The Fee Drag projection is
+                computed on this figure and is only as current as it is. Check the issuer&rsquo;s fact
+                sheet before acting on a fee figure.
               </ProvenanceNotice>
               <FeeDragCard expenseRatioPct={entry.expenseRatioPct} symbol={symbol} salesCharge={fundSalesCharge(entry)} website={entry.website} />
               {/* Items 11/13: municipal funds arrived with this pass, and their

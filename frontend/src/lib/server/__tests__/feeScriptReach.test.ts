@@ -61,9 +61,10 @@ describe('build-fund-fees.mjs reads across quarters and accepts candidates', () 
     expect(fees).toMatch(/const secEr = sec\.netExpenseRatio \?\? sec\.grossExpenseRatio/)
   })
 
-  it('still reports, never writes: nothing touches fundCatalog.ts or the stamp', () => {
+  it('still reports, never writes: nothing touches fundCatalog.ts or either of its dates', () => {
     expect(fees).not.toMatch(/writeFileSync\([^)]*fundCatalog/)
-    expect(fees).not.toMatch(/FUND_DATA_LAST_VERIFIED\s*=/)
+    // Since D117 the catalog has two dates; the script may set neither.
+    expect(fees).not.toMatch(/FUND_[A-Z_]+_(?:LAST_VERIFIED|COMPILED_ON)\s*=/)
   })
 })
 

@@ -21,9 +21,9 @@
 // IT REPORTS, NEVER WRITES — same split as build-fund-fees.mjs and
 // apply-fee-updates.ts. An automated fee overwrite is how a correct number lands
 // on the wrong fund, and share classes and near-identical trust names make that
-// easy. It also never touches FUND_DATA_LAST_VERIFIED: that date asserts the
-// whole table was compiled on one day, and only a human who reviewed every row
-// can move it.
+// easy. It also never touches FUND_FEES_LAST_VERIFIED (FUND_DATA_LAST_VERIFIED
+// until D117, 2026-10-14): that date asserts every row's fee was checked, and
+// only a human who reviewed every row can move it.
 //
 // ⚠ IT DOES NOT DECIDE. Different structures name the same quantity differently:
 // a '40-Act ETF states "Total Annual Fund Operating Expenses", a grantor trust
@@ -522,7 +522,7 @@ async function main() {
 
   log('')
   log('Nothing was changed. Read the filing each figure names, then edit fundCatalog.ts')
-  log('by hand. FUND_DATA_LAST_VERIFIED is NOT moved by this script.')
+  log('by hand. FUND_FEES_LAST_VERIFIED is NOT moved by this script.')
 }
 
 main().catch((err) => { console.error(err); process.exit(1) })

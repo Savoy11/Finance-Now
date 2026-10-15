@@ -3,7 +3,7 @@
 import { clsx } from 'clsx'
 import { Landmark, AlertTriangle } from 'lucide-react'
 import {
-  FUND_CATEGORY_INFO, FUND_STRATEGY_INFO, fundStrategy, fundSalesCharge, getFund,
+  FUND_CATEGORY_INFO, FUND_STRATEGY_INFO, fundAssetsFact, fundStrategy, fundSalesCharge, getFund,
   type FundEntry,
 } from '@/lib/data/fundCatalog'
 import { feeImpact, feeCostDisplay, DEFAULT_FEE_IMPACT_PARAMS, FEE_IMPACT_BENCHMARK_ER_PCT } from '@/lib/data/feeImpact'
@@ -112,7 +112,19 @@ const ROWS: Row[] = [
     },
   },
   { label: 'Yield (TTM)', cell: (f) => (f.yieldPct != null ? <span className="font-mono">{f.yieldPct}%</span> : <span className="text-text-muted">Negligible</span>) },
-  { label: 'AUM', cell: (f) => <span className="font-mono">{formatCompact(f.aumB * 1e9)}</span> },
+  {
+    label: 'Assets',
+    hint: 'A date means the figure is the fund’s SEC filing for that date; ≈ means approximate. A mutual fund’s figure is the whole fund, every share class together.',
+    cell: (f) => {
+      const assets = fundAssetsFact(f, formatCompact)
+      return (
+        <span className="inline-flex flex-col">
+          <span className="font-mono">{assets.value}</span>
+          {assets.label !== 'AUM' && <span className="text-[10px] leading-tight text-text-muted">{assets.label}</span>}
+        </span>
+      )
+    },
+  },
   {
     label: 'Inception',
     hint: 'A longer record is more history to judge, not evidence of a better fund.',

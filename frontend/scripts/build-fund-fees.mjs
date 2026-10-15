@@ -43,9 +43,10 @@
 // fund, and share classes make that easy (AGTHX, AGTFX, CGFAX… same fund,
 // different fees). Matching is on TICKER, never on a name or a number.
 //
-// It also never moves FUND_DATA_LAST_VERIFIED. That date asserts the whole
-// table was compiled on one day; only a human who reviewed every row can move
-// it. Same rule as TRANSFER_FEES_LAST_VERIFIED.
+// It also never moves FUND_FEES_LAST_VERIFIED (FUND_DATA_LAST_VERIFIED until
+// D117 split it, 2026-10-14). That date asserts every row's fee was checked, and
+// is the oldest check still standing; only a human who reviewed every row can
+// move it. Same rule as TRANSFER_FEES_LAST_VERIFIED.
 //
 // FIRST RUN: USE --inspect
 //
@@ -818,9 +819,9 @@ async function main() {
   log(`\nwrote ${path.relative(ROOT, OUT_JSON)} and ${path.relative(ROOT, OUT_CSV)}`)
   log('\nNothing was changed. Read the report, verify anything you intend to use')
   log('against the filing it names, then edit fundCatalog.ts by hand.')
-  log('FUND_DATA_LAST_VERIFIED is NOT moved by this script — that date asserts the')
-  log('whole table was compiled on one day, and only a human who reviewed every')
-  log('row can move it.')
+  log('FUND_FEES_LAST_VERIFIED is NOT moved by this script — that date asserts every')
+  log('row\'s fee was checked (the oldest check still standing), and only a human who')
+  log('reviewed every row can move it.')
 }
 
 main().catch((err) => {

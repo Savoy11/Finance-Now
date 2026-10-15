@@ -1,6 +1,6 @@
 import type Anthropic from '@anthropic-ai/sdk'
 import { EQUITY_CATALOG, SECTOR_INFO } from '@/lib/data/equityCatalog'
-import { FUND_CATALOG, FUND_CATEGORY_INFO } from '@/lib/data/fundCatalog'
+import { FUND_CATALOG, FUND_CATEGORY_INFO, fundAssetsFact } from '@/lib/data/fundCatalog'
 import { COMMODITY_CATALOG, COMMODITY_CATEGORY_INFO } from '@/lib/data/commodityCatalog'
 import { CURRENCY_CATALOG, CURRENCY_CATEGORY_INFO } from '@/lib/data/currencyCatalog'
 import { RATES_CATALOG, RATES_CATEGORY_INFO } from '@/lib/data/ratesCatalog'
@@ -691,7 +691,10 @@ async function execute(
             category: f.focusSector
               ? `${FUND_CATEGORY_INFO[f.category].label} · ${SECTOR_INFO[f.focusSector].label}${f.focusIndustry ? ` (${f.focusIndustry})` : ''}`
               : FUND_CATEGORY_INFO[f.category].label,
-            expenseRatioPct: f.expenseRatioPct, aumB: f.aumB, yieldPct: f.yieldPct,
+            // aumAsOf is the SEC filing's period end; null means the figure is approximate.
+            // aumMeasure says what it counts: a mutual fund's is the whole fund (D115).
+            expenseRatioPct: f.expenseRatioPct, aumB: f.aumB, aumAsOf: f.aumAsOf ?? null,
+            aumMeasure: fundAssetsFact(f, String).label, yieldPct: f.yieldPct,
             indexTracked: f.indexTracked,
             topHoldings: f.topHoldings.slice(0, 5).map((h) => `${h.symbol} ${h.weightPct}%`),
           }))
