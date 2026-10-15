@@ -343,7 +343,11 @@ still worth keeping — they are the only **inventory** (a PR ref needs a number
 remembers), they carry provenance, and `git fetch --tags` brings them while PR refs
 are not fetched by default. It also means enabling *Automatically delete head
 branches* is safe and creates no exception to the rule: the tag only earns its keep
-for a branch that never had a PR.
+for a branch that never had a PR. **The first one is `archive/local-wip-s1` (2026-10-14,
+T-017):** a WIP commit from 2026-08-19 that lived only in the owner's local clone, which
+cloud sessions cannot see, so three ledger passes had taken it for gone. Record:
+`docs/audits/local-wip-s1-archive-2026-10-14.md`. A mirror clone outside OneDrive is now a
+second copy that is not GitHub (T-238); refresh it without `--prune`.
 
 **Do NOT enable *Automatically delete head branches* — archive instead** (owner,
 2026-09-12: *"I dont want to delete any branches, if possible can we enable an auto

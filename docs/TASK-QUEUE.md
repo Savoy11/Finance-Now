@@ -1618,6 +1618,9 @@ conditions are checkable at a glance.
   panels, tests retained in place with restore instructions at each site.
   **Subproject P3-W2-S1 is SUSPENDED** — do not work it unless the owner reopens.
   ⚠ The owner's parallel-session WIP branch `local-wip-s1` touches these files.
+  *(2026-10-14, T-017: found in the owner's local clone, one unpushed commit, and archived as
+  the tag `archive/local-wip-s1`; read it before restoring these surfaces. Record:
+  `docs/audits/local-wip-s1-archive-2026-10-14.md`.)*
 
 **Queued (not yet built):**
 

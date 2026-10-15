@@ -62,11 +62,10 @@
   "total_verified": 398,
   "outstanding": 379,
   "by_status": {
-   "closed": 217,
+   "closed": 218,
    "parked": 135,
    "open": 20,
-   "blocked": 6,
-   "unclear": 1
+   "blocked": 6
   },
   "by_owner_role": {
    "remote-dev": 93,
@@ -75,7 +74,7 @@
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 217,
+  "closed_by_annotation": 218,
   "counts_recomputed_on": "2026-10-14",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 379
@@ -7241,7 +7240,8 @@
    "effort": "small",
    "blocking_decision": null,
    "related_ids": [
-    "F2"
+    "F2",
+    "T-017"
    ],
    "summary": "GitHub is the only durable copy.",
    "next_action": "On the owner's machine, outside OneDrive: git clone --mirror https://github.com/Savoy11/Finance-Now.git; then set a monthly reminder to run git -C Finance-Now.git remote update. Optionally add a one-line dated note under step 7 of docs/audits/git-repo-audit-2026-08-23.md saying where the mirror lives.",
@@ -7251,7 +7251,16 @@
      "lines": "323-333, 158-163",
      "quote": "Once — and occasionally after — run on the local machine, somewhere outside OneDrive: … Five minutes a month buys an independent backup of the single point of storage."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-10-14",
+    "note": "Mirror made on the owner’s machine, outside OneDrive, at %USERPROFILE%\\Finance-Now.git: 134 branches, 237 tags and 355 PR refs, 12 MB, `git fsck --connectivity-only` clean, main at 94e3058. Made after archive/local-wip-s1 was pushed, so it also holds that commit (T-017). The clone sets no pruning, so `git -C Finance-Now.git remote update` never deletes a ref; step 7 of the 2026-08-23 repo audit now says where the mirror lives and not to add --prune.",
+    "remaining_work": "The monthly refresh reminder is the owner’s to set; closing the item is the owner’s call.",
+    "evidence": [
+     "docs/audits/local-wip-s1-archive-2026-10-14.md",
+     "docs/audits/git-repo-audit-2026-08-23.md"
+    ]
+   }
   },
   {
    "id": "T-371",
@@ -9827,14 +9836,16 @@
   {
    "id": "T-017",
    "title": "Reconcile the owner's local-wip-s1 WIP branch against hidden backtest files",
-   "status": "unclear",
+   "status": "closed",
    "confidence": "medium",
    "owner_role": "owner-machine",
    "category": "process",
    "effort": "small",
    "blocking_decision": null,
    "related_ids": [
-    "P3-W2-S1"
+    "P3-W2-S1",
+    "T-016",
+    "T-238"
    ],
    "summary": "The branch touches the files hidden on 2026-08-20 and is not visible in this clone; owner must land/rebase before anyone restores or edits them.",
    "next_action": "Owner confirms whether local-wip-s1 exists anywhere (a live session or any pushed ref). If it does not, propose retiring the TASK-QUEUE:1620 warning via propose -> approve -> apply; if it does, push it as an archive/* branch with a dated docs/ note before anyone restores or edits the backtest surfaces (T-016).",
@@ -9844,7 +9855,21 @@
      "lines": "1620",
      "quote": "⚠ The owner's parallel-session WIP branch `local-wip-s1` touches these files."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "unclear",
+    "closed_on": "2026-10-14",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "The branch exists. Every earlier look ran from a cloud clone, which sees only GitHub; on the owner’s machine `git branch --list` shows local-wip-s1 with one commit no remote ref holds: 75f4459 (2026-08-19, “WIP: local backtest/indicator work from a parallel session”), based on #75 and 339 commits behind main. It adds an indicator catalog with its test and a theme store, none of them on main, and edits the three technical-analysis pages and the hidden backtests page. Archived as the annotated tag archive/local-wip-s1 (the 2026-09-11 tag rule, not an archive/* branch), pushed and verified on the remote; the local branch is unchanged and nothing was merged. The TASK-QUEUE warning now points at the tag, and the dated note records it.",
+    "approved_by": "owner, 2026-10-14: “go” on archiving the branch and resolving T-017",
+    "evidence": [
+     "docs/audits/local-wip-s1-archive-2026-10-14.md",
+     "docs/TASK-QUEUE.md",
+     "CLAUDE.md"
+    ],
+    "known_gap": "Whether any of the work is wanted is not settled: it was written against a main 339 commits older, so using it is new work, a question for T-016 if backtesting reopens."
+   }
   },
   {
    "id": "T-021",
@@ -10638,7 +10663,8 @@
     "NT12",
     "P3-W2-S1",
     "S1",
-    "T12"
+    "T12",
+    "T-017"
    ],
    "summary": "Hidden 2026-08-20 ('I may revisit back testing'): /equities/backtests redirect (next.config.mjs:87-92), Portfolios Backtest tab (portfolios/page.tsx:688), crypto TA Backtest tab (technical-analysis/page.tsx:933); engines/tests retained; Sharpe decision with owner.",
    "next_action": "Nothing unless the owner reopens; the restore recipe is: delete next.config.mjs:92, re-add the nav entry in lib/modules/registry.ts, add 'backtest' back to the two tab unions and their lists, then make S1's first decision (T-018) before the equities page goes live.",
@@ -40361,6 +40387,13 @@
     "what": "T-439 closed on the owner’s approval after #354 merged. Counts recomputed.",
     "evidence": [
      "docs/audits/coverage-matrix-2026-10-14.md"
+    ]
+   },
+   {
+    "on": "2026-10-14",
+    "what": "T-017 closed on the owner’s “go”: local-wip-s1 found in the owner’s local clone and archived as the tag archive/local-wip-s1. T-238’s mirror made outside OneDrive; its monthly refresh stays the owner’s. Counts recomputed.",
+    "evidence": [
+     "docs/audits/local-wip-s1-archive-2026-10-14.md"
     ]
    }
   ]
