@@ -6973,11 +6973,13 @@
     "note": "RECONCILIATION RUN on the owner's machine over clean egress (Spectrum, proxy:false, hosting:false): `npm run fund-fees -- --inspect` then `npm run fund-fees`. Unit declared by the dataset (uom=pure, decimal). Of 126 catalog rows the quarter's Risk/Return archive matched 4 — GDX 0.51, AGG 0.03, MUB 0.05, DODGX 0.51 — and all four AGREE with the catalog to the basis point (differing: 0). 99 rows are not in this quarter's archive and 23 have no expense value in it; that is the archive's coverage, not a catalog problem, and the script's own note says one quarterly archive only covers funds that filed a prospectus that quarter. What this settles: nothing the archive could see disagrees with the catalog. What it cannot settle: the other 122 rows, and the unchecked AUM/yield/inception fields. FUND_DATA_LAST_VERIFIED (2026-07-20, 55 days from its window) is NOT moved — the 2026-09-19 note already made that the owner's judgement, and this run adds four agreeing data points to it, not a whole-table pass.",
     "evidence": [
      "frontend/fund-fee-reconcile.json (generated, untracked)",
-     "frontend/scripts/build-fund-fees.mjs"
+     "frontend/scripts/build-fund-fees.mjs",
+     "docs/audits/fund-catalog-facts-2026-10-14.md"
     ],
     "corrections": [
      "2026-09-26: THE EXPENSE-RATIO HALF IS COMPLETE — all 37 non-'40-Act rows now carry a primary-source figure. `npm run fund-prospectus-fees` resolved 30 of them (27 agree to the basis point; DBC/UDN/IBIT re-flagged and all three are already-decided non-corrections recorded in the fundCatalog banner), and the remaining SEVEN were read by hand from their filings: HACK 0.60 ✅ (Amplify ETF Trust 485BPOS 2026-01-28), BAR 0.1749% ✅ (10-K 2026-08-13, superseding the 2018 S-1 the probe refused to trust), PSLV 0.45% contractual / 0.56% MER against a catalogued 0.57 (40-F 2026-03-16 ex99-6), and CORN/WEAT/SOYB/CANE — WHERE THE CATALOG IS WRONG BY OVER TWO POINTS. Those four record 1.00, which is the management fee; the trust's 10-K (2026-03-02) states total gross expense ratios of 3.45 / 3.18 / 3.34 / 4.27% for FY2025 and each prospectus's own breakeven table implies ~3.6%. That is the USO/UNG error three times larger, and it survived because the Risk/Return dataset does not cover commodity pools while the probe could not resolve a four-fund shared registrant. Also found: the catalog now treats waivers two ways — IBIT keeps its contractual 0.25 while SIVR (0.30 of 0.45) and the three D27 rows (EMLC, BKLN, HEFA 0.35 of 0.70) all record net. Corrections and the waiver-rule question are filed as T-414; nothing was applied and the stamp did not move. Record: docs/audits/fund-fees-non-40act-2026-09-26.md. WHAT REMAINS ON THIS ITEM: the unchecked AUM / yield / inception fields across the catalog, which is the other half of its title and is untouched.",
-     "2026-09-30: the four Teucrium corrections and PSLV's 0.56 were applied under T-414 (D35, D37), and D36 settled the waiver rule — the fee paid today, with the full fee stated. T-416 carries the three readings the cloud session could not make. This item's other half, the AUM / yield / inception fields, is still untouched."
+     "2026-09-30: the four Teucrium corrections and PSLV's 0.56 were applied under T-414 (D35, D37), and D36 settled the waiver rule — the fee paid today, with the full fee stated. T-416 carries the three readings the cloud session could not make. This item's other half, the AUM / yield / inception fields, is still untouched.",
+     "2026-10-14: THE OTHER HALF, FIRST CHECK (report only, nothing applied). Assets, launch years and yields were compared with the SEC’s own data on the owner’s machine (egress: no proxy, no hosting flag). ASSETS: 101 of 140 rows checked: 71 against N-PORT 2026q3 (one-class series only, periods ending 2026-05-31 to 07-31), HACK against N-PORT by series name, and 29 trusts against their own XBRL (10-Q, 10-K, 40-F). 35 are within 15%, 41 are 15–67% apart and 25 more than 1.67× apart; of the 66 apart, 52 list less than the filing and 14 more (SOXX $14B against $47.8B filed; IBIT $80B against $43.4B held). The 2026-09-26 D27 rows read from issuer pages agree (seven of eight within 15%, BKLN 16% under), which supports the method. Not checked: 21 Vanguard ETF classes and 11 multi-class mutual funds (N-PORT gives only the whole fund), SPY and DIA (UITs), the four Teucrium funds (one registrant) and CPER (stale tag). For mutual funds `aumB` mixes whole-fund and class figures: VOO $720B + VFIAX $1,300B exceed their $1,671B fund. LAUNCH YEAR: 39 checked against PerfInceptionDate (Risk/Return 2025q3–2026q2); 38 agree, OILK is wrong (2019 listed, 2016-09-26 filed). YIELD: no SEC data set carries it; none checked. The stamp did not move. Six questions for the owner are in the note."
     ]
    }
   },
@@ -40394,6 +40396,13 @@
     "what": "T-017 closed on the owner’s “go”: local-wip-s1 found in the owner’s local clone and archived as the tag archive/local-wip-s1. T-238’s mirror made outside OneDrive; its monthly refresh stays the owner’s. Counts recomputed.",
     "evidence": [
      "docs/audits/local-wip-s1-archive-2026-10-14.md"
+    ]
+   },
+   {
+    "on": "2026-10-14",
+    "what": "T-386: first check of the catalog’s assets, launch years and yields against SEC data (N-PORT 2026q3, registrant XBRL, Risk/Return PerfInceptionDate). Report only; nothing applied; the stamp did not move.",
+    "evidence": [
+     "docs/audits/fund-catalog-facts-2026-10-14.md"
     ]
    }
   ]
