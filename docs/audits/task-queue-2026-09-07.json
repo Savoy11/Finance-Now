@@ -62,9 +62,9 @@
   "total_verified": 398,
   "outstanding": 380,
   "by_status": {
-   "closed": 219,
+   "closed": 222,
    "parked": 135,
-   "open": 20,
+   "open": 17,
    "blocked": 6
   },
   "by_owner_role": {
@@ -74,7 +74,7 @@
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 219,
+  "closed_by_annotation": 222,
   "counts_recomputed_on": "2026-10-15",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 380
@@ -5754,7 +5754,7 @@
   {
    "id": "T-105",
    "title": "Configure COINGECKO_API_KEY so builder drift pricing is not partial",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "ops-infra",
@@ -5781,6 +5781,19 @@
      "docs/decisions/2026-10-15-owner-decisions.md",
      "frontend/src/lib/api/live/coingecko.ts"
     ]
+   },
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-10-15",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "The owner created a CoinGecko Demo key and saved it in Integrations; the session never handled it. It is stored encrypted (T-437). Two routes that read only the environment variable were fixed first (#359). npm run audit at the default CoinGecko pacing (10 a minute), which the free tier had refused by the fifth request, read 77 REAL, 4 FALLBACK, 9 UNCONFIGURED and 0 FAIL, with every CoinGecko-backed check REAL. The drift monitor’s pricing route priced 20 of 20 coins live under the app’s own ids, so pricedPct is 100.",
+    "evidence": [
+     "docs/audits/live-data-audit-2026-10-15-t105.md",
+     "frontend/src/lib/api/live/coingecko.ts"
+    ],
+    "known_gap": "The Demo plan is the free tier: CoinGecko candles older than 365 days stay refused (a paid key reaches them, D21). DefiLlama and Coin Metrics closing prices cover that range (D103, D108).",
+    "approved_by": "owner, 2026-10-15: chose it among the items offered for closing"
    }
   },
   {
@@ -7265,7 +7278,7 @@
   {
    "id": "T-238",
    "title": "Keep an offline mirror clone outside OneDrive; refresh monthly",
-   "status": "open",
+   "status": "closed",
    "confidence": "medium",
    "owner_role": "owner-machine",
    "category": "ops-infra",
@@ -7297,6 +7310,19 @@
     "corrections": [
      "2026-10-15: The mirror now keeps every ref change and object (core.logAllRefUpdates=always; gc.reflogExpire, gc.reflogExpireUnreachable and gc.pruneExpire never; prune and pruneTags explicitly false), because a ref force-moved on GitHub could otherwise have taken old commits with it after git’s two-week cleanup. A Windows scheduled task, “Finance Now mirror refresh”, runs git remote update on the 1st of each month at 10:00 (at the next chance if missed) and logs each run; its test run exited 0 and brought main to d79e71b (D121). REMAINING: Nothing to do; closing the item is the owner’s call."
     ]
+   },
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-10-15",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "The mirror clone lives outside OneDrive at %USERPROFILE%\\Finance-Now.git (2026-10-14) and, since 2026-10-15, keeps every ref log and object with pruning explicitly off, so nothing deleted or force-moved on GitHub can take history with it (D121). A Windows scheduled task, “Finance Now mirror refresh”, refreshes it on the 1st of each month at 10:00 (at the next chance if missed) and logs each run; its test run exited 0 and brought main to d79e71b.",
+    "evidence": [
+     "docs/audits/local-wip-s1-archive-2026-10-14.md",
+     "docs/audits/git-repo-audit-2026-08-23.md",
+     "docs/decisions/2026-10-15-owner-decisions.md"
+    ],
+    "approved_by": "owner, 2026-10-15: chose it among the items offered for closing"
    }
   },
   {
@@ -14520,14 +14546,15 @@
      "frontend/src/lib/server/providerConfigCodec.ts"
     ],
     "corrections": [
-     "2026-10-15: BUILT. lib/server/secretBox.ts seals the whole of .provider-config.json with AES-256-GCM under FN_SECRETS_KEY (32 bytes, base64); providerConfigCodec.ts decides plain, sealed, unknown scheme or corrupt; providers.ts rewrites a plain file sealed the first time it reads it with the key set, and writes atomically. A file the store cannot read (sealed with no key or the wrong one, a malformed key, corrupt JSON) is never treated as empty and never written over: data routes fall back to environment keys, writes are declined and logged once, the Integrations page shows the reason and its save answers 409. This also ends a pre-existing loss: a corrupt file used to read as {} and the next save erased every key. Scripts read through scripts/lib/providerConfigFile.mjs, held to the app’s format by a test that seals with one and opens with the other. 23 tests in providerKeyStore.test.ts, on an in-memory file system; five guards driven red by mutations. REMAINING: the owner sets FN_SECRETS_KEY as a Windows user variable and restarts the server, so the file is sealed; then rotates the saved keys, since OneDrive’s version history keeps the old plain copies."
+     "2026-10-15: BUILT. lib/server/secretBox.ts seals the whole of .provider-config.json with AES-256-GCM under FN_SECRETS_KEY (32 bytes, base64); providerConfigCodec.ts decides plain, sealed, unknown scheme or corrupt; providers.ts rewrites a plain file sealed the first time it reads it with the key set, and writes atomically. A file the store cannot read (sealed with no key or the wrong one, a malformed key, corrupt JSON) is never treated as empty and never written over: data routes fall back to environment keys, writes are declined and logged once, the Integrations page shows the reason and its save answers 409. This also ends a pre-existing loss: a corrupt file used to read as {} and the next save erased every key. Scripts read through scripts/lib/providerConfigFile.mjs, held to the app’s format by a test that seals with one and opens with the other. 23 tests in providerKeyStore.test.ts, on an in-memory file system; five guards driven red by mutations. REMAINING: the owner sets FN_SECRETS_KEY as a Windows user variable and restarts the server, so the file is sealed; then rotates the saved keys, since OneDrive’s version history keeps the old plain copies.",
+     "2026-10-15 (later): KEY SET, STORE SEALED. At the owner’s request the session created FN_SECRETS_KEY as a Windows user variable (32 random bytes, never printed) and restarted the dev server with it; .provider-config.json was rewritten as the encrypted envelope, and all 10 saved keys read back before and after (11 once the CoinGecko key was added). SHELVED BY THE OWNER, for now: a backup copy of FN_SECRETS_KEY (no password manager to hand) and rotating the saved provider keys whose plain copies remain in OneDrive’s version history. Owner: “lets shelve this for now and revisit this later; Im ok with the slight security risk.” REMAINING: those two, when the owner revisits them; the item stays open for them."
     ]
    }
   },
   {
    "id": "T-438",
    "title": "Decide how to tell which state’s breach rules apply: record residence, or apply the strictest rule",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "blocking_decision": null,
    "opened": {
@@ -14564,6 +14591,18 @@
     "evidence": [
      "docs/decisions/2026-10-15-owner-decisions.md"
     ]
+   },
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-10-15",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "Decided (D125): the app records no state of residence, and every breach notice follows the strictest applicable rule. Collecting less personal data is itself the more protective choice.",
+    "evidence": [
+     "docs/decisions/2026-10-15-owner-decisions.md"
+    ],
+    "known_gap": "Two follow-throughs outside the repository: one sentence saying so in the draft breach plan (the owner’s document in the Finance Now Ledger page’s file library), and counsel’s confirmation in the legal review (D4), which can overturn it.",
+    "approved_by": "owner, 2026-10-15: chose it among the items offered for closing"
    }
   },
   {
@@ -40535,6 +40574,14 @@
     "what": "T-437 built: provider keys encrypted at rest under FN_SECRETS_KEY; an unreadable key store is never written over. Open until the owner sets the key and rotates.",
     "evidence": [
      "frontend/src/lib/server/secretBox.ts"
+    ]
+   },
+   {
+    "on": "2026-10-15",
+    "what": "T-105, T-238 and T-438 closed on the owner’s approval: the CoinGecko key verified by audit (0 FAIL at the default pace, pricedPct 100), the mirror keeping everything on a monthly schedule, and the breach-rules question decided (D125). T-437: key set and store sealed; backup and rotation shelved by the owner. Counts recomputed.",
+    "evidence": [
+     "docs/audits/live-data-audit-2026-10-15-t105.md",
+     "docs/decisions/2026-10-15-owner-decisions.md"
     ]
    }
   ]
