@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { coingeckoBase } from '@/lib/api/live/coingecko'
+import { coingeckoBase, coingeckoHeaders } from '@/lib/api/live/coingecko'
 import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 
 export const dynamic = 'force-dynamic'
@@ -97,12 +97,10 @@ function computeSignal(coin: {
 
 export async function GET() {
   const cgBase = coingeckoBase()
-  const cgKey  = process.env.COINGECKO_API_KEY && process.env.COINGECKO_API_KEY !== 'your-coingecko-api-key'
-    ? process.env.COINGECKO_API_KEY : undefined
-
   const ids = WATCH_COINS.map(c => c.cgId).join(',')
-  const headers: Record<string, string> = { Accept: 'application/json' }
-  if (cgKey) headers['x-cg-demo-api-key'] = cgKey
+  // The shared resolver, so a key saved in Integrations reaches this route too.
+  // It read only COINGECKO_API_KEY until 2026-10-15 (T-105).
+  const headers = coingeckoHeaders()
 
   let cgData: Record<string, {
     current_price: number

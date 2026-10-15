@@ -75,3 +75,29 @@ describe('coingeckoHeaders', () => {
     expect(coingeckoHeaders()['x-cg-demo-api-key']).toBeUndefined()
   })
 })
+
+// T-105 (2026-10-15): /live-data/chart built its own header from COINGECKO_API_KEY alone,
+// so a key saved in Integrations never reached it. One resolver, or the two drift apart.
+describe('every route sends the key through coingeckoHeaders()', () => {
+  // The Integrations Test button checks the key being typed in, before it is saved, so it
+  // builds its own header on purpose.
+  const ALLOWED = new Set(['lib/api/live/coingecko.ts', 'app/live-data/config/route.ts'])
+
+  it('no other file writes the CoinGecko key header', async () => {
+    const { readdirSync, readFileSync, statSync } = await import('node:fs')
+    const path = await import('node:path')
+    const root = path.resolve(__dirname, '../../../..')
+    const offenders: string[] = []
+    const walk = (dir: string) => {
+      for (const name of readdirSync(dir)) {
+        const full = path.join(dir, name)
+        if (statSync(full).isDirectory()) { if (name !== '__tests__' && name !== 'node_modules') walk(full); continue }
+        if (!/\.(ts|tsx)$/.test(name)) continue
+        const rel = path.relative(root, full).split(path.sep).join('/')
+        if (!ALLOWED.has(rel) && /x-cg-(?:demo|pro)-api-key/.test(readFileSync(full, 'utf8'))) offenders.push(rel)
+      }
+    }
+    walk(root)
+    expect(offenders).toEqual([])
+  })
+})

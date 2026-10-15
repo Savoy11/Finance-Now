@@ -60,24 +60,24 @@
  },
  "counts": {
   "total_verified": 398,
-  "outstanding": 379,
+  "outstanding": 380,
   "by_status": {
-   "closed": 218,
+   "closed": 219,
    "parked": 135,
    "open": 20,
    "blocked": 6
   },
   "by_owner_role": {
    "remote-dev": 93,
-   "either": 50,
+   "either": 51,
    "owner-decision": 150,
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 218,
-  "counts_recomputed_on": "2026-10-14",
+  "closed_by_annotation": 219,
+  "counts_recomputed_on": "2026-10-15",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
-  "total": 379
+  "total": 380
  },
  "blocking_decisions": [
   {
@@ -5761,7 +5761,8 @@
    "effort": "unknown",
    "blocking_decision": null,
    "related_ids": [
-    "PB5"
+    "PB5",
+    "D126"
    ],
    "summary": "Free tier burst-limits; unpriced positions are excluded and disclosed.",
    "next_action": "Owner: obtain a CoinGecko Demo-tier (free) key, set COINGECKO_API_KEY in frontend/.env.local or paste it in Integrations → providers, then re-run npm run audit and confirm the builder drift monitor reports pricedPct = 100 for a coin-holding portfolio.",
@@ -5771,7 +5772,16 @@
      "lines": "730-739",
      "quote": "The 2026-07-29 audit showed CoinGecko burst rate-limiting on the free tier — with no key, drift coverage can be partial under load. Degrades honestly; a `COINGECKO_API_KEY` is the operational fix. Not a blocker."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-10-15",
+    "note": "Owner is creating the Demo key (D126) and will save it in Integrations; the session never handles it. Two routes read only the COINGECKO_API_KEY environment variable and would have ignored a key saved in Integrations: /live-data/chart and /live-data/pump-report/metrics. Both now use coingeckoHeaders(), and coingecko.test.ts fails on any other file that writes the key header.",
+    "remaining_work": "Once the key is saved: npm run audit, confirm the CoinGecko 429s are gone and the builder drift monitor prices every coin (pricedPct 100).",
+    "evidence": [
+     "docs/decisions/2026-10-15-owner-decisions.md",
+     "frontend/src/lib/api/live/coingecko.ts"
+    ]
+   }
   },
   {
    "id": "T-106",
@@ -6944,7 +6954,7 @@
   {
    "id": "T-386",
    "title": "Re-verify the 37 non-'40-Act fund expense ratios and unchecked catalog fields before moving FUND_DATA_LAST_VERIFIED",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "data-verification",
@@ -6952,7 +6962,9 @@
    "blocking_decision": null,
    "related_ids": [
     "#136",
-    "W4-C7"
+    "W4-C7",
+    "T-440",
+    "D119"
    ],
    "summary": "2026-09-01 pass checked one field on 87/126 rows.",
    "next_action": "On the owner's machine: cd frontend && npm run fund-fees -- --inspect, then npm run fund-fees; review fund-fee-worksheet.csv, hand-check the 37 non-'40 Act rows (SPY/DIA, bullion/commodity trusts, CurrencyShares) plus AUM/yield/inception against issuer pages, apply via PR, and only then move FUND_DATA_LAST_VERIFIED.",
@@ -6984,6 +6996,21 @@
      "2026-10-14: THE OTHER HALF, FIRST CHECK (report only, nothing applied). Assets, launch years and yields were compared with the SEC’s own data on the owner’s machine (egress: no proxy, no hosting flag). ASSETS: 101 of 140 rows checked: 71 against N-PORT 2026q3 (one-class series only, periods ending 2026-05-31 to 07-31), HACK against N-PORT by series name, and 29 trusts against their own XBRL (10-Q, 10-K, 40-F). 35 are within 15%, 41 are 15–67% apart and 25 more than 1.67× apart; of the 66 apart, 52 list less than the filing and 14 more (SOXX $14B against $47.8B filed; IBIT $80B against $43.4B held). The 2026-09-26 D27 rows read from issuer pages agree (seven of eight within 15%, BKLN 16% under), which supports the method. Not checked: 21 Vanguard ETF classes and 11 multi-class mutual funds (N-PORT gives only the whole fund), SPY and DIA (UITs), the four Teucrium funds (one registrant) and CPER (stale tag). For mutual funds `aumB` mixes whole-fund and class figures: VOO $720B + VFIAX $1,300B exceed their $1,671B fund. LAUNCH YEAR: 39 checked against PerfInceptionDate (Risk/Return 2025q3–2026q2); 38 agree, OILK is wrong (2019 listed, 2016-09-26 filed). YIELD: no SEC data set carries it; none checked. The stamp did not move. Six questions for the owner are in the note.",
      "2026-10-14 (later): APPLIED, owner rulings D114–D118. The 101 filed asset figures went in with their period ends and accessions (aumAsOf, aumSource), the four fair-value trusts marked (D114). The eleven multi-class mutual funds took the whole fund, labelled \"Fund net assets (all share classes)\" (D115). OILK 2019 → 2016 (D116). The single date was split (D117): FUND_FEES_LAST_VERIFIED = 2026-09-26, the oldest fee check still standing, first stale 2027-01-25; FUND_FIGURES_COMPILED_ON = 2026-07-20, a compile date and not a verification date, for every yield and the 28 asset figures no filing supplies. Dating the fee clock found six funds whose fees had never been checked against a filing: read from their 497Ks, five were wrong and were corrected (D118: TQQQ 0.78, UPRO 0.88, SQQQ 0.94, SOXL 0.75, PIMIX 0.51). WHAT REMAINS: the figures clock still closes on 2026-11-18, so before then either a re-read of the 87 yields and the 28 undated asset figures (21 Vanguard ETF classes, SPY, DIA, the four Teucrium funds, CPER) or a recorded STALENESS-ACK. Whether this item closes, with the figures clock as its own item, is the owner’s call."
     ]
+   },
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-10-15",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "The item’s purpose, re-verifying the catalog before its date moved, is met for the fees and decided for the rest. Every expense ratio now has a filing check behind it, and FUND_FEES_LAST_VERIFIED is the oldest still standing, 2026-09-26 (D117, D118). 112 asset figures carry the SEC filing they come from (D114, D115), OILK’s launch year is corrected (D116), and the old single date is split so the approximate figures no longer hold the verified ones back. Report #357, applied #358.",
+    "approved_by": "owner, 2026-10-15 (D119): “Close; file new item”",
+    "evidence": [
+     "docs/audits/fund-catalog-facts-2026-10-14.md",
+     "docs/decisions/2026-10-14-owner-decisions.md",
+     "docs/decisions/2026-10-15-owner-decisions.md",
+     "frontend/src/lib/data/fundCatalog.ts"
+    ],
+    "known_gap": "The approximate figures, every yield and 28 asset figures no filing supplies, were not re-read. They move to T-440 under a STALENESS-ACK (D120)."
    }
   },
   {
@@ -7246,7 +7273,8 @@
    "blocking_decision": null,
    "related_ids": [
     "F2",
-    "T-017"
+    "T-017",
+    "D121"
    ],
    "summary": "GitHub is the only durable copy.",
    "next_action": "On the owner's machine, outside OneDrive: git clone --mirror https://github.com/Savoy11/Finance-Now.git; then set a monthly reminder to run git -C Finance-Now.git remote update. Optionally add a one-line dated note under step 7 of docs/audits/git-repo-audit-2026-08-23.md saying where the mirror lives.",
@@ -7263,7 +7291,11 @@
     "remaining_work": "The monthly refresh reminder is the owner’s to set; closing the item is the owner’s call.",
     "evidence": [
      "docs/audits/local-wip-s1-archive-2026-10-14.md",
-     "docs/audits/git-repo-audit-2026-08-23.md"
+     "docs/audits/git-repo-audit-2026-08-23.md",
+     "docs/decisions/2026-10-15-owner-decisions.md"
+    ],
+    "corrections": [
+     "2026-10-15: The mirror now keeps every ref change and object (core.logAllRefUpdates=always; gc.reflogExpire, gc.reflogExpireUnreachable and gc.pruneExpire never; prune and pruneTags explicitly false), because a ref force-moved on GitHub could otherwise have taken old commits with it after git’s two-week cleanup. A Windows scheduled task, “Finance Now mirror refresh”, runs git remote update on the 1st of each month at 10:00 (at the next chance if missed) and logs each run; its test run exited 0 and brought main to d79e71b (D121). REMAINING: Nothing to do; closing the item is the owner’s call."
     ]
    }
   },
@@ -14377,7 +14409,8 @@
    "effort": "medium",
    "related_ids": [
     "T-426",
-    "T-436"
+    "T-436",
+    "D123"
    ],
    "summary": "The T-426 draft breach plan (in the Finance Now Ledger page’s file library, 2026-10-14) found that sign-in has no password-reset or forced-reset flow. Accounts are Auth.js credentials with a bcrypt hash (cost 12), and sessions are JWTs with no sessions table (frontend/src/lib/auth/config.ts), so after a breach the only lever is rotating AUTH_SECRET: it signs everyone out, but cannot make anyone choose a new password. California lets a breach of login details alone be noticed by an email telling people to change their password, which assumes they can.",
    "next_action": "Design it before building: a reset link with a short-lived single-use token, and a per-user must-reset flag checked at sign-in. Sending the link needs an email provider, which is a choice for the owner (free or paid, D21). Pure parts tested; the token never logged.",
@@ -14392,7 +14425,15 @@
      "lines": "T-426 progress",
      "quote": "Draft written 2026-10-14"
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-10-15",
+    "note": "Owner ruled (D123): build the parts that need no email now: single-use short-lived reset tokens stored hashed and never logged, a per-user must-reset flag checked at sign-in, and an owner command that forces resets or issues a link to hand over directly. The email provider is chosen at launch (D21).",
+    "remaining_work": "Build it (a PR of its own, with a migration). Sending by email waits for launch.",
+    "evidence": [
+     "docs/decisions/2026-10-15-owner-decisions.md"
+    ]
+   }
   },
   {
    "id": "T-436",
@@ -14411,7 +14452,8 @@
    "related_ids": [
     "T-426",
     "T-291",
-    "T-435"
+    "T-435",
+    "D124"
    ],
    "summary": "The T-426 draft breach plan (in the Finance Now Ledger page’s file library, 2026-10-14) found that sign-up collects no consent to receive communications electronically, and the draft Terms and Privacy Policy carry none. North Carolina allows breach notice by email only \"for those persons for whom it has a valid email address and who have agreed to receive communications electronically\" (G.S. 75-65(e)(2)); without it, a breach notice would need a letter or phone call to each person, and the app holds no postal addresses or phone numbers.",
    "next_action": "Owner and counsel: the consent wording, edited in the owner’s disclosure document first and then copied in (as the About & Legal rule requires). Then a sign-up checkbox or clause, with the consent and its date stored on the user (a migration).",
@@ -14426,7 +14468,15 @@
      "lines": "T-426 progress",
      "quote": "Draft written 2026-10-14"
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-10-15",
+    "note": "Owner ruled (D124): a consent clause drafted for the owner’s disclosure document, marked draft and for counsel, with the sign-up checkbox and stored consent date built behind it and showing the draft until approved.",
+    "remaining_work": "Draft the clause for the owner’s document; build the checkbox and migration (a PR of its own). Counsel approves the wording.",
+    "evidence": [
+     "docs/decisions/2026-10-15-owner-decisions.md"
+    ]
+   }
   },
   {
    "id": "T-437",
@@ -14443,7 +14493,8 @@
    "category": "security",
    "effort": "medium",
    "related_ids": [
-    "T-426"
+    "T-426",
+    "D122"
    ],
    "summary": "The T-426 draft breach plan (in the Finance Now Ledger page’s file library, 2026-10-14) found that provider and AI API keys are stored in plain text in .provider-config.json, written with mode 0600 (frontend/src/lib/api/live/providers.ts), which has limited effect on Windows. A copy of that file in a backup, a OneDrive share or a commit hands over every key at once.",
    "next_action": "Encrypt the stored keys with a key held outside the file (an environment variable, or the OS key store), read a legacy plain-text file once and rewrite it encrypted, and fail plainly when the key is missing. Nothing is deleted: the old file is rewritten in place. Tests for the round trip and the missing-key path.",
@@ -14458,7 +14509,15 @@
      "lines": "T-426 progress",
      "quote": "Draft written 2026-10-14"
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-10-15",
+    "note": "Owner ruled (D122): the encryption key lives in a Windows user environment variable outside the OneDrive folder, a host secret at launch; AES-256-GCM, the file rewritten encrypted once, a missing key failing plainly.",
+    "remaining_work": "Build it (a PR of its own). Afterwards, rotate the stored keys: OneDrive’s version history keeps the old plain-text copies.",
+    "evidence": [
+     "docs/decisions/2026-10-15-owner-decisions.md"
+    ]
+   }
   },
   {
    "id": "T-438",
@@ -14476,7 +14535,8 @@
    "effort": "small",
    "related_ids": [
     "T-426",
-    "T-436"
+    "T-436",
+    "D125"
    ],
    "summary": "The T-426 draft breach plan (in the Finance Now Ledger page’s file library, 2026-10-14) found that the app does not ask where users live, so after a breach it cannot tell which state’s notice rules apply. North Carolina and California differ (who counts as affected, the 30-day California deadline, the Attorney General thresholds), and users may come from other states. The draft treats an unknown state as possibly North Carolina or California, and lists this as an open question for counsel.",
    "next_action": "Owner, with counsel’s answer: either record state of residence at sign-up (a field and a migration), or decide that every notice follows the strictest applicable rule and say so in the plan.",
@@ -14491,7 +14551,15 @@
      "lines": "T-426 progress",
      "quote": "Draft written 2026-10-14"
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-10-15",
+    "note": "Owner ruled (D125): every breach notice follows the strictest applicable rule, so no residence is collected; counsel can overturn it in the legal review (D4).",
+    "remaining_work": "One sentence in the draft breach plan, the owner’s document in the Finance Now Ledger page’s file library, saying so. Closing the item is the owner’s call.",
+    "evidence": [
+     "docs/decisions/2026-10-15-owner-decisions.md"
+    ]
+   }
   },
   {
    "id": "T-439",
@@ -14554,6 +14622,41 @@
     ],
     "known_gap": "A range is seen only where someone recorded the provider’s limit in dataSources.ts; an unrecorded limit stays invisible, and CLAUDE.md asks for `limits` to be set when a provider with one is added. The matrix measures single-sourcing and does not reduce it: the 16 surfaces it counts are D21’s standing work, not this item’s."
    }
+  },
+  {
+   "id": "T-440",
+   "title": "Re-read the fund catalog’s approximate figures: 87 yields and 28 undated asset figures",
+   "status": "open",
+   "confidence": "high",
+   "blocking_decision": null,
+   "opened": {
+    "on": "2026-10-15",
+    "by": "owner decision, filed by the session",
+    "why": "Owner, 2026-10-15 (D119): chose “Close; file new item” when T-386 closed with only the approximate-figures clock left."
+   },
+   "owner_role": "either",
+   "category": "data-verification",
+   "effort": "medium",
+   "related_ids": [
+    "T-386",
+    "D117",
+    "D119",
+    "D120"
+   ],
+   "summary": "Since D117 the fund catalog has two dates. The fee date is verified; FUND_FIGURES_COMPILED_ON (2026-07-20) dates the figures still compiled by hand: every yieldPct (87 rows carry one) and the asset figures no SEC filing supplies (21 Vanguard ETF classes, SPY, DIA, CORN, WEAT, SOYB, CANE, CPER). Its 120-day window closes 2026-11-18, and the owner chose to let the notice fire (D120, a STALENESS-ACK) rather than rush a re-read.",
+   "next_action": "When convenient: read each yield and each undated asset figure from the issuer’s own page or fact sheet, with the date it states; bring every difference to the owner before applying (report, never write). Only after all of them are re-read may FUND_FIGURES_COMPILED_ON move, and moving it voids the STALENESS-ACK, which is intended.",
+   "sources": [
+    {
+     "file": "frontend/src/lib/data/fundCatalog.ts",
+     "lines": "FUND_FIGURES_COMPILED_ON",
+     "quote": "// STALENESS-ACK: 2026-10-15 — owner (D120): let the approximate-figures notice fire on 2026-11-18 rather than rush a re-read."
+    },
+    {
+     "file": "docs/audits/fund-catalog-facts-2026-10-14.md",
+     "lines": "Not checked: 39 rows",
+     "quote": "Not checked: 21 Vanguard ETF classes and 11 multi-class mutual funds…, SPY and DIA, the four Teucrium funds and CPER."
+    }
+   ]
   }
  ],
  "closed_but_still_listed_as_open_in_docs": [
@@ -40413,6 +40516,13 @@
     "what": "T-386: D114–D118 applied. 112 filed asset figures, OILK’s launch year and five fees corrected; the fund catalog’s single date split into a fee verification date (2026-09-26) and a compile date for the approximate figures (2026-07-20, still due 2026-11-18). T-386 stays open.",
     "evidence": [
      "docs/decisions/2026-10-14-owner-decisions.md"
+    ]
+   },
+   {
+    "on": "2026-10-15",
+    "what": "Owner decisions D119–D126: T-386 closed and T-440 filed for the approximate fund figures (STALENESS-ACK, D120); T-238’s mirror made keep-everything with a monthly scheduled refresh; rulings recorded on T-435, T-436, T-437 and T-438; T-105 in progress, with two routes fixed to read the Integrations key. Counts recomputed.",
+    "evidence": [
+     "docs/decisions/2026-10-15-owner-decisions.md"
     ]
    }
   ]

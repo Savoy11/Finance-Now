@@ -379,7 +379,9 @@ too. Five minutes a month buys an independent backup of the single point of stor
 
 ✅ **EXECUTED 2026-10-14 (T-238)** — the mirror lives at `%USERPROFILE%\Finance-Now.git` on the
 owner's machine, outside OneDrive. Refresh it without `--prune`, so nothing deleted on GitHub is
-deleted there. Record: `docs/audits/local-wip-s1-archive-2026-10-14.md`.
+deleted there. Record: `docs/audits/local-wip-s1-archive-2026-10-14.md`. **2026-10-15 (D121):** it
+also keeps every ref change and object, so a ref force-moved on GitHub cannot take old commits with
+it, and a scheduled task refreshes it monthly. The settings are in that record.
 
 ---
 

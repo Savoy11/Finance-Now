@@ -257,6 +257,7 @@ export const FUND_FEES_LAST_VERIFIED = '2026-09-26'
  */
 export const FUND_FEES_STALE_AFTER_DAYS = 120
 
+// STALENESS-ACK: 2026-10-15 — owner (D120): let the approximate-figures notice fire on 2026-11-18 rather than rush a re-read. Every page marks these figures "≈" and calls them approximate, and the fee clock the fee maths runs on is separate and verified. Re-read when convenient (T-440); re-dating this anchor after a re-read voids this line.
 /** When the oldest hand-compiled asset or yield figure was written down (D117). */
 export const FUND_FIGURES_COMPILED_ON = '2026-07-20'
 
