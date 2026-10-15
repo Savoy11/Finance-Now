@@ -19,6 +19,8 @@ frontend/.provider-config.json
 frontend/.agent-prompts.json
 frontend/.exchange-credentials.json
 .provider-config.json
+# The atomic write's staging file (T-437); renamed over the store, so normally absent.
+.provider-config.json.tmp
 .agent-prompts.json
 .exchange-credentials.json
 

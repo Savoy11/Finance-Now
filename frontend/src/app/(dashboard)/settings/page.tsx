@@ -1260,8 +1260,41 @@ function AddCustomSourceForm({ category, market = 'crypto', onAdd }: { category:
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
+/** How the saved keys are held on disk (T-437); from GET /live-data/config. */
+interface SecretsStatus {
+  exists: boolean
+  encrypted: boolean
+  keySet: boolean
+  error: string | null
+}
+
+/**
+ * Always shown once known, like a provenance notice: a store that only spoke up when
+ * something was wrong would teach its silence to read as "encrypted".
+ */
+function SecretsStatusLine({ secrets }: { secrets: SecretsStatus }) {
+  if (secrets.error) {
+    return (
+      <div role="alert" className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-xs text-red-300 leading-relaxed">
+        <span className="font-semibold">Saved keys can&rsquo;t be read.</span> {secrets.error}
+      </div>
+    )
+  }
+  if (secrets.encrypted) {
+    return <p className="text-xs text-emerald-400/90">Saved keys are encrypted at rest with FN_SECRETS_KEY.</p>
+  }
+  return (
+    <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-xs text-amber-300 leading-relaxed">
+      Saved keys are stored in plain text in <span className="font-mono">.provider-config.json</span>. Set{' '}
+      <span className="font-mono">FN_SECRETS_KEY</span> as a user environment variable, outside the OneDrive folder, and restart
+      the server to encrypt them.
+    </div>
+  )
+}
+
 export default function SettingsPage() {
   const [providers, setProviders] = useState<ProviderView[]>([])
+  const [secrets, setSecrets] = useState<SecretsStatus | null>(null)
   const [loading, setLoading] = useState(true)
   const [accessError, setAccessError] = useState<string | null>(null)
 
@@ -1278,6 +1311,7 @@ export default function SettingsPage() {
         return
       }
       setProviders(data.providers ?? [])
+      setSecrets(data.secrets ?? null)
     } catch {
       // ignore
     } finally {
@@ -1349,6 +1383,7 @@ export default function SettingsPage() {
               browser — but the provider sections need admin access to load.
             </div>
           )}
+          {secrets && <SecretsStatusLine secrets={secrets} />}
           {/* Suite modules */}
           <ModulesPanel />
           <WatchlistBiasPanel />

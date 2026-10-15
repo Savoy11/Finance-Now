@@ -1175,12 +1175,30 @@ FN_ALLOW_KEYLESS_COIN_PROFILES=true|false     # Default true. Set false to forbi
                                             # owner concern about relying on free-tier terms).
 
 FN_ADMIN_TOKEN=...                          # (legacy CAEP_ADMIN_TOKEN still honored) Optional — sensitive endpoints (AI agents, provider config) require this token when the app is served from a non-localhost host; without it they are localhost-only (see src/lib/server/apiGuard.ts)
+FN_SECRETS_KEY=…                            # 32 random bytes, base64: encrypts .provider-config.json
+                                            # at rest (T-437). A Windows USER variable, outside OneDrive;
+                                            # a host secret at launch. See "Server-side secret stores".
 FN_BASE_URL=http://localhost:3000           # (legacy CAEP_BASE_URL still honored) Base URL the MCP
                                             # server and scripts call back into
 ```
 
 **Server-side secret stores** (gitignored, written at repo `frontend/` root):
 `.provider-config.json` (provider API keys) and `.agent-prompts.json` (agent overrides).
+
+**`.provider-config.json` is encrypted at rest when `FN_SECRETS_KEY` is set (T-437, D122,
+2026-10-15).** The key is 32 random bytes, base64. Keep it in a Windows **user** environment
+variable, not `.env.local`, which sits beside the file in the OneDrive folder; at launch it is a
+host secret. The whole file is sealed with AES-256-GCM (`lib/server/secretBox.ts`,
+`providerConfigCodec.ts`), and a plain file is rewritten sealed the first time it is read with the
+key set. Without the key the file stays plain, and the Integrations page says so.
+
+⚠ **A file the store cannot read is never treated as empty and never written over.** That covers a
+sealed file with no key or the wrong one, a malformed key, or corrupt JSON. Data routes fall back
+to environment-variable keys; every write is declined and logged once; the Integrations page shows
+the reason, and its save returns 409. Before this, a corrupt file read as `{}` and the next save
+lost every key. Lose `FN_SECRETS_KEY` and the saved keys go with it, so keep a copy somewhere safe.
+Scripts read the file through `scripts/lib/providerConfigFile.mjs`, which only opens it. Guarded,
+with mutations, by `lib/server/__tests__/providerKeyStore.test.ts`.
 
 > **`.exchange-credentials.json` is gone (2026-08-18).** Exchange API linking was removed
 > on security grounds: it stored an `apiKey` + `apiSecret` in plaintext at rest — the

@@ -14515,7 +14515,12 @@
     "note": "Owner ruled (D122): the encryption key lives in a Windows user environment variable outside the OneDrive folder, a host secret at launch; AES-256-GCM, the file rewritten encrypted once, a missing key failing plainly.",
     "remaining_work": "Build it (a PR of its own). Afterwards, rotate the stored keys: OneDrive’s version history keeps the old plain-text copies.",
     "evidence": [
-     "docs/decisions/2026-10-15-owner-decisions.md"
+     "docs/decisions/2026-10-15-owner-decisions.md",
+     "frontend/src/lib/server/secretBox.ts",
+     "frontend/src/lib/server/providerConfigCodec.ts"
+    ],
+    "corrections": [
+     "2026-10-15: BUILT. lib/server/secretBox.ts seals the whole of .provider-config.json with AES-256-GCM under FN_SECRETS_KEY (32 bytes, base64); providerConfigCodec.ts decides plain, sealed, unknown scheme or corrupt; providers.ts rewrites a plain file sealed the first time it reads it with the key set, and writes atomically. A file the store cannot read (sealed with no key or the wrong one, a malformed key, corrupt JSON) is never treated as empty and never written over: data routes fall back to environment keys, writes are declined and logged once, the Integrations page shows the reason and its save answers 409. This also ends a pre-existing loss: a corrupt file used to read as {} and the next save erased every key. Scripts read through scripts/lib/providerConfigFile.mjs, held to the app’s format by a test that seals with one and opens with the other. 23 tests in providerKeyStore.test.ts, on an in-memory file system; five guards driven red by mutations. REMAINING: the owner sets FN_SECRETS_KEY as a Windows user variable and restarts the server, so the file is sealed; then rotates the saved keys, since OneDrive’s version history keeps the old plain copies."
     ]
    }
   },
@@ -40523,6 +40528,13 @@
     "what": "Owner decisions D119–D126: T-386 closed and T-440 filed for the approximate fund figures (STALENESS-ACK, D120); T-238’s mirror made keep-everything with a monthly scheduled refresh; rulings recorded on T-435, T-436, T-437 and T-438; T-105 in progress, with two routes fixed to read the Integrations key. Counts recomputed.",
     "evidence": [
      "docs/decisions/2026-10-15-owner-decisions.md"
+    ]
+   },
+   {
+    "on": "2026-10-15",
+    "what": "T-437 built: provider keys encrypted at rest under FN_SECRETS_KEY; an unreadable key store is never written over. Open until the owner sets the key and rotates.",
+    "evidence": [
+     "frontend/src/lib/server/secretBox.ts"
     ]
    }
   ]

@@ -5,6 +5,7 @@ import {
   addCustomProvider,
   removeCustomProvider,
   updateCustomProvider,
+  providerConfigStatus,
   type CustomProviderDef,
 } from '@/lib/api/live/providers'
 import { guardSensitiveRoute } from '@/lib/server/apiGuard'
@@ -27,13 +28,22 @@ export async function GET() {
       apiKey: undefined, // never send raw key to browser
     },
   }))
-  return NextResponse.json({ providers })
+  // Whether saved keys are encrypted at rest, and why they cannot be read if not (T-437).
+  return NextResponse.json({ providers, secrets: providerConfigStatus() })
 }
 
 // POST /live-data/config
 export async function POST(req: NextRequest) {
   const denied = guardSensitiveRoute(req, 'provider-config', 30)
   if (denied) return denied
+
+  // The store declines every write it cannot make safely (T-437) and never throws, because
+  // data routes write through it too. Here a person pressed Save, so say why instead of
+  // reporting a success that did not happen.
+  const secrets = providerConfigStatus()
+  if (secrets.error) {
+    return NextResponse.json({ error: `Not saved. ${secrets.error}` }, { status: 409 })
+  }
 
   const body = (await req.json()) as {
     providerId?: string

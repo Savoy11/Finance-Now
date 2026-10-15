@@ -1,5 +1,7 @@
 import fs from 'fs'
 import path from 'path'
+import { parseSecretsKey, SECRETS_KEY_ENV } from '@/lib/server/secretBox'
+import { ConfigUnreadableError, decodeConfigText, encodeConfigText, type DecodedConfig } from '@/lib/server/providerConfigCodec'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -816,29 +818,126 @@ interface ConfigFile {
   customProviders: CustomProviderDef[]
 }
 
-function readConfigFile(): ConfigFile {
-  try {
-    if (fs.existsSync(CONFIG_PATH)) {
-      const raw = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'))
-      return {
-        configs: raw.configs ?? raw, // back-compat: old files stored only configs at top level
-        customProviders: raw.customProviders ?? [],
-      }
-    }
-  } catch {}
-  return { configs: {}, customProviders: [] }
+// Encrypted at rest since 2026-10-15 (T-437, D122): the whole file is sealed with
+// AES-256-GCM under FN_SECRETS_KEY, which lives outside it. Without the key the file is
+// read and written plain, as before, and the Integrations page says so. A file that
+// cannot be read (encrypted with no key or the wrong one, or corrupt) is NEVER treated as
+// empty and never written over: it used to be, and the next save lost every key.
+
+interface ConfigState {
+  file: ConfigFile
+  /** Why the file could not be read, or why it may not be written; null when all is well. */
+  error: string | null
+  encrypted: boolean
+  exists: boolean
 }
 
-function writeConfigFile(file: ConfigFile): void {
+const EMPTY_CONFIG = (): ConfigFile => ({ configs: {}, customProviders: [] })
+
+function secretsKey(): { key: Buffer | null; error: string | null } {
   try {
-    // 0600 like the exchange-credentials store — this file holds provider and
-    // LLM API keys. mode only applies on creation, so chmod covers files
-    // created by earlier versions with the default 0644.
-    fs.writeFileSync(CONFIG_PATH, JSON.stringify(file, null, 2), { encoding: 'utf8', mode: 0o600 })
-    fs.chmodSync(CONFIG_PATH, 0o600)
+    return { key: parseSecretsKey(process.env[SECRETS_KEY_ENV]), error: null }
   } catch (e) {
-    console.error('[providers] Failed to write config file:', e)
+    return { key: null, error: `${(e as Error).message} Saving is paused so nothing is stored in plain text by mistake.` }
   }
+}
+
+// Every route records provider calls through this store, so a standing problem would log
+// on every request; say it once per distinct message.
+let lastReported: string | null = null
+function reportOnce(message: string, level: 'error' | 'warn' = 'error'): void {
+  if (message === lastReported) return
+  lastReported = message
+  console[level](`[providers] ${message}`)
+}
+
+/** Write atomically: a crash mid-write must not leave a half-written key store. */
+function persistConfig(file: ConfigFile, key: Buffer | null): boolean {
+  const text = encodeConfigText(file, key)
+  // 0600 on creation; it means little on Windows, which is why the content is encrypted.
+  const tmp = `${CONFIG_PATH}.tmp`
+  try {
+    fs.writeFileSync(tmp, text, { encoding: 'utf8', mode: 0o600 })
+    fs.renameSync(tmp, CONFIG_PATH)
+  } catch {
+    // A rename can be refused while OneDrive holds the file; write in place instead.
+    try {
+      fs.writeFileSync(CONFIG_PATH, text, { encoding: 'utf8', mode: 0o600 })
+    } catch (e) {
+      console.error('[providers] Failed to write config file:', e)
+      return false
+    }
+  }
+  try { fs.chmodSync(CONFIG_PATH, 0o600) } catch {}
+  return true
+}
+
+function loadConfig(): ConfigState {
+  if (!fs.existsSync(CONFIG_PATH)) return { file: EMPTY_CONFIG(), error: null, encrypted: false, exists: false }
+  const { key, error: keyError } = secretsKey()
+  let decoded: DecodedConfig
+  try {
+    decoded = decodeConfigText(fs.readFileSync(CONFIG_PATH, 'utf8'), key)
+  } catch (e) {
+    const message = e instanceof ConfigUnreadableError
+      ? e.message
+      : `.provider-config.json could not be read (${(e as Error).message}); it was left untouched.`
+    reportOnce(message)
+    return { file: EMPTY_CONFIG(), error: message, encrypted: false, exists: true }
+  }
+  const raw = decoded.raw as { configs?: Record<string, ProviderConfig>; customProviders?: CustomProviderDef[] }
+  const file: ConfigFile = {
+    configs: raw.configs ?? (raw as Record<string, ProviderConfig>), // back-compat: old files stored only configs at top level
+    customProviders: raw.customProviders ?? [],
+  }
+  if (keyError) {
+    reportOnce(keyError)
+    return { file, error: keyError, encrypted: decoded.encrypted, exists: true }
+  }
+  // A plain file read while a key is set is rewritten encrypted, once (T-437).
+  if (!decoded.encrypted && key && persistConfig(file, key)) {
+    reportOnce('.provider-config.json was plain text and is now encrypted with FN_SECRETS_KEY.', 'warn')
+    return { file, error: null, encrypted: true, exists: true }
+  }
+  return { file, error: null, encrypted: decoded.encrypted, exists: true }
+}
+
+function readConfigFile(): ConfigFile {
+  return loadConfig().file
+}
+
+/**
+ * Never throws: every data route records provider calls through here. When the file
+ * cannot be read the write is declined (and reported once), so nothing is overwritten;
+ * the Integrations route checks `providerConfigStatus()` first and tells the owner why.
+ */
+function writeConfigFile(file: ConfigFile): void {
+  const state = loadConfig()
+  if (state.error) {
+    reportOnce(state.error)
+    return
+  }
+  const { key } = secretsKey()
+  if (!key) reportOnce(`Provider keys are stored in plain text; set ${SECRETS_KEY_ENV} to encrypt them (T-437).`, 'warn')
+  persistConfig(file, key)
+}
+
+export interface ProviderConfigStatus {
+  /** The key store exists on disk. */
+  exists: boolean
+  /** It is sealed with FN_SECRETS_KEY. */
+  encrypted: boolean
+  /** A usable FN_SECRETS_KEY is set in the server's environment. */
+  keySet: boolean
+  /** Why saved keys cannot be read, or saving is paused; null when all is well. */
+  error: string | null
+}
+
+/** For the Integrations page, and for the config route to refuse a save it cannot make safely. */
+export function providerConfigStatus(): ProviderConfigStatus {
+  const state = loadConfig()
+  const { key, error: keyError } = secretsKey()
+  return { exists: state.exists, encrypted: state.encrypted, keySet: key !== null && keyError === null, error: state.error ?? keyError }
 }
 
 // ─── Env-var baseline ─────────────────────────────────────────────────────────
