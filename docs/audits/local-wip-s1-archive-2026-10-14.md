@@ -48,13 +48,32 @@ this is the first.
 `--prune`: a ref deleted on GitHub would then be deleted here too, which is the one thing a
 second copy exists to survive.
 
+⚠ **Corrected 2026-10-15: that heading was true for deleted refs only** (D121). A mirror fetches
+with `+refs/*:refs/*`, so a branch or tag force-moved on GitHub moves here too. A bare clone keeps
+no reflog by default, so the old commits are left unreferenced, and git's automatic cleanup may
+discard them after two weeks. The mirror now keeps every ref change and every object:
+
+```
+core.logAllRefUpdates      = always   # log every ref move, so an old tip stays reachable
+gc.reflogExpire            = never
+gc.reflogExpireUnreachable = never
+gc.pruneExpire             = never    # cleanup never discards an object
+remote.origin.prune        = false    # explicit, so a global fetch.prune cannot turn it on
+remote.origin.pruneTags    = false
+```
+
+With these set, a refresh only adds. A Windows scheduled task, "Finance Now mirror refresh", runs
+it on the 1st of each month at 10:00, or at the next chance if the machine was off. It appends each
+run to `Finance-Now-mirror-refresh.log` in the user profile. Its first run on 2026-10-15 exited 0
+and brought `main` to `d79e71b`.
+
 ## What it does not settle
 
 - **Whether the work is wanted.** The indicator catalog and theme store were written against
   a `main` 339 commits older than today's; restoring any of it is a fresh piece of work, not
   a merge. That question belongs with T-016 if the owner reopens backtesting.
 - **The monthly refresh** (T-238's second half) is the owner's reminder to set; nothing here
-  schedules it.
+  schedules it. *(Settled 2026-10-15, D121: the owner chose a scheduled task, described above.)*
 
 ## Restore
 

@@ -347,7 +347,9 @@ for a branch that never had a PR. **The first one is `archive/local-wip-s1` (202
 T-017):** a WIP commit from 2026-08-19 that lived only in the owner's local clone, which
 cloud sessions cannot see, so three ledger passes had taken it for gone. Record:
 `docs/audits/local-wip-s1-archive-2026-10-14.md`. A mirror clone outside OneDrive is now a
-second copy that is not GitHub (T-238); refresh it without `--prune`.
+second copy that is not GitHub (T-238); refresh it without `--prune`. Since 2026-10-15 (D121)
+it keeps every ref log and object, so a ref force-moved on GitHub cannot strip old commits from
+it, and a Windows scheduled task refreshes it monthly. Neither setting deletes anything.
 
 **Do NOT enable *Automatically delete head branches* — archive instead** (owner,
 2026-09-12: *"I dont want to delete any branches, if possible can we enable an auto

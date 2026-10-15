@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { coingeckoIdFor } from '@/lib/api/live/coingeckoIds'
 import { normalizeDaysParam } from '@/lib/utils/chartParams'
-import { coingeckoBase } from '@/lib/api/live/coingecko'
+import { coingeckoBase, coingeckoHeaders } from '@/lib/api/live/coingecko'
 import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 
 // Server-side proxy for CoinGecko market_chart history. Maps the platform's
@@ -31,10 +31,6 @@ import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 export const dynamic = 'force-dynamic'
 export const revalidate = 300
 
-const API_KEY = process.env.COINGECKO_API_KEY && process.env.COINGECKO_API_KEY !== 'your-coingecko-api-key'
-  ? process.env.COINGECKO_API_KEY
-  : undefined
-
 interface MarketChart {
   prices: [number, number][]
   total_volumes: [number, number][]
@@ -55,8 +51,9 @@ export async function GET(request: NextRequest) {
   }
 
   const params = new URLSearchParams({ vs_currency: 'usd', days })
-  const headers: Record<string, string> = { Accept: 'application/json' }
-  if (API_KEY) headers['x-cg-demo-api-key'] = API_KEY
+  // The shared resolver, so a key saved in Integrations reaches this route too.
+  // It read only COINGECKO_API_KEY until 2026-10-15 (T-105).
+  const headers = coingeckoHeaders()
 
   try {
     const res = await fetch(`${coingeckoBase()}/coins/${cgId}/market_chart?${params.toString()}`, {
