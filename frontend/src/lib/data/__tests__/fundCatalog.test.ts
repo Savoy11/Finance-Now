@@ -1,15 +1,18 @@
 import { describe, it, expect } from 'vitest'
 import {
-  computeFeeDrag, fundSalesCharge, fundTradingRestriction, getFundDataProvenance, fundDataAgeDays, fundDataIsStale,
-  FUND_DATA_LAST_VERIFIED, FUND_DATA_STALE_AFTER_DAYS, FUND_CATALOG,
+  computeFeeDrag, fundSalesCharge, fundTradingRestriction, fundAssetsFact,
+  getFundFeeProvenance, fundFeesAgeDays, fundFeesAreStale, FUND_FEES_LAST_VERIFIED, FUND_FEES_STALE_AFTER_DAYS,
+  getFundFiguresProvenance, fundFiguresAgeDays, fundFiguresAreStale, FUND_FIGURES_COMPILED_ON, FUND_FIGURES_STALE_AFTER_DAYS,
+  FUND_CATALOG,
 } from '../fundCatalog'
 
 // W4-C9: computeFeeDrag drives a 30-year dollar projection on every fund detail
 // page and had no tests. W4-C7: the expense ratios it runs on are hand-maintained
 // and had no provenance machinery.
 
-const VERIFIED = new Date(FUND_DATA_LAST_VERIFIED)
-const daysAfter = (n: number) => new Date(VERIFIED.getTime() + n * 86_400_000)
+const FEES_VERIFIED = new Date(FUND_FEES_LAST_VERIFIED)
+const FIGURES_COMPILED = new Date(FUND_FIGURES_COMPILED_ON)
+const plusDays = (d: Date, n: number) => new Date(d.getTime() + n * 86_400_000)
 
 describe('computeFeeDrag', () => {
   it('returns one point per year', () => {
@@ -93,40 +96,110 @@ describe('computeFeeDrag', () => {
   })
 })
 
-describe('fund data provenance', () => {
-  it('reports age from the verification date', () => {
-    expect(fundDataAgeDays(VERIFIED)).toBe(0)
-    expect(fundDataAgeDays(daysAfter(45))).toBe(45)
+// D117 (2026-10-14): one date became two. The expense ratios are checked against filings
+// and computed on; the assets and yields are approximate. Each clock must run off its own
+// date, so each is tested against its own anchor.
+describe.each([
+  ['fees', FEES_VERIFIED, FUND_FEES_STALE_AFTER_DAYS, fundFeesAgeDays, fundFeesAreStale, getFundFeeProvenance],
+  ['figures', FIGURES_COMPILED, FUND_FIGURES_STALE_AFTER_DAYS, fundFiguresAgeDays, fundFiguresAreStale, getFundFiguresProvenance],
+] as const)('fund %s provenance', (_name, anchor, windowDays, ageDays, isStale, provenance) => {
+  it('reports age from its own date', () => {
+    expect(ageDays(anchor)).toBe(0)
+    expect(ageDays(plusDays(anchor, 45))).toBe(45)
   })
 
-  it('goes stale only past the window', () => {
-    expect(fundDataIsStale(daysAfter(FUND_DATA_STALE_AFTER_DAYS))).toBe(false)
-    expect(fundDataIsStale(daysAfter(FUND_DATA_STALE_AFTER_DAYS + 1))).toBe(true)
+  it('goes stale only past its window', () => {
+    expect(isStale(plusDays(anchor, windowDays))).toBe(false)
+    expect(isStale(plusDays(anchor, windowDays + 1))).toBe(true)
   })
 
   it('steps confidence down with age', () => {
-    expect(getFundDataProvenance(daysAfter(10)).confidence).toBe('high')
-    expect(getFundDataProvenance(daysAfter(60)).confidence).toBe('high')
-    expect(getFundDataProvenance(daysAfter(61)).confidence).toBe('medium')
-    expect(getFundDataProvenance(daysAfter(FUND_DATA_STALE_AFTER_DAYS)).confidence).toBe('medium')
-    expect(getFundDataProvenance(daysAfter(FUND_DATA_STALE_AFTER_DAYS + 1)).confidence).toBe('low')
-  })
-
-  it('exposes the shape the ProvenanceNotice renders', () => {
-    const p = getFundDataProvenance(daysAfter(30))
-    expect(p).toMatchObject({
-      verifiedAt: FUND_DATA_LAST_VERIFIED,
-      ageDays: 30,
-      stale: false,
-      confidence: 'high',
-    })
-    expect(p.source).toMatch(/\S/)
+    expect(provenance(plusDays(anchor, 10)).confidence).toBe('high')
+    expect(provenance(plusDays(anchor, 60)).confidence).toBe('high')
+    expect(provenance(plusDays(anchor, 61)).confidence).toBe('medium')
+    expect(provenance(plusDays(anchor, windowDays)).confidence).toBe('medium')
+    expect(provenance(plusDays(anchor, windowDays + 1)).confidence).toBe('low')
   })
 
   it('accepts an injectable now, so the notice is testable', () => {
     // The whole point of the pattern: no test may depend on the wall clock.
-    expect(getFundDataProvenance(daysAfter(500)).stale).toBe(true)
-    expect(getFundDataProvenance(VERIFIED).stale).toBe(false)
+    expect(provenance(plusDays(anchor, 500)).stale).toBe(true)
+    expect(provenance(anchor).stale).toBe(false)
+    expect(provenance(plusDays(anchor, 30)).source).toMatch(/\S/)
+  })
+})
+
+describe('the two fund dates say different things (D117)', () => {
+  it('the fee date is a verification date', () => {
+    expect(getFundFeeProvenance(plusDays(FEES_VERIFIED, 30))).toMatchObject({ verifiedAt: FUND_FEES_LAST_VERIFIED, ageDays: 30 })
+  })
+
+  it('the figures date is NOT called a verification date', () => {
+    // Approximate figures under a "verified" label would be the fabricated freshness the
+    // provenance rule exists to prevent.
+    const p = getFundFiguresProvenance(plusDays(FIGURES_COMPILED, 30))
+    expect(p).toMatchObject({ compiledOn: FUND_FIGURES_COMPILED_ON, ageDays: 30 })
+    expect(p).not.toHaveProperty('verifiedAt')
+  })
+})
+
+// D114/D115 (2026-10-14): asset figures read from SEC filings carry their period end and
+// the filing's accession, so each can be re-checked.
+describe('filed asset figures', () => {
+  const filed = FUND_CATALOG.filter((f) => f.aumAsOf !== undefined)
+  const ACCESSION = /^\d{10}-\d{2}-\d{6}$/
+
+  it('every filed figure has a real date and an accession', () => {
+    expect(filed.length).toBeGreaterThan(0)
+    for (const f of filed) {
+      expect(f.aumAsOf, f.symbol).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+      expect(Number.isNaN(new Date(f.aumAsOf!).getTime()), `${f.symbol} ${f.aumAsOf}`).toBe(false)
+      expect(f.aumSource, `${f.symbol} has a date but no accession`).toMatch(ACCESSION)
+    }
+  })
+
+  it('an accession never appears without its date', () => {
+    for (const f of FUND_CATALOG.filter((x) => x.aumSource !== undefined)) {
+      expect(f.aumAsOf, `${f.symbol} cites a filing but gives no date`).toBeDefined()
+    }
+  })
+
+  it('a fair-value figure is always a filed one', () => {
+    for (const f of FUND_CATALOG.filter((x) => x.aumBasis === 'holdings-fair-value')) {
+      expect(f.aumAsOf, f.symbol).toBeDefined()
+    }
+  })
+
+  it('every mutual fund carries the whole fund from its filing (D115)', () => {
+    const mutual = FUND_CATALOG.filter((f) => f.type === 'mutual')
+    expect(mutual.length).toBeGreaterThan(0)
+    for (const f of mutual) expect(f.aumAsOf, `${f.symbol} has no filed whole-fund figure`).toBeDefined()
+  })
+})
+
+describe('fundAssetsFact', () => {
+  const usd = (n: number) => `$${n / 1e9}B`
+  const base = { type: 'etf' as const, aumB: 2, aumAsOf: undefined, aumSource: undefined, aumBasis: undefined }
+
+  it('marks an undated figure as approximate', () => {
+    expect(fundAssetsFact(base, usd)).toMatchObject({ label: 'AUM', value: '≈ $2B' })
+  })
+
+  it('shows a filed figure with its date and names the filing', () => {
+    const fact = fundAssetsFact({ ...base, aumAsOf: '2026-06-30', aumSource: '0000000000-26-000001' }, usd)
+    expect(fact.value).toBe('$2B · 2026-06-30')
+    expect(fact.explain).toContain('0000000000-26-000001')
+  })
+
+  it('labels a mutual fund as the whole fund', () => {
+    const fact = fundAssetsFact({ ...base, type: 'mutual', aumAsOf: '2026-06-30', aumSource: '0000000000-26-000001' }, usd)
+    expect(fact.label).toBe('Fund net assets (all share classes)')
+  })
+
+  it('never calls holdings at fair value net assets', () => {
+    const fact = fundAssetsFact({ ...base, aumAsOf: '2026-06-30', aumSource: '0000000000-26-000001', aumBasis: 'holdings-fair-value' }, usd)
+    expect(fact.label).toBe('Holdings at fair value')
+    expect(fact.explain).toMatch(/not the same figure/)
   })
 })
 

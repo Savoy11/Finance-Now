@@ -834,7 +834,9 @@ export function FundsClient() {
                               row.expenseRatioPct != null ? expenseColor(row.expenseRatioPct) : 'text-text-muted')}>
                               {row.expenseRatioPct != null ? `${row.expenseRatioPct.toFixed(row.expenseRatioPct < 0.1 ? 3 : 2)}%` : '—'}
                             </div>
-                            <div className="col-span-1 text-right font-mono tabular-nums text-xs text-text-secondary">
+                            {/* A mutual fund's figure is the whole fund, every share class (D115). */}
+                            <div className="col-span-1 text-right font-mono tabular-nums text-xs text-text-secondary"
+                              title={row.aumB != null && row.type === 'mutual' ? 'Fund net assets, all share classes' : undefined}>
                               {row.aumB != null ? formatCompact(row.aumB * 1e9) : '—'}
                             </div>
                             <div className="col-span-1 text-right font-mono tabular-nums text-xs text-text-secondary">

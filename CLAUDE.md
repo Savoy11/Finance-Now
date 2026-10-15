@@ -1246,7 +1246,8 @@ It **reports, never writes** — same split as `apply-fee-updates.ts`, because a
 overwrite is how a correct number lands on the wrong fund, and share classes make that easy
 (AGTHX/AGTFX/CGFAX). Matching is on the SEC CLASS id, resolved to a ticker through the SEC's own
 `company_tickers_mf.json` — never a name or a number — and it never moves
-`FUND_DATA_LAST_VERIFIED`. **Run `--inspect` first**: the tag and column names are candidates until
+`FUND_FEES_LAST_VERIFIED` (`FUND_DATA_LAST_VERIFIED` until D117 split it, 2026-10-14; see the Fund
+Registry row). **Run `--inspect` first**: the tag and column names are candidates until
 someone confirms them against a real archive.
 
 ⚠ The decimal-vs-percent unit is **declared by the dataset, not inferred** (changed 2026-09-09).
@@ -1717,7 +1718,7 @@ One module (`macro` entitlement), three areas. Owner spec + status: `docs/ROADMA
 ### ETFs & Funds module (`/funds`)
 | Feature | Route | Status | Source / Notes |
 |---------|-------|--------|----------------|
-| Fund Registry | `/funds` | 🟡 Key-gated | `fundCatalog.ts` + live quotes; 140 ETFs/mutual funds (8 added 2026-08-19 for items 11/13: BNDX/IAGG/BWX/EMB/VWOB international, MUB/VTEB/TFI municipal; **14 added 2026-09-26 under D27** — XLC/XLP/XLY/XLB sector, VCSH/VMBS/VTIP/EMLC/BKLN bond, VSS/VGK/EWJ/VYMI/HEFA international — each probed quotable, actively trading and fee-sourced from its SEC filing first, `docs/audits/fund-candidates-probe-2026-09-26.md`). Catalog carries provenance (`getFundDataProvenance()`, stale after 120d) rendered on detail pages — its expense ratios are computed on by `computeFeeDrag`, the builder's fee math, and `reviewPlan`'s fee-creep check |
+| Fund Registry | `/funds` | 🟡 Key-gated | `fundCatalog.ts` + live quotes; 140 ETFs/mutual funds (8 added 2026-08-19 for items 11/13: BNDX/IAGG/BWX/EMB/VWOB international, MUB/VTEB/TFI municipal; **14 added 2026-09-26 under D27** — XLC/XLP/XLY/XLB sector, VCSH/VMBS/VTIP/EMLC/BKLN bond, VSS/VGK/EWJ/VYMI/HEFA international — each probed quotable, actively trading and fee-sourced from its SEC filing first, `docs/audits/fund-candidates-probe-2026-09-26.md`). Catalog carries provenance on **two dates since D117 (2026-10-14)**, both rendered on detail pages and both `staleness:check` clocks with 120-day windows. `FUND_FEES_LAST_VERIFIED` (`getFundFeeProvenance()`) is a verification date: every row's expense ratio was checked against the fund's own filings, and it is the oldest check still standing. Those ratios are computed on by `computeFeeDrag`, the builder's fee math, and `reviewPlan`'s fee-creep check. `FUND_FIGURES_COMPILED_ON` (`getFundFiguresProvenance()`) is **not** a verification date. It is when the oldest hand-compiled figure was written down: every yield, plus the asset figures no filing supplies. 112 asset figures carry their own SEC filing date and accession instead (`aumAsOf`, `aumSource`; D114), and the page shows that date. A mutual fund's figure is the whole fund, every share class (D115). An undated figure shows as "≈". Record: `docs/audits/fund-catalog-facts-2026-10-14.md` |
 | Fund Detail | `/funds/[symbol]` | 🟢 Live | Live chart/news + fund facts; Fee Drag Analyzer, top holdings. **The analyzer accounts for sales loads since 2026-09-03**: a verified rate enters the projection, an unverified one is disclosed in an amber panel that says plainly the figures understate the cost and links the prospectus. AGTHX is the live example — a Class A front-end load roughly DOUBLES its ten-year cost versus the 0.59% expense ratio alone, and none of it was shown before |
 
 ---
