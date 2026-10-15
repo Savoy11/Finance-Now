@@ -40,8 +40,7 @@
 // Exit 1 = nobody carries these symbols, or ground truth was unreachable.
 //          Exit 1 is a real result here, not just a failure: see the closing note.
 
-import fs from 'node:fs'
-import path from 'node:path'
+import { readProviderConfigs } from './lib/providerConfigFile.mjs'
 import { RATES_CATALOG } from '../src/lib/data/ratesCatalog.ts'
 import { decideRateScale } from '../src/lib/utils/rateScale.ts'
 
@@ -60,15 +59,11 @@ const ENV_KEYS = {
 }
 
 function readSavedConfigs() {
-  // process.cwd() is frontend/ when run through npm, matching providers.ts.
-  const p = path.join(process.cwd(), '.provider-config.json')
-  try {
-    if (!fs.existsSync(p)) return {}
-    const raw = JSON.parse(fs.readFileSync(p, 'utf8'))
-    return raw.configs ?? raw
-  } catch {
-    return {}
-  }
+  // Plain or encrypted (T-437). A file this cannot read is said out loud, never taken for
+  // "no keys saved".
+  const { configs, error } = readProviderConfigs()
+  if (error) console.error(`! ${error} Only environment-variable keys will be used.`)
+  return configs
 }
 
 const saved = readSavedConfigs()
