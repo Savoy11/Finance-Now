@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid, boolean, uniqueIndex } from 'drizzle-orm/pg-core'
+import { pgTable, text, timestamp, uuid, boolean, uniqueIndex, index } from 'drizzle-orm/pg-core'
 import { sql } from 'drizzle-orm'
 import type { ModuleId } from '@/lib/modules/registry'
 
@@ -43,6 +43,37 @@ export const entitlements = pgTable('entitlements', {
 }, (t) => ({
   userModuleUnique: uniqueIndex('entitlements_user_module_unique').on(t.userId, t.moduleId),
 }))
+
+// ─── Password reset (T-435, D123, migration 0008) ────────────────────────────
+// Two tables of their own, and no new column on `users`, on purpose: every existing
+// `select().from(users)` would otherwise name a column a database without migration 0008
+// does not have, and sign-in itself would break until `npm run db:migrate` ran. A missing
+// table here only means "no reset flag yet". Rows go only with their user (CASCADE); a
+// spent token is marked, never removed.
+
+/** Owner-issued, single-use reset links. Only the SHA-256 of a token is stored. */
+export const passwordResetTokens = pgTable('password_reset_tokens', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  tokenHash: text('token_hash').notNull(),
+  issuedBy: text('issued_by').notNull().default('owner-command'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  usedAt: timestamp('used_at', { withTimezone: true }),
+}, (t) => ({
+  tokenHashUnique: uniqueIndex('password_reset_tokens_hash_unique').on(t.tokenHash),
+  byUser: index('password_reset_tokens_user_idx').on(t.userId),
+}))
+
+/** One row per user whose password state has ever been touched; absence means "nothing forced". */
+export const passwordStates = pgTable('password_states', {
+  userId: uuid('user_id').primaryKey().references(() => users.id, { onDelete: 'cascade' }),
+  /** Sign-in is refused until the password is reset (the owner forced it, e.g. after a breach). */
+  mustReset: boolean('must_reset').notNull().default(false),
+  mustResetSince: timestamp('must_reset_since', { withTimezone: true }),
+  passwordChangedAt: timestamp('password_changed_at', { withTimezone: true }),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+})
 
 export type User = typeof users.$inferSelect
 export type NewUser = typeof users.$inferInsert

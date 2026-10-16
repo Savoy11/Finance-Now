@@ -57,6 +57,13 @@
       "when": 1791566090518,
       "tag": "0007_asset-rating-readings",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792103182867,
+      "tag": "0008_password-reset",
+      "breakpoints": true
     }
   ]
 }

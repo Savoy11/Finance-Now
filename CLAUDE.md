@@ -52,7 +52,9 @@ frontend/src/
 ├── app/
 │   ├── layout.tsx                  # Root layout — wraps everything in <Providers>
 │   ├── providers.tsx               # React Query + Toaster setup
-│   ├── (auth)/                     # Login page (Auth.js credentials; wall currently off)
+│   ├── (auth)/                     # Login page (Auth.js credentials; wall currently off), and
+│   │                               #   reset-password/, which spends an owner-issued reset link
+│   │                               #   (T-435; see "Password reset" under Environment Variables)
 │   ├── (legal)/                    # About & Legal — PUBLIC: no sign-in gate, no sidebar (D50,
 │   │                               #   2026-10-01). Outside (dashboard) on purpose: that layout
 │   │                               #   renders nothing signed-out once REQUIRE_AUTH is on, and
@@ -1181,6 +1183,28 @@ FN_SECRETS_KEY=…                            # 32 random bytes, base64: encrypt
 FN_BASE_URL=http://localhost:3000           # (legacy CAEP_BASE_URL still honored) Base URL the MCP
                                             # server and scripts call back into
 ```
+
+**Password reset, without email (T-435, D123, 2026-10-15).** Sign-in had no reset, and after a
+breach the only lever was rotating `AUTH_SECRET`. That signs everyone out but cannot make anyone
+choose a new password. There is no email provider before launch (D21), so the owner issues links:
+
+- `npm run auth:reset -- --user <email>` prints a one-time link, valid 60 minutes, to hand over
+  directly.
+- Adding `--force` also refuses that account's sign-in until it resets.
+- `--all --force` does that for every account. It is the breach lever; pair it with rotating
+  `AUTH_SECRET`.
+- `--status` lists the accounts that must reset.
+
+The rules are in `lib/auth/passwordReset.ts` (pure); the password rule is in `passwordPolicy.ts`,
+shared with sign-up. The link's token travels after `#`, so it never reaches a server log or a
+Referer header. Only its SHA-256 is stored, it works once, and using it spends every other link
+for the account.
+
+⚠ **Migration 0008 adds `password_reset_tokens` and `password_states`; run `npm run db:migrate`.**
+The flag lives in its own table, never on `users`, deliberately: a new `users` column would break
+every `select().from(users)`, sign-in included, on a database not yet migrated. Until 0008 runs,
+sign-in works as before and the reset route answers 503 with the instruction.
+Guarded, with mutations, by `lib/auth/__tests__/passwordReset.test.ts`.
 
 **Server-side secret stores** (gitignored, written at repo `frontend/` root):
 `.provider-config.json` (provider API keys) and `.agent-prompts.json` (agent overrides).

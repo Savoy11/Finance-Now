@@ -46,7 +46,10 @@ export default function LoginPage() {
       const result = await signIn('credentials', { email, password, redirect: false })
       setIsLoading(false)
       if (result?.error) {
-        setError('Incorrect email or password.')
+        // A forced reset (T-435) is its own code, so it is not misread as a typo.
+        setError(result.code === 'must_reset_password'
+          ? 'This account’s password has to be reset before it can sign in. Ask the site owner for a reset link.'
+          : 'Incorrect email or password.')
         return
       }
       router.push('/headlines')

@@ -3,13 +3,13 @@ import { eq, sql } from 'drizzle-orm'
 import bcrypt from 'bcryptjs'
 import { db, isDbConfigured } from '@/lib/db'
 import { users } from '@/lib/db/schema'
+import { passwordProblem } from '@/lib/auth/passwordPolicy'
 
 export const dynamic = 'force-dynamic'
 
 // Account creation. Auth.js's credentials provider only verifies existing
-// users; registration is the application's job.
-
-const MIN_PASSWORD_LENGTH = 10
+// users; registration is the application's job. The password rule is shared with
+// the reset (T-435), so the two cannot drift apart.
 
 export async function POST(request: Request) {
   if (!isDbConfigured) {
@@ -32,11 +32,9 @@ export async function POST(request: Request) {
   if (!email || !email.includes('@')) {
     return NextResponse.json({ error: 'A valid email address is required' }, { status: 400 })
   }
-  if (typeof password !== 'string' || password.length < MIN_PASSWORD_LENGTH) {
-    return NextResponse.json(
-      { error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters` },
-      { status: 400 }
-    )
+  const problem = passwordProblem(password)
+  if (problem || typeof password !== 'string') {
+    return NextResponse.json({ error: problem ?? 'A password is required' }, { status: 400 })
   }
 
   const [existing] = await db

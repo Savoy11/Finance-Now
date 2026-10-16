@@ -14457,7 +14457,13 @@
     "note": "Owner ruled (D123): build the parts that need no email now: single-use short-lived reset tokens stored hashed and never logged, a per-user must-reset flag checked at sign-in, and an owner command that forces resets or issues a link to hand over directly. The email provider is chosen at launch (D21).",
     "remaining_work": "Build it (a PR of its own, with a migration). Sending by email waits for launch.",
     "evidence": [
-     "docs/decisions/2026-10-15-owner-decisions.md"
+     "docs/decisions/2026-10-15-owner-decisions.md",
+     "frontend/src/lib/auth/passwordReset.ts",
+     "frontend/drizzle/0008_password-reset.sql",
+     "frontend/scripts/auth-reset.ts"
+    ],
+    "corrections": [
+     "2026-10-15: BUILT, the parts that need no email (D123). npm run auth:reset -- --user <email> prints a one-time link (60 minutes, single use) for the owner to hand over; --force also refuses that account’s sign-in until it resets; --all --force does it for every account, the breach lever, paired with rotating AUTH_SECRET; --status lists who must reset. The link’s token travels after “#”, so it never reaches a server log or Referer header; only its SHA-256 is stored, and using it spends every other link for the account. Sign-in refuses a flagged account with its own code, and the login page says why. The flag and the tokens live in two new tables (migration 0008), never on users, so sign-in keeps working on a database not yet migrated; the reset route then answers 503 with the instruction (checked against the owner’s database the same day). The password rule is now shared with sign-up (passwordPolicy.ts). 26 tests in passwordReset.test.ts; nine guards driven red by mutations. REMAINING: the owner runs npm run db:migrate; sending the link by email waits for launch, when an email provider is chosen (D21)."
     ]
    }
   },
@@ -40582,6 +40588,13 @@
     "evidence": [
      "docs/audits/live-data-audit-2026-10-15-t105.md",
      "docs/decisions/2026-10-15-owner-decisions.md"
+    ]
+   },
+   {
+    "on": "2026-10-15",
+    "what": "T-435 built: owner-issued, single-use reset links and a forced-reset flag (migration 0008), with no email. Open until the migration runs; email waits for launch.",
+    "evidence": [
+     "frontend/src/lib/auth/passwordReset.ts"
     ]
    }
   ]

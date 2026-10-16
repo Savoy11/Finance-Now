@@ -1,9 +1,18 @@
-import NextAuth from 'next-auth'
+import NextAuth, { CredentialsSignin } from 'next-auth'
 import Credentials from 'next-auth/providers/credentials'
 import { eq, sql } from 'drizzle-orm'
 import bcrypt from 'bcryptjs'
 import { db } from '@/lib/db'
 import { users } from '@/lib/db/schema'
+import { mustResetPassword } from './passwordResetStore'
+
+/**
+ * The password was right, but the owner has forced a reset (T-435, D123), e.g. after a
+ * breach. A distinct code so the login page can say so instead of "incorrect password".
+ */
+export class MustResetPasswordError extends CredentialsSignin {
+  code = 'must_reset_password'
+}
 
 // ─── Auth.js configuration ───────────────────────────────────────────────────
 // Credentials-only for now (docs/ROADMAP.md Phase 0: "credentials now, OAuth
@@ -47,6 +56,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         const ok = await bcrypt.compare(password, user.passwordHash)
         if (!ok) return null
+
+        // Checked only after the password matched, so the refusal tells nobody but the
+        // account's holder that a reset is pending.
+        if (await mustResetPassword(user.id)) throw new MustResetPasswordError()
 
         return { id: user.id, email: user.email, name: user.name ?? undefined, image: user.image ?? undefined }
       },
