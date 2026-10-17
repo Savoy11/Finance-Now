@@ -317,7 +317,10 @@ const tests = [
     // tokenized stocks and funds, so that is a fallback, not a pass.
     const ts = j.tokenizedSecurities
     if (!ts?.checked) return fallback(`${arr.length} candidates, tokenized-security check did not run`)
-    return `${arr.length} candidates, ${ts.excluded.length} tokenized securities left out${ts.partial ? ' (partial check)' : ''}`
+    // A partial check names its unanswered categories, so the run says why
+    // instead of only that it happened (2026-10-17: it said "partial" and nothing else).
+    const failed = Array.isArray(ts.failed) && ts.failed.length ? `: ${ts.failed.join('; ')}` : ''
+    return `${arr.length} candidates, ${ts.excluded.length} tokenized securities left out${ts.partial ? ` (partial check${failed})` : ''}`
   }},
 
   { group: 'crypto/market', path: '/live-data/assets/list', name: 'assets/list', check: (j) => {
@@ -863,10 +866,10 @@ const tests = [
   // All four upstreams are keyless, so there is no UNCONFIGURED path here: a
   // failure is a real failure.
 
-  { group: 'macro', path: '/live-data/macro-news?limit=20', name: 'macro-news (8 RSS feeds)', check: (j) => {
+  { group: 'macro', path: '/live-data/macro-news?limit=20', name: 'macro-news (RSS feeds)', check: (j) => {
     if (!j.ok) throw new Error(j.error ?? 'not ok')
     const a = j.articles ?? []
-    if (a.length === 0) throw new Error('no articles — all 8 macro feeds failed upstream')
+    if (a.length === 0) throw new Error('no articles — every macro feed failed upstream')
     // The pillar classifier is the point of this route: articles matching no
     // pillar are dropped, so a feed that returns only unclassifiable items
     // looks identical to a dead feed unless we count pillars.

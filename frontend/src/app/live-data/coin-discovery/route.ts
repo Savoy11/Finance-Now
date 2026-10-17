@@ -46,9 +46,10 @@ export interface CoinDiscoveryResponse {
    * Tokenized securities left out of the candidates (TS-3): tokenized stocks,
    * funds, Treasuries and credit are securities, not crypto projects. `checked`
    * false means CoinGecko's categories could not be read, so none were left out
-   * and the page must say the check did not run.
+   * and the page must say the check did not run. `failed` names each category
+   * that did not answer and why ("category: reason"), so "partial" can be traced.
    */
-  tokenizedSecurities: { checked: boolean; partial: boolean; excluded: ExcludedSecurity[] }
+  tokenizedSecurities: { checked: boolean; partial: boolean; failed: string[]; excluded: ExcludedSecurity[] }
   updatedAt: string
   source: { name: string; limit: number; url: string }
   error?: string
@@ -101,7 +102,7 @@ export async function GET(req: Request) {
         ok: false,
         candidates: [],
         alreadyTracked: 0,
-        tokenizedSecurities: { checked: false, partial: false, excluded: [] },
+        tokenizedSecurities: { checked: false, partial: false, failed: [], excluded: [] },
         updatedAt: new Date().toISOString(),
         source: { name: 'CoinGecko', limit, url: 'https://api.coingecko.com/api/v3/coins/markets' },
         error: `CoinGecko markets unavailable (${upstreamErrors.join('; ') || 'empty response'})`,
@@ -155,6 +156,7 @@ export async function GET(req: Request) {
     tokenizedSecurities: {
       checked: index.checked.length > 0,
       partial: index.failed.length > 0,
+      failed: index.failed,
       excluded,
     },
     updatedAt: new Date().toISOString(),
