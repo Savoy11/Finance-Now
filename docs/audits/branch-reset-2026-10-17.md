@@ -17,3 +17,21 @@ before it are held by:
 - their combined content in `main` as `117140d`.
 
 Nothing was deleted; no other ref moved.
+
+## Second reset, the same day
+
+**What was done.** After PR #366 (T-407: Bitget and XT.com stopped, KuCoin kept; D129–D131) was
+squash-merged into `main` as `658c092`, the branch was restarted from that commit for the XT.com
+card on the Transfer Fee Check page and pushed with `--force-with-lease`, for the same reason as
+above.
+
+**Where the prior state lives.** The branch's previous tip, `5f1e6c6`, and the commit before it
+(`8e2a36d`) are held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@5f1e6c6`, created by
+  `.github/workflows/archive-branch.yml` when #366 merged (the earlier tag name was taken, so the
+  workflow added the short SHA rather than overwrite it);
+- GitHub's `refs/pull/366/head`;
+- their combined content in `main` as `658c092`.
+
+Nothing was deleted; no other ref moved.

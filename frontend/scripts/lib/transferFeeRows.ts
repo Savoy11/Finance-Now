@@ -67,6 +67,22 @@ export const FEE_PAGES: Record<string, string> = {
   pionex: 'https://www.pionex.com/blog/pionex-fees/',
 }
 
+// Exchanges whose fee page cannot be read from the owner's region at all, with what was
+// seen there and when. Their card says so and asks for "Can't see it" instead of sending
+// the owner off to search. Record only what someone saw first-hand: an exchange that is
+// merely missing from FEE_PAGES keeps the search hint, and an entry here never also has a
+// fee page above. `site` is the exchange's own site, so its terms verdict can be looked up.
+export const UNREADABLE_FEE_PAGES: Record<string, { site: string; seen: string; why: string }> = {
+  // Observed from the owner's residential US connection, VPN off: www.xt.com redirects to
+  // /en/restrict (see the xt.com entry in sourceTerms.ts). No terms page could be found
+  // either, which is why D131 stopped the app calling XT.com.
+  xtcom: {
+    site: 'https://www.xt.com/',
+    seen: '2026-09-15',
+    why: 'XT.com’s own site refuses visitors from your region (“XT does not provide services in your country or region”).',
+  },
+}
+
 export const rowKey = (exchangeId: string, coinId: string, networkId: string): string =>
   `${exchangeId}:${coinId}:${networkId}`
 

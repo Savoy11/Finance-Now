@@ -352,8 +352,47 @@ var FeeCheckCore = (function () {
     return { saveRow: saveRow, clearRow: clearRow, saveTrading: saveTrading, clearTrading: clearTrading, saveExchangeNote: saveExchangeNote }
   }
 
+  var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+  /** "2026-09-15" → "September 15, 2026"; anything else comes back as given. */
+  function longDay(iso) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(str(iso))
+    if (!m || +m[2] < 1 || +m[2] > 12) return str(iso)
+    return MONTHS[+m[2] - 1] + ' ' + (+m[3]) + ', ' + m[1]
+  }
+
+  /**
+   * What an exchange's card says before its rows: the fee page to open, or why there is
+   * none, and the notes that change how its rows are answered. Decided here so the tests
+   * read the real wording; the client only draws it. An exchange whose fee page cannot be
+   * read from the owner's region is told to mark its rows "Can't see it", never to search.
+   */
+  function exchangeGuidance(ex) {
+    var e = ex && typeof ex === 'object' ? ex : {}
+    var name = str(e.name)
+    var page = str(e.feePage)
+    var blocked = e.unreadable && typeof e.unreadable === 'object' ? e.unreadable : null
+    var link = page
+      ? { href: page, label: 'Open ' + name + '’s fee page', hint: ' If the link has moved, search “' + name + ' withdrawal fees”.' }
+      : { href: null, label: '', hint: blocked ? 'No fee page you can open from here.' : 'No fee page on file. Search “' + name + ' withdrawal fees”.' }
+    var notes = []
+    if (e.feed) {
+      notes.push({ tone: 'info', text: name + ' publishes its withdrawal fees in a public feed, so npm run fee-reconcile on your computer checks most of these rows in one run. ' +
+        'Leave them for that; its trading fee still needs a look.' })
+    }
+    if (blocked) {
+      notes.push({ tone: 'warn', text: str(blocked.why) + ' Last seen ' + longDay(blocked.seen) + '. ' +
+        'You can’t read its fee page, so mark these rows “' + ROW_RESULTS['cant-see'] + '” or leave them blank. Don’t spend time searching for it.' +
+        (e.prohibited ? ' The app’s source-terms register also marks ' + str(e.prohibited) + ' prohibited, so the app never contacts it.' : '') })
+    } else if (e.prohibited) {
+      notes.push({ tone: 'warn', text: 'The app’s source-terms register marks ' + str(e.prohibited) + ' prohibited, so the app never contacts it. ' +
+        'These rows were typed in by hand from its public fee page. Ask Claude before spending long on them.' })
+    }
+    return { link: link, notes: notes }
+  }
+
   return {
     ROW_RESULTS: ROW_RESULTS, TRADING_RESULTS: TRADING_RESULTS, SETTLES: SETTLES, MAX_NOTE: MAX_NOTE,
+    longDay: longDay, exchangeGuidance: exchangeGuidance,
     APPLY_COLUMNS: APPLY_COLUMNS,
     own: own, parseAmount: parseAmount,
     normRowCheck: normRowCheck, normTradingCheck: normTradingCheck, normExchangeNote: normExchangeNote,

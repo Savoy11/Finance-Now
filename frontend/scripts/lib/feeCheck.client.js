@@ -526,29 +526,21 @@
     exEls[ex.id].count = count
     sec.appendChild(head)
 
+    var guide = C.exchangeGuidance(ex)
     var links = el('p', 'ex-link')
-    if (ex.feePage) {
-      var a = el('a', 'feepage', 'Open ' + ex.name + '’s fee page')
-      a.href = ex.feePage
+    if (guide.link.href) {
+      var a = el('a', 'feepage', guide.link.label)
+      a.href = guide.link.href
       a.target = '_blank'
       a.rel = 'noopener noreferrer'
       links.appendChild(a)
-      links.appendChild(el('span', 'hint', ' If the link has moved, search “' + ex.name + ' withdrawal fees”.'))
-    } else {
-      links.appendChild(el('span', 'hint', 'No fee page on file. Search “' + ex.name + ' withdrawal fees”.'))
     }
+    links.appendChild(el('span', 'hint', guide.link.hint))
     sec.appendChild(links)
 
-    if (ex.feed) {
-      sec.appendChild(el('p', 'callout',
-        ex.name + ' publishes its withdrawal fees in a public feed, so npm run fee-reconcile on your computer checks most of these rows in one run. ' +
-        'Leave them for that; its trading fee still needs a look.'))
-    }
-    if (ex.prohibited) {
-      sec.appendChild(el('p', 'callout warn',
-        'The app’s source-terms register marks ' + ex.prohibited + ' prohibited, so the app never contacts it. ' +
-        'These rows were typed in by hand from its public fee page. Ask Claude before spending long on them.'))
-    }
+    guide.notes.forEach(function (n) {
+      sec.appendChild(el('p', n.tone === 'warn' ? 'callout warn' : 'callout', n.text))
+    })
     if (ex.leads.length) {
       var box = el('div', 'leads')
       box.appendChild(el('p', 'leads-h', 'Things to look for here'))
