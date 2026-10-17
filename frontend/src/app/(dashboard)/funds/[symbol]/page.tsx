@@ -9,6 +9,7 @@ import { ArrowLeft, Calculator, Clock, ExternalLink, TrendingDown, TrendingUp } 
 import { ModuleGate } from '@/components/layout/ModuleGate'
 import { FundHoldingsHistory } from './FundHoldingsHistory'
 import { FundHoldingsSection } from './FundHoldingsSection'
+import { FundProspectusLink } from './FundProspectusLink'
 import { ExplainedLabel } from '@/components/ui/ExplainedLabel'
 import { SourceLine } from '@/components/ui/SourceLine'
 import { ProvenanceNotice } from '@/components/ui/ProvenanceNotice'
@@ -289,11 +290,13 @@ function FundDetailInner() {
                 <a href={entry.website} target="_blank" rel="noopener noreferrer" className="text-accent-blue/80 hover:text-accent-blue inline-flex items-center gap-0.5">
                   {entry.website.replace(/^https?:\/\/(www\.)?/, '').split(/[/?]/)[0]} <ExternalLink size={10} aria-hidden />
                 </a>
+                <FundProspectusLink symbol={symbol} />
               </p>
             ) : (
               <p className="mt-1 text-xs text-text-muted">
                 Discovered via the {type === 'etf' ? 'NASDAQ symbol directory' : 'SEC fund registry'} —
                 quotes, chart, and holdings load live by ticker.
+                <FundProspectusLink symbol={symbol} />
               </p>
             )}
           </div>

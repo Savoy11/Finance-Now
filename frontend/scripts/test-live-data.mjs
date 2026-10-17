@@ -824,6 +824,26 @@ const tests = [
     return `${h.length} holdings via ${j.source} (unexpectedly better than catalog)`
   }},
 
+  // T-420 item 2: IEF files a 497K summary prospectus with each annual 485BPOS,
+  // so the link must be the summary, dated on or after that update and within
+  // ~14 months (an annual filer older than that has stopped filing or the chain
+  // broke). SPY, a trust outside the mutual-fund map, must get no link at all.
+  { group: 'funds', path: '/live-data/fund-prospectus?symbol=IEF', name: 'fund-prospectus (IEF, 497K filer)', check: (j) => {
+    if (!j.ok) throw new Error(j.error ?? 'not ok')
+    const p = j.prospectus
+    if (!p) throw new Error(`no prospectus: ${j.reason ?? 'no reason given'}`)
+    if (p.kind !== 'summary') return fallback(`${p.kind} filed ${p.filedAt}, expected the 497K summary prospectus`)
+    if (p.url === p.indexUrl) return fallback(`summary filed ${p.filedAt}, but only the EDGAR index page — the document lookup failed`)
+    const ageDays = (Date.now() - new Date(p.filedAt).getTime()) / 86_400_000
+    if (ageDays > 430) return fallback(`summary filed ${p.filedAt} is ${Math.round(ageDays)} days old`)
+    return `summary prospectus filed ${p.filedAt}`
+  }},
+  { group: 'funds', path: '/live-data/fund-prospectus?symbol=SPY', name: 'fund-prospectus (SPY, trust — none expected)', check: (j) => {
+    if (!j.ok) throw new Error(j.error ?? 'not ok')
+    if (j.prospectus) throw new Error(`SPY got a prospectus link (${j.prospectus.url}); it files no 497K or 485BPOS, so this is another fund's document`)
+    return `no link, as expected: ${String(j.reason ?? '').slice(0, 80)}`
+  }},
+
   { group: 'funds', path: '/live-data/fund-holdings-history?symbol=SPY', name: 'fund-holdings-history (SPY)', check: (j) => {
     if (!j.ok) {
       const e = String(j.error ?? '')
