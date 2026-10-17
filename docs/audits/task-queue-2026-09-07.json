@@ -13109,10 +13109,11 @@
     "T-242",
     "T-151",
     "T-413",
-    "D41"
+    "D41",
+    "D133"
    ],
    "summary": "Four registry entries are `conditional` in a sense the word does not carry anywhere else in the registry. Normally `conditional` means permitted while conditions hold, and the conditions are obligations to honour. In these four it means WE ARE PROCEEDING ON A QUESTION THE DOCUMENT DOES NOT ANSWER — the plain text does not permit what the app does, and the entry is conditional because of an owner judgement about SCOPE. Same word, two different claims, and the registry has no field that separates them. CoinDesk: no display permission; \"rss\"/\"syndicat\"/\"feed\" return zero hits in 300 lines. Investing.com: no display permission and automated extraction expressly forbidden, yet it publishes the feeds and robots.txt permits /rss/. publicnode: bars re-use \"commercially and non-commercially\", which read literally prohibits consuming an RPC provider at all. Bitget: §1 lists the UNITED STATES among Prohibited Countries while the owner is US-resident. Three of the four were the owner's deliberate 2026-09-20 calls made with the readings in hand. This item exists so those calls stay visible rather than ageing into apparent settledness.",
-   "next_action": "One decision is owed now. INVESTING.COM: its Limitations on Use (c) forbid automated extraction “for any purpose”, while it publishes the feeds the app reads (3 of the macro-news feeds) and its robots.txt permits /rss/. The T-247 mechanism is ready: toward headline-and-link is one field (whatMayBeDisplayed: headline-link); toward prohibited, every macro pillar keeps a non-Investing source (D21). ALREADY SETTLED: Bitget (D129, 2026-10-17: the app stopped calling it); KuCoin (D130, 2026-10-17: kept until launch, on the reading that Article 17(5)’s US undertaking binds on registering an account (Article 14), which the app never does; recorded as a judgement on its registry entry, with counsel or KuCoin to confirm at launch together with the Article 91 permission D42 needs); XT.com (D131, 2026-10-17: the app stopped calling it, since it publishes no terms document anyone could find and refuses service to the owner’s region); and publicnode (D25, 2026-09-24: narrow reading kept, termsUrl fixed). CoinDesk and Nasdaq Trader are satisfied before launch under D96, each with its launch step on its registry entry.",
+   "next_action": "Nothing is owed now. At launch: CoinDesk and Nasdaq Trader, satisfied before launch under D96, each need the launch step written on its registry entry (CoinDesk's scope question is one for counsel). ALREADY SETTLED: Investing.com (D133, 2026-10-17: the app stopped reading its three macro-news feeds; investing.com is prohibited, and restoring them needs Fusion Media’s written permission, enquiry on T-425); Bitget (D129, 2026-10-17: the app stopped calling it); KuCoin (D130, 2026-10-17: kept until launch, on the reading that Article 17(5)’s US undertaking binds on registering an account (Article 14), which the app never does; recorded as a judgement on its registry entry, with counsel or KuCoin to confirm at launch together with the Article 91 permission D42 needs); XT.com (D131, 2026-10-17: the app stopped calling it, since it publishes no terms document anyone could find and refuses service to the owner’s region); and publicnode (D25, 2026-09-24: narrow reading kept, termsUrl fixed).",
    "sources": [
     {
      "file": "frontend/src/lib/server/sourceTerms.ts",
@@ -13140,7 +13141,8 @@
     "note": "2026-10-09 (D96): the owner ruled that anything done before launch is personal use, for every source. Under it, CoinDesk (viewing 'for personal, informational, and non-commercial purposes') and Nasdaq Trader ('one temporary copy for personal and non-commercial use') are satisfied before launch, and their question becomes a launch step, recorded on each registry entry. Investing.com (automated extraction forbidden 'for any purpose'), publicnode (re-use barred 'commercially and non-commercially') and Bitget (the United States a Prohibited Country) stay open: their limits are not about who the user is. See docs/assessments/source-terms-prelaunch-2026-10-09.md. MECHANISM READY (T-247): CoinDesk and Investing.com carry whatMayBeDisplayed: unclear. Resolving either toward headline-and-link is now setting that field to headline-link — the three news routes blank the summary automatically — plus updating displayGrant.test.ts's \"no source is headline-link today\" assertion with the decision. The question itself is unchanged and still the owner's (or a professional's).",
     "corrections": [
      "2026-10-17: BITGET DECIDED (D129). The owner chose to stop calling Bitget rather than rely on the reading that a no-account API call falls outside §1’s Prohibited Countries. The withdraw-fee overlay was its only call: the source and parseBitgetCoins were removed, bitget.com is prohibited in sourceTerms.ts, api.bitget.com is out of dataSources.ts (DATA-SOURCES.md regenerated), and guards in withdrawFeeAdapters.test.ts and sourceTerms.test.ts fail if any of it returns. Bitget’s 26 rows in the hand-kept transfer-fee table stay, now checked by hand like any exchange without a feed. Also corrected: the 2026-10-09 note above lists publicnode as still open, but D25 had kept its narrow reading on 2026-09-24.",
-     "2026-10-17: KUCOIN AND XT.COM DECIDED (D130, D131). KuCoin is kept until launch: Article 17(5)’s US undertaking binds on registering an account (Article 14), the app never registers, and Bitget differed because its terms bind on access to the Platform, API included. Its UNRESOLVED condition in sourceTerms.ts was replaced by one that names this as a judgement and carries the launch step, and sourceTerms.test.ts fails if it is dropped. XT.com is stopped: its source and parseXtSupportCurrency were removed from withdrawFeeAdapters.ts, xt.com is prohibited in sourceTerms.ts (review stays seeded, since no document was read), sapi.xt.com is out of dataSources.ts (DATA-SOURCES.md regenerated), and guards in withdrawFeeAdapters.test.ts and sourceTerms.test.ts fail if any of it returns. XT.com’s rows in the hand-kept transfer-fee table stay, checked by hand. The withdraw-fee overlay now has four feeds: KuCoin, HTX, LBank and Bitfinex."
+     "2026-10-17: KUCOIN AND XT.COM DECIDED (D130, D131). KuCoin is kept until launch: Article 17(5)’s US undertaking binds on registering an account (Article 14), the app never registers, and Bitget differed because its terms bind on access to the Platform, API included. Its UNRESOLVED condition in sourceTerms.ts was replaced by one that names this as a judgement and carries the launch step, and sourceTerms.test.ts fails if it is dropped. XT.com is stopped: its source and parseXtSupportCurrency were removed from withdrawFeeAdapters.ts, xt.com is prohibited in sourceTerms.ts (review stays seeded, since no document was read), sapi.xt.com is out of dataSources.ts (DATA-SOURCES.md regenerated), and guards in withdrawFeeAdapters.test.ts and sourceTerms.test.ts fail if any of it returns. XT.com’s rows in the hand-kept transfer-fee table stay, checked by hand. The withdraw-fee overlay now has four feeds: KuCoin, HTX, LBank and Bitfinex.",
+     "2026-10-17: INVESTING.COM DECIDED (D133). The owner chose to stop reading it rather than read its published RSS feeds as an invitation that its Limitations on Use (c) do not reconcile. The three macro-news feeds (commodities, bonds, forex) and their provider rows were removed; investing.com is prohibited in sourceTerms.ts (review stays verified, since the 2026-09-20 reading stands); www.investing.com is out of dataSources.ts (DATA-SOURCES.md regenerated). Every pillar keeps a source: commodities → OilPrice, currencies → FXStreet, bonds → CNBC Economy. The route uses a plain fetch, so sourceTerms.test.ts fails if the route or the provider registry names Investing.com again, and the drift check fails on its host. Nothing is owed now; CoinDesk and Nasdaq Trader remain launch steps under D96."
     ],
     "evidence": [
      "docs/decisions/2026-10-17-owner-decisions.md",
@@ -13148,8 +13150,11 @@
      "frontend/src/lib/server/withdrawFeeAdapters.ts",
      "frontend/src/lib/server/__tests__/withdrawFeeAdapters.test.ts",
      "frontend/src/lib/server/__tests__/sourceTerms.test.ts",
-     "docs/LEGAL-REVIEW.md"
-    ]
+     "docs/LEGAL-REVIEW.md",
+     "frontend/src/app/live-data/macro-news/route.ts",
+     "frontend/src/lib/api/live/providers.ts"
+    ],
+    "remaining_work": "At launch: the CoinDesk and Nasdaq Trader launch steps (D96). Nothing before then."
    },
    "reworded": {
     "on": "2026-10-17",
@@ -13994,7 +13999,10 @@
    },
    "progress": {
     "noted_on": "2026-10-09",
-    "note": "2026-10-09: a further enquiry joins this list: Marketaux (docs/licensing/marketaux-enquiry-2026-10-07.md, drafted 2026-10-07 for T-430), asking it to confirm its 'automated or non-human means' clause does not cover its own API and what approval a public app needs. Under D96 it is a launch step, so it can go with the others near build completion."
+    "note": "2026-10-09: a further enquiry joins this list: Marketaux (docs/licensing/marketaux-enquiry-2026-10-07.md, drafted 2026-10-07 for T-430), asking it to confirm its 'automated or non-human means' clause does not cover its own API and what approval a public app needs. Under D96 it is a launch step, so it can go with the others near build completion.",
+    "corrections": [
+     "2026-10-17: the Investing.com enquiry is now only for if the owner wants its feeds back. D133 stopped reading them, and restoring them needs Fusion Media’s written permission (its §20)."
+    ]
    },
    "reworded": {
     "on": "2026-10-14",

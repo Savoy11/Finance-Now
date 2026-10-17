@@ -486,14 +486,14 @@ export const DATA_SOURCES: DataSourceEntry[] = [
     id: 'macro-news', surface: 'Macro news (commodities/bonds/FX)', module: 'macro',
     route: '/live-data/macro-news', status: 'live',
     providers: [
-      { name: 'Investing.com RSS (commodities, bonds, forex)', host: 'www.investing.com', role: 'primary', auth: 'none' },
       { name: 'OilPrice RSS', host: 'oilprice.com', role: 'primary', auth: 'none' },
       { name: 'FXStreet RSS', host: 'www.fxstreet.com', role: 'primary', auth: 'none' },
       { name: 'CNBC RSS', host: 'search.cnbc.com', role: 'primary', auth: 'none' },
     ],
     // Until T-433 (2026-10-13) this was one hostless provider still naming "Dow Jones RSS",
     // whose MarketWatch feed went on terms on 2026-09-20, with a note counting 8 feeds.
-    notes: 'Keyless RSS feeds from the four publishers above, with a content-first pillar classifier. MarketWatch’s feed was removed on terms on 2026-09-20 (Dow Jones ToU §9.4.1).',
+    // Investing.com's three feeds went on terms on 2026-10-17 (D133, T-407).
+    notes: 'Keyless RSS feeds from the publishers above, with a content-first pillar classifier. MarketWatch’s feed was removed on terms on 2026-09-20 (Dow Jones ToU §9.4.1), and Investing.com’s three on 2026-10-17 (its Limitations on Use (c), owner decision D133).',
   },
   {
     id: 'futures-curve', surface: 'Futures term structure (forward curve)', module: 'macro',

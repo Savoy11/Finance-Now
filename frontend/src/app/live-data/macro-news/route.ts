@@ -55,22 +55,26 @@ export interface MacroNewsResponse {
 
 // ─── Feeds (all keyless; probed working 2026-07-21) ──────────────────────────
 
-// Order matters twice over: topic feeds run before general ones so dropped
-// duplicates credit the topical source, and the bonds feed runs before forex
-// because Investing.com cross-posts rates stories to both.
+// Order matters: topic feeds run before general ones so dropped duplicates
+// credit the topical source.
+//
+// ⚠ Investing.com's three feeds (commodities, bonds, forex) were removed 2026-10-17
+// ON TERMS (owner decision D133, T-407): its Limitations on Use (c) forbid automated
+// extraction "for any purpose", and investing.com is now `prohibited` in
+// sourceTerms.ts. This route fetches with a plain fetch, which that verdict does not
+// stop, so sourceTerms.test.ts and the data-sources drift check fail if a feed returns.
+// They still answer; do not restore them without Fusion Media's written permission
+// (the enquiry is on T-425).
+// Every pillar keeps a source: commodities → OilPrice, currencies → FXStreet, bonds →
+// CNBC Economy below (the Investing.com bonds feed carried mostly op-eds anyway).
 const FEEDS: Array<{ providerId: string; url: string; source: string; defaultPillar: MacroPillar | null }> = [
-  { providerId: 'investing-commodities', url: 'https://www.investing.com/rss/news_11.rss',           source: 'Investing.com Commodities', defaultPillar: 'commodities' },
   { providerId: 'oilprice',              url: 'https://oilprice.com/rss/main',                       source: 'OilPrice',                  defaultPillar: 'commodities' },
-  { providerId: 'investing-bonds',       url: 'https://www.investing.com/rss/bonds_Fundamental.rss', source: 'Investing.com Bonds',       defaultPillar: 'bonds' },
-  { providerId: 'investing-forex',       url: 'https://www.investing.com/rss/news_1.rss',            source: 'Investing.com Forex',       defaultPillar: 'currencies' },
   { providerId: 'fxstreet',              url: 'https://www.fxstreet.com/rss/news',                   source: 'FXStreet',                  defaultPillar: 'currencies' },
   // General feeds: kept only when an article classifies into a pillar.
-  // CNBC Economy is here mainly to feed the bonds pillar — the dedicated
-  // Investing.com bonds feed publishes op-eds every few weeks, not news.
+  // CNBC Economy is here mainly to feed the bonds pillar, which has no dedicated feed.
   // ⚠ `marketwatch-macro` (mw_bulletins) removed 2026-09-20 ON TERMS — Dow Jones
   // Terms of Use §9.1/§9.4.1; dowjones.io is now `prohibited`. See market-news for
-  // the reasoning. Seven feeds remain and every pillar keeps a dedicated source, so
-  // this degrades the general pool rather than removing a pillar.
+  // the reasoning. That degraded the general pool rather than removing a pillar.
   { providerId: 'cnbc-macro',        url: 'https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=10000664', source: 'CNBC', defaultPillar: null },
   { providerId: 'cnbc-economy',      url: 'https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=20910258', source: 'CNBC Economy', defaultPillar: null },
 ]

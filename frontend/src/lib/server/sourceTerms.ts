@@ -1122,6 +1122,7 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     // conditional entries, where conditions are simply obligations to honour.
     // Grouped and reasoned in docs/LEGAL-REVIEW.md §7. Tracked as T-407.
     // (Bitget left the class on 2026-10-17: owner decision D129 made it prohibited.)
+    // (Investing.com left it the same day: owner decision D133 made it prohibited.)
     // ✅ SETTLED 2026-10-17 (D129): prohibited, as the top of this entry says. The rest of
     // this block is kept as the record of why it was open.
     // THIS ONE IS THE SHARPEST OF THE FOUR, on a question the others do not raise:
@@ -1310,6 +1311,7 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     // conditional entries, where conditions are simply obligations to honour.
     // Grouped and reasoned in docs/LEGAL-REVIEW.md §7. Tracked as T-407.
     // (Bitget left the class on 2026-10-17: owner decision D129 made it prohibited.)
+    // (Investing.com left it the same day: owner decision D133 made it prohibited.)
     // THIS ONE: the broadest clause in the registry — barring re-use "commercially and
     // non-commercially", which read literally prohibits consuming an RPC provider at all,
     // since answering calls IS the product. `review: verified` records only that the
@@ -1701,6 +1703,7 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     // conditional entries, where conditions are simply obligations to honour.
     // Grouped and reasoned in docs/LEGAL-REVIEW.md §7. Tracked as T-407.
     // (Bitget left the class on 2026-10-17: owner decision D129 made it prohibited.)
+    // (Investing.com left it the same day: owner decision D133 made it prohibited.)
     // THIS ONE: the reading proposed `prohibited` and an adversarial pass sustained it.
     // Scope is what is unresolved — the ToU never mentions feeds, so either the feed is
     // inside the expansively defined "Services", or a document that never reaches feeds
@@ -1856,7 +1859,15 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
   {
     domain: 'investing.com',
     name: 'Investing.com',
-    verdict: 'conditional',
+    verdict: 'prohibited',
+    // RULED 2026-10-17 (owner decision D133, T-407): STOP READING IT. Limitations on Use
+    // (c) forbid automated extraction "for any purpose", and the pre-launch personal-use
+    // rule (D96) never reopens a ban on automated access. The macro-news route's three
+    // feeds (commodities, bonds, forex) and their provider rows were removed that day;
+    // every pillar keeps another source. `review` stays `verified`: the document was read
+    // on 2026-09-20, and this verdict follows that reading. Restoring the feeds needs
+    // Fusion Media's written permission (§20); the enquiry is on T-425. The notes below
+    // are the record of the tension that kept it `conditional` until this ruling.
     termsUrl: 'https://www.investing.com/about-us/terms-and-conditions',
     finding:
       'READ 2026-09-20. The Terms and Conditions are a 21-page PDF at ' +
@@ -1909,6 +1920,7 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     // conditional entries, where conditions are simply obligations to honour.
     // Grouped and reasoned in docs/LEGAL-REVIEW.md §7. Tracked as T-407.
     // (Bitget left the class on 2026-10-17: owner decision D129 made it prohibited.)
+    // (This one left it the same day: owner decision D133 made it prohibited.)
     // THIS ONE: no display permission, and automated extraction expressly forbidden —
     // yet Investing.com publishes the feeds this app reads and robots.txt permits /rss/.
     // Both true at once; the document never mentions feeds, so it reconciles neither.

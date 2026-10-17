@@ -395,18 +395,8 @@ export const BUILTIN_PROVIDERS: BuiltinProviderDef[] = [
 
   // ── Macro news (market: 'macro') ── one row per feed in the macro-news
   // route; all keyless RSS, merged in parallel like equity news.
-  {
-    id: 'investing-commodities',
-    name: 'Investing.com Commodities',
-    category: 'news',
-    market: 'macro',
-    description: 'Investing.com commodities desk — metals, energy, and agriculture coverage.',
-    features: ['Commodities coverage', 'No key needed'],
-    requiresKey: false,
-    freeTierLabel: 'Keyless — already active',
-    keyUrl: 'https://www.investing.com/commodities/',
-    priority: 1,
-  },
+  // ⚠ The three Investing.com rows (investing-commodities, investing-bonds,
+  // investing-forex) went 2026-10-17 with their feeds, on terms (D133, T-407).
   {
     id: 'oilprice',
     name: 'OilPrice',
@@ -418,30 +408,6 @@ export const BUILTIN_PROVIDERS: BuiltinProviderDef[] = [
     freeTierLabel: 'Keyless — already active',
     keyUrl: 'https://oilprice.com',
     priority: 2,
-  },
-  {
-    id: 'investing-bonds',
-    name: 'Investing.com Bonds',
-    category: 'news',
-    market: 'macro',
-    description: 'Investing.com bonds desk — rates and fixed-income commentary.',
-    features: ['Bonds & rates coverage', 'No key needed'],
-    requiresKey: false,
-    freeTierLabel: 'Keyless — already active',
-    keyUrl: 'https://www.investing.com/rates-bonds/',
-    priority: 3,
-  },
-  {
-    id: 'investing-forex',
-    name: 'Investing.com Forex',
-    category: 'news',
-    market: 'macro',
-    description: 'Investing.com FX desk — currency-market news.',
-    features: ['FX coverage', 'No key needed'],
-    requiresKey: false,
-    freeTierLabel: 'Keyless — already active',
-    keyUrl: 'https://www.investing.com/currencies/',
-    priority: 4,
   },
   {
     id: 'fxstreet',
