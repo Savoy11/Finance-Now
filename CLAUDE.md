@@ -1532,13 +1532,16 @@ the probe's map drifts from the route's.
 ```bash
 npm run agent-eval                 # PLAN only — prints what would run, spends nothing
 npm run agent-eval -- --run        # actually runs all 11. This costs money.
-npm run agent-eval -- --run --only equity-research
+npm run agent-eval -- --run --only equity-research,macro-screener
 ```
 
 `scripts/run-agent-eval.mjs` runs each of the 11 agents once on a **fixed** task and
 writes `agent-eval-worksheet.md` with a blank verdict box per agent — the same
 report-never-tune split as the fee scripts, because D20 says the owner judges. It
-never edits a prompt, a model or a temperature.
+never edits a prompt, a model or a temperature. A run with `--only` writes
+`agent-eval-worksheet-partial.md` instead, so re-running one agent never replaces a full
+run's worksheet. The file starts with a byte-order mark so Windows PowerShell's
+`Get-Content` reads it as UTF-8.
 
 **The default does nothing on purpose.** Every run bills, and the failure mode for an
 eval harness is being invoked by accident, so reaching the API takes an explicit

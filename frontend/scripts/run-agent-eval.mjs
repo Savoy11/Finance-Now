@@ -5,6 +5,7 @@
 //   npm run agent-eval              # PLAN only. Prints what would run. Spends nothing.
 //   npm run agent-eval -- --run     # actually runs them. This spends money.
 //   npm run agent-eval -- --run --only equity-research
+//   npm run agent-eval -- --run --only pump-report-investigator,pump-report-chat
 //   npm run agent-eval -- --run --timeout 180
 //
 // Owner decision D20 (2026-09-14): "Run once now; owner judges. One-off, not
@@ -39,9 +40,13 @@ import path from 'node:path'
 const BASE = process.env.BASE_URL ?? process.env.FN_BASE_URL ?? process.env.CAEP_BASE_URL ?? 'http://localhost:3000'
 const args = process.argv.slice(2)
 const RUN = args.includes('--run')
-const ONLY = args.includes('--only') ? args[args.indexOf('--only') + 1] : null
+const ONLY = args.includes('--only')
+  ? String(args[args.indexOf('--only') + 1] ?? '').split(',').map((s) => s.trim()).filter(Boolean)
+  : null
 const TIMEOUT_S = args.includes('--timeout') ? Number(args[args.indexOf('--timeout') + 1]) : 240
-const OUT = path.resolve(process.cwd(), '..', 'agent-eval-worksheet.md')
+// A run of some agents writes its own file, so re-running one or two never
+// replaces the worksheet of a full run the owner is still judging.
+const OUT = path.resolve(process.cwd(), '..', ONLY ? 'agent-eval-worksheet-partial.md' : 'agent-eval-worksheet.md')
 
 // The model the run will actually use, read out of the source rather than
 // repeated here. A worksheet that names a model the routes stopped using is
@@ -129,9 +134,10 @@ const AGENTS = [
   },
 ]
 
-const selected = ONLY ? AGENTS.filter((a) => a.id === ONLY) : AGENTS
-if (ONLY && selected.length === 0) {
-  console.error(`Unknown agent "${ONLY}". Known: ${AGENTS.map((a) => a.id).join(', ')}`)
+const unknown = ONLY ? ONLY.filter((id) => !AGENTS.some((a) => a.id === id)) : []
+const selected = ONLY ? AGENTS.filter((a) => ONLY.includes(a.id)) : AGENTS
+if (ONLY && (unknown.length > 0 || selected.length === 0)) {
+  console.error(`Unknown agent "${unknown.join(', ') || ONLY.join(', ')}". Known: ${AGENTS.map((a) => a.id).join(', ')}`)
   process.exit(1)
 }
 
@@ -210,7 +216,10 @@ async function callAgent(agent) {
     const ms = Date.now() - started
     const text = await res.text()
     let data
-    try { data = JSON.parse(text) } catch { data = { raw: text.slice(0, 2000) } }
+    // The Pump Report routes stream plain text, not JSON. Keep all of it: this
+    // cut it at 2,000 characters until 2026-10-17, so both Pump Report answers
+    // in that day's worksheet ended mid-report. The worksheet caps its own copy.
+    try { data = JSON.parse(text) } catch { data = { raw: text } }
 
     if (!res.ok) {
       return { ok: false, ms, status: res.status, error: data?.error ?? text.slice(0, 400) }
@@ -298,8 +307,12 @@ async function main() {
     const r = await callAgent(agent)
     results.push({ agent, ...r })
     if (r.ok) {
-      const tools = Array.isArray(r.toolsUsed) ? r.toolsUsed.length : (r.toolsUsed ? '?' : 0)
-      console.log(`${fmtDuration(r.ms)}, ${r.output.length} chars, ${tools} tool call(s)${tools === 0 ? '  ⚠ NO TOOLS' : ''}`)
+      // A route that does not report its tools (the Pump Report pair, which run
+      // their own web search) is not an agent that used none.
+      const tools = Array.isArray(r.toolsUsed)
+        ? `${r.toolsUsed.length} tool call(s)${r.toolsUsed.length === 0 ? '  ⚠ NO TOOLS' : ''}`
+        : 'tools not reported by this route'
+      console.log(`${fmtDuration(r.ms)}, ${r.output.length} chars, ${tools}`)
     } else {
       console.log(`FAILED (${r.status || 'no response'}) — ${r.error}`)
     }
@@ -382,7 +395,10 @@ async function main() {
   md.push('- Actual spend for this run is on the Anthropic Console — these routes do not return token counts.')
   md.push('')
 
-  fs.writeFileSync(OUT, md.join('\n'), 'utf8')
+  // With a byte-order mark, because Windows PowerShell's Get-Content reads a file
+  // without one in the old Windows code page, and the 2026-10-17 copy came out with
+  // every dash and arrow garbled ("â€”").
+  fs.writeFileSync(OUT, '\ufeff' + md.join('\n'), 'utf8')
 
   console.log('')
   console.log(`Worksheet → ${OUT}`)

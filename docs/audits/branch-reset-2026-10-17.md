@@ -149,3 +149,19 @@ with `--force-with-lease`, for the same reason as above.
 - its content in `main` as `92ba4dd`.
 
 Nothing was deleted; no other ref moved.
+
+## Tenth reset, the same day
+
+**What was done.** After PR #374 (the agent temperature fix) was squash-merged into `main` as
+`8c9bd8b`, the branch was restarted from that commit for fixes to the agent evaluation script and
+pushed with `--force-with-lease`, for the same reason as above.
+
+**Where the prior state lives.** The branch's previous tip, `fa0ac48`, its only commit beyond
+`92ba4dd`, is held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@fa0ac48`, created by
+  `.github/workflows/archive-branch.yml` when #374 merged;
+- GitHub's `refs/pull/374/head`;
+- its content in `main` as `8c9bd8b`.
+
+Nothing was deleted; no other ref moved.
