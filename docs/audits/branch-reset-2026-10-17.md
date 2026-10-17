@@ -133,3 +133,19 @@ pushed with `--force-with-lease`, for the same reason as above.
 - its content in `main` as `41e3d5b`.
 
 Nothing was deleted; no other ref moved.
+
+## Ninth reset, the same day
+
+**What was done.** After PR #373 (the live-data audit record) was squash-merged into `main` as
+`92ba4dd`, the branch was restarted from that commit for the agent temperature fix and pushed
+with `--force-with-lease`, for the same reason as above.
+
+**Where the prior state lives.** The branch's previous tip, `f439c96`, its only commit beyond
+`41e3d5b`, is held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@f439c96`, created by
+  `.github/workflows/archive-branch.yml` when #373 merged;
+- GitHub's `refs/pull/373/head`;
+- its content in `main` as `92ba4dd`.
+
+Nothing was deleted; no other ref moved.

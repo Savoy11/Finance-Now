@@ -5858,7 +5858,11 @@
     "note": "2026-10-17: THE AUDIT PRECONDITION IS MET. npm run audit ran on the owner's machine (residential Spectrum line, no proxy): 78 REAL, 4 FALLBACK, 9 UNCONFIGURED, 1 EMPTY, 0 FAIL (docs/audits/live-data-audit-2026-10-17.md).",
     "remaining_work": "The agent runs themselves, on the owner's machine (they bill the Anthropic key), and the write-up.",
     "evidence": [
-     "docs/audits/live-data-audit-2026-10-17.md"
+     "docs/audits/live-data-audit-2026-10-17.md",
+     "frontend/src/lib/agents/sampling.ts"
+    ],
+    "corrections": [
+     "2026-10-17 (later): THE FIRST RUN FOUND EVERY AGENT BROKEN, AND NOT BY A PROMPT. npm run agent-eval -- --run on the owner's machine: the nine agents on the shared runner were refused by Anthropic with HTTP 400, \"`temperature` is deprecated for this model.\" Claude Sonnet 5, the default since 2026-09-17, accepts no temperature, and every request sent the agent's saved one, so every AI surface (Assistant, Research, Daily Brief, the AI scans, Pump Report) had been failing since that day; no test reaches the paid API. The two Pump Report agents 'answered' only with their own error text, which the investigate route blamed on the API key. Refused requests are not billed. FIXED in the PR that carries this note: lib/agents/sampling.ts sends a temperature only to Claude 4.6 and older, at all three call sites; the eval script now counts a streamed error message as a failure. REMAINING: re-run npm run agent-eval -- --run once that PR is merged, with BASE_URL pointing at the running app."
     ]
    }
   },

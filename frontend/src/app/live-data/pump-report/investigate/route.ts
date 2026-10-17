@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { loadAgentConfig } from '@/lib/agents/config'
 import { DEFAULT_ANTHROPIC_MODEL } from '@/lib/agents/prompts'
+import { anthropicSampling } from '@/lib/agents/sampling'
 import { guardSensitiveRoute } from '@/lib/server/apiGuard'
 import { getProviderKey } from '@/lib/api/live/providers'
 
@@ -158,7 +159,8 @@ export async function POST(req: NextRequest) {
         const response = await client.messages.create({
           model,
           max_tokens: 8000,
-          temperature,
+          // Only models that accept it: Claude Sonnet 5 and newer refuse a temperature.
+          ...anthropicSampling(model, temperature),
           system: resolvedSystem,
 
           tools: [{ type: 'web_search_20250305', name: 'web_search' } as any],
@@ -172,7 +174,10 @@ export async function POST(req: NextRequest) {
           }
         }
       } catch (err) {
-        controller.enqueue(encoder.encode('\n\n<ERROR>Investigation failed — check ANTHROPIC_API_KEY and web_search tool access.</ERROR>'))
+        // The reason goes to the server log. This message used to blame the API key,
+        // which sent the 2026-10-17 failure (a refused temperature) the wrong way.
+        console.error('[pump-report/investigate]', err instanceof Error ? err.message : err)
+        controller.enqueue(encoder.encode('\n\n<ERROR>Investigation failed. The reason is in the server log.</ERROR>'))
       } finally {
         controller.close()
       }

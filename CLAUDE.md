@@ -1567,6 +1567,16 @@ per MTok against $3/$15 — so the upgrade lowers the bill rather than raising i
 picker's Opus option moved to `claude-opus-5` in the same pass. Haiku's dated id is
 deliberately untouched: it works, and it is not what this decision was about.
 
+⚠ **That swap broke every agent, and nothing noticed for a month (found 2026-10-17).**
+Claude Sonnet 5, and every model after Opus 4.6, refuses a `temperature` with a 400
+("`temperature` is deprecated for this model"), and every Anthropic request sent the
+agent's saved one. The first `npm run agent-eval -- --run` found all of them refused; no
+test reaches the paid API. **Send a temperature only through `anthropicSampling(model,
+temperature)` (`lib/agents/sampling.ts`)**, which passes it only to Claude 4.6 and older
+and to nothing it does not recognise. `__tests__/sampling.test.ts` fails on an Anthropic
+`messages.create` that sends a bare one. The AI Agents tab says so under the slider when
+the chosen model ignores it. Other providers (OpenAI-compatible) still get it.
+
 
 **⚠ STANDING RULE — paid decisions are deferred; no provider may be load-bearing (D21,
 owner, 2026-09-18).** Anything whose remedy is "buy a plan" is not a defect to chase
