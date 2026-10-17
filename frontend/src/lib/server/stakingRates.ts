@@ -122,16 +122,16 @@ export interface StakingRatesResponse {
 //   order-of-magnitude answer, which is what the UI's own disclosure says.
 const FALLBACK: Record<string, number> = {
   // ETH liquid staking
-  lido_eth:        2.24,
-  rocketpool_eth:  2.15,
-  ankr_eth:        2.4,
+  lido_eth:        2.2,
+  rocketpool_eth:  2.01,
+  ankr_eth:        2.28,
   coinbase_eth:    3.2,
   kraken_eth:      3.5,
   binance_eth:     3.1,
 
   // Solana
-  marinade_sol:    5.96,
-  jito_sol:        4.48,
+  marinade_sol:    5.97,
+  jito_sol:        4.87,
   native_sol:      6.5,   // generic Solana native staking
 
   // Cosmos / ATOM. stride_atom, stride_inj and stride_tia went 2026-10-14: Stride is
@@ -178,39 +178,39 @@ const FALLBACK: Record<string, number> = {
 
   // ── Liquid-staking / restaking protocols (live via DeFiLlama Yields) ────────
   // ETH LSTs & restaking
-  frax_eth:         2.49,
-  stakewise_eth:    2.31,
-  stader_eth:       2.13,
+  frax_eth:         2.7,
+  stakewise_eth:    2.26,
+  stader_eth:       2.14,
   swell_eth:        0.64,
-  renzo_eth:        2.34,
-  kelp_eth:         2.25,
+  renzo_eth:        2.89,
+  kelp_eth:         2.28,
   puffer_eth:       2.32,
   origin_eth:       2.65,
-  bedrock_eth:      2.48,
-  etherfi_eth:      2.24,
+  bedrock_eth:      2.44,
+  etherfi_eth:      2.22,
   // Solana LSTs
-  sanctum_sol:      5.65,
+  sanctum_sol:      5.69,
   ankr_sol:         6.2,
   // Avalanche LSTs
-  benqi_avax:       3.97,
-  ankr_avax:        0.47,
+  benqi_avax:       4.18,
+  ankr_avax:        0.2,
   // Polygon / BNB LSTs
-  stader_matic:     6.07,
+  stader_matic:     3.45,
   stader_bnb:       5.0,
   pstake_bnb:       5.5,
-  ankr_bnb:         0.65,
+  ankr_bnb:         0.69,
   // Cosmos LSTs
   quicksilver_atom:13.0,
   pstake_atom:     12.5,
   // Polkadot / Kusama LSTs
-  bifrost_dot:     3.71,
-  bifrost_ksm:     6.88,
+  bifrost_dot:     3.69,
+  bifrost_ksm:     6.99,
   // Bitcoin LST
-  lombard_btc:      0.11,
+  lombard_btc:      0.31,
 }
 
 /** When the FALLBACK_MEASURED keys were read from live upstreams. */
-const FALLBACK_MEASURED_ON = '2026-10-14'
+const FALLBACK_MEASURED_ON = '2026-10-17'
 
 /**
  * How long a measured reading stays worth publishing. Owner decision 2026-09-18.
