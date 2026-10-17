@@ -52,7 +52,7 @@ export const DISCLOSURE_SOURCE = {
   revisions: {
     'About page': 5,
     'Terms of Use': 6,
-    'Privacy Policy': 16,
+    'Privacy Policy': 17,
     'Not Investment Advice': 5,
     'How We Make Money': 13,
     'Contact & Complaints': 3,
@@ -60,6 +60,7 @@ export const DISCLOSURE_SOURCE = {
   /** Tabs copied again after copiedOn, and what their new revision changed. */
   recopied: {
     'Terms of Use': { on: '2026-10-17', change: 'Section 6 gains the "Email from Finance Now" paragraph (T-436); rev 6 is rev 5 plus that paragraph' },
+    'Privacy Policy': { on: '2026-10-17', change: 'Section 2 gains the "Your agreement to email notices" item (T-436); rev 17 is rev 16 plus that item' },
   },
 } as const
 
@@ -222,7 +223,7 @@ export const TERMS_OF_USE: LegalDocument = {
   ],
 }
 
-// ─── Privacy Policy (draft tab rev 16) ──────────────────────────────────────
+// ─── Privacy Policy (draft tab rev 17) ──────────────────────────────────────
 
 export const PRIVACY_POLICY: LegalDocument = {
   title: 'Privacy Policy',
@@ -246,6 +247,7 @@ export const PRIVACY_POLICY: LegalDocument = {
     section('2. What we collect on Finance Now',
       list(
         "**Account details:** your email, an optional name, and your password, which we store only in a scrambled form that can't be turned back into the password.",
+        '**Your agreement to email notices:** the date you gave it when you created your account, the exact wording you agreed to, and the date you withdraw it, if you do (Terms of Use, section 6).',
         '**What you save:** portfolios (name, description, starting amount, holdings, target weights, cost basis), watchlists (names and the instruments on them), Portfolio Builder plans including your answers to its questions (such as risk tolerance, years to retirement and amount), and wallet addresses you add, with their labels and chains.',
         '**What you type into AI features:** your messages, the conversation so far, and research questions. The assistant also receives the page you are on and the tickers on your watchlist as context.',
         "**Request logs:** when you use our public API, we log the path, the query, your browser type and the referring page. We don't log your IP address ourselves; our hosting provider does, as part of serving pages (section 6).",

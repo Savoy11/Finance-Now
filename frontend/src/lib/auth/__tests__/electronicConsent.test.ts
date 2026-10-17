@@ -7,7 +7,8 @@ import {
   CONSENT_REQUIRED_MESSAGE, CONSENT_STALE_MESSAGE, type ConsentRow,
 } from '../electronicConsent'
 import { SIGNUP_CONSENT, SIGNUP_CONSENT_WORDING } from '@/lib/legal/signupConsent'
-import { DISCLOSURE_SOURCE, EMAIL_NOTICES_CLAUSE, TERMS_OF_USE } from '@/lib/legal/disclosures'
+import { getTableColumns } from 'drizzle-orm'
+import { DISCLOSURE_SOURCE, EMAIL_NOTICES_CLAUSE, PRIVACY_POLICY, TERMS_OF_USE } from '@/lib/legal/disclosures'
 import { parseConsentCommand } from '../../../../scripts/lib/consentCommand'
 import { communicationConsents } from '@/lib/db/schema'
 
@@ -126,6 +127,27 @@ describe('npm run auth:consent', () => {
     const script = read('../../../../scripts/auth-consent.ts')
     expect(script).toMatch(/update communication_consents set withdrawn_at/)
     expect(script).not.toMatch(/\bdelete\s+from\b/i)
+  })
+})
+
+describe('the Privacy Policy', () => {
+  it('names the record sign-up keeps, in section 2', () => {
+    const section2 = PRIVACY_POLICY.sections.find((s) => s.heading.startsWith('2. '))
+    const items = section2!.blocks.flatMap((b) => (b.kind === 'list' ? b.items : []))
+    const item = items.find((i) => i.startsWith('**Your agreement to email notices:**'))
+    expect(item).toBeDefined()
+    for (const stored of [/the date you gave it/, /the exact wording/, /the date you withdraw it/]) expect(item).toMatch(stored)
+    // Copied from the Privacy Policy tab at rev 17, rev 16 plus this item.
+    expect(DISCLOSURE_SOURCE.revisions['Privacy Policy']).toBe(17)
+    expect(DISCLOSURE_SOURCE.recopied['Privacy Policy'].on).toBe(SIGNUP_CONSENT.source.copiedOn)
+    expect(read('../../legal/disclosures.ts')).toMatch(/Privacy Policy \(draft tab rev 17\)/)
+  })
+  it('is reviewed whenever the record gains a field', () => {
+    // A new column is new personal data. If this list changes, read the section 2 item above
+    // against it (and change the owner's document first) before updating the list.
+    expect(Object.keys(getTableColumns(communicationConsents)).sort()).toEqual(
+      ['agreedAt', 'givenVia', 'id', 'userId', 'withdrawnAt', 'wording', 'wordingVersion'],
+    )
   })
 })
 

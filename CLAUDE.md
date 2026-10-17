@@ -1219,6 +1219,7 @@ agreement keeps its date and the exact words agreed to.
 
 - The words are the Terms of Use's section 6 paragraph (`EMAIL_NOTICES_CLAUSE`) and the box's
   label (`SIGNUP_CONSENT`, `lib/legal/signupConsent.ts`), copied from the owner's document (D128).
+  The Privacy Policy's section 2 names what is kept; a test pins the table's columns to it.
 - `version` is a hash of those words, and a test fails if they change without it.
 - `npm run auth:consent -- --status` lists who may be sent notices by email; `--withdraw --user
   <email>` marks a withdrawal and deletes nothing.
