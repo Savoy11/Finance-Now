@@ -86,6 +86,10 @@
     node.hidden = !text
   }
 
+  // A save paints while busy (the store's own snapshot can arrive mid-write), so its
+  // buttons are re-enabled once it finishes; otherwise they stay greyed until the next one.
+  function enableButtons(btns) { Object.keys(btns).forEach(function (a) { btns[a].disabled = !canWrite }) }
+
   // ── rows ─────────────────────────────────────────────────────────────────────
   var ROW_ANSWERS = ['ok', 'changed', 'not-offered', 'cant-see']
 
@@ -217,6 +221,7 @@
       paintRow(r, msg)
     } finally {
       els.busy = false
+      enableButtons(els.btns)
     }
   }
 
@@ -253,6 +258,7 @@
       paintRow(r, C.dbMessage(e))
     } finally {
       els.busy = false
+      enableButtons(els.btns)
     }
   }
 
@@ -427,6 +433,7 @@
       paintTrading(ex, msg)
     } finally {
       els.busy = false
+      enableButtons(els.btns)
     }
   }
 
