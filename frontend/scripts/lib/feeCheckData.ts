@@ -6,7 +6,7 @@
  *
  * Every number the page shows is derived here; none is typed into the page.
  */
-import { byImpact, CORE_N, FEE_PAGES, type FeeRow } from './transferFeeRows'
+import { byImpact, CORE_N, FEE_PAGES, UNREADABLE_FEE_PAGES, type FeeRow } from './transferFeeRows'
 
 export interface FeeCheckLead {
   id: string
@@ -35,7 +35,12 @@ export interface FeeCheckExchange {
   feePage: string | null
   /** Publishes its withdrawal fees in a keyless feed, so `fee-reconcile` checks most rows. */
   feed: boolean
-  /** The source-terms register's name for it when its host is `prohibited`, else null. */
+  /** Why its fee page cannot be read from the owner's region, and when that was seen; else null. */
+  unreadable: { why: string; seen: string } | null
+  /**
+   * The source-terms register's name for it when its host is `prohibited`, else null: the
+   * fee page's host, or the site's for an exchange whose fee page cannot be read.
+   */
   prohibited: string | null
   trading: { makerPct: number; takerPct: number; note: string } | null
   leads: FeeCheckLead[]
@@ -113,10 +118,12 @@ export interface BuildFeeCheckInput {
   tradingCompiled: string
   generatedOn: string
   feePages?: Record<string, string>
+  unreadable?: Record<string, { site: string; seen: string; why: string }>
 }
 
 export function buildFeeCheckData(input: BuildFeeCheckInput): FeeCheckData {
   const feePages = input.feePages ?? FEE_PAGES
+  const unreadable = input.unreadable ?? UNREADABLE_FEE_PAGES
   const feeds = new Set(input.feedIds)
 
   // The core: the highest-impact rows on exchanges with no feed — the ones only a
@@ -130,6 +137,8 @@ export function buildFeeCheckData(input: BuildFeeCheckInput): FeeCheckData {
 
   const exchanges: FeeCheckExchange[] = input.exchanges.map((ex) => {
     const page = feePages[ex.id] ?? null
+    const blocked = page ? null : (unreadable[ex.id] ?? null)
+    const site = page ?? blocked?.site ?? null
     const t = input.trading[ex.id] ?? null
     return {
       id: ex.id,
@@ -137,7 +146,8 @@ export function buildFeeCheckData(input: BuildFeeCheckInput): FeeCheckData {
       tier: ex.tier,
       feePage: page,
       feed: feeds.has(ex.id),
-      prohibited: page ? input.prohibitedName(page) : null,
+      unreadable: blocked ? { why: blocked.why, seen: blocked.seen } : null,
+      prohibited: site ? input.prohibitedName(site) : null,
       trading: t ? { makerPct: t.makerPct, takerPct: t.takerPct, note: t.note ?? '' } : null,
       leads: byExchange[ex.id] ?? [],
       rows: input.rows

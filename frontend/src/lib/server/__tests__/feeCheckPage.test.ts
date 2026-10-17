@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { EXCHANGES, COIN_INFO, NETWORKS, SPOT_TRADING_FEES } from '@/lib/data/transferFees'
 import { WITHDRAW_FEE_SOURCES } from '@/lib/server/withdrawFeeAdapters'
 import { hostOf, matchTermsEntry } from '@/lib/server/sourceTerms'
-import { feeRows, byImpact, CORE_N, FEE_PAGES } from '../../../../scripts/lib/transferFeeRows'
+import { feeRows, byImpact, CORE_N, FEE_PAGES, UNREADABLE_FEE_PAGES } from '../../../../scripts/lib/transferFeeRows'
 import { buildFeeCheckData, feeLeads, namesExchange, FEE_CHECK_SERVES, type LedgerItem } from '../../../../scripts/lib/feeCheckData'
 import { buildFeeCheckPage, dataJson, FEE_CHECK_CAPABILITIES, FEE_CHECK_TITLE } from '../../../../scripts/lib/feeCheckPage.mjs'
 
@@ -35,9 +35,12 @@ type Plan = {
   notes: Array<{ key: string; note: string }>
 }
 type Saved = { error: string | null; doc: Record<string, unknown> | null }
+type Guidance = { link: { href: string | null; label: string; hint: string }; notes: Array<{ tone: string; text: string }> }
 type Core = {
   APPLY_COLUMNS: string[]
   ROW_RESULTS: Record<string, string>
+  longDay(iso: unknown): string
+  exchangeGuidance(ex: unknown): Guidance
   parseAmount(v: unknown): number | null
   normRowCheck(id: string, x: unknown): Check
   normTradingCheck(id: string, x: unknown): { result: string; maker: number | null; taker: number | null }
@@ -319,9 +322,28 @@ describe('the page’s data, from the real table', () => {
   })
 
   it('flags an exchange whose fee-page host the source-terms register prohibits', () => {
-    for (const e of data.exchanges) expect(e.prohibited).toBe(e.feePage ? prohibitedName(e.feePage) : null)
-    // Guards the guard: the lookup finds one today (OKX, D40), so it is not silently matching nothing.
-    expect(data.exchanges.filter((e) => e.prohibited).map((e) => e.id)).toContain('okx')
+    for (const e of data.exchanges) {
+      const site = e.feePage ?? UNREADABLE_FEE_PAGES[e.id]?.site ?? null
+      expect(e.prohibited).toBe(site ? prohibitedName(site) : null)
+    }
+    // Guards the guard: the lookup finds these today (OKX, D40; Bitget, D129; XT.com, D131,
+    // by its site, having no fee page), so it is not silently matching nothing.
+    expect(data.exchanges.filter((e) => e.prohibited).map((e) => e.id)).toEqual(expect.arrayContaining(['okx', 'bitget', 'xtcom']))
+  })
+
+  it('says when an exchange’s fee page cannot be read from the owner’s region, and only then', () => {
+    const xt = data.exchanges.find((e) => e.id === 'xtcom')!
+    expect(xt.feePage).toBeNull()
+    expect(xt.unreadable?.why).toMatch(/does not provide services in your country or region/)
+    expect(xt.unreadable?.seen).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+    for (const e of data.exchanges) expect(e.unreadable === null).toBe(!UNREADABLE_FEE_PAGES[e.id])
+  })
+
+  it('keeps the unreadable list to exchanges in the table that have no fee page on file', () => {
+    for (const id of Object.keys(UNREADABLE_FEE_PAGES)) {
+      expect(EXCHANGES.some((e) => e.id === id), `${id} is not in the table`).toBe(true)
+      expect(FEE_PAGES[id], `${id} has a fee page and is marked unreadable`).toBeUndefined()
+    }
   })
 
   it('takes leads only from open ledger items on the fee-refresh audit, never the items it works', () => {
@@ -340,6 +362,60 @@ describe('the page’s data, from the real table', () => {
     expect(uniq(EXCHANGES.map((e) => e.name.toLowerCase()))).toBe(true)
     expect(uniq(Object.values(COIN_INFO).map((c) => c.symbol.toUpperCase()))).toBe(true)
     expect(uniq(Object.values(NETWORKS).map((n) => n.shortName.toLowerCase()))).toBe(true)
+  })
+})
+
+describe('what an exchange’s card says', () => {
+  const base = { id: 'x', name: 'Example', feePage: null as string | null, feed: false, prohibited: null as string | null, unreadable: null as { why: string; seen: string } | null }
+
+  it('links the fee page when there is one', () => {
+    const g = core.exchangeGuidance({ ...base, feePage: 'https://example.com/fees' })
+    expect(g.link.href).toBe('https://example.com/fees')
+    expect(g.link.label).toBe('Open Example’s fee page')
+    expect(g.notes).toEqual([])
+  })
+
+  it('sends the owner to search when none is on file', () => {
+    const g = core.exchangeGuidance(base)
+    expect(g.link.href).toBeNull()
+    expect(g.link.hint).toBe('No fee page on file. Search “Example withdrawal fees”.')
+  })
+
+  it('never sends the owner to search for a fee page their region cannot read', () => {
+    const g = core.exchangeGuidance({ ...base, prohibited: 'Example (API)', unreadable: { why: 'Its site refuses your region.', seen: '2026-09-15' } })
+    expect(g.link.href).toBeNull()
+    expect(g.link.hint).not.toMatch(/Search/)
+    expect(g.notes).toHaveLength(1)
+    const [note] = g.notes
+    expect(note.tone).toBe('warn')
+    expect(note.text).toMatch(/^Its site refuses your region\. Last seen September 15, 2026\./)
+    expect(note.text).toContain(`“${core.ROW_RESULTS['cant-see']}”`)
+    expect(note.text).toMatch(/Don’t spend time searching/)
+    expect(note.text).toMatch(/also marks Example \(API\) prohibited/)
+    expect(note.text).not.toMatch(/typed in by hand from its public fee page/)
+  })
+
+  it('keeps the prohibited warning for an exchange whose fee page can be read', () => {
+    const g = core.exchangeGuidance({ ...base, feePage: 'https://example.com/fees', prohibited: 'Example (API)' })
+    expect(g.notes.map((n) => n.tone)).toEqual(['warn'])
+    expect(g.notes[0].text).toMatch(/^The app’s source-terms register marks Example \(API\) prohibited/)
+  })
+
+  it('points a feed exchange at fee-reconcile', () => {
+    const g = core.exchangeGuidance({ ...base, feePage: 'https://example.com/fees', feed: true })
+    expect(g.notes.map((n) => n.tone)).toEqual(['info'])
+    expect(g.notes[0].text).toMatch(/npm run fee-reconcile/)
+  })
+
+  it('reads a malformed card without throwing', () => {
+    for (const bad of [null, undefined, 'x', 42, { unreadable: 'yes' }]) expect(() => core.exchangeGuidance(bad)).not.toThrow()
+    expect(core.longDay('2026-13-01')).toBe('2026-13-01')
+    expect(core.longDay(undefined)).toBe('')
+  })
+
+  it('is what the page draws: the client takes the card’s link and notes from the core', () => {
+    expect(clientSrc).toMatch(/C\.exchangeGuidance\(ex\)/)
+    expect(clientSrc).not.toMatch(/No fee page on file/)
   })
 })
 
@@ -379,7 +455,7 @@ describe('the published page', () => {
     coreCount: 1,
     generalLeads: [],
     exchanges: [{
-      id: 'binance', name: 'Binance', tier: 1, feePage: FEE_PAGES.binance, feed: false, prohibited: null,
+      id: 'binance', name: 'Binance', tier: 1, feePage: FEE_PAGES.binance, feed: false, unreadable: null, prohibited: null,
       trading: { makerPct: 0.1, takerPct: 0.1, note: '' }, leads: [],
       rows: [{ key: 'binance:usdt:trc20', coin: 'USDT', coinName: 'Tether', network: 'TRC-20', fee: 1, min: 10, withdraw: true, deposit: true, note: 'a </script><script>alert(1)</script> note', core: true, impact: 300 }],
     }],
