@@ -37,48 +37,14 @@ import {
   type StakingCoinId,
 } from '../src/lib/data/stakingProviders'
 import { resolveLiveAprKey } from '../src/lib/utils/aprDisplay'
+import { LLAMA_SLUG } from './lib/stakingFactRows'
 
 const BASE = process.env.BASE_URL ?? process.env.FN_BASE_URL ?? 'http://localhost:3000'
 const OUT_CSV = join(process.cwd(), 'staking-catalog-worksheet.csv')
 const OUT_MD = join(process.cwd(), 'staking-catalog-worksheet.md')
 
-/**
- * Catalog id → DefiLlama protocol slug, for the providers whose TVL DefiLlama tracks
- * as a staking protocol. OBSERVED on 2026-09-24 against api.llama.fi/protocols, not
- * guessed: a wrong slug lands another protocol's TVL beside a provider's name. CeFi
- * exchanges are deliberately absent — DefiLlama's "binance-cex" is the exchange's
- * whole balance sheet, not its staking book, and comparing it to `tvlBillions` would
- * be a category error. Providers not listed here get a name-match CANDIDATE printed
- * for a human to confirm, never a value.
- */
-const LLAMA_SLUG: Readonly<Record<string, string>> = {
-  lido: 'lido',
-  rocketpool: 'rocket-pool',
-  marinade: 'marinade-liquid-staking',
-  jito: 'jito-liquid-staking',
-  stride: 'stride',
-  benqi: 'benqi-staked-avax',
-  etherfi: 'ether.fi-stake',
-  frax: 'frax-ether',
-  stakewise: 'stakewise-v3',
-  stader: 'stader',
-  swell: 'swell-liquid-staking',
-  renzo: 'renzo',
-  'kelp-dao': 'kelp',
-  puffer: 'puffer-stake',
-  bedrock: 'bedrock-unibtc',
-  sanctum: 'sanctum-validator-lsts',
-  babylon: 'babylon-protocol',
-  lombard: 'lombard-lbtc',
-  ankr: 'ankr',
-  metapool: 'meta-pool-near',
-  // The four below were printed as name-match CANDIDATES on the 2026-09-24 run and
-  // confirmed by the owner on 2026-09-25.
-  'origin-protocol': 'origin-ether',
-  quicksilver: 'quicksilver-protocol',
-  pstake: 'pstake-lsd',
-  bifrost: 'bifrost-liquid-staking',
-}
+// LLAMA_SLUG moved to scripts/lib/stakingFactRows.ts on 2026-10-17, so this worksheet and the
+// Staking Facts Check page agree on which assets figures DefiLlama supplies.
 
 type LlamaProtocol = { slug: string; name: string; tvl: number; category: string }
 type RatesResponse = { rates: Record<string, number>; sources: Record<string, string> }

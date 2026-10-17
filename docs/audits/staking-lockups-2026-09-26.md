@@ -93,6 +93,13 @@ says and what this audit now scopes to **12 specific rows** instead of 187:
 4. **ETH 0d ×9** — confirm each exchange fronts liquidity and say so in the note, or
    correct.
 
+> **Correction, 2026-10-17:** the list above names **24** rows, not 12 (SOL 8, TRX 4, NEAR 3,
+> ETH 9). The nine ETH rows are OKX, Crypto.com, Bitget, Gate.io, HTX, Robinhood, Gemini,
+> Bitstamp and MEXC; Nexo and KuCoin are left out as lending and soft staking. All 24 are
+> marked Start here on the Staking Facts Check page (D134), each only while the catalog
+> still has the figure and note questioned here (`LOCKUP_LEADS`,
+> `frontend/scripts/lib/stakingFactRows.ts`).
+
 Everything else on this field is consistent and needs nothing. `STAKING_DATA_LAST_VERIFIED`
 does not move for a single-field pass, and the 2026-09-27 notice fires as already
 acknowledged.

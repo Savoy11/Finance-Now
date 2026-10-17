@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { STAKING_PROVIDERS } from '../../data/stakingProviders'
+import { LLAMA_SLUG } from '../../../../scripts/lib/stakingFactRows'
 
 /**
  * `npm run staking-worksheet` (scripts/gen-staking-catalog-worksheet.ts) pre-fills a
@@ -15,17 +16,20 @@ const root = join(process.cwd(), '..')
 const gitignore = readFileSync(join(root, '.gitignore'), 'utf8')
 
 describe('staking catalog worksheet generator', () => {
+  it('takes its DefiLlama slugs from the shared list the Staking Facts Check page reads', () => {
+    expect(src).toMatch(/import \{ LLAMA_SLUG \} from '\.\/lib\/stakingFactRows'/)
+    expect(src).not.toMatch(/const LLAMA_SLUG/)
+  })
+
   it('maps DefiLlama slugs only for providers that exist in the catalog', () => {
-    const block = src.match(/const LLAMA_SLUG[\s\S]*?= \{([\s\S]*?)\n\}/)?.[1] ?? ''
-    const ids = [...block.matchAll(/^\s*'?([a-z0-9-]+)'?:\s*'[^']+'/gm)].map((m) => m[1])
+    const ids = Object.keys(LLAMA_SLUG)
     expect(ids.length).toBeGreaterThan(10)
     const known = new Set(STAKING_PROVIDERS.map((p) => p.id))
     for (const id of ids) expect(known.has(id), `LLAMA_SLUG names '${id}', not a provider id`).toBe(true)
   })
 
   it('maps no CeFi exchange — an exchange balance sheet is not a staking TVL', () => {
-    const block = src.match(/const LLAMA_SLUG[\s\S]*?= \{([\s\S]*?)\n\}/)?.[1] ?? ''
-    const ids = [...block.matchAll(/^\s*'?([a-z0-9-]+)'?:/gm)].map((m) => m[1])
+    const ids = Object.keys(LLAMA_SLUG)
     const cefi = new Set(STAKING_PROVIDERS.filter((p) => p.category === 'cefi').map((p) => p.id))
     for (const id of ids) expect(cefi.has(id), `${id} is a CeFi exchange`).toBe(false)
   })
