@@ -124,7 +124,7 @@ async function fetchTiingoOhlcv(symbol: string, range: string): Promise<OhlcvCan
   // splits only (measured 2026-09-09, above), while Tiingo's adj* also takes out
   // dividends, so a fall from Tiingo to FMP shifts a dividend payer's history.
   // Measured on NVDA 2026-10-17: a steady 0.29% across the 2024 split
-  // (docs/assessments/T11-equity-ta-audit.md, Deferred).
+  // (docs/assessments/T11-equity-ta-audit.md, Deferred). Whether to align them: T-441.
   const rows = await res.json() as Array<{
     date: string; open: number; high: number; low: number; close: number; volume: number
     adjOpen?: number; adjHigh?: number; adjLow?: number; adjClose?: number; adjVolume?: number

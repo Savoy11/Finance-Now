@@ -127,7 +127,7 @@ Verified: `tsc` clean · `eslint` clean · `vitest` (5 new / suite green) · `np
 > barely do. The route's comment that Tiingo's adjusted set "matches FMP's adjusted basis" is
 > wrong on this evidence. Making them match is a choice (FMP's dividend-adjusted endpoint, which
 > the route warns would change the basis of its charts, or a split-only Tiingo series), so it is
-> recorded here rather than made.
+> recorded here rather than made: filed as T-441 at low priority (D135).
 
 ## Changes in this PR
 - `src/lib/utils/ohlcvAdjust.ts` (new) + `__tests__/ohlcvAdjust.test.ts` (new, 5 tests).

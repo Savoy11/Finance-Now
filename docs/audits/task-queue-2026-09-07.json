@@ -60,9 +60,9 @@
  },
  "counts": {
   "total_verified": 398,
-  "outstanding": 380,
+  "outstanding": 381,
   "by_status": {
-   "closed": 222,
+   "closed": 223,
    "parked": 135,
    "open": 17,
    "blocked": 6
@@ -70,14 +70,14 @@
   "by_owner_role": {
    "remote-dev": 93,
    "either": 51,
-   "owner-decision": 150,
+   "owner-decision": 151,
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 222,
-  "counts_recomputed_on": "2026-10-15",
+  "closed_by_annotation": 223,
+  "counts_recomputed_on": "2026-10-17",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
-  "total": 380
+  "total": 381
  },
  "blocking_decisions": [
   {
@@ -6737,7 +6737,7 @@
   {
    "id": "T-271",
    "title": "Live cross-check of equity TA adjusted series (incl. NVDA)",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "data-verification",
@@ -6745,7 +6745,8 @@
    "blocking_decision": null,
    "related_ids": [
     "T1",
-    "T11"
+    "T11",
+    "T-441"
    ],
    "summary": "Needs Tiingo/FMP key.",
    "next_action": "On the owner's machine with TIINGO_API_KEY (and optionally FMP_API_KEY) set: `cd frontend && npm run dev`, fetch `/live-data/security-ohlcv?symbol=NVDA&range=1Y` and compare closes either side of the 2024-06-10 10:1 split (plus AAPL, TSLA) against a charting reference; record the result in the T11 assessment's Deferred section.",
@@ -6764,6 +6765,20 @@
      "docs/assessments/T11-equity-ta-audit.md",
      "frontend/src/app/live-data/security-ohlcv/route.ts"
     ]
+   },
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-10-17",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "Run on the owner's machine (residential line, no proxy), every series from Tiingo: across each stock's full history no split date shows a step (largest one-day moves NVDA 1.54x on 2004-08-06, TSLA 1.27x on 2020-09-08, AAPL 2.08x on 2000-09-29, each a real market fall), and NVDA's closes either side of the 2024-06-10 split sit a steady 0.28-0.29% below the published closes divided by ten on both sides, Tiingo also adjusting for dividends. Recorded in the T11 audit's Deferred section, beside the FMP rung's 2026-09-09 check. The one finding, that the two rungs adjust on different bases, is filed as T-441.",
+    "approved_by": "owner, 2026-10-17: chose “Close it” for T-271 (D135)",
+    "evidence": [
+     "docs/assessments/T11-equity-ta-audit.md",
+     "frontend/src/app/live-data/security-ohlcv/route.ts",
+     "docs/decisions/2026-10-17-owner-decisions.md"
+    ],
+    "known_gap": "Checked against published closes, not a TradingView chart. The other price route, /live-data/security-chart, was not checked for the same basis question."
    }
   },
   {
@@ -14793,6 +14808,35 @@
      "frontend/scripts/fund-figures-plan.ts"
     ]
    }
+  },
+  {
+   "id": "T-441",
+   "title": "Decide whether the stock price-history sources should share one adjustment basis (Tiingo takes out dividends, FMP does not)",
+   "status": "open",
+   "confidence": "high",
+   "blocking_decision": null,
+   "opened": {
+    "on": "2026-10-17",
+    "by": "owner decision, filed by the session",
+    "why": "Owner, 2026-10-17 (D135): chose “Add it, low priority” when T-271’s check found the two rungs on different bases."
+   },
+   "owner_role": "owner-decision",
+   "category": "data-verification",
+   "effort": "small",
+   "related_ids": [
+    "T-271",
+    "T11",
+    "D135"
+   ],
+   "summary": "/live-data/security-ohlcv tries Tiingo, then FMP. Tiingo’s adjusted prices take out splits and dividends; FMP’s /full takes out splits only (measured 2026-09-09; on NVDA its closes equal the published split-only closes). So when Tiingo fails or has no key and FMP answers, a dividend payer’s history shifts: 0.29% on NVDA around its 2024 split, and on a high-yield stock over a 5Y range, roughly its yield times the years at the start of the chart. Returns, drawdowns and the hidden backtests read that shift; most indicators barely do. Low priority by the owner’s choice: it shows only on a fall to the second rung. The route’s comment claiming the two match was corrected on 2026-10-17.",
+   "next_action": "Owner decides, when convenient: (a) leave it as is, documented; (b) move FMP to its dividend-adjusted endpoint (/stable/historical-price-eod/dividend-adjusted) so both rungs match Tiingo, after checking on the owner’s machine that the free key serves it; or (c) build Tiingo’s series from its raw prices and split factors so both match FMP. (b) keeps the basis most charts already show, since Tiingo answers first. Then a dev PR with a test that the two rungs agree on a dividend payer’s history, and the same question asked of /live-data/security-chart.",
+   "sources": [
+    {
+     "file": "docs/assessments/T11-equity-ta-audit.md",
+     "lines": "Deferred",
+     "quote": "Finding, not changed: the two rungs are on different bases. Tiingo serves split- and dividend-adjusted prices; FMP serves split-adjusted prices only."
+    }
+   ]
   }
  ],
  "closed_but_still_listed_as_open_in_docs": [
