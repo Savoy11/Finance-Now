@@ -722,6 +722,15 @@ Central data file for the Staking Opportunities page.
   - CeFi: Celsius (defunct, cautionary), Coinbase, Kraken, Binance, OKX, Bybit, KuCoin, Crypto.com, Bitget, Gate.io, HTX, Robinhood, Nexo, Gemini, Bitfinex, Bitstamp, MEXC, Upbit
   - Wallet: Ledger Live, MetaMask, Phantom, Trust Wallet, Exodus, Keplr, Solflare, Coinbase Wallet, Atomic Wallet, Trezor Suite
   - Liquid/restaking: Lido, Rocket Pool, Marinade, Jito, Stride, Benqi, EtherFi, Frax, Stakewise, Stader, Swell, Renzo, Kelp, Puffer, Bedrock, Sanctum, Babylon, Lombard, Aave, Convex, Ankr, MetaPool, and more
+- **Re-reading the facts (T-394, D134, 2026-10-17).** `npm run staking-facts-page -- <out.html>` builds the
+  **Staking Facts Check** page: one card per live provider with its own website, and a row per fact (website, year
+  founded, audit count, the staking-assets figure where DefiLlama supplies none, and each coin's minimum stake and
+  lock-up), liquid protocols first, then wallets, then exchanges. The answers live in the published page's database
+  (`checks`, `notes`), never in its HTML; `npm run staking-facts-plan -- <answers-dir>` reads them against the catalog
+  as it is then and reports, never writes. The rows come from `scripts/lib/stakingFactRows.ts`, which the page, the
+  plan and the CSV worksheet (`LLAMA_SLUG`) share. The lock-ups the 2026-09-26 audit questioned are marked Start here
+  (`LOCKUP_LEADS`), each only while the catalog still has the figure and note questioned. `STAKING_DATA_LAST_VERIFIED`
+  moves only when the plan reports every fact settled. Same look and rules as the Transfer Fee Check.
 
 To add a provider: append to `STAKING_PROVIDERS` following the pattern. Celsius should always be kept — it's used as the educational cautionary example.
 

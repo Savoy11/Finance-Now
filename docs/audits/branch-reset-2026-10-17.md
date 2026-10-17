@@ -68,3 +68,19 @@ it (`17a479d`) are held by:
 - their combined content in `main` as `61b2462`.
 
 Nothing was deleted; no other ref moved.
+
+## Fifth reset, the same day
+
+**What was done.** After PR #369 (Investing.com's feeds stopped, D133) was squash-merged into
+`main` as `e7a7812`, the branch was restarted from that commit for T-394's Staking Facts Check
+page (D134) and pushed with `--force-with-lease`, for the same reason as above.
+
+**Where the prior state lives.** The branch's previous tip, `e3f4d68`, its only commit beyond
+`61b2462`, is held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@e3f4d68`, created by
+  `.github/workflows/archive-branch.yml` when #369 merged;
+- GitHub's `refs/pull/369/head`;
+- its content in `main` as `e7a7812`.
+
+Nothing was deleted; no other ref moved.
