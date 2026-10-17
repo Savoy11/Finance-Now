@@ -14012,10 +14012,13 @@
     "why": "Filed under D91 from a row the business chat recorded on the ledger page on 1 Oct (Insurance & State Privacy Scan), which had no number."
    },
    "progress": {
-    "noted_on": "2026-10-14",
+    "noted_on": "2026-10-17",
     "note": "Draft written 2026-10-14 (owner picked T-426 to start) and filed in the Finance Now Ledger page’s file library, as D60 places business documents; not in this public repository. About one page: scope and the data the app holds, read from the code (accounts are an email, an optional name and a bcrypt hash; portfolios, trades, watchlists, wallet addresses; the old Budget tables with the owner’s bank history; provider keys in .provider-config.json), roles, detect and contain (rotating AUTH_SECRET is the only way to sign everyone out, sessions being JWTs), assess, a North Carolina vs California notice table, records, after-action review, ten open questions for counsel, and sources with verbatim quotes. North Carolina (G.S. 75-61, 75-65, 14-113.20) was checked against ncleg.gov; California (Civ. Code 1798.82) is quoted from FindLaw. Labelled a draft for counsel, not legal advice.",
     "evidence": [
      "Finance Now Ledger page, file library: “Finance Now data-breach response plan - draft for counsel (2026-10-14).md”, linked to T-426"
+    ],
+    "corrections": [
+     "2026-10-17: D125 ADDED. At the owner’s request the draft now carries D125: section 4 says no state of residence is recorded, by choice, and every notice follows the strictest applicable rule; section 5 applies both states’ rules to every affected person; open question 5 asks counsel to confirm the choice instead of making it. The revised file (2026-10-17) is in the Finance Now Ledger page’s file library, and the 2026-10-14 one is archived beside it, not removed. A dated note at its top says it does not yet reflect T-435, T-436 or T-437."
     ]
    }
   },
@@ -14619,7 +14622,7 @@
     "evidence": [
      "docs/decisions/2026-10-15-owner-decisions.md"
     ],
-    "known_gap": "Two follow-throughs outside the repository: one sentence saying so in the draft breach plan (the owner’s document in the Finance Now Ledger page’s file library), and counsel’s confirmation in the legal review (D4), which can overturn it.",
+    "known_gap": "Two follow-throughs outside the repository: one sentence saying so in the draft breach plan (the owner’s document in the Finance Now Ledger page’s file library), added 2026-10-17 in its sections 4 and 5 and open question 5; and counsel’s confirmation in the legal review (D4), which can overturn it.",
     "approved_by": "owner, 2026-10-15: chose it among the items offered for closing"
    }
   },
