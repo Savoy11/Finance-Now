@@ -72,6 +72,9 @@ export const FEE_CHECK_CSS = `
   --accent:#3FB3AA;--accent-ink:#0E1513;--accent-bg:#17302D;
   --ok:#5CC191;--ok-bg:#17301F;--diff:#E0A64A;--diff-bg:#2E2617;--gone:#93A2AC;--gone-bg:#222A2E;--cant:#A78BD8;--cant-bg:#26203A;
   --stale:#E8705F;--stale-bg:#331E1B;color-scheme:dark}
+/* The hidden attribute must beat every display rule below (.diff, .row, .ex): without this a
+   closed form, a filtered row or a filtered card still shows. */
+[hidden]{display:none!important}
 body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5}
 .wrap{max-width:880px;margin:0 auto;padding-inline:16px;padding-block:28px 64px;display:flex;flex-direction:column;gap:22px}
 h1{font-family:var(--serif);font-weight:600;font-size:30px;line-height:1.15;margin:0;text-wrap:balance}

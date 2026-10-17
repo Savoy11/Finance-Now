@@ -466,6 +466,13 @@ describe('the published page', () => {
     expect(FEE_CHECK_CAPABILITIES).toEqual({ db: { rules: [{ path: '', write: 'admin' }] }, user: {} })
   })
 
+  it('keeps the hidden attribute stronger than every display rule (closed forms, filtered rows)', () => {
+    // Without it every row's answer form showed at once and "Start here" hid nothing,
+    // since .diff, .row and .ex each set a display (found 2026-10-17).
+    expect(html).toContain('[hidden]{display:none!important}')
+    expect(html.indexOf('[hidden]{display:none!important}')).toBeLessThan(html.indexOf('.diff{'))
+  })
+
   it('is named, and loads no script from anywhere', () => {
     expect(html.startsWith(`<title>${FEE_CHECK_TITLE}</title>`)).toBe(true)
     expect(html).not.toMatch(/<script[^>]+src=/)

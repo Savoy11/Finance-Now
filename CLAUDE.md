@@ -734,6 +734,14 @@ To add a provider: append to `STAKING_PROVIDERS` following the pattern. Celsius 
 - **`computeFeeDrag(principal, erPct, years, returnPct, benchmarkErPct, frontLoadPct)`** — cost projection used by the Fee Drag Analyzer on fund detail pages. `frontLoadPct` is a SALES CHARGE deducted at purchase, not an annual fee: it comes off the top so only the remainder compounds, and it is **not** charged to the benchmark (a no-load index fund), or the comparison would cancel out the very difference it exists to show. Defaults to 0, so every no-load fund is unaffected.
 - **`SalesCharge` / `fundSalesCharge(f)`** — a fund's load, or null. **`kind` is required and `maxPct` is optional on purpose**: a load's EXISTENCE (from the issuer's documented share-class structure) and its RATE (from the prospectus) are separately knowable, and conflating them is how a wrong fee gets published. Undefined `maxPct` means *"a charge applies and we have not verified how much"* — never *"no charge"*. A stated rate REQUIRES `source` + `verifiedAt`, enforced catalog-wide by a test. The UI puts a verified rate into the maths and discloses an unverified one in words while excluding it from the projection: guessing is worse than omitting, and omitting silently is worse than both. Populate rates with `npm run fund-fees` (below), never from memory.
 - To add a fund: append to `FUND_CATALOG` following the pattern.
+- **Re-reading the approximate figures (T-440, D132, 2026-10-17).** `npm run fund-figures-page -- <out.html> [--order <file>]` builds the
+  **Fund Figures Check** page: one card per fund with the issuer's page and a box per figure for the value it shows, the date it
+  states and which kind of figure it is. The figures are derived: every `yieldPct`, and every asset figure without `aumAsOf`. The
+  readings live in the published page's database (`readings`, `notes`), never in its HTML; `npm run fund-figures-plan -- <answers-dir>`
+  reads them against the catalog and reports, never writes, and the differences go to the owner before any change.
+  `FUND_FIGURES_COMPILED_ON` moves only when every figure has a dated reading. `--order` takes a sort-order file kept off the
+  repository (symbols and a `differs` flag, worked out from a data service's figures, which are licensed); no outside figure
+  reaches the page. It shares the Transfer Fee Check's look and rules (`scripts/lib/fundFigures.core.js`, tested).
 
 ### `src/lib/data/portfolioBuilder.ts` (Portfolio Builder module)
 Pure engine, no API calls, covered by `__tests__/portfolioBuilder.test.ts` (86 tests).

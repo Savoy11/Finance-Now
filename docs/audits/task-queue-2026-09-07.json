@@ -14737,10 +14737,11 @@
     "T-386",
     "D117",
     "D119",
-    "D120"
+    "D120",
+    "D132"
    ],
    "summary": "Since D117 the fund catalog has two dates. The fee date is verified; FUND_FIGURES_COMPILED_ON (2026-07-20) dates the figures still compiled by hand: every yieldPct (87 rows carry one) and the asset figures no SEC filing supplies (21 Vanguard ETF classes, SPY, DIA, CORN, WEAT, SOYB, CANE, CPER). Its 120-day window closes 2026-11-18, and the owner chose to let the notice fire (D120, a STALENESS-ACK) rather than rush a re-read.",
-   "next_action": "When convenient: read each yield and each undated asset figure from the issuer’s own page or fact sheet, with the date it states; bring every difference to the owner before applying (report, never write). Only after all of them are re-read may FUND_FIGURES_COMPILED_ON move, and moving it voids the STALENESS-ACK, which is intended.",
+   "next_action": "Read the figures on the Fund Figures Check page (D132; `npm run fund-figures-page -- <out.html> [--order <file>]` rebuilds it): for each figure, the value the issuer’s page shows, the date it states, and which kind of figure it is. Then the session reads the page’s database, runs `npm run fund-figures-plan` over it, and brings every difference to the owner before applying (report, never write). Only after all of them are re-read may FUND_FIGURES_COMPILED_ON move, to the oldest date read, and moving it voids the STALENESS-ACK, which is intended.",
    "sources": [
     {
      "file": "frontend/src/lib/data/fundCatalog.ts",
@@ -14752,7 +14753,8 @@
      "lines": "Not checked: 39 rows",
      "quote": "Not checked: 21 Vanguard ETF classes and 11 multi-class mutual funds…, SPY and DIA, the four Teucrium funds and CPER."
     }
-   ]
+   ],
+   "note": "2026-10-17 (D132): the owner chose option 1 of the five offered, a check page the owner works through, ordered by option 3, a data service’s figures. Built and published that day (the Fund Figures Check, a private page like the Transfer Fee Check): one card per fund with the issuer’s page and a box per figure for the value shown, its date and its kind (12-month trailing, 30-day SEC or another yield; the fund’s own or the whole fund’s net assets). Readings save in the page’s own database, never in its HTML. The order came from Alpha Vantage’s free service, which allowed ten funds before its daily limit of 25 requests; FMP’s free plan refused quotes and dividends. A yield worked out from each fund’s price on 2026-10-16 and its past year of payouts was below the catalog’s for all ten: for nine by 8–18% (they differ at the catalog’s own precision and are marked Start here), for RSP by under 1%. The other 82 funds follow, grouped by issuer. No outside figure is in the repository or on the page: the sort-order file holds symbols and a flag only, and stays on the machine that built it. Nothing has been read through the page yet."
   }
  ],
  "closed_but_still_listed_as_open_in_docs": [

@@ -35,3 +35,19 @@ above.
 - their combined content in `main` as `658c092`.
 
 Nothing was deleted; no other ref moved.
+
+## Third reset, the same day
+
+**What was done.** After PR #367 (the XT.com card on the Transfer Fee Check page) was
+squash-merged into `main` as `3a10234`, the branch was restarted from that commit for T-440's
+Fund Figures Check page (D132) and pushed with `--force-with-lease`, for the same reason as above.
+
+**Where the prior state lives.** The branch's previous tip, `817a02a`, its only commit beyond
+`658c092`, is held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@817a02a`, created by
+  `.github/workflows/archive-branch.yml` when #367 merged;
+- GitHub's `refs/pull/367/head`;
+- its content in `main` as `3a10234`.
+
+Nothing was deleted; no other ref moved.
