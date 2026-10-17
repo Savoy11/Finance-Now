@@ -117,3 +117,19 @@ it (`2923675`, `c48e2ee`) are held by:
 - their combined content in `main` as `38f7fb1`.
 
 Nothing was deleted; no other ref moved.
+
+## Eighth reset, the same day
+
+**What was done.** After PR #372 (the staking backup-rate refresh) was squash-merged into `main`
+as `41e3d5b`, the branch was restarted from that commit to record the day's live-data audit and
+pushed with `--force-with-lease`, for the same reason as above.
+
+**Where the prior state lives.** The branch's previous tip, `c067477`, its only commit beyond
+`38f7fb1`, is held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@c067477`, created by
+  `.github/workflows/archive-branch.yml` when #372 merged;
+- GitHub's `refs/pull/372/head`;
+- its content in `main` as `41e3d5b`.
+
+Nothing was deleted; no other ref moved.

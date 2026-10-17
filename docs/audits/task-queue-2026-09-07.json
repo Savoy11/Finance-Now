@@ -3170,11 +3170,13 @@
     "remaining_work": "The OUTPUT half of T6 is still open, on the precondition the assessment itself states: `npm run audit` on the owner's machine with provider keys, read beside `npm run agent-eval -- --run`, so that a vague answer coming off a FALLBACK route is not misfiled as a prompt problem. Nothing in this pass evaluated agent output — it verified prompt TEXT only.",
     "corrections": [
      "ONE REAL DEFECT FOUND AND FIXED, outside the three claims. data-scraper's staking collection list asked the agent to collect a 'risk level' per opportunity. Its own JSON schema, field-for-field in the same order, carries `custodyModel` in that position (prompts.ts:318) — the rename came with D14 and landed in the schema but not in the prose. So the agent was being told to gather a composite provider risk judgement that the app publishes nowhere and that had no field to go in. The line now names the custody model with its three documented values and says plainly that no composite risk level is to be collected or invented.",
-     "Same shape as the riskScore/suspicionScore drift this assessment already records: an agent instructed to produce a value its consumer no longer accepts."
+     "Same shape as the riskScore/suspicionScore drift this assessment already records: an agent instructed to produce a value its consumer no longer accepts.",
+     "2026-10-17: THE AUDIT PRECONDITION IS MET. npm run audit ran on the owner's machine (residential Spectrum line, no proxy): 78 REAL, 4 FALLBACK, 9 UNCONFIGURED, 1 EMPTY, 0 FAIL (docs/audits/live-data-audit-2026-10-17.md). What the agents' tools will see is listed there: live data everywhere they read, except macro prices (unconfigured), the equity screener's 79-name universe (paid plan, D21), crypto social (no signals), video search (no key) and Reddit (robots gate). REMAINING: npm run agent-eval -- --run on the owner's machine (it bills the Anthropic key), read beside that record."
     ],
     "evidence": [
      "docs/assessments/T6-agent-prompts.md — the 2026-09-21 annotation block",
-     "frontend/src/lib/agents/prompts.ts:304-305 (the fix) and :318 (the schema it now matches)"
+     "frontend/src/lib/agents/prompts.ts:304-305 (the fix) and :318 (the schema it now matches)",
+     "docs/audits/live-data-audit-2026-10-17.md"
     ]
    }
   },
@@ -3906,12 +3908,14 @@
     "corrections": [
      "The audit this item cites is MISFILED in its own citation. It names docs/audits/screener-consistency-2026-07-30.md, which does not exist; the document is at docs/assessments/screener-consistency-2026-07-30.md. That wrong path is almost certainly why the earlier 2026-09-12 annotation concluded the consistency pass had not happened. It did happen, on 2026-07-30.",
      "W3-2 IS THE PARTS-INVENTORY PATTERN IN MINIATURE, and docs/TASK-QUEUE.md:1627 reads as fully delivered. The min-liquidity filter code, the derived sort key, its tests and a rendered sortable column all exist, and the SORT works end to end — but the filter INPUT was removed along with the /assets screener bar on 2026-08-22, so that filter can never be switched on from the UI. The code documents this at AssetRegistryClient.tsx:137-141. Restoring the inputs is UI-only (the store fields and applyParams support already exist) but it is a product decision, not a bug fix.",
-     "2026-09-26: the result-quality half is not separate work — D20 (2026-09-14) says the one-off agent-eval run \"closes T-001 and T-129’s result-quality half\". Preflight on 2026-09-26: dev server up, Anthropic key configured, egress clean (Charter AS11426, proxy:false hosting:false). `npm run agent-eval` (plan only) selected 11 of 11. The `--run` bills the owner’s key and is the owner’s to trigger; nothing here evaluated output."
+     "2026-09-26: the result-quality half is not separate work — D20 (2026-09-14) says the one-off agent-eval run \"closes T-001 and T-129’s result-quality half\". Preflight on 2026-09-26: dev server up, Anthropic key configured, egress clean (Charter AS11426, proxy:false hosting:false). `npm run agent-eval` (plan only) selected 11 of 11. The `--run` bills the owner’s key and is the owner’s to trigger; nothing here evaluated output.",
+     "2026-10-17: THE AUDIT PRECONDITION IS MET. npm run audit ran on the owner's machine (residential Spectrum line, no proxy): 78 REAL, 4 FALLBACK, 9 UNCONFIGURED, 1 EMPTY, 0 FAIL (docs/audits/live-data-audit-2026-10-17.md). For the screeners: the Equity Scanner and the AI Outlier Scan cover the 79-name catalog (stock-universe and stock-outliers read FALLBACK, a paid plan, D21); the Crypto Scanner reads DefiLlama's closes (REAL); the Macro Scanner depends on macro price history, which the quote ladder does not serve (macro quotes unconfigured). REMAINING: drive /equities, /funds, /assets, /coin-discovery and the three scanner pages on the owner's machine and record what each returns before any default changes."
     ],
     "evidence": [
      "docs/ROADMAP.md — the 2026-09-21 steward annotation",
      "docs/assessments/screener-consistency-2026-07-30.md (the real path)",
-     "frontend/src/app/(dashboard)/assets/AssetRegistryClient.tsx:137-141"
+     "frontend/src/app/(dashboard)/assets/AssetRegistryClient.tsx:137-141",
+     "docs/audits/live-data-audit-2026-10-17.md"
     ]
    }
   },
@@ -5841,14 +5845,22 @@
     "NT5"
    ],
    "summary": "Owner backlog; a vague answer off a fallback route is a data problem.",
-   "next_action": "On the owner's machine: `cd frontend && npm run audit` first, then run each of the 11 agents from /research and the Assistant against real queries and write docs/assessments/T6-agents-<date>.md per the T6 deployable prompt (TASK-QUEUE.md:373-421); propose annotating ROADMAP.md:462-466 to drop the stale 'no invocation trigger' clause.",
+   "next_action": "On the owner's machine: the audit is done (2026-10-17, docs/audits/live-data-audit-2026-10-17.md, 0 FAIL). Next, `npm run agent-eval` to see the plan, then `npm run agent-eval -- --run`, which bills the Anthropic key, or run each of the 11 agents from /research and the Assistant against real queries; write docs/assessments/T6-agents-<date>.md per the T6 deployable prompt (TASK-QUEUE.md:373-421), reading each answer against the audit's list of data gaps (macro prices, the equity screener's catalog universe, crypto social, video search, Reddit). Propose annotating ROADMAP.md:462-466 to drop the stale 'no invocation trigger' clause.",
    "sources": [
     {
      "file": "docs/ROADMAP.md",
      "lines": "462-466",
      "quote": "**Test and fine-tune all agents and AI-enhanced tools.** 11 agents exist; `data-scraper`, `equity-data-scraper` and `equity-diligence` are configurable but have **no invocation trigger** — either give them a UI entry point or retire them."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-10-17",
+    "note": "2026-10-17: THE AUDIT PRECONDITION IS MET. npm run audit ran on the owner's machine (residential Spectrum line, no proxy): 78 REAL, 4 FALLBACK, 9 UNCONFIGURED, 1 EMPTY, 0 FAIL (docs/audits/live-data-audit-2026-10-17.md).",
+    "remaining_work": "The agent runs themselves, on the owner's machine (they bill the Anthropic key), and the write-up.",
+    "evidence": [
+     "docs/audits/live-data-audit-2026-10-17.md"
+    ]
+   }
   },
   {
    "id": "T-140",

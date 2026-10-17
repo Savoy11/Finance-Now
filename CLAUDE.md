@@ -1426,6 +1426,11 @@ mistaken for slowness and "optimised" back out.
 > failed passed or behaved as designed. Until there is a key, run
 > `$env:AUDIT_CG_PER_MIN='4'; npm run audit`. A free Demo key raises the limit for the
 > app as well (T-105); `coingeckoHeaders()` already sends it as `x-cg-demo-api-key`.
+>
+> **There is a key now: the owner saved a Demo key on 2026-10-15 (T-105, closed), and that
+> day's run passed at the default pace with no refusal** (`live-data-audit-2026-10-15-t105.md`).
+> So run plain `npm run audit`. The 2026-10-17 run was slowed to 4 a minute out of habit and
+> spent 438 s waiting for nothing (`live-data-audit-2026-10-17.md`).
 
 Run `npm run audit` before trusting any route, and read its
 **REAL vs FALLBACK** classification rather than the HTTP status: a 200 carrying fallback data
