@@ -6755,7 +6755,16 @@
      "lines": "8-11, 77-80",
      "quote": "Live cross-check of 2–3 symbols (incl. a recent-split name like NVDA) against a charting reference to confirm the adjusted series matches."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-10-17",
+    "note": "DONE ON THE OWNER'S MACHINE (residential Spectrum line, no proxy). Every series came from Tiingo. Over range=MAX, the largest one-day move was NVDA 1.54x (2004-08-06), TSLA 1.27x (2020-09-08), AAPL 2.08x (2000-09-29), each a real market fall and none a split date, so no split leaves a step. NVDA's closes either side of the 2024-06-10 split (122.09, 120.65, 120.54, 121.44 on the split day, 120.58, 124.85, 129.25) sit a steady 0.28-0.29% below the published closes divided by ten, on both sides of the split: Tiingo's adjClose also takes out dividends, and the gap narrows by about 0.01% from 06-11, NVDA's ex-dividend date. The next action's range=1Y no longer reaches June 2024, so 5Y and MAX were used.",
+    "remaining_work": "Nothing on the check itself. One finding, recorded and not changed: Tiingo serves split- and dividend-adjusted prices while FMP, the next rung, serves split-adjusted prices only (measured 2026-09-09), so a fall from Tiingo to FMP shifts a dividend payer's history. The route's comment claiming they match is corrected.",
+    "evidence": [
+     "docs/assessments/T11-equity-ta-audit.md",
+     "frontend/src/app/live-data/security-ohlcv/route.ts"
+    ]
+   }
   },
   {
    "id": "T-272",
