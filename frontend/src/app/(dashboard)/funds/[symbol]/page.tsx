@@ -29,7 +29,7 @@ import type { FundUniverseResponse } from '@/app/live-data/fund-universe/route'
 import { RISK_RATINGS_SHOWN } from '@/lib/risk/visibility'
 import { fundStructureFacts } from '@/lib/data/fundStructure'
 import { FeatureNotice } from '@/components/legal/FeatureNotice'
-import { FundProspectusLink } from './FundProspectusLink'
+import { FundProspectusLink, useFundProspectus } from './FundProspectusLink'
 
 // ─── Fee drag analyzer ────────────────────────────────────────────────────────
 // Projects what this fund's expense ratio costs versus a 0.03% benchmark fund
@@ -56,6 +56,9 @@ function FeeDragCard({ expenseRatioPct, symbol, salesCharge, website }: {
   // worse than omitting it, and omitting it silently would be worse than both.
   const loadPct = salesCharge?.kind === 'front' ? salesCharge.maxPct : undefined
   const unverifiedLoad = salesCharge != null && salesCharge.maxPct == null
+  // The notice below sends the reader to "the fund's prospectus": the filing
+  // itself where EDGAR has it, else the issuer's site, which hosts it (T-420).
+  const prospectusUrl = useFundProspectus(symbol)?.url ?? website
   const [principal, setPrincipal] = useState(10_000)
   const [annualReturn, setAnnualReturn] = useState(7)
 
@@ -89,7 +92,7 @@ function FeeDragCard({ expenseRatioPct, symbol, salesCharge, website }: {
               The rate has not been verified against the prospectus, and a guessed number would be
               worse than none — so the projection shows the expense ratio only and understates the
               real cost. Check the{' '}
-              <a href={website} target="_blank" rel="noopener noreferrer" className="underline hover:text-text-primary">
+              <a href={prospectusUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-text-primary">
                 fund&rsquo;s prospectus
               </a>{' '}
               for the current sales charge.
