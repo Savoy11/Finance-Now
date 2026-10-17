@@ -1059,7 +1059,7 @@ site nobody has reviewed. Full design: `docs/architecture/source-terms.md`.
   maintainer's obligation, not something code enforces; writing them down is the point.
 - `prohibited` — hard-blocked, no override, anywhere.
 
-> **The prohibited set is seven, and four of them are recent.** `yahoo.com` (2026-08-06,
+> **The prohibited set is eight, and five of them are recent.** `yahoo.com` (2026-08-06,
 > terms), `cboe.com` (P2-O1 audit, 2026-08-05), `poloniex.com` (2026-09-15, User Agreement
 > §9), — added **2026-09-20** — `dowjones.io` and `marketwatch.com` (Dow Jones Terms of
 > Use §9.1/§9.4.1: RSS content is named expressly and automated ingestion needs prior
@@ -1070,11 +1070,15 @@ site nobody has reviewed. Full design: `docs/architecture/source-terms.md`.
 > — added **2026-10-17** (D129, T-407) — `bitget.com` (Terms of Use §1: the United States is a
 > Prohibited Country and the owner is US-resident; the owner chose to stop rather than rely on
 > a no-account call falling outside it. The withdraw-fee overlay lost one feed, and Bitget's
-> rows in the hidden Transfer Fees table are now checked by hand).
-> All seven are refused by `pinnedFetch` and `termsGatedFetch`, with no override, and
+> rows in the hidden Transfer Fees table are now checked by hand), and — the same day (D131) —
+> `xt.com` (no terms document can be found, and XT's own site refuses service to the owner's
+> region; `review` stays `seeded`, since the verdict is the owner's choice and not a reading).
+> KuCoin, which raises the same residence question in its Article 17(5), was kept until launch
+> instead (D130): that undertaking binds on registering an account, which the app never does.
+> All eight are refused by `pinnedFetch` and `termsGatedFetch`, with no override, and
 > `sourceTerms.test.ts` fails while a data-source entry names one. A plain `fetch` to one is
 > refused by neither, and is caught only by the drift check (see Yahoo above). Yahoo is described at
-> length above; the other six were only ever recorded in `sourceTerms.ts`, which is why
+> length above; the other seven were only ever recorded in `sourceTerms.ts`, which is why
 > this list exists.
 
 **Two assertion forms, and the split is the design:**

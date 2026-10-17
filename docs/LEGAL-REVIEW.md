@@ -315,8 +315,25 @@ may be *shown*; this is a question about whether the app may *call the host at a
 than rely on the reading that a no-account API call falls outside §1. The withdraw-fee overlay was
 the only call; its feed and parser were removed and `bitget.com` is `prohibited`. Bitget's rows in
 the hand-kept fee table stay, checked by hand, on a page hidden from rollout. Calling it again
-needs counsel's reading or Bitget's word. KuCoin (Article 17(5)) and XT.com, which geo-blocks the
-owner's region, raise the same residence question and are still open.
+needs counsel's reading or Bitget's word.
+
+**KuCoin and XT.com, which raised the same residence question, were answered the same day.**
+
+- **KuCoin: kept until launch (D130).** Article 17(5) has a user undertake not to reside in the
+  Restricted Locations, which include the United States. That undertaking binds on registering an
+  account (Article 14), and the app never registers, so the keyless currencies call stays, read as
+  D25 read publicnode. Bitget differs because its terms bind on access to the Platform, API
+  included. This is a judgement, not a clause that allows it, and it is written on KuCoin's
+  entry as a condition. **Launch step:** put it to counsel or KuCoin together with the written
+  permission Article 91 needs (D42).
+- **XT.com: stopped (D131).** XT publishes no terms document anyone could find, and its own site
+  refuses service to the owner's region, so there was nothing to rest a narrow reading on. The
+  withdraw-fee overlay was the only call; its feed and parser were removed and `xt.com` is
+  `prohibited`. Its entry stays `seeded`: no document was read, and the verdict is the owner's
+  choice.
+
+Both feed only Transfer Fees, which is hidden from rollout. The withdraw-fee overlay now has four
+feeds: KuCoin, HTX, LBank and Bitfinex.
 
 ### ⚠ A D22 gap, found while annotating this section
 

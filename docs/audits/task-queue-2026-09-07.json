@@ -13094,7 +13094,7 @@
   },
   {
    "id": "T-407",
-   "title": "Decide the sources kept conditional on an unresolved judgement: Investing.com and KuCoin’s US residency clause now; CoinDesk and Nasdaq Trader at launch",
+   "title": "Decide the sources kept conditional on an unresolved judgement: Investing.com now; CoinDesk and Nasdaq Trader at launch",
    "status": "open",
    "confidence": "high",
    "owner_role": "owner-decision",
@@ -13112,7 +13112,7 @@
     "D41"
    ],
    "summary": "Four registry entries are `conditional` in a sense the word does not carry anywhere else in the registry. Normally `conditional` means permitted while conditions hold, and the conditions are obligations to honour. In these four it means WE ARE PROCEEDING ON A QUESTION THE DOCUMENT DOES NOT ANSWER — the plain text does not permit what the app does, and the entry is conditional because of an owner judgement about SCOPE. Same word, two different claims, and the registry has no field that separates them. CoinDesk: no display permission; \"rss\"/\"syndicat\"/\"feed\" return zero hits in 300 lines. Investing.com: no display permission and automated extraction expressly forbidden, yet it publishes the feeds and robots.txt permits /rss/. publicnode: bars re-use \"commercially and non-commercially\", which read literally prohibits consuming an RPC provider at all. Bitget: §1 lists the UNITED STATES among Prohibited Countries while the owner is US-resident. Three of the four were the owner's deliberate 2026-09-20 calls made with the readings in hand. This item exists so those calls stay visible rather than ageing into apparent settledness.",
-   "next_action": "Two decisions are owed now, and they are different questions. (1) INVESTING.COM: its Limitations on Use (c) forbid automated extraction “for any purpose”, while it publishes the feeds the app reads (3 of the macro-news feeds) and its robots.txt permits /rss/. The T-247 mechanism is ready: toward headline-and-link is one field (whatMayBeDisplayed: headline-link); toward prohibited, every macro pillar keeps a non-Investing source (D21). (2) KUCOIN: Terms of Use Article 17(5) lists the United States among Restricted Locations, the question Bitget’s §1 raised; it binds on registration (Article 14), which the app never does, and KuCoin is called keyless only by the withdraw-fee overlay behind the hidden Transfer Fees page. XT.com, which geo-blocks the owner’s region and publishes no reachable terms, raises the same residence question. ALREADY SETTLED: Bitget (D129, 2026-10-17: the app stopped calling it) and publicnode (D25, 2026-09-24: narrow reading kept, termsUrl fixed). CoinDesk and Nasdaq Trader are satisfied before launch under D96, each with its launch step on its registry entry.",
+   "next_action": "One decision is owed now. INVESTING.COM: its Limitations on Use (c) forbid automated extraction “for any purpose”, while it publishes the feeds the app reads (3 of the macro-news feeds) and its robots.txt permits /rss/. The T-247 mechanism is ready: toward headline-and-link is one field (whatMayBeDisplayed: headline-link); toward prohibited, every macro pillar keeps a non-Investing source (D21). ALREADY SETTLED: Bitget (D129, 2026-10-17: the app stopped calling it); KuCoin (D130, 2026-10-17: kept until launch, on the reading that Article 17(5)’s US undertaking binds on registering an account (Article 14), which the app never does; recorded as a judgement on its registry entry, with counsel or KuCoin to confirm at launch together with the Article 91 permission D42 needs); XT.com (D131, 2026-10-17: the app stopped calling it, since it publishes no terms document anyone could find and refuses service to the owner’s region); and publicnode (D25, 2026-09-24: narrow reading kept, termsUrl fixed). CoinDesk and Nasdaq Trader are satisfied before launch under D96, each with its launch step on its registry entry.",
    "sources": [
     {
      "file": "frontend/src/lib/server/sourceTerms.ts",
@@ -13127,7 +13127,7 @@
     {
      "file": "frontend/src/lib/server/sourceTerms.ts",
      "lines": "kucoin.com entry",
-     "quote": "UNRESOLVED (T-407, owner, 2026-10-14): Article 17(5) lists the United States among Restricted Locations"
+     "quote": "JUDGEMENT, not a clause that allows it (T-407, owner decision D130, 2026-10-17)"
     }
    ],
    "opened": {
@@ -13139,18 +13139,22 @@
     "noted_on": "2026-10-17",
     "note": "2026-10-09 (D96): the owner ruled that anything done before launch is personal use, for every source. Under it, CoinDesk (viewing 'for personal, informational, and non-commercial purposes') and Nasdaq Trader ('one temporary copy for personal and non-commercial use') are satisfied before launch, and their question becomes a launch step, recorded on each registry entry. Investing.com (automated extraction forbidden 'for any purpose'), publicnode (re-use barred 'commercially and non-commercially') and Bitget (the United States a Prohibited Country) stay open: their limits are not about who the user is. See docs/assessments/source-terms-prelaunch-2026-10-09.md. MECHANISM READY (T-247): CoinDesk and Investing.com carry whatMayBeDisplayed: unclear. Resolving either toward headline-and-link is now setting that field to headline-link — the three news routes blank the summary automatically — plus updating displayGrant.test.ts's \"no source is headline-link today\" assertion with the decision. The question itself is unchanged and still the owner's (or a professional's).",
     "corrections": [
-     "2026-10-17: BITGET DECIDED (D129). The owner chose to stop calling Bitget rather than rely on the reading that a no-account API call falls outside §1’s Prohibited Countries. The withdraw-fee overlay was its only call: the source and parseBitgetCoins were removed, bitget.com is prohibited in sourceTerms.ts, api.bitget.com is out of dataSources.ts (DATA-SOURCES.md regenerated), and guards in withdrawFeeAdapters.test.ts and sourceTerms.test.ts fail if any of it returns. Bitget’s 26 rows in the hand-kept transfer-fee table stay, now checked by hand like any exchange without a feed. Also corrected: the 2026-10-09 note above lists publicnode as still open, but D25 had kept its narrow reading on 2026-09-24."
+     "2026-10-17: BITGET DECIDED (D129). The owner chose to stop calling Bitget rather than rely on the reading that a no-account API call falls outside §1’s Prohibited Countries. The withdraw-fee overlay was its only call: the source and parseBitgetCoins were removed, bitget.com is prohibited in sourceTerms.ts, api.bitget.com is out of dataSources.ts (DATA-SOURCES.md regenerated), and guards in withdrawFeeAdapters.test.ts and sourceTerms.test.ts fail if any of it returns. Bitget’s 26 rows in the hand-kept transfer-fee table stay, now checked by hand like any exchange without a feed. Also corrected: the 2026-10-09 note above lists publicnode as still open, but D25 had kept its narrow reading on 2026-09-24.",
+     "2026-10-17: KUCOIN AND XT.COM DECIDED (D130, D131). KuCoin is kept until launch: Article 17(5)’s US undertaking binds on registering an account (Article 14), the app never registers, and Bitget differed because its terms bind on access to the Platform, API included. Its UNRESOLVED condition in sourceTerms.ts was replaced by one that names this as a judgement and carries the launch step, and sourceTerms.test.ts fails if it is dropped. XT.com is stopped: its source and parseXtSupportCurrency were removed from withdrawFeeAdapters.ts, xt.com is prohibited in sourceTerms.ts (review stays seeded, since no document was read), sapi.xt.com is out of dataSources.ts (DATA-SOURCES.md regenerated), and guards in withdrawFeeAdapters.test.ts and sourceTerms.test.ts fail if any of it returns. XT.com’s rows in the hand-kept transfer-fee table stay, checked by hand. The withdraw-fee overlay now has four feeds: KuCoin, HTX, LBank and Bitfinex."
     ],
     "evidence": [
      "docs/decisions/2026-10-17-owner-decisions.md",
      "frontend/src/lib/server/sourceTerms.ts",
-     "frontend/src/lib/server/withdrawFeeAdapters.ts"
+     "frontend/src/lib/server/withdrawFeeAdapters.ts",
+     "frontend/src/lib/server/__tests__/withdrawFeeAdapters.test.ts",
+     "frontend/src/lib/server/__tests__/sourceTerms.test.ts",
+     "docs/LEGAL-REVIEW.md"
     ]
    },
    "reworded": {
     "on": "2026-10-17",
-    "by": "owner decision D129, applied by the session",
-    "why": "Bitget was decided (D129: the app stopped calling it), and publicnode had been decided on 2026-09-24 (D25) while the title and next action still listed both as open.",
+    "by": "owner decisions D129, D130 and D131, applied by the session",
+    "why": "Bitget (D129: stopped), KuCoin (D130: kept until launch) and XT.com (D131: stopped) were decided on 2026-10-17, and publicnode had been decided on 2026-09-24 (D25), while the title and next action still listed them as open.",
     "was": {
      "title": "Revisit the three sources kept conditional on an unresolved judgement (CoinDesk, Investing.com, Bitget) — plus Nasdaq Trader (D41, 2026-09-30), and KuCoin’s US residency clause (2026-10-14)",
      "next_action": "NOT a re-read — all four documents have been read carefully and will not say anything different next time. What is owed is a decision on each, and they do not all need the same one. (1) CoinDesk and Investing.com turn on ONE shared question: does a terms document that never mentions feeds govern a feed the publisher deliberately publishes and permits in robots.txt? Answer it once and both resolve; it is a question for a professional, not another careful reading. (2) publicnode needs only a judgement on whether to keep reading an absurdly broad clause narrowly — exposure is one route on a page already hidden from rollout. Also fix its termsUrl, which points at the homepage rather than the document its finding quotes. (3) ⚠ BITGET DOES NOT WAIT FOR EITHER. It is the only source where a clause may bar use OUTRIGHT rather than limit scope, and the owner is US-resident. Everything else here is about what may be SHOWN; this is about whether the app may call the host at all, today. If any resolves toward prohibited, T-247 is the mechanism — a per-source display flag — and the blast radius is recorded on each entry. (4) KUCOIN, ADDED 2026-10-14 (owner: “Record it under T-407”): the T-434 source survey re-read KuCoin’s Terms of Use on the owner’s machine (“Last updated: 09/29/2026”). Article 17(5) has the user undertake that it “is not a resident of or registered in, any of the Restricted Locations”, and “Restricted Locations” include the United States: Bitget’s question in a second place. The undertaking binds on registration (Article 14), the app never registers, and the keyless API answered from the owner’s US IP. KuCoin is called keyless only by the withdrawal-fee overlay behind the hidden Transfer Fees page. Recorded on the kucoin.com entry; no code change."
@@ -14100,8 +14104,8 @@
     "T-056",
     "T-422"
    ],
-   "summary": "The 1 Oct fee check could not confirm any of the 45 priority withdrawal rows: most exchanges now show withdrawal fees only on the logged-in withdrawal screen and change them with network costs (Gate hourly; Gemini, Bybit, Kraken and OKX say so too). The rebuild idea: take live fees from the six exchanges with a public fee feed (Bitget, HTX, Bitfinex, KuCoin, LBank and XT.com, which `npm run fee-reconcile` already reads) and show 'check on the exchange' with a link for the rest. The eighteen Transfer Fees items D89 parked wait on it, each carrying what the 1 Oct check found.",
-   "next_action": "After launch: decide with the owner whether Transfer Fees returns. If it does, design the page around the live feeds (WITHDRAW_FEE_SOURCES) and a link out for every other exchange. Settle the feeds’ terms first: Bitget was removed on terms (D129, 2026-10-17), KuCoin’s US residency clause is open under T-407, and HTX’s and XT.com’s could not be read. Then confirm the deposit-status fields (T-422), apply the confirmed trading fees (T-036), and only then restore the page (T-028).",
+   "summary": "The 1 Oct fee check could not confirm any of the 45 priority withdrawal rows: most exchanges now show withdrawal fees only on the logged-in withdrawal screen and change them with network costs (Gate hourly; Gemini, Bybit, Kraken and OKX say so too). The rebuild idea: take live fees from the exchanges with a public fee feed (HTX, Bitfinex, KuCoin and LBank, which `npm run fee-reconcile` already reads; Bitget and XT.com were removed on terms on 2026-10-17) and show 'check on the exchange' with a link for the rest. The eighteen Transfer Fees items D89 parked wait on it, each carrying what the 1 Oct check found.",
+   "next_action": "After launch: decide with the owner whether Transfer Fees returns. If it does, design the page around the live feeds (WITHDRAW_FEE_SOURCES) and a link out for every other exchange. Settle the feeds’ terms first: Bitget and XT.com were removed on terms (D129, D131, 2026-10-17), KuCoin is kept until launch on a recorded judgement that counsel or KuCoin must confirm (D130), and HTX’s terms could not be read. Then confirm the deposit-status fields (T-422), apply the confirmed trading fees (T-036), and only then restore the page (T-028).",
    "sources": [
     {
      "file": "docs/decisions/2026-10-07-owner-decisions.md",
@@ -14116,9 +14120,10 @@
    },
    "reworded": {
     "on": "2026-10-17",
-    "by": "owner decision D129, applied by the session",
-    "why": "It said Bitget’s feed terms were open under T-407; D129 removed Bitget’s feed instead.",
+    "by": "owner decisions D129, D130 and D131, applied by the session",
+    "why": "It listed Bitget and XT.com among the live feeds and said their terms, and KuCoin’s, were open; D129 and D131 removed the two feeds and D130 kept KuCoin’s until launch.",
     "was": {
+     "summary": "The 1 Oct fee check could not confirm any of the 45 priority withdrawal rows: most exchanges now show withdrawal fees only on the logged-in withdrawal screen and change them with network costs (Gate hourly; Gemini, Bybit, Kraken and OKX say so too). The rebuild idea: take live fees from the six exchanges with a public fee feed (Bitget, HTX, Bitfinex, KuCoin, LBank and XT.com, which `npm run fee-reconcile` already reads) and show 'check on the exchange' with a link for the rest. The eighteen Transfer Fees items D89 parked wait on it, each carrying what the 1 Oct check found.",
      "next_action": "After launch: decide with the owner whether Transfer Fees returns. If it does, design the page around the live feeds (WITHDRAW_FEE_SOURCES) and a link out for every other exchange. Settle the feeds' terms first: Bitget's is open under T-407, and HTX's and XT.com's could not be read. Then confirm the deposit-status fields (T-422), apply the confirmed trading fees (T-036), and only then restore the page (T-028)."
     }
    }
