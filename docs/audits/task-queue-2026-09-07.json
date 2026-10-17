@@ -10405,7 +10405,7 @@
     "Phase 6"
    ],
    "summary": "FN_ALLOW_LOCAL_USER=false; /api/auth/signup exists without a page.",
-   "next_action": "After T-131 is greenlit: add src/app/(auth)/signup/page.tsx posting to /api/auth/signup, and document FN_ALLOW_LOCAL_USER=false in the production env template — same branch/PR as the wall re-enable.",
+   "next_action": "After T-131 is greenlit: add src/app/(auth)/signup/page.tsx posting to /api/auth/signup, and document FN_ALLOW_LOCAL_USER=false in the production env template — same branch/PR as the wall re-enable. The page shows SIGNUP_CONSENT’s box (frontend/src/lib/legal/signupConsent.ts) and sends electronicConsent: true with its consentVersion: since 2026-10-17 the route refuses a sign-up without them (T-436, D127), and electronicConsent.test.ts holds the page to the box.",
    "sources": [
     {
      "file": "docs/architecture/auth.md",
@@ -14012,10 +14012,14 @@
     "why": "Filed under D91 from a row the business chat recorded on the ledger page on 1 Oct (Insurance & State Privacy Scan), which had no number."
    },
    "progress": {
-    "noted_on": "2026-10-14",
+    "noted_on": "2026-10-17",
     "note": "Draft written 2026-10-14 (owner picked T-426 to start) and filed in the Finance Now Ledger page’s file library, as D60 places business documents; not in this public repository. About one page: scope and the data the app holds, read from the code (accounts are an email, an optional name and a bcrypt hash; portfolios, trades, watchlists, wallet addresses; the old Budget tables with the owner’s bank history; provider keys in .provider-config.json), roles, detect and contain (rotating AUTH_SECRET is the only way to sign everyone out, sessions being JWTs), assess, a North Carolina vs California notice table, records, after-action review, ten open questions for counsel, and sources with verbatim quotes. North Carolina (G.S. 75-61, 75-65, 14-113.20) was checked against ncleg.gov; California (Civ. Code 1798.82) is quoted from FindLaw. Labelled a draft for counsel, not legal advice.",
     "evidence": [
      "Finance Now Ledger page, file library: “Finance Now data-breach response plan - draft for counsel (2026-10-14).md”, linked to T-426"
+    ],
+    "corrections": [
+     "2026-10-17: D125 ADDED. At the owner’s request the draft now carries D125: section 4 says no state of residence is recorded, by choice, and every notice follows the strictest applicable rule; section 5 applies both states’ rules to every affected person; open question 5 asks counsel to confirm the choice instead of making it. The revised file (2026-10-17) is in the Finance Now Ledger page’s file library, and the 2026-10-14 one is archived beside it, not removed. A dated note at its top says it does not yet reflect T-435, T-436 or T-437.",
+     "2026-10-17 (later): BROUGHT UP TO DATE, at the owner’s request. Containment adds forced password resets (npm run auth:reset -- --all --force, T-435) and what to do if FN_SECRETS_KEY itself is exposed: move .provider-config.json aside, set a new key, re-enter the reissued keys, since the store never writes over a file it cannot read (T-437). Notify names who may be emailed (npm run auth:consent -- --status) and gives the rest substitute notice (T-436, in review). Open questions 6 and 10 and Appendix A are rewritten against the code, citing files by name rather than line numbers. The file is “…(2026-10-17, full update).md” in the Finance Now Ledger page’s file library; both earlier versions are archived beside it, not removed. Still owed: counsel’s reading (D4), and the blanks once counsel, insurer and host exist."
     ]
    }
   },
@@ -14464,7 +14468,7 @@
     ],
     "corrections": [
      "2026-10-15: BUILT, the parts that need no email (D123). npm run auth:reset -- --user <email> prints a one-time link (60 minutes, single use) for the owner to hand over; --force also refuses that account’s sign-in until it resets; --all --force does it for every account, the breach lever, paired with rotating AUTH_SECRET; --status lists who must reset. The link’s token travels after “#”, so it never reaches a server log or Referer header; only its SHA-256 is stored, and using it spends every other link for the account. Sign-in refuses a flagged account with its own code, and the login page says why. The flag and the tokens live in two new tables (migration 0008), never on users, so sign-in keeps working on a database not yet migrated; the reset route then answers 503 with the instruction (checked against the owner’s database the same day). The password rule is now shared with sign-up (passwordPolicy.ts). 26 tests in passwordReset.test.ts; nine guards driven red by mutations. REMAINING: the owner runs npm run db:migrate; sending the link by email waits for launch, when an email provider is chosen (D21).",
-      "2026-10-17: MIGRATED. At the owner's request the session ran npm run db:migrate on the owner's machine (0008 applied), and npm run auth:reset -- --status then answered from the new tables (no account waiting on a forced reset). REMAINING: sending the link by email, at launch (D21); the item stays open for it."
+     "2026-10-17: MIGRATED. At the owner's request the session ran npm run db:migrate on the owner's machine (0008 applied), and npm run auth:reset -- --status then answered from the new tables (no account waiting on a forced reset). REMAINING: sending the link by email, at launch (D21); the item stays open for it."
     ]
    }
   },
@@ -14503,11 +14507,22 @@
     }
    ],
    "progress": {
-    "noted_on": "2026-10-15",
+    "noted_on": "2026-10-17",
     "note": "Owner ruled (D124): a consent clause drafted for the owner’s disclosure document, marked draft and for counsel, with the sign-up checkbox and stored consent date built behind it and showing the draft until approved.",
-    "remaining_work": "Draft the clause for the owner’s document; build the checkbox and migration (a PR of its own). Counsel approves the wording.",
+    "remaining_work": "Owner: run npm run db:migrate (migration 0009). Counsel: approve the wording (D4); the questions are on the two comments in the Disclosure Set (Terms section 6, Privacy section 2). The box itself appears with the sign-up page (T-132).",
     "evidence": [
-     "docs/decisions/2026-10-15-owner-decisions.md"
+     "docs/decisions/2026-10-15-owner-decisions.md",
+     "docs/decisions/2026-10-17-owner-decisions.md",
+     "frontend/src/lib/legal/signupConsent.ts",
+     "frontend/src/lib/auth/electronicConsent.ts",
+     "frontend/src/app/api/auth/signup/route.ts",
+     "frontend/drizzle/0009_communication-consents.sql",
+     "frontend/scripts/auth-consent.ts",
+     "frontend/src/lib/auth/__tests__/electronicConsent.test.ts"
+    ],
+    "corrections": [
+     "2026-10-17: BUILT. The owner made the agreement required (D127) and had the wording go into the owner’s Disclosure Set first (D128): the Terms of Use’s section 6 gained an “Email from Finance Now” paragraph (tab rev 5 → 6, with a comment for counsel naming G.S. 75-65(e)(2), 15 U.S.C. 7001(c) and the account-closing consequence), and the box’s label went into the “Read me first” tab’s documents-vs-code table (rev 22). The app copied both from those revisions: EMAIL_NOTICES_CLAUSE on the Terms page, and SIGNUP_CONSENT in lib/legal/signupConsent.ts, whose version is a hash of the words, so a test fails if they change without it. POST /api/auth/signup refuses an account without electronicConsent: true and the current consentVersion before touching the database, and answers with the box’s label. It writes the account and the agreement (its date and the exact words) in one transaction, into communication_consents (migration 0009), a table of its own so sign-in is untouched; before 0009 runs it answers 503 with the instruction and creates nothing. npm run auth:consent -- --status lists who may be sent notices by email; --withdraw --user <email> marks a withdrawal and deletes nothing. 24 tests in electronicConsent.test.ts, the route among them against a stand-in database; 11 deliberate breaks, each caught. Not built: the box on a page, since no sign-up page exists (T-132, parked with the sign-in wall under D84); the test holds that page to the box once it is built.",
+     "2026-10-17 (later): PRIVACY POLICY. At the owner’s request, section 2 gained a “Your agreement to email notices” item naming what sign-up keeps (the date, the exact wording, any withdrawal date), added to the Disclosure Set first (Privacy Policy tab rev 16 → 17, with a comment for counsel) and copied in from that revision. Sections 5 and 9 already cover it: sending required notices is a legal obligation, and the record goes with the account. Two more tests, one pinning communication_consents’ columns so a new field (new personal data) fails until section 2 is read against it; 3 deliberate breaks, each caught."
     ]
    }
   },
@@ -14608,7 +14623,7 @@
     "evidence": [
      "docs/decisions/2026-10-15-owner-decisions.md"
     ],
-    "known_gap": "Two follow-throughs outside the repository: one sentence saying so in the draft breach plan (the owner’s document in the Finance Now Ledger page’s file library), and counsel’s confirmation in the legal review (D4), which can overturn it.",
+    "known_gap": "Two follow-throughs outside the repository: one sentence saying so in the draft breach plan (the owner’s document in the Finance Now Ledger page’s file library), added 2026-10-17 in its sections 4 and 5 and open question 5; and counsel’s confirmation in the legal review (D4), which can overturn it.",
     "approved_by": "owner, 2026-10-15: chose it among the items offered for closing"
    }
   },

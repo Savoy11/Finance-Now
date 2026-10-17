@@ -1210,6 +1210,27 @@ every `select().from(users)`, sign-in included, on a database not yet migrated. 
 sign-in works as before and the reset route answers 503 with the instruction.
 Guarded, with mutations, by `lib/auth/__tests__/passwordReset.test.ts`.
 
+**Creating an account requires agreeing to notices by email (T-436, D124, D127, 2026-10-17).**
+North Carolina lets a breach notice go by email only to people who agreed to receive
+communications electronically (G.S. 75-65(e)(2)), and the app holds no postal address or phone
+number. `POST /api/auth/signup` refuses an account without `electronicConsent: true` and the
+current `consentVersion`, and writes the account and the agreement in one transaction. The
+agreement keeps its date and the exact words agreed to.
+
+- The words are the Terms of Use's section 6 paragraph (`EMAIL_NOTICES_CLAUSE`) and the box's
+  label (`SIGNUP_CONSENT`, `lib/legal/signupConsent.ts`), copied from the owner's document (D128).
+  The Privacy Policy's section 2 names what is kept; a test pins the table's columns to it.
+- `version` is a hash of those words, and a test fails if they change without it.
+- `npm run auth:consent -- --status` lists who may be sent notices by email; `--withdraw --user
+  <email>` marks a withdrawal and deletes nothing.
+- There is no sign-up page yet (T-132); when it is built it must show that box, and a test holds
+  it to that.
+
+⚠ **Migration 0009 adds `communication_consents`; run `npm run db:migrate`.** It is its own table
+for the reason 0008's are, so sign-in is untouched. Until it runs, sign-up answers 503 with the
+instruction and creates nothing. Draft wording for counsel (D4). Guarded, with mutations, by
+`lib/auth/__tests__/electronicConsent.test.ts`.
+
 **Server-side secret stores** (gitignored, written at repo `frontend/` root):
 `.provider-config.json` (provider API keys) and `.agent-prompts.json` (agent overrides).
 

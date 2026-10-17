@@ -64,6 +64,13 @@
       "when": 1792103182867,
       "tag": "0008_password-reset",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792247374471,
+      "tag": "0009_communication-consents",
+      "breakpoints": true
     }
   ]
 }
