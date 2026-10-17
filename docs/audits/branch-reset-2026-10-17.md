@@ -101,3 +101,19 @@ ledger fix (the next steps on T-435, T-436, T-437 and T-133) and pushed with
 - its content in `main` as `9b04e8b`.
 
 Nothing was deleted; no other ref moved.
+
+## Seventh reset, the same day
+
+**What was done.** After PR #371 (ledger updates, D135) was squash-merged into `main` as
+`38f7fb1`, the branch was restarted from that commit for the staking backup-rate refresh and
+pushed with `--force-with-lease`, for the same reason as above.
+
+**Where the prior state lives.** The branch's previous tip, `58e6881`, and the two commits before
+it (`2923675`, `c48e2ee`) are held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@58e6881`, created by
+  `.github/workflows/archive-branch.yml` when #371 merged;
+- GitHub's `refs/pull/371/head`;
+- their combined content in `main` as `38f7fb1`.
+
+Nothing was deleted; no other ref moved.
