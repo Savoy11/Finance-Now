@@ -597,7 +597,7 @@ export function PumpReportTab({ targets, coinId, symbol, agentIntro }: PumpRepor
         {/* Error */}
         {phase === 'error' && (
           <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-center">
-            <p className="text-xs text-red-400 mb-2">Investigation failed. Check that ANTHROPIC_API_KEY is set.</p>
+            <p className="text-xs text-red-400 mb-2">Investigation failed. Retry, or read the reason in the server log.</p>
             <button onClick={runInvestigation} className="text-[11px] px-3 py-1.5 rounded-lg bg-red-500/20 border border-red-500/30 text-red-300 hover:bg-red-500/30 transition-colors">
               Retry
             </button>

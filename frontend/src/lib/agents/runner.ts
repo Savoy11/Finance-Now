@@ -3,6 +3,7 @@ import OpenAI from 'openai'
 import { toolsForAgent, runToolWithCredits } from './tools'
 import { type ProviderId } from './prompts'
 import { loadAgentConfig } from './config'
+import { anthropicSampling } from './sampling'
 import { getProviderKey } from '@/lib/api/live/providers'
 import type { RequiredCredit } from '@/lib/data/dataSources'
 
@@ -130,7 +131,8 @@ async function runAgentAnthropic(
     const response = await client.messages.create({
       model: cfg.model,
       max_tokens: opts.maxTokens ?? 2048,
-      temperature: cfg.temperature,
+      // Only models that accept it: Claude Sonnet 5 and newer refuse a temperature (sampling.ts).
+      ...anthropicSampling(cfg.model, cfg.temperature),
       system,
       tools,
       messages,

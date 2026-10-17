@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { anthropicAcceptsTemperature } from '@/lib/agents/sampling'
 import {
   Bot,
   Cpu,
@@ -239,6 +240,11 @@ function AgentCard({
               <div className="flex justify-between text-[10px] text-slate-600 mt-0.5">
                 <span>Precise (0)</span><span>Creative (1)</span>
               </div>
+              {provider === 'anthropic' && !anthropicAcceptsTemperature(model) && (
+                <p className="text-[11px] text-amber-400/80 mt-1">
+                  Not sent: {models.find((m) => m.id === model)?.label ?? model} does not accept a temperature setting, so this slider has no effect.
+                </p>
+              )}
             </div>
           </div>
 

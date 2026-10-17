@@ -218,6 +218,12 @@ async function callAgent(agent) {
     // Each transport names its payload differently.
     const output = data.report ?? data.reply ?? data.text ?? data.message ?? data.summary
       ?? (typeof data.raw === 'string' ? data.raw : JSON.stringify(data).slice(0, 4000))
+    // The Pump Report routes stream their own error text with HTTP 200. On 2026-10-17
+    // that text counted as two short "answers" while every other agent failed.
+    const streamedError = /<ERROR>[\s\S]*?<\/ERROR>|\[Agent error[^\]]*\]/g
+    if (streamedError.test(String(output)) && String(output).replace(streamedError, '').trim() === '') {
+      return { ok: false, ms, status: res.status, error: `the route answered only with its own error message: ${String(output).trim().slice(0, 200)}` }
+    }
     return {
       ok: true, ms, status: res.status,
       output: String(output ?? ''),
@@ -266,19 +272,24 @@ async function main() {
     }
     console.log('When ready:  npm run agent-eval -- --run')
     console.log('')
-    process.exit(problems.length > 0 ? 2 : 0)
+    // exitCode rather than exit(): on Windows, exiting while the preflight's requests
+    // are still closing printed a Node assertion (src\win\async.c) after the plan.
+    process.exitCode = problems.length > 0 ? 2 : 0
+    return
   }
 
   if (problems.length > 0) {
     console.error('Cannot run — the environment is not ready:\n')
     for (const p of problems) console.error(`  • ${p}`)
     console.error('\nThis says nothing about the agents. Exit 2 = inconclusive.\n')
-    process.exit(2)
+    process.exitCode = 2
+    return
   }
   if (keyConfigured === false) {
     console.error('No Anthropic key is configured. Set ANTHROPIC_API_KEY in frontend/.env.local')
     console.error('or add it on the Integrations page, then re-run. Exit 2 = inconclusive.\n')
-    process.exit(2)
+    process.exitCode = 2
+    return
   }
 
   const results = []
@@ -381,7 +392,7 @@ async function main() {
   console.log('Check actual spend on the Anthropic Console — these routes report no token counts.')
   console.log('')
 
-  process.exit(failed.length > 0 ? 1 : 0)
+  process.exitCode = failed.length > 0 ? 1 : 0
 }
 
-main().catch((e) => { console.error(e); process.exit(1) })
+main().catch((e) => { console.error(e); process.exitCode = 1 })
