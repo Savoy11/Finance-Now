@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseNportReport, parseNportFilingsAtom } from '../nport'
+import { parseNportReport, parseNportFilingsAtom, parseNportRateRisk } from '../nport'
 
 // The N-PORT primary_doc.xml and browse-edgar Atom parsers are regex-based:
 // malformed input must degrade to fewer/empty rows, never an uncaught throw,
@@ -87,6 +87,75 @@ describe('parseNportReport', () => {
     expect(truncated.holdings).toHaveLength(1)
     expect(truncated.holdings[0].name).toBe('Unknown')
     expect(parseNportReport('no securities here').holdings).toEqual([])
+  })
+})
+
+// Item B.3.a exactly as two real filings carry it, fetched 2026-10-17: iShares
+// IEF (accession 0002071691-26-016715, positive figures) and Vanguard BND
+// (0000794105-26-000276, negative figures). Copied, not composed, so the test
+// holds the parser to what the SEC serves rather than to what the code expects.
+const IEF_CUR_METRICS = `
+      <curMetrics>
+        <curMetric>
+          <curCd>USD</curCd>
+          <intrstRtRiskdv01 period10Yr="15343879.43000000" period1Yr="546253.35000000" period30Yr="0.00000000" period3Mon="44721.79000000" period5Yr="17838412.59000000"/>
+          <intrstRtRiskdv100 period10Yr="1533672419.33000000" period1Yr="54517730.96000000" period30Yr="0.00000000" period3Mon="4289652.26000000" period5Yr="1786063591.63000000"/>
+        </curMetric>
+      </curMetrics>`
+const BND_CUR_METRICS = `
+      <curMetrics>
+        <curMetric>
+          <curCd>USD</curCd>
+          <intrstRtRiskdv01 period10Yr="-86242242.46706608" period1Yr="-26381609.88995072" period30Yr="-48588765.93585961" period3Mon="-374185.91679064" period5Yr="-64203513.91043710"/>
+          <intrstRtRiskdv100 period10Yr="-8413012502.15894500" period1Yr="-2624961116.22410200" period30Yr="-4540781968.69735100" period3Mon="-37531035.75855026" period5Yr="-6376578164.95474000"/>
+        </curMetric>
+      </curMetrics>`
+
+describe('parseNportRateRisk (Item B.3.a)', () => {
+  it('sums all five maturity buckets per currency, keeping the filer’s sign', () => {
+    const [ief] = parseNportRateRisk(IEF_CUR_METRICS)
+    expect(ief.currency).toBe('USD')
+    expect(ief.dv01).toBeCloseTo(15343879.43 + 546253.35 + 0 + 44721.79 + 17838412.59, 2)
+    const [bnd] = parseNportRateRisk(BND_CUR_METRICS)
+    expect(bnd.dv01).toBeLessThan(0)
+    expect(bnd.dv01).toBeCloseTo(-225790318.12, 1)
+  })
+
+  it('reads DV01 only, never DV100, whose direction appears to differ by filer', () => {
+    // A DV100 element on its own is not enough for an entry.
+    const dv100Only = IEF_CUR_METRICS.replace(/<intrstRtRiskdv01[^>]*\/>/, '')
+    expect(parseNportRateRisk(dv100Only)).toEqual([])
+    expect(Object.keys(parseNportRateRisk(IEF_CUR_METRICS)[0]).sort()).toEqual(['currency', 'dv01'])
+  })
+
+  it('reads net assets and rate risk through parseNportReport', () => {
+    const report = parseNportReport(`
+      <edgarSubmission><formData><genInfo><repPdDate>2026-05-31</repPdDate></genInfo>
+      <fundInfo><totAssets>48335873263.67</totAssets><netAssets>48329792760.21</netAssets>
+      ${IEF_CUR_METRICS}</fundInfo></formData></edgarSubmission>`)
+    expect(report.netAssets).toBeCloseTo(48329792760.21, 2)
+    expect(report.rateRisk).toHaveLength(1)
+  })
+
+  it('returns one entry per currency', () => {
+    const two = IEF_CUR_METRICS.replace('</curMetrics>',
+      '<curMetric><curCd>EUR</curCd><intrstRtRiskdv01 period3Mon="1" period1Yr="1" period5Yr="1" period10Yr="1" period30Yr="1"/>'
+      + '</curMetric></curMetrics>')
+    expect(parseNportRateRisk(two).map((r) => [r.currency, r.dv01])).toEqual([['USD', expect.any(Number)], ['EUR', 5]])
+  })
+
+  it('drops a currency with a missing or unreadable bucket rather than total four of five', () => {
+    const missing = IEF_CUR_METRICS.replace(' period30Yr="0.00000000"', '')
+    expect(parseNportRateRisk(missing)).toEqual([])
+    const garbled = IEF_CUR_METRICS.replace('period5Yr="17838412.59000000"', 'period5Yr="N/A"')
+    expect(parseNportRateRisk(garbled)).toEqual([])
+  })
+
+  it('is empty for a filing without the section (stock funds), and never throws', () => {
+    expect(parseNportRateRisk(`<fundInfo><netAssets>1</netAssets></fundInfo>`)).toEqual([])
+    expect(parseNportReport(APPLE).rateRisk).toEqual([])
+    expect(parseNportReport(APPLE).netAssets).toBeNull()
+    expect(() => parseNportRateRisk('<curMetrics><curMetric><intrstRtRiskdv01')).not.toThrow()
   })
 })
 

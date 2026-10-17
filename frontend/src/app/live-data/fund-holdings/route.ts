@@ -3,6 +3,7 @@ import { getProviderKey } from '@/lib/api/live/providers'
 import { getFund } from '@/lib/data/fundCatalog'
 import { resolveFundSeries, listNportFilings, fetchNportReport } from '@/lib/server/nport'
 import { computeAssetMix } from '@/lib/utils/assetMix'
+import { fundRateSensitivity, type FundRateSensitivity } from '@/lib/utils/fundRateSensitivity'
 import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 
 // Full underlying-investment breakdown for ETFs and mutual funds.
@@ -89,6 +90,13 @@ export interface FundHoldingsResponse {
   assetAllocationCoverage: AssetAllocationCoverage | null
   /** Total number of positions in the fund, when known. */
   holdingsCount: number | null
+  /**
+   * Duration worked out from the fund's own N-PORT interest-rate risk (Item
+   * B.3.a), the same filing the holdings come from (T-420 item 2). Only on the
+   * `sec` path, and null when the filing carries no such section (a fund with
+   * under 25% in debt files none) or the exposure is negligible.
+   */
+  rateSensitivity: FundRateSensitivity | null
   error?: string
 }
 
@@ -104,12 +112,15 @@ type SecHoldingsResult = FmpHoldingsResult & {
   totalCount: number
   assetAllocation: AssetAllocationSlice[]
   assetAllocationCoverage: AssetAllocationCoverage | null
+  rateSensitivity: FundRateSensitivity | null
+}
+
+const EMPTY_SEC: SecHoldingsResult = {
+  holdings: [], asOf: null, totalCount: 0, assetAllocation: [], assetAllocationCoverage: null, rateSensitivity: null,
 }
 
 async function fetchSecHoldings(symbol: string): Promise<SecHoldingsResult> {
-  const empty: SecHoldingsResult = {
-    holdings: [], asOf: null, totalCount: 0, assetAllocation: [], assetAllocationCoverage: null,
-  }
+  const empty = EMPTY_SEC
   const series = await resolveFundSeries(symbol)
   if (!series) return empty
   const filings = await listNportFilings(series.seriesId, 1)
@@ -147,6 +158,7 @@ async function fetchSecHoldings(symbol: string): Promise<SecHoldingsResult> {
     assetAllocationCoverage: mix.slices.length > 0
       ? { coveredPct: mix.coveredPct, unclassifiedCount: mix.unclassifiedCount }
       : null,
+    rateSensitivity: fundRateSensitivity(report.rateRisk, report.netAssets, report.asOf),
   }
 }
 
@@ -244,14 +256,12 @@ export async function GET(request: NextRequest) {
   const wantSec = !forced || forced === 'sec'
   const wantFmp = !!fmpKey() && entry?.type !== 'mutual' && (!forced || forced === 'fmp')
   const [secRes, fmpHoldingsRes, fmpSectorsRes] = await Promise.allSettled([
-    wantSec ? fetchSecHoldings(symbol) : Promise.resolve({ holdings: [], asOf: null, totalCount: 0, assetAllocation: [], assetAllocationCoverage: null } as SecHoldingsResult),
+    wantSec ? fetchSecHoldings(symbol) : Promise.resolve(EMPTY_SEC),
     wantFmp ? fetchFmpHoldings(symbol) : Promise.resolve({ holdings: [], asOf: null } as FmpHoldingsResult),
     wantFmp ? fetchFmpSectorWeights(symbol) : Promise.resolve([] as SectorWeight[]),
   ])
 
-  const sec: SecHoldingsResult = secRes.status === 'fulfilled'
-    ? secRes.value
-    : { holdings: [], asOf: null, totalCount: 0, assetAllocation: [], assetAllocationCoverage: null }
+  const sec: SecHoldingsResult = secRes.status === 'fulfilled' ? secRes.value : EMPTY_SEC
   const fmp = fmpHoldingsRes.status === 'fulfilled' ? fmpHoldingsRes.value : { holdings: [], asOf: null }
   const fmpSectors = fmpSectorsRes.status === 'fulfilled' ? fmpSectorsRes.value : []
 
@@ -266,6 +276,7 @@ export async function GET(request: NextRequest) {
       sectorWeights: forced === 'fmp' ? fmpSectors : [],
       assetAllocation: forced === 'sec' ? sec.assetAllocation : [],
       assetAllocationCoverage: forced === 'sec' ? sec.assetAllocationCoverage : null,
+      rateSensitivity: forced === 'sec' ? sec.rateSensitivity : null,
       holdingsCount: picked.count,
       ...(picked.holdings.length === 0 ? {
         error: forced === 'fmp' && !fmpKey()
@@ -282,6 +293,7 @@ export async function GET(request: NextRequest) {
       sectorWeights: fmpSectors,
       assetAllocation: sec.assetAllocation,
       assetAllocationCoverage: sec.assetAllocationCoverage,
+      rateSensitivity: sec.rateSensitivity,
       holdingsCount: sec.totalCount,
     } satisfies FundHoldingsResponse)
   }
@@ -295,6 +307,7 @@ export async function GET(request: NextRequest) {
       // guessed one from ticker shapes.
       assetAllocation: [],
       assetAllocationCoverage: null,
+      rateSensitivity: null,
       holdingsCount: fmp.holdings.length,
     } satisfies FundHoldingsResponse)
   }
@@ -308,6 +321,7 @@ export async function GET(request: NextRequest) {
     sectorWeights: fmpSectors,
     assetAllocation: [],
     assetAllocationCoverage: null,
+    rateSensitivity: null,
     holdingsCount: null,
   } satisfies FundHoldingsResponse)
 }
