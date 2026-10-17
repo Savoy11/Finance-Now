@@ -46,10 +46,28 @@ export interface NportHolding {
   assetCat: string | null
 }
 
+/**
+ * One currency's interest-rate risk from N-PORT Item B.3.a: the change in the
+ * fund's value, in US dollars, for a 1 basis point move in rates (DV01), summed
+ * here across the five maturity buckets the form splits it into (3 months, 1,
+ * 5, 10 and 30 years). Filed only by funds whose debt is at least 25% of net
+ * assets. Filers disagree on the sign — iShares reports it positive, Vanguard
+ * negative — so nothing here reads meaning into it. The item's DV100 is not
+ * read at all: its direction appears to differ by filer (lib/utils/fundRateSensitivity.ts).
+ */
+export interface NportRateRisk {
+  currency: string
+  dv01: number
+}
+
 export interface NportReport {
   /** Portfolio as-of date (repPdDate), YYYY-MM-DD. */
   asOf: string | null
+  /** Net assets in US dollars (Item B.1.c), when stated. */
+  netAssets: number | null
   holdings: NportHolding[]
+  /** Interest-rate risk per currency; empty when the filing carries none. */
+  rateRisk: NportRateRisk[]
 }
 
 /** Resolve a fund ticker to its EDGAR series/class ids via the SEC's mutual-fund
@@ -122,6 +140,37 @@ const tag = (block: string, name: string): string | undefined =>
 const attr = (block: string, name: string): string | undefined =>
   block.match(new RegExp(`<${name}[^>]*\\bvalue="([^"]*)"`))?.[1]
 
+const RATE_BUCKETS = ['period3Mon', 'period1Yr', 'period5Yr', 'period10Yr', 'period30Yr'] as const
+
+/** Sum the five maturity-bucket attributes of the `<intrstRtRiskdv01>` element.
+ *  Null when the element is missing or any bucket is unreadable: a total over
+ *  four of five buckets would understate the exposure while looking complete. */
+function dv01Total(block: string): number | null {
+  const el = block.match(/<intrstRtRiskdv01\b([^>]*)\/?>/)?.[1]
+  if (el == null) return null
+  let total = 0
+  for (const bucket of RATE_BUCKETS) {
+    const v = num(el.match(new RegExp(`\\b${bucket}="([^"]*)"`))?.[1])
+    if (v == null) return null
+    total += v
+  }
+  return total
+}
+
+/** Parse Item B.3.a (`<curMetrics>`) into one entry per currency. Pure. */
+export function parseNportRateRisk(xml: string): NportRateRisk[] {
+  const section = xml.match(/<curMetrics>([\s\S]*?)<\/curMetrics>/)?.[1]
+  if (!section) return []
+  const out: NportRateRisk[] = []
+  for (const raw of section.split(/<curMetric>/).slice(1)) {
+    const block = raw.split(/<\/curMetric>/)[0]
+    const dv01 = dv01Total(block)
+    if (dv01 == null) continue
+    out.push({ currency: tag(block, 'curCd') ?? '', dv01 })
+  }
+  return out
+}
+
 /** Fetch and parse one NPORT-P primary document into holdings. */
 export async function fetchNportReport(ref: NportFilingRef): Promise<NportReport> {
   const adsh = ref.accession.replace(/-/g, '')
@@ -158,5 +207,10 @@ export function parseNportReport(xml: string): NportReport {
       assetCat: tag(block, 'assetCat')?.trim().toUpperCase() || null,
     })
   }
-  return { asOf, holdings }
+  return {
+    asOf,
+    netAssets: num(xml.match(/<netAssets>\s*([^<]*?)\s*<\/netAssets>/)?.[1]),
+    holdings,
+    rateRisk: parseNportRateRisk(xml),
+  }
 }

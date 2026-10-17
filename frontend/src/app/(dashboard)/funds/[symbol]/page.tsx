@@ -9,6 +9,7 @@ import { ArrowLeft, Calculator, Clock, ExternalLink, TrendingDown, TrendingUp } 
 import { ModuleGate } from '@/components/layout/ModuleGate'
 import { FundHoldingsHistory } from './FundHoldingsHistory'
 import { FundHoldingsSection } from './FundHoldingsSection'
+import { FundRateSensitivityCard } from './FundRateSensitivityCard'
 import { ExplainedLabel } from '@/components/ui/ExplainedLabel'
 import { SourceLine } from '@/components/ui/SourceLine'
 import { ProvenanceNotice } from '@/components/ui/ProvenanceNotice'
@@ -395,6 +396,7 @@ function FundDetailInner() {
                   </div>
                 )
               })()}
+              <FundRateSensitivityCard symbol={symbol} />
               {/* Always visible, not only when stale — the fee figures above and
                   the 30-year projection below are computed on this table, and a
                   notice that only appears past a threshold teaches readers to

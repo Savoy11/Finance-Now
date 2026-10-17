@@ -201,9 +201,10 @@ export function FundFactsSection({ symbols }: { symbols: string[] }) {
               <strong className="text-text-secondary">Bond funds:</strong> the catalog records no
               duration figure and no credit-quality tier, so neither is shown. The “Tracks” row is
               the closest thing it holds — a benchmark name usually states the maturity band
-              (“1-3 Year”, “20+ Year”). Read the issuer’s page for effective duration and average
-              credit rating; a duration inferred from a fund’s name would be a number you could
-              rank on, and this table will not invent one.
+              (“1-3 Year”, “20+ Year”). Each bond fund’s own page shows its duration, worked out
+              from its SEC filing; read the issuer’s page for average credit rating. A duration
+              inferred from a fund’s name would be a number you could rank on, and this table will
+              not invent one.
             </span>
           </p>
         )}
