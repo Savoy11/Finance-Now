@@ -9,7 +9,6 @@ import { ArrowLeft, Calculator, Clock, ExternalLink, TrendingDown, TrendingUp } 
 import { ModuleGate } from '@/components/layout/ModuleGate'
 import { FundHoldingsHistory } from './FundHoldingsHistory'
 import { FundHoldingsSection } from './FundHoldingsSection'
-import { FundProspectusLink } from './FundProspectusLink'
 import { ExplainedLabel } from '@/components/ui/ExplainedLabel'
 import { SourceLine } from '@/components/ui/SourceLine'
 import { ProvenanceNotice } from '@/components/ui/ProvenanceNotice'
@@ -30,6 +29,7 @@ import type { FundUniverseResponse } from '@/app/live-data/fund-universe/route'
 import { RISK_RATINGS_SHOWN } from '@/lib/risk/visibility'
 import { fundStructureFacts } from '@/lib/data/fundStructure'
 import { FeatureNotice } from '@/components/legal/FeatureNotice'
+import { FundProspectusLink } from './FundProspectusLink'
 
 // ─── Fee drag analyzer ────────────────────────────────────────────────────────
 // Projects what this fund's expense ratio costs versus a 0.03% benchmark fund
