@@ -130,7 +130,11 @@ yet, and building it now means maintaining a login system with no users.
    already exists; read through a server route and treat missing rows as
    "denied" rather than the current "granted".
 5. **Turn off local-user mode** in production (`FN_ALLOW_LOCAL_USER=false`)
-   and add a signup UI.
+   and add a signup UI. Since 2026-10-17 the signup route refuses an account
+   without the agreement to get notices by email (T-436, D127), so the page shows
+   `SIGNUP_CONSENT`'s box (`lib/legal/signupConsent.ts`) and sends
+   `electronicConsent: true` with its `consentVersion`;
+   `lib/auth/__tests__/electronicConsent.test.ts` holds the page to that once it exists.
 6. **Then** billing (Stripe → writes `entitlements`), password reset, and
    OAuth via `@auth/drizzle-adapter`.
 

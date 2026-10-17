@@ -10405,7 +10405,7 @@
     "Phase 6"
    ],
    "summary": "FN_ALLOW_LOCAL_USER=false; /api/auth/signup exists without a page.",
-   "next_action": "After T-131 is greenlit: add src/app/(auth)/signup/page.tsx posting to /api/auth/signup, and document FN_ALLOW_LOCAL_USER=false in the production env template — same branch/PR as the wall re-enable.",
+   "next_action": "After T-131 is greenlit: add src/app/(auth)/signup/page.tsx posting to /api/auth/signup, and document FN_ALLOW_LOCAL_USER=false in the production env template — same branch/PR as the wall re-enable. The page shows SIGNUP_CONSENT’s box (frontend/src/lib/legal/signupConsent.ts) and sends electronicConsent: true with its consentVersion: since 2026-10-17 the route refuses a sign-up without them (T-436, D127), and electronicConsent.test.ts holds the page to the box.",
    "sources": [
     {
      "file": "docs/architecture/auth.md",
@@ -14464,7 +14464,7 @@
     ],
     "corrections": [
      "2026-10-15: BUILT, the parts that need no email (D123). npm run auth:reset -- --user <email> prints a one-time link (60 minutes, single use) for the owner to hand over; --force also refuses that account’s sign-in until it resets; --all --force does it for every account, the breach lever, paired with rotating AUTH_SECRET; --status lists who must reset. The link’s token travels after “#”, so it never reaches a server log or Referer header; only its SHA-256 is stored, and using it spends every other link for the account. Sign-in refuses a flagged account with its own code, and the login page says why. The flag and the tokens live in two new tables (migration 0008), never on users, so sign-in keeps working on a database not yet migrated; the reset route then answers 503 with the instruction (checked against the owner’s database the same day). The password rule is now shared with sign-up (passwordPolicy.ts). 26 tests in passwordReset.test.ts; nine guards driven red by mutations. REMAINING: the owner runs npm run db:migrate; sending the link by email waits for launch, when an email provider is chosen (D21).",
-      "2026-10-17: MIGRATED. At the owner's request the session ran npm run db:migrate on the owner's machine (0008 applied), and npm run auth:reset -- --status then answered from the new tables (no account waiting on a forced reset). REMAINING: sending the link by email, at launch (D21); the item stays open for it."
+     "2026-10-17: MIGRATED. At the owner's request the session ran npm run db:migrate on the owner's machine (0008 applied), and npm run auth:reset -- --status then answered from the new tables (no account waiting on a forced reset). REMAINING: sending the link by email, at launch (D21); the item stays open for it."
     ]
    }
   },
@@ -14503,11 +14503,21 @@
     }
    ],
    "progress": {
-    "noted_on": "2026-10-15",
+    "noted_on": "2026-10-17",
     "note": "Owner ruled (D124): a consent clause drafted for the owner’s disclosure document, marked draft and for counsel, with the sign-up checkbox and stored consent date built behind it and showing the draft until approved.",
-    "remaining_work": "Draft the clause for the owner’s document; build the checkbox and migration (a PR of its own). Counsel approves the wording.",
+    "remaining_work": "Owner: run npm run db:migrate (migration 0009). Counsel: approve the wording (D4); the questions are on the paragraph’s comment in the Disclosure Set. The box itself appears with the sign-up page (T-132). The Privacy Policy’s section 2 should name the stored agreement, in the owner’s wording.",
     "evidence": [
-     "docs/decisions/2026-10-15-owner-decisions.md"
+     "docs/decisions/2026-10-15-owner-decisions.md",
+     "docs/decisions/2026-10-17-owner-decisions.md",
+     "frontend/src/lib/legal/signupConsent.ts",
+     "frontend/src/lib/auth/electronicConsent.ts",
+     "frontend/src/app/api/auth/signup/route.ts",
+     "frontend/drizzle/0009_communication-consents.sql",
+     "frontend/scripts/auth-consent.ts",
+     "frontend/src/lib/auth/__tests__/electronicConsent.test.ts"
+    ],
+    "corrections": [
+     "2026-10-17: BUILT. The owner made the agreement required (D127) and had the wording go into the owner’s Disclosure Set first (D128): the Terms of Use’s section 6 gained an “Email from Finance Now” paragraph (tab rev 5 → 6, with a comment for counsel naming G.S. 75-65(e)(2), 15 U.S.C. 7001(c) and the account-closing consequence), and the box’s label went into the “Read me first” tab’s documents-vs-code table (rev 22). The app copied both from those revisions: EMAIL_NOTICES_CLAUSE on the Terms page, and SIGNUP_CONSENT in lib/legal/signupConsent.ts, whose version is a hash of the words, so a test fails if they change without it. POST /api/auth/signup refuses an account without electronicConsent: true and the current consentVersion before touching the database, and answers with the box’s label. It writes the account and the agreement (its date and the exact words) in one transaction, into communication_consents (migration 0009), a table of its own so sign-in is untouched; before 0009 runs it answers 503 with the instruction and creates nothing. npm run auth:consent -- --status lists who may be sent notices by email; --withdraw --user <email> marks a withdrawal and deletes nothing. 24 tests in electronicConsent.test.ts, the route among them against a stand-in database; 11 deliberate breaks, each caught. Not built: the box on a page, since no sign-up page exists (T-132, parked with the sign-in wall under D84); the test holds that page to the box once it is built. Found while copying: the Privacy Policy’s section 2 lists what an account holds and does not yet name the agreement."
     ]
    }
   },

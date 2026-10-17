@@ -48,14 +48,18 @@ export const DISCLOSURE_STATUS: 'draft' | 'approved' = 'draft'
 export const DISCLOSURE_SOURCE = {
   document: 'FN & NC — Disclosure Set (Draft v1)',
   copiedOn: '2026-10-01',
-  /** Tab revisions as read on copiedOn. */
+  /** Tab revisions as read on copiedOn, or on the later date `recopied` gives. */
   revisions: {
     'About page': 5,
-    'Terms of Use': 5,
+    'Terms of Use': 6,
     'Privacy Policy': 16,
     'Not Investment Advice': 5,
     'How We Make Money': 13,
     'Contact & Complaints': 3,
+  },
+  /** Tabs copied again after copiedOn, and what their new revision changed. */
+  recopied: {
+    'Terms of Use': { on: '2026-10-17', change: 'Section 6 gains the "Email from Finance Now" paragraph (T-436); rev 6 is rev 5 plus that paragraph' },
   },
 } as const
 
@@ -112,7 +116,14 @@ export function sectionId(heading: string): string {
 
 const section = (heading: string, ...blocks: LegalBlock[]): LegalSection => ({ id: sectionId(heading), heading, blocks })
 
-// ─── Terms of Use (draft tab rev 5) ─────────────────────────────────────────
+// ─── Terms of Use (draft tab rev 6) ─────────────────────────────────────────
+
+/**
+ * Section 6's consent to email notices (T-436, D124, D127), copied from the Terms tab at rev 6
+ * on 2026-10-17. The sign-up box points at it and stores it with each agreement
+ * (lib/legal/signupConsent.ts), so it is one constant rather than a second copy.
+ */
+export const EMAIL_NOTICES_CLAUSE = "**Email from Finance Now.** To create an account, you agree that we may give you notices by email, at the address on your account, instead of on paper. This covers every notice the law requires us to give you, including notice of a security breach that affects your information, and notices about these terms and your account. To receive them you need an email account and a device that can open email. Tell us when your address changes. You can ask for a paper copy of any notice, at no charge, by emailing [CONTACT EMAIL] with your postal address. You can withdraw this agreement at any time by emailing [CONTACT EMAIL]. Email is the only way we can reach account holders, so withdrawing it means we close your account; you can still use Finance Now without one. Withdrawing doesn't affect notices we have already sent."
 
 export const TERMS_OF_USE: LegalDocument = {
   title: 'Terms of Use',
@@ -149,6 +160,7 @@ export const TERMS_OF_USE: LegalDocument = {
     ),
     section('6. Accounts and saved data',
       p('**Finance Now.** Some features let you save portfolios, watchlists, plans and wallet addresses. Where a feature needs an account, give accurate sign-in details and keep your password safe; you are responsible for activity under your account. What you enter stays yours. You let us store and process it only to run the Services for you, as the [Privacy Policy](/about/privacy) describes. You can delete saved items at any time, and ask us to delete your account.'),
+      p(EMAIL_NOTICES_CLAUSE),
       p('**News Charts.** There are no accounts. Notes, followed pages and settings you create stay in your browser.'),
     ),
     section('7. Your own keys and AI features',

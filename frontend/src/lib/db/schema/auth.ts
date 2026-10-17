@@ -75,6 +75,27 @@ export const passwordStates = pgTable('password_states', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 })
 
+// ─── Consent to email notices (T-436, D124, D127, migration 0009) ────────────
+// A table of its own, for the reason password_states is one (above): a column on `users`
+// would break every select().from(users), sign-in included, on a database without 0009.
+// One row per agreement, holding the exact words agreed to (lib/legal/signupConsent.ts).
+// A withdrawal is marked, never removed; rows go only with their user (CASCADE).
+
+export const communicationConsents = pgTable('communication_consents', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  /** SIGNUP_CONSENT.version when it was given: a short hash of `wording`. */
+  wordingVersion: text('wording_version').notNull(),
+  /** The box's label and the Terms clause it points to, as shown. */
+  wording: text('wording').notNull(),
+  /** Where it was given. Only 'sign-up' so far. */
+  givenVia: text('given_via').notNull().default('sign-up'),
+  agreedAt: timestamp('agreed_at', { withTimezone: true }).notNull().defaultNow(),
+  withdrawnAt: timestamp('withdrawn_at', { withTimezone: true }),
+}, (t) => ({
+  byUser: index('communication_consents_user_idx').on(t.userId),
+}))
+
 export type User = typeof users.$inferSelect
 export type NewUser = typeof users.$inferInsert
 export type Entitlement = typeof entitlements.$inferSelect
