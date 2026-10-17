@@ -119,7 +119,7 @@ frontend/src/
 │   │                               #   so bookmarks land. This row said "page
 │   │                               #   retained" until 2026-09-22; what is actually
 │   │                               #   retained is an empty directory, nothing else.
-│   └── live-data/                  # Server-side API proxy routes (no API keys exposed) — 60 routes
+│   └── live-data/                  # Server-side API proxy routes (no API keys exposed) — 61 routes
 │       ├── markets/route.ts        # CoinGecko price data
 │       ├── news/route.ts           # Multi-provider crypto news (RSS + JSON feeds)
 │       ├── social/route.ts         # Social sentiment data
@@ -162,6 +162,10 @@ frontend/src/
 │       ├── fund-holdings/route.ts   # Full ETF/fund portfolio: SEC N-PORT direct (keyless, authoritative) → FMP → catalog.
 │                                   #   Also derives the stock/bond/cash asset mix from N-PORT assetCat (NT9)
 │       ├── fund-holdings-history/route.ts # Quarter-over-quarter holdings diff from N-PORT filings (EDGAR direct; FMP fallback)
+│       ├── fund-prospectus/route.ts # T-420 item 2: the share class's summary prospectus (497K) filed with its latest
+│                                   #   annual 485BPOS, else that 485BPOS; keyless EDGAR. Not the newest 497K: that can
+│                                   #   be a supplement (FXAIX, 2025-11-10). SPY/GLD file neither, and get no link
+│                                   #   (lib/server/fundProspectus.ts)
 │       ├── security-returns/route.ts # Trailing 1M/3M/YTD/1Y returns (Tiingo, per symbol, capped at 60; whole-universe requests refused)
 │       ├── fx-rates/route.ts        # Daily ECB reference FX (frankfurter.dev, keyless) — Macro currency converter, official tier
 │       ├── fx-rates-extended/route.ts # +126 more currencies (community currency-api, keyless) — converter's

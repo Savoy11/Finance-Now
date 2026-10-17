@@ -5,7 +5,7 @@ change the registry and regenerate. This is the "where does the data come from" 
 `DATA-AVAILABILITY.md` (which tracks whether each surface is live). The same registry powers the
 in-app **/data-sources** page and the per-page provenance badges, so the app and the docs never diverge._
 
-_Last generated: **2026-10-14**_
+_Last generated: **2026-10-17**_
 
 ## Legend
 
@@ -110,10 +110,12 @@ Provider tags: `key` = needs an API key · `paid` = needs a paid plan · untagge
 |---------|--------|-------------|---------|-------|
 | Fund universe | Live | [SEC](https://www.sec.gov/edgar) `www.sec.gov`<br>NASDAQ Trader `www.nasdaqtrader.com` | daily-cached | `/live-data/fund-universe` |
 | ETF / fund holdings | Live | [SEC N-PORT](https://www.sec.gov/edgar) `data.sec.gov`<br>FMP `financialmodelingprep.com` _(key)_<br>Catalog | — | `/live-data/fund-holdings` |
+| Fund prospectus link | Live | [SEC EDGAR (497K / 485BPOS)](https://www.sec.gov/edgar) `www.sec.gov` | 24h cache | `/live-data/fund-prospectus` |
 | Holdings quarter-over-quarter diff | Partial | [SEC N-PORT](https://www.sec.gov/edgar) `data.sec.gov`<br>FMP `financialmodelingprep.com` _(key)_ | — | `/live-data/fund-holdings-history` |
 
 - **Fund universe** — Discovered funds ship as compact {symbol,name} rows (2026-07-30, audit follow-up F3). PAGINATION WAS CONSIDERED AND REJECTED in item 11, not deferred: the registry screens client-side, so a page-at-a-time API would filter as though it had seen the whole universe when it had seen fifty rows. The earlier ~11s / 14MB figure predates the compact shape and is not a current measurement — payload re-measured on the owner’s machine 2026-09-19: 2,274,590 bytes (2.27 MB), carrying 29,009 discovered funds (5,593 ETFs + 23,416 mutual funds).
 - **ETF / fund holdings** — N-PORT is keyless and authoritative, and holdings are unaffected by the Yahoo removal. Two side panels are: SECTOR WEIGHTS now need an FMP key (N-PORT carries no GICS classification), and the stock/bond/cash ASSET MIX is DERIVED FROM N-PORT’s assetCat field (NT9) rather than having no source — the earlier "no source at all" note was overtaken by that work. It is therefore keyless and unaffected by the Yahoo removal, but absent for filers that publish no N-PORT (UITs such as SPY), where the section correctly does not render. UITs (e.g. SPY) file no N-PORT and correctly fall back to indicative top holdings.
+- **Fund prospectus link** — T-420 item 2 (D92). The summary prospectus filed with the share class’s latest annual 485BPOS, else that 485BPOS; looked up by class, since a series lists one 497K per share class. Trusts outside the SEC’s mutual-fund map (SPY, GLD) file neither form and correctly get no link.
 - **Holdings quarter-over-quarter diff** — Works where an N-PORT series exists.
 
 ## Macro Markets
@@ -155,4 +157,4 @@ Provider tags: `key` = needs an API key · `paid` = needs a paid plan · untagge
 
 ---
 
-_56 surfaces catalogued. Regenerate with `npm run data-sources`; verify against the route code with `npm run data-sources -- --verify`._
+_57 surfaces catalogued. Regenerate with `npm run data-sources`; verify against the route code with `npm run data-sources -- --verify`._

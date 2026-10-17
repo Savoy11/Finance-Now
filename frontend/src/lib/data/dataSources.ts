@@ -452,6 +452,13 @@ export const DATA_SOURCES: DataSourceEntry[] = [
     notes: 'N-PORT is keyless and authoritative, and holdings are unaffected by the Yahoo removal. Two side panels are: SECTOR WEIGHTS now need an FMP key (N-PORT carries no GICS classification), and the stock/bond/cash ASSET MIX is DERIVED FROM N-PORT’s assetCat field (NT9) rather than having no source — the earlier "no source at all" note was overtaken by that work. It is therefore keyless and unaffected by the Yahoo removal, but absent for filers that publish no N-PORT (UITs such as SPY), where the section correctly does not render. UITs (e.g. SPY) file no N-PORT and correctly fall back to indicative top holdings.',
   },
   {
+    id: 'fund-prospectus', surface: 'Fund prospectus link', module: 'funds',
+    route: '/live-data/fund-prospectus', status: 'live',
+    providers: [{ ...SEC_EDGAR, name: 'SEC EDGAR (497K / 485BPOS)', host: 'www.sec.gov' }],
+    cadence: '24h cache',
+    notes: 'T-420 item 2 (D92). The summary prospectus filed with the share class’s latest annual 485BPOS, else that 485BPOS; looked up by class, since a series lists one 497K per share class. Trusts outside the SEC’s mutual-fund map (SPY, GLD) file neither form and correctly get no link.',
+  },
+  {
     id: 'fund-holdings-history', surface: 'Holdings quarter-over-quarter diff', module: 'funds',
     route: '/live-data/fund-holdings-history', status: 'partial',
     providers: [{ ...SEC_EDGAR, name: 'SEC N-PORT' }, { name: 'FMP', host: 'financialmodelingprep.com', role: 'fallback', auth: 'key' }],
