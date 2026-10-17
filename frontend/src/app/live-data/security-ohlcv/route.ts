@@ -120,7 +120,11 @@ async function fetchTiingoOhlcv(symbol: string, range: string): Promise<OhlcvCan
   if (!res.ok) throw new Error(`Tiingo ${res.status}`)
   // Tiingo returns both raw (open/high/low/close/volume) and split+dividend
   // adjusted (adj*) fields. Use the adjusted set so a split is a continuous
-  // series (not a cliff) and the output matches FMP's adjusted basis.
+  // series (not a cliff). ⚠ This is NOT FMP's basis: FMP's /full is adjusted for
+  // splits only (measured 2026-09-09, above), while Tiingo's adj* also takes out
+  // dividends, so a fall from Tiingo to FMP shifts a dividend payer's history.
+  // Measured on NVDA 2026-10-17: a steady 0.29% across the 2024 split
+  // (docs/assessments/T11-equity-ta-audit.md, Deferred). Whether to align them: T-441.
   const rows = await res.json() as Array<{
     date: string; open: number; high: number; low: number; close: number; volume: number
     adjOpen?: number; adjHigh?: number; adjLow?: number; adjClose?: number; adjVolume?: number

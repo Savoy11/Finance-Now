@@ -98,6 +98,37 @@ Verified: `tsc` clean · `eslint` clean · `vitest` (5 new / suite green) · `np
   `adjClose` varies by plan; if a split stock still shows a cliff on the FMP path, switch to
   `/stable/historical-price-eod/dividend-adjusted`. Needs an FMP key to verify.
 
+> **Result, 2026-10-17 (T-271), on the owner's machine (residential Spectrum line, no proxy),
+> through `/live-data/security-ohlcv?range=MAX`, every series served by Tiingo:**
+>
+> | Symbol | Days | Largest one-day move | That day |
+> |---|---|---|---|
+> | NVDA | 6,977 | 1.54x, 2004-08-06 | a post-earnings fall, not a split |
+> | TSLA | 4,101 | 1.27x, 2020-09-08 | the 21% fall after the S&P 500 left it out |
+> | AAPL | 10,346 | 2.08x, 2000-09-29 | the 52% profit-warning crash, three months after the 2000 split |
+>
+> No split date shows a step (NVDA 10:1 2024-06-10 and 4:1 2021-07-20; TSLA 5:1 2020-08-31 and
+> 3:1 2022-08-25; AAPL 7:1 2014-06-09 and 4:1 2020-08-31, among others). NVDA's closes either side
+> of the 2024 split (`range=5Y`): 122.09, 120.65, 120.54, **121.44** (split day), 120.58, 124.85,
+> 129.25 for 06-05 to 06-13. Against the published closes divided by ten (122.44, 121.00, 120.89,
+> 121.79, 120.91, 125.20, 129.61), each sits a steady 0.28–0.29% lower on both sides of the split,
+> narrowing by about 0.01% from 06-11, NVDA's ex-dividend date for its $0.01 dividend. That is
+> Tiingo's `adjClose` adjusting for dividends as well as splits. **The Tiingo path is
+> split-adjusted: the first bullet above is answered.**
+>
+> **The FMP bullet was answered on 2026-09-09** (the route's own comment): `/full` returns
+> split-adjusted closes, and on NVDA they equal the published split-only closes above exactly.
+>
+> **Finding, not changed: the two rungs are on different bases.** Tiingo serves split- *and*
+> dividend-adjusted prices; FMP serves split-adjusted prices only. When the ladder falls from
+> Tiingo to FMP, the same symbol's history shifts by its dividends since each date: 0.3% on NVDA
+> here, and on a high-yield stock over a 5Y range, on the order of its yield times the years at
+> the start of the chart. Returns, backtests and drawdowns read that shift; most indicators
+> barely do. The route's comment that Tiingo's adjusted set "matches FMP's adjusted basis" is
+> wrong on this evidence. Making them match is a choice (FMP's dividend-adjusted endpoint, which
+> the route warns would change the basis of its charts, or a split-only Tiingo series), so it is
+> recorded here rather than made: filed as T-441 at low priority (D135).
+
 ## Changes in this PR
 - `src/lib/utils/ohlcvAdjust.ts` (new) + `__tests__/ohlcvAdjust.test.ts` (new, 5 tests).
 - `src/app/live-data/security-ohlcv/route.ts` — Yahoo/Tiingo/FMP adjusted-basis fix.

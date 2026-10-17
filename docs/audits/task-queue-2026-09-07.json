@@ -60,9 +60,9 @@
  },
  "counts": {
   "total_verified": 398,
-  "outstanding": 380,
+  "outstanding": 381,
   "by_status": {
-   "closed": 222,
+   "closed": 223,
    "parked": 135,
    "open": 17,
    "blocked": 6
@@ -70,14 +70,14 @@
   "by_owner_role": {
    "remote-dev": 93,
    "either": 51,
-   "owner-decision": 150,
+   "owner-decision": 151,
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 222,
-  "counts_recomputed_on": "2026-10-15",
+  "closed_by_annotation": 223,
+  "counts_recomputed_on": "2026-10-17",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
-  "total": 380
+  "total": 381
  },
  "blocking_decisions": [
   {
@@ -6737,7 +6737,7 @@
   {
    "id": "T-271",
    "title": "Live cross-check of equity TA adjusted series (incl. NVDA)",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "data-verification",
@@ -6745,7 +6745,8 @@
    "blocking_decision": null,
    "related_ids": [
     "T1",
-    "T11"
+    "T11",
+    "T-441"
    ],
    "summary": "Needs Tiingo/FMP key.",
    "next_action": "On the owner's machine with TIINGO_API_KEY (and optionally FMP_API_KEY) set: `cd frontend && npm run dev`, fetch `/live-data/security-ohlcv?symbol=NVDA&range=1Y` and compare closes either side of the 2024-06-10 10:1 split (plus AAPL, TSLA) against a charting reference; record the result in the T11 assessment's Deferred section.",
@@ -6755,7 +6756,30 @@
      "lines": "8-11, 77-80",
      "quote": "Live cross-check of 2–3 symbols (incl. a recent-split name like NVDA) against a charting reference to confirm the adjusted series matches."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-10-17",
+    "note": "DONE ON THE OWNER'S MACHINE (residential Spectrum line, no proxy). Every series came from Tiingo. Over range=MAX, the largest one-day move was NVDA 1.54x (2004-08-06), TSLA 1.27x (2020-09-08), AAPL 2.08x (2000-09-29), each a real market fall and none a split date, so no split leaves a step. NVDA's closes either side of the 2024-06-10 split (122.09, 120.65, 120.54, 121.44 on the split day, 120.58, 124.85, 129.25) sit a steady 0.28-0.29% below the published closes divided by ten, on both sides of the split: Tiingo's adjClose also takes out dividends, and the gap narrows by about 0.01% from 06-11, NVDA's ex-dividend date. The next action's range=1Y no longer reaches June 2024, so 5Y and MAX were used.",
+    "remaining_work": "Nothing on the check itself. One finding, recorded and not changed: Tiingo serves split- and dividend-adjusted prices while FMP, the next rung, serves split-adjusted prices only (measured 2026-09-09), so a fall from Tiingo to FMP shifts a dividend payer's history. The route's comment claiming they match is corrected.",
+    "evidence": [
+     "docs/assessments/T11-equity-ta-audit.md",
+     "frontend/src/app/live-data/security-ohlcv/route.ts"
+    ]
+   },
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-10-17",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "Run on the owner's machine (residential line, no proxy), every series from Tiingo: across each stock's full history no split date shows a step (largest one-day moves NVDA 1.54x on 2004-08-06, TSLA 1.27x on 2020-09-08, AAPL 2.08x on 2000-09-29, each a real market fall), and NVDA's closes either side of the 2024-06-10 split sit a steady 0.28-0.29% below the published closes divided by ten on both sides, Tiingo also adjusting for dividends. Recorded in the T11 audit's Deferred section, beside the FMP rung's 2026-09-09 check. The one finding, that the two rungs adjust on different bases, is filed as T-441.",
+    "approved_by": "owner, 2026-10-17: chose “Close it” for T-271 (D135)",
+    "evidence": [
+     "docs/assessments/T11-equity-ta-audit.md",
+     "frontend/src/app/live-data/security-ohlcv/route.ts",
+     "docs/decisions/2026-10-17-owner-decisions.md"
+    ],
+    "known_gap": "Checked against published closes, not a TradingView chart. The other price route, /live-data/security-chart, was not checked for the same basis question."
+   }
   },
   {
    "id": "T-272",
@@ -10051,10 +10075,11 @@
    "blocking_decision": "PARKED 2026-09-07, reason written 2026-10-05 — D84 (2026-10-05): it waits on T-131 and T-132 (sign-in back on, a sign-up page) and on choosing an email provider.",
    "related_ids": [
     "Goal B",
-    "Phase 6"
+    "Phase 6",
+    "T-435"
    ],
    "summary": "Needs an email delivery path.",
-   "next_action": "Do nothing until T-131/T-132 land; then design the reset token table + an email provider decision (none is configured) before writing /api/auth/reset routes.",
+   "next_action": "Do nothing until T-131/T-132 land (sign-in back on, a sign-up page). The reset token table, the must-reset flag and the reset route are already built (T-435, D123, 2026-10-15); what remains is sending the link by email, once a provider is chosen at launch (D21).",
    "sources": [
     {
      "file": "docs/architecture/auth.md",
@@ -14484,10 +14509,11 @@
    "related_ids": [
     "T-426",
     "T-436",
-    "D123"
+    "D123",
+    "T-133"
    ],
    "summary": "The T-426 draft breach plan (in the Finance Now Ledger page’s file library, 2026-10-14) found that sign-in has no password-reset or forced-reset flow. Accounts are Auth.js credentials with a bcrypt hash (cost 12), and sessions are JWTs with no sessions table (frontend/src/lib/auth/config.ts), so after a breach the only lever is rotating AUTH_SECRET: it signs everyone out, but cannot make anyone choose a new password. California lets a breach of login details alone be noticed by an email telling people to change their password, which assumes they can.",
-   "next_action": "Design it before building: a reset link with a short-lived single-use token, and a per-user must-reset flag checked at sign-in. Sending the link needs an email provider, which is a choice for the owner (free or paid, D21). Pure parts tested; the token never logged.",
+   "next_action": "Nothing now. The parts that need no email are built and migrated (D123; 0008 applied 2026-10-17): the owner issues a reset link with `npm run auth:reset -- --user <email>`, and `--all --force` is the breach lever. What remains is sending the link by email, at launch, once an email provider is chosen (D21). T-133, parked with the sign-in wall, carries the same remainder.",
    "sources": [
     {
      "file": "frontend/src/lib/auth/config.ts",
@@ -14512,7 +14538,8 @@
     ],
     "corrections": [
      "2026-10-15: BUILT, the parts that need no email (D123). npm run auth:reset -- --user <email> prints a one-time link (60 minutes, single use) for the owner to hand over; --force also refuses that account’s sign-in until it resets; --all --force does it for every account, the breach lever, paired with rotating AUTH_SECRET; --status lists who must reset. The link’s token travels after “#”, so it never reaches a server log or Referer header; only its SHA-256 is stored, and using it spends every other link for the account. Sign-in refuses a flagged account with its own code, and the login page says why. The flag and the tokens live in two new tables (migration 0008), never on users, so sign-in keeps working on a database not yet migrated; the reset route then answers 503 with the instruction (checked against the owner’s database the same day). The password rule is now shared with sign-up (passwordPolicy.ts). 26 tests in passwordReset.test.ts; nine guards driven red by mutations. REMAINING: the owner runs npm run db:migrate; sending the link by email waits for launch, when an email provider is chosen (D21).",
-     "2026-10-17: MIGRATED. At the owner's request the session ran npm run db:migrate on the owner's machine (0008 applied), and npm run auth:reset -- --status then answered from the new tables (no account waiting on a forced reset). REMAINING: sending the link by email, at launch (D21); the item stays open for it."
+     "2026-10-17: MIGRATED. At the owner's request the session ran npm run db:migrate on the owner's machine (0008 applied), and npm run auth:reset -- --status then answered from the new tables (no account waiting on a forced reset). REMAINING: sending the link by email, at launch (D21); the item stays open for it.",
+     "2026-10-17: NEXT ACTION REWRITTEN. It still described the build, which is done (see above); it now says only what is left."
     ]
    }
   },
@@ -14537,7 +14564,7 @@
     "D124"
    ],
    "summary": "The T-426 draft breach plan (in the Finance Now Ledger page’s file library, 2026-10-14) found that sign-up collects no consent to receive communications electronically, and the draft Terms and Privacy Policy carry none. North Carolina allows breach notice by email only \"for those persons for whom it has a valid email address and who have agreed to receive communications electronically\" (G.S. 75-65(e)(2)); without it, a breach notice would need a letter or phone call to each person, and the app holds no postal addresses or phone numbers.",
-   "next_action": "Owner and counsel: the consent wording, edited in the owner’s disclosure document first and then copied in (as the About & Legal rule requires). Then a sign-up checkbox or clause, with the consent and its date stored on the user (a migration).",
+   "next_action": "Counsel: approve the wording in the lawyer review before launch (D4); the questions are on the two comments in the Disclosure Set (Terms section 6, Privacy section 2). The box itself appears with the sign-up page (T-132, parked with the sign-in wall). Migration 0009 is applied on the owner's database.",
    "sources": [
     {
      "file": "frontend/src/app/api/auth/signup/route.ts",
@@ -14553,7 +14580,7 @@
    "progress": {
     "noted_on": "2026-10-17",
     "note": "Owner ruled (D124): a consent clause drafted for the owner’s disclosure document, marked draft and for counsel, with the sign-up checkbox and stored consent date built behind it and showing the draft until approved.",
-    "remaining_work": "Owner: run npm run db:migrate (migration 0009). Counsel: approve the wording (D4); the questions are on the two comments in the Disclosure Set (Terms section 6, Privacy section 2). The box itself appears with the sign-up page (T-132).",
+    "remaining_work": "Counsel: approve the wording (D4); the questions are on the two comments in the Disclosure Set (Terms section 6, Privacy section 2). The box itself appears with the sign-up page (T-132).",
     "evidence": [
      "docs/decisions/2026-10-15-owner-decisions.md",
      "docs/decisions/2026-10-17-owner-decisions.md",
@@ -14566,7 +14593,9 @@
     ],
     "corrections": [
      "2026-10-17: BUILT. The owner made the agreement required (D127) and had the wording go into the owner’s Disclosure Set first (D128): the Terms of Use’s section 6 gained an “Email from Finance Now” paragraph (tab rev 5 → 6, with a comment for counsel naming G.S. 75-65(e)(2), 15 U.S.C. 7001(c) and the account-closing consequence), and the box’s label went into the “Read me first” tab’s documents-vs-code table (rev 22). The app copied both from those revisions: EMAIL_NOTICES_CLAUSE on the Terms page, and SIGNUP_CONSENT in lib/legal/signupConsent.ts, whose version is a hash of the words, so a test fails if they change without it. POST /api/auth/signup refuses an account without electronicConsent: true and the current consentVersion before touching the database, and answers with the box’s label. It writes the account and the agreement (its date and the exact words) in one transaction, into communication_consents (migration 0009), a table of its own so sign-in is untouched; before 0009 runs it answers 503 with the instruction and creates nothing. npm run auth:consent -- --status lists who may be sent notices by email; --withdraw --user <email> marks a withdrawal and deletes nothing. 24 tests in electronicConsent.test.ts, the route among them against a stand-in database; 11 deliberate breaks, each caught. Not built: the box on a page, since no sign-up page exists (T-132, parked with the sign-in wall under D84); the test holds that page to the box once it is built.",
-     "2026-10-17 (later): PRIVACY POLICY. At the owner’s request, section 2 gained a “Your agreement to email notices” item naming what sign-up keeps (the date, the exact wording, any withdrawal date), added to the Disclosure Set first (Privacy Policy tab rev 16 → 17, with a comment for counsel) and copied in from that revision. Sections 5 and 9 already cover it: sending required notices is a legal obligation, and the record goes with the account. Two more tests, one pinning communication_consents’ columns so a new field (new personal data) fails until section 2 is read against it; 3 deliberate breaks, each caught."
+     "2026-10-17 (later): PRIVACY POLICY. At the owner’s request, section 2 gained a “Your agreement to email notices” item naming what sign-up keeps (the date, the exact wording, any withdrawal date), added to the Disclosure Set first (Privacy Policy tab rev 16 → 17, with a comment for counsel) and copied in from that revision. Sections 5 and 9 already cover it: sending required notices is a legal obligation, and the record goes with the account. Two more tests, one pinning communication_consents’ columns so a new field (new personal data) fails until section 2 is read against it; 3 deliberate breaks, each caught.",
+     "2026-10-17: NEXT ACTION REWRITTEN. It still described the build, which is done (see above); it now says only what is left.",
+     "2026-10-17: MIGRATED. On the owner's machine, npm run db:status listed communication_consents among the database's 29 tables, and npm run db:migrate then reported nothing left to apply. Sign-up no longer answers 503 for want of the table."
     ]
    }
   },
@@ -14589,7 +14618,7 @@
     "D122"
    ],
    "summary": "The T-426 draft breach plan (in the Finance Now Ledger page’s file library, 2026-10-14) found that provider and AI API keys are stored in plain text in .provider-config.json, written with mode 0600 (frontend/src/lib/api/live/providers.ts), which has limited effect on Windows. A copy of that file in a backup, a OneDrive share or a commit hands over every key at once.",
-   "next_action": "Encrypt the stored keys with a key held outside the file (an environment variable, or the OS key store), read a legacy plain-text file once and rewrite it encrypted, and fail plainly when the key is missing. Nothing is deleted: the old file is rewritten in place. Tests for the round trip and the missing-key path.",
+   "next_action": "Shelved by the owner on 2026-10-15 (“lets shelve this for now and revisit this later; Im ok with the slight security risk”). The encryption is built and the store is sealed (D122). When the owner revisits it: keep a backup copy of FN_SECRETS_KEY somewhere safe, since losing it loses the saved keys; then rotate the saved provider keys, whose old plain-text copies remain in OneDrive’s version history.",
    "sources": [
     {
      "file": "frontend/src/lib/api/live/providers.ts",
@@ -14613,7 +14642,8 @@
     ],
     "corrections": [
      "2026-10-15: BUILT. lib/server/secretBox.ts seals the whole of .provider-config.json with AES-256-GCM under FN_SECRETS_KEY (32 bytes, base64); providerConfigCodec.ts decides plain, sealed, unknown scheme or corrupt; providers.ts rewrites a plain file sealed the first time it reads it with the key set, and writes atomically. A file the store cannot read (sealed with no key or the wrong one, a malformed key, corrupt JSON) is never treated as empty and never written over: data routes fall back to environment keys, writes are declined and logged once, the Integrations page shows the reason and its save answers 409. This also ends a pre-existing loss: a corrupt file used to read as {} and the next save erased every key. Scripts read through scripts/lib/providerConfigFile.mjs, held to the app’s format by a test that seals with one and opens with the other. 23 tests in providerKeyStore.test.ts, on an in-memory file system; five guards driven red by mutations. REMAINING: the owner sets FN_SECRETS_KEY as a Windows user variable and restarts the server, so the file is sealed; then rotates the saved keys, since OneDrive’s version history keeps the old plain copies.",
-     "2026-10-15 (later): KEY SET, STORE SEALED. At the owner’s request the session created FN_SECRETS_KEY as a Windows user variable (32 random bytes, never printed) and restarted the dev server with it; .provider-config.json was rewritten as the encrypted envelope, and all 10 saved keys read back before and after (11 once the CoinGecko key was added). SHELVED BY THE OWNER, for now: a backup copy of FN_SECRETS_KEY (no password manager to hand) and rotating the saved provider keys whose plain copies remain in OneDrive’s version history. Owner: “lets shelve this for now and revisit this later; Im ok with the slight security risk.” REMAINING: those two, when the owner revisits them; the item stays open for them."
+     "2026-10-15 (later): KEY SET, STORE SEALED. At the owner’s request the session created FN_SECRETS_KEY as a Windows user variable (32 random bytes, never printed) and restarted the dev server with it; .provider-config.json was rewritten as the encrypted envelope, and all 10 saved keys read back before and after (11 once the CoinGecko key was added). SHELVED BY THE OWNER, for now: a backup copy of FN_SECRETS_KEY (no password manager to hand) and rotating the saved provider keys whose plain copies remain in OneDrive’s version history. Owner: “lets shelve this for now and revisit this later; Im ok with the slight security risk.” REMAINING: those two, when the owner revisits them; the item stays open for them.",
+     "2026-10-17: NEXT ACTION REWRITTEN. It still described the build, which is done (see above); it now says only what is left."
     ]
    }
   },
@@ -14778,6 +14808,35 @@
      "frontend/scripts/fund-figures-plan.ts"
     ]
    }
+  },
+  {
+   "id": "T-441",
+   "title": "Decide whether the stock price-history sources should share one adjustment basis (Tiingo takes out dividends, FMP does not)",
+   "status": "open",
+   "confidence": "high",
+   "blocking_decision": null,
+   "opened": {
+    "on": "2026-10-17",
+    "by": "owner decision, filed by the session",
+    "why": "Owner, 2026-10-17 (D135): chose “Add it, low priority” when T-271’s check found the two rungs on different bases."
+   },
+   "owner_role": "owner-decision",
+   "category": "data-verification",
+   "effort": "small",
+   "related_ids": [
+    "T-271",
+    "T11",
+    "D135"
+   ],
+   "summary": "/live-data/security-ohlcv tries Tiingo, then FMP. Tiingo’s adjusted prices take out splits and dividends; FMP’s /full takes out splits only (measured 2026-09-09; on NVDA its closes equal the published split-only closes). So when Tiingo fails or has no key and FMP answers, a dividend payer’s history shifts: 0.29% on NVDA around its 2024 split, and on a high-yield stock over a 5Y range, roughly its yield times the years at the start of the chart. Returns, drawdowns and the hidden backtests read that shift; most indicators barely do. Low priority by the owner’s choice: it shows only on a fall to the second rung. The route’s comment claiming the two match was corrected on 2026-10-17.",
+   "next_action": "Owner decides, when convenient: (a) leave it as is, documented; (b) move FMP to its dividend-adjusted endpoint (/stable/historical-price-eod/dividend-adjusted) so both rungs match Tiingo, after checking on the owner’s machine that the free key serves it; or (c) build Tiingo’s series from its raw prices and split factors so both match FMP. (b) keeps the basis most charts already show, since Tiingo answers first. Then a dev PR with a test that the two rungs agree on a dividend payer’s history, and the same question asked of /live-data/security-chart.",
+   "sources": [
+    {
+     "file": "docs/assessments/T11-equity-ta-audit.md",
+     "lines": "Deferred",
+     "quote": "Finding, not changed: the two rungs are on different bases. Tiingo serves split- and dividend-adjusted prices; FMP serves split-adjusted prices only."
+    }
+   ]
   }
  ],
  "closed_but_still_listed_as_open_in_docs": [
