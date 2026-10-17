@@ -4,8 +4,9 @@ const TZLESS_DATETIME = /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(:\d{2})?$/
 /**
  * Parse an RSS pubDate to an epoch, defaulting a missing timezone to UTC.
  *
- * Investing.com (3 of the 8 feeds) emits `<pubDate>2026-07-22 13:16:28</pubDate>`
- * with no zone, and `new Date()` reads a zone-less string as LOCAL time. On a
+ * Investing.com (3 of the macro feeds until 2026-10-17, D133) emitted
+ * `<pubDate>2026-07-22 13:16:28</pubDate>` with no zone, and `new Date()` reads a
+ * zone-less string as LOCAL time. On a
  * UTC−4 host that stamps every article 4 hours in the FUTURE — so the previous
  * clamp-to-now pinned the whole block to the fetch instant, which made every
  * one of them render as "just now", flagged them all Breaking (`now - published

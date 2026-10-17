@@ -301,7 +301,7 @@ no field that distinguishes them.
 | Source | What the document actually says | Why it is not `prohibited` | Live surface |
 |---|---|---|---|
 | **CoinDesk** | No display permission. View/print/download for personal, non-commercial use; republication needs prior written consent. "rss", "syndicat", "feed" return **zero hits** in 300 lines | Reading proposed `prohibited` and an adversarial pass sustained it; **scope** could not be settled — either the feed is inside the expansive "Services", or a ToU that never reaches feeds does not govern one the publisher deliberately publishes | `coindesk-rss` → `/live-data/news`, headline + 280-char summary |
-| **Investing.com** | No display permission; Limitations on Use (c) expressly forbids automated extraction "for any purpose" | It **publishes** the feeds this app reads and robots.txt permits `/rss/`. Publishing a feed and allowing it in robots is an invitation; the ToS bars extraction in general terms. Both true, and the document reconciles neither | 3 of the macro-news feeds |
+| **Investing.com** | No display permission; Limitations on Use (c) expressly forbids automated extraction "for any purpose" | It **publishes** the feeds this app reads and robots.txt permits `/rss/`. Publishing a feed and allowing it in robots is an invitation; the ToS bars extraction in general terms. Both true, and the document reconciles neither | Was 3 of the macro-news feeds. ✅ **DECIDED 2026-10-17 (D133): stopped** — the owner chose to stop reading it rather than read the published feeds as an invitation; `investing.com` is `prohibited` and the three feeds are gone. Restoring them needs Fusion Media's written permission (T-425) |
 | **publicnode.com** | Bars re-use "commercially **and non-commercially**" — the broadest clause in the registry | Read literally it prohibits consuming an RPC provider at all, since answering calls *is* the product. That cannot be the intent, and narrowing it is not a maintainer's call | `/live-data/wallet/eth`; `/wallets` already hidden from rollout. ✅ **DECIDED 2026-09-24 (D25): narrow reading kept** — owner, *"for safety"*; three of the four remain |
 | **Bitget** | §1 lists the **UNITED STATES** among Prohibited Countries; a Restricted Person is one who resides there. §10.1 licenses "non-commercial personal or internal business use" | The Prohibited-Country clauses attach to **Accounts and Services**, which §3.1 gates behind registration — and this is a keyless call with no account. "Platform" is defined to include API access. Unclear, not obviously either way | Was `withdrawFeeAdapters.ts` → `api.bitget.com`, keyless. ✅ **DECIDED 2026-10-17 (D129): stopped** — the owner chose to stop calling it rather than rely on the narrow reading; `bitget.com` is `prohibited` and the feed is gone |
 
@@ -365,7 +365,8 @@ the same one:
 1. **CoinDesk and Investing.com** turn on one shared question: *does a terms document that
    never mentions feeds govern a feed the publisher deliberately publishes and permits in
    robots.txt?* Answer it once and both resolve. It is a question for a professional, not
-   for another careful reading.
+   for another careful reading. *(Investing.com was answered 2026-10-17, D133: the app
+   stopped reading it. CoinDesk's question remains, as a launch step under D96.)*
 2. **publicnode** needs only a judgement on whether to keep reading an absurdly broad
    clause narrowly. Exposure is one route on a hidden page.
 3. **Bitget** needs its own answer, because the question is different in kind. *(Answered
@@ -374,7 +375,8 @@ the same one:
 Until then the annotation on each entry is the control, and `T-407` is the tracking item.
 
 **The switch exists (2026-09-26, T-247).** `whatMayBeDisplayed` is a real registry field —
-CoinDesk and Investing.com carry `unclear`, the six publishers that grant summaries carry
+CoinDesk and Investing.com carry `unclear` (Investing.com is `prohibited` since D133, so its
+field is a record and no longer gates anything), the six publishers that grant summaries carry
 `headline-link-summary` — and `summaryPermitted()` gates every summary site in the three news
 routes on the article's host. If either scope question resolves toward headline-and-link, the
 change is one field and the summaries go dark on every route at once, with the tests updated
@@ -397,7 +399,8 @@ Every source was re-read under the rule: `docs/assessments/source-terms-prelaunc
 - **Unchanged, kept blocked by the owner:** OKX (§9.4 bars building an analytics platform).
 - **§7's four sources:** CoinDesk becomes a launch step. Investing.com, publicnode and Bitget's US
   clause stay open, because personal use does not answer them. *(Bitget's was answered on
-  2026-10-17, D129: the app stopped calling it.)*
+  2026-10-17, D129: the app stopped calling it. Investing.com's the same day, D133: the app
+  stopped reading it.)*
 
 ## 9. What changed on 2026-10-12 (D102, T-423)
 

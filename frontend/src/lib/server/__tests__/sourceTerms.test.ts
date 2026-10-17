@@ -250,10 +250,11 @@ describe('news publishers', () => {
   // now PROHIBITED on terms grounds — Dow Jones ToU §9.1/§9.4.1. It moved to the
   // expectation below rather than simply being deleted, because "we stopped fetching it"
   // and "it must stay unfetchable" are different claims and only the second is a guard.
+  // www.investing.com left the same way on 2026-10-17 (D133): see its block below.
   const NEWS_HOSTS = [
     'www.coindesk.com', 'cointelegraph.com', 'decrypt.co', 'bitcoinmagazine.com',
     'search.cnbc.com',
-    'www.investing.com', 'oilprice.com', 'www.fxstreet.com',
+    'oilprice.com', 'www.fxstreet.com',
   ]
 
   it.each(NEWS_HOSTS)('%s has a verdict and is permitted', (host) => {
@@ -359,6 +360,33 @@ describe('XT.com (D131, 2026-10-17)', () => {
         .replace(/\/\*[\s\S]*?\*\//g, '')
         .replace(/^\s*\/\/.*$/gm, '')
       expect(code, p).not.toMatch(/xt\.com/i)
+    }
+  })
+})
+
+describe('Investing.com (D133, 2026-10-17)', () => {
+  // Withdrawn on TERMS, not availability: its RSS feeds still answer, and its robots.txt
+  // permits /rss/. Its Limitations on Use (c) forbid automated extraction "for any
+  // purpose", and the owner chose to stop rather than read the published feeds as an
+  // invitation. The macro-news route uses a plain fetch, which the verdict alone does not
+  // stop, so the route and the provider registry are read here too.
+  it.each(['www.investing.com', 'investing.com'])('%s is PROHIBITED and must stay unfetchable', (host) => {
+    const d = checkSourceTerms(`https://${host}/rss/news_11.rss`, NOW)
+    expect(d.entry?.verdict, `${host} must be prohibited — Investing.com Limitations on Use (c), owner decision D133`).toBe('prohibited')
+    expect(d.allowed, `${host} must not be allowed`).toBe(false)
+  })
+
+  it('stays verified: the verdict follows the 2026-09-20 reading', () => {
+    expect(matchTermsEntry('investing.com')?.review).toBe('verified')
+  })
+
+  it('the macro-news route and the provider registry name no Investing.com feed', () => {
+    for (const p of ['src/app/live-data/macro-news/route.ts', 'src/lib/api/live/providers.ts']) {
+      const code = readFileSync(join(process.cwd(), p), 'utf8')
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .replace(/^\s*\/\/.*$/gm, '')
+      expect(code, p).not.toMatch(/investing\.com/i)
+      expect(code, p).not.toMatch(/'investing-(commodities|bonds|forex)'/)
     }
   })
 })

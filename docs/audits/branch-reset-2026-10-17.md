@@ -51,3 +51,20 @@ Fund Figures Check page (D132) and pushed with `--force-with-lease`, for the sam
 - its content in `main` as `3a10234`.
 
 Nothing was deleted; no other ref moved.
+
+## Fourth reset, the same day
+
+**What was done.** After PR #368 (the Fund Figures Check page, T-440, D132) was
+squash-merged into `main` as `61b2462`, the branch was restarted from that commit for
+D133 (Investing.com's feeds stopped) and pushed with `--force-with-lease`, for the same
+reason as above.
+
+**Where the prior state lives.** The branch's previous tip, `faac217`, and the commit before
+it (`17a479d`) are held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@faac217`, created by
+  `.github/workflows/archive-branch.yml` when #368 merged;
+- GitHub's `refs/pull/368/head`;
+- their combined content in `main` as `61b2462`.
+
+Nothing was deleted; no other ref moved.
