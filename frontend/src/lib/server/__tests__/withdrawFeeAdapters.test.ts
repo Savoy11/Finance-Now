@@ -4,7 +4,6 @@ import {
   normalizeChain,
   parseKucoinCurrencies,
   parseHtxCurrencies,
-  parseBitgetCoins,
   parseLbankWithdrawConfigs,
   parseBitfinexTxFees,
   parseXtSupportCurrency,
@@ -89,26 +88,34 @@ describe('parseHtxCurrencies', () => {
   })
 })
 
-describe('parseBitgetCoins', () => {
-  const payload = {
-    code: '00000',
-    data: [
-      {
-        coin: 'SOL',
-        chains: [
-          { chain: 'SOL', withdrawFee: '0.005', minWithdrawAmount: '0.01', withdrawable: 'true' },
-          { chain: 'MADEUP', withdrawFee: '1' },
-        ],
-      },
-    ],
-  }
-  it('parses fee rows and drops unknown chains', () => {
-    expect(parseBitgetCoins(payload)).toEqual([
-      { exchangeId: 'bitget', coin: 'sol', network: 'solana', withdrawFee: 0.005, minWithdraw: 0.01, withdrawEnabled: true },
-    ])
+// ─────────────────────────────────────────────────────────────────────────────
+// Bitget stays removed (owner decision D129, 2026-10-17, T-407).
+//
+// Its Terms of Use §1 list the United States among Prohibited Countries, and the
+// owner is US-resident. The endpoint answers fine, which is what makes this worth
+// guarding: to a later reader it would look like a working feed someone forgot.
+// The same four checks as Poloniex's below. Its rows in the curated table stay on
+// purpose (they are checked by hand now), so there is no table assertion here.
+// ─────────────────────────────────────────────────────────────────────────────
+describe('Bitget is removed and stays removed', () => {
+  it('registers no bitget withdraw-fee source', () => {
+    expect(WITHDRAW_FEE_SOURCES.map((s) => s.exchangeId)).not.toContain('bitget')
+    expect(WITHDRAW_FEE_SOURCES.filter((s) => /bitget/i.test(s.url))).toEqual([])
   })
-  it('returns nothing on a non-success code', () => {
-    expect(parseBitgetCoins({ code: '40001' })).toEqual([])
+
+  it('exports no bitget parser', () => {
+    expect(Object.keys(withdrawFeeAdapters)).not.toContain('parseBitgetCoins')
+  })
+
+  it('has bitget.com prohibited in the terms registry', () => {
+    const d = checkSourceTerms('https://api.bitget.com/api/v2/spot/public/coins', new Date('2026-10-17T00:00:00Z'))
+    expect(d.status).toBe('prohibited')
+    expect(d.allowed).toBe(false)
+  })
+
+  it('declares no bitget host in dataSources', () => {
+    const hosts = DATA_SOURCES.flatMap((e) => e.providers.map((p) => p.host).filter(Boolean))
+    expect(hosts.filter((h) => /bitget/i.test(String(h)))).toEqual([])
   })
 })
 
@@ -395,14 +402,6 @@ describe('deposit status (T-054, D66)', () => {
     ] }] }))).toEqual([['trc20', false], ['erc20', true], ['solana', undefined]])
   })
 
-  it('reads Bitget rechargeable, sent as a word or a boolean', () => {
-    expect(statuses(parseBitgetCoins({ code: '00000', data: [{ coin: 'USDT', chains: [
-      { chain: 'TRC20', withdrawFee: '1', withdrawable: 'true', rechargeable: 'false' },
-      { chain: 'ERC20', withdrawFee: '3', withdrawable: 'true', rechargeable: true },
-      { chain: 'SOL', withdrawFee: '1', withdrawable: 'true', rechargeable: 'paused' },
-    ] }] }))).toEqual([['trc20', false], ['erc20', true], ['solana', undefined]])
-  })
-
   it('reads XT.com depositEnabled, and only a real boolean', () => {
     expect(statuses(parseXtSupportCurrency({ rc: 0, result: [{ currency: 'usdt', supportChains: [
       { chain: 'Tron', withdrawFeeAmount: '1', withdrawEnabled: true, depositEnabled: false },
@@ -423,7 +422,6 @@ describe('deposit status (T-054, D66)', () => {
     const samples: Record<string, unknown> = {
       kucoin: { code: '200000', data: [{ currency: 'USDT', chains: [{ chainName: 'TRC20', isDepositEnabled: false }] }] },
       htx: { code: 200, data: [{ currency: 'usdt', chains: [{ displayName: 'TRC20', depositStatus: 'prohibited' }] }] },
-      bitget: { code: '00000', data: [{ coin: 'USDT', chains: [{ chain: 'TRC20', rechargeable: 'false' }] }] },
       lbank: { result: 'true', data: [{ assetCode: 'usdt', chain: 'trc20', fee: '1', canWithDraw: true }] },
       bitfinex: [[['UST', ['0', '15']]]],
       xtcom: { rc: 0, result: [{ currency: 'usdt', supportChains: [{ chain: 'Tron', depositEnabled: false }] }] },

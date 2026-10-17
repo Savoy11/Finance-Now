@@ -319,6 +319,26 @@ describe('OKX (D40, 2026-09-30)', () => {
   })
 })
 
+describe('Bitget (D129, 2026-10-17)', () => {
+  // Withdrawn on TERMS, not availability: the keyless coin list still answers. Its Terms of
+  // Use §1 list the United States among Prohibited Countries and the owner is US-resident.
+  // Asserted here, as with OKX, where the next maintainer looking for a fee feed meets it.
+  it.each(['api.bitget.com', 'www.bitget.com', 'bitget.com'])('%s is PROHIBITED and must stay unfetchable', (host) => {
+    const d = checkSourceTerms(`https://${host}/api/v2/spot/public/coins`, NOW)
+    expect(d.entry?.verdict, `${host} must be prohibited — Bitget Terms of Use §1`).toBe('prohibited')
+    expect(d.allowed, `${host} must not be allowed`).toBe(false)
+  })
+
+  it('the withdraw-fee code calls nothing on Bitget', () => {
+    for (const p of ['src/lib/server/withdrawFeeAdapters.ts', 'src/lib/server/withdrawFeeOverlay.ts']) {
+      const code = readFileSync(join(process.cwd(), p), 'utf8')
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .replace(/^\s*\/\/.*$/gm, '')
+      expect(code, p).not.toMatch(/bitget\.com/i)
+    }
+  })
+})
+
 describe('alternative.me (D54, 2026-10-04)', () => {
   // Its terms, read 2026-09-26, allow commercial use "as long as the attribution is given right
   // next to the display of the data". A source badge elsewhere on a card does not meet that, so
