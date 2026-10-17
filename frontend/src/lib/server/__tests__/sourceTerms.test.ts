@@ -319,6 +319,66 @@ describe('OKX (D40, 2026-09-30)', () => {
   })
 })
 
+describe('Bitget (D129, 2026-10-17)', () => {
+  // Withdrawn on TERMS, not availability: the keyless coin list still answers. Its Terms of
+  // Use §1 list the United States among Prohibited Countries and the owner is US-resident.
+  // Asserted here, as with OKX, where the next maintainer looking for a fee feed meets it.
+  it.each(['api.bitget.com', 'www.bitget.com', 'bitget.com'])('%s is PROHIBITED and must stay unfetchable', (host) => {
+    const d = checkSourceTerms(`https://${host}/api/v2/spot/public/coins`, NOW)
+    expect(d.entry?.verdict, `${host} must be prohibited — Bitget Terms of Use §1`).toBe('prohibited')
+    expect(d.allowed, `${host} must not be allowed`).toBe(false)
+  })
+
+  it('the withdraw-fee code calls nothing on Bitget', () => {
+    for (const p of ['src/lib/server/withdrawFeeAdapters.ts', 'src/lib/server/withdrawFeeOverlay.ts']) {
+      const code = readFileSync(join(process.cwd(), p), 'utf8')
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .replace(/^\s*\/\/.*$/gm, '')
+      expect(code, p).not.toMatch(/bitget\.com/i)
+    }
+  })
+})
+
+describe('XT.com (D131, 2026-10-17)', () => {
+  // Withdrawn by the owner's choice, not a reading: XT publishes no terms document anyone
+  // could find, and its own site refuses service to the owner's region. `review` stays
+  // `seeded`, since no document was read; the verdict is what keeps it unfetchable.
+  it.each(['sapi.xt.com', 'www.xt.com', 'xt.com'])('%s is PROHIBITED and must stay unfetchable', (host) => {
+    const d = checkSourceTerms(`https://${host}/v4/public/wallet/support/currency`, NOW)
+    expect(d.entry?.verdict, `${host} must be prohibited — owner decision D131`).toBe('prohibited')
+    expect(d.allowed, `${host} must not be allowed`).toBe(false)
+  })
+
+  it('stays seeded, because no terms document was read', () => {
+    expect(matchTermsEntry('xt.com')?.review).toBe('seeded')
+  })
+
+  it('the withdraw-fee code calls nothing on XT.com', () => {
+    for (const p of ['src/lib/server/withdrawFeeAdapters.ts', 'src/lib/server/withdrawFeeOverlay.ts']) {
+      const code = readFileSync(join(process.cwd(), p), 'utf8')
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .replace(/^\s*\/\/.*$/gm, '')
+      expect(code, p).not.toMatch(/xt\.com/i)
+    }
+  })
+})
+
+describe('KuCoin (D130, 2026-10-17)', () => {
+  // Kept until launch on a recorded judgement: Article 17(5)'s US undertaking binds on
+  // registering an account, which the app never does. The judgement and its launch step
+  // must stay written on the entry, where whoever relaxes or removes it has to read them.
+  it('records the residence judgement and its launch step as conditions', () => {
+    const e = matchTermsEntry('api.kucoin.com')!
+    expect(e.verdict).toBe('conditional')
+    const c = e.conditions?.join(' ') ?? ''
+    expect(c).toMatch(/JUDGEMENT, not a clause that allows it/)
+    expect(c).toMatch(/D130/)
+    expect(c).toMatch(/Article 17\(5\)/)
+    expect(c).toMatch(/LAUNCH STEP/)
+    expect(c).not.toMatch(/UNRESOLVED/)
+  })
+})
+
 describe('alternative.me (D54, 2026-10-04)', () => {
   // Its terms, read 2026-09-26, allow commercial use "as long as the attribution is given right
   // next to the display of the data". A source badge elsewhere on a card does not meet that, so

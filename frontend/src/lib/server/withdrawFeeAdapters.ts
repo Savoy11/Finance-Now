@@ -166,29 +166,13 @@ export function parseHtxCurrencies(json: any): ParsedFeeRow[] {
   return rows
 }
 
-/** Bitget `GET /api/v2/spot/public/coins` → { code: '00000', data: [{ coin, chains: [...] }] } */
-export function parseBitgetCoins(json: any): ParsedFeeRow[] {
-  const rows: ParsedFeeRow[] = []
-  if (!json || json.code !== '00000') return rows
-  for (const cur of json.data ?? []) {
-    const coin = normalizeSymbol(String(cur?.coin ?? ''))
-    if (!coin) continue
-    for (const c of cur?.chains ?? []) {
-      const network = normalizeChain(String(c?.chain ?? ''))
-      const withdrawFee = num(c?.withdrawFee)
-      const withdrawEnabled = c?.withdrawable === undefined ? undefined : String(c.withdrawable) === 'true'
-      // Bitget calls deposits "recharge".
-      const depositEnabled = status(c?.rechargeable, 'true', 'false')
-      if (!network || !saysSomething({ withdrawFee, withdrawEnabled, depositEnabled })) continue
-      rows.push({
-        exchangeId: 'bitget', coin, network, withdrawFee,
-        minWithdraw: num(c?.minWithdrawAmount),
-        withdrawEnabled, depositEnabled,
-      })
-    }
-  }
-  return rows
-}
+// ⚠ parseBitgetCoins WAS REMOVED 2026-10-17 (owner decision D129, T-407). Bitget's
+// Terms of Use §1 list the United States among Prohibited Countries, and the owner is
+// US-resident. Whether that reaches a keyless call with no account was unclear (the
+// country clauses attach to accounts and services; "Platform" includes the API), and
+// the owner chose to stop calling the host rather than rest on the narrow reading.
+// bitget.com is `prohibited` in sourceTerms.ts. Deleted rather than left dormant, as
+// Poloniex's was below. Re-adding it needs counsel's answer or Bitget's, not a code change.
 
 // ⚠ parsePoloniexCurrencies WAS REMOVED 2026-09-15. Poloniex's User Agreement §9
 // licenses the API "solely for the purposes of trading on Poloniex" — the
@@ -266,27 +250,11 @@ export function parseBitfinexTxFees(json: any): ParsedFeeRow[] {
   return rows
 }
 
-/** XT.com `GET /v4/public/wallet/support/currency` → { rc: 0, result: [{ currency, supportChains: [...] }] } */
-export function parseXtSupportCurrency(json: any): ParsedFeeRow[] {
-  const rows: ParsedFeeRow[] = []
-  if (!json || json.rc !== 0) return rows
-  for (const cur of json.result ?? []) {
-    const coin = normalizeSymbol(String(cur?.currency ?? ''))
-    if (!coin) continue
-    for (const c of cur?.supportChains ?? []) {
-      const network = normalizeChain(String(c?.chain ?? ''))
-      const withdrawFee = num(c?.withdrawFeeAmount) ?? num(c?.withdrawFee)
-      const withdrawEnabled = bool(c?.withdrawEnabled)
-      const depositEnabled = bool(c?.depositEnabled)
-      if (!network || !saysSomething({ withdrawFee, withdrawEnabled, depositEnabled })) continue
-      rows.push({
-        exchangeId: 'xtcom', coin, network, withdrawFee,
-        withdrawEnabled, depositEnabled,
-      })
-    }
-  }
-  return rows
-}
+// ⚠ parseXtSupportCurrency WAS REMOVED 2026-10-17 (owner decision D131). XT.com
+// publishes no terms document anyone could find, and its own site refuses service to
+// the owner's region ("XT does not provide services in your country or region"), so
+// there was nothing to rest a narrow reading on. xt.com is `prohibited` in
+// sourceTerms.ts. Deleted rather than left dormant, as Bitget's and Poloniex's were.
 
 
 // ─── The keyless source list ──────────────────────────────────────────────────
@@ -330,10 +298,21 @@ export const WITHDRAW_FEE_SOURCES: WithdrawFeeSource[] = [
   // sourceTerms.ts, so pinnedFetch would refuse it at the socket anyway; leaving
   // the source registered would fail the dataSources terms sweep in
   // __tests__/sourceTerms.test.ts. Do not re-add it without a licence.
-  { exchangeId: 'bitget', url: 'https://api.bitget.com/api/v2/spot/public/coins', parse: parseBitgetCoins, probed: true, reportsDeposits: true },
+  //
+  // ⚠ BITGET (42 of those rows) WAS REMOVED 2026-10-17 (D129, T-407) — on TERMS
+  // again: §1 lists the United States among Prohibited Countries and the owner is
+  // US-resident. bitget.com is now `prohibited`. Its rows in the curated table stay
+  // and are now checked by hand like any exchange without a feed.
+  //
+  // ⚠ XT.COM (41 of those rows) WAS REMOVED 2026-10-17 (D131): no terms document can
+  // be found, and its site refuses service to the owner's region. xt.com is now
+  // `prohibited`; its rows in the curated table stay and are checked by hand.
+  //
+  // KuCoin stays (D130): its Article 17(5) US undertaking binds on registering an
+  // account, which the app never does. That is a recorded judgement, with counsel or
+  // KuCoin to confirm at launch; see its entry in sourceTerms.ts.
   { exchangeId: 'lbank', url: 'https://api.lbkex.com/v2/withdrawConfigs.do', parse: parseLbankWithdrawConfigs, probed: true, reportsDeposits: false },
   { exchangeId: 'bitfinex', url: 'https://api-pub.bitfinex.com/v2/conf/pub:map:currency:tx:fee', parse: parseBitfinexTxFees, probed: true, reportsDeposits: false },
-  { exchangeId: 'xtcom', url: 'https://sapi.xt.com/v4/public/wallet/support/currency', parse: parseXtSupportCurrency, probed: true, reportsDeposits: true },
 ]
 
 // ─── Overlay filter ───────────────────────────────────────────────────────────

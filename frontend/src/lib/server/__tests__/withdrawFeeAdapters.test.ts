@@ -4,10 +4,8 @@ import {
   normalizeChain,
   parseKucoinCurrencies,
   parseHtxCurrencies,
-  parseBitgetCoins,
   parseLbankWithdrawConfigs,
   parseBitfinexTxFees,
-  parseXtSupportCurrency,
   buildFeeOverrideMap,
   WITHDRAW_FEE_SOURCES,
   type ParsedFeeRow,
@@ -89,26 +87,65 @@ describe('parseHtxCurrencies', () => {
   })
 })
 
-describe('parseBitgetCoins', () => {
-  const payload = {
-    code: '00000',
-    data: [
-      {
-        coin: 'SOL',
-        chains: [
-          { chain: 'SOL', withdrawFee: '0.005', minWithdrawAmount: '0.01', withdrawable: 'true' },
-          { chain: 'MADEUP', withdrawFee: '1' },
-        ],
-      },
-    ],
-  }
-  it('parses fee rows and drops unknown chains', () => {
-    expect(parseBitgetCoins(payload)).toEqual([
-      { exchangeId: 'bitget', coin: 'sol', network: 'solana', withdrawFee: 0.005, minWithdraw: 0.01, withdrawEnabled: true },
-    ])
+// ─────────────────────────────────────────────────────────────────────────────
+// Bitget stays removed (owner decision D129, 2026-10-17, T-407).
+//
+// Its Terms of Use §1 list the United States among Prohibited Countries, and the
+// owner is US-resident. The endpoint answers fine, which is what makes this worth
+// guarding: to a later reader it would look like a working feed someone forgot.
+// The same four checks as Poloniex's below. Its rows in the curated table stay on
+// purpose (they are checked by hand now), so there is no table assertion here.
+// ─────────────────────────────────────────────────────────────────────────────
+describe('Bitget is removed and stays removed', () => {
+  it('registers no bitget withdraw-fee source', () => {
+    expect(WITHDRAW_FEE_SOURCES.map((s) => s.exchangeId)).not.toContain('bitget')
+    expect(WITHDRAW_FEE_SOURCES.filter((s) => /bitget/i.test(s.url))).toEqual([])
   })
-  it('returns nothing on a non-success code', () => {
-    expect(parseBitgetCoins({ code: '40001' })).toEqual([])
+
+  it('exports no bitget parser', () => {
+    expect(Object.keys(withdrawFeeAdapters)).not.toContain('parseBitgetCoins')
+  })
+
+  it('has bitget.com prohibited in the terms registry', () => {
+    const d = checkSourceTerms('https://api.bitget.com/api/v2/spot/public/coins', new Date('2026-10-17T00:00:00Z'))
+    expect(d.status).toBe('prohibited')
+    expect(d.allowed).toBe(false)
+  })
+
+  it('declares no bitget host in dataSources', () => {
+    const hosts = DATA_SOURCES.flatMap((e) => e.providers.map((p) => p.host).filter(Boolean))
+    expect(hosts.filter((h) => /bitget/i.test(String(h)))).toEqual([])
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// XT.com stays removed (owner decision D131, 2026-10-17, beside T-407).
+//
+// No terms document can be found, and XT's own site refuses service to the owner's
+// region ("XT does not provide services in your country or region"). The endpoint
+// answered keyless on the 2026-08-22 probe, so to a later reader it would look like
+// a working feed someone forgot. The same four checks as Bitget's above; its rows in
+// the curated table stay on purpose, checked by hand.
+// ─────────────────────────────────────────────────────────────────────────────
+describe('XT.com is removed and stays removed', () => {
+  it('registers no XT.com withdraw-fee source', () => {
+    expect(WITHDRAW_FEE_SOURCES.map((s) => s.exchangeId)).not.toContain('xtcom')
+    expect(WITHDRAW_FEE_SOURCES.filter((s) => /xt\.com/i.test(s.url))).toEqual([])
+  })
+
+  it('exports no XT.com parser', () => {
+    expect(Object.keys(withdrawFeeAdapters)).not.toContain('parseXtSupportCurrency')
+  })
+
+  it('has xt.com prohibited in the terms registry', () => {
+    const d = checkSourceTerms('https://sapi.xt.com/v4/public/wallet/support/currency', new Date('2026-10-17T00:00:00Z'))
+    expect(d.status).toBe('prohibited')
+    expect(d.allowed).toBe(false)
+  })
+
+  it('declares no XT.com host in dataSources', () => {
+    const hosts = DATA_SOURCES.flatMap((e) => e.providers.map((p) => p.host).filter(Boolean))
+    expect(hosts.filter((h) => /(^|\.)xt\.com$/i.test(String(h)))).toEqual([])
   })
 })
 
@@ -202,29 +239,6 @@ describe('parseBitfinexTxFees', () => {
   })
   it('returns nothing for a malformed payload', () => {
     expect(parseBitfinexTxFees({ nope: 1 })).toEqual([])
-  })
-})
-
-describe('parseXtSupportCurrency', () => {
-  const payload = {
-    rc: 0,
-    result: [
-      {
-        currency: 'usdt',
-        supportChains: [
-          { chain: 'Tron', withdrawFeeAmount: '1', withdrawEnabled: true },
-          { chain: 'Bitcoin Cash', withdrawFeeAmount: '1' },
-        ],
-      },
-    ],
-  }
-  it('parses fee rows and drops unmapped chains', () => {
-    expect(parseXtSupportCurrency(payload)).toEqual([
-      { exchangeId: 'xtcom', coin: 'usdt', network: 'trc20', withdrawFee: 1, withdrawEnabled: true },
-    ])
-  })
-  it('returns nothing on a non-zero rc', () => {
-    expect(parseXtSupportCurrency({ rc: 1 })).toEqual([])
   })
 })
 
@@ -395,21 +409,6 @@ describe('deposit status (T-054, D66)', () => {
     ] }] }))).toEqual([['trc20', false], ['erc20', true], ['solana', undefined]])
   })
 
-  it('reads Bitget rechargeable, sent as a word or a boolean', () => {
-    expect(statuses(parseBitgetCoins({ code: '00000', data: [{ coin: 'USDT', chains: [
-      { chain: 'TRC20', withdrawFee: '1', withdrawable: 'true', rechargeable: 'false' },
-      { chain: 'ERC20', withdrawFee: '3', withdrawable: 'true', rechargeable: true },
-      { chain: 'SOL', withdrawFee: '1', withdrawable: 'true', rechargeable: 'paused' },
-    ] }] }))).toEqual([['trc20', false], ['erc20', true], ['solana', undefined]])
-  })
-
-  it('reads XT.com depositEnabled, and only a real boolean', () => {
-    expect(statuses(parseXtSupportCurrency({ rc: 0, result: [{ currency: 'usdt', supportChains: [
-      { chain: 'Tron', withdrawFeeAmount: '1', withdrawEnabled: true, depositEnabled: false },
-      { chain: 'Ethereum', withdrawFeeAmount: '3', withdrawEnabled: true, depositEnabled: 1 },
-    ] }] }))).toEqual([['trc20', false], ['erc20', undefined]])
-  })
-
   it('keeps a row that carries only a deposit status', () => {
     expect(parseKucoinCurrencies({ code: '200000', data: [{ currency: 'USDT', chains: [
       { chainName: 'TRC20', isDepositEnabled: false },
@@ -423,10 +422,8 @@ describe('deposit status (T-054, D66)', () => {
     const samples: Record<string, unknown> = {
       kucoin: { code: '200000', data: [{ currency: 'USDT', chains: [{ chainName: 'TRC20', isDepositEnabled: false }] }] },
       htx: { code: 200, data: [{ currency: 'usdt', chains: [{ displayName: 'TRC20', depositStatus: 'prohibited' }] }] },
-      bitget: { code: '00000', data: [{ coin: 'USDT', chains: [{ chain: 'TRC20', rechargeable: 'false' }] }] },
       lbank: { result: 'true', data: [{ assetCode: 'usdt', chain: 'trc20', fee: '1', canWithDraw: true }] },
       bitfinex: [[['UST', ['0', '15']]]],
-      xtcom: { rc: 0, result: [{ currency: 'usdt', supportChains: [{ chain: 'Tron', depositEnabled: false }] }] },
     }
     for (const s of WITHDRAW_FEE_SOURCES) {
       expect(samples[s.exchangeId], `${s.exchangeId} needs a sample in this test`).toBeDefined()

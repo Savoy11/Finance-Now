@@ -1078,7 +1078,18 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
   {
     domain: 'bitget.com',
     name: 'Bitget (public market-data API)',
-    verdict: 'conditional',
+    verdict: 'prohibited',
+    // RULED 2026-10-17 (T-407, owner decision D129): STOP CALLING IT. §1 lists the United
+    // States among Prohibited Countries and the owner is US-resident. Whether that reaches a
+    // keyless public call with no account stayed genuinely unclear (below), and D96's
+    // personal-use rule cannot settle it: the clause is about where the user lives, not who
+    // uses the data. The owner chose to stop rather than proceed on the narrow reading.
+    // The withdraw-fee overlay was the app's only call (withdrawFeeAdapters.ts); its source
+    // and parser were removed the same day, as Poloniex's were on 2026-09-15. Bitget's
+    // rows in the hand-kept transferFees.ts table were left in place: they are checked by
+    // hand now, on a page hidden from rollout (T-428 decides whether it returns). Lifting
+    // this needs counsel's reading or Bitget's word that no-account API calls are outside §1.
+    //
     // Was an API DOCUMENTATION page until 2026-09-13, not a terms document — and it
     // returned HTTP 200, so every probe scored it as 'terms reachable'. It never was.
     // Then /terms/legal turned out to be an INDEX of 17 documents, client-rendered, so
@@ -1094,14 +1105,11 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     //        Services, which 3.1 gates behind registration. The owner is US-resident.
     //        This is the first source where a clause may bar use outright rather than
     //        limit its scope — it needs a real answer, not a maintainer's reading.
-    // The app DOES call this host: withdrawFeeAdapters.ts fetches
-    // api.bitget.com/api/v2/spot/public/coins keylessly.
+    // Until 2026-10-17 the app called this host: withdrawFeeAdapters.ts fetched
+    // api.bitget.com/api/v2/spot/public/coins keylessly. Nothing calls it now (D129).
     termsUrl: 'https://www.bitget.com/terms/legal/360014944032',
     finding:
-      'Publishes a documented public REST API; the spot public coin list (incl. per-chain withdrawal fees) is documented as unauthenticated, and withdrawFeeAdapters.ts calls it keylessly (probed). The Terms of Use WERE read in a browser on 2026-09-14 — see the comment above for the two findings, one of which (the United States listed as a Prohibited Country) is an open owner judgement rather than a scope limit.',
-    conditions: [
-      '⚠ SINGLE-USER ONLY — satisfied TODAY, blocking AT RELEASE (D22, 2026-09-23; applied 2026-09-24 under T-408). Nobody but the owner can load a page today, so this licence is currently met. The FIRST NON-OWNER PAGE LOAD — a private beta, a demo link, a shared staging URL — puts the app outside it. To operate beyond that: §10.1 licenses use "for non-commercial personal or internal business use" and the clauses read (docs/audits/terms-review-apis-2026-09-14.md) name no route to broader rights — ask Bitget directly and treat it as long-lead, the Binance.US shape. ⚠ THIS IS THE SMALLER OF BITGET\'S TWO PROBLEMS: §1 lists the United States among Prohibited Countries while the owner is US-resident, which is about whether the host may be called AT ALL, today, and is tracked under T-407 — do not read this condition as the whole answer. See docs/decisions/2026-09-23-owner-decisions.md.',
-      'Respect documented rate limits', 'Keyless public endpoints only — no authenticated endpoints (RP-5)'],
+      'Terms of Use read in a browser on 2026-09-14 (docs/audits/terms-review-apis-2026-09-14.md). §10.1 licenses use "for non-commercial personal or internal business use"; §1 lists the United States among Prohibited Countries, and §2.8 makes not residing in one an eligibility condition. Whether that reaches a keyless public API call with no account is unclear: "Platform" includes API access and the preamble binds on access, but the country clauses attach to Accounts and Services, which §3.1 gates behind registration. The owner, who is US-resident, ruled on 2026-10-17 (D129) to stop calling the host rather than rely on the narrow reading; the withdraw-fee overlay, the only call, was removed that day.',
     // ══ ⚠ OWNER-FLAGGED 2026-09-23 — REVISIT PENDING, DO NOT TREAT AS SETTLED ══
     // Owner: "I have some concerns around coindesk which will require some additional
     // research, for now annotate and we will revisit this and any similar cases."
@@ -1113,6 +1121,9 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     // on an unresolved question", which is NOT what it means on the other 20-odd
     // conditional entries, where conditions are simply obligations to honour.
     // Grouped and reasoned in docs/LEGAL-REVIEW.md §7. Tracked as T-407.
+    // (Bitget left the class on 2026-10-17: owner decision D129 made it prohibited.)
+    // ✅ SETTLED 2026-10-17 (D129): prohibited, as the top of this entry says. The rest of
+    // this block is kept as the record of why it was open.
     // THIS ONE IS THE SHARPEST OF THE FOUR, on a question the others do not raise:
     // §1 lists the UNITED STATES among Prohibited Countries and defines a Restricted
     // Person as one who resides there. THE OWNER IS US-RESIDENT. This is the only source
@@ -1212,7 +1223,15 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     // Behind the hidden Transfer Fees surface; not load-bearing.
     domain: 'xt.com',
     name: 'XT.com (public market-data API)',
-    verdict: 'conditional',
+    verdict: 'prohibited',
+    // RULED 2026-10-17 (owner decision D131, beside T-407): STOP CALLING IT. No terms
+    // document can be found (below), and XT's own site refuses service to the owner's
+    // region, so there is nothing to rest a narrow reading on. The withdraw-fee overlay
+    // was the only call; its source and parser were removed that day, as Bitget's were
+    // (D129). `review` stays `seeded`: this verdict is the owner's choice on what XT does,
+    // not a reading of a document, and no document has been read. XT's rows in the
+    // hand-kept transferFees.ts table stay, checked by hand.
+    //
     // ⚠ STILL UNREAD, and `reviewedAt` is deliberately LEFT at the 2026-08-21
     // seed date. The entry text below was rewritten 2026-09-15 with new
     // first-hand observations, but no terms document was read, and bumping the
@@ -1227,9 +1246,10 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     // provide services in your country or region." The page offers a
     // "click here to attempt logging in" bypass. It was NOT used.
     //
-    // This is a harder case than Bitget's US prohibition, which is written but
-    // not enforced at the edge. XT's is enforced. Both feed the same open owner
-    // question; see docs/decisions/2026-09-14-owner-decisions.md.
+    // This was a harder case than Bitget's US prohibition, which is written but
+    // not enforced at the edge. XT's is enforced. Both fed the same owner question,
+    // and both were answered the same way on 2026-10-17: stop calling it (D129 for
+    // Bitget, D131 here; docs/decisions/2026-10-17-owner-decisions.md).
     //
     // NO TERMS DOCUMENT IS REACHABLE. Five approaches, all exhausted 2026-09-15:
     //   1. www.xt.com footer          → geo-redirect, zero anchors rendered
@@ -1251,12 +1271,7 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     // 2026-09-14 pass found across all five withdraw-fee entries.
     termsUrl: 'https://doc.xt.com/',
     finding:
-      'Publishes a documented public REST API; the public wallet-support currency endpoint is documented as unauthenticated. Seeded from the published API documentation — the exchange ToS have NOT been read, and as of 2026-09-15 no terms document is reachable at all: XT publishes none in its 33k-URL sitemap, twelve conventional paths 404, and the docs site carries no legal links. Separately and more importantly, XT geo-blocks the owner\'s US residential egress outright ("XT does not provide services in your country or region"), which makes it a second and stronger instance of the unresolved Bitget US-prohibition question rather than a pure terms matter. The endpoint itself remains unprobed (see the Bybit removal: a seeded public claim loses to the owner probe).',
-    conditions: [
-      'Respect documented rate limits',
-      'Keyless public endpoints only — no authenticated endpoints (RP-5)',
-      'UNRESOLVED: XT states it does not provide services in this region — the owner-decision question, not a condition code can enforce',
-    ],
+      'Publishes a documented public REST API; the public wallet-support currency endpoint is documented as unauthenticated. Seeded from the published API documentation — the exchange ToS have NOT been read, and as of 2026-09-15 no terms document is reachable at all: XT publishes none in its 33k-URL sitemap, twelve conventional paths 404, and the docs site carries no legal links. Separately and more importantly, XT geo-blocks the owner\'s US residential egress outright ("XT does not provide services in your country or region"), which made it a second and stronger instance of the Bitget US-prohibition question rather than a pure terms matter. The owner ruled on 2026-10-17 (D131): stop calling it. The withdraw-fee overlay was the only call, and it was removed that day; this verdict records that choice, not a reading of a document.',
     reviewedAt: '2026-08-21',
     review: 'seeded',
     confidence: 'low',
@@ -1294,6 +1309,7 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     // on an unresolved question", which is NOT what it means on the other 20-odd
     // conditional entries, where conditions are simply obligations to honour.
     // Grouped and reasoned in docs/LEGAL-REVIEW.md §7. Tracked as T-407.
+    // (Bitget left the class on 2026-10-17: owner decision D129 made it prohibited.)
     // THIS ONE: the broadest clause in the registry — barring re-use "commercially and
     // non-commercially", which read literally prohibits consuming an RPC provider at all,
     // since answering calls IS the product. `review: verified` records only that the
@@ -1331,7 +1347,7 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     conditions: [
       'Respect documented rate limits', 'Keyless public endpoints only — no authenticated endpoints (RP-5)',
       '⚠ SINGLE-USER ONLY — satisfied TODAY, blocking AT RELEASE (D22, 2026-09-23; applied 2026-09-30 under T-413 / D42). Nobody but the owner can load a page today, so this licence is currently met. The FIRST NON-OWNER PAGE LOAD — a private beta, a demo link, a shared staging URL — puts the app outside it. To operate beyond that: Terms of Use Article 91 bars commercial use of the Platform or its content, and systematic collection "without the written permission of the Platform" — ask KuCoin for that permission. The one surface it feeds, Transfer Fees, is already hidden from rollout. See docs/decisions/2026-09-30-owner-decisions.md.',
-      'UNRESOLVED (T-407, owner, 2026-10-14): Article 17(5) lists the United States among Restricted Locations, the question Bitget’s §1 raises. Recorded, no code change; the one surface it feeds is hidden',
+      'JUDGEMENT, not a clause that allows it (T-407, owner decision D130, 2026-10-17): Article 17(5) has a user undertake not to reside in the Restricted Locations, which include the United States, and the undertaking binds on registering an account (Article 14). The app never registers, so the keyless currencies call is kept until launch, read as D25 read publicnode. Bitget was stopped instead (D129) because its terms bind on access to the Platform, API included. LAUNCH STEP: put this question to counsel or KuCoin together with the written permission Article 91 needs (D42); the one surface it feeds, Transfer Fees, is hidden',
     ],
     reviewedAt: '2026-09-26',
     review: 'verified',
@@ -1684,6 +1700,7 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     // on an unresolved question", which is NOT what it means on the other 20-odd
     // conditional entries, where conditions are simply obligations to honour.
     // Grouped and reasoned in docs/LEGAL-REVIEW.md §7. Tracked as T-407.
+    // (Bitget left the class on 2026-10-17: owner decision D129 made it prohibited.)
     // THIS ONE: the reading proposed `prohibited` and an adversarial pass sustained it.
     // Scope is what is unresolved — the ToU never mentions feeds, so either the feed is
     // inside the expansively defined "Services", or a document that never reaches feeds
@@ -1891,6 +1908,7 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     // on an unresolved question", which is NOT what it means on the other 20-odd
     // conditional entries, where conditions are simply obligations to honour.
     // Grouped and reasoned in docs/LEGAL-REVIEW.md §7. Tracked as T-407.
+    // (Bitget left the class on 2026-10-17: owner decision D129 made it prohibited.)
     // THIS ONE: no display permission, and automated extraction expressly forbidden —
     // yet Investing.com publishes the feeds this app reads and robots.txt permits /rss/.
     // Both true at once; the document never mentions feeds, so it reconciles neither.

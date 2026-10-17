@@ -303,13 +303,37 @@ no field that distinguishes them.
 | **CoinDesk** | No display permission. View/print/download for personal, non-commercial use; republication needs prior written consent. "rss", "syndicat", "feed" return **zero hits** in 300 lines | Reading proposed `prohibited` and an adversarial pass sustained it; **scope** could not be settled — either the feed is inside the expansive "Services", or a ToU that never reaches feeds does not govern one the publisher deliberately publishes | `coindesk-rss` → `/live-data/news`, headline + 280-char summary |
 | **Investing.com** | No display permission; Limitations on Use (c) expressly forbids automated extraction "for any purpose" | It **publishes** the feeds this app reads and robots.txt permits `/rss/`. Publishing a feed and allowing it in robots is an invitation; the ToS bars extraction in general terms. Both true, and the document reconciles neither | 3 of the macro-news feeds |
 | **publicnode.com** | Bars re-use "commercially **and non-commercially**" — the broadest clause in the registry | Read literally it prohibits consuming an RPC provider at all, since answering calls *is* the product. That cannot be the intent, and narrowing it is not a maintainer's call | `/live-data/wallet/eth`; `/wallets` already hidden from rollout. ✅ **DECIDED 2026-09-24 (D25): narrow reading kept** — owner, *"for safety"*; three of the four remain |
-| **Bitget** | §1 lists the **UNITED STATES** among Prohibited Countries; a Restricted Person is one who resides there. §10.1 licenses "non-commercial personal or internal business use" | The Prohibited-Country clauses attach to **Accounts and Services**, which §3.1 gates behind registration — and this is a keyless call with no account. "Platform" is defined to include API access. Unclear, not obviously either way | `withdrawFeeAdapters.ts` → `api.bitget.com`, keyless |
+| **Bitget** | §1 lists the **UNITED STATES** among Prohibited Countries; a Restricted Person is one who resides there. §10.1 licenses "non-commercial personal or internal business use" | The Prohibited-Country clauses attach to **Accounts and Services**, which §3.1 gates behind registration — and this is a keyless call with no account. "Platform" is defined to include API access. Unclear, not obviously either way | Was `withdrawFeeAdapters.ts` → `api.bitget.com`, keyless. ✅ **DECIDED 2026-10-17 (D129): stopped** — the owner chose to stop calling it rather than rely on the narrow reading; `bitget.com` is `prohibited` and the feed is gone |
 
 ### ⚠ Bitget is the sharpest, and for a reason the other three do not raise
 
 It is **the only source where a clause may bar use outright rather than limit its scope**,
 and **the owner is US-resident**. Everything else in this document is a question about what
 may be *shown*; this is a question about whether the app may *call the host at all*.
+
+**Answered 2026-10-17 (D129): it no longer does.** The owner chose to stop calling Bitget rather
+than rely on the reading that a no-account API call falls outside §1. The withdraw-fee overlay was
+the only call; its feed and parser were removed and `bitget.com` is `prohibited`. Bitget's rows in
+the hand-kept fee table stay, checked by hand, on a page hidden from rollout. Calling it again
+needs counsel's reading or Bitget's word.
+
+**KuCoin and XT.com, which raised the same residence question, were answered the same day.**
+
+- **KuCoin: kept until launch (D130).** Article 17(5) has a user undertake not to reside in the
+  Restricted Locations, which include the United States. That undertaking binds on registering an
+  account (Article 14), and the app never registers, so the keyless currencies call stays, read as
+  D25 read publicnode. Bitget differs because its terms bind on access to the Platform, API
+  included. This is a judgement, not a clause that allows it, and it is written on KuCoin's
+  entry as a condition. **Launch step:** put it to counsel or KuCoin together with the written
+  permission Article 91 needs (D42).
+- **XT.com: stopped (D131).** XT publishes no terms document anyone could find, and its own site
+  refuses service to the owner's region, so there was nothing to rest a narrow reading on. The
+  withdraw-fee overlay was the only call; its feed and parser were removed and `xt.com` is
+  `prohibited`. Its entry stays `seeded`: no document was read, and the verdict is the owner's
+  choice.
+
+Both feed only Transfer Fees, which is hidden from rollout. The withdraw-fee overlay now has four
+feeds: KuCoin, HTX, LBank and Bitfinex.
 
 ### ⚠ A D22 gap, found while annotating this section
 
@@ -344,7 +368,8 @@ the same one:
    for another careful reading.
 2. **publicnode** needs only a judgement on whether to keep reading an absurdly broad
    clause narrowly. Exposure is one route on a hidden page.
-3. **Bitget** needs its own answer, because the question is different in kind.
+3. **Bitget** needs its own answer, because the question is different in kind. *(Answered
+   2026-10-17, D129: the app stopped calling it.)*
 
 Until then the annotation on each entry is the control, and `T-407` is the tracking item.
 
@@ -371,7 +396,8 @@ Every source was re-read under the rule: `docs/assessments/source-terms-prelaunc
 - **Unchanged, blocked whatever the user:** Yahoo, Cboe, Poloniex, Dow Jones, MarketWatch.
 - **Unchanged, kept blocked by the owner:** OKX (§9.4 bars building an analytics platform).
 - **§7's four sources:** CoinDesk becomes a launch step. Investing.com, publicnode and Bitget's US
-  clause stay open, because personal use does not answer them.
+  clause stay open, because personal use does not answer them. *(Bitget's was answered on
+  2026-10-17, D129: the app stopped calling it.)*
 
 ## 9. What changed on 2026-10-12 (D102, T-423)
 
