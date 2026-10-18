@@ -310,8 +310,10 @@ describe('the rows, from the real catalog', () => {
     }
   })
 
-  it('puts its ETH lead only on exchange rows, as the audit counted them', () => {
-    for (const k of Object.keys(LOCKUP_LEADS).filter((x) => x.includes(':eth:'))) {
+  it('puts the audit’s ETH lead only on exchange rows, as the audit counted them', () => {
+    // The evaluation's two ETH leads (Uniswap's pool, Kraken's US line) ask something else.
+    const auditAsk = LOCKUP_LEADS['okx:eth:terms'].ask
+    for (const k of Object.keys(LOCKUP_LEADS).filter((x) => LOCKUP_LEADS[x].ask === auditAsk)) {
       expect(STAKING_PROVIDERS.find((p) => p.id === k.split(':')[0])!.category, k).toBe('cefi')
     }
   })

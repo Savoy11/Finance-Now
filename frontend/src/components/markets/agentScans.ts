@@ -38,8 +38,8 @@ export const EQUITY_OUTLIER_SCAN: AgentScan = {
   market: 'equities',
   agentName: 'Equity Screener',
   title: 'AI Outlier Scan',
-  blurb: 'Scans the whole universe for sector-relative outliers and explains opportunities vs traps.',
-  task: 'Scan the equities universe for the most statistically significant outliers. Call get_stock_outliers first, then investigate the most notable names and classify each as an opportunity, a trap, or fairly-explained. Group by theme and end with a short watch list.',
+  blurb: 'Scans the whole universe for sector-relative outliers and checks which ones the company’s own figures explain.',
+  task: 'Scan the equities universe for the most statistically significant outliers. Call get_stock_outliers first, then investigate the most notable names and label each as explained, not explained, or figures moving against it. Group by theme and end with what to check next.',
   reportTitle: 'Outlier Report',
   progress: 'Computing outliers and analyzing…',
 }

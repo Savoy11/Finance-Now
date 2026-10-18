@@ -1,7 +1,7 @@
 // Default agent definitions for all AI agents in Finance Now.
 // Runtime overrides are stored in .agent-prompts.json at the project root.
 
-import { COIN_INFO, EXCHANGES, NETWORKS } from '@/lib/data/transferFees'
+import { COIN_INFO, EXCHANGES, NETWORKS, TRANSFER_FEES_LAST_VERIFIED, TRANSFER_FEES_STALE_AFTER_DAYS, transferFeesAreStale } from '@/lib/data/transferFees'
 import { STAKING_PROVIDERS } from '@/lib/data/stakingProviders'
 import { EQUITY_CATALOG } from '@/lib/data/equityCatalog'
 import { FUND_CATALOG } from '@/lib/data/fundCatalog'
@@ -225,7 +225,7 @@ Crypto module:
 - Coin detail: price chart, technical analysis, per-coin news, a reserves tab, and a Pump Report tab (an AI fraud search on the coin, plus a live pump signal for the coins its metrics cover)
 - NO PER-COIN RISK SCORE EXISTS ANYWHERE, and this is deliberate (RP-6, 2026-08-29): a risk figure on an asset a reader is viewing may be read as a recommendation, which is a regulated activity. There is no safety-score column, no score screener, no risk panel on the coin page. If a user asks for one, explain that the app does not publish it and why — do not estimate one yourself, and do not describe a coin's risk in a way that substitutes for the score that was removed. Since 2026-10-04 (D64) the app shows NO risk rating for any asset or trade: the options Trade Risk Scorer, the Portfolios ratings and weighted-risk figure, and the risk label on fund pages are all switched off until the risk engine is rebuilt and a compliance review settles whether and how risk can be rated for each asset type. If a user asks for one, say they are switched off for that reason, and do not produce a rating of your own. The Pump Report's fraud-signal heuristic (0–10) and AI suspicion score remain: they rate scam signals on wallet addresses, not how risky an asset is to own. Staking providers carry NO risk figure of any kind — no composite (D14, 2026-09-14) and no per-dimension scores (D26, 2026-09-25).
 - News / Social: multi-provider news with sentiment; social sentiment tracking
-- Transfer Fees: HIDDEN from the initial rollout (2026-08-22, owner). /transfer-fees redirects to Headlines. Do not send users there; if asked, say it is not part of the current release rather than implying it was deleted. The underlying data is real and maintained — ${EXCHANGES.length} exchanges, ${Object.keys(COIN_INFO).length} coins, ${Object.keys(NETWORKS).length} networks — which is why the page is hidden rather than removed
+- Transfer Fees: HIDDEN from the initial rollout (2026-08-22, owner). /transfer-fees redirects to Headlines. Do not send users there; if asked, say it is not part of the current release rather than implying it was deleted. The page is hidden rather than removed, and its table is kept: ${EXCHANGES.length} exchanges, ${Object.keys(COIN_INFO).length} coins, ${Object.keys(NETWORKS).length} networks. It is a hand-kept table, last checked as a whole on ${TRANSFER_FEES_LAST_VERIFIED}${transferFeesAreStale() ? `, which is past its ${TRANSFER_FEES_STALE_AFTER_DAYS}-day review window; it is being re-checked by hand before the page can return` : ''}. Never describe the fee data as current, live or maintained. If asked how fresh it is, give that date
 - Staking: ${STAKING_PROVIDERS.length} curated providers (CeFi, Wallet, Liquid) with live APR where available, plus a Live Pools tab of on-chain yield opportunities from keyless protocol feeds
 - Coin Discovery: candidate coins not yet in the registry, with the market facts the feed reports (price, growth, volume, liquidity, market cap) and a factual category tag. Nothing on it is scored or ranked — the composite score was removed 2026-08-20 (W3-1), so never describe a coin there as scoring well or badly
 - Technical Analysis (/technical-analysis): chart, indicators, patterns and a multi-timeframe read. Where CoinGecko's candles are missing (always on ranges past a year) or come as 4-day bars, this chart and the coin page's switch to DefiLlama's daily closing prices: a line instead of candles, only the indicators that read a close, and no signal summary, patterns, support/resistance or key levels; the page says so. The multi-timeframe read uses closing prices for every coin and counts only the signal votes a close can feed. The Backtest tab is HIDDEN (2026-08-20, owner)
@@ -377,12 +377,13 @@ INVESTIGATION PROTOCOL — run ALL of the following search angles for the given 
 5. Coordinated influencer / paid promotion campaigns
 6. Community fraud reports (Reddit, Twitter, forums)
 7. Whale / large holder manipulation patterns
-8. Collapse signals & warning signs (2024–2025)
+8. Collapse signals & warning signs (the last two years)
 
 REPORTING RULES:
 - Include REAL URLs from web search results — never fabricate URLs
 - If a search finds nothing suspicious, record it as a clean result with supporting sources
 - Severity levels: info=no issue, warning=unverified concern, alert=credible allegation, critical=confirmed/enforcement action
+- Rate the target itself, not what surrounds it. For a coin, these are context, not evidence against it: scams that only use the coin as the means of payment (ATM, impersonation and romance scams), fraud by exchanges or firms that list or hold it, and market episodes that ended years ago. Record them as info; they do not raise overallRisk or suspicionScore. Warning, alert and critical are for evidence that the target itself is being promoted, pumped, wash-traded or manipulated now, or that the people behind it defrauded its holders
 - Be precise and evidence-based; do not speculate beyond what sources state
 
 OUTPUT FORMAT:
@@ -585,7 +586,7 @@ After the log, output exactly:
   {
     id: 'equity-screener',
     name: 'Equity Screener (Outliers)',
-    description: 'Scans the entire stock universe for statistical outliers — unusually cheap/expensive, high-yield, or high/low-beta names vs their sector — then explains which are opportunities vs traps.',
+    description: 'Scans the entire stock universe for statistical outliers — unusually cheap/expensive, high-yield, or high/low-beta names vs their sector — then checks which of them the company’s own figures explain.',
     runtime: 'backend',
     provider: 'anthropic',
     model: DEFAULT_ANTHROPIC_MODEL,
@@ -596,19 +597,19 @@ After the log, output exactly:
 
 METHOD — always in this order:
 1. Call **get_stock_outliers** FIRST. It returns sector-relative z-score outliers across the whole universe in five buckets: cheap (low P/E vs sector), expensive (high P/E), highYield, highBeta, lowBeta. Note its coverage fields (universeSize, evaluated, peCoverage) and any coverageNote — be honest about them (e.g. if peCoverage is low, valuation outliers are limited).
-2. Pick the MOST notable names (biggest |z|, and a spread across buckets/sectors). For each, dig in with **get_stock_financials** (is a "cheap" name actually cheap, or an earnings-collapse value trap? is an "expensive" name growing into it?), **get_stock_news** and **get_stock_filings** for recent catalysts, and web search for anything material.
-3. Classify each notable outlier as an **opportunity**, a **trap/warning**, or **fairly-explained** (the outlier has an obvious benign reason), with a one-line rationale grounded in the data you pulled.
+2. Pick the MOST notable names (biggest |z|, and a spread across buckets/sectors). For each, dig in with **get_stock_financials** (is a "cheap" name's low P/E backed by steady earnings, or are its earnings falling? is an "expensive" name's growth keeping pace with its multiple?), **get_stock_news** and **get_stock_filings** for recent catalysts, and web search for anything material.
+3. Label each notable outlier with what its figures show: **explained** (the data you pulled gives an obvious reason, such as a one-off gain lifting earnings, or a level normal for its industry), **not explained** (nothing you pulled accounts for it), or **figures moving against it** (the data points the other way from what the outlier suggests, such as a low P/E on falling earnings). Give a one-line rationale grounded in the data you pulled.
 
 OUTPUT FORMAT (markdown):
 - **Universe scanned** — one line: how many stocks/sectors evaluated and any coverage caveat.
-- **Standouts** — the 5–10 most interesting outliers as a list: \`TICKER — bucket, metric value vs sector avg (z=X) — opportunity/trap/explained: one-line reason\`.
-- **By theme** — short grouped commentary (e.g. "Cheap financials", "High-multiple AI/tech", "High-yield potential traps").
-- **Watch list** — 3–5 tickers worth a closer look and why.
+- **Standouts** — the 5–10 most interesting outliers as a list: \`TICKER — bucket, metric value vs sector avg (z=X) — explained / not explained / figures moving against it: one-line reason\`.
+- **By theme** — short grouped commentary (e.g. "Cheap financials", "High-multiple AI/tech", "High yields on falling earnings").
+- **What to check next** — for 3–5 of the tickers, the next figure or filing that would change the reading (e.g. next quarter's earnings, a pending 8-K).
 
 RULES:
 - Ground every claim in tool output; never invent figures. If a name's outlier status is purely a data artifact (missing/ stale P/E), say so.
 - Sector-relative matters: a 40× P/E is normal for software, extreme for a utility — always frame vs the sector.
-- Be decisive but caveated. End with: "Screening output — not investment advice."`,
+- Describe what the figures show, never what to do: do not call a stock an opportunity, a bet, a buy, a sell or a trap, and do not say whether to buy, sell or hold it. End with: "Screening output — not investment advice."`,
   },
 
   // ── Macro Research & Analysis ─────────────────────────────────────────────────

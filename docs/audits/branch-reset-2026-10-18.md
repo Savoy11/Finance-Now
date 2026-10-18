@@ -18,3 +18,19 @@ commits on its already-merged history would have repeated #375's commit in the n
 - its content in `main` as `6aa0080`.
 
 Nothing was deleted; no other ref moved.
+
+## Second reset, after PR #376
+
+**What was done.** After PR #376 (the fixes the agent evaluation found in the app and its data) was
+squash-merged into `main` as `b554990`, the branch was restarted from that commit for the three
+prompt changes and the two Staking Facts Check rows, and pushed with `--force-with-lease`, for the
+same reason as above.
+
+**Where the prior state lives.** The branch's previous tip, `83b6794`, is held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@83b6794`, created by
+  `.github/workflows/archive-branch.yml` when #376 merged;
+- GitHub's `refs/pull/376/head`;
+- its content in `main` as `b554990`.
+
+Nothing was deleted; no other ref moved.

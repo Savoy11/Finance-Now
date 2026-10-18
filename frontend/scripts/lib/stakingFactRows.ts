@@ -79,6 +79,18 @@ export const LOCKUP_LEADS: Readonly<Record<string, { days: number; note: string 
   // The audit's "nine CeFi rows" at 0 with no note: Nexo and KuCoin are left out, being
   // lending and soft staking, where zero is right and their features say so.
   ...leads('eth', 0, null, ['okx', 'crypto-com', 'bitget', 'gate-io', 'htx', 'robinhood', 'gemini', 'bitstamp', 'mexc']),
+  // Two the agent evaluation of 2026-10-17 raised (docs/assessments/T6-agents-2026-10-17.md,
+  // D136): the Research Analyst read both rows out as staking options, as they stand.
+  ['uniswap:eth:terms', {
+    days: 0,
+    note: null,
+    ask: 'This row is an ETH/USDC trading pool, which earns trading fees and is not staking. Check whether Uniswap offers ETH staking at all; if it does not, choose Not offered.',
+  }],
+  ['kraken:eth:terms', {
+    days: 7,
+    note: null,
+    ask: 'The catalog says Kraken stopped staking for US customers after its 2023 SEC settlement, which may be out of date. Check whether Kraken offers ETH staking in the US today, and put what its page says in the note.',
+  }],
 ])
 
 export type FactKind = 'site' | 'founded' | 'audits' | 'assets' | 'terms'
