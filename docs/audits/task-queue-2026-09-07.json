@@ -5903,7 +5903,7 @@
      "frontend/src/lib/server/treasuryCurve.ts",
      "frontend/scripts/lib/agentEvalAnswer.mjs"
     ],
-    "known_gap": "Whether the 2026-10-18 Equity Diligence report finished is not known: the worksheet then showed only its first 12,000 of 16,641 characters. `npm run agent-eval -- --run --only equity-diligence` would tell. The Pump Report Investigator still files three old or structural matters as 'warning' while rating Bitcoin clean."
+    "known_gap": "The Equity Diligence report's ending was not seen: the worksheet then showed only an answer's first 12,000 characters. Its length says it finished: one response under the 8,192-token limit comes to roughly 29,000 to 33,000 characters at the cut-off, and it ran to 16,641, then 16,790 on a re-run of that agent alone. The Pump Report Investigator still files three old or structural matters as 'warning' while rating Bitcoin clean."
    }
   },
   {
