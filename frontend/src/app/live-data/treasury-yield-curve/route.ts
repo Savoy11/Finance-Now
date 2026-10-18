@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { fetchTreasuryYieldCurve, type CurveSnapshot } from '@/lib/server/treasuryCurve'
+import { fetchTreasuryYieldCurve, type CurveSnapshot, type CurveSpreads } from '@/lib/server/treasuryCurve'
 
 // Official US Treasury daily par yield curve (home.treasury.gov XML, keyless).
 // Returns the latest curve plus two lookback snapshots (~1 month, start of
@@ -16,13 +16,16 @@ import { fetchTreasuryYieldCurve, type CurveSnapshot } from '@/lib/server/treasu
 
 export const dynamic = 'force-dynamic'
 
-export type { CurvePoint, CurveSnapshot } from '@/lib/server/treasuryCurve'
+export type { CurvePoint, CurveSnapshot, CurveSpreads } from '@/lib/server/treasuryCurve'
 
 export interface YieldCurveResponse {
   ok: boolean
   latest?: CurveSnapshot
   monthAgo?: CurveSnapshot
   yearStart?: CurveSnapshot
+  /** The spreads on the month-ago and year-start curves, present with those curves. */
+  monthAgoSpreads?: CurveSpreads
+  yearStartSpreads?: CurveSpreads
   /** 10Y minus 2Y, percentage points — the classic recession signal. */
   spread2s10s?: number
   /** 10Y minus 3M, the Fed's preferred version. */
@@ -40,6 +43,8 @@ export async function GET(): Promise<NextResponse<YieldCurveResponse>> {
       latest: curve.latest,
       monthAgo: curve.monthAgo.date !== curve.latest.date ? curve.monthAgo : undefined,
       yearStart: curve.yearStart.date !== curve.latest.date ? curve.yearStart : undefined,
+      monthAgoSpreads: curve.monthAgo.date !== curve.latest.date ? curve.monthAgoSpreads : undefined,
+      yearStartSpreads: curve.yearStart.date !== curve.latest.date ? curve.yearStartSpreads : undefined,
       spread2s10s: curve.spread2s10s,
       spread3m10y: curve.spread3m10y,
       shape: curve.shape,

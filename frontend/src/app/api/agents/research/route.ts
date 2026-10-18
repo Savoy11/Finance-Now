@@ -60,7 +60,10 @@ export async function POST(req: NextRequest) {
       agentId,
       messages,
       origin: new URL(req.url).origin,
-      maxTokens: 4096,
+      // 8,192, not 4,096: the 2026-10-17 agent evaluation found the Diligence report
+      // cut off in the middle of its findings at 4,096. Only the tokens an answer uses
+      // are billed, so a higher limit costs nothing on the answers that fit.
+      maxTokens: 8192,
       maxIterations: 12,
       webSearchMaxUses: 8, // research does multi-angle web lookups
     })

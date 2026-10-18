@@ -32,6 +32,23 @@ export function equityReferenceAgeDays(now: Date = new Date()): number {
 // across all of them. (The convention is Yahoo's originally; Yahoo itself is no
 // longer a Finance Now data source — see lib/server/sourceTerms.ts.)
 
+/**
+ * What a screen over the hand-kept list has to say about its figures (the outlier
+ * scan, which only the Equity Screener agent reads). The 2026-10-17 agent evaluation
+ * found that agent presenting Palantir's P/E of 250 and Tesla's of 200 as current:
+ * the note it read said "curated values" with no date, and said to "add an FMP key"
+ * though one was saved. The whole-market list needs a paid FMP plan; on the free key
+ * the screen stays on this list.
+ */
+export function catalogUniverseNote(fmpKeySaved: boolean, now: Date = new Date()): string {
+  const plan = fmpKeySaved
+    ? 'the whole-market list needs a paid FMP plan, and the FMP key saved did not return it'
+    : 'the whole-market list needs a paid FMP plan, and no FMP key is saved'
+  return `This screen covered the hand-kept list of ${EQUITY_CATALOG.length} stocks, not the whole market: ${plan}. `
+    + `Its P/E, dividend yield and beta figures are approximate reference values compiled ${EQUITY_REFERENCE_AS_OF} `
+    + `(${equityReferenceAgeDays(now)} days before this screen), not live figures. Say so wherever one is quoted.`
+}
+
 export type SectorId =
   | 'technology'
   | 'communication-services'
