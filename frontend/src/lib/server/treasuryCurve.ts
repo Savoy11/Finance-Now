@@ -19,10 +19,24 @@ export interface CurveSnapshot {
   points: CurvePoint[]
 }
 
+/** The two headline spreads of one curve, in percentage points. */
+export interface CurveSpreads {
+  spread2s10s?: number
+  spread3m10y?: number
+}
+
 export interface YieldCurveData {
   latest: CurveSnapshot
   monthAgo: CurveSnapshot
   yearStart: CurveSnapshot
+  /**
+   * The same spreads on the comparison curves, so a reader compares two published
+   * figures instead of working one out. The 2026-10-17 agent evaluation found the
+   * macro agent, given today's spread only, describing a curve that had flattened
+   * since January (2s10s +0.72 then, +0.35 now) as having steepened all year.
+   */
+  monthAgoSpreads: CurveSpreads
+  yearStartSpreads: CurveSpreads
   /** 10Y minus 2Y, percentage points — the classic recession signal. */
   spread2s10s?: number
   /** 10Y minus 3M, the Fed's preferred version. */
@@ -117,15 +131,25 @@ export function buildCurveData(snapshots: CurveSnapshot[]): YieldCurveData {
   const latestYear = latest.date.slice(0, 4)
   const yearStart = sorted.find((s) => s.date.startsWith(latestYear)) ?? sorted[0]
 
-  const y2 = yieldAt(latest, '2Y')
-  const y10 = yieldAt(latest, '10Y')
-  const m3 = yieldAt(latest, '3M')
-  const spread2s10s = y2 != null && y10 != null ? Math.round((y10 - y2) * 100) / 100 : undefined
-  const spread3m10y = m3 != null && y10 != null ? Math.round((y10 - m3) * 100) / 100 : undefined
+  const { spread2s10s, spread3m10y } = spreadsOf(latest)
   const shape = spread2s10s == null ? undefined
     : spread2s10s > 0.25 ? 'normal' : spread2s10s < -0.1 ? 'inverted' : 'flat'
 
-  return { latest, monthAgo, yearStart, spread2s10s, spread3m10y, shape }
+  return {
+    latest, monthAgo, yearStart, spread2s10s, spread3m10y, shape,
+    monthAgoSpreads: spreadsOf(monthAgo), yearStartSpreads: spreadsOf(yearStart),
+  }
+}
+
+/** 10Y minus 2Y and 10Y minus 3M on one curve, rounded to hundredths. */
+export function spreadsOf(snapshot: CurveSnapshot): CurveSpreads {
+  const y2 = yieldAt(snapshot, '2Y')
+  const y10 = yieldAt(snapshot, '10Y')
+  const m3 = yieldAt(snapshot, '3M')
+  return {
+    spread2s10s: y2 != null && y10 != null ? Math.round((y10 - y2) * 100) / 100 : undefined,
+    spread3m10y: m3 != null && y10 != null ? Math.round((y10 - m3) * 100) / 100 : undefined,
+  }
 }
 
 /**

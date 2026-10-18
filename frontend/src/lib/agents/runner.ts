@@ -24,6 +24,33 @@ export interface AgentRunResult {
   stopReason: string | null
 }
 
+/**
+ * Added to an answer the model stopped because it reached its length limit, so a
+ * reader knows the end is missing. Until 2026-10-17 a cut-off answer came back as
+ * though it were whole: that day's agent evaluation found the Diligence report
+ * ending in the middle of its findings, with nothing on the page to say so.
+ */
+export const CUT_OFF_NOTICE = '(This answer was cut off at its length limit before it finished.)'
+
+/**
+ * The answer's text from a final Anthropic response. Web search splits a sentence
+ * into several text blocks, each quoted passage its own block with its citations,
+ * so the blocks are joined as they stand. Joining them with line breaks, as this
+ * did until 2026-10-17, broke every sentence that quoted a source across lines.
+ */
+export function anthropicAnswerText(blocks: ReadonlyArray<{ type: string; text?: string }>, stopReason: string | null): string {
+  const text = blocks
+    .filter((b) => b.type === 'text' && typeof b.text === 'string')
+    .map((b) => b.text as string)
+    .join('')
+    .trim()
+  return stopReason === 'max_tokens' ? withCutOffNotice(text) : text
+}
+
+function withCutOffNotice(text: string): string {
+  return text ? `${text}\n\n${CUT_OFF_NOTICE}` : CUT_OFF_NOTICE
+}
+
 /** Run one tool and add its credits to the run's, once each. */
 async function runToolInto(
   credits: RequiredCredit[],
@@ -149,12 +176,7 @@ async function runAgentAnthropic(
     if ((response.stop_reason as string) === 'pause_turn') continue
 
     if (response.stop_reason !== 'tool_use') {
-      const text = response.content
-        .filter((b): b is Anthropic.TextBlock => b.type === 'text')
-        .map((b) => b.text)
-        .join('\n')
-        .trim()
-      return { text, toolsUsed, credits, stopReason }
+      return { text: anthropicAnswerText(response.content, stopReason), toolsUsed, credits, stopReason }
     }
 
     // Client-side tool_use blocks only — server_tool_use (web_search) is
@@ -250,7 +272,9 @@ async function runAgentOpenAI(
     chatMessages.push(assistantMsg)
 
     if (choice.finish_reason !== 'tool_calls' || !assistantMsg.tool_calls?.length) {
-      return { text: assistantMsg.content?.trim() ?? '', toolsUsed, credits, stopReason }
+      const text = assistantMsg.content?.trim() ?? ''
+      // 'length' is the OpenAI-compatible name for reaching the length limit.
+      return { text: choice.finish_reason === 'length' ? withCutOffNotice(text) : text, toolsUsed, credits, stopReason }
     }
 
     // Execute all tool calls in parallel

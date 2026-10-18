@@ -325,6 +325,7 @@ const SPEC = {
                 nativeToken: { type: 'string' },
                 feeUsd:      { type: 'number' },
                 source:      { type: 'string', enum: ['live', 'estimate'] },
+                provider:    { type: 'string', description: "Who measured a live fee amount (e.g. 'mempool.space'). Absent on an estimate. The credit in attributions is for the token prices." },
               },
             },
           },
@@ -541,8 +542,18 @@ const SPEC = {
           spread2s10s: { type: 'number', nullable: true, description: '10Y minus 2Y, percentage points — the classic recession signal.' },
           spread3m10y: { type: 'number', nullable: true, description: "10Y minus 3M — the Fed's preferred version." },
           shape:     { type: 'string', enum: ['normal', 'flat', 'inverted'] },
+          monthAgoSpreads:  { $ref: '#/components/schemas/CurveSpreads' },
+          yearStartSpreads: { $ref: '#/components/schemas/CurveSpreads' },
           source:    { type: 'string', enum: ['treasury-gov'] },
           updatedAt: { type: 'string', format: 'date-time' },
+        },
+      },
+      CurveSpreads: {
+        type: 'object',
+        description: 'The same two spreads on a comparison curve (monthAgo or yearStart), present with that curve.',
+        properties: {
+          spread2s10s: { type: 'number', nullable: true },
+          spread3m10y: { type: 'number', nullable: true },
         },
       },
       CurveSnapshot: {

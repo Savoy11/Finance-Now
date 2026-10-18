@@ -169,7 +169,7 @@ const TOOL_REGISTRY: RegisteredTool[] = [
     market: 'equities',
     tool: {
       name: 'get_stock_profile',
-      description: "Get a company's registrant profile from SEC EDGAR: official SIC industry classification, headquarters, state of incorporation, fiscal year end, exchange, and a background summary.",
+      description: "Get a company's registrant profile from SEC EDGAR: official SIC industry classification, headquarters, state of incorporation, fiscal year end, exchange. Also a background summary from Wikipedia, which is not SEC data: when you use it, credit Wikipedia and give its article link (background.url), as its licence (CC BY-SA 4.0) requires.",
       input_schema: {
         type: 'object',
         properties: { symbol: { type: 'string', description: 'Ticker symbol, e.g. "AAPL"' } },
@@ -387,7 +387,7 @@ const TOOL_REGISTRY: RegisteredTool[] = [
     market: 'macro',
     tool: {
       name: 'get_yield_curve',
-      description: 'Get the official US Treasury par yield curve (13 maturities, treasury.gov daily data) with 2s10s and 3m10y spreads, curve shape (normal/flat/inverted), and month-ago / year-start snapshots for comparison. The authoritative rates tool — prefer it over quoting ^TNX for curve questions.',
+      description: 'Get the official US Treasury par yield curve (13 maturities, treasury.gov daily data) with 2s10s and 3m10y spreads, curve shape (normal/flat/inverted), and month-ago / year-start snapshots for comparison, each with its own spreads (monthAgoSpreads, yearStartSpreads): compare those to say whether the curve has steepened or flattened, rather than working the spreads out yourself. The authoritative rates tool — prefer it over quoting ^TNX for curve questions.',
       input_schema: { type: 'object', properties: {} },
     },
   },
@@ -724,10 +724,17 @@ async function execute(
       case 'get_stock_profile': {
         const symbol = String(input.symbol ?? '').toUpperCase()
         const data = (await get(`/live-data/company-profile?symbol=${encodeURIComponent(symbol)}`)) as {
-          ok?: boolean; error?: string; profile?: unknown; wiki?: { extract?: string } | null
+          ok?: boolean; error?: string; profile?: unknown; wiki?: { extract?: string; url?: string | null } | null
         }
         if (!data.ok) return { error: data.error ?? 'no profile available', symbol }
-        return { symbol, profile: data.profile, background: data.wiki?.extract ?? null }
+        // Wikipedia's text, with its name and link. Wikipedia's terms ask for a link to
+        // the article (sourceTerms.ts), and the stock page gives one. This returned the
+        // text alone until 2026-10-17, when the agent evaluation found an agent crediting
+        // it to SEC EDGAR, the only source the tool named.
+        const background = data.wiki?.extract
+          ? { text: data.wiki.extract, source: 'Wikipedia', url: data.wiki.url ?? null, licence: 'CC BY-SA 4.0' }
+          : null
+        return { symbol, profile: data.profile, background }
       }
       case 'get_stock_filings': {
         const symbol = String(input.symbol ?? '').toUpperCase()
@@ -961,11 +968,15 @@ async function execute(
         const data = (await get(`/live-data/treasury-yield-curve`)) as {
           ok?: boolean; error?: string; latest?: unknown; monthAgo?: unknown; yearStart?: unknown
           spread2s10s?: number; spread3m10y?: number; shape?: string
+          monthAgoSpreads?: unknown; yearStartSpreads?: unknown
         }
         if (!data.ok) return { error: data.error ?? 'yield curve unavailable' }
+        // The comparison curves' spreads come worked out, so a trend is read off two
+        // published figures rather than the model's own subtraction (2026-10-17 evaluation).
         return {
           latest: data.latest, monthAgo: data.monthAgo, yearStart: data.yearStart,
           spread2s10s: data.spread2s10s, spread3m10y: data.spread3m10y, shape: data.shape,
+          monthAgoSpreads: data.monthAgoSpreads, yearStartSpreads: data.yearStartSpreads,
           source: 'treasury.gov official daily par curve',
         }
       }

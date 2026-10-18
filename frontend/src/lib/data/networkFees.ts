@@ -103,6 +103,14 @@ export interface NetworkFee {
   feeUsd: number
   nativeToken: string
   source: FeeSource
+  /**
+   * Who measured the fee amount, on a live row only ('mempool.space', 'publicnode
+   * eth_gasPrice'). The token PRICE is CoinGecko's, which is what the response's
+   * credit names. Without this field the credit was the only source named, and the
+   * 2026-10-17 agent evaluation found an agent reporting Bitcoin's fee as
+   * "CoinGecko-powered" when mempool.space had measured it.
+   */
+  provider?: string
 }
 
 export interface ComputedNetworkFees {
@@ -333,28 +341,30 @@ export async function computeNetworkFees(): Promise<ComputedNetworkFees> {
     ...FEE_PROVIDERS.map((p) => p.fetchFee().catch(() => null)),
   ])
 
-  // Collect successful live fee overrides + telemetry.
-  const liveOverrides = new Map<NetworkKey, number>()
+  // Collect successful live fee overrides + telemetry. Promise.all keeps order, so
+  // result i came from FEE_PROVIDERS[i], whose label names who measured it.
+  const liveOverrides = new Map<NetworkKey, { feeNative: number; provider: string }>()
   let btcSatPerVbyte: number | null = null
-  for (const res of providerResults) {
-    if (!res) continue
-    liveOverrides.set(res.network, res.feeNative)
+  providerResults.forEach((res, i) => {
+    if (!res) return
+    liveOverrides.set(res.network, { feeNative: res.feeNative, provider: FEE_PROVIDERS[i].label })
     if (res.meta?.btcSatPerVbyte) btcSatPerVbyte = res.meta.btcSatPerVbyte
-  }
+  })
 
   const fees = {} as Record<NetworkKey, NetworkFee>
   for (const key of Object.keys(NETWORK_GAS) as NetworkKey[]) {
     const info = NETWORK_GAS[key]
     const price = prices[info.priceKey] ?? FALLBACK_PRICES[info.priceKey] ?? 1
-    const liveNative = liveOverrides.get(key)
-    const feeNative = liveNative ?? info.native
+    const live = liveOverrides.get(key)
+    const feeNative = live?.feeNative ?? info.native
     fees[key] = {
       feeNative,
       feeUsd: parseFloat((feeNative * price).toFixed(4)),
       nativeToken: info.token,
       // Live only when a provider supplied the gas amount. A static gas amount
       // priced live is still an estimate.
-      source: liveNative != null ? 'live' : 'estimate',
+      source: live ? 'live' : 'estimate',
+      ...(live && { provider: live.provider }),
     }
   }
 

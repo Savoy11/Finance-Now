@@ -28,7 +28,8 @@ export async function GET() {
       note:
         "feeNative = typical token transfer cost in the network's gas token. " +
         'feeUsd = USD equivalent at the current live price. source=\'live\' means the ' +
-        "fee amount itself is real-time; source='estimate' means a static gas amount priced live.",
+        "fee amount itself is real-time; source='estimate' means a static gas amount priced live. " +
+        'provider names who measured a live fee amount; the credit in attributions is for the token prices.',
       // D100: the token prices are CoinGecko's, so the credit its terms require travels
       // with them, read from the registry entry this computation shares with the UI.
       attributions: requiredAttributions(getSource('network-fees')!),

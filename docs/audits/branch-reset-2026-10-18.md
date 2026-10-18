@@ -1,0 +1,20 @@
+# Branch reset — `claude/vibrant-faraday-3xo7mo`, 2026-10-18
+
+The standing rule in `CLAUDE.md` ("How Changes Land") asks that any force-push land with a dated
+note saying what was done and where the prior state lives. This is that note. The ten resets
+before it, and the reason for them, are in `branch-reset-2026-10-17.md`.
+
+**What was done.** After PR #375 (the agent evaluation script fixes) was squash-merged into `main`
+as `6aa0080`, the branch was restarted from that commit for the fixes the agent evaluation found
+and pushed with `--force-with-lease`. A merged pull request cannot carry new work, and stacking new
+commits on its already-merged history would have repeated #375's commit in the next pull request.
+
+**Where the prior state lives.** The branch's previous tip, `ba4607a`, its only commit beyond
+`8c9bd8b`, is held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@ba4607a`, created by
+  `.github/workflows/archive-branch.yml` when #375 merged;
+- GitHub's `refs/pull/375/head`;
+- its content in `main` as `6aa0080`.
+
+Nothing was deleted; no other ref moved.

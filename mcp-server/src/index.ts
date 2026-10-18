@@ -241,14 +241,14 @@ server.tool(
   {},
   async () => {
     const data = await get<{
-      fees: Record<string, { feeNative: number; nativeToken: string; feeUsd: number; source: string }>
+      fees: Record<string, { feeNative: number; nativeToken: string; feeUsd: number; source: string; provider?: string }>
       btcSatPerVbyte: number | null; priceSource: string; updatedAt: string
       attributions?: Array<{ text?: unknown; href?: unknown }>
     }>('/network-fees')
 
     const sorted = Object.entries(data.fees).sort(([, a], [, b]) => a.feeUsd - b.feeUsd)
     const lines  = sorted.map(([network, fee]) =>
-      `• **${network}**: $${fee.feeUsd.toFixed(4)} (${fee.feeNative} ${fee.nativeToken}) [${fee.source}]`
+      `• **${network}**: $${fee.feeUsd.toFixed(4)} (${fee.feeNative} ${fee.nativeToken}) [${fee.source}${fee.provider ? `, from ${fee.provider}` : ''}]`
     ).join('\n')
 
     let text = `**Network Fees** — sorted cheapest to most expensive\n(prices: ${data.priceSource}, updated: ${new Date(data.updatedAt).toLocaleTimeString()})\n`

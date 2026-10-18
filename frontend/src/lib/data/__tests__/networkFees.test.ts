@@ -70,6 +70,18 @@ describe('computeNetworkFees', () => {
     }
   })
 
+  // The 2026-10-17 agent evaluation: with CoinGecko's credit the only source named in the
+  // response, an agent reported Bitcoin's fee as "CoinGecko-powered". The live row now
+  // names who measured it, and an estimate names no one, since nobody measured it.
+  it('names who measured a live fee, and no one for an estimate', async () => {
+    vi.stubGlobal('fetch', mockFetch({ prices: priceResponse(ALL_IDS), btc: { halfHourFee: 20 } }))
+    const { fees } = await computeNetworkFees()
+    expect(fees.bitcoin.provider).toBe('mempool.space')
+    for (const key of Object.keys(NETWORK_GAS) as NetworkKey[]) {
+      if (fees[key].source === 'estimate') expect(fees[key].provider, key).toBeUndefined()
+    }
+  })
+
   it('falls back to the static Bitcoin estimate when mempool.space fails', async () => {
     vi.stubGlobal('fetch', mockFetch({ prices: priceResponse(ALL_IDS), btc: null }))
     const { fees, btcSatPerVbyte } = await computeNetworkFees()

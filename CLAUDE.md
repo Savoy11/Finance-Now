@@ -1580,6 +1580,18 @@ and to nothing it does not recognise. `__tests__/sampling.test.ts` fails on an A
 `messages.create` that sends a bare one. The AI Agents tab says so under the slider when
 the chosen model ignores it. Other providers (OpenAI-compatible) still get it.
 
+**The first run that reached the agents (2026-10-17) is judged: `docs/assessments/T6-agents-2026-10-17.md`,
+verdicts D136.** Most of what was wrong sat in the app, not the prompts, and is fixed: the runner joined
+an answer's text blocks with line breaks, which split every sentence quoting the web
+(`anthropicAnswerText`); an answer cut at its length limit looked whole (it now ends with
+`CUT_OFF_NOTICE`); and three tools handed over figures without what an agent needs to report them
+honestly, so each one now does. Each live network fee names its `provider`. The stock profile's
+Wikipedia `background` carries its link and licence. The outlier screen's note dates the hand-kept
+figures. The curve tool gives the comparison curves' spreads. **When a tool returns a figure an agent
+will quote, return its source and anything it will be compared with already worked out**: an agent
+credits the only source it is shown and does its own arithmetic badly. Three prompts are verdict
+*tune* and change in their own pull request.
+
 
 **⚠ STANDING RULE — paid decisions are deferred; no provider may be load-bearing (D21,
 owner, 2026-09-18).** Anything whose remedy is "buy a plan" is not a defect to chase

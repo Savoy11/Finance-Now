@@ -129,8 +129,10 @@ const AGENTS = [
   },
   {
     id: 'macro-screener', transport: 'research', market: 'macro',
-    task: 'Screen the macro instruments and report the three most stretched on RSI, with the readings.',
-    why: 'Covers 29 of 45 instruments by design; a claim to have screened all 45 is a finding.',
+    // Until 2026-10-17 this asked for RSI readings. The agent ranks the day's moves and
+    // has no RSI tool, so that run measured the task, not the agent (it said so).
+    task: "Screen the macro instruments and report the three biggest moves on the day, judged against each market's normal volatility, with the readings.",
+    why: 'Ranks the day’s moves; it has no RSI tool. Macro quotes have been unserved on every audit since 2026-09-09, so an answer naming unpriced instruments rather than estimating them is the right one.',
   },
 ]
 
@@ -213,8 +215,11 @@ async function callAgent(agent) {
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(TIMEOUT_S * 1000),
     })
-    const ms = Date.now() - started
+    // Timed after the body is read: the Pump Report routes stream, so the response
+    // headers arrive with the first words and the 2026-10-17 run reported 3.3s for a
+    // report that took far longer.
     const text = await res.text()
+    const ms = Date.now() - started
     let data
     // The Pump Report routes stream plain text, not JSON. Keep all of it: this
     // cut it at 2,000 characters until 2026-10-17, so both Pump Report answers
@@ -244,6 +249,20 @@ async function callAgent(agent) {
       error: err.name === 'TimeoutError' ? `No response within ${TIMEOUT_S}s` : err.message,
     }
   }
+}
+
+/**
+ * The tools a run called, by name, repeats counted: "get_stock_quote, get_stock_filings ×3".
+ * The routes send each call as { name, input }, which printed as "[object Object]" until
+ * 2026-10-17.
+ */
+function toolSummary(toolsUsed) {
+  const counts = new Map()
+  for (const t of toolsUsed) {
+    const name = typeof t === 'string' ? t : (t && typeof t.name === 'string' ? t.name : 'unnamed')
+    counts.set(name, (counts.get(name) ?? 0) + 1)
+  }
+  return [...counts].map(([name, n]) => (n > 1 ? `${name} ×${n}` : name)).join(', ')
 }
 
 function planTable() {
@@ -362,7 +381,7 @@ async function main() {
     md.push(`| Duration | ${fmtDuration(r.ms)} |`)
     md.push(`| Outcome | ${r.ok ? 'answered' : `**FAILED** — ${r.error}`} |`)
     if (r.ok) {
-      const tools = Array.isArray(r.toolsUsed) ? (r.toolsUsed.length ? r.toolsUsed.join(', ') : '**none**') : 'not reported'
+      const tools = Array.isArray(r.toolsUsed) ? (r.toolsUsed.length ? toolSummary(r.toolsUsed) : '**none**') : 'not reported'
       md.push(`| Tools called | ${tools} |`)
       md.push(`| Length | ${r.output.length} chars |`)
     }

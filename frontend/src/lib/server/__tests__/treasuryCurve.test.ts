@@ -35,6 +35,20 @@ describe('buildCurveData', () => {
     expect(d.shape).toBe('normal')
   })
 
+  // 2026-10-17: given today's spread only, the macro agent worked out January's
+  // itself and called a flattening a steepening. The comparison curves carry theirs.
+  it('gives the comparison curves their own spreads', () => {
+    const d = buildCurveData([
+      snap('2026-01-02', 3.47, 4.19, 3.6),
+      snap('2026-09-16', 4.74, 5.01, 4.3),
+      snap('2026-10-16', 4.74, 5.09, 4.26),
+    ])
+    expect(d.yearStartSpreads.spread2s10s).toBe(0.72)
+    expect(d.monthAgoSpreads.spread2s10s).toBe(0.27)
+    expect(d.spread2s10s).toBe(0.35)
+    expect(d.monthAgoSpreads.spread3m10y).toBe(0.71)
+  })
+
   it('reads an inverted curve', () => {
     const d = buildCurveData([snap('2026-03-31', 4.8, 4.5, 5.0)])
     expect(d.spread2s10s).toBe(-0.3)

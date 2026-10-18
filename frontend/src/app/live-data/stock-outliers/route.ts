@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getProviderKey } from '@/lib/api/live/providers'
-import { SECTOR_INFO, type SectorId } from '@/lib/data/equityCatalog'
+import { SECTOR_INFO, catalogUniverseNote, type SectorId } from '@/lib/data/equityCatalog'
 import type { StockUniverseResponse } from '@/app/live-data/stock-universe/route'
 import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 
@@ -149,6 +149,7 @@ export async function GET(req: NextRequest) {
     peCoverage: enriched.length ? parseFloat((peCount / enriched.length).toFixed(2)) : 0,
     categories: { cheap, expensive, highYield, highBeta, lowBeta },
     updatedAt: new Date().toISOString(),
-    note: uni.configured ? undefined : 'Curated fallback universe — add an FMP key for the full universe. P/E outliers use curated values; beta/yield are broader with FMP.',
+    // On the hand-kept list every figure is a dated reference value; the note says how old.
+    note: uni.source === 'fmp' ? undefined : catalogUniverseNote(!!getProviderKey('fmp')),
   } satisfies StockOutliersResponse)
 }
