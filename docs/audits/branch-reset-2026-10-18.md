@@ -50,3 +50,19 @@ reason as above.
 - its content in `main` as `7650d23`.
 
 Nothing was deleted; no other ref moved.
+
+## Fourth reset, after PR #378
+
+**What was done.** After PR #378 (the Staking Facts Check naming which check raised each Start
+here row) was squash-merged into `main` as `20047f1`, the branch was restarted from that commit
+for a ledger correction to T-129, and pushed with `--force-with-lease`, for the same reason as
+above.
+
+**Where the prior state lives.** The branch's previous tip, `ec414a1`, is held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@ec414a1`, created by
+  `.github/workflows/archive-branch.yml` when #378 merged;
+- GitHub's `refs/pull/378/head`;
+- its content in `main` as `20047f1`.
+
+Nothing was deleted; no other ref moved.
