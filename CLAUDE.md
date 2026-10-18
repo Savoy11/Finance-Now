@@ -735,6 +735,11 @@ Central data file for the Staking Opportunities page.
 
 To add a provider: append to `STAKING_PROVIDERS` following the pattern. Celsius should always be kept — it's used as the educational cautionary example.
 
+**The catalog's text states facts, never a grade of risk (D137, 2026-10-18).** D26 removed the 1–10 figures; 20 lines of
+text still graded providers ("elevated counterparty risk", "excellent security"), and an agent read them out. Write the
+fact ("Founders indicted by the US DOJ in 2023"), not the grade; naming a kind of risk ("restaking slashing applies") is
+a fact. `lib/data/__tests__/stakingWording.test.ts` holds it for every live provider; Celsius keeps its history.
+
 ### `src/lib/data/equityCatalog.ts` (Equities module)
 - **`EQUITY_CATALOG`** — 79 large-cap US stocks with sector (11 GICS sectors in `SECTOR_INFO`), industry, and approximate reference values (price, market cap, P/E, dividend yield, beta). Reference values are fallbacks — live quotes override price/change.
 - Symbols use the dash form of the class-share convention (`BRK-B`, not `BRK.B`) — every provider in the quote ladder accepts it, so one string works across all of them.
@@ -1541,7 +1546,8 @@ writes `agent-eval-worksheet.md` with a blank verdict box per agent — the same
 report-never-tune split as the fee scripts, because D20 says the owner judges. It
 never edits a prompt, a model or a temperature. A run with `--only` writes
 `agent-eval-worksheet-partial.md` instead, so re-running one agent never replaces a full
-run's worksheet. The file starts with a byte-order mark so Windows PowerShell's
+run's worksheet. An answer over 12,000 characters shows its opening and its last 3,000, where the
+runner's cut-off notice would be, and a cut-off answer is marked (`scripts/lib/agentEvalAnswer.mjs`). The file starts with a byte-order mark so Windows PowerShell's
 `Get-Content` reads it as UTF-8.
 
 **The default does nothing on purpose.** Every run bills, and the failure mode for an
@@ -1588,10 +1594,12 @@ an answer's text blocks with line breaks, which split every sentence quoting the
 `CUT_OFF_NOTICE`); and three tools handed over figures without what an agent needs to report them
 honestly, so each one now does. Each live network fee names its `provider`. The stock profile's
 Wikipedia `background` carries its link and licence. The outlier screen's note dates the hand-kept
-figures. The curve tool gives the comparison curves' spreads. **When a tool returns a figure an agent
+figures. The curve tool gives the comparison curves' spreads, and since D137 each maturity's change in basis points. **When a tool returns a figure an agent
 will quote, return its source and anything it will be compared with already worked out**: an agent
-credits the only source it is shown and does its own arithmetic badly. Three prompts are verdict
-*tune* and change in their own pull request.
+credits the only source it is shown and does its own arithmetic badly. Three prompts were verdict
+*tune* and changed in #377; the second run (2026-10-18, D137) kept all 11 and closed T-130 and T-001.
+It also found two agents putting one yield move at +53bp and +8bp, which is why the curve's changes now
+come worked out.
 
 
 **⚠ STANDING RULE — paid decisions are deferred; no provider may be load-bearing (D21,

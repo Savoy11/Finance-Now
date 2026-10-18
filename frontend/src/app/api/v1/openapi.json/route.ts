@@ -544,8 +544,18 @@ const SPEC = {
           shape:     { type: 'string', enum: ['normal', 'flat', 'inverted'] },
           monthAgoSpreads:  { $ref: '#/components/schemas/CurveSpreads' },
           yearStartSpreads: { $ref: '#/components/schemas/CurveSpreads' },
+          changeSinceMonthAgo:  { type: 'array', items: { $ref: '#/components/schemas/CurveChange' }, description: 'Each maturity\'s change since the month-ago curve, present with that curve.' },
+          changeSinceYearStart: { type: 'array', items: { $ref: '#/components/schemas/CurveChange' }, description: 'Each maturity\'s change since the year-start curve, present with that curve.' },
           source:    { type: 'string', enum: ['treasury-gov'] },
           updatedAt: { type: 'string', format: 'date-time' },
+        },
+      },
+      CurveChange: {
+        type: 'object',
+        description: 'One maturity\'s move between two curves.',
+        properties: {
+          label: { type: 'string', example: '10Y' },
+          bp:    { type: 'integer', description: 'Change in basis points (hundredths of a percentage point), rounded.', example: 8 },
         },
       },
       CurveSpreads: {

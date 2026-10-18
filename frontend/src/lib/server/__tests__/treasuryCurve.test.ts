@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildCurveData } from '../treasuryCurve'
+import { buildCurveData, changesBetween } from '../treasuryCurve'
 import type { CurveSnapshot } from '../treasuryCurve'
 
 // A curve with just enough points to satisfy the shape checks.
@@ -47,6 +47,29 @@ describe('buildCurveData', () => {
     expect(d.monthAgoSpreads.spread2s10s).toBe(0.27)
     expect(d.spread2s10s).toBe(0.35)
     expect(d.monthAgoSpreads.spread3m10y).toBe(0.71)
+  })
+
+  // 2026-10-18: given the same two curves, one agent put the 10-year's month-on-month
+  // move at +53bp and another at about +8bp. The change now comes worked out.
+  it('gives each maturity its change since the comparison curves, in basis points', () => {
+    const d = buildCurveData([
+      snap('2026-01-02', 3.47, 4.19, 3.6),
+      snap('2026-09-16', 4.74, 5.01, 4.3),
+      snap('2026-10-16', 4.74, 5.09, 4.26),
+    ])
+    expect(d.changeSinceMonthAgo).toEqual([{ label: '3M', bp: -4 }, { label: '2Y', bp: 0 }, { label: '10Y', bp: 8 }])
+    expect(d.changeSinceYearStart).toEqual([{ label: '3M', bp: 66 }, { label: '2Y', bp: 127 }, { label: '10Y', bp: 90 }])
+  })
+
+  it('rounds a change to whole basis points, despite floating-point subtraction', () => {
+    // (5.09 - 4.19) * 100 is 89.99999999999994 in floating point; it must read 90, not 89.
+    expect(changesBetween(snap('a', 4, 4.19), snap('b', 4, 5.09)).find((c) => c.label === '10Y')?.bp).toBe(90)
+  })
+
+  it('leaves out a maturity missing from either curve, rather than reading it as zero', () => {
+    const before: CurveSnapshot = { date: 'a', points: [{ label: '10Y', years: 10, yieldPct: 5 }] }
+    const after: CurveSnapshot = { date: 'b', points: [{ label: '2Y', years: 2, yieldPct: 4.5 }, { label: '10Y', years: 10, yieldPct: 5.25 }] }
+    expect(changesBetween(before, after)).toEqual([{ label: '10Y', bp: 25 }])
   })
 
   it('reads an inverted curve', () => {

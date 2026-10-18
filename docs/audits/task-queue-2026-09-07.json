@@ -62,9 +62,9 @@
   "total_verified": 398,
   "outstanding": 381,
   "by_status": {
-   "closed": 223,
+   "closed": 225,
    "parked": 135,
-   "open": 17,
+   "open": 15,
    "blocked": 6
   },
   "by_owner_role": {
@@ -74,8 +74,8 @@
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 223,
-  "counts_recomputed_on": "2026-10-17",
+  "closed_by_annotation": 225,
+  "counts_recomputed_on": "2026-10-18",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 381
  },
@@ -3138,7 +3138,7 @@
   {
    "id": "T-001",
    "title": "T6 agent-prompt evaluation — record assessment or re-run",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "either",
    "category": "data-verification",
@@ -3180,6 +3180,20 @@
      "frontend/src/lib/agents/prompts.ts:304-305 (the fix) and :318 (the schema it now matches)",
      "docs/audits/live-data-audit-2026-10-17.md",
      "docs/assessments/T6-agents-2026-10-17.md"
+    ]
+   },
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-10-18",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "Both halves of T6 are done and recorded: the prompt reading in docs/assessments/T6-agent-prompts.md (2026-09-08, re-verified 2026-09-21), and the output in docs/assessments/T6-agents-2026-10-17.md, two full runs judged by the owner (D136, D137). Closed with T-130, which carried the runs.",
+    "approved_by": "owner, 2026-10-18: chose \"Accept them\" for the second run's verdicts (keep all 11)",
+    "evidence": [
+     "docs/assessments/T6-agent-prompts.md",
+     "docs/assessments/T6-agents-2026-10-17.md",
+     "docs/decisions/2026-10-18-owner-decisions.md",
+     "frontend/src/lib/agents/__tests__/promptWording.test.ts"
     ]
    }
   },
@@ -5839,7 +5853,7 @@
   {
    "id": "T-130",
    "title": "Test and fine-tune all 11 agents against the REAL vs FALLBACK rule",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "data-verification",
@@ -5874,6 +5888,22 @@
      "2026-10-18: ALL 11 ANSWERED, AND MOST OF WHAT WAS WRONG WAS NOT A PROMPT. Run of 2026-10-17 22:06 UTC after the temperature fix, plus the two Pump Report agents again on 2026-10-18 after the script stopped cutting their answers. Read against the audit, the faults sat in the app and its data: answer text broken across lines wherever an agent quoted the web; a cut-off Diligence report that looked whole; a fee response naming only CoinGecko, so Bitcoin's fee was credited to it; Wikipedia's text passed to agents unnamed; the outlier screen's hand-kept P/E figures undated; and the curve tool giving today's spread only, so the macro agent called a flattening since January a steepening. All six FIXED in the pull request carrying this note. Three are prompt problems, all owner verdicts 'tune' (D136): the App Assistant called the hidden fee table 'actively maintained', as its instructions say; the Pump Report Investigator rated Bitcoin 'suspicious' (3.2) on ATM scams that only use it as a way to pay; the Equity Screener's wording ('high-conviction bet', 'opportunity', 'trap') reads close to a recommendation. The Macro Screener's task asked for RSI, which it has no tool for; the task now asks for the day's moves.",
      "2026-10-18 (later): THE THREE PROMPT CHANGES ARE WRITTEN, for the owner to read before merge. App Assistant: the transfer-fee line no longer says the data is \"real and maintained\"; it gives the date the table was last checked (TRANSFER_FEES_LAST_VERIFIED), says it is past its review window while transferFeesAreStale() says so, and forbids calling it current, live or maintained. Pump Report Investigator: a rule to rate the target itself, so scams that only use a coin to pay (ATM, impersonation, romance), fraud by firms that list or hold it, and episodes that ended years ago are recorded as info and do not raise overallRisk or suspicionScore; angle 8's fixed \"(2024–2025)\" became \"the last two years\". Equity Screener: its labels are now explained / not explained / figures moving against it, a rule forbids calling a stock an opportunity, a bet, a buy, a sell or a trap, and \"Watch list\" became \"What to check next\"; the scan panel's blurb and task and the AI Agents tab say the same. Guarded by frontend/src/lib/agents/__tests__/promptWording.test.ts, each of its checks broken on purpose and seen to fail. The Staking Facts Check gains two Start here rows, uniswap:eth:terms and kraken:eth:terms (LOCKUP_LEADS in frontend/scripts/lib/stakingFactRows.ts), each held only while the catalog row is unchanged."
     ]
+   },
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-10-18",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "Run, judged, fixed and run again. The first full run (2026-10-17) found every agent refused by a temperature the model no longer accepts (#374), then, once fixed, six faults in the app and its data (#376) and three in the prompts (#377), all judged by the owner (D136). The second full run (2026-10-18, against 01503eb, on the owner's machine) found each of those gone, and the owner kept all 11 (D137). It found three more things, fixed in the pull request carrying this closure: two agents disagreeing on one yield move (+53bp and +8bp), so the curve now comes with each maturity's change worked out; staking catalog text that still graded risk in words; and an eval worksheet that hid a long answer's ending. Record: docs/assessments/T6-agents-2026-10-17.md.",
+    "approved_by": "owner, 2026-10-18: chose \"Accept them\" for the second run's verdicts (keep all 11)",
+    "evidence": [
+     "docs/assessments/T6-agents-2026-10-17.md",
+     "docs/decisions/2026-10-18-owner-decisions.md",
+     "frontend/src/lib/agents/__tests__/promptWording.test.ts",
+     "frontend/src/lib/server/treasuryCurve.ts",
+     "frontend/scripts/lib/agentEvalAnswer.mjs"
+    ],
+    "known_gap": "Whether the 2026-10-18 Equity Diligence report finished is not known: the worksheet then showed only its first 12,000 of 16,641 characters. `npm run agent-eval -- --run --only equity-diligence` would tell. The Pump Report Investigator still files three old or structural matters as 'warning' while rating Bitcoin clean."
    }
   },
   {
