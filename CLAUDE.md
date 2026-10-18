@@ -729,7 +729,8 @@ Central data file for the Staking Opportunities page.
   (`checks`, `notes`), never in its HTML; `npm run staking-facts-plan -- <answers-dir>` reads them against the catalog
   as it is then and reports, never writes. The rows come from `scripts/lib/stakingFactRows.ts`, which the page, the
   plan and the CSV worksheet (`LLAMA_SLUG`) share. The lock-ups the 2026-09-26 audit questioned are marked Start here
-  (`LOCKUP_LEADS`), each only while the catalog still has the figure and note questioned. `STAKING_DATA_LAST_VERIFIED`
+  (`LOCKUP_LEADS`), each only while the catalog still has the figure and note questioned, and so are two rows the
+  2026-10-17 agent evaluation read out as staking options (Uniswap's ETH/USDC pool, Kraken's US line; D136). `STAKING_DATA_LAST_VERIFIED`
   moves only when the plan reports every fact settled. Same look and rules as the Transfer Fee Check.
 
 To add a provider: append to `STAKING_PROVIDERS` following the pattern. Celsius should always be kept — it's used as the educational cautionary example.

@@ -3151,7 +3151,7 @@
     "T7"
    ],
    "summary": "Steward annotation (2026-07-28, L11): no docs/assessments/T6-*.md and no T6-tagged commit; agent work happened inside feature commits. Write the assessment or re-run before relying on T6 (steward list also covers T7).",
-   "next_action": "On a feature branch, correct prompts.ts lines 189/192/196 to the post-RP-5/RP-6/rollout-hide app (crypto-scoped prompts too), then draft docs/assessments/T6-agent-prompts.md recording what was verified offline and listing the owner-machine `npm run audit` precondition for judging agent output; propose the TASK-QUEUE annotation change for owner approval rather than editing it.",
+   "next_action": "Close together with T-130. Both halves of T6 are recorded: the prompt reading in docs/assessments/T6-agent-prompts.md (2026-09-08, re-verified 2026-09-21) and the output run in docs/assessments/T6-agents-2026-10-17.md (verdicts D136), with its prompt changes in the pull request carrying this note. What remains is T-130's: one more `npm run agent-eval -- --run` on the owner's machine for the before-and-after.",
    "sources": [
     {
      "file": "docs/TASK-QUEUE.md",
@@ -3167,17 +3167,19 @@
    "progress": {
     "noted_on": "2026-09-21",
     "note": "SUBSTANTIALLY DONE. The item's premise is false on its first half: it says no docs/assessments/T6-*.md exists. docs/assessments/T6-agent-prompts.md has existed since 2026-09-08 and already records what was verified offline plus the owner-machine `npm run audit` precondition the item asks for. It was ANNOTATED with a dated 2026-09-21 re-verification block rather than rewritten. All three prompt-accuracy claims were re-read against source and were already correct: RP-5 (no prompt offers exchange API-key linking, and promptRoutes.test.ts asserts both the absence of the old wording and the presence of the RP-5 replacement), RP-6 (the Crypto block carries an explicit no-per-coin-risk-score paragraph), and ROLLOUT-HIDE (Transfer Fees, Wallets and all three backtest surfaces are each named WITH their withdrawal on the same line).",
-    "remaining_work": "The output half has been run and judged (docs/assessments/T6-agents-2026-10-17.md, D136); what is left is T-130's: the three prompt changes and a second run for the before-and-after.",
+    "remaining_work": "T-130's second run of all 11 for the before-and-after; the three prompt changes are in the pull request carrying this note.",
     "corrections": [
      "ONE REAL DEFECT FOUND AND FIXED, outside the three claims. data-scraper's staking collection list asked the agent to collect a 'risk level' per opportunity. Its own JSON schema, field-for-field in the same order, carries `custodyModel` in that position (prompts.ts:318) — the rename came with D14 and landed in the schema but not in the prose. So the agent was being told to gather a composite provider risk judgement that the app publishes nowhere and that had no field to go in. The line now names the custody model with its three documented values and says plainly that no composite risk level is to be collected or invented.",
      "Same shape as the riskScore/suspicionScore drift this assessment already records: an agent instructed to produce a value its consumer no longer accepts.",
      "2026-10-17: THE AUDIT PRECONDITION IS MET. npm run audit ran on the owner's machine (residential Spectrum line, no proxy): 78 REAL, 4 FALLBACK, 9 UNCONFIGURED, 1 EMPTY, 0 FAIL (docs/audits/live-data-audit-2026-10-17.md). What the agents' tools will see is listed there: live data everywhere they read, except macro prices (unconfigured), the equity screener's 79-name universe (paid plan, D21), crypto social (no signals), video search (no key) and Reddit (robots gate). REMAINING: npm run agent-eval -- --run on the owner's machine (it bills the Anthropic key), read beside that record.",
-     "2026-10-18: the agents were run on the owner's machine beside that audit and judged by the owner (D136); the record is docs/assessments/T6-agents-2026-10-17.md. Prompt TEXT and agent OUTPUT have now both been checked; T-001 stays open only for T-130's follow-up."
+     "2026-10-18: the agents were run on the owner's machine beside that audit and judged by the owner (D136); the record is docs/assessments/T6-agents-2026-10-17.md. Prompt TEXT and agent OUTPUT have now both been checked; T-001 stays open only for T-130's follow-up.",
+     "2026-10-18 (later): NEXT_ACTION REPLACED. It still asked for the September work (correct prompts.ts lines 189/192/196, draft T6-agent-prompts.md), which was done by 2026-09-21. It now says what is left: T-130's re-run."
     ],
     "evidence": [
      "docs/assessments/T6-agent-prompts.md — the 2026-09-21 annotation block",
      "frontend/src/lib/agents/prompts.ts:304-305 (the fix) and :318 (the schema it now matches)",
-     "docs/audits/live-data-audit-2026-10-17.md"
+     "docs/audits/live-data-audit-2026-10-17.md",
+     "docs/assessments/T6-agents-2026-10-17.md"
     ]
    }
   },
@@ -5846,7 +5848,7 @@
     "NT5"
    ],
    "summary": "Owner backlog; a vague answer off a fallback route is a data problem.",
-   "next_action": "The full run is done and judged: docs/assessments/T6-agents-2026-10-17.md, verdicts D136. The app and data faults it found are fixed in the pull request carrying this note. Next: the three prompt changes (the App Assistant's word on the transfer-fee table's freshness, what counts toward the Pump Report Investigator's rating, the Equity Screener's wording) in their own pull request for the owner to read; the staking catalog's Uniswap row and Kraken line onto the Staking Facts Check page; then `npm run agent-eval -- --run` once more on the owner's machine, same fixed tasks, for the before-and-after. ROADMAP.md:716-719 already strikes the 'no invocation trigger' clause, so there is nothing left to propose there.",
+   "next_action": "The full run is judged (docs/assessments/T6-agents-2026-10-17.md, verdicts D136); its app and data faults were fixed in #376, and the three prompt changes it led to (the App Assistant on the transfer-fee table's age, what counts toward the Pump Report Investigator's rating, the Equity Screener's wording) are in the pull request carrying this note, with the staking catalog's Uniswap row and Kraken line added to the Staking Facts Check page. Next, once it merges: `npm run agent-eval -- --run` once more on the owner's machine (`$env:BASE_URL = 'http://localhost:3001'`), same fixed tasks, and the answers compared with the 2026-10-17 run in that assessment. Then T-130 and T-001 can close together.",
    "sources": [
     {
      "file": "docs/ROADMAP.md",
@@ -5857,16 +5859,19 @@
    "progress": {
     "noted_on": "2026-10-18",
     "note": "2026-10-17: THE AUDIT PRECONDITION IS MET. npm run audit ran on the owner's machine (residential Spectrum line, no proxy): 78 REAL, 4 FALLBACK, 9 UNCONFIGURED, 1 EMPTY, 0 FAIL (docs/audits/live-data-audit-2026-10-17.md).",
-    "remaining_work": "The three prompt changes (owner reads them before merge), the two staking catalog leads on the Staking Facts Check page, and one more run of all 11 for the before-and-after.",
+    "remaining_work": "One more run of all 11 on the owner's machine after the pull request carrying the prompt changes merges, compared with the 2026-10-17 run.",
     "evidence": [
      "docs/audits/live-data-audit-2026-10-17.md",
      "frontend/src/lib/agents/sampling.ts",
      "docs/assessments/T6-agents-2026-10-17.md",
-     "docs/decisions/2026-10-18-owner-decisions.md"
+     "docs/decisions/2026-10-18-owner-decisions.md",
+     "frontend/src/lib/agents/__tests__/promptWording.test.ts",
+     "frontend/scripts/lib/stakingFactRows.ts"
     ],
     "corrections": [
      "2026-10-17 (later): THE FIRST RUN FOUND EVERY AGENT BROKEN, AND NOT BY A PROMPT. npm run agent-eval -- --run on the owner's machine: the nine agents on the shared runner were refused by Anthropic with HTTP 400, \"`temperature` is deprecated for this model.\" Claude Sonnet 5, the default since 2026-09-17, accepts no temperature, and every request sent the agent's saved one, so every AI surface (Assistant, Research, Daily Brief, the AI scans, Pump Report) had been failing since that day; no test reaches the paid API. The two Pump Report agents 'answered' only with their own error text, which the investigate route blamed on the API key. Refused requests are not billed. FIXED in the PR that carries this note: lib/agents/sampling.ts sends a temperature only to Claude 4.6 and older, at all three call sites; the eval script now counts a streamed error message as a failure. REMAINING: re-run npm run agent-eval -- --run once that PR is merged, with BASE_URL pointing at the running app.",
-     "2026-10-18: ALL 11 ANSWERED, AND MOST OF WHAT WAS WRONG WAS NOT A PROMPT. Run of 2026-10-17 22:06 UTC after the temperature fix, plus the two Pump Report agents again on 2026-10-18 after the script stopped cutting their answers. Read against the audit, the faults sat in the app and its data: answer text broken across lines wherever an agent quoted the web; a cut-off Diligence report that looked whole; a fee response naming only CoinGecko, so Bitcoin's fee was credited to it; Wikipedia's text passed to agents unnamed; the outlier screen's hand-kept P/E figures undated; and the curve tool giving today's spread only, so the macro agent called a flattening since January a steepening. All six FIXED in the pull request carrying this note. Three are prompt problems, all owner verdicts 'tune' (D136): the App Assistant called the hidden fee table 'actively maintained', as its instructions say; the Pump Report Investigator rated Bitcoin 'suspicious' (3.2) on ATM scams that only use it as a way to pay; the Equity Screener's wording ('high-conviction bet', 'opportunity', 'trap') reads close to a recommendation. The Macro Screener's task asked for RSI, which it has no tool for; the task now asks for the day's moves."
+     "2026-10-18: ALL 11 ANSWERED, AND MOST OF WHAT WAS WRONG WAS NOT A PROMPT. Run of 2026-10-17 22:06 UTC after the temperature fix, plus the two Pump Report agents again on 2026-10-18 after the script stopped cutting their answers. Read against the audit, the faults sat in the app and its data: answer text broken across lines wherever an agent quoted the web; a cut-off Diligence report that looked whole; a fee response naming only CoinGecko, so Bitcoin's fee was credited to it; Wikipedia's text passed to agents unnamed; the outlier screen's hand-kept P/E figures undated; and the curve tool giving today's spread only, so the macro agent called a flattening since January a steepening. All six FIXED in the pull request carrying this note. Three are prompt problems, all owner verdicts 'tune' (D136): the App Assistant called the hidden fee table 'actively maintained', as its instructions say; the Pump Report Investigator rated Bitcoin 'suspicious' (3.2) on ATM scams that only use it as a way to pay; the Equity Screener's wording ('high-conviction bet', 'opportunity', 'trap') reads close to a recommendation. The Macro Screener's task asked for RSI, which it has no tool for; the task now asks for the day's moves.",
+     "2026-10-18 (later): THE THREE PROMPT CHANGES ARE WRITTEN, for the owner to read before merge. App Assistant: the transfer-fee line no longer says the data is \"real and maintained\"; it gives the date the table was last checked (TRANSFER_FEES_LAST_VERIFIED), says it is past its review window while transferFeesAreStale() says so, and forbids calling it current, live or maintained. Pump Report Investigator: a rule to rate the target itself, so scams that only use a coin to pay (ATM, impersonation, romance), fraud by firms that list or hold it, and episodes that ended years ago are recorded as info and do not raise overallRisk or suspicionScore; angle 8's fixed \"(2024–2025)\" became \"the last two years\". Equity Screener: its labels are now explained / not explained / figures moving against it, a rule forbids calling a stock an opportunity, a bet, a buy, a sell or a trap, and \"Watch list\" became \"What to check next\"; the scan panel's blurb and task and the AI Agents tab say the same. Guarded by frontend/src/lib/agents/__tests__/promptWording.test.ts, each of its checks broken on purpose and seen to fail. The Staking Facts Check gains two Start here rows, uniswap:eth:terms and kraken:eth:terms (LOCKUP_LEADS in frontend/scripts/lib/stakingFactRows.ts), each held only while the catalog row is unchanged."
     ]
    }
   },
@@ -7083,7 +7088,7 @@
     "M5"
    ],
    "summary": "Partial edits did not re-verify the whole.",
-   "next_action": "Owner: work through the Staking Facts Check page (published 2026-10-17, D134; `npm run staking-facts-page` rebuilds it): 322 facts on 53 live providers, starting with the 24 lock-ups marked Start here. Each row is answered from the provider's own pages, and answers save on the page. Then Claude reads the page's database, runs `npm run staking-facts-plan` over it, and makes each change by hand in stakingProviders.ts, via PR. Only when the plan reports every fact settled does STAKING_DATA_LAST_VERIFIED move, to the day the pass finished. The 2026-09-27 notice fires as acknowledged until then.",
+   "next_action": "Owner: work through the Staking Facts Check page (published 2026-10-17, D134; `npm run staking-facts-page` rebuilds it): 322 facts on 53 live providers, starting with the 26 lock-ups marked Start here: 24 the 2026-09-26 audit questioned, plus Uniswap's ETH/USDC pool and Kraken's US staking line, which the 2026-10-17 agent evaluation raised (D136). Each row is answered from the provider's own pages, and answers save on the page. Then Claude reads the page's database, runs `npm run staking-facts-plan` over it, and makes each change by hand in stakingProviders.ts, via PR. Only when the plan reports every fact settled does STAKING_DATA_LAST_VERIFIED move, to the day the pass finished. The 2026-09-27 notice fires as acknowledged until then.",
    "sources": [
     {
      "file": "frontend/src/lib/data/stakingProviders.ts",
