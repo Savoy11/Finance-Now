@@ -57,6 +57,16 @@ const STAKING_FACTS_CSS = `
 @media (max-width:560px){.seg{display:flex;flex-wrap:wrap}.seg button{flex:1 1 auto;border-bottom:1px solid var(--line2);margin-bottom:-1px}}
 `
 
+/**
+ * What raised the Start here rows, as the end of the opening's sentence: ": 24 that the
+ * September 26 lock-up audit found …; and 2 that …". Empty when no source is listed.
+ */
+function leadSourcesText(sources) {
+  const parts = (Array.isArray(sources) ? sources : []).filter((s) => s && s.rows > 0).map((s) => `${esc(String(s.rows))} that ${esc(s.by)} ${esc(s.found)}`)
+  if (!parts.length) return ''
+  return ': ' + (parts.length === 1 ? parts[0] : parts.slice(0, -1).join('; ') + '; and ' + parts[parts.length - 1])
+}
+
 /** The whole page, as published. `data` comes from buildStakingFactsData (stakingFactsData.ts). */
 export function buildStakingFactsPage(data) {
   const core = inlineSource('stakingFacts.core.js')
@@ -76,7 +86,7 @@ export function buildStakingFactsPage(data) {
     <h1>${esc(STAKING_FACTS_TITLE)}</h1>
   </header>
   <p class="lede">The staking catalog was last fully checked on <b>${esc(longDate(c.lastVerified))}</b>, ${esc(String(c.ageDays))} days ago. Go through each provider’s own pages and say whether each fact still matches: its staking page, the year it was founded, its audits, its staking assets where no data service shows them, and the minimum stake and lock-up for every coin. That is <b>${esc(String(n.rows))} facts</b> on ${esc(String(n.providers))} providers; the ${esc(String(c.defunct))} defunct ones are left out. Your answers save here as you go, and Claude applies them to the catalog in a pull request.</p>
-  <p class="lede">Liquid-staking protocols come first, because their documentation is public. Wallets follow, then exchanges, which often show their terms only after you sign in.${n.leads ? ` ${esc(String(n.leads))} ${n.leads === 1 ? 'lock-up' : 'lock-ups'} on ${esc(String(leadCards))} ${leadCards === 1 ? 'provider' : 'providers'} ${n.leads === 1 ? 'is' : 'are'} marked <b>Start here</b>: the September 26 lock-up audit found them out of line with how their chain works, with no note saying why.` : ''}</p>
+  <p class="lede">Liquid-staking protocols come first, because their documentation is public. Wallets follow, then exchanges, which often show their terms only after you sign in.${n.leads ? ` ${esc(String(n.leads))} ${n.leads === 1 ? 'row' : 'rows'} on ${esc(String(leadCards))} ${leadCards === 1 ? 'provider' : 'providers'} ${n.leads === 1 ? 'is' : 'are'} marked <b>Start here</b>${leadSourcesText(data.leadSources)}.` : ''}</p>
   <p id="sf-conn" class="status" hidden></p>
   <div id="sf-progress" class="meters" aria-label="Progress"></div>
   <p id="sf-stale" class="status warn" hidden></p>

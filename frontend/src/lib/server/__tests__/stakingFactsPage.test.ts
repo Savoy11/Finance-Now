@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { STAKING_PROVIDERS, STAKING_COIN_INFO } from '@/lib/data/stakingProviders'
-import { stakingFactRows, LLAMA_SLUG, LOCKUP_LEADS, type FactRow } from '../../../../scripts/lib/stakingFactRows'
+import { stakingFactRows, LLAMA_SLUG, LOCKUP_LEADS, LEAD_SOURCES, type FactRow } from '../../../../scripts/lib/stakingFactRows'
 import { buildStakingFactsData, CATEGORY_ORDER, STAKING_FACTS_SERVES } from '../../../../scripts/lib/stakingFactsData'
 import { buildStakingFactsPage, STAKING_FACTS_CAPABILITIES, STAKING_FACTS_TITLE } from '../../../../scripts/lib/stakingFactsPage.mjs'
 
@@ -311,11 +311,22 @@ describe('the rows, from the real catalog', () => {
   })
 
   it('puts the audit’s ETH lead only on exchange rows, as the audit counted them', () => {
-    // The evaluation's two ETH leads (Uniswap's pool, Kraken's US line) ask something else.
+    // The evaluation's two ETH leads (Uniswap's pool, Kraken's US line) ask something else,
+    // and are credited to it: a lead the audit did not raise must not be counted as its.
     const auditAsk = LOCKUP_LEADS['okx:eth:terms'].ask
+    for (const [k, l] of Object.entries(LOCKUP_LEADS)) {
+      if (l.from === 'audit' && k.includes(':eth:')) expect(l.ask, k).toBe(auditAsk)
+      if (l.ask === auditAsk) expect(l.from, k).toBe('audit')
+    }
     for (const k of Object.keys(LOCKUP_LEADS).filter((x) => LOCKUP_LEADS[x].ask === auditAsk)) {
       expect(STAKING_PROVIDERS.find((p) => p.id === k.split(':')[0])!.category, k).toBe('cefi')
     }
+  })
+
+  it('names on each Start here row the check that raised it', () => {
+    // The page's opening and each card say which check raised their rows, from this field.
+    for (const r of rows.filter((x) => x.lead)) expect(r.leadBy, r.key).toBe(LEAD_SOURCES[LOCKUP_LEADS[r.key].from].by)
+    for (const r of rows.filter((x) => !x.lead)) expect(r.leadBy, r.key).toBeUndefined()
   })
 
   it('drops a lead once its row is corrected or gains a note', () => {
@@ -336,6 +347,8 @@ describe('the rows, from the real catalog', () => {
     expect(data.serves).toEqual([...STAKING_FACTS_SERVES])
     expect(data.catalog.defunct).toBe(STAKING_PROVIDERS.filter((p) => p.defunct).length)
     expect(data.counts.leads).toBe(rows.filter((r) => r.lead).length)
+    expect(data.leadSources.reduce((a, x) => a + x.rows, 0)).toBe(data.counts.leads)
+    expect(data.leadSources.every((x) => x.rows > 0)).toBe(true)
   })
 })
 
@@ -352,8 +365,21 @@ describe('the published page', () => {
     expect(html).not.toContain('id="sf-group-start"')
     const led = buildStakingFactsPage({ ...fixture, counts: { ...fixture.counts, leads: 1 }, providers: [{ ...fixture.providers[0], rows: [{ ...terms(), lead: 'Check this one.' }] }] })
     expect(led).toContain('id="sf-group-start"')
-    expect(led).toMatch(/1 lock-up on 1 provider is marked <b>Start here<\/b>/)
+    expect(led).toMatch(/1 row on 1 provider is marked <b>Start here<\/b>\./)
     expect(clientSrc).toMatch(/'Start here: ' \+ r\.lead/)
+  })
+
+  it('says which check raised the Start here rows, and how many each raised', () => {
+    // Until 2026-10-18 the opening credited every Start here row to the September 26 audit,
+    // and so did each card, which became untrue when the agent evaluation added two.
+    const symbols = Object.fromEntries(Object.entries(STAKING_COIN_INFO).map(([id, c]) => [id, c.symbol]))
+    const data = buildStakingFactsData({ providers: STAKING_PROVIDERS, symbols, lastVerified: '2026-06-28', ageDays: 111, staleAfterDays: 90, generatedOn: '2026-10-18' })
+    const page = buildStakingFactsPage(data)
+    expect(data.leadSources.length).toBeGreaterThan(0)
+    for (const x of data.leadSources) expect(page).toContain(`${x.rows} that ${x.by} ${x.found}`)
+    expect(page).not.toContain('audit found them out of line')
+    expect(clientSrc).toMatch(/r\.leadBy/)
+    expect(clientSrc).not.toMatch(/September 26/)
   })
 
   it('declares only db, with writes raised to editors, and user', () => {

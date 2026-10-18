@@ -34,3 +34,19 @@ same reason as above.
 - its content in `main` as `b554990`.
 
 Nothing was deleted; no other ref moved.
+
+## Third reset, after PR #377
+
+**What was done.** After PR #377 (the three prompt changes and two Staking Facts Check rows) was
+squash-merged into `main` as `7650d23`, the branch was restarted from that commit for a fix to the
+Staking Facts Check's wording about those rows, and pushed with `--force-with-lease`, for the same
+reason as above.
+
+**Where the prior state lives.** The branch's previous tip, `b7df21e`, is held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@b7df21e`, created by
+  `.github/workflows/archive-branch.yml` when #377 merged;
+- GitHub's `refs/pull/377/head`;
+- its content in `main` as `7650d23`.
+
+Nothing was deleted; no other ref moved.

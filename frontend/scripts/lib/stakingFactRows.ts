@@ -67,11 +67,23 @@ const LEAD_ASKS = {
   eth: 'An exchange can pay out unstaked ETH at once, but with no note a 0 here cannot be told apart from a figure nobody filled in. Check whether withdrawals are immediate, and say so in the note.',
 } as const
 
+/**
+ * Which check raised a lead, in the words the page uses: "<n> that <by> <found>" in its
+ * opening, and "raised by <by>" on each provider's card. A row's lead names its source, so
+ * neither sentence claims a row for a check that did not raise it.
+ */
+export const LEAD_SOURCES = {
+  audit: { by: 'the September 26 lock-up audit', found: 'found out of line with how their chain works, with no note saying why' },
+  evaluation: { by: 'the October 17 agent evaluation', found: 'raised after an agent read them out as staking options' },
+} as const
+export type LeadSource = keyof typeof LEAD_SOURCES
+export interface LockupLead { days: number; note: string | null; ask: string; from: LeadSource }
+
 function leads(coin: keyof typeof LEAD_ASKS, days: number, note: string | null, providers: string[]) {
-  return providers.map((id) => [`${id}:${coin}:terms`, { days, note, ask: LEAD_ASKS[coin] }] as const)
+  return providers.map((id) => [`${id}:${coin}:terms`, { days, note, ask: LEAD_ASKS[coin], from: 'audit' }] as const)
 }
 
-export const LOCKUP_LEADS: Readonly<Record<string, { days: number; note: string | null; ask: string }>> = Object.fromEntries([
+export const LOCKUP_LEADS: Readonly<Record<string, LockupLead>> = Object.fromEntries([
   ...leads('sol', 5, null, ['kraken', 'okx', 'bybit', 'crypto-com', 'bitget', 'gate-io', 'htx']),
   ...leads('sol', 7, null, ['kucoin']),
   ...leads('trx', 3, null, ['binance', 'trust-wallet', 'gate-io', 'htx']),
@@ -82,11 +94,13 @@ export const LOCKUP_LEADS: Readonly<Record<string, { days: number; note: string 
   // Two the agent evaluation of 2026-10-17 raised (docs/assessments/T6-agents-2026-10-17.md,
   // D136): the Research Analyst read both rows out as staking options, as they stand.
   ['uniswap:eth:terms', {
+    from: 'evaluation',
     days: 0,
     note: null,
     ask: 'This row is an ETH/USDC trading pool, which earns trading fees and is not staking. Check whether Uniswap offers ETH staking at all; if it does not, choose Not offered.',
   }],
   ['kraken:eth:terms', {
+    from: 'evaluation',
     days: 7,
     note: null,
     ask: 'The catalog says Kraken stopped staking for US customers after its 2023 SEC settlement, which may be out of date. Check whether Kraken offers ETH staking in the US today, and put what its page says in the note.',
@@ -116,6 +130,8 @@ export interface FactRow {
   note?: string
   /** Why this row is worth checking first (LOCKUP_LEADS), while the catalog still says what was questioned. */
   lead?: string
+  /** Which check raised the lead (LEAD_SOURCES' `by`), whenever `lead` is set. */
+  leadBy?: string
 }
 
 /** The coin symbols the rows name, keyed by coin id (STAKING_COIN_INFO's symbols). */
@@ -126,7 +142,7 @@ export function stakingFactRows(
   providers: readonly StakingProvider[],
   symbols: CoinSymbols,
   llamaSlug: Readonly<Record<string, string>> = LLAMA_SLUG,
-  lockupLeads: Readonly<Record<string, { days: number; note: string | null; ask: string }>> = LOCKUP_LEADS,
+  lockupLeads: Readonly<Record<string, LockupLead>> = LOCKUP_LEADS,
 ): FactRow[] {
   const rows: FactRow[] = []
   for (const p of providers) {
@@ -156,7 +172,7 @@ export function stakingFactRows(
           { name: 'lockup', type: 'days', catalog: a.lockupDays },
         ],
         note: a.lockupNote,
-        ...(leadHolds ? { lead: lead.ask } : {}),
+        ...(leadHolds ? { lead: lead.ask, leadBy: LEAD_SOURCES[lead.from].by } : {}),
       })
     }
   }

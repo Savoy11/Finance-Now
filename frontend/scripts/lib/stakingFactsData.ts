@@ -4,7 +4,7 @@
  * parameter, so the tests run it against the real catalog and against fixtures alike.
  */
 import type { StakingProvider } from '../../src/lib/data/stakingProviders'
-import { stakingFactRows, LLAMA_SLUG, type CoinSymbols, type FactRow } from './stakingFactRows'
+import { stakingFactRows, LLAMA_SLUG, LEAD_SOURCES, type CoinSymbols, type FactRow } from './stakingFactRows'
 
 export interface StakingFactCard {
   id: string
@@ -19,6 +19,8 @@ export interface StakingFactsData {
   serves: string[]
   catalog: { lastVerified: string; ageDays: number; staleAfterDays: number; providers: number; defunct: number }
   counts: { rows: number; terms: number; providers: number; leads: number }
+  /** The checks that raised the rows marked Start here, with how many each raised; only those with any. */
+  leadSources: Array<{ by: string; found: string; rows: number }>
   providers: StakingFactCard[]
 }
 
@@ -70,6 +72,9 @@ export function buildStakingFactsData(input: BuildStakingFactsInput): StakingFac
       defunct: input.providers.filter((p) => p.defunct).length,
     },
     counts: { rows: rows.length, terms: rows.filter((r) => r.kind === 'terms').length, providers: cards.length, leads: rows.filter((r) => r.lead).length },
+    leadSources: Object.values(LEAD_SOURCES)
+      .map((s) => ({ by: s.by, found: s.found, rows: rows.filter((r) => r.lead && r.leadBy === s.by).length }))
+      .filter((s) => s.rows > 0),
     providers: cards,
   }
 }
