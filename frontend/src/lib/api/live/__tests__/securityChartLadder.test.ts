@@ -36,9 +36,10 @@ const tiingoRows = [
   { date: '2026-09-15', close: 100, adjClose: 50 },
   { date: '2026-09-16', close: 102, adjClose: 51 },
 ]
+/** FMP's /dividend-adjusted shape, newest first (T-441: the FMP rung reads it). */
 const fmpRows = [
-  { date: '2026-09-16', close: 202 },
-  { date: '2026-09-15', close: 200 },
+  { symbol: 'AAPL', date: '2026-09-16', adjOpen: 201, adjHigh: 203, adjLow: 200, adjClose: 202, volume: 10 },
+  { symbol: 'AAPL', date: '2026-09-15', adjOpen: 199, adjHigh: 201, adjLow: 198, adjClose: 200, volume: 10 },
 ]
 const tdBody = {
   values: [
@@ -76,21 +77,21 @@ describe('the price-history ladder', () => {
   it('reports the basis, because the rungs genuinely disagree', async () => {
     keyed('tiingo')
     fetchMock.mockResolvedValue(json(tiingoRows))
-    expect((await fetchSecurityChart('AAPL', '1y')).basis).toBe('adjusted')
+    expect((await fetchSecurityChart('AAPL', '1y')).basis).toBe('splits-and-dividends')
 
     keyed('fmp')
     fetchMock.mockResolvedValue(json(fmpRows))
-    expect((await fetchSecurityChart('AAPL', '1y')).basis).toBe('unadjusted')
+    expect((await fetchSecurityChart('AAPL', '1y')).basis).toBe('splits-and-dividends')
 
     keyed('twelve-data')
     fetchMock.mockResolvedValue(json(tdBody))
     expect((await fetchSecurityChart('AAPL', '1y')).basis).toBe('unadjusted')
   })
 
-  it('prefers the adjusted rung, and uses adjClose when it serves', async () => {
-    // Order matters beyond preference: Tiingo is the only rung that can honour
-    // the adjusted basis, so a reshuffle that puts a raw-close rung first would
-    // silently change every chart across a split.
+  it('prefers Tiingo, and uses adjClose when it serves', async () => {
+    // Order matters beyond preference: Twelve Data cannot honour the adjusted
+    // basis, so a reshuffle that put it first would silently change every chart
+    // across a split.
     keyed('tiingo', 'fmp', 'twelve-data')
     fetchMock.mockImplementation((url: string) =>
       Promise.resolve(url.includes('tiingo') ? json(tiingoRows) : json(fmpRows)))
@@ -123,6 +124,48 @@ describe('the price-history ladder', () => {
     keyed()
     await expect(fetchSecurityChart('AAPL', '1y')).rejects.toThrow(/Tiingo, FMP or Twelve Data/)
     expect(fetchMock).not.toHaveBeenCalled()
+  })
+})
+
+describe('Tiingo and FMP on a dividend payer (T-441)', () => {
+  // Invented figures for a $0.50 dividend going ex on 09-16: the raw close drops with it, and
+  // the adjusted closes before that date are scaled by 1 - 0.50/50.00 = 0.99. Tiingo sends
+  // both; FMP sends the adjusted ones from /dividend-adjusted and the raw ones from /full.
+  const raw = { '2026-09-15': 50, '2026-09-16': 49.75, '2026-09-17': 50.1 }
+  const adjusted = { '2026-09-15': 49.5, '2026-09-16': 49.75, '2026-09-17': 50.1 }
+  const dates = Object.keys(raw) as Array<keyof typeof raw>
+  const tiingo = dates.map((date) => ({ date, close: raw[date], adjClose: adjusted[date] }))
+  const fmpAdjusted = [...dates].reverse().map((date) => ({
+    symbol: 'XYZ', date, adjOpen: adjusted[date], adjHigh: adjusted[date], adjLow: adjusted[date], adjClose: adjusted[date], volume: 1,
+  }))
+  const fmpFull = [...dates].reverse().map((date) => ({
+    symbol: 'XYZ', date, open: raw[date], high: raw[date], low: raw[date], close: raw[date], volume: 1,
+  }))
+  const closes = (c: { points: Array<{ close: number }> }) => c.points.map((p) => p.close)
+
+  it('gives the same history whichever of the two serves', async () => {
+    keyed('tiingo')
+    fetchMock.mockImplementation(() => Promise.resolve(json(tiingo)))
+    const fromTiingo = await fetchSecurityChart('XYZ', '1y')
+
+    keyed('fmp')
+    fetchMock.mockImplementation(() => Promise.resolve(json(fmpAdjusted)))
+    const fromFmp = await fetchSecurityChart('XYZ', '1y')
+
+    expect(fromFmp.source).toBe('fmp')
+    expect(closes(fromFmp)).toEqual(closes(fromTiingo))
+    expect(closes(fromFmp)).toEqual([49.5, 49.75, 50.1])
+    expect(fromFmp.basis).toBe(fromTiingo.basis)
+  })
+
+  it('labels the split-only fallback, which does not agree', async () => {
+    keyed('fmp')
+    fetchMock.mockImplementation((url: string) =>
+      Promise.resolve(url.includes('dividend-adjusted') ? json({}, false, 403) : json(fmpFull)))
+    const chart = await fetchSecurityChart('XYZ', '1y')
+
+    expect(chart.basis).toBe('splits')
+    expect(closes(chart)).toEqual([50, 49.75, 50.1])
   })
 })
 

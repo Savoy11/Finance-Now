@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import type { OhlcvCandle } from '@/lib/utils/indicators'
 import { getEquityOhlcvProviders, getProviderKey, recordProviderFetch } from '@/lib/api/live/providers'
 import { fetchCustomUrl, findArray, pickNumber, type ActiveCustom } from '@/lib/server/customFeeds'
-import { adjustCandles } from '@/lib/utils/ohlcvAdjust'
+import { fetchFmpDailyHistory, type PriceBasis } from '@/lib/api/live/fmpHistory'
 import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 
 // OHLCV proxy for equities / ETFs / mutual funds — feeds the TA and backtest
@@ -11,7 +11,7 @@ import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 // Integrations page. Mirrors /live-data/ohlcv (crypto).
 //   GET /live-data/security-ohlcv?symbol=AAPL&range=1Y
 //
-// Response: { ok, symbol, range, candles: OhlcvCandle[], source }
+// Response: { ok, symbol, range, candles: OhlcvCandle[], source, basis }
 //
 // ⚠ BOTH BUILT-IN RUNGS ARE KEYED. Yahoo Finance headed this ladder, keylessly,
 // until 2026-08-06, when it was removed on terms grounds (see
@@ -38,55 +38,35 @@ export interface SecurityOhlcvResponse {
   candles: OhlcvCandle[]
   /** Provider id that served the candles ('tiingo', 'fmp', 'custom-…') or 'none'. */
   source: string
+  /**
+   * What the prices have had taken out, when candles were served. Tiingo and FMP are both
+   * 'splits-and-dividends' (T-441); FMP reads 'splits' only if its plan withholds its
+   * dividend-adjusted prices; a user-added feed is 'unknown'.
+   */
+  basis?: PriceBasis
   error?: string
 }
 
 const RANGE_DAYS: Record<string, number> = { '1M': 22, '3M': 66, '6M': 130, '1Y': 260, '5Y': 1300, 'MAX': 10000 }
 
-async function fetchFmpOhlcv(symbol: string, range: string): Promise<OhlcvCandle[]> {
+/** Candles, oldest first, and what their prices have had taken out. */
+interface Served { candles: OhlcvCandle[]; basis: PriceBasis }
+
+async function fetchFmpOhlcv(symbol: string, range: string): Promise<Served> {
   // UI-saved key (Integrations page) or FMP_API_KEY env var. FMP's free tier
   // uses the /stable API; the legacy /api/v3 endpoints are retired (403).
   const FMP_KEY = getProviderKey('fmp')
   if (!FMP_KEY) throw new Error('FMP key not configured')
-  const res = await fetch(
-    `https://financialmodelingprep.com/stable/historical-price-eod/full?symbol=${encodeURIComponent(symbol)}&apikey=${FMP_KEY}`,
-    { next: { revalidate: RANGE_CONFIG[range].revalidate }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) }
-  )
-  if (!res.ok) throw new Error(`FMP ${res.status}`)
-  // `adjClose` (split+dividend adjusted) is used when present so a split isn't a
-  // cliff and FMP matches Tiingo's adjusted basis; when absent we fall back to raw
-  // close (factor 1).
-  //
-  // ✅ VERIFIED 2026-09-09 on the owner's machine with a live FMP key: this endpoint
-  //    returns SPLIT-ADJUSTED prices, so no switch to
-  //    /stable/historical-price-eod/dividend-adjusted is needed. Two independent
-  //    checks on NVDA (10-for-1 split, 2024-06-10) over range=5Y, 1254 candles:
-  //
-  //      across the split   122.44 -> 121.00 -> 120.89 -> 121.79 -> 120.91  (no cliff)
-  //      largest 1-day move 1.24x over the whole 5 years (a split would be ~10x)
-  //      Sept 2021 close    22.48, where unadjusted NVDA traded ~$224 — i.e. /10
-  //
-  //    The earlier note said this "varies by plan" and asked for a live check. It
-  //    has now had one, on the free tier. If a split stock DOES show a cliff on a
-  //    different plan, the dividend-adjusted endpoint is still the fix — but do not
-  //    switch pre-emptively: that endpoint also applies dividend adjustment, which
-  //    would silently change the basis of every existing chart.
-  const rows = await res.json() as Array<{
-    date: string; open: number; high: number; low: number; close: number; volume: number; adjClose?: number
-  }>
-  if (!Array.isArray(rows) || rows.length === 0) throw new Error('FMP: empty result')
-  const sorted = rows
-    .map((row) => ({
-      raw: {
-        time: Math.floor(new Date(row.date).getTime() / 1000),
-        open: row.open, high: row.high, low: row.low, close: row.close,
-        volume: row.volume ?? 0,
-      } as OhlcvCandle,
-      adjClose: row.adjClose,
+  // Dividend-adjusted prices, so FMP is on Tiingo's basis (T-441, 2026-10-18); split-only
+  // ones, labelled, if the plan withholds them. See lib/api/live/fmpHistory.ts.
+  const { bars, basis } = await fetchFmpDailyHistory(symbol, FMP_KEY, { revalidate: RANGE_CONFIG[range].revalidate })
+  const candles = bars
+    .map((b) => ({
+      time: Math.floor(new Date(b.date).getTime() / 1000),
+      open: b.open, high: b.high, low: b.low, close: b.close, volume: b.volume,
     }))
-    .sort((a, b) => a.raw.time - b.raw.time)
     .slice(-RANGE_DAYS[range])
-  return adjustCandles(sorted.map((s) => s.raw), sorted.map((s) => s.adjClose))
+  return { candles, basis }
 }
 
 // ⚠ TIINGO IS FETCHED UNCACHED, AND THAT IS A LICENCE CONSTRAINT, NOT AN OVERSIGHT.
@@ -109,7 +89,7 @@ async function fetchFmpOhlcv(symbol: string, range: string): Promise<OhlcvCandle
 // COST: every OHLCV request now hits Tiingo. RANGE_CONFIG still governs FMP, so the
 // fallback path is unchanged. If the plan moves to a paid tier without §1.6(a),
 // restore `next: { revalidate: RANGE_CONFIG[range].revalidate }` here and say so.
-async function fetchTiingoOhlcv(symbol: string, range: string): Promise<OhlcvCandle[]> {
+async function fetchTiingoOhlcv(symbol: string, range: string): Promise<Served> {
   const key = getProviderKey('tiingo')
   if (!key) throw new Error('Tiingo key not configured')
   const start = new Date(Date.now() - RANGE_DAYS[range] * 1.5 * 86_400_000).toISOString().slice(0, 10)
@@ -120,17 +100,17 @@ async function fetchTiingoOhlcv(symbol: string, range: string): Promise<OhlcvCan
   if (!res.ok) throw new Error(`Tiingo ${res.status}`)
   // Tiingo returns both raw (open/high/low/close/volume) and split+dividend
   // adjusted (adj*) fields. Use the adjusted set so a split is a continuous
-  // series (not a cliff). ⚠ This is NOT FMP's basis: FMP's /full is adjusted for
-  // splits only (measured 2026-09-09, above), while Tiingo's adj* also takes out
-  // dividends, so a fall from Tiingo to FMP shifts a dividend payer's history.
-  // Measured on NVDA 2026-10-17: a steady 0.29% across the 2024 split
-  // (docs/assessments/T11-equity-ta-audit.md, Deferred). Whether to align them: T-441.
+  // series (not a cliff). Its adj* takes out dividends as well as splits, measured
+  // on NVDA 2026-10-17: a steady 0.29% below the split-only closes across the 2024
+  // split (docs/assessments/T11-equity-ta-audit.md, Deferred). FMP's rung reads its
+  // dividend-adjusted prices for that reason (T-441), so a fall to it does not move
+  // a dividend payer's history.
   const rows = await res.json() as Array<{
     date: string; open: number; high: number; low: number; close: number; volume: number
     adjOpen?: number; adjHigh?: number; adjLow?: number; adjClose?: number; adjVolume?: number
   }>
   if (!Array.isArray(rows) || rows.length === 0) throw new Error('Tiingo: empty result')
-  return rows
+  const candles = rows
     .map((row) => ({
       time: Math.floor(new Date(row.date).getTime() / 1000),
       open: row.adjOpen ?? row.open, high: row.adjHigh ?? row.high,
@@ -138,12 +118,15 @@ async function fetchTiingoOhlcv(symbol: string, range: string): Promise<OhlcvCan
       volume: row.adjVolume ?? row.volume ?? 0,
     }))
     .sort((a, b) => a.time - b.time)
+  // A row missing adjClose falls back to its raw price, so only a series with every
+  // adjusted close is labelled adjusted.
+  return { candles, basis: rows.every((row) => row.adjClose != null) ? 'splits-and-dividends' : 'unknown' }
 }
 
 // Custom json-ohlcv feeds: URL with {symbol} (and optional {range}); the
 // response must contain an array of candles — time/OHLC fields are
 // auto-detected or mapped via jsonFieldMap.
-async function fetchCustomOhlcv(provider: ActiveCustom, symbol: string, range: string): Promise<OhlcvCandle[]> {
+async function fetchCustomOhlcv(provider: ActiveCustom, symbol: string, range: string): Promise<Served> {
   const url = provider.url.replace('{symbol}', encodeURIComponent(symbol)).replace('{range}', range)
   const res = await fetchCustomUrl(provider, url, RANGE_CONFIG[range].revalidate)
   const map = provider.jsonFieldMap ?? {}
@@ -166,7 +149,8 @@ async function fetchCustomOhlcv(provider: ActiveCustom, symbol: string, range: s
     candles.push({ time, open, high, low, close, volume: pickNumber(entry, map.volume, ['volume', 'v']) ?? 0 })
   }
   if (candles.length === 0) throw new Error('Custom feed returned no usable candles')
-  return candles.sort((a, b) => a.time - b.time)
+  // Nobody has read what a user-added feed adjusts for.
+  return { candles: candles.sort((a, b) => a.time - b.time), basis: 'unknown' }
 }
 
 export async function GET(request: NextRequest) {
@@ -185,12 +169,12 @@ export async function GET(request: NextRequest) {
 
   for (const provider of getEquityOhlcvProviders()) {
     try {
-      const candles = provider.isCustom
+      const { candles, basis } = provider.isCustom
         ? await fetchCustomOhlcv(provider, symbol, range)
         : provider.id === 'tiingo' ? await fetchTiingoOhlcv(symbol, range)
         : await fetchFmpOhlcv(symbol, range)
       recordProviderFetch(provider.id, { count: candles.length })
-      return NextResponse.json({ ok: true, symbol, range, candles, source: provider.id } satisfies SecurityOhlcvResponse)
+      return NextResponse.json({ ok: true, symbol, range, candles, source: provider.id, basis } satisfies SecurityOhlcvResponse)
     } catch (e) {
       recordProviderFetch(provider.id, { error: e instanceof Error ? e.message : String(e) })
     }

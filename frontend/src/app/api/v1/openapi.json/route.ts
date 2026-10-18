@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { CORS, options } from '../../_cors'
+import { PRICE_BASES } from '@/lib/api/live/fmpHistory'
 
 export const dynamic = 'force-dynamic'
 export { options as OPTIONS }
@@ -149,7 +150,7 @@ const SPEC = {
       get: {
         tags: ['securities'],
         summary: 'Get daily close-price history',
-        description: 'Daily close-only series for any symbol the price-history ladder covers (Tiingo, then FMP — both keyed), oldest first, with previous close and 52-week range. Tiingo covers US-listed equities, ETFs and mutual funds; futures, FX pairs and yield indices depend on FMP coverage.',
+        description: 'Daily close-only series for any symbol the price-history ladder covers (Tiingo, then FMP, then Twelve Data — all keyed), oldest first, with previous close and 52-week range. Tiingo covers US-listed equities, ETFs and mutual funds; futures, FX pairs and yield indices depend on FMP coverage. `basis` says what the closes have had taken out: splits and dividends from Tiingo and FMP, splits alone if FMP\'s plan withholds its dividend-adjusted prices, nothing from Twelve Data.',
         parameters: [
           { name: 'symbol', in: 'query', required: true, description: 'Market ticker, e.g. AAPL or BRK-B', schema: { type: 'string', example: 'AAPL' } },
           { name: 'range',  in: 'query', description: 'Lookback window', schema: { type: 'string', enum: ['1mo', '3mo', '6mo', '1y', '5y', 'max'], default: '1y' } },
@@ -530,6 +531,8 @@ const SPEC = {
           previousClose:     { type: 'number', nullable: true },
           fiftyTwoWeekHigh:  { type: 'number', nullable: true },
           fiftyTwoWeekLow:   { type: 'number', nullable: true },
+          source:            { type: 'string', example: 'tiingo', description: 'Provider that served the series: tiingo, fmp or twelve-data.' },
+          basis:             { type: 'string', enum: PRICE_BASES.filter((b) => b !== 'unknown'), description: 'What the closes have had taken out.' },
           updatedAt:         { type: 'string', format: 'date-time' },
         },
       },

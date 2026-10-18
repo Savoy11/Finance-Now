@@ -27,6 +27,12 @@ import type { OhlcvCandle } from '@/lib/utils/indicators'
  * tilt does not fire a signal; a 4× step does. Splitting the two would need the
  * provider's split history as a separate series — worth doing if volume ever
  * carries a figure a user acts on directly, which today it does not.
+ *
+ * ⚠ No route calls this since 2026-10-18 (T-441). Its one caller was FMP's rung in
+ * /live-data/security-ohlcv, and FMP's /full never sent the adjClose it reads, so it
+ * passed every candle through unchanged; that rung now reads FMP's dividend-adjusted
+ * prices, which arrive adjusted, as Tiingo's do. Kept, with its tests, until the owner
+ * decides whether to remove it.
  */
 export function adjustCandles(
   candles: OhlcvCandle[],

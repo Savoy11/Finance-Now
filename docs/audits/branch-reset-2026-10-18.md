@@ -81,3 +81,19 @@ and pushed with `--force-with-lease`, for the same reason as above.
 - its content in `main` as `01503eb`.
 
 Nothing was deleted; no other ref moved.
+
+## Sixth reset, after PR #380
+
+**What was done.** After PR #380 (the second agent run: worked-out curve changes, the staking
+catalog's wording) was squash-merged into `main` as `249bdf8`, the branch was restarted from that
+commit for T-441 (FMP's price history on the same basis as Tiingo's), and pushed with
+`--force-with-lease`, for the same reason as above.
+
+**Where the prior state lives.** The branch's previous tip, `b339a58`, is held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@b339a58`, created by
+  `.github/workflows/archive-branch.yml` when #380 merged;
+- GitHub's `refs/pull/380/head`;
+- its content in `main` as `249bdf8`.
+
+Nothing was deleted; no other ref moved.

@@ -129,6 +129,19 @@ Verified: `tsc` clean · `eslint` clean · `vitest` (5 new / suite green) · `np
 > the route warns would change the basis of its charts, or a split-only Tiingo series), so it is
 > recorded here rather than made: filed as T-441 at low priority (D135).
 
+> **Settled, 2026-10-18 (T-441, D138): the owner chose FMP's dividend-adjusted prices.** Both FMP
+> rungs, here and in the `security-chart` ladder, now read `/stable/historical-price-eod/dividend-adjusted`
+> through one fetcher, `src/lib/api/live/fmpHistory.ts`, so a fall from Tiingo to FMP no longer moves
+> a dividend payer's history. The free key's coverage of that endpoint had been measured on
+> 2026-09-18 with the app's key: the same symbols as `/full`. Its fields were read on 2026-10-18
+> through the owner's FMP connector (not the app's key): `adjOpen, adjHigh, adjLow, adjClose,
+> volume`, newest first, with KO's 2021-09-01 adjusted close at 0.857 of `/full`'s: about five
+> years of a 3% dividend taken out. The route falls back to `/full` only where the plan withholds
+> the endpoint (403) or its answer has no adjusted prices, and says so: every response now carries
+> `basis`. The route's warning, quoted above, that this endpoint would change the basis of its charts
+> had it the wrong way round: Tiingo answers first, so most charts were already on the dividend-adjusted
+> basis, and only the fallback was not.
+
 ## Changes in this PR
 - `src/lib/utils/ohlcvAdjust.ts` (new) + `__tests__/ohlcvAdjust.test.ts` (new, 5 tests).
 - `src/app/live-data/security-ohlcv/route.ts` — Yahoo/Tiingo/FMP adjusted-basis fix.
