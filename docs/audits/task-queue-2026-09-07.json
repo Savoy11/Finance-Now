@@ -7088,7 +7088,7 @@
     "M5"
    ],
    "summary": "Partial edits did not re-verify the whole.",
-   "next_action": "Owner: work through the Staking Facts Check page (published 2026-10-17, D134; `npm run staking-facts-page` rebuilds it): 322 facts on 53 live providers, starting with the 26 lock-ups marked Start here: 24 the 2026-09-26 audit questioned, plus Uniswap's ETH/USDC pool and Kraken's US staking line, which the 2026-10-17 agent evaluation raised (D136). Each row is answered from the provider's own pages, and answers save on the page. Then Claude reads the page's database, runs `npm run staking-facts-plan` over it, and makes each change by hand in stakingProviders.ts, via PR. Only when the plan reports every fact settled does STAKING_DATA_LAST_VERIFIED move, to the day the pass finished. The 2026-09-27 notice fires as acknowledged until then.",
+   "next_action": "Owner: work through the Staking Facts Check page (published 2026-10-17, D134; `npm run staking-facts-page` rebuilds it): 322 facts on 53 live providers, starting with the 26 rows marked Start here: 24 lock-ups the 2026-09-26 audit questioned, plus Uniswap's ETH/USDC pool and Kraken's US staking line, which the 2026-10-17 agent evaluation raised (D136). Each row is answered from the provider's own pages, and answers save on the page. Then Claude reads the page's database, runs `npm run staking-facts-plan` over it, and makes each change by hand in stakingProviders.ts, via PR. Only when the plan reports every fact settled does STAKING_DATA_LAST_VERIFIED move, to the day the pass finished. The 2026-09-27 notice fires as acknowledged until then.",
    "sources": [
     {
      "file": "frontend/src/lib/data/stakingProviders.ts",

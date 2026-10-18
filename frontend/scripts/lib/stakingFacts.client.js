@@ -407,8 +407,12 @@
     links.appendChild(el('span', 'hint', guide.link.hint))
     sec.appendChild(links)
     guide.notes.forEach(function (n) { sec.appendChild(el('p', n.tone === 'warn' ? 'callout warn' : 'callout', n.text)) })
-    var leadCount = card.rows.filter(function (r) { return typeof r.lead === 'string' && r.lead }).length
-    if (leadCount) sec.appendChild(el('p', 'callout warn', 'Start here: the lock-up audit of September 26 questioned ' + (leadCount === 1 ? 'one of this provider’s lock-ups. It is marked below.' : leadCount + ' of this provider’s lock-ups. They are marked below.')))
+    var led = card.rows.filter(function (r) { return typeof r.lead === 'string' && r.lead })
+    if (led.length) {
+      var by = []
+      led.forEach(function (r) { if (typeof r.leadBy === 'string' && r.leadBy && by.indexOf(r.leadBy) === -1) by.push(r.leadBy) })
+      sec.appendChild(el('p', 'callout warn', 'Start here: ' + (led.length === 1 ? 'one of this provider’s rows is' : led.length + ' of this provider’s rows are') + ' marked below' + (by.length ? ', raised by ' + by.join(' and ') : '') + '.'))
+    }
 
     var list = el('div', 'rows')
     card.rows.forEach(function (r) {

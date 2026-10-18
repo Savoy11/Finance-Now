@@ -57,6 +57,6 @@ writeFileSync(resolve(out), html, 'utf8')
 const byKind: Record<string, number> = {}
 for (const p of data.providers) for (const r of p.rows) byKind[r.kind] = (byKind[r.kind] ?? 0) + 1
 console.log(`Staking Facts Check page written → ${resolve(out)} (${Math.round(html.length / 1024)} KB)`)
-console.log(`  ${data.counts.rows} facts on ${data.counts.providers} providers (${data.catalog.defunct} defunct left out): ${Object.entries(byKind).map(([k, v]) => `${k} ${v}`).join(', ')}; ${data.counts.leads} lock-ups marked Start here`)
+console.log(`  ${data.counts.rows} facts on ${data.counts.providers} providers (${data.catalog.defunct} defunct left out): ${Object.entries(byKind).map(([k, v]) => `${k} ${v}`).join(', ')}; ${data.counts.leads} rows marked Start here (${data.leadSources.map((x) => `${x.rows} from ${x.by}`).join(', ')})`)
 console.log(`  catalog last fully verified ${data.catalog.lastVerified} (${data.catalog.ageDays} days ago) — not touched`)
 console.log(`  publish with capabilities ${JSON.stringify(STAKING_FACTS_CAPABILITIES)}`)
