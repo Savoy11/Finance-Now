@@ -19,6 +19,12 @@ export interface CurveSnapshot {
   points: CurvePoint[]
 }
 
+/** One maturity's move between two curves, in whole basis points (hundredths of a percentage point). */
+export interface CurveChange {
+  label: string
+  bp: number
+}
+
 /** The two headline spreads of one curve, in percentage points. */
 export interface CurveSpreads {
   spread2s10s?: number
@@ -37,6 +43,13 @@ export interface YieldCurveData {
    */
   monthAgoSpreads: CurveSpreads
   yearStartSpreads: CurveSpreads
+  /**
+   * Each maturity's change since the comparison curve, worked out here so it is quoted,
+   * not computed. In the 2026-10-18 agent run, two agents given the same two curves put
+   * the 10-year's month-on-month move at +53bp and at about +8bp.
+   */
+  changeSinceMonthAgo: CurveChange[]
+  changeSinceYearStart: CurveChange[]
   /** 10Y minus 2Y, percentage points — the classic recession signal. */
   spread2s10s?: number
   /** 10Y minus 3M, the Fed's preferred version. */
@@ -138,7 +151,16 @@ export function buildCurveData(snapshots: CurveSnapshot[]): YieldCurveData {
   return {
     latest, monthAgo, yearStart, spread2s10s, spread3m10y, shape,
     monthAgoSpreads: spreadsOf(monthAgo), yearStartSpreads: spreadsOf(yearStart),
+    changeSinceMonthAgo: changesBetween(monthAgo, latest), changeSinceYearStart: changesBetween(yearStart, latest),
   }
+}
+
+/** Each maturity's change from `from` to `to`, in curve order; a maturity missing from either is left out. */
+export function changesBetween(from: CurveSnapshot, to: CurveSnapshot): CurveChange[] {
+  return to.points.flatMap((p) => {
+    const before = yieldAt(from, p.label)
+    return before == null ? [] : [{ label: p.label, bp: Math.round((p.yieldPct - before) * 100) }]
+  })
 }
 
 /** 10Y minus 2Y and 10Y minus 3M on one curve, rounded to hundredths. */

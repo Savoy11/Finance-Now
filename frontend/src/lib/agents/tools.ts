@@ -387,7 +387,7 @@ const TOOL_REGISTRY: RegisteredTool[] = [
     market: 'macro',
     tool: {
       name: 'get_yield_curve',
-      description: 'Get the official US Treasury par yield curve (13 maturities, treasury.gov daily data) with 2s10s and 3m10y spreads, curve shape (normal/flat/inverted), and month-ago / year-start snapshots for comparison, each with its own spreads (monthAgoSpreads, yearStartSpreads): compare those to say whether the curve has steepened or flattened, rather than working the spreads out yourself. The authoritative rates tool — prefer it over quoting ^TNX for curve questions.',
+      description: 'Get the official US Treasury par yield curve (13 maturities, treasury.gov daily data) with 2s10s and 3m10y spreads, curve shape (normal/flat/inverted), and month-ago / year-start snapshots for comparison, each with its own spreads (monthAgoSpreads, yearStartSpreads) and each maturity\'s change since then in basis points (changeSinceMonthAgo, changeSinceYearStart): quote those to say how far a yield has moved and whether the curve has steepened or flattened, rather than working them out yourself. The authoritative rates tool — prefer it over quoting ^TNX for curve questions.',
       input_schema: { type: 'object', properties: {} },
     },
   },
@@ -969,14 +969,17 @@ async function execute(
           ok?: boolean; error?: string; latest?: unknown; monthAgo?: unknown; yearStart?: unknown
           spread2s10s?: number; spread3m10y?: number; shape?: string
           monthAgoSpreads?: unknown; yearStartSpreads?: unknown
+          changeSinceMonthAgo?: unknown; changeSinceYearStart?: unknown
         }
         if (!data.ok) return { error: data.error ?? 'yield curve unavailable' }
-        // The comparison curves' spreads come worked out, so a trend is read off two
-        // published figures rather than the model's own subtraction (2026-10-17 evaluation).
+        // The comparison curves' spreads and each maturity's change come worked out, so a
+        // trend is read off published figures rather than the model's own subtraction
+        // (2026-10-17 evaluation; on 2026-10-18 two agents put one move at +53bp and +8bp).
         return {
           latest: data.latest, monthAgo: data.monthAgo, yearStart: data.yearStart,
           spread2s10s: data.spread2s10s, spread3m10y: data.spread3m10y, shape: data.shape,
           monthAgoSpreads: data.monthAgoSpreads, yearStartSpreads: data.yearStartSpreads,
+          changeSinceMonthAgo: data.changeSinceMonthAgo, changeSinceYearStart: data.changeSinceYearStart,
           source: 'treasury.gov official daily par curve',
         }
       }

@@ -66,3 +66,18 @@ above.
 - its content in `main` as `20047f1`.
 
 Nothing was deleted; no other ref moved.
+
+## Fifth reset, after PR #379
+
+**What was done.** After PR #379 (the T-129 ledger correction) was squash-merged into `main` as
+`01503eb`, the branch was restarted from that commit for the second agent run's record and fixes,
+and pushed with `--force-with-lease`, for the same reason as above.
+
+**Where the prior state lives.** The branch's previous tip, `a11686a`, is held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@a11686a`, created by
+  `.github/workflows/archive-branch.yml` when #379 merged;
+- GitHub's `refs/pull/379/head`;
+- its content in `main` as `01503eb`.
+
+Nothing was deleted; no other ref moved.
