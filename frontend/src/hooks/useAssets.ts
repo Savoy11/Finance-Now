@@ -113,12 +113,6 @@ export function useAssetsWithStore(filterRules: FilterRule[] = []) {
 
   const params: GetAssetsParams = {
     assetType: filters.assetType !== 'all' ? filters.assetType : undefined,
-    blockchain: filters.blockchain !== 'all' ? filters.blockchain : undefined,
-    // Review fix: this store field was never threaded into the query params, so
-    // any UI bound to it (the Coins screener's "Min mkt cap") silently did
-    // nothing. applyParams has supported it all along.
-    minMarketCap: filters.minMarketCap > 0 ? filters.minMarketCap : undefined,
-    minLiquidityPct: filters.minLiquidityPct > 0 ? filters.minLiquidityPct : undefined,
     search: filters.search || undefined,
     filterRules: filterRules.length ? filterRules : undefined,
     // Deliberately NOT stripped while the sweep is in flight. With no values

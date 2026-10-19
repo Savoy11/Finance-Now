@@ -19,7 +19,7 @@ import { MetricCard } from '@/components/ui/MetricCard'
 import { useAssetsWithStore } from '@/hooks/useAssets'
 import {
   FILTER_FIELDS, FIELD_BY_KEY, UNAVAILABLE_FACTORS,
-  serializeRules, parseRules,
+  serializeRules, parseRules, activeRules,
   type FilterRule,
 } from '@/lib/data/coinFilters'
 import { FilterStack } from '@/components/ui/FilterStack'
@@ -32,7 +32,7 @@ import { SourceLine } from '@/components/ui/SourceLine'
 import { RequiredCredits } from '@/components/ui/RequiredCredits'
 import { formatCompact } from '@/lib/utils/format'
 import { LIVE_DATA, STALE_TIME_SHORT } from '@/lib/constants'
-import type { AssetType, Blockchain } from '@/types/asset'
+import type { AssetType } from '@/types/asset'
 import { marketsSourceLabel } from '@/lib/utils/marketsSource'
 
 type ViewMode = 'table' | 'grid'
@@ -137,14 +137,13 @@ export function AssetRegistryClient() {
     return { totalMcap, stablecoins, layer1, advancers, decliners, breadthKnown: withChange.length }
   }, [universe])
 
-  // Only the reachable filters: the type chips and the search box. The screener
-  // bar was removed (2026-08-22), so blockchain / minMarketCap / minLiquidityPct
-  // can no longer be set from this page and would make this permanently false.
-  // The store fields and the API params behind them are left in place at their
-  // no-op defaults, so restoring the screener is a UI change only.
+  // The type chips, the search box, and any screener rule complete enough to run
+  // (market cap and liquidity are rules there). The rules were left out of this
+  // until 2026-10-19, so a screened list read "no filters applied".
   const anyFilter =
     filters.assetType !== 'all' ||
-    !!filters.search
+    !!filters.search ||
+    activeRules(rules).length > 0
 
   return (
     <div className="space-y-6 max-w-(--breakpoint-2xl) mx-auto">

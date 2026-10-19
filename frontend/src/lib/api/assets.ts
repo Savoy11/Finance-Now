@@ -11,10 +11,6 @@ import { buildLiveAssets, buildLiveAssetDetail } from './live/overlay'
 // `filterRules` unrepresentable. Every field below is declared explicitly.
 export interface GetAssetsParams {
   assetType?: string
-  blockchain?: string
-  minMarketCap?: number
-  /** Minimum 24h-volume / market-cap, in percent (W3-2). */
-  minLiquidityPct?: number
   search?: string
   /**
    * Stackable screener rules, ANDed together. Applied HERE — before sorting and
@@ -103,21 +99,6 @@ export function applyParams(all: Asset[], params: GetAssetsParams): PaginatedRes
   }
   if (params.assetType && params.assetType !== 'all') {
     assets = assets.filter((a) => a.assetType === params.assetType)
-  }
-  if (params.blockchain && params.blockchain !== 'all') {
-    assets = assets.filter((a) => a.blockchain === params.blockchain)
-  }
-  if (params.minMarketCap !== undefined) {
-    assets = assets.filter((a) => a.marketCap !== null && a.marketCap >= (params.minMarketCap ?? 0))
-  }
-  if (params.minLiquidityPct !== undefined) {
-    // Liquidity = 24h volume / market cap. Rows missing either figure are
-    // EXCLUDED when the filter is active: an unknown ratio is not a passing
-    // ratio, and letting N/A through would make the filter read stricter than
-    // it is.
-    assets = assets.filter((a) =>
-      a.volume24h !== null && a.marketCap !== null && a.marketCap > 0 &&
-      (a.volume24h / a.marketCap) * 100 >= (params.minLiquidityPct ?? 0))
   }
 
   // Stack first, then sort, then paginate.

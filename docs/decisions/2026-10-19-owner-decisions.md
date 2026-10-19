@@ -1,0 +1,8 @@
+# Owner decisions — 2026-10-19
+
+Continuing from `2026-10-18-owner-decisions.md`, which ends at D138. Same form: one row per ruling,
+what it cascades to, and what was actually done.
+
+| # | Decision | Ruling | Cascades to |
+|---|---|---|---|
+| D139 | T-129 asked whether the Coins page's minimum-market-cap and minimum-liquidity inputs, removed with its screener bar on 2026-08-22, should come back. Asked why the session had recommended leaving them off, the session found the question moot: the stackable screener that landed the same day (`lib/data/coinFilters.ts`, the page's Screener button) already carries both, as "Market cap" and "Volume ÷ market cap", the same definition as the old field. The ledger and `docs/ROADMAP.md` had read the leftover store fields and missed the screener. Offered: one small pull request to correct the record, remove those leftover fields (and the old blockchain one) and remove `lib/utils/ohlcvAdjust.ts`, which has had no caller since D138 | **Owner:** *"Proceed"* → APPLIED | `AssetFilters`, the asset store, `useAssetsWithStore` and `GetAssetsParams` no longer carry `blockchain`, `minMarketCap` or `minLiquidityPct`; the two liquidity tests in `lib/api/__tests__/assets.test.ts` now run through the screener's rule. The page's Matches card counts screener rules as filters: it had said "no filters applied" on a screened list. `lib/utils/ohlcvAdjust.ts` and its test are removed: FMP's `/full` never sent the `adjClose` it read, so it changed no candle, and both rungs now send adjusted prices. T-129's ledger entry and the roadmap's W3-2 note are corrected; T-129 is left with the result-quality walkthrough on the owner's machine |
