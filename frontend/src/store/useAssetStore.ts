@@ -26,10 +26,7 @@ interface AssetActions {
 
 const DEFAULT_FILTERS: AssetFilters = {
   assetType: 'all',
-  blockchain: 'all',
   search: '',
-  minMarketCap: 0,
-  minLiquidityPct: 0,
 }
 
 const DEFAULT_SORT: AssetSortConfig = {

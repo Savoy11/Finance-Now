@@ -97,3 +97,19 @@ commit for T-441 (FMP's price history on the same basis as Tiingo's), and pushed
 - its content in `main` as `249bdf8`.
 
 Nothing was deleted; no other ref moved.
+
+## Seventh reset, after PR #381 (2026-10-19)
+
+**What was done.** After PR #381 (FMP's price history on Tiingo's basis, T-441) was squash-merged
+into `main` as `4cbe0fe`, the branch was restarted from that commit for the dead-code cleanup the
+owner approved on 2026-10-19 (T-129's two parked coin filters, `ohlcvAdjust.ts`), and pushed with
+`--force-with-lease`, for the same reason as above.
+
+**Where the prior state lives.** The branch's previous tip, `0ff18f6`, is held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@0ff18f6`, created by
+  `.github/workflows/archive-branch.yml` when #381 merged;
+- GitHub's `refs/pull/381/head`;
+- its content in `main` as `4cbe0fe`.
+
+Nothing was deleted; no other ref moved.

@@ -133,17 +133,16 @@ export interface AssetDetail extends Asset {
   latestReserve: ReserveAttestation | null
 }
 
+/**
+ * The Coins page's type chips and search box. Every other filter, market cap and
+ * liquidity included, is a rule in the stackable screener (lib/data/coinFilters.ts),
+ * held as page state. The single minimum-market-cap, minimum-liquidity and
+ * blockchain fields that sat here served the screener bar removed on 2026-08-22
+ * and went on 2026-10-19 (T-129): nothing could set them.
+ */
 export interface AssetFilters {
   assetType: AssetType | 'all'
-  blockchain: Blockchain | 'all'
   search: string
-  minMarketCap: number
-  /**
-   * Minimum 24h-volume/market-cap ratio, in percent (W3-2 — "search by
-   * liquidity"). 0 = no filter. A fact from the feed, same definition as Coin
-   * Discovery's liquidity ratio.
-   */
-  minLiquidityPct: number
 }
 
 export interface AssetSortConfig {

@@ -678,6 +678,14 @@ went to `docs/BUSINESS-CHECKLIST.md`, which is worked separately from both produ
       >   `minLiquidityPct` sit at their no-op defaults — see the comment at
       >   `AssetRegistryClient.tsx:137`. Treat W3-2's filter half as parked (a UI change
       >   restores it), not as delivered.
+      >
+      >   **Corrected 2026-10-19: the filter half was delivered, the same day the bar went.**
+      >   The stackable screener (`lib/data/coinFilters.ts`, the page's Screener button)
+      >   landed on 2026-08-22 after the bar was removed, and carries both as rules:
+      >   "Market cap" and "Volume ÷ market cap", the same definition as the old field,
+      >   stackable with every other rule. The note above read the leftover store fields
+      >   and missed the screener. Those fields, and the old blockchain one, were removed on
+      >   2026-10-19 (D139), and the page's Matches card now counts screener rules as filters.
       > - **W3-5 (`/equities`, DONE 2026-08-20) — live.** Price $, Yield %, Beta, Mkt cap
       >   and P/E are all full ranges, plus the dividend-payers-only toggle:
       >   `EquitiesClient.tsx:121`–`:195`, deep-linked via the hook at `:124`.
@@ -696,8 +704,9 @@ went to `docs/BUSINESS-CHECKLIST.md`, which is worked separately from both produ
       >   `frontend/src/app/(dashboard)/`, registered at
       >   `frontend/src/lib/modules/registry.ts:205`, `:218` and `:243`.
       >
-      > Remaining: the result-quality sweep (owner-gated), plus one small unblocked
-      > decision — whether W3-2's min-liquidity input comes back to `/assets`.
+      > Remaining: the result-quality sweep (owner-gated). ~~plus one small unblocked
+      > decision — whether W3-2's min-liquidity input comes back to `/assets`.~~ Moot since
+      > 2026-10-19: the screener already has it (see the correction above).
 - [x] **Label every data source on screen, per the house policy.** DONE 2026-08-06.
       Surveying first changed what this was: the *coverage* half was already largely done (36
       surfaces carried a `SourceLine`, and all 31 ids in use resolved). The half that wasn't

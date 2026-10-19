@@ -29,25 +29,29 @@ const baseAsset = (id: string): Asset => ({
 
 describe('liquidity (W3-2)', () => {
   const coin = (over: Partial<Asset> & { id: string }): Asset => ({ ...baseAsset(over.id), ...over })
+  // The screener's "Volume ÷ market cap" rule, which replaced the single
+  // minimum-liquidity field on 2026-10-19 (T-129).
+  const minLiquidity = (pct: number) => ({ filterRules: [{ id: '1', field: 'liquidityPct', operator: 'gte' as const, value: pct }] })
 
   it('filters by vol/mcap percent', () => {
     const rows = [
       coin({ id: 'deep', volume24h: 20e6, marketCap: 100e6 }),   // 20%/day
       coin({ id: 'thin', volume24h: 1e6, marketCap: 100e6 }),    // 1%/day
     ]
-    const out = applyParams(rows, { minLiquidityPct: 5 })
+    const out = applyParams(rows, minLiquidity(5))
     expect(out.data.map((a) => a.id)).toEqual(['deep'])
   })
 
-  it('excludes rows missing either figure when the filter is active', () => {
-    // An unknown ratio is not a passing ratio.
+  it('leaves out rows missing either figure, and counts them as not tested', () => {
+    // An unknown ratio is not a passing ratio, and not a failing one either.
     const rows = [
       coin({ id: 'known', volume24h: 20e6, marketCap: 100e6 }),
       coin({ id: 'noVol', volume24h: null, marketCap: 100e6 }),
       coin({ id: 'noCap', volume24h: 20e6, marketCap: null }),
     ]
-    const out = applyParams(rows, { minLiquidityPct: 1 })
+    const out = applyParams(rows, minLiquidity(1))
     expect(out.data.map((a) => a.id)).toEqual(['known'])
+    expect(out.untested).toBe(2)
   })
 
   it('sorts by the derived liquidityRatio key, nulls last', () => {
