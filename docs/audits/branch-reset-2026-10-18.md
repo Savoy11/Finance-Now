@@ -113,3 +113,18 @@ owner approved on 2026-10-19 (T-129's two parked coin filters, `ohlcvAdjust.ts`)
 - its content in `main` as `4cbe0fe`.
 
 Nothing was deleted; no other ref moved.
+
+## Eighth reset, after PR #382 (2026-10-19)
+
+**What was done.** After PR #382 (the Coins page's dead filter fields and `ohlcvAdjust.ts`, T-129,
+D139) was squash-merged into `main` as `ae771f0`, the branch was restarted from that commit for the
+site terms check (D140), and pushed with `--force-with-lease`, for the same reason as above.
+
+**Where the prior state lives.** The branch's previous tip, `7200270`, is held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@7200270`, created by
+  `.github/workflows/archive-branch.yml` when #382 merged;
+- GitHub's `refs/pull/382/head`;
+- its content in `main` as `ae771f0`.
+
+Nothing was deleted; no other ref moved.
