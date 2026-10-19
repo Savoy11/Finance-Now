@@ -1601,6 +1601,17 @@ credits the only source it is shown and does its own arithmetic badly. Three pro
 It also found two agents putting one yield move at +53bp and +8bp, which is why the curve's changes now
 come worked out.
 
+**Site terms check (owner machine, D140, needs an Anthropic key):** `npm run site-terms` plans and
+spends nothing; `-- --run --limit 3` reads three sites and prints what they cost; `-- --run` reads
+the rest, stopping when the next site would likely pass `--max-dollars` ($10 unless set). For every
+website the Transfer Fee, Staking Facts and Fund Figures Checks link to (a prohibited one skipped),
+an agent finds the terms and quotes what they say about software reading the site. This machine then
+looks each quote up on the page, runs the keyword scan (`termsProbe.ts`) over it as a second reader,
+and reads robots.txt itself. The owner rules each site in `site-terms-worksheet.md` (repository root,
+gitignored, beside `site-terms-results.json`, which a rerun keeps). It decides nothing and reads no
+figure: a pre-fill of the check pages (step 2) reads only sites the owner marks Allowed, and is not
+built. Rules and tests: `scripts/lib/siteTerms.ts`, `lib/server/__tests__/siteTerms.test.ts`.
+
 
 **⚠ STANDING RULE — paid decisions are deferred; no provider may be load-bearing (D21,
 owner, 2026-09-18).** Anything whose remedy is "buy a plan" is not a defect to chase

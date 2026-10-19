@@ -5517,7 +5517,12 @@
      "frontend/scripts/gen-fee-check-page.ts",
      "frontend/src/lib/data/transferFees.ts",
      "frontend/scripts/reconcile-transfer-fees.ts",
-     "frontend/scripts/apply-fee-updates.ts"
+     "frontend/scripts/apply-fee-updates.ts",
+     "frontend/scripts/check-site-terms.ts",
+     "docs/decisions/2026-10-19-owner-decisions.md"
+    ],
+    "corrections": [
+     "2026-10-19 (D140): SITE TERMS CHECK BUILT, NOT RUN. Before an agent reads this check page's websites for the owner (a pre-fill the owner confirms row by row, not built yet), `npm run site-terms` has an agent read each website's terms and robots.txt and quote what they say about software reading the site; on the owner's machine every quote is then looked up on the page itself, and the app's keyword scan reads the same page as a second reader. The owner rules each site Allowed, Not allowed or Ask first in site-terms-worksheet.md. 91 websites lie behind the three check pages (213 pages); OKX and Bitget are skipped as prohibited. It spends only with --run, stops when the next site would likely pass --max-dollars ($10 unless set), and keeps what it has read across runs. Nothing has been read and no figure has moved. For this item the reach is narrow: D89 found most withdrawal fees shown only behind a login, which no reading of the public pages changes."
     ]
    }
   },
@@ -7140,11 +7145,14 @@
      "frontend/scripts/lib/stakingFactRows.ts",
      "frontend/scripts/gen-staking-facts-page.ts",
      "frontend/scripts/staking-facts-plan.ts",
-     "frontend/src/lib/server/__tests__/stakingFactsPage.test.ts"
+     "frontend/src/lib/server/__tests__/stakingFactsPage.test.ts",
+     "frontend/scripts/check-site-terms.ts",
+     "docs/decisions/2026-10-19-owner-decisions.md"
     ],
     "corrections": [
      "2026-09-26: LOCK-UP FIELD AUDITED, and the pass it needs is now 12 rows rather than 187. lockupDays is mostly a PROTOCOL property for a natively-staked position — Cosmos unbonding is 21 days for everybody — so rows for one coin that disagree can be interrogated without leaving the repo. Eleven of the fifteen coins are internally consistent (ada 0d×11, atom 21d×15, avax 14d×9, bnb 7d×8, dot 28d×15, inj 21d×6, matic 9d×8, tia 21d×6, plus three single-row coins). Four disagree, and in every one the rows that carry a lockupNote agree with the protocol while the rows that differ are silent: SOL has four values across 22 rows (all seven noted rows say 3d with \"~2-3 epoch cooldown\"; seven at 5d, one at 7d and one at 0d carry no note), TRX has four silent rows at 3d against one noted row at 14d citing Stake 2.0, NEAR has three rows at 4d whose own note says \"~4-day\" where NEAR docs state 4 EPOCHS ≈ 24 hours, and ETH spreads 0d×9 / 7d×7 / 10d×1 with only the 7d and 10d rows explaining themselves. TWO FALSE LEADS RECORDED IN THE AUDIT rather than dropped: a first pass called eight rows impossible when six are lending or soft-staking products where zero is correct and the catalog says so in `features` (not lockupNote), and called eleven rows missing the field when the parse was line-based and those entries span several lines — no live row is missing it. Record: docs/audits/staking-lockups-2026-09-26.md. Nothing applied; STAKING_DATA_LAST_VERIFIED unmoved. REMAINING ON THIS ITEM: the 12 rows the audit names, plus audit counts, founded years, minimum stakes, and the 17 CeFi/wallet TVL figures DefiLlama cannot see.",
-     "2026-10-17: CHECK PAGE BUILT AND PUBLISHED (D134). The Staking Facts Check page carries every fact still owed, derived from the catalog rather than listed: 322 facts on 53 live providers (each provider's website and year founded; an audit count for the 27 that record one or are liquid protocols; the staking-assets figure for the 13 that show one DefiLlama does not supply; a minimum stake and lock-up for each of 176 coin rows). The owner answers on the page; `npm run staking-facts-plan` reads the answers and reports, never writes. TWO CORRECTIONS TO THE 2026-09-26 ENTRY ABOVE: the audit's list names 24 rows, not 12 (SOL 8, TRX 4, NEAR 3, ETH 9; its own '12' was miscounted), and those 24 are now marked Start here on the page, each only while the catalog still has the figure and note the audit questioned; and the staking-assets figures DefiLlama does not supply are 13 in today's catalog, not the 17 written above: ten exchanges, plus Uniswap, Aave and Convex, which DefiLlama tracks but not as staking. No wallet shows a figure, and a provider showing none gets no row, since there is nothing on the page to check. Nothing applied; STAKING_DATA_LAST_VERIFIED unmoved."
+     "2026-10-17: CHECK PAGE BUILT AND PUBLISHED (D134). The Staking Facts Check page carries every fact still owed, derived from the catalog rather than listed: 322 facts on 53 live providers (each provider's website and year founded; an audit count for the 27 that record one or are liquid protocols; the staking-assets figure for the 13 that show one DefiLlama does not supply; a minimum stake and lock-up for each of 176 coin rows). The owner answers on the page; `npm run staking-facts-plan` reads the answers and reports, never writes. TWO CORRECTIONS TO THE 2026-09-26 ENTRY ABOVE: the audit's list names 24 rows, not 12 (SOL 8, TRX 4, NEAR 3, ETH 9; its own '12' was miscounted), and those 24 are now marked Start here on the page, each only while the catalog still has the figure and note the audit questioned; and the staking-assets figures DefiLlama does not supply are 13 in today's catalog, not the 17 written above: ten exchanges, plus Uniswap, Aave and Convex, which DefiLlama tracks but not as staking. No wallet shows a figure, and a provider showing none gets no row, since there is nothing on the page to check. Nothing applied; STAKING_DATA_LAST_VERIFIED unmoved.",
+     "2026-10-19 (D140): SITE TERMS CHECK BUILT, NOT RUN. Before an agent reads this check page's websites for the owner (a pre-fill the owner confirms row by row, not built yet), `npm run site-terms` has an agent read each website's terms and robots.txt and quote what they say about software reading the site; on the owner's machine every quote is then looked up on the page itself, and the app's keyword scan reads the same page as a second reader. The owner rules each site Allowed, Not allowed or Ask first in site-terms-worksheet.md. 91 websites lie behind the three check pages (213 pages); OKX and Bitget are skipped as prohibited. It spends only with --run, stops when the next site would likely pass --max-dollars ($10 unless set), and keeps what it has read across runs. Nothing has been read and no figure has moved."
     ]
    }
   },
@@ -14864,7 +14872,12 @@
     "evidence": [
      "docs/decisions/2026-10-17-owner-decisions.md",
      "frontend/scripts/gen-fund-figures-page.ts",
-     "frontend/scripts/fund-figures-plan.ts"
+     "frontend/scripts/fund-figures-plan.ts",
+     "frontend/scripts/check-site-terms.ts",
+     "docs/decisions/2026-10-19-owner-decisions.md"
+    ],
+    "corrections": [
+     "2026-10-19 (D140): SITE TERMS CHECK BUILT, NOT RUN. Before an agent reads this check page's websites for the owner (a pre-fill the owner confirms row by row, not built yet), `npm run site-terms` has an agent read each website's terms and robots.txt and quote what they say about software reading the site; on the owner's machine every quote is then looked up on the page itself, and the app's keyword scan reads the same page as a second reader. The owner rules each site Allowed, Not allowed or Ask first in site-terms-worksheet.md. 91 websites lie behind the three check pages (213 pages); OKX and Bitget are skipped as prohibited. It spends only with --run, stops when the next site would likely pass --max-dollars ($10 unless set), and keeps what it has read across runs. Nothing has been read and no figure has moved."
     ]
    }
   },
