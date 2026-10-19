@@ -15,6 +15,7 @@ import { termsGatedFetch } from '@/lib/server/termsGatedFetch'
 import { probeSiteTerms, type TermsProbeReport } from '@/lib/server/termsProbe'
 import { describeThrottle } from '@/lib/server/coingeckoThrottle'
 import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
+import { providerRefusal } from '@/lib/server/providerRefusal'
 
 export const dynamic = 'force-dynamic'
 
@@ -408,9 +409,11 @@ async function testLlmProvider(id: string, key?: string): Promise<TestResult> {
     ? { 'x-api-key': key, 'anthropic-version': '2023-06-01' }
     : { Authorization: `Bearer ${key}` }
   const res = await termsGatedFetch(endpoint.url, { signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS), headers })
-  if (res.status === 401 || res.status === 403) return { ok: false, error: `HTTP ${res.status} — invalid key` }
-  if (!res.ok) return { ok: false, error: `HTTP ${res.status}` }
-  return { ok: true, detail: 'API key valid — models endpoint reachable' }
+  if (res.ok) return { ok: true, detail: 'API key valid — models endpoint reachable' }
+  // The provider's reason, not just its status: "HTTP 400" alone could not say what was wrong.
+  const reason = providerRefusal(await res.json().catch(() => null), key)
+  const status = res.status === 401 || res.status === 403 ? `HTTP ${res.status} — invalid key` : `HTTP ${res.status}`
+  return { ok: false, error: reason ? `${status}: ${reason}` : status }
 }
 
 async function testRssFeed(url: string, name: string): Promise<TestResult> {
