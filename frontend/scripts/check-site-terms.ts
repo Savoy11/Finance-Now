@@ -34,7 +34,7 @@ import { readProviderConfigs } from './lib/providerConfigFile.mjs'
 import { FEE_PAGES } from './lib/transferFeeRows'
 import {
   buildPrompt, collectSites, disagreement, estimateDollars, isSettled, MIN_PAGE_CHARS, parseReading, parseSiteTermsArgs,
-  quoteOnPage, READING_LABEL, READING_TOOL, renderWorksheet, robotsAnswer, runReadingLoop, SYSTEM_PROMPT, USAGE,
+  quoteOnPage, READING_LABEL, READING_TOOL, renderWorksheet, robotsAnswer, runReadingLoop, runStopper, SYSTEM_PROMPT, USAGE,
   webTools,
   type Reading, type RobotsAnswer, type SiteResult, type SiteTarget,
 } from './lib/siteTerms'
@@ -59,14 +59,20 @@ function loadEnvLocal(): void {
   } catch { /* no .env.local: rely on the environment */ }
 }
 
-/** The Integrations key first, then the environment, as getProviderKey resolves it in the app. */
-function anthropicKey(): { key: string | null; note: string | null } {
+/**
+ * The Integrations key first, then the environment, as getProviderKey resolves it in the app.
+ * `source` names where the key came from, never the key: a refused key has to be replaced
+ * where it lives. `note` says why the Integrations page's keys could not be read, if not.
+ */
+function anthropicKey(): { key: string | null; source: string; note: string | null } {
   const { configs, error } = readProviderConfigs()
   const saved = configs?.anthropic?.apiKey
-  if (typeof saved === 'string' && saved.trim()) return { key: saved.trim(), note: null }
+  if (typeof saved === 'string' && saved.trim()) return { key: saved.trim(), source: 'the Integrations page', note: null }
+  const shell = process.env.ANTHROPIC_API_KEY?.trim()
+  if (shell) return { key: shell, source: 'ANTHROPIC_API_KEY in this PowerShell window', note: error }
   loadEnvLocal()
-  const env = process.env.ANTHROPIC_API_KEY?.trim()
-  return { key: env || null, note: error }
+  const local = process.env.ANTHROPIC_API_KEY?.trim()
+  return { key: local || null, source: 'ANTHROPIC_API_KEY in frontend\\.env.local', note: error }
 }
 
 // ─── Reading from this machine ────────────────────────────────────────────────
@@ -122,17 +128,6 @@ async function robotsHere(target: SiteTarget): Promise<{ answers: RobotsAnswer[]
 
 // ─── Asking the agent ─────────────────────────────────────────────────────────
 
-/**
- * An error that ends the run, not just this site, because the next site would fail the same
- * way: a refused key, or a request the API rejects (every site sends the same shape, and a
- * spent credit balance comes back as one).
- */
-function isFatal(e: unknown): boolean {
-  return e instanceof Anthropic.AuthenticationError
-    || e instanceof Anthropic.PermissionDeniedError
-    || e instanceof Anthropic.BadRequestError
-}
-
 function askAgent(client: Anthropic, model: string, target: SiteTarget, robotsToCopy: string[]) {
   return runReadingLoop(model, buildPrompt(target, robotsToCopy), (messages) => client.messages.stream({
     model,
@@ -145,14 +140,14 @@ function askAgent(client: Anthropic, model: string, target: SiteTarget, robotsTo
   }).finalMessage())
 }
 
-async function readSite(client: Anthropic, model: string, target: SiteTarget): Promise<{ result: SiteResult; fatal: boolean }> {
+async function readSite(client: Anthropic, model: string, target: SiteTarget, keySource: string): Promise<{ result: SiteResult; stop: string | null }> {
   const checkedAt = new Date().toISOString()
   const { answers, pending } = await robotsHere(target)
   const asked = await askAgent(client, model, target, pending.map((p) => `${p.origin}/robots.txt`))
   if (asked.outcome === 'error') {
     return {
       result: { site: target.site, checkedAt, model, outcome: 'error', error: asked.error, robots: answers, usage: asked.usage, dollars: asked.dollars },
-      fatal: isFatal(asked.thrown),
+      stop: runStopper(asked.thrown, keySource),
     }
   }
 
@@ -179,7 +174,7 @@ async function readSite(client: Anthropic, model: string, target: SiteTarget): P
     if (text !== null && text.length >= MIN_PAGE_CHARS) scan = { url: reading.termsUrl, signals: scanTermsText(text) }
   }
 
-  return { fatal: false, result: {
+  return { stop: null, result: {
     site: target.site,
     checkedAt,
     model,
@@ -250,11 +245,12 @@ async function main(): Promise<number> {
     return 0
   }
 
-  const { key, note } = anthropicKey()
+  const { key, source, note } = anthropicKey()
   if (!key) {
     console.error(`No Anthropic key found: not on the Integrations page, not in ANTHROPIC_API_KEY, not in .env.local.${note ? ` (${note})` : ''}`)
     return 2
   }
+  console.log(`Key: from ${source}.${note ? ` The Integrations page's keys could not be read: ${note}` : ''}`)
   const client = new Anthropic({ apiKey: key, maxRetries: 4 })
 
   let spent = 0
@@ -269,7 +265,7 @@ async function main(): Promise<number> {
       break
     }
     process.stdout.write(`[${i + 1}/${todo.length}] ${target.site} … `)
-    const { result, fatal } = await readSite(client, args.model, target)
+    const { result, stop } = await readSite(client, args.model, target, source)
     attempted++
     spent += result.dollars
     results.set(result.site, result)
@@ -277,8 +273,8 @@ async function main(): Promise<number> {
     saved = true
     const label = result.reading ? READING_LABEL[result.reading.reading] : result.outcome
     console.log(`${label}${result.warning ? ' ⚠' : ''} · ${dollarsText(result.dollars)}${result.error ? ` (${result.error})` : ''}`)
-    if (fatal) {
-      console.log('\nStopping: the API refused the request, and every site would send the same one. The error is above.')
+    if (stop) {
+      console.log(`\nStopping: ${stop}${note ? ` The Integrations page's keys could not be read: ${note}` : ''}`)
       failed++
       break
     }
