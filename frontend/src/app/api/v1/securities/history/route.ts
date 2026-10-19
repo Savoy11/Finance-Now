@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { CORS, options } from '../../../_cors'
-import { fetchSecurityChart, type ChartRange } from '@/lib/api/live/marketData'
+import { fetchSecurityChart, type ChartRange, type SecurityChart } from '@/lib/api/live/marketData'
 
 // Public agent API — price history for any symbol the security ladder prices (stocks,
 // ETFs, mutual funds, futures, FX pairs, yield indices). Close-only series;
@@ -23,6 +23,8 @@ export interface V1SecurityHistoryResponse {
   fiftyTwoWeekLow: number | null
   /** Provider that served this series (e.g. 'tiingo', 'fmp') — V4 fix. */
   source: string
+  /** What the closes have had taken out (T-441): see SecurityChart['basis']. */
+  basis: SecurityChart['basis']
   updatedAt: string
 }
 
@@ -51,6 +53,7 @@ export async function GET(req: NextRequest) {
       fiftyTwoWeekHigh: chart.fiftyTwoWeekHigh,
       fiftyTwoWeekLow: chart.fiftyTwoWeekLow,
       source: chart.source,
+      basis: chart.basis,
       updatedAt: new Date().toISOString(),
     } satisfies V1SecurityHistoryResponse, { headers: CORS })
   } catch (err) {

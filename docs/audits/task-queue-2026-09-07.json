@@ -62,9 +62,9 @@
   "total_verified": 398,
   "outstanding": 381,
   "by_status": {
-   "closed": 225,
+   "closed": 226,
    "parked": 135,
-   "open": 15,
+   "open": 14,
    "blocked": 6
   },
   "by_owner_role": {
@@ -74,7 +74,7 @@
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 225,
+  "closed_by_annotation": 226,
   "counts_recomputed_on": "2026-10-18",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 381
@@ -14868,7 +14868,7 @@
   {
    "id": "T-441",
    "title": "Decide whether the stock price-history sources should share one adjustment basis (Tiingo takes out dividends, FMP does not)",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "blocking_decision": null,
    "opened": {
@@ -14892,7 +14892,24 @@
      "lines": "Deferred",
      "quote": "Finding, not changed: the two rungs are on different bases. Tiingo serves split- and dividend-adjusted prices; FMP serves split-adjusted prices only."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-10-18",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "Owner chose option (b) (D138). Both FMP rungs, in /live-data/security-ohlcv and the security-chart ladder, now read /stable/historical-price-eod/dividend-adjusted through one fetcher (frontend/src/lib/api/live/fmpHistory.ts), so a fall from Tiingo to FMP no longer moves a dividend payer's history. The owner-machine check the next action asked for had already been made: on 2026-09-18, with the app's key, the free tier answered that endpoint for the same symbols as /full (AAPL, MSFT, NVDA, SPY; 402 for QQQ, VOO, VTSAX; docs/decisions/2026-09-18-owner-decisions.md). The fetcher falls back to /full only on a 403 or an answer without adjusted prices, and every response names its basis, the public history endpoint included. Tests show both rungs giving the same history on a dividend payer. The same question asked of /live-data/security-chart: its FMP rung is on the same fetcher; its third rung, Twelve Data, stays unadjusted and is labelled so.",
+    "approved_by": "owner, 2026-10-18: chose \"Switch FMP to match (Recommended)\"",
+    "evidence": [
+     "frontend/src/lib/api/live/fmpHistory.ts",
+     "frontend/src/lib/api/live/__tests__/fmpHistory.test.ts",
+     "frontend/src/lib/api/live/__tests__/securityChartLadder.test.ts",
+     "frontend/src/lib/server/__tests__/securityOhlcvBasis.test.ts",
+     "docs/assessments/T11-equity-ta-audit.md",
+     "docs/decisions/2026-10-18-owner-decisions.md"
+    ],
+    "known_gap": "Twelve Data's history, the chart's third rung, is still not dividend-adjusted (its adjust=all changed nothing on 2026-09-18), so a fall to it still moves a dividend payer's history; whether it is split-adjusted has not been checked. The fetcher's fields were read through the owner's FMP connector, not the app's key; the app's key was last read against this endpoint on 2026-09-18. Called without dates, as /full was, the endpoint's default history length was not compared with /full's, so a 5Y or MAX chart served by FMP is worth one look on the owner's machine."
+   }
   }
  ],
  "closed_but_still_listed_as_open_in_docs": [

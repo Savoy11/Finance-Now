@@ -29,6 +29,7 @@ import {
 import { getEquity } from '@/lib/data/equityCatalog'
 import { getFund } from '@/lib/data/fundCatalog'
 import { pinnedFetch } from '@/lib/server/pinnedFetch'
+import { fetchFmpDailyHistory, type PriceBasis } from './fmpHistory'
 
 export interface SecurityQuote {
   symbol: string
@@ -459,16 +460,16 @@ export interface SecurityChart {
   fiftyTwoWeekLow: number | null
   currency: string
   /**
-   * Whether the closes are split/dividend adjusted.
+   * What the closes have had taken out.
    *
-   * Travels with the response because the ladder's rungs disagree and always
-   * have: Tiingo serves `adjClose`, FMP and Twelve Data serve raw closes. The
-   * docstring on fetchTiingoChart says a chart and a candlestick of the same
-   * symbol must not disagree across a split — true, and the FMP rung has been
-   * quietly breaking it since it took over. Naming the basis does not fix that,
-   * but it stops the mismatch being invisible to everything downstream.
+   * Travels with the response because the rungs did not all agree. Tiingo and FMP
+   * are both 'splits-and-dividends' since T-441 (2026-10-18): FMP's rung reads its
+   * dividend-adjusted prices, and reads 'splits' only if its plan withholds them.
+   * Before that its /full closes were split-adjusted and labelled 'unadjusted'
+   * here, which was wrong in the other direction. Twelve Data's are 'unadjusted'
+   * (see fetchTwelveDataChart).
    */
-  basis: 'adjusted' | 'unadjusted'
+  basis: Exclude<PriceBasis, 'unknown'>
 }
 
 /** Trading days to keep per range — both chart fetchers slice to this. */
@@ -505,8 +506,8 @@ function summarize(
  *
  * Replaced Yahoo as the head of the chart ladder on 2026-08-06. `adjClose` is
  * split+dividend adjusted, which is the same basis /live-data/security-ohlcv
- * puts its candles on — a chart and a candlestick of the same symbol must not
- * disagree across a split.
+ * puts its candles on, from either of its rungs — a chart and a candlestick of
+ * the same symbol must not disagree across a split, or by a dividend.
  *
  * ⚠ Tiingo covers US-listed equities, ETFs and mutual funds. It does NOT carry
  * futures (`GC=F`), FX pairs (`EURUSD=X`) or yield indices (`^TNX`), so macro
@@ -531,33 +532,30 @@ export async function fetchTiingoChart(symbol: string, range: ChartRange): Promi
     .sort((a, b) => a.t - b.t)
     .slice(-RANGE_DAYS[range])
   if (points.length === 0) throw new Error('Tiingo chart: no points')
-  return summarize(symbol, range, points, 'adjusted')
+  return summarize(symbol, range, points, 'splits-and-dividends')
 }
 
+/**
+ * FMP end-of-day closes, dividend-adjusted like Tiingo's (T-441): the same fetcher
+ * /live-data/security-ohlcv uses, in fmpHistory.ts, so the chart and the candles
+ * cannot read different FMP endpoints.
+ */
 export async function fetchFmpChart(symbol: string, range: ChartRange): Promise<SecurityChart> {
-  const key = requireKey('fmp')
-  const res = await fetch(
-    `${FMP_STABLE}/historical-price-eod/full?symbol=${encodeURIComponent(symbol)}&apikey=${key}`,
-    { next: { revalidate: 300 } }
-  )
-  if (!res.ok) throw new Error(`FMP chart ${res.status}`)
-  // /stable returns the array directly (newest-first), not { historical: [...] }.
-  const rows = await res.json() as Array<{ date: string; close: number }>
-  if (!Array.isArray(rows) || rows.length === 0) throw new Error('FMP chart: empty result')
-  const points = rows
-    .map((row) => ({ t: new Date(row.date).getTime(), close: row.close }))
-    .filter((p) => Number.isFinite(p.t) && Number.isFinite(p.close))
-    .sort((a, b) => a.t - b.t)
+  const { bars, basis } = await fetchFmpDailyHistory(symbol, requireKey('fmp'), { revalidate: 300, label: 'FMP chart' })
+  const points = bars
+    .map((b) => ({ t: new Date(b.date).getTime(), close: b.close }))
+    .filter((p) => Number.isFinite(p.t))
     .slice(-RANGE_DAYS[range])
   if (points.length === 0) throw new Error('FMP chart: no points')
-  return summarize(symbol, range, points, 'unadjusted')
+  return summarize(symbol, range, points, basis)
 }
 
 /**
  * Twelve Data end-of-day closes — the rung that covers what FMP will not serve.
  *
  * Measured 2026-09-18 against the key already configured: FMP's free tier
- * answers `historical-price-eod/full` for ordinary equities and SPY, and returns
+ * answers `historical-price-eod/full`, and `/dividend-adjusted`, which the FMP
+ * rung now reads, for ordinary equities and SPY, and returns
  * HTTP 402 — "not available under your current subscription" — for QQQ, VOO and
  * VTSAX. Twelve Data serves all three. Without this rung those symbols have no
  * chart at all: the ladder exhausts and the route reports unavailable, which is
@@ -568,9 +566,10 @@ export async function fetchFmpChart(symbol: string, range: ChartRange): Promise<
  *
  * ⚠ UNADJUSTED. Twelve Data's `time_series` returns raw OHLC — `datetime, open,
  * high, low, close, volume` — and `adjust=all` changes nothing in the response.
- * So this rung cannot honour the adjusted basis fetchTiingoChart documents. That
- * is not a regression it introduces: the rung above it, FMP, is unadjusted too
- * and is what serves today. It is why `basis` now travels with the response.
+ * So this rung cannot honour the adjusted basis the two rungs above it share
+ * (T-441), and a fall to it moves a dividend payer's history. It is why `basis`
+ * travels with the response. It serves when Tiingo has no key or fails and FMP
+ * refuses the symbol, as its free tier did QQQ, VOO and VTSAX (above).
  */
 export async function fetchTwelveDataChart(symbol: string, range: ChartRange): Promise<SecurityChart> {
   const key = requireKey('twelve-data')
@@ -612,9 +611,10 @@ export async function fetchTwelveDataChart(symbol: string, range: ChartRange): P
  * /live-data/security-chart returns ok:false so the UI shows LiveUnavailable
  * instead of an empty chart that reads as "flat".
  *
- * Order is deliberate: Tiingo first because it is the only rung with adjusted
- * closes, then FMP, then Twelve Data — which exists to catch FMP's 402s on ETFs
- * and mutual funds, so it belongs after the rung it rescues rather than before.
+ * Order is deliberate: Tiingo first, then FMP, both on the split- and
+ * dividend-adjusted basis (T-441), then Twelve Data, which is not, and exists to
+ * catch FMP's 402s on ETFs and mutual funds, so it belongs after the rung it
+ * rescues rather than before.
  */
 export async function fetchSecurityChart(symbol: string, range: ChartRange): Promise<SecurityChart & { source: string }> {
   let lastError: Error = new Error(
