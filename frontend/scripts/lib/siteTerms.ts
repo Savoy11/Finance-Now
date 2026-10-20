@@ -287,6 +287,39 @@ export function buildPrompt(target: SiteTarget, robotsToCopy: readonly string[])
 /** Sent once when the agent stops without answering. */
 export const NUDGE = `Please call ${READING_TOOL_NAME} now with what you found. If you could not find the terms, use the reading "not-found".`
 
+/**
+ * An API failure in one line: the status and the API's own words, without the request id
+ * and JSON the SDK's message wraps them in. Anything else is its message as it stands.
+ */
+export function apiErrorText(e: unknown): string {
+  const err = e as { status?: unknown; error?: { error?: { type?: unknown; message?: unknown } } } | null
+  const inner = err?.error?.error
+  if (typeof err?.status === 'number' && typeof inner?.message === 'string') {
+    return `${err.status} ${typeof inner.type === 'string' ? `${inner.type}: ` : ''}${inner.message}`
+  }
+  return e instanceof Error ? e.message : String(e)
+}
+
+/**
+ * What to tell the owner when a failure ends the whole run, or null when only this site
+ * failed. Every site sends the same key and the same request shape, so a refused key, a key
+ * without access, an empty credit balance or a rejected request would fail every site alike.
+ * `keySource` says where the key came from, since that is where it has to be replaced.
+ */
+export function runStopper(e: unknown, keySource: string): string | null {
+  const status = (e as { status?: unknown } | null)?.status
+  const text = apiErrorText(e)
+  if (status === 401) {
+    return `Anthropic refused the key from ${keySource} (${text}). Replace it there with a key from https://console.anthropic.com/settings/keys and run again.`
+  }
+  if (status === 403) return `The key from ${keySource} is not allowed to make this request (${text}).`
+  if (status === 400 && /credit balance/i.test(text)) {
+    return `The account behind the key from ${keySource} has no credit left (${text}).`
+  }
+  if (status === 400) return `The API rejected the request, and every site sends the same one (${text}).`
+  return null
+}
+
 /** Continuations of a paused server-tool turn, plus the one nudge, before giving up. */
 export const MAX_TURNS = 6
 
@@ -320,7 +353,7 @@ export async function runReadingLoop(
     try {
       res = await send(messages)
     } catch (e) {
-      return { outcome: 'error', error: e instanceof Error ? e.message : String(e), thrown: e, usage, dollars }
+      return { outcome: 'error', error: apiErrorText(e), thrown: e, usage, dollars }
     }
     usage.requests++
     usage.inputTokens += res.usage.input_tokens

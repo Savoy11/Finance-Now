@@ -128,3 +128,19 @@ site terms check (D140), and pushed with `--force-with-lease`, for the same reas
 - its content in `main` as `ae771f0`.
 
 Nothing was deleted; no other ref moved.
+
+## Ninth reset, after PR #383 (2026-10-19)
+
+**What was done.** After PR #383 (the site terms check, D140) was squash-merged into `main` as
+`29c9236`, the branch was restarted from that commit for a fix to that script found on its first
+real run (it did not say where the key Anthropic refused came from), and pushed with
+`--force-with-lease`, for the same reason as above.
+
+**Where the prior state lives.** The branch's previous tip, `b937443`, is held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@b937443`, created by
+  `.github/workflows/archive-branch.yml` when #383 merged;
+- GitHub's `refs/pull/383/head`;
+- its content in `main` as `29c9236`.
+
+Nothing was deleted; no other ref moved.

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { APIError } from '@anthropic-ai/sdk'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { STAKING_PROVIDERS } from '@/lib/data/stakingProviders'
@@ -8,9 +9,9 @@ import { scanTermsText } from '@/lib/server/termsProbe'
 import type { SourceTermsEntry } from '@/lib/server/sourceTerms'
 import { FEE_PAGES } from '../../../../scripts/lib/transferFeeRows'
 import {
-  buildPrompt, collectSites, DEFAULT_MAX_DOLLARS, DEFAULT_MODEL, disagreement, estimateDollars, isSettled, matchable,
+  apiErrorText, buildPrompt, collectSites, DEFAULT_MAX_DOLLARS, DEFAULT_MODEL, disagreement, estimateDollars, isSettled, matchable,
   MAX_TURNS, MODELS, NUDGE, parseReading, parseSiteTermsArgs, quoteOnPage, READING_TOOL, READING_TOOL_NAME, READINGS,
-  renderWorksheet, requestDollars, robotsAnswer, runReadingLoop, SAMPLE_PAGES, siteOf, SYSTEM_PROMPT, webTools,
+  renderWorksheet, requestDollars, robotsAnswer, runReadingLoop, runStopper, SAMPLE_PAGES, siteOf, SYSTEM_PROMPT, webTools,
   type AgentResponse, type AgentTurn, type Reading, type SitePage, type SiteResult, type SiteTarget,
 } from '../../../../scripts/lib/siteTerms'
 
@@ -297,6 +298,35 @@ describe('the conversation', () => {
     expect(out).toMatchObject({ outcome: 'error', error: 'no more replies', usage: { requests: 1 } })
     expect(out.dollars).toBeGreaterThan(0)
     expect(out.thrown).toBeInstanceOf(Error)
+  })
+})
+
+describe('a failure that ends the run', () => {
+  // Built the way the SDK builds them from an API answer, so the shape is the SDK's own.
+  const apiError = (status: number, type: string, message: string) =>
+    APIError.generate(status, { type: 'error', error: { type, message }, request_id: 'req_1' }, undefined, new Headers())
+
+  it('says what the API said, without the JSON and request id around it', () => {
+    expect(apiErrorText(apiError(401, 'authentication_error', 'invalid x-api-key'))).toBe('401 authentication_error: invalid x-api-key')
+    expect(apiErrorText(new Error('socket hang up'))).toBe('socket hang up')
+  })
+
+  it('names where a refused key came from, so it can be replaced there', () => {
+    const stop = runStopper(apiError(401, 'authentication_error', 'invalid x-api-key'), 'ANTHROPIC_API_KEY in frontend\\.env.local')
+    expect(stop).toContain('refused the key from ANTHROPIC_API_KEY in frontend\\.env.local')
+    expect(stop).toContain('console.anthropic.com/settings/keys')
+  })
+
+  it('tells an empty credit balance from a rejected request, and stops on both', () => {
+    expect(runStopper(apiError(400, 'invalid_request_error', 'Your credit balance is too low to access the Anthropic API.'), 'x')).toContain('no credit left')
+    expect(runStopper(apiError(400, 'invalid_request_error', 'tools.0: unknown field'), 'x')).toContain('every site sends the same one')
+    expect(runStopper(apiError(403, 'permission_error', 'no access'), 'x')).toContain('not allowed')
+  })
+
+  it('lets a failure of one site end only that site', () => {
+    expect(runStopper(apiError(529, 'overloaded_error', 'Overloaded'), 'x')).toBeNull()
+    expect(runStopper(apiError(500, 'api_error', 'Internal'), 'x')).toBeNull()
+    expect(runStopper(new Error('fetch failed'), 'x')).toBeNull()
   })
 })
 
