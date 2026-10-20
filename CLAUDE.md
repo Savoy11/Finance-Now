@@ -1607,7 +1607,12 @@ the rest, stopping when the next site would likely pass `--max-dollars` ($10 unl
 website the Transfer Fee, Staking Facts and Fund Figures Checks link to (a prohibited one skipped),
 an agent finds the terms and quotes what they say about software reading the site. This machine then
 looks each quote up on the page, runs the keyword scan (`termsProbe.ts`) over it as a second reader,
-and reads robots.txt itself. The owner rules each site in `site-terms-worksheet.md` (repository root,
+and reads robots.txt itself. Before the agent starts, this machine also reads the site's home pages
+for links that look like its terms and gives them to the agent, whose page opens and searches per site
+are fixed (`FETCH_USES`, `SEARCH_USES`) and stated in its instructions: the first paid run (2026-10-20)
+spent them on home pages and examples and never reached Kraken's or Vanguard's terms. A "not found"
+that only means they ran out gets no ruling box; the worksheet lists it under "Read again" with the
+`--redo` command. The owner rules each site in `site-terms-worksheet.md` (repository root,
 gitignored, beside `site-terms-results.json`, which a rerun keeps). It decides nothing and reads no
 figure: a pre-fill of the check pages (step 2) reads only sites the owner marks Allowed, and is not
 built. Rules and tests: `scripts/lib/siteTerms.ts`, `lib/server/__tests__/siteTerms.test.ts`.

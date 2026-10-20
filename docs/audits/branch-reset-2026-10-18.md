@@ -161,3 +161,20 @@ request the agents make, since listing models had passed a key no agent could us
 - its content in `main` as `1bc122b`.
 
 Nothing was deleted; no other ref moved.
+
+## Eleventh reset, after PR #386 (2026-10-20)
+
+**What was done.** After PR #386 (the Integrations Test button tests an Anthropic key with a real
+one-word request) was squash-merged into `main` as `8ed2ec9`, the branch was restarted from that
+commit for a fix to the site terms script found on its first paid run: the agent ran out of page
+opens before it reached Kraken's and Vanguard's terms. Pushed with `--force-with-lease`, for the
+same reason as above.
+
+**Where the prior state lives.** The branch's previous tip, `4a303db`, is held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@4a303db`, created by
+  `.github/workflows/archive-branch.yml` when #386 merged;
+- GitHub's `refs/pull/386/head`;
+- its content in `main` as `8ed2ec9`.
+
+Nothing was deleted; no other ref moved.

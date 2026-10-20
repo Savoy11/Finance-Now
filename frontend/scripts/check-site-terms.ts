@@ -29,13 +29,13 @@ import { FUND_CATALOG } from '@/lib/data/fundCatalog'
 import { EXCHANGES } from '@/lib/data/transferFees'
 import { pinnedFetch } from '@/lib/server/pinnedFetch'
 import { hostOf, matchTermsEntry } from '@/lib/server/sourceTerms'
-import { htmlToText, PROBE_USER_AGENT, scanTermsText } from '@/lib/server/termsProbe'
+import { discoverTermsLinks, htmlToText, isPathAllowedByRobots, parseRobotsTxt, PROBE_USER_AGENT, scanTermsText } from '@/lib/server/termsProbe'
 import { readProviderConfigs } from './lib/providerConfigFile.mjs'
 import { FEE_PAGES } from './lib/transferFeeRows'
 import {
-  buildPrompt, collectSites, disagreement, estimateDollars, isSettled, MIN_PAGE_CHARS, parseReading, parseSiteTermsArgs,
-  quoteOnPage, READING_LABEL, READING_TOOL, renderWorksheet, robotsAnswer, runReadingLoop, runStopper, SYSTEM_PROMPT, USAGE,
-  webTools,
+  buildPrompt, collectSites, disagreement, estimateDollars, homeOrigins, isSettled, MIN_PAGE_CHARS, OUT_OF_TOOLS_LABEL, parseReading,
+  parseSiteTermsArgs, quoteOnPage, ranOutOfTools, READING_LABEL, READING_TOOL, redoCommand, renderWorksheet, robotsAnswer,
+  runReadingLoop, runStopper, SYSTEM_PROMPT, termsLinksFor, USAGE, webTools,
   type Reading, type RobotsAnswer, type SiteResult, type SiteTarget,
 } from './lib/siteTerms'
 
@@ -48,6 +48,7 @@ const RESULTS_FORMAT = 'site-terms-results-v1'
 const MAX_TOKENS = 16_000
 const FETCH_TIMEOUT_MS = 10_000
 const MAX_BYTES = 800_000
+const MAX_REDIRECTS = 5
 
 /** Same dependency-free loader as scripts/auth-consent.ts: the real environment wins over the file. */
 function loadEnvLocal(): void {
@@ -77,26 +78,49 @@ function anthropicKey(): { key: string | null; source: string; note: string | nu
 
 // ─── Reading from this machine ────────────────────────────────────────────────
 
-async function fetchHere(url: string): Promise<{ status: number | null; text: string | null; why: string }> {
-  const host = hostOf(url)
-  if (!host || !/^https?:/i.test(url)) return { status: null, text: null, why: 'not a web address' }
-  if (matchTermsEntry(host)?.verdict === 'prohibited') return { status: null, text: null, why: 'the registry rules this host prohibited' }
-  try {
-    const res = await pinnedFetch(url, {
-      headers: { 'User-Agent': PROBE_USER_AGENT, Accept: 'text/html,text/plain,*/*' },
-      redirect: 'follow',
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-      // Reading a site's robots.txt and terms is how its terms are learned: the same opt-out
-      // termsProbe.ts takes for the same two documents. Address checks still apply.
-      skipTermsCheck: true,
-    })
-    if (!res.ok) return { status: res.status, text: null, why: `HTTP ${res.status}` }
-    const type = res.headers.get('content-type') ?? ''
-    if (type && !/text|html|xml/i.test(type)) return { status: res.status, text: null, why: `not a text page (${type.split(';')[0]})` }
-    return { status: res.status, text: (await res.text()).slice(0, MAX_BYTES), why: '' }
-  } catch (e) {
-    return { status: null, text: null, why: e instanceof Error ? e.message : String(e) }
+interface Fetched { status: number | null; text: string | null; url: string; why: string }
+
+/**
+ * One page as this machine reads it. Redirects are followed here, one hop at a time, so each
+ * new host is checked against the registry and pinned to its own address, and `url` is where
+ * the page really is: the base its relative links resolve against. Each address is read once
+ * a run, however many times it is asked for.
+ */
+const fetched = new Map<string, Promise<Fetched>>()
+function fetchHere(url: string): Promise<Fetched> {
+  if (!fetched.has(url)) fetched.set(url, fetchFollowing(url))
+  return fetched.get(url)!
+}
+
+async function fetchFollowing(url: string): Promise<Fetched> {
+  let at = url
+  for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
+    const host = hostOf(at)
+    if (!host || !/^https?:/i.test(at)) return { status: null, text: null, url: at, why: 'not a web address' }
+    if (matchTermsEntry(host)?.verdict === 'prohibited') return { status: null, text: null, url: at, why: 'the registry rules this host prohibited' }
+    try {
+      const res = await pinnedFetch(at, {
+        headers: { 'User-Agent': PROBE_USER_AGENT, Accept: 'text/html,text/plain,*/*' },
+        redirect: 'manual',
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+        // Reading a site's robots.txt and terms is how its terms are learned: the same opt-out
+        // termsProbe.ts takes for the same two documents. Address checks still apply.
+        skipTermsCheck: true,
+      })
+      const next = res.status >= 300 && res.status < 400 ? res.headers.get('location') : null
+      if (next) {
+        at = new URL(next, at).toString()
+        continue
+      }
+      if (!res.ok) return { status: res.status, text: null, url: at, why: `HTTP ${res.status}` }
+      const type = res.headers.get('content-type') ?? ''
+      if (type && !/text|html|xml/i.test(type)) return { status: res.status, text: null, url: at, why: `not a text page (${type.split(';')[0]})` }
+      return { status: res.status, text: (await res.text()).slice(0, MAX_BYTES), url: at, why: '' }
+    } catch (e) {
+      return { status: null, text: null, url: at, why: e instanceof Error ? e.message : String(e) }
+    }
   }
+  return { status: null, text: null, url: at, why: `more than ${MAX_REDIRECTS} redirects` }
 }
 
 /** One read per page however many quotes cite it: the promise is cached, not the text, so concurrent checks share it. */
@@ -126,10 +150,29 @@ async function robotsHere(target: SiteTarget): Promise<{ answers: RobotsAnswer[]
   return { answers, pending }
 }
 
+/**
+ * Links on the site's home pages that look like its terms, for the agent to open directly. A
+ * home page whose robots.txt disallows it is not read; neither is one whose robots.txt could
+ * not be read, short of a 404, which disallows nothing.
+ */
+async function termsLinksHere(target: SiteTarget): Promise<string[]> {
+  const found: string[] = []
+  for (const origin of homeOrigins(target)) {
+    const robots = await fetchHere(`${origin}/robots.txt`)
+    const allowed = robots.text !== null
+      ? isPathAllowedByRobots(parseRobotsTxt(robots.text), '/')
+      : robots.status === 404 || robots.status === 410
+    if (!allowed) continue
+    const home = await fetchHere(`${origin}/`)
+    if (home.text !== null) found.push(...discoverTermsLinks(home.text, home.url))
+  }
+  return termsLinksFor(target.site, found)
+}
+
 // ─── Asking the agent ─────────────────────────────────────────────────────────
 
-function askAgent(client: Anthropic, model: string, target: SiteTarget, robotsToCopy: string[]) {
-  return runReadingLoop(model, buildPrompt(target, robotsToCopy), (messages) => client.messages.stream({
+function askAgent(client: Anthropic, model: string, target: SiteTarget, robotsToCopy: string[], termsLinks: string[]) {
+  return runReadingLoop(model, buildPrompt(target, robotsToCopy, termsLinks), (messages) => client.messages.stream({
     model,
     max_tokens: MAX_TOKENS,
     system: SYSTEM_PROMPT,
@@ -143,7 +186,7 @@ function askAgent(client: Anthropic, model: string, target: SiteTarget, robotsTo
 async function readSite(client: Anthropic, model: string, target: SiteTarget, keySource: string): Promise<{ result: SiteResult; stop: string | null }> {
   const checkedAt = new Date().toISOString()
   const { answers, pending } = await robotsHere(target)
-  const asked = await askAgent(client, model, target, pending.map((p) => `${p.origin}/robots.txt`))
+  const asked = await askAgent(client, model, target, pending.map((p) => `${p.origin}/robots.txt`), await termsLinksHere(target))
   if (asked.outcome === 'error') {
     return {
       result: { site: target.site, checkedAt, model, outcome: 'error', error: asked.error, robots: answers, usage: asked.usage, dollars: asked.dollars },
@@ -271,7 +314,7 @@ async function main(): Promise<number> {
     results.set(result.site, result)
     save(results, targets, skipped)
     saved = true
-    const label = result.reading ? READING_LABEL[result.reading.reading] : result.outcome
+    const label = ranOutOfTools(result) ? OUT_OF_TOOLS_LABEL : result.reading ? READING_LABEL[result.reading.reading] : result.outcome
     console.log(`${label}${result.warning ? ' ⚠' : ''} · ${dollarsText(result.dollars)}${result.error ? ` (${result.error})` : ''}`)
     if (stop) {
       console.log(`\nStopping: ${stop}${note ? ` The Integrations page's keys could not be read: ${note}` : ''}`)
@@ -290,6 +333,10 @@ async function main(): Promise<number> {
   const left = targets.filter((t) => { const r = results.get(t.site); return !r || !isSettled(r) }).length
   console.log(`\nSpent ${dollarsText(spent)} on ${attempted} site${attempted === 1 ? '' : 's'}${spent > 0 ? ` (${dollarsText(spent / attempted)} each on average)` : ''}. ${left} left to read.`)
   if (spent > 0 && left > 0) console.log(`At that average the ${left} left would cost about ${dollarsText((spent / attempted) * left)}.`)
+  const again = [...results.values()].filter(ranOutOfTools).map((r) => r.site).sort()
+  if (again.length > 0) {
+    console.log(`\n${again.length} site${again.length === 1 ? '' : 's'} ran out of page opens or searches before reaching the terms. Read ${again.length === 1 ? 'it' : 'them'} again with:\n  ${redoCommand(again)}`)
+  }
   if (saved) console.log(`Worksheet: ${WORKSHEET}\nAnswers:   ${RESULTS}`)
   return failed > 0 && failed >= attempted ? 1 : 0
 }
