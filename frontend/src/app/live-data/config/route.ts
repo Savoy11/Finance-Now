@@ -16,6 +16,7 @@ import { probeSiteTerms, type TermsProbeReport } from '@/lib/server/termsProbe'
 import { describeThrottle } from '@/lib/server/coingeckoThrottle'
 import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 import { providerRefusal } from '@/lib/server/providerRefusal'
+import { DEFAULT_ANTHROPIC_MODEL } from '@/lib/agents/prompts'
 
 export const dynamic = 'force-dynamic'
 
@@ -229,7 +230,8 @@ async function testProvider(provider: { id: string; isCustom?: boolean; url?: st
     case 'cnbc':          return testRssFeed('https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=100003114', 'CNBC')
     case 'reddit-stocks': return testRedditStocks()
     case 'stocktwits':    return testStocktwits()
-    case 'anthropic': case 'openai': case 'google': case 'groq': case 'xai':
+    case 'anthropic':     return testAnthropic(key)
+    case 'openai': case 'google': case 'groq': case 'xai':
     case 'deepseek': case 'mistral': case 'together': case 'cohere':
       return testLlmProvider(provider.id, key)
     default:              return { ok: false, error: 'No test available for this provider' }
@@ -389,8 +391,8 @@ async function testYouTubeSearch(key: string | undefined): Promise<TestResult> {
 }
 
 // Verify an LLM key by listing models on the provider's (OpenAI-compatible) endpoint.
-const LLM_TEST_ENDPOINTS: Record<string, { url: string; auth: 'bearer' | 'anthropic' }> = {
-  anthropic: { url: 'https://api.anthropic.com/v1/models', auth: 'anthropic' },
+// Anthropic is tested with a real request instead: see testAnthropic.
+const LLM_TEST_ENDPOINTS: Record<string, { url: string; auth: 'bearer' }> = {
   openai:    { url: 'https://api.openai.com/v1/models', auth: 'bearer' },
   google:    { url: 'https://generativelanguage.googleapis.com/v1beta/openai/models', auth: 'bearer' },
   groq:      { url: 'https://api.groq.com/openai/v1/models', auth: 'bearer' },
@@ -405,15 +407,42 @@ async function testLlmProvider(id: string, key?: string): Promise<TestResult> {
   if (!key) return { ok: false, error: 'API key required' }
   const endpoint = LLM_TEST_ENDPOINTS[id]
   if (!endpoint) return { ok: false, error: 'No test available for this provider' }
-  const headers: Record<string, string> = endpoint.auth === 'anthropic'
-    ? { 'x-api-key': key, 'anthropic-version': '2023-06-01' }
-    : { Authorization: `Bearer ${key}` }
-  const res = await termsGatedFetch(endpoint.url, { signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS), headers })
+  const res = await termsGatedFetch(endpoint.url, { signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS), headers: { Authorization: `Bearer ${key}` } })
   if (res.ok) return { ok: true, detail: 'API key valid — models endpoint reachable' }
-  // The provider's reason, not just its status: "HTTP 400" alone could not say what was wrong.
+  return refused(res, key)
+}
+
+/** The provider's reason, not just its status: "HTTP 400" alone could not say what was wrong. */
+async function refused(res: Response, key: string): Promise<TestResult> {
   const reason = providerRefusal(await res.json().catch(() => null), key)
   const status = res.status === 401 || res.status === 403 ? `HTTP ${res.status} — invalid key` : `HTTP ${res.status}`
   return { ok: false, error: reason ? `${status}: ${reason}` : status }
+}
+
+/** Room for a one-word answer, and for a model that thinks first to stop early without failing. */
+const ANTHROPIC_TEST_MAX_TOKENS = 16
+
+/**
+ * Anthropic is tested with the kind of request the agents make, not by listing models.
+ * Listing models passed for a key no agent could use (2026-10-19): a key not scoped to a
+ * workspace may list models but not run one. A one-word request on the agents' default
+ * model proves what they need, the key, its workspace, its credit and its access to the
+ * model, for a fraction of a cent a press.
+ */
+async function testAnthropic(key?: string): Promise<TestResult> {
+  if (!key) return { ok: false, error: 'API key required' }
+  const res = await termsGatedFetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS),
+    headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+    body: JSON.stringify({
+      model: DEFAULT_ANTHROPIC_MODEL,
+      max_tokens: ANTHROPIC_TEST_MAX_TOKENS,
+      messages: [{ role: 'user', content: 'Reply with OK.' }],
+    }),
+  })
+  if (res.ok) return { ok: true, detail: `API key works: ${DEFAULT_ANTHROPIC_MODEL} answered a one-word request` }
+  return refused(res, key)
 }
 
 async function testRssFeed(url: string, name: string): Promise<TestResult> {

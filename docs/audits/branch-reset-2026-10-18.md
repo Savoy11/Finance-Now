@@ -144,3 +144,20 @@ real run (it did not say where the key Anthropic refused came from), and pushed 
 - its content in `main` as `29c9236`.
 
 Nothing was deleted; no other ref moved.
+
+## Tenth reset, after PR #385 (2026-10-20)
+
+**What was done.** After PR #385 (why an Anthropic key was refused: the site terms script and
+the Integrations Test button) was squash-merged into `main` as `1bc122b`, the branch was
+restarted from that commit for the owner's next request: make that Test button run the kind of
+request the agents make, since listing models had passed a key no agent could use. Pushed with
+`--force-with-lease`, for the same reason as above.
+
+**Where the prior state lives.** The branch's previous tip, `2dce1b6`, is held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@2dce1b6`, created by
+  `.github/workflows/archive-branch.yml` when #385 merged;
+- GitHub's `refs/pull/385/head`;
+- its content in `main` as `1bc122b`.
+
+Nothing was deleted; no other ref moved.
