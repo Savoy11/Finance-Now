@@ -215,7 +215,7 @@ export const READING_TOOL = {
       operator: strOrNull('Who runs the site, as the terms name them'),
       termsUrl: strOrNull('The terms document you read, or null if none was found'),
       termsTitle: strOrNull('Its title, as the document gives it'),
-      termsUpdated: strOrNull('Its "last updated" or effective date, as the document states it'),
+      termsUpdated: strOrNull('Its "last updated" or effective date, as the document states it: the date alone'),
       reading: {
         type: 'string',
         enum: [...READINGS],
@@ -251,8 +251,50 @@ Rules:
 /** At most this many of a site's pages go into the instructions; the rest are counted. */
 export const SAMPLE_PAGES = 6
 
-/** The user turn for one site. `robotsToCopy` lists robots.txt files this machine could not read. */
-export function buildPrompt(target: SiteTarget, robotsToCopy: readonly string[]): string {
+/**
+ * What one site's conversation may use, stated in the instructions so the agent can plan for
+ * it. On the first paid run (2026-10-20) the agent spent its allowance on the home page and the
+ * example pages, and reached neither Kraken's terms nor Vanguard's.
+ */
+export const FETCH_USES = 8
+export const SEARCH_USES = 3
+
+/** Home pages this machine reads for terms links, and how many of those links the agent is given. */
+export const HOME_PAGES = 3
+export const TERMS_LINKS = 6
+
+/** The home pages to read for terms links: the site's own first, then each host its pages are on. */
+export function homeOrigins(target: SiteTarget): string[] {
+  const out = [`https://${target.site}`]
+  const same = (o: string) => out.some((x) => x.replace('://www.', '://') === o.replace('://www.', '://'))
+  for (const p of target.pages) {
+    let origin: string
+    try { origin = new URL(p.url).origin } catch { continue }
+    if (!same(origin)) out.push(origin)
+  }
+  return out.slice(0, HOME_PAGES)
+}
+
+/** Links found on those home pages, kept to this site, without fragments, once each, in the order found. */
+export function termsLinksFor(site: string, found: readonly string[]): string[] {
+  const out: string[] = []
+  for (const raw of found) {
+    let u: URL
+    try { u = new URL(raw) } catch { continue }
+    if (!/^https?:$/.test(u.protocol) || siteOf(u.toString()) !== site) continue
+    u.hash = ''
+    const url = u.toString()
+    if (!out.includes(url)) out.push(url)
+  }
+  return out.slice(0, TERMS_LINKS)
+}
+
+/**
+ * The user turn for one site. `robotsToCopy` lists robots.txt files this machine could not
+ * read; `termsLinks` the links on its home pages that look like terms, read from this machine.
+ * Naming them here lets the agent open them directly, with no search and no home page first.
+ */
+export function buildPrompt(target: SiteTarget, robotsToCopy: readonly string[], termsLinks: readonly string[] = []): string {
   const sample: SitePage[] = []
   for (const check of Object.keys(CHECK_PAGES) as CheckId[]) {
     const first = target.pages.find((p) => p.check === check)
@@ -276,7 +318,13 @@ export function buildPrompt(target: SiteTarget, robotsToCopy: readonly string[])
     '',
     'Also note who operates the site and when the terms were last updated, as the document states them.',
     '',
-    `Start from the home page (${origin}) and its footer links, or search for "${target.site} terms of use". If the pages above are on a site run by a different company from the home page, the terms of the site the pages are on are the ones that count.`,
+    ...(termsLinks.length > 0
+      ? ['The owner\'s machine read the site\'s home page and found these links that look like its terms. Open the likeliest first; you should not need to search:', ...termsLinks.map((u) => `- ${u}`)]
+      : [`The owner's machine found no terms link on the home page (some sites draw their links only in a browser). Search for "${target.site} terms of use", or open the home page (${origin}) and follow its footer links.`]),
+    '',
+    `You can open at most ${FETCH_USES} pages and run at most ${SEARCH_USES} searches for this site, so spend them on the terms. You do not need to open the pages listed above: they only show which part of the site the owner reads. A legal page that lists several documents is a menu; from it, open the terms of use or service.`,
+    '',
+    'If the pages above are on a site run by a different company from the home page, the terms of the site the pages are on are the ones that count; their addresses usually show it.',
     '',
     robotsToCopy.length === 0
       ? 'robots.txt has been read separately; you do not need to.'
@@ -413,13 +461,27 @@ const ENTITIES: Record<string, string> = {
 const codePoint = (n: number, m: string): string => (Number.isInteger(n) && n > 0 && n <= 0x10ffff ? String.fromCodePoint(n) : m)
 
 /**
- * Text reduced to what a quote should match on: entities decoded, curly quotes and dashes
- * made plain, case ignored, and spaces dropped altogether. A stripped tag leaves a space the
- * page's reader never saw (`<b>Site</b>’s` reads as "Site ’s"), and a verbatim passage of
- * any length is no less unique without its spaces.
+ * A quote without the Markdown a fetched page reaches the agent in: `**bold**`, `[text](link)`
+ * and heading marks. Lido's "The **Permitted Use** of the Interface" was marked missing on the
+ * first paid run (2026-10-20) for its asterisks alone.
+ */
+export function plainQuote(s: string): string {
+  return s
+    .replace(/!?\[([^\]]*)\]\([^)\s]*\)/g, '$1')
+    .replace(/(\*\*|__)(?=\S)([\s\S]*?\S)\1/g, '$2')
+    .replace(/^\s{0,3}#{1,6}\s+/gm, '')
+}
+
+/**
+ * Text reduced to what a quote should match on: Markdown dropped, entities decoded, curly
+ * quotes and dashes made plain, case ignored, and spaces dropped altogether. A stripped tag
+ * leaves a space the page's reader never saw (`<b>Site</b>’s` reads as "Site ’s"), and a
+ * verbatim passage of any length is no less unique without its spaces. Asterisks go on both
+ * sides, so a stray emphasis mark cannot fail a quote and cannot pass one either.
  */
 export function matchable(s: string): string {
-  return s
+  return plainQuote(s)
+    .replace(/\*/g, '')
     .replace(/&#x([0-9a-f]+);/gi, (m, h) => codePoint(parseInt(h, 16), m))
     .replace(/&#(\d+);/g, (m, d) => codePoint(Number(d), m))
     .replace(/&([a-z]+);/gi, (m, n) => ENTITIES[n.toLowerCase()] ?? m)
@@ -530,12 +592,12 @@ export function webTools(model: string) {
   if (!web) throw new Error(`Unknown model ${model}`)
   return web === 'dynamic'
     ? [
-        { type: 'web_search_20260209' as const, name: 'web_search' as const, max_uses: 3 },
-        { type: 'web_fetch_20260209' as const, name: 'web_fetch' as const, max_uses: 6, max_content_tokens: 40_000 },
+        { type: 'web_search_20260209' as const, name: 'web_search' as const, max_uses: SEARCH_USES },
+        { type: 'web_fetch_20260209' as const, name: 'web_fetch' as const, max_uses: FETCH_USES, max_content_tokens: 40_000 },
       ]
     : [
-        { type: 'web_search_20250305' as const, name: 'web_search' as const, max_uses: 3 },
-        { type: 'web_fetch_20250910' as const, name: 'web_fetch' as const, max_uses: 6, max_content_tokens: 40_000 },
+        { type: 'web_search_20250305' as const, name: 'web_search' as const, max_uses: SEARCH_USES },
+        { type: 'web_fetch_20250910' as const, name: 'web_fetch' as const, max_uses: FETCH_USES, max_content_tokens: 40_000 },
       ]
 }
 
@@ -610,6 +672,28 @@ export interface SiteResult {
 /** A result worth keeping on a rerun: anything but an error, which is tried again. */
 export const isSettled = (r: SiteResult): boolean => r.outcome !== 'error'
 
+/**
+ * A "terms not found" that only means the agent used up its page opens or searches first: the
+ * count says so, or the agent's own reasons do. It is not an answer about the site, so the
+ * worksheet asks for the site to be read again rather than ruled on. Kept, not retried by
+ * itself: a site that always runs out would otherwise be paid for on every run.
+ */
+export function ranOutOfTools(r: SiteResult): boolean {
+  const g = r.reading
+  if (r.outcome !== 'read' || g?.reading !== 'not-found') return false
+  return r.usage.webFetches >= FETCH_USES || r.usage.webSearches >= SEARCH_USES
+    || g.couldNotRead.some((c) => /\blimit\b|max(imum)?[_ ]uses|ran out/i.test(c.why))
+}
+
+/** The command that reads these sites again. */
+export const redoCommand = (sites: readonly string[]): string => `npm run site-terms -- --run --redo --only ${sites.join(',')}`
+
+/** "Page last updated: September 23, 2026" as the date alone: the worksheet supplies "last updated". */
+export function datePart(s: string): string {
+  const date = s.replace(/^\s*(?:page\s+|document\s+)?(?:last\s+(?:updated|revised|modified)|updated|revised|effective(?:\s+date)?)\s*(?:on\b)?\s*:?\s*/i, '').trim()
+  return date || s.trim()
+}
+
 /** Escapes what Markdown would otherwise read as markup in text copied from a website. */
 export function md(s: string): string {
   return s.replace(/\s+/g, ' ').replace(/([\\`*_[\]<>|#])/g, '\\$1').trim()
@@ -656,8 +740,11 @@ function quoteSummary(r: SiteResult): string {
   return `${on} of ${checks.length} on page${missing > 0 ? `, ⚠ ${missing} missing` : ''}`
 }
 
+export const OUT_OF_TOOLS_LABEL = 'Ran out of page opens or searches'
+
 const outcomeLabel = (r: SiteResult): string =>
-  r.outcome === 'read' && r.reading ? READING_LABEL[r.reading.reading]
+  ranOutOfTools(r) ? OUT_OF_TOOLS_LABEL
+    : r.outcome === 'read' && r.reading ? READING_LABEL[r.reading.reading]
     : r.outcome === 'refused' ? 'The model declined'
     : r.outcome === 'no-answer' ? 'No answer'
     : `Error: ${r.error ?? 'unknown'}`
@@ -674,6 +761,7 @@ export function renderWorksheet(input: {
   const failedLast = new Map(input.results.filter((r) => !isSettled(r)).map((r) => [r.site, r.error ?? 'unknown error']))
   const read = input.targets.filter((t) => bySite.has(t.site))
   const unread = input.targets.filter((t) => !bySite.has(t.site))
+  const again = read.filter((t) => ranOutOfTools(bySite.get(t.site)!)).map((t) => t.site)
   const spent = input.results.reduce((s, r) => s + r.dollars, 0)
 
   const lines: string[] = [
@@ -683,7 +771,7 @@ export function renderWorksheet(input: {
     '',
     '**Nothing here is a ruling, and a site that says nothing has not said yes.** Mark each site; the pre-fill (step 2) will read only the sites you mark Allowed. Every figure it suggests still waits for you on the check page.',
     '',
-    `${read.length} site${read.length === 1 ? '' : 's'} read · ${unread.length} not read yet · ${input.skipped.length} skipped · $${spent.toFixed(2)} spent in all`,
+    `${read.length} site${read.length === 1 ? '' : 's'} read${again.length > 0 ? ` (${again.length} to read again)` : ''} · ${unread.length} not read yet · ${input.skipped.length} skipped · $${spent.toFixed(2)} spent in all`,
     '',
     '## Summary',
     '',
@@ -696,6 +784,18 @@ export function renderWorksheet(input: {
     '',
   ]
 
+  if (again.length > 0) {
+    lines.push(
+      '## Read again',
+      '',
+      `The agent used up its page opens or searches before it reached the terms of ${again.length === 1 ? 'this site' : `these ${again.length} sites`}, so "not found" is no answer about ${again.length === 1 ? 'it' : 'them'}. Read ${again.length === 1 ? 'it' : 'them'} again before ruling:`,
+      '',
+      '```',
+      redoCommand(again),
+      '```',
+      '',
+    )
+  }
   if (unread.length > 0) {
     lines.push('## Not read yet', '', 'Run `npm run site-terms -- --run` again to continue; sites already read are kept.', '')
     for (const t of unread) {
@@ -725,12 +825,12 @@ export function renderWorksheet(input: {
     if (r.warning) lines.push('', `⚠ ${md(r.warning)}`)
     const g = r.reading
     if (g) {
-      if (g.termsUrl) lines.push('', `Terms: [${md(g.termsTitle ?? g.termsUrl)}](${g.termsUrl})${g.termsUpdated ? `, last updated ${md(g.termsUpdated)}` : ''}${g.operator ? `. Operator: ${md(g.operator)}` : ''}`)
+      if (g.termsUrl) lines.push('', `Terms: [${md(g.termsTitle ?? g.termsUrl)}](${g.termsUrl})${g.termsUpdated ? `, last updated ${md(datePart(g.termsUpdated))}` : ''}${g.operator ? `. Operator: ${md(g.operator)}` : ''}`)
       lines.push('', md(g.summary))
       if (g.clauses.length > 0) {
         lines.push('', 'Quotes:')
         g.clauses.forEach((c, i) => {
-          lines.push('', `> ${md(c.quote)}`, '', `${c.topic}, [source](${c.url}) · ${QUOTE_MARK[r.quoteChecks?.[i] ?? 'unchecked']}`)
+          lines.push('', `> ${md(plainQuote(c.quote))}`, '', `${c.topic}, [source](${c.url}) · ${QUOTE_MARK[r.quoteChecks?.[i] ?? 'unchecked']}`)
         })
       }
       if (g.otherDocuments.length > 0) lines.push('', `Also read: ${g.otherDocuments.map((d) => `[${md(d.title)}](${d.url})`).join(', ')}`)
@@ -744,7 +844,9 @@ export function renderWorksheet(input: {
     } else if (r.reading?.termsUrl) {
       lines.push('', 'Keyword scan: the terms page could not be read from this machine.')
     }
-    lines.push('', 'robots.txt:', ...robotsLines(r.robots), '', RULING, '')
+    const u = r.usage
+    lines.push('', `As the API reported it: ${u.webFetches} page open${u.webFetches === 1 ? '' : 's'} of ${FETCH_USES}, ${u.webSearches} search${u.webSearches === 1 ? '' : 'es'} of ${SEARCH_USES}, $${r.dollars.toFixed(2)}.`)
+    lines.push('', 'robots.txt:', ...robotsLines(r.robots), '', ranOutOfTools(r) ? `**No ruling yet:** read this site again first (\`${redoCommand([t.site])}\`).` : RULING, '')
   }
   return `\uFEFF${lines.join('\n')}\n`
 }
