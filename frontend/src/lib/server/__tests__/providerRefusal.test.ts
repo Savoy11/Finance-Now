@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 import { providerRefusal } from '../providerRefusal'
+import { DEFAULT_ANTHROPIC_MODEL } from '@/lib/agents/prompts'
 
 /**
  * The Integrations Test button says why a provider refused a key (2026-10-19). It said only
@@ -63,6 +64,28 @@ describe('the Test button for an AI provider', () => {
   it('keeps "invalid key" on a 401, with the reason', async () => {
     fetchMock.mockResolvedValue(new Response(JSON.stringify({ type: 'error', error: { type: 'authentication_error', message: 'invalid x-api-key' } }), { status: 401 }))
     expect((await press('sk-ant-old')).error).toBe('HTTP 401 — invalid key: invalid x-api-key')
+  })
+
+  it('tests Anthropic with the kind of request the agents make, not a model list', async () => {
+    fetchMock.mockResolvedValue(new Response(JSON.stringify({ content: [{ type: 'text', text: 'OK' }] }), { status: 200 }))
+    const out = await press('sk-ant-new')
+    expect(out.ok).toBe(true)
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit]
+    expect(url).toBe('https://api.anthropic.com/v1/messages')
+    expect(init.method).toBe('POST')
+    const body = JSON.parse(String(init.body))
+    expect(body.model).toBe(DEFAULT_ANTHROPIC_MODEL)
+    expect(body.max_tokens).toBeLessThanOrEqual(32)
+    expect(JSON.stringify(fetchMock.mock.calls)).not.toContain('/v1/models')
+  })
+
+  it('fails a key not scoped to a workspace, which a model list let through (2026-10-19)', async () => {
+    // The message Anthropic sent the owner's script that day, for a key the old test passed.
+    const message = 'This API key is not scoped to a workspace, so this request must include the anthropic-workspace-id header with the ID of the workspace to use. Add the header, or use an API key that is scoped to a workspace.'
+    fetchMock.mockResolvedValue(new Response(JSON.stringify({ type: 'error', error: { type: 'invalid_request_error', message } }), { status: 400 }))
+    const out = await press('sk-ant-user-key')
+    expect(out.ok).toBe(false)
+    expect(out.error).toContain('HTTP 400: This API key is not scoped to a workspace')
   })
 
   it('falls back to the status alone when the body says nothing', async () => {
