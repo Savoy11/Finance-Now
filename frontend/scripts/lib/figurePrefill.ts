@@ -118,47 +118,46 @@ export const ASSET_KINDS = ['own', 'whole'] as const
 
 const s = (description: string) => ({ type: 'string', description })
 
+export type FigureName = 'yield' | 'assets'
+
+const ANSWER_FIELDS = {
+  found: { type: 'boolean', description: 'Whether the page text shows this figure' },
+  shown: s('The figure exactly as the page prints it, unit and all ("1.23%", "$1,234.5 M"), or "" if not found'),
+  label: s('The words the page puts beside it ("30 Day SEC Yield"), or ""'),
+  kind: { type: 'string', enum: [...YIELD_KINDS, ...ASSET_KINDS, 'none'], description: 'Which kind of figure it is, from the kinds listed for it; none if not found' },
+  asOf: s('The date the page gives for this figure, as year-month-day (2026-09-30), or "" if it gives none'),
+  quote: s('One continuous passage copied exactly from the page text that holds the figure itself, with its label where the page prints one beside it ("secYield":"1.00%"). Never the date alone or the label alone. "" if not found'),
+  dateQuote: s('The passage the date is in, copied exactly, if the quote above does not hold it; otherwise ""'),
+  others: s('Any other yields or net-asset figures the page shows, as printed, or ""'),
+  why: s('If not found: why, in a sentence. Otherwise ""'),
+}
+
 /**
  * The answer's shape, asked for as structured output (`output_config.format`), never through a
  * forced tool: Claude Sonnet 5.5 and Opus 5.5 refuse a forced `tool_choice` with a 400, which is
- * how the first trial run on the owner's machine ended (2026-10-21).
+ * how the first trial run on the owner's machine ended (2026-10-21). One required slot per figure
+ * asked, named for it: a list let the model leave a figure out, which is how VOO's net assets went
+ * unanswered on the second trial run the same day.
  */
-export const FIGURES_FORMAT = {
-  type: 'json_schema' as const,
-  schema: {
-    type: 'object',
-    properties: {
-      figures: {
-        type: 'array',
-        items: {
-          type: 'object',
-          properties: {
-            figure: { type: 'string', enum: ['yield', 'assets'] },
-            found: { type: 'boolean', description: 'Whether the page text shows this figure' },
-            shown: s('The figure exactly as the page prints it, unit and all ("1.23%", "$1,234.5 M"), or "" if not found'),
-            label: s('The words the page puts beside it ("30 Day SEC Yield"), or ""'),
-            kind: { type: 'string', enum: [...YIELD_KINDS, ...ASSET_KINDS, 'none'], description: 'Which kind of figure it is, from the kinds listed for it; none if not found' },
-            asOf: s('The date the page gives for this figure, as year-month-day (2026-09-30), or "" if it gives none'),
-            quote: s('One continuous passage copied exactly from the page text that holds the label and the figure, or ""'),
-            dateQuote: s('The passage the date is in, copied exactly, if the quote above does not hold it; otherwise ""'),
-            others: s('Any other yields or net-asset figures the page shows, as printed, or ""'),
-            why: s('If not found: why, in a sentence. Otherwise ""'),
-          },
-          required: ['figure', 'found', 'shown', 'label', 'kind', 'asOf', 'quote', 'dateQuote', 'others', 'why'],
-          additionalProperties: false,
-        },
-      },
+export function figuresFormat(figures: readonly FigureName[]) {
+  const answer = { type: 'object', properties: ANSWER_FIELDS, required: Object.keys(ANSWER_FIELDS), additionalProperties: false }
+  const names = [...new Set(figures)]
+  return {
+    type: 'json_schema' as const,
+    schema: {
+      type: 'object',
+      properties: Object.fromEntries(names.map((n) => [n, answer])),
+      required: names,
+      additionalProperties: false,
     },
-    required: ['figures'],
-    additionalProperties: false,
-  },
+  }
 }
 
 export const FIGURES_SYSTEM = `You read one fund's web page, as plain text, for the owner of Finance Now, who is re-reading the figures in a fund catalog by hand and wants the page's figures found for them first. They compare every figure you report with the page before they use it.
 
 Rules:
 - Copy, never compute. Give each figure exactly as the page prints it, unit and all. Do not round, convert or add up.
-- Quote the passage each figure is in, copied exactly from the text you are given: one continuous passage, nothing added, dropped or changed. A quote that is not in the text is thrown away, and so is its figure.
+- Quote the passage each figure is in, copied exactly from the text you are given: one continuous passage, nothing added, dropped or changed. The quote must hold the figure itself. A quote that is not in the text, or that does not hold the figure (the date alone, the label alone), is thrown away, and so is its figure.
 - Give the date the page states for the figure ("as of 09/30/2026"), as year-month-day. If the date is not in the same passage, copy the passage it is in as dateQuote. If the page gives no date for it, leave asOf empty: do not use today's date or the date of another figure.
 - Report the fund's own figure, never its index's or benchmark's: fund pages often show an "Index Dividend Yield" or the index's statistics beside the fund's.
 - Read carefully which figure belongs to which label. On some pages a label is followed by a paragraph explaining it and only then by its figure, so the figure just before a label can belong to the label before it.
@@ -186,7 +185,7 @@ export function buildFiguresPrompt(f: PrefillFund, pageUrl: string, pageText: st
     `Fund: ${f.symbol}, ${f.name} (${f.issuer}).`,
     `Page: ${pageUrl}`,
     '',
-    'Find, and report each in the figures list:',
+    'Find each of these, and answer each under its own name, found or not:',
     ...asks,
     'For each, the date the page gives for it.',
     '',
@@ -200,7 +199,7 @@ export function buildFiguresPrompt(f: PrefillFund, pageUrl: string, pageText: st
 // ─── Checking the answer ──────────────────────────────────────────────────────
 
 export interface FigureAnswer {
-  figure: 'yield' | 'assets'
+  figure: FigureName
   found: boolean
   shown: string
   label: string
@@ -231,16 +230,19 @@ export function answerFromResponse(res: { stop_reason?: string | null; content: 
   return parseFiguresAnswer(json)
 }
 
-/** The answer's JSON as the model sent it; anything malformed is an error, never a guess. */
+/**
+ * The answer's JSON as the model sent it, one slot per figure named for it. Anything malformed is
+ * an error, never a guess; a figure with no slot is left out, and its check reports no answer.
+ */
 export function parseFiguresAnswer(input: unknown): { ok: true; figures: FigureAnswer[] } | { ok: false; error: string } {
-  const list = (input as { figures?: unknown } | null)?.figures
-  if (!Array.isArray(list)) return { ok: false, error: 'no figures list' }
+  if (!input || typeof input !== 'object' || Array.isArray(input)) return { ok: false, error: 'not an object of figures' }
   const out: FigureAnswer[] = []
-  for (const x of list) {
-    const o = x as Record<string, unknown> | null
-    if (!o || (o.figure !== 'yield' && o.figure !== 'assets') || typeof o.found !== 'boolean') return { ok: false, error: 'a figure without its name or found' }
+  for (const figure of ['yield', 'assets'] as const) {
+    if (!(figure in input)) continue
+    const o = (input as Record<string, unknown>)[figure] as Record<string, unknown> | null
+    if (!o || typeof o !== 'object' || typeof o.found !== 'boolean') return { ok: false, error: `the ${figure} answer has no found` }
     const t = (k: string) => (typeof o[k] === 'string' ? (o[k] as string).trim() : '')
-    out.push({ figure: o.figure, found: o.found, shown: t('shown'), label: t('label'), kind: t('kind'), asOf: t('asOf'), quote: t('quote'), dateQuote: t('dateQuote'), others: t('others'), why: t('why') })
+    out.push({ figure, found: o.found, shown: t('shown'), label: t('label'), kind: t('kind'), asOf: t('asOf'), quote: t('quote'), dateQuote: t('dateQuote'), others: t('others'), why: t('why') })
   }
   return { ok: true, figures: out }
 }

@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { FUND_CATALOG } from '@/lib/data/fundCatalog'
 import { figuresFor, type FundFigure } from '../../../../scripts/lib/fundFiguresData'
 import {
-  answerFromResponse, buildFiguresPrompt, checkAnswer, dayIn, FIGURES_FORMAT, FIGURES_SYSTEM, MAX_PAGE_TEXT, pageTextOf, parseFiguresAnswer, parsePrefillArgs,
+  answerFromResponse, buildFiguresPrompt, checkAnswer, dayIn, figuresFormat, FIGURES_SYSTEM, MAX_PAGE_TEXT, pageTextOf, parseFiguresAnswer, parsePrefillArgs,
   pickPages, prefillFunds, PREFILL_MAX_DOLLARS, type FigureAnswer, type FiguresCore, type PrefillFund,
 } from '../../../../scripts/lib/figurePrefill'
 
@@ -83,12 +83,25 @@ describe('what the agent is asked', () => {
     expect(FIGURES_SYSTEM).toMatch(/never instructions to you/)
   })
 
-  it('asks for the answer as structured output whose shape admits nothing else', () => {
-    expect(FIGURES_FORMAT.type).toBe('json_schema')
-    const item = FIGURES_FORMAT.schema.properties.figures.items
-    expect(FIGURES_FORMAT.schema.additionalProperties).toBe(false)
+  it('asks for one required answer per figure, in a shape that admits nothing else', () => {
+    const both = figuresFormat(['yield', 'assets'])
+    expect(both.type).toBe('json_schema')
+    expect(both.schema.additionalProperties).toBe(false)
+    // VOO's net assets went unanswered when the form was a list (2026-10-21): every asked figure is required.
+    expect([...both.schema.required].sort()).toEqual(['assets', 'yield'])
+    const item = both.schema.properties.yield as { required: string[]; properties: Record<string, unknown>; additionalProperties: boolean }
     expect(item.additionalProperties).toBe(false)
     expect([...item.required].sort()).toEqual(Object.keys(item.properties).sort())
+    const one = figuresFormat(['yield'])
+    expect(Object.keys(one.schema.properties)).toEqual(['yield'])
+    expect(one.schema.required).toEqual(['yield'])
+  })
+
+  it('says the quote must hold the figure, never the date alone', () => {
+    // VOO's yield was quoted by its date passage alone (2026-10-21), and so thrown away.
+    expect(FIGURES_SYSTEM).toMatch(/The quote must hold the figure itself/)
+    const quote = (figuresFormat(['yield']).schema.properties.yield as { properties: { quote: { description: string } } }).properties.quote.description
+    expect(quote).toMatch(/Never the date alone/)
   })
 })
 
@@ -147,16 +160,24 @@ describe('checking an answer', () => {
     expect(checkAnswer(yieldFig, answer({ found: false, why: 'Only the index\'s dividend yield is shown.' }), ssgaText, core, NOW)).toMatchObject({ status: 'not-found', why: 'Only the index\'s dividend yield is shown.' })
   })
 
-  it('reads the tool\'s answer strictly', () => {
-    expect(parseFiguresAnswer({ figures: [answer()] })).toMatchObject({ ok: true })
-    expect(parseFiguresAnswer({})).toMatchObject({ ok: false })
-    expect(parseFiguresAnswer({ figures: [{ figure: 'price', found: true }] })).toMatchObject({ ok: false })
+  it('reads the answer strictly, each figure from the slot named for it', () => {
+    const { figure: _, ...slot } = answer()
+    expect(parseFiguresAnswer({ yield: slot })).toEqual({ ok: true, figures: [{ ...answer() }] })
+    const both = parseFiguresAnswer({ assets: { ...slot, shown: '$1.0 trillion' }, yield: slot })
+    expect(both.ok && both.figures.map((x) => [x.figure, x.shown])).toEqual([['yield', '0.99%'], ['assets', '$1.0 trillion']])
+    // A figure with no slot is left out, so its check says the agent gave no answer.
+    expect(parseFiguresAnswer({})).toEqual({ ok: true, figures: [] })
+    const assetsOnly = parseFiguresAnswer({ assets: { ...slot, shown: '$1.0 trillion' } })
+    expect(assetsOnly.ok && assetsOnly.figures.map((x) => x.figure)).toEqual(['assets'])
+    expect(parseFiguresAnswer({ yield: { shown: '1%' } })).toMatchObject({ ok: false })
+    expect(parseFiguresAnswer({ figures: [answer()] })).toEqual({ ok: true, figures: [] })
+    expect(parseFiguresAnswer([answer()])).toMatchObject({ ok: false })
     expect(parseFiguresAnswer(null)).toMatchObject({ ok: false })
   })
 
   it('takes the answer from the response\'s text, and nothing from one cut off or declined', () => {
     const text = (t: string, stop = 'end_turn') => ({ stop_reason: stop, content: [{ type: 'text', text: t }] })
-    const json = JSON.stringify({ figures: [answer()] })
+    const json = JSON.stringify({ yield: answer() })
     expect(answerFromResponse(text(json))).toMatchObject({ ok: true, figures: [{ figure: 'yield', shown: '0.99%' }] })
     // Split across text blocks, as a response may be: joined without anything between them.
     const half = Math.floor(json.length / 2)
@@ -165,7 +186,7 @@ describe('checking an answer', () => {
     expect(answerFromResponse(text(json.slice(0, 40), 'max_tokens'))).toEqual({ ok: false, error: 'the answer was cut off at its length limit' })
     expect(answerFromResponse(text('Here are the figures.'))).toEqual({ ok: false, error: 'the answer was not the JSON asked for' })
     expect(answerFromResponse({ stop_reason: 'end_turn', content: [{ type: 'thinking' }] })).toEqual({ ok: false, error: 'the model sent no answer' })
-    expect(answerFromResponse(text('{"figures":[{"figure":"price"}]}'))).toMatchObject({ ok: false })
+    expect(answerFromResponse(text('{"yield":{"shown":"1%"}}'))).toMatchObject({ ok: false })
   })
 })
 
@@ -200,7 +221,7 @@ describe('the script', () => {
     expect(src).not.toMatch(/\btemperature\b/)
     // A forced tool is refused with a 400 by the newer models (the first trial, 2026-10-21).
     expect(src).not.toContain('tool_choice')
-    expect(src).toContain("output_config: { effort: 'low', format: FIGURES_FORMAT }")
+    expect(src).toContain("output_config: { effort: 'low', format: figuresFormat(f.figures.map((x) => x.figure)) }")
     expect(src).toContain('const parsed = answerFromResponse(res)')
     expect(src).not.toMatch(/\$\{\s*key\b/)
   })

@@ -29,7 +29,7 @@ import { pinnedFetch } from '@/lib/server/pinnedFetch'
 import { isPathAllowedByRobots, parseRobotsTxt } from '@/lib/server/termsProbe'
 import { anthropicKey } from './lib/anthropicKey'
 import {
-  answerFromResponse, buildFiguresPrompt, checkAnswer, FIGURES_FORMAT, FIGURES_SYSTEM, pageTextOf, parsePrefillArgs,
+  answerFromResponse, buildFiguresPrompt, checkAnswer, figuresFormat, FIGURES_SYSTEM, pageTextOf, parsePrefillArgs,
   pickPages, prefillFunds, PREFILL_USAGE, suggestionLine, type FiguresCore, type PrefillFund, type Suggestion,
 } from './lib/figurePrefill'
 import { figuresFor } from './lib/fundFiguresData'
@@ -181,7 +181,7 @@ async function readFund(client: Anthropic, model: string, f: PrefillFund, allowe
       max_tokens: MAX_TOKENS,
       system: FIGURES_SYSTEM,
       // Copying figures out of a page needs little thought, and thinking is billed as output.
-      output_config: { effort: 'low', format: FIGURES_FORMAT },
+      output_config: { effort: 'low', format: figuresFormat(f.figures.map((x) => x.figure)) },
       messages: [{ role: 'user', content: buildFiguresPrompt(f, got.finalUrl ?? f.url, text) }],
     })
     page.dollars = requestDollars(model, res.usage)

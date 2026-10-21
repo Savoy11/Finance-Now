@@ -262,3 +262,21 @@ output. Pushed with `--force-with-lease`, for the same reason as above.
 - its content in `main` as `49b8577`.
 
 Nothing was deleted; no other ref moved.
+
+## Seventeenth reset, after PR #392 (2026-10-21)
+
+**What was done.** After PR #392 (the pre-fill asks for structured output, not a forced tool) was
+squash-merged into `main` as `4ab31c5`, the branch was restarted from that commit for the next
+step: the trial's second run on the owner's machine read SPY correctly but left VOO's net assets
+unanswered and quoted VOO's yield by its date alone, so the answer form now has one required slot
+per figure. This restart was made on the owner's machine, not in a cloud session. Pushed with
+`--force-with-lease`, for the same reason as above.
+
+**Where the prior state lives.** The branch's previous tip, `75ab109`, is held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@75ab109`, created by
+  `.github/workflows/archive-branch.yml` when #392 merged;
+- GitHub's `refs/pull/392/head`;
+- its content in `main` as `4ab31c5`.
+
+Nothing was deleted; no other ref moved.
