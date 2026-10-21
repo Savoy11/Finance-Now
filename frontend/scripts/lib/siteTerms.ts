@@ -577,7 +577,8 @@ export type WebToolVersions = 'dynamic' | 'basic'
  * Cache writes are the standard 1.25 times input where the list gives no figure; this
  * script sets no cache breakpoints, so they should not occur. Haiku 5.5 costs five times
  * as much on a prompt over 100,000 tokens. Web search is $10 per 1,000 searches; web
- * fetch is billed only as the tokens it adds.
+ * fetch is billed only as the tokens it adds. `web` is the newest web tool versions the model
+ * is offered, not the ones this script uses: see DEFAULT_WEB_TOOLS.
  */
 export const MODELS: Record<string, { price: Price; above100k?: Price; web: WebToolVersions }> = {
   'claude-opus-5-5': { price: { input: 4, output: 20, cacheWrite: 5, cacheRead: 0.2 }, web: 'dynamic' },
@@ -623,17 +624,27 @@ export function estimateDollars(model: string, sites: number): { low: number; hi
   return { low: per(20_000, 2_000, 1) * sites, high: per(80_000, 6_000, 3) * sites }
 }
 
-/** The web tool versions a model is given: its own, unless `--web` says otherwise. */
+/**
+ * The web tools this script uses unless `--web` says otherwise. The newer, `dynamic` versions
+ * run the agent's page reading through a small code sandbox, and their calls failed with
+ * invalid_tool_input on 22 of 88 sites on the full run (2026-10-20) and on 9 of 10 sites re-read
+ * with them (2026-10-21). Re-read with the basic versions, the 22 came back with no input error,
+ * 15 with a reading, at about half the cost a site ($0.15 against $0.28).
+ */
+export const DEFAULT_WEB_TOOLS: WebToolVersions = 'basic'
+
+/** The web tool versions a run uses: the default, unless `--web` asks for others the model offers. */
 export function webVersion(model: string, override: WebToolVersions | null = null): WebToolVersions {
-  const web = MODELS[model]?.web
-  if (!web) throw new Error(`Unknown model ${model}`)
-  return override ?? web
+  const offered = MODELS[model]?.web
+  if (!offered) throw new Error(`Unknown model ${model}`)
+  const chosen = override ?? DEFAULT_WEB_TOOLS
+  if (chosen === 'dynamic' && offered !== 'dynamic') throw new Error(`${model} is not offered the dynamic web tools; leave out --web or use --web basic`)
+  return chosen
 }
 
 /**
- * The server tools for a model: the versions that can filter a page before it is read, where
- * offered. Those run the agent's page reading through a small code sandbox; `basic` hands it
- * the page directly, for a site where the sandboxed calls failed.
+ * The server tools for a run: the basic versions, which hand the agent each page directly, or,
+ * on request, the dynamic ones, which filter a page in a code sandbox before it is read.
  */
 export function webTools(model: string, override: WebToolVersions | null = null) {
   return webVersion(model, override) === 'dynamic'
@@ -669,7 +680,7 @@ npm run site-terms -- --run                   read the rest, stopping at --max-d
   --only a.com,b.com   just these sites        --redo          read them again even if already read
   --max-dollars N      stop when the next site would likely pass N (default ${DEFAULT_MAX_DOLLARS}; this run only)
   --model ID           ${Object.keys(MODELS).join(', ')} (default ${DEFAULT_MODEL})
-  --web basic|dynamic  which version of the web tools (default: the model's own; basic skips the code sandbox)`
+  --web basic|dynamic  which version of the web tools (default ${DEFAULT_WEB_TOOLS}; dynamic filters pages in a code sandbox)`
 
 export function parseSiteTermsArgs(argv: readonly string[]): SiteTermsArgs | { error: string } {
   const out: SiteTermsArgs = { run: false, only: [], limit: null, maxDollars: DEFAULT_MAX_DOLLARS, model: DEFAULT_MODEL, redo: false, web: null, help: false }
@@ -760,15 +771,14 @@ export type ReadAgainReason = 'tools-failed' | 'ran-out'
 export const readAgainReason = (r: SiteResult): ReadAgainReason | null =>
   webToolsFailed(r) ? 'tools-failed' : ranOutOfTools(r) ? 'ran-out' : null
 
-/** The command that reads these sites again; a site whose tools failed is read with the basic ones. */
-export const redoCommand = (sites: readonly string[], reason: ReadAgainReason = 'ran-out'): string =>
-  `npm run site-terms -- --run --redo --only ${sites.join(',')}${reason === 'tools-failed' ? ' --web basic' : ''}`
+/** The command that reads these sites again, with the default web tools. */
+export const redoCommand = (sites: readonly string[]): string => `npm run site-terms -- --run --redo --only ${sites.join(',')}`
 
 /** The sites to read again, by reason, each with its command, in a stable order. */
 export function readAgainCommands(results: readonly SiteResult[]): { reason: ReadAgainReason; sites: string[]; command: string }[] {
   return (['tools-failed', 'ran-out'] as const).flatMap((reason) => {
     const sites = results.filter((r) => readAgainReason(r) === reason).map((r) => r.site).sort()
-    return sites.length > 0 ? [{ reason, sites, command: redoCommand(sites, reason) }] : []
+    return sites.length > 0 ? [{ reason, sites, command: redoCommand(sites) }] : []
   })
 }
 
@@ -887,7 +897,7 @@ export function renderWorksheet(input: {
     lines.push('## Read again', '', `For ${again.length === 1 ? 'this site' : `these ${again.length} sites`}, "not found" is no answer about the site. Read ${again.length === 1 ? 'it' : 'them'} again before ruling.`, '')
     for (const g of againGroups) {
       const why = g.reason === 'tools-failed'
-        ? 'The web tools failed on their calls, so nothing was read. This reads them with the basic web tools:'
+        ? 'The web tools failed on their calls, so nothing was read:'
         : 'The agent used up its page opens or searches before it reached the terms:'
       lines.push(`**${READ_AGAIN_LABEL[g.reason]}** (${g.sites.length}). ${why}`, '', '```', g.command, '```', '')
     }
@@ -944,7 +954,7 @@ export function renderWorksheet(input: {
     lines.push('', `As the API reported it: ${u.webFetches} page open${u.webFetches === 1 ? '' : 's'} of ${FETCH_USES}, ${u.webSearches} search${u.webSearches === 1 ? '' : 'es'} of ${SEARCH_USES}, $${r.dollars.toFixed(2)}${r.web ? `, ${r.web} web tools` : ''}.`)
     if (r.toolErrors && r.toolErrors.length > 0) lines.push('', `Web tool errors, as the API reported them: ${md(toolErrorSummary(r.toolErrors))}`)
     const againReason = readAgainReason(r)
-    lines.push('', 'robots.txt:', ...robotsLines(r.robots), '', againReason ? `**No ruling yet:** read this site again first (\`${redoCommand([t.site], againReason)}\`).` : RULING, '')
+    lines.push('', 'robots.txt:', ...robotsLines(r.robots), '', againReason ? `**No ruling yet:** read this site again first (\`${redoCommand([t.site])}\`).` : RULING, '')
   }
   return `\uFEFF${lines.join('\n')}\n`
 }

@@ -195,3 +195,20 @@ for the same reason as above.
 - its content in `main` as `36793d8`.
 
 Nothing was deleted; no other ref moved.
+
+## Thirteenth reset, after PR #388 (2026-10-21)
+
+**What was done.** After PR #388 (the site terms check keeps the web tools' error codes and
+re-reads sites whose tools failed) was squash-merged into `main` as `88c8290`, the branch was
+restarted from that commit for the owner's next request: make the basic web tools the default,
+since the error codes that PR kept showed the newer versions failing on 9 of 10 sites and the
+basic ones on none of 22. Pushed with `--force-with-lease`, for the same reason as above.
+
+**Where the prior state lives.** The branch's previous tip, `2415f25`, is held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@2415f25`, created by
+  `.github/workflows/archive-branch.yml` when #388 merged;
+- GitHub's `refs/pull/388/head`;
+- its content in `main` as `88c8290`.
+
+Nothing was deleted; no other ref moved.

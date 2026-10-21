@@ -6,7 +6,7 @@
  *   npm run site-terms -- --run --limit 3       read three sites; prints what they cost
  *   npm run site-terms -- --run                 read the rest, stopping at --max-dollars ($10)
  *   npm run site-terms -- --run --only kraken.com --redo
- *   npm run site-terms -- --run --redo --only fidelity.com --web basic
+ *   npm run site-terms -- --run --only a.com --web dynamic   the newer web tools, not the default
  *
  * RUN IT ON THE OWNER'S MACHINE. robots.txt and the quotes are checked from here, and the
  * cloud environment reaches none of these sites. The agent reads through Anthropic's own
@@ -294,7 +294,13 @@ async function main(): Promise<number> {
     if (!args.run) printReadAgain(results.values())
     return 0
   }
-  const web = webVersion(args.model, args.web)
+  let web: WebToolVersions
+  try {
+    web = webVersion(args.model, args.web)
+  } catch (e) {
+    console.error(e instanceof Error ? e.message : String(e))
+    return 1
+  }
   const est = estimateDollars(args.model, todo.length)
   console.log(`Model: ${args.model}, ${web} web tools. Rough cost for ${todo.length}: ${dollarsText(est.low)} to ${dollarsText(est.high)} (a guess, not a measurement). Cap for this run: ${dollarsText(args.maxDollars)}.`)
 

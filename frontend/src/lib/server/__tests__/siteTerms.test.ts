@@ -9,7 +9,7 @@ import { scanTermsText } from '@/lib/server/termsProbe'
 import type { SourceTermsEntry } from '@/lib/server/sourceTerms'
 import { FEE_PAGES } from '../../../../scripts/lib/transferFeeRows'
 import {
-  apiErrorText, buildPrompt, collectSites, datePart, DEFAULT_MAX_DOLLARS, DEFAULT_MODEL, disagreement, estimateDollars, FETCH_USES,
+  apiErrorText, buildPrompt, collectSites, datePart, DEFAULT_MAX_DOLLARS, DEFAULT_MODEL, DEFAULT_WEB_TOOLS, disagreement, estimateDollars, FETCH_USES,
   HOME_PAGES, homeOrigins, isSettled, matchable, MAX_TOOL_ERRORS, MAX_TURNS, MODELS, NUDGE, OUT_OF_TOOLS_LABEL, parseReading,
   parseSiteTermsArgs, plainQuote, quoteOnPage, ranOutOfTools, READ_AGAIN_LABEL, readAgainCommands, readAgainReason, READING_TOOL,
   READING_TOOL_NAME, READINGS, redoCommand, renderWorksheet, requestDollars, robotsAnswer, runReadingLoop, runStopper, SAMPLE_PAGES,
@@ -162,13 +162,22 @@ describe('the instructions', () => {
     expect(p).toContain('Give the page tool only an address and the search tool only a query')
   })
 
-  it('gives the basic web tools on request, whatever the model would use', () => {
-    expect(webVersion('claude-sonnet-5-5')).toBe('dynamic')
-    expect(webVersion('claude-sonnet-5-5', 'basic')).toBe('basic')
-    expect(webVersion('claude-haiku-5-5', 'dynamic')).toBe('dynamic')
-    expect(webTools('claude-sonnet-5-5', 'basic').map((t) => t.type)).toEqual(['web_search_20250305', 'web_fetch_20250910'])
-    expect(webTools('claude-sonnet-5-5', 'basic').map((t) => t.max_uses)).toEqual([SEARCH_USES, FETCH_USES])
-    expect(() => webVersion('claude-unknown', 'basic')).toThrow()
+  it('uses the basic web tools unless asked, on every model, since the dynamic ones failed on most sites (2026-10-21)', () => {
+    expect(DEFAULT_WEB_TOOLS).toBe('basic')
+    for (const model of Object.keys(MODELS)) {
+      expect(webVersion(model)).toBe('basic')
+      expect(webTools(model).map((t) => t.type)).toEqual(['web_search_20250305', 'web_fetch_20250910'])
+    }
+    expect(webTools('claude-sonnet-5-5').map((t) => t.max_uses)).toEqual([SEARCH_USES, FETCH_USES])
+    expect(() => webVersion('claude-unknown')).toThrow()
+  })
+
+  it('gives the dynamic web tools only on request, and only to a model offered them', () => {
+    expect(webVersion('claude-sonnet-5-5', 'dynamic')).toBe('dynamic')
+    expect(webTools('claude-opus-5-5', 'dynamic').map((t) => t.type)).toEqual(['web_search_20260209', 'web_fetch_20260209'])
+    expect(webTools('claude-opus-5-5', 'dynamic').map((t) => t.max_uses)).toEqual([SEARCH_USES, FETCH_USES])
+    expect(() => webVersion('claude-haiku-5-5', 'dynamic')).toThrow(/not offered the dynamic web tools/)
+    expect(webVersion('claude-haiku-5-5', 'basic')).toBe('basic')
   })
 
   it('reads the site’s home page first, then each other host its pages are on, www folded in', () => {
@@ -225,12 +234,11 @@ describe('the instructions', () => {
     expect((READING_TOOL.input_schema.properties.reading as { enum: string[] }).enum).toEqual([...READINGS])
   })
 
-  it('gives every model a search and a fetch tool, filtering ones where offered', () => {
+  it('gives every model a search and a fetch tool, by those names, in either version', () => {
     for (const model of Object.keys(MODELS)) {
       expect(webTools(model).map((t) => t.name)).toEqual(['web_search', 'web_fetch'])
+      if (MODELS[model].web === 'dynamic') expect(webTools(model, 'dynamic').map((t) => t.name)).toEqual(['web_search', 'web_fetch'])
     }
-    expect(webTools('claude-opus-5-5').map((t) => t.type)).toEqual(['web_search_20260209', 'web_fetch_20260209'])
-    expect(webTools('claude-haiku-5-5').map((t) => t.type)).toEqual(['web_search_20250305', 'web_fetch_20250910'])
     expect(() => webTools('claude-unknown')).toThrow()
   })
 })
@@ -596,9 +604,10 @@ describe('a site where the agent ran out of page opens', () => {
     const failed = (site: string): SiteResult => ({ ...base, site, toolErrors: [{ tool: 'web_fetch', code: 'invalid_tool_input', input: '' }] })
     const groups = readAgainCommands([failed('trezor.io'), base, failed('fidelity.com'), { ...base, site: 'ok.com', reading: reading() }])
     expect(groups.map((g) => [g.reason, g.sites])).toEqual([['tools-failed', ['fidelity.com', 'trezor.io']], ['ran-out', ['kraken.com']]])
-    expect(groups[0].command).toBe('npm run site-terms -- --run --redo --only fidelity.com,trezor.io --web basic')
+    // Both read again with the default web tools, which are the basic ones.
+    expect(groups[0].command).toBe('npm run site-terms -- --run --redo --only fidelity.com,trezor.io')
     expect(groups[1].command).toBe('npm run site-terms -- --run --redo --only kraken.com')
-    expect(parseSiteTermsArgs(groups[0].command.split(' ').slice(4))).toMatchObject({ run: true, redo: true, only: ['fidelity.com', 'trezor.io'], web: 'basic' })
+    expect(parseSiteTermsArgs(groups[0].command.split(' ').slice(4))).toMatchObject({ run: true, redo: true, only: ['fidelity.com', 'trezor.io'], web: null })
     expect(readAgainCommands([{ ...base, reading: reading() }])).toEqual([])
   })
 
@@ -609,7 +618,7 @@ describe('a site where the agent ran out of page opens', () => {
     ] }
     const sheet = renderWorksheet({ generatedOn: '2026-10-21', results: [failed, base], targets: [{ ...target, site: 'fidelity.com' }, target], skipped: [] })
     expect(sheet).toContain('2 sites read (2 to read again)')
-    expect(sheet).toMatch(/\*\*The web tools failed\*\* \(1\)[\s\S]*--only fidelity\.com --web basic/)
+    expect(sheet).toMatch(/\*\*The web tools failed\*\* \(1\)[\s\S]*--only fidelity\.com\n/)
     expect(sheet).toMatch(/\*\*Ran out of page opens or searches\*\* \(1\)[\s\S]*--only kraken\.com\n/)
     expect(sheet).toContain('Web tool errors, as the API reported them: web\\_fetch invalid\\_tool\\_input ×2, web\\_search invalid\\_tool\\_input ×1')
     expect(sheet).toContain(', dynamic web tools.')
@@ -642,7 +651,7 @@ describe('the script', () => {
 
   it('uses the web tools it was asked for, keeps their errors and the version, and lists what to read again even when planning', () => {
     expect(src).toContain('tools: [...webTools(model, web), READING_TOOL]')
-    expect(src).toContain('const web = webVersion(args.model, args.web)')
+    expect(src).toContain('web = webVersion(args.model, args.web)')
     expect(src.match(/toolErrors: asked\.toolErrors/g)).toHaveLength(2)
     expect(src).toMatch(/if \(!args\.run\) \{[\s\S]*?printReadAgain\(results\.values\(\)\)[\s\S]*?return 0/)
   })
