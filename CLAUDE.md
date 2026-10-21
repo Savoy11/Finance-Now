@@ -1619,7 +1619,13 @@ code sandbox, failed with `invalid_tool_input` on 9 of 10 sites re-read with the
 versions on none of the 22, at about half the cost. **So the basic tools are the default
 (`DEFAULT_WEB_TOOLS`, 2026-10-21)**; `--web dynamic` still asks for the newer ones. The owner rules
 each site in `site-terms-worksheet.md` (repository root,
-gitignored, beside `site-terms-results.json`, which a rerun keeps). It decides nothing and reads no
+gitignored, beside `site-terms-results.json`, which a rerun keeps). The rulings themselves are kept
+in `site-terms-rulings.json`, which no reading rewrites (2026-10-21): every run first copies in the
+boxes ticked and notes typed on the worksheet, `-- --rule allowed=a.com --rule not-allowed=rest`
+records them without reading anything, and a site read again after a ruling asks for a new one. A
+reading short of "forbids" whose page the keyword scan finds a ban in is marked ⚠: Invesco's read
+"conditions" from search excerpts while its terms ban "data mining, robots, or similar data gathering
+and extraction tools". It decides nothing and reads no
 figure: a pre-fill of the check pages (step 2) reads only sites the owner marks Allowed, and is not
 built. Rules and tests: `scripts/lib/siteTerms.ts`, `lib/server/__tests__/siteTerms.test.ts`.
 

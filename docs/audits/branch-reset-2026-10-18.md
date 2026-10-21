@@ -212,3 +212,20 @@ basic ones on none of 22. Pushed with `--force-with-lease`, for the same reason 
 - its content in `main` as `88c8290`.
 
 Nothing was deleted; no other ref moved.
+
+## Fourteenth reset, after PR #389 (2026-10-21)
+
+**What was done.** After PR #389 (the site terms check uses the basic web tools by default) was
+squash-merged into `main` as `4e0b887`, the branch was restarted from that commit for the next
+step: keeping the owner's rulings on the site terms worksheet in their own file, since every
+paid run rewrites the worksheet and would have wiped boxes ticked by hand. Pushed with
+`--force-with-lease`, for the same reason as above.
+
+**Where the prior state lives.** The branch's previous tip, `772d17a`, is held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@772d17a`, created by
+  `.github/workflows/archive-branch.yml` when #389 merged;
+- GitHub's `refs/pull/389/head`;
+- its content in `main` as `4e0b887`.
+
+Nothing was deleted; no other ref moved.

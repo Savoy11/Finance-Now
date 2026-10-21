@@ -553,10 +553,15 @@ export function quoteOnPage(quote: string, pageText: string | null): QuoteCheck 
 
 const STRONG_SIGNALS = new Set(['prohibits automated access', 'prohibits scraping'])
 
-/** Where the agent's reading and the keyword scan of the same page disagree, said in a line. */
+/**
+ * Where the agent's reading and the keyword scan of the same page disagree, said in a line. Any
+ * reading short of "forbids" counts: on 2026-10-21 Invesco's read "conditions" from search
+ * excerpts while the scan of the whole page found "use any data mining, robots, or similar data
+ * gathering and extraction tools" among the things it prohibits, and nothing said so.
+ */
 export function disagreement(reading: Reading, signals: readonly TermsSignal[]): string | null {
   const strong = signals.filter((s) => s.kind === 'restrictive' && STRONG_SIGNALS.has(s.label))
-  if ((reading.reading === 'silent' || reading.reading === 'permits') && strong.length > 0) {
+  if (reading.reading !== 'forbids' && strong.length > 0) {
     return `The agent read "${READING_LABEL[reading.reading]}", but the keyword scan of the same page found wording that ${strong.map((s) => s.label).join(' and ')}. Read the scan's sentence below before ruling.`
   }
   if (reading.reading === 'forbids' && !reading.clauses.some((c) => c.topic === 'automated-access')) {
@@ -671,6 +676,8 @@ export interface SiteTermsArgs {
   redo: boolean
   /** The web tool versions to use, when not the model's own. */
   web: WebToolVersions | null
+  /** Rulings to record; a run with these reads nothing. */
+  rule: RuleArg[]
   help: boolean
 }
 
@@ -680,10 +687,12 @@ npm run site-terms -- --run                   read the rest, stopping at --max-d
   --only a.com,b.com   just these sites        --redo          read them again even if already read
   --max-dollars N      stop when the next site would likely pass N (default ${DEFAULT_MAX_DOLLARS}; this run only)
   --model ID           ${Object.keys(MODELS).join(', ')} (default ${DEFAULT_MODEL})
-  --web basic|dynamic  which version of the web tools (default ${DEFAULT_WEB_TOOLS}; dynamic filters pages in a code sandbox)`
+  --web basic|dynamic  which version of the web tools (default ${DEFAULT_WEB_TOOLS}; dynamic filters pages in a code sandbox)
+npm run site-terms -- --rule allowed=a.com,b.com --rule not-allowed=rest    record rulings; reads and spends nothing
+  --rule KIND=SITES    KIND is allowed, not-allowed, ask or clear; SITES a comma-separated list, or rest for every site not ruled yet`
 
 export function parseSiteTermsArgs(argv: readonly string[]): SiteTermsArgs | { error: string } {
-  const out: SiteTermsArgs = { run: false, only: [], limit: null, maxDollars: DEFAULT_MAX_DOLLARS, model: DEFAULT_MODEL, redo: false, web: null, help: false }
+  const out: SiteTermsArgs = { run: false, only: [], limit: null, maxDollars: DEFAULT_MAX_DOLLARS, model: DEFAULT_MODEL, redo: false, web: null, rule: [], help: false }
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]
     const value = () => argv[++i]
@@ -706,9 +715,14 @@ export function parseSiteTermsArgs(argv: readonly string[]): SiteTermsArgs | { e
       const w = value()
       if (w !== 'basic' && w !== 'dynamic') return { error: '--web takes basic or dynamic' }
       out.web = w
+    } else if (a === '--rule') {
+      const r = parseRuleArg(value())
+      if ('error' in r) return r
+      out.rule.push(r)
     } else return { error: `Unknown option ${a}` }
   }
   if (out.only.length === 0 && argv.includes('--only')) return { error: '--only takes a comma-separated list of sites' }
+  if (out.rule.length > 0 && (out.run || out.redo || out.only.length > 0)) return { error: '--rule records rulings only; give it without --run, --redo or --only' }
   return out
 }
 
@@ -857,14 +871,216 @@ export function toolErrorSummary(errors: readonly ToolError[]): string {
   return [...counts].map(([k, n]) => `${k} ×${n}`).join(', ')
 }
 
-const RULING = '**Your ruling:** ☐ Allowed ☐ Not allowed ☐ Ask the site first  \n**Notes:**'
+// ─── Rulings ──────────────────────────────────────────────────────────────────
+
+export const RULINGS = ['allowed', 'not-allowed', 'ask'] as const
+export type RulingKind = typeof RULINGS[number]
+
+export const RULING_LABEL: Record<RulingKind, string> = { allowed: 'Allowed', 'not-allowed': 'Not allowed', ask: 'Ask the site first' }
+
+/**
+ * One ruling as it was recorded. The file only grows: changing a ruling adds one, and the old
+ * one stays as history. `ruling` null is a ruling withdrawn, every box unticked again.
+ */
+export interface Ruling {
+  site: string
+  ruling: RulingKind | null
+  ruledOn: string
+  /** The reading it was made on, by that result's checkedAt. Once the site is read again it is history, not in force. */
+  readingAt: string
+  from: 'worksheet' | 'command'
+}
+
+export const RULINGS_FORMAT = 'site-terms-rulings-v1'
+
+/**
+ * The owner's rulings, kept apart from the worksheet: every paid run rewrites the worksheet, and
+ * until 2026-10-21 that would have wiped any box ticked by hand.
+ */
+export interface RulingsFile {
+  format: typeof RULINGS_FORMAT
+  rulings: Ruling[]
+  /** What was typed under each site's "Notes:", kept across readings. */
+  notes: Record<string, string>
+}
+
+export const emptyRulings = (): RulingsFile => ({ format: RULINGS_FORMAT, rulings: [], notes: {} })
+
+/** The sites that get a ruling box: read, and not waiting to be read again. */
+export const ruleable = (r: SiteResult): boolean => isSettled(r) && readAgainReason(r) === null
+
+const lastRuling = (file: RulingsFile, site: string): Ruling | undefined => file.rulings.filter((x) => x.site === site).at(-1)
+
+/** The ruling in force: the latest for the site, if it was made on the reading the site has now. */
+export function rulingInForce(file: RulingsFile, r: SiteResult): RulingKind | null {
+  const last = lastRuling(file, r.site)
+  return last && last.readingAt === r.checkedAt && ruleable(r) ? last.ruling : null
+}
+
+/** The latest ruling, when it was made on an earlier reading and has not been made again. */
+export function earlierRuling(file: RulingsFile, r: SiteResult): Ruling | null {
+  const last = lastRuling(file, r.site)
+  return last && last.readingAt !== r.checkedAt && last.ruling ? last : null
+}
+
+/** The sites the pre-fill (step 2) may read: ruled Allowed on the reading each has now. */
+export function allowedSites(file: RulingsFile, results: readonly SiteResult[]): string[] {
+  return results.filter((r) => rulingInForce(file, r) === 'allowed').map((r) => r.site).sort()
+}
+
+export function rulingCounts(file: RulingsFile, results: readonly SiteResult[]): Record<RulingKind | 'unruled', number> {
+  const counts: Record<RulingKind | 'unruled', number> = { allowed: 0, 'not-allowed': 0, ask: 0, unruled: 0 }
+  for (const r of results.filter(ruleable)) counts[rulingInForce(file, r) ?? 'unruled']++
+  return counts
+}
+
+export const rulingCountsLine = (c: Record<RulingKind | 'unruled', number>): string =>
+  `${c.allowed} Allowed · ${c['not-allowed']} Not allowed · ${c.ask} Ask the site first · ${c.unruled} not ruled yet`
+
+export function rulingLine(ruling: RulingKind | null): string {
+  return `**Your ruling:** ${RULINGS.map((k) => `${k === ruling ? '☒' : '☐'} ${RULING_LABEL[k]}`).join(' ')}  `
+}
+
+/** Marks a worksheet this version wrote, whose empty boxes and notes can be taken as meant. */
+export const WORKSHEET_MARK = '<!-- site-terms worksheet v2: ticks and notes typed here are kept in site-terms-rulings.json -->'
+
+export interface WorksheetEntry {
+  site: string
+  /** The reading the section showed; null on a worksheet from before 2026-10-21. */
+  readingAt: string | null
+  ruling: RulingKind | null
+  notes: string
+  problem: string | null
+}
+
+const UNTICKED = /^(?:☐|\[\s?\]|\(\s?\))?$/
+
+/** The text after "**Your ruling:**": which box is ticked, whatever was typed into it. */
+export function parseRulingLine(rest: string): { ruling: RulingKind | null; problem: string | null } {
+  const m = /^(.*?)Allowed(.*?)Not allowed(.*?)Ask the site first\s*$/.exec(rest)
+  if (m) {
+    const ticked = RULINGS.filter((_, i) => !UNTICKED.test(m[i + 1].trim()))
+    if (ticked.length > 1) return { ruling: null, problem: 'more than one box is ticked' }
+    return { ruling: ticked[0] ?? null, problem: null }
+  }
+  const word = rest.replace(/[☐☒☑✓✔✅]|\[[^\]]*\]/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase()
+  if (word === '') return { ruling: null, problem: null }
+  const named = RULINGS.find((k) => k === word || RULING_LABEL[k].toLowerCase() === word)
+  return named ? { ruling: named, problem: null } : { ruling: null, problem: `its ruling line could not be read ("${rest.trim().slice(0, 80)}")` }
+}
+
+/** Each site's ruling and notes, as the worksheet now has them. */
+export function parseWorksheet(text: string): { v2: boolean; entries: WorksheetEntry[] } {
+  const clean = text.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n')
+  const entries = clean.split(/^(?=### )/m).slice(1).map((chunk): WorksheetEntry => {
+    const site = /^### (.+)$/m.exec(chunk)![1].replace(/\\(.)/g, '$1').trim()
+    const line = /^\*\*Your ruling:\*\*(.*)$/m.exec(chunk)
+    const { ruling, problem } = line ? parseRulingLine(line[1]) : { ruling: null, problem: null }
+    const at = chunk.indexOf('**Notes:**')
+    const notes = at === -1 ? '' : chunk.slice(at + '**Notes:**'.length).split(/^#{1,3} /m)[0].trim()
+    return { site, readingAt: /<!-- reading (\S+) -->/.exec(chunk)?.[1] ?? null, ruling, notes, problem }
+  })
+  return { v2: clean.includes(WORKSHEET_MARK), entries }
+}
+
+/**
+ * Takes what the owner typed into the worksheet into the rulings file. The worksheet is drawn
+ * from the file, so anything that differs was typed by hand. On a worksheet from before the
+ * file existed an empty box or empty notes may only mean nothing was typed yet, so only what
+ * was written is taken, never what is missing.
+ */
+export function importWorksheet(
+  file: RulingsFile,
+  sheet: { v2: boolean; entries: readonly WorksheetEntry[] },
+  results: ReadonlyMap<string, SiteResult>,
+  today: string,
+): { file: RulingsFile; changes: string[]; problems: string[] } {
+  const out: RulingsFile = { ...file, rulings: [...file.rulings], notes: { ...file.notes } }
+  const changes: string[] = []
+  const problems: string[] = []
+  for (const e of sheet.entries) {
+    const r = results.get(e.site)
+    if (!r) continue
+    if (e.problem) problems.push(`${e.site}: ${e.problem}, so its ruling was left as it was`)
+    else if (ruleable(r) && e.readingAt !== null && e.readingAt !== r.checkedAt) {
+      if (e.ruling !== null) problems.push(`${e.site}: the worksheet showed an earlier reading, so its tick was not taken; rule it again`)
+    } else if (ruleable(r)) {
+      const now = rulingInForce(out, r)
+      if (e.ruling !== now && (e.ruling !== null || sheet.v2)) {
+        out.rulings.push({ site: e.site, ruling: e.ruling, ruledOn: today, readingAt: r.checkedAt, from: 'worksheet' })
+        changes.push(`${e.site} ${e.ruling ? RULING_LABEL[e.ruling] : 'unticked'}`)
+      }
+    }
+    const had = out.notes[e.site] ?? ''
+    if (e.notes !== had && (e.notes !== '' || sheet.v2)) {
+      out.notes[e.site] = e.notes
+      changes.push(`${e.site} notes`)
+    }
+  }
+  return { file: out, changes, problems }
+}
+
+export interface RuleArg { ruling: RulingKind | null; sites: string[] | 'rest' }
+
+/** "allowed=a.com,b.com", "not-allowed=rest" or "clear=a.com", as --rule takes it. */
+export function parseRuleArg(value: string | undefined): RuleArg | { error: string } {
+  const m = /^(allowed|not-allowed|ask|clear)=(.+)$/.exec(value?.trim() ?? '')
+  if (!m) return { error: '--rule takes allowed=, not-allowed=, ask= or clear=, then a comma-separated list of sites or rest' }
+  const sites = m[2].split(',').map((s) => s.trim().toLowerCase().replace(/^www\./, '')).filter(Boolean)
+  if (sites.includes('rest') && sites.length > 1) return { error: 'rest stands alone: --rule not-allowed=rest' }
+  return { ruling: m[1] === 'clear' ? null : m[1] as RulingKind, sites: sites[0] === 'rest' ? 'rest' : sites }
+}
+
+/**
+ * Records --rule rulings, all or none. "rest" is every site with a ruling box that has no ruling
+ * in force and is not named in the same command.
+ */
+export function applyRules(
+  file: RulingsFile,
+  rules: readonly RuleArg[],
+  results: ReadonlyMap<string, SiteResult>,
+  today: string,
+): { file: RulingsFile; changes: string[] } | { error: string } {
+  const chosen = new Map<string, RulingKind | null>()
+  for (const rule of rules) {
+    if (rule.sites === 'rest') continue
+    for (const site of rule.sites) {
+      const r = results.get(site)
+      if (chosen.has(site)) return { error: `${site} is named twice` }
+      if (!r) return { error: `${site} has not been read yet, so there is nothing to rule on` }
+      const again = readAgainReason(r)
+      if (again) return { error: `${site}: ${READ_AGAIN_LABEL[again].toLowerCase()}, so there is no reading to rule on. Read it again first: ${redoCommand([site])}` }
+      if (!ruleable(r)) return { error: `${site} has no reading to rule on` }
+      chosen.set(site, rule.ruling)
+    }
+  }
+  const rest = rules.filter((r) => r.sites === 'rest')
+  if (rest.length > 1) return { error: 'rest can be named once' }
+  if (rest.length === 1) {
+    for (const r of [...results.values()].filter(ruleable).sort((a, b) => a.site.localeCompare(b.site))) {
+      if (!chosen.has(r.site) && rulingInForce(file, r) === null) chosen.set(r.site, rest[0].ruling)
+    }
+  }
+  const out: RulingsFile = { ...file, rulings: [...file.rulings] }
+  const changes: string[] = []
+  for (const [site, ruling] of chosen) {
+    const r = results.get(site)!
+    if (rulingInForce(out, r) === ruling) continue
+    out.rulings.push({ site, ruling, ruledOn: today, readingAt: r.checkedAt, from: 'command' })
+    changes.push(`${site} ${ruling ? RULING_LABEL[ruling] : 'unticked'}`)
+  }
+  return { file: out, changes }
+}
+
 
 export function renderWorksheet(input: {
   generatedOn: string
   results: readonly SiteResult[]
   targets: readonly SiteTarget[]
   skipped: readonly SkippedSite[]
+  rulings?: RulingsFile
 }): string {
+  const rulings = input.rulings ?? emptyRulings()
   const bySite = new Map(input.results.filter(isSettled).map((r) => [r.site, r]))
   const failedLast = new Map(input.results.filter((r) => !isSettled(r)).map((r) => [r.site, r.error ?? 'unknown error']))
   const read = input.targets.filter((t) => bySite.has(t.site))
@@ -873,14 +1089,25 @@ export function renderWorksheet(input: {
   const again = againGroups.flatMap((g) => g.sites)
   const spent = input.results.reduce((s, r) => s + r.dollars, 0)
 
+  // Worked out again on every render, so a reading saved before a fix to disagreement() gets it too.
+  const warningFor = (r: SiteResult): string | null => r.reading ? disagreement(r.reading, r.scan?.signals ?? []) : r.warning ?? null
+  const rulingCell = (r: SiteResult): string => {
+    const now = rulingInForce(rulings, r)
+    const earlier = now ? null : earlierRuling(rulings, r)
+    return now ? RULING_LABEL[now] : earlier?.ruling ? `(was ${RULING_LABEL[earlier.ruling]}; rule again)` : ''
+  }
+
   const lines: string[] = [
+    WORKSHEET_MARK,
     `# Site terms worksheet, ${input.generatedOn}`,
     '',
     `What each website behind the ${Object.values(CHECK_PAGES).join(', the ').replace(/, the ([^,]+)$/, ' and the $1')} says about software reading it. An agent found each site's terms and quoted them; every quote was then looked up on the page from this machine, and the app's keyword scan read the same page as a second reader.`,
     '',
-    '**Nothing here is a ruling, and a site that says nothing has not said yes.** Mark each site; the pre-fill (step 2) will read only the sites you mark Allowed. Every figure it suggests still waits for you on the check page.',
+    '**Nothing here is a ruling, and a site that says nothing has not said yes.** Tick one box under each site (change ☐ to ☒), or record rulings with `npm run site-terms -- --rule allowed=a.com,b.com`. Either way they are kept in site-terms-rulings.json, which the next run copies your ticks and notes into before it writes anything, so reading sites again never wipes them. A site read again after you ruled shows your old ruling and asks for a new one. The pre-fill (step 2) will read only the sites you mark Allowed, and every figure it suggests still waits for you on the check page.',
     '',
     `${read.length} site${read.length === 1 ? '' : 's'} read${again.length > 0 ? ` (${again.length} to read again)` : ''} · ${unread.length} not read yet · ${input.skipped.length} skipped · $${spent.toFixed(2)} spent in all`,
+    '',
+    `Ruled: ${rulingCountsLine(rulingCounts(rulings, read.map((t) => bySite.get(t.site)!)))}`,
     '',
     '## Summary',
     '',
@@ -888,7 +1115,7 @@ export function renderWorksheet(input: {
     '|---|---|---|---|---|---|',
     ...read.map((t) => {
       const r = bySite.get(t.site)!
-      return `| ${md(t.site)} | ${t.pages.length} | ${md(outcomeLabel(r))}${r.warning ? ' ⚠' : ''} | ${quoteSummary(r)} | ${robotsSummary(r.robots)} | |`
+      return `| ${md(t.site)} | ${t.pages.length} | ${md(outcomeLabel(r))}${warningFor(r) ? ' ⚠' : ''} | ${quoteSummary(r)} | ${robotsSummary(r.robots)} | ${rulingCell(r)} |`
     }),
     '',
   ]
@@ -928,7 +1155,8 @@ export function renderWorksheet(input: {
       lines.push(`Registry: ${md(e.domain)} is ${e.verdict} (${e.review}, ${e.reviewedAt}). That reading was for an API or a feed, not for reading these pages.`)
     }
     lines.push('', `**Reading:** ${md(outcomeLabel(r))}`)
-    if (r.warning) lines.push('', `⚠ ${md(r.warning)}`)
+    const warning = warningFor(r)
+    if (warning) lines.push('', `⚠ ${md(warning)}`)
     const g = r.reading
     if (g) {
       if (g.termsUrl) lines.push('', `Terms: [${md(g.termsTitle ?? g.termsUrl)}](${g.termsUrl})${g.termsUpdated ? `, last updated ${md(datePart(g.termsUpdated))}` : ''}${g.operator ? `. Operator: ${md(g.operator)}` : ''}`)
@@ -953,8 +1181,15 @@ export function renderWorksheet(input: {
     const u = r.usage
     lines.push('', `As the API reported it: ${u.webFetches} page open${u.webFetches === 1 ? '' : 's'} of ${FETCH_USES}, ${u.webSearches} search${u.webSearches === 1 ? '' : 'es'} of ${SEARCH_USES}, $${r.dollars.toFixed(2)}${r.web ? `, ${r.web} web tools` : ''}.`)
     if (r.toolErrors && r.toolErrors.length > 0) lines.push('', `Web tool errors, as the API reported them: ${md(toolErrorSummary(r.toolErrors))}`)
-    const againReason = readAgainReason(r)
-    lines.push('', 'robots.txt:', ...robotsLines(r.robots), '', againReason ? `**No ruling yet:** read this site again first (\`${redoCommand([t.site])}\`).` : RULING, '')
+    lines.push('', 'robots.txt:', ...robotsLines(r.robots), '')
+    if (readAgainReason(r)) lines.push(`**No ruling yet:** read this site again first (\`${redoCommand([t.site])}\`).  `)
+    else {
+      const earlier = rulingInForce(rulings, r) ? null : earlierRuling(rulings, r)
+      if (earlier?.ruling) lines.push(`You ruled this site ${RULING_LABEL[earlier.ruling]} on ${earlier.ruledOn}, on an earlier reading of its terms. Read this one and rule again.`, '')
+      lines.push(`<!-- reading ${r.checkedAt} -->`, rulingLine(rulingInForce(rulings, r)))
+    }
+    const notes = rulings.notes[t.site] ?? ''
+    lines.push(`**Notes:**${notes ? ` ${notes}` : ''}`, '')
   }
   return `\uFEFF${lines.join('\n')}\n`
 }

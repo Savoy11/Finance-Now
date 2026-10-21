@@ -7,6 +7,7 @@
  *   npm run site-terms -- --run                 read the rest, stopping at --max-dollars ($10)
  *   npm run site-terms -- --run --only kraken.com --redo
  *   npm run site-terms -- --run --only a.com --web dynamic   the newer web tools, not the default
+ *   npm run site-terms -- --rule allowed=a.com,b.com --rule not-allowed=rest   record rulings
  *
  * RUN IT ON THE OWNER'S MACHINE. robots.txt and the quotes are checked from here, and the
  * cloud environment reaches none of these sites. The agent reads through Anthropic's own
@@ -17,7 +18,10 @@
  * take this run past --max-dollars. It writes two files in the repository root, both
  * gitignored, after every site: site-terms-results.json (every answer; a rerun keeps the
  * sites already read and reads only the rest) and site-terms-worksheet.md (the page to rule
- * from). It decides nothing and changes nothing in the app.
+ * from). The owner's rulings live in a third, site-terms-rulings.json, which no reading
+ * rewrites: every run first copies in any box ticked or note typed on the worksheet, and
+ * --rule records rulings without reading anything. It decides nothing and changes nothing in
+ * the app.
  *
  * The key is the Integrations page's Anthropic key, else ANTHROPIC_API_KEY from the shell or
  * .env.local. It is never printed.
@@ -34,15 +38,17 @@ import { discoverTermsLinks, htmlToText, isPathAllowedByRobots, parseRobotsTxt, 
 import { readProviderConfigs } from './lib/providerConfigFile.mjs'
 import { FEE_PAGES } from './lib/transferFeeRows'
 import {
-  buildPrompt, collectSites, disagreement, estimateDollars, homeOrigins, isSettled, MIN_PAGE_CHARS, parseReading,
-  parseSiteTermsArgs, quoteOnPage, READ_AGAIN_LABEL, readAgainCommands, readAgainReason, READING_LABEL, READING_TOOL,
-  renderWorksheet, robotsAnswer, runReadingLoop, runStopper, SYSTEM_PROMPT, termsLinksFor, toolErrorSummary, USAGE, webTools,
-  webVersion, type Reading, type RobotsAnswer, type SiteResult, type SiteTarget, type WebToolVersions,
+  applyRules, buildPrompt, collectSites, disagreement, emptyRulings, estimateDollars, homeOrigins, importWorksheet, isSettled,
+  MIN_PAGE_CHARS, parseReading, parseSiteTermsArgs, parseWorksheet, quoteOnPage, READ_AGAIN_LABEL, readAgainCommands,
+  readAgainReason, READING_LABEL, READING_TOOL, renderWorksheet, robotsAnswer, rulingCounts, rulingCountsLine, RULINGS_FORMAT,
+  runReadingLoop, runStopper, SYSTEM_PROMPT, termsLinksFor, toolErrorSummary, USAGE, webTools, webVersion, type Reading,
+  type RobotsAnswer, type RulingsFile, type SiteResult, type SiteTarget, type WebToolVersions,
 } from './lib/siteTerms'
 
 const ROOT = resolve(process.cwd(), '..')
 const RESULTS = resolve(ROOT, 'site-terms-results.json')
 const WORKSHEET = resolve(ROOT, 'site-terms-worksheet.md')
+const RULINGS = resolve(ROOT, 'site-terms-rulings.json')
 const RESULTS_FORMAT = 'site-terms-results-v1'
 
 /** Thinking counts against this too. */
@@ -246,10 +252,23 @@ function loadResults(): SiteResult[] {
   return json.results as SiteResult[]
 }
 
-function save(results: Map<string, SiteResult>, targets: SiteTarget[], skipped: ReturnType<typeof collectSites>['skipped']): void {
+function loadRulings(): RulingsFile {
+  if (!existsSync(RULINGS)) return emptyRulings()
+  const json = JSON.parse(readFileSync(RULINGS, 'utf8').replace(/^\uFEFF/, ''))
+  if (json?.format !== RULINGS_FORMAT || !Array.isArray(json.rulings) || typeof json.notes !== 'object' || json.notes === null) {
+    throw new Error(`${RULINGS} is not a rulings file this script wrote (format ${String(json?.format)}). It holds your rulings, so move it aside rather than delete it.`)
+  }
+  return json as RulingsFile
+}
+
+function saveRulings(rulings: RulingsFile): void {
+  writeFileSync(RULINGS, `${JSON.stringify({ ...rulings, savedAt: new Date().toISOString() }, null, 2)}\n`)
+}
+
+function save(results: Map<string, SiteResult>, targets: SiteTarget[], skipped: ReturnType<typeof collectSites>['skipped'], rulings: RulingsFile): void {
   const list = [...results.values()].sort((a, b) => a.site.localeCompare(b.site))
   writeFileSync(RESULTS, `${JSON.stringify({ format: RESULTS_FORMAT, savedAt: new Date().toISOString(), results: list }, null, 2)}\n`)
-  writeFileSync(WORKSHEET, renderWorksheet({ generatedOn: new Date().toISOString().slice(0, 10), results: list, targets, skipped }))
+  writeFileSync(WORKSHEET, renderWorksheet({ generatedOn: new Date().toISOString().slice(0, 10), results: list, targets, skipped, rulings }))
 }
 
 const dollarsText = (n: number) => `$${n.toFixed(2)}`
@@ -283,6 +302,43 @@ async function main(): Promise<number> {
   }
 
   const results = new Map(loadResults().filter(isSettled).map((r) => [r.site, r]))
+  const today = new Date().toISOString().slice(0, 10)
+
+  // Ticks and notes typed on the worksheet go into the rulings file before anything rewrites it.
+  let rulings = loadRulings()
+  if (existsSync(WORKSHEET)) {
+    const taken = importWorksheet(rulings, parseWorksheet(readFileSync(WORKSHEET, 'utf8')), results, today)
+    for (const p of taken.problems) console.log(`Worksheet: ${p}.`)
+    if (taken.changes.length > 0) {
+      rulings = taken.file
+      saveRulings(rulings)
+      console.log(`Kept from the worksheet in ${RULINGS}: ${taken.changes.join(', ')}.`)
+    }
+  }
+
+  if (args.rule.length > 0) {
+    const named = args.rule.flatMap((r) => r.sites === 'rest' ? [] : r.sites)
+    const strangers = named.filter((s) => !targets.some((t) => t.site === s))
+    if (strangers.length > 0) {
+      console.error(strangers.map((s) => `${s}: ${skipped.find((k) => k.site === s)?.reason ?? 'not a site any check page links to'}`).join('\n'))
+      return 1
+    }
+    const applied = applyRules(rulings, args.rule, results, today)
+    if ('error' in applied) {
+      console.error(`${applied.error}\nNothing was recorded.`)
+      return 1
+    }
+    rulings = applied.file
+    if (applied.changes.length > 0) {
+      saveRulings(rulings)
+      save(results, targets, skipped, rulings)
+    }
+    console.log(applied.changes.length > 0 ? `Recorded ${applied.changes.length}: ${applied.changes.join(', ')}.` : 'Nothing to record: those rulings were already in force.')
+    console.log(`Ruled: ${rulingCountsLine(rulingCounts(rulings, [...results.values()]))}.`)
+    if (applied.changes.length > 0) console.log(`Rulings: ${RULINGS}\nWorksheet: ${WORKSHEET}`)
+    return 0
+  }
+
   let todo = targets.filter((t) => args.only.length === 0 || args.only.includes(t.site)).filter((t) => args.redo || !results.has(t.site))
   if (args.limit !== null) todo = todo.slice(0, args.limit)
 
@@ -290,8 +346,10 @@ async function main(): Promise<number> {
   console.log(`Site terms check: ${targets.length} websites behind the three check pages (${pages} pages).`)
   if (skipped.length > 0) console.log(`Skipped ${skipped.length}: ${skipped.map((s) => s.site).join(', ')} (the registry rules them prohibited).`)
   console.log(`Already read: ${results.size}. This run would read ${todo.length}: ${todo.map((t) => t.site).join(', ') || 'none'}.`)
+  const printRulings = () => console.log(`\nRuled: ${rulingCountsLine(rulingCounts(rulings, [...results.values()]))}.`)
   if (todo.length === 0) {
     if (!args.run) printReadAgain(results.values())
+    printRulings()
     return 0
   }
   let web: WebToolVersions
@@ -307,6 +365,7 @@ async function main(): Promise<number> {
   if (!args.run) {
     console.log('\nNothing was spent. To read three sites and see what they really cost:\n  npm run site-terms -- --run --limit 3')
     printReadAgain(results.values())
+    printRulings()
     return 0
   }
 
@@ -334,7 +393,7 @@ async function main(): Promise<number> {
     attempted++
     spent += result.dollars
     results.set(result.site, result)
-    save(results, targets, skipped)
+    save(results, targets, skipped, rulings)
     saved = true
     const again = readAgainReason(result)
     const label = again ? READ_AGAIN_LABEL[again] : result.reading ? READING_LABEL[result.reading.reading] : result.outcome
@@ -358,7 +417,8 @@ async function main(): Promise<number> {
   console.log(`\nSpent ${dollarsText(spent)} on ${attempted} site${attempted === 1 ? '' : 's'}${spent > 0 ? ` (${dollarsText(spent / attempted)} each on average)` : ''}. ${left} left to read.`)
   if (spent > 0 && left > 0) console.log(`At that average the ${left} left would cost about ${dollarsText((spent / attempted) * left)}.`)
   printReadAgain(results.values())
-  if (saved) console.log(`Worksheet: ${WORKSHEET}\nAnswers:   ${RESULTS}`)
+  printRulings()
+  if (saved) console.log(`Worksheet: ${WORKSHEET}\nAnswers:   ${RESULTS}\nRulings:   ${RULINGS}`)
   return failed > 0 && failed >= attempted ? 1 : 0
 }
 
