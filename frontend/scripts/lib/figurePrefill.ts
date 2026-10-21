@@ -116,16 +116,17 @@ export function pageTextOf(html: string): string {
 export const YIELD_KINDS = ['trailing', 'sec', 'other'] as const
 export const ASSET_KINDS = ['own', 'whole'] as const
 
-export const FIGURES_TOOL_NAME = 'record_figures'
-
 const s = (description: string) => ({ type: 'string', description })
 
-export const FIGURES_TOOL = {
-  name: FIGURES_TOOL_NAME,
-  description: 'Record the figures this fund page shows. Call it once.',
-  strict: true,
-  input_schema: {
-    type: 'object' as const,
+/**
+ * The answer's shape, asked for as structured output (`output_config.format`), never through a
+ * forced tool: Claude Sonnet 5.5 and Opus 5.5 refuse a forced `tool_choice` with a 400, which is
+ * how the first trial run on the owner's machine ended (2026-10-21).
+ */
+export const FIGURES_FORMAT = {
+  type: 'json_schema' as const,
+  schema: {
+    type: 'object',
     properties: {
       figures: {
         type: 'array',
@@ -185,7 +186,7 @@ export function buildFiguresPrompt(f: PrefillFund, pageUrl: string, pageText: st
     `Fund: ${f.symbol}, ${f.name} (${f.issuer}).`,
     `Page: ${pageUrl}`,
     '',
-    'Find, and report each with record_figures:',
+    'Find, and report each in the figures list:',
     ...asks,
     'For each, the date the page gives for it.',
     '',
@@ -211,7 +212,26 @@ export interface FigureAnswer {
   why: string
 }
 
-/** The tool's input as the agent sent it; anything malformed is an error, never a guess. */
+/**
+ * The answer in a response, before it is checked: the JSON its text holds. A refusal, an answer
+ * cut off at its length limit, and text that is not the JSON asked for are each an error, never
+ * a guess at what was meant.
+ */
+export function answerFromResponse(res: { stop_reason?: string | null; content: ReadonlyArray<{ type: string; text?: string }> }): { ok: true; figures: FigureAnswer[] } | { ok: false; error: string } {
+  if (res.stop_reason === 'refusal') return { ok: false, error: 'the model declined to answer' }
+  if (res.stop_reason === 'max_tokens') return { ok: false, error: 'the answer was cut off at its length limit' }
+  const text = res.content.filter((b) => b.type === 'text').map((b) => b.text ?? '').join('').trim()
+  if (!text) return { ok: false, error: 'the model sent no answer' }
+  let json: unknown
+  try {
+    json = JSON.parse(text)
+  } catch {
+    return { ok: false, error: 'the answer was not the JSON asked for' }
+  }
+  return parseFiguresAnswer(json)
+}
+
+/** The answer's JSON as the model sent it; anything malformed is an error, never a guess. */
 export function parseFiguresAnswer(input: unknown): { ok: true; figures: FigureAnswer[] } | { ok: false; error: string } {
   const list = (input as { figures?: unknown } | null)?.figures
   if (!Array.isArray(list)) return { ok: false, error: 'no figures list' }
