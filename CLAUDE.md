@@ -1654,7 +1654,11 @@ values over `MAX_DATA_VALUE` characters are left out. One payment's yield in a l
 distributions (`distributions.incomeCapitalGains[0].distributionYields`) is refused as a yield
 (`onePaymentYield`): the full run (2026-10-21) took it for a 12-month yield on VBTLX, VCSH and VTEB,
 whose SEC yields were on the same page. Rules and tests: `scripts/lib/figurePrefill.ts`,
-`lib/server/__tests__/figurePrefill.test.ts`.
+`lib/server/__tests__/figurePrefill.test.ts`. `npm run fund-figures-review` lays the suggestions out
+as one page to read beside the check page (`fund-figures-review.html`, repository root, gitignored):
+each figure with its kind, date, the catalog's figure and the passage it came from, then every
+figure not suggested with its reason. It reads no website and changes nothing
+(`scripts/lib/fundFiguresReview.ts`, tested).
 
 
 **⚠ STANDING RULE — paid decisions are deferred; no provider may be load-bearing (D21,

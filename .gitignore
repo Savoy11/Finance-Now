@@ -90,3 +90,4 @@ site-terms-worksheet.md
 site-terms-rulings.json
 # The pre-fill's suggestions (npm run fund-figures-prefill): figures read from fund pages, kept off the repository
 fund-figures-suggestions.json
+fund-figures-review.html
