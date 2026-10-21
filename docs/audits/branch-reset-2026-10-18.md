@@ -280,3 +280,20 @@ per figure. This restart was made on the owner's machine, not in a cloud session
 - its content in `main` as `4ab31c5`.
 
 Nothing was deleted; no other ref moved.
+
+## Eighteenth reset, after PR #393 (2026-10-21)
+
+**What was done.** After PR #393 (one required answer per figure) was squash-merged into `main`
+as `51114a2`, the branch was restarted from that commit on the owner's machine for the next
+step: the third trial run answered both of VOO's figures but quoted each one's date entry, so
+page data is now laid out one sorted line per value. Pushed with `--force-with-lease`, for the
+same reason as above.
+
+**Where the prior state lives.** The branch's previous tip, `8b7dd0f`, is held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@8b7dd0f`, created by
+  `.github/workflows/archive-branch.yml` when #393 merged;
+- GitHub's `refs/pull/393/head`;
+- its content in `main` as `51114a2`.
+
+Nothing was deleted; no other ref moved.
