@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { FUND_CATALOG } from '@/lib/data/fundCatalog'
 import { figuresFor, type FundFigure } from '../../../../scripts/lib/fundFiguresData'
 import {
-  answerFromResponse, buildFiguresPrompt, checkAnswer, dayIn, figuresFormat, FIGURES_SYSTEM, MAX_PAGE_TEXT, pageTextOf, parseFiguresAnswer, parsePrefillArgs,
+  answerFromResponse, buildFiguresPrompt, checkAnswer, dataLines, dayIn, figuresFormat, FIGURES_SYSTEM, MAX_PAGE_TEXT, pageTextOf, parseFiguresAnswer, parsePrefillArgs,
   pickPages, prefillFunds, PREFILL_MAX_DOLLARS, type FigureAnswer, type FiguresCore, type PrefillFund,
 } from '../../../../scripts/lib/figurePrefill'
 
@@ -112,9 +112,31 @@ describe('the page\'s text', () => {
     const html = `<script>var x = 1</script><div class="a" data-vgn-funds-profile="${state}">Total net assets</div><p data-n="7">Fees &amp; minimums</p>`
     const text = pageTextOf(html)
     expect(text).toContain('Total net assets Fees & minimums')
-    expect(text).toContain('Data the page draws its figures from:\n{"note":"<p>Fund’s </p>","shareClassTotalNetAssets":"$1.0 trillion","shareClassTotalNetAssetsDate":"09/30/2026"}')
+    expect(text).toContain('Data the page draws its figures from:\nnote: <p>Fund’s </p>\nshareClassTotalNetAssets: $1.0 trillion\nshareClassTotalNetAssetsDate: 09/30/2026')
     expect(text).not.toContain('var x')
     expect(pageTextOf('<p>No data here</p>')).toBe('No data here')
+  })
+
+  it('lays page data out one value a line, sorted, so a figure sits beside its date', () => {
+    // As VOO's data was laid out (2026-10-21): the date first, other figures between, the figure last.
+    const data = JSON.stringify({
+      dashboard: { secYieldAsOfDate: '09/30/2026', '52WeekDiffPct': '23.28%', navPrice: '$706.55', ticker: 'VOO', secYield: '1.00%', yieldNote: [{ secDay: '30' }] },
+      content: { firmAdvisor: `<p>${'Launched in 1975. '.repeat(20)}</p>` },
+      empty: '', missing: null,
+    })
+    const lines = dataLines(data)!.split('\n')
+    const at = lines.indexOf('dashboard.secYield: 1.00%')
+    expect(at).toBeGreaterThan(-1)
+    expect(lines[at + 1]).toBe('dashboard.secYieldAsOfDate: 09/30/2026')
+    expect(lines).toContain('dashboard.yieldNote[0].secDay: 30')
+    // Prose is never a figure, and an empty value is not a line.
+    expect(lines.join('\n')).not.toContain('Launched in 1975')
+    expect(lines.some((l) => l.startsWith('empty') || l.startsWith('missing'))).toBe(false)
+    expect([...lines].sort()).toEqual(lines)
+    expect(dataLines('{not json')).toBeNull()
+    // A block that is not JSON still reaches the agent, as it was.
+    const odd = `{ figures: secYield 1.00% ${'x'.repeat(60)} }`
+    expect(pageTextOf(`<div data-x="${odd}"></div>`)).toContain(odd)
   })
 
   it('finds a day however the page writes it', () => {

@@ -1647,7 +1647,10 @@ force a tool choice on Claude Sonnet 5.5, Opus 5.5 or Fable 5.1**: they refuse `
 structured output instead (`output_config.format`, `figuresFormat`), one required slot per figure
 asked, and reads it with `answerFromResponse`. The slots are required because the second run, given a
 list, left VOO's net assets out; the same run quoted VOO's yield by its date passage alone, so the
-instructions say the quote must hold the figure itself. Rules and tests: `scripts/lib/figurePrefill.ts`,
+instructions say the quote must hold the figure itself. That was not enough (the third run quoted both
+date entries again), so page data is now laid out one sorted `name: value` line per value
+(`dataLines`), which puts `dashboard.secYield: 1.00%` directly above its `…AsOfDate` line; prose
+values over `MAX_DATA_VALUE` characters are left out. Rules and tests: `scripts/lib/figurePrefill.ts`,
 `lib/server/__tests__/figurePrefill.test.ts`.
 
 
