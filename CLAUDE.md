@@ -1650,7 +1650,10 @@ list, left VOO's net assets out; the same run quoted VOO's yield by its date pas
 instructions say the quote must hold the figure itself. That was not enough (the third run quoted both
 date entries again), so page data is now laid out one sorted `name: value` line per value
 (`dataLines`), which puts `dashboard.secYield: 1.00%` directly above its `…AsOfDate` line; prose
-values over `MAX_DATA_VALUE` characters are left out. Rules and tests: `scripts/lib/figurePrefill.ts`,
+values over `MAX_DATA_VALUE` characters are left out. One payment's yield in a list of recent
+distributions (`distributions.incomeCapitalGains[0].distributionYields`) is refused as a yield
+(`onePaymentYield`): the full run (2026-10-21) took it for a 12-month yield on VBTLX, VCSH and VTEB,
+whose SEC yields were on the same page. Rules and tests: `scripts/lib/figurePrefill.ts`,
 `lib/server/__tests__/figurePrefill.test.ts`.
 
 
