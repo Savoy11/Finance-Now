@@ -9,6 +9,10 @@ import { scanTermsText } from '@/lib/server/termsProbe'
 import type { SourceTermsEntry } from '@/lib/server/sourceTerms'
 import { FEE_PAGES } from '../../../../scripts/lib/transferFeeRows'
 import {
+  allowedSites, applyRules, earlierRuling, emptyRulings, importWorksheet, parseRulingLine, parseWorksheet, ruleable, rulingCounts,
+  rulingInForce, rulingLine, WORKSHEET_MARK, type RulingsFile,
+} from '../../../../scripts/lib/siteTerms'
+import {
   apiErrorText, buildPrompt, collectSites, datePart, DEFAULT_MAX_DOLLARS, DEFAULT_MODEL, DEFAULT_WEB_TOOLS, disagreement, estimateDollars, FETCH_USES,
   HOME_PAGES, homeOrigins, isSettled, matchable, MAX_TOOL_ERRORS, MAX_TURNS, MODELS, NUDGE, OUT_OF_TOOLS_LABEL, parseReading,
   parseSiteTermsArgs, plainQuote, quoteOnPage, ranOutOfTools, READ_AGAIN_LABEL, readAgainCommands, readAgainReason, READING_TOOL,
@@ -304,6 +308,14 @@ describe('two readers', () => {
     expect(disagreement(reading({ reading: 'permits', clauses: [] }), scan)).toContain('keyword scan')
   })
 
+  it('flags a reading with conditions, or an unclear one, the scan finds a ban in (Invesco, 2026-10-21)', () => {
+    // The scan's sentence from Invesco's terms page, which the agent had seen only in search excerpts.
+    const invesco = scanTermsText('You agree not to: (ix) or use any data mining, robots, or similar data gathering and extraction tools on the Website.')
+    expect(disagreement(reading({ reading: 'conditions', clauses: [] }), invesco)).toContain('prohibits scraping')
+    expect(disagreement(reading({ reading: 'unclear', clauses: [] }), scan)).toContain('keyword scan')
+    expect(disagreement(reading({ reading: 'conditions', clauses: [] }), scanTermsText('Personal, non-commercial use only.'))).toBeNull()
+  })
+
   it('flags a "forbids" with no automated-access clause behind it', () => {
     expect(disagreement(reading({ clauses: [{ topic: 'content-use', quote: 'q', url: 'u' }] }), [])).toContain('quoted no clause')
   })
@@ -459,12 +471,12 @@ describe('a failure that ends the run', () => {
 
 describe('arguments', () => {
   it('plans by default, under the default cap and model', () => {
-    expect(parseSiteTermsArgs([])).toEqual({ run: false, only: [], limit: null, maxDollars: DEFAULT_MAX_DOLLARS, model: DEFAULT_MODEL, redo: false, web: null, help: false })
+    expect(parseSiteTermsArgs([])).toEqual({ run: false, only: [], limit: null, maxDollars: DEFAULT_MAX_DOLLARS, model: DEFAULT_MODEL, redo: false, web: null, rule: [], help: false })
   })
 
   it('reads the options', () => {
     expect(parseSiteTermsArgs(['--run', '--limit', '3', '--only', 'www.Kraken.com, ishares.com', '--max-dollars', '2.5', '--model', 'claude-opus-5-5', '--redo', '--web', 'basic']))
-      .toEqual({ run: true, only: ['kraken.com', 'ishares.com'], limit: 3, maxDollars: 2.5, model: 'claude-opus-5-5', redo: true, web: 'basic', help: false })
+      .toEqual({ run: true, only: ['kraken.com', 'ishares.com'], limit: 3, maxDollars: 2.5, model: 'claude-opus-5-5', redo: true, web: 'basic', rule: [], help: false })
   })
 
   it('refuses what it cannot honour', () => {
@@ -499,7 +511,7 @@ describe('the worksheet', () => {
   })
 
   it('opens with a byte-order mark, so Windows PowerShell reads it as UTF-8', () => {
-    expect(sheet.startsWith('\uFEFF# Site terms worksheet, 2026-10-19')).toBe(true)
+    expect(sheet.startsWith(`\uFEFF${WORKSHEET_MARK}\n# Site terms worksheet, 2026-10-19`)).toBe(true)
   })
 
   it('says nothing here is a ruling, and gives each read site a ruling box', () => {
@@ -638,6 +650,150 @@ describe('a site where the agent ran out of page opens', () => {
   })
 })
 
+describe('the rulings', () => {
+  const target = (site: string): SiteTarget => ({ site, pages: [{ url: `https://${site}/p`, check: 'funds', label: site }], registry: [] })
+  const result = (site: string, over: Partial<SiteResult> = {}): SiteResult => ({
+    site, checkedAt: '2026-10-21T08:00:00.000Z', model: DEFAULT_MODEL, outcome: 'read',
+    reading: reading({ reading: 'conditions', clauses: [] }), quoteChecks: [], robots: [], scan: null, warning: null,
+    usage: { requests: 1, inputTokens: 1, outputTokens: 1, cacheTokens: 0, webSearches: 0, webFetches: 1 }, dollars: 0.1, ...over,
+  })
+  const ranOut = result('rocketpool.net', { reading: reading({ reading: 'not-found', termsUrl: null, clauses: [] }), usage: { requests: 1, inputTokens: 1, outputTokens: 1, cacheTokens: 0, webSearches: 0, webFetches: FETCH_USES } })
+  const list = [result('vanguard.com'), result('ssga.com'), result('invesco.com'), ranOut]
+  const results = new Map(list.map((r) => [r.site, r]))
+  const targets = list.map((r) => target(r.site))
+  const sheetOf = (rulings: RulingsFile, rs: readonly SiteResult[] = list) =>
+    renderWorksheet({ generatedOn: '2026-10-21', results: rs, targets: rs.map((r) => target(r.site)), skipped: [], rulings })
+  const ruled = (over: Partial<RulingsFile> = {}): RulingsFile => ({
+    ...emptyRulings(),
+    rulings: [{ site: 'vanguard.com', ruling: 'allowed', ruledOn: '2026-10-21', readingAt: '2026-10-21T08:00:00.000Z', from: 'command' }],
+    notes: { 'vanguard.com': 'Fund pages draw figures with script.\nTry five rows first.' },
+    ...over,
+  })
+
+  it('reads whichever box is ticked, however it was ticked', () => {
+    expect(parseRulingLine(' ☒ Allowed ☐ Not allowed ☐ Ask the site first  ')).toEqual({ ruling: 'allowed', problem: null })
+    expect(parseRulingLine(' ☐ Allowed x Not allowed ☐ Ask the site first')).toEqual({ ruling: 'not-allowed', problem: null })
+    expect(parseRulingLine(' [ ] Allowed [ ] Not allowed [x] Ask the site first')).toEqual({ ruling: 'ask', problem: null })
+    expect(parseRulingLine(' ☐ Allowed ☐ Not allowed ☐ Ask the site first  ')).toEqual({ ruling: null, problem: null })
+    expect(parseRulingLine(' Not allowed')).toEqual({ ruling: 'not-allowed', problem: null })
+    expect(parseRulingLine(' ☒ Allowed ☒ Not allowed ☐ Ask the site first').problem).toContain('more than one')
+    expect(parseRulingLine(' maybe later').problem).toContain('could not be read')
+  })
+
+  it('draws the rulings on the worksheet and reads back exactly what it drew', () => {
+    const file = ruled()
+    const sheet = sheetOf(file)
+    expect(sheet.replace(/^﻿/, '').startsWith(WORKSHEET_MARK)).toBe(true)
+    expect(sheet).toContain(rulingLine('allowed'))
+    expect(sheet).toContain('Ruled: 1 Allowed · 0 Not allowed · 0 Ask the site first · 2 not ruled yet')
+    expect(sheet).toMatch(/\| vanguard\.com \|[^\n]*\| Allowed \|/)
+    const back = importWorksheet(file, parseWorksheet(sheet), results, '2026-10-22')
+    expect(back.changes).toEqual([])
+    expect(back.problems).toEqual([])
+    expect(back.file).toEqual(file)
+  })
+
+  it('takes a box ticked and notes typed by hand, and keeps the old ruling when one changes', () => {
+    const file = ruled()
+    const sheet = sheetOf(file)
+      .replace(/(### ssga\.com[\s\S]*?\*\*Your ruling:\*\*) ☐ Allowed/, '$1 ☒ Allowed')
+      .replace(/(### vanguard\.com[\s\S]*?\*\*Your ruling:\*\*) ☒ Allowed ☐ Not allowed/, '$1 ☐ Allowed ☒ Not allowed')
+      .replace(/(### invesco\.com[\s\S]*?\*\*Notes:\*\*)/, '$1 The scan found a robots ban.')
+    const taken = importWorksheet(file, parseWorksheet(sheet), results, '2026-10-22')
+    expect(taken.changes).toEqual(['vanguard.com Not allowed', 'ssga.com Allowed', 'invesco.com notes'])
+    expect(rulingInForce(taken.file, results.get('ssga.com')!)).toBe('allowed')
+    expect(rulingInForce(taken.file, results.get('vanguard.com')!)).toBe('not-allowed')
+    expect(taken.file.rulings.filter((r) => r.site === 'vanguard.com').map((r) => r.ruling)).toEqual(['allowed', 'not-allowed'])
+    expect(taken.file.notes['invesco.com']).toBe('The scan found a robots ban.')
+    expect(taken.file.notes['vanguard.com']).toBe(file.notes['vanguard.com'])
+  })
+
+  it('takes only what was written from a worksheet drawn before the rulings file existed', () => {
+    const old = sheetOf(emptyRulings()).replace(WORKSHEET_MARK, '').replace(/<!-- reading \S+ -->\n/g, '')
+      .replace(/(### ssga\.com[\s\S]*?\*\*Your ruling:\*\*) ☐ Allowed/, '$1 ☒ Allowed')
+    const taken = importWorksheet(ruled(), parseWorksheet(old), results, '2026-10-22')
+    // Vanguard's empty box and empty notes on the old sheet withdraw nothing.
+    expect(taken.changes).toEqual(['ssga.com Allowed'])
+    expect(rulingInForce(taken.file, results.get('vanguard.com')!)).toBe('allowed')
+    expect(taken.file.notes['vanguard.com']).toBe(ruled().notes['vanguard.com'])
+  })
+
+  it('leaves a ruling it cannot read, and a tick made on an earlier reading, and says so', () => {
+    const two = sheetOf(emptyRulings()).replace(/(### ssga\.com[\s\S]*?\*\*Your ruling:\*\*) ☐ Allowed ☐ Not allowed/, '$1 ☒ Allowed ☒ Not allowed')
+    const a = importWorksheet(emptyRulings(), parseWorksheet(two), results, '2026-10-22')
+    expect(a.changes).toEqual([])
+    expect(a.problems).toEqual(['ssga.com: more than one box is ticked, so its ruling was left as it was'])
+    const stale = sheetOf(emptyRulings()).replace(/(### ssga\.com[\s\S]*?\*\*Your ruling:\*\*) ☐ Allowed/, '$1 ☒ Allowed')
+    const reread = new Map(results).set('ssga.com', result('ssga.com', { checkedAt: '2026-10-22T09:00:00.000Z' }))
+    const b = importWorksheet(emptyRulings(), parseWorksheet(stale), reread, '2026-10-22')
+    expect(b.changes).toEqual([])
+    expect(b.problems[0]).toContain('ssga.com: the worksheet showed an earlier reading')
+  })
+
+  it('stops holding a ruling once its site is read again, and asks for a new one', () => {
+    const reread = result('vanguard.com', { checkedAt: '2026-10-22T09:00:00.000Z' })
+    const file = ruled()
+    expect(rulingInForce(file, reread)).toBeNull()
+    expect(earlierRuling(file, reread)?.ruling).toBe('allowed')
+    expect(allowedSites(file, [reread])).toEqual([])
+    expect(allowedSites(file, list)).toEqual(['vanguard.com'])
+    const sheet = sheetOf(file, [reread])
+    expect(sheet).toContain('You ruled this site Allowed on 2026-10-21, on an earlier reading of its terms. Read this one and rule again.')
+    expect(sheet).toContain(rulingLine(null))
+    expect(sheet).toContain('(was Allowed; rule again)')
+    expect(sheet).toContain('**Notes:** Fund pages draw figures with script.\nTry five rows first.')
+  })
+
+  it('records --rule rulings all or none, with rest for every site not ruled yet', () => {
+    const done = applyRules(ruled(), [{ ruling: 'allowed', sites: ['ssga.com'] }, { ruling: 'not-allowed', sites: 'rest' }], results, '2026-10-22')
+    expect(done).not.toHaveProperty('error')
+    if ('error' in done) return
+    expect(done.changes).toEqual(['ssga.com Allowed', 'invesco.com Not allowed'])
+    expect(rulingCounts(done.file, list)).toEqual({ allowed: 2, 'not-allowed': 1, ask: 0, unruled: 0 })
+    // A site to read again has no box, so rest passes it by and naming it is refused.
+    expect(ruleable(ranOut)).toBe(false)
+    expect(rulingInForce(done.file, ranOut)).toBeNull()
+    const refused = applyRules(ruled(), [{ ruling: 'allowed', sites: ['ssga.com', 'rocketpool.net'] }], results, '2026-10-22')
+    expect(refused).toHaveProperty('error')
+    expect((refused as { error: string }).error).toContain('npm run site-terms -- --run --redo --only rocketpool.net')
+    expect(applyRules(ruled(), [{ ruling: 'allowed', sites: ['ssga.com'] }, { ruling: 'ask', sites: ['ssga.com'] }], results, '2026-10-22')).toHaveProperty('error')
+    expect(applyRules(ruled(), [{ ruling: 'allowed', sites: ['later.com'] }], results, '2026-10-22')).toHaveProperty('error')
+    const again = applyRules(ruled(), [{ ruling: 'allowed', sites: ['vanguard.com'] }], results, '2026-10-22')
+    expect(again).toEqual({ file: ruled(), changes: [] })
+    const cleared = applyRules(ruled(), [{ ruling: null, sites: ['vanguard.com'] }], results, '2026-10-22')
+    expect('error' in cleared ? null : rulingInForce(cleared.file, results.get('vanguard.com')!)).toBeNull()
+    expect('error' in cleared ? 0 : cleared.file.rulings.length).toBe(2)
+  })
+
+  it('takes --rule from the command line, and only on its own', () => {
+    expect(parseSiteTermsArgs(['--rule', 'allowed=www.Vanguard.com, ssga.com', '--rule', 'not-allowed=rest'])).toMatchObject({
+      rule: [{ ruling: 'allowed', sites: ['vanguard.com', 'ssga.com'] }, { ruling: 'not-allowed', sites: 'rest' }],
+    })
+    expect(parseSiteTermsArgs(['--rule', 'clear=a.com'])).toMatchObject({ rule: [{ ruling: null, sites: ['a.com'] }] })
+    for (const bad of [['--rule', 'yes=a.com'], ['--rule', 'allowed='], ['--rule'], ['--rule', 'allowed=rest,a.com'], ['--rule', 'allowed=a.com', '--run']]) {
+      expect(parseSiteTermsArgs(bad), bad.join(' ')).toHaveProperty('error')
+    }
+  })
+
+  it('warns on a reading saved before the warning covered it', () => {
+    // Saved with no warning, as Invesco's was on 2026-10-21.
+    const signals = scanTermsText('You agree not to use any data mining, robots, or similar data gathering and extraction tools on the Website.')
+    const saved = result('invesco.com', { scan: { url: 'https://www.invesco.com/terms', signals }, warning: null })
+    const sheet = sheetOf(emptyRulings(), [saved])
+    expect(sheet).toMatch(/\| invesco\.com \| 1 \| Allows it only on conditions ⚠ \|/)
+    expect(sheet).toContain('⚠ The agent read "Allows it only on conditions", but the keyword scan of the same page found wording that prohibits scraping')
+  })
+
+  it('draws a ruling box only where there is a reading to rule on, and notes everywhere', () => {
+    const sheet = sheetOf(emptyRulings())
+    const section = sheet.split('### rocketpool.net')[1]
+    expect(section).toContain('**No ruling yet:**')
+    expect(section).not.toContain('**Your ruling:**')
+    expect(section).toContain('**Notes:**')
+    expect(parseWorksheet(sheet).entries.map((e) => e.site)).toEqual(targets.map((t) => t.site))
+  })
+})
+
 describe('the script', () => {
   const src = readFileSync(join(process.cwd(), 'scripts', 'check-site-terms.ts'), 'utf8')
 
@@ -661,6 +817,17 @@ describe('the script', () => {
     expect(src).toContain("redirect: 'manual'")
     expect(src).not.toContain("redirect: 'follow'")
     expect(src).toMatch(/isPathAllowedByRobots\(parseRobotsTxt\(robots\.text\), '\/'\)/)
+  })
+
+  it('copies the worksheet\'s ticks into the rulings file before anything rewrites the worksheet', () => {
+    const taken = src.indexOf('importWorksheet(rulings, parseWorksheet(readFileSync(WORKSHEET')
+    expect(taken).toBeGreaterThan(0)
+    expect(taken).toBeLessThan(src.indexOf('save(results, targets, skipped, rulings)'))
+    expect(src.match(/save\(results, targets, skipped, rulings\)/g)).toHaveLength(2)
+    expect(src).not.toMatch(/save\(results, targets, skipped\)/)
+    expect(src).toContain('if (args.rule.length > 0) {')
+    expect(src.indexOf('if (args.rule.length > 0) {')).toBeLessThan(src.indexOf('new Anthropic('))
+    expect(readFileSync(join(process.cwd(), '..', '.gitignore'), 'utf8')).toMatch(/^site-terms-rulings\.json$/m)
   })
 
   it('sends no temperature, and stops a run at the cap before starting a site', () => {
