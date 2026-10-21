@@ -324,6 +324,8 @@ export function buildPrompt(target: SiteTarget, robotsToCopy: readonly string[],
     '',
     `You can open at most ${FETCH_USES} pages and run at most ${SEARCH_USES} searches for this site, so spend them on the terms. You do not need to open the pages listed above: they only show which part of the site the owner reads. A legal page that lists several documents is a menu; from it, open the terms of use or service.`,
     '',
+    'The page tool opens only addresses that have already appeared in this conversation: these instructions, your search results, or a page you opened. It refuses a guessed address and still counts it, so search or follow a link rather than guess. Give the page tool only an address and the search tool only a query.',
+    '',
     'If the pages above are on a site run by a different company from the home page, the terms of the site the pages are on are the ones that count; their addresses usually show it.',
     '',
     robotsToCopy.length === 0
@@ -374,8 +376,41 @@ export const MAX_TURNS = 6
 /** The parts of an API response the loop reads. */
 export interface AgentResponse {
   stop_reason: string | null
-  content: ReadonlyArray<{ type: string; name?: string; input?: unknown }>
+  content: ReadonlyArray<ContentBlock>
   usage: Usage
+}
+export interface ContentBlock { type: string; name?: string; input?: unknown; id?: string; tool_use_id?: string; content?: unknown }
+
+/** A web tool call that failed, as the API reported it: the tool, its error code and what it was given. */
+export interface ToolError { tool: string; code: string; input: string }
+
+/** At most this many failed calls are kept per site: enough to see a pattern, not a log. */
+export const MAX_TOOL_ERRORS = 12
+
+const errorCodes = (v: unknown, depth = 0): string[] => {
+  if (depth > 4 || v === null || typeof v !== 'object') return []
+  if (Array.isArray(v)) return v.flatMap((x) => errorCodes(x, depth + 1))
+  const o = v as Record<string, unknown>
+  return typeof o.error_code === 'string' ? [o.error_code] : errorCodes(o.content, depth + 1)
+}
+
+/**
+ * The failed server-tool calls in one response. On the full paid run (2026-10-20) every page
+ * open and search failed on 22 sites, and the agent could only call it "invalid tool input":
+ * the API's own error codes were not kept. A result block names the call it answers, so the
+ * code is matched to the tool and the input that produced it.
+ */
+export function toolErrorsIn(content: ReadonlyArray<ContentBlock>): ToolError[] {
+  const calls = new Map(content.filter((b) => b.type === 'server_tool_use' && b.id).map((b) => [b.id!, b]))
+  const out: ToolError[] = []
+  for (const b of content) {
+    if (!b.type.endsWith('_tool_result')) continue
+    const call = b.tool_use_id ? calls.get(b.tool_use_id) : undefined
+    for (const code of errorCodes(b.content)) {
+      out.push({ tool: call?.name ?? b.type.replace(/_tool_result$/, ''), code, input: call ? JSON.stringify(call.input ?? null).slice(0, 160) : '' })
+    }
+  }
+  return out
 }
 export interface AgentTurn { role: 'user' | 'assistant'; content: unknown }
 
@@ -391,9 +426,10 @@ export async function runReadingLoop(
   model: string,
   prompt: string,
   send: (messages: readonly AgentTurn[]) => Promise<AgentResponse>,
-): Promise<{ outcome: 'read' | 'refused' | 'no-answer' | 'error'; input?: unknown; error?: string; thrown?: unknown; usage: UsageTotals; dollars: number }> {
+): Promise<{ outcome: 'read' | 'refused' | 'no-answer' | 'error'; input?: unknown; error?: string; thrown?: unknown; usage: UsageTotals; dollars: number; toolErrors: ToolError[] }> {
   const usage = zeroUsage()
   let dollars = 0
+  const toolErrors: ToolError[] = []
   const messages: AgentTurn[] = [{ role: 'user', content: prompt }]
   let nudged = false
   for (let turn = 0; turn < MAX_TURNS; turn++) {
@@ -401,7 +437,7 @@ export async function runReadingLoop(
     try {
       res = await send(messages)
     } catch (e) {
-      return { outcome: 'error', error: apiErrorText(e), thrown: e, usage, dollars }
+      return { outcome: 'error', error: apiErrorText(e), thrown: e, usage, dollars, toolErrors }
     }
     usage.requests++
     usage.inputTokens += res.usage.input_tokens
@@ -410,11 +446,12 @@ export async function runReadingLoop(
     usage.webSearches += res.usage.server_tool_use?.web_search_requests ?? 0
     usage.webFetches += res.usage.server_tool_use?.web_fetch_requests ?? 0
     dollars += requestDollars(model, res.usage)
+    toolErrors.push(...toolErrorsIn(res.content).slice(0, MAX_TOOL_ERRORS - toolErrors.length))
 
-    if (res.stop_reason === 'refusal') return { outcome: 'refused', usage, dollars }
+    if (res.stop_reason === 'refusal') return { outcome: 'refused', usage, dollars, toolErrors }
     const answer = res.content.find((b) => b.type === 'tool_use' && b.name === READING_TOOL_NAME)
-    if (answer) return { outcome: 'read', input: answer.input, usage, dollars }
-    if (res.stop_reason === 'max_tokens') return { outcome: 'no-answer', error: 'ran out of room before answering', usage, dollars }
+    if (answer) return { outcome: 'read', input: answer.input, usage, dollars, toolErrors }
+    if (res.stop_reason === 'max_tokens') return { outcome: 'no-answer', error: 'ran out of room before answering', usage, dollars, toolErrors }
     // Appended unchanged, never edited: the history a paused turn resumes from.
     messages.push({ role: 'assistant', content: res.content })
     if (res.stop_reason === 'pause_turn') continue
@@ -422,7 +459,7 @@ export async function runReadingLoop(
     messages.push({ role: 'user', content: NUDGE })
     nudged = true
   }
-  return { outcome: 'no-answer', error: 'finished without recording an answer', usage, dollars }
+  return { outcome: 'no-answer', error: 'finished without recording an answer', usage, dollars, toolErrors }
 }
 
 const isStr = (v: unknown): v is string => typeof v === 'string'
@@ -586,11 +623,20 @@ export function estimateDollars(model: string, sites: number): { low: number; hi
   return { low: per(20_000, 2_000, 1) * sites, high: per(80_000, 6_000, 3) * sites }
 }
 
-/** The server tools for a model: the versions that can filter a page before it is read, where offered. */
-export function webTools(model: string) {
+/** The web tool versions a model is given: its own, unless `--web` says otherwise. */
+export function webVersion(model: string, override: WebToolVersions | null = null): WebToolVersions {
   const web = MODELS[model]?.web
   if (!web) throw new Error(`Unknown model ${model}`)
-  return web === 'dynamic'
+  return override ?? web
+}
+
+/**
+ * The server tools for a model: the versions that can filter a page before it is read, where
+ * offered. Those run the agent's page reading through a small code sandbox; `basic` hands it
+ * the page directly, for a site where the sandboxed calls failed.
+ */
+export function webTools(model: string, override: WebToolVersions | null = null) {
+  return webVersion(model, override) === 'dynamic'
     ? [
         { type: 'web_search_20260209' as const, name: 'web_search' as const, max_uses: SEARCH_USES },
         { type: 'web_fetch_20260209' as const, name: 'web_fetch' as const, max_uses: FETCH_USES, max_content_tokens: 40_000 },
@@ -612,6 +658,8 @@ export interface SiteTermsArgs {
   maxDollars: number
   model: string
   redo: boolean
+  /** The web tool versions to use, when not the model's own. */
+  web: WebToolVersions | null
   help: boolean
 }
 
@@ -620,10 +668,11 @@ npm run site-terms -- --run --limit 3         read three sites; prints what they
 npm run site-terms -- --run                   read the rest, stopping at --max-dollars
   --only a.com,b.com   just these sites        --redo          read them again even if already read
   --max-dollars N      stop when the next site would likely pass N (default ${DEFAULT_MAX_DOLLARS}; this run only)
-  --model ID           ${Object.keys(MODELS).join(', ')} (default ${DEFAULT_MODEL})`
+  --model ID           ${Object.keys(MODELS).join(', ')} (default ${DEFAULT_MODEL})
+  --web basic|dynamic  which version of the web tools (default: the model's own; basic skips the code sandbox)`
 
 export function parseSiteTermsArgs(argv: readonly string[]): SiteTermsArgs | { error: string } {
-  const out: SiteTermsArgs = { run: false, only: [], limit: null, maxDollars: DEFAULT_MAX_DOLLARS, model: DEFAULT_MODEL, redo: false, help: false }
+  const out: SiteTermsArgs = { run: false, only: [], limit: null, maxDollars: DEFAULT_MAX_DOLLARS, model: DEFAULT_MODEL, redo: false, web: null, help: false }
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]
     const value = () => argv[++i]
@@ -642,6 +691,10 @@ export function parseSiteTermsArgs(argv: readonly string[]): SiteTermsArgs | { e
       const m = value()
       if (!m || !MODELS[m]) return { error: `--model takes one of ${Object.keys(MODELS).join(', ')}` }
       out.model = m
+    } else if (a === '--web') {
+      const w = value()
+      if (w !== 'basic' && w !== 'dynamic') return { error: '--web takes basic or dynamic' }
+      out.web = w
     } else return { error: `Unknown option ${a}` }
   }
   if (out.only.length === 0 && argv.includes('--only')) return { error: '--only takes a comma-separated list of sites' }
@@ -667,6 +720,10 @@ export interface SiteResult {
   warning?: string | null
   usage: UsageTotals
   dollars: number
+  /** The web tool versions this reading used; absent on readings from before 2026-10-21, which used the model's own. */
+  web?: WebToolVersions
+  /** Web tool calls that failed, as the API reported them; absent on readings from before 2026-10-21. */
+  toolErrors?: ToolError[]
 }
 
 /** A result worth keeping on a rerun: anything but an error, which is tried again. */
@@ -685,8 +742,40 @@ export function ranOutOfTools(r: SiteResult): boolean {
     || g.couldNotRead.some((c) => /\blimit\b|max(imum)?[_ ]uses|ran out/i.test(c.why))
 }
 
-/** The command that reads these sites again. */
-export const redoCommand = (sites: readonly string[]): string => `npm run site-terms -- --run --redo --only ${sites.join(',')}`
+/**
+ * A "terms not found" that only means the web tools failed: the API reported an input error, or,
+ * on a reading from before those were kept, the agent's own reasons say so. On the 2026-10-20
+ * run 22 sites failed this way on every call, Fidelity and Trezor among them, while the sites
+ * either side of them read normally. Nothing was learned about these sites.
+ */
+export function webToolsFailed(r: SiteResult): boolean {
+  if (r.outcome !== 'read' || r.reading?.reading !== 'not-found') return false
+  return (r.toolErrors ?? []).some((e) => /invalid/i.test(e.code))
+    || r.reading.couldNotRead.some((c) => /invalid[- ]?(tool[- ])?input|\binput error/i.test(c.why))
+}
+
+export type ReadAgainReason = 'tools-failed' | 'ran-out'
+
+/** Why a reading is no answer about its site, if it is not: the tools failed first, since that also uses up the allowance. */
+export const readAgainReason = (r: SiteResult): ReadAgainReason | null =>
+  webToolsFailed(r) ? 'tools-failed' : ranOutOfTools(r) ? 'ran-out' : null
+
+/** The command that reads these sites again; a site whose tools failed is read with the basic ones. */
+export const redoCommand = (sites: readonly string[], reason: ReadAgainReason = 'ran-out'): string =>
+  `npm run site-terms -- --run --redo --only ${sites.join(',')}${reason === 'tools-failed' ? ' --web basic' : ''}`
+
+/** The sites to read again, by reason, each with its command, in a stable order. */
+export function readAgainCommands(results: readonly SiteResult[]): { reason: ReadAgainReason; sites: string[]; command: string }[] {
+  return (['tools-failed', 'ran-out'] as const).flatMap((reason) => {
+    const sites = results.filter((r) => readAgainReason(r) === reason).map((r) => r.site).sort()
+    return sites.length > 0 ? [{ reason, sites, command: redoCommand(sites, reason) }] : []
+  })
+}
+
+export const READ_AGAIN_LABEL: Record<ReadAgainReason, string> = {
+  'tools-failed': 'The web tools failed',
+  'ran-out': 'Ran out of page opens or searches',
+}
 
 /** "Page last updated: September 23, 2026" as the date alone: the worksheet supplies "last updated". */
 export function datePart(s: string): string {
@@ -740,14 +829,23 @@ function quoteSummary(r: SiteResult): string {
   return `${on} of ${checks.length} on page${missing > 0 ? `, ⚠ ${missing} missing` : ''}`
 }
 
-export const OUT_OF_TOOLS_LABEL = 'Ran out of page opens or searches'
+export const OUT_OF_TOOLS_LABEL = READ_AGAIN_LABEL['ran-out']
 
-const outcomeLabel = (r: SiteResult): string =>
-  ranOutOfTools(r) ? OUT_OF_TOOLS_LABEL
+const outcomeLabel = (r: SiteResult): string => {
+  const again = readAgainReason(r)
+  return again ? READ_AGAIN_LABEL[again]
     : r.outcome === 'read' && r.reading ? READING_LABEL[r.reading.reading]
     : r.outcome === 'refused' ? 'The model declined'
     : r.outcome === 'no-answer' ? 'No answer'
     : `Error: ${r.error ?? 'unknown'}`
+}
+
+/** "web_fetch invalid_tool_input ×3, web_search invalid_tool_input ×1". */
+export function toolErrorSummary(errors: readonly ToolError[]): string {
+  const counts = new Map<string, number>()
+  for (const e of errors) counts.set(`${e.tool} ${e.code}`, (counts.get(`${e.tool} ${e.code}`) ?? 0) + 1)
+  return [...counts].map(([k, n]) => `${k} ×${n}`).join(', ')
+}
 
 const RULING = '**Your ruling:** ☐ Allowed ☐ Not allowed ☐ Ask the site first  \n**Notes:**'
 
@@ -761,7 +859,8 @@ export function renderWorksheet(input: {
   const failedLast = new Map(input.results.filter((r) => !isSettled(r)).map((r) => [r.site, r.error ?? 'unknown error']))
   const read = input.targets.filter((t) => bySite.has(t.site))
   const unread = input.targets.filter((t) => !bySite.has(t.site))
-  const again = read.filter((t) => ranOutOfTools(bySite.get(t.site)!)).map((t) => t.site)
+  const againGroups = readAgainCommands(read.map((t) => bySite.get(t.site)!))
+  const again = againGroups.flatMap((g) => g.sites)
   const spent = input.results.reduce((s, r) => s + r.dollars, 0)
 
   const lines: string[] = [
@@ -785,16 +884,13 @@ export function renderWorksheet(input: {
   ]
 
   if (again.length > 0) {
-    lines.push(
-      '## Read again',
-      '',
-      `The agent used up its page opens or searches before it reached the terms of ${again.length === 1 ? 'this site' : `these ${again.length} sites`}, so "not found" is no answer about ${again.length === 1 ? 'it' : 'them'}. Read ${again.length === 1 ? 'it' : 'them'} again before ruling:`,
-      '',
-      '```',
-      redoCommand(again),
-      '```',
-      '',
-    )
+    lines.push('## Read again', '', `For ${again.length === 1 ? 'this site' : `these ${again.length} sites`}, "not found" is no answer about the site. Read ${again.length === 1 ? 'it' : 'them'} again before ruling.`, '')
+    for (const g of againGroups) {
+      const why = g.reason === 'tools-failed'
+        ? 'The web tools failed on their calls, so nothing was read. This reads them with the basic web tools:'
+        : 'The agent used up its page opens or searches before it reached the terms:'
+      lines.push(`**${READ_AGAIN_LABEL[g.reason]}** (${g.sites.length}). ${why}`, '', '```', g.command, '```', '')
+    }
   }
   if (unread.length > 0) {
     lines.push('## Not read yet', '', 'Run `npm run site-terms -- --run` again to continue; sites already read are kept.', '')
@@ -845,8 +941,10 @@ export function renderWorksheet(input: {
       lines.push('', 'Keyword scan: the terms page could not be read from this machine.')
     }
     const u = r.usage
-    lines.push('', `As the API reported it: ${u.webFetches} page open${u.webFetches === 1 ? '' : 's'} of ${FETCH_USES}, ${u.webSearches} search${u.webSearches === 1 ? '' : 'es'} of ${SEARCH_USES}, $${r.dollars.toFixed(2)}.`)
-    lines.push('', 'robots.txt:', ...robotsLines(r.robots), '', ranOutOfTools(r) ? `**No ruling yet:** read this site again first (\`${redoCommand([t.site])}\`).` : RULING, '')
+    lines.push('', `As the API reported it: ${u.webFetches} page open${u.webFetches === 1 ? '' : 's'} of ${FETCH_USES}, ${u.webSearches} search${u.webSearches === 1 ? '' : 'es'} of ${SEARCH_USES}, $${r.dollars.toFixed(2)}${r.web ? `, ${r.web} web tools` : ''}.`)
+    if (r.toolErrors && r.toolErrors.length > 0) lines.push('', `Web tool errors, as the API reported them: ${md(toolErrorSummary(r.toolErrors))}`)
+    const againReason = readAgainReason(r)
+    lines.push('', 'robots.txt:', ...robotsLines(r.robots), '', againReason ? `**No ruling yet:** read this site again first (\`${redoCommand([t.site], againReason)}\`).` : RULING, '')
   }
   return `\uFEFF${lines.join('\n')}\n`
 }

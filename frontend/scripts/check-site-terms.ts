@@ -6,6 +6,7 @@
  *   npm run site-terms -- --run --limit 3       read three sites; prints what they cost
  *   npm run site-terms -- --run                 read the rest, stopping at --max-dollars ($10)
  *   npm run site-terms -- --run --only kraken.com --redo
+ *   npm run site-terms -- --run --redo --only fidelity.com --web basic
  *
  * RUN IT ON THE OWNER'S MACHINE. robots.txt and the quotes are checked from here, and the
  * cloud environment reaches none of these sites. The agent reads through Anthropic's own
@@ -33,10 +34,10 @@ import { discoverTermsLinks, htmlToText, isPathAllowedByRobots, parseRobotsTxt, 
 import { readProviderConfigs } from './lib/providerConfigFile.mjs'
 import { FEE_PAGES } from './lib/transferFeeRows'
 import {
-  buildPrompt, collectSites, disagreement, estimateDollars, homeOrigins, isSettled, MIN_PAGE_CHARS, OUT_OF_TOOLS_LABEL, parseReading,
-  parseSiteTermsArgs, quoteOnPage, ranOutOfTools, READING_LABEL, READING_TOOL, redoCommand, renderWorksheet, robotsAnswer,
-  runReadingLoop, runStopper, SYSTEM_PROMPT, termsLinksFor, USAGE, webTools,
-  type Reading, type RobotsAnswer, type SiteResult, type SiteTarget,
+  buildPrompt, collectSites, disagreement, estimateDollars, homeOrigins, isSettled, MIN_PAGE_CHARS, parseReading,
+  parseSiteTermsArgs, quoteOnPage, READ_AGAIN_LABEL, readAgainCommands, readAgainReason, READING_LABEL, READING_TOOL,
+  renderWorksheet, robotsAnswer, runReadingLoop, runStopper, SYSTEM_PROMPT, termsLinksFor, toolErrorSummary, USAGE, webTools,
+  webVersion, type Reading, type RobotsAnswer, type SiteResult, type SiteTarget, type WebToolVersions,
 } from './lib/siteTerms'
 
 const ROOT = resolve(process.cwd(), '..')
@@ -171,25 +172,25 @@ async function termsLinksHere(target: SiteTarget): Promise<string[]> {
 
 // ─── Asking the agent ─────────────────────────────────────────────────────────
 
-function askAgent(client: Anthropic, model: string, target: SiteTarget, robotsToCopy: string[], termsLinks: string[]) {
+function askAgent(client: Anthropic, model: string, web: WebToolVersions, target: SiteTarget, robotsToCopy: string[], termsLinks: string[]) {
   return runReadingLoop(model, buildPrompt(target, robotsToCopy, termsLinks), (messages) => client.messages.stream({
     model,
     max_tokens: MAX_TOKENS,
     system: SYSTEM_PROMPT,
     thinking: { type: 'adaptive' },
     output_config: { effort: 'medium' },
-    tools: [...webTools(model), READING_TOOL],
+    tools: [...webTools(model, web), READING_TOOL],
     messages: messages as Anthropic.MessageParam[],
   }).finalMessage())
 }
 
-async function readSite(client: Anthropic, model: string, target: SiteTarget, keySource: string): Promise<{ result: SiteResult; stop: string | null }> {
+async function readSite(client: Anthropic, model: string, web: WebToolVersions, target: SiteTarget, keySource: string): Promise<{ result: SiteResult; stop: string | null }> {
   const checkedAt = new Date().toISOString()
   const { answers, pending } = await robotsHere(target)
-  const asked = await askAgent(client, model, target, pending.map((p) => `${p.origin}/robots.txt`), await termsLinksHere(target))
+  const asked = await askAgent(client, model, web, target, pending.map((p) => `${p.origin}/robots.txt`), await termsLinksHere(target))
   if (asked.outcome === 'error') {
     return {
-      result: { site: target.site, checkedAt, model, outcome: 'error', error: asked.error, robots: answers, usage: asked.usage, dollars: asked.dollars },
+      result: { site: target.site, checkedAt, model, outcome: 'error', error: asked.error, robots: answers, usage: asked.usage, dollars: asked.dollars, web, toolErrors: asked.toolErrors },
       stop: runStopper(asked.thrown, keySource),
     }
   }
@@ -229,6 +230,8 @@ async function readSite(client: Anthropic, model: string, target: SiteTarget, ke
     warning: reading ? disagreement(reading, scan?.signals ?? []) : null,
     usage: asked.usage,
     dollars: asked.dollars,
+    web,
+    toolErrors: asked.toolErrors,
   } }
 }
 
@@ -250,6 +253,14 @@ function save(results: Map<string, SiteResult>, targets: SiteTarget[], skipped: 
 }
 
 const dollarsText = (n: number) => `$${n.toFixed(2)}`
+
+/** The sites to read again and the command for each group; nothing when there are none. */
+function printReadAgain(results: Iterable<SiteResult>): void {
+  for (const g of readAgainCommands([...results])) {
+    const why = g.reason === 'tools-failed' ? 'the web tools failed on their calls' : 'ran out of page opens or searches before reaching the terms'
+    console.log(`\n${g.sites.length} site${g.sites.length === 1 ? '' : 's'}: ${why}. Read ${g.sites.length === 1 ? 'it' : 'them'} again with:\n  ${g.command}`)
+  }
+}
 
 async function main(): Promise<number> {
   const args = parseSiteTermsArgs(process.argv.slice(2))
@@ -279,12 +290,17 @@ async function main(): Promise<number> {
   console.log(`Site terms check: ${targets.length} websites behind the three check pages (${pages} pages).`)
   if (skipped.length > 0) console.log(`Skipped ${skipped.length}: ${skipped.map((s) => s.site).join(', ')} (the registry rules them prohibited).`)
   console.log(`Already read: ${results.size}. This run would read ${todo.length}: ${todo.map((t) => t.site).join(', ') || 'none'}.`)
-  if (todo.length === 0) return 0
+  if (todo.length === 0) {
+    if (!args.run) printReadAgain(results.values())
+    return 0
+  }
+  const web = webVersion(args.model, args.web)
   const est = estimateDollars(args.model, todo.length)
-  console.log(`Model: ${args.model}. Rough cost for ${todo.length}: ${dollarsText(est.low)} to ${dollarsText(est.high)} (a guess, not a measurement). Cap for this run: ${dollarsText(args.maxDollars)}.`)
+  console.log(`Model: ${args.model}, ${web} web tools. Rough cost for ${todo.length}: ${dollarsText(est.low)} to ${dollarsText(est.high)} (a guess, not a measurement). Cap for this run: ${dollarsText(args.maxDollars)}.`)
 
   if (!args.run) {
     console.log('\nNothing was spent. To read three sites and see what they really cost:\n  npm run site-terms -- --run --limit 3')
+    printReadAgain(results.values())
     return 0
   }
 
@@ -308,14 +324,16 @@ async function main(): Promise<number> {
       break
     }
     process.stdout.write(`[${i + 1}/${todo.length}] ${target.site} … `)
-    const { result, stop } = await readSite(client, args.model, target, source)
+    const { result, stop } = await readSite(client, args.model, web, target, source)
     attempted++
     spent += result.dollars
     results.set(result.site, result)
     save(results, targets, skipped)
     saved = true
-    const label = ranOutOfTools(result) ? OUT_OF_TOOLS_LABEL : result.reading ? READING_LABEL[result.reading.reading] : result.outcome
-    console.log(`${label}${result.warning ? ' ⚠' : ''} · ${dollarsText(result.dollars)}${result.error ? ` (${result.error})` : ''}`)
+    const again = readAgainReason(result)
+    const label = again ? READ_AGAIN_LABEL[again] : result.reading ? READING_LABEL[result.reading.reading] : result.outcome
+    const errors = result.toolErrors && result.toolErrors.length > 0 ? ` [${toolErrorSummary(result.toolErrors)}]` : ''
+    console.log(`${label}${result.warning ? ' ⚠' : ''} · ${dollarsText(result.dollars)}${result.error ? ` (${result.error})` : ''}${errors}`)
     if (stop) {
       console.log(`\nStopping: ${stop}${note ? ` The Integrations page's keys could not be read: ${note}` : ''}`)
       failed++
@@ -333,10 +351,7 @@ async function main(): Promise<number> {
   const left = targets.filter((t) => { const r = results.get(t.site); return !r || !isSettled(r) }).length
   console.log(`\nSpent ${dollarsText(spent)} on ${attempted} site${attempted === 1 ? '' : 's'}${spent > 0 ? ` (${dollarsText(spent / attempted)} each on average)` : ''}. ${left} left to read.`)
   if (spent > 0 && left > 0) console.log(`At that average the ${left} left would cost about ${dollarsText((spent / attempted) * left)}.`)
-  const again = [...results.values()].filter(ranOutOfTools).map((r) => r.site).sort()
-  if (again.length > 0) {
-    console.log(`\n${again.length} site${again.length === 1 ? '' : 's'} ran out of page opens or searches before reaching the terms. Read ${again.length === 1 ? 'it' : 'them'} again with:\n  ${redoCommand(again)}`)
-  }
+  printReadAgain(results.values())
   if (saved) console.log(`Worksheet: ${WORKSHEET}\nAnswers:   ${RESULTS}`)
   return failed > 0 && failed >= attempted ? 1 : 0
 }

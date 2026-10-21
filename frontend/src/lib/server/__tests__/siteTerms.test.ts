@@ -10,10 +10,11 @@ import type { SourceTermsEntry } from '@/lib/server/sourceTerms'
 import { FEE_PAGES } from '../../../../scripts/lib/transferFeeRows'
 import {
   apiErrorText, buildPrompt, collectSites, datePart, DEFAULT_MAX_DOLLARS, DEFAULT_MODEL, disagreement, estimateDollars, FETCH_USES,
-  HOME_PAGES, homeOrigins, isSettled, matchable, MAX_TURNS, MODELS, NUDGE, OUT_OF_TOOLS_LABEL, parseReading, parseSiteTermsArgs,
-  plainQuote, quoteOnPage, ranOutOfTools, READING_TOOL, READING_TOOL_NAME, READINGS, redoCommand, renderWorksheet, requestDollars,
-  robotsAnswer, runReadingLoop, runStopper, SAMPLE_PAGES, SEARCH_USES, siteOf, SYSTEM_PROMPT, TERMS_LINKS, termsLinksFor, webTools,
-  type AgentResponse, type AgentTurn, type Reading, type SitePage, type SiteResult, type SiteTarget,
+  HOME_PAGES, homeOrigins, isSettled, matchable, MAX_TOOL_ERRORS, MAX_TURNS, MODELS, NUDGE, OUT_OF_TOOLS_LABEL, parseReading,
+  parseSiteTermsArgs, plainQuote, quoteOnPage, ranOutOfTools, READ_AGAIN_LABEL, readAgainCommands, readAgainReason, READING_TOOL,
+  READING_TOOL_NAME, READINGS, redoCommand, renderWorksheet, requestDollars, robotsAnswer, runReadingLoop, runStopper, SAMPLE_PAGES,
+  SEARCH_USES, siteOf, SYSTEM_PROMPT, TERMS_LINKS, termsLinksFor, toolErrorsIn, toolErrorSummary, webTools, webToolsFailed, webVersion,
+  type AgentResponse, type AgentTurn, type ContentBlock, type Reading, type SitePage, type SiteResult, type SiteTarget,
 } from '../../../../scripts/lib/siteTerms'
 
 /**
@@ -153,6 +154,21 @@ describe('the instructions', () => {
     for (const model of Object.keys(MODELS)) {
       expect(webTools(model).map((t) => t.max_uses)).toEqual([SEARCH_USES, FETCH_USES])
     }
+  })
+
+  it('tells the agent a guessed address is refused but still counted, and what each tool takes', () => {
+    const p = buildPrompt(target, [])
+    expect(p).toContain('refuses a guessed address and still counts it')
+    expect(p).toContain('Give the page tool only an address and the search tool only a query')
+  })
+
+  it('gives the basic web tools on request, whatever the model would use', () => {
+    expect(webVersion('claude-sonnet-5-5')).toBe('dynamic')
+    expect(webVersion('claude-sonnet-5-5', 'basic')).toBe('basic')
+    expect(webVersion('claude-haiku-5-5', 'dynamic')).toBe('dynamic')
+    expect(webTools('claude-sonnet-5-5', 'basic').map((t) => t.type)).toEqual(['web_search_20250305', 'web_fetch_20250910'])
+    expect(webTools('claude-sonnet-5-5', 'basic').map((t) => t.max_uses)).toEqual([SEARCH_USES, FETCH_USES])
+    expect(() => webVersion('claude-unknown', 'basic')).toThrow()
   })
 
   it('reads the site’s home page first, then each other host its pages are on, www folded in', () => {
@@ -363,6 +379,47 @@ describe('the conversation', () => {
   })
 })
 
+describe('the web tool errors', () => {
+  const content: ContentBlock[] = [
+    { type: 'server_tool_use', id: 'f1', name: 'web_fetch', input: { url: 'https://www.fidelity.com/terms-of-use' } },
+    { type: 'web_fetch_tool_result', tool_use_id: 'f1', content: { type: 'web_fetch_tool_result_error', error_code: 'invalid_tool_input' } },
+    { type: 'server_tool_use', id: 's1', name: 'web_search', input: { query: 'fidelity terms of use' } },
+    { type: 'web_search_tool_result', tool_use_id: 's1', content: { type: 'web_search_tool_result_error', error_code: 'invalid_tool_input' } },
+    { type: 'server_tool_use', id: 'f2', name: 'web_fetch', input: { url: 'https://www.kraken.com/legal' } },
+    { type: 'web_fetch_tool_result', tool_use_id: 'f2', content: { type: 'web_fetch_result', url: 'https://www.kraken.com/legal', content: { type: 'document', source: { type: 'text', data: 'Legal' } } } },
+    { type: 'text' },
+  ]
+
+  it('names each failed call’s tool, its code and what it was given, and ignores a call that worked', () => {
+    expect(toolErrorsIn(content)).toEqual([
+      { tool: 'web_fetch', code: 'invalid_tool_input', input: '{"url":"https://www.fidelity.com/terms-of-use"}' },
+      { tool: 'web_search', code: 'invalid_tool_input', input: '{"query":"fidelity terms of use"}' },
+    ])
+  })
+
+  it('finds a code nested inside a result, and names the tool by the block when the call is not in view', () => {
+    expect(toolErrorsIn([{ type: 'web_fetch_tool_result', tool_use_id: 'gone', content: [{ type: 'x', content: { error_code: 'url_not_allowed' } }] }]))
+      .toEqual([{ tool: 'web_fetch', code: 'url_not_allowed', input: '' }])
+    expect(toolErrorsIn([{ type: 'tool_use', name: READING_TOOL_NAME, input: {} }])).toEqual([])
+  })
+
+  it('keeps them across the turns of a conversation, up to a limit', async () => {
+    const usage = { input_tokens: 1, output_tokens: 1 }
+    const failing: ContentBlock[] = Array.from({ length: 8 }, (_, i) => [
+      { type: 'server_tool_use', id: `c${i}`, name: 'web_fetch', input: { url: `https://a.com/${i}` } },
+      { type: 'web_fetch_tool_result', tool_use_id: `c${i}`, content: { error_code: 'invalid_tool_input' } },
+    ]).flat()
+    const replies: AgentResponse[] = [
+      { stop_reason: 'pause_turn', content: failing, usage },
+      { stop_reason: 'tool_use', content: [...failing, { type: 'tool_use', name: READING_TOOL_NAME, input: reading({ reading: 'not-found' }) }], usage },
+    ]
+    const out = await runReadingLoop(DEFAULT_MODEL, 'p', async () => replies.shift()!)
+    expect(out.outcome).toBe('read')
+    expect(out.toolErrors).toHaveLength(MAX_TOOL_ERRORS)
+    expect(toolErrorSummary(out.toolErrors)).toBe(`web_fetch invalid_tool_input ×${MAX_TOOL_ERRORS}`)
+  })
+})
+
 describe('a failure that ends the run', () => {
   // Built the way the SDK builds them from an API answer, so the shape is the SDK's own.
   const apiError = (status: number, type: string, message: string) =>
@@ -394,16 +451,16 @@ describe('a failure that ends the run', () => {
 
 describe('arguments', () => {
   it('plans by default, under the default cap and model', () => {
-    expect(parseSiteTermsArgs([])).toEqual({ run: false, only: [], limit: null, maxDollars: DEFAULT_MAX_DOLLARS, model: DEFAULT_MODEL, redo: false, help: false })
+    expect(parseSiteTermsArgs([])).toEqual({ run: false, only: [], limit: null, maxDollars: DEFAULT_MAX_DOLLARS, model: DEFAULT_MODEL, redo: false, web: null, help: false })
   })
 
   it('reads the options', () => {
-    expect(parseSiteTermsArgs(['--run', '--limit', '3', '--only', 'www.Kraken.com, ishares.com', '--max-dollars', '2.5', '--model', 'claude-opus-5-5', '--redo']))
-      .toEqual({ run: true, only: ['kraken.com', 'ishares.com'], limit: 3, maxDollars: 2.5, model: 'claude-opus-5-5', redo: true, help: false })
+    expect(parseSiteTermsArgs(['--run', '--limit', '3', '--only', 'www.Kraken.com, ishares.com', '--max-dollars', '2.5', '--model', 'claude-opus-5-5', '--redo', '--web', 'basic']))
+      .toEqual({ run: true, only: ['kraken.com', 'ishares.com'], limit: 3, maxDollars: 2.5, model: 'claude-opus-5-5', redo: true, web: 'basic', help: false })
   })
 
   it('refuses what it cannot honour', () => {
-    for (const bad of [['--limit', '0'], ['--limit', '1.5'], ['--max-dollars', 'x'], ['--model', 'gpt-4o'], ['--only'], ['--spend-it-all']]) {
+    for (const bad of [['--limit', '0'], ['--limit', '1.5'], ['--max-dollars', 'x'], ['--model', 'gpt-4o'], ['--only'], ['--web', 'fast'], ['--web'], ['--spend-it-all']]) {
       expect(parseSiteTermsArgs(bad), bad.join(' ')).toHaveProperty('error')
     }
   })
@@ -515,6 +572,51 @@ describe('a site where the agent ran out of page opens', () => {
     expect(ranOutOfTools({ ...base, outcome: 'error', reading: undefined })).toBe(false)
   })
 
+  it('tells a failure of the web tools from running out, by the API’s code or, on older readings, the agent’s words', () => {
+    const notFound = (couldNotRead: Reading['couldNotRead']) => ({ ...base, reading: { ...base.reading!, couldNotRead } })
+    // Fidelity and MEXC on the 2026-10-20 run, before the codes were kept.
+    const fidelity = notFound([{ url: 'https://www.fidelity.com/terms-of-use', why: "The fetch tool returned an 'invalid tool input' error on three attempts, so the page never loaded." }])
+    const mexc = notFound([{ url: 'https://www.mexc.com/terms', why: 'The page fetch tool returned an input error on every attempt' }])
+    expect(webToolsFailed(fidelity)).toBe(true)
+    expect(webToolsFailed(mexc)).toBe(true)
+    expect(webToolsFailed({ ...notFound([]), toolErrors: [{ tool: 'web_fetch', code: 'invalid_tool_input', input: '' }] })).toBe(true)
+    // A refused guess is the agent's own mistake, not a tool failure; nor is a reading that found the terms.
+    expect(webToolsFailed({ ...notFound([]), toolErrors: [{ tool: 'web_fetch', code: 'url_not_allowed', input: '' }] })).toBe(false)
+    expect(webToolsFailed({ ...fidelity, reading: { ...fidelity.reading!, reading: 'forbids' } })).toBe(false)
+    expect(webToolsFailed(base)).toBe(false)
+    // iShares ran out of searches because its calls failed: the failure is the reason.
+    const ishares = { ...fidelity, usage: { ...base.usage, webSearches: SEARCH_USES } }
+    expect(ranOutOfTools(ishares)).toBe(true)
+    expect(readAgainReason(ishares)).toBe('tools-failed')
+    expect(readAgainReason(base)).toBe('ran-out')
+    expect(readAgainReason({ ...base, reading: { ...base.reading!, couldNotRead: [] } })).toBeNull()
+  })
+
+  it('groups the sites to read again by reason, each with its own command', () => {
+    const failed = (site: string): SiteResult => ({ ...base, site, toolErrors: [{ tool: 'web_fetch', code: 'invalid_tool_input', input: '' }] })
+    const groups = readAgainCommands([failed('trezor.io'), base, failed('fidelity.com'), { ...base, site: 'ok.com', reading: reading() }])
+    expect(groups.map((g) => [g.reason, g.sites])).toEqual([['tools-failed', ['fidelity.com', 'trezor.io']], ['ran-out', ['kraken.com']]])
+    expect(groups[0].command).toBe('npm run site-terms -- --run --redo --only fidelity.com,trezor.io --web basic')
+    expect(groups[1].command).toBe('npm run site-terms -- --run --redo --only kraken.com')
+    expect(parseSiteTermsArgs(groups[0].command.split(' ').slice(4))).toMatchObject({ run: true, redo: true, only: ['fidelity.com', 'trezor.io'], web: 'basic' })
+    expect(readAgainCommands([{ ...base, reading: reading() }])).toEqual([])
+  })
+
+  it('shows a failed site its errors and no ruling box, under its own heading', () => {
+    const failed: SiteResult = { ...base, site: 'fidelity.com', web: 'dynamic', toolErrors: [
+      { tool: 'web_fetch', code: 'invalid_tool_input', input: '' }, { tool: 'web_fetch', code: 'invalid_tool_input', input: '' },
+      { tool: 'web_search', code: 'invalid_tool_input', input: '' },
+    ] }
+    const sheet = renderWorksheet({ generatedOn: '2026-10-21', results: [failed, base], targets: [{ ...target, site: 'fidelity.com' }, target], skipped: [] })
+    expect(sheet).toContain('2 sites read (2 to read again)')
+    expect(sheet).toMatch(/\*\*The web tools failed\*\* \(1\)[\s\S]*--only fidelity\.com --web basic/)
+    expect(sheet).toMatch(/\*\*Ran out of page opens or searches\*\* \(1\)[\s\S]*--only kraken\.com\n/)
+    expect(sheet).toContain('Web tool errors, as the API reported them: web\\_fetch invalid\\_tool\\_input ×2, web\\_search invalid\\_tool\\_input ×1')
+    expect(sheet).toContain(', dynamic web tools.')
+    expect(sheet).toContain(READ_AGAIN_LABEL['tools-failed'])
+    expect(sheet).not.toContain('**Your ruling:**')
+  })
+
   it('gets no ruling box, and the worksheet gives the command to read it again', () => {
     const sheet = renderWorksheet({ generatedOn: '2026-10-20', results: [base], targets: [target], skipped: [] })
     expect(sheet).toContain('1 site read (1 to read again)')
@@ -536,6 +638,13 @@ describe('the script', () => {
     expect(src).not.toMatch(/\$\{\s*key\b/)
     expect(src).not.toMatch(/console\.\w+\([^)]*,\s*key\b/)
     expect(src).toContain('new Anthropic({ apiKey: key,')
+  })
+
+  it('uses the web tools it was asked for, keeps their errors and the version, and lists what to read again even when planning', () => {
+    expect(src).toContain('tools: [...webTools(model, web), READING_TOOL]')
+    expect(src).toContain('const web = webVersion(args.model, args.web)')
+    expect(src.match(/toolErrors: asked\.toolErrors/g)).toHaveLength(2)
+    expect(src).toMatch(/if \(!args\.run\) \{[\s\S]*?printReadAgain\(results\.values\(\)\)[\s\S]*?return 0/)
   })
 
   it('hands the agent the links read from the home pages, and follows redirects itself', () => {
