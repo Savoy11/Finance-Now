@@ -178,3 +178,20 @@ same reason as above.
 - its content in `main` as `8ed2ec9`.
 
 Nothing was deleted; no other ref moved.
+
+## Twelfth reset, after PR #387 (2026-10-21)
+
+**What was done.** After PR #387 (the site terms check hands the agent the terms links and says
+when it ran out) was squash-merged into `main` as `36793d8`, the branch was restarted from that
+commit for a fix found on the full paid run: on 22 sites every web tool call failed with an
+input error, and the run recorded no error codes to say why. Pushed with `--force-with-lease`,
+for the same reason as above.
+
+**Where the prior state lives.** The branch's previous tip, `2e25a5c`, is held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@2e25a5c`, created by
+  `.github/workflows/archive-branch.yml` when #387 merged;
+- GitHub's `refs/pull/387/head`;
+- its content in `main` as `36793d8`.
+
+Nothing was deleted; no other ref moved.

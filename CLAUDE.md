@@ -1612,7 +1612,10 @@ for links that look like its terms and gives them to the agent, whose page opens
 are fixed (`FETCH_USES`, `SEARCH_USES`) and stated in its instructions: the first paid run (2026-10-20)
 spent them on home pages and examples and never reached Kraken's or Vanguard's terms. A "not found"
 that only means they ran out gets no ruling box; the worksheet lists it under "Read again" with the
-`--redo` command. The owner rules each site in `site-terms-worksheet.md` (repository root,
+`--redo` command. So does one whose web tools failed: on the full run (2026-10-20) every call failed
+on 22 sites, Fidelity's and Trezor's among them, with no error code kept. Each failed call's code is
+kept now (`toolErrors`), and those sites are read again with `--web basic`, the tool versions without
+the code sandbox. The owner rules each site in `site-terms-worksheet.md` (repository root,
 gitignored, beside `site-terms-results.json`, which a rerun keeps). It decides nothing and reads no
 figure: a pre-fill of the check pages (step 2) reads only sites the owner marks Allowed, and is not
 built. Rules and tests: `scripts/lib/siteTerms.ts`, `lib/server/__tests__/siteTerms.test.ts`.
