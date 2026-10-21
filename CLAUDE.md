@@ -758,6 +758,8 @@ a fact. `lib/data/__tests__/stakingWording.test.ts` holds it for every live prov
   `FUND_FIGURES_COMPILED_ON` moves only when every figure has a dated reading. `--order` takes a sort-order file kept off the
   repository (symbols and a `differs` flag, worked out from a data service's figures, which are licensed); no outside figure
   reaches the page. It shares the Transfer Fee Check's look and rules (`scripts/lib/fundFigures.core.js`, tested).
+  `npm run fund-figures-prefill` suggests figures from the issuers' pages the owner ruled Allowed (D141), for the
+  owner to compare with each page; see "Site terms check" under Testing the Live Data Layer.
 
 ### `src/lib/data/portfolioBuilder.ts` (Portfolio Builder module)
 Pure engine, no API calls, covered by `__tests__/portfolioBuilder.test.ts` (86 tests).
@@ -1626,8 +1628,21 @@ records them without reading anything, and a site read again after a ruling asks
 reading short of "forbids" whose page the keyword scan finds a ban in is marked ⚠: Invesco's read
 "conditions" from search excerpts while its terms ban "data mining, robots, or similar data gathering
 and extraction tools". It decides nothing and reads no
-figure: a pre-fill of the check pages (step 2) reads only sites the owner marks Allowed, and is not
-built. Rules and tests: `scripts/lib/siteTerms.ts`, `lib/server/__tests__/siteTerms.test.ts`.
+figure. Rules and tests: `scripts/lib/siteTerms.ts`, `lib/server/__tests__/siteTerms.test.ts`.
+
+**The owner's rulings (D141, 2026-10-21): 4 Allowed** (vanguard.com, ssga.com, sectorspdrs.com,
+proshares.com), 84 Not allowed, 3 with no reading. Every site behind the Transfer Fee and Staking
+Facts Checks is Not allowed, so **the pre-fill (step 2) reaches only the Fund Figures Check**:
+`npm run fund-figures-prefill` plans and spends nothing; `-- --run --limit 4` reads one page per
+Allowed site. It reads only a page on a site ruled Allowed on the reading in force, from the owner's
+machine, as FinanceNow, where robots.txt lets FinanceNow, and never skips the terms gate. A model
+copies the figures out of the page's text without being shown the catalog's; a figure is kept only
+when its quote is in that text and holds it, its date only when written in what was quoted, and only
+if the check page itself (`fundFigures.core.js`) would accept it. It writes
+`fund-figures-suggestions.json` (repository root, gitignored) and nothing else. Vanguard's pages carry
+their net assets in a data attribute the browser draws from (`pageTextOf` decodes it) but not their
+yields, which load later in the browser. Rules and tests: `scripts/lib/figurePrefill.ts`,
+`lib/server/__tests__/figurePrefill.test.ts`.
 
 
 **⚠ STANDING RULE — paid decisions are deferred; no provider may be load-bearing (D21,

@@ -117,9 +117,9 @@ export function collectSites(
 // ─── robots.txt ───────────────────────────────────────────────────────────────
 
 /**
- * The readers whose robots.txt answers the worksheet shows. Step 2 is not built yet, so
- * which reader it uses is open; these are the ones it could be. The Anthropic names are as
- * Anthropic publishes them for its own fetchers.
+ * The readers whose robots.txt answers the worksheet shows. The pre-fill (step 2,
+ * fund-figures-prefill.ts) reads pages from the owner's machine as FinanceNow, so that is
+ * the row it obeys; the Anthropic names are as Anthropic publishes them for its own fetchers.
  */
 export const ROBOTS_READERS = [
   { token: '*', label: 'Any software' },
@@ -892,6 +892,9 @@ export interface Ruling {
 }
 
 export const RULINGS_FORMAT = 'site-terms-rulings-v1'
+
+/** The format site-terms-results.json is written in. */
+export const RESULTS_FORMAT = 'site-terms-results-v1'
 
 /**
  * The owner's rulings, kept apart from the worksheet: every paid run rewrites the worksheet, and

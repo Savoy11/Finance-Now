@@ -229,3 +229,19 @@ paid run rewrites the worksheet and would have wiped boxes ticked by hand. Pushe
 - its content in `main` as `4e0b887`.
 
 Nothing was deleted; no other ref moved.
+
+## Fifteenth reset, after PR #390 (2026-10-21)
+
+**What was done.** After PR #390 (the site terms check keeps the owner's rulings in their own
+file) was squash-merged into `main` as `f244259`, the branch was restarted from that commit for
+the next step: the Fund Figures Check pre-fill, built as a trial on the four sites the owner then
+ruled Allowed (D141). Pushed with `--force-with-lease`, for the same reason as above.
+
+**Where the prior state lives.** The branch's previous tip, `265f68f`, is held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@265f68f`, created by
+  `.github/workflows/archive-branch.yml` when #390 merged;
+- GitHub's `refs/pull/390/head`;
+- its content in `main` as `f244259`.
+
+Nothing was deleted; no other ref moved.
