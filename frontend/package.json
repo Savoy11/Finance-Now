@@ -51,6 +51,7 @@
     "fund-figures-page": "tsx scripts/gen-fund-figures-page.ts",
     "fund-figures-plan": "tsx scripts/fund-figures-plan.ts",
     "fund-figures-prefill": "tsx scripts/fund-figures-prefill.ts",
+    "fund-figures-review": "tsx scripts/fund-figures-review.ts",
     "site-terms": "tsx scripts/check-site-terms.ts",
     "fund-prospectus-fees": "node scripts/probe-fund-prospectus-fees.mjs",
     "agent-eval": "node scripts/run-agent-eval.mjs",

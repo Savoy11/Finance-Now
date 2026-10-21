@@ -314,3 +314,18 @@ yield in a list of recent distributions, so that is now refused. Pushed with
 - its content in `main` as `76dc793`.
 
 Nothing was deleted; no other ref moved.
+## Twentieth reset, after PR #396 (2026-10-21)
+
+**What was done.** After PR #396 (one payment's yield refused as a yield) was squash-merged into
+`main` as `65f9d69`, the branch was restarted from that commit on the owner's machine for the
+next step: a page that lays the pre-fill's suggestions out for the owner to read beside the
+Fund Figures Check. Pushed with `--force-with-lease`, for the same reason as above.
+
+**Where the prior state lives.** The branch's previous tip, `ba8c172`, is held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@ba8c172`, created by
+  `.github/workflows/archive-branch.yml` when #396 merged;
+- GitHub's `refs/pull/396/head`;
+- its content in `main` as `65f9d69`.
+
+Nothing was deleted; no other ref moved.
