@@ -35,11 +35,11 @@ import { EXCHANGES } from '@/lib/data/transferFees'
 import { pinnedFetch } from '@/lib/server/pinnedFetch'
 import { hostOf, matchTermsEntry } from '@/lib/server/sourceTerms'
 import { discoverTermsLinks, htmlToText, isPathAllowedByRobots, parseRobotsTxt, PROBE_USER_AGENT, scanTermsText } from '@/lib/server/termsProbe'
-import { readProviderConfigs } from './lib/providerConfigFile.mjs'
+import { anthropicKey } from './lib/anthropicKey'
 import { FEE_PAGES } from './lib/transferFeeRows'
 import {
   applyRules, buildPrompt, collectSites, disagreement, emptyRulings, estimateDollars, homeOrigins, importWorksheet, isSettled,
-  MIN_PAGE_CHARS, parseReading, parseSiteTermsArgs, parseWorksheet, quoteOnPage, READ_AGAIN_LABEL, readAgainCommands,
+  MIN_PAGE_CHARS, parseReading, parseSiteTermsArgs, parseWorksheet, quoteOnPage, READ_AGAIN_LABEL, readAgainCommands, RESULTS_FORMAT,
   readAgainReason, READING_LABEL, READING_TOOL, renderWorksheet, robotsAnswer, rulingCounts, rulingCountsLine, RULINGS_FORMAT,
   runReadingLoop, runStopper, SYSTEM_PROMPT, termsLinksFor, toolErrorSummary, USAGE, webTools, webVersion, type Reading,
   type RobotsAnswer, type RulingsFile, type SiteResult, type SiteTarget, type WebToolVersions,
@@ -49,39 +49,12 @@ const ROOT = resolve(process.cwd(), '..')
 const RESULTS = resolve(ROOT, 'site-terms-results.json')
 const WORKSHEET = resolve(ROOT, 'site-terms-worksheet.md')
 const RULINGS = resolve(ROOT, 'site-terms-rulings.json')
-const RESULTS_FORMAT = 'site-terms-results-v1'
 
 /** Thinking counts against this too. */
 const MAX_TOKENS = 16_000
 const FETCH_TIMEOUT_MS = 10_000
 const MAX_BYTES = 800_000
 const MAX_REDIRECTS = 5
-
-/** Same dependency-free loader as scripts/auth-consent.ts: the real environment wins over the file. */
-function loadEnvLocal(): void {
-  try {
-    for (const line of readFileSync(resolve(process.cwd(), '.env.local'), 'utf8').split('\n')) {
-      const m = /^\s*([A-Z0-9_]+)\s*=\s*(.*)$/i.exec(line)
-      if (m && !process.env[m[1]]) process.env[m[1]] = m[2].trim().replace(/^["']|["']$/g, '')
-    }
-  } catch { /* no .env.local: rely on the environment */ }
-}
-
-/**
- * The Integrations key first, then the environment, as getProviderKey resolves it in the app.
- * `source` names where the key came from, never the key: a refused key has to be replaced
- * where it lives. `note` says why the Integrations page's keys could not be read, if not.
- */
-function anthropicKey(): { key: string | null; source: string; note: string | null } {
-  const { configs, error } = readProviderConfigs()
-  const saved = configs?.anthropic?.apiKey
-  if (typeof saved === 'string' && saved.trim()) return { key: saved.trim(), source: 'the Integrations page', note: null }
-  const shell = process.env.ANTHROPIC_API_KEY?.trim()
-  if (shell) return { key: shell, source: 'ANTHROPIC_API_KEY in this PowerShell window', note: error }
-  loadEnvLocal()
-  const local = process.env.ANTHROPIC_API_KEY?.trim()
-  return { key: local || null, source: 'ANTHROPIC_API_KEY in frontend\\.env.local', note: error }
-}
 
 // ─── Reading from this machine ────────────────────────────────────────────────
 
