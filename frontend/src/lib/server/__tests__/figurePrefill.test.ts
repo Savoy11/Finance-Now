@@ -177,6 +177,18 @@ describe('checking an answer', () => {
     expect(checkAnswer(assetsFig, answer({ figure: 'assets', kind: 'own', shown: '$45,123.4 M', quote: 'Net Assets $45,123.4 M as of 10/19/2026', dateQuote: '' }), ok, core, NOW)).toMatchObject({ status: 'suggested', asOf: '2026-10-19' })
   })
 
+  it('throws away the yield of one payment, which is not a 12-month or SEC yield', () => {
+    // VBTLX, VCSH and VTEB were each answered "trailing" from this line on the full run (2026-10-21).
+    const lines = 'dashboard.secYield: 5.11%\ndashboard.secYieldAsOfDate: 10/19/2026\ndistributions.incomeCapitalGains[0].distributionYields: 4.27%\ndistributions.incomeCapitalGains[0].recordDate: 09/30/2026\n'.repeat(20)
+    const one = answer({ shown: '4.27%', label: '', quote: 'distributions.incomeCapitalGains[0].distributionYields: 4.27%', asOf: '2026-09-30', dateQuote: 'distributions.incomeCapitalGains[0].recordDate: 09/30/2026' })
+    expect(checkAnswer(yieldFig, one, lines, core, NOW)).toMatchObject({ status: 'not-checked', why: expect.stringContaining('one payment') })
+    const sec = answer({ shown: '5.11%', kind: 'sec', label: '', quote: 'dashboard.secYield: 5.11%', asOf: '2026-10-19', dateQuote: 'dashboard.secYieldAsOfDate: 10/19/2026' })
+    expect(checkAnswer(yieldFig, sec, lines, core, NOW)).toMatchObject({ status: 'suggested', value: 5.11, asOf: '2026-10-19' })
+    // State Street's distribution yield is over 365 days and in prose, not a list entry: still kept.
+    expect(checkAnswer(yieldFig, answer(), ssgaText, core, NOW).status).toBe('suggested')
+    expect(buildFiguresPrompt(fund(), 'u', 't')).toContain('that payment\'s yield, not a 12-month one')
+  })
+
   it('says why when there is nothing to suggest', () => {
     expect(checkAnswer(yieldFig, undefined, ssgaText, core, NOW).status).toBe('no-answer')
     expect(checkAnswer(yieldFig, answer({ found: false, why: 'Only the index\'s dividend yield is shown.' }), ssgaText, core, NOW)).toMatchObject({ status: 'not-found', why: 'Only the index\'s dividend yield is shown.' })

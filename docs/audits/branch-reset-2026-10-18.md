@@ -297,3 +297,20 @@ same reason as above.
 - its content in `main` as `51114a2`.
 
 Nothing was deleted; no other ref moved.
+
+## Nineteenth reset, after PR #394 (2026-10-21)
+
+**What was done.** After PR #394 (page data laid out one line per value) was squash-merged into
+`main` as `76dc793`, the branch was restarted from that commit on the owner's machine for the
+next step: the full pre-fill run answered three Vanguard bond funds' yields from one payment's
+yield in a list of recent distributions, so that is now refused. Pushed with
+`--force-with-lease`, for the same reason as above.
+
+**Where the prior state lives.** The branch's previous tip, `9457684`, is held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@9457684`, created by
+  `.github/workflows/archive-branch.yml` when #394 merged;
+- GitHub's `refs/pull/394/head`;
+- its content in `main` as `76dc793`.
+
+Nothing was deleted; no other ref moved.
