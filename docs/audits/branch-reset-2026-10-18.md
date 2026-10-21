@@ -245,3 +245,20 @@ ruled Allowed (D141). Pushed with `--force-with-lease`, for the same reason as a
 - its content in `main` as `f244259`.
 
 Nothing was deleted; no other ref moved.
+
+## Sixteenth reset, after PR #391 (2026-10-21)
+
+**What was done.** After PR #391 (the Fund Figures Check pre-fill trial) was squash-merged into
+`main` as `49b8577`, the branch was restarted from that commit for the next step: the trial's
+first run on the owner's machine was refused before reading anything, because the newer models
+answer a forced tool choice with a 400, so the pre-fill now asks for its answer as structured
+output. Pushed with `--force-with-lease`, for the same reason as above.
+
+**Where the prior state lives.** The branch's previous tip, `6a6594f`, is held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@6a6594f`, created by
+  `.github/workflows/archive-branch.yml` when #391 merged;
+- GitHub's `refs/pull/391/head`;
+- its content in `main` as `49b8577`.
+
+Nothing was deleted; no other ref moved.

@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { FUND_CATALOG } from '@/lib/data/fundCatalog'
 import { figuresFor, type FundFigure } from '../../../../scripts/lib/fundFiguresData'
 import {
-  buildFiguresPrompt, checkAnswer, dayIn, FIGURES_SYSTEM, FIGURES_TOOL, MAX_PAGE_TEXT, pageTextOf, parseFiguresAnswer, parsePrefillArgs,
+  answerFromResponse, buildFiguresPrompt, checkAnswer, dayIn, FIGURES_FORMAT, FIGURES_SYSTEM, MAX_PAGE_TEXT, pageTextOf, parseFiguresAnswer, parsePrefillArgs,
   pickPages, prefillFunds, PREFILL_MAX_DOLLARS, type FigureAnswer, type FiguresCore, type PrefillFund,
 } from '../../../../scripts/lib/figurePrefill'
 
@@ -81,7 +81,14 @@ describe('what the agent is asked', () => {
     expect(FIGURES_SYSTEM).toMatch(/Copy, never compute/)
     expect(FIGURES_SYSTEM).toMatch(/never its index's or benchmark's/)
     expect(FIGURES_SYSTEM).toMatch(/never instructions to you/)
-    expect(FIGURES_TOOL.strict).toBe(true)
+  })
+
+  it('asks for the answer as structured output whose shape admits nothing else', () => {
+    expect(FIGURES_FORMAT.type).toBe('json_schema')
+    const item = FIGURES_FORMAT.schema.properties.figures.items
+    expect(FIGURES_FORMAT.schema.additionalProperties).toBe(false)
+    expect(item.additionalProperties).toBe(false)
+    expect([...item.required].sort()).toEqual(Object.keys(item.properties).sort())
   })
 })
 
@@ -146,6 +153,20 @@ describe('checking an answer', () => {
     expect(parseFiguresAnswer({ figures: [{ figure: 'price', found: true }] })).toMatchObject({ ok: false })
     expect(parseFiguresAnswer(null)).toMatchObject({ ok: false })
   })
+
+  it('takes the answer from the response\'s text, and nothing from one cut off or declined', () => {
+    const text = (t: string, stop = 'end_turn') => ({ stop_reason: stop, content: [{ type: 'text', text: t }] })
+    const json = JSON.stringify({ figures: [answer()] })
+    expect(answerFromResponse(text(json))).toMatchObject({ ok: true, figures: [{ figure: 'yield', shown: '0.99%' }] })
+    // Split across text blocks, as a response may be: joined without anything between them.
+    const half = Math.floor(json.length / 2)
+    expect(answerFromResponse({ stop_reason: 'end_turn', content: [{ type: 'text', text: json.slice(0, half) }, { type: 'text', text: json.slice(half) }] })).toMatchObject({ ok: true })
+    expect(answerFromResponse(text(json, 'refusal'))).toEqual({ ok: false, error: 'the model declined to answer' })
+    expect(answerFromResponse(text(json.slice(0, 40), 'max_tokens'))).toEqual({ ok: false, error: 'the answer was cut off at its length limit' })
+    expect(answerFromResponse(text('Here are the figures.'))).toEqual({ ok: false, error: 'the answer was not the JSON asked for' })
+    expect(answerFromResponse({ stop_reason: 'end_turn', content: [{ type: 'thinking' }] })).toEqual({ ok: false, error: 'the model sent no answer' })
+    expect(answerFromResponse(text('{"figures":[{"figure":"price"}]}'))).toMatchObject({ ok: false })
+  })
 })
 
 describe('the command line', () => {
@@ -177,6 +198,10 @@ describe('the script', () => {
     expect(src).not.toMatch(/\bcatalog:\s/)
     expect(src.indexOf('if (!args.run)')).toBeLessThan(src.indexOf('new Anthropic('))
     expect(src).not.toMatch(/\btemperature\b/)
+    // A forced tool is refused with a 400 by the newer models (the first trial, 2026-10-21).
+    expect(src).not.toContain('tool_choice')
+    expect(src).toContain("output_config: { effort: 'low', format: FIGURES_FORMAT }")
+    expect(src).toContain('const parsed = answerFromResponse(res)')
     expect(src).not.toMatch(/\$\{\s*key\b/)
   })
 

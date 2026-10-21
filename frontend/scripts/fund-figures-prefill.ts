@@ -29,7 +29,7 @@ import { pinnedFetch } from '@/lib/server/pinnedFetch'
 import { isPathAllowedByRobots, parseRobotsTxt } from '@/lib/server/termsProbe'
 import { anthropicKey } from './lib/anthropicKey'
 import {
-  buildFiguresPrompt, checkAnswer, FIGURES_SYSTEM, FIGURES_TOOL, FIGURES_TOOL_NAME, pageTextOf, parseFiguresAnswer, parsePrefillArgs,
+  answerFromResponse, buildFiguresPrompt, checkAnswer, FIGURES_FORMAT, FIGURES_SYSTEM, pageTextOf, parsePrefillArgs,
   pickPages, prefillFunds, PREFILL_USAGE, suggestionLine, type FiguresCore, type PrefillFund, type Suggestion,
 } from './lib/figurePrefill'
 import { figuresFor } from './lib/fundFiguresData'
@@ -49,7 +49,8 @@ const USER_AGENT = 'FinanceNow/1.0 (fund figures check: reads a fund page for it
 const FETCH_TIMEOUT_MS = 15_000
 const MAX_BYTES = 2_000_000
 const MAX_REDIRECTS = 5
-const MAX_TOKENS = 4_000
+/** Thinking counts against this too. */
+const MAX_TOKENS = 8_000
 
 const coreSrc = readFileSync(join(process.cwd(), 'scripts/lib/fundFigures.core.js'), 'utf8')
 const core = new Function(`${coreSrc}\nreturn FundFiguresCore`)() as FiguresCore & { YIELD_KINDS: Record<string, string>; ASSET_KINDS: Record<string, string> }
@@ -179,13 +180,12 @@ async function readFund(client: Anthropic, model: string, f: PrefillFund, allowe
       model,
       max_tokens: MAX_TOKENS,
       system: FIGURES_SYSTEM,
-      tools: [FIGURES_TOOL] as unknown as Anthropic.Tool[],
-      tool_choice: { type: 'tool', name: FIGURES_TOOL_NAME },
+      // Copying figures out of a page needs little thought, and thinking is billed as output.
+      output_config: { effort: 'low', format: FIGURES_FORMAT },
       messages: [{ role: 'user', content: buildFiguresPrompt(f, got.finalUrl ?? f.url, text) }],
     })
     page.dollars = requestDollars(model, res.usage)
-    const call = res.content.find((b) => b.type === 'tool_use' && b.name === FIGURES_TOOL_NAME) as { input: unknown } | undefined
-    const parsed = parseFiguresAnswer(call?.input)
+    const parsed = answerFromResponse(res)
     if (!parsed.ok) return { page: { ...page, outcome: 'error', why: `the answer could not be read: ${parsed.error}` }, stop: null }
     const now = Date.now()
     page.figures = f.figures.map((fig) => checkAnswer(fig, parsed.figures.find((a) => a.figure === fig.figure), text, core, now))
