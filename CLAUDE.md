@@ -1640,11 +1640,14 @@ copies the figures out of the page's text without being shown the catalog's; a f
 when its quote is in that text and holds it, its date only when written in what was quoted, and only
 if the check page itself (`fundFigures.core.js`) would accept it. It writes
 `fund-figures-suggestions.json` (repository root, gitignored) and nothing else. Vanguard's pages carry
-their net assets in a data attribute the browser draws from (`pageTextOf` decodes it) but not their
-yields, which load later in the browser. ⚠ **Never force a tool choice on Claude Sonnet 5.5, Opus 5.5
-or Fable 5.1**: they refuse `tool_choice` `any` or `tool` with a 400, which is how the trial's first run
-ended (2026-10-21). The pre-fill asks for structured output instead (`output_config.format`,
-`FIGURES_FORMAT`) and reads it with `answerFromResponse`. Rules and tests: `scripts/lib/figurePrefill.ts`,
+their net assets and 30-day SEC yield in a data attribute the browser draws from (`pageTextOf` decodes
+it; VOO's, 2026-10-21: `"secYield":"1.00%"`, `"shareClassTotalNetAssets":"$1.0 trillion"`). ⚠ **Never
+force a tool choice on Claude Sonnet 5.5, Opus 5.5 or Fable 5.1**: they refuse `tool_choice` `any` or
+`tool` with a 400, which is how the trial's first run ended (2026-10-21). The pre-fill asks for
+structured output instead (`output_config.format`, `figuresFormat`), one required slot per figure
+asked, and reads it with `answerFromResponse`. The slots are required because the second run, given a
+list, left VOO's net assets out; the same run quoted VOO's yield by its date passage alone, so the
+instructions say the quote must hold the figure itself. Rules and tests: `scripts/lib/figurePrefill.ts`,
 `lib/server/__tests__/figurePrefill.test.ts`.
 
 
