@@ -760,6 +760,9 @@ a fact. `lib/data/__tests__/stakingWording.test.ts` holds it for every live prov
   reaches the page. It shares the Transfer Fee Check's look and rules (`scripts/lib/fundFigures.core.js`, tested).
   `npm run fund-figures-prefill` suggests figures from the issuers' pages the owner ruled Allowed (D141), for the
   owner to compare with each page; see "Site terms check" under Testing the Live Data Layer.
+  `npm run fund-figures-page -- <out.html> --suggestions fund-figures-suggestions.json` shows each
+  suggestion on its figure's card, with the passage it came from, or why there is none. It is a hint
+  beside the row and never fills the reading box (`buildSuggestion` in `fundFigures.client.js`, tested).
 
 ### `src/lib/data/portfolioBuilder.ts` (Portfolio Builder module)
 Pure engine, no API calls, covered by `__tests__/portfolioBuilder.test.ts` (86 tests).
