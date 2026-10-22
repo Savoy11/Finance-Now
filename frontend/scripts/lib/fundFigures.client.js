@@ -123,6 +123,7 @@
     vals.appendChild(d)
     root.appendChild(vals)
     root.appendChild(el('p', 'tnote', C.figureGuidance(fund, g)))
+    if (g.suggestion) root.appendChild(buildSuggestion(g))
 
     var ans = el('div', 'answer')
     var btns = el('div', 'btns')
@@ -147,6 +148,34 @@
     root.appendChild(ans)
     figEls[g.id] = { root: root, btns: byAnswer, state: state, form: form, busy: false }
     return root
+  }
+
+  // What the pre-fill copied from the issuer's page. A hint to check against the page, shown
+  // beside the row and never put into the reading box: what is saved is what was typed.
+  function buildSuggestion(g) {
+    var s = g.suggestion
+    var box = el('div', 'sugg' + (s.status === 'suggested' ? '' : ' none'))
+    if (s.status !== 'suggested') {
+      box.appendChild(el('p', null, 'No suggestion from the page' + (s.readOn ? ' (read ' + C.longDay(s.readOn) + ')' : '') + ': ' + (s.why || 'no reason was kept.')))
+      return box
+    }
+    var kinds = g.figure === 'assets' ? C.ASSET_KINDS : C.YIELD_KINDS
+    var line = el('p')
+    line.appendChild(el('span', 'sugg-l', 'Suggested'))
+    line.appendChild(el('b', 'mono', s.shown))
+    var parts = []
+    if (s.kind) parts.push(kinds[s.kind] || s.kind)
+    parts.push(s.asOf ? 'as of ' + C.longDay(s.asOf) : 'no date beside it')
+    line.appendChild(el('span', null, ' · ' + parts.join(' · ')))
+    box.appendChild(line)
+    if (s.why) box.appendChild(el('p', 'sugg-why', s.why))
+    var more = el('details')
+    more.appendChild(el('summary', null, 'Where it was copied from'))
+    more.appendChild(el('p', 'mono', s.quote))
+    if (s.dateQuote) more.appendChild(el('p', 'mono', s.dateQuote))
+    more.appendChild(el('p', null, 'Read from the page' + (s.readOn ? ' on ' + C.longDay(s.readOn) : '') + '. Check it there before you type it.'))
+    box.appendChild(more)
+    return box
   }
 
   function buildForm(g) {

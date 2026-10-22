@@ -16,6 +16,28 @@ export interface FundFigure {
   figure: FigureKind
   /** The catalog's value now: a yield in percent, or net assets in billions of dollars. */
   catalog: number
+  /** What the pre-fill copied from the issuer's page, when the page was built with one. */
+  suggestion?: FigureSuggestion
+}
+
+/**
+ * A pre-fill suggestion as the card shows it (npm run fund-figures-prefill, D140 step 2).
+ * It is read from an issuer's page on a site the owner ruled Allowed (D141), never from a
+ * data service, and it is a hint: the reading box is never filled from it.
+ */
+export interface FigureSuggestion {
+  /** `suggested` carries a figure; `none` carries only why there is none. */
+  status: 'suggested' | 'none'
+  /** As the issuer's page prints it. */
+  shown: string
+  asOf: string | null
+  kind: string | null
+  /** The passages the figure and its date were copied from. */
+  quote: string
+  dateQuote: string
+  why: string
+  /** The day the pre-fill read the page. */
+  readOn: string
 }
 
 export interface FundCard {
@@ -40,6 +62,8 @@ export interface FundFiguresData {
   counts: { yields: number; assets: number; funds: number }
   /** How the cards are ordered: `basis` is null when no sort order was given. */
   order: { basis: string | null; ranked: number; startHere: number }
+  /** When the pre-fill's suggestions were saved, and how many figures carry one; null without them. */
+  suggestions: { savedAt: string; suggested: number; none: number } | null
   funds: FundCard[]
 }
 
@@ -102,6 +126,46 @@ export interface BuildFundFiguresInput {
   staleAfterDays: number
   generatedOn: string
   order?: FundOrder | null
+  /** Keyed by figure id (`<SYMBOL>:yield`), from suggestionsByFigure. */
+  suggestions?: { savedAt: string; byFigure: ReadonlyMap<string, FigureSuggestion> } | null
+}
+
+const SUGGESTION_TEXT_MAX = 600
+
+/**
+ * The pre-fill's file (fund-figures-suggestions-v1, its `pages`) as one suggestion per
+ * figure. A page that was not read gives each of its figures a `none` with the reason.
+ * Text is cut to a length a card can carry; everything else in the file stays behind.
+ */
+export function suggestionsByFigure(pages: ReadonlyArray<{
+  symbol: string; readAt: string; outcome: string; why: string
+  figures?: ReadonlyArray<{ id: string; status: string; shown: string; asOf: string | null; kind: string | null; quote: string; dateQuote: string; why: string }>
+}>): Map<string, FigureSuggestion> {
+  const cut = (s: unknown) => { const t = typeof s === 'string' ? s : ''; return t.length > SUGGESTION_TEXT_MAX ? `${t.slice(0, SUGGESTION_TEXT_MAX)}…` : t }
+  const out = new Map<string, FigureSuggestion>()
+  for (const p of pages) {
+    const readOn = typeof p.readAt === 'string' ? p.readAt.slice(0, 10) : ''
+    if (p.outcome !== 'read') {
+      for (const figure of ['yield', 'assets']) {
+        out.set(`${p.symbol}:${figure}`, { status: 'none', shown: '', asOf: null, kind: null, quote: '', dateQuote: '', why: cut(`The page was not read: ${p.why || p.outcome}`), readOn })
+      }
+      continue
+    }
+    for (const f of p.figures ?? []) {
+      const ok = f.status === 'suggested'
+      out.set(f.id, {
+        status: ok ? 'suggested' : 'none',
+        shown: ok ? cut(f.shown) : '',
+        asOf: ok ? f.asOf : null,
+        kind: ok ? f.kind : null,
+        quote: ok ? cut(f.quote) : '',
+        dateQuote: ok ? cut(f.dateQuote) : '',
+        why: cut(f.why),
+        readOn,
+      })
+    }
+  }
+  return out
 }
 
 export function buildFundFiguresData(input: BuildFundFiguresInput): FundFiguresData {
@@ -115,7 +179,10 @@ export function buildFundFiguresData(input: BuildFundFiguresInput): FundFiguresD
       website: f.website,
       shareClass: f.issuer === 'Vanguard' && f.type === 'etf',
       startHere: false,
-      figures: figuresFor(f),
+      figures: figuresFor(f).map((g) => {
+        const s = input.suggestions?.byFigure.get(g.id)
+        return s ? { ...g, suggestion: s } : g
+      }),
     }))
     .filter((c) => c.figures.length > 0)
 
@@ -155,6 +222,13 @@ export function buildFundFiguresData(input: BuildFundFiguresInput): FundFiguresD
       funds: cards.length,
     },
     order: { basis: order?.basis ?? null, ranked: rank.size, startHere: differs.size },
+    suggestions: input.suggestions
+      ? {
+          savedAt: input.suggestions.savedAt,
+          suggested: figures.filter((f) => f.suggestion?.status === 'suggested').length,
+          none: figures.filter((f) => f.suggestion?.status === 'none').length,
+        }
+      : null,
     funds: cards,
   }
 }

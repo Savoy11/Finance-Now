@@ -346,3 +346,19 @@ backend's lockfile so the security scanner's open alerts close. Pushed with
 - its content in `main` as `b9dd44e`.
 
 Nothing was deleted; no other ref moved.
+
+## Twenty-second reset, after PR #399 (2026-10-21)
+
+**What was done.** After PR #399 (the frozen backend's locked packages updated to clear the
+security scan's alerts) was squash-merged into `main` as `b4c7588`, the branch was restarted
+from that commit on the owner's machine for the next step: showing the pre-fill's suggestions
+on the Fund Figures Check's cards. Pushed with `--force-with-lease`, for the same reason as above.
+
+**Where the prior state lives.** The branch's previous tip, `f198cc3`, is held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@f198cc3`, created by
+  `.github/workflows/archive-branch.yml` when #399 merged;
+- GitHub's `refs/pull/399/head`;
+- its content in `main` as `b4c7588`.
+
+Nothing was deleted; no other ref moved.

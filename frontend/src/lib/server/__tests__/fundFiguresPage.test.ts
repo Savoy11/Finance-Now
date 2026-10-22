@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { FUND_CATALOG, FUND_CATEGORY_INFO, FUND_FIGURES_COMPILED_ON, FUND_FIGURES_STALE_AFTER_DAYS } from '@/lib/data/fundCatalog'
-import { buildFundFiguresData, figuresFor, parseFundOrder, FUND_FIGURES_SERVES, type FundFigure } from '../../../../scripts/lib/fundFiguresData'
+import { buildFundFiguresData, figuresFor, parseFundOrder, suggestionsByFigure, FUND_FIGURES_SERVES, type FundFigure } from '../../../../scripts/lib/fundFiguresData'
 import { buildFundFiguresPage, FUND_FIGURES_CAPABILITIES, FUND_FIGURES_TITLE, staleFrom } from '../../../../scripts/lib/fundFiguresPage.mjs'
 import { FEE_CHECK_CSS } from '../../../../scripts/lib/feeCheckPage.mjs'
 
@@ -364,6 +364,34 @@ describe('the page’s data, from the real catalog', () => {
     expect(Object.keys(d.funds[0].figures[0]).sort()).toEqual(['catalog', 'figure', 'id', 'symbol'])
   })
 
+  it('adds no suggestion unless the page is built with the pre-fill’s file', () => {
+    expect(data.suggestions).toBeNull()
+    expect(figs.every((g) => !('suggestion' in g))).toBe(true)
+  })
+
+  it('attaches each pre-fill suggestion to its figure, and says why where there is none', () => {
+    const pages = [
+      { symbol: 'VOO', readAt: '2026-10-21T16:00:00Z', outcome: 'read', why: '', figures: [
+        { id: 'VOO:yield', status: 'suggested', shown: '1.00%', asOf: '2026-10-19', kind: 'sec', quote: 'dashboard.secYield: 1.00%', dateQuote: 'dashboard.secYieldAsOfDate: 10/19/2026', why: '', others: 'not carried', value: 1, label: 'x' },
+        { id: 'VOO:assets', status: 'not-found', shown: '', asOf: null, kind: null, quote: 'ignored', dateQuote: '', why: 'Not on the page.' },
+      ] },
+      { symbol: 'VT', readAt: '2026-10-21T16:00:00Z', outcome: 'error', why: 'Could not resolve host', figures: [] },
+      { symbol: 'NOTINCATALOG', readAt: '2026-10-21T16:00:00Z', outcome: 'read', why: '', figures: [{ id: 'NOTINCATALOG:yield', status: 'suggested', shown: '9%', asOf: null, kind: 'sec', quote: 'q'.repeat(2000), dateQuote: '', why: '' }] },
+    ]
+    const byFigure = suggestionsByFigure(pages)
+    expect(byFigure.get('NOTINCATALOG:yield')!.quote.length).toBeLessThan(700)
+    const d = buildFundFiguresData({ ...base, suggestions: { savedAt: '2026-10-21T18:00:00Z', byFigure } })
+    const fig = (id: string) => d.funds.flatMap((f) => f.figures).find((g) => g.id === id)!
+    expect(fig('VOO:yield').suggestion).toEqual({ status: 'suggested', shown: '1.00%', asOf: '2026-10-19', kind: 'sec', quote: 'dashboard.secYield: 1.00%', dateQuote: 'dashboard.secYieldAsOfDate: 10/19/2026', why: '', readOn: '2026-10-21' })
+    expect(fig('VOO:assets').suggestion).toMatchObject({ status: 'none', shown: '', quote: '', why: 'Not on the page.' })
+    expect(fig('VT:yield').suggestion).toMatchObject({ status: 'none', why: 'The page was not read: Could not resolve host' })
+    // The catalog's figure is untouched, and nothing from the file reaches a fund the page does not list.
+    expect(fig('VOO:yield').catalog).toBe(FUND_CATALOG.find((f) => f.symbol === 'VOO')!.yieldPct)
+    expect(JSON.stringify(d)).not.toContain('NOTINCATALOG')
+    expect(JSON.stringify(d)).not.toContain('not carried')
+    expect(d.suggestions).toEqual({ savedAt: '2026-10-21T18:00:00Z', suggested: 1, none: d.funds.flatMap((f) => f.figures).filter((g) => g.suggestion?.status === 'none').length })
+  })
+
   it('serves T-440, and figuresFor skips a fund with nothing to read', () => {
     expect(data.serves).toEqual([...FUND_FIGURES_SERVES])
     expect(figuresFor({ symbol: 'X', name: 'X', type: 'etf', issuer: 'I', category: 'bond', website: '', yieldPct: null, aumB: 1, aumAsOf: '2026-06-30' })).toEqual([])
@@ -426,6 +454,25 @@ describe('the published page', () => {
     const members = [...code.matchAll(/\bruntime\.(\w+)/g)].map((m) => m[1])
     expect(new Set(members)).toEqual(new Set(['use']))
     expect(code).not.toMatch(/window\.claude\.\w+/)
+  })
+
+  it('shows a suggestion as a hint beside the row, never in the reading box, and embeds it safely', () => {
+    const suggestion = { status: 'suggested', shown: '1.00%', asOf: '2026-10-19', kind: 'sec', quote: 'secYield: 1.00% </script><script>alert(1)</script>', dateQuote: '', why: '', readOn: '2026-10-21' }
+    const withSugg = buildFundFiguresPage({
+      ...fixture,
+      suggestions: { savedAt: '2026-10-21T18:00:00Z', suggested: 1, none: 0 },
+      funds: [{ ...fixture.funds[0], figures: [{ ...fixture.funds[0].figures[0], suggestion }, fixture.funds[0].figures[1]] }],
+    })
+    const block = withSugg.slice(withSugg.indexOf('id="ff-data">'), withSugg.indexOf('</script>', withSugg.indexOf('id="ff-data">')))
+    expect(block).not.toContain('<')
+    expect(withSugg).toContain('1 figures carry a <b>suggestion</b>')
+    expect(html).not.toContain('carry a <b>suggestion</b>')
+    // The card's suggestion is drawn by buildSuggestion alone, which never touches a form or a value.
+    const code = clientSrc.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')
+    const fn = code.slice(code.indexOf('function buildSuggestion('), code.indexOf('function buildForm('))
+    expect(fn.length).toBeGreaterThan(100)
+    expect(fn).not.toMatch(/\.value\b|\binput\b|form|save/i)
+    expect([...code.matchAll(/\.suggestion\b/g)].length).toBe(2) // the guard and the read in buildSuggestion
   })
 
   it('re-enables a figure’s buttons when its save finishes', () => {

@@ -61,6 +61,15 @@ p.tier{margin-top:-6px}
 .row{grid-template-columns:minmax(0,7rem) minmax(0,10rem) minmax(0,1fr)}
 .row .tnote{grid-column:1/3;color:var(--mute)}
 .diff>.btn.link{align-self:flex-start}
+.sugg{grid-column:1/3;font-size:13.5px;background:var(--accent-bg);border-radius:6px;padding:7px 10px;display:flex;flex-direction:column;gap:4px;min-width:0;overflow-wrap:anywhere}
+.sugg.none{background:var(--bg3);color:var(--ink2)}
+.sugg p{margin:0}
+.sugg-l{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin-right:8px}
+.sugg-why{color:var(--diff)}
+.sugg details summary{cursor:pointer;color:var(--ink2);font-size:13px}
+.sugg details p{margin-top:4px;color:var(--ink2)}
+.sugg details p.mono{font-size:12.5px}
+@media (max-width:720px){.sugg{grid-column:1}}
 .field select{font:inherit;font-size:14px;border:1px solid var(--line2);border-radius:6px;padding:6px 8px;background:var(--bg2);color:var(--ink);min-width:0;width:100%;box-sizing:border-box}
 @media (max-width:720px){.row .tnote{grid-column:1}}
 `
@@ -76,6 +85,10 @@ export function buildFundFiguresPage(data) {
   const orderLine = order.basis
     ? `The first ${esc(String(order.ranked))} funds are ordered by a check against an outside figure: ${esc(order.basis)} The ${esc(String(order.startHere))} where it differs are marked <b>Start here</b>. The page shows no outside figure: you read the issuer’s own. The other funds follow, grouped by issuer, so one sitting covers one site.`
     : 'The funds are grouped by issuer, so one sitting covers one site.'
+  const sg = data.suggestions
+  const suggestionsLine = sg
+    ? `<p class="lede">${esc(String(sg.suggested))} figures carry a <b>suggestion</b>: the figure the pre-fill copied from the fund’s own page on ${esc(longDate(sg.savedAt.slice(0, 10)))}, with the passage it came from. It is a hint, not a reading: check it on the page, then type what the page shows. ${esc(String(sg.none))} more say why there is none.</p>`
+    : ''
   const startButton = order.startHere
     ? `<button type="button" id="ff-mode-start" aria-pressed="true">Start here · ${esc(String(order.startHere))} funds</button>\n      `
     : ''
@@ -91,6 +104,7 @@ export function buildFundFiguresPage(data) {
   </header>
   <p class="lede">The fund catalog’s yields, and the asset figures no SEC filing dates, were compiled by hand; the oldest on <b>${esc(longDate(c.compiledOn))}</b>, ${esc(String(c.ageDays))} days ago. Read each one from the fund’s own page, with the date the page gives. That is <b>${esc(String(n.yields))} yields</b> and <b>${esc(String(n.assets))} asset figures</b> on ${esc(String(n.funds))} of the catalog’s ${esc(String(c.funds))} funds. Your readings save here as you go, and Claude brings every difference to you before anything changes.</p>
   <p class="lede">${orderLine}</p>
+  ${suggestionsLine}
   <p id="ff-conn" class="status" hidden></p>
   <div id="ff-progress" class="meters" aria-label="Progress"></div>
   <p id="ff-stale" class="status warn" hidden></p>
