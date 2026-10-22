@@ -242,8 +242,9 @@ describe('the script', () => {
   it('reads only what the owner ruled Allowed, and only where robots.txt lets FinanceNow', () => {
     expect(src).toContain('allowedSites(rulings, results.results as SiteResult[])')
     expect(src).toContain('prefillFunds(FUND_CATALOG, figuresFor, allowed)')
-    expect(src).toMatch(/isPathAllowedByRobots\(parseRobotsTxt\(robots\.text\), `\$\{u\.pathname\}\$\{u\.search\}`\)/)
-    expect(src).toContain("redirect: 'manual'")
+    // Every page goes through the shared gate (allowedFetch.ts), whose rules allowedFetch.test.ts runs.
+    expect(src).toContain('const fetchPage = allowedFetcher(USER_AGENT, allowed)')
+    expect(src).not.toContain('pinnedFetch')
     // Reading a page for its figures is consuming its data: the terms gate is never skipped.
     expect(src).not.toContain('skipTermsCheck')
   })

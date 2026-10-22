@@ -36,6 +36,7 @@
     "staking-worksheet": "tsx scripts/gen-staking-catalog-worksheet.ts",
     "staking-facts-page": "tsx scripts/gen-staking-facts-page.ts",
     "staking-facts-plan": "tsx scripts/staking-facts-plan.ts",
+    "staking-facts-prefill": "tsx scripts/staking-facts-prefill.ts",
     "fee-probe": "tsx scripts/probe-exchange-fee-apis.mjs",
     "gas-probe": "tsx scripts/probe-gas-rpcs.mjs",
     "rates-probe": "tsx scripts/probe-rates-scale.mjs",

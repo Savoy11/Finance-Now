@@ -101,6 +101,39 @@
     return (f.unit || 'coins') + ', 0 if none'
   }
 
+  // What the pre-fill copied from the provider's own pages. A hint to check against the page,
+  // shown beside the row and never put into an answer box: what is saved is what was typed.
+  function buildSuggestion(r) {
+    var s = r.suggestion
+    var any = s.fields.some(function (x) { return x && x.status === 'suggested' })
+    var box = el('div', 'sugg' + (any ? '' : ' none'))
+    // A bare day is midnight UTC, which is the day before in the owner's evening: read it at noon.
+    var read = s.readOn ? ' (read ' + day(s.readOn + 'T12:00:00Z') + ')' : ''
+    s.fields.forEach(function (x) {
+      if (!x || typeof x !== 'object') return
+      var f = r.fields.filter(function (y) { return y.name === x.field })[0]
+      var label = C.FIELD_LABELS[x.field] || x.field
+      if (x.status !== 'suggested') {
+        box.appendChild(el('p', null, label + ': no suggestion from the pages' + read + '. ' + (x.why || 'No reason was kept.')))
+        return
+      }
+      var line = el('p')
+      line.appendChild(el('span', 'sugg-l', 'Suggested'))
+      line.appendChild(el('span', null, label + ' '))
+      line.appendChild(el('b', 'mono', x.shown))
+      if (f && typeof x.figure === 'number') line.appendChild(el('span', null, ' · ' + C.fieldText(f, x.figure)))
+      line.appendChild(el('span', null, x.matches ? ' · the catalog’s figure' : ' · differs from the catalog'))
+      box.appendChild(line)
+      if (x.why) box.appendChild(el('p', 'sugg-why', x.why))
+      var more = el('details')
+      more.appendChild(el('summary', null, 'Where it was copied from'))
+      more.appendChild(el('p', 'mono', x.quote))
+      more.appendChild(el('p', null, 'From ' + (x.url || 'the provider’s page') + read + '. Check it there before you answer.'))
+      box.appendChild(more)
+    })
+    return box
+  }
+
   // ── rows ─────────────────────────────────────────────────────────────────────
   function buildRow(card, r) {
     var root = el('div', 'row')
@@ -120,6 +153,7 @@
     if (r.note) root.appendChild(el('p', 'tnote', 'Catalog note: ' + r.note))
     if (typeof r.lead === 'string' && r.lead) root.appendChild(el('p', 'tnote callout warn', 'Start here: ' + r.lead))
     root.appendChild(el('p', 'tnote hint', C.rowGuidance(card, r)))
+    if (r.suggestion && Array.isArray(r.suggestion.fields)) root.appendChild(buildSuggestion(r))
 
     var ans = el('div', 'answer')
     var btns = el('div', 'btns')

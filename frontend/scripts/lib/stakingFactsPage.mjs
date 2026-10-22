@@ -53,6 +53,15 @@ const STAKING_FACTS_CSS = `
 .row .tnote.hint{color:var(--mute)}
 .vals dd.url{font-size:12.5px;word-break:break-all}
 @media (max-width:720px){.row .tnote{grid-column:1}}
+.sugg{grid-column:1/3;font-size:13.5px;background:var(--accent-bg);border-radius:6px;padding:7px 10px;display:flex;flex-direction:column;gap:4px;min-width:0;overflow-wrap:anywhere}
+.sugg.none{background:var(--bg3);color:var(--ink2)}
+.sugg p{margin:0}
+.sugg-l{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin-right:8px}
+.sugg-why{color:var(--diff)}
+.sugg details summary{cursor:pointer;color:var(--ink2);font-size:13px}
+.sugg details p{margin-top:4px;color:var(--ink2)}
+.sugg details p.mono{font-size:12.5px}
+@media (max-width:720px){.sugg{grid-column:1}}
 .seg button{white-space:nowrap}
 @media (max-width:560px){.seg{display:flex;flex-wrap:wrap}.seg button{flex:1 1 auto;border-bottom:1px solid var(--line2);margin-bottom:-1px}}
 `
@@ -75,6 +84,10 @@ export function buildStakingFactsPage(data) {
   const n = data.counts
   const count = (cat) => data.providers.filter((p) => p.category === cat).length
   const leadCards = data.providers.filter((p) => p.rows.some((r) => r.lead)).length
+  const sg = data.suggestions
+  const suggestionsLine = sg
+    ? `<p class="lede">${esc(String(sg.suggested))} figures carry a <b>suggestion</b>: what the pre-fill copied from the provider’s own pages on ${esc(longDate(sg.savedAt.slice(0, 10)))}, with the passage it came from. It is a hint, not an answer: check it on the page, then answer from what the page shows. ${esc(String(sg.none))} more say why there is none.</p>`
+    : ''
   return `<title>${esc(STAKING_FACTS_TITLE)}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -87,6 +100,7 @@ export function buildStakingFactsPage(data) {
   </header>
   <p class="lede">The staking catalog was last fully checked on <b>${esc(longDate(c.lastVerified))}</b>, ${esc(String(c.ageDays))} days ago. Go through each provider’s own pages and say whether each fact still matches: its staking page, the year it was founded, its audits, its staking assets where no data service shows them, and the minimum stake and lock-up for every coin. That is <b>${esc(String(n.rows))} facts</b> on ${esc(String(n.providers))} providers; the ${esc(String(c.defunct))} defunct ones are left out. Your answers save here as you go, and Claude applies them to the catalog in a pull request.</p>
   <p class="lede">Liquid-staking protocols come first, because their documentation is public. Wallets follow, then exchanges, which often show their terms only after you sign in.${n.leads ? ` ${esc(String(n.leads))} ${n.leads === 1 ? 'row' : 'rows'} on ${esc(String(leadCards))} ${leadCards === 1 ? 'provider' : 'providers'} ${n.leads === 1 ? 'is' : 'are'} marked <b>Start here</b>${leadSourcesText(data.leadSources)}.` : ''}</p>
+  ${suggestionsLine}
   <p id="sf-conn" class="status" hidden></p>
   <div id="sf-progress" class="meters" aria-label="Progress"></div>
   <p id="sf-stale" class="status warn" hidden></p>
