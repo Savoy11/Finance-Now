@@ -3,7 +3,7 @@
 import { clsx } from 'clsx'
 import { Landmark, AlertTriangle } from 'lucide-react'
 import {
-  FUND_CATEGORY_INFO, FUND_STRATEGY_INFO, fundAssetsFact, fundStrategy, fundSalesCharge, getFund,
+  FUND_CATEGORY_INFO, FUND_STRATEGY_INFO, fundAssetsFact, fundYieldFact, fundStrategy, fundSalesCharge, getFund,
   type FundEntry,
 } from '@/lib/data/fundCatalog'
 import { feeImpact, feeCostDisplay, DEFAULT_FEE_IMPACT_PARAMS, FEE_IMPACT_BENCHMARK_ER_PCT } from '@/lib/data/feeImpact'
@@ -111,10 +111,23 @@ const ROWS: Row[] = [
       )
     },
   },
-  { label: 'Yield (TTM)', cell: (f) => (f.yieldPct != null ? <span className="font-mono">{f.yieldPct}%</span> : <span className="text-text-muted">Negligible</span>) },
+  {
+    label: 'Yield',
+    hint: 'A 12-month distribution yield unless marked SEC: a 30-day SEC yield, from the fund’s own page. The two answer different questions.',
+    cell: (f) => {
+      if (f.yieldPct == null) return <span className="text-text-muted">Negligible</span>
+      const y = fundYieldFact(f)
+      return (
+        <span className="inline-flex flex-col">
+          <span className="font-mono">{f.yieldPct}%</span>
+          <span className="text-[10px] leading-tight text-text-muted">{y.kind === 'sec' ? '30-day SEC' : '12-month'}{y.asOf ? ` · ${y.asOf}` : ''}</span>
+        </span>
+      )
+    },
+  },
   {
     label: 'Assets',
-    hint: 'A date means the figure is the fund’s SEC filing for that date; ≈ means approximate. A mutual fund’s figure is the whole fund, every share class together.',
+    hint: 'A date means the figure is the fund’s SEC filing, or its own page, for that date; ≈ means approximate. A mutual fund’s figure is the whole fund, every share class together.',
     cell: (f) => {
       const assets = fundAssetsFact(f, formatCompact)
       return (

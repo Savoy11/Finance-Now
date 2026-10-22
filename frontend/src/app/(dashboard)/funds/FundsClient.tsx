@@ -841,6 +841,9 @@ export function FundsClient() {
                             </div>
                             <div className="col-span-1 text-right font-mono tabular-nums text-xs text-text-secondary">
                               {row.yieldPct != null ? `${row.yieldPct.toFixed(1)}%` : '—'}
+                              {row.yieldPct != null && getFund(row.symbol)?.yieldRead?.kind === 'sec' && (
+                                <span className="ml-1 text-[10px] text-text-muted" title="30-day SEC yield, from the fund’s own page">SEC</span>
+                              )}
                             </div>
                           </>
                         ) : columnTab === 'fees' ? (() => {

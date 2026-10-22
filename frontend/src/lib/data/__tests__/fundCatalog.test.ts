@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import {
-  computeFeeDrag, fundSalesCharge, fundTradingRestriction, fundAssetsFact,
+  computeFeeDrag, fundSalesCharge, fundTradingRestriction, fundAssetsFact, fundYieldFact,
   getFundFeeProvenance, fundFeesAgeDays, fundFeesAreStale, FUND_FEES_LAST_VERIFIED, FUND_FEES_STALE_AFTER_DAYS,
   getFundFiguresProvenance, fundFiguresAgeDays, fundFiguresAreStale, FUND_FIGURES_COMPILED_ON, FUND_FIGURES_STALE_AFTER_DAYS,
   FUND_CATALOG,
@@ -200,6 +202,60 @@ describe('fundAssetsFact', () => {
     const fact = fundAssetsFact({ ...base, aumAsOf: '2026-06-30', aumSource: '0000000000-26-000001', aumBasis: 'holdings-fair-value' }, usd)
     expect(fact.label).toBe('Holdings at fair value')
     expect(fact.explain).toMatch(/not the same figure/)
+  })
+})
+
+// T-440 (2026-10-21): figures read from the fund's own page carry the date and kind the page
+// gave and the page's address, so each can be re-read; a 30-day SEC yield is never shown as a
+// 12-month one.
+describe('figures read from the fund’s own page', () => {
+  const ISO = /^\d{4}-\d{2}-\d{2}$/
+  const host = (u: string) => new URL(u).hostname.replace(/^www\./, '').split('.').slice(-2).join('.')
+  const read = FUND_CATALOG.filter((f) => f.yieldRead || f.aumRead)
+  const D141_ALLOWED = ['vanguard.com', 'ssga.com', 'sectorspdrs.com', 'proshares.com']
+
+  it('every reading has a real date, a kind, and the issuer’s own page as its source', () => {
+    expect(read.length).toBeGreaterThan(0)
+    for (const f of read) {
+      for (const r of [f.yieldRead, f.aumRead].filter((x) => x !== undefined)) {
+        expect(r!.asOf, f.symbol).toMatch(ISO)
+        expect(Number.isNaN(new Date(r!.asOf).getTime()), `${f.symbol} ${r!.asOf}`).toBe(false)
+        expect(r!.asOf >= '2026-01-01', `${f.symbol} ${r!.asOf}`).toBe(true)
+        expect(r!.source, f.symbol).toMatch(/^https:\/\//)
+        // Only a site the owner ruled Allowed (D141) may be read by a script. A link may
+        // redirect between them (sectorspdrs.com to ssga.com): the source is where the page was.
+        expect(D141_ALLOWED, `${f.symbol} ${r!.source}`).toContain(host(r!.source))
+      }
+      if (f.yieldRead) {
+        expect(['trailing', 'sec'], f.symbol).toContain(f.yieldRead.kind)
+        expect(f.yieldPct, `${f.symbol} dates a yield it does not have`).not.toBeNull()
+      }
+    }
+  })
+
+  it('never dates a filed asset figure a second way', () => {
+    for (const f of FUND_CATALOG.filter((x) => x.aumRead)) expect(f.aumAsOf, f.symbol).toBeUndefined()
+  })
+
+  it('labels a SEC yield as one, dates a read yield, and marks an unread one approximate', () => {
+    expect(fundYieldFact({ yieldPct: 1.2 })).toMatchObject({ label: 'Distribution Yield', value: '≈ 1.20%', kind: 'trailing', asOf: null })
+    const sec = fundYieldFact({ yieldPct: 5.11, yieldRead: { asOf: '2026-10-19', kind: 'sec', source: 'https://x.test' } })
+    expect(sec).toMatchObject({ label: '30-Day SEC Yield', short: 'SEC', value: '5.11% · 2026-10-19', kind: 'sec' })
+    expect(sec.explain).toMatch(/not what the fund paid out over the past year/)
+    expect(fundYieldFact({ yieldPct: 3.66, yieldRead: { asOf: '2026-10-20', kind: 'trailing', source: 'https://x.test' } }).value).toBe('3.66% · 2026-10-20')
+    expect(fundYieldFact({ yieldPct: null }).value).toBe('—')
+  })
+
+  it('shows a page-read asset figure with its date', () => {
+    const fact = fundAssetsFact({ type: 'etf', aumB: 2, aumRead: { asOf: '2026-09-30', source: 'https://x.test' } }, (n) => `$${n / 1e9}B`)
+    expect(fact).toMatchObject({ label: 'AUM', value: '$2B · 2026-09-30' })
+    expect(fact.explain).toMatch(/fund’s own page/)
+  })
+
+  it('never shows a yield as TTM or bare outside fundYieldFact', () => {
+    const read = (p: string) => readFileSync(join(process.cwd(), p), 'utf8')
+    expect(read('src/components/markets/FundFactsSection.tsx')).not.toMatch(/Yield \(TTM\)/)
+    expect(read('src/app/(dashboard)/funds/[symbol]/page.tsx')).not.toMatch(/label: 'Distribution Yield'/)
   })
 })
 
