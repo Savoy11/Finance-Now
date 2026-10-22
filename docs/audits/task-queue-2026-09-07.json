@@ -7150,13 +7150,15 @@
      "frontend/src/lib/server/__tests__/stakingFactsPage.test.ts",
      "frontend/scripts/check-site-terms.ts",
      "docs/decisions/2026-10-19-owner-decisions.md",
-     "docs/decisions/2026-10-21-owner-decisions.md"
+     "docs/decisions/2026-10-21-owner-decisions.md",
+     "frontend/scripts/lib/savedCollection.ts"
     ],
     "corrections": [
      "2026-09-26: LOCK-UP FIELD AUDITED, and the pass it needs is now 12 rows rather than 187. lockupDays is mostly a PROTOCOL property for a natively-staked position — Cosmos unbonding is 21 days for everybody — so rows for one coin that disagree can be interrogated without leaving the repo. Eleven of the fifteen coins are internally consistent (ada 0d×11, atom 21d×15, avax 14d×9, bnb 7d×8, dot 28d×15, inj 21d×6, matic 9d×8, tia 21d×6, plus three single-row coins). Four disagree, and in every one the rows that carry a lockupNote agree with the protocol while the rows that differ are silent: SOL has four values across 22 rows (all seven noted rows say 3d with \"~2-3 epoch cooldown\"; seven at 5d, one at 7d and one at 0d carry no note), TRX has four silent rows at 3d against one noted row at 14d citing Stake 2.0, NEAR has three rows at 4d whose own note says \"~4-day\" where NEAR docs state 4 EPOCHS ≈ 24 hours, and ETH spreads 0d×9 / 7d×7 / 10d×1 with only the 7d and 10d rows explaining themselves. TWO FALSE LEADS RECORDED IN THE AUDIT rather than dropped: a first pass called eight rows impossible when six are lending or soft-staking products where zero is correct and the catalog says so in `features` (not lockupNote), and called eleven rows missing the field when the parse was line-based and those entries span several lines — no live row is missing it. Record: docs/audits/staking-lockups-2026-09-26.md. Nothing applied; STAKING_DATA_LAST_VERIFIED unmoved. REMAINING ON THIS ITEM: the 12 rows the audit names, plus audit counts, founded years, minimum stakes, and the 17 CeFi/wallet TVL figures DefiLlama cannot see.",
      "2026-10-17: CHECK PAGE BUILT AND PUBLISHED (D134). The Staking Facts Check page carries every fact still owed, derived from the catalog rather than listed: 322 facts on 53 live providers (each provider's website and year founded; an audit count for the 27 that record one or are liquid protocols; the staking-assets figure for the 13 that show one DefiLlama does not supply; a minimum stake and lock-up for each of 176 coin rows). The owner answers on the page; `npm run staking-facts-plan` reads the answers and reports, never writes. TWO CORRECTIONS TO THE 2026-09-26 ENTRY ABOVE: the audit's list names 24 rows, not 12 (SOL 8, TRX 4, NEAR 3, ETH 9; its own '12' was miscounted), and those 24 are now marked Start here on the page, each only while the catalog still has the figure and note the audit questioned; and the staking-assets figures DefiLlama does not supply are 13 in today's catalog, not the 17 written above: ten exchanges, plus Uniswap, Aave and Convex, which DefiLlama tracks but not as staking. No wallet shows a figure, and a provider showing none gets no row, since there is nothing on the page to check. Nothing applied; STAKING_DATA_LAST_VERIFIED unmoved.",
      "2026-10-19 (D140): SITE TERMS CHECK BUILT, NOT RUN. Before an agent reads this check page's websites for the owner (a pre-fill the owner confirms row by row, not built yet), `npm run site-terms` has an agent read each website's terms and robots.txt and quote what they say about software reading the site; on the owner's machine every quote is then looked up on the page itself, and the app's keyword scan reads the same page as a second reader. The owner rules each site Allowed, Not allowed or Ask first in site-terms-worksheet.md. 91 websites lie behind the three check pages (213 pages); OKX and Bitget are skipped as prohibited. It spends only with --run, stops when the next site would likely pass --max-dollars ($10 unless set), and keeps what it has read across runs. Nothing has been read and no figure has moved.",
-     "2026-10-21 (D141): every website behind this check page was ruled Not allowed for software reading, or has no reading (the owner's rulings in site-terms-rulings.json). The pre-fill does not reach this page; its facts stay read by hand."
+     "2026-10-21 (D141): every website behind this check page was ruled Not allowed for software reading, or has no reading (the owner's rulings in site-terms-rulings.json). The pre-fill does not reach this page; its facts stay read by hand.",
+     "2026-10-21: staking-facts-plan could not read a saved export of the page's database on Windows, which writes \":\" in a file name as \"%3A\", so every answer would have read as a row the catalog no longer has; the three check-page plans now share one reader that decodes it (#401). Nothing has been answered yet, and the page rebuilt from the catalog that day matches the published one row for row."
     ]
    }
   },
@@ -14853,10 +14855,15 @@
     "D117",
     "D119",
     "D120",
-    "D132"
+    "D132",
+    "D140",
+    "D141",
+    "D142",
+    "D143",
+    "D144"
    ],
    "summary": "Since D117 the fund catalog has two dates. The fee date is verified; FUND_FIGURES_COMPILED_ON (2026-07-20) dates the figures still compiled by hand: every yieldPct (87 rows carry one) and the asset figures no SEC filing supplies (21 Vanguard ETF classes, SPY, DIA, CORN, WEAT, SOYB, CANE, CPER). Its 120-day window closes 2026-11-18, and the owner chose to let the notice fire (D120, a STALENESS-ACK) rather than rush a re-read.",
-   "next_action": "Read the figures on the Fund Figures Check page (D132; `npm run fund-figures-page -- <out.html> [--order <file>]` rebuilds it): for each figure, the value the issuer’s page shows, the date it states, and which kind of figure it is. Then the session reads the page’s database, runs `npm run fund-figures-plan` over it, and brings every difference to the owner before applying (report, never write). Only after all of them are re-read may FUND_FIGURES_COMPILED_ON move, to the oldest date read, and moving it voids the STALENESS-ACK, which is intended.",
+   "next_action": "Owner: read the 55 figures still open on the Fund Figures Check page (D132; `npm run fund-figures-page -- <out.html> --order <file> --suggestions fund-figures-suggestions.json` rebuilds it), each with the value the issuer's page shows, the date it states and its kind. Then the session reads the page's database, runs `npm run fund-figures-plan` over it, and brings every difference to the owner before applying (report, never write). Only after all 115 have a dated reading may FUND_FIGURES_COMPILED_ON move, to the oldest date read, and moving it voids the STALENESS-ACK, which is intended.",
    "sources": [
     {
      "file": "frontend/src/lib/data/fundCatalog.ts",
@@ -14872,7 +14879,7 @@
    "progress": {
     "noted_on": "2026-10-17",
     "note": "2026-10-17 (D132): the owner chose option 1 of the five offered, a check page the owner works through, ordered by option 3, a data service’s figures. Built and published that day (the Fund Figures Check, a private page like the Transfer Fee Check): one card per fund with the issuer’s page and a box per figure for the value shown, its date and its kind (12-month trailing, 30-day SEC or another yield; the fund’s own or the whole fund’s net assets). Readings save in the page’s own database, never in its HTML. The order came from Alpha Vantage’s free service, which allowed ten funds before its daily limit of 25 requests; FMP’s free plan refused quotes and dividends. A yield worked out from each fund’s price on 2026-10-16 and its past year of payouts was below the catalog’s for all ten: for nine by 8–18% (they differ at the catalog’s own precision and are marked Start here), for RSP by under 1%. The other 82 funds follow, grouped by issuer. No outside figure is in the repository or on the page: the sort-order file holds symbols and a flag only, and stays on the machine that built it. Nothing has been read through the page yet.",
-    "remaining_work": "The owner reads each figure on the Fund Figures Check page. Then the session runs npm run fund-figures-plan over the page’s database and brings every difference to the owner before any change.",
+    "remaining_work": "The owner reads the 55 figures left on the Fund Figures Check page: 45 on sites a script may not read (BlackRock, Invesco, Schwab, JPMorgan, VanEck, Global X, Dodge & Cox, Fidelity, PIMCO, Direxion, Teucrium, USCF), the yields of 8 Vanguard funds and TQQQ, whose pages show no fund yield (their fact sheets next), and VNQ's yield, to confirm 2.89% (D142). Then the session runs npm run fund-figures-plan over the page's database and brings every difference to the owner before any change.",
     "evidence": [
      "docs/decisions/2026-10-17-owner-decisions.md",
      "frontend/scripts/gen-fund-figures-page.ts",
@@ -14880,11 +14887,15 @@
      "frontend/scripts/check-site-terms.ts",
      "docs/decisions/2026-10-19-owner-decisions.md",
      "docs/decisions/2026-10-21-owner-decisions.md",
-     "frontend/scripts/fund-figures-prefill.ts"
+     "frontend/scripts/fund-figures-prefill.ts",
+     "frontend/src/lib/data/fundCatalog.ts",
+     "frontend/scripts/lib/savedCollection.ts",
+     "frontend/scripts/fund-figures-review.ts"
     ],
     "corrections": [
      "2026-10-19 (D140): SITE TERMS CHECK BUILT, NOT RUN. Before an agent reads this check page's websites for the owner (a pre-fill the owner confirms row by row, not built yet), `npm run site-terms` has an agent read each website's terms and robots.txt and quote what they say about software reading the site; on the owner's machine every quote is then looked up on the page itself, and the app's keyword scan reads the same page as a second reader. The owner rules each site Allowed, Not allowed or Ask first in site-terms-worksheet.md. 91 websites lie behind the three check pages (213 pages); OKX and Bitget are skipped as prohibited. It spends only with --run, stops when the next site would likely pass --max-dollars ($10 unless set), and keeps what it has read across runs. Nothing has been read and no figure has moved.",
-     "2026-10-21 (D141): THE OWNER RULED, AND THE PRE-FILL IS BUILT AS A TRIAL, NOT RUN. The site terms check read all 91 websites ($29.58); the owner ruled 4 Allowed (vanguard.com, ssga.com, sectorspdrs.com, proshares.com) and 84 Not allowed. Those four hold 47 of this page's funds and 70 of its figures. `npm run fund-figures-prefill` reads those pages from the owner's machine, has a model copy each figure out of the page text, keeps only figures whose quote is in that text and that this page itself would accept, and writes fund-figures-suggestions.json (gitignored) for the owner to compare with each page. It writes nothing to the catalog or to this page. `--run --limit 4` is the first try. Measured from the cloud without a model: State Street's and ProShares' pages carry their figures in their text; Vanguard's carry net assets but not yields, so its 27 yields stay read by hand. No figure has moved."
+     "2026-10-21 (D141): THE OWNER RULED, AND THE PRE-FILL IS BUILT AS A TRIAL, NOT RUN. The site terms check read all 91 websites ($29.58); the owner ruled 4 Allowed (vanguard.com, ssga.com, sectorspdrs.com, proshares.com) and 84 Not allowed. Those four hold 47 of this page's funds and 70 of its figures. `npm run fund-figures-prefill` reads those pages from the owner's machine, has a model copy each figure out of the page text, keeps only figures whose quote is in that text and that this page itself would accept, and writes fund-figures-suggestions.json (gitignored) for the owner to compare with each page. It writes nothing to the catalog or to this page. `--run --limit 4` is the first try. Measured from the cloud without a model: State Street's and ProShares' pages carry their figures in their text; Vanguard's carry net assets but not yields, so its 27 yields stay read by hand. No figure has moved.",
+     "2026-10-21 (D142, D143, D144): 60 OF THE 115 FIGURES ARE IN THE CATALOG, DATED. The pre-fill read all 47 pages on the four Allowed sites ($3.56 in all, three runs), after fixes found by its trial runs: structured output instead of a forced tool choice (#392), one required answer per figure (#393), page data laid out one line per value (#394), and one payment's yield refused as a yield (#396), which the full run had suggested for VBTLX, VCSH and VTEB. Its 61 suggestions were laid out on a review page (#397, `npm run fund-figures-review`) and then on the check page's own cards, beside the reading box and never in it (#400). The owner chose the adjusted 2.89% for VNQ (D142). With the owner's go-ahead an automated check (D143) reviewed every suggestion against its source passage and saved 60 as readings, each noted as automated with its page and date; it held back VNQ's yield, never matched against the page. Reading that export found all three check-page plans unable to read a saved export on Windows, which writes \":\" in a file name as \"%3A\" (fixed in #401). The plan then reported 37 differing, 18 30-day SEC yields where the catalog held a 12-month yield, and 5 agreeing. The owner applied all of them and chose to record the SEC yields as such (D144, #402): each figure now carries the page's date and address (yieldRead, aumRead), fundYieldFact labels a SEC yield as one on every surface, and a test holds every page-read source to a D141 site. The plan now reports 60 already in the catalog and 55 not read."
     ]
    }
   },
@@ -40821,6 +40832,14 @@
     "what": "T-435 built: owner-issued, single-use reset links and a forced-reset flag (migration 0008), with no email. Open until the migration runs; email waits for launch.",
     "evidence": [
      "frontend/src/lib/auth/passwordReset.ts"
+    ]
+   },
+   {
+    "on": "2026-10-21",
+    "what": "T-440: 60 of its 115 figures applied to the fund catalog with their pages' dates (D142, D143, D144; #392–#402), and its remaining work narrowed to the 55 a person must read. T-394: its plan's export reader fixed (#401). No item changed status; counts unchanged.",
+    "evidence": [
+     "docs/decisions/2026-10-21-owner-decisions.md",
+     "frontend/src/lib/data/fundCatalog.ts"
     ]
    }
   ]
