@@ -329,3 +329,20 @@ Fund Figures Check. Pushed with `--force-with-lease`, for the same reason as abo
 - its content in `main` as `65f9d69`.
 
 Nothing was deleted; no other ref moved.
+
+## Twenty-first reset, after PR #397 (2026-10-21)
+
+**What was done.** After PR #397 (a page to read the pre-fill's suggestions by) was
+squash-merged into `main` as `b9dd44e`, and dependabot's #395 and #384 after it, the branch was
+restarted from `main` (`5d0980f`) on the owner's machine for the next step: updating the frozen
+backend's lockfile so the security scanner's open alerts close. Pushed with
+`--force-with-lease`, for the same reason as above.
+
+**Where the prior state lives.** The branch's previous tip, `347c4ed`, is held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@347c4ed`, created by
+  `.github/workflows/archive-branch.yml` when #397 merged;
+- GitHub's `refs/pull/397/head`;
+- its content in `main` as `b9dd44e`.
+
+Nothing was deleted; no other ref moved.
