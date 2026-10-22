@@ -17,10 +17,11 @@
  * request. STAKING_DATA_LAST_VERIFIED may move only when `complete` is true. Nothing here
  * touches it.
  */
-import { existsSync, readdirSync, readFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { STAKING_PROVIDERS, STAKING_COIN_INFO, STAKING_DATA_LAST_VERIFIED } from '../src/lib/data/stakingProviders'
 import { stakingFactRows, type FactRow } from './lib/stakingFactRows'
+import { readSavedCollection } from './lib/savedCollection'
 
 type Check = { key: string; result: string; values: Record<string, unknown>; note: string; at: string }
 type Change = { key: string; providerId: string; kind: string; coin: string | null; field: string; from: unknown; to: unknown }
@@ -44,23 +45,8 @@ if (!dirArg || dirArg.startsWith('-')) {
 }
 const dir = resolve(dirArg)
 
-/** Every document in one saved collection, keyed by id (the file name). */
-function readCollection(name: string): Record<string, unknown> {
-  const d = join(dir, name)
-  const out: Record<string, unknown> = {}
-  if (!existsSync(d)) return out
-  for (const f of readdirSync(d)) {
-    if (!f.endsWith('.json')) continue
-    try {
-      const body = JSON.parse(readFileSync(join(d, f), 'utf8'))
-      // Tolerate a { data } wrapper as well as a bare document.
-      out[f.slice(0, -'.json'.length)] = body && typeof body === 'object' && 'data' in body && typeof body.data === 'object' ? body.data : body
-    } catch {
-      console.warn(`  skipped ${name}/${f}: not readable JSON`)
-    }
-  }
-  return out
-}
+/** Every document in one saved collection, keyed by its id (decoded from the file name). */
+const readCollection = (name: string) => readSavedCollection(dir, name)
 
 const symbols = Object.fromEntries(Object.entries(STAKING_COIN_INFO).map(([id, c]) => [id, c.symbol]))
 const rows = stakingFactRows(STAKING_PROVIDERS, symbols)
