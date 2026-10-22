@@ -6,12 +6,39 @@
 import type { StakingProvider } from '../../src/lib/data/stakingProviders'
 import { stakingFactRows, LLAMA_SLUG, LEAD_SOURCES, type CoinSymbols, type FactRow } from './stakingFactRows'
 
+/**
+ * A pre-fill suggestion for one figure of a row, as the card shows it (npm run
+ * staking-facts-prefill, D153). Read from the provider's own pages on a site the owner ruled
+ * Allowed, and a hint only: the answer box is never filled from it.
+ */
+export interface FieldSuggestion {
+  field: string
+  /** `suggested` carries a figure; `none` carries only why there is none. */
+  status: 'suggested' | 'none'
+  /** As the page prints it, and as the check page would store it. */
+  shown: string
+  figure: number | null
+  /** Whether that is the catalog's figure now. */
+  matches: boolean | null
+  quote: string
+  url: string | null
+  why: string
+}
+
+export interface RowSuggestion {
+  /** The day the pre-fill read the pages. */
+  readOn: string
+  fields: FieldSuggestion[]
+}
+
+export type StakingFactRow = FactRow & { suggestion?: RowSuggestion }
+
 export interface StakingFactCard {
   id: string
   name: string
   category: StakingProvider['category']
   website: string | null
-  rows: FactRow[]
+  rows: StakingFactRow[]
 }
 
 export interface StakingFactsData {
@@ -21,6 +48,8 @@ export interface StakingFactsData {
   counts: { rows: number; terms: number; providers: number; leads: number }
   /** The checks that raised the rows marked Start here, with how many each raised; only those with any. */
   leadSources: Array<{ by: string; found: string; rows: number }>
+  /** When the pre-fill's suggestions were saved, and how many figures carry one; null without them. */
+  suggestions: { savedAt: string; suggested: number; none: number } | null
   providers: StakingFactCard[]
 }
 
@@ -41,11 +70,60 @@ export interface BuildStakingFactsInput {
   staleAfterDays: number
   generatedOn: string
   llamaSlug?: Readonly<Record<string, string>>
+  /** Keyed by row key, from suggestionsByRow. */
+  suggestions?: { savedAt: string; byRow: ReadonlyMap<string, RowSuggestion> } | null
+}
+
+const SUGGESTION_TEXT_MAX = 600
+
+/**
+ * The pre-fill's file (staking-facts-suggestions-v1, its `providers`) as one suggestion per row.
+ * A provider whose pages were not read gives each of its rows a `none` with the reason. Text is
+ * cut to a length a card can carry; everything else in the file stays behind.
+ */
+export function suggestionsByRow(
+  reads: ReadonlyArray<{
+    id: string; readAt: string; outcome: string; why: string
+    facts?: ReadonlyArray<{ key: string; field: string; status: string; shown: string; value: number | null; matches: boolean | null; quote: string; url: string | null; why: string }>
+  }>,
+  rows: readonly FactRow[],
+): Map<string, RowSuggestion> {
+  const cut = (s: unknown) => { const t = typeof s === 'string' ? s : ''; return t.length > SUGGESTION_TEXT_MAX ? `${t.slice(0, SUGGESTION_TEXT_MAX)}…` : t }
+  const out = new Map<string, RowSuggestion>()
+  for (const p of reads) {
+    const readOn = typeof p.readAt === 'string' ? p.readAt.slice(0, 10) : ''
+    if (p.outcome !== 'read') {
+      for (const r of rows) {
+        if (r.providerId !== p.id || r.kind === 'site') continue
+        out.set(r.key, { readOn, fields: r.fields.map((f) => ({ field: f.name, status: 'none', shown: '', figure: null, matches: null, quote: '', url: null, why: cut(`The pages were not read: ${p.why || p.outcome}`) })) })
+      }
+      continue
+    }
+    for (const x of p.facts ?? []) {
+      const ok = x.status === 'suggested'
+      const row = out.get(x.key) ?? { readOn, fields: [] }
+      row.fields.push({
+        field: x.field,
+        status: ok ? 'suggested' : 'none',
+        shown: ok ? cut(x.shown) : '',
+        figure: ok && typeof x.value === 'number' ? x.value : null,
+        matches: ok ? x.matches === true : null,
+        quote: ok ? cut(x.quote) : '',
+        url: ok && typeof x.url === 'string' ? x.url : null,
+        why: cut(x.why),
+      })
+      out.set(x.key, row)
+    }
+  }
+  return out
 }
 
 export function buildStakingFactsData(input: BuildStakingFactsInput): StakingFactsData {
-  const rows = stakingFactRows(input.providers, input.symbols, input.llamaSlug ?? LLAMA_SLUG)
-  const byProvider = new Map<string, FactRow[]>()
+  const rows: StakingFactRow[] = stakingFactRows(input.providers, input.symbols, input.llamaSlug ?? LLAMA_SLUG).map((r) => {
+    const s = input.suggestions?.byRow.get(r.key)
+    return s ? { ...r, suggestion: s } : r
+  })
+  const byProvider = new Map<string, StakingFactRow[]>()
   for (const r of rows) {
     const list = byProvider.get(r.providerId) ?? []
     list.push(r)
@@ -75,6 +153,13 @@ export function buildStakingFactsData(input: BuildStakingFactsInput): StakingFac
     leadSources: Object.values(LEAD_SOURCES)
       .map((s) => ({ by: s.by, found: s.found, rows: rows.filter((r) => r.lead && r.leadBy === s.by).length }))
       .filter((s) => s.rows > 0),
+    suggestions: input.suggestions
+      ? {
+          savedAt: input.suggestions.savedAt,
+          suggested: rows.reduce((n, r) => n + (r.suggestion?.fields.filter((f) => f.status === 'suggested').length ?? 0), 0),
+          none: rows.reduce((n, r) => n + (r.suggestion?.fields.filter((f) => f.status === 'none').length ?? 0), 0),
+        }
+      : null,
     providers: cards,
   }
 }

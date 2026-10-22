@@ -429,3 +429,20 @@ next step: recording the 2026-10-22 site rulings and the readers the owner chose
 - its content in `main` as `d407e94`.
 
 Nothing was deleted; no other ref moved.
+
+## Twenty-seventh reset, after PR #404 (2026-10-22)
+
+**What was done.** After PR #404 (the 2026-10-22 site rulings, D146–D148) was squash-merged into
+`main` as `c7121dd`, the branch was restarted from that commit on the owner's machine for the
+next step: the staking pre-fill, the pre-fills' shared fetch gate, and the decisions behind them
+(D149–D154). Pushed with `--force-with-lease`, for the same reason as above.
+
+**Where the prior state lives.** The branch's previous tip, `60802db`, is held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@60802db`, created by
+  `.github/workflows/archive-branch.yml` when #404 merged, and checked on the remote before the
+  restart;
+- GitHub's `refs/pull/404/head`;
+- its content in `main` as `c7121dd`.
+
+Nothing was deleted; no other ref moved.

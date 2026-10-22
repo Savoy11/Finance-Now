@@ -25,8 +25,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { FUND_CATALOG } from '@/lib/data/fundCatalog'
-import { pinnedFetch } from '@/lib/server/pinnedFetch'
-import { isPathAllowedByRobots, parseRobotsTxt } from '@/lib/server/termsProbe'
+import { allowedFetcher, type GatedPage } from './lib/allowedFetch'
 import { anthropicKey } from './lib/anthropicKey'
 import {
   answerFromResponse, buildFiguresPrompt, checkAnswer, figuresFormat, FIGURES_SYSTEM, pageTextOf, parsePrefillArgs,
@@ -46,9 +45,6 @@ const SUGGESTIONS_FORMAT = 'fund-figures-suggestions-v1'
 
 /** Says what it is and that robots.txt's FinanceNow rules apply to it. */
 const USER_AGENT = 'FinanceNow/1.0 (fund figures check: reads a fund page for its owner)'
-const FETCH_TIMEOUT_MS = 15_000
-const MAX_BYTES = 2_000_000
-const MAX_REDIRECTS = 5
 /** Thinking counts against this too. */
 const MAX_TOKENS = 8_000
 
@@ -89,82 +85,12 @@ function saveSuggestions(pages: Map<string, PageRead>): void {
   writeFileSync(SUGGESTIONS, `${JSON.stringify({ format: SUGGESTIONS_FORMAT, savedAt: new Date().toISOString(), pages: list }, null, 2)}\n`)
 }
 
-// ─── Reading a page from this machine ─────────────────────────────────────────
-
-interface Fetched { status: number | null; text: string | null; url: string; why: string }
-
-/**
- * One address, following redirects here one hop at a time, so every hop passes `hop`, which
- * returns why it may not be read, or null. pinnedFetch pins each connection to the address its
- * own host resolved to, so it cannot follow a redirect to another host itself.
- */
-async function fetchFollowing(url: string, hop: (at: string, n: number) => Promise<string | null>): Promise<Fetched & { refused: string | null }> {
-  let at = url
-  for (let n = 0; n <= MAX_REDIRECTS; n++) {
-    const refused = await hop(at, n)
-    if (refused) return { status: null, text: null, url: at, why: refused, refused }
-    try {
-      const res = await pinnedFetch(at, {
-        headers: { 'User-Agent': USER_AGENT, Accept: 'text/html,text/plain,*/*' },
-        redirect: 'manual',
-        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-      })
-      const next = res.status >= 300 && res.status < 400 ? res.headers.get('location') : null
-      if (next) {
-        at = new URL(next, at).toString()
-        continue
-      }
-      if (!res.ok) return { status: res.status, text: null, url: at, why: `HTTP ${res.status}`, refused: null }
-      return { status: res.status, text: (await res.text()).slice(0, MAX_BYTES), url: at, why: '', refused: null }
-    } catch (e) {
-      return { status: null, text: null, url: at, why: e instanceof Error ? e.message : String(e), refused: null }
-    }
-  }
-  return { status: null, text: null, url: at, why: `more than ${MAX_REDIRECTS} redirects`, refused: null }
-}
-
-const onAllowedSite = (allowed: ReadonlySet<string>) => async (at: string, n: number) => {
-  const site = siteOf(at)
-  return site && allowed.has(site) ? null : `${n === 0 ? 'The address is' : `It redirected to ${at}, which is`} not on a site ruled Allowed.`
-}
-
-const robotsCache = new Map<string, Promise<Fetched & { refused: string | null }>>()
-function robotsFor(origin: string, allowed: ReadonlySet<string>) {
-  if (!robotsCache.has(origin)) robotsCache.set(origin, fetchFollowing(`${origin}/robots.txt`, onAllowedSite(allowed)))
-  return robotsCache.get(origin)!
-}
-
-/**
- * The page. Every hop must be on an Allowed site and let FinanceNow read it. A robots.txt that
- * is missing (404) disallows nothing; one that cannot be read stops it: no answer is no permission.
- */
-async function fetchPage(url: string, allowed: ReadonlySet<string>): Promise<{ outcome: PageRead['outcome']; why: string; finalUrl: string | null; html: string | null }> {
-  let robotsRefused = false
-  const got = await fetchFollowing(url, async (at, n) => {
-    const notAllowed = await onAllowedSite(allowed)(at, n)
-    if (notAllowed) return notAllowed
-    const u = new URL(at)
-    const robots = await robotsFor(u.origin, allowed)
-    if (robots.text !== null) {
-      if (isPathAllowedByRobots(parseRobotsTxt(robots.text), `${u.pathname}${u.search}`)) return null
-      robotsRefused = true
-      return `${u.origin}/robots.txt does not let FinanceNow read ${u.pathname}.`
-    }
-    if (robots.status === 404 || robots.status === 410) return null
-    robotsRefused = true
-    return `${u.origin}/robots.txt could not be read (${robots.why}), and no answer is no permission.`
-  })
-  if (got.refused) return { outcome: robotsRefused ? 'robots' : 'not-allowed', why: got.refused, finalUrl: got.url, html: null }
-  if (got.text === null) return { outcome: 'unreadable', why: got.why, finalUrl: got.url, html: null }
-  return { outcome: 'read', why: '', finalUrl: got.url, html: got.text }
-}
-
 // ─── One fund ─────────────────────────────────────────────────────────────────
 
-async function readFund(client: Anthropic, model: string, f: PrefillFund, allowed: ReadonlySet<string>, keySource: string): Promise<{ page: PageRead; stop: string | null }> {
+async function readFund(client: Anthropic, model: string, f: PrefillFund, fetchPage: (url: string) => Promise<GatedPage>, keySource: string): Promise<{ page: PageRead; stop: string | null }> {
   const readAt = new Date().toISOString()
   const page: PageRead = { symbol: f.symbol, url: f.url, finalUrl: null, readAt, outcome: 'read', why: '', textChars: 0, model: null, dollars: 0, figures: [] }
-  const got = await fetchPage(f.url, allowed)
+  const got = await fetchPage(f.url)
   page.finalUrl = got.finalUrl
   if (got.outcome !== 'read' || got.html === null) return { page: { ...page, outcome: got.outcome, why: got.why }, stop: null }
 
@@ -253,6 +179,7 @@ async function main(): Promise<number> {
   console.log(`Key: from ${source}.`)
   const client = new Anthropic({ apiKey: key, maxRetries: 4 })
 
+  const fetchPage = allowedFetcher(USER_AGENT, allowed)
   let spent = 0
   let attempted = 0
   const tally = { read: 0, suggested: 0, other: 0 }
@@ -263,7 +190,7 @@ async function main(): Promise<number> {
       break
     }
     process.stdout.write(`[${i + 1}/${todo.length}] ${f.symbol} (${f.site}) … `)
-    const { page, stop } = await readFund(client, args.model, f, allowed, source)
+    const { page, stop } = await readFund(client, args.model, f, fetchPage, source)
     attempted++
     spent += page.dollars
     if (page.outcome !== 'error') {

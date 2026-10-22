@@ -732,6 +732,14 @@ Central data file for the Staking Opportunities page.
   (`LOCKUP_LEADS`), each only while the catalog still has the figure and note questioned, and so are two rows the
   2026-10-17 agent evaluation read out as staking options (Uniswap's ETH/USDC pool, Kraken's US line; D136). `STAKING_DATA_LAST_VERIFIED`
   moves only when the plan reports every fact settled. Same look and rules as the Transfer Fee Check.
+  `npm run staking-facts-prefill` (D153, 2026-10-22) suggests facts from each provider's own pages on a site
+  ruled Allowed: its staking page and up to four same-site pages it links to, chosen by address and link text,
+  all through the fund pre-fill's gate (`scripts/lib/allowedFetch.ts`: Allowed at every hop, robots.txt
+  honoured, no cookies). A fact is kept only when its quote is on a page read and holds it, and the check
+  page's parsing takes it; the script, never the model, turns hours or weeks into days and gives a range at its
+  longest (`scripts/lib/stakingPrefill.ts`, tested). It writes only `staking-facts-suggestions.json`
+  (gitignored); `npm run staking-facts-page -- <out.html> --suggestions staking-facts-suggestions.json` shows
+  each beside its row, never in an answer box.
 
 To add a provider: append to `STAKING_PROVIDERS` following the pattern. Celsius should always be kept — it's used as the educational cautionary example.
 
@@ -1642,8 +1650,11 @@ figure. Rules and tests: `scripts/lib/siteTerms.ts`, `lib/server/__tests__/siteT
 proshares.com), 84 Not allowed, 3 with no reading. **D146 (2026-10-22) added five:** vaneck.com, whose
 pages only load for a visitor that keeps cookies, which the pre-fill does not (D147, so its four yields
 stay read by hand), and lido.fi, puffer.fi, ankr.com and metapool.app, staking sites with no pre-fill to
-read them (D148: their facts stay read by hand). Every site behind the Transfer Fee Check, and all but
-those four behind the Staking Facts Check, is Not allowed, so **the pre-fill (step 2) reaches only the Fund Figures Check**:
+read them (D148: their facts stay read by hand). **The same day the owner added five more (D151, D152):**
+coinbase.com, robinhood.com, gemini.com, direxion.com and frax.finance, whose terms set no ban on software
+reading, and asked for a staking pre-fill after all (D153, below). A site whose terms forbid software reading
+stays Not allowed whatever the owner permits (D149): that permission is the site's to give. Every site
+behind the Transfer Fee Check is Not allowed. **The fund pre-fill (step 2)**:
 `npm run fund-figures-prefill` plans and spends nothing; `-- --run --limit 4` reads one page per
 Allowed site. It reads only a page on a site ruled Allowed on the reading in force, from the owner's
 machine, as FinanceNow, where robots.txt lets FinanceNow, and never skips the terms gate. A model

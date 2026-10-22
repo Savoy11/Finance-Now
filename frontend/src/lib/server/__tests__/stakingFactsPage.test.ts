@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { STAKING_PROVIDERS, STAKING_COIN_INFO } from '@/lib/data/stakingProviders'
 import { stakingFactRows, LLAMA_SLUG, LOCKUP_LEADS, LEAD_SOURCES, type FactRow } from '../../../../scripts/lib/stakingFactRows'
-import { buildStakingFactsData, CATEGORY_ORDER, STAKING_FACTS_SERVES } from '../../../../scripts/lib/stakingFactsData'
+import { buildStakingFactsData, CATEGORY_ORDER, STAKING_FACTS_SERVES, suggestionsByRow } from '../../../../scripts/lib/stakingFactsData'
 import { buildStakingFactsPage, STAKING_FACTS_CAPABILITIES, STAKING_FACTS_TITLE } from '../../../../scripts/lib/stakingFactsPage.mjs'
 
 /**
@@ -406,10 +406,58 @@ describe('the published page', () => {
     expect(new Set([...code.matchAll(/\bruntime\.(\w+)/g)].map((m) => m[1]))).toEqual(new Set(['use']))
   })
 
+  it('shows a suggestion as a hint beside the row, never in an answer box, and embeds it safely', () => {
+    const suggestion = { readOn: '2026-10-22', fields: [{ field: 'lockup', status: 'suggested', shown: '1-5 days', figure: 5, matches: false, quote: 'take 1-5 days </script><script>alert(1)</script>', url: 'https://help.lido.fi/x', why: 'A range.' }] }
+    const withSugg = buildStakingFactsPage({ ...fixture, suggestions: { savedAt: '2026-10-22T12:00:00Z', suggested: 1, none: 0 }, providers: [{ ...fixture.providers[0], rows: [{ ...terms(), suggestion }] }] })
+    const block = withSugg.slice(withSugg.indexOf('id="sf-data">'), withSugg.indexOf('</script>', withSugg.indexOf('id="sf-data">')))
+    expect(block).not.toContain('<')
+    expect(withSugg).toContain('1 figures carry a <b>suggestion</b>')
+    expect(html).not.toContain('carry a <b>suggestion</b>')
+    // The card's suggestion is drawn by buildSuggestion alone, which never touches a form, a box's value or a save.
+    const code = clientSrc.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')
+    const fn = code.slice(code.indexOf('function buildSuggestion('), code.indexOf('function buildRow('))
+    expect(fn.length).toBeGreaterThan(100)
+    expect(fn).not.toMatch(/\.value\b|\binput\b|form|save|onAnswer/i)
+    expect([...code.matchAll(/\.suggestion\b/g)].length).toBe(3) // the guard (twice) and the read in buildSuggestion
+  })
+
   it('re-enables a row’s buttons when its save finishes', () => {
     const finallies = [...clientSrc.matchAll(/\n {4}\} finally \{\n {6}els\.busy = false\n([^\n]*)/g)].map((m) => m[1].trim())
     expect(finallies.length).toBeGreaterThanOrEqual(2)
     for (const l of finallies) expect(l).toBe('enableButtons(els.btns)')
+  })
+})
+
+describe('the pre-fill’s suggestions on the rows', () => {
+  const symbols = Object.fromEntries(Object.entries(STAKING_COIN_INFO).map(([id, c]) => [id, c.symbol]))
+  const base = { providers: STAKING_PROVIDERS, symbols, lastVerified: '2026-06-28', ageDays: 116, staleAfterDays: 90, generatedOn: '2026-10-22' }
+  const allRows = stakingFactRows(STAKING_PROVIDERS, symbols)
+  const rowOf = (d: ReturnType<typeof buildStakingFactsData>, key: string) => d.providers.flatMap((p) => p.rows).find((r) => r.key === key)
+
+  it('adds no suggestion unless the page is built with the pre-fill’s file', () => {
+    const d = buildStakingFactsData(base)
+    expect(d.suggestions).toBeNull()
+    expect(d.providers.flatMap((p) => p.rows).every((r) => !('suggestion' in r))).toBe(true)
+  })
+
+  it('attaches each fact to its row, and says why where there is none or the pages were not read', () => {
+    const reads = [
+      { id: 'lido', readAt: '2026-10-22T12:00:00Z', outcome: 'read', why: '', facts: [
+        { key: 'lido:eth:terms', field: 'lockup', status: 'suggested', shown: '1-5 days', value: 5, matches: false, quote: 'take 1-5 days', url: 'https://help.lido.fi/x', why: 'A range.' },
+        { key: 'lido:eth:terms', field: 'min', status: 'not-found', shown: '', value: null, matches: null, quote: '', url: null, why: 'Not on the pages.' },
+      ] },
+      { id: 'puffer', readAt: '2026-10-22T12:01:00Z', outcome: 'unreadable', why: 'drawn in the browser', facts: [] },
+    ]
+    const byRow = suggestionsByRow(reads, allRows)
+    const d = buildStakingFactsData({ ...base, suggestions: { savedAt: '2026-10-22T12:05:00Z', byRow } })
+    expect(rowOf(d, 'lido:eth:terms')?.suggestion).toEqual({ readOn: '2026-10-22', fields: [
+      { field: 'lockup', status: 'suggested', shown: '1-5 days', figure: 5, matches: false, quote: 'take 1-5 days', url: 'https://help.lido.fi/x', why: 'A range.' },
+      { field: 'min', status: 'none', shown: '', figure: null, matches: null, quote: '', url: null, why: 'Not on the pages.' },
+    ] })
+    const puffer = d.providers.find((p) => p.id === 'puffer')!.rows
+    expect(puffer.filter((r) => r.kind !== 'site').every((r) => r.suggestion?.fields.every((f) => f.status === 'none' && f.why === 'The pages were not read: drawn in the browser'))).toBe(true)
+    expect(puffer.find((r) => r.kind === 'site')?.suggestion).toBeUndefined()
+    expect(d.suggestions?.suggested).toBe(1)
   })
 })
 
@@ -427,5 +475,6 @@ describe('the scripts around the page', () => {
     const pkg = JSON.parse(read('package.json')) as { scripts: Record<string, string> }
     expect(pkg.scripts['staking-facts-page']).toBe('tsx scripts/gen-staking-facts-page.ts')
     expect(pkg.scripts['staking-facts-plan']).toBe('tsx scripts/staking-facts-plan.ts')
+    expect(pkg.scripts['staking-facts-prefill']).toBe('tsx scripts/staking-facts-prefill.ts')
   })
 })
