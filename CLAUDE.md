@@ -1639,8 +1639,11 @@ and extraction tools". It decides nothing and reads no
 figure. Rules and tests: `scripts/lib/siteTerms.ts`, `lib/server/__tests__/siteTerms.test.ts`.
 
 **The owner's rulings (D141, 2026-10-21): 4 Allowed** (vanguard.com, ssga.com, sectorspdrs.com,
-proshares.com), 84 Not allowed, 3 with no reading. Every site behind the Transfer Fee and Staking
-Facts Checks is Not allowed, so **the pre-fill (step 2) reaches only the Fund Figures Check**:
+proshares.com), 84 Not allowed, 3 with no reading. **D146 (2026-10-22) added five:** vaneck.com, whose
+pages only load for a visitor that keeps cookies, which the pre-fill does not (D147, so its four yields
+stay read by hand), and lido.fi, puffer.fi, ankr.com and metapool.app, staking sites with no pre-fill to
+read them (D148: their facts stay read by hand). Every site behind the Transfer Fee Check, and all but
+those four behind the Staking Facts Check, is Not allowed, so **the pre-fill (step 2) reaches only the Fund Figures Check**:
 `npm run fund-figures-prefill` plans and spends nothing; `-- --run --limit 4` reads one page per
 Allowed site. It reads only a page on a site ruled Allowed on the reading in force, from the owner's
 machine, as FinanceNow, where robots.txt lets FinanceNow, and never skips the terms gate. A model
