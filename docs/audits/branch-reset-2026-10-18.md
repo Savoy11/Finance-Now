@@ -396,3 +396,20 @@ as above.
 - its content in `main` as `bf7cff2`.
 
 Nothing was deleted; no other ref moved.
+
+## Twenty-fifth reset, after PR #402 (2026-10-21)
+
+**What was done.** After PR #402 (the Fund Figures Check's first 60 readings, dated, in the
+fund catalog) was squash-merged into `main` as `4fd22a6`, the branch was restarted from that
+commit on the owner's machine for the next step: recording the day's work in the task-queue
+ledger and the day's owner decisions (D142–D145), as the owner approved. Pushed with
+`--force-with-lease`, for the same reason as above.
+
+**Where the prior state lives.** The branch's previous tip, `b3fed81`, is held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@b3fed81`, created by
+  `.github/workflows/archive-branch.yml` when #402 merged;
+- GitHub's `refs/pull/402/head`;
+- its content in `main` as `4fd22a6`.
+
+Nothing was deleted; no other ref moved.
