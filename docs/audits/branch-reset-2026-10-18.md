@@ -413,3 +413,19 @@ ledger and the day's owner decisions (D142–D145), as the owner approved. Pushe
 - its content in `main` as `4fd22a6`.
 
 Nothing was deleted; no other ref moved.
+
+## Twenty-sixth reset, after PR #403 (2026-10-22)
+
+**What was done.** After PR #403 (the ledger brought up to 2026-10-21) was squash-merged into
+`main` as `d407e94`, the branch was restarted from that commit on the owner's machine for the
+next step: recording the 2026-10-22 site rulings and the readers the owner chose not to build
+(D146–D148). Pushed with `--force-with-lease`, for the same reason as above.
+
+**Where the prior state lives.** The branch's previous tip, `377d83f`, is held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@377d83f`, created by
+  `.github/workflows/archive-branch.yml` when #403 merged;
+- GitHub's `refs/pull/403/head`;
+- its content in `main` as `d407e94`.
+
+Nothing was deleted; no other ref moved.
