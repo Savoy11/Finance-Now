@@ -19,10 +19,11 @@
  * compiled date may move only when `complete` is true, and then to the oldest date read.
  * Nothing here touches FUND_FIGURES_COMPILED_ON.
  */
-import { existsSync, readdirSync, readFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { FUND_CATALOG, FUND_FIGURES_COMPILED_ON } from '../src/lib/data/fundCatalog'
 import { figuresFor, type FundFigure } from './lib/fundFiguresData'
+import { readSavedCollection } from './lib/savedCollection'
 
 type Reading = { id: string; result: string; value: number | null; typed: string; asOf: string | null; kind: string | null; note: string }
 type Item = { id: string; symbol: string; figure: string; from: number; to: number; asOf: string; kind: string; note: string }
@@ -51,23 +52,8 @@ if (!dirArg || dirArg.startsWith('-')) {
 }
 const dir = resolve(dirArg)
 
-/** Every document in one saved collection, keyed by id (the file name). */
-function readCollection(name: string): Record<string, unknown> {
-  const d = join(dir, name)
-  const out: Record<string, unknown> = {}
-  if (!existsSync(d)) return out
-  for (const f of readdirSync(d)) {
-    if (!f.endsWith('.json')) continue
-    try {
-      const body = JSON.parse(readFileSync(join(d, f), 'utf8'))
-      // Tolerate a { data } wrapper as well as a bare document.
-      out[f.slice(0, -'.json'.length)] = body && typeof body === 'object' && 'data' in body && typeof body.data === 'object' ? body.data : body
-    } catch {
-      console.warn(`  skipped ${name}/${f}: not readable JSON`)
-    }
-  }
-  return out
-}
+/** Every document in one saved collection, keyed by its id (decoded from the file name). */
+const readCollection = (name: string) => readSavedCollection(dir, name)
 
 const figs = FUND_CATALOG.flatMap(figuresFor)
 const known = new Set(figs.map((f) => f.id))

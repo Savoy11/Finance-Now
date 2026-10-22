@@ -362,3 +362,20 @@ on the Fund Figures Check's cards. Pushed with `--force-with-lease`, for the sam
 - its content in `main` as `b4c7588`.
 
 Nothing was deleted; no other ref moved.
+
+## Twenty-third reset, after PR #400 (2026-10-21)
+
+**What was done.** After PR #400 (the pre-fill's suggestions shown on the Fund Figures Check's
+cards) was squash-merged into `main` as `b63cebd`, the branch was restarted from that commit on
+the owner's machine for the next step: the three check-page plans could not read a real export
+of the page's database on Windows, where `:` is saved in a file name as `%3A`. Pushed with
+`--force-with-lease`, for the same reason as above.
+
+**Where the prior state lives.** The branch's previous tip, `c0333f4`, is held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@c0333f4`, created by
+  `.github/workflows/archive-branch.yml` when #400 merged;
+- GitHub's `refs/pull/400/head`;
+- its content in `main` as `b63cebd`.
+
+Nothing was deleted; no other ref moved.

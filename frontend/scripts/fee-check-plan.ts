@@ -19,10 +19,11 @@
  *
  * Reads; writes only the CSV. Never touches TRANSFER_FEES_LAST_VERIFIED.
  */
-import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { EXCHANGES, SPOT_TRADING_FEES } from '../src/lib/data/transferFees'
 import { feeRows } from './lib/transferFeeRows'
+import { readSavedCollection } from './lib/savedCollection'
 
 type Check = { key: string; result: string; fee: number | null; min: number | null; note: string }
 type Trading = { exchangeId: string; result: string; maker: number | null; taker: number | null; note: string }
@@ -59,23 +60,8 @@ const dir = resolve(dirArg)
 const csvAt = flags.indexOf('--csv')
 const csvOut = csvAt >= 0 ? flags[csvAt + 1] : null
 
-/** Every document in one saved collection, keyed by id (the file name). */
-function readCollection(name: string): Record<string, unknown> {
-  const d = join(dir, name)
-  const out: Record<string, unknown> = {}
-  if (!existsSync(d)) return out
-  for (const f of readdirSync(d)) {
-    if (!f.endsWith('.json')) continue
-    try {
-      const body = JSON.parse(readFileSync(join(d, f), 'utf8'))
-      // Tolerate a { data } wrapper as well as a bare document.
-      out[f.slice(0, -'.json'.length)] = body && typeof body === 'object' && 'data' in body && typeof body.data === 'object' ? body.data : body
-    } catch {
-      console.warn(`  skipped ${name}/${f}: not readable JSON`)
-    }
-  }
-  return out
-}
+/** Every document in one saved collection, keyed by its id (decoded from the file name). */
+const readCollection = (name: string) => readSavedCollection(dir, name)
 
 const rows: PlanRow[] = feeRows(EXCHANGES).map((r) => ({
   key: r.key, exchange: r.exchange, coin: r.coin, network: r.network, fee: r.fee, min: r.minWithdraw,
