@@ -42,7 +42,10 @@ This is a retirement on paper of a service that had already stopped running:
   migrations here describe this backend's own historical view of the database; do not
   run them against a live database.
 - Every source file, test, `pyproject.toml`, `poetry.lock`, `Dockerfile` and
-  `alembic.ini`, exactly as they were.
+  `alembic.ini`, exactly as they were. The one exception is `poetry.lock`, updated on
+  2026-10-21 so the security scanner's alerts close: aiohttp (#384), then pyjwt, anyio,
+  certifi, cryptography, mako and multidict, each to a fixed release. Nothing was added
+  and `pyproject.toml` did not change; none of it runs, so this changes no behaviour.
 
 ## What was removed elsewhere
 
