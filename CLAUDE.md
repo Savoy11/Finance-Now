@@ -763,6 +763,11 @@ a fact. `lib/data/__tests__/stakingWording.test.ts` holds it for every live prov
   `npm run fund-figures-page -- <out.html> --suggestions fund-figures-suggestions.json` shows each
   suggestion on its figure's card, with the passage it came from, or why there is none. It is a hint
   beside the row and never fills the reading box (`buildSuggestion` in `fundFigures.client.js`, tested).
+  **First pass applied, 2026-10-21:** 60 figures read from those pages by an automated check the owner
+  approved carry the page's date, kind and address (`yieldRead`, `aumRead`), only ever from a D141
+  site (a test holds it). 18 are 30-day SEC yields, recorded as such at the owner's choice. **Show a
+  yield only through `fundYieldFact`**, which labels a SEC yield as one, never as "TTM". The other 55
+  figures wait for the owner's hand reading, so `FUND_FIGURES_COMPILED_ON` stays.
 
 ### `src/lib/data/portfolioBuilder.ts` (Portfolio Builder module)
 Pure engine, no API calls, covered by `__tests__/portfolioBuilder.test.ts` (86 tests).

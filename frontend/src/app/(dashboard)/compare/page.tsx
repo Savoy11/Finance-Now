@@ -10,7 +10,7 @@ import { SourceLine } from '@/components/ui/SourceLine'
 import { LineChart } from '@/components/charts/LineChart'
 import { LiveUnavailable } from '@/components/ui/LiveUnavailable'
 import { EQUITY_CATALOG, SECTOR_INFO, getEquity } from '@/lib/data/equityCatalog'
-import { FUND_CATALOG, getFund } from '@/lib/data/fundCatalog'
+import { FUND_CATALOG, fundYieldFact, getFund } from '@/lib/data/fundCatalog'
 import { ASSET_CATALOG } from '@/lib/data/assetCatalog'
 import { INSTRUMENTS, securitySymbol, type InstrumentClass } from '@/lib/data/instruments'
 import { compareAssetClasses, CLASS_PROFILES } from '@/lib/data/assetClassProfiles'
@@ -265,7 +265,7 @@ function statRows(symbol: string, opt?: Option): Array<[string, string]> {
       ['Sector', '—'],
       ['Market cap', '—'],
       ['P/E (TTM)', '—'],
-      ['Dividend yield', f.yieldPct != null ? `${f.yieldPct}%` : '—'],
+      ['Dividend yield', f.yieldPct != null ? `${f.yieldPct}%${fundYieldFact(f).kind === 'sec' ? ' (30-day SEC)' : ''}` : '—'],
       ['Beta (5Y)', '—'],
       ['Expense ratio', `${f.expenseRatioPct}%`],
     ]

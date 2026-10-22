@@ -17,7 +17,7 @@ import { PriceChartCard, FiftyTwoWeekBar } from '@/components/markets/PriceChart
 import { MarketNewsList } from '@/components/markets/MarketNewsList'
 import {
   computeFeeDrag, fundSalesCharge, FUND_CATEGORY_INFO, FUND_RISK_INFO, FUND_STRATEGY_INFO,
-  fundAssetsFact, fundRiskLevel, fundStrategy, fundTradingRestriction, getFund,
+  fundAssetsFact, fundYieldFact, fundRiskLevel, fundStrategy, fundTradingRestriction, getFund,
   getFundFeeProvenance, getFundFiguresProvenance,
 } from '@/lib/data/fundCatalog'
 import type { SalesCharge } from '@/lib/data/fundCatalog'
@@ -254,8 +254,7 @@ function FundDetailInner() {
     { label: 'Expense Ratio', value: `${entry.expenseRatioPct}%`,
       explain: 'The annual fee skimmed from returns, visible or not. The single most reliable predictor of long-run relative performance — compounding works against you here. The Fee Drag Analyzer below shows the dollar cost.' },
     fundAssetsFact(entry, formatCompact),
-    { label: 'Distribution Yield', value: entry.yieldPct != null ? `≈ ${entry.yieldPct.toFixed(2)}%` : '—',
-      explain: 'Income (dividends and interest) paid out over the past year as a percent of the fund’s price — the cash-flow component of your return.' },
+    fundYieldFact(entry),
     { label: 'Inception', value: String(entry.inceptionYear),
       explain: 'Launch year. A longer track record shows how the fund behaved across full market cycles, not just the recent regime.' },
     { label: 'Index', value: entry.indexTracked ?? 'Actively managed',

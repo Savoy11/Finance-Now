@@ -379,3 +379,20 @@ of the page's database on Windows, where `:` is saved in a file name as `%3A`. P
 - its content in `main` as `b63cebd`.
 
 Nothing was deleted; no other ref moved.
+
+## Twenty-fourth reset, after PR #401 (2026-10-21)
+
+**What was done.** After PR #401 (the check-page plans read a saved export's ids from its file
+names) was squash-merged into `main` as `bf7cff2`, the branch was restarted from that commit on
+the owner's machine for the next step: putting the Fund Figures Check's first 60 readings into
+the fund catalog, as the owner approved. Pushed with `--force-with-lease`, for the same reason
+as above.
+
+**Where the prior state lives.** The branch's previous tip, `fb5f6a6`, is held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@fb5f6a6`, created by
+  `.github/workflows/archive-branch.yml` when #401 merged;
+- GitHub's `refs/pull/401/head`;
+- its content in `main` as `bf7cff2`.
+
+Nothing was deleted; no other ref moved.
