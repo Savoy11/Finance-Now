@@ -446,3 +446,25 @@ next step: the staking pre-fill, the pre-fills' shared fetch gate, and the decis
 - its content in `main` as `c7121dd`.
 
 Nothing was deleted; no other ref moved.
+
+## Twenty-eighth reset, after PR #405 (2026-10-22)
+
+**What was done.** After PR #405 (the staking pre-fill and D149–D154) was squash-merged into
+`main` as `3d2e387`, the branch was restarted from that commit on the owner's machine for the
+ledger pass that records it (T-394, T-440, D155). Pushed with `--force-with-lease`, for the same
+reason as above.
+
+**Where the prior state lives.** The branch's previous tip, `8ada0c0`, is held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@8ada0c0`, created by
+  `.github/workflows/archive-branch.yml` when #405 merged, and checked on the remote before the
+  restart;
+- GitHub's `refs/pull/405/head`;
+- its content in `main` as `3d2e387`.
+
+**One more archive the same day, by hand.** Dependabot's #398 was closed unmerged (D155). Before
+closing, `archive-branch.yml` was run by hand (`workflow_dispatch`, run 39867978716) and created
+`archive/dependabot/pip/backend/certifi-2026.10.19` → `51b1443` (tag object `765c3fd`), checked on
+the remote. The branch itself was left alone; GitHub's `refs/pull/398/head` also holds the commit.
+
+Nothing was deleted; no other ref moved.
