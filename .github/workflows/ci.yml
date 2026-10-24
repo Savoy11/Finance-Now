@@ -331,9 +331,10 @@ jobs:
       # (D53), not a bare `npm audit`. It fails on everything `--audit-level=high`
       # failed on, except an advisory that a recorded owner decision allows for a
       # dated window in frontend/audit-exceptions.json: at most 92 days, and only
-      # while npm reports no fix short of a major upgrade. The first is
-      # GHSA-vfj7-8cjw-p6xm (braces), which has no patched release and turned main
-      # and every PR red. Do not add `|| true` and do not raise the threshold: either
+      # while npm reports no fix short of a major upgrade. The first was
+      # GHSA-vfj7-8cjw-p6xm (braces), which had no patched release and turned main
+      # and every PR red; it went when GitHub withdrew the advisory on 2026-10-23
+      # (D156), and the file lists none. Do not add `|| true` and do not raise the threshold: either
       # makes the gate unable to fail. auditGate.test.ts reads this step.
       - name: Node.js dependency audit
         run: |
