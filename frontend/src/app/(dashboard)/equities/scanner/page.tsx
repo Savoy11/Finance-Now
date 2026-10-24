@@ -13,6 +13,7 @@ import { computeSignalSummary, rsi, sma, type OhlcvCandle, type Signal, type Sig
 import { detectSetups, type DetectedSetup, type SetupKey } from '@/lib/utils/scanSetups'
 import { runPool } from '@/lib/utils/runPool'
 import { formatAdaptivePrice } from '@/lib/utils/format'
+import { groupOhlcvFailures } from '@/lib/utils/ohlcvFailures'
 import { EQUITY_CATALOG, SECTOR_INFO, type SectorId } from '@/lib/data/equityCatalog'
 import type { SecurityOhlcvResponse } from '@/app/live-data/security-ohlcv/route'
 
@@ -80,6 +81,8 @@ interface ScanRow {
   setups: DetectedSetup[]
   signal: SignalSummary | null
   status: RowStatus
+  /** On an 'error' row: each provider the route tried and why it failed. */
+  failures?: string[]
 }
 
 const SIGNAL_SCORE: Record<Signal, number> = {
@@ -131,7 +134,9 @@ function ScannerPanel() {
         const json = (await res.json()) as SecurityOhlcvResponse
         const candles: OhlcvCandle[] = json.candles ?? []
         if (!json.ok || candles.length === 0) {
-          patch = { status: 'error' }
+          const failures = json.failures?.length ? json.failures
+            : json.error && json.error !== 'fetch_failed' ? [json.error] : undefined
+          patch = { status: 'error', failures }
         } else {
           const closes = candles.map((c) => c.close)
           const rsiSeries = rsi(closes, 14)
@@ -197,7 +202,9 @@ function ScannerPanel() {
     return sorted
   }, [rows, sector, activeSetup, sortKey, signalFilter, search])
 
-  const errored = rows.filter((r) => r.status === 'error').length
+  const erroredRows = rows.filter((r) => r.status === 'error')
+  const errored = erroredRows.length
+  const failureGroups = groupOhlcvFailures(erroredRows)
   const withSetups = rows.filter((r) => r.setups.length > 0).length
 
   return (
@@ -305,10 +312,14 @@ function ScannerPanel() {
       {/* Coverage, never silently capped */}
       <p className="text-[11px] leading-relaxed text-text-muted">
         Scanning {SCAN_UNIVERSE.length} curated large-caps over {WINDOWS.find((w) => w.key === historyWindow)?.hint} of daily history.
-        {' '}{withSetups} {withSetups === 1 ? 'name has' : 'names have'} at least one setup.
+        {/* Before the first scan there is no result to count, and "0 names have a
+            setup" read as one (T-129, 2026-10-24). */}
+        {(lastScan || scanning) && (
+          <>{' '}{withSetups} {withSetups === 1 ? 'name has' : 'names have'} at least one setup.</>
+        )}
         {errored > 0 && (
-          <> {errored} returned no history — the OHLCV providers are key-gated, so an unconfigured
-          instance scans nothing rather than showing invented rows.</>
+          <> {errored} returned no history, and none is invented:{' '}
+          {failureGroups.map((g) => `${g.count} because ${g.reason}`).join(' · ')}.</>
         )}
         {' '}The registry&rsquo;s broader universe is not scanned: one keyed OHLCV request per symbol
         makes a whole-universe sweep a quota decision, not a technical one.

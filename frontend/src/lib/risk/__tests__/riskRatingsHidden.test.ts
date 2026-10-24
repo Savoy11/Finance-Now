@@ -97,9 +97,19 @@ describe('D64: risk ratings are switched off', () => {
       'src/app/(dashboard)/portfolios/page.tsx',
       'src/app/(dashboard)/funds/[symbol]/page.tsx',
       'src/app/live-data/fund-universe/route.ts',
+      'src/app/(dashboard)/funds/FundsClient.tsx',
     ]) {
       expect(code(f), f).toContain('RISK_RATINGS_SHOWN')
     }
+  })
+
+  it('the fund list offers its Risk profile filter, and reads ?risk=, only through the switch', () => {
+    // The filter stayed on after D64 while the fund list's feed stopped sending a risk
+    // level, so every choice emptied the list (T-129, 2026-10-24).
+    const src = code('src/app/(dashboard)/funds/FundsClient.tsx')
+    expect(src).toMatch(/\{RISK_RATINGS_SHOWN && \(\s*<div>\s*<p[^>]*>Risk profile<\/p>/)
+    expect(src).toMatch(/if \(RISK_RATINGS_SHOWN && p\.risk /)
+    expect(src).toMatch(/\{RISK_RATINGS_SHOWN && <>Risk profile is derived/)
   })
 
   it('the fund page adds its Risk Profile line only through the switch', () => {

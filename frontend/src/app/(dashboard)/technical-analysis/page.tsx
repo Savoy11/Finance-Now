@@ -38,6 +38,7 @@ import { SourceLine } from '@/components/ui/SourceLine'
 import { useThesisStore, computeRiskReward } from '@/store/useThesisStore'
 import { COINGECKO_IDS } from '@/lib/api/live/coingeckoIds'
 import type { CoinListResponse } from '@/lib/types/coinList'
+import { catalogCoinMeta } from '@/lib/utils/catalogCoinMeta'
 import type { FearGreedData } from '@/app/live-data/fear-greed/route'
 import type { DefiTvlData } from '@/app/live-data/defi-tvl/route'
 import type { BtcStatsData } from '@/app/live-data/btc-stats/route'
@@ -142,22 +143,12 @@ function TechnicalAnalysisContent() {
     staleTime: 10 * 60 * 1000,
   })
 
-  // Build chart asset list: all COINGECKO_IDS-supported ids, enriched with live names
-  const chartAssets = useMemo(() => {
-    const coinMap = new Map(
-      (coinListData?.coins ?? []).map(c => [c.symbol.toUpperCase(), c])
-    )
-    return SUPPORTED_IDS.map(id => {
-      const sym = id.toUpperCase()
-      const live = coinMap.get(sym)
-      return {
-        id,
-        symbol: sym,
-        label: live?.name ?? sym,
-        rank: live?.rank ?? 9999,
-      }
-    }).sort((a, b) => a.rank - b.rank)
-  }, [coinListData])
+  // Build chart asset list: all COINGECKO_IDS-supported ids, enriched with live names,
+  // matched by CoinGecko id: tickers are shared (catalogCoinMeta.ts says what that broke).
+  const chartAssets = useMemo(
+    () => catalogCoinMeta(SUPPORTED_IDS, COINGECKO_IDS, coinListData?.coins).sort((a, b) => a.rank - b.rank),
+    [coinListData],
+  )
 
   const [tab, setTab] = useState<Tab>('chart')
   const [assetId, setAssetId] = useState(() => {

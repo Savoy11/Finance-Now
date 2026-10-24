@@ -22,6 +22,7 @@ import { candleGranularity, candleSizeWords } from '@/lib/utils/candleGranularit
 import { SignalBadge } from '@/components/charts/SignalBadge'
 import { COINGECKO_IDS } from '@/lib/api/live/coingeckoIds'
 import type { CoinListResponse } from '@/lib/types/coinList'
+import { catalogCoinMeta } from '@/lib/utils/catalogCoinMeta'
 import { ASSET_CATALOG } from '@/lib/data/assetCatalog'
 
 // ─── Crypto Scanner ───────────────────────────────────────────────────────────
@@ -137,15 +138,12 @@ function ScannerPanel() {
     staleTime: 10 * 60 * 1000,
   })
 
-  // Whole monitored universe, enriched with live names + market-cap rank.
-  const universe = useMemo(() => {
-    const coinMap = new Map((coinListData?.coins ?? []).map(c => [c.symbol.toUpperCase(), c]))
-    return SUPPORTED_IDS.map(id => {
-      const sym = id.toUpperCase()
-      const live = coinMap.get(sym)
-      return { id, symbol: sym, label: live?.name ?? sym, rank: live?.rank ?? 9999 }
-    })
-  }, [coinListData])
+  // Whole monitored universe, enriched with live names + market-cap rank, matched
+  // by CoinGecko id: tickers are shared (catalogCoinMeta.ts says what that broke).
+  const universe = useMemo(
+    () => catalogCoinMeta(SUPPORTED_IDS, COINGECKO_IDS, coinListData?.coins),
+    [coinListData],
+  )
   const metaById = useMemo(() => new Map(universe.map(u => [u.id, u])), [universe])
 
   const [timeframe, setTimeframe] = useState<ScanTimeframe>('1D')

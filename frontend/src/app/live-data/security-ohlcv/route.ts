@@ -45,6 +45,20 @@ export interface SecurityOhlcvResponse {
    */
   basis?: PriceBasis
   error?: string
+  /**
+   * With error 'fetch_failed': each configured provider that was tried, in order, and
+   * why it failed ("tiingo: Tiingo 429"). Without it a scan that came back empty could
+   * not say whether a key was missing, a quota was spent or a symbol was unknown.
+   */
+  failures?: string[]
+}
+
+/** A provider's failure reason, with anything shaped like a key in a URL taken out. */
+function failureReason(id: string, e: unknown): string {
+  const message = (e instanceof Error ? e.message : String(e))
+    .replace(/((?:token|apikey|api_key|key)=)[^&\s]+/gi, '$1…')
+    .slice(0, 200)
+  return `${id}: ${message}`
 }
 
 const RANGE_DAYS: Record<string, number> = { '1M': 22, '3M': 66, '6M': 130, '1Y': 260, '5Y': 1300, 'MAX': 10000 }
@@ -167,6 +181,7 @@ export async function GET(request: NextRequest) {
     )
   }
 
+  const failures: string[] = []
   for (const provider of getEquityOhlcvProviders()) {
     try {
       const { candles, basis } = provider.isCustom
@@ -177,6 +192,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ ok: true, symbol, range, candles, source: provider.id, basis } satisfies SecurityOhlcvResponse)
     } catch (e) {
       recordProviderFetch(provider.id, { error: e instanceof Error ? e.message : String(e) })
+      failures.push(failureReason(provider.id, e))
     }
   }
 
@@ -189,5 +205,6 @@ export async function GET(request: NextRequest) {
     error: configured
       ? 'fetch_failed'
       : 'no_provider_configured: add a Tiingo or FMP API key on the Integrations page',
+    ...(configured ? { failures } : {}),
   } satisfies SecurityOhlcvResponse)
 }
