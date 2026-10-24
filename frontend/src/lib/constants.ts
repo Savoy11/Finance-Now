@@ -41,6 +41,7 @@ export const ASSET_TYPE_LABELS: Record<string, string> = {
   cbdc: 'CBDC',
   defi: 'DeFi',
   layer1: 'Layer 1',
+  other: 'Other',
   all: 'All Types',
 }
 

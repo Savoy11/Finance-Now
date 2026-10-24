@@ -31,7 +31,9 @@ async function fetchActiveProviders(): Promise<ProviderInfo[]> {
 export function DataStatusBanner() {
   const { data: marketData } = useQuery({
     queryKey: ['live-markets-status'],
-    queryFn: fetchLiveMarkets,
+    // Wrapped: React Query passes its context as the first argument, which
+    // fetchLiveMarkets would read as the added coins to price (T-129 A).
+    queryFn: () => fetchLiveMarkets(),
     enabled: LIVE_DATA,
     staleTime: 60 * 1000,
     refetchInterval: 60 * 1000,

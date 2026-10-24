@@ -1,4 +1,7 @@
-export type AssetType = 'stablecoin' | 'tokenized' | 'cbdc' | 'defi' | 'layer1'
+// 'other' is never in the catalog and has no filter chip: it is a coin added
+// from Coin Discovery whose kind the four types do not name (OP, a Layer 2), so
+// it shows under "All" with its own `typeLabel` rather than as Layer 1 (T-129 A).
+export type AssetType = 'stablecoin' | 'tokenized' | 'cbdc' | 'defi' | 'layer1' | 'other'
 // Single source of truth for the band vocabulary is lib/risk/types.ts. Imported
 // locally (used below) and re-exported so existing `@/types/asset` importers work.
 import type { RiskBand } from '@/lib/risk/types'
@@ -15,6 +18,8 @@ export interface Asset {
   symbol: string
   name: string
   assetType: AssetType
+  /** Shown in place of the type's own label, where it is more exact ("Layer 2"). */
+  typeLabel?: string
   blockchain: Blockchain
   contractAddress: string
   isActive: boolean

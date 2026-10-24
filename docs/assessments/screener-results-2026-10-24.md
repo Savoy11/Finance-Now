@@ -65,6 +65,18 @@ allowance for the day.
 | D | **The Macro Scanner runs its 29 keyed requests on every visit** (again after 10 minutes), where the Equity Scanner waits for Run scan to spare the quota. Four are the Treasury yields, which no provider serves (D3 moved them to the official curve), so those four can never succeed. | (a) add Run scan as on Equities and drop the four yields from the sweep, or read them from the Treasury curve; (b) leave as is. |
 | E | **Coin Discovery types coins from their id**, which mislabels STABLE, apyUSD and reUSD and misses most non-dollar stablecoins. | (a) read CoinGecko's own stablecoin category, one more request a day, cached like the tokenized check; (b) leave the labelled heuristic. |
 
+### The owner’s answers (2026-10-24, D157)
+
+All five picks, as recommended, built in the next pull request:
+
+- **A.** Added coins are priced in the catalog’s own request and filtered like any coin; a coin
+  with no live quote shows no price. OP is labelled Layer 2 and matches no type chip.
+- **B.** Stablecoins are left out of the Crypto Scanner, and the page names them.
+- **C.** The setup reads “RSI 37.4, under 38, turning up”; the overbought fade reads the same way
+  against its 68.
+- **D.** The Macro Scanner runs on Run scan; the four Treasury yields are out of its sweep.
+- **E.** Stablecoin labels come from CoinGecko’s `stablecoins` category, read once a day.
+
 ## Seen in passing
 
 - **The Coins page header says "110 coins monitored · live prices via CoinGecko"** while 30 of the

@@ -82,7 +82,7 @@ export function AssetCard({ asset, selected, onSelect, className }: AssetCardPro
       {/* Footer tags */}
       <div className="flex items-center gap-1.5 flex-wrap">
         <span className="px-1.5 py-0.5 text-[10px] rounded-sm bg-bg-elevated text-text-muted border border-border font-mono capitalize">
-          {ASSET_TYPE_LABELS[asset.assetType] ?? asset.assetType}
+          {asset.typeLabel ?? ASSET_TYPE_LABELS[asset.assetType] ?? asset.assetType}
         </span>
         <span className="px-1.5 py-0.5 text-[10px] rounded-sm bg-bg-elevated text-text-muted border border-border font-mono capitalize">
           {BLOCKCHAIN_LABELS[asset.blockchain] ?? asset.blockchain}

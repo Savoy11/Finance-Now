@@ -489,3 +489,24 @@ of `main` that `gh pr update-branch` added), is held by:
 `archive/dependabot/npm_and_yarn/mcp-server/ip-address-10.7.4` → `8243fdd`, checked on the remote.
 
 Nothing was deleted; no other ref moved.
+
+## Thirtieth reset, after PR #409 (2026-10-24)
+
+**What was done.** After PR #410 (the dependency fixes, D156) was squash-merged into `main` as
+`4fa4b1f`, and PR #409 (the T-129 walkthrough) after it as `1dae2f2`, the branch was restarted from
+`1dae2f2` on the owner's machine to build the owner's answers to T-129's choices A to E. Pushed with
+`--force-with-lease`, for the same reason as above.
+
+**Where the prior state lives.** The branch's previous tip, `728a8f6` (#409's last commit, the merge
+of `main` that `gh pr update-branch` added), is held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@728a8f6`, created by
+  `.github/workflows/archive-branch.yml` when #409 merged, and checked on the remote before the
+  restart;
+- GitHub's `refs/pull/409/head`;
+- its content in `main` as `1dae2f2`.
+
+#410's branch was archived the same way when it merged: `archive/claude/deps-2026-10-24` →
+`86459ad`, checked on the remote. The branch itself was left alone.
+
+Nothing was deleted; no other ref moved.

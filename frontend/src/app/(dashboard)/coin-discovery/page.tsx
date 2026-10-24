@@ -590,6 +590,21 @@ function TokenizedSecuritiesNote({ info }: { info: CoinDiscoveryResponse['tokeni
   )
 }
 
+/**
+ * T-129 E: stablecoin labels come from CoinGecko's own category. When it could
+ * not be read they are guessed from each coin's id and marked "(heuristic)";
+ * this says so once, above the list, rather than only in each card's note.
+ */
+function StablecoinLabelsNote({ info }: { info: CoinDiscoveryResponse['stablecoins'] | undefined }) {
+  if (!info || info.checked) return null
+  return (
+    <p className="text-xs text-amber-400/90 bg-bg-card border border-amber-500/20 rounded-lg px-3 py-2">
+      Couldn&rsquo;t read CoinGecko&rsquo;s stablecoin category, so the stablecoin labels below are a
+      guess from each coin&rsquo;s CoinGecko id, marked &ldquo;heuristic&rdquo;. They may be wrong.
+    </p>
+  )
+}
+
 function CoinDiscoveryPageInner() {
   const [tab, setTab]             = useState<Tab>('candidates')
   const [rules, setRules] = useState<FilterRule[]>([])
@@ -708,6 +723,7 @@ function CoinDiscoveryPageInner() {
       <SourceLine id="coin-discovery" />
 
       {data && <TokenizedSecuritiesNote info={data.tokenizedSecurities} />}
+      {data && <StablecoinLabelsNote info={data.stablecoins} />}
 
       {/* Source selector */}
       <div className="flex items-center gap-3 flex-wrap">

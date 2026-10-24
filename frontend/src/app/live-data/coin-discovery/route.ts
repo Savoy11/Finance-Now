@@ -4,6 +4,7 @@ import { fetchCoinGeckoPages } from '@/lib/server/coingeckoPages'
 import {
   fetchTokenizedSecurityIndex, partitionTokenizedSecurities, type ExcludedSecurity,
 } from '@/lib/server/tokenizedSecurities'
+import { classifyCoinUtility, fetchStablecoinIndex } from '@/lib/server/stablecoinCategory'
 
 export const dynamic = 'force-dynamic'
 
@@ -50,22 +51,21 @@ export interface CoinDiscoveryResponse {
    * that did not answer and why ("category: reason"), so "partial" can be traced.
    */
   tokenizedSecurities: { checked: boolean; partial: boolean; failed: string[]; excluded: ExcludedSecurity[] }
+  /**
+   * Whether the stablecoin labels came from CoinGecko's own category (T-129 E).
+   * `checked` false means it could not be read, `error` says why, and the labels
+   * fell back to a guess from the coin's id, each marked "(heuristic)".
+   */
+  stablecoins: { checked: boolean; error?: string }
   updatedAt: string
   source: { name: string; limit: number; url: string }
   error?: string
 }
 
-/** Category/utility annotation — factual metadata, no scoring (W3-1). */
-function classifyUtility(cgId: string): { category: string; note: string } {
-  const mapped = UTILITY_MAP[cgId]
-  if (mapped) return { category: mapped.category, note: mapped.note }
-  const id = cgId.toLowerCase()
-  if (id.includes('usd') || id.includes('stable') || id.includes('dai'))
-    return { category: 'stablecoin', note: 'Stablecoin (heuristic)' }
-  if (id.includes('swap') || id.includes('dex') || id.includes('defi'))
-    return { category: 'defi', note: 'DeFi protocol (heuristic)' }
-  return { category: 'unknown', note: '' }
-}
+// The category/utility annotation is classifyCoinUtility (lib/server/
+// stablecoinCategory.ts): stablecoins come from CoinGecko's own category since
+// T-129 E (2026-10-24), and from a labelled guess on the id only when that
+// category could not be read.
 
 // ─── Route handler ────────────────────────────────────────────────────────────
 
@@ -103,6 +103,7 @@ export async function GET(req: Request) {
         candidates: [],
         alreadyTracked: 0,
         tokenizedSecurities: { checked: false, partial: false, failed: [], excluded: [] },
+        stablecoins: { checked: false, error: 'not tried: the market list did not load' },
         updatedAt: new Date().toISOString(),
         source: { name: 'CoinGecko', limit, url: 'https://api.coingecko.com/api/v3/coins/markets' },
         error: `CoinGecko markets unavailable (${upstreamErrors.join('; ') || 'empty response'})`,
@@ -121,9 +122,12 @@ export async function GET(req: Request) {
     ? partitionTokenizedSecurities(untracked, index)
     : { kept: untracked, excluded: [] }
 
+  // After the tokenized walk, so a rate limit there is already spent; cached a day.
+  const stable = await fetchStablecoinIndex()
+
   const candidates: CandidateCoin[] = kept
     .map(c => {
-      const util = classifyUtility(c.id)
+      const util = classifyCoinUtility(c.id, stable.ids, UTILITY_MAP)
       const catInfo = CATEGORY_INFO[util.category] ?? CATEGORY_INFO.unknown
       return {
         cgId:           c.id,
@@ -159,6 +163,7 @@ export async function GET(req: Request) {
       failed: index.failed,
       excluded,
     },
+    stablecoins: stable.ids ? { checked: true } : { checked: false, error: stable.error },
     updatedAt: new Date().toISOString(),
     source: {
       name: 'CoinGecko',

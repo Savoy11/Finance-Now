@@ -62,9 +62,9 @@
   "total_verified": 398,
   "outstanding": 381,
   "by_status": {
-   "closed": 227,
+   "closed": 228,
    "parked": 135,
-   "open": 14,
+   "open": 13,
    "blocked": 5
   },
   "by_owner_role": {
@@ -74,7 +74,7 @@
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 227,
+  "closed_by_annotation": 228,
   "counts_recomputed_on": "2026-10-24",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 381
@@ -3902,13 +3902,15 @@
   {
    "id": "T-129",
    "title": "Fine-tune all screeners for consistent filters, defaults and result quality",
-   "status": "open",
+   "status": "closed",
    "confidence": "medium",
    "owner_role": "either",
    "category": "feature",
    "effort": "medium",
    "blocking_decision": null,
-   "related_ids": [],
+   "related_ids": [
+    "D157"
+   ],
    "summary": "Result quality needs live IP-dependent data.",
    "next_action": "Owner: answer A to E in docs/assessments/screener-results-2026-10-24.md, \"For the owner to decide\": (A) coins added from Coin Discovery show the price saved when added; (B) stablecoins in the Crypto Scanner's results; (C) \"Oversold bounce\" fires below RSI 38 while the signal summary calls oversold below 30; (D) the Macro Scanner spends its 29 keyed requests on every visit, four of them Treasury yields no provider serves; (E) Coin Discovery labels stablecoins from their id. Then the session makes the chosen changes, each in a PR.",
    "sources": [
@@ -3941,6 +3943,23 @@
      "docs/assessments/screener-results-2026-10-24.md",
      "frontend/src/lib/utils/ohlcvFailures.ts",
      "frontend/src/lib/utils/catalogCoinMeta.ts"
+    ]
+   },
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-10-24",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "Done. The walkthrough on the owner's machine recorded all seven screens and fixed five bugs (#409), and the owner answered its five choices on 2026-10-24 (D157), each built in the following PR: (A) coins added from Coin Discovery are priced in the catalog's own CoinGecko request and filtered like any coin, a Layer 2 labelled as one; (B) stablecoins are left out of the Crypto Scanner, named on the page; (C) the RSI setups state their own cut-off (\"RSI 37.4, under 38, turning up\"); (D) the Macro Scanner runs on Run scan, and the four Treasury yields no provider serves are out of its sweep; (E) Coin Discovery's stablecoin labels come from CoinGecko's own category. Left, and not this item's: a full Equity Scan cannot finish within an hour on the free Tiingo and FMP plans, a paid-plan question deferred under D21.",
+    "approved_by": "owner, 2026-10-24: chose \"Use all my picks (Recommended)\" for A to E, then \"Yes, close T-129 (Recommended)\"",
+    "evidence": [
+     "docs/assessments/screener-results-2026-10-24.md",
+     "docs/decisions/2026-10-24-owner-decisions.md",
+     "frontend/src/lib/api/live/addedCoins.ts",
+     "frontend/src/lib/data/scannerUniverse.ts",
+     "frontend/src/lib/utils/scanSetups.ts",
+     "frontend/src/app/(dashboard)/macro/scanner/page.tsx",
+     "frontend/src/lib/server/stablecoinCategory.ts"
     ]
    }
   },
@@ -40912,6 +40931,14 @@
     "what": "T-418 closed (blocked → closed): GitHub withdrew the braces advisory on 2026-10-23, and #410 removed its exception (D156). The same PR moved undici to 7.30.1 and zod to 4.6.7 in frontend/, and zod, body-parser and fast-uri in mcp-server/, for advisories published that day. Counts recomputed: closed 227, blocked 5.",
     "evidence": [
      "docs/decisions/2026-10-24-owner-decisions.md"
+    ]
+   },
+   {
+    "on": "2026-10-24",
+    "what": "T-129 closed (open → closed): the owner answered the walkthrough's five choices (D157), all built in one PR: added coins priced live and filtered, stablecoins out of the Crypto Scanner, RSI setups stating their cut-off, the Macro Scanner on Run scan without the four Treasury yields, and stablecoin labels from CoinGecko's category. Counts recomputed: closed 228, open 13.",
+    "evidence": [
+     "docs/decisions/2026-10-24-owner-decisions.md",
+     "docs/assessments/screener-results-2026-10-24.md"
     ]
    }
   ]

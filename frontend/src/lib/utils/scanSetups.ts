@@ -32,6 +32,16 @@ export const SETUP_INPUTS: Readonly<Record<SetupKey, { needsRange?: true; needsV
   volatility_compression: {},
 }
 
+/**
+ * The RSI cut-offs the two RSI setups fire at. Wider than the 30/70 that the
+ * signal summary calls oversold and overbought, on purpose: a setup flags a turn
+ * that is starting, not one already at the extreme. Because the two numbers
+ * differ, each setup's text states its own cut-off (T-129 C, owner 2026-10-24),
+ * so "oversold" here can never be read as the summary's "below 30".
+ */
+export const OVERSOLD_SETUP_RSI = 38
+export const OVERBOUGHT_SETUP_RSI = 68
+
 /** The setups that read closing prices alone, in detector order. */
 export const SETUPS_FROM_CLOSES: readonly SetupKey[] = (Object.keys(SETUP_INPUTS) as SetupKey[])
   .filter((k) => !SETUP_INPUTS[k].needsRange && !SETUP_INPUTS[k].needsVolume)
@@ -59,16 +69,17 @@ function detectAll(candles: OhlcvCandle[]): DetectedSetup[] {
   const priorHigh = Math.max(...highs.slice(n - 21, n - 1))
   if (last > priorHigh) setups.push({ key: 'breakout', detail: `Closed above 20-bar high $${priorHigh.toLocaleString(undefined, { maximumFractionDigits: 2 })}` })
 
-  // Oversold bounce — RSI < 38 and turning up
+  // Oversold bounce — RSI under OVERSOLD_SETUP_RSI and turning up. One decimal
+  // in the text, because a whole number rounds 37.6 up to "RSI 38, under 38".
   const rsiVals = rsi(closes, 14)
   const rsiNow = rsiVals[n - 1]; const rsiPrev = rsiVals[n - 2]
-  if (rsiNow !== null && rsiNow < 38 && last > prev && (rsiPrev === null || rsiNow > rsiPrev)) {
-    setups.push({ key: 'oversold_bounce', detail: `RSI ${rsiNow.toFixed(0)} turning up off oversold` })
+  if (rsiNow !== null && rsiNow < OVERSOLD_SETUP_RSI && last > prev && (rsiPrev === null || rsiNow > rsiPrev)) {
+    setups.push({ key: 'oversold_bounce', detail: `RSI ${rsiNow.toFixed(1)}, under ${OVERSOLD_SETUP_RSI}, turning up` })
   }
 
-  // Overbought fade — RSI > 68 and rolling over (bearish counterpart)
-  if (rsiNow !== null && rsiNow > 68 && last < prev && (rsiPrev === null || rsiNow < rsiPrev)) {
-    setups.push({ key: 'overbought_fade', detail: `RSI ${rsiNow.toFixed(0)} rolling over from overbought` })
+  // Overbought fade — RSI over OVERBOUGHT_SETUP_RSI and rolling over (bearish counterpart)
+  if (rsiNow !== null && rsiNow > OVERBOUGHT_SETUP_RSI && last < prev && (rsiPrev === null || rsiNow < rsiPrev)) {
+    setups.push({ key: 'overbought_fade', detail: `RSI ${rsiNow.toFixed(1)}, over ${OVERBOUGHT_SETUP_RSI}, turning down` })
   }
 
   // MA cross — EMA20/EMA50 crossed within the last ~2 bars

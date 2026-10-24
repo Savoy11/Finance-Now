@@ -81,7 +81,7 @@ export function AssetTable({ assets, loading, total }: AssetTableProps) {
         sortable: true,
         accessor: (row) => (
           <span className="text-xs text-text-muted font-mono capitalize">
-            {ASSET_TYPE_LABELS[row.assetType] ?? row.assetType}
+            {row.typeLabel ?? ASSET_TYPE_LABELS[row.assetType] ?? row.assetType}
           </span>
         ),
       },
@@ -120,7 +120,9 @@ export function AssetTable({ assets, loading, total }: AssetTableProps) {
         header: 'Peg Dev',
         sortable: true,
         align: 'right',
-        accessor: (row) => row.assetType === 'layer1' ? (
+        // 'other' (an added Layer 2, meme coin…) has no peg, like a Layer 1:
+        // a dash for "does not apply", not N/A for "missing".
+        accessor: (row) => row.assetType === 'layer1' || row.assetType === 'other' ? (
           <span className="font-mono text-xs text-text-muted">—</span>
         ) : (
           <span className={clsx('font-mono text-xs', getPegDeviationColorClass(row.pegDeviationBps ?? row.pegDeviation))}>
@@ -175,7 +177,7 @@ export function AssetTable({ assets, loading, total }: AssetTableProps) {
         header: 'Reserve',
         sortable: true,
         align: 'right',
-        accessor: (row) => row.assetType === 'layer1' ? (
+        accessor: (row) => row.assetType === 'layer1' || row.assetType === 'other' ? (
           <span className="font-mono text-xs text-text-muted">—</span>
         ) : row.reserveRatio === null ? (
           <span className="font-mono text-xs text-text-muted">{NA_LABEL}</span>

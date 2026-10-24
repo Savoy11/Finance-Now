@@ -9,7 +9,7 @@ import {
   buildTechnicalRead, ema,
   type OhlcvCandle, type DetectedPattern, type SignalSummary,
 } from '../indicators'
-import { detectSetups } from '../scanSetups'
+import { detectSetups, OVERSOLD_SETUP_RSI, OVERBOUGHT_SETUP_RSI } from '../scanSetups'
 import { computeRiskReward } from '../riskReward'
 
 // Flat candle per value: open = high = low = close = v.
@@ -319,6 +319,23 @@ describe('detectSetups', () => {
     expect(keys(trigger)).toContain('oversold_bounce')
     const noBounce = series([...ramp(200, 147, 1), 146])
     expect(keys(noBounce)).not.toContain('oversold_bounce')
+  })
+
+  // T-129 C: the setups fire at 38/68 while the signal summary calls 30/70
+  // oversold and overbought, so each setup's text must state its own cut-off,
+  // and the reading it prints must sit on the right side of it.
+  it('oversold bounce and overbought fade state the cut-off they fired at', () => {
+    const bounce = detectSetups(series([...ramp(200, 147, 1), 147.5])).find((s) => s.key === 'oversold_bounce')
+    const m = bounce?.detail.match(/^RSI (\d+\.\d), under (\d+), turning up$/)
+    expect(m, bounce?.detail).toBeTruthy()
+    expect(Number(m![2])).toBe(OVERSOLD_SETUP_RSI)
+    expect(Number(m![1])).toBeLessThan(OVERSOLD_SETUP_RSI)
+
+    const fade = detectSetups(series([...ramp(100, 153, 1), 152.5])).find((s) => s.key === 'overbought_fade')
+    const f = fade?.detail.match(/^RSI (\d+\.\d), over (\d+), turning down$/)
+    expect(f, fade?.detail).toBeTruthy()
+    expect(Number(f![2])).toBe(OVERBOUGHT_SETUP_RSI)
+    expect(Number(f![1])).toBeGreaterThan(OVERBOUGHT_SETUP_RSI)
   })
 
   it('overbought fade: stretched RSI rolling over on a down close', () => {

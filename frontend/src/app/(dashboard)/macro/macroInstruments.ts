@@ -28,6 +28,12 @@ export interface MacroInstrument {
    * genuinely liquid ones and read as comparable.
    */
   liquid: boolean
+  /**
+   * A Treasury yield read off the official par curve (D3). No provider serves
+   * these symbols any history, so a candle request for one can never succeed;
+   * the scanner leaves them out and points to the Rates page (T-129 D).
+   */
+  curveYield: boolean
 }
 
 // The thin-market exclusion set lives with the catalog (one source of truth —
@@ -42,6 +48,7 @@ export const MACRO_INSTRUMENTS: MacroInstrument[] = [
     detailPath: `/macro/commodities/${c.slug}`,
     instrument: INSTRUMENT_BY_KEY[`${SEC_PREFIX}${c.symbol}`],
     liquid: !THINLY_TRADED_COMMODITIES.has(c.symbol),
+    curveYield: false,
   })),
   ...CURRENCY_CATALOG.map((c) => ({
     symbol: c.symbol,
@@ -52,6 +59,7 @@ export const MACRO_INSTRUMENTS: MacroInstrument[] = [
     // Majors and the index are deep; EM pairs and crosses quote thinly through
     // the provider and gap over local holidays.
     liquid: c.category === 'major' || c.category === 'index',
+    curveYield: false,
   })),
   ...RATES_CATALOG.map((r) => ({
     symbol: r.symbol,
@@ -60,14 +68,20 @@ export const MACRO_INSTRUMENTS: MacroInstrument[] = [
     detailPath: `/macro/rates/${r.slug}`,
     instrument: INSTRUMENT_BY_KEY[`${SEC_PREFIX}${r.symbol}`],
     liquid: true,
+    curveYield: r.quoteBasis === 'pct',
   })),
 ]
 
 export const BY_SYMBOL = new Map(MACRO_INSTRUMENTS.map((m) => [m.symbol, m]))
 export const GROUPS: MacroGroup[] = ['Commodities', 'Currencies', 'Bonds & Rates']
 
-/** Scanner universe — liquid only, and small enough to be one fetch per row. */
-export const SCANNER_INSTRUMENTS = MACRO_INSTRUMENTS.filter((m) => m.liquid)
+/**
+ * Scanner universe — liquid only, and small enough to be one fetch per row.
+ * The Treasury yields are liquid but have no candle source (D3), so they are
+ * listed apart rather than swept: four keyed requests that could never succeed.
+ */
+export const SCANNER_INSTRUMENTS = MACRO_INSTRUMENTS.filter((m) => m.liquid && !m.curveYield)
+export const CURVE_YIELD_INSTRUMENTS = MACRO_INSTRUMENTS.filter((m) => m.curveYield)
 
 
 /** Quote text honouring the instrument's own convention — never bare dollars. */
