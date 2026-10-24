@@ -2123,6 +2123,12 @@ newest release, and npm's suggested fix was a downgrade to `eslint-config-next` 
 `eslint-config-next` with the project's own lint config would remove the last path; it was offered
 and not chosen.
 
+**Removed on 2026-10-24 (D156): GitHub withdrew the advisory on 2026-10-23**, with no patched release
+ever published, so npm stopped reporting it and the gate warned that the entry was no longer needed.
+`audit-exceptions.json` lists none now, and T-418 is closed. The same day undici went to 7.30.1 and
+zod to 4.6.7 for two new high advisories (GHSA-xjj6-f33q-929c, GHSA-mrhx-c7xc-m3w5), both fixed
+within the ranges already allowed.
+
 ---
 
 ## Counts and lists in copy: derive them, never type them
