@@ -3910,7 +3910,7 @@
    "blocking_decision": null,
    "related_ids": [],
    "summary": "Result quality needs live IP-dependent data.",
-   "next_action": "The docs half is done: docs/ROADMAP.md's screener entry carries the steward notes of 2026-09-12 and 2026-09-21, which record what landed (the 2026-07-30 consistency pass, W3-5, the fee-impact column, the three section scanners). One thing is left: result quality, on the owner's machine with the dev server running: open /equities, /funds, /assets, /coin-discovery and the three scanners (/scanner, /equities/scanner, /macro/scanner), and for each write down what the default view returns and what one narrowed filter returns, before any default is changed. Read it beside docs/audits/live-data-audit-2026-10-17.md: on the free FMP plan the stock list and the outlier screen are the 79-name catalog, and macro prices are unserved, so a thin Macro Scanner is the data, not the screener. (The second thing once listed here, whether to bring back the coin list's minimum market cap and minimum liquidity inputs, is moot: the Coins page's stackable screener already has both, as \"Market cap\" and \"Volume ÷ market cap\". D139, 2026-10-19.)",
+   "next_action": "Owner: answer A to E in docs/assessments/screener-results-2026-10-24.md, \"For the owner to decide\": (A) coins added from Coin Discovery show the price saved when added; (B) stablecoins in the Crypto Scanner's results; (C) \"Oversold bounce\" fires below RSI 38 while the signal summary calls oversold below 30; (D) the Macro Scanner spends its 29 keyed requests on every visit, four of them Treasury yields no provider serves; (E) Coin Discovery labels stablecoins from their id. Then the session makes the chosen changes, each in a PR.",
    "sources": [
     {
      "file": "docs/ROADMAP.md",
@@ -3921,14 +3921,15 @@
    "progress": {
     "noted_on": "2026-09-21",
     "note": "STEWARD HALF DONE. docs/ROADMAP.md's screener entry carries a new dated block, 'Steward annotation, 2026-09-21 (T-129, second pass)', recording what has already landed so the remaining scope is understood to be result quality alone. The entry text, its unticked checkbox and an earlier 2026-09-12 annotation were all left untouched. Each of the five claimed-landed pieces was verified in the tree: W3-5 (full ranges + payers toggle on /equities) is live and deep-linked; the fee-impact work is live but is a COLUMN plus a null-safe sort, not a filter, and is recorded that way rather than repeating the item's wording; all three section scanners exist and are in the nav registry.",
-    "remaining_work": "Result quality on the owner's machine: drive the seven screens and record what each returns.",
+    "remaining_work": "The owner's answers to A to E in the 2026-10-24 write-up; then the chosen changes.",
     "corrections": [
      "The audit this item cites is MISFILED in its own citation. It names docs/audits/screener-consistency-2026-07-30.md, which does not exist; the document is at docs/assessments/screener-consistency-2026-07-30.md. That wrong path is almost certainly why the earlier 2026-09-12 annotation concluded the consistency pass had not happened. It did happen, on 2026-07-30.",
      "W3-2 IS THE PARTS-INVENTORY PATTERN IN MINIATURE, and docs/TASK-QUEUE.md:1627 reads as fully delivered. The min-liquidity filter code, the derived sort key, its tests and a rendered sortable column all exist, and the SORT works end to end — but the filter INPUT was removed along with the /assets screener bar on 2026-08-22, so that filter can never be switched on from the UI. The code documents this at AssetRegistryClient.tsx:137-141. Restoring the inputs is UI-only (the store fields and applyParams support already exist) but it is a product decision, not a bug fix.",
      "2026-09-26: the result-quality half is not separate work — D20 (2026-09-14) says the one-off agent-eval run \"closes T-001 and T-129’s result-quality half\". Preflight on 2026-09-26: dev server up, Anthropic key configured, egress clean (Charter AS11426, proxy:false hosting:false). `npm run agent-eval` (plan only) selected 11 of 11. The `--run` bills the owner’s key and is the owner’s to trigger; nothing here evaluated output.",
      "2026-10-17: THE AUDIT PRECONDITION IS MET. npm run audit ran on the owner's machine (residential Spectrum line, no proxy): 78 REAL, 4 FALLBACK, 9 UNCONFIGURED, 1 EMPTY, 0 FAIL (docs/audits/live-data-audit-2026-10-17.md). For the screeners: the Equity Scanner and the AI Outlier Scan cover the 79-name catalog (stock-universe and stock-outliers read FALLBACK, a paid plan, D21); the Crypto Scanner reads DefiLlama's closes (REAL); the Macro Scanner depends on macro price history, which the quote ladder does not serve (macro quotes unconfigured). REMAINING: drive /equities, /funds, /assets, /coin-discovery and the three scanner pages on the owner's machine and record what each returns before any default changes.",
      "2026-10-18: NEXT_ACTION REPLACED. It still asked for the ROADMAP.md annotation, which was written on 2026-09-21 (this entry's note), so it sent a session to redo finished work. Checked the same day: the 2026-09-21 note is in docs/ROADMAP.md, and the coin list's minimum market cap and liquidity inputs are still unreachable (AssetRegistryClient.tsx, the comment above anyFilter). D20 counted the agent-eval run toward this item's result-quality half; the 2026-10-17 run covered the two AI scans (the Equity Screener's outlier report and the Macro Screener), not the filter screens themselves, so the walkthrough above is still owed (docs/assessments/T6-agents-2026-10-17.md).",
-     "2026-10-19 (D139): THE TWO \"PARKED\" COIN FILTERS WERE NEVER MISSING. The stackable screener (lib/data/coinFilters.ts, the Coins page's Screener button) landed on 2026-08-22, after the screener bar was removed that morning, and carries both as rules: \"Market cap\" and \"Volume ÷ market cap\", the latter the same definition as the old min-liquidity field. The W3-2 correction above read the leftover store fields (minMarketCap, minLiquidityPct) and the comment beside them, and missed the screener; so did docs/ROADMAP.md. Asked why the session recommended leaving them off, it checked the page and found them there. The leftover fields and the old blockchain one are removed, the two liquidity tests now run through the screener rule, and the Matches card counts screener rules as filters (it had read \"no filters applied\" on a screened list)."
+     "2026-10-19 (D139): THE TWO \"PARKED\" COIN FILTERS WERE NEVER MISSING. The stackable screener (lib/data/coinFilters.ts, the Coins page's Screener button) landed on 2026-08-22, after the screener bar was removed that morning, and carries both as rules: \"Market cap\" and \"Volume ÷ market cap\", the latter the same definition as the old min-liquidity field. The W3-2 correction above read the leftover store fields (minMarketCap, minLiquidityPct) and the comment beside them, and missed the screener; so did docs/ROADMAP.md. Asked why the session recommended leaving them off, it checked the page and found them there. The leftover fields and the old blockchain one are removed, the two liquidity tests now run through the screener rule, and the Matches card counts screener rules as filters (it had read \"no filters applied\" on a screened list).",
+     "2026-10-24: THE WALKTHROUGH IS DONE, on the owner's machine (Spectrum, AS11426, no proxy), with the dev server on main at 2f6b6cd. Each of the seven screens' default view and one narrowed filter is recorded in docs/assessments/screener-results-2026-10-24.md, as counts and names, no prices. It found five bugs, fixed in #409: security-ohlcv answered fetch_failed with no reason (42 of 79 Equity Scanner rows were Tiingo 429 with FMP 402, while the page blamed a missing key; the route now returns each provider's answer and the scanner says it in words); the Crypto Scanner and the Technical Analysis picker matched coins by ticker, so DAI showed as \"DAI on PulseChain\" and MemeCore as \"Mantis\" (now by CoinGecko id); the Fund Registry's Risk profile filter emptied the list on any choice while D64 has the fund risk level off (now behind RISK_RATINGS_SHOWN); the Coins page's breadth card printed a count as a percentage (\"-33.00%\"); and the Equity Scanner counted setups before any scan had run. Five design questions (A to E) are left for the owner; no default was changed. One full Equity Scan cannot finish within an hour on the free Tiingo and FMP plans, a paid-plan question under D21."
     ],
     "evidence": [
      "docs/ROADMAP.md — the 2026-09-21 steward annotation",
@@ -3936,7 +3937,10 @@
      "frontend/src/app/(dashboard)/assets/AssetRegistryClient.tsx:137-141",
      "docs/audits/live-data-audit-2026-10-17.md",
      "docs/decisions/2026-10-19-owner-decisions.md",
-     "frontend/src/lib/data/coinFilters.ts"
+     "frontend/src/lib/data/coinFilters.ts",
+     "docs/assessments/screener-results-2026-10-24.md",
+     "frontend/src/lib/utils/ohlcvFailures.ts",
+     "frontend/src/lib/utils/catalogCoinMeta.ts"
     ]
    }
   },
@@ -14614,7 +14618,7 @@
    "progress": {
     "noted_on": "2026-10-15",
     "note": "Owner ruled (D123): build the parts that need no email now: single-use short-lived reset tokens stored hashed and never logged, a per-user must-reset flag checked at sign-in, and an owner command that forces resets or issues a link to hand over directly. The email provider is chosen at launch (D21).",
-    "remaining_work": "Build it (a PR of its own, with a migration). Sending by email waits for launch.",
+    "remaining_work": "Sending the link by email, at launch, once an email provider is chosen (D21).",
     "evidence": [
      "docs/decisions/2026-10-15-owner-decisions.md",
      "frontend/src/lib/auth/passwordReset.ts",
@@ -14624,7 +14628,8 @@
     "corrections": [
      "2026-10-15: BUILT, the parts that need no email (D123). npm run auth:reset -- --user <email> prints a one-time link (60 minutes, single use) for the owner to hand over; --force also refuses that account’s sign-in until it resets; --all --force does it for every account, the breach lever, paired with rotating AUTH_SECRET; --status lists who must reset. The link’s token travels after “#”, so it never reaches a server log or Referer header; only its SHA-256 is stored, and using it spends every other link for the account. Sign-in refuses a flagged account with its own code, and the login page says why. The flag and the tokens live in two new tables (migration 0008), never on users, so sign-in keeps working on a database not yet migrated; the reset route then answers 503 with the instruction (checked against the owner’s database the same day). The password rule is now shared with sign-up (passwordPolicy.ts). 26 tests in passwordReset.test.ts; nine guards driven red by mutations. REMAINING: the owner runs npm run db:migrate; sending the link by email waits for launch, when an email provider is chosen (D21).",
      "2026-10-17: MIGRATED. At the owner's request the session ran npm run db:migrate on the owner's machine (0008 applied), and npm run auth:reset -- --status then answered from the new tables (no account waiting on a forced reset). REMAINING: sending the link by email, at launch (D21); the item stays open for it.",
-     "2026-10-17: NEXT ACTION REWRITTEN. It still described the build, which is done (see above); it now says only what is left."
+     "2026-10-17: NEXT ACTION REWRITTEN. It still described the build, which is done (see above); it now says only what is left.",
+     "2026-10-24: remaining_work still read \"Build it (a PR of its own, with a migration)\", written before the build. The parts that need no email were built on 2026-10-15 (D123) and migration 0008 applied on 2026-10-17, as next_action already said; remaining_work now names only what is left, sending the link by email at launch."
     ]
    }
   },
@@ -14719,7 +14724,7 @@
    "progress": {
     "noted_on": "2026-10-15",
     "note": "Owner ruled (D122): the encryption key lives in a Windows user environment variable outside the OneDrive folder, a host secret at launch; AES-256-GCM, the file rewritten encrypted once, a missing key failing plainly.",
-    "remaining_work": "Build it (a PR of its own). Afterwards, rotate the stored keys: OneDrive’s version history keeps the old plain-text copies.",
+    "remaining_work": "When the owner revisits it: keep a backup copy of FN_SECRETS_KEY somewhere safe, then rotate the saved provider keys, whose old plain-text copies remain in OneDrive's version history.",
     "evidence": [
      "docs/decisions/2026-10-15-owner-decisions.md",
      "frontend/src/lib/server/secretBox.ts",
@@ -14728,7 +14733,8 @@
     "corrections": [
      "2026-10-15: BUILT. lib/server/secretBox.ts seals the whole of .provider-config.json with AES-256-GCM under FN_SECRETS_KEY (32 bytes, base64); providerConfigCodec.ts decides plain, sealed, unknown scheme or corrupt; providers.ts rewrites a plain file sealed the first time it reads it with the key set, and writes atomically. A file the store cannot read (sealed with no key or the wrong one, a malformed key, corrupt JSON) is never treated as empty and never written over: data routes fall back to environment keys, writes are declined and logged once, the Integrations page shows the reason and its save answers 409. This also ends a pre-existing loss: a corrupt file used to read as {} and the next save erased every key. Scripts read through scripts/lib/providerConfigFile.mjs, held to the app’s format by a test that seals with one and opens with the other. 23 tests in providerKeyStore.test.ts, on an in-memory file system; five guards driven red by mutations. REMAINING: the owner sets FN_SECRETS_KEY as a Windows user variable and restarts the server, so the file is sealed; then rotates the saved keys, since OneDrive’s version history keeps the old plain copies.",
      "2026-10-15 (later): KEY SET, STORE SEALED. At the owner’s request the session created FN_SECRETS_KEY as a Windows user variable (32 random bytes, never printed) and restarted the dev server with it; .provider-config.json was rewritten as the encrypted envelope, and all 10 saved keys read back before and after (11 once the CoinGecko key was added). SHELVED BY THE OWNER, for now: a backup copy of FN_SECRETS_KEY (no password manager to hand) and rotating the saved provider keys whose plain copies remain in OneDrive’s version history. Owner: “lets shelve this for now and revisit this later; Im ok with the slight security risk.” REMAINING: those two, when the owner revisits them; the item stays open for them.",
-     "2026-10-17: NEXT ACTION REWRITTEN. It still described the build, which is done (see above); it now says only what is left."
+     "2026-10-17: NEXT ACTION REWRITTEN. It still described the build, which is done (see above); it now says only what is left.",
+     "2026-10-24: remaining_work still read \"Build it (a PR of its own)\", written before the build. The encryption was built and the store sealed on 2026-10-15 (D122), and the owner shelved the rest that day, as next_action already said; remaining_work now names only what is left."
     ]
    }
   },
@@ -40878,6 +40884,13 @@
     "evidence": [
      "docs/decisions/2026-10-22-owner-decisions.md",
      "frontend/scripts/staking-facts-prefill.ts"
+    ]
+   },
+   {
+    "on": "2026-10-24",
+    "what": "T-129: the screener walkthrough done on the owner's machine, five bugs fixed in #409, five design questions (A to E) left for the owner. T-435 and T-437: remaining_work corrected, each still asking for a build finished on 2026-10-15. Dependabot #408 merged (2f6b6cd) and archived. No item changed status; counts unchanged.",
+    "evidence": [
+     "docs/assessments/screener-results-2026-10-24.md"
     ]
    }
   ]
