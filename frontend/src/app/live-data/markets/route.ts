@@ -3,6 +3,7 @@ import { ALL_COINGECKO_IDS, ASSET_ID_BY_COINGECKO, COINGECKO_IDS } from '@/lib/a
 import { getProviderKey, recordProviderFetch } from '@/lib/api/live/providers'
 import { coingeckoBase, coingeckoHeaders } from '@/lib/api/live/coingecko'
 import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
+import { parseExtraIds } from '@/lib/api/live/marketsExtra'
 
 // Server-side proxy for market data.
 // Supports multiple sources via ?source= query param:
@@ -25,9 +26,18 @@ import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 export const dynamic = 'force-dynamic'
 
 
-async function fetchCoinGecko(): Promise<Record<string, unknown>> {
+// `?extra=` (T-129 A): coins a user added from Coin Discovery, by CoinGecko id,
+// asked for in the same CoinGecko request as the catalog and returned apart as
+// `extraQuotes` (lib/api/live/marketsExtra.ts). CoinMarketCap answers by ticker,
+// which cannot be matched to a CoinGecko id safely, so a CMC-served response
+// carries none, and those coins show no price rather than a guessed one.
+
+type Fetched = { quotes: Record<string, unknown>; extraQuotes: Record<string, unknown> }
+
+async function fetchCoinGecko(extraIds: string[]): Promise<Fetched> {
+  const extra = new Set(extraIds)
   const params = new URLSearchParams({
-    vs_currency: 'usd', ids: ALL_COINGECKO_IDS.join(','),
+    vs_currency: 'usd', ids: [...ALL_COINGECKO_IDS, ...extraIds].join(','),
     order: 'market_cap_desc', per_page: '250', page: '1',
     sparkline: 'false', price_change_percentage: '24h,7d,30d',
   })
@@ -49,10 +59,13 @@ async function fetchCoinGecko(): Promise<Record<string, unknown>> {
     market_cap_rank: number | null
   }>
   const quotes: Record<string, unknown> = {}
+  const extraQuotes: Record<string, unknown> = {}
   for (const row of rows) {
     const assetId = ASSET_ID_BY_COINGECKO[row.id]
-    if (!assetId) continue
-    quotes[assetId] = {
+    // A catalog coin is keyed by its asset id; an added coin by its CoinGecko id.
+    const target = assetId ? quotes : extra.has(row.id) ? extraQuotes : null
+    if (!target) continue
+    target[assetId ?? row.id] = {
       price: row.current_price ?? null, marketCap: row.market_cap ?? null,
       volume24h: row.total_volume ?? null, priceChange24h: row.price_change_percentage_24h ?? null,
       circulatingSupply: row.circulating_supply ?? null,
@@ -71,10 +84,10 @@ async function fetchCoinGecko(): Promise<Record<string, unknown>> {
       marketCapRank: row.market_cap_rank ?? null,
     }
   }
-  return quotes
+  return { quotes, extraQuotes }
 }
 
-async function fetchCoinMarketCap(): Promise<Record<string, unknown>> {
+async function fetchCoinMarketCap(): Promise<Fetched> {
   const key = getProviderKey('coinmarketcap')
   if (!key) throw new Error('CoinMarketCap key not configured')
 
@@ -115,18 +128,19 @@ async function fetchCoinMarketCap(): Promise<Record<string, unknown>> {
       circulatingSupply: best.circulating_supply ?? null,
     }
   }
-  return quotes
+  return { quotes, extraQuotes: {} }
 }
 
 type SourceId = 'coingecko' | 'coinmarketcap'
 
-const FETCHERS: Record<SourceId, () => Promise<Record<string, unknown>>> = {
+const FETCHERS: Record<SourceId, (extraIds: string[]) => Promise<Fetched>> = {
   coingecko: fetchCoinGecko,
-  coinmarketcap: fetchCoinMarketCap,
+  coinmarketcap: () => fetchCoinMarketCap(),
 }
 
 export async function GET(request: NextRequest) {
   const source = request.nextUrl.searchParams.get('source') ?? 'coingecko'
+  const extraIds = parseExtraIds(request.nextUrl.searchParams.get('extra'))
 
   // Requested source first, then the others as fallbacks.
   const requested: SourceId = source === 'coinmarketcap' ? source : 'coingecko'
@@ -135,13 +149,15 @@ export async function GET(request: NextRequest) {
   for (let i = 0; i < chain.length; i++) {
     const src = chain[i]
     try {
-      const quotes = await FETCHERS[src]()
+      const { quotes, extraQuotes } = await FETCHERS[src](extraIds)
       if (Object.keys(quotes).length === 0) throw new Error(`${src} returned no quotes`)
-      recordProviderFetch(src, { count: Object.keys(quotes).length })
+      recordProviderFetch(src, { count: Object.keys(quotes).length + Object.keys(extraQuotes).length })
       return NextResponse.json({
         ok: true,
         updatedAt: new Date().toISOString(),
         quotes,
+        // Only when asked for, so the catalog-only response is unchanged.
+        ...(extraIds.length > 0 ? { extraQuotes } : {}),
         source: i === 0 ? src : `${src}-fallback`,
       })
     } catch (err) {

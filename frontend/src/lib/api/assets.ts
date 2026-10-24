@@ -4,6 +4,7 @@ import type { Asset, AssetDetail, AssetFilters, AssetSortConfig } from '@/types/
 import type { PaginatedResponse } from '@/types/api'
 import { fetchLiveMarkets } from './live/liveClient'
 import { buildLiveAssets, buildLiveAssetDetail } from './live/overlay'
+import { buildAddedCoinAssets, type AddedCoinRef } from './live/addedCoins'
 
 // Deliberately NOT `extends QueryParams`: that interface carries an index
 // signature (`[key: string]: string | number | boolean | undefined`) which no
@@ -26,6 +27,12 @@ export interface GetAssetsParams {
    * undefined technicals and lands in `untested`.
    */
   technicals?: Map<string, TechnicalRow>
+  /**
+   * Coins added from Coin Discovery (T-129 A). Priced in the same request as
+   * the catalog and merged in BEFORE every filter, sort and page, so the type
+   * chips, the screener and the totals treat them as they treat any coin.
+   */
+  addedCoins?: AddedCoinRef[]
   sortBy?: string
   sortDirection?: 'asc' | 'desc'
   page?: number
@@ -35,9 +42,10 @@ export interface GetAssetsParams {
 // Null-safe comparison: missing values always sort to the end regardless of
 // direction, so "N/A" rows don't masquerade as the smallest/largest value.
 /**
- * Null-safe comparison used by every sort on this surface. Exported so the
- * discovery-store merge in useAssetsWithStore orders its rows the same way,
- * instead of inventing a second comparator that disagrees at the edges.
+ * Null-safe comparison used by every sort on this surface. Exported so any
+ * other ordering of these rows uses the same comparator instead of inventing a
+ * second one that disagrees at the edges. (The discovery-store merge it was
+ * exported for now happens inside getAssets, before the sort: T-129 A.)
  */
 export function compareValues(av: unknown, bv: unknown, dir: number): number {
   const aMissing = av === null || av === undefined
@@ -146,13 +154,14 @@ export function applyParams(all: Asset[], params: GetAssetsParams): PaginatedRes
 export const assetsApi = {
   /** List assets: live quotes, optional screener rules, then sort and paginate. */
   getAssets: async (params: GetAssetsParams = {}): Promise<PaginatedResponse<Asset>> => {
-    const result = await fetchLiveMarkets()
+    const added = params.addedCoins ?? []
+    const result = await fetchLiveMarkets(added.map((c) => c.cgId))
     // CR-note-1 fix: fetchLiveMarkets swallows failures into {ok:false,
     // quotes:{}}, and building the catalog from empty quotes rendered a full
     // table of N/A prices — a dead upstream disguised as a quiet market.
     // Throwing lets React Query's isError branch show the error card + retry.
     if (!result.ok) throw new Error('Market data is unreachable — no live prices are available right now.')
-    const assets = buildLiveAssets(result.quotes)
+    const assets = [...buildLiveAssets(result.quotes), ...buildAddedCoinAssets(added, result.extraQuotes)]
     // Carry the serving rung through to the page. applyParams only sorts and
     // paginates, so without this the provenance dies at this boundary and the
     // page has nothing to name but a guess.

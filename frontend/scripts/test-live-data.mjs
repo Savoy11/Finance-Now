@@ -128,8 +128,10 @@ const cgPacer = createCoinGeckoPacer({
  *                                                      the audit ever passes
  *                                                      ?limit= above 250
  *                   + TOKENIZED_SECURITY_CATEGORIES  — 7 category pages (TS-3,
- *                     (lib/server/tokenizedSecurities)  2026-10-07), cached a day,
- *                                                      so 8 is a cold-cache bound
+ *                     (lib/server/tokenizedSecurities)  2026-10-07), cached a day
+ *                   + STABLECOIN_CATEGORY            — 1 category page (T-129 E,
+ *                     (lib/server/stablecoinCategory)   2026-10-24), cached a day,
+ *                                                      so 9 is a cold-cache bound
  *   ohlcv           /ohlc + /market_chart, together  — 2 per candle request since
  *                                                      the Binance rungs went
  *                                                      (T-423, 2026-10-13); a
@@ -140,7 +142,7 @@ const cgPacer = createCoinGeckoPacer({
  */
 const COINGECKO_CALL_WEIGHT = {
   '/live-data/coin-list': 3,
-  '/live-data/coin-discovery': 8,
+  '/live-data/coin-discovery': 9,
   '/live-data/ohlcv': 2,
 }
 const coinGeckoWeight = (t) => {
@@ -320,7 +322,10 @@ const tests = [
     // A partial check names its unanswered categories, so the run says why
     // instead of only that it happened (2026-10-17: it said "partial" and nothing else).
     const failed = Array.isArray(ts.failed) && ts.failed.length ? `: ${ts.failed.join('; ')}` : ''
-    return `${arr.length} candidates, ${ts.excluded.length} tokenized securities left out${ts.partial ? ` (partial check${failed})` : ''}`
+    const summary = `${arr.length} candidates, ${ts.excluded.length} tokenized securities left out${ts.partial ? ` (partial check${failed})` : ''}`
+    // T-129 E: stablecoin labels guessed from the id are the fallback, not a pass.
+    if (j.stablecoins && !j.stablecoins.checked) return fallback(`${summary}; stablecoin labels guessed (${j.stablecoins.error ?? 'category not read'})`)
+    return summary
   }},
 
   { group: 'crypto/market', path: '/live-data/assets/list', name: 'assets/list', check: (j) => {

@@ -24,6 +24,7 @@ import { COINGECKO_IDS } from '@/lib/api/live/coingeckoIds'
 import type { CoinListResponse } from '@/lib/types/coinList'
 import { catalogCoinMeta } from '@/lib/utils/catalogCoinMeta'
 import { ASSET_CATALOG } from '@/lib/data/assetCatalog'
+import { splitScannerUniverse } from '@/lib/data/scannerUniverse'
 
 // ─── Crypto Scanner ───────────────────────────────────────────────────────────
 //
@@ -46,6 +47,10 @@ import { ASSET_CATALOG } from '@/lib/data/assetCatalog'
 // every coin, so every row is judged on the same inputs whichever source served it.
 
 const SUPPORTED_IDS = Object.keys(COINGECKO_IDS)
+
+// T-129 B: stablecoins are not swept. Held at a peg, their drift read as setups
+// and Buy signals; the page names the coins it leaves out (scannerUniverse.ts).
+const { scanned: SCAN_IDS, pegged: PEGGED } = splitScannerUniverse(SUPPORTED_IDS)
 
 // TS-3: a tokenized security in the universe is still charted, but labelled for
 // what it is. The universe is the app's own catalog, so the catalog's assetType
@@ -162,10 +167,11 @@ function ScannerPanel() {
   const [filters, setFilters] = useState<ScannerFilters>({})
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [rows, setRows] = useState<ScanRow[]>(
-    () => SUPPORTED_IDS.map(id => ({ assetId: id, setups: [], signal: null, rsi14: null, vsSma50Pct: null, status: 'loading' as ScanStatus })),
+    () => SCAN_IDS.map(id => ({ assetId: id, setups: [], signal: null, rsi14: null, vsSma50Pct: null, status: 'loading' as ScanStatus })),
   )
   const [scanning, setScanning] = useState(false)
   const [done, setDone] = useState(0)
+  const [sweepSize, setSweepSize] = useState(SCAN_IDS.length)
   const [lastScan, setLastScan] = useState<Date | null>(null)
   // Credits the scan's prices require, from the responses that carried them (D108).
   const [credits, setCredits] = useState<RequiredCredit[]>([])
@@ -184,7 +190,7 @@ function ScannerPanel() {
   const filterResult = useMemo(() => {
     const quotes = marketsData?.quotes ?? {}
     return applyScannerFilters(
-      SUPPORTED_IDS,
+      SCAN_IDS,
       filters,
       (id: string) => {
         const q = quotes[id] ?? {}
@@ -216,6 +222,7 @@ function ScannerPanel() {
     setDone(0)
     setCredits([])
     const sweep = scanUniverseRef.current
+    setSweepSize(sweep.length)
     setRows(sweep.map(id => ({ assetId: id, setups: [], signal: null, rsi14: null, vsSma50Pct: null, status: 'loading' as ScanStatus })))
 
     await runPool(sweep, SCAN_CONCURRENCY, async (id) => {
@@ -315,7 +322,9 @@ function ScannerPanel() {
       return (a.meta?.rank ?? 9999) - (b.meta?.rank ?? 9999)
     })
 
-  const total = SUPPORTED_IDS.length
+  // The size of the sweep actually run, not of the catalog: with a filter on,
+  // the old catalog count left the progress bar short of full forever.
+  const total = sweepSize
 
   return (
     <div className="flex flex-col gap-4">
@@ -380,7 +389,7 @@ function ScannerPanel() {
             filtersActive ? 'bg-accent-blue/20 text-accent-blue border-accent-blue/30' : 'text-text-muted border-border hover:text-text-secondary hover:bg-bg-elevated')}
           title="Narrow the universe before scanning — fewer coins means a faster scan"
         >
-          Filters{filtersActive ? ` · ${scanUniverse.length}/${SUPPORTED_IDS.length}` : ''}
+          Filters{filtersActive ? ` · ${scanUniverse.length}/${SCAN_IDS.length}` : ''}
         </button>
 
         <button
@@ -425,7 +434,7 @@ function ScannerPanel() {
                 onChange={(e) => setFilters(f => ({ ...f, topN: e.target.value ? Number(e.target.value) : null }))}
                 className="w-full bg-bg-elevated border border-border rounded-lg px-2 py-1.5 text-xs text-text-primary focus:outline-hidden focus:border-accent-blue/40"
               >
-                <option value="">All {SUPPORTED_IDS.length}</option>
+                <option value="">All {SCAN_IDS.length}</option>
                 {[10, 25, 50].map(n => <option key={n} value={n}>Top {n} by rank</option>)}
               </select>
             </label>
@@ -471,7 +480,7 @@ function ScannerPanel() {
               Reset
             </button>
             <span className="text-text-secondary">
-              <strong className="text-text-primary">{scanUniverse.length}</strong> of {SUPPORTED_IDS.length} coins match
+              <strong className="text-text-primary">{scanUniverse.length}</strong> of {SCAN_IDS.length} coins match
             </span>
             {/* Never folded into the excluded count: nobody ran the test on these. */}
             {filterResult.unknown.length > 0 && (
@@ -496,7 +505,7 @@ function ScannerPanel() {
                 {i > 0 && ' · '}<strong className="text-text-secondary">{f.label}</strong> — {f.needs}
               </span>
             ))}
-            . This scanner sweeps a curated {SUPPORTED_IDS.length}-coin universe rather than the whole market,
+            . This scanner sweeps a curated {SCAN_IDS.length}-coin universe rather than the whole market,
             so those filters would have little to sift even with the data.
           </p>
         </div>
@@ -537,6 +546,12 @@ function ScannerPanel() {
           </span>
         ))}
         . The signal counts the {SIGNALS_FROM_CLOSES.size} indicator votes that read a close alone.
+        {PEGGED.length > 0 && (
+          <>
+            {' '}<strong className="text-text-secondary">{PEGGED.length} stablecoins are left out</strong>{' '}
+            ({PEGGED.map(p => p.symbol).join(', ')}): held at a peg, their small drift would read as setups and signals, not a trend.
+          </>
+        )}
       </p>
 
       {!scanning && filtered.length === 0 && (
@@ -629,10 +644,11 @@ function CryptoScannerInner() {
       <PageHeader
         title="Crypto Scanner"
         subtitle="Sweep every tracked coin for technical setups"
-        description={`Scans the whole monitored universe on the selected timeframe for ${listWords(SETUPS_FROM_CLOSES.map(k => SETUP_META[k].phrase))}, read from each coin’s closing prices. Rescan manually or leave auto-refresh on.`}
+        description={`Scans every tracked coin except stablecoins on the selected timeframe for ${listWords(SETUPS_FROM_CLOSES.map(k => SETUP_META[k].phrase))}, read from each coin’s closing prices. Rescan manually or leave auto-refresh on.`}
         details={[
           { label: 'What it is', text: 'A discovery tool: it looks across assets to find candidates. Technical Analysis is the other half — it charts the one asset you picked.' },
           { label: 'Setups', text: `${SETUPS_FROM_CLOSES.length} detectors run per asset on its closing prices, one per period. ${listWords(SETUPS_NOT_RUN.map(s => s.label))} need each period’s high or its volume, which closing prices do not carry, so they are not run. A setup is a pattern the data shows, not a view on whether to trade it.` },
+          { label: 'Stablecoins', text: `The ${PEGGED.length} stablecoins in the catalog are not scanned. A coin held at its peg, a dollar or a euro or another currency, has no trend for a setup to describe, and its tiny drift otherwise filled the results.` },
           { label: 'Timeframes', text: '4H, 1D and 1W. The detectors read the same way on each; only the spacing changes. A coin whose prices come back at another spacing is left out and counted, not scanned as if it were the one you picked.' },
         ]}
       />
