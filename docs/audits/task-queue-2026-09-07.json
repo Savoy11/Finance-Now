@@ -62,10 +62,10 @@
   "total_verified": 398,
   "outstanding": 381,
   "by_status": {
-   "closed": 226,
+   "closed": 227,
    "parked": 135,
    "open": 14,
-   "blocked": 6
+   "blocked": 5
   },
   "by_owner_role": {
    "remote-dev": 93,
@@ -74,8 +74,8 @@
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 226,
-  "counts_recomputed_on": "2026-10-19",
+  "closed_by_annotation": 227,
+  "counts_recomputed_on": "2026-10-24",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 381
  },
@@ -13763,7 +13763,7 @@
   {
    "id": "T-418",
    "title": "Remove the braces audit exception once a fix ships, or decide again by 2027-01-14",
-   "status": "blocked",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "either",
    "category": "security",
@@ -13771,7 +13771,8 @@
    "blocking_decision": "Has npm started reporting a fix for GHSA-vfj7-8cjw-p6xm that needs no major upgrade (most likely a braces 3.0.4), or has the D111 exception reached its 2027-01-14 expiry, when the owner decides again?",
    "related_ids": [
     "D53",
-    "D111"
+    "D111",
+    "D156"
    ],
    "summary": "D53 (2026-10-03) allowed one advisory in the CI dependency audit: GHSA-vfj7-8cjw-p6xm, a high-severity crash in braces 3.0.3 and earlier, which has no patched release. D111 (2026-10-14) renewed it until 2027-01-14. braces now reaches this app only through eslint-config-next (via @next/eslint-plugin-next, fast-glob and micromatch), which runs it on ESLint’s file globs written in the repo; Tailwind 4 no longer depends on it. The exception ends on its own, and the Security Scan goes red again, on whichever comes first: npm reports a fix short of a major upgrade, or 2027-01-14 passes.",
    "next_action": "When the Security Scan goes red on GHSA-vfj7-8cjw-p6xm, or by 2027-01-14: in frontend/, run `npm run deps:check`. If it says a fix is available, run `npm audit fix` (no `--force`), confirm `npm run deps:check` passes, then remove the braces entry from frontend/audit-exceptions.json by hand and update CLAUDE.md’s Dependency audit section. If no fix exists by the expiry, put the choice to the owner again: a new dated exception under a new decision (never an edited expiry), or replacing eslint-config-next with the project’s own lint config, which removes the last path braces comes in by.",
@@ -13809,6 +13810,19 @@
     "evidence": [
      "frontend/audit-exceptions.json",
      "docs/decisions/2026-10-14-owner-decisions.md"
+    ]
+   },
+   "closure": {
+    "status_was": "blocked",
+    "closed_on": "2026-10-24",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "The exception is gone. GitHub withdrew GHSA-vfj7-8cjw-p6xm on 2026-10-23 with no patched release ever published, so npm stopped reporting it and `npm run deps:check` warned that the entry was no longer needed: neither of the two ends the blocking question named (a fix short of a major upgrade, or the 2027-01-14 expiry). The braces entry was removed from frontend/audit-exceptions.json, which lists none, in #410 (D156), and CLAUDE.md's Dependency audit section and the CI step's comment record it. If GitHub restores the advisory, the gate goes red again and a new decision is owed, as for any new advisory.",
+    "approved_by": "owner, 2026-10-24: chose \"Bump first, then merge #409 (Recommended)\", which included removing the braces exception and recording it",
+    "evidence": [
+     "docs/decisions/2026-10-24-owner-decisions.md",
+     "frontend/audit-exceptions.json",
+     "CLAUDE.md"
     ]
    }
   },
@@ -40891,6 +40905,13 @@
     "what": "T-129: the screener walkthrough done on the owner's machine, five bugs fixed in #409, five design questions (A to E) left for the owner. T-435 and T-437: remaining_work corrected, each still asking for a build finished on 2026-10-15. Dependabot #408 merged (2f6b6cd) and archived. No item changed status; counts unchanged.",
     "evidence": [
      "docs/assessments/screener-results-2026-10-24.md"
+    ]
+   },
+   {
+    "on": "2026-10-24",
+    "what": "T-418 closed (blocked → closed): GitHub withdrew the braces advisory on 2026-10-23, and #410 removed its exception (D156). The same PR moved undici to 7.30.1 and zod to 4.6.7 in frontend/, and zod, body-parser and fast-uri in mcp-server/, for advisories published that day. Counts recomputed: closed 227, blocked 5.",
+    "evidence": [
+     "docs/decisions/2026-10-24-owner-decisions.md"
     ]
    }
   ]
