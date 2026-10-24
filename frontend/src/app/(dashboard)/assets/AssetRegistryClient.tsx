@@ -252,8 +252,9 @@ export function AssetRegistryClient() {
                   </span>
                 )
               }
-              trend={kpi.breadthKnown === 0 ? undefined : kpi.advancers - kpi.decliners}
-              subtitle="advancers vs decliners"
+              // No `trend`: MetricCard prints it as a percentage, and advancers minus
+              // decliners is a count, so 21 up and 54 down read "-33.00%" (T-129, 2026-10-24).
+              subtitle={kpi.breadthKnown === 0 ? 'advancers vs decliners' : `advancers vs decliners, of ${kpi.breadthKnown} with a 24h change`}
               accentColor="#14b8a6"
             />
             <MetricCard

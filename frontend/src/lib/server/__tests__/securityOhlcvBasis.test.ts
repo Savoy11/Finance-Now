@@ -78,3 +78,30 @@ describe('security-ohlcv on a dividend payer', () => {
     expect(body.basis).toBe('unknown')
   })
 })
+
+// T-129, 2026-10-24: an Equity Scan on the owner's machine came back with 42 of 79 symbols
+// empty and no reason, while the page blamed a missing key. Both keys were set: Tiingo had
+// answered 429 and FMP 402. The route now says which, in the order it tried them.
+describe('security-ohlcv when every provider fails', () => {
+  it('names each provider tried and why, in ladder order', async () => {
+    const body = await served(['tiingo', 'fmp'], (url) => (url.includes('tiingo') ? json({}, 429) : json({}, 402)))
+    expect(body.ok).toBe(false)
+    expect(body.error).toBe('fetch_failed')
+    expect(body.failures).toEqual(['tiingo: Tiingo 429', 'fmp: FMP 402'])
+  })
+
+  it('never returns a key that a failure message carried', async () => {
+    ladder.ids = ['tiingo']
+    fetchMock.mockImplementation(() => Promise.reject(new Error('connect failed for https://api.tiingo.com/x?startDate=1&token=test-tiingo-key')))
+    const { GET } = await import('@/app/live-data/security-ohlcv/route')
+    const body = await (await GET(new NextRequest('http://localhost/live-data/security-ohlcv?symbol=XYZ&range=1Y'))).json()
+    expect(JSON.stringify(body)).not.toContain('test-tiingo-key')
+    expect(body.failures[0]).toMatch(/^tiingo: connect failed .*token=…$/)
+  })
+
+  it('sends no failures when nothing is configured, since nothing was tried', async () => {
+    const body = await served([], () => json({}, 500))
+    expect(body.error).toMatch(/^no_provider_configured/)
+    expect(body.failures).toBeUndefined()
+  })
+})

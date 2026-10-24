@@ -20,6 +20,7 @@ import { SECTOR_INFO } from '@/lib/data/equityCatalog'
 import { formatCompact, formatCurrency, formatPercent } from '@/lib/utils/format'
 import { STALE_TIME_SHORT } from '@/lib/constants'
 import { useScreenerUrl } from '@/lib/hooks/useScreenerUrl'
+import { RISK_RATINGS_SHOWN } from '@/lib/risk/visibility'
 import type { SecurityQuotesResponse } from '@/app/live-data/security-quotes/route'
 import type { SecurityReturnsResponse } from '@/app/live-data/security-returns/route'
 import type { DiscoveredFund, FundUniverseEntry, FundUniverseResponse } from '@/app/live-data/fund-universe/route'
@@ -222,7 +223,9 @@ export function FundsClient() {
       if (p.issuer) setIssuer(p.issuer)
       if (p.style === 'index' || p.style === 'active') setStyle(p.style)
       if (p.industry) setIndustry(p.industry)
-      if (p.risk && (p.risk === 'all' || p.risk in FUND_RISK_INFO)) setRiskLevel(p.risk as FundRiskLevel | 'all')
+      // While the fund risk level is switched off (D64) an old ?risk= link is ignored,
+      // so it shows every fund rather than none.
+      if (RISK_RATINGS_SHOWN && p.risk && (p.risk === 'all' || p.risk in FUND_RISK_INFO)) setRiskLevel(p.risk as FundRiskLevel | 'all')
       if (p.strategy && (p.strategy === 'all' || p.strategy in FUND_STRATEGY_INFO)) setStrategy(p.strategy as FundStrategy | 'all')
       if (p.curated === '1') setCuratedOnly(true)
       if (p.q) setSearch(p.q)
@@ -597,6 +600,10 @@ export function FundsClient() {
                 {industries.map((i) => <option key={i} value={i}>{i}</option>)}
               </select>
             </div>
+            {/* The fund risk level is switched off (D64), and /live-data/fund-universe
+                sends no riskLevel while it is, so this filter emptied the list on any
+                choice (T-129, 2026-10-24). It returns with the switch. */}
+            {RISK_RATINGS_SHOWN && (
             <div>
               <p className="text-[11px] text-text-muted mb-1">Risk profile</p>
               <select
@@ -610,6 +617,7 @@ export function FundsClient() {
                 ))}
               </select>
             </div>
+            )}
             <div>
               <p className="text-[11px] text-text-muted mb-1">Strategy</p>
               <select
@@ -625,7 +633,7 @@ export function FundsClient() {
               </select>
             </div>
             <p className="text-[10px] text-text-muted/80 leading-relaxed">
-              Risk profile is derived from category + strategy (leveraged/inverse and crypto rank Speculative).
+              {RISK_RATINGS_SHOWN && <>Risk profile is derived from category + strategy (leveraged/inverse and crypto rank Speculative).{' '}</>}
               Classification screens cover the curated set; non-catalog funds are excluded while one is set.
             </p>
           </FilterGroup>

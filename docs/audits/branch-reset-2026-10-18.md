@@ -468,3 +468,24 @@ closing, `archive-branch.yml` was run by hand (`workflow_dispatch`, run 39867978
 the remote. The branch itself was left alone; GitHub's `refs/pull/398/head` also holds the commit.
 
 Nothing was deleted; no other ref moved.
+
+## Twenty-ninth reset, after PR #406 (2026-10-24)
+
+**What was done.** After PR #406 (the ledger pass for D149–D155) was squash-merged into `main` as
+`7404ed6`, and Dependabot's #408 after it as `2f6b6cd`, the branch was restarted from `2f6b6cd` on
+the owner's machine for the screener walkthrough (T-129). Pushed with `--force-with-lease`, for the
+same reason as above.
+
+**Where the prior state lives.** The branch's previous tip, `3cf7b57` (#406's last commit, the merge
+of `main` that `gh pr update-branch` added), is held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@3cf7b57`, created by
+  `.github/workflows/archive-branch.yml` when #406 merged, and checked on the remote before the
+  restart;
+- GitHub's `refs/pull/406/head`;
+- its content in `main` as `7404ed6`.
+
+#408's branch was archived the same way when it merged:
+`archive/dependabot/npm_and_yarn/mcp-server/ip-address-10.7.4` → `8243fdd`, checked on the remote.
+
+Nothing was deleted; no other ref moved.
