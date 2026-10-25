@@ -705,3 +705,21 @@ held by:
 - its content in `main` as `b1ff8bd`.
 
 Nothing was deleted; no other ref moved.
+
+## Forty-second reset, after PR #422 (2026-10-25)
+
+**What was done.** After PR #422 (D168, filed fund assets re-read against their newest SEC
+filings) was squash-merged into `main` as `cb2908f`, the branch was restarted from `cb2908f` on the
+owner's machine to record D169: a staking rate read as 0 is no rate, on the page as in the fallback
+refresh. Pushed with `--force-with-lease`, for the same reason as above.
+
+**Where the prior state lives.** The branch's previous tip, `593cd19` (#422's only commit), is
+held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@593cd19`, created by
+  `.github/workflows/archive-branch.yml` when #422 merged, and checked on the remote before the
+  restart;
+- GitHub's `refs/pull/422/head`;
+- its content in `main` as `cb2908f`.
+
+Nothing was deleted; no other ref moved.
