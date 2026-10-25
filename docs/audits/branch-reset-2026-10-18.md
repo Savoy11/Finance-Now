@@ -563,3 +563,20 @@ held by:
 - its content in `main` as `4b534d9`.
 
 Nothing was deleted; no other ref moved.
+
+## Thirty-fourth reset, after PR #414 (2026-10-24)
+
+**What was done.** After PR #414 (D160, T-437 closed) was squash-merged into `main` as `2614b96`,
+the branch was restarted from `2614b96` on the owner's machine to apply D161, wording fixes on 34
+parked items. Pushed with `--force-with-lease`, for the same reason as above.
+
+**Where the prior state lives.** The branch's previous tip, `2cc100e` (#414's only commit), is
+held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@2cc100e`, created by
+  `.github/workflows/archive-branch.yml` when #414 merged, and checked on the remote before the
+  restart;
+- GitHub's `refs/pull/414/head`;
+- its content in `main` as `2614b96`.
+
+Nothing was deleted; no other ref moved.
