@@ -4,7 +4,6 @@ import {
   computeBacktestResults, summarizeBacktest, validateHoldings, getDiversificationWarnings,
   type Portfolio, type PortfolioHolding,
 } from '../portfolioUtils'
-import { getEquity } from '../equityCatalog'
 import { getFund } from '../fundCatalog'
 
 const holding = (over: Partial<PortfolioHolding>): PortfolioHolding => ({
@@ -226,7 +225,9 @@ describe('computeMetrics', () => {
 
 describe('computeAnnualIncome', () => {
   const spyYield = getFund('SPY')?.yieldPct ?? 0
-  const aaplYield = getEquity('AAPL')?.dividendYieldPct ?? 0
+  // D167: a stock's yield is its SEC dividends per share over the live price.
+  const aaplDps = new Map([['AAPL', 1.02]])
+  const aaplYield = (1.02 / 255) * 100
 
   it('projects income from reference yields over security values', () => {
     const p = portfolio([holding({ cgId: 'sec:SPY', symbol: 'SPY', name: 'SPY', targetAlloc: 100 })])
@@ -242,7 +243,7 @@ describe('computeAnnualIncome', () => {
       holding({ cgId: 'bitcoin', targetAlloc: 50 }),
     ])
     // Bitcoin unpriced on purpose: it is not a security, so it is not "left out" either.
-    const est = computeAnnualIncome(computeHoldings(p, { 'sec:AAPL': 255 }))
+    const est = computeAnnualIncome(computeHoldings(p, { 'sec:AAPL': 255 }), aaplDps)
     expect(est.covered).toBe(1)
     expect(est.unpriced).toBe(0)
     expect(est.income).toBeCloseTo(5_000 * aaplYield / 100, 6)
@@ -266,11 +267,16 @@ describe('computeAnnualIncome', () => {
       holding({ cgId: 'sec:SPY', symbol: 'SPY', targetAlloc: 75 }),
       holding({ cgId: 'sec:AAPL', symbol: 'AAPL', name: 'Apple', targetAlloc: 25 }),
     ])
-    const est = computeAnnualIncome(computeHoldings(p, { 'sec:SPY': 640 }))
+    const est = computeAnnualIncome(computeHoldings(p, { 'sec:SPY': 640 }), aaplDps)
     expect(est.covered).toBe(1)
     expect(est.unpriced).toBe(1)
     expect(est.income).toBeCloseTo(7_500 * spyYield / 100, 6)
     expect(est.pricedPct).toBeCloseTo(75, 6)
+  })
+
+  it('D167: a stock with no SEC dividend figure counts as having no yield on record', () => {
+    const p = portfolio([holding({ cgId: 'sec:AAPL', symbol: 'AAPL', targetAlloc: 100 })])
+    expect(computeAnnualIncome(computeHoldings(p, { 'sec:AAPL': 255 }))).toEqual({ income: 0, covered: 0, unpriced: 0, pricedPct: 100 })
   })
 
   it('income scales with current value when P&L is known', () => {

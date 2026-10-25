@@ -2,12 +2,14 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { clsx } from 'clsx'
-import { Calculator } from 'lucide-react'
+import { Calculator, ExternalLink } from 'lucide-react'
 import { ExplainedLabel } from '@/components/ui/ExplainedLabel'
 import { STALE_TIME_LONG } from '@/lib/constants'
 import { formatCompact, formatCompactNumber, formatCurrency, formatRatio } from '@/lib/utils/format'
 import { computeValuationMultiples } from '@/lib/utils/companyRatios'
 import type { CompanyFactsResponse } from '@/app/live-data/company-facts/route'
+import { getEquity } from '@/lib/data/equityCatalog'
+import { perShareFrom, stockFigures, stockFiguresLink, yieldText } from '@/lib/data/stockPerShare'
 
 // Financial ratios & metrics computed from SEC EDGAR XBRL company facts
 // (audited filings). Valuation multiples combine those fundamentals with the
@@ -28,6 +30,8 @@ type Row = {
   ref?: boolean
   /** Signed fraction rendered as a colored YoY chip, e.g. 0.06 → "+6.0% YoY" */
   growth?: number | null
+  /** Where the figure comes from (D167: the SEC filings, beside P/E and yield). */
+  link?: { href: string; text: string; title: string }
 }
 
 const dash = '—'
@@ -66,14 +70,25 @@ export function FinancialRatios({ symbol, price, priceIsLive }: FinancialRatiosP
       : 'Profit per share for the fiscal year, as filed. The basis (basic or diluted) is not identified in this registrant’s facts.'
   const peLabel = epsBasis === 'basic' ? 'P/E (FY, basic)' : epsBasis === 'diluted' ? 'P/E (FY, diluted)' : 'P/E (FY)'
 
+  // D167: the dividend yield by the registry's rule (a dividend counts only for the same
+  // fiscal year as the earnings), and a link to the SEC filings beside it and the P/E.
+  const perShare = f ? perShareFrom({
+    ...(f.eps != null && f.epsPeriodEnd ? { [epsBasis === 'basic' ? 'epsBasic' : 'epsDiluted']: { val: f.eps, end: f.epsPeriodEnd } } : {}),
+    ...(f.dividendsPerShare != null && f.dividendsPerShareEnd ? { dpsDeclared: { val: f.dividendsPerShare, end: f.dividendsPerShareEnd } } : {}),
+  }, getEquity(symbol)?.dividendYieldPct === null) : null
+  const yieldFig = yieldText(stockFigures(perShare, price))
+  const secLink = stockFiguresLink(symbol)
+
   const groups: Array<{ title: string; rows: Row[] }> = f && ra ? [
     {
       title: 'Valuation',
       rows: [
         { label: 'Market Cap', value: usd(marketCap), ref: !priceIsLive,
           explain: 'The total value the market puts on the company (share price × shares outstanding). It sets the company’s size class — mega, large, mid cap — and its weight in indexes.' },
-        { label: peLabel, value: times(pe), ref: !priceIsLive,
+        { label: peLabel, value: times(pe), ref: !priceIsLive, link: secLink,
           explain: 'How many dollars you pay for $1 of annual profit. A high P/E means the market expects strong growth; a low one can signal a bargain — or a business in trouble. Only meaningful vs. peers and history. Blank for a loss-making company: a negative multiple is a category error, not a cheap stock.' },
+        { label: 'Dividend yield (FY)', value: yieldFig.value === '—' ? dash : yieldFig.value, ref: !priceIsLive && yieldFig.value.endsWith('%'), link: secLink,
+          explain: yieldFig.explain },
         { label: 'Price / Sales', value: times(ps), ref: !priceIsLive,
           explain: 'Market cap per dollar of revenue. Useful when earnings are thin or negative, where P/E breaks down. Compare within the same industry — software commands far higher P/S than retail.' },
         { label: 'Price / Book', value: times(pb), ref: !priceIsLive,
@@ -164,13 +179,19 @@ export function FinancialRatios({ symbol, price, priceIsLive }: FinancialRatiosP
             <div key={title}>
               <h3 className="text-[11px] font-medium uppercase tracking-wide text-text-muted mb-2">{title}</h3>
               <dl className="space-y-2">
-                {rows.map(({ label, value, explain, ref, growth }) => (
+                {rows.map(({ label, value, explain, ref, growth, link }) => (
                   <div key={label} className="flex items-baseline justify-between gap-2 text-sm">
                     <dt className="text-text-muted text-xs">
                       <ExplainedLabel label={label} explain={explain} />
                     </dt>
                     <dd className="font-mono tabular-nums text-text-primary text-right">
                       {value}
+                      {link && (
+                        <a href={link.href} target="_blank" rel="noopener noreferrer" title={link.title}
+                          className="ml-1.5 inline-flex items-center align-middle font-sans text-[10px] text-accent-blue hover:underline">
+                          {link.text} <ExternalLink size={9} className="ml-0.5" aria-hidden />
+                        </a>
+                      )}
                       {ref && value !== dash && (
                         <span className="ml-1 text-[9px] text-amber-400/70 align-top font-sans" title="Uses reference price — live quote unavailable">ref</span>
                       )}

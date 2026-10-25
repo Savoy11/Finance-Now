@@ -14,13 +14,17 @@
  * - each fund asset figure read from the fund's own page, a quarter after its date;
  * - each fund asset figure from an SEC filing, once a newer quarter's filing is due out;
  * - every provenance clock `npm run staleness:check` discovers (staking facts, the fee table,
- *   stablecoin issuers, FOMC dates, site terms…), on the date it fires.
+ *   stablecoin issuers, FOMC dates, site terms…), on the date it fires;
+ * - with `--sec` (D167), each catalog stock's P/E and yield: worked out daily from its SEC
+ *   annual report, so nothing is re-read by hand, but a stock whose latest annual figures are
+ *   older than a year and a quarter, or missing, is listed so a stale or absent figure is seen.
  *
  * It reads no website and changes nothing. Pure: the catalog, the clocks and `now` are
  * parameters, so the tests run it on fixtures. It never fails on a figure being due: being
  * due is the reminder, and withholding is the fund page's job, not this report's.
  */
 
+import type { StockPerShare } from '../../src/lib/data/stockPerShare'
 import { fundShownYield, YIELD_CHECK_AFTER_DAYS, YIELD_SHOWN_FOR_DAYS, type FundEntry } from '../../src/lib/data/fundCatalog'
 
 const DAY_MS = 86_400_000
@@ -32,12 +36,18 @@ export const ACCURACY_HORIZON_DAYS = 21
  * a quarter plus 60 days after its own period end.
  */
 export const FILED_FIGURE_DUE_DAYS = 92 + 60
+/**
+ * A stock's figures are for its latest fiscal year. The next annual report's figures reach the
+ * SEC's data within about 75 days of the next year end (large filers file in 60), so they fall
+ * due a year and 75 days after the current ones' period end.
+ */
+export const STOCK_FIGURES_DUE_DAYS = 365 + 75
 
 export type AccuracyStatus = 'ok' | 'soon' | 'due' | 'withheld'
 
 export interface AccuracyRow {
   /** Which group of figures: one per re-read command. */
-  group: 'fund-yield' | 'fund-assets-page' | 'fund-assets-filed' | 'clock'
+  group: 'fund-yield' | 'fund-assets-page' | 'fund-assets-filed' | 'stock-per-share' | 'clock'
   /** What is posted: a fund symbol, or a clock's table. */
   item: string
   /** The date the figure was read, or the clock's anchor. */
@@ -96,6 +106,26 @@ export function fundRows(catalog: readonly CatalogFund[], nowMs: number): Accura
   return rows
 }
 
+/**
+ * One row per catalog stock (D167): due when its SEC figures should have moved to a newer
+ * fiscal year. A stock with no usable earnings figure is listed as due, with a note, since
+ * every page shows a dash for it; one whose dividend is not in the data says so too.
+ */
+export function stockRows(perShare: ReadonlyMap<string, StockPerShare>, nowMs: number): AccuracyRow[] {
+  const today = iso(floorDay(nowMs))
+  return [...perShare].map(([symbol, ps]) => {
+    if (!ps.asOf) {
+      return { group: 'stock-per-share' as const, item: symbol, asOf: 'none', dueOn: today, status: 'due' as const, days: 0,
+        note: 'no usable earnings figure in the SEC data: P/E and yield show a dash' }
+    }
+    const dueOn = addDays(ps.asOf, STOCK_FIGURES_DUE_DAYS)
+    return {
+      group: 'stock-per-share' as const, item: symbol, asOf: ps.asOf, dueOn, ...statusOf(dueOn, nowMs),
+      ...(ps.dividend === 'unknown' ? { note: 'dividend not in the SEC data: yield shows a dash' } : {}),
+    }
+  })
+}
+
 /** A provenance clock, as `staleness:check` discovers it. */
 export interface ClockInput {
   file: string
@@ -133,6 +163,10 @@ export const REREAD_STEPS: Record<AccuracyRow['group'], string[]> = {
   'fund-assets-filed': [
     'npm run fund-facts on the owner’s machine (SEC filings, keyless; reports, never writes), then apply the newer period by PR.',
   ],
+  'stock-per-share': [
+    'Worked out each day from the company’s SEC annual report: nothing to re-read by hand.',
+    'A row due means the SEC data has no newer annual report for that company yet (late filing, or a changed tag): open its filings, linked beside its figures, and say whether to look closer.',
+  ],
   clock: [
     'Re-verify the table as a whole and move its date, or record a STALENESS-ACK; npm run staleness:check gives the detail.',
   ],
@@ -158,6 +192,7 @@ const GROUP_TITLES: Record<AccuracyRow['group'], string> = {
   'fund-yield': 'Fund yields shown (read from the fund’s own page; re-read each quarter)',
   'fund-assets-page': 'Fund net assets read from the fund’s own page',
   'fund-assets-filed': 'Fund net assets from SEC filings',
+  'stock-per-share': 'Stock P/E and dividend yield (from each company’s SEC annual report)',
   clock: 'Hand-kept tables with a provenance clock',
 }
 

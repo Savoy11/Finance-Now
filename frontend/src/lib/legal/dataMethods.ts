@@ -67,6 +67,16 @@ export const DATA_METHODS: readonly MethodSection[] = [
     ],
   },
   {
+    id: 'stock-pe-yield',
+    title: 'Stock P/E and dividend yield',
+    decided: '2026-10-25',
+    paragraphs: [
+      'A stock’s P/E is its price divided by its earnings per share for its latest fiscal year (diluted, or basic where the company reports no diluted figure). Its dividend yield is the dividends per share for that same fiscal year divided by its price. Both per-share figures come from the company’s own SEC annual report, and each figure shows the fiscal year it is for.',
+      'The price is the live quote where the page has one; otherwise a stored reference price, marked “ref”. Screens and sorts on the Stock Registry use the reference price, so they cover every stock at once.',
+      'A dividend counts only when it is for the same fiscal year as the earnings, so a dividend a company has since stopped is never shown as a current yield. A company that lost money shows “Loss” for its P/E. Where the SEC data has no usable figure, the page shows a dash, never a guess. A link beside each figure opens the company’s SEC filings.',
+    ],
+  },
+  {
     id: 'fund-costs',
     title: 'Fund costs',
     paragraphs: [
@@ -103,7 +113,7 @@ export const DATA_METHODS: readonly MethodSection[] = [
     title: 'How figures are re-checked',
     decided: '2026-10-25',
     paragraphs: [
-      'Figures kept by hand are re-checked on a schedule. At the start of each quarter, a report lists every such figure with the date it was read and when it is due: each shown fund yield, each fund’s net assets, and every hand-kept table, such as staking terms.',
+      'Figures kept by hand are re-checked on a schedule. At the start of each quarter, a report lists every such figure with the date it was read and when it is due: each shown fund yield, each fund’s net assets, and every hand-kept table, such as staking terms. It also lists every stock whose SEC figures have not moved to a newer annual report when one is due, or that have none.',
       'A figure is re-read from its own source, never from another site’s copy of it, and a change is applied only after it has been checked. Each table’s page says when it was last checked.',
     ],
   },

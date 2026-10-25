@@ -42,12 +42,12 @@ describe('computePeRatio', () => {
 })
 
 describe('recentAnnualFrames', () => {
-  it('asks for the two most recent complete calendar years', () => {
-    expect(recentAnnualFrames(new Date('2026-07-19T00:00:00Z'))).toEqual(['CY2025', 'CY2024'])
+  it('asks for the current year and the two before it (D167: mid-year fiscal years file inside the year)', () => {
+    expect(recentAnnualFrames(new Date('2026-07-19T00:00:00Z'))).toEqual(['CY2026', 'CY2025', 'CY2024'])
   })
 
   it('derives from the clock so it cannot go stale at year boundaries', () => {
-    expect(recentAnnualFrames(new Date('2027-01-01T00:00:00Z'))).toEqual(['CY2026', 'CY2025'])
-    expect(recentAnnualFrames(new Date('2030-12-31T23:59:59Z'))).toEqual(['CY2029', 'CY2028'])
+    expect(recentAnnualFrames(new Date('2027-01-01T00:00:00Z'))).toEqual(['CY2027', 'CY2026', 'CY2025'])
+    expect(recentAnnualFrames(new Date('2030-12-31T23:59:59Z'))).toEqual(['CY2030', 'CY2029', 'CY2028'])
   })
 })

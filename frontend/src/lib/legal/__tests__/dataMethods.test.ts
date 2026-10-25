@@ -55,6 +55,13 @@ describe('how our figures are worked out (D163)', () => {
     expect(text('rechecks')).toMatch(/each quarter/)
   })
 
+  it('states the stock P/E and yield rule (D167)', () => {
+    const t = text('stock-pe-yield')
+    expect(t).toMatch(/SEC annual report/)
+    expect(t).toMatch(/same fiscal year/)
+    expect(t).toMatch(/link beside each figure opens the company’s SEC filings/)
+  })
+
   it('states the liquid lock-up rule the staking catalog follows (D162)', () => {
     // The catalog side is held by stakingProviders.test.ts; this holds the page to it.
     expect(text('staking-terms')).toMatch(/liquid staking[^.]*0 days/i)

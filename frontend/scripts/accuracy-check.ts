@@ -4,10 +4,11 @@
  *   npm run accuracy-check                          the report, today
  *   npm run accuracy-check -- --now=2027-01-05      the report as it will read on that day
  *   npm run accuracy-check -- --out report.md       also write it to a file
+ *   npm run accuracy-check -- --sec                 also each stock's SEC figures (D167; reads data.sec.gov)
  *
  * Lists every posted figure with a date (each shown fund yield, each fund asset figure, every
  * provenance clock), when its re-read falls due, and the command that re-reads it. It reads no
- * website, spends nothing and changes nothing; the rules are in scripts/lib/accuracyCheck.ts.
+ * website unless `--sec` asks it to read the SEC's data for the stocks, spends nothing and changes nothing; the rules are in scripts/lib/accuracyCheck.ts.
  * It exits 0 whatever is due: the fund pages already withhold a yield whose check was missed,
  * so a due figure is a reminder, never a broken build. It exits 1 only if it cannot find what
  * it checks (no fund figures or no clocks), since a check that sees nothing proves nothing.
@@ -19,8 +20,10 @@
 import { writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { FUND_CATALOG, FUND_SITES_ALLOWED } from '../src/lib/data/fundCatalog'
+import { EQUITY_CATALOG } from '../src/lib/data/equityCatalog'
+import { fetchStockPerShare } from '../src/lib/server/stockPerShare'
 import { discover } from './check-staleness-horizon'
-import { accuracyReport, clockRows, fundRows, summarize, yieldSiteList } from './lib/accuracyCheck'
+import { accuracyReport, clockRows, fundRows, stockRows, summarize, yieldSiteList, type AccuracyRow } from './lib/accuracyCheck'
 
 const args = process.argv.slice(2)
 const nowArg = args.find((a) => a.startsWith('--now='))?.slice('--now='.length)
@@ -45,10 +48,28 @@ if (funds.length === 0 || clocks.length === 0) {
 }
 for (const p of problems) console.error(`accuracy-check: clock discovery: ${p}`)
 
-const summary = summarize([...funds, ...clockRows(clocks, nowMs)])
-const report = accuracyReport(summary, today, { yieldSites: yieldSiteList(FUND_SITES_ALLOWED) })
-console.log(report)
-if (outPath) {
-  writeFileSync(resolve(outPath), report + '\n', 'utf8')
-  console.error(`\nWritten to ${resolve(outPath)}`)
+async function main() {
+  let stocks: AccuracyRow[] = []
+  if (args.includes('--sec')) {
+    const nonPayers = new Set(EQUITY_CATALOG.filter((e) => e.dividendYieldPct === null).map((e) => e.symbol))
+    const { bySymbol, reached } = await fetchStockPerShare(EQUITY_CATALOG.map((e) => e.symbol), nonPayers, new Date(nowMs))
+    if (!reached) {
+      console.error('accuracy-check: --sec could not reach the SEC’s data, so the stock figures were not checked.')
+      process.exit(1)
+    }
+    stocks = stockRows(bySymbol, nowMs)
+  }
+
+  const summary = summarize([...funds, ...stocks, ...clockRows(clocks, nowMs)])
+  const report = accuracyReport(summary, today, { yieldSites: yieldSiteList(FUND_SITES_ALLOWED) })
+  console.log(report)
+  if (outPath) {
+    writeFileSync(resolve(outPath), report + '\n', 'utf8')
+    console.error(`\nWritten to ${resolve(outPath)}`)
+  }
 }
+
+main().catch((e) => {
+  console.error(`accuracy-check: ${e instanceof Error ? e.message : String(e)}`)
+  process.exit(1)
+})

@@ -668,3 +668,21 @@ held by:
 - its content in `main` as `532319e`.
 
 Nothing was deleted; no other ref moved.
+
+## Fortieth reset, after PR #420 (2026-10-25)
+
+**What was done.** After PR #420 (D166, a link beside every fund yield and the quarterly accuracy
+check) was squash-merged into `main` as `9d060ad`, the branch was restarted from `9d060ad` on the
+owner's machine to record D167: stock P/E and dividend yields worked out from SEC filings. Pushed
+with `--force-with-lease`, for the same reason as above.
+
+**Where the prior state lives.** The branch's previous tip, `c119d29` (#420's only commit), is
+held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@c119d29`, created by
+  `.github/workflows/archive-branch.yml` when #420 merged, and checked on the remote before the
+  restart;
+- GitHub's `refs/pull/420/head`;
+- its content in `main` as `9d060ad`.
+
+Nothing was deleted; no other ref moved.

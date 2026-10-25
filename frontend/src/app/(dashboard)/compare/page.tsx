@@ -29,6 +29,8 @@ import {
 } from '@/lib/utils/compareStats'
 import type { SecurityChartResponse } from '@/app/live-data/security-chart/route'
 import type { CompanyFactsResponse } from '@/app/live-data/company-facts/route'
+import type { StockUniverseResponse, UniverseEntry } from '@/app/live-data/stock-universe/route'
+import { stockFiguresLink } from '@/lib/data/stockPerShare'
 import { FundOverlapSection } from '@/components/markets/FundOverlapSection'
 import { FundFactsSection } from '@/components/markets/FundFactsSection'
 
@@ -234,7 +236,7 @@ const FUNDAMENTAL_ROWS: Array<{ label: string; render: (d: CompanyFactsResponse)
   { label: 'Free cash flow (FY)', render: (d) => (d.fundamentals?.freeCashFlow != null ? formatCompact(d.fundamentals.freeCashFlow) : '—') },
 ]
 
-const STAT_LABELS = ['Type', 'Sector', 'Market cap', 'P/E (TTM)', 'Dividend yield', 'Beta (5Y)', 'Expense ratio']
+const STAT_LABELS = ['Type', 'Sector', 'Market cap', 'P/E (FY)', 'Dividend yield', 'Beta (5Y)', 'Expense ratio']
 
 /**
  * Reference-fundamentals column for one symbol.
@@ -245,15 +247,22 @@ const STAT_LABELS = ['Type', 'Sector', 'Market cap', 'P/E (TTM)', 'Dividend yiel
  * printing a Type we know while dashing a P/E we do not is the honest split,
  * and it is why this takes the option rather than looking the symbol up itself.
  */
-function statRows(symbol: string, opt?: Option): Array<[string, string]> {
+function statRows(symbol: string, opt?: Option, sec?: Map<string, UniverseEntry>): Array<[string, string]> {
   const e = getEquity(symbol)
   if (e) {
+    // D167: P/E and yield from the company's SEC annual report, against the reference
+    // price, with its fiscal year; the link beside them opens its filings.
+    const u = sec?.get(symbol.toUpperCase())
+    const fy = u?.perShareAsOf ? ` · FY ${u.perShareAsOf}` : ''
+    const pe = !u ? '…' : u.peRatio != null ? `${u.peRatio.toFixed(1)}${fy}` : u.eps != null && u.eps <= 0 ? 'Loss' : '—'
+    const yld = !u ? '…' : u.dividendState === 'paid' && u.dividendYieldPct != null ? `${u.dividendYieldPct.toFixed(2)}%${fy}`
+      : u.dividendState === 'none' ? 'None' : '—'
     return [
       ['Type', 'Stock'],
       ['Sector', SECTOR_INFO[e.sector].label],
       ['Market cap', formatCompact(e.marketCapB * 1e9)],
-      ['P/E (TTM)', e.peRatio != null ? String(e.peRatio) : '—'],
-      ['Dividend yield', e.dividendYieldPct != null ? `${e.dividendYieldPct}%` : 'None'],
+      ['P/E (FY)', pe],
+      ['Dividend yield', yld],
       ['Beta (5Y)', e.beta.toFixed(2)],
       ['Expense ratio', '—'],
     ]
@@ -456,6 +465,14 @@ function CompareInner() {
     () => symbols.filter((s) => resolve(s).kind === 'stock'),
     [symbols],
   )
+  // The stock legs' SEC per-share figures (D167): one request for all of them.
+  const { data: secData } = useQuery({
+    queryKey: ['stock-universe', 'symbols', stockSymbols.join(',')],
+    queryFn: async (): Promise<StockUniverseResponse> => (await fetch(`/live-data/stock-universe?symbols=${encodeURIComponent(stockSymbols.join(','))}`)).json(),
+    enabled: stockSymbols.length > 0,
+    staleTime: STALE_TIME_LONG * 6,
+  })
+  const secBySymbol = useMemo(() => new Map((secData?.entries ?? []).map((u) => [u.symbol, u])), [secData])
   const factsQueries = useQueries({
     queries: stockSymbols.map((symbol) => ({
       queryKey: ['company-facts', symbol],
@@ -883,12 +900,14 @@ function CompareInner() {
                 <td className="px-4 py-2.5 text-text-muted">{label}</td>
                 {symbols.map((s) => (
                   <td key={s} className="px-4 py-2.5 text-right font-mono tabular-nums text-text-secondary">
-                    {statRows(s, resolve(s))[rowIdx]?.[1] ?? '—'}
-                    {/* D166: a link to the fund's own page beside every fund yield. */}
-                    {label === 'Dividend yield' && (() => {
+                    {statRows(s, resolve(s), secBySymbol)[rowIdx]?.[1] ?? '—'}
+                    {/* D166: a link to the fund's own page beside every fund yield; D167: a link
+                        to the company's SEC filings beside every stock P/E and yield. */}
+                    {(label === 'Dividend yield' || label === 'P/E (FY)') && (() => {
                       const f = getFund(s)
-                      if (!f) return null
-                      const link = fundYieldFact(f).link
+                      const link = f ? (label === 'Dividend yield' ? fundYieldFact(f).link : null)
+                        : getEquity(s) ? stockFiguresLink(s) : null
+                      if (!link) return null
                       return (
                         <a href={link.href} target="_blank" rel="noopener noreferrer" title={link.title}
                           className="ml-2 inline-flex items-center gap-0.5 font-sans text-[11px] text-accent-blue hover:underline">
