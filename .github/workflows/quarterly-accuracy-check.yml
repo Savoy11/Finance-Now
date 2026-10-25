@@ -6,7 +6,8 @@ name: Quarterly accuracy check
 #
 # At the start of each quarter this runs `npm run accuracy-check`, which lists every posted
 # figure with a date (each shown fund yield, each fund asset figure, every hand-kept table's
-# provenance clock), when its re-read falls due, and the command that re-reads it. It posts
+# provenance clock, and with --sec each stock's P/E and yield from its SEC annual report, D167),
+# when its re-read falls due, and the command that re-reads it. It posts
 # that report as an issue, so the reminder arrives without anyone remembering to look; GitHub
 # notifies the repository owner of a new issue.
 #
@@ -51,7 +52,7 @@ jobs:
       - name: Run the accuracy check
         run: |
           cd frontend
-          npm run accuracy-check -- --out "$RUNNER_TEMP/accuracy-check.md"
+          npm run accuracy-check -- --sec --out "$RUNNER_TEMP/accuracy-check.md"
           cat "$RUNNER_TEMP/accuracy-check.md" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Post the report as this quarter's issue

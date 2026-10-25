@@ -1,5 +1,7 @@
 import type Anthropic from '@anthropic-ai/sdk'
 import { EQUITY_CATALOG, SECTOR_INFO } from '@/lib/data/equityCatalog'
+import { peText, stockFigures, stockFiguresLink, yieldText } from '@/lib/data/stockPerShare'
+import type { StockUniverseResponse } from '@/app/live-data/stock-universe/route'
 import { FUND_CATALOG, FUND_CATEGORY_INFO, fundAssetsFact, fundYieldFact } from '@/lib/data/fundCatalog'
 import { COMMODITY_CATALOG, COMMODITY_CATEGORY_INFO } from '@/lib/data/commodityCatalog'
 import { CURRENCY_CATALOG, CURRENCY_CATEGORY_INFO } from '@/lib/data/currencyCatalog'
@@ -667,16 +669,34 @@ async function execute(
         const type = input.type ? String(input.type) : undefined
         const sector = input.sector ? String(input.sector).toLowerCase() : undefined
 
-        const stocks = (type && type !== 'stock') ? [] : EQUITY_CATALOG
+        const stockHits = (type && type !== 'stock') ? [] : EQUITY_CATALOG
           .filter((e) => !sector || e.sector === sector)
           .filter((e) => !query || e.symbol.toLowerCase().includes(query) || e.name.toLowerCase().includes(query) || e.industry.toLowerCase().includes(query))
           .slice(0, 15)
-          .map((e) => ({
+        // D167: P/E and dividend yield from each company's SEC annual report, against the
+        // catalog's reference price, never the catalog's hand-typed figures. perShareAsOf is
+        // the fiscal year they are for; secFilings is where they come from.
+        // Read through the Stock Registry's own route, so the agent sees what the page shows.
+        const sec = stockHits.length
+          ? await get(`/live-data/stock-universe?symbols=${encodeURIComponent(stockHits.map((e) => e.symbol).join(','))}`) as StockUniverseResponse
+          : null
+        const secBySymbol = new Map((sec?.entries ?? []).map((u) => [u.symbol, u]))
+        const stocks = stockHits.map((e) => {
+          const u = secBySymbol.get(e.symbol)
+          const f = stockFigures(u ? {
+            eps: u.eps != null && u.epsBasis ? { val: u.eps, end: u.perShareAsOf ?? '', basis: u.epsBasis } : null,
+            dps: u.dividendsPerShare != null ? { val: u.dividendsPerShare, end: u.perShareAsOf ?? '' } : null,
+            dividend: u.dividendState, asOf: u.perShareAsOf,
+          } : null, e.referencePrice)
+          return {
             symbol: e.symbol, name: e.name, type: 'stock' as const,
             sector: SECTOR_INFO[e.sector].label, industry: e.industry,
-            marketCapB: e.marketCapB, peRatio: e.peRatio,
-            dividendYieldPct: e.dividendYieldPct, beta: e.beta,
-          }))
+            marketCapB: e.marketCapB, referencePrice: e.referencePrice,
+            peRatio: f.pe, dividendYieldPct: f.dividendYieldPct, dividendState: f.dividend,
+            perShareAsOf: f.asOf, figuresNote: `${peText(f).explain} ${yieldText(f).explain} Worked out against the reference price ${e.referencePrice}, not a live quote.`,
+            secFilings: stockFiguresLink(e.symbol).href, beta: e.beta,
+          }
+        })
         const funds = (type === 'stock') ? [] : FUND_CATALOG
           .filter((f) => !type || f.type === type)
           .filter((f) => !query ||

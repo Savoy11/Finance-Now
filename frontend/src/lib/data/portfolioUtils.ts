@@ -283,7 +283,15 @@ export interface AnnualIncomeEstimate {
 // at cost what the page promises never to — "positions without a live price are
 // excluded from totals, never valued at cost" — and what PB-1 took out of the
 // value and P&L totals on 2026-08-18.
-export function computeAnnualIncome(holdings: ComputedHolding[]): AnnualIncomeEstimate {
+//
+// D167 (2026-10-25): a stock's yield is its dividends per share for its latest fiscal year,
+// from its SEC annual report (`stockDividends`, from /live-data/stock-universe), over the
+// holding's live price. A stock missing from that map counts as having no yield on record;
+// the catalog's hand-typed yield is never used.
+export function computeAnnualIncome(
+  holdings: ComputedHolding[],
+  stockDividends: ReadonlyMap<string, number> = new Map(),
+): AnnualIncomeEstimate {
   let income = 0
   let covered = 0
   let unpriced = 0
@@ -296,7 +304,11 @@ export function computeAnnualIncome(holdings: ComputedHolding[]): AnnualIncomeEs
     // out, like any holding with no yield on record, and the panel says how many were counted.
     const fund = getFund(sym)
     const fundYield = fund ? fundShownYield(fund) : null
-    const yieldPct = getEquity(sym)?.dividendYieldPct ?? (fundYield?.shown ? fundYield.pct : null)
+    const dps = getEquity(sym) ? stockDividends.get(sym.toUpperCase()) ?? null : null
+    const stockYield = dps != null && h.currentPrice != null && h.currentPrice > 0 ? (dps / h.currentPrice) * 100 : null
+    const yieldPct = getEquity(sym)
+      ? (dps != null ? stockYield ?? 0 : null)
+      : (fundYield?.shown ? fundYield.pct : null)
     if (yieldPct == null || h.targetValue <= 0) continue
     yieldingCapital += h.targetValue
     if (h.currentValue == null) { unpriced++; continue }

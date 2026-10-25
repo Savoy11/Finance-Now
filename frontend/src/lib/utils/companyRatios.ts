@@ -29,6 +29,11 @@ export interface CompanyFundamentals {
    * whole option/convertible overhang, and P/E inherits the difference.
    */
   epsBasis: EpsBasis | null
+  /** The fiscal period end `eps` is for (D167: a dividend counts only for the same year). */
+  epsPeriodEnd?: string | null
+  /** Dividends per share declared (else paid) for the latest fiscal year reported, and its end. */
+  dividendsPerShare?: number | null
+  dividendsPerShareEnd?: string | null
   // Cash flow — latest fiscal year
   operatingCashFlow: number | null
   capex: number | null

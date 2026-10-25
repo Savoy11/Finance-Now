@@ -154,6 +154,8 @@ export async function GET(req: NextRequest) {
     const operatingIncome = annual(gaap, ['OperatingIncomeLoss'])
     const netIncome = annual(gaap, ['NetIncomeLoss'])
     const eps = annual(gaap, ['EarningsPerShareDiluted', 'EarningsPerShareBasic'], ['USD/shares'])
+    // D167: dividends per share, for the stock page's yield (the same rule as the registry's).
+    const dps = annual(gaap, ['CommonStockDividendsPerShareDeclared', 'CommonStockDividendsPerShareCashPaid'], ['USD/shares'])
     const ocf = annual(gaap, ['NetCashProvidedByUsedInOperatingActivities', 'NetCashProvidedByUsedInOperatingActivitiesContinuingOperations'])
     const capex = annual(gaap, ['PaymentsToAcquirePropertyPlantAndEquipment', 'PaymentsToAcquireProductiveAssets'])
 
@@ -189,6 +191,9 @@ export async function GET(req: NextRequest) {
       epsBasis: eps.latestConcept === 'EarningsPerShareDiluted' ? 'diluted'
         : eps.latestConcept === 'EarningsPerShareBasic' ? 'basic'
         : null,
+      epsPeriodEnd: eps.latest?.end ?? null,
+      dividendsPerShare: dps.latest?.val ?? null,
+      dividendsPerShareEnd: dps.latest?.end ?? null,
       operatingCashFlow: ocf.latest?.val ?? null,
       capex: capex.latest?.val ?? null,
       freeCashFlow: fcf,

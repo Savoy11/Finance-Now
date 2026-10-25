@@ -24,7 +24,9 @@ import {
   type Portfolio, type PortfolioHolding,
 } from '@/lib/data/portfolioUtils'
 import type { PortfolioPricesResponse } from '@/app/live-data/portfolio-prices/route'
-import { INSTRUMENT_BY_KEY, CLASS_LABELS, formatInstrumentQuote } from '@/lib/data/instruments'
+import { INSTRUMENT_BY_KEY, CLASS_LABELS, formatInstrumentQuote, isSecurityKey, securitySymbol } from '@/lib/data/instruments'
+import { getEquity } from '@/lib/data/equityCatalog'
+import type { StockUniverseResponse } from '@/app/live-data/stock-universe/route'
 import { fetchInstrumentPrices } from '@/lib/api/instrumentPrices'
 import type { PortfolioHistoryResponse } from '@/app/live-data/portfolio-history/route'
 import { PortfolioLookThrough } from '@/components/portfolio/PortfolioLookThrough'
@@ -597,7 +599,20 @@ function PortfolioDetail({ portfolio, onEdit, onBack }: {
   const metrics  = useMemo(() => computeMetrics(portfolio, holdings), [portfolio, holdings])
   const warnings = useMemo(() => getDiversificationWarnings(holdings, metrics), [holdings, metrics])
 
-  const annualIncome = useMemo(() => computeAnnualIncome(holdings), [holdings])
+  // D167: held catalog stocks' dividends per share from their SEC annual reports.
+  const heldStocks = useMemo(
+    () => holdings.filter((h) => isSecurityKey(h.cgId) && getEquity(securitySymbol(h.cgId))).map((h) => securitySymbol(h.cgId).toUpperCase()).sort().join(','),
+    [holdings],
+  )
+  const { data: stockSec } = useQuery({
+    queryKey: ['stock-universe', 'symbols', heldStocks],
+    queryFn: async (): Promise<StockUniverseResponse> => (await fetch(`/live-data/stock-universe?symbols=${encodeURIComponent(heldStocks)}`)).json(),
+    enabled: !!heldStocks, staleTime: 6 * 60 * 60_000,
+  })
+  const stockDividends = useMemo(() => new Map((stockSec?.entries ?? [])
+    .filter((u) => u.dividendState === 'paid' && u.dividendsPerShare != null)
+    .map((u) => [u.symbol, u.dividendsPerShare as number])), [stockSec])
+  const annualIncome = useMemo(() => computeAnnualIncome(holdings, stockDividends), [holdings, stockDividends])
 
   const TAB_LABELS: Record<DetailTab, string> = { overview: 'Overview', analysis: 'Analysis', 'look-through': 'Look-through' }
 

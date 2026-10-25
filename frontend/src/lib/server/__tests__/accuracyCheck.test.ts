@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { FUND_CATALOG, YIELD_CHECK_AFTER_DAYS, YIELD_SHOWN_FOR_DAYS, fundShownYield } from '@/lib/data/fundCatalog'
 import {
-  accuracyReport, clockRows, fundRows, summarize, ACCURACY_HORIZON_DAYS, FILED_FIGURE_DUE_DAYS,
+  accuracyReport, clockRows, fundRows, stockRows, summarize, ACCURACY_HORIZON_DAYS, FILED_FIGURE_DUE_DAYS, STOCK_FIGURES_DUE_DAYS,
 } from '../../../../scripts/lib/accuracyCheck'
 
 // The quarterly accuracy check (owner, 2026-10-25, D166): every posted figure with a date, when
@@ -62,6 +62,28 @@ describe('fund figures', () => {
   })
 })
 
+describe('stock figures (D167)', () => {
+  const ps = (asOf: string | null, dividend: 'paid' | 'none' | 'unknown' = 'paid') => ({
+    eps: asOf ? { val: 7.46, end: asOf, basis: 'diluted' as const } : null,
+    dps: null, dividend, asOf,
+  })
+
+  it('falls due a year and 75 days after the fiscal year the figures are for', () => {
+    const rows = stockRows(new Map([['AAPL', ps('2025-09-27')]]), utc('2026-10-25'))
+    expect(rows[0]).toMatchObject({ group: 'stock-per-share', item: 'AAPL', asOf: '2025-09-27', dueOn: new Date(plus('2025-09-27', STOCK_FIGURES_DUE_DAYS)).toISOString().slice(0, 10), status: 'ok' })
+    expect(stockRows(new Map([['AAPL', ps('2025-09-27')]]), plus('2025-09-27', STOCK_FIGURES_DUE_DAYS))[0].status).toBe('due')
+  })
+
+  it('lists a stock with no usable figure as due, saying the pages show a dash', () => {
+    expect(stockRows(new Map([['V', ps(null, 'unknown')]]), utc('2026-10-25'))[0]).toMatchObject({ asOf: 'none', status: 'due', note: expect.stringMatching(/show a dash/) })
+  })
+
+  it('notes a dividend missing from the data', () => {
+    expect(stockRows(new Map([['CRM', ps('2026-01-31', 'unknown')]]), utc('2026-10-25'))[0].note).toMatch(/dividend not in the SEC data/)
+    expect(stockRows(new Map([['AMZN', ps('2025-12-31', 'none')]]), utc('2026-10-25'))[0].note).toBeUndefined()
+  })
+})
+
 describe('clocks', () => {
   const clock = { file: 'src/lib/data/x.ts', anchorName: 'X_LAST_VERIFIED', anchorDate: '2026-06-01', windowDays: 90, ack: null }
 
@@ -96,7 +118,7 @@ describe('the quarterly workflow', () => {
   it('runs at the start of each quarter and on demand', () => {
     expect(yml).toMatch(/cron:\s*'[0-9]+ [0-9]+ 1 1,4,7,10 \*'/)
     expect(yml).toMatch(/workflow_dispatch/)
-    expect(yml).toContain('npm run accuracy-check -- --out')
+    expect(yml).toContain('npm run accuracy-check -- --sec --out')
   })
 
   it('may open an issue and read the repo, and nothing else: no deletion, no push', () => {

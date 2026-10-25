@@ -4,12 +4,13 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { clsx } from 'clsx'
-import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, KeyRound, LineChart, RefreshCw, Search } from 'lucide-react'
+import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, ExternalLink, KeyRound, LineChart, RefreshCw, Search } from 'lucide-react'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { SourceLine } from '@/components/ui/SourceLine'
 import { MetricCard } from '@/components/ui/MetricCard'
 import { OutlierScanPanel } from '@/components/markets/OutlierScanPanel'
 import { SECTOR_INFO, type SectorId } from '@/lib/data/equityCatalog'
+import { peText, stockFigures, stockFiguresLink, yieldText, type StockFigures } from '@/lib/data/stockPerShare'
 import { formatCompact, formatCurrency, formatPercent } from '@/lib/utils/format'
 import { STALE_TIME_SHORT } from '@/lib/constants'
 import { useScreenerUrl } from '@/lib/hooks/useScreenerUrl'
@@ -60,6 +61,8 @@ function ReturnCell({ value, adjusted }: { value: number | null; adjusted?: bool
 
 interface Row extends UniverseEntry {
   livePrice: number
+  /** P/E and yield against livePrice, from the SEC per-share figures (D167). */
+  figures: StockFigures
   changePercent: number | null
   liveMarketCap: number
   live: boolean
@@ -263,9 +266,20 @@ export function EquitiesClient() {
     const q = quoteData?.quotes?.[e.symbol.toUpperCase()]
     const r = pageReturnsData?.returns?.[e.symbol.toUpperCase()]
     const live = !!q && quoteData?.source !== 'reference' && !q.reference
+    const livePrice = q?.price ?? e.referencePrice
+    // D167: P/E and yield from the SEC annual report's per-share figures, against the
+    // price this row shows (live where the page has a quote). Filters and sorts use the
+    // route's figures, worked out against the reference price, so they cover every stock.
+    const figures = stockFigures({
+      eps: e.eps != null && e.epsBasis ? { val: e.eps, end: e.perShareAsOf ?? '', basis: e.epsBasis } : null,
+      dps: e.dividendsPerShare != null ? { val: e.dividendsPerShare, end: e.perShareAsOf ?? '' } : null,
+      dividend: e.dividendState ?? 'unknown',
+      asOf: e.perShareAsOf ?? null,
+    }, livePrice)
     return {
       ...e,
-      livePrice: q?.price ?? e.referencePrice,
+      figures,
+      livePrice,
       changePercent: live ? q?.changePercent ?? null : null,
       liveMarketCap: q?.marketCap ?? e.marketCapB * 1e9,
       marketCapIsRef: q?.marketCap == null,
@@ -460,8 +474,30 @@ export function EquitiesClient() {
                       {formatCompact(row.liveMarketCap)}
                       {row.marketCapIsRef && <span className="ml-1 text-[9px] text-amber-400/80 align-top" title="Reference market cap — this quote source does not supply one">ref</span>}
                     </div>
-                    <div className="text-right font-mono tabular-nums text-xs text-text-secondary">{row.peRatio ?? '—'}</div>
-                    <div className="text-right font-mono tabular-nums text-xs text-text-secondary">{row.dividendYieldPct != null ? `${row.dividendYieldPct.toFixed(1)}%` : '—'}</div>
+                    {(() => {
+                      // A link to the company's SEC filings beside each figure (D167). Nested in
+                      // the row link, so stopPropagation keeps the click from opening the row.
+                      const link = stockFiguresLink(row.symbol)
+                      const pe = peText(row.figures)
+                      const yld = yieldText(row.figures)
+                      const icon = (what: string) => (
+                        <a href={link.href} target="_blank" rel="noopener noreferrer" title={link.title}
+                          aria-label={`${row.symbol} ${what}: ${link.text}`} onClick={(e) => e.stopPropagation()}
+                          className="ml-1 inline-flex align-middle text-accent-blue hover:text-accent-blue/80">
+                          <ExternalLink size={10} aria-hidden />
+                        </a>
+                      )
+                      return (
+                        <>
+                          <div className="text-right font-mono tabular-nums text-xs text-text-secondary">
+                            <span title={pe.explain}>{pe.value}</span>{icon('P/E')}
+                          </div>
+                          <div className="text-right font-mono tabular-nums text-xs text-text-secondary">
+                            <span title={yld.explain}>{yld.value}</span>{icon('dividend yield')}
+                          </div>
+                        </>
+                      )
+                    })()}
                     <div className="text-right font-mono tabular-nums text-xs text-text-secondary">{row.beta ? row.beta.toFixed(2) : '—'}</div>
                     <ReturnCell value={row.ytdPct} adjusted={row.returnsAdjusted} />
                     <ReturnCell value={row.y1Pct} adjusted={row.returnsAdjusted} />
@@ -503,7 +539,8 @@ export function EquitiesClient() {
       <p className="text-[11px] text-text-muted text-center">
         {configured ? 'Universe live via Financial Modeling Prep · refreshed daily' : 'Curated fallback universe'}
         {quoteData?.updatedAt && ` · quotes updated ${new Date(quoteData.updatedAt).toLocaleTimeString()}`}
-        {' · '}live quotes cover the visible page; P/E &amp; beta are reference values
+        {' · '}live quotes cover the visible page; P/E &amp; yield are worked out from each company&rsquo;s SEC annual report
+        and the price shown (screens use the reference price), linked beside each; beta is a reference value
         {' · '}YTD/1Y returns cover the visible page only and are not sortable or screenable
         {returnsUnavailable && (
           <span className="text-amber-400">

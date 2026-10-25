@@ -45,8 +45,9 @@ export function catalogUniverseNote(fmpKeySaved: boolean, now: Date = new Date()
     ? 'the whole-market list needs a paid FMP plan, and the FMP key saved did not return it'
     : 'the whole-market list needs a paid FMP plan, and no FMP key is saved'
   return `This screen covered the hand-kept list of ${EQUITY_CATALOG.length} stocks, not the whole market: ${plan}. `
-    + `Its P/E, dividend yield and beta figures are approximate reference values compiled ${EQUITY_REFERENCE_AS_OF} `
-    + `(${equityReferenceAgeDays(now)} days before this screen), not live figures. Say so wherever one is quoted.`
+    + `Its P/E and dividend yield figures are worked out from each company's SEC annual report (its latest fiscal year) `
+    + `against a reference price, and its prices and beta figures are approximate reference values, compiled ${EQUITY_REFERENCE_AS_OF} `
+    + `(${equityReferenceAgeDays(now)} days before this screen): not live figures. Say so wherever one is quoted.`
 }
 
 export type SectorId =
@@ -106,9 +107,18 @@ export interface EquityEntry {
   marketCapB: number
   /** Approximate share price USD — overridden by live quotes. */
   referencePrice: number
-  /** Trailing P/E; null for unprofitable or not meaningful. */
+  /**
+   * Hand-typed 2026-07-07 with no source, and shown NOWHERE since D167 (2026-10-25): a stock's
+   * P/E and yield are worked out from its SEC annual report (lib/data/stockPerShare.ts,
+   * served by /live-data/stock-universe). Kept as the record of what was compiled.
+   * `equityCatalog.test.ts`'s guard fails on a file that reads either outside its list.
+   */
   peRatio: number | null
-  /** Annual dividend yield in percent; null = no dividend. */
+  /**
+   * Hand-typed annual dividend yield in percent (2026-07-07), shown nowhere since D167. Its
+   * one use: null marks a company that pays no dividend, which tells "none" from "unknown"
+   * when the SEC data has no dividend figure.
+   */
   dividendYieldPct: number | null
   /** 5y beta vs S&P 500. */
   beta: number

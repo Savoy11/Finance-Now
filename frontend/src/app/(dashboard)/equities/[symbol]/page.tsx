@@ -209,8 +209,9 @@ function EquityDetailInner() {
       <MarketNewsList symbol={symbol} limit={8} />
 
       <p className="text-[11px] text-text-muted text-center">
-        Fundamentals marked “ref” are approximate reference values compiled {EQUITY_REFERENCE_AS_OF}
-        ({equityReferenceAgeDays()}d ago), pending a fundamentals feed ·
+        Financial ratios, P/E and dividend yield come from the company&rsquo;s SEC filings, linked beside
+        them; a figure marked &ldquo;ref&rdquo; uses the reference price, compiled {EQUITY_REFERENCE_AS_OF}
+        ({equityReferenceAgeDays()}d ago), because no live quote was available ·
         Quotes: {data?.source === 'reference' || !data ? 'reference prices' : `live via ${data.source}`}
       </p>
     </div>
