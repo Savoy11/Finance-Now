@@ -617,9 +617,11 @@ went to `docs/BUSINESS-CHECKLIST.md`, which is worked separately from both produ
 - [ ] **Linking brokerage accounts / helping power users process trades.** ⚠ **The largest
       regulatory step in the backlog** — routing or assisting orders is execution, not
       information, and touches broker-dealer territory. Scope it deliberately: read-only
-      position sync (the safe version, extends the existing wallet/exchange-credential
-      pattern) is a different product from anything that places or pre-fills trades. Decide
-      which before any provider work.
+      position sync (the safe version) is a different product from anything that places or
+      pre-fills trades. Decide which before any provider work. *(Corrected 2026-10-24, D161:
+      this said read-only sync "extends the existing wallet/exchange-credential pattern". The
+      exchange-credential store was removed on 2026-08-18 (RP-5), so read-only sync has to be
+      scoped without it.)*
 - [ ] **Fine-tune all screeners.** Stock Registry range screener, coin screener/discovery, fund
       screener, TA screener — consistency of filters, defaults, and result quality across them.
       > **Steward annotation, 2026-09-12 (T-129).** Left unticked on purpose — the

@@ -4119,11 +4119,12 @@
    "owner_role": "owner-decision",
    "category": "decision",
    "effort": "small",
-   "blocking_decision": "PARKED 2026-09-30 — D9 (2026-09-14): the S4 options subproject is deferred with the rollout (D1), and behind the D4 legal review since it expands an advice-adjacent tool. D9 names T-061, T-062 and T-063; T-060 is S4's first decision. The ledger carried it as open until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md). 2026-10-05 (D82): it also waits on the risk engine rebuild (T-420). S4 extends the options Trade Risk Scorer, which D64 (2026-10-04) switched off until the engine is rebuilt. 2026-10-07 (D92): the options scorer stays off; T-420 may build an ungraded calculator (maximum loss and gain, breakevens, payoff) only after counsel answers the T-419 memo's §8 question 7.",
+   "blocking_decision": "PARKED 2026-09-30 — D9 (2026-09-14): the S4 options subproject is deferred with the rollout (D1), and behind the D4 legal review since it expands an advice-adjacent tool. D9 names T-061, T-062 and T-063; T-060 is S4's first decision. The ledger carried it as open until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md). 2026-10-05 (D82): it also waits on the risk engine rebuild (T-420). S4 extends the options Trade Risk Scorer, which D64 (2026-10-04) switched off until the engine is rebuilt. 2026-10-07 (D92): the options scorer stays off; T-420 may build an ungraded calculator (maximum loss and gain, breakevens, payoff) only after counsel answers the T-419 memo's §8 question 7. 2026-10-24 (D161): overtaken in part. The ungraded calculator did not wait for counsel: D93 (2026-10-07) built and showed it at /equities/options-calculator. This item stays parked because it extends the switched-off scorer (D93: \"T-060 to T-063 stay parked, since they extend the scorer\").",
    "related_ids": [
     "P2-O2",
     "S4",
-    "T-420"
+    "T-420",
+    "D161"
    ],
    "summary": "user_positions table, same optimistic pattern as wallets; the one architectural call in S4.",
    "next_action": "Owner decides whether saved options positions join the DB (user_positions, optimistic pattern as wallets) and whether to activate S4; a remote dev then scopes the migration and route under /api/user/.",
@@ -4317,16 +4318,33 @@
    "category": "decision",
    "effort": "unknown",
    "blocking_decision": "PARKED 2026-09-30 — D1 (2026-09-14): the parked production/hosting/desktop items \"stay parked\" — this is the desktop update-mechanism decision. The ledger carried it as open until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md). Was: \"How does an installed copy get new versions (auto-update channel? manual download? signed releases?), and does that ride the entitlement system (Phase 6) as paid upgrades, a subscription, or free updates with paid modules.\"",
-   "related_ids": [],
+   "related_ids": [
+    "D161"
+   ],
    "summary": "Owner backlog (2026-07-26).",
-   "next_action": "Put the ROADMAP.md:425-428 question to the owner as a three-option decision (auto-update / manual signed download / store channel × free / paid / subscription); on an answer, record it as a dated note under the ROADMAP entry via the propose→approve path and tick the box. No code work until then.",
+   "next_action": "Put the ROADMAP.md 'Desktop update mechanism' question to the owner as a three-option decision (auto-update / manual signed download / store channel × free / paid / subscription); on an answer, record it as a dated note under the ROADMAP entry via the propose→approve path and tick the box. No code work until then.",
    "sources": [
     {
      "file": "docs/ROADMAP.md",
-     "lines": "425-428",
+     "lines": "592-594",
      "quote": "**Desktop update mechanism — and whether updates are monetized.** How does an installed copy get new versions (auto-update channel? manual download? signed releases?), and does that ride the entitlement system (Phase 6) as paid upgrades, a subscription, or free updates with paid modules."
     }
-   ]
+   ],
+   "reworded": {
+    "on": "2026-10-24",
+    "by": "owner approval (\"All three groups\"), applied by the session (D161)",
+    "why": "Wording only: a next step that was done or wrong, or a line reference that had moved. The item stays parked.",
+    "was": {
+     "next_action": "Put the ROADMAP.md:425-428 question to the owner as a three-option decision (auto-update / manual signed download / store channel × free / paid / subscription); on an answer, record it as a dated note under the ROADMAP entry via the propose→approve path and tick the box. No code work until then.",
+     "sources": [
+      {
+       "file": "docs/ROADMAP.md",
+       "lines": "425-428",
+       "quote": "**Desktop update mechanism — and whether updates are monetized.** How does an installed copy get new versions (auto-update channel? manual download? signed releases?), and does that ride the entitlement system (Phase 6) as paid upgrades, a subscription, or free updates with paid modules."
+      }
+     ]
+    }
+   }
   },
   {
    "id": "T-128",
@@ -5116,17 +5134,26 @@
    "effort": "small",
    "blocking_decision": "PARKED 2026-09-30 — D5 (2026-09-14): SOC 2 not now — revisit post-launch; trigger: the first paying customer or the first enterprise conversation. D5 also answers this item's own question: \"Branch-and-PR stays the informal change-management control.\" The ledger carried it as open until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md). Was: \"none for a policy draft; deploy-approval half waits on the hosting decision\"",
    "related_ids": [
-    "F4"
+    "F4",
+    "D161"
    ],
    "summary": "Overlaps branch protection (F4).",
-   "next_action": "Confirm with the owner whether the CLAUDE.md branch-and-PR rule should be formalised as the change-management control (add a short policy doc, e.g. docs/process/change-management.md, plus GitHub branch protection on main), and correct the T-202 'F4' cross-reference to whatever branch-protection item was meant.",
+   "next_action": "Nothing until D5's trigger (the first paying customer or enterprise conversation). Then write a short policy doc (e.g. docs/process/change-management.md) formalising the branch-and-PR rule, which D5 already names as the informal change-management control. Branch protection on main is already in place (T-236, closed); the 'F4' cross-reference meant that item.",
    "sources": [
     {
      "file": "docs/audits/production-readiness-scorecard.md",
      "lines": "175",
      "quote": "Implement change management policy (PR reviews, deploy approvals)"
     }
-   ]
+   ],
+   "reworded": {
+    "on": "2026-10-24",
+    "by": "owner approval (\"All three groups\"), applied by the session (D161)",
+    "why": "Wording only: a next step that was done or wrong, or a line reference that had moved. The item stays parked.",
+    "was": {
+     "next_action": "Confirm with the owner whether the CLAUDE.md branch-and-PR rule should be formalised as the change-management control (add a short policy doc, e.g. docs/process/change-management.md, plus GitHub branch protection on main), and correct the T-202 'F4' cross-reference to whatever branch-protection item was meant."
+    }
+   }
   },
   {
    "id": "T-215",
@@ -5473,14 +5500,15 @@
    "owner_role": "owner-machine",
    "category": "data-verification",
    "effort": "large",
-   "blocking_decision": "PARKED 2026-10-07 — D89 (2026-10-07): Transfer Fees stays hidden for launch, the owner's decision of 2026-10-01, recorded in this repository by D89. The fee check that day found that most exchanges now show withdrawal fees only on the logged-in withdrawal screen and change them with network costs, so a hand pass cannot finish the table. Waits on T-428: after launch, rebuild Transfer Fees from the live fee feeds six exchanges publish, with a 'check on the exchange' link for the rest.",
+   "blocking_decision": "PARKED 2026-10-07 — D89 (2026-10-07): Transfer Fees stays hidden for launch, the owner's decision of 2026-10-01, recorded in this repository by D89. The fee check that day found that most exchanges now show withdrawal fees only on the logged-in withdrawal screen and change them with network costs, so a hand pass cannot finish the table. Waits on T-428: after launch, rebuild Transfer Fees from the live fee feeds six exchanges publish, with a 'check on the exchange' link for the rest. 2026-10-24 (D161): fewer feeds remain than \"six\" says. Bitget and XT.com left WITHDRAW_FEE_SOURCES (frontend/src/lib/server/withdrawFeeAdapters.ts) on terms on 2026-10-17 (D129, D131), so their rows are checked by hand; the rebuild reads whatever that list holds.",
    "related_ids": [
     "#108",
     "M4",
     "S3",
     "T1",
     "T8",
-    "T-428"
+    "T-428",
+    "D161"
    ],
    "summary": "115/543 rows machine-verified on 2026-08-22; remaining 428 (Binance, Coinbase, Kraken, OKX, Bybit…) need a human on `npm run fee-worksheet` from the owner's machine; LAST_VERIFIED stays 2025-06-01 until every exchange is done (M4/T8).",
    "next_action": "On the owner's machine: `cd frontend && npm run fee-reconcile && npm run fee-worksheet`, fill the core-45 rows of transfer-fee-worksheet.csv from each exchange's fee page, then `npm run fee-apply -- --dry-run` before applying; LAST_VERIFIED moves only when every exchange is done.",
@@ -5560,10 +5588,11 @@
    "owner_role": "owner-machine",
    "category": "data-verification",
    "effort": "medium",
-   "blocking_decision": "PARKED 2026-10-07 — D89 (2026-10-07): Transfer Fees stays hidden for launch, the owner's decision of 2026-10-01, recorded in this repository by D89. The fee check that day found that most exchanges now show withdrawal fees only on the logged-in withdrawal screen and change them with network costs, so a hand pass cannot finish the table. Waits on T-428: after launch, rebuild Transfer Fees from the live fee feeds six exchanges publish, with a 'check on the exchange' link for the rest.",
+   "blocking_decision": "PARKED 2026-10-07 — D89 (2026-10-07): Transfer Fees stays hidden for launch, the owner's decision of 2026-10-01, recorded in this repository by D89. The fee check that day found that most exchanges now show withdrawal fees only on the logged-in withdrawal screen and change them with network costs, so a hand pass cannot finish the table. Waits on T-428: after launch, rebuild Transfer Fees from the live fee feeds six exchanges publish, with a 'check on the exchange' link for the rest. 2026-10-24 (D161): fewer feeds remain than \"six\" says. Bitget and XT.com left WITHDRAW_FEE_SOURCES (frontend/src/lib/server/withdrawFeeAdapters.ts) on terms on 2026-10-17 (D129, D131), so their rows are checked by hand; the rebuild reads whatever that list holds.",
    "related_ids": [
     "S3",
-    "T-428"
+    "T-428",
+    "D161"
    ],
    "summary": "Default-tier rates for the exchanges were seeded from posture; worksheet's trading-fee section must be checked on the owner's machine before the LOW pin lifts.",
    "next_action": "On the owner's machine, while doing the T-031 worksheet: fill the 'Spot trading fees' section's Observed maker/taker columns from each exchange's spot fee schedule page, then update SPOT_TRADING_FEES, bump TRADING_FEES_COMPILED, lift the confidence pin and update saleCost.test.ts:56-59 in the same PR.",
@@ -5632,12 +5661,13 @@
    "owner_role": "owner-machine",
    "category": "data-verification",
    "effort": "small",
-   "blocking_decision": "PARKED 2026-10-07 — D89 (2026-10-07): Transfer Fees stays hidden for launch, the owner's decision of 2026-10-01, recorded in this repository by D89. The fee check that day found that most exchanges now show withdrawal fees only on the logged-in withdrawal screen and change them with network costs, so a hand pass cannot finish the table. Waits on T-428: after launch, rebuild Transfer Fees from the live fee feeds six exchanges publish, with a 'check on the exchange' link for the rest. The two zero-fee rows stay held.",
+   "blocking_decision": "PARKED 2026-10-07 — D89 (2026-10-07): Transfer Fees stays hidden for launch, the owner's decision of 2026-10-01, recorded in this repository by D89. The fee check that day found that most exchanges now show withdrawal fees only on the logged-in withdrawal screen and change them with network costs, so a hand pass cannot finish the table. Waits on T-428: after launch, rebuild Transfer Fees from the live fee feeds six exchanges publish, with a 'check on the exchange' link for the rest. The two zero-fee rows stay held. 2026-10-24 (D161): fewer feeds remain than \"six\" says. Bitget and XT.com left WITHDRAW_FEE_SOURCES (frontend/src/lib/server/withdrawFeeAdapters.ts) on terms on 2026-10-17 (D129, D131), so their rows are checked by hand; the rebuild reads whatever that list holds.",
    "related_ids": [
     "#108",
     "M4",
     "S3",
-    "T-428"
+    "T-428",
+    "D161"
    ],
    "summary": "Reconcile proposed exactly 0; held because 0 renders as 'Free' and is indistinguishable from an absent field.",
    "next_action": "Owner opens Bitfinex's and Bitget's own withdrawal-fee pages for DOT (Polkadot) and USDC (BEP-20); if genuinely 0, apply via `npm run fee-apply` with a filled worksheet CSV row (never hand-edit to 0 from the API reading alone) and annotate the fee-reconcile audit; if not 0, record 'held rows confirmed non-zero' in docs/audits/fee-reconcile-2026-08-22.md.",
@@ -7553,11 +7583,12 @@
    "owner_role": "remote-dev",
    "category": "feature",
    "effort": "small",
-   "blocking_decision": "PARKED 2026-09-30 — D9 (2026-09-14): the S4 options subproject is deferred with the rollout (D1), and behind the D4 legal review since it expands an advice-adjacent tool. D9 names T-061, T-062 and T-063; T-060 is S4's first decision. The ledger carried it as blocked until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md). Was: \"Owner activation of subproject S4 (charter proposed 2026-08-20, not activated).\" 2026-10-05 (D82): it also waits on the risk engine rebuild (T-420). S4 extends the options Trade Risk Scorer, which D64 (2026-10-04) switched off until the engine is rebuilt. 2026-10-07 (D92): the options scorer stays off; T-420 may build an ungraded calculator (maximum loss and gain, breakevens, payoff) only after counsel answers the T-419 memo's §8 question 7.",
+   "blocking_decision": "PARKED 2026-09-30 — D9 (2026-09-14): the S4 options subproject is deferred with the rollout (D1), and behind the D4 legal review since it expands an advice-adjacent tool. D9 names T-061, T-062 and T-063; T-060 is S4's first decision. The ledger carried it as blocked until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md). Was: \"Owner activation of subproject S4 (charter proposed 2026-08-20, not activated).\" 2026-10-05 (D82): it also waits on the risk engine rebuild (T-420). S4 extends the options Trade Risk Scorer, which D64 (2026-10-04) switched off until the engine is rebuilt. 2026-10-07 (D92): the options scorer stays off; T-420 may build an ungraded calculator (maximum loss and gain, breakevens, payoff) only after counsel answers the T-419 memo's §8 question 7. 2026-10-24 (D161): overtaken in part. The ungraded calculator did not wait for counsel: D93 (2026-10-07) built and showed it at /equities/options-calculator. This item stays parked because it extends the switched-off scorer (D93: \"T-060 to T-063 stay parked, since they extend the scorer\").",
    "related_ids": [
     "RP-1",
     "S4",
-    "T-420"
+    "T-420",
+    "D161"
    ],
    "summary": "UI accepts 1–4 legs vs API 8; hand entry stays (RP-1).",
    "next_action": "Once the owner activates S4: raise the UI cap in options/page.tsx:325 to 8 to match route.ts:65, add the missing structure presets in lib/options/presets, keep hand entry (RP-1) — small self-contained PR.",
@@ -7578,10 +7609,11 @@
    "owner_role": "remote-dev",
    "category": "feature",
    "effort": "small",
-   "blocking_decision": "PARKED 2026-09-30 — D9 (2026-09-14): the S4 options subproject is deferred with the rollout (D1), and behind the D4 legal review since it expands an advice-adjacent tool. D9 names T-061, T-062 and T-063; T-060 is S4's first decision. The ledger carried it as blocked until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md). Was: \"Owner activation of subproject S4.\" 2026-10-05 (D82): it also waits on the risk engine rebuild (T-420). S4 extends the options Trade Risk Scorer, which D64 (2026-10-04) switched off until the engine is rebuilt. 2026-10-07 (D92): the options scorer stays off; T-420 may build an ungraded calculator (maximum loss and gain, breakevens, payoff) only after counsel answers the T-419 memo's §8 question 7.",
+   "blocking_decision": "PARKED 2026-09-30 — D9 (2026-09-14): the S4 options subproject is deferred with the rollout (D1), and behind the D4 legal review since it expands an advice-adjacent tool. D9 names T-061, T-062 and T-063; T-060 is S4's first decision. The ledger carried it as blocked until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md). Was: \"Owner activation of subproject S4.\" 2026-10-05 (D82): it also waits on the risk engine rebuild (T-420). S4 extends the options Trade Risk Scorer, which D64 (2026-10-04) switched off until the engine is rebuilt. 2026-10-07 (D92): the options scorer stays off; T-420 may build an ungraded calculator (maximum loss and gain, breakevens, payoff) only after counsel answers the T-419 memo's §8 question 7. 2026-10-24 (D161): overtaken in part. The ungraded calculator did not wait for counsel: D93 (2026-10-07) built and showed it at /equities/options-calculator. This item stays parked because it extends the switched-off scorer (D93: \"T-060 to T-063 stay parked, since they extend the scorer\").",
    "related_ids": [
     "S4",
-    "T-420"
+    "T-420",
+    "D161"
    ],
    "summary": "Pure engine makes re-scoring cheap; charter not active.",
    "next_action": "After S4 activation: add IV-shift and underlying-move sliders that re-run the pure scorer client-side and show the delta per dimension; keep the explains-not-recommends copy.",
@@ -7602,11 +7634,12 @@
    "owner_role": "remote-dev",
    "category": "feature",
    "effort": "small",
-   "blocking_decision": "PARKED 2026-09-30 — D9 (2026-09-14): the S4 options subproject is deferred with the rollout (D1), and behind the D4 legal review since it expands an advice-adjacent tool. D9 names T-061, T-062 and T-063; T-060 is S4's first decision. The ledger carried it as blocked until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md). Was: \"S4 activation (owner)\" 2026-10-05 (D82): it also waits on the risk engine rebuild (T-420). S4 extends the options Trade Risk Scorer, which D64 (2026-10-04) switched off until the engine is rebuilt. 2026-10-07 (D92): the options scorer stays off; T-420 may build an ungraded calculator (maximum loss and gain, breakevens, payoff) only after counsel answers the T-419 memo's §8 question 7.",
+   "blocking_decision": "PARKED 2026-09-30 — D9 (2026-09-14): the S4 options subproject is deferred with the rollout (D1), and behind the D4 legal review since it expands an advice-adjacent tool. D9 names T-061, T-062 and T-063; T-060 is S4's first decision. The ledger carried it as blocked until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md). Was: \"S4 activation (owner)\" 2026-10-05 (D82): it also waits on the risk engine rebuild (T-420). S4 extends the options Trade Risk Scorer, which D64 (2026-10-04) switched off until the engine is rebuilt. 2026-10-07 (D92): the options scorer stays off; T-420 may build an ungraded calculator (maximum loss and gain, breakevens, payoff) only after counsel answers the T-419 memo's §8 question 7. 2026-10-24 (D161): overtaken in part. The ungraded calculator did not wait for counsel: D93 (2026-10-07) built and showed it at /equities/options-calculator. This item stays parked because it extends the switched-off scorer (D93: \"T-060 to T-063 stay parked, since they extend the scorer\").",
    "related_ids": [
     "RP-3",
     "S4",
-    "T-420"
+    "T-420",
+    "D161"
    ],
    "summary": "Must keep the explains-not-recommends stance (RP-3).",
    "next_action": "After S4 activation: add a `narrative` per dimension in lib/risk/profiles/optionsTrade.ts (pure, tested — tests should assert no 'buy/sell/should' instruction wording, mirroring taxCharacter.test.ts) and render it beside each dimension on /equities/options.",
@@ -10123,10 +10156,11 @@
    "blocking_decision": "Owner lifts the Transfer Fees rollout hold (T-028).",
    "related_ids": [
     "#144",
-    "S3"
+    "S3",
+    "D161"
    ],
    "summary": "scripts/test-live-data.mjs:711-728 asserts the 503 hold; missing-params check must go back to 400 once the gate lifts.",
-   "next_action": "Bundle into the T-028 restore PR: replace the two withheld checks at test-live-data.mjs:718-728 with the original assertions (routes array non-empty; missing params → 400) and drop expectStatus: 503.",
+   "next_action": "Bundle into the T-028 restore PR: replace the two withheld 'v1 transfer' checks (expectStatus: 503) in scripts/test-live-data.mjs with the original assertions (routes array non-empty; missing params → 400) and drop expectStatus: 503.",
    "sources": [
     {
      "file": "git:179f479 (#144)",
@@ -10138,7 +10172,15 @@
      "lines": "711-728",
      "quote": "WHEN TRANSFER FEES IS RESTORED: revert both of these to the real assertions — routes array non-empty, and missing params → 400."
     }
-   ]
+   ],
+   "reworded": {
+    "on": "2026-10-24",
+    "by": "owner approval (\"All three groups\"), applied by the session (D161)",
+    "why": "Wording only: a next step that was done or wrong, or a line reference that had moved. The item stays parked.",
+    "was": {
+     "next_action": "Bundle into the T-028 restore PR: replace the two withheld checks at test-live-data.mjs:718-728 with the original assertions (routes array non-empty; missing params → 400) and drop expectStatus: 503."
+    }
+   }
   },
   {
    "id": "T-032",
@@ -10392,19 +10434,29 @@
    "owner_role": "remote-dev",
    "category": "feature",
    "effort": "medium",
-   "blocking_decision": "Billing model: per-module licenses vs. tiered bundles — Phase 6 (ROADMAP.md:487); and D2 public /api/v1 exposure",
+   "blocking_decision": "Billing model: per-module licenses vs. tiered bundles — Phase 6 (the Billing model entry in ROADMAP.md; D29's working plan, tiered bundles, awaits the owner's reassessment); and D2 public /api/v1 exposure",
    "related_ids": [
-    "Risk F"
+    "Risk F",
+    "D161"
    ],
    "summary": "No metering counter.",
-   "next_action": "Leave parked until the Phase 6 billing model (ROADMAP.md:487) and D2 (/api/v1 auth) are decided; metering belongs on whichever key middleware ships — most likely a new one in frontend/src/app/api/v1, not backend/app/models/api_key.py.",
+   "next_action": "Leave parked until the Phase 6 billing model (ROADMAP.md's Billing model entry) and D2 (/api/v1 auth) are decided; metering belongs on whichever key middleware ships — most likely a new one in frontend/src/app/api/v1, not backend/app/models/api_key.py.",
    "sources": [
     {
      "file": "docs/audits/production-readiness-scorecard.md",
      "lines": "121",
      "quote": "No API usage metering for billing | Add metering counter to API key middleware (Q4) | Yes — `api_key.py:31` mentions `rate_limit_override` in a comment only"
     }
-   ]
+   ],
+   "reworded": {
+    "on": "2026-10-24",
+    "by": "owner approval (\"All three groups\"), applied by the session (D161)",
+    "why": "Wording only: a next step that was done or wrong, or a line reference that had moved. The item stays parked.",
+    "was": {
+     "blocking_decision": "Billing model: per-module licenses vs. tiered bundles — Phase 6 (ROADMAP.md:487); and D2 public /api/v1 exposure",
+     "next_action": "Leave parked until the Phase 6 billing model (ROADMAP.md:487) and D2 (/api/v1 auth) are decided; metering belongs on whichever key middleware ships — most likely a new one in frontend/src/app/api/v1, not backend/app/models/api_key.py."
+    }
+   }
   },
   {
    "id": "T-372",
@@ -10650,11 +10702,12 @@
    "owner_role": "either",
    "category": "data-verification",
    "effort": "small",
-   "blocking_decision": "PARKED 2026-10-07 — D89 (2026-10-07): Transfer Fees stays hidden for launch, the owner's decision of 2026-10-01, recorded in this repository by D89. The fee check that day found that most exchanges now show withdrawal fees only on the logged-in withdrawal screen and change them with network costs, so a hand pass cannot finish the table. Waits on T-428: after launch, rebuild Transfer Fees from the live fee feeds six exchanges publish, with a 'check on the exchange' link for the rest.",
+   "blocking_decision": "PARKED 2026-10-07 — D89 (2026-10-07): Transfer Fees stays hidden for launch, the owner's decision of 2026-10-01, recorded in this repository by D89. The fee check that day found that most exchanges now show withdrawal fees only on the logged-in withdrawal screen and change them with network costs, so a hand pass cannot finish the table. Waits on T-428: after launch, rebuild Transfer Fees from the live fee feeds six exchanges publish, with a 'check on the exchange' link for the rest. 2026-10-24 (D161): fewer feeds remain than \"six\" says. Bitget and XT.com left WITHDRAW_FEE_SOURCES (frontend/src/lib/server/withdrawFeeAdapters.ts) on terms on 2026-10-17 (D129, D131), so their rows are checked by hand; the rebuild reads whatever that list holds.",
    "related_ids": [
     "S3",
     "T-031",
-    "T-428"
+    "T-428",
+    "D161"
    ],
    "summary": "Priority 6; table still keys the coin as `matic` on polygon/erc20.",
    "next_action": "Answer it on the Transfer Fee Check page (T-031, D52), where it is listed under its exchange; then: During the owner-machine worksheet pass, for each non-live exchange (Binance, Coinbase, Kraken, OKX, Bybit, Gemini, Crypto.com, Gate.io, MEXC, Upbit...) check the POL withdrawal networks and mark the `matic`/erc20 row `delisted` in the CSV if retired — `npm run fee-apply` skips delisted rows, so retire them by hand in frontend/src/lib/data/transferFees.ts (matic blocks at lines 456, 545, 688, 777, 902...). No CoinId rename is needed; the adapters already map POL→matic.",
@@ -10824,10 +10877,11 @@
    "blocking_decision": "Read-only position sync (the safe version) or anything that places or pre-fills trades — decide which before any provider work",
    "related_ids": [
     "P2-O2",
-    "RP-5"
+    "RP-5",
+    "D161"
    ],
    "summary": "Owner backlog, flagged as the largest regulatory step; nothing routes or assists orders until the owner decides.",
-   "next_action": "No work; when the owner picks it up, the first question is read-only position sync vs execution, and the read-only path must be re-scoped without the RP-5 credential store (propose a ROADMAP note correcting the 'extends the existing exchange-credential pattern' line).",
+   "next_action": "No work; when the owner picks it up, the first question is read-only position sync vs execution, and the read-only path must be re-scoped without the RP-5 credential store (ROADMAP's line saying it 'extends the existing wallet/exchange-credential pattern' was corrected on 2026-10-24, D161).",
    "sources": [
     {
      "file": "docs/TASK-QUEUE.md",
@@ -10839,7 +10893,15 @@
      "lines": "439-444",
      "quote": "**Linking brokerage accounts / helping power users process trades.** ⚠ **The largest regulatory step in the backlog** — routing or assisting orders is execution, not information, and touches broker-dealer territory."
     }
-   ]
+   ],
+   "reworded": {
+    "on": "2026-10-24",
+    "by": "owner approval (\"All three groups\"), applied by the session (D161)",
+    "why": "Wording only: a next step that was done or wrong, or a line reference that had moved. The item stays parked.",
+    "was": {
+     "next_action": "No work; when the owner picks it up, the first question is read-only position sync vs execution, and the read-only path must be re-scoped without the RP-5 credential store (propose a ROADMAP note correcting the 'extends the existing exchange-credential pattern' line)."
+    }
+   }
   },
   {
    "id": "T-015",
@@ -10881,10 +10943,11 @@
     "P3-W2-S1",
     "S1",
     "T12",
-    "T-017"
+    "T-017",
+    "D161"
    ],
    "summary": "Hidden 2026-08-20 ('I may revisit back testing'): /equities/backtests redirect (next.config.mjs:87-92), Portfolios Backtest tab (portfolios/page.tsx:688), crypto TA Backtest tab (technical-analysis/page.tsx:933); engines/tests retained; Sharpe decision with owner.",
-   "next_action": "Nothing unless the owner reopens; the restore recipe is: delete next.config.mjs:92, re-add the nav entry in lib/modules/registry.ts, add 'backtest' back to the two tab unions and their lists, then make S1's first decision (T-018) before the equities page goes live.",
+   "next_action": "Nothing unless the owner reopens; the restore recipe is: delete the /equities/backtests redirect in next.config.mjs, re-add the nav entry in lib/modules/registry.ts, add 'backtest' back to the two tab unions and their lists, then make S1's first decision (T-018) before the equities page goes live.",
    "sources": [
     {
      "file": "docs/TASK-QUEUE.md",
@@ -10916,7 +10979,15 @@
      "lines": "14",
      "quote": "S1 (backtests / Sharpe): suspended; Sharpe decision delegated to owner. Backtest surfaces hidden 2026-08-20, restorable."
     }
-   ]
+   ],
+   "reworded": {
+    "on": "2026-10-24",
+    "by": "owner approval (\"All three groups\"), applied by the session (D161)",
+    "why": "Wording only: a next step that was done or wrong, or a line reference that had moved. The item stays parked.",
+    "was": {
+     "next_action": "Nothing unless the owner reopens; the restore recipe is: delete next.config.mjs:92, re-add the nav entry in lib/modules/registry.ts, add 'backtest' back to the two tab unions and their lists, then make S1's first decision (T-018) before the equities page goes live."
+    }
+   }
   },
   {
    "id": "T-018",
@@ -10935,10 +11006,11 @@
     "P3-W2-S1",
     "S1-1",
     "S1-2",
-    "S1-3"
+    "S1-3",
+    "D161"
    ],
    "summary": "equities/backtests/page.tsx:26-28 annualizes at 252/52/12 while security-ohlcv returns daily bars on every range since the Yahoo removal; restore weekly/monthly resampling server-side or relabel every range daily.",
-   "next_action": "Nothing while S1 is suspended; when the owner reopens backtesting, decide resample-server-side vs relabel-to-daily first (and add the NT12-style barsPerYear-vs-bar-spacing guard) before deleting the redirect. Meanwhile propose (not apply) the TASK-QUEUE/P3 annotation that S1-1 no longer gates rollout because the surface is dark.",
+   "next_action": "Nothing while S1 is suspended; when the owner reopens backtesting, decide resample-server-side vs relabel-to-daily first (and add the NT12-style barsPerYear-vs-bar-spacing guard) before deleting the redirect. (The annotation that S1-1 no longer gates rollout, because the surface is dark, was approved under D80; T-395 is closed.)",
    "sources": [
     {
      "file": "docs/TASK-QUEUE.md",
@@ -10955,7 +11027,15 @@
      "lines": "354, 772, 840, 892, 921-923",
      "quote": "Equity backtest Sharpe annualized at 52/12 bars-per-year against data that is daily on every range. **Owned by P3-W2-S1** and deliberately not fixed here: the fix depends on S1's first decision (resample server-side vs relabel to daily)"
     }
-   ]
+   ],
+   "reworded": {
+    "on": "2026-10-24",
+    "by": "owner approval (\"All three groups\"), applied by the session (D161)",
+    "why": "Wording only: a next step that was done or wrong, or a line reference that had moved. The item stays parked.",
+    "was": {
+     "next_action": "Nothing while S1 is suspended; when the owner reopens backtesting, decide resample-server-side vs relabel-to-daily first (and add the NT12-style barsPerYear-vs-bar-spacing guard) before deleting the redirect. Meanwhile propose (not apply) the TASK-QUEUE/P3 annotation that S1-1 no longer gates rollout because the surface is dark."
+    }
+   }
   },
   {
    "id": "T-019",
@@ -11027,10 +11107,11 @@
     "NT12",
     "P3-W3",
     "RP-5",
-    "S3"
+    "S3",
+    "D161"
    ],
    "summary": "Owner 2026-08-22: kept but out of the initial suite. Restore = nav+routePrefixes in registry.ts:178-189, remove /transfer-fees redirect, uncomment find_transfer_routes in mcp-server, lift the 503 on /api/v1/transfer/routes; S3 charter stays open.",
-   "next_action": "No action until the owner says restore; then follow the four-site recipe in registry.ts:187-189 (nav + routePrefixes, delete next.config.mjs:58 redirect, un-comment tools.ts and mcp-server blocks, flip HIDDEN_FROM_ROLLOUT) plus T-029's harness revert, in one PR.",
+   "next_action": "No action until the owner says restore; then follow the TO RESTORE comment beside the Transfer Fees entry in lib/modules/registry.ts (nav + routePrefixes, delete the /transfer-fees redirect in next.config.mjs, un-comment tools.ts and mcp-server blocks, flip HIDDEN_FROM_ROLLOUT) plus T-029's harness revert, in one PR.",
    "sources": [
     {
      "file": "docs/TASK-QUEUE.md",
@@ -11062,7 +11143,15 @@
      "lines": "16",
      "quote": "S3: built but withheld (Transfer Fees / Wallets hidden from rollout 2026-08-22)."
     }
-   ]
+   ],
+   "reworded": {
+    "on": "2026-10-24",
+    "by": "owner approval (\"All three groups\"), applied by the session (D161)",
+    "why": "Wording only: a next step that was done or wrong, or a line reference that had moved. The item stays parked.",
+    "was": {
+     "next_action": "No action until the owner says restore; then follow the four-site recipe in registry.ts:187-189 (nav + routePrefixes, delete next.config.mjs:58 redirect, un-comment tools.ts and mcp-server blocks, flip HIDDEN_FROM_ROLLOUT) plus T-029's harness revert, in one PR."
+    }
+   }
   },
   {
    "id": "T-030",
@@ -11077,10 +11166,11 @@
    "related_ids": [
     "NT3",
     "P3-W3",
-    "RP-5"
+    "RP-5",
+    "D161"
    ],
    "summary": "Hidden 2026-08-22; registry.ts:161-177 and /wallets redirect are the undo sites; /api/user/wallets stays up.",
-   "next_action": "No action until the owner says restore; then re-add the nav entry and routePrefix in registry.ts and delete next.config.mjs:64 (two-site recipe — no agent/MCP/v1 surfaces for wallets).",
+   "next_action": "No action until the owner says restore; then re-add the nav entry and routePrefix in registry.ts and delete the /wallets redirect in next.config.mjs (two-site recipe — no agent/MCP/v1 surfaces for wallets).",
    "sources": [
     {
      "file": "CLAUDE.md",
@@ -11097,7 +11187,15 @@
      "lines": "161-177",
      "quote": "TO RESTORE: put this entry and the routePrefix back, delete the redirect."
     }
-   ]
+   ],
+   "reworded": {
+    "on": "2026-10-24",
+    "by": "owner approval (\"All three groups\"), applied by the session (D161)",
+    "why": "Wording only: a next step that was done or wrong, or a line reference that had moved. The item stays parked.",
+    "was": {
+     "next_action": "No action until the owner says restore; then re-add the nav entry and routePrefix in registry.ts and delete next.config.mjs:64 (two-site recipe — no agent/MCP/v1 surfaces for wallets)."
+    }
+   }
   },
   {
    "id": "T-034",
@@ -11137,10 +11235,11 @@
     "D2",
     "F4",
     "NT8",
-    "S6"
+    "S6",
+    "D161"
    ],
    "summary": "FMP /stable/stock-price-change has the windows but batching is paid-gated; code carries its own restore condition; folded with NT8 into the enterprise-key conversation.",
-   "next_action": "No action until the owner signals 'near release'; then buy the FMP tier that batches /stable/stock-price-change and delete the restore guard in FundsClient.tsx:242-256 per the comment's own instructions.",
+   "next_action": "No action until the owner signals 'near release'; then buy the FMP tier that batches /stable/stock-price-change and follow the comment above the RETURNS_UNAVAILABLE guards in FundsClient.tsx: re-add the universe query and drop those guards.",
    "sources": [
     {
      "file": "docs/TASK-QUEUE.md",
@@ -11167,7 +11266,15 @@
      "lines": "18",
      "quote": "item 4 returns restore — parked with decision D2."
     }
-   ]
+   ],
+   "reworded": {
+    "on": "2026-10-24",
+    "by": "owner approval (\"All three groups\"), applied by the session (D161)",
+    "why": "Wording only: a next step that was done or wrong, or a line reference that had moved. The item stays parked.",
+    "was": {
+     "next_action": "No action until the owner signals 'near release'; then buy the FMP tier that batches /stable/stock-price-change and delete the restore guard in FundsClient.tsx:242-256 per the comment's own instructions."
+    }
+   }
   },
   {
    "id": "T-076",
@@ -11382,19 +11489,28 @@
    "owner_role": "owner-decision",
    "category": "feature",
    "effort": "medium",
-   "blocking_decision": "Owner restores Transfer Fees to the rollout (2026-08-22 withhold) AND ratifies the integrity rules (T-117).",
+   "blocking_decision": "Owner restores Transfer Fees to the rollout (2026-08-22 withhold) AND ratifies the integrity rules (T-117). 2026-10-24 (D161): both conditions on the owner's side are past or met elsewhere: the integrity rules were ratified (T-117, done) and the shared link component exists (T-118, closed 2026-09-21). What still holds it: Transfer Fees stays hidden for launch (D89), and no paid or affiliate links at launch (D49).",
    "related_ids": [
-    "P2"
+    "P2",
+    "D161"
    ],
    "summary": "Highest-intent surface but currently hidden from rollout.",
-   "next_action": "No action; revisit only after Transfer Fees is un-withheld and the T-118 shared link component exists.",
+   "next_action": "No action while Transfer Fees stays hidden (D89) and paid links wait until after launch (D49). The T-118 shared link component exists.",
    "sources": [
     {
      "file": "docs/ROADMAP.md",
      "lines": "395-399",
      "quote": "**Transfer Fee Calculator** — the highest-intent surface in the app, and `docs/MARKET-ASSESSMENT.md` already notes competing fee/bridge comparators are affiliate-monetized. Same integrity rules: cheapest route wins, never the paying route."
     }
-   ]
+   ],
+   "reworded": {
+    "on": "2026-10-24",
+    "by": "owner approval (\"All three groups\"), applied by the session (D161)",
+    "why": "Wording only: a next step that was done or wrong, or a line reference that had moved. The item stays parked.",
+    "was": {
+     "next_action": "No action; revisit only after Transfer Fees is un-withheld and the T-118 shared link component exists."
+    }
+   }
   },
   {
    "id": "T-131",
@@ -11587,16 +11703,26 @@
    "category": "feature",
    "effort": "large",
    "blocking_decision": "D1 — rollout posture on entitlements (owner planning session); also 2026-09-05 'not ready for rollout'.",
-   "related_ids": [],
+   "related_ids": [
+    "D161"
+   ],
    "summary": "The #1 scaling blocker.",
-   "next_action": "Owner settles D1 (rollout posture / paid-vs-free) in the planning session. Only then: design a users→provider_keys table in frontend/src/lib/db/schema with encryption at rest, a route under /api/user/provider-keys (must be under /api/user/ per next.config.mjs rewrite rule), and migrate providers.ts getProviderKey() to read per-user. Do not start before D1.",
+   "next_action": "Owner settles D1 (rollout posture / paid-vs-free) in the planning session. Only then: design a users→provider_keys table in frontend/src/lib/db/schema with encryption at rest (the file store is already encrypted, T-437 and D122: reuse lib/server/secretBox.ts), a route under /api/user/provider-keys (the home for user-scoped data; the old rewrite constraint was lifted by D2), and migrate providers.ts getProviderKey() to read per-user. Do not start before D1.",
    "sources": [
     {
      "file": "docs/MARKET-ASSESSMENT.md",
      "lines": "139-140",
      "quote": "Multi-tenant backend: move provider config/keys from local JSON to a real DB with per-user encrypted key storage (the single biggest architectural change)"
     }
-   ]
+   ],
+   "reworded": {
+    "on": "2026-10-24",
+    "by": "owner approval (\"All three groups\"), applied by the session (D161)",
+    "why": "Wording only: a next step that was done or wrong, or a line reference that had moved. The item stays parked.",
+    "was": {
+     "next_action": "Owner settles D1 (rollout posture / paid-vs-free) in the planning session. Only then: design a users→provider_keys table in frontend/src/lib/db/schema with encryption at rest, a route under /api/user/provider-keys (must be under /api/user/ per next.config.mjs rewrite rule), and migrate providers.ts getProviderKey() to read per-user. Do not start before D1."
+    }
+   }
   },
   {
    "id": "T-311",
@@ -11770,19 +11896,36 @@
    "category": "decision",
    "effort": "unknown",
    "blocking_decision": "Owner: per-module licences vs tiered bundles — deferred with the paid-vs-free conversation",
-   "related_ids": [],
+   "related_ids": [
+    "D161"
+   ],
    "summary": "Phase 6 open decision gating issuance and desktop-update monetization.",
-   "next_action": "Raise in the owner's paid-vs-free planning session alongside D1; record the outcome in docs/ROADMAP.md line 487 (via propose → approve) and, if paid, feed it into T-084's scope.",
+   "next_action": "Raise in the owner's paid-vs-free planning session alongside D1; record the outcome under the Billing model entry in docs/ROADMAP.md (Phase 6), where D29's working plan already sits (via propose → approve) and, if paid, feed it into T-084's scope.",
    "sources": [
     {
      "file": "docs/ROADMAP.md",
-     "lines": "487",
+     "lines": "756-759",
      "quote": "Billing model: per-module licenses vs. tiered bundles — Phase 6."
     }
    ],
    "progress": {
     "noted_on": "2026-09-28",
     "note": "Working plan recorded 2026-09-28 (D29): tiered bundles, not per-module licences — hosted Free / Core $9.99 / Pro $29 / Advisor $99 per seat, plus a $299 BYOK Perpetual desktop edition. Pending the owner's reassessment; stays parked under D21."
+   },
+   "reworded": {
+    "on": "2026-10-24",
+    "by": "owner approval (\"All three groups\"), applied by the session (D161)",
+    "why": "Wording only: a next step that was done or wrong, or a line reference that had moved. The item stays parked.",
+    "was": {
+     "next_action": "Raise in the owner's paid-vs-free planning session alongside D1; record the outcome in docs/ROADMAP.md line 487 (via propose → approve) and, if paid, feed it into T-084's scope.",
+     "sources": [
+      {
+       "file": "docs/ROADMAP.md",
+       "lines": "487",
+       "quote": "Billing model: per-module licenses vs. tiered bundles — Phase 6."
+      }
+     ]
+    }
    }
   },
   {
@@ -11922,16 +12065,26 @@
    "category": "security",
    "effort": "small",
    "blocking_decision": "Owner decision to begin deployment work (ROADMAP 2026-07: 'no deployment work yet'; 2026-09-05: not ready for rollout)",
-   "related_ids": [],
+   "related_ids": [
+    "D161"
+   ],
    "summary": "Only sslmode=disable in tree.",
-   "next_action": "When the owner schedules the first hosted deployment: require sslmode=require in DATABASE_URL for the frontend (document in CLAUDE.md env block, add ssl option in frontend/src/lib/db/index.ts) and in backend/app/config.py DATABASE_URL, and change the exporter DSN at infrastructure/docker/docker-compose.yml:202 for non-local compose.",
+   "next_action": "When the owner schedules the first hosted deployment: require sslmode=require in DATABASE_URL for the frontend (document in CLAUDE.md env block, add ssl option in frontend/src/lib/db/index.ts), and change the exporter DSN (sslmode=disable) in infrastructure/docker/docker-compose.yml for non-local compose. backend/ is frozen (D2, backend/FROZEN.md), so its config is not touched.",
    "sources": [
     {
      "file": "docs/audits/production-readiness-scorecard.md",
      "lines": "134, 170",
      "quote": "SSL/TLS enforced everywhere (`sslmode=require`) | Not done — the only `sslmode` in the tree is `sslmode=disable` (`docker-compose.yml:199`, metrics exporter)"
     }
-   ]
+   ],
+   "reworded": {
+    "on": "2026-10-24",
+    "by": "owner approval (\"All three groups\"), applied by the session (D161)",
+    "why": "Wording only: a next step that was done or wrong, or a line reference that had moved. The item stays parked.",
+    "was": {
+     "next_action": "When the owner schedules the first hosted deployment: require sslmode=require in DATABASE_URL for the frontend (document in CLAUDE.md env block, add ssl option in frontend/src/lib/db/index.ts) and in backend/app/config.py DATABASE_URL, and change the exporter DSN at infrastructure/docker/docker-compose.yml:202 for non-local compose."
+    }
+   }
   },
   {
    "id": "T-191",
@@ -12289,11 +12442,12 @@
    "owner_role": "owner-machine",
    "category": "data-verification",
    "effort": "small",
-   "blocking_decision": "PARKED 2026-10-07 — D89 (2026-10-07): Transfer Fees stays hidden for launch, the owner's decision of 2026-10-01, recorded in this repository by D89. The fee check that day found that most exchanges now show withdrawal fees only on the logged-in withdrawal screen and change them with network costs, so a hand pass cannot finish the table. Waits on T-428: after launch, rebuild Transfer Fees from the live fee feeds six exchanges publish, with a 'check on the exchange' link for the rest.",
+   "blocking_decision": "PARKED 2026-10-07 — D89 (2026-10-07): Transfer Fees stays hidden for launch, the owner's decision of 2026-10-01, recorded in this repository by D89. The fee check that day found that most exchanges now show withdrawal fees only on the logged-in withdrawal screen and change them with network costs, so a hand pass cannot finish the table. Waits on T-428: after launch, rebuild Transfer Fees from the live fee feeds six exchanges publish, with a 'check on the exchange' link for the rest. 2026-10-24 (D161): fewer feeds remain than \"six\" says. Bitget and XT.com left WITHDRAW_FEE_SOURCES (frontend/src/lib/server/withdrawFeeAdapters.ts) on terms on 2026-10-17 (D129, D131), so their rows are checked by hand; the rebuild reads whatever that list holds.",
    "related_ids": [
     "S3",
     "T-031",
-    "T-428"
+    "T-428",
+    "D161"
    ],
    "summary": "Priority 1; confirm on bitfinex.com/fees and update SPOT_TRADING_FEES.bitfinex.",
    "next_action": "Answer it on the Transfer Fee Check page (T-031, D52), where it is listed under its exchange; then: On the owner machine open bitfinex.com/fees; if 0/0 is confirmed edit SPOT_TRADING_FEES.bitfinex in frontend/src/lib/data/transferFees.ts:109 to 0/0 with a dated note (file convention: zero-commission venues carry a 'not free — spread' note and a reviewed-by date).",
@@ -12323,11 +12477,12 @@
    "owner_role": "owner-machine",
    "category": "data-verification",
    "effort": "small",
-   "blocking_decision": "PARKED 2026-10-07 — D89 (2026-10-07): Transfer Fees stays hidden for launch, the owner's decision of 2026-10-01, recorded in this repository by D89. The fee check that day found that most exchanges now show withdrawal fees only on the logged-in withdrawal screen and change them with network costs, so a hand pass cannot finish the table. Waits on T-428: after launch, rebuild Transfer Fees from the live fee feeds six exchanges publish, with a 'check on the exchange' link for the rest.",
+   "blocking_decision": "PARKED 2026-10-07 — D89 (2026-10-07): Transfer Fees stays hidden for launch, the owner's decision of 2026-10-01, recorded in this repository by D89. The fee check that day found that most exchanges now show withdrawal fees only on the logged-in withdrawal screen and change them with network costs, so a hand pass cannot finish the table. Waits on T-428: after launch, rebuild Transfer Fees from the live fee feeds six exchanges publish, with a 'check on the exchange' link for the rest. 2026-10-24 (D161): fewer feeds remain than \"six\" says. Bitget and XT.com left WITHDRAW_FEE_SOURCES (frontend/src/lib/server/withdrawFeeAdapters.ts) on terms on 2026-10-17 (D129, D131), so their rows are checked by hand; the rebuild reads whatever that list holds.",
    "related_ids": [
     "S3",
     "T-031",
-    "T-428"
+    "T-428",
+    "D161"
    ],
    "summary": "Priority 2; base tier reported 0.040/0.070 spot vs table 0.01/0.035.",
    "next_action": "Answer it on the Transfer Fee Check page (T-031, D52), where it is listed under its exchange; then: On the owner machine read the official Hyperliquid fees page (hyperliquid.gitbook.io); if base tier differs, set SPOT_TRADING_FEES.hyperliquid at transferFees.ts:133 to the entry tier and note the tier framing.",
@@ -12357,11 +12512,12 @@
    "owner_role": "owner-machine",
    "category": "data-verification",
    "effort": "small",
-   "blocking_decision": "PARKED 2026-10-07 — D89 (2026-10-07): Transfer Fees stays hidden for launch, the owner's decision of 2026-10-01, recorded in this repository by D89. The fee check that day found that most exchanges now show withdrawal fees only on the logged-in withdrawal screen and change them with network costs, so a hand pass cannot finish the table. Waits on T-428: after launch, rebuild Transfer Fees from the live fee feeds six exchanges publish, with a 'check on the exchange' link for the rest.",
+   "blocking_decision": "PARKED 2026-10-07 — D89 (2026-10-07): Transfer Fees stays hidden for launch, the owner's decision of 2026-10-01, recorded in this repository by D89. The fee check that day found that most exchanges now show withdrawal fees only on the logged-in withdrawal screen and change them with network costs, so a hand pass cannot finish the table. Waits on T-428: after launch, rebuild Transfer Fees from the live fee feeds six exchanges publish, with a 'check on the exchange' link for the rest. 2026-10-24 (D161): fewer feeds remain than \"six\" says. Bitget and XT.com left WITHDRAW_FEE_SOURCES (frontend/src/lib/server/withdrawFeeAdapters.ts) on terms on 2026-10-17 (D129, D131), so their rows are checked by hand; the rebuild reads whatever that list holds.",
    "related_ids": [
     "S3",
     "T-031",
-    "T-428"
+    "T-428",
+    "D161"
    ],
    "summary": "Priority 3; possible Intro 1 at 0.60/1.20 vs table 0.4/0.6.",
    "next_action": "Answer it on the Transfer Fee Check page (T-031, D52), where it is listed under its exchange; then: On the owner machine open coinbase.com/advanced-fees; if Intro 1 is 0.60/1.20, edit SPOT_TRADING_FEES.coinbase at transferFees.ts:105.",
@@ -12391,14 +12547,15 @@
    "owner_role": "owner-machine",
    "category": "data-verification",
    "effort": "small",
-   "blocking_decision": "PARKED 2026-10-07 — D89 (2026-10-07): Transfer Fees stays hidden for launch, the owner's decision of 2026-10-01, recorded in this repository by D89. The fee check that day found that most exchanges now show withdrawal fees only on the logged-in withdrawal screen and change them with network costs, so a hand pass cannot finish the table. Waits on T-428: after launch, rebuild Transfer Fees from the live fee feeds six exchanges publish, with a 'check on the exchange' link for the rest.",
+   "blocking_decision": "PARKED 2026-10-07 — D89 (2026-10-07): Transfer Fees stays hidden for launch, the owner's decision of 2026-10-01, recorded in this repository by D89. The fee check that day found that most exchanges now show withdrawal fees only on the logged-in withdrawal screen and change them with network costs, so a hand pass cannot finish the table. Waits on T-428: after launch, rebuild Transfer Fees from the live fee feeds six exchanges publish, with a 'check on the exchange' link for the rest. 2026-10-24 (D161): fewer feeds remain than \"six\" says. Bitget and XT.com left WITHDRAW_FEE_SOURCES (frontend/src/lib/server/withdrawFeeAdapters.ts) on terms on 2026-10-17 (D129, D131), so their rows are checked by hand; the rebuild reads whatever that list holds.",
    "related_ids": [
     "S3",
     "T-031",
-    "T-428"
+    "T-428",
+    "D161"
    ],
    "summary": "Priority 4; confirm gate.io vs gate.com canonical page.",
-   "next_action": "Answer it on the Transfer Fee Check page (T-031, D52), where it is listed under its exchange; then: On the owner machine open the canonical Gate fee page (gate.io vs gate.com) and update SPOT_TRADING_FEES.gateio and the Gate.io EXCHANGES block (transferFees.ts:1065-1129) as needed.",
+   "next_action": "Answer it on the Transfer Fee Check page (T-031, D52), where it is listed under its exchange; then: On the owner machine open the canonical Gate fee page (gate.io vs gate.com) and update SPOT_TRADING_FEES.gateio and the Gate.io block of EXCHANGES in transferFees.ts as needed.",
    "sources": [
     {
      "file": "docs/audits/fee-refresh-2026-08-20.md",
@@ -12414,6 +12571,14 @@
      "docs/decisions/2026-10-05-owner-decisions.md",
      "frontend/scripts/lib/feeCheckData.ts"
     ]
+   },
+   "reworded": {
+    "on": "2026-10-24",
+    "by": "owner approval (\"All three groups\"), applied by the session (D161)",
+    "why": "Wording only: a next step that was done or wrong, or a line reference that had moved. The item stays parked.",
+    "was": {
+     "next_action": "Answer it on the Transfer Fee Check page (T-031, D52), where it is listed under its exchange; then: On the owner machine open the canonical Gate fee page (gate.io vs gate.com) and update SPOT_TRADING_FEES.gateio and the Gate.io EXCHANGES block (transferFees.ts:1065-1129) as needed."
+    }
    }
   },
   {
@@ -12425,14 +12590,15 @@
    "owner_role": "owner-machine",
    "category": "data-verification",
    "effort": "small",
-   "blocking_decision": "PARKED 2026-10-07 — D89 (2026-10-07): Transfer Fees stays hidden for launch, the owner's decision of 2026-10-01, recorded in this repository by D89. The fee check that day found that most exchanges now show withdrawal fees only on the logged-in withdrawal screen and change them with network costs, so a hand pass cannot finish the table. Waits on T-428: after launch, rebuild Transfer Fees from the live fee feeds six exchanges publish, with a 'check on the exchange' link for the rest.",
+   "blocking_decision": "PARKED 2026-10-07 — D89 (2026-10-07): Transfer Fees stays hidden for launch, the owner's decision of 2026-10-01, recorded in this repository by D89. The fee check that day found that most exchanges now show withdrawal fees only on the logged-in withdrawal screen and change them with network costs, so a hand pass cannot finish the table. Waits on T-428: after launch, rebuild Transfer Fees from the live fee feeds six exchanges publish, with a 'check on the exchange' link for the rest. 2026-10-24 (D161): fewer feeds remain than \"six\" says. Bitget and XT.com left WITHDRAW_FEE_SOURCES (frontend/src/lib/server/withdrawFeeAdapters.ts) on terms on 2026-10-17 (D129, D131), so their rows are checked by hand; the rebuild reads whatever that list holds.",
    "related_ids": [
     "S3",
     "T-031",
-    "T-428"
+    "T-428",
+    "D161"
    ],
    "summary": "Priority 5; reported up to 10 USDT vs flat 2.5.",
-   "next_action": "Answer it on the Transfer Fee Check page (T-031, D52), where it is listed under its exchange; then: On the owner machine check kraken.com/features/fee-schedule (withdrawal section) for dynamic ERC-20 fees and add a note to each affected row in the Kraken block of transferFees.ts (575-636).",
+   "next_action": "Answer it on the Transfer Fee Check page (T-031, D52), where it is listed under its exchange; then: On the owner machine check kraken.com/features/fee-schedule (withdrawal section) for dynamic ERC-20 fees and add a note to each affected row in the Kraken block of transferFees.ts.",
    "sources": [
     {
      "file": "docs/audits/fee-refresh-2026-08-20.md",
@@ -12448,6 +12614,14 @@
      "docs/decisions/2026-10-05-owner-decisions.md",
      "frontend/scripts/lib/feeCheckData.ts"
     ]
+   },
+   "reworded": {
+    "on": "2026-10-24",
+    "by": "owner approval (\"All three groups\"), applied by the session (D161)",
+    "why": "Wording only: a next step that was done or wrong, or a line reference that had moved. The item stays parked.",
+    "was": {
+     "next_action": "Answer it on the Transfer Fee Check page (T-031, D52), where it is listed under its exchange; then: On the owner machine check kraken.com/features/fee-schedule (withdrawal section) for dynamic ERC-20 fees and add a note to each affected row in the Kraken block of transferFees.ts (575-636)."
+    }
    }
   },
   {
@@ -12459,12 +12633,13 @@
    "owner_role": "owner-machine",
    "category": "data-verification",
    "effort": "small",
-   "blocking_decision": "PARKED 2026-10-07 — D89 (2026-10-07): Transfer Fees stays hidden for launch, the owner's decision of 2026-10-01, recorded in this repository by D89. The fee check that day found that most exchanges now show withdrawal fees only on the logged-in withdrawal screen and change them with network costs, so a hand pass cannot finish the table. Waits on T-428: after launch, rebuild Transfer Fees from the live fee feeds six exchanges publish, with a 'check on the exchange' link for the rest.",
+   "blocking_decision": "PARKED 2026-10-07 — D89 (2026-10-07): Transfer Fees stays hidden for launch, the owner's decision of 2026-10-01, recorded in this repository by D89. The fee check that day found that most exchanges now show withdrawal fees only on the logged-in withdrawal screen and change them with network costs, so a hand pass cannot finish the table. Waits on T-428: after launch, rebuild Transfer Fees from the live fee feeds six exchanges publish, with a 'check on the exchange' link for the rest. 2026-10-24 (D161): fewer feeds remain than \"six\" says. Bitget and XT.com left WITHDRAW_FEE_SOURCES (frontend/src/lib/server/withdrawFeeAdapters.ts) on terms on 2026-10-17 (D129, D131), so their rows are checked by hand; the rebuild reads whatever that list holds.",
    "related_ids": [
     "S3",
     "T8",
     "T-031",
-    "T-428"
+    "T-428",
+    "D161"
    ],
    "summary": "Priority 8; USDC ERC-20/Polygon, LTC, DOGE rows carry the pass-through caveat since T8.",
    "next_action": "Answer it on the Transfer Fee Check page (T-031, D52), where it is listed under its exchange; then: On the owner machine open gemini.com/fees (transfer-fee article) and set the four rows at transferFees.ts:860-867 to the pass-through values, or keep 0 with a dated confirmation note.",
@@ -12499,11 +12674,12 @@
    "owner_role": "owner-machine",
    "category": "data-verification",
    "effort": "small",
-   "blocking_decision": "PARKED 2026-10-07 — D89 (2026-10-07): Transfer Fees stays hidden for launch, the owner's decision of 2026-10-01, recorded in this repository by D89. The fee check that day found that most exchanges now show withdrawal fees only on the logged-in withdrawal screen and change them with network costs, so a hand pass cannot finish the table. Waits on T-428: after launch, rebuild Transfer Fees from the live fee feeds six exchanges publish, with a 'check on the exchange' link for the rest.",
+   "blocking_decision": "PARKED 2026-10-07 — D89 (2026-10-07): Transfer Fees stays hidden for launch, the owner's decision of 2026-10-01, recorded in this repository by D89. The fee check that day found that most exchanges now show withdrawal fees only on the logged-in withdrawal screen and change them with network costs, so a hand pass cannot finish the table. Waits on T-428: after launch, rebuild Transfer Fees from the live fee feeds six exchanges publish, with a 'check on the exchange' link for the rest. 2026-10-24 (D161): fewer feeds remain than \"six\" says. Bitget and XT.com left WITHDRAW_FEE_SOURCES (frontend/src/lib/server/withdrawFeeAdapters.ts) on terms on 2026-10-17 (D129, D131), so their rows are checked by hand; the rebuild reads whatever that list holds.",
    "related_ids": [
     "S3",
     "T-031",
-    "T-428"
+    "T-428",
+    "D161"
    ],
    "summary": "Group D re-check item.",
    "next_action": "Answer it on the Transfer Fee Check page (T-031, D52), where it is listed under its exchange; then: On the owner machine read Upbit's withdrawal-fee page for BTC and apply via `npm run fee-apply` from a filled worksheet row (exchange upbit, coin btc, network bitcoin).",
@@ -12533,11 +12709,12 @@
    "owner_role": "owner-machine",
    "category": "data-verification",
    "effort": "small",
-   "blocking_decision": "PARKED 2026-10-07 — D89 (2026-10-07): Transfer Fees stays hidden for launch, the owner's decision of 2026-10-01, recorded in this repository by D89. The fee check that day found that most exchanges now show withdrawal fees only on the logged-in withdrawal screen and change them with network costs, so a hand pass cannot finish the table. Waits on T-428: after launch, rebuild Transfer Fees from the live fee feeds six exchanges publish, with a 'check on the exchange' link for the rest.",
+   "blocking_decision": "PARKED 2026-10-07 — D89 (2026-10-07): Transfer Fees stays hidden for launch, the owner's decision of 2026-10-01, recorded in this repository by D89. The fee check that day found that most exchanges now show withdrawal fees only on the logged-in withdrawal screen and change them with network costs, so a hand pass cannot finish the table. Waits on T-428: after launch, rebuild Transfer Fees from the live fee feeds six exchanges publish, with a 'check on the exchange' link for the rest. 2026-10-24 (D161): fewer feeds remain than \"six\" says. Bitget and XT.com left WITHDRAW_FEE_SOURCES (frontend/src/lib/server/withdrawFeeAdapters.ts) on terms on 2026-10-17 (D129, D131), so their rows are checked by hand; the rebuild reads whatever that list holds.",
    "related_ids": [
     "S3",
     "T-031",
-    "T-428"
+    "T-428",
+    "D161"
    ],
    "summary": "Table notes KRW-market only.",
    "next_action": "Answer it on the Transfer Fee Check page (T-031, D52), where it is listed under its exchange; then: Fold into the Upbit page read for T-046: if 0.25% BTC/USDT-market is on the official page, extend the note at transferFees.ts:117.",
@@ -12567,12 +12744,13 @@
    "owner_role": "owner-machine",
    "category": "data-verification",
    "effort": "small",
-   "blocking_decision": "PARKED 2026-10-07 — D89 (2026-10-07): Transfer Fees stays hidden for launch, the owner's decision of 2026-10-01, recorded in this repository by D89. The fee check that day found that most exchanges now show withdrawal fees only on the logged-in withdrawal screen and change them with network costs, so a hand pass cannot finish the table. Waits on T-428: after launch, rebuild Transfer Fees from the live fee feeds six exchanges publish, with a 'check on the exchange' link for the rest.",
+   "blocking_decision": "PARKED 2026-10-07 — D89 (2026-10-07): Transfer Fees stays hidden for launch, the owner's decision of 2026-10-01, recorded in this repository by D89. The fee check that day found that most exchanges now show withdrawal fees only on the logged-in withdrawal screen and change them with network costs, so a hand pass cannot finish the table. Waits on T-428: after launch, rebuild Transfer Fees from the live fee feeds six exchanges publish, with a 'check on the exchange' link for the rest. 2026-10-24 (D161): fewer feeds remain than \"six\" says. Bitget and XT.com left WITHDRAW_FEE_SOURCES (frontend/src/lib/server/withdrawFeeAdapters.ts) on terms on 2026-10-17 (D129, D131), so their rows are checked by hand; the rebuild reads whatever that list holds.",
    "related_ids": [
     "S3",
     "T8",
     "T-031",
-    "T-428"
+    "T-428",
+    "D161"
    ],
    "summary": "Single-source value from 2026-07-20; verify on Bybit's live withdrawal screen.",
    "next_action": "Answer it on the Transfer Fee Check page (T-031, D52), where it is listed under its exchange; then: On the owner machine open Bybit's ETH withdrawal screen (logged in), confirm the ERC-20 fee and the Mantle free route, and update transferFees.ts:743 via fee-apply.",
@@ -12607,11 +12785,12 @@
    "owner_role": "owner-machine",
    "category": "data-verification",
    "effort": "small",
-   "blocking_decision": "PARKED 2026-10-07 — D89 (2026-10-07): Transfer Fees stays hidden for launch, the owner's decision of 2026-10-01, recorded in this repository by D89. The fee check that day found that most exchanges now show withdrawal fees only on the logged-in withdrawal screen and change them with network costs, so a hand pass cannot finish the table. Waits on T-428: after launch, rebuild Transfer Fees from the live fee feeds six exchanges publish, with a 'check on the exchange' link for the rest.",
+   "blocking_decision": "PARKED 2026-10-07 — D89 (2026-10-07): Transfer Fees stays hidden for launch, the owner's decision of 2026-10-01, recorded in this repository by D89. The fee check that day found that most exchanges now show withdrawal fees only on the logged-in withdrawal screen and change them with network costs, so a hand pass cannot finish the table. Waits on T-428: after launch, rebuild Transfer Fees from the live fee feeds six exchanges publish, with a 'check on the exchange' link for the rest. 2026-10-24 (D161): fewer feeds remain than \"six\" says. Bitget and XT.com left WITHDRAW_FEE_SOURCES (frontend/src/lib/server/withdrawFeeAdapters.ts) on terms on 2026-10-17 (D129, D131), so their rows are checked by hand; the rebuild reads whatever that list holds.",
    "related_ids": [
     "S3",
     "T-031",
-    "T-428"
+    "T-428",
+    "D161"
    ],
    "summary": "Table may mix the two schedules.",
    "next_action": "Answer it on the Transfer Fee Check page (T-031, D52), where it is listed under its exchange; then: On the owner machine read crypto.com/exchange/document/fees-limits and the App fee page, decide which schedule the table represents, and add a note to the Crypto.com entry and SPOT_TRADING_FEES.cryptocom.",
@@ -12641,11 +12820,12 @@
    "owner_role": "owner-machine",
    "category": "data-verification",
    "effort": "small",
-   "blocking_decision": "PARKED 2026-10-07 — D89 (2026-10-07): Transfer Fees stays hidden for launch, the owner's decision of 2026-10-01, recorded in this repository by D89. The fee check that day found that most exchanges now show withdrawal fees only on the logged-in withdrawal screen and change them with network costs, so a hand pass cannot finish the table. Waits on T-428: after launch, rebuild Transfer Fees from the live fee feeds six exchanges publish, with a 'check on the exchange' link for the rest.",
+   "blocking_decision": "PARKED 2026-10-07 — D89 (2026-10-07): Transfer Fees stays hidden for launch, the owner's decision of 2026-10-01, recorded in this repository by D89. The fee check that day found that most exchanges now show withdrawal fees only on the logged-in withdrawal screen and change them with network costs, so a hand pass cannot finish the table. Waits on T-428: after launch, rebuild Transfer Fees from the live fee feeds six exchanges publish, with a 'check on the exchange' link for the rest. 2026-10-24 (D161): fewer feeds remain than \"six\" says. Bitget and XT.com left WITHDRAW_FEE_SOURCES (frontend/src/lib/server/withdrawFeeAdapters.ts) on terms on 2026-10-17 (D129, D131), so their rows are checked by hand; the rebuild reads whatever that list holds.",
    "related_ids": [
     "S3",
     "T-031",
-    "T-428"
+    "T-428",
+    "D161"
    ],
    "summary": "Absence of rows is historically correct; re-confirm on the re-run.",
    "next_action": "Answer it on the Transfer Fee Check page (T-031, D52), where it is listed under its exchange; then: On the owner machine check Kraken's deposit/withdrawal network list for BNB Smart Chain; if still absent, no code change — record the confirmation in the worksheet CSV.",
@@ -12675,11 +12855,12 @@
    "owner_role": "owner-machine",
    "category": "data-verification",
    "effort": "small",
-   "blocking_decision": "PARKED 2026-10-07 — D89 (2026-10-07): Transfer Fees stays hidden for launch, the owner's decision of 2026-10-01, recorded in this repository by D89. The fee check that day found that most exchanges now show withdrawal fees only on the logged-in withdrawal screen and change them with network costs, so a hand pass cannot finish the table. Waits on T-428: after launch, rebuild Transfer Fees from the live fee feeds six exchanges publish, with a 'check on the exchange' link for the rest.",
+   "blocking_decision": "PARKED 2026-10-07 — D89 (2026-10-07): Transfer Fees stays hidden for launch, the owner's decision of 2026-10-01, recorded in this repository by D89. The fee check that day found that most exchanges now show withdrawal fees only on the logged-in withdrawal screen and change them with network costs, so a hand pass cannot finish the table. Waits on T-428: after launch, rebuild Transfer Fees from the live fee feeds six exchanges publish, with a 'check on the exchange' link for the rest. 2026-10-24 (D161): fewer feeds remain than \"six\" says. Bitget and XT.com left WITHDRAW_FEE_SOURCES (frontend/src/lib/server/withdrawFeeAdapters.ts) on terms on 2026-10-17 (D129, D131), so their rows are checked by hand; the rebuild reads whatever that list holds.",
    "related_ids": [
     "S3",
     "T-031",
-    "T-428"
+    "T-428",
+    "D161"
    ],
    "summary": "okx.com was egress-blocked on 08-20.",
    "next_action": "Answer it on the Transfer Fee Check page (T-031, D52), where it is listed under its exchange; then: On the owner machine open OKX's BTC/ETH withdrawal screens; confirm the dynamic-fee wording and whether MATIC is listed as POL, and update the notes at transferFees.ts:640/644 if needed.",
@@ -41006,6 +41187,13 @@
    {
     "on": "2026-10-24",
     "what": "T-437 closed (open → closed, D160): encryption at rest was already merged; the owner backed up FN_SECRETS_KEY and declined replacing the provider keys, a security-only step. Counts recomputed: closed 231, open 11.",
+    "evidence": [
+     "docs/decisions/2026-10-24-owner-decisions.md"
+    ]
+   },
+   {
+    "on": "2026-10-24",
+    "what": "D161, a review of all 134 parked items: none could be unparked or closed. 34 had out-of-date wording, fixed with no status change: the transfer-fee rows' feed count, the options add-ons' calculator note, T-122's met prerequisites, five next steps that were done or wrong, and nine moved line references, now cited by name.",
     "evidence": [
      "docs/decisions/2026-10-24-owner-decisions.md"
     ]
