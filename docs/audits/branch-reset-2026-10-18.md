@@ -633,3 +633,20 @@ held by:
 - its content in `main` as `0b55f97`.
 
 Nothing was deleted; no other ref moved.
+
+## Thirty-eighth reset, after PR #418 (2026-10-25)
+
+**What was done.** After PR #418 (D164, T-154 parked) was squash-merged into `main` as `6c42bec`,
+the branch was restarted from `6c42bec` on the owner's machine to record D165 and the fund issuers'
+permission drafts. Pushed with `--force-with-lease`, for the same reason as above.
+
+**Where the prior state lives.** The branch's previous tip, `fbd6f6a` (#418's only commit), is
+held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@fbd6f6a`, created by
+  `.github/workflows/archive-branch.yml` when #418 merged, and checked on the remote before the
+  restart;
+- GitHub's `refs/pull/418/head`;
+- its content in `main` as `6c42bec`.
+
+Nothing was deleted; no other ref moved.
