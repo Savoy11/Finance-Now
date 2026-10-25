@@ -253,8 +253,10 @@ import type { SectorId } from './equityCatalog'
 // check the owner approved, and each carries the page's date, kind and address (yieldRead,
 // aumRead). 18 of the yields are 30-day SEC yields, the only yield those Vanguard pages give,
 // recorded as such at the owner's choice: fundYieldFact labels them, never as 12-month ones.
-// The other 55 figures are on sites a script may not read, or on pages that give no fund
-// yield, and wait for the owner's hand reading, so FUND_FIGURES_COMPILED_ON does not move.
+// 2026-10-24 (D158): VNQ's yield is the adjusted effective yield its page gives, which the
+// owner confirmed there (D150), labelled as that kind. The other 54 figures are on sites a
+// script may not read or that refuse it (Direxion answers HTTP 403), or on pages that give no
+// fund yield, and wait for the owner's hand reading, so FUND_FIGURES_COMPILED_ON does not move.
 //
 // Also D116: OILK's launch year 2019 -> 2016, from its prospectus's PerfInceptionDate.
 export const FUND_FEES_LAST_VERIFIED = '2026-09-26'
@@ -356,35 +358,45 @@ export interface PageReading {
   source: string
 }
 
-/** The two kinds of yield the catalog holds: a trailing 12-month distribution yield, or a 30-day SEC yield. */
-export type YieldKind = 'trailing' | 'sec'
+/**
+ * The kinds of yield the catalog holds: a trailing 12-month distribution yield, a 30-day SEC
+ * yield (D144), or the adjusted effective yield a fund's page gives instead (VNQ, D150).
+ */
+export type YieldKind = 'trailing' | 'sec' | 'effective'
+
+/** Each kind's name: in full, as a column badge, and as the words under a figure. */
+export const YIELD_KIND_NAMES: Record<YieldKind, { label: string; short: string; words: string }> = {
+  trailing: { label: 'Distribution Yield', short: 'TTM', words: '12-month' },
+  sec: { label: '30-Day SEC Yield', short: 'SEC', words: '30-day SEC' },
+  effective: { label: 'Adjusted Effective Yield', short: 'Adj. eff.', words: 'Adjusted effective' },
+}
 
 /**
- * The fund's yield as every surface shows it. A 30-day SEC yield is never labelled as a
- * 12-month one: the two answer different questions (what the fund paid out over a year, and
- * what its holdings are earning now, net of fees), and bond funds' can differ by a point.
+ * The fund's yield as every surface shows it. No kind is ever labelled as another: a 12-month
+ * yield says what the fund paid out over a year, a 30-day SEC yield what its holdings are
+ * earning now, net of fees, and bond funds' can differ by a point. An adjusted effective yield
+ * is the fund page's own figure, shown under the page's own name.
  */
 export function fundYieldFact(
   f: Pick<FundEntry, 'yieldPct' | 'yieldRead'>,
-): { label: string; short: string; value: string; explain: string; kind: YieldKind; asOf: string | null } {
+): { label: string; short: string; words: string; value: string; explain: string; kind: YieldKind; asOf: string | null } {
   const kind: YieldKind = f.yieldRead?.kind ?? 'trailing'
   const asOf = f.yieldRead?.asOf ?? null
-  const label = kind === 'sec' ? '30-Day SEC Yield' : 'Distribution Yield'
-  const short = kind === 'sec' ? 'SEC' : 'TTM'
-  if (f.yieldPct === null) return { label, short, value: '—', explain: 'The fund pays out little or nothing.', kind, asOf }
+  const { label, short, words } = YIELD_KIND_NAMES[kind]
+  if (f.yieldPct === null) return { label, short, words, value: '—', explain: 'The fund pays out little or nothing.', kind, asOf }
   const pct = `${f.yieldPct.toFixed(2)}%`
   if (!asOf) {
     return {
-      label, short, kind, asOf, value: `≈ ${pct}`,
+      label, short, words, kind, asOf, value: `≈ ${pct}`,
       explain: 'Income (dividends and interest) paid out over the past year as a percent of the fund’s price — the cash-flow component of your return. Approximate, compiled by hand.',
     }
   }
-  return {
-    label, short, kind, asOf, value: `${pct} · ${asOf}`,
-    explain: kind === 'sec'
-      ? `The 30-day SEC yield on ${asOf}, from the fund’s own page: what its holdings earned over the last 30 days, net of fees, as a yearly rate. It is not what the fund paid out over the past year, and for a bond fund the two can differ by a point or more.`
-      : `Income paid out over the 12 months to ${asOf} as a percent of the fund’s price, from the fund’s own page.`,
-  }
+  const explain = {
+    sec: `The 30-day SEC yield on ${asOf}, from the fund’s own page: what its holdings earned over the last 30 days, net of fees, as a yearly rate. It is not what the fund paid out over the past year, and for a bond fund the two can differ by a point or more.`,
+    trailing: `Income paid out over the 12 months to ${asOf} as a percent of the fund’s price, from the fund’s own page.`,
+    effective: `The figure the fund’s own page gives as its adjusted effective yield, on ${asOf}. It is neither what the fund paid out over the past year nor a 30-day SEC yield, so set it beside those with care.`,
+  }[kind]
+  return { label, short, words, kind, asOf, value: `${pct} · ${asOf}`, explain }
 }
 
 export function fundAssetsFact(
@@ -715,7 +727,7 @@ export const FUND_CATALOG: FundEntry[] = [
   { symbol: 'XLI',  name: 'Industrial Select Sector SPDR',     type: 'etf', issuer: 'State Street', category: 'sector', expenseRatioPct: 0.08, aumB: 34, aumAsOf: '2026-06-30', aumSource: '0001410368-26-089138', referencePrice: 150, yieldPct: 1.13, yieldRead: { asOf: '2026-10-20', kind: 'trailing', source: 'https://www.ssga.com/us/en/intermediary/etfs/state-street-industrial-select-sector-spdr-etf-xli' }, inceptionYear: 1998, indexTracked: 'Industrial Select Sector', topHoldings: [], website: 'https://www.sectorspdrs.com/mainfund/xli', description: 'S&P 500 industrials: aerospace, machinery, transport.', focusSector: 'industrials', focusIndustry: 'Aerospace, machinery & transport' },
   { symbol: 'XLU',  name: 'Utilities Select Sector SPDR',      type: 'etf', issuer: 'State Street', category: 'sector', expenseRatioPct: 0.08, aumB: 23.1, aumAsOf: '2026-06-30', aumSource: '0001410368-26-089590', referencePrice: 84, yieldPct: 2.89, yieldRead: { asOf: '2026-10-20', kind: 'trailing', source: 'https://www.ssga.com/us/en/intermediary/etfs/state-street-utilities-select-sector-spdr-etf-xlu' }, inceptionYear: 1998, indexTracked: 'Utilities Select Sector', topHoldings: [], website: 'https://www.sectorspdrs.com/mainfund/xlu', description: 'S&P 500 utilities; data-center power demand theme.', focusSector: 'utilities', focusIndustry: 'Electric & multi-utilities' },
   { symbol: 'SMH',  name: 'VanEck Semiconductor ETF',          type: 'etf', issuer: 'VanEck',       category: 'sector', expenseRatioPct: 0.35, aumB: 77.2, aumAsOf: '2026-06-30', aumSource: '0001410368-26-086937', referencePrice: 300, yieldPct: 0.4, inceptionYear: 2000, indexTracked: 'MVIS US Listed Semiconductor 25', topHoldings: [ { symbol: 'NVDA', name: 'NVIDIA', weightPct: 20 }, { symbol: 'TSM', name: 'TSMC', weightPct: 12 }, { symbol: 'AVGO', name: 'Broadcom', weightPct: 8 }, { symbol: 'AMD', name: 'AMD', weightPct: 5 }, { symbol: 'ASML', name: 'ASML', weightPct: 5 } ], website: 'https://www.vaneck.com/us/en/investments/semiconductor-etf-smh/', description: 'Concentrated semiconductor pure play — the AI supply chain.', focusSector: 'technology', focusIndustry: 'Semiconductors' },
-  { symbol: 'VNQ',  name: 'Vanguard Real Estate ETF',          type: 'etf', issuer: 'Vanguard',     category: 'sector', expenseRatioPct: 0.13, aumB: 35.9, aumRead: { asOf: '2026-09-30', source: 'https://investor.vanguard.com/investment-products/etfs/profile/vnq' }, referencePrice: 95, yieldPct: 3.9, inceptionYear: 2004, indexTracked: 'MSCI US IMI Real Estate 25/50', topHoldings: [ { symbol: 'PLD', name: 'Prologis', weightPct: 6 }, { symbol: 'AMT', name: 'American Tower', weightPct: 5 }, { symbol: 'EQIX', name: 'Equinix', weightPct: 4 }, { symbol: 'WELL', name: 'Welltower', weightPct: 4 }, { symbol: 'O', name: 'Realty Income', weightPct: 3 } ], website: 'https://investor.vanguard.com/investment-products/etfs/profile/vnq', description: 'Broad US REIT exposure for income and diversification.', focusSector: 'real-estate', focusIndustry: 'Equity REITs' },
+  { symbol: 'VNQ',  name: 'Vanguard Real Estate ETF',          type: 'etf', issuer: 'Vanguard',     category: 'sector', expenseRatioPct: 0.13, aumB: 35.9, aumRead: { asOf: '2026-09-30', source: 'https://investor.vanguard.com/investment-products/etfs/profile/vnq' }, referencePrice: 95, yieldPct: 2.89, yieldRead: { asOf: '2026-09-30', kind: 'effective', source: 'https://investor.vanguard.com/investment-products/etfs/profile/vnq' }, inceptionYear: 2004, indexTracked: 'MSCI US IMI Real Estate 25/50', topHoldings: [ { symbol: 'PLD', name: 'Prologis', weightPct: 6 }, { symbol: 'AMT', name: 'American Tower', weightPct: 5 }, { symbol: 'EQIX', name: 'Equinix', weightPct: 4 }, { symbol: 'WELL', name: 'Welltower', weightPct: 4 }, { symbol: 'O', name: 'Realty Income', weightPct: 3 } ], website: 'https://investor.vanguard.com/investment-products/etfs/profile/vnq', description: 'Broad US REIT exposure for income and diversification.', focusSector: 'real-estate', focusIndustry: 'Equity REITs' },
   { symbol: 'SOXX', name: 'iShares Semiconductor ETF',        type: 'etf', issuer: 'BlackRock',    category: 'sector', expenseRatioPct: 0.34, aumB: 47.8, aumAsOf: '2026-06-30', aumSource: '0002071691-26-019781',  referencePrice: 230, yieldPct: 0.7, inceptionYear: 2001, indexTracked: 'NYSE Semiconductor', topHoldings: [], website: 'https://www.ishares.com/us/products/239705/ishares-phlx-semiconductor-etf', description: 'Concentrated US-listed semiconductor makers and designers.', focusSector: 'technology', focusIndustry: 'Semiconductors' },
   { symbol: 'IGV',  name: 'iShares Expanded Tech-Software ETF', type: 'etf', issuer: 'BlackRock',  category: 'sector', expenseRatioPct: 0.39, aumB: 13.5, aumAsOf: '2026-06-30', aumSource: '0002071691-26-019778',   referencePrice: 95,  yieldPct: null, inceptionYear: 2001, indexTracked: 'S&P North American Expanded Technology Software', topHoldings: [], website: 'https://www.ishares.com/us/products/239771/ishares-north-american-techsoftware-etf', description: 'Application, systems, and infrastructure software makers.', focusSector: 'technology', focusIndustry: 'Software' },
   { symbol: 'HACK', name: 'Amplify Cybersecurity ETF',        type: 'etf', issuer: 'Amplify',      category: 'sector', expenseRatioPct: 0.60, aumB: 2.59, aumAsOf: '2026-06-30', aumSource: '0001193125-26-372674', referencePrice: 68,  yieldPct: null, inceptionYear: 2014, indexTracked: 'Nasdaq ISE Cyber Security Select', topHoldings: [], website: 'https://amplifyetfs.com/hack/', description: 'Pure-play cybersecurity hardware, software, and services.', focusSector: 'technology', focusIndustry: 'Cybersecurity' },

@@ -265,7 +265,7 @@ function statRows(symbol: string, opt?: Option): Array<[string, string]> {
       ['Sector', '—'],
       ['Market cap', '—'],
       ['P/E (TTM)', '—'],
-      ['Dividend yield', f.yieldPct != null ? `${f.yieldPct}%${fundYieldFact(f).kind === 'sec' ? ' (30-day SEC)' : ''}` : '—'],
+      ['Dividend yield', f.yieldPct != null ? `${f.yieldPct}%${fundYieldFact(f).kind === 'trailing' ? '' : ` (${fundYieldFact(f).words})`}` : '—'],
       ['Beta (5Y)', '—'],
       ['Expense ratio', `${f.expenseRatioPct}%`],
     ]

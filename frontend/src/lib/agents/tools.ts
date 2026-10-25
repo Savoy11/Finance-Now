@@ -694,7 +694,8 @@ async function execute(
             // aumAsOf is the SEC filing's period end; null means the figure is approximate.
             // aumMeasure says what it counts: a mutual fund's is the whole fund (D115).
             expenseRatioPct: f.expenseRatioPct, aumB: f.aumB, aumAsOf: f.aumAsOf ?? null,
-            // yieldKind says which yield it is: 'sec' is a 30-day SEC yield, never a 12-month one.
+            // yieldKind says which yield it is: 'sec' is a 30-day SEC yield and 'effective' the
+            // page's adjusted effective yield, never a 12-month one.
             aumMeasure: fundAssetsFact(f, String).label, yieldPct: f.yieldPct,
             yieldKind: fundYieldFact(f).kind, yieldAsOf: fundYieldFact(f).asOf,
             indexTracked: f.indexTracked,
