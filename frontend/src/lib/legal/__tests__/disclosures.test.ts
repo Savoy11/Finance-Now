@@ -103,9 +103,9 @@ describe('blanks and the draft notice', () => {
 })
 
 describe('the footer (D50)', () => {
-  it('links About, Terms, Privacy and the not-advice notice', () => {
+  it('links About, Terms, Privacy, the not-advice notice and how the figures are worked out (D163)', () => {
     expect(FOOTER_LINKS.map((l) => l.href)).toEqual([
-      LEGAL_PATHS.about, LEGAL_PATHS.terms, LEGAL_PATHS.privacy, LEGAL_PATHS.notAdvice,
+      LEGAL_PATHS.about, LEGAL_PATHS.terms, LEGAL_PATHS.privacy, LEGAL_PATHS.notAdvice, LEGAL_PATHS.dataMethods,
     ])
   })
 
