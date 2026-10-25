@@ -334,6 +334,22 @@ describe('which yields are shown (D166)', () => {
     }
   })
 
+  it('notes beside the link where the fund’s page lacks the figure (D168)', () => {
+    // Checked 2026-10-25: Vanguard's VT, VXUS and VTIAX pages in a browser (the SEC yield reads
+    // "—"), and the pre-fill found no yield on the other five; ProShares' TQQQ page and fact sheet;
+    // Direxion's SOXL page; Teucrium's CORN page and fact sheet.
+    const noted = FUND_CATALOG.filter((f) => f.pageNote).map((f) => f.symbol).sort()
+    expect(noted).toEqual(['CANE', 'CORN', 'SOXL', 'SOYB', 'TQQQ', 'VEA', 'VGK', 'VSS', 'VT', 'VTIAX', 'VWO', 'VXUS', 'VYMI', 'WEAT'])
+    for (const f of FUND_CATALOG.filter((x) => x.pageNote)) {
+      const { link, explain } = fundYieldFact(f, NOW_D166)
+      expect(link.note, f.symbol).toBe(f.pageNote)
+      expect(link.title, f.symbol).toContain(f.pageNote!)
+      expect(explain, f.symbol).toContain(f.pageNote!)
+      expect(link.title, f.symbol).not.toMatch(/which has its current yield/)
+    }
+    expect(fundYieldFact(FUND_CATALOG.find((f) => f.symbol === 'VOO')!, NOW_D166).link.note).toBeUndefined()
+  })
+
   it('shows no catalog yield from a site outside the rulings', () => {
     let shown = 0
     for (const f of FUND_CATALOG) {

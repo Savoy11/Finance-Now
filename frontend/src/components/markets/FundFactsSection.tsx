@@ -122,11 +122,14 @@ const ROWS: Row[] = [
           {y.link.text} <ExternalLink size={9} aria-hidden />
         </a>
       )
+      // D168: where the fund's page lacks the figure, the note says where it is.
+      const note = y.link.note && <span className="text-[10px] leading-tight text-text-muted">{y.link.note}</span>
       if (!y.shown) {
         return (
           <span className="inline-flex flex-col">
             <span className="text-text-muted" title={y.explain}>{f.yieldPct == null ? 'Negligible' : 'Not shown'}</span>
             {link}
+            {note}
           </span>
         )
       }
@@ -135,6 +138,7 @@ const ROWS: Row[] = [
           <span className="font-mono" title={y.explain}>{y.value.split(' · ')[0]}</span>
           <span className="text-[10px] leading-tight text-text-muted">{y.words} · {y.asOf} · may have changed</span>
           {link}
+          {note}
         </span>
       )
     },

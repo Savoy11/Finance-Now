@@ -237,7 +237,7 @@ function FundDetailInner() {
   const change = live ? quote?.changePercent ?? null : null
   const category = entry ? FUND_CATEGORY_INFO[entry.category] : null
 
-  const facts: Array<{ label: string; value: string; explain: string; link?: { href: string; text: string; title: string } }> = entry ? [
+  const facts: Array<{ label: string; value: string; explain: string; link?: { href: string; text: string; title: string; note?: string } }> = entry ? [
     { label: 'Issuer', value: entry.issuer,
       explain: 'The fund company managing the assets. Scale matters: large issuers tend to mean tighter trading spreads, lower fees, and less risk the fund gets closed.' },
     { label: 'Type', value: entry.type === 'etf' ? 'Exchange-Traded Fund' : 'Mutual Fund',
@@ -368,6 +368,10 @@ function FundDetailInner() {
                             className="ml-2 inline-flex items-center gap-0.5 font-sans text-[11px] text-accent-blue hover:underline">
                             {link.text} <ExternalLink size={10} aria-hidden />
                           </a>
+                        )}
+                        {/* D168: where the linked page lacks the figure, say so beside the link. */}
+                        {link?.note && (
+                          <span className="mt-0.5 block max-w-[16rem] font-sans text-[10px] leading-snug text-text-muted">{link.note}</span>
                         )}
                       </dd>
                     </div>
