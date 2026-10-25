@@ -4,8 +4,13 @@
  * against small fixtures alike. gen-fund-figures-page.ts passes the real values.
  *
  * The figures to re-read are derived, never listed: every yield the catalog holds, and
- * every asset figure that carries no SEC filing date (`aumAsOf`).
+ * every asset figure that carries no SEC filing date (`aumAsOf`), for the funds whose own
+ * site the owner ruled allows its figures to be read and shown (FUND_SITES_ALLOWED, D166).
+ * A figure read off any other site could not be shown, so the page does not ask for it.
+ * Re-reading these each quarter is the yields' quarterly check (`npm run accuracy-check`).
  */
+
+import { fundSiteAllowsFigures } from '../../src/lib/data/fundCatalog'
 
 export type FigureKind = 'yield' | 'assets'
 
@@ -110,9 +115,15 @@ export function parseFundOrder(json: unknown, known: ReadonlySet<string>): FundO
   return { basis: o.basis.trim(), funds }
 }
 
+/** Whether a fund's own site allows its figures to be shown (D166); an unreadable address does not. */
+export function siteAllows(f: Pick<CatalogFund, 'website'>): boolean {
+  try { return fundSiteAllowsFigures(f) } catch { return false }
+}
+
 /** The figures a fund needs re-read, in the order its card shows them. */
 export function figuresFor(f: CatalogFund): FundFigure[] {
   const out: FundFigure[] = []
+  if (!siteAllows(f)) return out
   if (f.yieldPct !== null) out.push({ id: `${f.symbol}:yield`, symbol: f.symbol, figure: 'yield', catalog: f.yieldPct })
   if (!f.aumAsOf) out.push({ id: `${f.symbol}:assets`, symbol: f.symbol, figure: 'assets', catalog: f.aumB })
   return out

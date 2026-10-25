@@ -4,7 +4,7 @@ import { Suspense, useCallback, useEffect, useMemo, useState, type CSSProperties
 import { useQueries, useQuery } from '@tanstack/react-query'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { clsx } from 'clsx'
-import { GitCompareArrows, Search, X } from 'lucide-react'
+import { ExternalLink, GitCompareArrows, Search, X } from 'lucide-react'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { SourceLine } from '@/components/ui/SourceLine'
 import { LineChart } from '@/components/charts/LineChart'
@@ -265,7 +265,13 @@ function statRows(symbol: string, opt?: Option): Array<[string, string]> {
       ['Sector', '—'],
       ['Market cap', '—'],
       ['P/E (TTM)', '—'],
-      ['Dividend yield', f.yieldPct != null ? `${f.yieldPct}%${fundYieldFact(f).kind === 'trailing' ? '' : ` (${fundYieldFact(f).words})`}` : '—'],
+      // D166: a yield only where the fund's site allows it, dated; otherwise a pointer to the
+      // fund's own page, which the fund-facts table below links.
+      ['Dividend yield', (() => {
+        const y = fundYieldFact(f)
+        if (!y.shown) return f.yieldPct == null ? '—' : 'See fund’s page'
+        return `${y.value.split(' · ')[0]}${y.kind === 'trailing' ? '' : ` (${y.words})`} · ${y.asOf}`
+      })()],
       ['Beta (5Y)', '—'],
       ['Expense ratio', `${f.expenseRatioPct}%`],
     ]
@@ -878,6 +884,18 @@ function CompareInner() {
                 {symbols.map((s) => (
                   <td key={s} className="px-4 py-2.5 text-right font-mono tabular-nums text-text-secondary">
                     {statRows(s, resolve(s))[rowIdx]?.[1] ?? '—'}
+                    {/* D166: a link to the fund's own page beside every fund yield. */}
+                    {label === 'Dividend yield' && (() => {
+                      const f = getFund(s)
+                      if (!f) return null
+                      const link = fundYieldFact(f).link
+                      return (
+                        <a href={link.href} target="_blank" rel="noopener noreferrer" title={link.title}
+                          className="ml-2 inline-flex items-center gap-0.5 font-sans text-[11px] text-accent-blue hover:underline">
+                          {link.text} <ExternalLink size={10} aria-hidden />
+                        </a>
+                      )
+                    })()}
                   </td>
                 ))}
               </tr>

@@ -1,11 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import { readFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { readFileSync, readdirSync, statSync } from 'node:fs'
+import { join, relative, sep } from 'node:path'
 import {
   computeFeeDrag, fundSalesCharge, fundTradingRestriction, fundAssetsFact, fundYieldFact,
   getFundFeeProvenance, fundFeesAgeDays, fundFeesAreStale, FUND_FEES_LAST_VERIFIED, FUND_FEES_STALE_AFTER_DAYS,
   getFundFiguresProvenance, fundFiguresAgeDays, fundFiguresAreStale, FUND_FIGURES_COMPILED_ON, FUND_FIGURES_STALE_AFTER_DAYS,
-  FUND_CATALOG, YIELD_KIND_NAMES,
+  FUND_CATALOG, YIELD_KIND_NAMES, FUND_SITES_ALLOWED, fundShownYield, fundSiteAllowsFigures, siteDomain,
+  YIELD_CHECK_AFTER_DAYS, YIELD_SHOWN_FOR_DAYS,
 } from '../fundCatalog'
 
 // W4-C9: computeFeeDrag drives a 30-year dollar projection on every fund detail
@@ -212,7 +213,8 @@ describe('figures read from the fund’s own page', () => {
   const ISO = /^\d{4}-\d{2}-\d{2}$/
   const host = (u: string) => new URL(u).hostname.replace(/^www\./, '').split('.').slice(-2).join('.')
   const read = FUND_CATALOG.filter((f) => f.yieldRead || f.aumRead)
-  const D141_ALLOWED = ['vanguard.com', 'ssga.com', 'sectorspdrs.com', 'proshares.com']
+  // The owner's rulings: D141 (four), D146 (vaneck.com), D151 (direxion.com), D165 (teucrium.com).
+  const D141_ALLOWED = ['vanguard.com', 'ssga.com', 'sectorspdrs.com', 'proshares.com', 'vaneck.com', 'direxion.com', 'teucrium.com']
 
   it('every reading has a real date, a kind, and the issuer’s own page as its source', () => {
     expect(read.length).toBeGreaterThan(0)
@@ -237,17 +239,21 @@ describe('figures read from the fund’s own page', () => {
     for (const f of FUND_CATALOG.filter((x) => x.aumRead)) expect(f.aumAsOf, f.symbol).toBeUndefined()
   })
 
-  it('labels a SEC yield as one, dates a read yield, and marks an unread one approximate', () => {
-    expect(fundYieldFact({ yieldPct: 1.2 })).toMatchObject({ label: 'Distribution Yield', value: '≈ 1.20%', kind: 'trailing', asOf: null })
-    const sec = fundYieldFact({ yieldPct: 5.11, yieldRead: { asOf: '2026-10-19', kind: 'sec', source: 'https://x.test' } })
-    expect(sec).toMatchObject({ label: '30-Day SEC Yield', short: 'SEC', value: '5.11% · 2026-10-19', kind: 'sec' })
+  // An allowed site, so these test the labels; D166's rule has its own tests below.
+  const ALLOWED = { website: 'https://investor.vanguard.com/x', issuer: 'Vanguard' }
+  const NOW = new Date('2026-10-25')
+
+  it('labels a SEC yield as one, dates a read yield, and shows none it has not read', () => {
+    expect(fundYieldFact({ ...ALLOWED, yieldPct: 1.2 }, NOW)).toMatchObject({ label: 'Distribution Yield', value: 'See fund’s page', kind: 'trailing', asOf: null, shown: false })
+    const sec = fundYieldFact({ ...ALLOWED, yieldPct: 5.11, yieldRead: { asOf: '2026-10-19', kind: 'sec', source: 'https://x.test' } }, NOW)
+    expect(sec).toMatchObject({ label: '30-Day SEC Yield', short: 'SEC', value: '5.11% · 2026-10-19', kind: 'sec', shown: true })
     expect(sec.explain).toMatch(/not what the fund paid out over the past year/)
-    expect(fundYieldFact({ yieldPct: 3.66, yieldRead: { asOf: '2026-10-20', kind: 'trailing', source: 'https://x.test' } }).value).toBe('3.66% · 2026-10-20')
-    expect(fundYieldFact({ yieldPct: null }).value).toBe('—')
+    expect(fundYieldFact({ ...ALLOWED, yieldPct: 3.66, yieldRead: { asOf: '2026-10-20', kind: 'trailing', source: 'https://x.test' } }, NOW).value).toBe('3.66% · 2026-10-20')
+    expect(fundYieldFact({ ...ALLOWED, yieldPct: null }, NOW).value).toBe('—')
   })
 
   it('names an adjusted effective yield as one, never as a 12-month or SEC yield (D150)', () => {
-    const eff = fundYieldFact({ yieldPct: 2.89, yieldRead: { asOf: '2026-09-30', kind: 'effective', source: 'https://x.test' } })
+    const eff = fundYieldFact({ ...ALLOWED, yieldPct: 2.89, yieldRead: { asOf: '2026-09-30', kind: 'effective', source: 'https://x.test' } }, NOW)
     expect(eff).toMatchObject({ label: 'Adjusted Effective Yield', short: 'Adj. eff.', words: 'Adjusted effective', value: '2.89% · 2026-09-30', kind: 'effective' })
     expect(eff.explain).toMatch(/adjusted effective yield, on 2026-09-30/)
     expect(eff.explain).toMatch(/neither what the fund paid out over the past year nor a 30-day SEC yield/)
@@ -276,6 +282,100 @@ describe('figures read from the fund’s own page', () => {
     const read = (p: string) => readFileSync(join(process.cwd(), p), 'utf8')
     expect(read('src/components/markets/FundFactsSection.tsx')).not.toMatch(/Yield \(TTM\)/)
     expect(read('src/app/(dashboard)/funds/[symbol]/page.tsx')).not.toMatch(/label: 'Distribution Yield'/)
+  })
+})
+
+// ─── D166: a link beside every yield, a yield only where the fund's site allows ──
+// Owner, 2026-10-25: a link to the fund's own page beside every yield; a yield shown only for
+// funds whose site allows it, saying it may have changed; and a quarterly check of every shown
+// figure. A missed check withholds the figure rather than leaving an old one up.
+const NOW_D166 = new Date('2026-10-25')
+
+describe('which yields are shown (D166)', () => {
+  const read = { asOf: '2026-09-30', kind: 'sec' as const, source: 'https://investor.vanguard.com/x' }
+  const vanguard = { website: 'https://investor.vanguard.com/x', issuer: 'Vanguard', yieldPct: 1.0, yieldRead: read }
+  const asOf = new Date('2026-09-30')
+
+  it('lists exactly the sites the owner ruled Allowed', () => {
+    expect([...FUND_SITES_ALLOWED].sort()).toEqual(['direxion.com', 'proshares.com', 'sectorspdrs.com', 'ssga.com', 'teucrium.com', 'vaneck.com', 'vanguard.com'])
+    expect(siteDomain('https://www.ishares.com/us/products/1')).toBe('ishares.com')
+    expect(siteDomain('https://investor.vanguard.com/x')).toBe('vanguard.com')
+  })
+
+  it('shows a dated reading from an allowed site, and says it may have changed', () => {
+    expect(fundShownYield(vanguard, plusDays(asOf, 10))).toMatchObject({ shown: true, pct: 1.0, asOf: '2026-09-30', due: false })
+    const fact = fundYieldFact(vanguard, plusDays(asOf, 10))
+    expect(fact.explain).toMatch(/may have changed since/)
+    expect(fact.link).toMatchObject({ href: vanguard.website, text: 'Current yield' })
+  })
+
+  it('never shows a yield from a site whose terms do not allow it, even with a reading', () => {
+    const ishares = { ...vanguard, website: 'https://www.ishares.com/us/products/1', issuer: 'BlackRock' }
+    expect(fundShownYield(ishares, plusDays(asOf, 1))).toMatchObject({ shown: false, reason: 'site-not-allowed' })
+    const fact = fundYieldFact(ishares, plusDays(asOf, 1))
+    expect(fact).toMatchObject({ shown: false, value: 'See fund’s page' })
+    expect(fact.value).not.toMatch(/[0-9]/)
+    expect(fact.explain).toMatch(/BlackRock’s page for this fund has its current yield/)
+  })
+
+  it('falls due a quarter after its date and is withheld a month later', () => {
+    expect(fundShownYield(vanguard, plusDays(asOf, YIELD_CHECK_AFTER_DAYS))).toMatchObject({ shown: true, due: false })
+    expect(fundShownYield(vanguard, plusDays(asOf, YIELD_CHECK_AFTER_DAYS + 1))).toMatchObject({ shown: true, due: true })
+    expect(fundShownYield(vanguard, plusDays(asOf, YIELD_SHOWN_FOR_DAYS))).toMatchObject({ shown: true })
+    expect(fundShownYield(vanguard, plusDays(asOf, YIELD_SHOWN_FOR_DAYS + 1))).toMatchObject({ shown: false, reason: 'too-old' })
+    expect(YIELD_SHOWN_FOR_DAYS).toBeGreaterThan(YIELD_CHECK_AFTER_DAYS)
+  })
+
+  it('gives every catalog fund a link to its own page', () => {
+    for (const f of FUND_CATALOG) {
+      const { link } = fundYieldFact(f, NOW_D166)
+      expect(link.href, f.symbol).toBe(f.website)
+      expect(link.href, f.symbol).toMatch(/^https:[/][/]/)
+    }
+  })
+
+  it('shows no catalog yield from a site outside the rulings', () => {
+    let shown = 0
+    for (const f of FUND_CATALOG) {
+      if (!fundShownYield(f, NOW_D166).shown) continue
+      shown++
+      expect(fundSiteAllowsFigures(f), f.symbol).toBe(true)
+    }
+    expect(shown).toBeGreaterThan(0)
+  })
+
+  it('reads a fund yield nowhere but through the rule', () => {
+    // Every file that names `yieldPct`, and why it may. A new surface reading a fund's yieldPct
+    // directly would show a yield the rule withholds: route it through fundShownYield or
+    // fundYieldFact, then add it here with its reason.
+    const allowed: Record<string, string> = {
+      'src/lib/data/fundCatalog.ts': 'defines the field and the rule',
+      'src/app/live-data/fund-universe/route.ts': 'serves fundShownYield as yieldPct',
+      'src/app/(dashboard)/funds/FundsClient.tsx': 'reads the route’s yieldPct, already the shown one',
+      'src/components/markets/FundFactsSection.tsx': 'tells a negligible yield from one not shown',
+      'src/app/(dashboard)/compare/page.tsx': 'tells a negligible yield from one not shown',
+      'src/lib/agents/tools.ts': 'passes yieldPct only when fundYieldFact says it is shown',
+      'src/components/markets/TaxEquivalentYieldCard.tsx': 'the yield in its box',
+      'src/lib/data/portfolioUtils.ts': 'a local name for fundShownYield or an equity’s yield',
+      // The Treasury curve's points carry their own, unrelated yieldPct.
+      'src/lib/server/treasuryCurve.ts': 'Treasury curve',
+      'src/lib/utils/parBondDuration.ts': 'Treasury curve',
+      'src/lib/data/ratesFromCurve.ts': 'Treasury curve',
+      'src/app/api/v1/openapi.json/route.ts': 'Treasury curve',
+      'src/app/(dashboard)/macro/rates/[slug]/RatesDetailClient.tsx': 'Treasury curve',
+      'src/app/(dashboard)/macro/rates/RatesClient.tsx': 'Treasury curve',
+    }
+    const walk = (dir: string): string[] => readdirSync(dir).flatMap((n) => {
+      const p = join(dir, n)
+      if (statSync(p).isDirectory()) return n === '__tests__' ? [] : walk(p)
+      return /[.]tsx?$/.test(n) ? [p] : []
+    })
+    const root = process.cwd()
+    const found = walk(join(root, 'src'))
+      .filter((p) => readFileSync(p, 'utf8').includes('yieldPct'))
+      .map((p) => relative(root, p).split(sep).join('/'))
+    expect(found.length).toBeGreaterThan(5)
+    for (const f of found) expect(Object.keys(allowed), `${f} reads yieldPct; route it through fundShownYield`).toContain(f)
   })
 })
 

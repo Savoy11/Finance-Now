@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { FUND_CATALOG, FUND_CATEGORY_INFO, FUND_FIGURES_COMPILED_ON, FUND_FIGURES_STALE_AFTER_DAYS } from '@/lib/data/fundCatalog'
+import { fundSiteAllowsFigures } from '@/lib/data/fundCatalog'
 import { buildFundFiguresData, figuresFor, parseFundOrder, suggestionsByFigure, FUND_FIGURES_SERVES, type FundFigure } from '../../../../scripts/lib/fundFiguresData'
 import { buildFundFiguresPage, FUND_FIGURES_CAPABILITIES, FUND_FIGURES_TITLE, staleFrom } from '../../../../scripts/lib/fundFiguresPage.mjs'
 import { FEE_CHECK_CSS } from '../../../../scripts/lib/feeCheckPage.mjs'
@@ -314,9 +315,13 @@ describe('the page’s data, from the real catalog', () => {
   const data = buildFundFiguresData(base)
   const figs = data.funds.flatMap((f) => f.figures)
 
-  it('asks for every yield the catalog holds and every asset figure with no filing date, and nothing else', () => {
-    const yields = FUND_CATALOG.filter((f) => f.yieldPct !== null)
-    const undated = FUND_CATALOG.filter((f) => !f.aumAsOf)
+  it('asks for every yield the catalog holds and every asset figure with no filing date, on an allowed site, and nothing else', () => {
+    // D166: a figure read off a site whose terms do not allow it could not be shown, so the
+    // page does not ask for it.
+    const allowed = FUND_CATALOG.filter((f) => fundSiteAllowsFigures(f))
+    const yields = allowed.filter((f) => f.yieldPct !== null)
+    const undated = allowed.filter((f) => !f.aumAsOf)
+    expect(figs.some((g) => g.symbol === 'AGG' || g.symbol === 'DODGX')).toBe(false)
     expect(figs.filter((g) => g.figure === 'yield').map((g) => g.symbol).sort()).toEqual(yields.map((f) => f.symbol).sort())
     expect(figs.filter((g) => g.figure === 'assets').map((g) => g.symbol).sort()).toEqual(undated.map((f) => f.symbol).sort())
     expect(data.counts).toEqual({ yields: yields.length, assets: undated.length, funds: new Set([...yields, ...undated].map((f) => f.symbol)).size })
@@ -341,9 +346,9 @@ describe('the page’s data, from the real catalog', () => {
   })
 
   it('puts ranked funds first in the order given, marks those that differ, then groups the rest', () => {
-    const order = { basis: 'A check.', funds: [{ symbol: 'DIA', differs: true }, { symbol: 'RSP', differs: false }, { symbol: 'VOO', differs: true }] }
+    const order = { basis: 'A check.', funds: [{ symbol: 'DIA', differs: true }, { symbol: 'VTI', differs: false }, { symbol: 'VOO', differs: true }] }
     const d = buildFundFiguresData({ ...base, order })
-    expect(d.funds.slice(0, 3).map((c) => [c.symbol, c.startHere])).toEqual([['DIA', true], ['RSP', false], ['VOO', true]])
+    expect(d.funds.slice(0, 3).map((c) => [c.symbol, c.startHere])).toEqual([['DIA', true], ['VTI', false], ['VOO', true]])
     expect(d.funds.filter((c) => c.startHere).map((c) => c.symbol)).toEqual(['DIA', 'VOO'])
     expect(d.order).toEqual({ basis: 'A check.', ranked: 3, startHere: 2 })
     expect(d.funds).toHaveLength(data.funds.length)

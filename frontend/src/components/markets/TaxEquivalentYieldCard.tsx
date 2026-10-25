@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { clsx } from 'clsx'
-import { Landmark } from 'lucide-react'
+import { ExternalLink, Landmark } from 'lucide-react'
 import { taxEquivalentYield, afterTaxYield, type TaxProfile } from '@/lib/utils/taxEquivalentYield'
 import { FeatureNotice } from '@/components/legal/FeatureNotice'
 
@@ -14,6 +14,10 @@ import { FeatureNotice } from '@/components/legal/FeatureNotice'
  * looks worse and, for a high-bracket investor, is not. This is the arithmetic
  * that makes the comparison honest, and it needs the reader's marginal rate,
  * which is why it is an input rather than an assumption.
+ *
+ * The yield is an input too (D166). Where the fund's yield is shown, the box starts at it,
+ * with its date; where it is not (MUB: iShares' terms keep its figures off this app), the
+ * reader types the yield from the fund's own page, linked beside the box.
  */
 
 // Federal ordinary-income brackets. Deliberately a picker of the real bracket
@@ -22,7 +26,15 @@ import { FeatureNotice } from '@/components/legal/FeatureNotice'
 // a made-up answer.
 const FEDERAL_BRACKETS = [0, 10, 12, 22, 24, 32, 35, 37]
 
-export function TaxEquivalentYieldCard({ symbol, yieldPct }: { symbol: string; yieldPct: number }) {
+export function TaxEquivalentYieldCard({ symbol, shownYieldPct, shownAsOf, link }: {
+  symbol: string
+  shownYieldPct: number | null
+  shownAsOf: string | null
+  link: { href: string; text: string; title: string }
+}) {
+  const [typedYield, setTypedYield] = useState(shownYieldPct != null ? String(shownYieldPct) : '')
+  const yieldPct = Number(typedYield)
+  const hasYield = typedYield.trim() !== '' && Number.isFinite(yieldPct) && yieldPct >= 0 && yieldPct <= 25
   const [federalPct, setFederalPct] = useState(24)
   const [statePct, setStatePct] = useState(0)
   const [stateExempt, setStateExempt] = useState(false)
@@ -32,7 +44,7 @@ export function TaxEquivalentYieldCard({ symbol, yieldPct }: { symbol: string; y
     () => ({ federalPct, statePct, stateExempt, deductStateFromFederal: itemizes }),
     [federalPct, statePct, stateExempt, itemizes],
   )
-  const tey = useMemo(() => taxEquivalentYield(yieldPct, profile), [yieldPct, profile])
+  const tey = useMemo(() => taxEquivalentYield(hasYield ? yieldPct : 0, profile), [hasYield, yieldPct, profile])
 
   // A concrete comparison beats an abstract one: 5.20% is roughly what
   // investment-grade corporates pay, so the reader sees which side wins for them.
@@ -47,10 +59,31 @@ export function TaxEquivalentYieldCard({ symbol, yieldPct }: { symbol: string; y
       </h2>
 
       <p className="text-xs leading-relaxed text-text-muted">
-        {symbol} pays {yieldPct.toFixed(2)}% free of federal income tax. Comparing that
-        directly with a taxable fund&rsquo;s yield is the wrong comparison — this is what a
-        taxable bond would have to pay to leave you with the same money.
+        {symbol}&rsquo;s income is free of federal income tax. Comparing its yield directly with a
+        taxable fund&rsquo;s is the wrong comparison — this is what a taxable bond would have to pay
+        to leave you with the same money.
       </p>
+
+      <label className="block text-xs text-text-muted">
+        {symbol}&rsquo;s yield
+        <span className="ml-1 text-text-muted/70">
+          {shownYieldPct != null && shownAsOf
+            ? `(from its page on ${shownAsOf}; it may have changed since)`
+            : '(type the yield shown on the fund’s own page)'}
+        </span>
+        <span className="mt-1 flex items-center gap-2">
+          <input
+            type="number" min={0} max={25} step={0.01} value={typedYield} placeholder="e.g. 3.10"
+            onChange={(e) => setTypedYield(e.target.value)}
+            className="w-28 rounded-sm border border-border bg-bg-elevated px-2 py-1.5 text-sm font-mono text-text-primary focus:border-accent-blue/50 focus:outline-hidden"
+          />
+          <span className="text-text-muted">%</span>
+          <a href={link.href} target="_blank" rel="noopener noreferrer" title={link.title}
+            className="inline-flex items-center gap-0.5 text-[11px] text-accent-blue hover:underline">
+            {link.text} <ExternalLink size={10} aria-hidden />
+          </a>
+        </span>
+      </label>
 
       <div className="grid gap-2 sm:grid-cols-2">
         <label className="text-xs text-text-muted">
@@ -93,6 +126,7 @@ export function TaxEquivalentYieldCard({ symbol, yieldPct }: { symbol: string; y
         </label>
       </div>
 
+      {hasYield ? (<>
       <div className="grid gap-2 sm:grid-cols-2">
         <div className="rounded-sm border border-border bg-bg-elevated p-3">
           <div className="text-lg font-bold font-mono text-emerald-400">{tey.taxEquivalentPct.toFixed(2)}%</div>
@@ -118,6 +152,11 @@ export function TaxEquivalentYieldCard({ symbol, yieldPct }: { symbol: string; y
           ? `On a like-for-like comparison this fund beats a ${CORPORATE_REFERENCE.toFixed(2)}% taxable bond for you.`
           : `A ${CORPORATE_REFERENCE.toFixed(2)}% taxable bond still nets you more — munis are not automatically the better deal.`}
       </p>
+      </>) : (
+        <p className="text-[11px] leading-relaxed text-text-muted">
+          Enter the fund&rsquo;s yield (0 to 25%) to see what a taxable bond would have to pay.
+        </p>
+      )}
 
       <FeatureNotice feature="calculators" />
 
@@ -126,8 +165,8 @@ export function TaxEquivalentYieldCard({ symbol, yieldPct }: { symbol: string; y
         Standard formula on rates you supplied — not tax advice, and not a projection of what you
         will keep. It does not model AMT, the de minimis rule, state-specific treatment of in-state
         issuers, the net investment income tax, or whether every distribution this fund makes is
-        actually exempt (capital-gain distributions are not). Distribution yield is a reference
-        snapshot from the fund catalog, not a live figure.
+        actually exempt (capital-gain distributions are not). The yield is the one in the box:
+        a dated reading from the fund&rsquo;s page or the figure you typed, not a live one.
       </p>
     </div>
   )

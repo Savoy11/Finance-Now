@@ -258,6 +258,11 @@ import type { SectorId } from './equityCatalog'
 // script may not read or that refuse it (Direxion answers HTTP 403), or on pages that give no
 // fund yield, and wait for the owner's hand reading, so FUND_FIGURES_COMPILED_ON does not move.
 //
+// 2026-10-25 (D166): every yield carries a link to the fund's own page, and a yield is shown
+// only where it was read from a site in FUND_SITES_ALLOWED within the last quarter
+// (fundShownYield). The undated yields stay in this file as the record of what was compiled,
+// and no page shows them. `npm run accuracy-check` lists each shown figure's quarterly re-read.
+//
 // Also D116: OILK's launch year 2019 -> 2016, from its prospectus's PerfInceptionDate.
 export const FUND_FEES_LAST_VERIFIED = '2026-09-26'
 
@@ -372,31 +377,109 @@ export const YIELD_KIND_NAMES: Record<YieldKind, { label: string; short: string;
 }
 
 /**
+ * The issuers' sites whose terms the owner ruled allow their fund pages to be read by software
+ * (D141, D146, D151, D165), by registrable domain. Owner, 2026-10-25 (D166): a fund's yield is
+ * shown only from one of these. Every other fund's yield is a link to its own page. A figure a
+ * person reads off a site not listed here is not shown either: those terms reserve public use
+ * of their content, which is not the owner's to grant (D149).
+ */
+export const FUND_SITES_ALLOWED: readonly string[] = [
+  'vanguard.com', 'ssga.com', 'sectorspdrs.com', 'proshares.com', 'vaneck.com', 'direxion.com', 'teucrium.com',
+]
+
+/** A page address's registrable domain: investor.vanguard.com → vanguard.com. */
+export function siteDomain(url: string): string {
+  return new URL(url).hostname.replace(/^www\./, '').split('.').slice(-2).join('.')
+}
+
+/** Whether the fund's own site is one whose figures may be shown (D166). */
+export function fundSiteAllowsFigures(f: Pick<FundEntry, 'website'>): boolean {
+  return FUND_SITES_ALLOWED.includes(siteDomain(f.website))
+}
+
+/**
+ * The quarterly check (D166). A shown yield falls due for re-reading a quarter after the date
+ * its page gave for it, and `npm run accuracy-check` lists it from then. Past
+ * YIELD_SHOWN_FOR_DAYS, a month later, it is no longer shown at all, so a missed check leaves
+ * a link rather than an old figure. Not a disclosure clock: this one withholds.
+ */
+export const YIELD_CHECK_AFTER_DAYS = 92
+export const YIELD_SHOWN_FOR_DAYS = 122
+
+/** Why a fund's yield is or is not shown (D166). */
+export type YieldShown =
+  | { shown: true; pct: number; kind: YieldKind; asOf: string; ageDays: number; due: boolean }
+  | { shown: false; reason: 'none' | 'site-not-allowed' | 'not-read' | 'too-old'; asOf: string | null }
+
+/**
+ * The one rule for whether a yield is shown: the fund's site allows it, the figure was read
+ * there with a date, and that date is under YIELD_SHOWN_FOR_DAYS old. Every surface reads a
+ * yield through this (or fundYieldFact), never `yieldPct` directly.
+ */
+export function fundShownYield(
+  f: Pick<FundEntry, 'yieldPct' | 'yieldRead' | 'website'>,
+  now: Date = new Date(),
+): YieldShown {
+  const asOf = f.yieldRead?.asOf ?? null
+  if (f.yieldPct === null) return { shown: false, reason: 'none', asOf }
+  if (!fundSiteAllowsFigures(f)) return { shown: false, reason: 'site-not-allowed', asOf }
+  if (!f.yieldRead) return { shown: false, reason: 'not-read', asOf }
+  const ageDays = daysSince(f.yieldRead.asOf, now)
+  if (ageDays > YIELD_SHOWN_FOR_DAYS) return { shown: false, reason: 'too-old', asOf }
+  return { shown: true, pct: f.yieldPct, kind: f.yieldRead.kind, asOf: f.yieldRead.asOf, ageDays, due: ageDays > YIELD_CHECK_AFTER_DAYS }
+}
+
+/** The link beside every yield (D166): the fund's own page, where its current yield is. */
+export function fundYieldLink(f: Pick<FundEntry, 'website' | 'issuer'>): { href: string; text: string; title: string } {
+  return {
+    href: f.website,
+    text: 'Current yield',
+    title: `${f.issuer}’s page for this fund, which has its current yield`,
+  }
+}
+
+/**
  * The fund's yield as every surface shows it. No kind is ever labelled as another: a 12-month
  * yield says what the fund paid out over a year, a 30-day SEC yield what its holdings are
  * earning now, net of fees, and bond funds' can differ by a point. An adjusted effective yield
- * is the fund page's own figure, shown under the page's own name.
+ * is the fund page's own figure, shown under the page's own name. A shown yield always says it
+ * may have changed since its date; one not shown says why, and both carry the fund's own page.
  */
 export function fundYieldFact(
-  f: Pick<FundEntry, 'yieldPct' | 'yieldRead'>,
-): { label: string; short: string; words: string; value: string; explain: string; kind: YieldKind; asOf: string | null } {
+  f: Pick<FundEntry, 'yieldPct' | 'yieldRead' | 'website' | 'issuer'>,
+  now: Date = new Date(),
+): {
+  label: string; short: string; words: string; value: string; explain: string; kind: YieldKind; asOf: string | null
+  shown: boolean; link: { href: string; text: string; title: string }
+} {
   const kind: YieldKind = f.yieldRead?.kind ?? 'trailing'
-  const asOf = f.yieldRead?.asOf ?? null
   const { label, short, words } = YIELD_KIND_NAMES[kind]
-  if (f.yieldPct === null) return { label, short, words, value: '—', explain: 'The fund pays out little or nothing.', kind, asOf }
-  const pct = `${f.yieldPct.toFixed(2)}%`
-  if (!asOf) {
-    return {
-      label, short, words, kind, asOf, value: `≈ ${pct}`,
-      explain: 'Income (dividends and interest) paid out over the past year as a percent of the fund’s price — the cash-flow component of your return. Approximate, compiled by hand.',
+  const link = fundYieldLink(f)
+  const y = fundShownYield(f, now)
+  const current = `${f.issuer}’s page for this fund has its current yield.`
+  if (!y.shown) {
+    const asOf = y.asOf
+    if (y.reason === 'none') {
+      return { label, short, words, kind, asOf, shown: false, link, value: '—', explain: `The fund pays out little or nothing. ${current}` }
     }
+    const why = {
+      'site-not-allowed': `Yields change often, and ${f.issuer}’s terms do not let this app read and show figures from its site, so none is shown here.`,
+      'not-read': 'Yields change often, and this fund’s yield has not been read from its own page yet, so none is shown here.',
+      'too-old': `Yields change often, and this fund’s last reading (${asOf}) is more than a quarter old, so it is no longer shown.`,
+    }[y.reason]
+    return { label, short, words, kind, asOf, shown: false, link, value: 'See fund’s page', explain: `${why} ${current}` }
   }
+  const pct = `${y.pct.toFixed(2)}%`
+  const asOf = y.asOf
   const explain = {
     sec: `The 30-day SEC yield on ${asOf}, from the fund’s own page: what its holdings earned over the last 30 days, net of fees, as a yearly rate. It is not what the fund paid out over the past year, and for a bond fund the two can differ by a point or more.`,
     trailing: `Income paid out over the 12 months to ${asOf} as a percent of the fund’s price, from the fund’s own page.`,
     effective: `The figure the fund’s own page gives as its adjusted effective yield, on ${asOf}. It is neither what the fund paid out over the past year nor a 30-day SEC yield, so set it beside those with care.`,
   }[kind]
-  return { label, short, words, kind, asOf, value: `${pct} · ${asOf}`, explain }
+  return {
+    label, short, words, kind, asOf, shown: true, link, value: `${pct} · ${asOf}`,
+    explain: `${explain} It may have changed since: ${current}`,
+  }
 }
 
 export function fundAssetsFact(
@@ -619,7 +702,8 @@ export interface FundEntry {
   /**
    * Yield in percent; null if negligible. A trailing 12-month distribution yield, unless
    * yieldRead says the fund's page gave its 30-day SEC yield instead. Show it through
-   * fundYieldFact, which labels it, never as a bare "TTM" or "dividend" yield.
+   * fundYieldFact or fundShownYield, which label it and decide whether it is shown at all
+   * (D166), never as a bare "TTM" or "dividend" yield and never read directly.
    */
   yieldPct: number | null
   /** Where yieldPct was read from the fund's own page, with the date and kind it gave (T-440). */

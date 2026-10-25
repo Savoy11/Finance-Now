@@ -22,7 +22,7 @@
 import { readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { FUND_CATALOG, FUND_FIGURES_COMPILED_ON } from '../src/lib/data/fundCatalog'
-import { figuresFor, type FundFigure } from './lib/fundFiguresData'
+import { figuresFor, siteAllows, type FundFigure } from './lib/fundFiguresData'
 import { readSavedCollection } from './lib/savedCollection'
 
 type Reading = { id: string; result: string; value: number | null; typed: string; asOf: string | null; kind: string | null; note: string }
@@ -92,8 +92,12 @@ if (plan.notes.length) {
   console.log(`  notes: ${plan.notes.length}`)
   for (const n of plan.notes) console.log(`    ${n.id}: ${n.note}`)
 }
-if (unknown.length) list('readings for figures the catalog no longer has (ignored)', unknown)
+if (unknown.length) list('readings for figures the page no longer asks for (ignored): the catalog dropped them, or the fund’s site does not allow its figures to be shown (D166)', unknown)
 for (const n of notes) console.log(`  fund note ${n.symbol} (${n.at.slice(0, 10)}): ${n.text}`)
-console.log(plan.complete
+// An undated asset figure on a site that does not allow its figures is still shown as
+// approximate, and no page reading can date it (D166): it waits for an SEC filing.
+const undatedElsewhere = FUND_CATALOG.filter((f) => !siteAllows(f) && !f.aumAsOf && !f.aumRead).map((f) => f.symbol)
+if (undatedElsewhere.length) list('undated asset figures on sites that do not allow them (date them from an SEC filing instead)', undatedElsewhere)
+console.log(plan.complete && undatedElsewhere.length === 0
   ? `\nEvery figure has a dated reading. FUND_FIGURES_COMPILED_ON (${FUND_FIGURES_COMPILED_ON}) may move to ${plan.oldestAsOf} once the owner has approved the changes; that voids its STALENESS-ACK, as intended.`
   : `\nNot complete: FUND_FIGURES_COMPILED_ON (${FUND_FIGURES_COMPILED_ON}) must not move yet.`)

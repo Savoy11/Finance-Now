@@ -173,7 +173,7 @@ export function discoverFrom(sources: Source[]): { clocks: Clock[]; problems: st
 }
 
 /** Real-tree discovery: read every non-test .ts/.tsx under src/ and scan it. */
-function discover(): { clocks: Clock[]; problems: string[] } {
+export function discover(): { clocks: Clock[]; problems: string[] } {
   return discoverFrom(
     walk(srcDir).map((full) => ({
       rel: path.relative(frontendDir, full).replace(/\\/g, '/'),
