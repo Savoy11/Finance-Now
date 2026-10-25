@@ -75,7 +75,7 @@
   },
   "closed_but_listed_open_in_docs": 60,
   "closed_by_annotation": 231,
-  "counts_recomputed_on": "2026-10-24",
+  "counts_recomputed_on": "2026-10-25",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 381
  },
@@ -7200,7 +7200,8 @@
     "D149",
     "D151",
     "D152",
-    "D153"
+    "D153",
+    "D162"
    ],
    "summary": "Partial edits did not re-verify the whole.",
    "next_action": "Owner: work through the Staking Facts Check page (published 2026-10-17, D134; `npm run staking-facts-page` rebuilds it): 322 facts on 53 live providers, starting with the 26 rows marked Start here: 24 lock-ups the 2026-09-26 audit questioned, plus Uniswap's ETH/USDC pool and Kraken's US staking line, which the 2026-10-17 agent evaluation raised (D136). Each row is answered from the provider's own pages, and answers save on the page; 7 rows carry a pre-fill suggestion (D153) to check against the page. Then Claude reads the page's database, runs `npm run staking-facts-plan` over it, and makes each change by hand in stakingProviders.ts, via PR. Only when the plan reports every fact settled does STAKING_DATA_LAST_VERIFIED move, to the day the pass finished. The 2026-09-27 notice fires as acknowledged until then.",
@@ -7229,7 +7230,9 @@
      "docs/decisions/2026-10-22-owner-decisions.md",
      "frontend/scripts/staking-facts-prefill.ts",
      "frontend/scripts/lib/stakingPrefill.ts",
-     "frontend/scripts/lib/allowedFetch.ts"
+     "frontend/scripts/lib/allowedFetch.ts",
+     "docs/decisions/2026-10-25-owner-decisions.md",
+     "frontend/src/lib/data/stakingProviders.ts"
     ],
     "corrections": [
      "2026-09-26: LOCK-UP FIELD AUDITED, and the pass it needs is now 12 rows rather than 187. lockupDays is mostly a PROTOCOL property for a natively-staked position — Cosmos unbonding is 21 days for everybody — so rows for one coin that disagree can be interrogated without leaving the repo. Eleven of the fifteen coins are internally consistent (ada 0d×11, atom 21d×15, avax 14d×9, bnb 7d×8, dot 28d×15, inj 21d×6, matic 9d×8, tia 21d×6, plus three single-row coins). Four disagree, and in every one the rows that carry a lockupNote agree with the protocol while the rows that differ are silent: SOL has four values across 22 rows (all seven noted rows say 3d with \"~2-3 epoch cooldown\"; seven at 5d, one at 7d and one at 0d carry no note), TRX has four silent rows at 3d against one noted row at 14d citing Stake 2.0, NEAR has three rows at 4d whose own note says \"~4-day\" where NEAR docs state 4 EPOCHS ≈ 24 hours, and ETH spreads 0d×9 / 7d×7 / 10d×1 with only the 7d and 10d rows explaining themselves. TWO FALSE LEADS RECORDED IN THE AUDIT rather than dropped: a first pass called eight rows impossible when six are lending or soft-staking products where zero is correct and the catalog says so in `features` (not lockupNote), and called eleven rows missing the field when the parse was line-based and those entries span several lines — no live row is missing it. Record: docs/audits/staking-lockups-2026-09-26.md. Nothing applied; STAKING_DATA_LAST_VERIFIED unmoved. REMAINING ON THIS ITEM: the 12 rows the audit names, plus audit counts, founded years, minimum stakes, and the 17 CeFi/wallet TVL figures DefiLlama cannot see.",
@@ -7238,7 +7241,8 @@
      "2026-10-21 (D141): every website behind this check page was ruled Not allowed for software reading, or has no reading (the owner's rulings in site-terms-rulings.json). The pre-fill does not reach this page; its facts stay read by hand.",
      "2026-10-21: staking-facts-plan could not read a saved export of the page's database on Windows, which writes \":\" in a file name as \"%3A\", so every answer would have read as a row the catalog no longer has; the three check-page plans now share one reader that decodes it (#401). Nothing has been answered yet, and the page rebuilt from the catalog that day matches the published one row for row.",
      "2026-10-22 (D146, D148): the owner ruled lido.fi, puffer.fi, ankr.com and metapool.app Allowed for software reading (20 of this page's facts), and chose not to build a staking pre-fill for them, so every fact on this page stays read by hand.",
-     "2026-10-22 (D151, D152, D153): the owner ruled coinbase.com, robinhood.com, gemini.com and frax.finance Allowed, and a staking pre-fill was built and run ($0.14; `npm run staking-facts-prefill`, through the fund pre-fill's gate, now shared in scripts/lib/allowedFetch.ts). It read 4 of the 9 providers on Allowed sites (Lido, Ankr, Gemini, Robinhood); Coinbase and Coinbase Wallet answered HTTP 403, and Frax, Puffer and Meta Pool draw their pages in the browser. Its 7 suggestions show on the Staking Facts Check beside their rows, never in an answer box. Nothing has been answered and the catalog is unchanged."
+     "2026-10-22 (D151, D152, D153): the owner ruled coinbase.com, robinhood.com, gemini.com and frax.finance Allowed, and a staking pre-fill was built and run ($0.14; `npm run staking-facts-prefill`, through the fund pre-fill's gate, now shared in scripts/lib/allowedFetch.ts). It read 4 of the 9 providers on Allowed sites (Lido, Ankr, Gemini, Robinhood); Coinbase and Coinbase Wallet answered HTTP 403, and Frax, Puffer and Meta Pool draw their pages in the browser. Its 7 suggestions show on the Staking Facts Check beside their rows, never in an answer box. Nothing has been answered and the catalog is unchanged.",
+     "2026-10-25 (D162): THE FIRST FOUR ROWS, BY AN AUTOMATED CHECK. With the owner's go-ahead, the seven pre-fill suggestions (D153) were reviewed against their quoted sentences and saved on the check page as automated answers. Gemini ETH and SOL changed in the catalog: no minimum, and 6–60 and about 3–4 days' unbonding. Lido ETH and Ankr AVAX match: a liquid token's lock-up stays 0, since its receipt token sells at once, and the wait to withdraw through the provider is now in each row's note (1–5 days; up to 4 weeks). The plan reports 0 changes left and 318 facts unanswered, so STAKING_DATA_LAST_VERIFIED stays."
     ]
    }
   },
@@ -41196,6 +41200,13 @@
     "what": "D161, a review of all 134 parked items: none could be unparked or closed. 34 had out-of-date wording, fixed with no status change: the transfer-fee rows' feed count, the options add-ons' calculator note, T-122's met prerequisites, five next steps that were done or wrong, and nine moved line references, now cited by name.",
     "evidence": [
      "docs/decisions/2026-10-24-owner-decisions.md"
+    ]
+   },
+   {
+    "on": "2026-10-25",
+    "what": "T-394 progress (stays open, D162): the staking pre-fill's seven suggestions went through an automated check; Gemini's ETH and SOL rows changed in the catalog, and Lido's and Ankr's keep a 0-day lock-up with the provider's withdrawal wait in the note. Counts unchanged.",
+    "evidence": [
+     "docs/decisions/2026-10-25-owner-decisions.md"
     ]
    }
   ]

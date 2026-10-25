@@ -553,6 +553,8 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
         staticApr: 2.25,
         minStakeNative: 0,
         lockupDays: 0,
+        // Read on stake.lido.fi 2026-10-22, applied 2026-10-25 (D162).
+        lockupNote: 'stETH can be sold at once; withdrawing through Lido takes 1–5 days',
         receiptToken: 'stETH',
         liquid: true,
         liveAprKey: 'lido_eth',
@@ -992,8 +994,9 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     founded: 2014,
     website: 'https://www.gemini.com/staking',
     assets: {
-      eth: { coinId: 'eth', staticApr: 3.0, minStakeNative: 0.001, lockupDays: 0, liquid: false, features: ['Available US-wide incl. New York', '~15% commission on rewards', 'Unstake subject to protocol exit queue', 'Not the defunct Earn lending program'] },
-      sol: { coinId: 'sol', staticApr: 6.0, minStakeNative: 0.01,  lockupDays: 3, lockupNote: '~2-3 epoch cooldown', liquid: false, features: ['Availability varies by state', '~15% commission on rewards'] },
+      // Minimums and unbonding from gemini.com/staking, read 2026-10-22 and applied 2026-10-25 (D162).
+      eth: { coinId: 'eth', staticApr: 3.0, minStakeNative: 0, lockupDays: 60, lockupNote: '6–60 day unbonding', liquid: false, features: ['Available US-wide incl. New York', '~15% commission on rewards', 'Unstake subject to protocol exit queue', 'Not the defunct Earn lending program'] },
+      sol: { coinId: 'sol', staticApr: 6.0, minStakeNative: 0,  lockupDays: 4, lockupNote: 'About 3–4 day unbonding', liquid: false, features: ['Availability varies by state', '~15% commission on rewards'] },
     },
   },
 
@@ -1664,7 +1667,8 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     assets: {
       eth:  { coinId: 'eth',  staticApr: 2.47,  minStakeNative: 0.5,  lockupDays: 0, receiptToken: 'ankrETH', liquid: true,  liveAprKey: 'ankr_eth',  features: ['ankrETH non-rebasing token', 'Lower DeFi liquidity vs Lido/Rocket Pool', '5 security audits'] },
       bnb:  { coinId: 'bnb',  staticApr: 1,  minStakeNative: 0.1,  lockupDays: 0, receiptToken: 'ankrBNB', liquid: true,  liveAprKey: 'ankr_bnb',  features: ['ankrBNB liquid BNB staking', 'Bypass 7-day BNB unbonding'] },
-      avax: { coinId: 'avax', staticApr: 6.32,  minStakeNative: 1,    lockupDays: 0, receiptToken: 'ankrAVAX',liquid: true,  liveAprKey: 'ankr_avax', features: ['ankrAVAX — alternative to Benqi sAVAX', 'No 25 AVAX minimum'] },
+      // Read on ankr.com 2026-10-22, applied 2026-10-25 (D162).
+      avax: { coinId: 'avax', staticApr: 6.32,  minStakeNative: 1,    lockupDays: 0, lockupNote: 'ankrAVAX can be sold at once; unstaking through Ankr can take up to 4 weeks', receiptToken: 'ankrAVAX',liquid: true,  liveAprKey: 'ankr_avax', features: ['ankrAVAX — alternative to Benqi sAVAX', 'No 25 AVAX minimum'] },
       sol:  { coinId: 'sol',  staticApr: 6.2,  minStakeNative: 0.01, lockupDays: 0, receiptToken: 'ankrSOL', liquid: true,  liveAprKey: 'ankr_sol',  features: ['ankrSOL liquid Solana staking', 'Lower liquidity than Marinade/Jito'] },
     },
   },
