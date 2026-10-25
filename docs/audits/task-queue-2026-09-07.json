@@ -62,9 +62,9 @@
   "total_verified": 398,
   "outstanding": 381,
   "by_status": {
-   "closed": 230,
+   "closed": 231,
    "parked": 134,
-   "open": 12,
+   "open": 11,
    "blocked": 5
   },
   "by_owner_role": {
@@ -74,7 +74,7 @@
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 230,
+  "closed_by_annotation": 231,
   "counts_recomputed_on": "2026-10-24",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 381
@@ -14754,7 +14754,7 @@
   {
    "id": "T-437",
    "title": "Encrypt provider API keys at rest in .provider-config.json",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "blocking_decision": null,
    "opened": {
@@ -14767,7 +14767,8 @@
    "effort": "medium",
    "related_ids": [
     "T-426",
-    "D122"
+    "D122",
+    "D160"
    ],
    "summary": "The T-426 draft breach plan (in the Finance Now Ledger page’s file library, 2026-10-14) found that provider and AI API keys are stored in plain text in .provider-config.json, written with mode 0600 (frontend/src/lib/api/live/providers.ts), which has limited effect on Windows. A copy of that file in a backup, a OneDrive share or a commit hands over every key at once.",
    "next_action": "Shelved by the owner on 2026-10-15 (“lets shelve this for now and revisit this later; Im ok with the slight security risk”). The encryption is built and the store is sealed (D122). When the owner revisits it: keep a backup copy of FN_SECRETS_KEY somewhere safe, since losing it loses the saved keys; then rotate the saved provider keys, whose old plain-text copies remain in OneDrive’s version history.",
@@ -14797,6 +14798,20 @@
      "2026-10-15 (later): KEY SET, STORE SEALED. At the owner’s request the session created FN_SECRETS_KEY as a Windows user variable (32 random bytes, never printed) and restarted the dev server with it; .provider-config.json was rewritten as the encrypted envelope, and all 10 saved keys read back before and after (11 once the CoinGecko key was added). SHELVED BY THE OWNER, for now: a backup copy of FN_SECRETS_KEY (no password manager to hand) and rotating the saved provider keys whose plain copies remain in OneDrive’s version history. Owner: “lets shelve this for now and revisit this later; Im ok with the slight security risk.” REMAINING: those two, when the owner revisits them; the item stays open for them.",
      "2026-10-17: NEXT ACTION REWRITTEN. It still described the build, which is done (see above); it now says only what is left.",
      "2026-10-24: remaining_work still read \"Build it (a PR of its own)\", written before the build. The encryption was built and the store sealed on 2026-10-15 (D122), and the owner shelved the rest that day, as next_action already said; remaining_work now names only what is left."
+    ]
+   },
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-10-24",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "Done. .provider-config.json is encrypted at rest when FN_SECRETS_KEY is set, built and merged on 2026-10-15 (D122). The owner backed up FN_SECRETS_KEY to a folder of their own on 2026-10-24, so the saved keys stay recoverable; the session never saw or handled it. Replacing the saved provider keys, whose plain-text copies from before encryption remain in OneDrive's version history, is a security-only step the owner declined (D160): \"If this is for security I'm going to skip this as I am not concerned.\" It is not pending.",
+    "approved_by": "owner, 2026-10-24: \"FN_SECRETS_KEY is backed up. I have a folder on my desktop where I will keep things like this\", then \"Close it (Recommended)\"",
+    "evidence": [
+     "docs/decisions/2026-10-24-owner-decisions.md",
+     "docs/decisions/2026-10-15-owner-decisions.md",
+     "frontend/src/lib/server/secretBox.ts",
+     "frontend/src/lib/server/providerConfigCodec.ts"
     ]
    }
   },
@@ -40984,6 +40999,13 @@
    {
     "on": "2026-10-24",
     "what": "D159, the owner's ruling that an outside cross-check of figures from a tested, working endpoint is not needed: T-266 (TradingView vs the crypto charts, open → closed) and T-025 (equity backtests vs an outside source, parked → closed), both moot. Hand-kept tables are not covered and stay open or parked. Counts recomputed: closed 230, open 12, parked 134.",
+    "evidence": [
+     "docs/decisions/2026-10-24-owner-decisions.md"
+    ]
+   },
+   {
+    "on": "2026-10-24",
+    "what": "T-437 closed (open → closed, D160): encryption at rest was already merged; the owner backed up FN_SECRETS_KEY and declined replacing the provider keys, a security-only step. Counts recomputed: closed 231, open 11.",
     "evidence": [
      "docs/decisions/2026-10-24-owner-decisions.md"
     ]

@@ -546,3 +546,20 @@ held by:
 - its content in `main` as `9bf186a`.
 
 Nothing was deleted; no other ref moved.
+
+## Thirty-third reset, after PR #413 (2026-10-24)
+
+**What was done.** After PR #413 (D159, the ruling on redundant cross-checks) was squash-merged
+into `main` as `4b534d9`, the branch was restarted from `4b534d9` on the owner's machine to close
+T-437 (D160). Pushed with `--force-with-lease`, for the same reason as above.
+
+**Where the prior state lives.** The branch's previous tip, `fdff3f2` (#413's only commit), is
+held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@fdff3f2`, created by
+  `.github/workflows/archive-branch.yml` when #413 merged, and checked on the remote before the
+  restart;
+- GitHub's `refs/pull/413/head`;
+- its content in `main` as `4b534d9`.
+
+Nothing was deleted; no other ref moved.
