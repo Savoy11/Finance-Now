@@ -5,6 +5,7 @@ import {
   stakingDataAgeDays,
   stakingDataIsStale,
   getStakingDataProvenance,
+  STAKING_PROVIDERS,
 } from '../stakingProviders'
 
 // The provider catalog is hand-maintained reference data presented alongside
@@ -59,5 +60,26 @@ describe('staking data provenance', () => {
     // read as permanently fresh — the failure mode this machinery exists to
     // prevent, so it is worth a guard rather than a convention.
     expect(stakingDataAgeDays()).toBeGreaterThanOrEqual(0)
+  })
+})
+
+// A liquid token can be sold the moment it is received, so the catalog records its
+// lock-up as 0 for every liquid row; the provider's own withdrawal wait, where a page
+// states one, goes in lockupNote (owner, 2026-10-25, D162). Recording the wait as the
+// lock-up on the rows that happen to have been read would make those providers look
+// slower than every liquid peer still at 0.
+describe('liquid staking lock-ups', () => {
+  const liquid = STAKING_PROVIDERS.filter((p) => !p.defunct).flatMap((p) =>
+    Object.entries(p.assets).filter(([, a]) => a?.liquid).map(([coin, a]) => ({ key: `${p.id}:${coin}`, a: a! })))
+
+  it('records 0 days for every liquid token', () => {
+    expect(liquid.length).toBeGreaterThan(0)
+    for (const { key, a } of liquid) expect(a.lockupDays, key).toBe(0)
+  })
+
+  it('keeps a stated withdrawal wait in the note', () => {
+    const notes = Object.fromEntries(liquid.map(({ key, a }) => [key, a.lockupNote ?? '']))
+    expect(notes['lido:eth']).toMatch(/1–5 days/)
+    expect(notes['ankr:avax']).toMatch(/up to 4 weeks/)
   })
 })

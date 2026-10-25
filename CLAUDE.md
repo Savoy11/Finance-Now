@@ -740,6 +740,11 @@ Central data file for the Staking Opportunities page.
   longest (`scripts/lib/stakingPrefill.ts`, tested). It writes only `staking-facts-suggestions.json`
   (gitignored); `npm run staking-facts-page -- <out.html> --suggestions staking-facts-suggestions.json` shows
   each beside its row, never in an answer box.
+  **First pass applied, 2026-10-25 (D162):** the owner let an automated check review the seven suggestions against
+  their quoted sentences, as D143 did for funds; the answers are on the check page, noted as automated. Gemini's ETH
+  and SOL rows changed (no minimum; 6–60 and about 3–4 days' unbonding). **A liquid token's lock-up is 0**, since
+  its receipt token sells at once; the provider's own withdrawal wait goes in `lockupNote` (Lido 1–5 days, Ankr up
+  to 4 weeks). `stakingProviders.test.ts` holds both halves.
 
 To add a provider: append to `STAKING_PROVIDERS` following the pattern. Celsius should always be kept — it's used as the educational cautionary example.
 

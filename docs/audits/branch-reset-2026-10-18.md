@@ -580,3 +580,21 @@ held by:
 - its content in `main` as `2614b96`.
 
 Nothing was deleted; no other ref moved.
+
+## Thirty-fifth reset, after PR #415 (2026-10-25)
+
+**What was done.** After PR #415 (D161, the parked-item review) was squash-merged into `main` as
+`a62c779`, the branch was restarted from `a62c779` on the owner's machine to apply the staking
+facts' first automated check (D162). Pushed with `--force-with-lease`, for the same reason as
+above.
+
+**Where the prior state lives.** The branch's previous tip, `0e48db7` (#415's only commit), is
+held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@0e48db7`, created by
+  `.github/workflows/archive-branch.yml` when #415 merged, and checked on the remote before the
+  restart;
+- GitHub's `refs/pull/415/head`;
+- its content in `main` as `a62c779`.
+
+Nothing was deleted; no other ref moved.
