@@ -674,7 +674,8 @@ function PortfolioDetail({ portfolio, onEdit, onBack }: {
               ? `${annualIncome.covered} yielding holding${annualIncome.covered !== 1 ? 's' : ''} · ref yields`
               : annualIncome.unpriced > 0
                 ? `no live price for ${annualIncome.unpriced} yielding holding${annualIncome.unpriced !== 1 ? 's' : ''}`
-                : 'no yielding securities'
+                // D166: a fund whose yield is not shown counts as having none here.
+                : 'no holding with a yield on record'
           }</div>
           {/* D48: holdings with no live price are left out, as in every other total
               here — so say how much the figure covers, the way the P&L tile does. */}

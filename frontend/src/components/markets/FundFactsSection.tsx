@@ -1,7 +1,7 @@
 'use client'
 
 import { clsx } from 'clsx'
-import { Landmark, AlertTriangle } from 'lucide-react'
+import { Landmark, AlertTriangle, ExternalLink } from 'lucide-react'
 import {
   FUND_CATEGORY_INFO, FUND_STRATEGY_INFO, fundAssetsFact, fundYieldFact, fundStrategy, fundSalesCharge, getFund,
   type FundEntry,
@@ -113,14 +113,28 @@ const ROWS: Row[] = [
   },
   {
     label: 'Yield',
-    hint: 'A 12-month distribution yield unless marked otherwise: a 30-day SEC yield, or an adjusted effective yield, from the fund’s own page. Each answers a different question.',
+    hint: 'Shown only where the fund’s own site allows it (D166), with the date its page gave; it may have changed since. A 12-month distribution yield unless marked otherwise: a 30-day SEC yield, or an adjusted effective yield. Each answers a different question. Every fund links its own page for the current yield.',
     cell: (f) => {
-      if (f.yieldPct == null) return <span className="text-text-muted">Negligible</span>
       const y = fundYieldFact(f)
+      const link = (
+        <a href={y.link.href} target="_blank" rel="noopener noreferrer" title={y.link.title}
+          className="inline-flex items-center gap-0.5 text-[10px] leading-tight text-accent-blue hover:underline">
+          {y.link.text} <ExternalLink size={9} aria-hidden />
+        </a>
+      )
+      if (!y.shown) {
+        return (
+          <span className="inline-flex flex-col">
+            <span className="text-text-muted" title={y.explain}>{f.yieldPct == null ? 'Negligible' : 'Not shown'}</span>
+            {link}
+          </span>
+        )
+      }
       return (
         <span className="inline-flex flex-col">
-          <span className="font-mono">{f.yieldPct}%</span>
-          <span className="text-[10px] leading-tight text-text-muted">{y.words}{y.asOf ? ` · ${y.asOf}` : ''}</span>
+          <span className="font-mono" title={y.explain}>{y.value.split(' · ')[0]}</span>
+          <span className="text-[10px] leading-tight text-text-muted">{y.words} · {y.asOf} · may have changed</span>
+          {link}
         </span>
       )
     },

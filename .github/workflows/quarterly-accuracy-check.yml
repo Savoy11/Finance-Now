@@ -1,0 +1,73 @@
+name: Quarterly accuracy check
+
+# D166 (owner, 2026-10-25): "For any fund where the yield is posted we need to build some kind
+# of quarterly check that reconfirms the accuracy of the yield; this can extend to other values
+# that are being posted to ensure overall accuracy within the app."
+#
+# At the start of each quarter this runs `npm run accuracy-check`, which lists every posted
+# figure with a date (each shown fund yield, each fund asset figure, every hand-kept table's
+# provenance clock), when its re-read falls due, and the command that re-reads it. It posts
+# that report as an issue, so the reminder arrives without anyone remembering to look; GitHub
+# notifies the repository owner of a new issue.
+#
+# It reads no website and changes nothing in the repository: the re-reading itself runs on
+# the owner's machine (the cloud cannot reach the issuers' sites), and each change lands by PR.
+# A figure being due never fails this run: the fund pages already stop showing a yield whose
+# check was missed. It fails only if the check cannot run, or finds nothing to check.
+#
+# Permissions are read the repo and write issues, nothing more. One open issue per quarter:
+# a second run in the same quarter updates that issue's text rather than opening another.
+
+on:
+  schedule:
+    # 14:07 UTC on 1 January, April, July and October.
+    - cron: '7 14 1 1,4,7,10 *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  report:
+    name: Report what is due for re-reading
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          cd frontend
+          npm ci --prefer-offline
+
+      - name: Run the accuracy check
+        run: |
+          cd frontend
+          npm run accuracy-check -- --out "$RUNNER_TEMP/accuracy-check.md"
+          cat "$RUNNER_TEMP/accuracy-check.md" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Post the report as this quarter's issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          quarter="$(date -u +%Y) Q$(( ($(date -u +%-m) - 1) / 3 + 1 ))"
+          title="Quarterly accuracy check — $quarter"
+          body="$RUNNER_TEMP/accuracy-check.md"
+          existing=$(gh issue list --repo "$REPO" --state open --search "\"$title\" in:title" --json number,title \
+            --jq "map(select(.title == \"$title\")) | .[0].number // empty")
+          if [ -n "$existing" ]; then
+            gh issue edit "$existing" --repo "$REPO" --body-file "$body"
+            echo "Updated issue #$existing ($title)"
+          else
+            gh issue create --repo "$REPO" --title "$title" --body-file "$body"
+          fi

@@ -650,3 +650,21 @@ held by:
 - its content in `main` as `6c42bec`.
 
 Nothing was deleted; no other ref moved.
+
+## Thirty-ninth reset, after PR #419 (2026-10-25)
+
+**What was done.** After PR #419 (D165, the fund issuers' permission drafts) was squash-merged into
+`main` as `532319e`, the branch was restarted from `532319e` on the owner's machine to record D166:
+a link to the fund's own page beside every yield, yields shown only where the fund's site allows it,
+and a quarterly accuracy check. Pushed with `--force-with-lease`, for the same reason as above.
+
+**Where the prior state lives.** The branch's previous tip, `974e61c` (#419's only commit), is
+held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@974e61c`, created by
+  `.github/workflows/archive-branch.yml` when #419 merged, and checked on the remote before the
+  restart;
+- GitHub's `refs/pull/419/head`;
+- its content in `main` as `532319e`.
+
+Nothing was deleted; no other ref moved.

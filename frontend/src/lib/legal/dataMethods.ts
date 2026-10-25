@@ -1,5 +1,5 @@
 import { STAKING_PROVIDERS, STAKING_DATA_LAST_VERIFIED } from '@/lib/data/stakingProviders'
-import { FUND_CATALOG, FUND_FEES_LAST_VERIFIED, YIELD_KIND_NAMES } from '@/lib/data/fundCatalog'
+import { FUND_CATALOG, FUND_FEES_LAST_VERIFIED, YIELD_CHECK_AFTER_DAYS, YIELD_KIND_NAMES, YIELD_SHOWN_FOR_DAYS } from '@/lib/data/fundCatalog'
 
 /**
  * "How our figures are worked out" (/about/data-methods, D163): the rules behind the figures
@@ -45,10 +45,12 @@ export const DATA_METHODS: readonly MethodSection[] = [
   {
     id: 'fund-yields',
     title: 'Fund yields',
-    decided: '2026-10-24',
+    decided: '2026-10-25',
     paragraphs: [
-      'A fund’s yield is one of three kinds, and each is labelled as what it is, never as another:',
-      'A yield read from the fund’s own page shows the date the page gave. A yield with no date is approximate, compiled by hand, and marked ≈.',
+      'Yields change often, so every fund’s yield has a link beside it to the fund’s own page, which has the current figure. To see a fund’s current yield, follow that link.',
+      'A yield is shown here only where the fund’s own website allows its figures to be read and shown, and only as read from that page, with the date the page gave. It may have changed since that date. Where the website does not allow it, or the yield has not been read yet, no figure is shown, only the link.',
+      `Each shown yield is re-read once a quarter: it falls due ${YIELD_CHECK_AFTER_DAYS} days after its date. If it has not been re-read ${YIELD_SHOWN_FOR_DAYS} days after its date, it is no longer shown, and the link remains.`,
+      'A shown yield is one of three kinds, and each is labelled as what it is, never as another:',
     ],
     items: [
       { term: YIELD_KIND_NAMES.trailing.label, text: 'income the fund paid out over the past 12 months, as a percent of its price.' },
@@ -94,6 +96,15 @@ export const DATA_METHODS: readonly MethodSection[] = [
     title: 'Treasury yields',
     paragraphs: [
       'Treasury yields come from the US Treasury’s official daily par yield curve. It is published once a day, so these yields show no change during the day.',
+    ],
+  },
+  {
+    id: 'rechecks',
+    title: 'How figures are re-checked',
+    decided: '2026-10-25',
+    paragraphs: [
+      'Figures kept by hand are re-checked on a schedule. At the start of each quarter, a report lists every such figure with the date it was read and when it is due: each shown fund yield, each fund’s net assets, and every hand-kept table, such as staking terms.',
+      'A figure is re-read from its own source, never from another site’s copy of it, and a change is applied only after it has been checked. Each table’s page says when it was last checked.',
     ],
   },
   {

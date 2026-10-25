@@ -725,6 +725,7 @@ added 2026-07-29; their rows stay ⬜ **Not measured** until the next run.
 | Feature / Page | Status | Source | Notes |
 |----------------|--------|--------|-------|
 | Fund universe | 🟢 Live | SEC + providers | 126 catalog + **29,009 discovered** (5,593 ETFs, 23,416 mutual). **Slow: ~12 s** — but the 2026-07-30 slimming (action item 11) is now measured: **2.27 MB, down from 14 MB** (2026-09-19). |
+| Fund yields | 🟡 Partial | the fund's own page, read by hand or by the pre-fill (D166) | **Every catalog fund links its own page for the current yield.** A yield is shown only where that site allows its figures to be read and shown (`FUND_SITES_ALLOWED`), dated, and under 122 days old, with "may have changed since"; elsewhere only the link shows. Re-read quarterly: `npm run accuracy-check` lists what is due. |
 | Fund holdings | 🟢 Live | SEC N-PORT (keyless, authoritative) | Verified full books: **VOO 513** (re-probed 2026-09-19 — this row said 511, disagreeing with both the audit and the measured table earlier in this file), IVV 507, VTI 1500, QQQ 101, ARKK 46. |
 | Fund holdings — UITs | 🟡 Partial | catalog | **SPY, and UITs generally, file no N-PORT**, so they correctly fall back to indicative top holdings. Not a bug. |
 | Fund holdings history | 🟡 Partial | SEC N-PORT diff → FMP | `configured: true` — the FMP key is held. Works only where an N-PORT series exists; a fund without one (SPY) returns `periods: []` and says so rather than emptying silently. |

@@ -615,6 +615,9 @@ const { data } = useQuery({
 > ⚠ **Not every clock is a disclosure clock.** `stakingRates.ts`'s 14-day
 > `FALLBACK_STALE_AFTER_DAYS` **withholds** the rate (`delete rates[key]` → a dash);
 > the `*_LAST_VERIFIED` windows only change what a notice says. Do not unify them.
+> `YIELD_SHOWN_FOR_DAYS` (D166) is the second withholding clock, per figure: a fund yield
+> older than it is not shown. `npm run accuracy-check` lists every clock and every dated fund
+> figure in one quarterly report (see the fund catalog section).
 >
 > **`npm run queue:check` does for the task-queue ledger what `docs:check` does for this
 > file** (added 2026-09-23, runs in CI beside both). `docs/audits/task-queue-2026-09-07.json`
@@ -789,6 +792,30 @@ a fact. `lib/data/__tests__/stakingWording.test.ts` holds it for every live prov
   would have shown the third kind as a 12-month yield. The other 54 figures wait for the owner's
   hand reading, so `FUND_FIGURES_COMPILED_ON` stays. Direxion's is one of them: its site answers the
   pre-fill with HTTP 403.
+  **⚠ A link beside every yield, and a yield only where the fund's site allows it (D166,
+  2026-10-25).** Owner: *"Lets post a link beside every yield … for funds that allow it we can show
+  the yield but confirm that it may not be accurate as it may have changed."* Every fund's yield, on
+  the fund page, the Fund Registry, Compare and the muni calculator, carries a link to the fund's own
+  page (`fundYieldLink`), which has the current figure. A yield is **shown** only when the fund's
+  site is in `FUND_SITES_ALLOWED` (the owner's rulings: D141, D146, D151, D165), the figure was read
+  there with a date (`yieldRead`), and that date is under `YIELD_SHOWN_FOR_DAYS` (122) old; it says
+  it may have changed since. Otherwise only the link shows. **Read a yield only through
+  `fundShownYield` or `fundYieldFact`**: `fundCatalog.test.ts` fails on any file that names
+  `yieldPct` and is not on its list with a reason, and `/live-data/fund-universe` serves the shown
+  yield as `yieldPct`, so the registry's filter and sort see only shown yields. The 35 yields on
+  sites that forbid software reading (BlackRock, Invesco, JPMorgan, Schwab, Global X, Fidelity, Dodge
+  & Cox, PIMCO) stay in the file as a record and appear nowhere; the Fund Figures Check no longer
+  asks for them, or for any figure on such a site (`figuresFor`), since a reading could not be shown.
+  The muni calculator takes a typed yield where none is shown (MUB). The AI tool returns `yieldPct`
+  only when shown, with `yieldNote` and `website`.
+  **The quarterly accuracy check (D166): `npm run accuracy-check`** (`scripts/lib/accuracyCheck.ts`,
+  tested) lists every posted figure with a date, when its re-read falls due and the command that
+  re-reads it: each shown yield (due `YIELD_CHECK_AFTER_DAYS`, 92, after its date; withheld at 122,
+  so a missed check leaves the link and no old figure), each page-read and filed asset figure, and
+  every clock `staleness:check` discovers. It reads no website, changes nothing and never fails on a
+  due figure. `.github/workflows/quarterly-accuracy-check.yml` runs it on 1 January, April, July and
+  October and posts the report as that quarter's issue (`contents: read`, `issues: write`, nothing
+  else). The re-reading is the pre-fill, the check page and the plan, on the owner's machine.
 
 ### `src/lib/data/portfolioBuilder.ts` (Portfolio Builder module)
 Pure engine, no API calls, covered by `__tests__/portfolioBuilder.test.ts` (86 tests).
@@ -1951,7 +1978,7 @@ One module (`macro` entitlement), three areas. Owner spec + status: `docs/ROADMA
 ### ETFs & Funds module (`/funds`)
 | Feature | Route | Status | Source / Notes |
 |---------|-------|--------|----------------|
-| Fund Registry | `/funds` | 🟡 Key-gated | `fundCatalog.ts` + live quotes; 140 ETFs/mutual funds (8 added 2026-08-19 for items 11/13: BNDX/IAGG/BWX/EMB/VWOB international, MUB/VTEB/TFI municipal; **14 added 2026-09-26 under D27** — XLC/XLP/XLY/XLB sector, VCSH/VMBS/VTIP/EMLC/BKLN bond, VSS/VGK/EWJ/VYMI/HEFA international — each probed quotable, actively trading and fee-sourced from its SEC filing first, `docs/audits/fund-candidates-probe-2026-09-26.md`). Catalog carries provenance on **two dates since D117 (2026-10-14)**, both rendered on detail pages and both `staleness:check` clocks with 120-day windows. `FUND_FEES_LAST_VERIFIED` (`getFundFeeProvenance()`) is a verification date: every row's expense ratio was checked against the fund's own filings, and it is the oldest check still standing. Those ratios are computed on by `computeFeeDrag`, the builder's fee math, and `reviewPlan`'s fee-creep check. `FUND_FIGURES_COMPILED_ON` (`getFundFiguresProvenance()`) is **not** a verification date. It is when the oldest hand-compiled figure was written down: every yield, plus the asset figures no filing supplies. 112 asset figures carry their own SEC filing date and accession instead (`aumAsOf`, `aumSource`; D114), and the page shows that date. A mutual fund's figure is the whole fund, every share class (D115). An undated figure shows as "≈". Record: `docs/audits/fund-catalog-facts-2026-10-14.md` |
+| Fund Registry | `/funds` | 🟡 Key-gated | `fundCatalog.ts` + live quotes; 140 ETFs/mutual funds (8 added 2026-08-19 for items 11/13: BNDX/IAGG/BWX/EMB/VWOB international, MUB/VTEB/TFI municipal; **14 added 2026-09-26 under D27** — XLC/XLP/XLY/XLB sector, VCSH/VMBS/VTIP/EMLC/BKLN bond, VSS/VGK/EWJ/VYMI/HEFA international — each probed quotable, actively trading and fee-sourced from its SEC filing first, `docs/audits/fund-candidates-probe-2026-09-26.md`). Catalog carries provenance on **two dates since D117 (2026-10-14)**, both rendered on detail pages and both `staleness:check` clocks with 120-day windows. `FUND_FEES_LAST_VERIFIED` (`getFundFeeProvenance()`) is a verification date: every row's expense ratio was checked against the fund's own filings, and it is the oldest check still standing. Those ratios are computed on by `computeFeeDrag`, the builder's fee math, and `reviewPlan`'s fee-creep check. `FUND_FIGURES_COMPILED_ON` (`getFundFiguresProvenance()`) is **not** a verification date. It is when the oldest hand-compiled figure was written down: every yield, plus the asset figures no filing supplies. 112 asset figures carry their own SEC filing date and accession instead (`aumAsOf`, `aumSource`; D114), and the page shows that date. A mutual fund's figure is the whole fund, every share class (D115). An undated figure shows as "≈". Record: `docs/audits/fund-catalog-facts-2026-10-14.md`. **Yields since D166 (2026-10-25):** every row links the fund's own page for its current yield, and a yield is shown only where that site allows it, dated, within the quarter (`fundShownYield`); the yield filter and sort see only those |
 | Fund Detail | `/funds/[symbol]` | 🟢 Live | Live chart/news + fund facts; Fee Drag Analyzer, top holdings. **The analyzer accounts for sales loads since 2026-09-03**: a verified rate enters the projection, an unverified one is disclosed in an amber panel that says plainly the figures understate the cost and links the prospectus. AGTHX is the live example — a Class A front-end load roughly DOUBLES its ten-year cost versus the 0.59% expense ratio alone, and none of it was shown before. **Bond funds show their duration since 2026-10-17 (T-420 item 2, D92)** in an "If Rates Move" card, worked out from the fund's own N-PORT filing (Item B.3.a, the same filing the holdings come from): \|ΣDV01\| ÷ net assets × 10,000 (`lib/utils/fundRateSensitivity.ts`, tested against iShares' published figures). The filing's DV100 is **not** used: its sign and size suggest the direction of the move differs by filer (TLT's sits above its straight-line duration, as a fall would; BND's below, as a rise would), so a "1-point rise" figure read from it would be wrong by 1.5 points on a long fund. A fund under 25% in debt files no such section and the card renders nothing |
 
 ---

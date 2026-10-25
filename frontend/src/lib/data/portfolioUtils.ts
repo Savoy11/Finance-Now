@@ -1,7 +1,7 @@
 import { CATEGORY_META, type CoinCategory } from './portfolioCoins'
 import { CLASS_LABELS, INSTRUMENT_BY_KEY, isSecurityKey, securitySymbol, type InstrumentClass } from './instruments'
 import { getEquity } from './equityCatalog'
-import { getFund } from './fundCatalog'
+import { fundShownYield, getFund } from './fundCatalog'
 import { RISK_RATINGS_SHOWN } from '@/lib/risk/visibility'
 
 // ─── Core types ───────────────────────────────────────────────────────────────
@@ -292,7 +292,11 @@ export function computeAnnualIncome(holdings: ComputedHolding[]): AnnualIncomeEs
   for (const h of holdings) {
     if (!isSecurityKey(h.cgId)) continue
     const sym = securitySymbol(h.cgId)
-    const yieldPct = getEquity(sym)?.dividendYieldPct ?? getFund(sym)?.yieldPct ?? null
+    // A fund's yield counts only where it is shown (D166); a fund whose yield is not is left
+    // out, like any holding with no yield on record, and the panel says how many were counted.
+    const fund = getFund(sym)
+    const fundYield = fund ? fundShownYield(fund) : null
+    const yieldPct = getEquity(sym)?.dividendYieldPct ?? (fundYield?.shown ? fundYield.pct : null)
     if (yieldPct == null || h.targetValue <= 0) continue
     yieldingCapital += h.targetValue
     if (h.currentValue == null) { unpriced++; continue }

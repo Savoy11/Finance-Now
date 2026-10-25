@@ -695,9 +695,19 @@ async function execute(
             // aumMeasure says what it counts: a mutual fund's is the whole fund (D115).
             expenseRatioPct: f.expenseRatioPct, aumB: f.aumB, aumAsOf: f.aumAsOf ?? null,
             // yieldKind says which yield it is: 'sec' is a 30-day SEC yield and 'effective' the
-            // page's adjusted effective yield, never a 12-month one.
-            aumMeasure: fundAssetsFact(f, String).label, yieldPct: f.yieldPct,
-            yieldKind: fundYieldFact(f).kind, yieldAsOf: fundYieldFact(f).asOf,
+            // page's adjusted effective yield, never a 12-month one. A yield is given only where
+            // it is shown (D166), dated and possibly changed since; yieldNote and website say so.
+            aumMeasure: fundAssetsFact(f, String).label,
+            ...(() => {
+              const y = fundYieldFact(f)
+              return {
+                yieldPct: y.shown ? f.yieldPct : null,
+                yieldKind: y.shown ? y.kind : null,
+                yieldAsOf: y.shown ? y.asOf : null,
+                yieldNote: y.explain,
+                website: f.website,
+              }
+            })(),
             indexTracked: f.indexTracked,
             topHoldings: f.topHoldings.slice(0, 5).map((h) => `${h.symbol} ${h.weightPct}%`),
           }))

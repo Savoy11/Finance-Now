@@ -3,7 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { DATA_METHODS } from '../dataMethods'
 import { LEGAL_PATHS } from '../links'
-import { YIELD_KIND_NAMES, FUND_CATALOG, FUND_FEES_LAST_VERIFIED } from '@/lib/data/fundCatalog'
+import { YIELD_KIND_NAMES, FUND_CATALOG, FUND_FEES_LAST_VERIFIED, YIELD_CHECK_AFTER_DAYS, YIELD_SHOWN_FOR_DAYS } from '@/lib/data/fundCatalog'
 import { STAKING_PROVIDERS, STAKING_DATA_LAST_VERIFIED } from '@/lib/data/stakingProviders'
 
 // The page that tells readers how the figures are worked out (D163) is only worth having while
@@ -43,6 +43,16 @@ describe('how our figures are worked out (D163)', () => {
     expect(text('fund-costs')).toContain(FUND_FEES_LAST_VERIFIED)
     const src = fs.readFileSync(path.join(process.cwd(), 'src/lib/legal/dataMethods.ts'), 'utf8')
     expect(src).not.toMatch(/for \d+ providers|all \d+ funds/)
+  })
+
+  it('states the yield rule the fund pages follow (D166), with the windows they use', () => {
+    const t = text('fund-yields')
+    expect(t).toMatch(/link beside it to the fund’s own page/)
+    expect(t).toMatch(/only where the fund’s own website allows/)
+    expect(t).toMatch(/may have changed since/)
+    expect(t).toContain(`${YIELD_CHECK_AFTER_DAYS} days`)
+    expect(t).toContain(`${YIELD_SHOWN_FOR_DAYS} days`)
+    expect(text('rechecks')).toMatch(/each quarter/)
   })
 
   it('states the liquid lock-up rule the staking catalog follows (D162)', () => {

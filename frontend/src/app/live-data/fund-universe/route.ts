@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import {
-  FUND_CATALOG, fundRiskLevel, fundStrategy, fundTradingRestriction,
+  FUND_CATALOG, fundRiskLevel, fundShownYield, fundStrategy, fundTradingRestriction,
   type FundCategoryId, type FundRiskLevel, type FundStrategy, type FundType,
 } from '@/lib/data/fundCatalog'
 import type { SectorId } from '@/lib/data/equityCatalog'
@@ -36,7 +36,13 @@ export interface FundUniverseEntry {
   expenseRatioPct: number | null
   aumB: number | null
   referencePrice: number | null
+  /**
+   * The yield as shown (D166): only where the fund's own site allows it and the figure was read
+   * there within the quarter (fundShownYield), else null. yieldAsOf is the date its page gave;
+   * a yield may have changed since, and `website` has the current one.
+   */
   yieldPct: number | null
+  yieldAsOf: string | null
   inceptionYear: number | null
   indexTracked: string | null
   focusSector: SectorId | null
@@ -101,7 +107,8 @@ function catalogEntry(f: (typeof FUND_CATALOG)[number]): FundUniverseEntry {
   return {
     symbol: f.symbol, name: f.name, type: f.type, inCatalog: true,
     category: f.category, issuer: f.issuer, expenseRatioPct: f.expenseRatioPct,
-    aumB: f.aumB, referencePrice: f.referencePrice, yieldPct: f.yieldPct,
+    aumB: f.aumB, referencePrice: f.referencePrice,
+    ...(() => { const y = fundShownYield(f); return { yieldPct: y.shown ? y.pct : null, yieldAsOf: y.shown ? y.asOf : null } })(),
     inceptionYear: f.inceptionYear, indexTracked: f.indexTracked,
     focusSector: f.focusSector ?? null, focusIndustry: f.focusIndustry ?? null,
     website: f.website ?? null,
@@ -236,7 +243,7 @@ function skeleton(e: { symbol: string; name: string }, type: FundType): FundUniv
   return {
     symbol: e.symbol, name: e.name, type, inCatalog: false,
     category: null, issuer: null, expenseRatioPct: null, aumB: null,
-    referencePrice: null, yieldPct: null, inceptionYear: null,
+    referencePrice: null, yieldPct: null, yieldAsOf: null, inceptionYear: null,
     indexTracked: null, focusSector: null, focusIndustry: null,
     // Nasdaq's traded-symbol file and the SEC series/class CSV carry no issuer
     // URL, so uncurated funds genuinely have none. Better null than a guessed

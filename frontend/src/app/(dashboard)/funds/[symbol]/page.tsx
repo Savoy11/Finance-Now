@@ -17,7 +17,7 @@ import { PriceChartCard, FiftyTwoWeekBar } from '@/components/markets/PriceChart
 import { MarketNewsList } from '@/components/markets/MarketNewsList'
 import {
   computeFeeDrag, fundSalesCharge, FUND_CATEGORY_INFO, FUND_RISK_INFO, FUND_STRATEGY_INFO,
-  fundAssetsFact, fundYieldFact, fundRiskLevel, fundStrategy, fundTradingRestriction, getFund,
+  fundAssetsFact, fundShownYield, fundYieldFact, fundYieldLink, fundRiskLevel, fundStrategy, fundTradingRestriction, getFund,
   getFundFeeProvenance, getFundFiguresProvenance,
 } from '@/lib/data/fundCatalog'
 import type { SalesCharge } from '@/lib/data/fundCatalog'
@@ -237,7 +237,7 @@ function FundDetailInner() {
   const change = live ? quote?.changePercent ?? null : null
   const category = entry ? FUND_CATEGORY_INFO[entry.category] : null
 
-  const facts: Array<{ label: string; value: string; explain: string }> = entry ? [
+  const facts: Array<{ label: string; value: string; explain: string; link?: { href: string; text: string; title: string } }> = entry ? [
     { label: 'Issuer', value: entry.issuer,
       explain: 'The fund company managing the assets. Scale matters: large issuers tend to mean tighter trading spreads, lower fees, and less risk the fund gets closed.' },
     { label: 'Type', value: entry.type === 'etf' ? 'Exchange-Traded Fund' : 'Mutual Fund',
@@ -254,7 +254,7 @@ function FundDetailInner() {
     { label: 'Expense Ratio', value: `${entry.expenseRatioPct}%`,
       explain: 'The annual fee skimmed from returns, visible or not. The single most reliable predictor of long-run relative performance — compounding works against you here. The Fee Drag Analyzer below shows the dollar cost.' },
     fundAssetsFact(entry, formatCompact),
-    fundYieldFact(entry),
+    (() => { const y = fundYieldFact(entry); return { label: y.label, value: y.value, explain: y.explain, link: y.link } })(),
     { label: 'Inception', value: String(entry.inceptionYear),
       explain: 'Launch year. A longer track record shows how the fund behaved across full market cycles, not just the recent regime.' },
     { label: 'Index', value: entry.indexTracked ?? 'Actively managed',
@@ -353,15 +353,23 @@ function FundDetailInner() {
               <div className="rounded-card border border-border bg-bg-card p-4">
                 <h2 className="text-sm font-medium text-text-secondary mb-3">Fund Facts</h2>
                 <dl className="space-y-2.5">
-                  {facts.map(({ label, value, explain }) => (
+                  {facts.map(({ label, value, explain, link }) => (
                     <div key={label} className="flex items-center justify-between gap-3 text-sm">
                       <dt className="text-text-muted shrink-0">
                         <ExplainedLabel label={label} explain={explain} />
                       </dt>
-                      {/* No link here — the header already links the issuer's
-                          product page, and two links to the same URL on one
-                          page is noise. */}
-                      <dd className="font-mono tabular-nums text-text-primary text-right text-xs">{value}</dd>
+                      {/* Only the yield carries a link (D166): it changes often, so the
+                          fund's own page sits beside it. The other facts rely on the
+                          header's link to the same page. */}
+                      <dd className="font-mono tabular-nums text-text-primary text-right text-xs">
+                        {value}
+                        {link && (
+                          <a href={link.href} target="_blank" rel="noopener noreferrer" title={link.title}
+                            className="ml-2 inline-flex items-center gap-0.5 font-sans text-[11px] text-accent-blue hover:underline">
+                            {link.text} <ExternalLink size={10} aria-hidden />
+                          </a>
+                        )}
+                      </dd>
                     </div>
                   ))}
                 </dl>
@@ -375,8 +383,10 @@ function FundDetailInner() {
                 confidence={figuresProvenance.confidence}
                 stale={figuresProvenance.stale}
               >
-                Assets shown with a date are the fund&rsquo;s SEC filing for that date. Yield, the
-                tracked index and any figure marked &asymp; are approximate: {figuresProvenance.source},
+                Assets shown with a date are the fund&rsquo;s SEC filing for that date. A yield is
+                shown only where the fund&rsquo;s own site allows it, with the date its page gave, and it
+                may have changed since: the fund&rsquo;s page, linked beside it, has the current yield.
+                The tracked index and any figure marked &asymp; are approximate: {figuresProvenance.source},
                 the oldest on {figuresProvenance.compiledOn} ({figuresProvenance.ageDays}d ago). Check the
                 issuer&rsquo;s fact sheet for current figures.
               </ProvenanceNotice>
@@ -421,9 +431,13 @@ function FundDetailInner() {
               {/* Items 11/13: municipal funds arrived with this pass, and their
                   headline yield is not comparable to a taxable fund's. Shown
                   only for the funds it actually applies to. */}
-              {isMuniFund(entry.symbol) && entry.yieldPct != null && (
-                <TaxEquivalentYieldCard symbol={entry.symbol} yieldPct={entry.yieldPct} />
-              )}
+              {isMuniFund(entry.symbol) && (() => {
+                const y = fundShownYield(entry)
+                return (
+                  <TaxEquivalentYieldCard symbol={entry.symbol} link={fundYieldLink(entry)}
+                    shownYieldPct={y.shown ? y.pct : null} shownAsOf={y.shown ? y.asOf : null} />
+                )
+              })()}
             </>
           ) : (
             <div className="rounded-card border border-border bg-bg-card p-4">

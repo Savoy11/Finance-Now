@@ -44,7 +44,7 @@ function hydrateDiscovered(e: DiscoveredFund, type: FundType): FundUniverseEntry
   return {
     symbol: e.symbol, name: e.name, type, inCatalog: false,
     category: null, issuer: null, expenseRatioPct: null, aumB: null,
-    referencePrice: null, yieldPct: null, inceptionYear: null,
+    referencePrice: null, yieldPct: null, yieldAsOf: null, inceptionYear: null,
     indexTracked: null, focusSector: null, focusIndustry: null,
     website: null, strategy: null, riskLevel: null,
     // Same honest generic policy note the route applies to uncurated mutuals.
@@ -649,7 +649,12 @@ export function FundsClient() {
           </FilterGroup>
 
           <FilterGroup title="Dividend" active={rangeActive(ranges.yield) ? 1 : 0}>
-            <RangeField label="Distribution yield" unit="%" range={ranges.yield} onChange={setRange('yield')} />
+            <RangeField label="Yield" unit="%" range={ranges.yield} onChange={setRange('yield')} />
+            <p className="text-[11px] text-text-muted leading-relaxed">
+              Only funds whose yield is shown: where the fund&rsquo;s own site allows it, read within the
+              last quarter. A filter leaves every other fund out; each row links the fund&rsquo;s page for
+              its current yield.
+            </p>
           </FilterGroup>
 
           <FilterGroup title="Returns" active={RETURN_KEYS.filter((k) => rangeActive(ranges[k])).length}>
@@ -848,13 +853,26 @@ export function FundsClient() {
                               {row.aumB != null ? formatCompact(row.aumB * 1e9) : '—'}
                             </div>
                             <div className="col-span-1 text-right font-mono tabular-nums text-xs text-text-secondary">
-                              {row.yieldPct != null ? `${row.yieldPct.toFixed(1)}%` : '—'}
+                              {/* The route serves only a shown yield (D166), dated; a link to
+                                  the fund's own page sits beside every catalog fund's. */}
+                              <span title={row.yieldAsOf ? `From the fund’s page on ${row.yieldAsOf}; it may have changed since` : undefined}>
+                                {row.yieldPct != null ? `${row.yieldPct.toFixed(1)}%` : '—'}
+                              </span>
                               {row.yieldPct != null && (() => {
                                 const kind = getFund(row.symbol)?.yieldRead?.kind
                                 if (!kind || kind === 'trailing') return null
                                 const name = YIELD_KIND_NAMES[kind]
                                 return <span className="ml-1 text-[10px] text-text-muted" title={`${name.label}, from the fund’s own page`}>{name.short}</span>
                               })()}
+                              {row.inCatalog && row.website && (
+                                <a href={row.website} target="_blank" rel="noopener noreferrer"
+                                  title={`${row.issuer ?? 'The issuer'}’s page for this fund, which has its current yield`}
+                                  aria-label={`Current yield for ${row.symbol} on the fund’s own page`}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="ml-1 inline-flex align-middle text-accent-blue hover:text-accent-blue/80">
+                                  <ExternalLink size={10} aria-hidden />
+                                </a>
+                              )}
                             </div>
                           </>
                         ) : columnTab === 'fees' ? (() => {
@@ -975,7 +993,8 @@ export function FundsClient() {
       <p className="text-[11px] text-text-muted text-center">
         {quoteData ? SOURCE_LABELS[quoteData.source] ?? quoteData.source : 'Loading…'}
         {quoteData?.updatedAt && ` · quotes updated ${new Date(quoteData.updatedAt).toLocaleTimeString()} (visible page)`}
-        {' · '}Expense ratios, AUM, and yields are reference snapshots for curated funds
+        {' · '}Expense ratios and AUM are reference snapshots for curated funds; a yield is shown only where
+        the fund&rsquo;s site allows it, dated and possibly changed since, beside a link to the fund&rsquo;s page
       </p>
     </div>
   )
