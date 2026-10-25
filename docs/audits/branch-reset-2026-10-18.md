@@ -616,3 +616,20 @@ held by:
 - its content in `main` as `f0b91ec`.
 
 Nothing was deleted; no other ref moved.
+
+## Thirty-seventh reset, after PR #417 (2026-10-25)
+
+**What was done.** After PR #417 (D163, the data methods page and T-425 parked) was squash-merged
+into `main` as `0b55f97`, the branch was restarted from `0b55f97` on the owner's machine to park
+T-154 (D164). Pushed with `--force-with-lease`, for the same reason as above.
+
+**Where the prior state lives.** The branch's previous tip, `2ec416f` (#417's only commit), is
+held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@2ec416f`, created by
+  `.github/workflows/archive-branch.yml` when #417 merged, and checked on the remote before the
+  restart;
+- GitHub's `refs/pull/417/head`;
+- its content in `main` as `0b55f97`.
+
+Nothing was deleted; no other ref moved.

@@ -63,8 +63,8 @@
   "outstanding": 381,
   "by_status": {
    "closed": 231,
-   "parked": 135,
-   "open": 10,
+   "parked": 136,
+   "open": 9,
    "blocked": 5
   },
   "by_owner_role": {
@@ -8712,14 +8712,15 @@
   {
    "id": "T-154",
    "title": "FMP rollout-scope decision on market-calendar and stock-universe if the reading is restrictive",
-   "status": "open",
+   "status": "parked",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "decision",
    "effort": "unknown",
-   "blocking_decision": null,
+   "blocking_decision": "PARKED 2026-10-25 — D164 (2026-10-25): the owner chose to decide at launch, with FMP's reply to the enquiry (T-425, parked until then) in hand, between launching without FMP (the Stock Registry on its curated catalog, the earnings calendar hidden, quotes from the next provider) and FMP's Order Form. A paid plan alone is not an option: FMP's terms bar a multi-user deployment \"irrespective of whether such usage is complimentary or paid\" (§2.2.2). Before launch everything is personal use (D96), so the app keeps the free key until then.",
    "related_ids": [
-    "T-383"
+    "T-383",
+    "D164"
    ],
    "summary": "/equities/calendar would go dark; stock-universe collapses to the curated catalog.",
    "next_action": "No action until T-152 returns a restrictive reading; then the owner decides whether /equities/calendar goes dark and the Stock Registry ships on the curated catalog, or a paid FMP plan is bought at release (consistent with the 'free-tier until near release' constraint).",
@@ -8739,7 +8740,8 @@
      "docs/decisions/2026-09-23-owner-decisions.md",
      "docs/licensing/2026-09-20-provider-enquiries.md"
     ]
-   }
+   },
+   "parked_on": "2026-10-25"
   },
   {
    "id": "T-195",
@@ -41216,6 +41218,14 @@
     "what": "T-425 parked (open → parked, D163): the provider enquiries, DefiLlama's included, go when the owner prepares to launch. Counts recomputed: open 10, parked 135.",
     "evidence": [
      "docs/decisions/2026-10-25-owner-decisions.md"
+    ]
+   },
+   {
+    "on": "2026-10-25",
+    "what": "T-154 parked (open → parked, D164): the FMP launch scope is decided at launch, with FMP's reply in hand; a paid plan alone does not allow a public app. Counts recomputed: open 9, parked 136.",
+    "evidence": [
+     "docs/decisions/2026-10-25-owner-decisions.md",
+     "docs/audits/terms-review-fmp-2026-09-13.md"
     ]
    }
   ]
