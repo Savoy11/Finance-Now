@@ -113,14 +113,14 @@ const ROWS: Row[] = [
   },
   {
     label: 'Yield',
-    hint: 'A 12-month distribution yield unless marked SEC: a 30-day SEC yield, from the fund’s own page. The two answer different questions.',
+    hint: 'A 12-month distribution yield unless marked otherwise: a 30-day SEC yield, or an adjusted effective yield, from the fund’s own page. Each answers a different question.',
     cell: (f) => {
       if (f.yieldPct == null) return <span className="text-text-muted">Negligible</span>
       const y = fundYieldFact(f)
       return (
         <span className="inline-flex flex-col">
           <span className="font-mono">{f.yieldPct}%</span>
-          <span className="text-[10px] leading-tight text-text-muted">{y.kind === 'sec' ? '30-day SEC' : '12-month'}{y.asOf ? ` · ${y.asOf}` : ''}</span>
+          <span className="text-[10px] leading-tight text-text-muted">{y.words}{y.asOf ? ` · ${y.asOf}` : ''}</span>
         </span>
       )
     },

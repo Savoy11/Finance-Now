@@ -510,3 +510,21 @@ of `main` that `gh pr update-branch` added), is held by:
 `86459ad`, checked on the remote. The branch itself was left alone.
 
 Nothing was deleted; no other ref moved.
+
+## Thirty-first reset, after PR #411 (2026-10-24)
+
+**What was done.** After PR #411 (the owner's answers to T-129's choices A to E, D157) was
+squash-merged into `main` as `2648d2f`, the branch was restarted from `2648d2f` on the owner's
+machine to give VNQ's adjusted effective yield a label of its own (D150) and apply the Direxion
+pre-fill's result to T-440. Pushed with `--force-with-lease`, for the same reason as above.
+
+**Where the prior state lives.** The branch's previous tip, `262303e` (#411's last commit), is
+held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@262303e`, created by
+  `.github/workflows/archive-branch.yml` when #411 merged, and checked on the remote before the
+  restart;
+- GitHub's `refs/pull/411/head`;
+- its content in `main` as `2648d2f`.
+
+Nothing was deleted; no other ref moved.

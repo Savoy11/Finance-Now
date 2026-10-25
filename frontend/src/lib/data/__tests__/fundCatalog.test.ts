@@ -5,7 +5,7 @@ import {
   computeFeeDrag, fundSalesCharge, fundTradingRestriction, fundAssetsFact, fundYieldFact,
   getFundFeeProvenance, fundFeesAgeDays, fundFeesAreStale, FUND_FEES_LAST_VERIFIED, FUND_FEES_STALE_AFTER_DAYS,
   getFundFiguresProvenance, fundFiguresAgeDays, fundFiguresAreStale, FUND_FIGURES_COMPILED_ON, FUND_FIGURES_STALE_AFTER_DAYS,
-  FUND_CATALOG,
+  FUND_CATALOG, YIELD_KIND_NAMES,
 } from '../fundCatalog'
 
 // W4-C9: computeFeeDrag drives a 30-year dollar projection on every fund detail
@@ -227,7 +227,7 @@ describe('figures read from the fund’s own page', () => {
         expect(D141_ALLOWED, `${f.symbol} ${r!.source}`).toContain(host(r!.source))
       }
       if (f.yieldRead) {
-        expect(['trailing', 'sec'], f.symbol).toContain(f.yieldRead.kind)
+        expect(Object.keys(YIELD_KIND_NAMES), f.symbol).toContain(f.yieldRead.kind)
         expect(f.yieldPct, `${f.symbol} dates a yield it does not have`).not.toBeNull()
       }
     }
@@ -244,6 +244,26 @@ describe('figures read from the fund’s own page', () => {
     expect(sec.explain).toMatch(/not what the fund paid out over the past year/)
     expect(fundYieldFact({ yieldPct: 3.66, yieldRead: { asOf: '2026-10-20', kind: 'trailing', source: 'https://x.test' } }).value).toBe('3.66% · 2026-10-20')
     expect(fundYieldFact({ yieldPct: null }).value).toBe('—')
+  })
+
+  it('names an adjusted effective yield as one, never as a 12-month or SEC yield (D150)', () => {
+    const eff = fundYieldFact({ yieldPct: 2.89, yieldRead: { asOf: '2026-09-30', kind: 'effective', source: 'https://x.test' } })
+    expect(eff).toMatchObject({ label: 'Adjusted Effective Yield', short: 'Adj. eff.', words: 'Adjusted effective', value: '2.89% · 2026-09-30', kind: 'effective' })
+    expect(eff.explain).toMatch(/adjusted effective yield, on 2026-09-30/)
+    expect(eff.explain).toMatch(/neither what the fund paid out over the past year nor a 30-day SEC yield/)
+    // No two kinds share a name, on any surface: a reader can always tell them apart.
+    for (const part of ['label', 'short', 'words'] as const) {
+      const names = Object.values(YIELD_KIND_NAMES).map((n) => n[part])
+      expect(new Set(names).size, part).toBe(names.length)
+    }
+  })
+
+  it('names a yield’s kind on every surface through YIELD_KIND_NAMES, never by testing for one kind', () => {
+    // A surface written as `kind === 'sec' ? 'SEC' : …` showed a third kind as a 12-month yield.
+    for (const file of ['../../../app/(dashboard)/funds/FundsClient.tsx', '../../../components/markets/FundFactsSection.tsx', '../../../app/(dashboard)/compare/page.tsx']) {
+      const src = readFileSync(join(__dirname, file), 'utf8')
+      expect(src, file).not.toMatch(/kind\s*===\s*'sec'/)
+    }
   })
 
   it('shows a page-read asset figure with its date', () => {

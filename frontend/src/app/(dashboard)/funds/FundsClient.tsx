@@ -10,7 +10,7 @@ import { SourceLine } from '@/components/ui/SourceLine'
 import { MetricCard } from '@/components/ui/MetricCard'
 import {
   FUND_CATALOG, FUND_CATEGORY_INFO, FUND_RISK_INFO, FUND_STRATEGY_INFO, fundTradingRestriction,
-  getFund,
+  getFund, YIELD_KIND_NAMES,
   type FundCategoryId, type FundRiskLevel, type FundStrategy, type FundType,
 } from '@/lib/data/fundCatalog'
 import {
@@ -849,9 +849,12 @@ export function FundsClient() {
                             </div>
                             <div className="col-span-1 text-right font-mono tabular-nums text-xs text-text-secondary">
                               {row.yieldPct != null ? `${row.yieldPct.toFixed(1)}%` : '—'}
-                              {row.yieldPct != null && getFund(row.symbol)?.yieldRead?.kind === 'sec' && (
-                                <span className="ml-1 text-[10px] text-text-muted" title="30-day SEC yield, from the fund’s own page">SEC</span>
-                              )}
+                              {row.yieldPct != null && (() => {
+                                const kind = getFund(row.symbol)?.yieldRead?.kind
+                                if (!kind || kind === 'trailing') return null
+                                const name = YIELD_KIND_NAMES[kind]
+                                return <span className="ml-1 text-[10px] text-text-muted" title={`${name.label}, from the fund’s own page`}>{name.short}</span>
+                              })()}
                             </div>
                           </>
                         ) : columnTab === 'fees' ? (() => {

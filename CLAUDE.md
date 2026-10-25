@@ -774,8 +774,13 @@ a fact. `lib/data/__tests__/stakingWording.test.ts` holds it for every live prov
   **First pass applied, 2026-10-21:** 60 figures read from those pages by an automated check the owner
   approved carry the page's date, kind and address (`yieldRead`, `aumRead`), only ever from a D141
   site (a test holds it). 18 are 30-day SEC yields, recorded as such at the owner's choice. **Show a
-  yield only through `fundYieldFact`**, which labels a SEC yield as one, never as "TTM". The other 55
-  figures wait for the owner's hand reading, so `FUND_FIGURES_COMPILED_ON` stays.
+  yield only through `fundYieldFact`**, which labels a SEC yield as one, never as "TTM". **A third
+  kind since 2026-10-24 (D158):** VNQ's page gives an adjusted effective yield and no SEC yield, so
+  it is recorded as `kind: 'effective'` and shown as "Adjusted Effective Yield". Every surface names
+  a kind through `YIELD_KIND_NAMES`; a test fails on one that tests `kind === 'sec'`, the shape that
+  would have shown the third kind as a 12-month yield. The other 54 figures wait for the owner's
+  hand reading, so `FUND_FIGURES_COMPILED_ON` stays. Direxion's is one of them: its site answers the
+  pre-fill with HTTP 403.
 
 ### `src/lib/data/portfolioBuilder.ts` (Portfolio Builder module)
 Pure engine, no API calls, covered by `__tests__/portfolioBuilder.test.ts` (86 tests).
