@@ -234,7 +234,7 @@ const FALLBACK_MEASURED_ON = '2026-10-17'
  * which is the exact combination that published yields up to 20× real in the
  * 2026-09-09 finding.
  */
-const FALLBACK_STALE_AFTER_DAYS = 14
+export const FALLBACK_STALE_AFTER_DAYS = 14
 
 /** True when `key`'s stored reading is measured but older than the window. */
 function expiredMeasurement(key: string, now: Date = new Date()): boolean {
@@ -386,7 +386,19 @@ const LLAMA_MAP: { key: string; symbols: string[]; chain?: string }[] = [
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function clamp(v: number, lo = 0, hi = 50) { return v >= lo && v <= hi ? v : null }
+/**
+ * A reading worth publishing as a rate: above zero and no higher than `hi`, else null,
+ * and null keeps the key on its fallback like any other miss.
+ *
+ * Zero is refused, not just negatives (2026-10-25). It replaced `clamp(v, 0, hi)`, which let
+ * a 0 through, so a source that had gone quiet published "live 0%": DefiLlama's MaticX pool
+ * read 0 from 2026-10-20 with $2.6M still in it, and LBTC did the same on 2026-09-24. The
+ * fallback refresh already called a live 0 "no rate" (stakingFallbackRefresh.mjs); the page
+ * now agrees with it. A protocol that really stops paying goes to its gap reason the same way.
+ */
+export function usableRate(v: number, hi: number): number | null {
+  return Number.isFinite(v) && v > 0 && v <= hi ? v : null
+}
 function round2(v: number) { return Math.round(v * 100) / 100 }
 
 /** Extract a number from various API shapes (decimal or percent, object or primitive) */
@@ -400,6 +412,42 @@ function extractNumber(data: unknown, ...paths: string[]): number | null {
 
 /** Normalise a rate: if < 1 assume decimal (0.038 → 3.8), else assume percent */
 function normPct(raw: number): number { return raw < 1 ? raw * 100 : raw }
+
+export interface LlamaPool { symbol?: string; chain?: string; apy?: number | null; apyBase?: number | null; tvlUsd?: number }
+
+/**
+ * DefiLlama's pools → rates for the keys in `map`. Per key: the exact symbol, narrowed to the
+ * named chain when that chain has hits, then the pool with the most deposits; its base APY,
+ * else its total APY. `refused` holds each key whose pool was found but whose reading was not
+ * a usable rate (`usableRate`, above 0 and at most 40%), with what it read, so the upstream
+ * line can tell "the symbol matched nothing" from "the pool read 0" or "read 7530".
+ */
+export function matchLlamaPools(pools: LlamaPool[], map = LLAMA_MAP): {
+  rates: Record<string, number>
+  refused: Record<string, number | null>
+} {
+  const rates: Record<string, number> = {}
+  const refused: Record<string, number | null> = {}
+  for (const m of map) {
+    let cands: LlamaPool[] = []
+    for (const sym of m.symbols) {
+      cands = pools.filter(p => (p.symbol || '').toUpperCase() === sym)
+      if (m.chain) {
+        const byChain = cands.filter(p => p.chain === m.chain)
+        if (byChain.length) cands = byChain
+      }
+      if (cands.length) break
+    }
+    if (!cands.length) continue
+    const best = [...cands].sort((a, b) => (b.tvlUsd || 0) - (a.tvlUsd || 0))[0]
+    // Prefer base staking yield; fall back to total APY when base is absent/zero.
+    const raw = (typeof best.apyBase === 'number' && best.apyBase > 0) ? best.apyBase : best.apy
+    const pct = typeof raw === 'number' ? usableRate(raw, 40) : null
+    if (pct != null) rates[m.key] = round2(pct)
+    else refused[m.key] = typeof raw === 'number' ? round2(raw) : null
+  }
+  return { rates, refused }
+}
 
 // ─── Handler ─────────────────────────────────────────────────────────────────
 
@@ -504,7 +552,7 @@ export async function collectStakingRates(): Promise<StakingRatesResponse> {
     try {
       const d = await lidoRes.value.json()
       const raw = parseFloat(d?.data?.aprs?.[0]?.apr ?? d?.data?.smaApr ?? '')
-      const pct = clamp(raw < 1 ? raw * 100 : raw, 0, 15)
+      const pct = usableRate(raw < 1 ? raw * 100 : raw, 15)
       if (pct != null) {
         rates.lido_eth = round2(pct)
         rates.ankr_eth = round2(pct + 0.1)
@@ -524,7 +572,7 @@ export async function collectStakingRates(): Promise<StakingRatesResponse> {
       const d = await rocketRes.value.json()
       // RP API returns { yearlyAPR: "3.54" } or { currentAPR: number }
       const raw = parseFloat(d?.yearlyAPR ?? d?.currentAPR ?? d?.apr ?? '')
-      const pct = clamp(normPct(raw), 0, 15)
+      const pct = usableRate(normPct(raw), 15)
       if (pct != null) { rates.rocketpool_eth = round2(pct); sources.rocketpool_eth = 'live' }
     } catch { /* fallback */ }
   }
@@ -535,7 +583,7 @@ export async function collectStakingRates(): Promise<StakingRatesResponse> {
       const d = await marinadeRes.value.json()
       const raw = typeof d === 'number' ? d : extractNumber(d, 'value') ?? extractNumber(d, 'apy')
       if (raw != null) {
-        const pct = clamp(normPct(raw), 0, 25)
+        const pct = usableRate(normPct(raw), 25)
         if (pct != null) { rates.marinade_sol = round2(pct); sources.marinade_sol = 'live' }
       }
     } catch { /* fallback */ }
@@ -554,7 +602,7 @@ export async function collectStakingRates(): Promise<StakingRatesResponse> {
         ? latest.data
         : typeof d === 'number' ? d : extractNumber(d, 'value') ?? extractNumber(d, 'apy')
       if (raw != null) {
-        const pct = clamp(normPct(raw), 0, 25)
+        const pct = usableRate(normPct(raw), 25)
         if (pct != null) { rates.jito_sol = round2(pct); sources.jito_sol = 'live' }
       }
     } catch { /* fallback */ }
@@ -580,7 +628,7 @@ export async function collectStakingRates(): Promise<StakingRatesResponse> {
     try {
       const d = await injRes.value.json()
       const raw = parseFloat(d?.inflation ?? '')
-      const apr = clamp(normPct(raw) / 0.60, 0, 40)  // ~60% bonded ratio
+      const apr = usableRate(normPct(raw) / 0.60, 40)  // ~60% bonded ratio
       if (apr != null) { rates.native_inj = round2(apr); sources.native_inj = 'live' }
     } catch { /* fallback */ }
   }
@@ -589,31 +637,14 @@ export async function collectStakingRates(): Promise<StakingRatesResponse> {
   // One keyless fetch covers ~24 protocol rows that otherwise have no live feed.
   // Runs after the protocol-specific blocks above so a DeFiLlama reading upgrades
   // any derived estimate (e.g. ankr_eth, previously offset from Lido) to live.
+  const llamaRefused: Record<string, number | null> = {}
   if (llamaRes.status === 'fulfilled' && llamaRes.value.ok) {
     try {
       const d = await llamaRes.value.json()
-      const pools: Array<{ symbol?: string; chain?: string; apy?: number; apyBase?: number; tvlUsd?: number }> =
-        Array.isArray(d?.data) ? d.data : []
-      if (pools.length) {
-        for (const m of LLAMA_MAP) {
-          let cands: typeof pools = []
-          for (const sym of m.symbols) {
-            cands = pools.filter(p => (p.symbol || '').toUpperCase() === sym)
-            if (m.chain) {
-              const byChain = cands.filter(p => p.chain === m.chain)
-              if (byChain.length) cands = byChain
-            }
-            if (cands.length) break
-          }
-          if (!cands.length) continue
-          cands.sort((a, b) => (b.tvlUsd || 0) - (a.tvlUsd || 0))
-          const best = cands[0]
-          // Prefer base staking yield; fall back to total APY when base is absent/zero.
-          const raw = (typeof best.apyBase === 'number' && best.apyBase > 0) ? best.apyBase : best.apy
-          const pct = typeof raw === 'number' ? clamp(raw, 0, 40) : null
-          if (pct != null) { rates[m.key] = round2(pct); sources[m.key] = 'live' }
-        }
-      }
+      const pools: LlamaPool[] = Array.isArray(d?.data) ? d.data : []
+      const matched = matchLlamaPools(pools)
+      for (const [key, pct] of Object.entries(matched.rates)) { rates[key] = pct; sources[key] = 'live' }
+      Object.assign(llamaRefused, matched.refused)
     } catch { /* keep fallbacks */ }
   }
 
@@ -652,10 +683,19 @@ export async function collectStakingRates(): Promise<StakingRatesResponse> {
       // for DeFiLlama a miss means a symbol in LLAMA_MAP no longer matches any
       // pool — a one-line map fix, but only once you know which symbol. Capped so
       // a wholesale mismatch cannot flood the line.
+      // A key whose pool WAS found but read 0 or out of range is not a symbol problem, and
+      // calling it "no match" sent the reader to the map (2026-10-25: swell_eth read 7530,
+      // stader_matic read 0). Those are listed apart, with the reading.
       const missed = keys.filter((k) => sources[k] !== 'live')
-      const shown = missed.slice(0, 8).join(', ')
-      const more = missed.length > 8 ? `, +${missed.length - 8} more` : ''
-      return [name, `partial (${landed.length}/${keys.length} live; no match: ${shown}${more})`]
+      const list = (ks: string[], label: (k: string) => string) =>
+        ks.slice(0, 8).map(label).join(', ') + (ks.length > 8 ? `, +${ks.length - 8} more` : '')
+      const refused = missed.filter((k) => k in llamaRefused)
+      const unmatched = missed.filter((k) => !(k in llamaRefused))
+      const parts = [
+        refused.length ? `no usable rate: ${list(refused, (k) => `${k} read ${llamaRefused[k] ?? 'nothing'}`)}` : '',
+        unmatched.length ? `no match: ${list(unmatched, (k) => k)}` : '',
+      ].filter(Boolean)
+      return [name, `partial (${landed.length}/${keys.length} live; ${parts.join('; ')})`]
     }
     // HTTP 200 whose body the parser could not turn into a rate: a changed
     // response shape or a symbol that no longer matches. This is the failure

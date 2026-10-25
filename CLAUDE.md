@@ -1601,6 +1601,14 @@ the probe's map drifts from the route's.
 > Seen and deliberately not acted on: **ANKRMATIC** and **MPETH/SPETH** are live
 > pools with no key in the map. Adding them means new keys in the static table and
 > on the staking page — a feature, not this cleanup.
+>
+> ⚠ **A pool found but reading 0 is not a symbol miss, and is not a rate (D169,
+> 2026-10-25).** The route's line now reads `no usable rate: stader_matic read 0,
+> swell_eth read 7530.09` for a pool it found whose reading `usableRate` refused (0, or
+> over the bound), and keeps `no match:` for symbols that found no pool; this probe only
+> answers the second. Every collector reads through `usableRate` (above 0, at most the
+> bound), so a source gone quiet shows the fallback marked estimate, never a live 0%,
+> which is what the fallback refresh already assumed (`stakingZeroRate.test.ts`).
 
 **Agent evaluation (owner machine — D20, needs `ANTHROPIC_API_KEY`):**
 
