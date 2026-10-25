@@ -71,3 +71,10 @@ achievable frictionless return. Added:
 - `src/lib/utils/equityBacktest.ts` (new, extracted + fee support) + `__tests__/equityBacktest.test.ts` (new, 7 tests).
 - `src/app/(dashboard)/equities/backtests/page.tsx` — use the extracted engine; fee-tier control; updated honesty labeling.
 - `docs/assessments/T12-equity-backtests-audit.md` — this report.
+
+## Live comparison not needed (2026-10-24, D159)
+The live value comparison this audit deferred (T-025) is closed under the owner's ruling D159:
+an outside cross-check of figures from an endpoint already tested and working is not needed.
+The engine (`lib/utils/equityBacktest.ts`) is pure and unit-tested, and its candles come from
+`/live-data/security-ohlcv` (Tiingo, then FMP), the route the equity TA page also reads. The
+backtest page stays hidden (2026-08-20); restoring it no longer waits on this comparison.

@@ -528,3 +528,21 @@ held by:
 - its content in `main` as `2648d2f`.
 
 Nothing was deleted; no other ref moved.
+
+## Thirty-second reset, after PR #412 (2026-10-24)
+
+**What was done.** After PR #412 (VNQ's adjusted effective yield and the Direxion pre-fill, D158)
+was squash-merged into `main` as `9bf186a`, the branch was restarted from `9bf186a` on the
+owner's machine to record the owner's ruling on redundant cross-checks (D159) and close T-266 and
+T-025 under it. Pushed with `--force-with-lease`, for the same reason as above.
+
+**Where the prior state lives.** The branch's previous tip, `5ca81ac` (#412's only commit), is
+held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@5ca81ac`, created by
+  `.github/workflows/archive-branch.yml` when #412 merged, and checked on the remote before the
+  restart;
+- GitHub's `refs/pull/412/head`;
+- its content in `main` as `9bf186a`.
+
+Nothing was deleted; no other ref moved.
