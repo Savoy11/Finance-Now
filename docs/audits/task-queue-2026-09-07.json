@@ -62,9 +62,9 @@
   "total_verified": 398,
   "outstanding": 381,
   "by_status": {
-   "closed": 228,
-   "parked": 135,
-   "open": 13,
+   "closed": 230,
+   "parked": 134,
+   "open": 12,
    "blocked": 5
   },
   "by_owner_role": {
@@ -74,7 +74,7 @@
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 228,
+  "closed_by_annotation": 230,
   "counts_recomputed_on": "2026-10-24",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 381
@@ -6793,7 +6793,7 @@
   {
    "id": "T-266",
    "title": "Live TradingView cross-check of crypto TA on 2–3 coins",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "data-verification",
@@ -6802,7 +6802,8 @@
    "related_ids": [
     "T1",
     "T10",
-    "T-423"
+    "T-423",
+    "D159"
    ],
    "summary": "A check of the crypto TA page’s indicator maths against TradingView, on the owner’s network. Since T-423 (2026-10-13) the page draws CoinGecko’s candles and, where those are missing or 4-day, DefiLlama’s daily closes (Coin Metrics as the backup, D108); Binance.US is no longer a source. Measured for BTC on 2026-10-14: the 1H range is 48 thirty-minute CoinGecko candles, the 4H range 42 four-hour CoinGecko candles, and the 1Y range 365 DefiLlama daily closes (CoinGecko’s own answer there is 4-day candles, which the page replaces). So SMA-50 and SMA-200 can be compared only on 1Y; the two short ranges carry RSI-14 and MACD.",
    "next_action": "On the owner’s machine with `npm run dev`, open /technical-analysis for BTC, ETH and SOL on the 1H, 4H and 1Y ranges, and note the candle size and source each one names. Compare RSI-14 and MACD (12, 26, 9) on all three ranges, and SMA-50 and SMA-200 on 1Y, against TradingView at the same candle size on an aggregated feed rather than one exchange (for example CRYPTO:BTCUSD), since CoinGecko’s and DefiLlama’s prices are aggregates too. Expect small gaps: the feeds differ, and DefiLlama’s daily prices fall a day apart counting back from the request time, not at midnight UTC. Record each gap rather than passing or failing on an exact match; a large gap, or a crossover on one side only, is a finding. Record results in docs/assessments/T10-crypto-ta-audit.md.",
@@ -6821,6 +6822,20 @@
      "summary": "Against Binance.US; owner network.",
      "next_action": "On the owner's machine with `npm run dev`, open /technical-analysis for BTC/ETH/SOL on 1H/4H/1D and compare RSI-14, MACD, SMA-50/200 against TradingView's BINANCEUS feed; record results in docs/assessments/T10-crypto-ta-audit.md."
     }
+   },
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-10-24",
+    "basis": "owner-ruling",
+    "verdict": "moot",
+    "reason": "MOOT under D159 (2026-10-24): the owner ruled an outside cross-check of figures from a tested, working endpoint unnecessary. Both crypto charts read /live-data/ohlcv through useCryptoChartSeries and draw RSI, MACD and SMA with the tested functions in lib/utils/indicators. On 2026-10-24 the session read those values for BTC, ETH and SOL on 1H, 4H and 1Y as the charts request them, and one reading matched the live page (BTC 1Y RSI-14 43.48). The TradingView comparison itself was not made, so no gap is recorded.",
+    "approved_by": "owner, 2026-10-24: \"Its fine if we skip these checks; these checks seem redundant based on how the app was built and where the data is being sourced. I want to use this same ruling for similar tasks where endpoints have been tested and confirmed working.\" Then \"Close both (Recommended)\"",
+    "evidence": [
+     "docs/decisions/2026-10-24-owner-decisions.md",
+     "docs/assessments/T10-crypto-ta-audit.md",
+     "frontend/src/hooks/useCryptoChartSeries.ts",
+     "frontend/src/components/charts/indicatorRegistry.ts"
+    ]
    }
   },
   {
@@ -12189,8 +12204,7 @@
   {
    "id": "T-025",
    "title": "T12 live cross-check of equity backtest output on the owner's machine",
-   "status": "parked",
-   "parked_on": "2026-09-07",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "data-verification",
@@ -12199,7 +12213,8 @@
    "related_ids": [
     "P3-W2-S1",
     "T11",
-    "T12"
+    "T12",
+    "D159"
    ],
    "summary": "docs/assessments/T12 deferred the live value comparison (needs OHLCV egress); discharge on the owner's machine when S1 reopens.",
    "next_action": "When S1 reopens, on the owner's machine with a Tiingo/FMP key: run one strategy on /equities/backtests (temporarily un-redirected) and compare CAGR/max drawdown against a known-good source for the same window; date the result in docs/assessments/T12-equity-backtests-audit.md.",
@@ -12214,7 +12229,21 @@
      "lines": "12-13, 67-68",
      "quote": "Live reference cross-check deferred (IP-dependent)."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "parked",
+    "closed_on": "2026-10-24",
+    "basis": "owner-ruling",
+    "verdict": "moot",
+    "reason": "MOOT under D159 (2026-10-24): the owner ruled an outside cross-check of figures from a tested, working endpoint unnecessary. The backtest engine (lib/utils/equityBacktest.ts) is pure and unit-tested, and its candles come from /live-data/security-ohlcv, the route the equity TA page reads. Restoring the hidden backtest page no longer waits on comparing its results with an outside source.",
+    "approved_by": "owner, 2026-10-24: \"Its fine if we skip these checks; these checks seem redundant based on how the app was built and where the data is being sourced. I want to use this same ruling for similar tasks where endpoints have been tested and confirmed working.\" Then \"Close both (Recommended)\"",
+    "evidence": [
+     "docs/decisions/2026-10-24-owner-decisions.md",
+     "docs/assessments/T12-equity-backtests-audit.md",
+     "frontend/src/lib/utils/equityBacktest.ts"
+    ],
+    "parked_on": "2026-09-07"
+   }
   },
   {
    "id": "T-037",
@@ -40950,6 +40979,13 @@
     "evidence": [
      "docs/decisions/2026-10-24-owner-decisions.md",
      "frontend/src/lib/data/fundCatalog.ts"
+    ]
+   },
+   {
+    "on": "2026-10-24",
+    "what": "D159, the owner's ruling that an outside cross-check of figures from a tested, working endpoint is not needed: T-266 (TradingView vs the crypto charts, open → closed) and T-025 (equity backtests vs an outside source, parked → closed), both moot. Hand-kept tables are not covered and stay open or parked. Counts recomputed: closed 230, open 12, parked 134.",
+    "evidence": [
+     "docs/decisions/2026-10-24-owner-decisions.md"
     ]
    }
   ]

@@ -107,3 +107,15 @@ Live TradingView cross-check on 2–3 coins across several indicators, comparing
 **Binance.US** (or expecting legitimate venue divergence). The math and wiring are verified; the
 only thing unconfirmed is that the *live upstream values* match a reference — which is the
 IP-dependent piece.
+
+## Closed without the TradingView comparison (2026-10-24, D159)
+The owner ruled the comparison above redundant and T-266 is closed under that ruling. What was
+done first: on 2026-10-24, on the owner's residential connection (no proxy), a script asked
+`/live-data/ohlcv` for BTC, ETH and SOL on 1H, 4H and 1Y exactly as `useCryptoChartSeries` does
+(CoinGecko candles first; DefiLlama closes where the candles are missing or 4-day, which is every
+1Y range) and ran the same `rsi`, `macd` and `sma` from `lib/utils/indicators` that the chart's
+indicator registry draws with. One reading was checked on the live page and matched (BTC, 1Y,
+RSI-14 43.48). The readings were CoinGecko and DefiLlama prices and stay off the repository. The
+comparison was never made, so no gap is recorded. The owner's reasoning: the figures come from
+a tested, working endpoint through tested code, and a third-party site would mostly show where
+its price feed differs from these ones.
