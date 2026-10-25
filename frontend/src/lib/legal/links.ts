@@ -13,6 +13,8 @@ export const LEGAL_PATHS = {
   privacy: '/about/privacy',
   notAdvice: '/about/not-investment-advice',
   openSource: '/about/open-source',
+  /** How the figures are worked out (D163, 2026-10-25). */
+  dataMethods: '/about/data-methods',
 } as const
 
 /** /how-we-make-money redirects here (next.config.mjs). */
@@ -26,4 +28,6 @@ export const FOOTER_LINKS: ReadonlyArray<{ href: string; label: string }> = [
   { href: LEGAL_PATHS.terms, label: 'Terms' },
   { href: LEGAL_PATHS.privacy, label: 'Privacy' },
   { href: LEGAL_PATHS.notAdvice, label: 'Not investment advice' },
+  // Owner, 2026-10-25 (D163): the rules behind the figures, where users can find them.
+  { href: LEGAL_PATHS.dataMethods, label: 'How our figures work' },
 ]

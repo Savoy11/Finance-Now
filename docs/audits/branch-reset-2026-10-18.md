@@ -598,3 +598,21 @@ held by:
 - its content in `main` as `a62c779`.
 
 Nothing was deleted; no other ref moved.
+
+## Thirty-sixth reset, after PR #416 (2026-10-25)
+
+**What was done.** After PR #416 (D162, the staking facts' first automated check) was
+squash-merged into `main` as `f0b91ec`, the branch was restarted from `f0b91ec` on the owner's
+machine to build the data methods page and park T-425 (D163). Pushed with `--force-with-lease`,
+for the same reason as above.
+
+**Where the prior state lives.** The branch's previous tip, `2870e5c` (#416's only commit), is
+held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@2870e5c`, created by
+  `.github/workflows/archive-branch.yml` when #416 merged, and checked on the remote before the
+  restart;
+- GitHub's `refs/pull/416/head`;
+- its content in `main` as `f0b91ec`.
+
+Nothing was deleted; no other ref moved.

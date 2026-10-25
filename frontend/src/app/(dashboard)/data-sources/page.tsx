@@ -6,6 +6,7 @@ import { ExternalLink, Database, KeyRound, ShieldCheck, ShieldAlert, Scale, Chev
 import { clsx } from 'clsx'
 import Link from 'next/link'
 import { PageHeader } from '@/components/ui/PageHeader'
+import { LEGAL_PATHS } from '@/lib/legal/links'
 import {
   DATA_SOURCES, SOURCE_STATUS_META, PROVIDER_AUTH_META,
   type DataSourceEntry, type SourceStatus,
@@ -258,6 +259,12 @@ export default function DataSourcesPage() {
           { label: 'Permitted use', text: 'Every host below has a dated terms verdict (see the panel underneath). Prohibited hosts are blocked in code, and a source nobody has reviewed cannot be added without an explicit acknowledgement.' },
         ]}
       />
+
+      {/* D163: where the data comes from is this page; what is done with it is that one. */}
+      <p className="text-sm text-text-secondary">
+        How each figure is worked out, and what is shown when a source gives a range or nothing at all:{' '}
+        <Link href={LEGAL_PATHS.dataMethods} className="text-accent-blue hover:underline">How our figures are worked out</Link>.
+      </p>
 
       {/* W3-7: this page LISTS every source, and the owner's review found no
           way to ADD one from here — adding lives on Integrations, behind

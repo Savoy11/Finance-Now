@@ -67,7 +67,10 @@ frontend/src/
 │   │                               #   "Draft — not yet in force" notice until approved + no blanks.
 │   │                               #   risk-ratings/ is the T-420 rating methodology, rendered from
 │   │                               #   lib/risk/methodology/v1.ts; a 404 while ASSET_PAGE_RATINGS_SHOWN
-│   │                               #   is false
+│   │                               #   is false. data-methods/ is "How our figures are worked out"
+│   │                               #   (D163): the rules behind the figures, from lib/legal/dataMethods.ts,
+│   │                               #   in the footer. ⚠ A decision that changes how a figure is worked
+│   │                               #   out updates that file in the same PR (owner, 2026-10-25)
 │   ├── (dashboard)/                # All main pages (use Sidebar layout)
 │   │   ├── layout.tsx              # Dashboard shell with Sidebar
 │   │   │
