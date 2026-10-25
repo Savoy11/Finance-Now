@@ -61,6 +61,7 @@
     "queue:check": "node scripts/check-queue-ledger.mjs",
     "staleness:check": "tsx scripts/check-staleness-horizon.ts",
     "accuracy-check": "tsx scripts/accuracy-check.ts",
+    "fund-assets-check": "tsx scripts/fund-assets-check.ts",
     "deps:check": "node scripts/check-dependency-audit.mjs",
     "ratings:validate": "tsx scripts/validate-ratings.ts"
   },

@@ -161,7 +161,8 @@ export const REREAD_STEPS: Record<AccuracyRow['group'], string[]> = {
     'Read with the yields above: the same pre-fill, check page and plan.',
   ],
   'fund-assets-filed': [
-    'npm run fund-facts on the owner’s machine (SEC filings, keyless; reports, never writes), then apply the newer period by PR.',
+    'npm run fund-assets-check (SEC filings, keyless; reports, never writes): each fund’s newest NPORT-P against its catalog figure. The owner approves the differences; they land by PR (D168).',
+    'A trust that files no N-PORT (gold, silver, oil, currency and crypto trusts, the commodity pools) is listed there as such: re-read it from its newest 10-Q, 10-K or 40-F.',
   ],
   'stock-per-share': [
     'Worked out each day from the company’s SEC annual report: nothing to re-read by hand.',

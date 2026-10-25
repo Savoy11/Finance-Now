@@ -866,7 +866,9 @@ export function FundsClient() {
                               })()}
                               {row.inCatalog && row.website && (
                                 <a href={row.website} target="_blank" rel="noopener noreferrer"
-                                  title={`${row.issuer ?? 'The issuer'}’s page for this fund, which has its current yield`}
+                                  title={getFund(row.symbol)?.pageNote
+                                    ? `${row.issuer ?? 'The issuer'}’s page for this fund. ${getFund(row.symbol)!.pageNote}`
+                                    : `${row.issuer ?? 'The issuer'}’s page for this fund, which has its current yield`}
                                   aria-label={`Current yield for ${row.symbol} on the fund’s own page`}
                                   onClick={(e) => e.stopPropagation()}
                                   className="ml-1 inline-flex align-middle text-accent-blue hover:text-accent-blue/80">

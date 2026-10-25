@@ -686,3 +686,22 @@ held by:
 - its content in `main` as `9d060ad`.
 
 Nothing was deleted; no other ref moved.
+
+## Forty-first reset, after PR #421 (2026-10-25)
+
+**What was done.** After PR #421 (D167, stock P/E and dividend yields from SEC filings) was
+squash-merged into `main` as `b1ff8bd`, the branch was restarted from `b1ff8bd` on the owner's
+machine to record D168: the filed fund asset figures re-read against their newest SEC filings, and
+a note beside each fund link whose page lacks the figure. Pushed with `--force-with-lease`, for the
+same reason as above.
+
+**Where the prior state lives.** The branch's previous tip, `c1352bc` (#421's only commit), is
+held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@c1352bc`, created by
+  `.github/workflows/archive-branch.yml` when #421 merged, and checked on the remote before the
+  restart;
+- GitHub's `refs/pull/421/head`;
+- its content in `main` as `b1ff8bd`.
+
+Nothing was deleted; no other ref moved.
