@@ -362,17 +362,25 @@ var FundFiguresCore = (function () {
   }
 
   /** What the catalog's figure is, and how to read the page's, for one figure row. */
+  // A figure the catalog already carries from the page, with the page's date, is not
+  // "compiled by hand and undated", and saying so would send the owner to re-check it.
   function figureGuidance(fund, fig) {
     var f = fund && typeof fund === 'object' ? fund : {}
+    var asOf = isoDay(fig && fig.catalogAsOf)
     if (fig.figure === 'yield') {
-      return 'The catalog holds a 12-month trailing distribution yield, compiled by hand and undated. ' +
+      return (asOf
+        ? 'The catalog’s yield was read from this fund’s page, dated ' + longDay(asOf) + '. '
+        : 'The catalog holds a 12-month trailing distribution yield, compiled by hand and undated. ') +
         'If the page shows several yields, read that one. If it shows only a 30-day SEC yield, read that and say so.'
     }
     if (f.shareClass) {
-      return 'Vanguard’s ETFs are share classes of larger funds, and the catalog holds the ETF’s own net assets. ' +
+      return (asOf ? 'The catalog’s figure was read from this fund’s page, dated ' + longDay(asOf) + '. ' : '') +
+        'Vanguard’s ETFs are share classes of larger funds, and the catalog holds the ETF’s own net assets. ' +
         'Read the ETF share class’s figure, not the whole fund’s.'
     }
-    return 'The catalog holds this fund’s own net assets, compiled by hand and undated.'
+    return asOf
+      ? 'The catalog holds this fund’s own net assets, read from its page, dated ' + longDay(asOf) + '.'
+      : 'The catalog holds this fund’s own net assets, compiled by hand and undated.'
   }
 
   /** Where a fund's card sends the owner. */

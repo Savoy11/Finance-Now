@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { FUND_CATALOG, FUND_CATEGORY_INFO, FUND_FIGURES_COMPILED_ON, FUND_FIGURES_STALE_AFTER_DAYS } from '@/lib/data/fundCatalog'
 import { fundSiteAllowsFigures } from '@/lib/data/fundCatalog'
-import { buildFundFiguresData, figuresFor, parseFundOrder, suggestionsByFigure, FUND_FIGURES_SERVES, type FundFigure } from '../../../../scripts/lib/fundFiguresData'
+import { buildFundFiguresData, figuresFor, parseFundOrder, suggestionsByFigure, FUND_FIGURES_PARKED, FUND_FIGURES_SERVES, type FundFigure } from '../../../../scripts/lib/fundFiguresData'
 import { buildFundFiguresPage, FUND_FIGURES_CAPABILITIES, FUND_FIGURES_TITLE, staleFrom } from '../../../../scripts/lib/fundFiguresPage.mjs'
 import { FEE_CHECK_CSS } from '../../../../scripts/lib/feeCheckPage.mjs'
 
@@ -50,7 +50,7 @@ type Core = {
   dbMessage(e: unknown): string
   longDay(iso: unknown): string
   figureText(figure: string, value: unknown): string
-  figureGuidance(fund: unknown, fig: { figure: string }): string
+  figureGuidance(fund: unknown, fig: { figure: string; catalogAsOf?: string }): string
   fundGuidance(fund: unknown): { href: string | null; label: string; hint: string }
   makeStore(o: { db: unknown; me: string | null; now?: () => number; wait?: () => Promise<void> }): {
     saveReading(fig: FundFigure, input: Record<string, unknown>): Promise<Saved>
@@ -366,7 +366,9 @@ describe('the page’s data, from the real catalog', () => {
   it('carries no outside figure: a sort order holds symbols and flags only', () => {
     const d = buildFundFiguresData({ ...base, order: { basis: 'A check.', funds: [{ symbol: 'DIA', differs: true }] } })
     expect(Object.keys(d.funds[0]).sort()).toEqual(['category', 'figures', 'issuer', 'name', 'shareClass', 'startHere', 'symbol', 'type', 'website'])
-    expect(Object.keys(d.funds[0].figures[0]).sort()).toEqual(['catalog', 'figure', 'id', 'symbol'])
+    // catalogAsOf is the catalog's own date for its figure (yieldRead), not an outside one.
+    expect(Object.keys(d.funds[0].figures[0]).sort()).toEqual(['catalog', 'catalogAsOf', 'figure', 'id', 'symbol'])
+    expect(d.funds[0].figures[0].catalogAsOf).toBe(FUND_CATALOG.find((f) => f.symbol === 'DIA')!.yieldRead!.asOf)
   })
 
   it('adds no suggestion unless the page is built with the pre-fill’s file', () => {
@@ -394,7 +396,53 @@ describe('the page’s data, from the real catalog', () => {
     expect(fig('VOO:yield').catalog).toBe(FUND_CATALOG.find((f) => f.symbol === 'VOO')!.yieldPct)
     expect(JSON.stringify(d)).not.toContain('NOTINCATALOG')
     expect(JSON.stringify(d)).not.toContain('not carried')
-    expect(d.suggestions).toEqual({ savedAt: '2026-10-21T18:00:00Z', suggested: 1, none: d.funds.flatMap((f) => f.figures).filter((g) => g.suggestion?.status === 'none').length })
+    expect(d.suggestions).toEqual({ savedAt: '2026-10-21T18:00:00Z', readFrom: '2026-10-21', readTo: '2026-10-21', suggested: 1, none: d.funds.flatMap((f) => f.figures).filter((g) => g.suggestion?.status === 'none').length })
+    // A later attempt that read nothing (SOXL's 403 on 2026-10-25) does not stretch the days copied.
+    const later = suggestionsByFigure([...pages, { symbol: 'SOXL', readAt: '2026-10-25T05:00:00Z', outcome: 'error', why: 'HTTP 403', figures: [] }])
+    expect(buildFundFiguresData({ ...base, suggestions: { savedAt: '2026-10-25T05:40:00Z', byFigure: later } }).suggestions).toMatchObject({ readFrom: '2026-10-21', readTo: '2026-10-21' })
+  })
+
+  it('dates a figure the catalog already carries from the page, and leaves an undated one undated', () => {
+    // Found 2026-10-26: 61 figures applied from the fund's own page still read "compiled by hand
+    // and undated", and their net assets carried the "≈" kept for undated figures.
+    const voo = FUND_CATALOG.find((f) => f.symbol === 'VOO')!
+    expect(voo.yieldRead?.asOf).toBeTruthy()
+    const vooFigs = figuresFor(voo)
+    expect(vooFigs.find((g) => g.figure === 'yield')!.catalogAsOf).toBe(voo.yieldRead!.asOf)
+    expect(vooFigs.find((g) => g.figure === 'assets')!.catalogAsOf).toBe(voo.aumRead!.asOf)
+    const vt = figuresFor(FUND_CATALOG.find((f) => f.symbol === 'VT')!)
+    expect(vt.find((g) => g.figure === 'yield')!.catalogAsOf).toBeUndefined()
+    // Every dated figure, and only those, carries its date.
+    for (const g of figs) {
+      const f = FUND_CATALOG.find((x) => x.symbol === g.symbol)!
+      expect(g.catalogAsOf).toBe((g.figure === 'yield' ? f.yieldRead?.asOf : f.aumRead?.asOf) ?? undefined)
+    }
+    expect(core.figureGuidance({}, { figure: 'yield', catalogAsOf: '2026-09-30' })).toMatch(/^The catalog’s yield was read from this fund’s page, dated September 30, 2026\./)
+    expect(core.figureGuidance({}, { figure: 'yield', catalogAsOf: '2026-09-30' })).not.toMatch(/undated/)
+    expect(core.figureGuidance({}, { figure: 'yield' })).toMatch(/compiled by hand and undated/)
+    expect(core.figureGuidance({}, { figure: 'assets', catalogAsOf: 'nonsense' })).toMatch(/undated/)
+    expect(core.figureGuidance({ shareClass: true }, { figure: 'assets', catalogAsOf: '2026-09-30' })).toMatch(/dated September 30, 2026\. .*share class’s figure/)
+    // The card marks "≈" only for an undated figure, and shows the date of a dated one.
+    expect(clientSrc).toMatch(/g\.figure === 'assets' && !asOf \? '≈ ' : ''/)
+    expect(clientSrc).toMatch(/el\('dt', null, 'As of'\)/)
+  })
+
+  it('carries each fund’s page note to its card, which shows it under the link', () => {
+    // The 14 figures left on 2026-10-26 were mostly ones the catalog already knew the page does
+    // not print (D168): 8 Vanguard yields reading "—", TQQQ's and SOXL's on a fact sheet.
+    const noted = FUND_CATALOG.filter((f) => f.pageNote && figuresFor(f).length > 0)
+    expect(noted.length).toBeGreaterThan(5)
+    for (const f of noted) expect(data.funds.find((c) => c.symbol === f.symbol)!.pageNote).toBe(f.pageNote)
+    for (const c of data.funds) if (!FUND_CATALOG.find((f) => f.symbol === c.symbol)!.pageNote) expect(c).not.toHaveProperty('pageNote')
+    expect(clientSrc).toMatch(/if \(typeof fund\.pageNote === 'string' && fund\.pageNote\) sec\.appendChild\(el\('p', 'callout', fund\.pageNote\)\)/)
+  })
+
+  it('is parked until before launch (D171), and says so only while parked', () => {
+    expect(FUND_FIGURES_PARKED).toMatchObject({ on: '2026-10-26', decision: 'D171' })
+    expect(buildFundFiguresData({ ...base, parked: FUND_FIGURES_PARKED }).parked).toEqual(FUND_FIGURES_PARKED)
+    expect(data.parked).toBeNull()
+    expect(read('scripts/gen-fund-figures-page.ts')).toMatch(/parked: FUND_FIGURES_PARKED/)
+    expect(read('scripts/fund-figures-plan.ts')).toMatch(/if \(FUND_FIGURES_PARKED\) console\.log/)
   })
 
   it('serves T-440, and figuresFor skips a fund with nothing to read', () => {
@@ -465,7 +513,7 @@ describe('the published page', () => {
     const suggestion = { status: 'suggested', shown: '1.00%', asOf: '2026-10-19', kind: 'sec', quote: 'secYield: 1.00% </script><script>alert(1)</script>', dateQuote: '', why: '', readOn: '2026-10-21' }
     const withSugg = buildFundFiguresPage({
       ...fixture,
-      suggestions: { savedAt: '2026-10-21T18:00:00Z', suggested: 1, none: 0 },
+      suggestions: { savedAt: '2026-10-21T18:00:00Z', readFrom: '2026-10-21', readTo: '2026-10-21', suggested: 1, none: 0 },
       funds: [{ ...fixture.funds[0], figures: [{ ...fixture.funds[0].figures[0], suggestion }, fixture.funds[0].figures[1]] }],
     })
     const block = withSugg.slice(withSugg.indexOf('id="ff-data">'), withSugg.indexOf('</script>', withSugg.indexOf('id="ff-data">')))
@@ -478,6 +526,24 @@ describe('the published page', () => {
     expect(fn.length).toBeGreaterThan(100)
     expect(fn).not.toMatch(/\.value\b|\binput\b|form|save/i)
     expect([...code.matchAll(/\.suggestion\b/g)].length).toBe(2) // the guard and the read in buildSuggestion
+  })
+
+  it('dates the suggestions by the days the pages were read, not the day the file was saved', () => {
+    // Found 2026-10-26: the page said the pre-fill copied its figures "on October 25, 2026", the
+    // day the file was last saved; the pages were read on October 21.
+    const page = (readFrom: string | null, readTo: string | null) =>
+      buildFundFiguresPage({ ...fixture, suggestions: { savedAt: '2026-10-25T05:40:43Z', readFrom, readTo, suggested: 1, none: 0 } })
+    expect(page('2026-10-21', '2026-10-21')).toContain('copied from the fund’s own page on October 21, 2026,')
+    expect(page('2026-10-21', '2026-10-21')).not.toContain('October 25, 2026')
+    expect(page('2026-10-21', '2026-10-24')).toContain('page between October 21, 2026 and October 24, 2026,')
+    expect(page(null, null)).toContain('page in the file saved October 25, 2026,')
+  })
+
+  it('puts a parked notice above everything else while the check is parked, and none otherwise', () => {
+    const parked = buildFundFiguresPage({ ...fixture, parked: { on: '2026-10-26', decision: 'D171', why: 'Waiting <b>.' } })
+    expect(parked).toContain('<p class="callout warn" id="ff-parked"><b>Parked until before launch</b> (October 26, 2026, D171). Waiting &lt;b&gt;.</p>')
+    expect(parked.indexOf('id="ff-parked"')).toBeLessThan(parked.indexOf('class="lede"'))
+    expect(html).not.toContain('ff-parked')
   })
 
   it('re-enables a figure’s buttons when its save finishes', () => {

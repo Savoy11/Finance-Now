@@ -119,8 +119,16 @@
     var vals = el('dl', 'vals')
     var d = el('div')
     d.appendChild(el('dt', null, 'Catalog'))
-    d.appendChild(el('dd', 'mono', (g.figure === 'assets' ? '≈ ' : '') + C.figureText(g.figure, g.catalog)))
+    // "≈" marks an undated figure only; one read from the page carries the page's date instead.
+    var asOf = C.isoDay(g.catalogAsOf)
+    d.appendChild(el('dd', 'mono', (g.figure === 'assets' && !asOf ? '≈ ' : '') + C.figureText(g.figure, g.catalog)))
     vals.appendChild(d)
+    if (asOf) {
+      var dd = el('div')
+      dd.appendChild(el('dt', null, 'As of'))
+      dd.appendChild(el('dd', 'mono', C.longDay(asOf)))
+      vals.appendChild(dd)
+    }
     root.appendChild(vals)
     root.appendChild(el('p', 'tnote', C.figureGuidance(fund, g)))
     if (g.suggestion) root.appendChild(buildSuggestion(g))
@@ -452,6 +460,9 @@
     }
     links.appendChild(el('span', 'hint', guide.hint))
     sec.appendChild(links)
+    // What we already know the page leaves out (the catalog's pageNote, D168), so a figure the
+    // page does not print is answered "Can't find it" without a search for it.
+    if (typeof fund.pageNote === 'string' && fund.pageNote) sec.appendChild(el('p', 'callout', fund.pageNote))
     if (fund.startHere) sec.appendChild(el('p', 'callout warn', 'Start here: the yield a data service works out from today’s price and the past year’s payouts differs from the catalog’s.'))
 
     var list = el('div', 'rows')

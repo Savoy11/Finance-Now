@@ -37,7 +37,7 @@ import {
   FUND_FIGURES_STALE_AFTER_DAYS,
   fundFiguresAgeDays,
 } from '../src/lib/data/fundCatalog'
-import { buildFundFiguresData, figuresFor, parseFundOrder, suggestionsByFigure } from './lib/fundFiguresData'
+import { buildFundFiguresData, figuresFor, parseFundOrder, suggestionsByFigure, FUND_FIGURES_PARKED } from './lib/fundFiguresData'
 import { parseSuggestions } from './lib/fundFiguresReview'
 import { buildFundFiguresPage, FUND_FIGURES_CAPABILITIES } from './lib/fundFiguresPage.mjs'
 
@@ -68,6 +68,7 @@ const data = buildFundFiguresData({
   generatedOn: now.toISOString().slice(0, 10),
   order,
   suggestions: suggested ? { savedAt: suggested.savedAt, byFigure: suggestionsByFigure(suggested.pages) } : null,
+  parked: FUND_FIGURES_PARKED,
 })
 
 const html = buildFundFiguresPage(data)
@@ -79,5 +80,6 @@ console.log(order
   ? `  ordered: ${data.order.ranked} funds from ${orderFile}, ${data.order.startHere} marked Start here; the rest grouped by issuer`
   : '  no sort order given: grouped by issuer')
 if (data.suggestions) console.log(`  suggestions from ${suggestionsFile}: ${data.suggestions.suggested} figures suggested, ${data.suggestions.none} with the reason there is none`)
+if (data.parked) console.log(`  PARKED since ${data.parked.on} (${data.parked.decision}): the page says so at the top`)
 console.log(`  figures compiled ${data.catalog.compiledOn} (${data.catalog.ageDays} days ago) — not touched`)
 console.log(`  publish with capabilities ${JSON.stringify(FUND_FIGURES_CAPABILITIES)}`)

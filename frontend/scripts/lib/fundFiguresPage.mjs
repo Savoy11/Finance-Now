@@ -86,8 +86,17 @@ export function buildFundFiguresPage(data) {
     ? `The first ${esc(String(order.ranked))} funds are ordered by a check against an outside figure: ${esc(order.basis)} The ${esc(String(order.startHere))} where it differs are marked <b>Start here</b>. The page shows no outside figure: you read the issuer’s own. The other funds follow, grouped by issuer, so one sitting covers one site.`
     : 'The funds are grouped by issuer, so one sitting covers one site.'
   const sg = data.suggestions
+  // The day the pages were read, never the day the file was last saved: a later save (a
+  // re-read of one site, a hand note) moves savedAt without anyone reading the other pages.
+  const readOn = sg && sg.readFrom
+    ? (sg.readFrom === sg.readTo ? `on ${longDate(sg.readFrom)}` : `between ${longDate(sg.readFrom)} and ${longDate(sg.readTo)}`)
+    : sg ? `in the file saved ${longDate(sg.savedAt.slice(0, 10))}` : ''
   const suggestionsLine = sg
-    ? `<p class="lede">${esc(String(sg.suggested))} figures carry a <b>suggestion</b>: the figure the pre-fill copied from the fund’s own page on ${esc(longDate(sg.savedAt.slice(0, 10)))}, with the passage it came from. It is a hint, not a reading: check it on the page, then type what the page shows. ${esc(String(sg.none))} more say why there is none.</p>`
+    ? `<p class="lede">${esc(String(sg.suggested))} figures carry a <b>suggestion</b>: the figure the pre-fill copied from the fund’s own page ${esc(readOn)}, with the passage it came from. It is a hint, not a reading: check it on the page, then type what the page shows. ${esc(String(sg.none))} more say why there is none.</p>`
+    : ''
+  const pk = data.parked
+  const parkedLine = pk
+    ? `<p class="callout warn" id="ff-parked"><b>Parked until before launch</b> (${esc(longDate(pk.on))}, ${esc(pk.decision)}). ${esc(pk.why)}</p>`
     : ''
   const startButton = order.startHere
     ? `<button type="button" id="ff-mode-start" aria-pressed="true">Start here · ${esc(String(order.startHere))} funds</button>\n      `
@@ -102,6 +111,7 @@ export function buildFundFiguresPage(data) {
     <p class="eyebrow">Finance Now · ${esc(data.serves.join(' and '))}</p>
     <h1>${esc(FUND_FIGURES_TITLE)}</h1>
   </header>
+  ${parkedLine}
   <p class="lede">The fund catalog’s yields, and the asset figures no SEC filing dates, were compiled by hand; the oldest on <b>${esc(longDate(c.compiledOn))}</b>, ${esc(String(c.ageDays))} days ago. Read each one from the fund’s own page, with the date the page gives. That is <b>${esc(String(n.yields))} yields</b> and <b>${esc(String(n.assets))} asset figures</b> on ${esc(String(n.funds))} of the catalog’s ${esc(String(c.funds))} funds. Your readings save here as you go, and Claude brings every difference to you before anything changes.</p>
   <p class="lede">${orderLine}</p>
   ${suggestionsLine}

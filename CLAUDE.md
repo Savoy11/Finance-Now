@@ -836,6 +836,12 @@ a fact. `lib/data/__tests__/stakingWording.test.ts` holds it for every live prov
   page lacks the figure: 8 Vanguard funds (the SEC yield reads "—"), TQQQ (on its fact sheet), SOXL,
   and Teucrium's four (no net assets on the page or fact sheet). Every fund has a link; a test holds
   the list of notes.
+  **⚠ T-440 is parked until before launch (D171, 2026-10-26).** Owner: the rest *"may be solved by a
+  paid subscription that I may be required to use to cover other aspects of the app."* The 14 figures
+  left are on pages that do not print them, so the check cannot finish by reading alone. The page
+  says so at the top while `FUND_FIGURES_PARKED` (`scripts/lib/fundFiguresData.ts`) is set; null it
+  when the check resumes. Its cards show each fund's `pageNote`, and a figure the catalog already
+  dates shows that date, not "≈". The quarterly accuracy check is not parked.
 
 ### `src/lib/data/portfolioBuilder.ts` (Portfolio Builder module)
 Pure engine, no API calls, covered by `__tests__/portfolioBuilder.test.ts` (86 tests).
