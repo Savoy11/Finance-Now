@@ -404,6 +404,15 @@ var StakingFactsCore = (function () {
     return 'The smallest amount you can stake, and how long it is locked before you can withdraw (0 if you can leave at once).'
   }
 
+  /**
+   * The rows answered in a glance (owner, 2026-10-25: "Add the quick facts first ordering"):
+   * the provider's website (does the link still work?) and the year it was founded. The
+   * "Quick facts" view shows only these, across every provider, so they can be cleared in one
+   * sitting before the minimums and lock-ups that need digging.
+   */
+  var QUICK_KINDS = ['site', 'founded']
+  function isQuickRow(row) { return !!row && QUICK_KINDS.indexOf(row.kind) !== -1 }
+
   /** Where a provider's card sends the owner, and the notes that change how it is read. */
   function providerGuidance(provider) {
     var p = provider && typeof provider === 'object' ? provider : {}
@@ -426,5 +435,6 @@ var StakingFactsCore = (function () {
     answerState: answerState, tally: tally, factPlan: factPlan,
     withRetry: withRetry, dbMessage: dbMessage, makeStore: makeStore,
     fieldText: fieldText, rowGuidance: rowGuidance, providerGuidance: providerGuidance,
+    QUICK_KINDS: QUICK_KINDS, isQuickRow: isQuickRow,
   }
 })(); // the semicolon matters: the client, inlined next, opens with "(" (see buildStakingFactsPage)

@@ -742,3 +742,20 @@ held by:
 - its content in `main` as `2bfbbcd`.
 
 Nothing was deleted; no other ref moved.
+
+## Forty-fourth reset, after PR #424 (2026-10-25)
+
+**What was done.** After PR #424 (D170, stock market cap, prices and beta) was squash-merged into
+`main` as `ec6df63`, the branch was restarted from `ec6df63` on the owner's machine to add the
+Staking Facts Check's Quick facts view. Pushed with `--force-with-lease`, for the same reason as
+above.
+
+**Where the prior state lives.** The branch's previous tip, `8534a77` (#424's head), is held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@8534a77`, created by
+  `.github/workflows/archive-branch.yml` when #424 merged, and checked on the remote before the
+  restart;
+- GitHub's `refs/pull/424/head`;
+- its content in `main` as `ec6df63`.
+
+Nothing was deleted; no other ref moved.

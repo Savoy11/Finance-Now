@@ -38,6 +38,8 @@ type Core = {
   answerDoc(row: FactRow, input: Record<string, unknown>, me: string | null, nowMs: number): Record<string, unknown>
   answerState(row: FactRow, c: Check | undefined): string
   tally(rows: FactRow[], checks: Record<string, Check>): Record<string, number>
+  QUICK_KINDS: string[]
+  isQuickRow(row: unknown): boolean
   factPlan(rows: FactRow[], checks: Record<string, Check>): Plan
   dbMessage(e: unknown): string
   fieldText(field: unknown, value: unknown): string
@@ -356,10 +358,28 @@ describe('the published page', () => {
   const fixture = {
     generatedOn: '2026-10-17', serves: ['T-394'],
     catalog: { lastVerified: '2026-06-28', ageDays: 111, staleAfterDays: 90, providers: 2, defunct: 1 },
-    counts: { rows: 1, terms: 1, providers: 1, leads: 0 },
+    counts: { rows: 1, terms: 1, providers: 1, leads: 0, quick: 0 },
     providers: [{ id: 'lido', name: 'Lido </script><script>alert(1)</script>', category: 'liquid', website: 'https://stake.lido.fi', rows: [terms()] }],
   }
   const html = buildStakingFactsPage(fixture)
+
+  it('offers a Quick facts view of the websites and founding years alone (owner, 2026-10-25)', () => {
+    // The rule is the core's, so the page's count and the client's filter read one list.
+    expect(core.QUICK_KINDS).toEqual(['site', 'founded'])
+    expect(core.isQuickRow({ kind: 'site' }) && core.isQuickRow({ kind: 'founded' })).toBe(true)
+    expect(core.isQuickRow({ kind: 'terms' }) || core.isQuickRow({ kind: 'audits' }) || core.isQuickRow({ kind: 'assets' }) || core.isQuickRow(null)).toBe(false)
+    const symbols = Object.fromEntries(Object.entries(STAKING_COIN_INFO).map(([id, c]) => [id, c.symbol]))
+    const real = buildStakingFactsData({ providers: STAKING_PROVIDERS, symbols, lastVerified: '2026-06-28', ageDays: 111, staleAfterDays: 90, generatedOn: '2026-10-25' })
+    const quick = real.providers.flatMap((p) => p.rows).filter((r) => core.isQuickRow(r)).length
+    expect(real.counts.quick).toBe(quick)
+    expect(quick).toBeGreaterThan(50)
+    expect(buildStakingFactsPage(real)).toContain(`id="sf-group-quick" aria-pressed="false" title="Only each provider’s website and the year it was founded, so they can be cleared in one sitting">Quick facts · ${quick}</button>`)
+    // The client shows only quick rows in that view, and counts them in its own meter.
+    expect(clientSrc).toMatch(/var GROUPS = \['all', 'quick',/)
+    expect(clientSrc).toMatch(/function rowShown\(r\) \{ return view\.group !== 'quick' \|\| C\.isQuickRow\(r\) \}/)
+    expect(clientSrc).toMatch(/re\.root\.hidden = !rowShown\(r\)/)
+    expect(clientSrc).toMatch(/'quick facts: websites and founding years'/)
+  })
 
   it('offers a Start here filter only when a row carries a lead', () => {
     expect(html).not.toContain('id="sf-group-start"')
