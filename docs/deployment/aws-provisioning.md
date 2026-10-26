@@ -54,6 +54,13 @@ If that is more than intended, the levers — in descending order of saving — 
 `redis_num_cache_clusters = 1`, Aurora Serverless v2 (already stubbed at `rds.tf:191-193`),
 `single_nat_gateway = true`, and dropping the on-demand node group to spot-only.
 
+> **⚠ 2026-10-26 (T-112): read `docs/deployment/hosting-brief-2026-10-26.md` before applying any
+> of this.** These files describe the backend D2 retired. The ingress and nginx send `/api` to it,
+> the frontend's probes check an `/api/health` route that does not exist, and
+> `readOnlyRootFilesystem` blocks the three files the app writes. The ElastiCache Redis ($451 of the
+> estimate above) serves only that backend. `infrastructure/kubernetes/ingress.yaml` also switches on
+> AWS Shield Advanced, $3,000 a month with a one-year commitment, which the table above leaves out.
+>
 > **2026-10-05 (owner decision D78):** no spending level is chosen. It is decided with
 > the host at launch planning (T-112, T-365), and AWS is one of three hosting paths the
 > roadmap names, beside Vercel with a hosted database and a rented server. The test copy
