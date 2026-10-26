@@ -793,3 +793,19 @@ reason as above.
 - its content in `main` as `0f7b0c6`.
 
 Nothing was deleted; no other ref moved.
+
+## Forty-seventh reset, after PR #427 (2026-10-26)
+
+**What was done.** After PR #427 (T-289, the brief for counsel) was squash-merged into `main` as
+`8bb2b29`, the branch was restarted from `8bb2b29` on the owner's machine to write the hosting
+brief (T-112). Pushed with `--force-with-lease`, for the same reason as above.
+
+**Where the prior state lives.** The branch's previous tip, `bb207ac` (#427's head), is held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@bb207ac`, created by
+  `.github/workflows/archive-branch.yml` when #427 merged, and checked on the remote before the
+  restart;
+- GitHub's `refs/pull/427/head`;
+- its content in `main` as `8bb2b29`.
+
+Nothing was deleted; no other ref moved.
