@@ -738,6 +738,8 @@ Central data file for the Staking Opportunities page.
   (`LOCKUP_LEADS`), each only while the catalog still has the figure and note questioned, and so are two rows the
   2026-10-17 agent evaluation read out as staking options (Uniswap's ETH/USDC pool, Kraken's US line; D136). `STAKING_DATA_LAST_VERIFIED`
   moves only when the plan reports every fact settled. Same look and rules as the Transfer Fee Check.
+  A **Quick facts** view (owner, 2026-10-25) shows only each provider's website and founding year (`isQuickRow` in
+  the page's core), so those 106 can be cleared in one sitting before the minimums and lock-ups.
   `npm run staking-facts-prefill` (D153, 2026-10-22) suggests facts from each provider's own pages on a site
   ruled Allowed: its staking page and up to four same-site pages it links to, chosen by address and link text,
   all through the fund pre-fill's gate (`scripts/lib/allowedFetch.ts`: Allowed at every hop, robots.txt

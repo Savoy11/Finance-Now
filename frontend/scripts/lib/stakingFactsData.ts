@@ -45,7 +45,7 @@ export interface StakingFactsData {
   generatedOn: string
   serves: string[]
   catalog: { lastVerified: string; ageDays: number; staleAfterDays: number; providers: number; defunct: number }
-  counts: { rows: number; terms: number; providers: number; leads: number }
+  counts: { rows: number; terms: number; providers: number; leads: number; quick: number }
   /** The checks that raised the rows marked Start here, with how many each raised; only those with any. */
   leadSources: Array<{ by: string; found: string; rows: number }>
   /** When the pre-fill's suggestions were saved, and how many figures carry one; null without them. */
@@ -149,7 +149,7 @@ export function buildStakingFactsData(input: BuildStakingFactsInput): StakingFac
       providers: input.providers.length,
       defunct: input.providers.filter((p) => p.defunct).length,
     },
-    counts: { rows: rows.length, terms: rows.filter((r) => r.kind === 'terms').length, providers: cards.length, leads: rows.filter((r) => r.lead).length },
+    counts: { rows: rows.length, terms: rows.filter((r) => r.kind === 'terms').length, providers: cards.length, leads: rows.filter((r) => r.lead).length, quick: rows.filter((r) => r.kind === 'site' || r.kind === 'founded').length },
     leadSources: Object.values(LEAD_SOURCES)
       .map((s) => ({ by: s.by, found: s.found, rows: rows.filter((r) => r.lead && r.leadBy === s.by).length }))
       .filter((s) => s.rows > 0),

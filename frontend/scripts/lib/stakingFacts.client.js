@@ -31,6 +31,7 @@
   })
   var TERMS = ROWS.filter(function (r) { return r.kind === 'terms' })
   var LEADS = ROWS.filter(function (r) { return typeof r.lead === 'string' && r.lead })
+  var QUICK = ROWS.filter(C.isQuickRow)
   function hasLead(card) { return card.rows.some(function (r) { return typeof r.lead === 'string' && r.lead }) }
   var CATEGORY_LABELS = { liquid: 'Liquid staking', wallet: 'Wallet', cefi: 'Exchange' }
 
@@ -39,7 +40,7 @@
   var canWrite = false        // set at start; a refused write turns it off for the visit
   var checks = {}, notes = {}
   var rowEls = {}, cardEls = {}
-  var GROUPS = ['all', 'start', 'liquid', 'wallet', 'cefi']
+  var GROUPS = ['all', 'quick', 'start', 'liquid', 'wallet', 'cefi']
   var view = { group: 'all', hideDone: false }
   try {
     var saved = JSON.parse(localStorage.getItem('sf-view') || 'null')
@@ -457,16 +458,22 @@
     return sec
   }
 
+  // In the Quick facts view a card shows only its website and founding-year rows.
+  function rowShown(r) { return view.group !== 'quick' || C.isQuickRow(r) }
+
   function cardVisible(card) {
     if (view.group === 'start') { if (!hasLead(card)) return false }
+    else if (view.group === 'quick') { if (!card.rows.some(C.isQuickRow)) return false }
     else if (view.group !== 'all' && card.category !== view.group) return false
     if (!view.hideDone) return true
-    return !card.rows.every(function (r) { return rowDone(r) && rowEls[r.key] && rowEls[r.key].form.root.hidden })
+    return !card.rows.filter(rowShown).every(function (r) { return rowDone(r) && rowEls[r.key] && rowEls[r.key].form.root.hidden })
   }
 
   function paintCardVisibility(card) {
     var e = cardEls[card.id]
-    if (e) e.root.hidden = !cardVisible(card)
+    if (!e) return
+    e.root.hidden = !cardVisible(card)
+    card.rows.forEach(function (r) { var re = rowEls[r.key]; if (re) re.root.hidden = !rowShown(r) })
   }
 
   function paintCard(card) {
@@ -489,6 +496,7 @@
         [all.answered, all.total, 'facts answered'],
         [terms.answered, terms.total, 'coin minimums and lock-ups'],
         [finished, CARDS.length, 'providers finished'],
+        [C.tally(QUICK, checks).answered, QUICK.length, 'quick facts: websites and founding years'],
       ].concat(LEADS.length ? [[C.tally(LEADS, checks).answered, LEADS.length, 'Start here lock-ups answered']] : []).forEach(function (x) {
         var d = el('div', 'meter')
         var n = el('p', 'meter-n mono')

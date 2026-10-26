@@ -99,7 +99,7 @@ export function buildStakingFactsPage(data) {
     <h1>${esc(STAKING_FACTS_TITLE)}</h1>
   </header>
   <p class="lede">The staking catalog was last fully checked on <b>${esc(longDate(c.lastVerified))}</b>, ${esc(String(c.ageDays))} days ago. Go through each provider’s own pages and say whether each fact still matches: its staking page, the year it was founded, its audits, its staking assets where no data service shows them, and the minimum stake and lock-up for every coin. That is <b>${esc(String(n.rows))} facts</b> on ${esc(String(n.providers))} providers; the ${esc(String(c.defunct))} defunct ones are left out. Your answers save here as you go, and Claude applies them to the catalog in a pull request.</p>
-  <p class="lede">Liquid-staking protocols come first, because their documentation is public. Wallets follow, then exchanges, which often show their terms only after you sign in.${n.leads ? ` ${esc(String(n.leads))} ${n.leads === 1 ? 'row' : 'rows'} on ${esc(String(leadCards))} ${leadCards === 1 ? 'provider' : 'providers'} ${n.leads === 1 ? 'is' : 'are'} marked <b>Start here</b>${leadSourcesText(data.leadSources)}.` : ''}</p>
+  <p class="lede"><b>Quick facts</b> shows only the ${esc(String(n.quick))} rows answered at a glance, each provider’s website and the year it was founded, so you can clear them in one sitting first. Liquid-staking protocols come first, because their documentation is public. Wallets follow, then exchanges, which often show their terms only after you sign in.${n.leads ? ` ${esc(String(n.leads))} ${n.leads === 1 ? 'row' : 'rows'} on ${esc(String(leadCards))} ${leadCards === 1 ? 'provider' : 'providers'} ${n.leads === 1 ? 'is' : 'are'} marked <b>Start here</b>${leadSourcesText(data.leadSources)}.` : ''}</p>
   ${suggestionsLine}
   <p id="sf-conn" class="status" hidden></p>
   <div id="sf-progress" class="meters" aria-label="Progress"></div>
@@ -107,6 +107,7 @@ export function buildStakingFactsPage(data) {
   <div class="controls">
     <div class="seg" role="group" aria-label="Which providers to show">
       <button type="button" id="sf-group-all" aria-pressed="true">All · ${esc(String(n.providers))}</button>
+      <button type="button" id="sf-group-quick" aria-pressed="false" title="Only each provider’s website and the year it was founded, so they can be cleared in one sitting">Quick facts · ${esc(String(n.quick))}</button>
 ${leadCards ? `      <button type="button" id="sf-group-start" aria-pressed="false">Start here · ${esc(String(leadCards))}</button>
 ` : ''}      <button type="button" id="sf-group-liquid" aria-pressed="false">Liquid · ${esc(String(count('liquid')))}</button>
       <button type="button" id="sf-group-wallet" aria-pressed="false">Wallets · ${esc(String(count('wallet')))}</button>
