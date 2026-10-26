@@ -65,7 +65,7 @@ describe('fund figures', () => {
 describe('stock figures (D167)', () => {
   const ps = (asOf: string | null, dividend: 'paid' | 'none' | 'unknown' = 'paid') => ({
     eps: asOf ? { val: 7.46, end: asOf, basis: 'diluted' as const } : null,
-    dps: null, dividend, asOf,
+    dps: null, dividend, asOf, shares: null, shareChange: null,
   })
 
   it('falls due a year and 75 days after the fiscal year the figures are for', () => {

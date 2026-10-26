@@ -234,7 +234,7 @@ Crypto module:
 - Wallets: HIDDEN from the initial rollout (2026-08-22), same posture as Transfer Fees. Exchange API linking was REMOVED entirely on 2026-08-18 (RP-5) on security grounds — it stored an exchange key and secret in plaintext. Never tell a user they can connect an exchange API key; the app does not accept one anywhere
 
 Equities module (/equities):
-- Stock Registry: the full US common-stock universe via FMP's screener, which only a PAID FMP plan serves; with a free key or none it shows the ${EQUITY_CATALOG.length}-name curated fallback. ${SECTOR_COUNT} sectors, live quotes for the visible page
+- Stock Registry: the full US common-stock universe via FMP's screener, which only a PAID FMP plan serves; with a free key or none it shows the ${EQUITY_CATALOG.length}-name curated fallback. ${SECTOR_COUNT} sectors, live quotes for every stock on the list (P/E, yield and market cap are worked out against them; no live quote, no figure; beta is on each stock's page)
 - Equity Detail: chart, news, 52-week range, financial ratios from SEC XBRL, revenue/earnings history, company profile, sector peers, SEC filings (10-K/10-Q/8-K)
 - Market News: RSS multi-feed with filters; with a Marketaux key, a stock's own news also includes articles Marketaux tagged with its ticker
 - Stock Social: StockTwits sentiment. Reddit is not read: its robots.txt disallows this app's agent, and the app honours that
@@ -586,7 +586,7 @@ After the log, output exactly:
   {
     id: 'equity-screener',
     name: 'Equity Screener (Outliers)',
-    description: 'Scans the entire stock universe for statistical outliers — unusually cheap/expensive, high-yield, or high/low-beta names vs their sector — then checks which of them the company’s own figures explain.',
+    description: 'Scans the entire stock universe for statistical outliers — unusually cheap/expensive or high-yield names vs their sector — then checks which of them the company’s own figures explain.',
     runtime: 'backend',
     provider: 'anthropic',
     model: DEFAULT_ANTHROPIC_MODEL,
@@ -596,7 +596,7 @@ After the log, output exactly:
     systemPrompt: `You are an equity screening analyst embedded in Finance Now. You scan the whole stock universe for statistical outliers and explain what they mean. This is analytical framing, NOT investment advice.
 
 METHOD — always in this order:
-1. Call **get_stock_outliers** FIRST. It returns sector-relative z-score outliers across the whole universe in five buckets: cheap (low P/E vs sector), expensive (high P/E), highYield, highBeta, lowBeta. Note its coverage fields (universeSize, evaluated, peCoverage) and any coverageNote — be honest about them (e.g. if peCoverage is low, valuation outliers are limited).
+1. Call **get_stock_outliers** FIRST. It returns sector-relative z-score outliers across the whole universe in three buckets: cheap (low P/E vs sector), expensive (high P/E), highYield. Note its coverage fields (universeSize, evaluated, peCoverage) and any coverageNote — be honest about them (e.g. if peCoverage is low, valuation outliers are limited).
 2. Pick the MOST notable names (biggest |z|, and a spread across buckets/sectors). For each, dig in with **get_stock_financials** (is a "cheap" name's low P/E backed by steady earnings, or are its earnings falling? is an "expensive" name's growth keeping pace with its multiple?), **get_stock_news** and **get_stock_filings** for recent catalysts, and web search for anything material.
 3. Label each notable outlier with what its figures show: **explained** (the data you pulled gives an obvious reason, such as a one-off gain lifting earnings, or a level normal for its industry), **not explained** (nothing you pulled accounts for it), or **figures moving against it** (the data points the other way from what the outlier suggests, such as a low P/E on falling earnings). Give a one-line rationale grounded in the data you pulled.
 

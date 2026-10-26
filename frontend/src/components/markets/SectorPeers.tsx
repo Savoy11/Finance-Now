@@ -7,27 +7,44 @@ import { Users } from 'lucide-react'
 import { EQUITY_CATALOG, SECTOR_INFO, type SectorId } from '@/lib/data/equityCatalog'
 import { formatCompact, formatCurrency, formatPercent } from '@/lib/utils/format'
 import { STALE_TIME_SHORT } from '@/lib/constants'
+import { marketCapText, marketCapUsd } from '@/lib/data/stockShares'
 import type { SecurityQuotesResponse } from '@/app/live-data/security-quotes/route'
+import type { StockUniverseResponse } from '@/app/live-data/stock-universe/route'
 
 // Same-sector peers from the equity catalog with live quotes, so a stock's
 // page shows where it sits among comparable names. Rows link to each peer.
+//
+// Ranked by market cap against live prices (D170): SEC cover-page shares × the live quote,
+// for every catalog stock in the sector (a dozen at most), then the largest eight. Without a
+// quote the ranking falls back to the catalog's order, and the cells show a dash.
 
 const MAX_PEERS = 8
 
 export function SectorPeers({ symbol, sector }: { symbol: string; sector: SectorId }) {
-  const peers = EQUITY_CATALOG
-    .filter(e => e.sector === sector && e.symbol !== symbol)
-    .sort((a, b) => b.marketCapB - a.marketCapB)
-    .slice(0, MAX_PEERS)
-
-  const symbols = peers.map(p => p.symbol)
+  const candidates = EQUITY_CATALOG.filter(e => e.sector === sector && e.symbol !== symbol)
+  const symbols = candidates.map(p => p.symbol)
   const { data } = useQuery<SecurityQuotesResponse>({
     queryKey: ['security-quotes', 'peers', symbols.join(',')],
     queryFn: () => fetch(`/live-data/security-quotes?symbols=${encodeURIComponent(symbols.join(','))}`).then(r => r.json()),
     staleTime: STALE_TIME_SHORT,
-    refetchInterval: 60_000,
+    refetchInterval: 120_000,
     enabled: symbols.length > 0,
   })
+  const { data: sec } = useQuery<StockUniverseResponse>({
+    queryKey: ['stock-universe', 'peers', symbols.join(',')],
+    queryFn: () => fetch(`/live-data/stock-universe?symbols=${encodeURIComponent(symbols.join(','))}`).then(r => r.json()),
+    staleTime: 1000 * 60 * 60,
+    enabled: symbols.length > 0,
+  })
+  const sharesBy = new Map((sec?.entries ?? []).map(e => [e.symbol, e.shares]))
+  const peers = candidates.map(peer => {
+    const q = data?.quotes?.[peer.symbol]
+    const price = q && !q.reference && q.price != null && q.price > 0 ? q.price : null
+    const shares = sharesBy.get(peer.symbol) ?? null
+    return { peer, price, change: price != null ? q?.changePercent ?? null : null, shares, mcap: marketCapUsd(shares, price) }
+  })
+    .sort((a, b) => (b.mcap ?? -1) - (a.mcap ?? -1))
+    .slice(0, MAX_PEERS)
 
   if (peers.length === 0) return null
   const sectorMeta = SECTOR_INFO[sector]
@@ -57,15 +74,7 @@ export function SectorPeers({ symbol, sector }: { symbol: string; sector: Sector
             </tr>
           </thead>
           <tbody>
-            {peers.map(peer => {
-              const q = data?.quotes?.[peer.symbol]
-              const live = !!q && data?.source !== 'reference' && !q.reference
-              const price = q?.price ?? peer.referencePrice
-              const change = live ? q?.changePercent ?? null : null
-              const mcap = q?.marketCap ?? peer.marketCapB * 1e9
-              // `live` above covers the price only — providers below FMP return
-              // marketCap: null, so tag the cap on its own (W4-C8).
-              const mcapIsRef = q?.marketCap == null
+            {peers.map(({ peer, price, change, shares, mcap }) => {
               return (
                 <tr key={peer.symbol} className="border-b border-border/30 last:border-0 hover:bg-bg-elevated/50 transition-colors">
                   <td className="py-2 pr-4">
@@ -74,17 +83,15 @@ export function SectorPeers({ symbol, sector }: { symbol: string; sector: Sector
                     </Link>
                   </td>
                   <td className="py-2 pr-4 text-text-secondary truncate max-w-[220px]">{peer.name}</td>
-                  <td className="py-2 pr-4 text-right font-mono tabular-nums text-text-primary">
-                    {formatCurrency(price)}
-                    {!live && <span className="ml-1 text-[9px] text-amber-400/70 align-top font-sans">ref</span>}
+                  <td className={clsx('py-2 pr-4 text-right font-mono tabular-nums', price == null ? 'text-text-muted' : 'text-text-primary')}>
+                    {price == null ? '—' : formatCurrency(price)}
                   </td>
                   <td className={clsx('py-2 pr-4 text-right font-mono tabular-nums',
                     change == null ? 'text-text-muted' : change >= 0 ? 'text-emerald-400' : 'text-red-400')}>
                     {change == null ? '—' : formatPercent(change, 2)}
                   </td>
-                  <td className="py-2 text-right font-mono tabular-nums text-text-secondary">
-                    {formatCompact(mcap)}
-                    {mcapIsRef && <span className="ml-1 text-[9px] text-amber-400/80 align-top" title="Reference market cap — this quote source does not supply one">ref</span>}
+                  <td className="py-2 text-right font-mono tabular-nums text-text-secondary" title={marketCapText(shares, price).explain}>
+                    {mcap == null ? '—' : formatCompact(mcap)}
                   </td>
                 </tr>
               )

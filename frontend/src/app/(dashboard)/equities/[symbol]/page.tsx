@@ -15,7 +15,8 @@ import { FundamentalsTrend } from '@/components/markets/FundamentalsTrend'
 import { CompanyProfileCard } from '@/components/markets/CompanyProfileCard'
 import { SectorPeers } from '@/components/markets/SectorPeers'
 import { AssetRatingPanel } from '@/components/markets/AssetRatingPanel'
-import { getEquity, secFilingsUrl, EQUITY_REFERENCE_AS_OF, equityReferenceAgeDays, SECTOR_INFO, type SectorId } from '@/lib/data/equityCatalog'
+import { StockBetaCard } from '@/components/markets/StockBetaCard'
+import { getEquity, secFilingsUrl, SECTOR_INFO, type SectorId } from '@/lib/data/equityCatalog'
 import { formatCurrency, formatPercent } from '@/lib/utils/format'
 import { STALE_TIME_SHORT } from '@/lib/constants'
 import type { SecurityQuotesResponse } from '@/app/live-data/security-quotes/route'
@@ -28,7 +29,6 @@ interface DetailEntry {
   sector: SectorId
   industry: string
   website: string
-  referencePrice: number
 }
 
 // The gate wraps at the COMPONENT boundary, not inside the returned JSX. Placed
@@ -49,20 +49,21 @@ function EquityDetailInner() {
   const symbol = (params.symbol ?? '').toUpperCase()
   const staticEntry = getEquity(symbol)
 
-  // Resolve non-catalog tickers from the live universe (FMP profile lookup).
+  // Resolve non-catalog tickers from the live universe (FMP profile lookup). Asked for catalog
+  // stocks too since D170: its share-count change is the split guard for P/E and yield.
   const { data: uniData, isLoading: uniLoading } = useQuery<StockUniverseResponse>({
     queryKey: ['stock-universe', symbol],
     queryFn: () => fetch(`/live-data/stock-universe?symbol=${encodeURIComponent(symbol)}`).then((r) => r.json()),
-    enabled: !staticEntry && !!symbol,
+    enabled: !!symbol,
     staleTime: 1000 * 60 * 30,
     retry: 1,
   })
   const dyn = uniData?.entries?.[0]
 
   const entry: DetailEntry | undefined = staticEntry
-    ? { symbol: staticEntry.symbol, name: staticEntry.name, sector: staticEntry.sector, industry: staticEntry.industry, website: staticEntry.website, referencePrice: staticEntry.referencePrice }
+    ? { symbol: staticEntry.symbol, name: staticEntry.name, sector: staticEntry.sector, industry: staticEntry.industry, website: staticEntry.website }
     : dyn
-      ? { symbol: dyn.symbol, name: dyn.name, sector: dyn.sector, industry: dyn.industry, website: dyn.website ?? '', referencePrice: dyn.referencePrice }
+      ? { symbol: dyn.symbol, name: dyn.name, sector: dyn.sector, industry: dyn.industry, website: dyn.website ?? '' }
       : undefined
 
   const { data } = useQuery<SecurityQuotesResponse>({
@@ -95,9 +96,9 @@ function EquityDetailInner() {
   }
 
   const quote = data?.quotes?.[symbol]
-  const live = !!quote && data?.source !== 'reference' && !quote.reference
-  const price = quote?.price ?? entry.referencePrice
-  const change = live ? quote?.changePercent ?? null : null
+  // The live quote or nothing (D170): no stored price stands in for one.
+  const price = quote && !quote.reference && quote.price != null && quote.price > 0 ? quote.price : null
+  const change = price != null ? quote?.changePercent ?? null : null
   const sector = SECTOR_INFO[entry.sector]
 
   return (
@@ -130,9 +131,9 @@ function EquityDetailInner() {
             </p>
           </div>
           <div className="text-right">
-            <p className="font-mono text-3xl font-bold text-text-primary tabular-nums">
-              {formatCurrency(price)}
-              {!live && <span className="ml-2 text-xs text-amber-400/80 align-middle font-sans" title="Reference price — live source unreachable">ref</span>}
+            <p className={clsx('font-mono text-3xl font-bold tabular-nums', price == null ? 'text-text-muted' : 'text-text-primary')}
+              title={price == null ? 'No live quote: every quote provider needs an API key, and no stored price is shown in its place' : undefined}>
+              {price == null ? '—' : formatCurrency(price)}
             </p>
             {change != null && (
               <p className={clsx('mt-0.5 flex items-center justify-end gap-1 font-mono text-sm tabular-nums',
@@ -166,11 +167,12 @@ function EquityDetailInner() {
         <div className="xl:col-span-2 space-y-4">
           <PriceChartCard symbol={symbol} />
           <FiftyTwoWeekBar symbol={symbol} price={price} />
-          <FinancialRatios symbol={symbol} price={price} priceIsLive={live} />
+          <FinancialRatios symbol={symbol} price={price} shareChange={dyn?.symbol === symbol ? dyn.shareChange : null} />
           <FundamentalsTrend symbol={symbol} />
         </div>
         <div className="space-y-4">
           <CompanyProfileCard symbol={symbol} name={entry.name} />
+          <StockBetaCard symbol={symbol} />
           <div className="rounded-card border border-border bg-bg-card p-4">
             <h2 className="text-sm font-medium text-text-secondary mb-3">Financial Statements</h2>
             <ul className="space-y-2.5">
@@ -210,9 +212,8 @@ function EquityDetailInner() {
 
       <p className="text-[11px] text-text-muted text-center">
         Financial ratios, P/E and dividend yield come from the company&rsquo;s SEC filings, linked beside
-        them; a figure marked &ldquo;ref&rdquo; uses the reference price, compiled {EQUITY_REFERENCE_AS_OF}
-        ({equityReferenceAgeDays()}d ago), because no live quote was available ·
-        Quotes: {data?.source === 'reference' || !data ? 'reference prices' : `live via ${data.source}`}
+        them, against the live price; with no live quote they show a dash ·
+        Quotes: {price == null ? 'none available' : `live via ${data?.source}`}
       </p>
     </div>
   )

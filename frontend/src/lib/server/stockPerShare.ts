@@ -2,11 +2,16 @@ import { EDGAR_HEADERS, fetchTickerCikMap } from './edgar'
 import { recentAnnualFrames } from './secFundamentals'
 import { EXTERNAL_FETCH_TIMEOUT_MS } from './fetchBudget'
 import { perShareFrom, type PerShareFact, type PerShareFacts, type StockPerShare } from '@/lib/data/stockPerShare'
+import { recentInstantFrames, sharesHistory, type SharesFact } from '@/lib/data/stockShares'
 
 // Earnings and dividends per share for every SEC filer, from the XBRL "frames" API: one
 // request per concept per year, across all filers (D167). Four concepts over the last two
 // annual frames is eight requests, each cached for a day, whatever the number of stocks.
 // The rules that turn them into a P/E and a yield are in lib/data/stockPerShare.ts.
+//
+// Since D170 it also reads each filer's cover-page share count from the ten latest quarterly
+// instant frames (ten more requests, cached alike): the latest gives the market cap against a
+// live price, and the history shows a split since the annual report (lib/data/stockShares.ts).
 //
 // Never throws: an unreachable SEC leaves every stock's figures unknown, and pages say so.
 
@@ -17,11 +22,11 @@ const CONCEPTS = {
   dpsPaid: 'CommonStockDividendsPerShareCashPaid',
 } as const satisfies Record<keyof PerShareFacts, string>
 
-interface FrameRow { cik: number; val: number; end: string }
+interface FrameRow { cik: number; val: number; end: string; accn?: string }
 
-async function fetchFrame(concept: string, period: string): Promise<FrameRow[]> {
+async function fetchFrame(concept: string, period: string, path = `us-gaap/${concept}/USD-per-shares`): Promise<FrameRow[]> {
   try {
-    const res = await fetch(`https://data.sec.gov/api/xbrl/frames/us-gaap/${concept}/USD-per-shares/${period}.json`, {
+    const res = await fetch(`https://data.sec.gov/api/xbrl/frames/${path}/${period}.json`, {
       headers: EDGAR_HEADERS,
       next: { revalidate: 86_400 },
       signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS),
@@ -48,6 +53,22 @@ async function conceptByCik(concept: string, now: Date): Promise<Map<number, Per
   return out
 }
 
+/** Every filer's cover-page share counts over the recent quarters, by CIK. */
+async function coversByCik(now: Date): Promise<Map<number, SharesFact[]>> {
+  const frames = await Promise.all(recentInstantFrames(now).map((p) =>
+    fetchFrame('EntityCommonStockSharesOutstanding', p, 'dei/EntityCommonStockSharesOutstanding/shares')))
+  const out = new Map<number, SharesFact[]>()
+  for (const rows of frames) {
+    for (const r of rows) {
+      if (typeof r.val !== 'number' || typeof r.end !== 'string') continue
+      const list = out.get(r.cik) ?? []
+      list.push({ val: r.val, end: r.end, accn: r.accn ?? '' })
+      out.set(r.cik, list)
+    }
+  }
+  return out
+}
+
 export interface PerShareResult {
   bySymbol: Map<string, StockPerShare>
   /** False when the SEC could not be reached: every figure is then unknown, not missing. */
@@ -66,8 +87,9 @@ export async function fetchStockPerShare(
   const bySymbol = new Map<string, StockPerShare>()
   try {
     const keys = Object.keys(CONCEPTS) as Array<keyof PerShareFacts>
-    const [tickers, ...maps] = await Promise.all([
+    const [tickers, covers, ...maps] = await Promise.all([
       fetchTickerCikMap(),
+      coversByCik(now),
       ...keys.map((k) => conceptByCik(CONCEPTS[k], now)),
     ])
     const reached = maps.some((m) => m.size > 0)
@@ -76,7 +98,7 @@ export async function fetchStockPerShare(
       const cik = tickers.get(symbol)?.cikNum
       const facts: PerShareFacts = {}
       if (cik != null) keys.forEach((k, i) => { const f = maps[i].get(cik); if (f) facts[k] = f })
-      bySymbol.set(symbol, perShareFrom(facts, nonPayers.has(symbol)))
+      bySymbol.set(symbol, perShareFrom(facts, nonPayers.has(symbol), sharesHistory(cik != null ? covers.get(cik) ?? [] : [])))
     }
     return { bySymbol, reached }
   } catch {
