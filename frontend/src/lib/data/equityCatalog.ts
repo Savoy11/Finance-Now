@@ -1,17 +1,17 @@
 // Central data file for the Equities module.
 // Same layer as transferFees.ts / stakingProviders.ts — pure data, no API calls.
 //
-// referencePrice / marketCapB / peRatio / dividendYieldPct / beta are
+// referencePrice / marketCapB / peRatio / dividendYieldPct / beta were
 // APPROXIMATE reference values, compiled 2026-07-07 (see EQUITY_REFERENCE_AS_OF
-// below). Live quotes from /live-data/security-quotes override price and change
-// whenever a source is reachable; the reference values keep every page
-// rendering offline.
-//
-// These drift, and visibly: NVDA's marketCapB was written at 4300 and is not
-// re-checked on a schedule. That is tolerable ONLY because two things hold —
-// live quotes win whenever reachable, and anything still showing a reference
-// value is tagged with an amber `ref` badge in the UI. Do not add a surface
-// that renders these numbers without that tag.
+// below), and NONE IS SHOWN OR USED ANY MORE. P/E and yield went first (D167):
+// they are worked out from each company's SEC annual report. Price, market cap
+// and beta followed on 2026-10-25 (D170), after Netflix and ServiceNow split and
+// their pre-split reference prices gave the outlier scan P/Es of 435 and 569:
+//   - price: the live quote, or a dash (marketData.ts serves reference rows for funds only);
+//   - market cap: SEC cover-page shares × the live price (lib/data/stockShares.ts);
+//   - beta: a year of daily prices against SPY, on the stock's own page (lib/data/stockBeta.ts).
+// The fields stay as the record of what was compiled; `stockShares.test.ts`'s guard
+// fails on a file that reads one outside its list.
 //
 // Dated with a machine-readable constant rather than the prose "early 2026"
 // it used to carry, so consumers can compute the age instead of guessing at it.
@@ -40,14 +40,13 @@ export function equityReferenceAgeDays(now: Date = new Date()): number {
  * though one was saved. The whole-market list needs a paid FMP plan; on the free key
  * the screen stays on this list.
  */
-export function catalogUniverseNote(fmpKeySaved: boolean, now: Date = new Date()): string {
+export function catalogUniverseNote(fmpKeySaved: boolean): string {
   const plan = fmpKeySaved
     ? 'the whole-market list needs a paid FMP plan, and the FMP key saved did not return it'
     : 'the whole-market list needs a paid FMP plan, and no FMP key is saved'
   return `This screen covered the hand-kept list of ${EQUITY_CATALOG.length} stocks, not the whole market: ${plan}. `
     + `Its P/E and dividend yield figures are worked out from each company's SEC annual report (its latest fiscal year) `
-    + `against a reference price, and its prices and beta figures are approximate reference values, compiled ${EQUITY_REFERENCE_AS_OF} `
-    + `(${equityReferenceAgeDays(now)} days before this screen): not live figures. Say so wherever one is quoted.`
+    + `against live quotes fetched for this screen, and change with the price. Say which fiscal year a figure is for wherever one is quoted.`
 }
 
 export type SectorId =
@@ -103,15 +102,15 @@ export interface EquityEntry {
   name: string
   sector: SectorId
   industry: string
-  /** Approximate market cap in billions USD — reference only. */
+  /** Hand-typed 2026-07-07; used nowhere since D170 (market cap = SEC shares × live price). */
   marketCapB: number
-  /** Approximate share price USD — overridden by live quotes. */
+  /** Hand-typed 2026-07-07; used nowhere since D170 (no live quote, no price). */
   referencePrice: number
   /**
    * Hand-typed 2026-07-07 with no source, and shown NOWHERE since D167 (2026-10-25): a stock's
    * P/E and yield are worked out from its SEC annual report (lib/data/stockPerShare.ts,
    * served by /live-data/stock-universe). Kept as the record of what was compiled.
-   * `equityCatalog.test.ts`'s guard fails on a file that reads either outside its list.
+   * `stockPerShare.test.ts`'s guard fails on a file that reads either outside its list.
    */
   peRatio: number | null
   /**
@@ -120,7 +119,7 @@ export interface EquityEntry {
    * when the SEC data has no dividend figure.
    */
   dividendYieldPct: number | null
-  /** 5y beta vs S&P 500. */
+  /** Hand-typed 5y beta (2026-07-07); used nowhere since D170 (see lib/data/stockBeta.ts). */
   beta: number
   description: string
   website: string

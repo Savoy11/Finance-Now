@@ -723,3 +723,22 @@ held by:
 - its content in `main` as `cb2908f`.
 
 Nothing was deleted; no other ref moved.
+
+## Forty-third reset, after PR #423 (2026-10-25)
+
+**What was done.** After PR #423 (D169, a staking rate read as 0 is no rate) was squash-merged
+into `main` as `2bfbbcd`, the branch was restarted from `2bfbbcd` on the owner's machine to record
+D170: stock market cap from SEC shares × the live price, no stock reference prices, and beta
+worked out from prices on each stock's page. Pushed with `--force-with-lease`, for the same reason
+as above.
+
+**Where the prior state lives.** The branch's previous tip, `c141100` (#423's only commit), is
+held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@c141100`, created by
+  `.github/workflows/archive-branch.yml` when #423 merged, and checked on the remote before the
+  restart;
+- GitHub's `refs/pull/423/head`;
+- its content in `main` as `2bfbbcd`.
+
+Nothing was deleted; no other ref moved.

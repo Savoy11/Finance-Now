@@ -10,7 +10,8 @@ import { SourceLine } from '@/components/ui/SourceLine'
 import { MetricCard } from '@/components/ui/MetricCard'
 import { OutlierScanPanel } from '@/components/markets/OutlierScanPanel'
 import { SECTOR_INFO, type SectorId } from '@/lib/data/equityCatalog'
-import { peText, stockFigures, stockFiguresLink, yieldText, type StockFigures } from '@/lib/data/stockPerShare'
+import { peText, perShareFromFields, stockFigures, stockFiguresLink, yieldText, type StockFigures } from '@/lib/data/stockPerShare'
+import { marketCapText, marketCapUsd } from '@/lib/data/stockShares'
 import { formatCompact, formatCurrency, formatPercent } from '@/lib/utils/format'
 import { STALE_TIME_SHORT } from '@/lib/constants'
 import { useScreenerUrl } from '@/lib/hooks/useScreenerUrl'
@@ -18,12 +19,19 @@ import type { StockUniverseResponse, UniverseEntry } from '@/app/live-data/stock
 import type { SecurityQuotesResponse } from '@/app/live-data/security-quotes/route'
 import type { SecurityReturnsResponse } from '@/app/live-data/security-returns/route'
 
-type SortKey = 'symbol' | 'sector' | 'price' | 'marketCap' | 'pe' | 'dividend' | 'beta'
+type SortKey = 'symbol' | 'sector' | 'price' | 'marketCap' | 'pe' | 'dividend'
 const PAGE_SIZE = 50
+/**
+ * Live quotes are fetched for the whole list up to this many stocks, so every price-derived
+ * filter and sort sees every stock (D170: there is no stored price to fall back on). The
+ * curated list is well inside it; the paid FMP universe is not, and there they cover the
+ * largest stocks by FMP's own ordering, plus the page on screen.
+ */
+const QUOTE_ALL_UP_TO = 200
 
-// Shared column template so the header and every row line up. 8 columns:
-// Company · Sector · Price · Chg% · Mkt Cap · P/E · Yield · Beta
-const COLS = 'grid grid-cols-[minmax(0,2.4fr)_1.2fr_1fr_0.8fr_1.1fr_0.7fr_0.7fr_0.7fr_0.8fr_0.8fr] gap-2 px-4'
+// Shared column template so the header and every row line up. 9 columns:
+// Company · Sector · Price · Chg% · Mkt Cap · P/E · Yield · YTD · 1Y
+const COLS = 'grid grid-cols-[minmax(0,2.4fr)_1.2fr_1fr_0.8fr_1.1fr_0.7fr_0.7fr_0.8fr_0.8fr] gap-2 px-4'
 
 /**
  * A trailing-return cell. Module-level, not declared inside the client: a
@@ -59,18 +67,17 @@ function ReturnCell({ value, adjusted }: { value: number | null; adjusted?: bool
   )
 }
 
-interface Row extends UniverseEntry {
-  livePrice: number
+/** What a stock's live quote makes of its SEC figures (D170): null fields without a quote. */
+interface LiveFigures {
+  livePrice: number | null
   /** P/E and yield against livePrice, from the SEC per-share figures (D167). */
   figures: StockFigures
   changePercent: number | null
-  liveMarketCap: number
-  live: boolean
-  /** Market cap came from the catalog, not the quote. Tagged separately from
-   *  `live` because that flag covers the PRICE only — every provider below FMP
-   *  returns marketCap: null, so a live price beside a reference market cap is
-   *  the normal path, not an edge case (W4-C8). */
-  marketCapIsRef: boolean
+  /** SEC cover-page shares × livePrice (D170). */
+  liveMarketCap: number | null
+}
+
+interface Row extends UniverseEntry, LiveFigures {
   /** Trailing returns, page-scoped and key-gated. Null when unavailable — never 0. */
   ytdPct: number | null
   y1Pct: number | null
@@ -79,8 +86,10 @@ interface Row extends UniverseEntry {
 }
 
 const SORT_BASIS_HINT: Partial<Record<SortKey, string>> = {
-  price: 'Sorted by daily reference price — live quotes load per page, so intraday moves may not change the order',
-  marketCap: 'Sorted by daily reference market cap — live quotes load per page',
+  price: 'Sorted by live price; stocks with no live quote come last',
+  marketCap: 'Sorted by market cap (SEC shares outstanding × live price); stocks with no figure come last',
+  pe: 'Sorted by P/E against the live price; stocks with no figure come last',
+  dividend: 'Sorted by dividend yield against the live price; stocks with no figure come last',
 }
 
 /**
@@ -132,13 +141,12 @@ export function EquitiesClient() {
   const [maxPe, setMaxPe] = useState('')
   const [minYield, setMinYield] = useState('')
   const [maxYield, setMaxYield] = useState('')
-  const [minBeta, setMinBeta] = useState('')
-  const [maxBeta, setMaxBeta] = useState('')
   const [minPrice, setMinPrice] = useState('')
   const [maxPrice, setMaxPrice] = useState('')
   // W3-5: every filter is a RANGE over a catalog fact — the owner asked for
   // "more like filters; more options", and half-ranges (min-only yield,
-  // max-only beta) were the old shape's arbitrary limits.
+  // max-only beta) were the old shape's arbitrary limits. Beta left the list on 2026-10-25
+  // (D170): it is worked out from a year of prices on each stock's own page.
   const [payersOnly, setPayersOnly] = useState(false)
 
   // Deep-linkable screener state — /equities?sector=technology&peMax=20&sort=pe
@@ -146,27 +154,25 @@ export function EquitiesClient() {
     {
       sector, q: search, sort: sortKey, dir: sortAsc ? 'asc' : 'desc',
       mcapMin: minMcapB, mcapMax: maxMcapB, peMin: minPe, peMax: maxPe,
-      yieldMin: minYield, yieldMax: maxYield, betaMin: minBeta, betaMax: maxBeta,
+      yieldMin: minYield, yieldMax: maxYield,
       priceMin: minPrice, priceMax: maxPrice, payers: payersOnly ? '1' : '',
     },
-    { sector: 'all', q: '', sort: 'marketCap', dir: 'desc', mcapMin: '', mcapMax: '', peMin: '', peMax: '', yieldMin: '', yieldMax: '', betaMin: '', betaMax: '', priceMin: '', priceMax: '', payers: '' },
+    { sector: 'all', q: '', sort: 'marketCap', dir: 'desc', mcapMin: '', mcapMax: '', peMin: '', peMax: '', yieldMin: '', yieldMax: '', priceMin: '', priceMax: '', payers: '' },
     (p) => {
       if (p.sector && (p.sector === 'all' || p.sector in SECTOR_INFO)) setSector(p.sector as SectorId | 'all')
       if (p.q) setSearch(p.q)
-      if (p.sort && ['symbol', 'sector', 'price', 'marketCap', 'pe', 'dividend', 'beta'].includes(p.sort)) setSortKey(p.sort as SortKey)
+      if (p.sort && ['symbol', 'sector', 'price', 'marketCap', 'pe', 'dividend'].includes(p.sort)) setSortKey(p.sort as SortKey)
       if (p.dir) setSortAsc(p.dir === 'asc')
       if (p.mcapMin) setMinMcapB(p.mcapMin)
       if (p.mcapMax) setMaxMcapB(p.mcapMax)
       if (p.peMin) setMinPe(p.peMin)
       if (p.peMax) setMaxPe(p.peMax)
       if (p.yieldMin) setMinYield(p.yieldMin)
-      // The five below were written into the link from W3-5 on but never read back,
+      // These were written into the link from W3-5 on but never read back,
       // so a shared link dropped them and showed the unfiltered list (found by the
       // T-282 click-through, 2026-10-07). equitiesScreenerUrl.test.ts now fails if a
       // key written above is not read here.
       if (p.yieldMax) setMaxYield(p.yieldMax)
-      if (p.betaMin) setMinBeta(p.betaMin)
-      if (p.betaMax) setMaxBeta(p.betaMax)
       if (p.priceMin) setMinPrice(p.priceMin)
       if (p.priceMax) setMaxPrice(p.priceMax)
       if (p.payers === '1') setPayersOnly(true)
@@ -182,50 +188,71 @@ export function EquitiesClient() {
   const universe = useMemo(() => universeData?.entries ?? [], [universeData])
   const configured = universeData?.configured ?? false
 
+  // ── Live quotes for the whole list (D170) ──
+  // Every price-derived figure is worked out against a live quote and nothing else, so the
+  // screen needs a quote for every stock it screens. The curated list is one request.
+  const quotedSymbols = useMemo(() => universe.slice(0, QUOTE_ALL_UP_TO).map((e) => e.symbol), [universe])
+  const { data: quoteData } = useQuery<SecurityQuotesResponse>({
+    queryKey: ['security-quotes', 'registry', quotedSymbols.join(',')],
+    queryFn: () => fetch(`/live-data/security-quotes?symbols=${encodeURIComponent(quotedSymbols.join(','))}`).then((r) => r.json()),
+    enabled: quotedSymbols.length > 0,
+    staleTime: STALE_TIME_SHORT,
+    refetchInterval: 120_000,
+    placeholderData: keepPreviousData,
+  })
+
+  const liveBySymbol = useMemo(() => {
+    const out = new Map<string, LiveFigures>()
+    for (const e of universe) {
+      const q = quoteData?.quotes?.[e.symbol.toUpperCase()]
+      out.set(e.symbol, liveFiguresOf(e, q && !q.reference ? q : undefined))
+    }
+    return out
+  }, [universe, quoteData])
+
   // ── Filter + sort the whole universe ──
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase()
     const mcMin = parseNum(minMcapB), mcMax = parseNum(maxMcapB)
     const peMin = parseNum(minPe), peMax = parseNum(maxPe)
     const yMin = parseNum(minYield), yMax = parseNum(maxYield)
-    const bMin = parseNum(minBeta), bMax = parseNum(maxBeta)
     const pMin = parseNum(minPrice), pMax = parseNum(maxPrice)
-    const subset = universe.filter((e) =>
-      (sector === 'all' || e.sector === sector) &&
-      (!query || e.symbol.toLowerCase().includes(query) || e.name.toLowerCase().includes(query)) &&
-      (!isFinite(mcMin) || e.marketCapB >= mcMin) &&
-      (!isFinite(mcMax) || e.marketCapB <= mcMax) &&
-      (!isFinite(peMin) || (e.peRatio != null && e.peRatio >= peMin)) &&
-      (!isFinite(peMax) || (e.peRatio != null && e.peRatio <= peMax)) &&
-      (!isFinite(yMin) || (e.dividendYieldPct != null && e.dividendYieldPct >= yMin)) &&
-      (!isFinite(yMax) || (e.dividendYieldPct != null && e.dividendYieldPct <= yMax)) &&
-      (!isFinite(bMin) || e.beta >= bMin) &&
-      (!isFinite(bMax) || e.beta <= bMax) &&
-      (!isFinite(pMin) || e.referencePrice >= pMin) &&
-      (!isFinite(pMax) || e.referencePrice <= pMax) &&
-      (!payersOnly || (e.dividendYieldPct != null && e.dividendYieldPct > 0))
-    )
+    const live = (e: UniverseEntry) => liveBySymbol.get(e.symbol)!
+    const inRange = (v: number | null, lo: number, hi: number) =>
+      (!isFinite(lo) || (v != null && v >= lo)) && (!isFinite(hi) || (v != null && v <= hi))
+    const subset = universe.filter((e) => {
+      const l = live(e)
+      return (sector === 'all' || e.sector === sector) &&
+        (!query || e.symbol.toLowerCase().includes(query) || e.name.toLowerCase().includes(query)) &&
+        inRange(l.liveMarketCap != null ? l.liveMarketCap / 1e9 : null, mcMin, mcMax) &&
+        inRange(l.figures.pe, peMin, peMax) &&
+        inRange(l.figures.dividendYieldPct, yMin, yMax) &&
+        inRange(l.livePrice, pMin, pMax) &&
+        (!payersOnly || e.dividendState === 'paid')
+    })
     const dir = sortAsc ? 1 : -1
-    const value = (e: UniverseEntry): number | string => {
+    // Null for a stock with no figure: it sorts last whichever way the column runs.
+    const value = (e: UniverseEntry): number | string | null => {
+      const l = live(e)
       switch (sortKey) {
         case 'symbol':   return e.symbol
         case 'sector':   return `${SECTOR_INFO[e.sector].label} ${e.industry}`
-        case 'price':    return e.referencePrice
-        case 'pe':       return e.peRatio ?? -Infinity
-        case 'dividend': return e.dividendYieldPct ?? -Infinity
-        case 'beta':     return e.beta
-        default:         return e.marketCapB
+        case 'price':    return l.livePrice
+        case 'pe':       return l.figures.pe
+        case 'dividend': return l.figures.dividendYieldPct
+        default:         return l.liveMarketCap
       }
     }
     return [...subset].sort((a, b) => {
       const va = value(a), vb = value(b)
+      if (va == null || vb == null) return va == null ? (vb == null ? 0 : 1) : -1
       if (typeof va === 'string' && typeof vb === 'string') return va.localeCompare(vb) * dir
       return ((va as number) - (vb as number)) * dir
     })
-  }, [universe, sector, search, sortKey, sortAsc, minMcapB, maxMcapB, minPe, maxPe, minYield, maxYield, minBeta, maxBeta, minPrice, maxPrice, payersOnly])
+  }, [universe, liveBySymbol, sector, search, sortKey, sortAsc, minMcapB, maxMcapB, minPe, maxPe, minYield, maxYield, minPrice, maxPrice, payersOnly])
 
   // Reset to first page whenever the result set changes
-  const filterSig = JSON.stringify([sector, search, sortKey, sortAsc, minMcapB, maxMcapB, minPe, maxPe, minYield, maxYield, minBeta, maxBeta, minPrice, maxPrice, payersOnly])
+  const filterSig = JSON.stringify([sector, search, sortKey, sortAsc, minMcapB, maxMcapB, minPe, maxPe, minYield, maxYield, minPrice, maxPrice, payersOnly])
   const page = pageState.sig === filterSig ? pageState.page : 0
   const setPage = (next: number | ((p: number) => number)) =>
     setPageState({ sig: filterSig, page: typeof next === 'function' ? next(page) : next })
@@ -235,13 +262,14 @@ export function EquitiesClient() {
   const pageEntries = filtered.slice(safePage * PAGE_SIZE, safePage * PAGE_SIZE + PAGE_SIZE)
   const pageSymbols = pageEntries.map((e) => e.symbol)
 
-  // ── Live quotes for the visible page only (bounded regardless of universe size) ──
-  const { data: quoteData } = useQuery<SecurityQuotesResponse>({
-    queryKey: ['security-quotes', 'page', pageSymbols.join(',')],
-    queryFn: () => fetch(`/live-data/security-quotes?symbols=${encodeURIComponent(pageSymbols.join(','))}`).then((r) => r.json()),
-    enabled: pageSymbols.length > 0,
+  // ── The page's own quotes, only past QUOTE_ALL_UP_TO (the paid FMP universe) ──
+  const unquotedOnPage = universe.length > QUOTE_ALL_UP_TO ? pageSymbols.filter((s) => !quotedSymbols.includes(s)) : []
+  const { data: pageQuoteData } = useQuery<SecurityQuotesResponse>({
+    queryKey: ['security-quotes', 'page', unquotedOnPage.join(',')],
+    queryFn: () => fetch(`/live-data/security-quotes?symbols=${encodeURIComponent(unquotedOnPage.join(','))}`).then((r) => r.json()),
+    enabled: unquotedOnPage.length > 0,
     staleTime: STALE_TIME_SHORT,
-    refetchInterval: 60_000,
+    refetchInterval: 120_000,
     placeholderData: keepPreviousData,
   })
 
@@ -263,52 +291,40 @@ export function EquitiesClient() {
   const returnsUnavailable = pageReturnsData?.source === 'none'
 
   const rows: Row[] = pageEntries.map((e) => {
-    const q = quoteData?.quotes?.[e.symbol.toUpperCase()]
+    const pq = pageQuoteData?.quotes?.[e.symbol.toUpperCase()]
     const r = pageReturnsData?.returns?.[e.symbol.toUpperCase()]
-    const live = !!q && quoteData?.source !== 'reference' && !q.reference
-    const livePrice = q?.price ?? e.referencePrice
-    // D167: P/E and yield from the SEC annual report's per-share figures, against the
-    // price this row shows (live where the page has a quote). Filters and sorts use the
-    // route's figures, worked out against the reference price, so they cover every stock.
-    const figures = stockFigures({
-      eps: e.eps != null && e.epsBasis ? { val: e.eps, end: e.perShareAsOf ?? '', basis: e.epsBasis } : null,
-      dps: e.dividendsPerShare != null ? { val: e.dividendsPerShare, end: e.perShareAsOf ?? '' } : null,
-      dividend: e.dividendState ?? 'unknown',
-      asOf: e.perShareAsOf ?? null,
-    }, livePrice)
+    const l = liveBySymbol.get(e.symbol)!
     return {
       ...e,
-      figures,
-      livePrice,
-      changePercent: live ? q?.changePercent ?? null : null,
-      liveMarketCap: q?.marketCap ?? e.marketCapB * 1e9,
-      marketCapIsRef: q?.marketCap == null,
+      ...(l.livePrice == null && pq && !pq.reference ? liveFiguresOf(e, pq) : l),
       ytdPct: r?.ytd ?? null,
       y1Pct: r?.y1 ?? null,
       returnsAdjusted: r?.adjusted,
-      live,
     }
   })
 
   // Universe-level KPIs + page breadth from the live quotes we do have
   const sectorsCovered = useMemo(() => new Set(universe.map((e) => e.sector)).size, [universe])
-  const largest = universe[0]
+  const largest = useMemo(() => {
+    let best: UniverseEntry | undefined
+    let bestCap = 0
+    for (const e of universe) {
+      const cap = liveBySymbol.get(e.symbol)?.liveMarketCap ?? 0
+      if (cap > bestCap) { best = e; bestCap = cap }
+    }
+    return best
+  }, [universe, liveBySymbol])
   const pageWithChange = rows.filter((r) => r.changePercent != null)
   const advancers = pageWithChange.filter((r) => (r.changePercent ?? 0) > 0).length
   const decliners = pageWithChange.filter((r) => (r.changePercent ?? 0) < 0).length
 
-  const anyFilter = !!(search || minMcapB || maxMcapB || minPe || maxPe || minYield || maxYield || minBeta || maxBeta || minPrice || maxPrice || payersOnly || sector !== 'all')
+  const anyFilter = !!(search || minMcapB || maxMcapB || minPe || maxPe || minYield || maxYield || minPrice || maxPrice || payersOnly || sector !== 'all')
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) setSortAsc((a) => !a)
     else { setSortKey(key); setSortAsc(key === 'symbol' || key === 'sector') }
   }
 
-  // Price/mkt-cap sorting orders on the universe's DAILY reference values, not
-  // the live quotes — quotes are fetched for the visible page only, after
-  // sort + pagination, so a live-quote sort over thousands of rows is not
-  // possible. Cells still show the live quote, so order and display can differ
-  // slightly intraday; the tooltip states it (review E-note-1).
   return (
     <div className="space-y-6 max-w-(--breakpoint-2xl) mx-auto">
       <div className="flex items-start justify-between gap-4">
@@ -318,7 +334,7 @@ export function EquitiesClient() {
             ? `${universe.length.toLocaleString()} equities across ${sectorsCovered} sectors · refreshed daily`
             : `${universe.length} curated equities · add an FMP key for the full daily universe`}
           icon={<LineChart size={20} aria-hidden />}
-          description="The universe is sourced daily from Financial Modeling Prep (all actively-traded common stocks, sector-tagged) and cached for 24h; live quotes for the visible page ladder through the configured providers. Every quote provider needs an API key. Without one, the universe falls back to a curated large-cap list and prices show as reference values."
+          description="The universe is sourced daily from Financial Modeling Prep (all actively-traded common stocks, sector-tagged) and cached for 24h; live quotes for the visible page ladder through the configured providers. Every quote provider needs an API key. Without one, the universe falls back to a curated large-cap list, and prices and every figure worked out from them show a dash."
         />
         <div className="flex items-center gap-3 shrink-0">
           <div className="relative">
@@ -401,14 +417,13 @@ export function EquitiesClient() {
         <RangeFilter label="P/E" min={minPe} max={maxPe} setMin={setMinPe} setMax={setMaxPe} />
         <RangeFilter label="Price $" min={minPrice} max={maxPrice} setMin={setMinPrice} setMax={setMaxPrice} />
         <RangeFilter label="Yield %" min={minYield} max={maxYield} setMin={setMinYield} setMax={setMaxYield} />
-        <RangeFilter label="Beta" min={minBeta} max={maxBeta} setMin={setMinBeta} setMax={setMaxBeta} />
         <label className="flex items-center gap-1.5 text-xs text-text-muted">
           <input type="checkbox" checked={payersOnly} onChange={(e) => setPayersOnly(e.target.checked)} className="rounded-sm border-border" />
           Dividend payers only
         </label>
         {anyFilter && (
           <button
-            onClick={() => { setMinMcapB(''); setMaxMcapB(''); setMinPe(''); setMaxPe(''); setMinYield(''); setMaxYield(''); setMinBeta(''); setMaxBeta(''); setMinPrice(''); setMaxPrice(''); setPayersOnly(false); setSearch(''); setSector('all') }}
+            onClick={() => { setMinMcapB(''); setMaxMcapB(''); setMinPe(''); setMaxPe(''); setMinYield(''); setMaxYield(''); setMinPrice(''); setMaxPrice(''); setPayersOnly(false); setSearch(''); setSector('all') }}
             className="text-xs text-accent-blue hover:underline"
           >
             Clear all
@@ -427,7 +442,6 @@ export function EquitiesClient() {
           <SortHeader label="Mkt Cap" colKey="marketCap" sortKey={sortKey} sortAsc={sortAsc} onToggle={toggleSort} />
           <SortHeader label="P/E" colKey="pe" sortKey={sortKey} sortAsc={sortAsc} onToggle={toggleSort} />
           <SortHeader label="Yield" colKey="dividend" sortKey={sortKey} sortAsc={sortAsc} onToggle={toggleSort} />
-          <SortHeader label="Beta" colKey="beta" sortKey={sortKey} sortAsc={sortAsc} onToggle={toggleSort} />
           <span
             className="text-xs font-medium uppercase tracking-wider text-text-muted text-right"
             title="Year-to-date total return for the visible page. Not sortable or screenable: returns are fetched per page, so a sort would order fifty rows as though it had seen every one."
@@ -462,17 +476,17 @@ export function EquitiesClient() {
                         <span className="truncate">{info.label}</span>
                       </span>
                     </div>
-                    <div className="text-right font-mono tabular-nums text-text-primary">
-                      {formatCurrency(row.livePrice)}
-                      {!row.live && <span className="ml-1 text-[9px] text-amber-400/80 align-top" title="Reference price — live source unreachable">ref</span>}
+                    <div className={clsx('text-right font-mono tabular-nums', row.livePrice == null ? 'text-text-muted' : 'text-text-primary')}
+                      title={row.livePrice == null ? 'No live quote: no stored price is shown in its place' : undefined}>
+                      {row.livePrice == null ? '—' : formatCurrency(row.livePrice)}
                     </div>
                     <div className={clsx('text-right font-mono tabular-nums text-xs',
                       change == null ? 'text-text-muted' : change >= 0 ? 'text-emerald-400' : 'text-red-400')}>
                       {change == null ? '—' : formatPercent(change, 2)}
                     </div>
-                    <div className="text-right font-mono tabular-nums text-text-secondary">
-                      {formatCompact(row.liveMarketCap)}
-                      {row.marketCapIsRef && <span className="ml-1 text-[9px] text-amber-400/80 align-top" title="Reference market cap — this quote source does not supply one">ref</span>}
+                    <div className="text-right font-mono tabular-nums text-text-secondary"
+                      title={marketCapText(row.shares, row.livePrice).explain}>
+                      {row.liveMarketCap == null ? '—' : formatCompact(row.liveMarketCap)}
                     </div>
                     {(() => {
                       // A link to the company's SEC filings beside each figure (D167). Nested in
@@ -498,7 +512,6 @@ export function EquitiesClient() {
                         </>
                       )
                     })()}
-                    <div className="text-right font-mono tabular-nums text-xs text-text-secondary">{row.beta ? row.beta.toFixed(2) : '—'}</div>
                     <ReturnCell value={row.ytdPct} adjusted={row.returnsAdjusted} />
                     <ReturnCell value={row.y1Pct} adjusted={row.returnsAdjusted} />
                   </Link>
@@ -539,8 +552,10 @@ export function EquitiesClient() {
       <p className="text-[11px] text-text-muted text-center">
         {configured ? 'Universe live via Financial Modeling Prep · refreshed daily' : 'Curated fallback universe'}
         {quoteData?.updatedAt && ` · quotes updated ${new Date(quoteData.updatedAt).toLocaleTimeString()}`}
-        {' · '}live quotes cover the visible page; P/E &amp; yield are worked out from each company&rsquo;s SEC annual report
-        and the price shown (screens use the reference price), linked beside each; beta is a reference value
+        {' · '}P/E &amp; yield are worked out from each company&rsquo;s SEC annual report against the live price, linked beside each;
+        market cap is SEC shares outstanding &times; the live price; no live quote, no figure
+        {universe.length > QUOTE_ALL_UP_TO && ` · screens and sorts cover the ${QUOTE_ALL_UP_TO} largest stocks`}
+        {' · '}beta is on each stock&rsquo;s page
         {' · '}YTD/1Y returns cover the visible page only and are not sortable or screenable
         {returnsUnavailable && (
           <span className="text-amber-400">
@@ -550,6 +565,17 @@ export function EquitiesClient() {
       </p>
     </div>
   )
+}
+
+/** A stock's figures against its live quote, or none without one (D170). */
+function liveFiguresOf(e: UniverseEntry, q: { price: number | null; changePercent: number | null } | undefined): LiveFigures {
+  const livePrice = q?.price != null && q.price > 0 ? q.price : null
+  return {
+    livePrice,
+    figures: stockFigures(perShareFromFields(e), livePrice),
+    changePercent: livePrice != null ? q?.changePercent ?? null : null,
+    liveMarketCap: marketCapUsd(e.shares, livePrice),
+  }
 }
 
 // ─── Small inputs ─────────────────────────────────────────────────────────────

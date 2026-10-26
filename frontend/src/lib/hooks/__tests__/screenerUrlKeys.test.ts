@@ -108,13 +108,14 @@ describe('screener links: every written filter is read back', () => {
 
   it('the check fails on the stock screener as it was before the fix', () => {
     // The pre-fix apply() restored ten of the fifteen keys. Rebuild that by removing
-    // the five lines the fix added, and the check must name exactly those five.
+    // the lines the fix added, and the check must name exactly those. (betaMin was one of
+    // the five; the beta filter itself left the screener on 2026-10-25, D170.)
     const fixed = read('app/(dashboard)/equities/EquitiesClient.tsx')
     const before = fixed
       .split('\n')
-      .filter((l) => !/if \(p\.(yieldMax|betaMin|priceMin|priceMax|payers)\b/.test(l))
+      .filter((l) => !/if \(p\.(yieldMax|priceMin|priceMax|payers)\b/.test(l))
       .join('\n')
     expect(before).not.toBe(fixed)
-    expect(unreadKeys(before).sort()).toEqual(['payers', 'priceMax', 'priceMin', 'yieldMax', 'betaMin'].sort())
+    expect(unreadKeys(before).sort()).toEqual(['payers', 'priceMax', 'priceMin', 'yieldMax'].sort())
   })
 })

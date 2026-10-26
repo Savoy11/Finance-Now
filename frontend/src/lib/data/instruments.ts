@@ -69,6 +69,9 @@ export const securitySymbol = (key: string) => key.slice(SEC_PREFIX.length)
 
 // Rough volatility proxy from beta — same 1–10 scale as crypto risk tiers,
 // where broad-market equities land well below most crypto.
+// ⚠ It reads the catalog's hand-typed beta (2026-07-07), which no page shows since D170
+// (2026-10-25). Tiers are switched off (D64): rebuild this on a beta worked out from prices
+// (lib/data/stockBeta.ts) before they return.
 function equityRiskTier(beta: number): number {
   if (beta < 0.7) return 3
   if (beta < 1.2) return 4

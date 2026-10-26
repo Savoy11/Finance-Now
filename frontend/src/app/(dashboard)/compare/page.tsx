@@ -30,7 +30,8 @@ import {
 import type { SecurityChartResponse } from '@/app/live-data/security-chart/route'
 import type { CompanyFactsResponse } from '@/app/live-data/company-facts/route'
 import type { StockUniverseResponse, UniverseEntry } from '@/app/live-data/stock-universe/route'
-import { stockFiguresLink } from '@/lib/data/stockPerShare'
+import { perShareFromFields, stockFigures, stockFiguresLink } from '@/lib/data/stockPerShare'
+import { marketCapUsd } from '@/lib/data/stockShares'
 import { FundOverlapSection } from '@/components/markets/FundOverlapSection'
 import { FundFactsSection } from '@/components/markets/FundFactsSection'
 
@@ -236,7 +237,7 @@ const FUNDAMENTAL_ROWS: Array<{ label: string; render: (d: CompanyFactsResponse)
   { label: 'Free cash flow (FY)', render: (d) => (d.fundamentals?.freeCashFlow != null ? formatCompact(d.fundamentals.freeCashFlow) : '—') },
 ]
 
-const STAT_LABELS = ['Type', 'Sector', 'Market cap', 'P/E (FY)', 'Dividend yield', 'Beta (5Y)', 'Expense ratio']
+const STAT_LABELS = ['Type', 'Sector', 'Market cap', 'P/E (FY)', 'Dividend yield', 'Expense ratio']
 
 /**
  * Reference-fundamentals column for one symbol.
@@ -247,23 +248,26 @@ const STAT_LABELS = ['Type', 'Sector', 'Market cap', 'P/E (FY)', 'Dividend yield
  * printing a Type we know while dashing a P/E we do not is the honest split,
  * and it is why this takes the option rather than looking the symbol up itself.
  */
-function statRows(symbol: string, opt?: Option, sec?: Map<string, UniverseEntry>): Array<[string, string]> {
+function statRows(symbol: string, opt?: Option, sec?: Map<string, UniverseEntry>, lastClose?: number | null): Array<[string, string]> {
   const e = getEquity(symbol)
   if (e) {
-    // D167: P/E and yield from the company's SEC annual report, against the reference
-    // price, with its fiscal year; the link beside them opens its filings.
+    // D167/D170: P/E, yield and market cap from the company's SEC filings, against the
+    // latest close in the chart above (never a stored price), with the fiscal year; the
+    // link beside them opens its filings. No close, no figure.
     const u = sec?.get(symbol.toUpperCase())
+    const price = lastClose != null && lastClose > 0 ? lastClose : null
+    const f = stockFigures(perShareFromFields(u), price)
     const fy = u?.perShareAsOf ? ` · FY ${u.perShareAsOf}` : ''
-    const pe = !u ? '…' : u.peRatio != null ? `${u.peRatio.toFixed(1)}${fy}` : u.eps != null && u.eps <= 0 ? 'Loss' : '—'
-    const yld = !u ? '…' : u.dividendState === 'paid' && u.dividendYieldPct != null ? `${u.dividendYieldPct.toFixed(2)}%${fy}`
-      : u.dividendState === 'none' ? 'None' : '—'
+    const pe = !u ? '…' : f.pe != null ? `${f.pe.toFixed(1)}${fy}` : f.peState === 'loss' ? 'Loss' : '—'
+    const yld = !u ? '…' : f.dividendYieldPct != null ? `${f.dividendYieldPct.toFixed(2)}%${fy}`
+      : f.dividend === 'none' ? 'None' : '—'
+    const cap = marketCapUsd(u?.shares, price)
     return [
       ['Type', 'Stock'],
       ['Sector', SECTOR_INFO[e.sector].label],
-      ['Market cap', formatCompact(e.marketCapB * 1e9)],
+      ['Market cap', !u ? '…' : cap != null ? formatCompact(cap) : '—'],
       ['P/E (FY)', pe],
       ['Dividend yield', yld],
-      ['Beta (5Y)', e.beta.toFixed(2)],
       ['Expense ratio', '—'],
     ]
   }
@@ -281,7 +285,6 @@ function statRows(symbol: string, opt?: Option, sec?: Map<string, UniverseEntry>
         if (!y.shown) return f.yieldPct == null ? '—' : 'See fund’s page'
         return `${y.value.split(' · ')[0]}${y.kind === 'trailing' ? '' : ` (${y.words})`} · ${y.asOf}`
       })()],
-      ['Beta (5Y)', '—'],
       ['Expense ratio', `${f.expenseRatioPct}%`],
     ]
   }
@@ -292,7 +295,7 @@ function statRows(symbol: string, opt?: Option, sec?: Map<string, UniverseEntry>
     : o.kind === 'fund' ? (o.cls === 'etf' ? 'ETF' : 'Mutual fund')
     : o.kind === 'stock' ? 'Stock'
     : CLASS_PROFILES[o.cls].label
-  return [['Type', label], ['Sector', '—'], ['Market cap', '—'], ['P/E (TTM)', '—'], ['Dividend yield', '—'], ['Beta (5Y)', '—'], ['Expense ratio', '—']]
+  return [['Type', label], ['Sector', '—'], ['Market cap', '—'], ['P/E (TTM)', '—'], ['Dividend yield', '—'], ['Expense ratio', '—']]
 }
 
 const pct = (v: number, dp = 1) => `${v >= 0 ? '+' : ''}${v.toFixed(dp)}%`
@@ -553,7 +556,7 @@ function CompareInner() {
           description="Pick 2–6 assets of any type — stocks, ETFs, mutual funds, coins, commodities, currencies, or rate indices. The chart normalizes every series to 100 at the common start date; the stats below are computed from the live price series over the selected window."
           details={[
             { label: 'Performance stats', text: 'Return, volatility, drawdown and Sharpe are derived from the fetched history over the current range.' },
-            { label: 'Fundamentals', text: 'The reference table shows approximate catalog values, labeled per the suite convention. A ticker outside the curated catalogs charts and scores normally — those figures simply come from the catalog, so it shows its type and em-dashes for the rest rather than a guess.' },
+            { label: 'Fundamentals', text: 'For a stock, the facts table works out market cap (SEC shares outstanding × price), P/E and dividend yield (from its SEC annual report) against the latest close in the chart. A fund shows its expense ratio and, where its site allows, its yield. A ticker outside the curated catalogs charts and scores normally, and shows its type and em-dashes for the rest rather than a guess.' },
             { label: 'Beyond the catalogs', text: 'Search reaches past the curated lists to any coin CoinGecko carries and any quotable US-listed stock or fund. A symbol with no price history lands in the "no data" notice by name rather than disappearing.' },
           ]}
         />
@@ -729,7 +732,7 @@ function CompareInner() {
           </table>
           <p className="px-4 py-2 text-[11px] text-text-muted border-t border-border/60">
             Derived from date-aligned daily closes over the common window; annualization matches per-series bar spacing (daily/weekly/monthly). Sharpe and Sortino use a 0% risk-free rate; Sortino penalizes downside deviation only, so it exceeds Sharpe when volatility is mostly upside. CAGR is blank on windows under a year — annualizing a one-month move overstates it.
-            {' '}Beta is the slope of a series&rsquo; returns against the chosen benchmark over the same window, paired by date and <strong>not</strong> annualized; R² is how much of the movement the benchmark explains, and a low one (under 0.20, shown amber) means the beta is describing noise rather than a relationship. Blank when fewer than {MIN_BETA_PERIODS} periods overlap. The catalog&rsquo;s static &ldquo;Beta (5Y)&rdquo; in the reference table below is a different figure from a different window.
+            {' '}Beta is the slope of a series&rsquo; returns against the chosen benchmark over the same window, paired by date and <strong>not</strong> annualized; R² is how much of the movement the benchmark explains, and a low one (under 0.20, shown amber) means the beta is describing noise rather than a relationship. Blank when fewer than {MIN_BETA_PERIODS} periods overlap.
           </p>
         </div>
       )}
@@ -888,7 +891,7 @@ function CompareInner() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border">
-              <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-text-muted">Stat <span className="normal-case">(reference)</span></th>
+              <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-text-muted">Stat <span className="normal-case">(at the latest close)</span></th>
               {symbols.map((s, i) => (
                 <th key={s} className="px-4 py-2.5 text-right text-xs font-mono font-semibold" style={{ color: color(i) }}>{s}</th>
               ))}
@@ -900,7 +903,7 @@ function CompareInner() {
                 <td className="px-4 py-2.5 text-text-muted">{label}</td>
                 {symbols.map((s) => (
                   <td key={s} className="px-4 py-2.5 text-right font-mono tabular-nums text-text-secondary">
-                    {statRows(s, resolve(s), secBySymbol)[rowIdx]?.[1] ?? '—'}
+                    {statRows(s, resolve(s), secBySymbol, series.find((x) => x.symbol === s)?.points.at(-1)?.close ?? null)[rowIdx]?.[1] ?? '—'}
                     {/* D166: a link to the fund's own page beside every fund yield; D167: a link
                         to the company's SEC filings beside every stock P/E and yield. */}
                     {(label === 'Dividend yield' || label === 'P/E (FY)') && (() => {

@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getProviderKey } from '@/lib/api/live/providers'
 import { EQUITY_CATALOG, EQUITY_BY_SYMBOL, mapSectorName, type SectorId } from '@/lib/data/equityCatalog'
 import { fetchStockPerShare } from '@/lib/server/stockPerShare'
-import { stockFigures, type DividendState } from '@/lib/data/stockPerShare'
+import type { DividendState } from '@/lib/data/stockPerShare'
+import type { SharesFact } from '@/lib/data/stockShares'
 import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 
 // The equities universe for the Stock Registry.
@@ -12,7 +13,7 @@ import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 // With an FMP key it pulls the whole active common-stock universe from FMP's
 // stock-screener (sector-tagged, sorted by market cap) and caches it for a day
 // — so index changes and new listings appear automatically. Curated catalog
-// entries overlay their hand-written descriptions/betas as enrichment. Without
+// entries overlay their hand-written descriptions as enrichment. Without
 // a key (or on failure) it falls back to the curated catalog so the page always
 // renders. `configured` tells the client whether the live universe is active.
 //
@@ -20,6 +21,14 @@ import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 // (D167, lib/data/stockPerShare.ts): never the catalog's hand-typed figures, and
 // never FMP's dividend. `?symbols=A,B` returns those catalog stocks only, for
 // pages that need a few (portfolio income, Compare).
+//
+// NO PRICE AND NOTHING WORKED OUT FROM ONE (D170, 2026-10-25). The route used to serve a
+// reference price, a market cap and a beta per stock (the catalog's, typed 2026-07-07, or
+// FMP's), and P/E and yield against that price. Netflix and ServiceNow split since, so the
+// outlier scan saw P/Es of 435 and 569. Now it serves what does not move with the price: the
+// SEC per-share figures and the cover-page share count (`shares`). Each page works out P/E,
+// yield and market cap against a LIVE quote (stockFigures, marketCapUsd), and shows a dash
+// without one. Beta is worked out on the stock's own page from a year of prices.
 
 export const dynamic = 'force-dynamic'
 
@@ -28,17 +37,6 @@ export interface UniverseEntry {
   name: string
   sector: SectorId
   industry: string
-  /** Reference market cap in billions USD (daily from FMP, or curated). */
-  marketCapB: number
-  /** Reference price USD — live quotes override on the visible page. */
-  referencePrice: number
-  /**
-   * P/E and dividend yield against `referencePrice`, worked out from the company's SEC
-   * annual report (D167). A page with a live price works them out again from `eps` and
-   * `dividendsPerShare` through stockFigures(); filters and sorts use these.
-   */
-  peRatio: number | null
-  dividendYieldPct: number | null
   /** Earnings per share for the fiscal year ending `perShareAsOf` (diluted, else basic). */
   eps: number | null
   epsBasis: 'diluted' | 'basic' | null
@@ -46,7 +44,10 @@ export interface UniverseEntry {
   dividendsPerShare: number | null
   dividendState: DividendState
   perShareAsOf: string | null
-  beta: number
+  /** Shares outstanding on the latest SEC cover page (D170); market cap = this × a live price. */
+  shares: SharesFact | null
+  /** Latest share count ÷ the count after `perShareAsOf`: outside the band, a split (stockShares.ts). */
+  shareChange: number | null
   exchange: string | null
   /** Present only for curated names. */
   description?: string
@@ -85,14 +86,14 @@ interface FmpScreenerRow {
 }
 
 const NO_PER_SHARE = {
-  peRatio: null, dividendYieldPct: null, eps: null, epsBasis: null,
-  dividendsPerShare: null, dividendState: 'unknown' as DividendState, perShareAsOf: null,
+  eps: null, epsBasis: null, dividendsPerShare: null, dividendState: 'unknown' as DividendState,
+  perShareAsOf: null, shares: null, shareChange: null,
 }
 
 /**
- * P/E and dividend yield for every entry from its SEC annual report (D167), against the
- * entry's reference price. Mutates in place and never throws: an unreachable SEC leaves the
- * figures unknown and the universe intact. Returns how many carry an earnings figure.
+ * Every entry's SEC per-share figures (D167) and cover-page share count (D170). Mutates in
+ * place and never throws: an unreachable SEC leaves the figures unknown and the universe
+ * intact. Returns how many carry an earnings figure.
  */
 async function applyPerShare(entries: UniverseEntry[]): Promise<{ withEps: number; reached: boolean }> {
   const nonPayers = new Set(EQUITY_CATALOG.filter((e) => e.dividendYieldPct === null).map((e) => e.symbol))
@@ -101,14 +102,13 @@ async function applyPerShare(entries: UniverseEntry[]): Promise<{ withEps: numbe
   for (const entry of entries) {
     const ps = bySymbol.get(entry.symbol)
     if (!ps) continue
-    const f = stockFigures(ps, entry.referencePrice)
-    entry.peRatio = f.pe
-    entry.dividendYieldPct = f.dividendYieldPct
     entry.eps = ps.eps?.val ?? null
     entry.epsBasis = ps.eps?.basis ?? null
     entry.dividendsPerShare = ps.dps?.val ?? null
     entry.dividendState = ps.dividend
     entry.perShareAsOf = ps.asOf
+    entry.shares = ps.shares
+    entry.shareChange = ps.shareChange
     if (ps.eps) withEps++
   }
   return { withEps, reached }
@@ -119,32 +119,32 @@ function curatedEntry(symbol: string): UniverseEntry | undefined {
   if (!e) return undefined
   return {
     symbol: e.symbol, name: e.name, sector: e.sector, industry: e.industry,
-    marketCapB: e.marketCapB, referencePrice: e.referencePrice,
     // Filled from SEC filings by applyPerShare; the catalog's typed figures are never served.
-    ...NO_PER_SHARE, beta: e.beta, exchange: null,
+    ...NO_PER_SHARE, exchange: null,
     description: e.description, website: e.website,
   }
 }
 
+/** The catalog, in its own order: pages sort by market cap against live prices. */
 function catalogUniverse(): UniverseEntry[] {
-  return EQUITY_CATALOG.map((e) => curatedEntry(e.symbol)!).sort((a, b) => b.marketCapB - a.marketCapB)
+  return EQUITY_CATALOG.map((e) => curatedEntry(e.symbol)!)
 }
 
-/** Convert one FMP screener row to a UniverseEntry, enriched with curated data. */
-function toEntry(row: FmpScreenerRow): UniverseEntry | null {
+/**
+ * Convert one FMP screener row to a UniverseEntry, enriched with curated data. FMP's market cap
+ * only screens out shells and orders the list; neither it, its price nor its beta is served.
+ */
+function toEntry(row: FmpScreenerRow): (UniverseEntry & { fmpCap: number }) | null {
   const symbol = row.symbol?.toUpperCase()
   if (!symbol || row.marketCap == null || row.marketCap <= 0) return null
   const curated = EQUITY_BY_SYMBOL[symbol]
-  const price = row.price ?? curated?.referencePrice ?? 0
   return {
+    fmpCap: row.marketCap,
     symbol,
     name: curated?.name ?? row.companyName ?? symbol,
     sector: curated?.sector ?? mapSectorName(row.sector),
     industry: curated?.industry ?? row.industry ?? '—',
-    marketCapB: row.marketCap / 1e9,
-    referencePrice: price,
-    ...NO_PER_SHARE,   // from SEC filings, by applyPerShare (D167)
-    beta: row.beta ?? curated?.beta ?? 1,
+    ...NO_PER_SHARE,   // from SEC filings, by applyPerShare (D167, D170)
     exchange: row.exchangeShortName ?? null,
     description: curated?.description,
     website: curated?.website,
@@ -166,19 +166,20 @@ async function fetchFmpUniverse(key: string): Promise<UniverseEntry[]> {
   if (!Array.isArray(rows) || rows.length === 0) throw new Error('FMP screener returned no rows')
 
   const seen = new Set<string>()
-  const entries: UniverseEntry[] = []
+  const ranked: Array<UniverseEntry & { fmpCap: number }> = []
   for (const row of rows) {
     if (row.isEtf || row.isFund) continue
     const entry = toEntry(row)
     if (!entry || seen.has(entry.symbol)) continue
     seen.add(entry.symbol)
-    entries.push(entry)
+    ranked.push(entry)
   }
+  ranked.sort((a, b) => b.fmpCap - a.fmpCap)
+  const entries: UniverseEntry[] = ranked.map(({ fmpCap: _cap, ...e }) => e)
   // Ensure curated names are always present even if the screener omitted them.
   for (const e of EQUITY_CATALOG) {
     if (!seen.has(e.symbol.toUpperCase())) { entries.push(curatedEntry(e.symbol)!); seen.add(e.symbol.toUpperCase()) }
   }
-  entries.sort((a, b) => b.marketCapB - a.marketCapB)
   return entries
 }
 
@@ -207,7 +208,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: true, configured: !!key, source, count: entries.length, entries, secReached: reached, updatedAt: new Date().toISOString() } satisfies StockUniverseResponse)
   }
 
-  // A few catalog stocks (portfolio income, Compare): their reference facts and SEC figures.
+  // A few catalog stocks (portfolio income, Compare): their catalog facts and SEC figures.
   const symbolsParam = req.nextUrl.searchParams.get('symbols')
   if (symbolsParam && !symbolParam) {
     const wanted = [...new Set(symbolsParam.split(',').map((x) => x.trim().toUpperCase()).filter(Boolean))].slice(0, 100)
@@ -236,9 +237,8 @@ export async function GET(req: NextRequest) {
             const entry: UniverseEntry = {
               symbol: p.symbol.toUpperCase(), name: p.companyName ?? p.symbol,
               sector: mapSectorName(p.sector), industry: p.industry ?? '—',
-              marketCapB: (p.marketCap ?? 0) / 1e9, referencePrice: p.price ?? 0,
               ...NO_PER_SHARE,
-              beta: p.beta ?? 1, exchange: p.exchange ?? null, website: p.website || undefined,
+              exchange: p.exchange ?? null, website: p.website || undefined,
             }
             const { reached } = await applyPerShare([entry])
             return NextResponse.json({ ok: true, configured: true, source: 'fmp', count: 1, entries: [entry], secReached: reached, updatedAt: new Date().toISOString() } satisfies StockUniverseResponse)

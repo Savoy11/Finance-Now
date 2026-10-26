@@ -10,16 +10,21 @@ import { computeValuationMultiples } from '@/lib/utils/companyRatios'
 import type { CompanyFactsResponse } from '@/app/live-data/company-facts/route'
 import { getEquity } from '@/lib/data/equityCatalog'
 import { perShareFrom, stockFigures, stockFiguresLink, yieldText } from '@/lib/data/stockPerShare'
+import { outsideShareBand } from '@/lib/data/stockShares'
 
 // Financial ratios & metrics computed from SEC EDGAR XBRL company facts
 // (audited filings). Valuation multiples combine those fundamentals with the
-// page's quote price; when the price is a reference value they carry the
-// app-wide amber "ref" tag.
+// page's LIVE quote price, and show a dash without one (D170: no reference prices).
 
 interface FinancialRatiosProps {
   symbol: string
-  price: number
-  priceIsLive: boolean
+  /** The live quote, or null: never a stored price (D170). */
+  price: number | null
+  /**
+   * Latest share count ÷ the count after the annual report (stock-universe's `shareChange`).
+   * Outside the band the company split since, and P/E and yield are withheld (D170).
+   */
+  shareChange?: number | null
 }
 
 type Row = {
@@ -27,7 +32,6 @@ type Row = {
   value: string
   /** Hover explanation: what the metric is and why it matters. */
   explain: string
-  ref?: boolean
   /** Signed fraction rendered as a colored YoY chip, e.g. 0.06 → "+6.0% YoY" */
   growth?: number | null
   /** Where the figure comes from (D167: the SEC filings, beside P/E and yield). */
@@ -39,7 +43,7 @@ const pct = (v: number | null) => (v == null ? dash : formatRatio(v, 1))
 const times = (v: number | null) => (v == null ? dash : `${v.toFixed(2)}×`)
 const usd = (v: number | null) => (v == null ? dash : formatCompact(v))
 
-export function FinancialRatios({ symbol, price, priceIsLive }: FinancialRatiosProps) {
+export function FinancialRatios({ symbol, price, shareChange = null }: FinancialRatiosProps) {
   const { data, isLoading, error } = useQuery<CompanyFactsResponse>({
     queryKey: ['company-facts', symbol],
     queryFn: async () => {
@@ -54,7 +58,12 @@ export function FinancialRatios({ symbol, price, priceIsLive }: FinancialRatiosP
   const f = data?.fundamentals
   const ra = data?.ratios
 
-  const { marketCap, pe, ps, pb } = computeValuationMultiples(f, price)
+  const { marketCap, pe: rawPe, ps, pb } = computeValuationMultiples(f, price)
+  // A split since the annual report puts its earnings per share in the old shares and the
+  // price in the new (Booking, Honeywell in 2026): no P/E until the next annual report.
+  const split = outsideShareBand(shareChange)
+  const pe = split ? null : rawPe
+  const noPrice = 'No live price, so this is not worked out: it uses the live price only.'
 
   // The route falls back to EarningsPerShareBasic when a registrant reports no
   // diluted figure, and reports which one it used. Labelling a basic figure
@@ -76,23 +85,25 @@ export function FinancialRatios({ symbol, price, priceIsLive }: FinancialRatiosP
     ...(f.eps != null && f.epsPeriodEnd ? { [epsBasis === 'basic' ? 'epsBasic' : 'epsDiluted']: { val: f.eps, end: f.epsPeriodEnd } } : {}),
     ...(f.dividendsPerShare != null && f.dividendsPerShareEnd ? { dpsDeclared: { val: f.dividendsPerShare, end: f.dividendsPerShareEnd } } : {}),
   }, getEquity(symbol)?.dividendYieldPct === null) : null
-  const yieldFig = yieldText(stockFigures(perShare, price))
+  const yieldFig = yieldText(stockFigures(perShare ? { ...perShare, shareChange } : null, price))
   const secLink = stockFiguresLink(symbol)
 
   const groups: Array<{ title: string; rows: Row[] }> = f && ra ? [
     {
       title: 'Valuation',
       rows: [
-        { label: 'Market Cap', value: usd(marketCap), ref: !priceIsLive,
-          explain: 'The total value the market puts on the company (share price × shares outstanding). It sets the company’s size class — mega, large, mid cap — and its weight in indexes.' },
-        { label: peLabel, value: times(pe), ref: !priceIsLive, link: secLink,
-          explain: 'How many dollars you pay for $1 of annual profit. A high P/E means the market expects strong growth; a low one can signal a bargain — or a business in trouble. Only meaningful vs. peers and history. Blank for a loss-making company: a negative multiple is a category error, not a cheap stock.' },
-        { label: 'Dividend yield (FY)', value: yieldFig.value === '—' ? dash : yieldFig.value, ref: !priceIsLive && yieldFig.value.endsWith('%'), link: secLink,
+        { label: 'Market Cap', value: usd(marketCap),
+          explain: `The total value the market puts on the company (the live share price × shares outstanding from its latest SEC filing). It sets the company’s size class — mega, large, mid cap — and its weight in indexes.${price == null ? ' ' + noPrice : ''}` },
+        { label: peLabel, value: times(pe), link: secLink,
+          explain: split
+            ? 'The company’s share count has changed by a split’s worth since its annual report, so its earnings per share are in the old shares and the price in the new. No P/E is worked out until its next annual report.'
+            : `How many dollars you pay for $1 of annual profit. A high P/E means the market expects strong growth; a low one can signal a bargain — or a business in trouble. Only meaningful vs. peers and history. Blank for a loss-making company: a negative multiple is a category error, not a cheap stock.${price == null ? ' ' + noPrice : ''}` },
+        { label: 'Dividend yield (FY)', value: yieldFig.value === '—' ? dash : yieldFig.value, link: secLink,
           explain: yieldFig.explain },
-        { label: 'Price / Sales', value: times(ps), ref: !priceIsLive,
-          explain: 'Market cap per dollar of revenue. Useful when earnings are thin or negative, where P/E breaks down. Compare within the same industry — software commands far higher P/S than retail.' },
-        { label: 'Price / Book', value: times(pb), ref: !priceIsLive,
-          explain: 'Price relative to accounting net worth. Below 1× can mean a bargain or a business earning poor returns on its assets. Most relevant for banks and asset-heavy companies.' },
+        { label: 'Price / Sales', value: times(ps),
+          explain: `Market cap per dollar of revenue. Useful when earnings are thin or negative, where P/E breaks down. Compare within the same industry — software commands far higher P/S than retail.${price == null ? ' ' + noPrice : ''}` },
+        { label: 'Price / Book', value: times(pb),
+          explain: `Price relative to accounting net worth. Below 1× can mean a bargain or a business earning poor returns on its assets. Most relevant for banks and asset-heavy companies.${price == null ? ' ' + noPrice : ''}` },
         { label: 'Shares Outstanding', value: f.sharesOutstanding != null ? formatCompactNumber(f.sharesOutstanding) : dash,
           explain: 'Total shares in existence. A shrinking count (buybacks) gives each remaining share a bigger claim on profits; a growing count dilutes existing holders.' },
       ],
@@ -179,7 +190,7 @@ export function FinancialRatios({ symbol, price, priceIsLive }: FinancialRatiosP
             <div key={title}>
               <h3 className="text-[11px] font-medium uppercase tracking-wide text-text-muted mb-2">{title}</h3>
               <dl className="space-y-2">
-                {rows.map(({ label, value, explain, ref, growth, link }) => (
+                {rows.map(({ label, value, explain, growth, link }) => (
                   <div key={label} className="flex items-baseline justify-between gap-2 text-sm">
                     <dt className="text-text-muted text-xs">
                       <ExplainedLabel label={label} explain={explain} />
@@ -191,9 +202,6 @@ export function FinancialRatios({ symbol, price, priceIsLive }: FinancialRatiosP
                           className="ml-1.5 inline-flex items-center align-middle font-sans text-[10px] text-accent-blue hover:underline">
                           {link.text} <ExternalLink size={9} className="ml-0.5" aria-hidden />
                         </a>
-                      )}
-                      {ref && value !== dash && (
-                        <span className="ml-1 text-[9px] text-amber-400/70 align-top font-sans" title="Uses reference price — live quote unavailable">ref</span>
                       )}
                       {growth != null && (
                         <span className={clsx('ml-1.5 text-[10px] font-sans', growth >= 0 ? 'text-emerald-400' : 'text-red-400')}>

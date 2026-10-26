@@ -1,7 +1,9 @@
 import type Anthropic from '@anthropic-ai/sdk'
 import { EQUITY_CATALOG, SECTOR_INFO } from '@/lib/data/equityCatalog'
-import { peText, stockFigures, stockFiguresLink, yieldText } from '@/lib/data/stockPerShare'
+import { peText, perShareFromFields, stockFigures, stockFiguresLink, yieldText } from '@/lib/data/stockPerShare'
+import { marketCapText, marketCapUsd } from '@/lib/data/stockShares'
 import type { StockUniverseResponse } from '@/app/live-data/stock-universe/route'
+import type { SecurityQuotesResponse } from '@/app/live-data/security-quotes/route'
 import { FUND_CATALOG, FUND_CATEGORY_INFO, fundAssetsFact, fundYieldFact } from '@/lib/data/fundCatalog'
 import { COMMODITY_CATALOG, COMMODITY_CATEGORY_INFO } from '@/lib/data/commodityCatalog'
 import { CURRENCY_CATALOG, CURRENCY_CATEGORY_INFO } from '@/lib/data/currencyCatalog'
@@ -244,7 +246,7 @@ const TOOL_REGISTRY: RegisteredTool[] = [
     market: 'equities',
     tool: {
       name: 'get_stock_outliers',
-      description: 'Scan the WHOLE stock universe and return the statistical outliers, computed sector-relative (z-scores vs each stock\'s sector). Returns categories: cheap (low P/E vs sector), expensive (high P/E), highYield, highBeta, lowBeta. Use this FIRST for any "find outliers / screen the market / what stands out" request, then drill into flagged names with the other tools.',
+      description: 'Scan the WHOLE stock universe and return the statistical outliers, computed sector-relative (z-scores vs each stock\'s sector). Returns categories: cheap (low P/E vs sector), expensive (high P/E), highYield; P/E and yield are against live prices, and a stock with no live quote is left out and counted. Use this FIRST for any "find outliers / screen the market / what stands out" request, then drill into flagged names with the other tools.',
       input_schema: {
         type: 'object',
         properties: {
@@ -257,7 +259,7 @@ const TOOL_REGISTRY: RegisteredTool[] = [
     market: 'equities',
     tool: {
       name: 'search_securities',
-      description: 'Search the equities and funds catalogs (~70 US large-cap stocks, ~55 ETFs/mutual funds) by ticker, name, sector, or category. Use to find the right symbol, discover what stocks/funds the platform tracks, or get reference facts (sector, P/E, expense ratio, top holdings).',
+      description: 'Search the equities and funds catalogs (~70 US large-cap stocks, ~55 ETFs/mutual funds) by ticker, name, sector, or category. Use to find the right symbol, discover what stocks/funds the platform tracks, or get facts (sector, industry, expense ratio, top holdings, and for stocks P/E, yield and market cap against the live price).',
       input_schema: {
         type: 'object',
         properties: {
@@ -673,28 +675,32 @@ async function execute(
           .filter((e) => !sector || e.sector === sector)
           .filter((e) => !query || e.symbol.toLowerCase().includes(query) || e.name.toLowerCase().includes(query) || e.industry.toLowerCase().includes(query))
           .slice(0, 15)
-        // D167: P/E and dividend yield from each company's SEC annual report, against the
-        // catalog's reference price, never the catalog's hand-typed figures. perShareAsOf is
-        // the fiscal year they are for; secFilings is where they come from.
-        // Read through the Stock Registry's own route, so the agent sees what the page shows.
-        const sec = stockHits.length
-          ? await get(`/live-data/stock-universe?symbols=${encodeURIComponent(stockHits.map((e) => e.symbol).join(','))}`) as StockUniverseResponse
-          : null
+        // D167/D170: P/E, dividend yield and market cap from each company's SEC filings,
+        // against the LIVE price, never the catalog's hand-typed figures or a stored price.
+        // perShareAsOf is the fiscal year they are for; secFilings is where they come from.
+        // Read through the Stock Registry's own routes, so the agent sees what the page shows.
+        const list = encodeURIComponent(stockHits.map((e) => e.symbol).join(','))
+        const [sec, quotes] = stockHits.length
+          ? await Promise.all([
+            get(`/live-data/stock-universe?symbols=${list}`) as Promise<StockUniverseResponse>,
+            get(`/live-data/security-quotes?symbols=${list}`) as Promise<SecurityQuotesResponse>,
+          ])
+          : [null, null]
         const secBySymbol = new Map((sec?.entries ?? []).map((u) => [u.symbol, u]))
         const stocks = stockHits.map((e) => {
           const u = secBySymbol.get(e.symbol)
-          const f = stockFigures(u ? {
-            eps: u.eps != null && u.epsBasis ? { val: u.eps, end: u.perShareAsOf ?? '', basis: u.epsBasis } : null,
-            dps: u.dividendsPerShare != null ? { val: u.dividendsPerShare, end: u.perShareAsOf ?? '' } : null,
-            dividend: u.dividendState, asOf: u.perShareAsOf,
-          } : null, e.referencePrice)
+          const q = quotes?.quotes?.[e.symbol]
+          const livePrice = q && !q.reference && q.price != null && q.price > 0 ? q.price : null
+          const f = stockFigures(perShareFromFields(u), livePrice)
+          const cap = marketCapText(u?.shares, livePrice)
           return {
             symbol: e.symbol, name: e.name, type: 'stock' as const,
             sector: SECTOR_INFO[e.sector].label, industry: e.industry,
-            marketCapB: e.marketCapB, referencePrice: e.referencePrice,
+            livePrice, marketCapUsd: marketCapUsd(u?.shares, livePrice), sharesAsOf: u?.shares?.end ?? null,
             peRatio: f.pe, dividendYieldPct: f.dividendYieldPct, dividendState: f.dividend,
-            perShareAsOf: f.asOf, figuresNote: `${peText(f).explain} ${yieldText(f).explain} Worked out against the reference price ${e.referencePrice}, not a live quote.`,
-            secFilings: stockFiguresLink(e.symbol).href, beta: e.beta,
+            perShareAsOf: f.asOf,
+            figuresNote: `${peText(f).explain} ${yieldText(f).explain} Market cap: ${cap.explain}${livePrice == null ? ' No live quote was available, so none of these is given; do not estimate them.' : ''}`,
+            secFilings: stockFiguresLink(e.symbol).href,
           }
         })
         const funds = (type === 'stock') ? [] : FUND_CATALOG
@@ -743,7 +749,10 @@ async function execute(
         const data = (await get(`/live-data/security-quotes?symbols=${encodeURIComponent(symbols)}`)) as {
           source?: string; quotes?: Record<string, { price: number; changePercent: number | null; marketCap: number | null; volume: number | null; reference?: boolean }>
         }
-        return { source: data.source, quotes: data.quotes ?? {} }
+        const quotes = data.quotes ?? {}
+        // A stock with no live quote is absent, never given a stored price (D170).
+        const missing = symbols.split(',').filter((s) => s && !quotes[s])
+        return { source: data.source, quotes, ...(missing.length ? { missing, missingNote: 'No live quote for these: say so, and do not estimate a price.' } : {}) }
       }
       case 'get_stock_financials': {
         const symbol = String(input.symbol ?? '').toUpperCase()

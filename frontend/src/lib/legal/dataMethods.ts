@@ -76,8 +76,18 @@ export const DATA_METHODS: readonly MethodSection[] = [
     decided: '2026-10-25',
     paragraphs: [
       'A stock’s P/E is its price divided by its earnings per share for its latest fiscal year (diluted, or basic where the company reports no diluted figure). Its dividend yield is the dividends per share for that same fiscal year divided by its price. Both per-share figures come from the company’s own SEC annual report, and each figure shows the fiscal year it is for.',
-      'The price is the live quote where the page has one; otherwise a stored reference price, marked “ref”. Screens and sorts on the Stock Registry use the reference price, so they cover every stock at once.',
+      'The price is always the live quote. With no live quote, the P/E and yield show a dash and say why: no stored price is used.',
+      'If a company’s share count has changed by a split’s worth since that fiscal year, as after a stock split, its per-share figures for that year are in the old shares and the price is in the new. Its P/E and yield then show a dash until its next annual report, and are never adjusted by a guessed ratio.',
       'A dividend counts only when it is for the same fiscal year as the earnings, so a dividend a company has since stopped is never shown as a current yield. A company that lost money shows “Loss” for its P/E. Where the SEC data has no usable figure, the page shows a dash, never a guess. A link beside each figure opens the company’s SEC filings.',
+    ],
+  },
+  {
+    id: 'stock-market-cap-beta',
+    title: 'Stock market cap and beta',
+    decided: '2026-10-25',
+    paragraphs: [
+      'A stock’s market cap is its shares outstanding, from the cover page of the company’s latest SEC filing, multiplied by the live price. The figure shows the date of the share count. Without a live price there is no market cap. A company with more than one class of stock reports a share count for each class, so no single count is available and its market cap shows a dash.',
+      'A stock’s beta is worked out on its own page from one year of daily closing prices, against the SPDR S&P 500 ETF (SPY): how much the stock’s daily returns have moved with the market’s. It is a measure of the past year, not a forecast. Where the only prices available are not adjusted for stock splits, no beta is worked out, since a split would read as a single day’s move. It is not shown in lists or screens, which would need a year of prices for every stock at once.',
     ],
   },
   {
@@ -125,7 +135,7 @@ export const DATA_METHODS: readonly MethodSection[] = [
     id: 'missing-prices',
     title: 'When there is no live price',
     paragraphs: [
-      'When no live quote is available for a stock or fund, the page shows a stored reference price tagged “ref”. Figures that need a live price say so instead of showing a number. Commodities, currencies and rates with no quote show a dash. No price is ever made up to fill a gap.',
+      'When no live quote is available for a stock, the page shows a dash, as it does for commodities, currencies and rates. For a fund it shows a stored reference price tagged “ref”. Figures that need a live price say so instead of showing a number. No price is ever made up to fill a gap.',
     ],
   },
 ]

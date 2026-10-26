@@ -26,7 +26,6 @@ import {
   type AnyActiveProvider,
   type CustomProviderDef,
 } from './providers'
-import { getEquity } from '@/lib/data/equityCatalog'
 import { getFund } from '@/lib/data/fundCatalog'
 import { pinnedFetch } from '@/lib/server/pinnedFetch'
 import { fetchFmpDailyHistory, type PriceBasis } from './fmpHistory'
@@ -430,12 +429,16 @@ export async function fetchSecurityQuotes(
  * `reference: true` so no consumer can mistake them for live readings. Shared
  * by /live-data/security-quotes and /api/v1/securities/quotes — the fallback
  * semantics are part of the quote surface, not one route's private behavior.
+ *
+ * FUNDS ONLY since D170 (2026-10-25). A stock with no live quote gets none: the stock
+ * catalog's reference prices (2026-07-07) had gone stale past use, Netflix and ServiceNow
+ * having split since, and a stock missing here shows a dash.
  */
 export function referenceSecurityQuotes(symbols: string[]): Record<string, SecurityQuote> {
   const quotes: Record<string, SecurityQuote> = {}
   for (const raw of symbols) {
     const symbol = raw.toUpperCase()
-    const ref = getEquity(symbol)?.referencePrice ?? getFund(symbol)?.referencePrice
+    const ref = getFund(symbol)?.referencePrice
     if (ref == null) continue
     quotes[symbol] = {
       symbol, price: ref, change: null, changePercent: null,

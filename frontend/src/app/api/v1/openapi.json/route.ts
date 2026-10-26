@@ -135,7 +135,7 @@ const SPEC = {
       get: {
         tags: ['securities'],
         summary: 'Get quotes for securities and macro instruments',
-        description: 'Quotes for anything the security ladder prices: stocks, ETFs, mutual funds, commodity/rate futures (GC=F, ZN=F), FX pairs (EURUSD=X), and yield indices (^TNX). Symbols use standard market ticker notation (BRK-B, GC=F, EURUSD=X, ^TNX). Served by the same registry-driven provider ladder the UI reads (FMP → Finnhub → Twelve Data → Tiingo → Alpha Vantage → catalog reference); EVERY live rung requires an API key, so an unkeyed instance returns catalog reference prices for stocks/funds and nothing for macro instruments. Reference-priced quotes carry `reference: true` and must not be treated as live.',
+        description: 'Quotes for anything the security ladder prices: stocks, ETFs, mutual funds, commodity/rate futures (GC=F, ZN=F), FX pairs (EURUSD=X), and yield indices (^TNX). Symbols use standard market ticker notation (BRK-B, GC=F, EURUSD=X, ^TNX). Served by the same registry-driven provider ladder the UI reads (FMP → Finnhub → Twelve Data → Tiingo → Alpha Vantage → catalog reference); EVERY live rung requires an API key, so an unkeyed instance returns catalog reference prices for funds only, and nothing for stocks or macro instruments (a stock with no live quote is listed in `missing`). Reference-priced quotes carry `reference: true` and must not be treated as live.',
         parameters: [
           { name: 'symbols', in: 'query', required: true, description: 'Comma-separated tickers, max 25 (e.g. AAPL,VOO,GC=F,^TNX)', schema: { type: 'string', example: 'AAPL,VOO,GC=F' } },
         ],
@@ -496,7 +496,7 @@ const SPEC = {
               type: 'object',
               properties: {
                 symbol:        { type: 'string' },
-                reference:     { type: 'boolean', description: 'True when this is a static catalog reference price, NOT a live reading.' },
+                reference:     { type: 'boolean', description: 'True when this is a static catalog reference price for a fund, NOT a live reading. Stocks never get one.' },
                 price:         { type: 'number' },
                 change:        { type: 'number', nullable: true, description: 'Absolute change vs previous close.' },
                 changePercent: { type: 'number', nullable: true },

@@ -361,7 +361,7 @@ export const DATA_SOURCES: DataSourceEntry[] = [
       { name: 'Catalog reference prices', role: 'fallback', auth: 'none' },
     ],
     staticData: ['lib/data/equityCatalog.ts', 'lib/data/fundCatalog.ts'],
-    notes: 'Registry-driven provider ladder (Integrations page). EVERY live rung needs an API key since the keyless one was withdrawn on terms grounds (2026-08-06) — with no key, stocks and funds fall to catalog reference prices behind an amber `ref` tag, and macro instruments (no reference price by design) show a dash.',
+    notes: 'Registry-driven provider ladder (Integrations page). EVERY live rung needs an API key since the keyless one was withdrawn on terms grounds (2026-08-06) — with no key, funds fall to catalog reference prices behind an amber `ref` tag, and stocks (since D170, 2026-10-25) and macro instruments show a dash.',
   },
   {
     id: 'security-ohlcv', surface: 'Stock OHLCV / TA / backtests', module: 'equities',
@@ -408,13 +408,13 @@ export const DATA_SOURCES: DataSourceEntry[] = [
     route: '/live-data/stock-universe', status: 'partial',
     providers: [{ name: 'FMP company-screener', host: 'financialmodelingprep.com', role: 'primary', auth: 'paid' }, { name: 'Curated catalog', role: 'fallback', auth: 'none' }, { ...SEC_EDGAR, name: 'SEC XBRL frames (P/E backfill)', role: 'aggregator' }],
     staticData: ['lib/data/equityCatalog.ts (~79 names)'],
-    notes: 'FMP screener is PAID-only; without a key the registry falls back to ~79 curated names. P/E backfilled from SEC XBRL frames on the FMP path only.',
+    notes: 'FMP screener is PAID-only; without a key the registry falls back to ~79 curated names. On every path the route serves each company’s SEC per-share figures (D167) and cover-page share count (D170) from the SEC’s XBRL frames, and no price: pages work out P/E, yield and market cap against live quotes.',
   },
   {
     id: 'stock-outliers', surface: 'Equity screener / outliers', module: 'equities',
     route: '/live-data/stock-outliers', status: 'partial',
     providers: [{ name: 'Derived from stock-universe', role: 'derived', auth: 'none' }],
-    notes: 'Sector z-scores over whatever universe stock-universe returns — inherits its narrowness on the catalog fallback.',
+    notes: 'Sector z-scores over whatever universe stock-universe returns, with P/E and yield worked out against a live quote for every stock (D170); a stock with no quote is left out and counted. Inherits the universe’s narrowness on the catalog fallback.',
   },
   {
     id: 'ipo-calendar', surface: 'IPO calendar', module: 'equities',

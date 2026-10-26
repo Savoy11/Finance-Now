@@ -13,7 +13,7 @@ const f = (val: number, end: string) => ({ val, end })
 describe('the per-share rules', () => {
   it('pairs a dividend with the earnings of the same fiscal year (Apple, FY to 2025-09-27)', () => {
     const ps = perShareFrom({ epsDiluted: f(7.46, '2025-09-27'), dpsDeclared: f(1.02, '2025-09-27') })
-    expect(ps).toEqual({ eps: { val: 7.46, end: '2025-09-27', basis: 'diluted' }, dps: f(1.02, '2025-09-27'), dividend: 'paid', asOf: '2025-09-27' })
+    expect(ps).toEqual({ eps: { val: 7.46, end: '2025-09-27', basis: 'diluted' }, dps: f(1.02, '2025-09-27'), dividend: 'paid', asOf: '2025-09-27', shares: null, shareChange: null })
     expect(stockFigures(ps, 255)).toMatchObject({ pe: 34.18, peState: 'shown', dividendYieldPct: 0.4, dividend: 'paid' })
   })
 
@@ -80,6 +80,9 @@ describe('reading the SEC data', () => {
   const stub = (up: boolean) => vi.stubGlobal('fetch', vi.fn(async (url: string) => {
     if (!up) throw new Error('network down')
     if (url.includes('company_tickers')) return new Response(JSON.stringify({ 0: { cik_str: 320193, ticker: 'AAPL', title: 'Apple Inc.' } }))
+    if (url.includes('/dei/EntityCommonStockSharesOutstanding/shares/CY2026Q3I')) {
+      return new Response(JSON.stringify({ data: [{ cik: 320193, val: 14_594_180_000, end: '2026-07-17', accn: '0000320193-26-000020' }] }))
+    }
     const m = url.match(/us-gaap\/([A-Za-z]+)\/USD-per-shares\/(CY\d{4})\.json/)
     const rows = m ? frames[`${m[1]}/${m[2]}`] : undefined
     return rows ? new Response(JSON.stringify({ data: rows })) : new Response('{}', { status: 404 })
@@ -90,6 +93,8 @@ describe('reading the SEC data', () => {
     const { bySymbol, reached } = await fetchStockPerShare(['aapl', 'ZZZZ'], new Set(), new Date('2026-10-25'))
     expect(reached).toBe(true)
     expect(bySymbol.get('AAPL')).toMatchObject({ dividend: 'paid', asOf: '2025-09-27', eps: { val: 7.46 } })
+    // D170: the cover-page share count rides along, with its date and filing.
+    expect(bySymbol.get('AAPL')?.shares).toEqual({ val: 14_594_180_000, end: '2026-07-17', accn: '0000320193-26-000020' })
     expect(bySymbol.get('ZZZZ')).toMatchObject({ eps: null, dividend: 'unknown' })
   })
 
@@ -108,11 +113,11 @@ describe('no page shows the catalog’s hand-typed P/E or yield (D167)', () => {
     const allowed: Record<string, string> = {
       'src/lib/data/equityCatalog.ts': 'defines the fields, kept as a record',
       'src/lib/data/stockPerShare.ts': 'names the rule',
-      'src/app/live-data/stock-universe/route.ts': 'serves the SEC figures under these names; reads dividendYieldPct === null only to mark non-payers',
-      'src/app/(dashboard)/equities/EquitiesClient.tsx': 'filters and sorts on the route’s SEC figures',
-      'src/app/live-data/stock-outliers/route.ts': 'screens on the route’s SEC figures',
+      'src/app/live-data/stock-universe/route.ts': 'reads dividendYieldPct === null only to mark non-payers; serves no figure under these names since D170',
+      'src/app/(dashboard)/equities/EquitiesClient.tsx': 'filters and sorts on stockFigures’ values against live quotes (D170)',
+      'src/app/live-data/stock-outliers/route.ts': 'screens on stockFigures’ values against live quotes (D170)',
       'src/lib/agents/tools.ts': 'returns stockFigures’ values under these names; reads dividendYieldPct === null only to mark non-payers',
-      'src/app/(dashboard)/compare/page.tsx': 'reads the route’s SEC figures',
+      'src/app/(dashboard)/compare/page.tsx': 'works stockFigures out against the latest close (D170)',
       'src/components/markets/FinancialRatios.tsx': 'reads dividendYieldPct === null only to mark a non-payer',
       'src/lib/data/portfolioUtils.ts': 'names its parameter; stock yields come from SEC dividends per share',
       // Unrelated fields of the same name.
