@@ -1632,6 +1632,13 @@ the probe's map drifts from the route's.
 > answers the second. Every collector reads through `usableRate` (above 0, at most the
 > bound), so a source gone quiet shows the fallback marked estimate, never a live 0%,
 > which is what the fallback refresh already assumed (`stakingZeroRate.test.ts`).
+>
+> ⚠ **The Live Pools tab reads DefiLlama separately, so it needs its own bound (2026-10-26).**
+> `npm run audit` found it showing Swell's rswETH at 7,530% and swETH at 366% after D169 had kept
+> both off the staking rates. `/live-data/staking-discovery` now leaves out any pool above
+> `DISCOVERY_APY_MAX` (40%, the staking rates' DefiLlama bound; `lib/data/discoveryApy.ts`) and
+> names it in the response's `refused`, which the panel counts. `discoveryApy.test.ts` holds the
+> two bounds and the audit's check equal. A new reader of a yield feed takes a bound too.
 
 **Agent evaluation (owner machine — D20, needs `ANTHROPIC_API_KEY`):**
 

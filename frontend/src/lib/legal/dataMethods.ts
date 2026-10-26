@@ -1,5 +1,6 @@
 import { STAKING_PROVIDERS, STAKING_DATA_LAST_VERIFIED } from '@/lib/data/stakingProviders'
 import { FALLBACK_STALE_AFTER_DAYS } from '@/lib/server/stakingRates'
+import { DISCOVERY_APY_MAX } from '@/lib/data/discoveryApy'
 import { FUND_CATALOG, FUND_FEES_LAST_VERIFIED, YIELD_CHECK_AFTER_DAYS, YIELD_KIND_NAMES, YIELD_SHOWN_FOR_DAYS } from '@/lib/data/fundCatalog'
 
 /**
@@ -39,9 +40,10 @@ export const DATA_METHODS: readonly MethodSection[] = [
   {
     id: 'staking-rates',
     title: 'Staking rates',
-    decided: '2026-10-25',
+    decided: '2026-10-26',
     paragraphs: [
       'A rate read from a provider’s or a data service’s live source is marked live. Every other rate is a stored estimate and is marked as an estimate, not a current reading.',
+      `The Live Pools tab lists staking pools read from data services. A pool whose reported yield is above ${DISCOVERY_APY_MAX}% is left out, because no staking pool pays that much: it is a broken reading, or a yield paid in reward tokens. The tab says how many it left out and which.`,
       'A live source that reports a rate of 0%, or an implausibly high one, is treated as giving no reading: the stored estimate is shown instead, marked as an estimate, never a live 0%. A source can report 0 because it has stopped updating, not only because the rate is 0.',
       `Stored estimates that were measured from live sources carry the date they were measured, and are withheld once they are more than ${FALLBACK_STALE_AFTER_DAYS} days old; the rate is then shown as a dash.`,
     ],

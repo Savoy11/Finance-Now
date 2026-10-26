@@ -4,6 +4,7 @@ import {
   ALL_STAKING_SYMBOLS, COIN_SYMBOL_MAP, MATURE_CHAINS,
 } from '@/lib/data/stakingDiscovery'
 import type { ProviderCategory } from '@/lib/data/stakingProviders'
+import { splitPlausiblePools, type RefusedPool } from '@/lib/data/discoveryApy'
 
 export const dynamic = 'force-dynamic'
 
@@ -54,6 +55,12 @@ export interface StakingDiscoveryResponse {
   upstreams: Record<DiscoverySource, string>
   /** True when at least one upstream failed on this request, whatever the pool count. */
   degraded:  boolean
+  /**
+   * Pools left out because their yield was not plausible for staking: above
+   * DISCOVERY_APY_MAX (40%), or not above 0 (lib/data/discoveryApy.ts, 2026-10-26).
+   * Named so the page and the audit can say what was left out.
+   */
+  refused:   RefusedPool[]
 }
 
 // ─── Shared helpers ───────────────────────────────────────────────────────────
@@ -433,9 +440,13 @@ export async function GET(req: NextRequest) {
     all = all.filter(p => p.source === sourceFilter)
   }
 
+  // A yield no staking pool pays is a broken reading (Swell's rswETH read 7,530% on
+  // 2026-10-26): left out of the list and named in `refused` (lib/data/discoveryApy.ts).
+  const { kept: plausible, refused } = splitPlausiblePools(all)
+
   // Deduplicate by poolId (safety net)
   const seen = new Set<string>()
-  const pools = all.filter(p => {
+  const pools = plausible.filter(p => {
     if (seen.has(p.poolId)) return false
     seen.add(p.poolId)
     return true
@@ -474,6 +485,7 @@ export async function GET(req: NextRequest) {
     sources,
     upstreams,
     degraded: anyUpstreamFailed,
+    refused,
     updatedAt: new Date().toISOString(),
   }
 

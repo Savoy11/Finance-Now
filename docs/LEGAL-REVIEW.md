@@ -13,16 +13,18 @@ drafts folder, and no single place said what they add up to.
 > **For a lawyer, start with `docs/assessments/counsel-brief-2026-10-26.md` (T-289).** It puts
 > every question this project has left for counsel in one document, grouped by T-289's six areas,
 > each tagged by whether it touches a live feature, unblocks parked work or matters only at launch,
-> with what each answer would release. This note stays the working record behind it. Where the two
-> differ, the brief reflects the later decisions: some sections below still show as open sources
-> that D25, D129 and D133 settled.
+> with what each answer would release. This note stays the working record behind it. Its sections
+> that showed publicnode, Bitget and Investing.com as open, which D25, D129 and D133 settled, carry
+> dated corrections since 2026-10-26.
 
 ---
 
 ## 1. What is drafted and unsent
 
-`docs/licensing/2026-09-20-provider-enquiries.md` holds four enquiries. **Nothing has been
-sent and no vendor has been contacted.** Sending is the owner's act.
+`docs/licensing/2026-09-20-provider-enquiries.md` holds seven enquiries: the four in the table
+below, which ask for a licence or for the governing instrument, and three about content feeds
+(Dow Jones/MarketWatch, CoinDesk and Investing.com, its §5 to §7). This said four until
+2026-10-26. **Nothing has been sent and no vendor has been contacted.** Sending is the owner's act.
 
 | Provider | Asks for | Status |
 |---|---|---|
@@ -200,7 +202,9 @@ answered:
 
 The app already carries one tokenized security misfiled as a stablecoin (Ondo USDY, coin
 registry); that is an engineering item in the assessment, listed here only because the
-misfile is also a disclosure defect.
+misfile is also a disclosure defect. *(Fixed: its false depeg alert went on 2026-09-22, and
+since 2026-10-07 it is filed as `assetType: 'tokenized'` (TS-1, TS-2). Which other tokens are
+securities is still counsel's question, A6 in `docs/assessments/counsel-brief-2026-10-26.md`.)*
 
 **H. Risk ratings by asset type** (opened 2026-10-07, T-419). Full record:
 `docs/assessments/risk-ratings-by-asset-type-2026-10-07.md`. D64 switched every risk rating
@@ -257,6 +261,9 @@ This note is not on a timer, because the triggers are events rather than dates:
    can load a page. **Bitget is the exception and does not wait for either** — its §1
    Prohibited-Countries clause names the United States while the owner is US-resident, and
    that is a question about whether the app may call the host at all, today.
+   *(Overtaken 2026-10-17: the app stopped calling Bitget (D129) and stopped reading
+   Investing.com (D133). publicnode was decided on 2026-09-24 (D25: narrow reading kept).
+   CoinDesk is the one of the four left, as a launch step and D1 in the counsel brief.)*
 
 7. **Before any risk rating returns** (added 2026-10-07). Group H's answers, the owner's (D92)
    and then the lawyer's, are what T-420 rebuilds to and what decides whether anything shows. Check the Second Circuit's
@@ -375,7 +382,8 @@ the same one:
    for another careful reading. *(Investing.com was answered 2026-10-17, D133: the app
    stopped reading it. CoinDesk's question remains, as a launch step under D96.)*
 2. **publicnode** needs only a judgement on whether to keep reading an absurdly broad
-   clause narrowly. Exposure is one route on a hidden page.
+   clause narrowly. Exposure is one route on a hidden page. *(Decided 2026-09-24, D25: narrow
+   reading kept, "for safety".)*
 3. **Bitget** needs its own answer, because the question is different in kind. *(Answered
    2026-10-17, D129: the app stopped calling it.)*
 
@@ -407,7 +415,8 @@ Every source was re-read under the rule: `docs/assessments/source-terms-prelaunc
 - **§7's four sources:** CoinDesk becomes a launch step. Investing.com, publicnode and Bitget's US
   clause stay open, because personal use does not answer them. *(Bitget's was answered on
   2026-10-17, D129: the app stopped calling it. Investing.com's the same day, D133: the app
-  stopped reading it.)*
+  stopped reading it. publicnode's had been decided before this section was written, on
+  2026-09-24 (D25: narrow reading kept), so listing it as open here was an error.)*
 
 ## 9. What changed on 2026-10-12 (D102, T-423)
 

@@ -198,7 +198,9 @@ not plain spot purchases. **Two exceptions bring the securities analysis straigh
 tokens that are digital securities, and tokenized versions of real securities. The app
 already carries one of those misfiled as a stablecoin: Ondo's USDY, a tokenized Treasury note
 (tokenized-securities assessment, F2). Before any coin rating returns, the coin catalog has
-to know which tokens are securities.
+to know which tokens are securities. *(Correction, 2026-10-26: USDY was refiled as
+`assetType: 'tokenized'` on 2026-10-07, the day this memo was written (TS-1, TS-2). The
+question for the other tokens stands, as §8 question 6.)*
 
 ### 3.6 Rules that apply to every form: accuracy and fairness
 
