@@ -776,3 +776,20 @@ what the Fund Figures Check was missing and to park T-440 until before launch (D
 - its content in `main` as `882ec89`.
 
 Nothing was deleted; no other ref moved.
+
+## Forty-sixth reset, after PR #426 (2026-10-26)
+
+**What was done.** After PR #426 (D171, the Fund Figures Check's fixes and T-440's park) was
+squash-merged into `main` as `0f7b0c6`, the branch was restarted from `0f7b0c6` on the owner's
+machine to write the brief for counsel (T-289). Pushed with `--force-with-lease`, for the same
+reason as above.
+
+**Where the prior state lives.** The branch's previous tip, `26fdb86` (#426's head), is held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@26fdb86`, created by
+  `.github/workflows/archive-branch.yml` when #426 merged, and checked on the remote before the
+  restart;
+- GitHub's `refs/pull/426/head`;
+- its content in `main` as `0f7b0c6`.
+
+Nothing was deleted; no other ref moved.

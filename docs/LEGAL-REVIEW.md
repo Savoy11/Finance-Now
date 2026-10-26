@@ -10,6 +10,13 @@ drafts folder, and no single place said what they add up to.
 > readings. Anything that becomes a signed agreement, a filed entity, or a published
 > disclosure deserves a professional.
 
+> **For a lawyer, start with `docs/assessments/counsel-brief-2026-10-26.md` (T-289).** It puts
+> every question this project has left for counsel in one document, grouped by T-289's six areas,
+> each tagged by whether it touches a live feature, unblocks parked work or matters only at launch,
+> with what each answer would release. This note stays the working record behind it. Where the two
+> differ, the brief reflects the later decisions: some sections below still show as open sources
+> that D25, D129 and D133 settled.
+
 ---
 
 ## 1. What is drafted and unsent

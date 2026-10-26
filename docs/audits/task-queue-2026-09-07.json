@@ -4745,20 +4745,26 @@
    "blocking_decision": null,
    "related_ids": [],
    "summary": "Six priority areas incl. advice-vs-information.",
-   "next_action": "Owner: engage counsel on the six areas, starting with investment-adviser (advice vs information) since RP-3/RP-4/RP-6 all reopen on its answer; record the outcome as a dated note under docs/ and tick BUSINESS-CHECKLIST.md:40 via the steward propose→approve flow.",
+   "next_action": "Owner: engage counsel with docs/assessments/counsel-brief-2026-10-26.md and its seven attachments (section 5), starting with A1, A2, A6, A7, A8, C1 and C2 if counsel can take only part. Record the outcome as a dated note under docs/ and tick BUSINESS-CHECKLIST.md's \"Federal regulations\" item via the steward propose-approve flow.",
    "sources": [
     {
      "file": "docs/BUSINESS-CHECKLIST.md",
      "lines": "40-51",
      "quote": "**Federal regulations applicable to the website and the software.** Priority areas: - **Investment advice vs. information** — SEC/state investment-adviser rules. Risk scores and \"recommendations\" at scale is exactly the line flagged in `docs/MARKET-ASSESSMENT.md`'s risk register."
+    },
+    {
+     "file": "docs/assessments/counsel-brief-2026-10-26.md",
+     "lines": "§4",
+     "quote": "If counsel can only take part of this, A1, A2, A6, A7, A8, C1 and C2 do the most."
     }
    ],
    "progress": {
-    "noted_on": "2026-10-07",
-    "note": "The investment-adviser part of the brief for counsel is written: §8 of the T-419 memo (twelve questions), with §3 as the background (docs/assessments/risk-ratings-by-asset-type-2026-10-07.md). D92 (2026-10-07) shows no risk rating until counsel confirms the impersonal form.",
+    "noted_on": "2026-10-26",
+    "note": "2026-10-26: the brief for counsel is written: docs/assessments/counsel-brief-2026-10-26.md. It gathers every question the project has left for counsel in one document: a fact sheet on the app and the owner, the central question (information versus advice), and the questions grouped by the six areas (A advice, B broker-dealer and securities, C the FTC and the disclosures, D data licensing, E privacy and breach notice, F crypto promotion), plus the company and insurance. Each is tagged Live, Unblocks or Launch, with the ledger items its answer would release. The T-419 memo's twelve questions are area A. Two attachments live outside the repository: the breach plan (T-426) and the Disclosure Set with the consent comments (T-436). Earlier: The investment-adviser part of the brief for counsel is written: §8 of the T-419 memo (twelve questions), with §3 as the background (docs/assessments/risk-ratings-by-asset-type-2026-10-07.md). D92 (2026-10-07) shows no risk rating until counsel confirms the impersonal form.",
     "evidence": [
      "docs/assessments/risk-ratings-by-asset-type-2026-10-07.md"
-    ]
+    ],
+    "remaining_work": "Owner: attach the breach plan and the Disclosure Set, then engage counsel with the brief. Record the answers as a dated note under docs/ and apply them to the items the brief's section 4 lists; tick BUSINESS-CHECKLIST.md's \"Federal regulations\" item through the steward propose-approve flow."
    }
   },
   {
