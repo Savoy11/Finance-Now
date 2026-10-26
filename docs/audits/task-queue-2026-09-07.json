@@ -63,8 +63,8 @@
   "outstanding": 381,
   "by_status": {
    "closed": 231,
-   "parked": 136,
-   "open": 9,
+   "parked": 137,
+   "open": 8,
    "blocked": 5
   },
   "by_owner_role": {
@@ -75,7 +75,7 @@
   },
   "closed_but_listed_open_in_docs": 60,
   "closed_by_annotation": 231,
-  "counts_recomputed_on": "2026-10-25",
+  "counts_recomputed_on": "2026-10-26",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 381
  },
@@ -15125,9 +15125,9 @@
   {
    "id": "T-440",
    "title": "Re-read the fund catalog’s approximate figures: 87 yields and 28 undated asset figures",
-   "status": "open",
+   "status": "parked",
    "confidence": "high",
-   "blocking_decision": null,
+   "blocking_decision": "PARKED 2026-10-26 — D171 (2026-10-26): the owner parked the rest of the check until before launch, \"as it may be solved by a paid subscription that I may be required to use to cover other aspects of the app\". The 14 figures left are on pages that do not print them (8 Vanguard yields reading \"—\", TQQQ and SOXL on fact sheets) or that the pre-fill cannot reach (VanEck's four, which need cookies, D147), so the check cannot finish by reading alone. Before launch nothing is held up: those 14 yields are not shown anywhere (D166), and FUND_FIGURES_COMPILED_ON's notice fires on 2026-11-18 as the owner chose (D120).",
    "opened": {
     "on": "2026-10-15",
     "by": "owner decision, filed by the session",
@@ -15158,10 +15158,11 @@
     "D158",
     "D165",
     "D166",
-    "D168"
+    "D168",
+    "D171"
    ],
    "summary": "Since D117 the fund catalog has two dates. The fee date is verified; FUND_FIGURES_COMPILED_ON (2026-07-20) dates the figures still compiled by hand: every yieldPct (87 rows carry one) and the asset figures no SEC filing supplies (21 Vanguard ETF classes, SPY, DIA, CORN, WEAT, SOYB, CANE, CPER). Its 120-day window closes 2026-11-18, and the owner chose to let the notice fire (D120, a STALENESS-ACK) rather than rush a re-read.",
-   "next_action": "Owner: read the 54 figures still open on the Fund Figures Check page (D132; `npm run fund-figures-page -- <out.html> --order <file> --suggestions fund-figures-suggestions.json` rebuilds it), each with the value the issuer's page shows, the date it states and its kind. Then the session reads the page's database, runs `npm run fund-figures-plan` over it, and brings every difference to the owner before applying (report, never write). Only after all 115 have a dated reading may FUND_FIGURES_COMPILED_ON move, to the oldest date read, and moving it voids the STALENESS-ACK, which is intended.",
+   "next_action": "Before launch, once the owner has chosen any paid data plan: if it supplies fund yields the app may show, read the 14 open figures from it; if not, read them by hand on the Fund Figures Check (its cards now carry each fund's page note), or let the owner decide that a yield which is never shown (no yieldRead, D166) no longer holds FUND_FIGURES_COMPILED_ON. Then set FUND_FIGURES_PARKED to null in frontend/scripts/lib/fundFiguresData.ts, rebuild and republish the page, read its database and run `npm run fund-figures-plan` over it, and bring every difference to the owner before applying. Not parked meanwhile: the quarterly accuracy check (D166) re-reads the 61 shown figures through the pre-fill.",
    "sources": [
     {
      "file": "frontend/src/lib/data/fundCatalog.ts",
@@ -15177,7 +15178,7 @@
    "progress": {
     "noted_on": "2026-10-17",
     "note": "2026-10-17 (D132): the owner chose option 1 of the five offered, a check page the owner works through, ordered by option 3, a data service’s figures. Built and published that day (the Fund Figures Check, a private page like the Transfer Fee Check): one card per fund with the issuer’s page and a box per figure for the value shown, its date and its kind (12-month trailing, 30-day SEC or another yield; the fund’s own or the whole fund’s net assets). Readings save in the page’s own database, never in its HTML. The order came from Alpha Vantage’s free service, which allowed ten funds before its daily limit of 25 requests; FMP’s free plan refused quotes and dividends. A yield worked out from each fund’s price on 2026-10-16 and its past year of payouts was below the catalog’s for all ten: for nine by 8–18% (they differ at the catalog’s own precision and are marked Start here), for RSP by under 1%. The other 82 funds follow, grouped by issuer. No outside figure is in the repository or on the page: the sort-order file holds symbols and a flag only, and stays on the machine that built it. Nothing has been read through the page yet.",
-    "remaining_work": "Since D166 the Fund Figures Check asks only for figures on sites the owner ruled Allowed, and since D168 every asset figure is dated (Teucrium's four and CPER from their trusts' 10-Qs). Left: 14 yields, read by the owner by hand: 8 Vanguard funds (VT, VXUS, VEA, VWO, VSS, VGK, VYMI, VTIAX), whose pages show no yield (the 30-day SEC yield reads \"—\"; a page note says so beside each link), TQQQ (on its fact sheet), SOXL (Direxion's page shows payouts, no yield) and four VanEck funds (SMH, OIH, GDX, EMLC; on each page's Distributions tab). Then the session runs npm run fund-figures-plan and brings every difference to the owner. FUND_FIGURES_COMPILED_ON moves only when all are dated. From then on, npm run accuracy-check lists each shown figure's quarterly re-read, and npm run fund-assets-check re-reads the filed asset figures.",
+    "remaining_work": "14 yields: VT (answered \"Can't find it\" on 2026-10-25), VXUS, VEA, VWO, VSS, VGK, VYMI, VTIAX (Vanguard's 30-day SEC yield reads \"—\"), TQQQ (on its fact sheet), SOXL (Direxion's page shows payouts, no yield; the browser extension refuses direxion.com), SMH, OIH, GDX and EMLC (VanEck: the yield is on the page's Distributions tab, which loads only with cookies). 61 of the 75 figures carry the page's date in the catalog since 2026-10-21. As built, the check is complete only when every figure has a dated reading, which 10 of the 14 cannot get from their pages.",
     "evidence": [
      "docs/decisions/2026-10-17-owner-decisions.md",
      "frontend/scripts/gen-fund-figures-page.ts",
@@ -15210,7 +15211,8 @@
      "2026-10-25 (D166): A LINK BESIDE EVERY YIELD, A YIELD ONLY WHERE THE SITE ALLOWS IT, AND A QUARTERLY CHECK. Every fund's yield now carries a link to the fund's own page, which has the current figure. A yield is shown only when the fund's site is one the owner ruled Allowed (FUND_SITES_ALLOWED), it was read there with a date, and the date is under 122 days old; it says it may have changed since. That shows 38 yields and hides 35 on sites whose terms forbid software reading or that have none found (BlackRock, Invesco, JPMorgan, Schwab, Global X, Fidelity, Dodge & Cox, PIMCO): those no longer need reading, and the check page no longer asks for them. npm run accuracy-check lists every posted figure with a date and when its re-read is due (yields 92 days after their date), and .github/workflows/quarterly-accuracy-check.yml posts that report as an issue at the start of each quarter.",
      "2026-10-25 (D168): FILED ASSET FIGURES RE-READ, AND A NOTE BESIDE EACH LINK WHOSE PAGE LACKS THE FIGURE. npm run fund-facts was the wrong tool (it rebuilds a file nothing reads, T-392), and the quarterly report had named it; npm run fund-assets-check now compares each filed figure with the fund's newest NPORT-P. Of 112, 10 had an August 31 filing and were applied, 72 were current, 30 are trusts filing 10-Qs. CPER and Teucrium's four were dated from their 2026-06-30 10-Qs (117 filed). Every fund has a link; for 14 the page lacks the figure, checked in the owner's browser, and a pageNote beside the link says where it is."
     ]
-   }
+   },
+   "parked_on": "2026-10-26"
   },
   {
    "id": "T-441",

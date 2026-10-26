@@ -21,6 +21,11 @@ export interface FundFigure {
   figure: FigureKind
   /** The catalog's value now: a yield in percent, or net assets in billions of dollars. */
   catalog: number
+  /**
+   * The date the issuer's page gave for the catalog's value, when it was read there
+   * (`yieldRead`, `aumRead`). Absent means compiled by hand and undated, shown with "≈".
+   */
+  catalogAsOf?: string
   /** What the pre-fill copied from the issuer's page, when the page was built with one. */
   suggestion?: FigureSuggestion
 }
@@ -56,6 +61,8 @@ export interface FundCard {
   shareClass: boolean
   /** The sort order flagged a difference between an outside figure and the catalog. */
   startHere: boolean
+  /** What the fund's own page does not show and where it is (the catalog's `pageNote`, D168). */
+  pageNote?: string
   figures: FundFigure[]
 }
 
@@ -67,12 +74,37 @@ export interface FundFiguresData {
   counts: { yields: number; assets: number; funds: number }
   /** How the cards are ordered: `basis` is null when no sort order was given. */
   order: { basis: string | null; ranked: number; startHere: number }
-  /** When the pre-fill's suggestions were saved, and how many figures carry one; null without them. */
-  suggestions: { savedAt: string; suggested: number; none: number } | null
+  /**
+   * When the pre-fill's suggestions were saved, the days the suggested figures were copied
+   * (`readFrom` to `readTo`, which a later save does not move), and how many figures carry one;
+   * null without them.
+   */
+  suggestions: { savedAt: string; readFrom: string | null; readTo: string | null; suggested: number; none: number } | null
+  /** Set while the check is parked: the page then says so above everything else. */
+  parked: FundFiguresParked | null
   funds: FundCard[]
 }
 
 export const FUND_FIGURES_SERVES = ['T-440'] as const
+
+export interface FundFiguresParked {
+  on: string
+  decision: string
+  /** One or two sentences, shown at the top of the page. */
+  why: string
+}
+
+/**
+ * T-440 is parked until before launch (owner, 2026-10-26, D171): the figures left need a
+ * person on pages that do not print them, and a paid data plan the owner may take for other
+ * parts of the app could supply them. The page stays published, its readings untouched, and
+ * says it is parked. Set this to null when the check resumes.
+ */
+export const FUND_FIGURES_PARKED: FundFiguresParked | null = {
+  on: '2026-10-26',
+  decision: 'D171',
+  why: 'The figures still open need a person on pages that do not print them, and a paid data plan the owner may take for other parts of the app could supply them. Nothing here needs doing until then; the readings already given stay saved.',
+}
 
 /** The catalog fields this page reads (a FundEntry has more). */
 export interface CatalogFund {
@@ -85,6 +117,9 @@ export interface CatalogFund {
   yieldPct: number | null
   aumB: number
   aumAsOf?: string
+  yieldRead?: { asOf: string }
+  aumRead?: { asOf: string }
+  pageNote?: string
 }
 
 /**
@@ -124,8 +159,9 @@ export function siteAllows(f: Pick<CatalogFund, 'website'>): boolean {
 export function figuresFor(f: CatalogFund): FundFigure[] {
   const out: FundFigure[] = []
   if (!siteAllows(f)) return out
-  if (f.yieldPct !== null) out.push({ id: `${f.symbol}:yield`, symbol: f.symbol, figure: 'yield', catalog: f.yieldPct })
-  if (!f.aumAsOf) out.push({ id: `${f.symbol}:assets`, symbol: f.symbol, figure: 'assets', catalog: f.aumB })
+  const dated = (asOf: string | undefined) => (asOf ? { catalogAsOf: asOf } : {})
+  if (f.yieldPct !== null) out.push({ id: `${f.symbol}:yield`, symbol: f.symbol, figure: 'yield', catalog: f.yieldPct, ...dated(f.yieldRead?.asOf) })
+  if (!f.aumAsOf) out.push({ id: `${f.symbol}:assets`, symbol: f.symbol, figure: 'assets', catalog: f.aumB, ...dated(f.aumRead?.asOf) })
   return out
 }
 
@@ -139,6 +175,7 @@ export interface BuildFundFiguresInput {
   order?: FundOrder | null
   /** Keyed by figure id (`<SYMBOL>:yield`), from suggestionsByFigure. */
   suggestions?: { savedAt: string; byFigure: ReadonlyMap<string, FigureSuggestion> } | null
+  parked?: FundFiguresParked | null
 }
 
 const SUGGESTION_TEXT_MAX = 600
@@ -190,6 +227,7 @@ export function buildFundFiguresData(input: BuildFundFiguresInput): FundFiguresD
       website: f.website,
       shareClass: f.issuer === 'Vanguard' && f.type === 'etf',
       startHere: false,
+      ...(f.pageNote ? { pageNote: f.pageNote } : {}),
       figures: figuresFor(f).map((g) => {
         const s = input.suggestions?.byFigure.get(g.id)
         return s ? { ...g, suggestion: s } : g
@@ -223,6 +261,8 @@ export function buildFundFiguresData(input: BuildFundFiguresInput): FundFiguresD
   })
 
   const figures = cards.flatMap((c) => c.figures)
+  // The days the suggested figures were copied; a page that could not be read copied nothing.
+  const readDays = figures.filter((f) => f.suggestion?.status === 'suggested').map((f) => f.suggestion!.readOn).filter(Boolean).sort()
   return {
     generatedOn: input.generatedOn,
     serves: [...FUND_FIGURES_SERVES],
@@ -236,10 +276,13 @@ export function buildFundFiguresData(input: BuildFundFiguresInput): FundFiguresD
     suggestions: input.suggestions
       ? {
           savedAt: input.suggestions.savedAt,
+          readFrom: readDays[0] ?? null,
+          readTo: readDays[readDays.length - 1] ?? null,
           suggested: figures.filter((f) => f.suggestion?.status === 'suggested').length,
           none: figures.filter((f) => f.suggestion?.status === 'none').length,
         }
       : null,
+    parked: input.parked ?? null,
     funds: cards,
   }
 }

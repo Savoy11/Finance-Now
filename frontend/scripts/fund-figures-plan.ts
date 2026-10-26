@@ -22,7 +22,7 @@
 import { readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { FUND_CATALOG, FUND_FIGURES_COMPILED_ON } from '../src/lib/data/fundCatalog'
-import { figuresFor, siteAllows, type FundFigure } from './lib/fundFiguresData'
+import { figuresFor, siteAllows, FUND_FIGURES_PARKED, type FundFigure } from './lib/fundFiguresData'
 import { readSavedCollection } from './lib/savedCollection'
 
 type Reading = { id: string; result: string; value: number | null; typed: string; asOf: string | null; kind: string | null; note: string }
@@ -77,6 +77,7 @@ const list = (label: string, ids: string[]) => {
   console.log(`  ${label}: ${ids.length}`)
   for (const k of ids) console.log(`    ${k}`)
 }
+if (FUND_FIGURES_PARKED) console.log(`T-440 is PARKED since ${FUND_FIGURES_PARKED.on} (${FUND_FIGURES_PARKED.decision}): nothing below is owed until it resumes.`)
 console.log(`Readings in ${dir}, read against the catalog as it is now (${figs.length} figures):`)
 console.log(`  differ from the catalog — bring to the owner: ${plan.differ.length}`)
 for (const i of plan.differ) console.log(show(i))

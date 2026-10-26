@@ -759,3 +759,20 @@ above.
 - its content in `main` as `ec6df63`.
 
 Nothing was deleted; no other ref moved.
+
+## Forty-fifth reset, after PR #425 (2026-10-26)
+
+**What was done.** After PR #425 (the Staking Facts Check's Quick facts view) was squash-merged
+into `main` as `882ec89`, the branch was restarted from `882ec89` on the owner's machine to fix
+what the Fund Figures Check was missing and to park T-440 until before launch (D171). Pushed with
+`--force-with-lease`, for the same reason as above.
+
+**Where the prior state lives.** The branch's previous tip, `a7faea5` (#425's head), is held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@a7faea5`, created by
+  `.github/workflows/archive-branch.yml` when #425 merged, and checked on the remote before the
+  restart;
+- GitHub's `refs/pull/425/head`;
+- its content in `main` as `882ec89`.
+
+Nothing was deleted; no other ref moved.
