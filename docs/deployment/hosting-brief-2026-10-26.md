@@ -83,7 +83,10 @@ is started.
    Pump Report, the Integrations page, prompt editing and video answers answer 403 on any host
    but localhost. With it set they answer 401, because no page in the app sends the token
    (`lib/server/apiGuard.ts`). The fix is either a way for the owner's browser to send it, or
-   tying those routes to a signed-in owner once sign-in is on (T-131).
+   tying those routes to a signed-in owner once sign-in is on (T-131). **Built 2026-10-26:**
+   the owner types the token once at `/owner`, which sets a 30-day cookie the guard accepts
+   (`lib/server/ownerAccess.ts`). The cookie holds no copy of the token, and changing the
+   token ends it on every browser.
 3. **Decide who the user is.** A production build turns off the shared local account
    (`lib/auth/session.ts`), and sign-in is switched off (`REQUIRE_AUTH = false`,
    `LOGIN_DISABLED = true`). So on a host, portfolios and watchlists have no user unless
@@ -92,8 +95,10 @@ is started.
 4. **Set what Auth.js needs off Vercel:** `AUTH_TRUST_HOST` or `AUTH_URL`, plus `AUTH_SECRET`
    (T-339).
 5. **Require SSL to the database (T-189).** Add `prepare: false` if a pooled address is used.
-6. **Add a health route** for the host's checks and the outside uptime check (D74). The app has
-   none: the Kubernetes files probe `/api/health`, which does not exist.
+6. **Add a health route** for the host's checks and the outside uptime check (D74). The app had
+   none: the Kubernetes files probe `/api/health`, which did not exist. **Built 2026-10-26:**
+   `GET /api/health` answers from the app alone and calls no data source. It returns 503 only
+   when a configured database does not answer within 2 seconds (`lib/server/health.ts`).
 7. **Decide the public API's exposure before launch (T-087).** `/api/v1` has no key and no rate
    limit, with CORS open to every site, and it runs on the owner's provider keys.
 
