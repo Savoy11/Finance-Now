@@ -104,6 +104,13 @@ T-407 grouped four sources kept on an unresolved judgement. Under D96:
 - **Investing.com** and **publicnode** stay open: their limits are not about who the user is.
 - **Bitget** stays open on the US Prohibited Country clause.
 
+> **Since this reading (note of 2026-10-26).** publicnode had already been decided on 2026-09-24
+> (D25: narrow reading kept), so it was not open when this was written. Bitget and Investing.com
+> were settled on 2026-10-17, when the app stopped calling Bitget (D129) and stopped reading
+> Investing.com (D133). CoinDesk and Nasdaq Trader remain as launch steps (T-407), and CoinDesk's
+> scope question is D1 in `docs/assessments/counsel-brief-2026-10-26.md`. The rows above are left
+> as read on 2026-10-09.
+
 ## The launch list
 
 Everything in group C, plus CoinGecko's §7, is what the first non-owner page load requires.

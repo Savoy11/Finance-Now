@@ -474,8 +474,15 @@ const tests = [
   { group: 'crypto/staking', path: '/live-data/staking-discovery', name: 'staking-discovery', check: (j) => {
     if (!j.ok || !Array.isArray(j.pools) || j.pools.length === 0) throw new Error('no pools')
     const apys = j.pools.map((p) => p.apy).filter(Number.isFinite)
-    if (apys.some((a) => a < 0 || a > 1000)) throw new Error('implausible APY present')
-    return `${j.pools.length} pools, APY ${Math.min(...apys).toFixed(1)}–${Math.max(...apys).toFixed(1)}%`
+    // 40 is DISCOVERY_APY_MAX (lib/data/discoveryApy.ts): the route leaves out any pool above it
+    // and names it in `refused`. This check said 1000 until 2026-10-26, which let Swell's rswETH
+    // at 366% pass and caught it only at 7,530%.
+    if (apys.some((a) => a <= 0 || a > 40)) throw new Error('implausible APY present')
+    const refused = Array.isArray(j.refused) ? j.refused : []
+    const detail = `${j.pools.length} pools, APY ${Math.min(...apys).toFixed(1)}–${Math.max(...apys).toFixed(1)}%`
+    return refused.length
+      ? `${detail}; ${refused.length} left out above 40%: ${refused.map((r) => `${r.symbol} ${Number(r.apy).toFixed(0)}%`).join(', ')}`
+      : detail
   }},
 
   // ── News & social ───────────────────────────────────────────────────────────
@@ -681,15 +688,19 @@ const tests = [
   { group: 'equities', path: '/live-data/stock-universe', name: 'stock-universe', quick: true, check: (j) => {
     if (!j.ok || !Array.isArray(j.entries) || j.entries.length === 0) throw new Error('no universe entries')
     const e = j.entries[0]
-    if (!e.symbol || !e.sector || !(e.marketCapB > 0)) throw new Error(`bad top entry: ${JSON.stringify(e).slice(0, 80)}`)
-    if (j.entries.length > 1 && j.entries[1].marketCapB > e.marketCapB) throw new Error('not sorted by market cap')
+    // Since D170 (2026-10-25) the route serves no price or market cap, only the SEC figures and
+    // share count, so its entries are checked for those. This check still asked for marketCapB
+    // and a market-cap order until 2026-10-26, and failed every run.
+    if (!e.symbol || !e.sector) throw new Error(`bad top entry: ${JSON.stringify(e).slice(0, 80)}`)
+    if ('marketCapB' in e || 'referencePrice' in e) throw new Error('serves a market cap or reference price, which D170 removed')
+    const withShares = j.entries.filter((x) => x.shares && x.shares.val > 0).length
     // The FMP company-screener is a PAID endpoint. Without a paid key the route
     // serves the ~79-entry curated catalog — a fraction of the real universe,
     // and every downstream screener/outlier surface inherits that narrowing.
     if (j.source === 'catalog') {
-      return fallback(`${j.count} stocks from curated catalog — FMP company-screener needs a PAID plan (real universe ≈ thousands)`)
+      return fallback(`${j.count} stocks from curated catalog, ${withShares} with an SEC share count — FMP company-screener needs a PAID plan (real universe ≈ thousands)`)
     }
-    return `${j.count} stocks, source=${j.source}, largest ${e.symbol} $${e.marketCapB.toFixed(0)}B`
+    return `${j.count} stocks, source=${j.source}, ${withShares} with an SEC share count`
   }},
 
   { group: 'equities', path: '/live-data/stock-universe?symbol=AAPL', name: 'stock-universe (single lookup)', check: (j) => {
@@ -700,7 +711,8 @@ const tests = [
   { group: 'equities', path: '/live-data/stock-outliers?min_mcap=2', name: 'stock-outliers (screener)', check: (j) => {
     if (!j.ok || !j.categories) throw new Error('no outlier categories')
     if (!(j.evaluated > 0) || !(j.sectorsEvaluated > 0)) throw new Error(`nothing evaluated (${j.evaluated})`)
-    const cats = ['cheap', 'expensive', 'highYield', 'highBeta', 'lowBeta']
+    // The beta lists went with D170 (2026-10-25); this still asked for them until 2026-10-26.
+    const cats = ['cheap', 'expensive', 'highYield']
     for (const c of cats) {
       if (!Array.isArray(j.categories[c])) throw new Error(`missing category ${c}`)
       for (const it of j.categories[c]) if (typeof it.z !== 'number') throw new Error(`item missing z in ${c}`)

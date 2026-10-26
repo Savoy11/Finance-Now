@@ -825,3 +825,20 @@ owner access and health route. Pushed with `--force-with-lease`, for the same re
 - its content in `main` as `7ab50cd`.
 
 Nothing was deleted; no other ref moved.
+
+## Forty-ninth reset, after PR #429 (2026-10-26)
+
+**What was done.** After PR #429 (owner access off localhost and the health route) was
+squash-merged into `main` as `870d8ce`, the branch was restarted from `870d8ce` on the owner's
+machine to correct the legal notes the counsel brief rests on. Pushed with `--force-with-lease`,
+for the same reason as above.
+
+**Where the prior state lives.** The branch's previous tip, `e15928e` (#429's head), is held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@e15928e`, created by
+  `.github/workflows/archive-branch.yml` when #429 merged, and checked on the remote before the
+  restart;
+- GitHub's `refs/pull/429/head`;
+- its content in `main` as `870d8ce`.
+
+Nothing was deleted; no other ref moved.

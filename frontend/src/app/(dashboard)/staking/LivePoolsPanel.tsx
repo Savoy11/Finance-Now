@@ -7,6 +7,7 @@ import { SourceLine } from '@/components/ui/SourceLine'
 import { STALE_TIME_LONG, GC_TIME } from '@/lib/constants'
 import { timeAgoCompact } from '@/lib/utils/format'
 import type { StakingDiscoveryResponse, DiscoverySource } from '@/app/live-data/staking-discovery/route'
+import { DISCOVERY_APY_MAX } from '@/lib/data/discoveryApy'
 
 // ─── Live on-chain pools (W3-3, option B) ─────────────────────────────────────
 //
@@ -91,6 +92,14 @@ function LiveOpportunities({ search }: { search: string }) {
             title={Object.entries(data.upstreams).map(([k, v]) => `${k}: ${v}`).join('\n')}
           >
             {failedUpstreams.join(', ')} unreachable — showing the rest
+          </span>
+        )}
+        {data && (data.refused?.length ?? 0) > 0 && (
+          <span
+            className="px-1.5 py-0.5 text-[10px] rounded-sm border font-medium bg-bg-elevated text-text-muted border-border"
+            title={data.refused.map((r) => `${r.project} ${r.symbol} (${r.chain}): ${r.apy.toFixed(2)}% from ${r.source}`).join('\n')}
+          >
+            {data.refused.length} left out: yield above {DISCOVERY_APY_MAX}%, not a staking rate
           </span>
         )}
         <button
