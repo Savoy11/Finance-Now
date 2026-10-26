@@ -809,3 +809,19 @@ brief (T-112). Pushed with `--force-with-lease`, for the same reason as above.
 - its content in `main` as `8bb2b29`.
 
 Nothing was deleted; no other ref moved.
+
+## Forty-eighth reset, after PR #428 (2026-10-26)
+
+**What was done.** After PR #428 (T-112, the hosting brief) was squash-merged into `main` as
+`7ab50cd`, the branch was restarted from `7ab50cd` on the owner's machine to build the brief's
+owner access and health route. Pushed with `--force-with-lease`, for the same reason as above.
+
+**Where the prior state lives.** The branch's previous tip, `8a91d1d` (#428's head), is held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@8a91d1d`, created by
+  `.github/workflows/archive-branch.yml` when #428 merged, and checked on the remote before the
+  restart;
+- GitHub's `refs/pull/428/head`;
+- its content in `main` as `7ab50cd`.
+
+Nothing was deleted; no other ref moved.

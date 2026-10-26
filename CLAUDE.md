@@ -54,7 +54,9 @@ frontend/src/
 │   ├── providers.tsx               # React Query + Toaster setup
 │   ├── (auth)/                     # Login page (Auth.js credentials; wall currently off), and
 │   │                               #   reset-password/, which spends an owner-issued reset link
-│   │                               #   (T-435; see "Password reset" under Environment Variables)
+│   │                               #   (T-435; see "Password reset" under Environment Variables),
+│   │                               #   and owner/, which unlocks the owner's tools on a host
+│   │                               #   (see FN_ADMIN_TOKEN under Environment Variables)
 │   ├── (legal)/                    # About & Legal — PUBLIC: no sign-in gate, no sidebar (D50,
 │   │                               #   2026-10-01). Outside (dashboard) on purpose: that layout
 │   │                               #   renders nothing signed-out once REQUIRE_AUTH is on, and
@@ -1302,6 +1304,12 @@ FN_ALLOW_KEYLESS_COIN_PROFILES=true|false     # Default true. Set false to forbi
                                             # owner concern about relying on free-tier terms).
 
 FN_ADMIN_TOKEN=...                          # (legacy CAEP_ADMIN_TOKEN still honored) Optional — sensitive endpoints (AI agents, provider config) require this token when the app is served from a non-localhost host; without it they are localhost-only (see src/lib/server/apiGuard.ts)
+                                            # On a host, the owner types it once at /owner, which sets a 30-day
+                                            # HttpOnly, SameSite=Strict cookie holding an HMAC of a label keyed by
+                                            # the token, never the token itself; the guard accepts it, and
+                                            # changing the token voids every cookie (lib/server/ownerAccess.ts,
+                                            # 2026-10-26). GET /api/health is the host's and the uptime check's
+                                            # page: 503 only when a configured database does not answer.
 FN_SECRETS_KEY=…                            # 32 random bytes, base64: encrypts .provider-config.json
                                             # at rest (T-437). A Windows USER variable, outside OneDrive;
                                             # a host secret at launch. See "Server-side secret stores".
