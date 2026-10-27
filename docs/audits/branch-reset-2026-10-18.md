@@ -875,3 +875,20 @@ and rate limit (D173). Pushed with `--force-with-lease`, for the same reason as 
 - its content in `main` as `0a401a8`.
 
 Nothing was deleted; no other ref moved.
+
+## Fifty-second reset, after PR #432 (2026-10-26)
+
+**What was done.** After PR #432 (the public API's keys and rate limit, D173) was squash-merged
+into `main` as `777fb5f`, the branch was restarted from `777fb5f` on the owner's machine for the
+ledger notes on the items that waited on the same question. Pushed with `--force-with-lease`, for
+the same reason as above.
+
+**Where the prior state lives.** The branch's previous tip, `3576686` (#432's head), is held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@3576686`, created by
+  `.github/workflows/archive-branch.yml` when #432 merged, and checked on the remote before the
+  restart;
+- GitHub's `refs/pull/432/head`;
+- its content in `main` as `777fb5f`.
+
+Nothing was deleted; no other ref moved.
