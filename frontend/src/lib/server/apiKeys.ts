@@ -72,6 +72,15 @@ export function internalApiToken(): string {
   return globalThis.__fnInternalApiToken
 }
 
+/**
+ * Headers for a server-side request from the app to itself. They carry the internal token, which
+ * both the public API's key check and the site lock (siteLock.ts) accept, so a self-call works on a
+ * host while the site is locked to its owner.
+ */
+export function selfRequestHeaders(extra: Record<string, string> = {}): Record<string, string> {
+  return { ...extra, [INTERNAL_HEADER]: internalApiToken() }
+}
+
 /** The key a request presents, from either header. */
 export function presentedKey(req: NextRequest): string {
   const bearer = req.headers.get('authorization')?.match(/^Bearer\s+(.+)$/i)?.[1]?.trim()

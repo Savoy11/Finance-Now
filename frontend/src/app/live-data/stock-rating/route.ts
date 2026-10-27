@@ -10,6 +10,7 @@ import {
 } from '@/lib/server/assetRatingRoute'
 import type { SecurityOhlcvResponse } from '@/app/live-data/security-ohlcv/route'
 import type { CompanyFactsResponse } from '@/app/live-data/company-facts/route'
+import { selfRequestHeaders } from '@/lib/server/apiKeys'
 
 // Measured-risk rating for one catalog stock (T-420 item 4; methodology §4, §5).
 //   GET /live-data/stock-rating?symbol=AAPL
@@ -33,7 +34,7 @@ const INTERNAL_TIMEOUT_MS = 2 * EXTERNAL_FETCH_TIMEOUT_MS
 
 async function getJson<T>(url: string, init: RequestInit & { next: { revalidate: number } }): Promise<T | { fetchError: string }> {
   try {
-    const res = await fetch(url, { ...init, signal: AbortSignal.timeout(INTERNAL_TIMEOUT_MS) })
+    const res = await fetch(url, { ...init, headers: selfRequestHeaders(), signal: AbortSignal.timeout(INTERNAL_TIMEOUT_MS) })
     return await res.json() as T
   } catch (e) {
     return { fetchError: e instanceof Error ? e.message : String(e) }

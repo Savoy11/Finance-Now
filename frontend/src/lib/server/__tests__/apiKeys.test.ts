@@ -5,7 +5,7 @@ import { randomBytes } from 'node:crypto'
 import { NextRequest } from 'next/server'
 import {
   API_KEY_MIN_LENGTH, API_PER_DAY, API_PER_MINUTE, INTERNAL_HEADER,
-  guardApiV1, internalApiToken, parseApiKeys,
+  guardApiV1, internalApiToken, parseApiKeys, selfRequestHeaders,
 } from '@/lib/server/apiKeys'
 import { cleanName, envEntry, newApiKey } from '../../../../scripts/lib/apiKeyFormat.mjs'
 
@@ -144,11 +144,15 @@ describe('every route is gated', () => {
 })
 
 describe('the callers', () => {
+  it('a self-call carries the internal token, which the key check accepts', () => {
+    expect(selfRequestHeaders({ Accept: 'application/json' })).toEqual({ Accept: 'application/json', [INTERNAL_HEADER]: internalApiToken() })
+    expect(guardApiV1(req({ headers: selfRequestHeaders() }))).toBeNull()
+  })
+
   it('the app’s AI tools send the internal token on every call to the public API', () => {
     const tools = read('src/lib/agents/tools.ts')
-    expect(tools).toMatch(/return path\.startsWith\('\/api\/v1'\) \? \{ \.\.\.extra, \[INTERNAL_HEADER\]: internalApiToken\(\) \} : extra/)
-    expect(tools).toMatch(/fetch\(origin \+ path, \{ headers: selfHeaders\(path/)
-    expect(tools).toMatch(/headers: selfHeaders\('\/api\/v1\/options\/score'/)
+    expect(tools).toMatch(/fetch\(origin \+ path, \{ headers: selfRequestHeaders\(\{/)
+    expect(tools).toMatch(/fetch\(origin \+ '\/api\/v1\/options\/score', \{\s+method: 'POST',\s+headers: selfRequestHeaders\(\{/)
     expect([...tools.matchAll(/fetch\(origin \+/g)].length).toBe(2)
   })
 

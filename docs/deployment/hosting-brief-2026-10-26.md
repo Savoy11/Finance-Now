@@ -71,14 +71,18 @@ stores are in the database.
 
 ## 4. Work every host needs first
 
-These are app changes, not host settings, and they are the same whichever host is chosen. None
-is started.
+These are app changes, not host settings, and they are the same whichever host is chosen. Built
+so far: items 1, 2, 6 and 7, all on 2026-10-26.
 
 1. **Lock any test copy to the owner until launch.** Under D22 the first page load by anyone else
    is launch, and a reachable test copy counts. That takes the app outside the free licences of
    FMP, Finnhub and Twelve Data (D164 for FMP), and NewsAPI's free plan cannot be used "in a
    staging or production environment" at all (D106). Locked to the owner, a test copy stays
-   personal use (D96).
+   personal use (D96). **Built 2026-10-26 (D174: sign-in stays off until launch, so it cannot be the
+   lock):** on any host but the owner's machine, every page and route needs the cookie `/owner`
+   issues, until `FN_SITE_OPEN=true` is set at launch (`lib/server/siteLock.ts`, run by
+   `src/middleware.ts`). Pages go to `/owner`; routes answer 401; `/api/health` stays open. So
+   `FN_ADMIN_TOKEN` must be set on the host, or nobody can unlock it.
 2. **Make the owner's tools work off localhost.** Without `FN_ADMIN_TOKEN`, the AI agents, the
    Pump Report, the Integrations page, prompt editing and video answers answer 403 on any host
    but localhost. With it set they answer 401, because no page in the app sends the token
@@ -91,7 +95,8 @@ is started.
    (`lib/auth/session.ts`), and sign-in is switched off (`REQUIRE_AUTH = false`,
    `LOGIN_DISABLED = true`). So on a host, portfolios and watchlists have no user unless
    `FN_ALLOW_LOCAL_USER=true`, which gives every visitor one shared account. For a test copy
-   locked to the owner that is acceptable. For launch it is T-131 and T-132.
+   locked to the owner that is acceptable, and item 1 now does the locking. For launch it is T-131
+   and T-132, which the owner keeps until launch (D174).
 4. **Set what Auth.js needs off Vercel:** `AUTH_TRUST_HOST` or `AUTH_URL`, plus `AUTH_SECRET`
    (T-339).
 5. **Require SSL to the database (T-189).** Add `prepare: false` if a pooled address is used.
