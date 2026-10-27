@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { CORS, options } from '../../_cors'
 import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
-import { guardApiV1 } from '@/lib/server/apiKeys'
+import { guardApiV1, selfRequestHeaders } from '@/lib/server/apiKeys'
 
 export const dynamic = 'force-dynamic'
 export { options as OPTIONS }
@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
   let articles: object[] = []
   let upstreamError: string | null = null
   try {
-    const res = await fetch(internalUrl.toString(), { next: { revalidate: 300 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) })
+    const res = await fetch(internalUrl.toString(), { headers: selfRequestHeaders(), next: { revalidate: 300 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) })
     if (!res.ok) upstreamError = `news feed upstream returned HTTP ${res.status}`
     if (res.ok) {
       const data = await res.json() as {

@@ -12,6 +12,10 @@ import type { OwnerAccessStatus } from '@/app/api/owner/route'
 // token. Typing it here once sets a cookie that lasts 30 days on this browser; the token
 // itself is not kept anywhere in the browser. Outside the dashboard, like the reset page,
 // so it works whether or not sign-in is on.
+//
+// Until launch the whole site is locked to the owner on any host but their own machine
+// (lib/server/siteLock.ts, D174): the lock sends every other page here with ?locked=1, and the
+// same cookie opens it.
 
 const inputClass =
   'w-full px-3 py-2.5 bg-bg-secondary border border-border rounded-sm text-sm text-text-primary placeholder-text-muted focus:outline-hidden focus:border-accent-blue/60 focus:ring-1 focus:ring-accent-blue/30 transition-colors'
@@ -27,12 +31,18 @@ export default function OwnerAccessPage() {
   const [token, setToken] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [locked, setLocked] = useState(false)
 
   useEffect(() => {
     let alive = true
     fetch('/api/owner', { cache: 'no-store' })
       .then((res) => res.json() as Promise<OwnerAccessStatus>)
-      .then((s) => { if (alive) setStatus(s) })
+      .then((s) => {
+        if (!alive) return
+        setStatus(s)
+        // Read with the status, so the notice and the form appear together.
+        setLocked(new URLSearchParams(window.location.search).get('locked') === '1')
+      })
       .catch(() => { if (alive) setError('Could not reach the server. Try again.') })
     return () => { alive = false }
   }, [])
@@ -76,6 +86,12 @@ export default function OwnerAccessPage() {
         </p>
       </div>
 
+      {locked && !status?.unlocked && (
+        <p className="text-sm text-text-secondary text-center">
+          This site is open only to its owner until launch.
+        </p>
+      )}
+
       {error && (
         <div role="alert" className="flex items-center gap-2 px-3 py-2.5 rounded-sm bg-red-500/10 border border-red-500/30 text-sm text-red-400">
           <AlertTriangle size={14} aria-hidden className="shrink-0" />
@@ -92,13 +108,14 @@ export default function OwnerAccessPage() {
       ) : status.mode === 'closed' ? (
         <p className="text-sm text-text-secondary text-center">
           The tools are switched off on this server: no admin token is set. Set <code>FN_ADMIN_TOKEN</code> in the host&rsquo;s
-          secret store and restart, then come back here.
+          secret store and restart, then come back here.{locked && ' Until then the site stays locked.'}
         </p>
       ) : status.unlocked ? (
         <div className="flex flex-col items-center gap-3 text-center">
           <CheckCircle2 size={28} className="text-emerald-400" aria-hidden />
           <p className="text-sm text-text-primary">This browser has owner access for 30 days.</p>
           <p className="text-xs text-text-muted">Changing the admin token on the server ends it on every browser.</p>
+          <Link href="/headlines" className="text-xs text-accent-blue hover:underline">Open the app</Link>
           <Link href="/settings" className="text-xs text-accent-blue hover:underline">Go to Integrations</Link>
           <button type="button" disabled={busy} onClick={() => void send('DELETE')} className="text-xs text-text-muted hover:text-text-primary underline">
             Lock this browser

@@ -1,13 +1,21 @@
 import { NextResponse, type NextRequest } from 'next/server'
+import { siteLockResponse } from '@/lib/server/siteLock'
 
 /**
- * Request logging for the public `/api/v1/*` contract (R2 §5.3, decision E2).
+ * Two jobs, in this order.
+ *
+ * 1. The site lock (lib/server/siteLock.ts, D174): until launch, on any host but the owner's
+ *    machine, every page and route needs the owner cookie /owner issues, unless FN_SITE_OPEN=true.
+ *    It runs on the Node.js runtime so it shares the owner cookie's and the API key's code with
+ *    the route handlers instead of keeping a second copy for the Edge runtime.
+ *
+ * 2. Request logging for the public `/api/v1/*` contract (R2 §5.3, decision E2).
  *
  * Finance Now has no consumer telemetry on `/api/v1/`, so "no one is using it" is an
  * assumption, not a fact. This middleware emits one structured line per v1
  * request (method, path, query, a coarse client fingerprint) so a deprecation
- * decision is grounded in evidence. It is deliberately read-only: it never
- * blocks, rewrites, or mutates the response — always `NextResponse.next()`.
+ * decision is grounded in evidence. The logging is deliberately read-only: it never
+ * blocks, rewrites, or mutates the response.
  *
  * It was written to decide whether the staking endpoint's legacy `riskScore` /
  * `max_risk` fields could be removed. Owner decision D14 (2026-09-14) removed
@@ -23,7 +31,12 @@ import { NextResponse, type NextRequest } from 'next/server'
  * NOT log request bodies, cookies, or full headers (no auth/PII leakage).
  */
 export function middleware(req: NextRequest) {
+  const locked = siteLockResponse(req)
+  if (locked) return locked
+
   const { pathname, search } = req.nextUrl
+  if (!pathname.startsWith('/api/v1')) return NextResponse.next()
+
   // A client still sending max_risk is being silently un-filtered (D14 removed
   // the parameter). Logged so the widened result set is attributable.
   const usesRemovedRiskFilter =
@@ -52,7 +65,7 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  // Scope strictly to the public v1 API — internal /live-data/* and pages are
-  // untouched, so this adds no overhead to the UI.
-  matcher: ['/api/v1/:path*'],
+  runtime: 'nodejs',
+  // Every request but Next's own build files: the lock covers pages and routes alike.
+  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
 }

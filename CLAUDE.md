@@ -1313,6 +1313,12 @@ FN_ADMIN_TOKEN=...                          # (legacy CAEP_ADMIN_TOKEN still hon
                                             # changing the token voids every cookie (lib/server/ownerAccess.ts,
                                             # 2026-10-26). GET /api/health is the host's and the uptime check's
                                             # page: 503 only when a configured database does not answer.
+FN_SITE_OPEN=true                           # LAUNCH ONLY (D174). Until it is set, any host but localhost is locked to
+                                            # the owner: every page and route needs that /owner cookie, pages redirect
+                                            # to /owner, routes answer 401 (lib/server/siteLock.ts, run by
+                                            # src/middleware.ts). Sign-in stays off until launch, so this is the lock.
+                                            # A server-side call to the app's own address must send
+                                            # selfRequestHeaders() (apiKeys.ts), or siteLock.test.ts fails.
 FN_SECRETS_KEY=…                            # 32 random bytes, base64: encrypts .provider-config.json
                                             # at rest (T-437). A Windows USER variable, outside OneDrive;
                                             # a host secret at launch. See "Server-side secret stores".

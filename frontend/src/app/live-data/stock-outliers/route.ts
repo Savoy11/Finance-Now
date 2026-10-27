@@ -6,6 +6,7 @@ import type { SecurityQuotesResponse } from '@/app/live-data/security-quotes/rou
 import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 import { perShareFromFields, stockFigures } from '@/lib/data/stockPerShare'
 import { marketCapUsd } from '@/lib/data/stockShares'
+import { selfRequestHeaders } from '@/lib/server/apiKeys'
 
 // Cross-sectional outlier detection over the stock universe.
 //   GET /live-data/stock-outliers?min_mcap=2
@@ -88,7 +89,7 @@ export async function GET(req: NextRequest) {
 
   let uni: StockUniverseResponse
   try {
-    const res = await fetch(`${origin}/live-data/stock-universe`, { next: { revalidate: 3600 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) })
+    const res = await fetch(`${origin}/live-data/stock-universe`, { headers: selfRequestHeaders(), next: { revalidate: 3600 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) })
     uni = await res.json() as StockUniverseResponse
   } catch {
     return NextResponse.json(empty({ ok: false, note: 'universe unavailable' }), { status: 503 })
@@ -99,7 +100,7 @@ export async function GET(req: NextRequest) {
   let quotes: SecurityQuotesResponse['quotes'] = {}
   try {
     const res = await fetch(`${origin}/live-data/security-quotes?symbols=${encodeURIComponent(candidates.map((e) => e.symbol).join(','))}`,
-      { cache: 'no-store', signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS * 3) })
+      { headers: selfRequestHeaders(), cache: 'no-store', signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS * 3) })
     quotes = ((await res.json()) as SecurityQuotesResponse).quotes ?? {}
   } catch { /* every stock counts as unpriced below */ }
 
