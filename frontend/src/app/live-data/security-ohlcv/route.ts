@@ -27,6 +27,9 @@ const RANGE_CONFIG: Record<string, { revalidate: number }> = {
   '3M':  { revalidate: 900 },
   '6M':  { revalidate: 900 },
   '1Y':  { revalidate: 900 },
+  // 2Y returned 2026-10-26 (T-095) for the equity backtests. It was dropped with D-2, which
+  // removed the button when the route had no such range; the route has one again.
+  '2Y':  { revalidate: 3600 },
   '5Y':  { revalidate: 3600 },
   'MAX': { revalidate: 3600 },
 }
@@ -61,7 +64,7 @@ function failureReason(id: string, e: unknown): string {
   return `${id}: ${message}`
 }
 
-const RANGE_DAYS: Record<string, number> = { '1M': 22, '3M': 66, '6M': 130, '1Y': 260, '5Y': 1300, 'MAX': 10000 }
+const RANGE_DAYS: Record<string, number> = { '1M': 22, '3M': 66, '6M': 130, '1Y': 260, '2Y': 520, '5Y': 1300, 'MAX': 10000 }
 
 /** Candles, oldest first, and what their prices have had taken out. */
 interface Served { candles: OhlcvCandle[]; basis: PriceBasis }

@@ -3,6 +3,7 @@
 // on bar i's close fills on bar i+1's open (the earliest tradable price).
 
 import { rsi, sma, ema, macd, bollingerBands, type OhlcvCandle } from './indicators'
+import { maxDrawdownFraction, perTradeRatios, periodsPerYear } from './backtestMetrics'
 
 // ─── Public types ─────────────────────────────────────────────────────────────
 
@@ -24,6 +25,12 @@ export interface BacktestMetrics {
   averageHoldingPeriod: number   // mean bars held
   sharpeRatio:          number | null  // per-trade, annualised
   sortinoRatio:         number | null  // per-trade, annualised (downside only)
+  /**
+   * Candles in a year, measured from their timestamps (T-018, D172): 365 for daily crypto
+   * candles, about 91 for CoinGecko's 4-day ones. The ratios are annualised on it, and are
+   * null when it cannot be measured.
+   */
+  periodsPerYear:       number | null
 }
 
 export interface BacktestResult {
@@ -538,35 +545,22 @@ export function runBacktest(
   }
 
   // Equity curve + drawdown
-  let equity = 1, peak = 1, maxDd = 0
+  let equity = 1
   const equityCurve: number[] = []
   for (const t of trades) {
     equity *= 1 + t.returnPct / 100
     equityCurve.push(equity)
-    peak  = Math.max(peak, equity)
-    maxDd = Math.max(maxDd, (peak - equity) / peak)
   }
+  const maxDd = maxDrawdownFraction(equityCurve)
 
-  // Risk-adjusted ratios (per-trade, annualised)
+  // Risk-adjusted ratios (per-trade), annualised on the candle size measured from the data
+  // (backtestMetrics.ts). This said √(252 ÷ bars held) until 2026-10-26: 252 is a stock
+  // year, and on long ranges the candles are four days apart.
   const rets = trades.map(t => t.returnPct)
   const n    = rets.length
-  let sharpeRatio:  number | null = null
-  let sortinoRatio: number | null = null
-  if (n >= 2) {
-    const avgHold = trades.reduce((a, t) => a + t.bars, 0) / n
-    const annFactor = Math.sqrt(252 / Math.max(avgHold, 1))
-    const mean = rets.reduce((a, v) => a + v, 0) / n
-    const variance = rets.reduce((a, v) => a + (v - mean) ** 2, 0) / (n - 1)
-    const std = Math.sqrt(variance)
-    if (std > 0) sharpeRatio = (mean / std) * annFactor
-
-    const downRets = rets.filter(v => v < 0)
-    if (downRets.length >= 2) {
-      const downVar = downRets.reduce((a, v) => a + v ** 2, 0) / downRets.length
-      const downStd = Math.sqrt(downVar)
-      if (downStd > 0) sortinoRatio = (mean / downStd) * annFactor
-    }
-  }
+  const perYear = periodsPerYear(candles.map(c => c.time), 'crypto')
+  const avgHold = n ? trades.reduce((a, t) => a + t.bars, 0) / n : 0
+  const { sharpe: sharpeRatio, sortino: sortinoRatio } = perTradeRatios(rets, avgHold, perYear)
 
   const wins = trades.filter(t => t.returnPct > 0).length
   const metrics: BacktestMetrics = {
@@ -578,6 +572,7 @@ export function runBacktest(
     averageHoldingPeriod: n ? trades.reduce((a, t) => a + t.bars, 0) / n : 0,
     sharpeRatio,
     sortinoRatio,
+    periodsPerYear:       perYear,
   }
 
   return { trades, metrics, equityCurve }

@@ -11,9 +11,10 @@ import { SourceLine } from '@/components/ui/SourceLine'
 import { MetricCard } from '@/components/ui/MetricCard'
 import { AreaChart } from '@/components/charts/AreaChart'
 import { LiveUnavailable } from '@/components/ui/LiveUnavailable'
+import { SymbolSearch } from '@/components/markets/SymbolSearch'
 import { rsi, sma, macd } from '@/lib/utils/indicators'
 import { runEquityBacktest } from '@/lib/utils/equityBacktest'
-import { EQUITY_CATALOG } from '@/lib/data/equityCatalog'
+import { MIN_BARS, backtestGap } from '@/lib/utils/backtestGap'
 import { formatCurrency, formatPercent } from '@/lib/utils/format'
 import type { SecurityOhlcvResponse } from '@/app/live-data/security-ohlcv/route'
 
@@ -22,10 +23,19 @@ import type { SecurityOhlcvResponse } from '@/app/live-data/security-ohlcv/route
 // real strategy backtests on actual price history — same educational intent,
 // live math instead of curated narratives.
 
+// ⚠ HIDDEN since 2026-08-20 ('I may revisit back testing'): /equities/backtests redirects to
+// /equities (next.config.mjs) and has no nav entry. Worked on while hidden on 2026-10-26, at
+// the owner's word: "You can work on the backtesting but I want it to remain hidden" (D172).
+//
+// Every range is daily bars: the data route has served nothing else since the 2026-08-06
+// Yahoo removal. These labels said "5 Years (weekly)" and "Max (monthly)", and the Sharpe
+// ratio was annualised as if they were (T-018). The engine now measures the bar size from the
+// timestamps (lib/utils/backtestMetrics.ts), so no label decides a figure.
 const PERIODS = [
-  { value: '1Y',  label: '1 Year (daily)',    barsPerYear: 252 },
-  { value: '5Y',  label: '5 Years (weekly)',  barsPerYear: 52 },
-  { value: 'MAX', label: 'Max (monthly)',     barsPerYear: 12 },
+  { value: '1Y',  label: '1 Year' },
+  { value: '2Y',  label: '2 Years' },
+  { value: '5Y',  label: '5 Years' },
+  { value: 'MAX', label: 'Max' },
 ] as const
 type Period = typeof PERIODS[number]['value']
 
@@ -104,15 +114,15 @@ function EquityBacktestsContent() {
   })
 
   const strategy = STRATEGIES.find((s) => s.id === strategyId) ?? STRATEGIES[0]
-  const barsPerYear = PERIODS.find((p) => p.value === period)?.barsPerYear ?? 252
 
   const result = useMemo(() => {
     const candles = data?.candles ?? []
-    if (candles.length < 50) return null
+    if (candles.length < MIN_BARS) return null
     const closes = candles.map((c) => c.close)
     const times = candles.map((c) => c.time)
-    return runEquityBacktest(times, closes, strategy.positions(closes), barsPerYear, { feeBps })
-  }, [data, strategy, barsPerYear, feeBps])
+    return runEquityBacktest(times, closes, strategy.positions(closes), { feeBps })
+  }, [data, strategy, feeBps])
+  const gap = backtestGap(data, symbol)
 
   const beatMarket = result != null && result.totalReturnPct > result.buyHoldReturnPct
 
@@ -128,7 +138,7 @@ function EquityBacktestsContent() {
           subtitle="Run rules-based strategies against real price history, benchmarked to buy & hold"
           description="Each strategy is simulated bar-by-bar on actual split- and dividend-adjusted price history with no lookahead: the position taken on each bar comes from the signal computed on the previous bar. Apply an optional per-side transaction cost below; slippage, dividends, and taxes are still not modelled."
           details={[
-            { label: 'Sharpe ratio', text: 'Mean bar return over its standard deviation, annualized by bar frequency. Above ~1 is good; below 0 means the strategy lost money per unit of risk.' },
+            { label: 'Sharpe ratio', text: 'Mean daily return over its standard deviation, annualized over 252 trading days a year. The bar size is measured from the price history, never assumed. Above ~1 is good; below 0 means the strategy lost money per unit of risk.' },
             { label: 'Exposure', text: 'Fraction of bars the strategy held the stock — lower exposure with similar return means less time at risk.' },
           ]}
         />
@@ -150,15 +160,9 @@ function EquityBacktestsContent() {
 
       {/* Controls */}
       <div className="flex flex-wrap items-center gap-3">
-        <select
-          value={symbol}
-          onChange={(e) => setSymbol(e.target.value)}
-          className="bg-bg-secondary border border-border rounded-sm px-2 py-1.5 text-sm text-text-primary font-mono focus:outline-hidden focus:border-accent-blue/60"
-        >
-          {EQUITY_CATALOG.map((e) => (
-            <option key={e.symbol} value={e.symbol}>{e.symbol} — {e.name}</option>
-          ))}
-        </select>
+        {/* Any ticker the data route covers, as on the TA page (T-020, D172). */}
+        <SymbolSearch symbol={symbol} onSelect={setSymbol} directVerb="Backtest" />
+        <span className="text-[11px] text-text-muted">Daily bars</span>
         <div className="flex items-center gap-0.5 bg-bg-elevated border border-border rounded-sm p-0.5">
           {PERIODS.map(({ value, label }) => (
             <button
@@ -240,7 +244,7 @@ function EquityBacktestsContent() {
             <MetricCard
               title="Sharpe"
               value={result.sharpe != null ? result.sharpe.toFixed(2) : '—'}
-              subtitle="annualized"
+              subtitle={result.periodsPerYear != null ? `annualized, ${Math.round(result.periodsPerYear)} bars a year` : 'annualized'}
               accentColor="#8b5cf6"
             />
             <MetricCard
@@ -272,7 +276,7 @@ function EquityBacktestsContent() {
                 { key: 'buyHold', label: 'Buy & Hold', color: '#3b82f6', fillOpacity: 0.3 },
               ]}
               xKey="t"
-              xFormatter={(v) => format(new Date(Number(v)), period === '1Y' ? 'MMM' : 'yyyy')}
+              xFormatter={(v) => format(new Date(Number(v)), period === '1Y' ? 'MMM' : period === '2Y' ? 'MMM yy' : 'yyyy')}
               yFormatter={(v) => `$${Number(v).toFixed(0)}`}
               tooltipFormatter={(v, name) => [formatCurrency(Number(v)), String(name)]}
               height={300}
@@ -315,10 +319,7 @@ function EquityBacktestsContent() {
           )}
         </>
       ) : (
-        <LiveUnavailable
-          reason="needs-api-key"
-          message="Backtesting needs at least 50 bars of price history, and no source is reachable. Add a Tiingo or FMP key on the Integrations page — the keyless source was withdrawn on terms grounds."
-        />
+        <LiveUnavailable reason={gap.reason} message={gap.message} />
       )}
     </div>
   )

@@ -10,7 +10,7 @@ describe('runEquityBacktest', () => {
     // means in-market for bars 2 and 3.
     const closes = [100, 110, 121, 130]
     const desired = [false, true, true, false]
-    const r = runEquityBacktest(T(4), closes, desired, 252)
+    const r = runEquityBacktest(T(4), closes, desired)
     // In-market bars: i=2 (110→121, +10%) and i=3 (121→130, +7.44%) → 1.1*1.0744-1.
     expect(r.totalReturnPct).toBeCloseTo((1.1 * (130 / 121) - 1) * 100, 6)
     // One round trip, entered at close[1]=110, exited at close[3]=130.
@@ -25,14 +25,14 @@ describe('runEquityBacktest', () => {
   it('computes buy & hold over the identical window with identical starting capital', () => {
     const closes = [100, 90, 120, 150]
     const desired = [true, true, true, true] // always long ⇒ strategy == buy&hold
-    const r = runEquityBacktest(T(4), closes, desired, 252)
+    const r = runEquityBacktest(T(4), closes, desired)
     expect(r.totalReturnPct).toBeCloseTo(r.buyHoldReturnPct, 6)
     expect(r.buyHoldReturnPct).toBeCloseTo((150 / 100 - 1) * 100, 6)
     expect(r.exposurePct).toBe(100)
   })
 
   it('stays flat (0% strategy return) when never in the market', () => {
-    const r = runEquityBacktest(T(4), [100, 110, 121, 130], [false, false, false, false], 252)
+    const r = runEquityBacktest(T(4), [100, 110, 121, 130], [false, false, false, false])
     expect(r.totalReturnPct).toBeCloseTo(0, 9)
     expect(r.trades).toHaveLength(0)
     expect(r.exposurePct).toBe(0)
@@ -44,8 +44,8 @@ describe('runEquityBacktest', () => {
     // i=2 (out→in), exit at i=4 (in→out) → both sides charged.
     const closes = [100, 110, 121, 130, 130]
     const desired = [false, true, true, false, false]
-    const free = runEquityBacktest(T(5), closes, desired, 252, { feeBps: 0 })
-    const paid = runEquityBacktest(T(5), closes, desired, 252, { feeBps: 25 }) // 0.25%/side
+    const free = runEquityBacktest(T(5), closes, desired, { feeBps: 0 })
+    const paid = runEquityBacktest(T(5), closes, desired, { feeBps: 25 }) // 0.25%/side
     expect(paid.totalReturnPct).toBeLessThan(free.totalReturnPct)
     // Two sides at 0.25% each ≈ 0.5% of drag, compounded — bounded sanity check.
     const drag = free.totalReturnPct - paid.totalReturnPct
@@ -57,8 +57,8 @@ describe('runEquityBacktest', () => {
     // Position held through the last bar: only the entry side is charged.
     const closes = [100, 110, 121, 130]
     const desired = [false, true, true, true]
-    const free = runEquityBacktest(T(4), closes, desired, 252, { feeBps: 0 })
-    const paid = runEquityBacktest(T(4), closes, desired, 252, { feeBps: 25 })
+    const free = runEquityBacktest(T(4), closes, desired, { feeBps: 0 })
+    const paid = runEquityBacktest(T(4), closes, desired, { feeBps: 25 })
     const drag = free.totalReturnPct - paid.totalReturnPct
     expect(drag).toBeGreaterThan(0.2)   // ~one side
     expect(drag).toBeLessThan(0.4)
@@ -67,14 +67,14 @@ describe('runEquityBacktest', () => {
   it('charges buy & hold a single entry-side fee (held, not round-tripped)', () => {
     const closes = [100, 110, 121, 130]
     const desired = [true, true, true, true]
-    const free = runEquityBacktest(T(4), closes, desired, 252, { feeBps: 0 })
-    const paid = runEquityBacktest(T(4), closes, desired, 252, { feeBps: 50 }) // 0.5%/side
+    const free = runEquityBacktest(T(4), closes, desired, { feeBps: 0 })
+    const paid = runEquityBacktest(T(4), closes, desired, { feeBps: 50 }) // 0.5%/side
     // Buy&hold pays exactly one 0.5% entry fee → final value scaled by 0.995.
     expect((1 + paid.buyHoldReturnPct / 100)).toBeCloseTo((1 + free.buyHoldReturnPct / 100) * 0.995, 6)
   })
 
   it('returns null CAGR for windows under ~6 months', () => {
-    const r = runEquityBacktest(T(10), [100, 101, 102, 103, 104, 105, 106, 107, 108, 109], Array(10).fill(true), 252)
+    const r = runEquityBacktest(T(10), [100, 101, 102, 103, 104, 105, 106, 107, 108, 109], Array(10).fill(true))
     expect(r.cagrPct).toBeNull() // 9 days ≪ 0.5y
   })
 })
