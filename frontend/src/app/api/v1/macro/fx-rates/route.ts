@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { CORS, options } from '../../../_cors'
 import { fetchEcbFxRates } from '@/lib/server/ecbFxRates'
+import { guardApiV1 } from '@/lib/server/apiKeys'
 
 // Public agent API — daily ECB reference FX rates (frankfurter.dev, keyless).
 // Official tier only: the ECB's published set. The UI's extended tier
@@ -22,6 +23,8 @@ export interface V1FxRatesResponse {
 }
 
 export async function GET(req: NextRequest) {
+  const denied = guardApiV1(req)
+  if (denied) return denied
   const filter = req.nextUrl.searchParams.get('symbols')?.trim()
   try {
     const { date, base, rates } = await fetchEcbFxRates()

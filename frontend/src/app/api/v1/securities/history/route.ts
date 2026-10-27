@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { CORS, options } from '../../../_cors'
 import { fetchSecurityChart, type ChartRange, type SecurityChart } from '@/lib/api/live/marketData'
+import { guardApiV1 } from '@/lib/server/apiKeys'
 
 // Public agent API — price history for any symbol the security ladder prices (stocks,
 // ETFs, mutual funds, futures, FX pairs, yield indices). Close-only series;
@@ -29,6 +30,8 @@ export interface V1SecurityHistoryResponse {
 }
 
 export async function GET(req: NextRequest) {
+  const denied = guardApiV1(req)
+  if (denied) return denied
   const symbol = req.nextUrl.searchParams.get('symbol')?.trim().toUpperCase()
   const range = (req.nextUrl.searchParams.get('range') ?? '1y') as ChartRange
 

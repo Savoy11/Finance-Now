@@ -12,6 +12,7 @@ import { ohlcvSourceLabel } from '@/lib/utils/ohlcvSource'
 import { candleGranularity, candleSizeWords } from '@/lib/utils/candleGranularity'
 import { RISK_RATINGS_SHOWN } from '@/lib/risk/visibility'
 import { parseCredits, requiredAttributions, sourceForRoute, type RequiredCredit } from '@/lib/data/dataSources'
+import { INTERNAL_HEADER, internalApiToken } from '@/lib/server/apiKeys'
 
 // ─── Agent tool registry ──────────────────────────────────────────────────────
 //
@@ -465,8 +466,16 @@ export function toolsForAgent(toolset: ToolSet = 'crypto'): Anthropic.Tool[] {
  * `if (!data.ok) return { error: data.error }` branch downstream was
  * unreachable because this threw first.
  */
+/**
+ * Headers for a tool's request to the app itself. A call to the public API carries the internal
+ * token, since it needs a key otherwise (lib/server/apiKeys.ts, D173).
+ */
+function selfHeaders(path: string, extra: Record<string, string> = {}): Record<string, string> {
+  return path.startsWith('/api/v1') ? { ...extra, [INTERNAL_HEADER]: internalApiToken() } : extra
+}
+
 async function getJson(origin: string, path: string, credits?: RequiredCredit[]): Promise<unknown> {
-  const res = await fetch(origin + path, { headers: { Accept: 'application/json' } })
+  const res = await fetch(origin + path, { headers: selfHeaders(path, { Accept: 'application/json' }) })
   const body = await res.json().catch(() => null)
   if (!res.ok) {
     const detail = body && typeof body === 'object' && typeof (body as { error?: unknown }).error === 'string'
@@ -811,7 +820,7 @@ async function execute(
         // missing instead of guessing at it.
         const res = await fetch(origin + '/api/v1/options/score', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          headers: selfHeaders('/api/v1/options/score', { 'Content-Type': 'application/json', Accept: 'application/json' }),
           body: JSON.stringify(input),
         })
         const data = await res.json().catch(() => null) as

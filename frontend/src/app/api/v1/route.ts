@@ -1,6 +1,7 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/server'
 import { CORS, options } from '../_cors'
 import { COIN_INFO, NETWORKS } from '@/lib/data/transferFees'
+import { API_PER_DAY, API_PER_MINUTE, guardApiV1 } from '@/lib/server/apiKeys'
 
 export const dynamic = 'force-dynamic'
 export { options as OPTIONS }
@@ -13,12 +14,21 @@ export { options as OPTIONS }
 const SUPPORTED_COINS = Object.keys(COIN_INFO)
 const SUPPORTED_NETWORKS = Object.keys(NETWORKS)
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const denied = guardApiV1(req, { open: true })
+  if (denied) return denied
   return NextResponse.json({
     name: 'Finance Now API',
     version: '1.0.0',
     description: 'Finance Now — programmatic access to transfer fees, staking rates, network fees, news, and exchange data.',
     docs: '/api/v1/openapi.json',
+    // D173: every endpoint below needs a key; this list and the spec do not.
+    authentication: {
+      required: true,
+      how: 'Send an API key as "Authorization: Bearer <key>" or "x-api-key: <key>". Keys are issued by the owner.',
+      rateLimit: { perMinute: API_PER_MINUTE, perDay: API_PER_DAY, per: 'key', overLimit: '429 with Retry-After' },
+      open: ['/api/v1', '/api/v1/openapi.json'],
+    },
     endpoints: [
       { method: 'GET', path: '/api/v1/prices',                   description: 'Live prices for one or more coins', params: ['coins (csv, default: all)'] },
       { method: 'GET', path: '/api/v1/exchanges',                description: 'List all supported exchanges with coins and networks', params: ['tier (1|2)'] },

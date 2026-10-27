@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { CORS, options } from '../../_cors'
 import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 import { COINGECKO_ATTRIBUTION } from '@/lib/data/dataSources'
+import { guardApiV1 } from '@/lib/server/apiKeys'
 
 export const dynamic = 'force-dynamic'
 export { options as OPTIONS }
@@ -24,6 +25,8 @@ const FALLBACK: Record<string, number> = {
 }
 
 export async function GET(req: NextRequest) {
+  const denied = guardApiV1(req)
+  if (denied) return denied
   const param = req.nextUrl.searchParams.get('coins')
   const requested = param
     ? param.split(',').map(c => c.trim().toLowerCase()).filter(c => ALL_COINS.includes(c as typeof ALL_COINS[number]))

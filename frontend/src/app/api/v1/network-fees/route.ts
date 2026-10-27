@@ -1,7 +1,8 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/server'
 import { CORS, options } from '../../_cors'
 import { computeNetworkFees } from '@/lib/data/networkFees'
 import { getSource, requiredAttributions } from '@/lib/data/dataSources'
+import { guardApiV1 } from '@/lib/server/apiKeys'
 
 export const dynamic = 'force-dynamic'
 export { options as OPTIONS }
@@ -16,7 +17,9 @@ export { options as OPTIONS }
 // This said "BTC is live; other networks are static" until 2026-09-22 — the live
 // EVM gas landed on 2026-08-21 and three separate summaries went on describing
 // the state before it. See DATA-AVAILABILITY.md.
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const denied = guardApiV1(req)
+  if (denied) return denied
   const { fees, priceSource, btcSatPerVbyte, updatedAt } = await computeNetworkFees()
 
   return NextResponse.json(

@@ -1,6 +1,7 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/server'
 import { CORS, options } from '../../../_cors'
 import { fetchTreasuryYieldCurve, type CurveChange, type CurveSnapshot, type CurveSpreads } from '@/lib/server/treasuryCurve'
+import { guardApiV1 } from '@/lib/server/apiKeys'
 
 // Public agent API — the official US Treasury daily par yield curve
 // (13 maturities, treasury.gov, keyless) with headline spreads and shape.
@@ -28,7 +29,9 @@ export interface V1YieldCurveResponse {
   updatedAt: string
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const denied = guardApiV1(req)
+  if (denied) return denied
   try {
     const curve = await fetchTreasuryYieldCurve()
     return NextResponse.json({

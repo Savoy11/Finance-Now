@@ -1303,6 +1303,9 @@ FN_ALLOW_KEYLESS_COIN_PROFILES=true|false     # Default true. Set false to forbi
                                             # only the keyed CoinMarketCap path (2026-08-29 —
                                             # owner concern about relying on free-tier terms).
 
+FN_API_KEYS=name:key,name2:key2           # Keys for the public API, /api/v1 (D173). Issue one with
+                                            # `npm run api:key`. Unset: the API answers only on localhost.
+                                            # FN_API_KEY (one key) is what the MCP server and `npm run audit` send.
 FN_ADMIN_TOKEN=...                          # (legacy CAEP_ADMIN_TOKEN still honored) Optional — sensitive endpoints (AI agents, provider config) require this token when the app is served from a non-localhost host; without it they are localhost-only (see src/lib/server/apiGuard.ts)
                                             # On a host, the owner types it once at /owner, which sets a 30-day
                                             # HttpOnly, SameSite=Strict cookie holding an HMAC of a label keyed by
@@ -2081,6 +2084,14 @@ two routes, the two filter lists and the `/api/v1/news` spec and note, and fails
 A separate, agent-optimised REST API lives at `/api/v1/`. It is distinct from `/live-data/*` (which is internal to the UI) — the v1 API is designed for programmatic consumption by AI agents, external scripts, and other services.
 
 ### Key differences from `/live-data/*`
+- **A key and a rate limit (D173, 2026-10-26).** Every data route calls `guardApiV1`
+  (`lib/server/apiKeys.ts`) as its first statement, and `apiKeys.test.ts` fails on one that does not.
+  A caller sends `Authorization: Bearer <key>` or `x-api-key: <key>`; keys are issued with
+  `npm run api:key` (prints one, stores nothing) and listed in `FN_API_KEYS` on the server. Each key
+  gets 60 requests a minute and 2,000 a day (429 with Retry-After). `/api/v1` and `openapi.json` stay
+  open. **With no keys set, the API answers only on localhost**, the rule `apiGuard` follows. The
+  app's own AI tools send an internal token (`tools.ts` `selfHeaders`); the MCP server and
+  `npm run audit` send `FN_API_KEY`
 - All routes include `Access-Control-Allow-Origin: *` CORS headers
 - Responses are flat and descriptive (no UI-specific shape)
 - Proper HTTP 400 errors with human-readable messages for bad params
@@ -2168,6 +2179,8 @@ claude mcp add finance-now node <path-to-repo>/mcp-server/dist/index.js
 
 ### Environment variable
 `FN_BASE_URL` — base URL of running Finance Now instance (default: `http://localhost:3000`; legacy `CAEP_BASE_URL` still honored)
+`FN_API_KEY` — an API key the owner issued (`npm run api:key`), sent as `Authorization: Bearer`. Needed for
+any instance with `FN_API_KEYS` set; a local one with none answers without it (D173)
 
 ---
 
