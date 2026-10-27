@@ -62,8 +62,8 @@
   "total_verified": 398,
   "outstanding": 381,
   "by_status": {
-   "closed": 231,
-   "parked": 137,
+   "closed": 236,
+   "parked": 132,
    "open": 8,
    "blocked": 5
   },
@@ -74,7 +74,7 @@
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 231,
+  "closed_by_annotation": 236,
   "counts_recomputed_on": "2026-10-26",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 381
@@ -10135,8 +10135,7 @@
   {
    "id": "T-021",
    "title": "S1-4 — backtest empty state misattributes short history to a missing key",
-   "status": "parked",
-   "parked_on": "2026-09-07",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "bug",
@@ -10154,7 +10153,21 @@
      "lines": "2023",
      "quote": "Empty state blames a missing Tiingo/FMP key for what may be a valid-key short-history case. The route already distinguishes them (`source:'none'` + `no_provider_configured` vs `fetch_failed`); the page doesn't read the distinction."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "parked",
+    "closed_on": "2026-10-26",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "Done: the empty state reads the route's answer (frontend/src/lib/utils/backtestGap.ts). no_provider_configured asks for a key; fetch_failed says the sources did not answer and lists why; too few bars says how many there are and that 50 are needed.",
+    "approved_by": "owner, 2026-10-26: \"You can work on the backtesting but I want it to remain hidden\", then, choosing: \"Measure it (Recommended)\", \"Share the maths only (Recommended)\", \"Any ticker (Recommended)\"",
+    "evidence": [
+     "frontend/src/lib/utils/backtestGap.ts",
+     "docs/decisions/2026-10-26-owner-decisions.md",
+     "frontend/src/lib/utils/__tests__/backtestMetrics.test.ts"
+    ],
+    "parked_on_was": "2026-09-07"
+   }
   },
   {
    "id": "T-029",
@@ -10959,7 +10972,7 @@
     "D161"
    ],
    "summary": "Hidden 2026-08-20 ('I may revisit back testing'): /equities/backtests redirect (next.config.mjs:87-92), Portfolios Backtest tab (portfolios/page.tsx:688), crypto TA Backtest tab (technical-analysis/page.tsx:933); engines/tests retained; Sharpe decision with owner.",
-   "next_action": "Nothing unless the owner reopens; the restore recipe is: delete the /equities/backtests redirect in next.config.mjs, re-add the nav entry in lib/modules/registry.ts, add 'backtest' back to the two tab unions and their lists, then make S1's first decision (T-018) before the equities page goes live.",
+   "next_action": "Nothing unless the owner restores backtesting. The restore recipe: delete the /equities/backtests redirect in next.config.mjs, re-add the nav entry in lib/modules/registry.ts, add 'backtest' back to the two tab unions and their lists, and update the hidden-surfaces test in backtestMetrics.test.ts. T-018 (the first decision before restoring) is done (D172). When restored, add a backtest section to /about/data-methods (D163).",
    "sources": [
     {
      "file": "docs/TASK-QUEUE.md",
@@ -10999,13 +11012,16 @@
     "was": {
      "next_action": "Nothing unless the owner reopens; the restore recipe is: delete next.config.mjs:92, re-add the nav entry in lib/modules/registry.ts, add 'backtest' back to the two tab unions and their lists, then make S1's first decision (T-018) before the equities page goes live."
     }
+   },
+   "progress": {
+    "noted_on": "2026-10-26",
+    "note": "2026-10-26 (D172): worked on while hidden, at the owner's word (\"I want it to remain hidden\"). T-018, T-019, T-020, T-021 and T-095 are done and closed: the bar size is measured from the data in a shared module both engines use, the equity backtest takes any ticker and a 2-year range, and its empty state says which gap it hit. All three surfaces stay hidden, and backtestMetrics.test.ts fails if the redirect, the nav entry or either tab comes back. Restoring them is still the owner's call; the restore recipe below stands."
    }
   },
   {
    "id": "T-018",
    "title": "S1-1/2/3 — Sharpe barsPerYear defect and false range labels; decide resample vs relabel",
-   "status": "parked",
-   "parked_on": "2026-09-07",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "bug",
@@ -11047,13 +11063,28 @@
     "was": {
      "next_action": "Nothing while S1 is suspended; when the owner reopens backtesting, decide resample-server-side vs relabel-to-daily first (and add the NT12-style barsPerYear-vs-bar-spacing guard) before deleting the redirect. Meanwhile propose (not apply) the TASK-QUEUE/P3 annotation that S1-1 no longer gates rollout because the surface is dark."
     }
+   },
+   "closure": {
+    "status_was": "parked",
+    "closed_on": "2026-10-26",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "Done under D172: measured, not resampled or relabelled. Both engines now read the bar size from the timestamps (frontend/src/lib/utils/backtestMetrics.ts): 252 sessions a year for daily stock bars, 365 ÷ spacing for crypto. The equity page's ranges are labelled as daily, and its 5-year Sharpe is no longer scaled by √52 where √252 was right (about 2.2× too small). The crypto engine had the same bug: √(252 ÷ bars held) for a market that trades 365 days, on 4-day candles over long ranges. The barsPerYear-versus-spacing guard the next action asked for is the measurement itself, and a test fails if either engine keeps a constant of its own.",
+    "approved_by": "owner, 2026-10-26: \"You can work on the backtesting but I want it to remain hidden\", then, choosing: \"Measure it (Recommended)\", \"Share the maths only (Recommended)\", \"Any ticker (Recommended)\"",
+    "evidence": [
+     "frontend/src/lib/utils/backtestMetrics.ts",
+     "frontend/src/lib/utils/equityBacktest.ts",
+     "frontend/src/lib/utils/backtest.ts",
+     "docs/decisions/2026-10-26-owner-decisions.md",
+     "frontend/src/lib/utils/__tests__/backtestMetrics.test.ts"
+    ],
+    "parked_on_was": "2026-09-07"
    }
   },
   {
    "id": "T-019",
    "title": "S1 decision 2 — converge equityBacktest.ts and backtest.ts engines?",
-   "status": "parked",
-   "parked_on": "2026-09-07",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "decision",
@@ -11071,13 +11102,26 @@
      "lines": "2011-2014, 2042-2043",
      "quote": "**Do the two engines converge?** One shared engine across crypto/equities/portfolios, or deliberately separate with the reason written down."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "parked",
+    "closed_on": "2026-10-26",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "Decided under D172: keep the two strategy engines separate (one runs a list of positions, the other 18 strategies on candles), and share the maths. backtestMetrics.ts holds the bar size, the annualised and per-trade Sharpe and Sortino, and the drawdown, used by both, so a fix cannot land in one and miss the other.",
+    "approved_by": "owner, 2026-10-26: \"You can work on the backtesting but I want it to remain hidden\", then, choosing: \"Measure it (Recommended)\", \"Share the maths only (Recommended)\", \"Any ticker (Recommended)\"",
+    "evidence": [
+     "frontend/src/lib/utils/backtestMetrics.ts",
+     "docs/decisions/2026-10-26-owner-decisions.md",
+     "frontend/src/lib/utils/__tests__/backtestMetrics.test.ts"
+    ],
+    "parked_on_was": "2026-09-07"
+   }
   },
   {
    "id": "T-020",
    "title": "S1 decision 3 — backtest symbol universe (79-name catalog vs any ticker)",
-   "status": "parked",
-   "parked_on": "2026-09-07",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "decision",
@@ -11102,7 +11146,22 @@
      "lines": "365-366, 388-390",
      "quote": "Backtests' symbol select is the 79-name curated catalog while TA charts any ticker — an inconsistency worth a Wave 2 decision (bounded select may be deliberate)."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "parked",
+    "closed_on": "2026-10-26",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "Decided under D172: any ticker, as on the TA page. The TA page's ticker search moved to frontend/src/components/markets/SymbolSearch.tsx, one copy both pages use; the backtest offers \"Backtest <ticker> directly\" for anything the data route covers.",
+    "approved_by": "owner, 2026-10-26: \"You can work on the backtesting but I want it to remain hidden\", then, choosing: \"Measure it (Recommended)\", \"Share the maths only (Recommended)\", \"Any ticker (Recommended)\"",
+    "evidence": [
+     "frontend/src/components/markets/SymbolSearch.tsx",
+     "frontend/src/app/(dashboard)/equities/backtests/page.tsx",
+     "docs/decisions/2026-10-26-owner-decisions.md",
+     "frontend/src/lib/utils/__tests__/backtestMetrics.test.ts"
+    ],
+    "parked_on_was": "2026-09-07"
+   }
   },
   {
    "id": "T-028",
@@ -11433,8 +11492,7 @@
   {
    "id": "T-095",
    "title": "Reintroduce the 2Y range in security-ohlcv with real data (D-2 follow-up)",
-   "status": "parked",
-   "parked_on": "2026-09-07",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "feature",
@@ -11453,7 +11511,21 @@
      "lines": "543-549, 1005-1008, 1018",
      "quote": "D-2 was fixed client-side only (the 2Y button removed) — the range vocabulary of `security-ohlcv` itself belongs to subproject P3-W2-S1, which may reintroduce 2Y with real data."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "parked",
+    "closed_on": "2026-10-26",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "Done: security-ohlcv accepts 2Y again (520 sessions, cached an hour), and the hidden equity backtest offers it. Checked on the dev server: MSFT 2Y, 535 daily bars from Tiingo. The equity TA page's picker was left as it is, since the owner asked for this work to stay inside the hidden backtests.",
+    "approved_by": "owner, 2026-10-26: \"You can work on the backtesting but I want it to remain hidden\", then, choosing: \"Measure it (Recommended)\", \"Share the maths only (Recommended)\", \"Any ticker (Recommended)\"",
+    "evidence": [
+     "frontend/src/app/live-data/security-ohlcv/route.ts",
+     "docs/decisions/2026-10-26-owner-decisions.md",
+     "frontend/src/lib/utils/__tests__/backtestMetrics.test.ts"
+    ],
+    "parked_on_was": "2026-09-07"
+   }
   },
   {
    "id": "T-112",

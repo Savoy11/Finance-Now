@@ -1,7 +1,10 @@
 // Pure long/flat backtest engine for the equity Strategy Backtests page.
 // Extracted from the page so it can be unit-tested (no-lookahead reconciliation,
 // benchmark parity, transaction-cost drag). This is NOT the shared
-// lib/utils/backtest.ts engine — it is the equity page's own simpler model.
+// lib/utils/backtest.ts engine — it is the equity page's own simpler model. The two share
+// their arithmetic through lib/utils/backtestMetrics.ts (T-019, D172).
+
+import { annualisedSharpe, maxDrawdownFraction, periodsPerYear } from './backtestMetrics'
 
 export interface BacktestTrade {
   entryTime: number
@@ -19,6 +22,11 @@ export interface BacktestResult {
   cagrPct: number | null
   maxDrawdownPct: number
   sharpe: number | null
+  /**
+   * Bars in a year, measured from the timestamps (T-018, D172): 252 for daily stock bars.
+   * Null when there are too few bars to measure, and then `sharpe` is null too.
+   */
+  periodsPerYear: number | null
   trades: BacktestTrade[]
   winRatePct: number | null
   exposurePct: number
@@ -44,7 +52,6 @@ export function runEquityBacktest(
   times: number[],
   closes: number[],
   desired: boolean[],
-  barsPerYear: number,
   opts: BacktestOptions = {},
 ): BacktestResult {
   const n = closes.length
@@ -53,9 +60,8 @@ export function runEquityBacktest(
   let buyHold = 1
   const curve: BacktestResult['curve'] = [{ t: times[0] * 1000, strategy: 100, buyHold: 100 }]
   const periodReturns: number[] = []
+  const equitySeries: number[] = []
   const trades: BacktestTrade[] = []
-  let peak = 1
-  let maxDrawdown = 0
   let inBars = 0
   let entry: { time: number; price: number } | null = null
 
@@ -85,8 +91,7 @@ export function runEquityBacktest(
       entry = null
     }
 
-    peak = Math.max(peak, equity)
-    maxDrawdown = Math.max(maxDrawdown, (peak - equity) / peak)
+    equitySeries.push(equity)
     curve.push({ t: times[i] * 1000, strategy: equity * 100, buyHold: buyHold * 100 })
   }
   if (entry) {
@@ -98,9 +103,7 @@ export function runEquityBacktest(
   }
 
   const years = (times[n - 1] - times[0]) / 31_557_600
-  const mean = periodReturns.reduce((s, r) => s + r, 0) / periodReturns.length
-  const variance = periodReturns.reduce((s, r) => s + (r - mean) ** 2, 0) / periodReturns.length
-  const stdev = Math.sqrt(variance)
+  const perYear = periodsPerYear(times, 'equity')
   const wins = trades.filter((t) => t.returnPct > 0).length
 
   return {
@@ -108,8 +111,9 @@ export function runEquityBacktest(
     totalReturnPct: (equity - 1) * 100,
     buyHoldReturnPct: (buyHold - 1) * 100,
     cagrPct: years > 0.5 ? (Math.pow(equity, 1 / years) - 1) * 100 : null,
-    maxDrawdownPct: maxDrawdown * 100,
-    sharpe: stdev > 0 ? (mean / stdev) * Math.sqrt(barsPerYear) : null,
+    maxDrawdownPct: maxDrawdownFraction(equitySeries) * 100,
+    sharpe: annualisedSharpe(periodReturns, perYear),
+    periodsPerYear: perYear,
     trades,
     winRatePct: trades.length > 0 ? (wins / trades.length) * 100 : null,
     exposurePct: (inBars / (n - 1)) * 100,

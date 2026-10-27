@@ -842,3 +842,20 @@ for the same reason as above.
 - its content in `main` as `870d8ce`.
 
 Nothing was deleted; no other ref moved.
+
+## Fiftieth reset, after PR #430 (2026-10-26)
+
+**What was done.** After PR #430 (Live Pools' yield bound, the audit checks and the legal notes)
+was squash-merged into `main` as `78955fb`, the branch was restarted from `78955fb` on the owner's
+machine for the hidden backtests (D172). Pushed with `--force-with-lease`, for the same reason as
+above.
+
+**Where the prior state lives.** The branch's previous tip, `6638af6` (#430's head), is held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@6638af6`, created by
+  `.github/workflows/archive-branch.yml` when #430 merged, and checked on the remote before the
+  restart;
+- GitHub's `refs/pull/430/head`;
+- its content in `main` as `78955fb`.
+
+Nothing was deleted; no other ref moved.
