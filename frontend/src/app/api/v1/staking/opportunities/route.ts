@@ -7,6 +7,7 @@ import {
 } from '@/lib/data/stakingProviders'
 import { collectStakingRates } from '@/lib/server/stakingRates'
 import { aprDisplay, resolveLiveAprKey } from '@/lib/utils/aprDisplay'
+import { guardApiV1 } from '@/lib/server/apiKeys'
 
 export const dynamic = 'force-dynamic'
 export { options as OPTIONS }
@@ -23,6 +24,8 @@ export { options as OPTIONS }
 // Both surfaces now read collectStakingRates() and resolve through aprDisplay().
 
 export async function GET(req: NextRequest) {
+  const denied = guardApiV1(req)
+  if (denied) return denied
   const { searchParams } = req.nextUrl
   const coinParam     = searchParams.get('coin')?.toLowerCase() as StakingCoinId | null
   const categoryParam = searchParams.get('category') as ProviderCategory | null

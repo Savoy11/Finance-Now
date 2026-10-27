@@ -99,7 +99,9 @@ is started.
    none: the Kubernetes files probe `/api/health`, which did not exist. **Built 2026-10-26:**
    `GET /api/health` answers from the app alone and calls no data source. It returns 503 only
    when a configured database does not answer within 2 seconds (`lib/server/health.ts`).
-7. **Decide the public API's exposure before launch (T-087).** `/api/v1` has no key and no rate
+7. **Decide the public API's exposure before launch (T-087).** **Built 2026-10-26 (D173):** every data
+   route needs an owner-issued key and is limited to 60 requests a minute and 2,000 a day per key, and
+   with no keys set the API answers only on localhost (`lib/server/apiKeys.ts`). It read: `/api/v1` has no key and no rate
    limit, with CORS open to every site, and it runs on the owner's provider keys.
 
 ## 5. What choosing a host releases

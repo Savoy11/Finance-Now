@@ -62,8 +62,8 @@
   "total_verified": 398,
   "outstanding": 381,
   "by_status": {
-   "closed": 236,
-   "parked": 132,
+   "closed": 237,
+   "parked": 131,
    "open": 8,
    "blocked": 5
   },
@@ -74,7 +74,7 @@
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 236,
+  "closed_by_annotation": 237,
   "counts_recomputed_on": "2026-10-26",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 381
@@ -5186,7 +5186,11 @@
      "lines": "208",
      "quote": "**API versioning guarantee**: Define deprecation policy (12-month notice)"
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-10-26",
+    "note": "2026-10-26 (D173): T-087 is settled. /api/v1 needs a key the owner issues (`npm run api:key`, listed in FN_API_KEYS on the server, not a database table), each key is limited to 60 requests a minute and 2,000 a day, the endpoint list and spec stay open, and with no keys set the API answers only on localhost (frontend/src/lib/server/apiKeys.ts). A versioning promise still waits on D5's trigger (a business tier)."
+   }
   },
   {
    "id": "T-265",
@@ -7759,8 +7763,8 @@
     }
    ],
    "progress": {
-    "noted_on": "2026-10-04",
-    "note": "Parked under D57. The summary said \"Single global limit today.\" Measured 2026-10-04: none of the 13 /api/v1 routes calls guardQuotaRoute or guardSensitiveRoute, so there is no limit at all on that surface. The blocker's \"D2\" is the P3 production review's D2 (public API exposure, now T-087), not the 2026-09-14 D2 that froze the backend, and its ROADMAP.md:487 reference now sits at line 728.",
+    "noted_on": "2026-10-26",
+    "note": "2026-10-26 (D173): T-087 is settled. /api/v1 needs a key the owner issues (`npm run api:key`, listed in FN_API_KEYS on the server, not a database table), each key is limited to 60 requests a minute and 2,000 a day, the endpoint list and spec stay open, and with no keys set the API answers only on localhost (frontend/src/lib/server/apiKeys.ts). Per-plan limits are now a change to one table of limits in apiKeys.ts; they still wait on pricing (D29, under D21). Earlier: Parked under D57. The summary said \"Single global limit today.\" Measured 2026-10-04: none of the 13 /api/v1 routes calls guardQuotaRoute or guardSensitiveRoute, so there is no limit at all on that surface. The blocker's \"D2\" is the P3 production review's D2 (public API exposure, now T-087), not the 2026-09-14 D2 that froze the backend, and its ROADMAP.md:487 reference now sits at line 728.",
     "evidence": [
      "docs/decisions/2026-10-04-owner-decisions.md",
      "docs/assessments/P3-production-review.md",
@@ -8916,8 +8920,8 @@
     }
    ],
    "progress": {
-    "noted_on": "2026-10-04",
-    "note": "Parked under D73. Its open questions stay open for when it returns: who tests, how much of the system, the budget and when. Checked 2026-10-04: no hosted copy of the site exists to test (nothing has been provisioned, D22), and a business buyer's request for a test report sits with T-216 under D5's trigger.",
+    "noted_on": "2026-10-26",
+    "note": "2026-10-26 (D173): T-087 is settled. /api/v1 needs a key the owner issues (`npm run api:key`, listed in FN_API_KEYS on the server, not a database table), each key is limited to 60 requests a minute and 2,000 a day, the endpoint list and spec stay open, and with no keys set the API answers only on localhost (frontend/src/lib/server/apiKeys.ts). T-087 leaves the D73 list; the rest of the list stands. Earlier: Parked under D73. Its open questions stay open for when it returns: who tests, how much of the system, the budget and when. Checked 2026-10-04: no hosted copy of the site exists to test (nothing has been provisioned, D22), and a business buyer's request for a test report sits with T-216 under D5's trigger.",
     "evidence": [
      "docs/decisions/2026-10-04-owner-decisions.md"
     ]
@@ -9731,8 +9735,8 @@
     }
    ],
    "progress": {
-    "noted_on": "2026-10-04",
-    "note": "Parked under D73. Checked 2026-10-04: the app has no admin accounts. The users table (frontend/src/lib/db/schema/auth.ts) has no role column; sign-in is email and password only (the Credentials provider in frontend/src/lib/auth/config.ts) and is switched off (REQUIRE_AUTH = false in frontend/src/app/(dashboard)/layout.tsx). What needs guarding (the AI agents, the Pump Report's included, and the data-provider settings) goes through guardSensitiveRoute in frontend/src/lib/server/apiGuard.ts: a shared FN_ADMIN_TOKEN when one is set, otherwise localhost only. The item came from the retired backend, whose users had two-step sign-in.",
+    "noted_on": "2026-10-26",
+    "note": "2026-10-26 (D173): T-087 is settled. /api/v1 needs a key the owner issues (`npm run api:key`, listed in FN_API_KEYS on the server, not a database table), each key is limited to 60 requests a minute and 2,000 a day, the endpoint list and spec stay open, and with no keys set the API answers only on localhost (frontend/src/lib/server/apiKeys.ts). T-087 leaves the D73 list; the rest of the list stands. Earlier: Parked under D73. Checked 2026-10-04: the app has no admin accounts. The users table (frontend/src/lib/db/schema/auth.ts) has no role column; sign-in is email and password only (the Credentials provider in frontend/src/lib/auth/config.ts) and is switched off (REQUIRE_AUTH = false in frontend/src/app/(dashboard)/layout.tsx). What needs guarding (the AI agents, the Pump Report's included, and the data-provider settings) goes through guardSensitiveRoute in frontend/src/lib/server/apiGuard.ts: a shared FN_ADMIN_TOKEN when one is set, otherwise localhost only. The item came from the retired backend, whose users had two-step sign-in.",
     "evidence": [
      "docs/decisions/2026-10-04-owner-decisions.md",
      "frontend/src/lib/db/schema/auth.ts",
@@ -11459,8 +11463,7 @@
   {
    "id": "T-087",
    "title": "D2 — decide public /api/v1 exposure (no rate limit, no auth, CORS *)",
-   "status": "parked",
-   "parked_on": "2026-09-07",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "security",
@@ -11486,6 +11489,21 @@
     "note": "2026-10-07 (D91): the Vendor Pass of 30 Sep (build item 1, recorded on the ledger page and filed here) adds the licensing side of this question. /api/v1 and the MCP server pass on CoinGecko prices (/prices), stock quotes and charts (/securities/*), publisher headlines (/news) and DefiLlama yields (/staking/opportunities), and _cors.ts allows every origin. Before the first outside visitor, lock them to the owner or strip the licensed data from them; licensing the data is the other way.",
     "evidence": [
      "docs/decisions/2026-10-07-owner-decisions.md"
+    ]
+   },
+   "closure": {
+    "status_was": "parked",
+    "parked_on_was": "2026-09-07",
+    "closed_on": "2026-10-26",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "Decided and built (D173): gate it. Every /api/v1 data route calls guardApiV1 first and needs an owner-issued key, as \"Authorization: Bearer\" or \"x-api-key\"; each key gets 60 requests a minute and 2,000 a day (429 with Retry-After). The endpoint list and the OpenAPI spec stay open, rate-limited by address. With no keys set the API answers only on localhost, so a deployed build without keys is closed. The app's own AI tools send an internal token; the MCP server and the live-data check send FN_API_KEY. Keys are issued with npm run api:key, which prints and stores nothing. Tests: apiKeys.test.ts, eight rules checked by breaking each.",
+    "approved_by": "owner, 2026-10-26: \"Build the API key and rate limit\"",
+    "evidence": [
+     "frontend/src/lib/server/apiKeys.ts",
+     "frontend/src/lib/server/__tests__/apiKeys.test.ts",
+     "frontend/scripts/api-key.mjs",
+     "docs/decisions/2026-10-26-owner-decisions.md"
     ]
    }
   },
@@ -12086,8 +12104,8 @@
     }
    ],
    "progress": {
-    "noted_on": "2026-10-04",
-    "note": "D68 settled the P3 review's D5, one of this item's two blockers: run_audit is removed and the MCP server is data-only, held by frontend/src/lib/server/__tests__/mcpDataOnly.test.ts. D2 remains. Was: \"No action now. Revisit at the owner's planning session once D2 (API auth/rate limiting, enterprise key, hosting) and D5 (run_audit removal or hard guard before any external distribution) are settled; the 2026-09-05 rollout ruling defers all launch-shaped work.\""
+    "noted_on": "2026-10-26",
+    "note": "2026-10-26 (D173): T-087 is settled. /api/v1 needs a key the owner issues (`npm run api:key`, listed in FN_API_KEYS on the server, not a database table), each key is limited to 60 requests a minute and 2,000 a day, the endpoint list and spec stay open, and with no keys set the API answers only on localhost (frontend/src/lib/server/apiKeys.ts). Packaging the API and MCP as a product still waits on launch planning and pricing. Earlier: D68 settled the P3 review's D5, one of this item's two blockers: run_audit is removed and the MCP server is data-only, held by frontend/src/lib/server/__tests__/mcpDataOnly.test.ts. D2 remains. Was: \"No action now. Revisit at the owner's planning session once D2 (API auth/rate limiting, enterprise key, hosting) and D5 (run_audit removal or hard guard before any external distribution) are settled; the 2026-09-05 rollout ruling defers all launch-shaped work.\""
    }
   },
   {
@@ -12109,7 +12127,11 @@
      "lines": "217",
      "quote": "Extend `/api/v1` + MCP tools to personal data behind per-user API keys."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-10-26",
+    "note": "2026-10-26 (D173): T-087 is settled. /api/v1 needs a key the owner issues (`npm run api:key`, listed in FN_API_KEYS on the server, not a database table), each key is limited to 60 requests a minute and 2,000 a day, the endpoint list and spec stay open, and with no keys set the API answers only on localhost (frontend/src/lib/server/apiKeys.ts). Keys today are owner-issued and shared, not per user: per-user keys over personal data still wait on sign-in (T-131) and entitlements (T-083)."
+   }
   },
   {
    "id": "T-114",
@@ -12200,8 +12222,8 @@
     }
    ],
    "progress": {
-    "noted_on": "2026-10-05",
-    "note": "Re-anchored under D82; status unchanged.",
+    "noted_on": "2026-10-26",
+    "note": "2026-10-26 (D173): T-087 is settled. /api/v1 needs a key the owner issues (`npm run api:key`, listed in FN_API_KEYS on the server, not a database table), each key is limited to 60 requests a minute and 2,000 a day, the endpoint list and spec stay open, and with no keys set the API answers only on localhost (frontend/src/lib/server/apiKeys.ts). Its own blocker is answered: keys exist. They live in FN_API_KEYS rather than a table, so an allowlist would be a field on each entry there, or the keys move to a table first. It stays parked as one of D73's security items, for the owner to take up. Earlier: Re-anchored under D82; status unchanged.",
     "evidence": [
      "docs/decisions/2026-10-05-owner-decisions.md"
     ]

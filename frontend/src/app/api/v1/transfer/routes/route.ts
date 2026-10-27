@@ -8,6 +8,7 @@ import { computeNetworkFees, FALLBACK_PRICES_AS_OF } from '@/lib/data/networkFee
 import { fetchLiveFeeOverlay, OVERLAY_EXCHANGE_IDS } from '@/lib/server/withdrawFeeOverlay'
 import { TRANSFER_FEES_LAST_VERIFIED } from '@/lib/data/transferFees'
 import { getSource, requiredAttributions } from '@/lib/data/dataSources'
+import { guardApiV1 } from '@/lib/server/apiKeys'
 
 export const dynamic = 'force-dynamic'
 export { options as OPTIONS }
@@ -36,6 +37,8 @@ export type PriceSource = 'live' | 'fallback'
 const HIDDEN_FROM_ROLLOUT = true
 
 export async function GET(req: NextRequest) {
+  const denied = guardApiV1(req)
+  if (denied) return denied
   if (HIDDEN_FROM_ROLLOUT) {
     return NextResponse.json({
       error: 'Transfer route lookup is not available in this build.',

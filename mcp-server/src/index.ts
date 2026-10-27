@@ -12,6 +12,9 @@
  *
  * Environment:
  *   FN_BASE_URL — base URL of the running Finance Now instance (legacy CAEP_BASE_URL honored) (default: http://localhost:3000)
+ *   FN_API_KEY  — an API key the owner issued (`npm run api:key` in frontend/). Needed for any
+ *                 instance with keys set (FN_API_KEYS); a local instance with none answers
+ *                 without one. Sent as `Authorization: Bearer`, never logged.
  */
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
@@ -20,9 +23,12 @@ import { z } from 'zod'
 
 const BASE_URL = (process.env.FN_BASE_URL ?? process.env.CAEP_BASE_URL ?? 'http://localhost:3000').replace(/\/$/, '')
 const API = `${BASE_URL}/api/v1`
+const API_KEY = process.env.FN_API_KEY?.trim() ?? ''
+/** The key header when one is set: the public API needs one wherever keys are configured (D173). */
+const AUTH: Record<string, string> = API_KEY ? { Authorization: `Bearer ${API_KEY}` } : {}
 
 async function get<T>(path: string): Promise<T> {
-  const res = await fetch(`${API}${path}`)
+  const res = await fetch(`${API}${path}`, { headers: AUTH })
   if (!res.ok) {
     const body = await res.text()
     throw new Error(`Finance Now API error ${res.status}: ${body}`)
@@ -43,7 +49,7 @@ async function get<T>(path: string): Promise<T> {
 async function post<T>(path: string, body: unknown): Promise<T> {
   const res = await fetch(`${API}${path}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { ...AUTH, 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   })
   const json = await res.json().catch(() => null) as

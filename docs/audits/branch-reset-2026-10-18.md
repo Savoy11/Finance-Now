@@ -859,3 +859,19 @@ above.
 - its content in `main` as `78955fb`.
 
 Nothing was deleted; no other ref moved.
+
+## Fifty-first reset, after PR #431 (2026-10-26)
+
+**What was done.** After PR #431 (the hidden backtests, D172) was squash-merged into `main` as
+`0a401a8`, the branch was restarted from `0a401a8` on the owner's machine for the public API's keys
+and rate limit (D173). Pushed with `--force-with-lease`, for the same reason as above.
+
+**Where the prior state lives.** The branch's previous tip, `e99c5da` (#431's head), is held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@e99c5da`, created by
+  `.github/workflows/archive-branch.yml` when #431 merged, and checked on the remote before the
+  restart;
+- GitHub's `refs/pull/431/head`;
+- its content in `main` as `0a401a8`.
+
+Nothing was deleted; no other ref moved.

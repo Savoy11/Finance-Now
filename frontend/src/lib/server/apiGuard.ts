@@ -24,7 +24,7 @@ const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]', '::1'])
 // per-IP rate limiting. If this ever goes behind a proxy: set FN_ADMIN_TOKEN
 // (so access control stops relying on Host at all) and derive the client key
 // from the proxy's trusted forwarding header only (audit L8).
-function isLocalRequest(req: NextRequest): boolean {
+export function isLocalRequest(req: NextRequest): boolean {
   const host = (req.headers.get('host') ?? '').split(':')[0].toLowerCase()
   return LOCAL_HOSTS.has(host)
 }
@@ -37,7 +37,8 @@ function tokenMatches(req: NextRequest, expected: string): boolean {
 
 const windows = new Map<string, { count: number; resetAt: number }>()
 
-function rateLimited(key: string, limitPerMinute: number): boolean {
+// Exported for the public API's per-key limits (lib/server/apiKeys.ts), so the app keeps one limiter.
+export function rateLimited(key: string, limitPerMinute: number): boolean {
   const now = Date.now()
   const w = windows.get(key)
   if (!w || now >= w.resetAt) {
@@ -52,7 +53,7 @@ function rateLimited(key: string, limitPerMinute: number): boolean {
   return w.count > limitPerMinute
 }
 
-function clientKey(req: NextRequest): string {
+export function clientKey(req: NextRequest): string {
   return req.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? 'local'
 }
 
@@ -102,7 +103,7 @@ export function guardSensitiveRoute(
 const dailyWindows = new Map<string, { count: number; resetAt: number }>()
 
 /** Whole-app daily counter, independent of client IP — the upstream quota is global. */
-function dailyBudgetExceeded(bucket: string, limitPerDay: number): boolean {
+export function dailyBudgetExceeded(bucket: string, limitPerDay: number): boolean {
   const now = Date.now()
   const w = dailyWindows.get(bucket)
   if (!w || now >= w.resetAt) {

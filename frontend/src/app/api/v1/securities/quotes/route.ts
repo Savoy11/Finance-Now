@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { CORS, options } from '../../../_cors'
 import { fetchSecurityQuotes, referenceSecurityQuotes, type SecurityQuote } from '@/lib/api/live/marketData'
+import { guardApiV1 } from '@/lib/server/apiKeys'
 
 // Public agent API — quotes for anything the security ladder prices: stocks,
 // ETFs, mutual funds, and macro instruments (futures like GC=F, FX pairs like
@@ -24,6 +25,8 @@ export interface V1SecurityQuotesResponse {
 }
 
 export async function GET(req: NextRequest) {
+  const denied = guardApiV1(req)
+  if (denied) return denied
   const param = req.nextUrl.searchParams.get('symbols')?.trim()
   if (!param) {
     return NextResponse.json(

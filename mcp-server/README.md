@@ -23,6 +23,7 @@ One environment variable:
 | Variable | Meaning | Default |
 |---|---|---|
 | `FN_BASE_URL` | Base URL of the running Finance Now frontend (legacy `CAEP_BASE_URL` still honored) | `http://localhost:3000` |
+| `FN_API_KEY` | An API key the owner issued (`npm run api:key` in `frontend/`), sent as `Authorization: Bearer`. Needed when the instance lists keys in `FN_API_KEYS`; a local instance with none answers without it | none |
 
 ### Claude Desktop (`claude_desktop_config.json`)
 

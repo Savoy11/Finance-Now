@@ -212,7 +212,8 @@ describe('every agent API route serving CoinGecko data carries the credit (D100)
 
     it('answers with CoinGecko’s credit, verbatim', async () => {
       vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ bitcoin: { usd: 101.5 } }), { status: 200 })))
-      const res = await v1Prices(new NextRequest('http://localhost/api/v1/prices?coins=btc'))
+      // The owner's machine: with no API keys set the API answers only there (D173).
+      const res = await v1Prices(new NextRequest('http://localhost/api/v1/prices?coins=btc', { headers: { host: 'localhost:3000' } }))
       const body = await res.json()
       expect(body.prices.btc).toBe(101.5)
       expect(body.attributions).toEqual([COINGECKO_ATTRIBUTION])

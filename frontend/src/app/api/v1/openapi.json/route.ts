@@ -1,6 +1,7 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/server'
 import { CORS, options } from '../../_cors'
 import { PRICE_BASES } from '@/lib/api/live/fmpHistory'
+import { API_PER_DAY, API_PER_MINUTE, guardApiV1 } from '@/lib/server/apiKeys'
 
 export const dynamic = 'force-dynamic'
 export { options as OPTIONS }
@@ -214,7 +215,14 @@ const SPEC = {
       },
     },
   },
+  // D173: a key on every path listed here. The endpoint list (/api/v1) and this spec need none,
+  // and are not listed.
+  security: [{ bearerKey: [] }, { headerKey: [] }],
   components: {
+    securitySchemes: {
+      bearerKey: { type: 'http', scheme: 'bearer', description: `An API key issued by the owner. ${API_PER_MINUTE} requests a minute and ${API_PER_DAY} a day per key; past either, 429 with Retry-After.` },
+      headerKey: { type: 'apiKey', in: 'header', name: 'x-api-key', description: 'The same key, in its own header.' },
+    },
     schemas: {
       ErrorResponse: {
         type: 'object',
@@ -600,6 +608,8 @@ const SPEC = {
   },
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const denied = guardApiV1(req, { open: true })
+  if (denied) return denied
   return NextResponse.json(SPEC, { headers: CORS })
 }

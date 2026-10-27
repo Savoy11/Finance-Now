@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import fs from 'node:fs'
 import path from 'node:path'
-import type { NextRequest } from 'next/server'
+import { NextRequest } from 'next/server'
 import { RISK_RATINGS_SHOWN } from '../visibility'
 import { AGENT_TOOLS, WITHHELD_TOOLS, runTool, toolsForAgent, type ToolSet } from '@/lib/agents/tools'
 import { MODULES, flattenNavItems } from '@/lib/modules/registry'
@@ -36,13 +36,15 @@ describe('D64: risk ratings are switched off', () => {
   })
 
   it('the options scoring API answers 503 to both methods', async () => {
+    // A local request: with no API keys set, the API answers only on the owner's machine (D173).
     const post = await optionsScorePost(new Request('http://localhost/api/v1/options/score', {
       method: 'POST',
+      headers: { host: 'localhost:3000' },
       body: JSON.stringify({ underlyingPrice: 100, daysToExpiry: 30, legs: [{ side: 'long', type: 'call', strike: 100, bid: 1, ask: 1.1 }] }),
     }) as unknown as NextRequest)
     expect(post.status).toBe(503)
     expect((await post.json()).error).toMatch(/not available/)
-    const get = await optionsScoreGet()
+    const get = await optionsScoreGet(new NextRequest('http://localhost/api/v1/options/score', { headers: { host: 'localhost:3000' } }))
     expect(get.status).toBe(503)
   })
 

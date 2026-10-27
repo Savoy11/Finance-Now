@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { CORS, options } from '../../_cors'
 import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
+import { guardApiV1 } from '@/lib/server/apiKeys'
 
 export const dynamic = 'force-dynamic'
 export { options as OPTIONS }
 
 // Proxy to the internal news route but reshape the response for agent consumption
 export async function GET(req: NextRequest) {
+  const denied = guardApiV1(req)
+  if (denied) return denied
   const { searchParams } = req.nextUrl
   const coin      = searchParams.get('coin')?.toLowerCase()
   // Clamped at BOTH ends: a negative limit made slice(0, -n) silently drop the

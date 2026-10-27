@@ -102,7 +102,8 @@ describe('the audit reports a decided state as a decision, against the route’s
 
   it('v1 options score: the 503 the runner expects is what the route sends, with a reason', async () => {
     const t = auditTest('v1 options score (withheld, D64)')
-    const res = await optionsScore()
+    // The audit calls the dev server on localhost, where no API key is needed (D173).
+    const res = await optionsScore(new NextRequest('http://localhost/api/v1/options/score', { headers: { host: 'localhost:3000' } }))
     expect(t.expectStatus).toBe(res.status)
     expect(verdictOf(t.check, await res.json(), res.status).verdict).toBe('REAL')
   })

@@ -181,7 +181,11 @@ const results = []
 
 async function getJson(path) {
   const t0 = Date.now()
-  const res = await fetch(BASE + path, { headers: { Accept: 'application/json' } })
+  // The public API needs a key wherever keys are set (D173). On the owner's machine with none
+  // set it answers without one; with FN_API_KEYS set locally, put one of them in FN_API_KEY.
+  const key = process.env.FN_API_KEY?.trim()
+  const auth = key && path.startsWith('/api/v1') ? { Authorization: `Bearer ${key}` } : {}
+  const res = await fetch(BASE + path, { headers: { Accept: 'application/json', ...auth } })
   const text = await res.text()
   const ms = Date.now() - t0
   let json = null

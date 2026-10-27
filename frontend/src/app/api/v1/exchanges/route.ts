@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { CORS, options } from '../../_cors'
 import { EXCHANGES } from '@/lib/data/transferFees'
+import { guardApiV1 } from '@/lib/server/apiKeys'
 
 export const dynamic = 'force-dynamic'
 export { options as OPTIONS }
 
 export async function GET(req: NextRequest) {
+  const denied = guardApiV1(req)
+  if (denied) return denied
   const tierParam = req.nextUrl.searchParams.get('tier')
   const tierFilter = tierParam ? parseInt(tierParam) : null
 

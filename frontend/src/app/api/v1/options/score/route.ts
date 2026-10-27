@@ -6,6 +6,7 @@ import {
 } from '@/lib/risk/profiles/optionsTrade'
 import type { CompositeRisk } from '@/lib/risk/types'
 import { RISK_RATINGS_SHOWN } from '@/lib/risk/visibility'
+import { guardApiV1 } from '@/lib/server/apiKeys'
 
 // Public agent API — score a described options position (P2-O5).
 //
@@ -147,6 +148,8 @@ function validate(body: unknown): { inputs: OptionsTradeInputs } | { errors: str
 }
 
 export async function POST(request: NextRequest) {
+  const denied = guardApiV1(request)
+  if (denied) return denied
   if (!RISK_RATINGS_SHOWN) return withheld()
   let body: unknown
   try {
@@ -182,7 +185,9 @@ export async function POST(request: NextRequest) {
 }
 
 /** Discoverability: the schema, so the endpoint explains itself by hand. */
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const denied = guardApiV1(req)
+  if (denied) return denied
   if (!RISK_RATINGS_SHOWN) return withheld()
   return NextResponse.json({
     endpoint: '/api/v1/options/score',
