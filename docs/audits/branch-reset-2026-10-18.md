@@ -909,3 +909,19 @@ as above.
 - its content in `main` as `6e8d271`.
 
 Nothing was deleted; no other ref moved.
+
+## Fifty-fourth reset, after PR #434 (2026-10-27)
+
+**What was done.** After PR #434 (the owner-only site lock, D174) was squash-merged into `main`
+as `20c10cc`, the branch was restarted from `20c10cc` on the owner's machine for the staking
+fallback refresh (D175). Pushed with `--force-with-lease`, for the same reason as above.
+
+**Where the prior state lives.** The branch's previous tip, `5598696` (#434's head), is held by:
+
+- the annotated tag `archive/claude/vibrant-faraday-3xo7mo@5598696`, created by
+  `.github/workflows/archive-branch.yml` when #434 merged, and checked on the remote before the
+  restart;
+- GitHub's `refs/pull/434/head`;
+- its content in `main` as `20c10cc`.
+
+Nothing was deleted; no other ref moved.

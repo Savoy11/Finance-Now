@@ -46,6 +46,7 @@ export const DATA_METHODS: readonly MethodSection[] = [
       `The Live Pools tab lists staking pools read from data services. A pool whose reported yield is above ${DISCOVERY_APY_MAX}% is left out, because no staking pool pays that much: it is a broken reading, or a yield paid in reward tokens. The tab says how many it left out and which.`,
       'A live source that reports a rate of 0%, or an implausibly high one, is treated as giving no reading: the stored estimate is shown instead, marked as an estimate, never a live 0%. A source can report 0 because it has stopped updating, not only because the rate is 0.',
       `Stored estimates that were measured from live sources carry the date they were measured, and are withheld once they are more than ${FALLBACK_STALE_AFTER_DAYS} days old; the rate is then shown as a dash.`,
+      'Where a live source stops giving a usable reading for good, its stored figure can no longer be measured again. It is then kept as an undated estimate, marked as an estimate like the others, rather than given a new date it was not read on.',
     ],
   },
   {
