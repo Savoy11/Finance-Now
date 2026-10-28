@@ -32,7 +32,7 @@
 
 import fs from 'node:fs'
 import path from 'node:path'
-import { planFallbackRefresh } from './lib/stakingFallbackRefresh.mjs'
+import { planFallbackRefresh, readingDate } from './lib/stakingFallbackRefresh.mjs'
 
 const ROUTE_FILE = path.resolve(process.cwd(), 'src/lib/server/stakingRates.ts')
 const BASE = process.env.BASE_URL ?? process.env.FN_BASE_URL ?? 'http://localhost:3000'
@@ -50,7 +50,7 @@ async function readLive() {
 
 const live = await readLive()
 const src = fs.readFileSync(ROUTE_FILE, 'utf8')
-const today = new Date().toISOString().slice(0, 10)
+const today = readingDate(live)
 const { measured, changed, skipped, failedUpstreams, liveCount, next, refusal } = planFallbackRefresh(src, live, today)
 const upstreamCount = Object.keys(live.upstreams ?? {}).length
 

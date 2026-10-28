@@ -69,16 +69,24 @@ export interface StakingRatesResponse {
 // ⚠ THIS TABLE IS HALF MEASURED AND HALF LEGACY, AND THE TWO HALVES DO NOT
 //   CARRY THE SAME WEIGHT. Check FALLBACK_MEASURED before trusting a number.
 //
-//   27 of the 51 keys are set from a live reading of this route on the owner's
-//   machine — first on 2026-09-09, refreshed 2026-09-18 (both times all 7
-//   upstreams live, defillama-yields 19/19). Those keys are listed in
-//   FALLBACK_MEASURED and dated by FALLBACK_MEASURED_ON.
+//   The keys in FALLBACK_MEASURED are set from a live reading of this route on
+//   the owner's machine — first on 2026-09-09 (27 of 51 then), refreshed since
+//   with `npm run staking:refresh-fallbacks`, which writes only a whole reading.
+//   FALLBACK_MEASURED_ON dates them.
 //
-//   The other 24 have no upstream and were never measured — they are the
-//   original hand-written estimates, of unknown vintage. FALLBACK_MEASURED_ON
-//   deliberately does NOT date them: re-verifying 27 rows of 51 does not
-//   refresh the other 24, and stamping the whole table with one fresh date is
-//   the staleness lie the provenance convention exists to prevent.
+//   The rest are undated estimates. Most have no upstream and were never
+//   measured: the original hand-written figures, of unknown vintage.
+//   FALLBACK_MEASURED_ON deliberately does NOT date them: re-verifying some rows
+//   does not refresh the others, and stamping the whole table with one fresh
+//   date is the staleness lie the provenance convention exists to prevent.
+//
+//   Two were measured and are no longer (D175, 2026-10-27): swell_eth (0.64) and
+//   stader_matic (3.45), last read live on 2026-10-17. Since then DefiLlama's
+//   pools for them give no usable rate (Swell's rswETH reads 7,530%, Stader's
+//   MaticX 0; D169 refuses both), so no refresh could include them, and keeping
+//   them would block every refresh of the other 22. They stay as undated
+//   estimates, never withheld by the 14-day clock. Put a key back when its
+//   source reads again and a refresh measures it.
 //
 //   WHAT THE 2026-09-09 PASS FOUND, and why this was worth doing: 22 of the 27
 //   were off by ≥25%, and every one of them was OVERSTATED —
@@ -122,16 +130,16 @@ export interface StakingRatesResponse {
 //   order-of-magnitude answer, which is what the UI's own disclosure says.
 const FALLBACK: Record<string, number> = {
   // ETH liquid staking
-  lido_eth:        2.2,
-  rocketpool_eth:  2.01,
-  ankr_eth:        2.28,
+  lido_eth:        2.23,
+  rocketpool_eth:  1.82,
+  ankr_eth:        2.5,
   coinbase_eth:    3.2,
   kraken_eth:      3.5,
   binance_eth:     3.1,
 
   // Solana
-  marinade_sol:    5.97,
-  jito_sol:        4.87,
+  marinade_sol:    5.93,
+  jito_sol:        4.75,
   native_sol:      6.5,   // generic Solana native staking
 
   // Cosmos / ATOM. stride_atom, stride_inj and stride_tia went 2026-10-14: Stride is
@@ -178,39 +186,39 @@ const FALLBACK: Record<string, number> = {
 
   // ── Liquid-staking / restaking protocols (live via DeFiLlama Yields) ────────
   // ETH LSTs & restaking
-  frax_eth:         2.7,
-  stakewise_eth:    2.26,
-  stader_eth:       2.14,
+  frax_eth:         2.53,
+  stakewise_eth:    2.21,
+  stader_eth:       2.21,
   swell_eth:        0.64,
-  renzo_eth:        2.89,
-  kelp_eth:         2.28,
-  puffer_eth:       2.32,
+  renzo_eth:        2.41,
+  kelp_eth:         2.39,
+  puffer_eth:       2.52,
   origin_eth:       2.65,
-  bedrock_eth:      2.44,
-  etherfi_eth:      2.22,
+  bedrock_eth:      2.77,
+  etherfi_eth:      2.37,
   // Solana LSTs
-  sanctum_sol:      5.69,
+  sanctum_sol:      5.24,
   ankr_sol:         6.2,
   // Avalanche LSTs
-  benqi_avax:       4.18,
-  ankr_avax:        0.2,
+  benqi_avax:       3.76,
+  ankr_avax:        0.21,
   // Polygon / BNB LSTs
   stader_matic:     3.45,
   stader_bnb:       5.0,
   pstake_bnb:       5.5,
-  ankr_bnb:         0.69,
+  ankr_bnb:         0.66,
   // Cosmos LSTs
   quicksilver_atom:13.0,
   pstake_atom:     12.5,
   // Polkadot / Kusama LSTs
-  bifrost_dot:     3.69,
-  bifrost_ksm:     6.99,
+  bifrost_dot:     4.25,
+  bifrost_ksm:     7.35,
   // Bitcoin LST
-  lombard_btc:      0.31,
+  lombard_btc:      0.91,
 }
 
 /** When the FALLBACK_MEASURED keys were read from live upstreams. */
-const FALLBACK_MEASURED_ON = '2026-10-17'
+const FALLBACK_MEASURED_ON = '2026-10-27'
 
 /**
  * How long a measured reading stays worth publishing. Owner decision 2026-09-18.
@@ -259,7 +267,7 @@ const FALLBACK_MEASURED: ReadonlySet<string> = new Set([
   'bifrost_dot', 'bifrost_ksm', 'etherfi_eth', 'frax_eth', 'jito_sol',
   'kelp_eth', 'lido_eth', 'lombard_btc', 'marinade_sol', 'native_inj',
   'origin_eth', 'puffer_eth', 'renzo_eth', 'rocketpool_eth', 'sanctum_sol',
-  'stader_eth', 'stader_matic', 'stakewise_eth', 'swell_eth',
+  'stader_eth', 'stakewise_eth',
 ])
 
 /**

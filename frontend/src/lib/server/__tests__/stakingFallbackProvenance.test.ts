@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { planFallbackRefresh } from '../../../../scripts/lib/stakingFallbackRefresh.mjs'
+import { planFallbackRefresh, readingDate } from '../../../../scripts/lib/stakingFallbackRefresh.mjs'
 
 /**
  * FALLBACK carries two kinds of number, and the difference is the whole point:
@@ -103,7 +103,7 @@ describe('staking FALLBACK provenance', () => {
     // The tests below exercise planFallbackRefresh; they prove nothing about the
     // command unless the command actually calls it.
     const script = readFileSync(join(process.cwd(), 'scripts/refresh-staking-fallbacks.mjs'), 'utf8')
-    expect(script).toMatch(/import \{ planFallbackRefresh \} from '\.\/lib\/stakingFallbackRefresh\.mjs'/)
+    expect(script).toMatch(/import \{[^}]*\bplanFallbackRefresh\b[^}]*\} from '\.\/lib\/stakingFallbackRefresh\.mjs'/)
     expect(script).toMatch(/if \(refusal\) \{[\s\S]*?process\.exit\(1\)/)
   })
 
@@ -162,6 +162,16 @@ describe('the fallback refresh writes only a whole reading (2026-10-13)', () => 
       TODAY,
     )
     expect(plan.refusal).toBe('not one measured key came back live.')
+  })
+
+  it('dates a reading by when it was taken, not when it is written', () => {
+    // 2026-10-27: a reading taken at 14:17 UTC, written after midnight UTC.
+    const after = new Date('2026-10-28T01:13:00Z')
+    expect(readingDate({ updatedAt: '2026-10-27T14:17:24.141Z' }, after)).toBe('2026-10-27')
+    expect(readingDate({}, after)).toBe('2026-10-28')
+    expect(readingDate({ updatedAt: 'not a date' }, after)).toBe('2026-10-28')
+    const script = readFileSync(join(process.cwd(), 'scripts/refresh-staking-fallbacks.mjs'), 'utf8')
+    expect(script).toContain('const today = readingDate(live)')
   })
 
   it('treats a live zero as no rate: skipped with a reason, never written, and the write refused', () => {

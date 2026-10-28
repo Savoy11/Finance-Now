@@ -10,6 +10,18 @@
 // INJ, which were the four then being served from the table). So the write now
 // needs every measured key read live, or it writes nothing.
 
+/**
+ * The date a reading was measured on: its own `updatedAt`, else today (UTC).
+ *
+ * A reading saved with `--from` can be written a day after it was taken: on
+ * 2026-10-27 one read at 14:17 UTC was written after midnight UTC, and the clock
+ * would have dated it 2026-10-28, a day it was not read.
+ */
+export function readingDate(live, now = new Date()) {
+  const at = typeof live?.updatedAt === 'string' ? Date.parse(live.updatedAt) : NaN
+  return new Date(Number.isNaN(at) ? now : at).toISOString().slice(0, 10)
+}
+
 /** Keys listed in FALLBACK_MEASURED, in source order. */
 export function measuredKeys(src) {
   const block = src.match(/const FALLBACK_MEASURED: ReadonlySet<string> = new Set\(\[([\s\S]*?)\]\)/)
