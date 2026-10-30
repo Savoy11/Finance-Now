@@ -93,12 +93,9 @@ export const LOCKUP_LEADS: Readonly<Record<string, LockupLead>> = Object.fromEnt
   ...leads('eth', 0, null, ['okx', 'crypto-com', 'bitget', 'gate-io', 'htx', 'robinhood', 'gemini', 'bitstamp', 'mexc']),
   // Two the agent evaluation of 2026-10-17 raised (docs/assessments/T6-agents-2026-10-17.md,
   // D136): the Research Analyst read both rows out as staking options, as they stand.
-  ['uniswap:eth:terms', {
-    from: 'evaluation',
-    days: 0,
-    note: null,
-    ask: 'This row is an ETH/USDC trading pool, which earns trading fees and is not staking. Check whether Uniswap offers ETH staking at all; if it does not, choose Not offered.',
-  }],
+  // The uniswap:eth lead was answered Not offered by the 2026-10-30 search-engine check
+  // (Uniswap is a DEX; the row was a trading pool) and the entry left the catalog with it;
+  // a lead may only name a row that exists, so it is gone from this table too.
   ['kraken:eth:terms', {
     from: 'evaluation',
     days: 7,
