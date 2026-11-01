@@ -759,6 +759,9 @@ Central data file for the Staking Opportunities page.
   search-result snippets or a protocol's public GitHub repository, with its sources in the note, settles a fact as one read
   on the provider's own pages does; only "Can't see it" leaves a fact open. A provider's own site is still never opened by
   software (D149). An audit count is every report the protocol itself lists for the staking product, fix reviews included.
+  **A figure no provider publishes is left out (D181, 2026-11-01).** Owner: *"Take those 15 figures out of the catalog"*: the
+  staking totals of nine exchanges and Aave, and five audit counts. Each provider carries `unpublished` naming the field, which
+  the check page reads so it stops asking, and a test fails if a field so marked carries a figure. The page and API show none.
 
 To add a provider: append to `STAKING_PROVIDERS` following the pattern. Celsius should always be kept — it's used as the educational cautionary example.
 

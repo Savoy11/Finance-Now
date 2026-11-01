@@ -83,3 +83,25 @@ describe('liquid staking lock-ups', () => {
     expect(notes['ankr:avax']).toMatch(/up to 4 weeks/)
   })
 })
+
+// D181 (2026-11-01): a figure the provider does not publish is left out, never kept as a
+// guess. Marking it `unpublished` while still carrying the number would show a figure the
+// owner ruled unsourceable, and the check page would stop asking about it.
+describe('figures the provider does not publish (D181)', () => {
+  it('carries no figure it is marked as not publishing', () => {
+    const marked = STAKING_PROVIDERS.filter((p) => (p.unpublished ?? []).length > 0)
+    expect(marked.length).toBeGreaterThan(0)
+    for (const p of marked) {
+      for (const field of p.unpublished!) expect([p.id, p[field]]).toEqual([p.id, undefined])
+    }
+  })
+
+  it('names no audit count or staking total for them in the text either', () => {
+    for (const p of STAKING_PROVIDERS) {
+      const features = Object.values(p.assets).flatMap((a) => a?.features ?? [])
+      if (p.unpublished?.includes('auditCount')) {
+        expect(features.filter((f) => /\b\d+\s+(independent\s+)?(security\s+)?audits?\b/i.test(f))).toEqual([])
+      }
+    }
+  })
+})
