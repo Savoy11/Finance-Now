@@ -39,8 +39,16 @@
   var store = null
   var canWrite = false        // set at start; a refused write turns it off for the visit
   var checks = {}, notes = {}
+  var loaded = false          // the first answers have arrived
   var rowEls = {}, cardEls = {}
-  var GROUPS = ['all', 'quick', 'start', 'liquid', 'wallet', 'cefi']
+  var GROUPS = ['all', 'quick', 'open', 'start', 'liquid', 'wallet', 'cefi']
+  // The Still open view keeps the rows that were open when it was chosen, so a row
+  // answered there stays in sight with its new answer until the view is chosen again.
+  var openKeys = {}
+  function snapshotOpen() {
+    openKeys = {}
+    ROWS.forEach(function (r) { if (!C.isSettled(r, checks[r.key])) openKeys[r.key] = true })
+  }
   var view = { group: 'all', hideDone: false }
   try {
     var saved = JSON.parse(localStorage.getItem('sf-view') || 'null')
@@ -361,10 +369,8 @@
     }
   }
 
-  function rowDone(r) {
-    var s = C.answerState(r, checks[r.key])
-    return s === 'current' || s === 'applied'
-  }
+  // Finished means settled: a "Can't see it" answer leaves the fact open.
+  function rowDone(r) { return C.isSettled(r, checks[r.key]) }
 
   // ── a note about the provider (link moved, sign-in needed, region block) ──────
   function buildProviderNote(card) {
@@ -458,12 +464,18 @@
     return sec
   }
 
-  // In the Quick facts view a card shows only its website and founding-year rows.
-  function rowShown(r) { return view.group !== 'quick' || C.isQuickRow(r) }
+  // In the Quick facts view a card shows only its website and founding-year rows; in the
+  // Still open view, only the rows with no settled answer.
+  function rowShown(r) {
+    if (view.group === 'quick') return C.isQuickRow(r)
+    if (view.group === 'open') return !!openKeys[r.key]
+    return true
+  }
 
   function cardVisible(card) {
     if (view.group === 'start') { if (!hasLead(card)) return false }
     else if (view.group === 'quick') { if (!card.rows.some(C.isQuickRow)) return false }
+    else if (view.group === 'open') { if (!card.rows.some(rowShown)) return false }
     else if (view.group !== 'all' && card.category !== view.group) return false
     if (!view.hideDone) return true
     return !card.rows.filter(rowShown).every(function (r) { return rowDone(r) && rowEls[r.key] && rowEls[r.key].form.root.hidden })
@@ -494,6 +506,7 @@
       p.textContent = ''
       ;[
         [all.answered, all.total, 'facts answered'],
+        [all.settled, all.total, 'facts settled'],
         [terms.answered, terms.total, 'coin minimums and lock-ups'],
         [finished, CARDS.length, 'providers finished'],
         [C.tally(QUICK, checks).answered, QUICK.length, 'quick facts: websites and founding years'],
@@ -512,6 +525,8 @@
         p.appendChild(d)
       })
     }
+    var openN = $('sf-open-n')
+    if (openN) openN.textContent = ' · ' + (all.total - all.settled)
     setStatus($('sf-stale'), all.stale ? all.stale + (all.stale === 1 ? ' answer was' : ' answers were') + ' given before the catalog changed. Those rows say “Out of date”; check them again.' : '', 'warn')
     CARDS.forEach(paintCard)
   }
@@ -523,6 +538,7 @@
   }
 
   function applyView() {
+    if (view.group === 'open') snapshotOpen()
     GROUPS.forEach(function (g) { var b = $('sf-group-' + g); if (b) b.setAttribute('aria-pressed', String(view.group === g)) })
     $('sf-hide').checked = view.hideDone
     CARDS.forEach(paintCard)
@@ -581,7 +597,10 @@
       snap.docs.forEach(function (d) {
         try { next[d.id] = C.normCheck(d.id, d.data()) } catch (e) { /* unreadable row: skipped */ }
       })
+      var first = !loaded
+      loaded = true
       checks = next
+      if (first && view.group === 'open') snapshotOpen()
       paintAll()
     }, function (e) { setStatus($('sf-conn'), 'Answers stopped updating (' + ((e && e.code) || 'error') + '). Reload to reconnect.', 'err') })
 

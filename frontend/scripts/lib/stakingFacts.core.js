@@ -257,6 +257,16 @@ var StakingFactsCore = (function () {
     return 'stale'
   }
 
+  /**
+   * Whether a fact is settled: its answer is current and is "Matches", "Different" or "Not
+   * offered", or the catalog already carries it. "Can't see it" is an answer but settles
+   * nothing, so a provider is finished only when every one of its facts is settled.
+   */
+  function isSettled(row, check) {
+    var s = answerState(row, check)
+    return s === 'applied' || (s === 'current' && own(SETTLES, check.result))
+  }
+
   /** Counts for a set of rows. `answered` includes "can't see it"; `settled` does not. */
   function tally(rows, checksByKey) {
     var t = { total: 0, answered: 0, settled: 0, stale: 0, ok: 0, changed: 0, 'not-offered': 0, 'cant-see': 0 }
@@ -267,7 +277,7 @@ var StakingFactsCore = (function () {
       if (s === 'unchecked') return
       if (s === 'stale') { t.stale++; return }
       t.answered++
-      if (s === 'applied' || own(SETTLES, c.result)) t.settled++
+      if (isSettled(r, c)) t.settled++
       if (own(t, c.result)) t[c.result]++
     })
     return t
@@ -432,7 +442,7 @@ var StakingFactsCore = (function () {
     own: own, parseField: parseField, parseBillions: parseBillions, parseUrl: parseUrl,
     normCheck: normCheck, normProviderNote: normProviderNote,
     checkAnswer: checkAnswer, answerDoc: answerDoc,
-    answerState: answerState, tally: tally, factPlan: factPlan,
+    answerState: answerState, isSettled: isSettled, tally: tally, factPlan: factPlan,
     withRetry: withRetry, dbMessage: dbMessage, makeStore: makeStore,
     fieldText: fieldText, rowGuidance: rowGuidance, providerGuidance: providerGuidance,
     QUICK_KINDS: QUICK_KINDS, isQuickRow: isQuickRow,

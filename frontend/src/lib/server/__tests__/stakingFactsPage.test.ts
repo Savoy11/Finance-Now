@@ -37,6 +37,7 @@ type Core = {
   checkAnswer(row: FactRow, input: Record<string, unknown>, nowMs: number): string | null
   answerDoc(row: FactRow, input: Record<string, unknown>, me: string | null, nowMs: number): Record<string, unknown>
   answerState(row: FactRow, c: Check | undefined): string
+  isSettled(row: FactRow, c: Check | undefined): boolean
   tally(rows: FactRow[], checks: Record<string, Check>): Record<string, number>
   QUICK_KINDS: string[]
   isQuickRow(row: unknown): boolean
@@ -212,6 +213,23 @@ describe('the plan the session reads', () => {
 
   it('counts answered and settled apart', () => {
     expect(core.tally(rows, checks)).toMatchObject({ total: 6, answered: 5, settled: 4, 'cant-see': 1, stale: 0 })
+  })
+
+  it('calls a fact settled only when its answer settles it (the Still open view, 2026-11-01)', () => {
+    const row = terms()
+    expect(core.isSettled(row, undefined)).toBe(false)
+    expect(core.isSettled(row, answer(row, { result: 'cant-see' }))).toBe(false)
+    expect(core.isSettled(row, answer(row, { result: 'ok' }))).toBe(true)
+    expect(core.isSettled(row, answer(row, { result: 'not-offered' }))).toBe(true)
+    // An answer given against figures that have since moved settles nothing.
+    expect(core.isSettled(terms({ lockup: 7 }), answer(row, { result: 'ok' }))).toBe(false)
+    // A "Different" answer the catalog now carries is settled.
+    const changed = answer(row, { result: 'changed', values: { min: '0.1' } })
+    expect(core.isSettled(terms({ min: 0.1 }), changed)).toBe(true)
+    // The tally counts with the same rule.
+    const byKey: Record<string, Check> = checks
+    const settled = rows.filter((r) => core.isSettled(r, byKey[r.key])).length
+    expect(core.tally(rows, checks).settled).toBe(settled)
   })
 })
 
@@ -390,9 +408,26 @@ describe('the published page', () => {
     expect(buildStakingFactsPage(real)).toContain(`id="sf-group-quick" aria-pressed="false" title="Only each provider’s website and the year it was founded, so they can be cleared in one sitting">Quick facts · ${quick}</button>`)
     // The client shows only quick rows in that view, and counts them in its own meter.
     expect(clientSrc).toMatch(/var GROUPS = \['all', 'quick',/)
-    expect(clientSrc).toMatch(/function rowShown\(r\) \{ return view\.group !== 'quick' \|\| C\.isQuickRow\(r\) \}/)
+    expect(clientSrc).toMatch(/if \(view\.group === 'quick'\) return C\.isQuickRow\(r\)/)
     expect(clientSrc).toMatch(/re\.root\.hidden = !rowShown\(r\)/)
     expect(clientSrc).toMatch(/'quick facts: websites and founding years'/)
+  })
+
+  it('offers a Still open view of the facts with no settled answer (2026-11-01)', () => {
+    // Every fact had an answer once the search passes ended, so "finished" by answers alone
+    // hid all 49 providers while 95 facts were still "Can't see it".
+    expect(html).toContain(`<button type="button" id="sf-group-open" aria-pressed="false" title="Only the facts with no settled answer: not answered yet, out of date, or marked Can't see it">Still open<span id="sf-open-n"></span></button>`)
+    expect(html).toContain('<b>Still open</b> shows only the facts with no settled answer')
+    expect(clientSrc).toMatch(/var GROUPS = \['all', 'quick', 'open',/)
+    expect(clientSrc).toMatch(/if \(!C\.isSettled\(r, checks\[r\.key\]\)\) openKeys\[r\.key\] = true/)
+    expect(clientSrc).toMatch(/if \(view\.group === 'open'\) return !!openKeys\[r\.key\]/)
+    // The rows are taken once the answers have arrived, not from the empty set before.
+    expect(clientSrc).toMatch(/if \(first && view\.group === 'open'\) snapshotOpen\(\)/)
+    expect(clientSrc).toMatch(/openN\.textContent = ' · ' \+ \(all\.total - all\.settled\)/)
+    // A provider is finished, for its meter and for "Hide providers I've finished", only
+    // when every fact is settled.
+    expect(clientSrc).toMatch(/function rowDone\(r\) \{ return C\.isSettled\(r, checks\[r\.key\]\) \}/)
+    expect(clientSrc).toMatch(/\[all\.settled, all\.total, 'facts settled'\]/)
   })
 
   it('offers a Start here filter only when a row carries a lead', () => {
