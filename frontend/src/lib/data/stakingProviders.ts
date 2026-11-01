@@ -1592,37 +1592,6 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
   },
 
   {
-    id: 'convex',
-    name: 'Convex Finance',
-    category: 'liquid',
-    tagline: 'Boost Curve LP rewards by staking cvxCRV — the dominant CRV yield layer',
-    description: 'Convex Finance sits on top of Curve Finance, letting users deposit Curve LP tokens to earn boosted CRV rewards without locking CRV themselves. Staking cvxCRV earns a share of the CRV fees collected by Convex\'s locked veCRV position. Convex controls a dominant share of all veCRV, making it the primary venue for CRV governance influence and boosted Curve yields.',
-    custodyModel: 'smart-contract',
-    founded: 2021,
-    website: 'https://curve.convexfinance.com/stake',
-    tvlBillions: 2.0,
-    auditCount: 2,
-    assets: {
-      eth: {
-        coinId: 'eth',
-        staticApr: 6.0,
-        minStakeNative: 0,
-        lockupDays: 0,
-        liquid: false,
-        features: [
-          'Stakes cvxCRV (Convex CRV) — not ETH directly',
-          'Earns CRV, CVX, and 3CRV (USDT/USDC/DAI) rewards',
-          'No lockup (unlike native veCRV 4-year lock)',
-          'Convex controls ~50% of all veCRV — dominant Curve governance influence',
-          'cvxCRV/CRV liquidity pool for instant exit (may have slippage)',
-          '2 audits of its CRV staking listed by Convex',
-        ],
-        yieldType: 'governance',
-      },
-    },
-  },
-
-  {
     id: 'ankr',
     name: 'Ankr Staking',
     category: 'liquid',

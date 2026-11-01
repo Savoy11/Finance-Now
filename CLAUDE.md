@@ -726,10 +726,10 @@ Central data file for the Staking Opportunities page.
   render one, so do not wire it into a page on the assumption it is merely unused.~~
   **DELETED 2026-09-25 with the six dimensions (D26)** — there is no staking scorer to
   wire in. This bullet still called it "retained" until 2026-09-29 (T-415).
-- **`STAKING_PROVIDERS`** array — 54 providers (count is dynamic; the page reads `STAKING_PROVIDERS.length`; Uniswap left 2026-10-30 — a DEX, never a staking provider, per the T-394 check). Representative names:
+- **`STAKING_PROVIDERS`** array — 53 providers (count is dynamic; the page reads `STAKING_PROVIDERS.length`; Uniswap left 2026-10-30 — a DEX, never a staking provider, per the T-394 check; Convex left 2026-11-01 (D179) — it stakes CRV, not ETH, though the catalog filed it under ETH). Representative names:
   - CeFi: Celsius (defunct, cautionary), Coinbase, Kraken, Binance, OKX, Bybit, KuCoin, Crypto.com, Bitget, Gate.io, HTX, Robinhood, Nexo, Gemini, Bitfinex, Bitstamp, MEXC, Upbit
   - Wallet: Ledger Live, MetaMask, Phantom, Trust Wallet, Exodus, Keplr, Solflare, Coinbase Wallet, Atomic Wallet, Trezor Suite
-  - Liquid/restaking: Lido, Rocket Pool, Marinade, Jito, Stride, Benqi, EtherFi, Frax, Stakewise, Stader, Swell, Renzo, Kelp, Puffer, Bedrock, Sanctum, Babylon, Lombard, Aave, Convex, Ankr, MetaPool, and more
+  - Liquid/restaking: Lido, Rocket Pool, Marinade, Jito, Stride, Benqi, EtherFi, Frax, Stakewise, Stader, Swell, Renzo, Kelp, Puffer, Bedrock, Sanctum, Babylon, Lombard, Aave, Ankr, MetaPool, and more
 - **Re-reading the facts (T-394, D134, 2026-10-17).** `npm run staking-facts-page -- <out.html>` builds the
   **Staking Facts Check** page: one card per live provider with its own website, and a row per fact (website, year
   founded, audit count, the staking-assets figure where DefiLlama supplies none, and each coin's minimum stake and
