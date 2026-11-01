@@ -855,7 +855,11 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     name: 'Bitget',
     category: 'cefi',
     tagline: 'Top-10 derivatives exchange by volume with growing spot staking products',
-    description: 'Bitget has grown rapidly post-FTX as a derivatives-focused exchange, now offering staking via Bitget Earn. Strong copy-trading community. Registered in Seychelles with a user protection fund. Regulatory status varies by jurisdiction — not available to US users.',
+    // The September 2026 hack, from news reports found 2026-11-01 (PYMNTS, BleepingComputer,
+    // Cointelegraph, Forklog): unauthorized transfers flagged 2026-09-24, about $387.5M taken
+    // from hot and warm wallets (first put at $351.6M), withdrawals restored in stages after.
+    // Added at the owner's word, 2026-11-01 (T-394).
+    description: 'Bitget has grown rapidly post-FTX as a derivatives-focused exchange, now offering staking via Bitget Earn. Strong copy-trading community. Registered in Seychelles with a user protection fund. On September 24, 2026 it lost about $387.5 million from its hot and warm wallets in a hack, and restored withdrawals in stages afterwards. Regulatory status varies by jurisdiction — not available to US users.',
     custodyModel: 'custodial',
     founded: 2018,
     website: 'https://www.bitget.com/earning/staking',
