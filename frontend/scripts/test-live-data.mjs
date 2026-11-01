@@ -436,13 +436,14 @@ const tests = [
     const keys = Object.keys(rates)
     if (keys.length === 0) throw new Error('no rates')
     // The DeFiLlama + native-rate expansion added ~23 protocol keys to the
-    // fallback table, so a current route ALWAYS returns ~48 keys (51 until Stride's
-    // three went, 2026-10-14) regardless of
+    // fallback table, so a current route ALWAYS returns ~45 keys (51 until Stride's
+    // three went, 2026-10-14; 48 until pSTAKE's two and Quicksilver's one went,
+    // 2026-11-01) regardless of
     // which upstreams the running IP can reach (these are fallback keys — their
     // presence is IP-independent). Far fewer keys means the server is running
     // pre-expansion code (a stale dev server / old checkout) — fail loudly here
     // rather than let the run pass green against code that isn't the branch's.
-    const REQUIRED_KEYS = ['frax_eth', 'renzo_eth', 'kelp_eth', 'benqi_avax', 'lombard_btc', 'quicksilver_atom']
+    const REQUIRED_KEYS = ['frax_eth', 'renzo_eth', 'kelp_eth', 'benqi_avax', 'lombard_btc', 'bifrost_dot']
     // A measured fallback past its 14-day window is WITHHELD (deleted from
     // `rates`, marked 'estimate-expired' in `gaps`) when its upstream also failed.
     // That is the route working, not stale code, so it is reported, not failed.

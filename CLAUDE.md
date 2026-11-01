@@ -755,6 +755,10 @@ Central data file for the Staking Opportunities page.
   and SOL rows changed (no minimum; 6–60 and about 3–4 days' unbonding). **A liquid token's lock-up is 0**, since
   its receipt token sells at once; the provider's own withdrawal wait goes in `lockupNote` (Lido 1–5 days, Ankr up
   to 4 weeks). `stakingProviders.test.ts` holds both halves.
+  **Search-based answers count as verified (D178, 2026-11-01).** Owner: *"count them as verified"*. An answer built from
+  search-result snippets or a protocol's public GitHub repository, with its sources in the note, settles a fact as one read
+  on the provider's own pages does; only "Can't see it" leaves a fact open. A provider's own site is still never opened by
+  software (D149). An audit count is every report the protocol itself lists for the staking product, fix reviews included.
 
 To add a provider: append to `STAKING_PROVIDERS` following the pattern. Celsius should always be kept — it's used as the educational cautionary example.
 
