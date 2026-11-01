@@ -147,8 +147,9 @@ export function stakingFactRows(
     rows.push({ key: `${p.id}:site`, providerId: p.id, kind: 'site', fields: [{ name: 'url', type: 'url', catalog: p.website ?? null }] })
     rows.push({ key: `${p.id}:founded`, providerId: p.id, kind: 'founded', fields: [{ name: 'year', type: 'year', catalog: p.founded ?? null }] })
     // Audits: where the catalog records a count, and for every liquid protocol, whose
-    // contracts are what an audit covers, so a missing count is worth a look.
-    if (p.auditCount != null || p.category === 'liquid') {
+    // contracts are what an audit covers, so a missing count is worth a look, unless the
+    // owner has ruled that the protocol publishes none (`unpublished`, D181).
+    if (p.auditCount != null || (p.category === 'liquid' && !p.unpublished?.includes('auditCount'))) {
       rows.push({ key: `${p.id}:audits`, providerId: p.id, kind: 'audits', fields: [{ name: 'count', type: 'count', catalog: p.auditCount ?? null }] })
     }
     // Assets: only a figure the catalog shows that DefiLlama does not supply.

@@ -292,9 +292,23 @@ describe('the rows, from the real catalog', () => {
     expect(expected.length).toBeGreaterThan(0)
   })
 
-  it('asks for audits where the catalog has a count, and for every liquid protocol', () => {
-    const expected = live.filter((p) => p.auditCount != null || p.category === 'liquid').map((p) => p.id).sort()
+  it('asks for audits where the catalog has a count, and for every liquid protocol that publishes them', () => {
+    const expected = live
+      .filter((p) => p.auditCount != null || (p.category === 'liquid' && !p.unpublished?.includes('auditCount')))
+      .map((p) => p.id).sort()
     expect(rows.filter((r) => r.kind === 'audits').map((r) => r.providerId).sort()).toEqual(expected)
+  })
+
+  it('never asks for a figure the owner ruled unpublished (D181)', () => {
+    const marked = live.filter((p) => (p.unpublished ?? []).length > 0)
+    expect(marked.length).toBeGreaterThan(0)
+    for (const p of marked) {
+      if (p.unpublished!.includes('auditCount')) expect(rows.some((r) => r.key === `${p.id}:audits`)).toBe(false)
+      if (p.unpublished!.includes('tvlBillions')) expect(rows.some((r) => r.key === `${p.id}:assets`)).toBe(false)
+    }
+    // The rule is the reason: a liquid protocol with no count and no ruling is still asked.
+    const probe = { ...marked.find((p) => p.category === 'liquid' && p.unpublished!.includes('auditCount'))!, unpublished: undefined }
+    expect(stakingFactRows([probe], {}).some((r) => r.kind === 'audits')).toBe(true)
   })
 
   it('names in its lock-up leads only rows that exist', () => {

@@ -181,6 +181,13 @@ export interface StakingProvider {
   custodyModel: 'custodial' | 'non-custodial' | 'smart-contract'
   tvlBillions?: number
   auditCount?: number
+  /**
+   * Figures the provider itself does not publish, so the catalog shows none and the Staking
+   * Facts Check does not ask for one (D181, 2026-11-01). Two search passes and the provider's
+   * own reports found no staking total or audit list; a figure nobody can source is left out,
+   * as a missing price is, rather than kept as a guess. A field named here must be absent.
+   */
+  unpublished?: ReadonlyArray<'tvlBillions' | 'auditCount'>
   founded?: number
   /**
    * The provider's own, unmonetised URL. ALWAYS the honest path.
@@ -349,7 +356,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     custodyModel: 'custodial',
     founded: 2011,
     website: 'https://www.kraken.com/features/staking',
-    tvlBillions: 1.3,
+    unpublished: ['tvlBillions'],
     assets: {
       eth:  { coinId: 'eth',  staticApr: 3.5,  minStakeNative: 0,      lockupDays: 5,  lockupNote: '~1–5 days per Kraken\'s guide, depending on Ethereum\'s exit queue', liquid: false, features: ['~1–5 days to unstake (Kraken\'s guide)', 'US staking relaunched January 2025', 'No minimums per Kraken\'s staking page', 'Slashing protection included'] },
       sol:  { coinId: 'sol',  staticApr: 6.0,  minStakeNative: 0,      lockupDays: 3,  lockupNote: '~2–3 days per Kraken\'s guide', liquid: false, features: ['Higher APY than most CeFi', 'Kraken selects top validators', 'No minimum per Kraken\'s pages'] },
@@ -370,7 +377,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     custodyModel: 'custodial',
     founded: 2017,
     website: 'https://www.binance.com/en/earn',
-    tvlBillions: 5.0,
+    unpublished: ['tvlBillions'],
     assets: {
       eth:  { coinId: 'eth',  staticApr: 3.1,  minStakeNative: 0.0001, lockupDays: 0,  receiptToken: 'WBETH', liquid: true,  features: ['WBETH — liquid wrapped ETH', 'BETH legacy token also supported', 'Unstaking queue can be long'] },
       sol:  { coinId: 'sol',  staticApr: 5.0,  minStakeNative: 0.1,    lockupDays: 0,  lockupNote: 'BNSOL can be sold at once; redeeming BNSOL for SOL takes about 4 days', receiptToken: 'BNSOL', liquid: true,  features: ['BNSOL — liquid receipt token', 'Competitive APY'] },
@@ -396,7 +403,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     custodyModel: 'custodial',
     founded: 2017,
     website: 'https://www.okx.com/earn',
-    tvlBillions: 1.5,
+    unpublished: ['tvlBillions'],
     assets: {
       eth:  { coinId: 'eth',  staticApr: 3.2,  minStakeNative: 0.01,  lockupDays: 0,  liquid: false, features: ['On-chain ETH staking', 'Queue-based withdrawal', 'Slashing protection'] },
       sol:  { coinId: 'sol',  staticApr: 5.5,  minStakeNative: 1,     lockupDays: 5,  liquid: false, features: ['On-Chain Earn product', 'Competitive rate'] },
@@ -418,7 +425,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     custodyModel: 'custodial',
     founded: 2018,
     website: 'https://www.bybit.com/en/earn',
-    tvlBillions: 0.8,
+    unpublished: ['tvlBillions'],
     assets: {
       eth:  { coinId: 'eth',  staticApr: 3.3,  minStakeNative: 0.01,  lockupDays: 7,  liquid: false, features: ['Bybit covers slashing', 'Flexible exit (queue-based)'] },
       sol:  { coinId: 'sol',  staticApr: 5.8,  minStakeNative: 0.1,   lockupDays: 3,  lockupNote: '~2–3 days per Bybit\'s pages; bbSOL redemptions are prompt below 400K SOL', liquid: false, features: ['Competitive APY', 'Auto-compound'] },
@@ -583,7 +590,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     founded: 2016,
     website: 'https://stake.rocketpool.net',
     tvlBillions: 1.39,
-    auditCount: 7,
+    unpublished: ['auditCount'],
     assets: {
       eth: {
         coinId: 'eth',
@@ -598,7 +605,6 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
           '3,000+ permissionless node operators (most decentralized ETH LST)',
           'Node operators stake 8 ETH + 2.4 ETH worth of RPL as insurance',
           'No company — protocol DAO governance only',
-          '7 independent security audits',
           'Holds a smaller share of staked ETH than Lido',
           'rETH usable as DeFi collateral (Aave, Maker, Compound)',
         ],
@@ -648,7 +654,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     founded: 2022,
     website: 'https://www.jito.network/staking/',
     tvlBillions: 1.21,
-    auditCount: 3,
+    unpublished: ['auditCount'],
     assets: {
       sol: {
         coinId: 'sol',
@@ -809,7 +815,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     custodyModel: 'custodial',
     founded: 2017,
     website: 'https://www.kucoin.com/earn/staking',
-    tvlBillions: 0.6,
+    unpublished: ['tvlBillions'],
     assets: {
       eth:  { coinId: 'eth',  staticApr: 3.5,  minStakeNative: 0.01,  lockupDays: 0,  liquid: false, features: ['Soft staking — no lockup', 'Competitive rate', 'Founders indicted by the US DOJ in 2023'] },
       sol:  { coinId: 'sol',  staticApr: 6.5,  minStakeNative: 1,     lockupDays: 5,  lockupNote: '5-day redemption per KuCoin\'s staking page', liquid: false, features: ['Fixed-term and flexible options', 'Higher APY than most CeFi'] },
@@ -837,7 +843,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     custodyModel: 'custodial',
     founded: 2016,
     website: 'https://crypto.com/staking',
-    tvlBillions: 0.7,
+    unpublished: ['tvlBillions'],
     assets: {
       eth:  { coinId: 'eth',  staticApr: 3.0,  minStakeNative: 0.01, lockupDays: 0,  liquid: false, features: ['Flexible staking, no lockup', 'CRO staking boosts APY by up to 2×'] },
       sol:  { coinId: 'sol',  staticApr: 4.5,  minStakeNative: 1,    lockupDays: 5,  liquid: false, features: ['~5-day cooldown', 'Auto-compound'] },
@@ -863,7 +869,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     custodyModel: 'custodial',
     founded: 2018,
     website: 'https://www.bitget.com/earning/staking',
-    tvlBillions: 0.5,
+    unpublished: ['tvlBillions'],
     assets: {
       eth:  { coinId: 'eth',  staticApr: 3.2,  minStakeNative: 0.01, lockupDays: 0,  liquid: false, features: ['Flexible ETH staking', 'Slashing protection included'] },
       sol:  { coinId: 'sol',  staticApr: 5.5,  minStakeNative: 1,    lockupDays: 5,  liquid: false, features: ['Competitive SOL rate', '~5-day cooldown'] },
@@ -882,7 +888,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     custodyModel: 'custodial',
     founded: 2013,
     website: 'https://www.gate.com/staking',
-    tvlBillions: 0.9,
+    unpublished: ['tvlBillions'],
     assets: {
       eth:  { coinId: 'eth',  staticApr: 3.3,  minStakeNative: 0.01, lockupDays: 0,  liquid: false, features: ['Flexible ETH staking'] },
       sol:  { coinId: 'sol',  staticApr: 6.0,  minStakeNative: 1,    lockupDays: 5,  liquid: false, features: ['Competitive rate', '~5-day cooldown'] },
@@ -907,7 +913,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     custodyModel: 'custodial',
     founded: 2013,
     website: 'https://www.htx.com/en-us/finance',
-    tvlBillions: 0.4,
+    unpublished: ['tvlBillions'],
     assets: {
       eth:  { coinId: 'eth',  staticApr: 3.5,  minStakeNative: 0.01, lockupDays: 0,  liquid: false, features: ['Flexible staking', 'Ownership linked to Justin Sun'] },
       sol:  { coinId: 'sol',  staticApr: 5.5,  minStakeNative: 1,    lockupDays: 5,  liquid: false, features: ['~5-day cooldown'] },
@@ -1096,7 +1102,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     custodyModel: 'non-custodial',
     founded: 2017,
     website: 'https://atomicwallet.io/staking',
-    auditCount: 1,
+    unpublished: ['auditCount'],
     assets: {
       sol: { coinId: 'sol', staticApr: 7.0,  minStakeNative: 0.01, lockupDays: 3,  lockupNote: '~2-3 epoch cooldown', liquid: false, features: ['Native delegation', '2023 hack hit key security — see description'] },
       eth: { coinId: 'eth', staticApr: 3.0,  minStakeNative: 0.1,  lockupDays: 0,  lockupNote: 'Staking returns stETH, which can be sold at once; redeeming through Lido takes about 1–5 days', receiptToken: 'stETH', liquid: true, features: ['In-app ETH staking returns Lido stETH'] },
@@ -1199,9 +1205,9 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     founded: 2021,
     website: 'https://www.staderlabs.com/eth/stake/',
     tvlBillions: 0.27,
-    auditCount: 6,
+    unpublished: ['auditCount'],
     assets: {
-      eth:  { coinId: 'eth',  staticApr: 2.26,  minStakeNative: 0, lockupDays: 0, receiptToken: 'ETHx',   liquid: true, liveAprKey: 'stader_eth',   features: ['ETHx — liquid receipt for Ethereum staking', 'Permissioned + community node operators', 'Instant exit via Curve ETHx pool', '6 audits'] },
+      eth:  { coinId: 'eth',  staticApr: 2.26,  minStakeNative: 0, lockupDays: 0, receiptToken: 'ETHx',   liquid: true, liveAprKey: 'stader_eth',   features: ['ETHx — liquid receipt for Ethereum staking', 'Permissioned + community node operators', 'Instant exit via Curve ETHx pool'] },
       bnb:  { coinId: 'bnb',  staticApr: 5.0,  minStakeNative: 0, lockupDays: 0, receiptToken: 'BNBx',   liquid: true, liveAprKey: 'stader_bnb',   features: ['BNBx — liquid BNB staking, bypasses 7-day unbonding', 'Available on BNB Chain DeFi'] },
     },
   },
@@ -1283,7 +1289,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     founded: 2023,
     website: 'https://kelpdao.xyz',
     tvlBillions: 1.15,
-    auditCount: 3,
+    unpublished: ['auditCount'],
     assets: {
       eth: {
         coinId: 'eth',
@@ -1575,7 +1581,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     custodyModel: 'smart-contract',
     founded: 2017,
     website: 'https://app.aave.com/staking',
-    tvlBillions: 0.5,
+    unpublished: ['tvlBillions'],
     auditCount: 6,
     assets: {
       eth: {
