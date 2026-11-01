@@ -627,7 +627,8 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
       sol: {
         coinId: 'sol',
         staticApr: 6.05,
-        minStakeNative: 0.01,
+        // No minimum beyond zero: its deposit minimum was set to 1 lamport, and its help pages say none is enforced (GitHub, D178, 2026-11-01).
+        minStakeNative: 0,
         lockupDays: 0,
         receiptToken: 'mSOL',
         liquid: true,
@@ -659,7 +660,8 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
       sol: {
         coinId: 'sol',
         staticApr: 4.98,
-        minStakeNative: 0.01,
+        // No minimum beyond zero: the SPL stake-pool program refuses only a deposit too small to mint one JitoSOL (GitHub, D178, 2026-11-01).
+        minStakeNative: 0,
         lockupDays: 0,
         receiptToken: 'jitoSOL',
         liquid: true,
@@ -1209,8 +1211,10 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     tvlBillions: 0.27,
     unpublished: ['auditCount'],
     assets: {
-      eth:  { coinId: 'eth',  staticApr: 2.26,  minStakeNative: 0, lockupDays: 0, receiptToken: 'ETHx',   liquid: true, liveAprKey: 'stader_eth',   features: ['ETHx — liquid receipt for Ethereum staking', 'Permissioned + community node operators', 'Instant exit via Curve ETHx pool'] },
-      bnb:  { coinId: 'bnb',  staticApr: 5.0,  minStakeNative: 0, lockupDays: 0, receiptToken: 'BNBx',   liquid: true, liveAprKey: 'stader_bnb',   features: ['BNBx — liquid BNB staking, bypasses 7-day unbonding', 'Available on BNB Chain DeFi'] },
+      // Minimums from Stader's contracts on GitHub (D178, 2026-11-01): ETHx's MIN_DEPOSIT_AMOUNT is 1e14 wei;
+      // BNBx deposits pass to BNB Chain's StakeHub, which requires at least 1 BNB.
+      eth:  { coinId: 'eth',  staticApr: 2.26,  minStakeNative: 0.0001, lockupDays: 0, receiptToken: 'ETHx',   liquid: true, liveAprKey: 'stader_eth',   features: ['ETHx — liquid receipt for Ethereum staking', 'Permissioned + community node operators', 'Instant exit via Curve ETHx pool'] },
+      bnb:  { coinId: 'bnb',  staticApr: 5.0,  minStakeNative: 1, lockupDays: 0, receiptToken: 'BNBx',   liquid: true, liveAprKey: 'stader_bnb',   features: ['BNBx — liquid BNB staking, bypasses 7-day unbonding', 'Available on BNB Chain DeFi'] },
     },
   },
 
@@ -1391,7 +1395,8 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     auditCount: 4,
     assets: {
       eth: { coinId: 'eth', staticApr: 2.44, minStakeNative: 0, lockupDays: 0, receiptToken: 'uniETH', liquid: true, liveAprKey: 'bedrock_eth', features: ['uniETH — liquid ETH staking with EigenLayer restaking', 'Instant exit via uniETH/ETH Curve pool', '4 audits'] },
-      btc: { coinId: 'btc', staticApr: 3.5, minStakeNative: 0.001, lockupDays: 0, receiptToken: 'uniBTC', liquid: true, features: ['uniBTC — BTC liquid restaking via Babylon protocol', 'Earn BTC yield by restaking through EVM wrapper', 'Nascent product'] },
+      // uniBTC's Vault refuses only an amount below one satoshi (GitHub, D178, 2026-11-01).
+      btc: { coinId: 'btc', staticApr: 3.5, minStakeNative: 0, lockupDays: 0, receiptToken: 'uniBTC', liquid: true, features: ['uniBTC — BTC liquid restaking via Babylon protocol', 'Earn BTC yield by restaking through EVM wrapper', 'Nascent product'] },
     },
   },
 
@@ -1414,7 +1419,8 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
       sol: {
         coinId: 'sol',
         staticApr: 5.63,
-        minStakeNative: 0.01,
+        // No minimum beyond zero: INF refuses only a zero amount (GitHub, D178, 2026-11-01).
+        minStakeNative: 0,
         lockupDays: 0,
         receiptToken: 'INF',
         liquid: true,
@@ -1495,8 +1501,10 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     tvlBillions: 0.15,
     auditCount: 3,
     assets: {
-      dot: { coinId: 'dot', staticApr: 3.03, minStakeNative: 1, lockupDays: 0, receiptToken: 'vDOT', liquid: true, liveAprKey: 'bifrost_dot', features: ['vDOT — bypasses 28-day Polkadot unbonding period', 'Instant exit via vDOT/DOT pool on Bifrost DEX', '3 audits', 'Polkadot parachain — fully on-chain governance'] },
-      ksm: { coinId: 'ksm', staticApr: 6.41, minStakeNative: 0.1, lockupDays: 0, receiptToken: 'vKSM', liquid: true, liveAprKey: 'bifrost_ksm', features: ['vKSM — bypasses 7-day Kusama unbonding', 'Higher yield than DOT (canary network premiums)', 'Liquid exit via Bifrost DEX'] },
+      // vToken minimums are a governance setting: 0.5 DOT and 0.25 KSM per Bifrost's docs and governance records
+      // (search snippets, D178, 2026-11-01).
+      dot: { coinId: 'dot', staticApr: 3.03, minStakeNative: 0.5, lockupDays: 0, receiptToken: 'vDOT', liquid: true, liveAprKey: 'bifrost_dot', features: ['vDOT — bypasses 28-day Polkadot unbonding period', 'Instant exit via vDOT/DOT pool on Bifrost DEX', '3 audits', 'Polkadot parachain — fully on-chain governance'] },
+      ksm: { coinId: 'ksm', staticApr: 6.41, minStakeNative: 0.25, lockupDays: 0, receiptToken: 'vKSM', liquid: true, liveAprKey: 'bifrost_ksm', features: ['vKSM — bypasses 7-day Kusama unbonding', 'Higher yield than DOT (canary network premiums)', 'Liquid exit via Bifrost DEX'] },
     },
   },
 
@@ -1521,8 +1529,10 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
         coinId: 'btc',
         staticApr: 3.5,
         minStakeNative: 0.005,
-        lockupDays: 7,
-        lockupNote: 'Timelock-based unbonding (~7 days depending on parameters)',
+        // Proposal #12 (July 2025) cut unbonding from 1008 to 301 Bitcoin blocks for new stakes:
+        // about 2.1 days, rounded up. Found by a GitHub and search check (D178, 2026-11-01).
+        lockupDays: 3,
+        lockupNote: 'About 2 days (301 Bitcoin blocks) to unbond since July 2025; stakes made earlier keep 7 days until restaked',
         liquid: false,
         features: [
           'BTC stays on Bitcoin L1 — no bridging, no wrapping',
@@ -1553,7 +1563,8 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
       btc: {
         coinId: 'btc',
         staticApr: 3.2,
-        minStakeNative: 0.001,
+        // MIN_STAKE_AMOUNT_BTC in Lombard's SDK on GitHub (D178, 2026-11-01).
+        minStakeNative: 0.0002,
         lockupDays: 0,
         receiptToken: 'LBTC',
         liquid: true,
@@ -1618,7 +1629,8 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     tvlBillions: 0.03,
     auditCount: 7,
     assets: {
-      eth:  { coinId: 'eth',  staticApr: 2.47,  minStakeNative: 0.5,  lockupDays: 0, receiptToken: 'ankrETH', liquid: true,  liveAprKey: 'ankr_eth',  features: ['ankrETH non-rebasing token', 'Lower DeFi liquidity vs Lido/Rocket Pool', '7 security audits'] },
+      // No minimum to stake ETH per Ankr's docs repository on GitHub; 0.5 ETH is its minimum to unstake (D178, 2026-11-01).
+      eth:  { coinId: 'eth',  staticApr: 2.47,  minStakeNative: 0,    lockupDays: 0, receiptToken: 'ankrETH', liquid: true,  liveAprKey: 'ankr_eth',  features: ['ankrETH non-rebasing token', 'Lower DeFi liquidity vs Lido/Rocket Pool', '7 security audits'] },
       bnb:  { coinId: 'bnb',  staticApr: 1,  minStakeNative: 0.1,  lockupDays: 0, receiptToken: 'ankrBNB', liquid: true,  liveAprKey: 'ankr_bnb',  features: ['ankrBNB liquid BNB staking', 'Bypass 7-day BNB unbonding'] },
       // Read on ankr.com 2026-10-22, applied 2026-10-25 (D162).
       avax: { coinId: 'avax', staticApr: 6.32,  minStakeNative: 1,    lockupDays: 0, lockupNote: 'ankrAVAX can be sold at once; unstaking through Ankr can take up to 4 weeks', receiptToken: 'ankrAVAX',liquid: true,  liveAprKey: 'ankr_avax', features: ['ankrAVAX — alternative to Benqi sAVAX', 'No 25 AVAX minimum'] },
