@@ -324,7 +324,10 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     custodyModel: 'custodial',
     founded: 2012,
     website: 'https://www.coinbase.com/earn',
-    tvlBillions: 2.1,
+    // Coinbase's 2025 Form 10-K (filed 2026-02-12, read on sec.gov): about $7.5B staked by
+    // individual consumers on 2025-12-31. Its institutional staking through Coinbase Prime
+    // (over $15.2B) is a separate product and is not counted. Applied 2026-11-01 (D178).
+    tvlBillions: 7.5,
     assets: {
       eth:  { coinId: 'eth',  staticApr: 3.2,  minStakeNative: 0,    lockupDays: 0,  lockupNote: 'cbETH can be sold at once; unstaking natively takes ~10 days per Coinbase\'s estimate', receiptToken: 'cbETH', liquid: true,  liveAprKey: 'coinbase_eth',  features: ['cbETH — liquid ERC-20 receipt token', 'Coinbase covers slashing losses', 'NASDAQ-listed — audited financials'] },
       sol:  { coinId: 'sol',  staticApr: 4.5,  minStakeNative: 0.01, lockupDays: 5,  lockupNote: '~5 days per Coinbase\'s estimate', liquid: false, features: ['~5 days to unstake (Coinbase estimate)', 'Auto-compound', 'Coinbase selects validators'] },
