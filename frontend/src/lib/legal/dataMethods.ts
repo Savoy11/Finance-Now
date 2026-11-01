@@ -34,7 +34,7 @@ export const DATA_METHODS: readonly MethodSection[] = [
       'A minimum is the smallest amount a provider accepts. A lock-up is how many days a stake stays locked before you can withdraw it, and 0 means you can leave at once.',
       'For liquid staking, where you receive a token such as stETH that can be sold at any time, the lock-up is shown as 0 days. Where the provider’s own page gives a wait to withdraw through the provider instead, that wait is in the note beside the figure.',
       'Where a provider gives a range, the longest figure is shown and the range is quoted in the note.',
-      `These figures are kept by hand for ${liveProviders} providers, from each provider’s own pages or, where those cannot be read, from search results quoting them and the provider’s public code repository. The staking page says when the list was last checked as a whole (${STAKING_DATA_LAST_VERIFIED}). No provider is given a risk score or grade.`,
+      `These figures are kept by hand for ${liveProviders} providers, from each provider’s own pages or, where those cannot be read, from search results quoting them, the provider’s public code repository, or the provider’s own contract settings read from its blockchain. The staking page says when the list was last checked as a whole (${STAKING_DATA_LAST_VERIFIED}). No provider is given a risk score or grade.`,
       'A staking total or an audit count is shown only where the provider itself publishes it. Where it publishes none, no figure is shown.',
     ],
   },

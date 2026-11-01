@@ -762,6 +762,8 @@ Central data file for the Staking Opportunities page.
   **A figure no provider publishes is left out (D181, 2026-11-01).** Owner: *"Take those 15 figures out of the catalog"*: the
   staking totals of nine exchanges and Aave, and five audit counts. Each provider carries `unpublished` naming the field, which
   the check page reads so it stops asking, and a test fails if a field so marked carries a figure. The page and API show none.
+  **A contract's live setting read from its blockchain counts too (D182, 2026-11-01)**, with the contract, block and node in the
+  note: Kelp's and Meta Pool's minimums are admin settings the code shows only at launch.
 
 To add a provider: append to `STAKING_PROVIDERS` following the pattern. Celsius should always be kept — it's used as the educational cautionary example.
 
