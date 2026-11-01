@@ -720,7 +720,7 @@ function StakingPageInner() {
           {/* Adjacent-yield toggle */}
           <button
             onClick={() => setShowAdjacent(v => !v)}
-            title="Governance-token staking (e.g. Aave, Convex) and lending yield (e.g. Nexo) earn on a different token or by lending — they don't stake the selected coin. Hidden by default."
+            title="Governance-token staking (e.g. Aave) and lending yield (e.g. Nexo) earn on a different token or by lending — they don't stake the selected coin. Hidden by default."
             className={clsx(
               'ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all',
               showAdjacent
