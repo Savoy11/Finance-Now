@@ -784,7 +784,9 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     founded: 2023,
     website: 'https://app.ether.fi',
     tvlBillions: 5.16,
-    auditCount: 6,
+    // 30 of the 31 reports in github.com/etherfi-protocol/smart-contracts/audits (2023-02 to
+    // 2026-08); Halborn's L2 governance-token review is a different product. Applied 2026-11-01 (D178).
+    auditCount: 30,
     assets: {
       eth: {
         coinId: 'eth',
