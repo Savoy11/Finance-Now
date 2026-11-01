@@ -1300,7 +1300,9 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
       eth: {
         coinId: 'eth',
         staticApr: 2.37,
-        minStakeNative: 0,
+        // minAmountToDeposit() on Kelp's LRTDepositPool, read from Ethereum at block 26,323,062
+        // (2026-11-01): 1e14 wei (D182).
+        minStakeNative: 0.0001,
         lockupDays: 0,
         receiptToken: 'rsETH',
         liquid: true,
