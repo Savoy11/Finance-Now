@@ -205,11 +205,10 @@ const FALLBACK: Record<string, number> = {
   // Polygon / BNB LSTs
   stader_matic:     3.45,
   stader_bnb:       5.0,
-  pstake_bnb:       5.5,
   ankr_bnb:         0.66,
-  // Cosmos LSTs
-  quicksilver_atom:13.0,
-  pstake_atom:     12.5,
+  // Cosmos LSTs. pstake_atom, pstake_bnb and quicksilver_atom went 2026-11-01 (D178):
+  // pSTAKE closed its liquid staking after 2025-12-31 and Quicksilver was exploited and
+  // wound down in June 2026, so there is no rate to publish; the catalog marks both defunct.
   // Polkadot / Kusama LSTs
   bifrost_dot:     4.25,
   bifrost_ksm:     7.35,
@@ -307,9 +306,6 @@ const GAP_BY_KEY: Record<string, GapReasonId> = {
   metapool_near:    'no-upstream',   // DeFiLlama lists meta-pool-eth only
   ankr_sol:         'no-upstream',   // Ankr has no Solana product in the pool set
   stader_bnb:       'no-upstream',   // Stader lists ETHX/MATICX only
-  pstake_bnb:       'no-upstream',   // pSTAKE absent from DeFiLlama entirely
-  pstake_atom:      'no-upstream',   // ditto
-  quicksilver_atom: 'no-upstream',   // Quicksilver absent entirely
 
   // ── Source exists but now requires a key, which is a policy decision ──
   native_dot:       'needs-api-key', // polkadot.webapi.subscan.io — 403, keyed

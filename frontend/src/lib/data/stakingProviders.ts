@@ -456,13 +456,12 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     name: 'MetaMask',
     category: 'wallet',
     tagline: 'Most popular Ethereum wallet — ETH staking via integrated Lido and Rocket Pool',
-    description: 'MetaMask added native staking in 2024, integrating with Lido, Rocket Pool, and other liquid staking providers directly in the wallet UI. You retain custody of your keys; MetaMask\'s staking is purely a UI wrapper around on-chain liquid staking protocols. MetaMask collects a small referral fee from protocols.',
+    description: 'MetaMask added native staking in 2024, integrating with Lido, Rocket Pool, and other liquid staking providers directly in the wallet UI. You retain custody of your keys; MetaMask\'s staking is purely a UI wrapper around on-chain liquid staking protocols. MetaMask collects a small referral fee from protocols. Its POL staking ran through Lido on Polygon and Stader\'s MaticX, which closed in December 2024 and August 2026; MetaMask now stakes ETH only.',
     custodyModel: 'non-custodial',
     founded: 2016,
     website: 'https://portfolio.metamask.io/stake',
     assets: {
       eth:  { coinId: 'eth',  staticApr: 2.25,  minStakeNative: 0, lockupDays: 0,  receiptToken: 'stETH/rETH', liquid: true,  liveAprKey: 'lido_eth',  features: ['Choose Lido (stETH) or Rocket Pool (rETH)', 'Fully non-custodial', 'MetaMask earns referral fee (~10% of protocol rewards)', 'No minimum'] },
-      matic:{ coinId: 'matic',staticApr: 4.5,  minStakeNative: 1, lockupDays: 9,  liquid: false, features: ['Polygon network staking', '~9-day unbonding'] },
     },
   },
 
@@ -614,7 +613,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     founded: 2021,
     website: 'https://app.marinade.finance/stake',
     tvlBillions: 0.27,
-    auditCount: 4,
+    auditCount: 7,
     assets: {
       sol: {
         coinId: 'sol',
@@ -629,7 +628,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
           '100+ validators via algorithmic delegation',
           'Delayed unstaking option: 1–2 epoch wait for full face value',
           'Instant unstake available via AMM liquidity pool (slight fee)',
-          '4 security audits',
+          '7 security audits',
           'Marinade DAO governance',
         ],
       },
@@ -1130,7 +1129,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     founded: 2019,
     website: 'https://app.frax.finance',
     tvlBillions: 0.14,
-    auditCount: 5,
+    auditCount: 4,
     assets: {
       eth: {
         coinId: 'eth',
@@ -1144,7 +1143,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
           'sfrxETH accrues all validator rewards from the entire frxETH supply',
           'Higher APY than Lido/Rocket Pool due to dual-token model',
           'frxETH/ETH Curve pool provides instant exit at near-zero slippage',
-          '5 security audits',
+          '4 frxETH audits',
           'Part of a multi-product protocol (stablecoins, lending and liquid staking)',
           'sfrxETH accepted as collateral in Frax Lend and Fraxlend markets',
         ],
@@ -1162,7 +1161,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     founded: 2021,
     website: 'https://app.stakewise.io',
     tvlBillions: 1.01,
-    auditCount: 4,
+    auditCount: 8,
     assets: {
       eth: {
         coinId: 'eth',
@@ -1177,7 +1176,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
           'Permissionless vault creation for custom validator sets',
           'Institutional vault option for KYC/AML-compliant staking',
           'osETH redeemable any time via withdrawal queue or secondary market',
-          '4 independent audits',
+          '8 independent audits',
         ],
       },
     },
@@ -1211,7 +1210,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     founded: 2022,
     website: 'https://app.swellnetwork.io',
     tvlBillions: 0.03,
-    auditCount: 4,
+    auditCount: 8,
     assets: {
       eth: {
         coinId: 'eth',
@@ -1226,7 +1225,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
           'swETH available for standard liquid staking (no restaking)',
           'EigenLayer integration adds restaking slashing risk',
           'Points program → SWELL token airdrop',
-          '4 security audits',
+          '8 security audits',
           'Instant exit via rswETH/ETH Pendle/Curve pools',
         ],
       },
@@ -1244,7 +1243,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     founded: 2023,
     website: 'https://app.renzoprotocol.com',
     tvlBillions: 0.13,
-    auditCount: 4,
+    auditCount: 6,
     assets: {
       eth: {
         coinId: 'eth',
@@ -1309,7 +1308,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     founded: 2022,
     website: 'https://app.puffer.fi',
     tvlBillions: 0.03,
-    auditCount: 4,
+    auditCount: 17,
     assets: {
       eth: {
         coinId: 'eth',
@@ -1323,7 +1322,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
           'pufETH — native restaking, earns staking + EigenLayer AVS rewards',
           'Validator anti-slashing: Intel TDX trusted execution environments',
           'Permissionless node operators with reduced ETH collateral requirement',
-          '4 security audits including Trail of Bits',
+          '17 security audits including Trail of Bits',
           'pufETH/ETH pool on Curve for instant exit',
           'PUFFER governance token rewards',
         ],
@@ -1341,7 +1340,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     founded: 2017,
     website: 'https://app.originprotocol.com',
     tvlBillions: 0.3,
-    auditCount: 8,
+    auditCount: 15,
     assets: {
       eth: {
         coinId: 'eth',
@@ -1354,7 +1353,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
         features: [
           'OETH auto-routes to highest-yield LSTs and DeFi strategies',
           'Rebasing token — balance grows automatically each day',
-          '8 security audits (one of the most-audited DeFi protocols)',
+          '15 OETH audits listed by Origin',
           'Instant exit: OETH/ETH Curve pool',
           'wOETH (wrapped) available for non-rebasing DeFi integrations',
           'Origin Protocol has been running since 2018 — long track record',
@@ -1374,9 +1373,9 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     founded: 2022,
     website: 'https://app.bedrock.technology/unibtc',
     tvlBillions: 0.38,
-    auditCount: 3,
+    auditCount: 4,
     assets: {
-      eth: { coinId: 'eth', staticApr: 2.44, minStakeNative: 0, lockupDays: 0, receiptToken: 'uniETH', liquid: true, liveAprKey: 'bedrock_eth', features: ['uniETH — liquid ETH staking with EigenLayer restaking', 'Instant exit via uniETH/ETH Curve pool', '3 audits'] },
+      eth: { coinId: 'eth', staticApr: 2.44, minStakeNative: 0, lockupDays: 0, receiptToken: 'uniETH', liquid: true, liveAprKey: 'bedrock_eth', features: ['uniETH — liquid ETH staking with EigenLayer restaking', 'Instant exit via uniETH/ETH Curve pool', '4 audits'] },
       btc: { coinId: 'btc', staticApr: 3.5, minStakeNative: 0.001, lockupDays: 0, receiptToken: 'uniBTC', liquid: true, features: ['uniBTC — BTC liquid restaking via Babylon protocol', 'Earn BTC yield by restaking through EVM wrapper', 'Nascent product'] },
     },
   },
@@ -1395,7 +1394,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     founded: 2021,
     website: 'https://app.sanctum.so',
     tvlBillions: 1.89,
-    auditCount: 3,
+    auditCount: 9,
     assets: {
       sol: {
         coinId: 'sol',
@@ -1410,7 +1409,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
           'Instant exit from any LST via shared Infinity reserve pool',
           'Supports 50+ validator-branded LSTs (bonkSOL, jupSOL, etc.)',
           'Sanctum router finds lowest slippage LST swaps',
-          '3 security audits',
+          '9 security audits',
           'CLOUD governance token rewards',
         ],
       },
@@ -1425,6 +1424,11 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     id: 'quicksilver',
     name: 'Quicksilver Protocol',
     category: 'liquid',
+    // Marked defunct 2026-11-01 (owner, D178): exploited and wound down. Its rates stay
+    // as the last published figures and render struck through, as Stride's do.
+    defunct: true,
+    defunctDate: 'June 2026',
+    defunctNote: `Quicksilver was exploited on June 21, 2026: forged delegation proofs minted unbacked qATOM and qOSMO, and its chain was halted. Osmosis now lists it as wound down, with deposits and withdrawals halted on all qAssets, while a redemption route is prepared. No new stake can be placed, and the rates below are the last ones published, not current yields.`,
     tagline: 'IBC-native liquid staking for the Cosmos ecosystem — qAssets retain governance rights',
     description: 'Quicksilver is a Cosmos-native liquid staking protocol that issues qAssets (qATOM, qOSMO, qSTARS, etc.). A key differentiator is that Quicksilver passes governance voting rights through to qAsset holders, letting users participate in governance of the underlying chain while retaining liquidity. Operates as its own Cosmos chain, using IBC for cross-chain staking.',
     custodyModel: 'smart-contract',
@@ -1433,7 +1437,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     tvlBillions: 0.08,
     auditCount: 2,
     assets: {
-      atom: { coinId: 'atom', staticApr: 13.0, minStakeNative: 0.1, lockupDays: 0, receiptToken: 'qATOM', liquid: true, liveAprKey: 'quicksilver_atom', features: ['qATOM retains Cosmos Hub governance voting rights', 'IBC-based cross-chain staking', 'Exit via qATOM/ATOM Osmosis pool', '2 security audits', 'Smaller TVL — lower liquidity than Stride'] },
+      atom: { coinId: 'atom', staticApr: 13.0, minStakeNative: 0.1, lockupDays: 0, receiptToken: 'qATOM', liquid: true, features: ['qATOM retains Cosmos Hub governance voting rights', 'IBC-based cross-chain staking', 'Exit via qATOM/ATOM Osmosis pool', '2 security audits', 'Smaller TVL — lower liquidity than Stride'] },
       osmo: { coinId: 'osmo', staticApr: 9.0,  minStakeNative: 1,   lockupDays: 0, receiptToken: 'qOSMO', liquid: true, features: ['qOSMO — liquid Osmosis staking with governance', 'Exit via Osmosis DEX'] },
     },
   },
@@ -1442,16 +1446,21 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     id: 'pstake',
     name: 'pSTAKE Finance',
     category: 'liquid',
+    // Marked defunct 2026-11-01 (owner, D178): its liquid staking closed. Its rates
+    // stay as the last published figures and render struck through, as Stride's do.
+    defunct: true,
+    defunctDate: 'December 2025',
+    defunctNote: `pSTAKE has closed its liquid staking. Its final notice (December 16, 2025) says support for stkATOM and stkBNB ended after December 31, 2025 and the original team has stepped away; the contracts stay on-chain with the app removed, so withdrawing now means interacting with the contracts directly. No new stake can be placed, and the rates below are the last ones published, not current yields.`,
     tagline: 'Cosmos and BNB liquid staking — stkATOM, stkBNB with DeFi integrations',
     description: 'pSTAKE Finance was one of the early Cosmos liquid staking protocols (stkATOM, stkBNB) but has pivoted to Bitcoin liquid staking — its main app is now BTC-focused and the Cosmos stkASSET products are being wound down/deprecated, so the stkATOM/stkBNB listing below is legacy. Backed by Binance Labs among others; smaller TVL than Stride but multiple audits.',
     custodyModel: 'smart-contract',
     founded: 2021,
     website: 'https://app.pstake.finance',
     tvlBillions: 0.12,
-    auditCount: 4,
+    auditCount: 7,
     assets: {
-      atom: { coinId: 'atom', staticApr: 12.5, minStakeNative: 0.1, lockupDays: 0, receiptToken: 'stkATOM', liquid: true, liveAprKey: 'pstake_atom', features: ['stkATOM — liquid Cosmos staking', 'Listed on Osmosis DEX', '4 audits including Halborn', 'Backed by Binance Labs'] },
-      bnb:  { coinId: 'bnb',  staticApr: 5.5,  minStakeNative: 0.1, lockupDays: 0, receiptToken: 'stkBNB', liquid: true, liveAprKey: 'pstake_bnb', features: ['stkBNB — liquid BNB staking on BNB Chain', 'Integrated with Venus Protocol as collateral'] },
+      atom: { coinId: 'atom', staticApr: 12.5, minStakeNative: 0.1, lockupDays: 0, receiptToken: 'stkATOM', liquid: true, features: ['stkATOM — liquid Cosmos staking', 'Listed on Osmosis DEX', '7 audits including Halborn', 'Backed by Binance Labs'] },
+      bnb:  { coinId: 'bnb',  staticApr: 5.5,  minStakeNative: 0.1, lockupDays: 0, receiptToken: 'stkBNB', liquid: true, features: ['stkBNB — liquid BNB staking on BNB Chain', 'Integrated with Venus Protocol as collateral'] },
     },
   },
 
@@ -1491,7 +1500,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     founded: 2022,
     website: 'https://btcstaking.babylonlabs.io',
     tvlBillions: 3.41,
-    auditCount: 4,
+    auditCount: 13,
     assets: {
       btc: {
         coinId: 'btc',
@@ -1505,7 +1514,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
           'Self-custodial Bitcoin script timelock — not custodial',
           'BTC can be slashed via Bitcoin script for provable misbehavior',
           'Earns yield from PoS chains secured by Babylon',
-          '4 security audits (ZKSecurity, Halborn, CertiK)',
+          '13 audits listed (Coinspect, Zellic, Halborn and others)',
           'Mainnet Phase 1 launched 2024 — cap-limited allocations',
           'Phase 2 adds full rewards; currently in phased rollout',
         ],
@@ -1524,7 +1533,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     founded: 2024,
     website: 'https://www.lombard.finance/app/stake',
     tvlBillions: 0.71,
-    auditCount: 3,
+    auditCount: 15,
     assets: {
       btc: {
         coinId: 'btc',
@@ -1540,7 +1549,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
           'Use LBTC as DeFi collateral while earning BTC staking yield',
           'Available on Ethereum, BNB Chain, Base',
           'Inherits Babylon slashing risk plus EVM bridge risk',
-          '3 audits — newer protocol, exercise caution with large positions',
+          '15 LBTC audits listed by Lombard',
         ],
       },
     },
@@ -1560,7 +1569,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     founded: 2017,
     website: 'https://app.aave.com/staking',
     tvlBillions: 0.5,
-    auditCount: 15,
+    auditCount: 6,
     assets: {
       eth: {
         coinId: 'eth',
@@ -1574,7 +1583,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
           'Earns AAVE emission rewards + protocol revenue share',
           'Up to 30% slash risk in shortfall event (bad debt crystallisation)',
           '20-day cooldown before unstake; 2-day unstake window after (raised from 10 days)',
-          '15+ independent security audits — one of the most-audited DeFi protocols',
+          '6 Safety Module audits listed by Aave; its lending markets have many more',
           'stkAAVE has voting power in Aave governance',
         ],
         yieldType: 'governance',
@@ -1592,7 +1601,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     founded: 2021,
     website: 'https://curve.convexfinance.com/stake',
     tvlBillions: 2.0,
-    auditCount: 4,
+    auditCount: 2,
     assets: {
       eth: {
         coinId: 'eth',
@@ -1606,7 +1615,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
           'No lockup (unlike native veCRV 4-year lock)',
           'Convex controls ~50% of all veCRV — dominant Curve governance influence',
           'cvxCRV/CRV liquidity pool for instant exit (may have slippage)',
-          '4 security audits',
+          '2 audits of its CRV staking listed by Convex',
         ],
         yieldType: 'governance',
       },
@@ -1623,9 +1632,9 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     founded: 2017,
     website: 'https://www.ankr.com/staking-crypto/',
     tvlBillions: 0.03,
-    auditCount: 5,
+    auditCount: 7,
     assets: {
-      eth:  { coinId: 'eth',  staticApr: 2.47,  minStakeNative: 0.5,  lockupDays: 0, receiptToken: 'ankrETH', liquid: true,  liveAprKey: 'ankr_eth',  features: ['ankrETH non-rebasing token', 'Lower DeFi liquidity vs Lido/Rocket Pool', '5 security audits'] },
+      eth:  { coinId: 'eth',  staticApr: 2.47,  minStakeNative: 0.5,  lockupDays: 0, receiptToken: 'ankrETH', liquid: true,  liveAprKey: 'ankr_eth',  features: ['ankrETH non-rebasing token', 'Lower DeFi liquidity vs Lido/Rocket Pool', '7 security audits'] },
       bnb:  { coinId: 'bnb',  staticApr: 1,  minStakeNative: 0.1,  lockupDays: 0, receiptToken: 'ankrBNB', liquid: true,  liveAprKey: 'ankr_bnb',  features: ['ankrBNB liquid BNB staking', 'Bypass 7-day BNB unbonding'] },
       // Read on ankr.com 2026-10-22, applied 2026-10-25 (D162).
       avax: { coinId: 'avax', staticApr: 6.32,  minStakeNative: 1,    lockupDays: 0, lockupNote: 'ankrAVAX can be sold at once; unstaking through Ankr can take up to 4 weeks', receiptToken: 'ankrAVAX',liquid: true,  liveAprKey: 'ankr_avax', features: ['ankrAVAX — alternative to Benqi sAVAX', 'No 25 AVAX minimum'] },
@@ -1646,7 +1655,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     founded: 2021,
     website: 'https://www.metapool.app/stake',
     tvlBillions: 0.12,
-    auditCount: 2,
+    auditCount: 4,
     assets: {
       near: {
         coinId: 'near',
@@ -1660,7 +1669,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
           'stNEAR — liquid NEAR receipt token',
           'Instant exit via stNEAR/NEAR liquidity pool (small slippage)',
           'Stake distributed across 60+ validators — lower slashing concentration',
-          '2 security audits',
+          '4 security audits',
           'Meta Pool DAO governance',
           'No minimum stake requirement',
         ],

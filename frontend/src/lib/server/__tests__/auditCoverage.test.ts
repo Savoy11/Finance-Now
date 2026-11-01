@@ -120,7 +120,7 @@ describe('the audit reports a decided state as a decision, against the route’s
 
   it('staking-rates: a fallback withheld past its window is reported, and only a key gone for no reason fails', () => {
     const check = auditTest('staking-rates').check
-    const rates = { renzo_eth: 3, kelp_eth: 3, benqi_avax: 5, lombard_btc: 1, quicksilver_atom: 10, lido_eth: 3, marinade_sol: 7, jito_sol: 7 }
+    const rates = { renzo_eth: 3, kelp_eth: 3, benqi_avax: 5, lombard_btc: 1, bifrost_dot: 4, lido_eth: 3, marinade_sol: 7, jito_sol: 7 }
     const sources = { lido_eth: 'live', marinade_sol: 'live', jito_sol: 'live' }
     const base = { ok: true, rates, sources, upstreams: { 'defillama-yields': 'http-error (HTTP 500)' } }
     const expired = verdictOf(check, { ...base, gaps: { frax_eth: 'estimate-expired' } })
