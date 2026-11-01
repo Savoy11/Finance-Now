@@ -446,17 +446,22 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     name: 'Ledger Live',
     category: 'wallet',
     tagline: 'Hardware wallet staking — your keys, your coins, signing stays offline',
-    description: 'Ledger Live lets you stake directly from a hardware wallet (Ledger Nano S/X/S Plus/Stax). Your private keys never leave the device. Staking transactions are signed on the hardware wallet but the protocol delegation is on-chain. Ledger integrates Lido for ETH liquid staking and native delegation for SOL, DOT, ATOM, ADA, AVAX, and MATIC.',
+    description: 'Ledger Live lets you stake directly from a hardware wallet (Ledger Nano S/X/S Plus/Stax). Your private keys never leave the device. Staking transactions are signed on the hardware wallet but the protocol delegation is on-chain. Ledger integrates Lido for ETH liquid staking and native delegation for SOL, DOT, ATOM, ADA and AVAX.',
     custodyModel: 'non-custodial',
     founded: 2014,
     website: 'https://www.ledger.com/staking',
     assets: {
       eth:  { coinId: 'eth',  staticApr: 2.25,  minStakeNative: 0,    lockupDays: 0,  receiptToken: 'stETH', liquid: true,  liveAprKey: 'lido_eth',  features: ['Via Lido integration — stETH received', 'Keys stay on hardware wallet', 'No minimum ETH required'] },
       sol:  { coinId: 'sol',  staticApr: 6.5,  minStakeNative: 0,    lockupDays: 3,  liquid: false, features: ['Native Solana delegation', 'You choose validator', '~2–3 day unstake cooldown', 'No strict minimum per Ledger\'s page'] },
-      ada:  { coinId: 'ada',  staticApr: 4.5,  minStakeNative: 5,    lockupDays: 0,  liquid: false, features: ['No lockup — Cardano native delegation', 'ADA never leaves your wallet', 'Rewards every epoch (~5 days)'] },
+      // Ledger Live's Cardano code asks only for a balance above 0 (coin-cardano/src/logic.ts) and,
+      // on the first delegation, enough to cover the refundable stake-key deposit
+      // (getTransactionStatus/delegate.ts; 2 ADA on mainnet). Its app text: "you can choose to
+      // un-delegate at anytime". LedgerHQ/ledger-live at ad043a05, 2026-10-31 (D178).
+      ada:  { coinId: 'ada',  staticApr: 4.5,  minStakeNative: 0,    lockupDays: 0,  liquid: false, features: ['No lockup — Cardano native delegation', 'ADA never leaves your wallet', 'Rewards every epoch (~5 days)', 'A refundable 2 ADA deposit is needed for the first delegation'] },
       dot:  { coinId: 'dot',  staticApr: 13.0, minStakeNative: 10,   lockupDays: 28, lockupNote: 'Up to 28 days: since mid-2026 (Referendum 1910) Polkadot unbonding is queue-based, often about 2 days but up to 28 when many unbond at once', liquid: false, features: ['Direct nomination', 'Up to 28-day unbonding (often ~2 days since mid-2026)', 'Slashing enabled on Polkadot'] },
       atom: { coinId: 'atom', staticApr: 14.0, minStakeNative: 0,    lockupDays: 21, lockupNote: '21-day Cosmos Hub unbonding', liquid: false, features: ['Direct delegation to validators', '21-day unbonding', 'Slashing for double-signing'] },
-      matic:{ coinId: 'matic',staticApr: 4.5,  minStakeNative: 1,    lockupDays: 9,  liquid: false, features: ['Via Lido stMATIC integration', '~9 day unbonding'] },
+      // POL removed 2026-11-01 (D183): Ledger Live has no POL staking code at ad043a05
+      // (2026-10-31), and the Lido-on-Polygon route this row described closed in 2024–25.
       avax: { coinId: 'avax', staticApr: 7.0,  minStakeNative: 25,   lockupDays: 14, lockupNote: 'AVAX network requires 25 AVAX minimum, 2-week minimum stake', liquid: false, features: ['Protocol-level staking', 'High minimum (25 AVAX)', '2-week lockup minimum'] },
     },
   },
@@ -465,13 +470,18 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     id: 'metamask',
     name: 'MetaMask',
     category: 'wallet',
-    tagline: 'Most popular Ethereum wallet — ETH staking via integrated Lido and Rocket Pool',
-    description: 'MetaMask added native staking in 2024, integrating with Lido, Rocket Pool, and other liquid staking providers directly in the wallet UI. You retain custody of your keys; MetaMask\'s staking is purely a UI wrapper around on-chain liquid staking protocols. MetaMask collects a small referral fee from protocols. Its POL staking ran through Lido on Polygon and Stader\'s MaticX, which closed in December 2024 and August 2026; MetaMask now stakes ETH only.',
+    tagline: 'Most popular Ethereum wallet — pooled ETH staking with no minimum',
+    description: 'MetaMask\'s mobile app offers pooled ETH staking: you can stake any amount and keep your own keys. Unstaking usually takes under 3 days but can take up to 44, depending on the amount and on Ethereum staking activity at the time. Its POL staking ran through Lido on Polygon and Stader\'s MaticX, which closed in December 2024 and August 2026; MetaMask now stakes ETH only.',
     custodyModel: 'non-custodial',
     founded: 2016,
     website: 'https://portfolio.metamask.io/stake',
     assets: {
-      eth:  { coinId: 'eth',  staticApr: 2.25,  minStakeNative: 0, lockupDays: 0,  receiptToken: 'stETH/rETH', liquid: true,  liveAprKey: 'lido_eth',  features: ['Choose Lido (stETH) or Rocket Pool (rETH)', 'Fully non-custodial', 'MetaMask earns referral fee (~10% of protocol rewards)', 'No minimum'] },
+      // MetaMask's own pooled staking (D183), from metamask-mobile at 032bc6d0 (2026-10-31),
+      // locales/languages/en.json: "Stake any amount of ETH." / "No minimum required." and
+      // "Unstake anytime. Typically takes less than 3 days, but can take up to 44 days to
+      // process." The Lido and Rocket Pool route this row described is in none of MetaMask's
+      // public repositories (mobile, extension, core), so it and Lido's live rate came out.
+      eth:  { coinId: 'eth',  staticApr: 2.25,  minStakeNative: 0, lockupDays: 44, lockupNote: 'Usually under 3 days, up to 44, per MetaMask\'s app', liquid: false, features: ['MetaMask Pooled Staking', 'Stake any amount of ETH', 'Unstake any time; usually under 3 days, up to 44'] },
     },
   },
 
@@ -1057,12 +1067,13 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     // 2026-09-14, D17) and the per-asset assetRisks that pushed DOT to 8. D26 (2026-09-25)
     // removed every risk dimension, so both are gone. The facts behind them stay on each
     // asset: every chain Keplr delegates to has a long mandatory unbonding queue — 21 days
-    // on Cosmos Hub, Injective and Celestia, 28 on Polkadot, 14 on Osmosis — recorded in
-    // lockupDays and lockupNote below.
+    // on Cosmos Hub, Injective and Celestia, 14 on Osmosis — recorded in lockupDays and
+    // lockupNote below. DOT was removed 2026-11-01 (D183): Keplr's public chain registry
+    // (chainapsis/keplr-chain-registry at 70795ecd, 2026-10-31) lists Cosmos, EVM and SVM
+    // chains only, and its DOT entries are IBC tokens on Cosmos chains, which cannot be staked.
     assets: {
       atom: { coinId: 'atom', staticApr: 14.0, minStakeNative: 1,   lockupDays: 21, lockupNote: '21-day Cosmos Hub unbonding', liquid: false, features: ['Direct on-chain delegation', 'You choose validator', '21-day unbonding', 'Slashing for double-signing and downtime', 'Governance participation included'] },
       osmo: { coinId: 'osmo', staticApr: 10.0, minStakeNative: 1,   lockupDays: 14, lockupNote: '14-day Osmosis unbonding', liquid: false, features: ['Superfluid staking — stake while providing liquidity', '14-day unbonding on Osmosis', 'Governance voting power'] },
-      dot:  { coinId: 'dot',  staticApr: 13.0, minStakeNative: 10,  lockupDays: 28, lockupNote: '28-day Polkadot unbonding', liquid: false, features: ['Via Polkadot.js integration', '28-day unbonding', 'Manual nomination selection'] },
       inj:  { coinId: 'inj',  staticApr: 7.33, minStakeNative: 1,   lockupDays: 21, lockupNote: '21-day Injective unbonding', liquid: false, features: ['Native Injective delegation', 'You choose validator', '21-day unbonding', 'Slashing enabled'] },
       tia:  { coinId: 'tia',  staticApr: 18.0, minStakeNative: 1,   lockupDays: 21, lockupNote: '21-day Celestia unbonding', liquid: false, features: ['Native Celestia delegation', 'You choose validator', '21-day unbonding', 'High inflation-driven APY'] },
     },
@@ -1127,8 +1138,14 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     founded: 2013,
     website: 'https://suite.trezor.io',
     assets: {
-      eth: { coinId: 'eth', staticApr: 3.2, minStakeNative: 0.1, lockupDays: 7, lockupNote: 'Validator exit queue applies', liquid: false, features: ['Pooled staking via Everstake', 'Keys stay on the hardware device'] },
-      sol: { coinId: 'sol', staticApr: 6.5, minStakeNative: 1,   lockupDays: 3, lockupNote: '~2-3 epoch cooldown', liquid: false, features: ['Added March 2025', 'Native delegation via Everstake'] },
+      // Minimums from trezor/trezor-suite at 416c02d7 (2026-10-31): stake() refuses less than
+      // MIN_ETH_AMOUNT_FOR_STAKING = 0.01 ETH (ethereumStaking.ts), and the SOL form less than
+      // MIN_SOL_AMOUNT_FOR_STAKING = 1 (network-solana constants/staking.ts). A Trezor guide
+      // quoted 0.1 ETH; the code is what the app enforces (D178). The ETH wait is fetched from
+      // Everstake while the app runs, so the 7 days is still open. The SOL wait is one epoch,
+      // which Trezor's app text puts at "approximately 1 day"; Solana epochs run about 2–3.
+      eth: { coinId: 'eth', staticApr: 3.2, minStakeNative: 0.01, lockupDays: 7, lockupNote: 'Validator exit queue applies', liquid: false, features: ['Pooled staking via Everstake', 'Keys stay on the hardware device'] },
+      sol: { coinId: 'sol', staticApr: 6.5, minStakeNative: 1,   lockupDays: 3, lockupNote: 'One Solana epoch, about 2–3 days (Trezor\'s app estimates about 1)', liquid: false, features: ['Added March 2025', 'Native delegation via Everstake'] },
     },
   },
 
