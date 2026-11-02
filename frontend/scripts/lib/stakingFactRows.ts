@@ -87,7 +87,8 @@ export const LOCKUP_LEADS: Readonly<Record<string, LockupLead>> = Object.fromEnt
   ...leads('sol', 5, null, ['kraken', 'okx', 'bybit', 'crypto-com', 'bitget', 'gate-io', 'htx']),
   ...leads('sol', 7, null, ['kucoin']),
   ...leads('trx', 3, null, ['binance', 'trust-wallet', 'gate-io', 'htx']),
-  ...leads('near', 4, '~4-day NEAR unstaking', ['coinbase', 'kucoin', 'gate-io']),
+  // Coinbase's NEAR row left the catalog on 2026-11-02 (D185: not offered), so its lead went with it.
+  ...leads('near', 4, '~4-day NEAR unstaking', ['kucoin', 'gate-io']),
   // The audit's "nine CeFi rows" at 0 with no note: Nexo and KuCoin are left out, being
   // lending and soft staking, where zero is right and their features say so.
   ...leads('eth', 0, null, ['okx', 'crypto-com', 'bitget', 'gate-io', 'htx', 'robinhood', 'gemini', 'bitstamp', 'mexc']),
@@ -166,7 +167,10 @@ export function stakingFactRows(
         kind: 'terms',
         coin,
         fields: [
-          { name: 'min', type: 'amount', catalog: a.minStakeNative, unit: symbols[coin] ?? coin.toUpperCase() },
+          // A minimum stated only in dollars is checked in dollars (D185).
+          a.minStakeUsd != null
+            ? { name: 'min', type: 'amount', catalog: a.minStakeUsd, unit: 'USD' }
+            : { name: 'min', type: 'amount', catalog: a.minStakeNative, unit: symbols[coin] ?? coin.toUpperCase() },
           { name: 'lockup', type: 'days', catalog: a.lockupDays },
         ],
         note: a.lockupNote,

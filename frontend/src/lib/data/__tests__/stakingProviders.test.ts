@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import {
   STAKING_DATA_LAST_VERIFIED,
   STAKING_DATA_STALE_AFTER_DAYS,
@@ -103,5 +105,28 @@ describe('figures the provider does not publish (D181)', () => {
         expect(features.filter((f) => /\b\d+\s+(independent\s+)?(security\s+)?audits?\b/i.test(f))).toEqual([])
       }
     }
+  })
+})
+
+// D185 (2026-11-02): some providers state their minimum only in dollars (Nexo's $500 per
+// coin, Robinhood's $1). That figure is kept as it is stated, never turned into a coin
+// amount at some price, and the coin minimum stays 0 so nothing shows two minimums.
+describe('a minimum stated in dollars (D185)', () => {
+  const withUsd = STAKING_PROVIDERS.flatMap((p) => Object.values(p.assets).filter((a) => a?.minStakeUsd != null).map((a) => [p.id, a!] as const))
+
+  it('is a positive dollar figure with no coin minimum beside it', () => {
+    expect(withUsd.length).toBeGreaterThan(0)
+    for (const [id, a] of withUsd) {
+      expect([id, a.coinId, a.minStakeUsd! > 0]).toEqual([id, a.coinId, true])
+      expect([id, a.coinId, a.minStakeNative]).toEqual([id, a.coinId, 0])
+    }
+  })
+
+  it('is what every surface shows', () => {
+    const read = (rel: string) => readFileSync(join(process.cwd(), rel), 'utf8')
+    expect(read('src/app/(dashboard)/staking/page.tsx')).toMatch(/asset\.minStakeUsd != null \?/)
+    expect(read('src/app/api/v1/staking/opportunities/route.ts')).toMatch(/minStakeUsd:\s+asset\.minStakeUsd \?\? null/)
+    expect(read('scripts/lib/stakingFactRows.ts')).toMatch(/a\.minStakeUsd != null\s*\n?\s*\? \{ name: 'min', type: 'amount', catalog: a\.minStakeUsd, unit: 'USD' \}/)
+    expect(read('../mcp-server/src/index.ts')).toMatch(/opp\.minStakeUsd != null/)
   })
 })

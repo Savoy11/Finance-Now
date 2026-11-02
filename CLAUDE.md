@@ -769,8 +769,10 @@ Central data file for the Staking Opportunities page.
   note: Kelp's and Meta Pool's minimums are admin settings the code shows only at launch.
   **A deeper search pass settled 26 of the 84 open exchange facts (D184, 2026-11-02)**, from snippets of the exchanges' own
   pages. An exchange's tradable receipt token (Gate's GTETH, HTX's and OKX's BETH, KuCoin's ksETH, Bitget's BGSOL) is
-  recorded with a 0 lock-up under D162; a minimum listed as the coin's smallest unit is 0, and one given only in dollars
-  (Nexo, Robinhood) is left open, never converted.
+  recorded with a 0 lock-up under D162, and a minimum listed as the coin's smallest unit is 0.
+  **A minimum stated only in dollars is kept in dollars (D185, 2026-11-02)**: `minStakeUsd` (Nexo $500 per coin, Robinhood
+  $1), with `minStakeNative` 0 beside it, shown as dollars on the staking page, the API, the MCP server and the check page,
+  never converted into coins at some price. `stakingProviders.test.ts` holds both halves.
 
 To add a provider: append to `STAKING_PROVIDERS` following the pattern. Celsius should always be kept — it's used as the educational cautionary example.
 

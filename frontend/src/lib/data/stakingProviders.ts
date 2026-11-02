@@ -159,6 +159,9 @@ export interface StakingAsset {
   coinId: StakingCoinId
   staticApr: number          // fallback APR in % (shown when live data unavailable)
   minStakeNative: number     // minimum stake in coin units
+  /** A minimum the provider states only in dollars (D185). When set, `minStakeNative` is 0
+   *  and every surface shows this figure instead, never a converted coin amount. */
+  minStakeUsd?: number
   lockupDays: number         // 0 = no forced lockup
   lockupNote?: string
   receiptToken?: string      // e.g. 'stETH', 'rETH', 'mSOL'
@@ -343,7 +346,8 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
       dot:  { coinId: 'dot',  staticApr: 11.0, minStakeNative: 1,    lockupDays: 4,  lockupNote: '~4 days per Coinbase\'s estimate; Polkadot unbonding is about 2 days since mid-2026', liquid: false, features: ['~4 days to unstake (Coinbase estimate)', 'Coinbase handles nomination complexity'] },
       matic:{ coinId: 'matic',staticApr: 3.5,  minStakeNative: 0,    lockupDays: 8,  lockupNote: '~8 days per Coinbase\'s estimate; no minimum balance per its table', liquid: false, features: ['~8 days to unstake (Coinbase estimate)', 'Auto-compound'] },
       avax: { coinId: 'avax', staticApr: 5.0,  minStakeNative: 0.1,  lockupDays: 9,  lockupNote: '~9 days per Coinbase\'s estimate', liquid: false, features: ['~9 days to unstake (Coinbase estimate)', 'Coinbase handles validator selection'] },
-      near: { coinId: 'near', staticApr: 9.5,  minStakeNative: 1,    lockupDays: 4,  lockupNote: '~4-day NEAR unstaking', liquid: false, features: ['~4-day unstaking (NEAR protocol)', 'Coinbase handles validator selection'] },
+      // NEAR removed 2026-11-02 (D185): Coinbase's retail NEAR page says “NEAR Protocol staking is not
+      // supported by Coinbase”, and no 2026 Coinbase staking list includes NEAR.
     },
   },
 
@@ -962,14 +966,16 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     custodyModel: 'custodial',
     founded: 2013,
     website: 'https://robinhood.com/us/en/learn/articles/crypto-staking',
+    // Robinhood's minimum is in dollars (D185): “earn staking rewards on your ETH, SOL and ADA for as
+    // little as $1 of crypto” (robinhood.com/us/en/crypto).
     assets: {
-      eth: { coinId: 'eth', staticApr: 3.0, minStakeNative: 0, lockupDays: 0, liquid: false, features: ['FINRA-regulated broker', 'Simplified UI, no technical knowledge required', 'Robinhood covers slashing losses', 'Not available in all US states'] },
-      sol: { coinId: 'sol', staticApr: 4.5, minStakeNative: 0, lockupDays: 3, liquid: false, features: ['~3-day cooldown', 'Auto-compound'] },
+      eth: { coinId: 'eth', staticApr: 3.0, minStakeNative: 0, minStakeUsd: 1, lockupDays: 0, liquid: false, features: ['FINRA-regulated broker', 'Simplified UI, no technical knowledge required', 'Robinhood covers slashing losses', 'Not available in all US states'] },
+      sol: { coinId: 'sol', staticApr: 4.5, minStakeNative: 0, minStakeUsd: 1, lockupDays: 3, liquid: false, features: ['~3-day cooldown', 'Auto-compound'] },
       // Added 2026-11-02 at the owner's choice (D184). Robinhood's US support page: “Currently, we only
       // support staking for Solana (SOL), Ethereum (ETH), and Cardano (ADA)”; its EU page lists SOL and ETH only.
       // Rewards start after a 15-day bonding period; the minimum is about $1. Robinhood publishes no ADA rate:
       // the 2.3 is an estimate, Cardano's ~3% (2026) less the 25% of rewards Robinhood says it keeps.
-      ada: { coinId: 'ada', staticApr: 2.3, minStakeNative: 0, lockupDays: 0, lockupNote: 'Cardano has no unbonding period; Robinhood says unbonding can take a few days and gives no ADA figure', liquid: false, features: ['US only, not in every state; not offered in the EU', 'Rewards start after a 15-day bonding period', 'Minimum about $1'] },
+      ada: { coinId: 'ada', staticApr: 2.3, minStakeNative: 0, minStakeUsd: 1, lockupDays: 0, lockupNote: 'Cardano has no unbonding period; Robinhood says unbonding can take a few days and gives no ADA figure', liquid: false, features: ['US only, not in every state; not offered in the EU', 'Rewards start after a 15-day bonding period'] },
     },
   },
 
@@ -983,12 +989,15 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     custodyModel: 'custodial',
     founded: 2018,
     website: 'https://nexo.com/earn-crypto',
+    // Nexo states its minimum only in dollars (D185): from 2025-11-24 a balance of at least $500 of
+    // each coin earns, in Flexible and Fixed-term Savings alike (Nexo's blog, “Upcoming updates to our
+    // Flexible and Fixed-term Savings”, October 2025). Flexible Savings has no lock-up (its earn pages).
     assets: {
-      eth:  { coinId: 'eth',  staticApr: 5.0,  minStakeNative: 0, lockupDays: 0,  liquid: false, features: ['Lending-based yield, not validator staking', 'Flexible terms', 'Exited US market 2023', 'Regulatory investigation in Bulgaria'] },
-      sol:  { coinId: 'sol',  staticApr: 7.0,  minStakeNative: 0, lockupDays: 0,  liquid: false, features: ['Lending-based yield', 'Paid from loans to institutional borrowers'] },
-      bnb:  { coinId: 'bnb',  staticApr: 6.0,  minStakeNative: 0, lockupDays: 0,  liquid: false, features: ['Flexible lending yield'] },
-      avax: { coinId: 'avax', staticApr: 7.0,  minStakeNative: 0, lockupDays: 0,  liquid: false, features: ['Lending-based, not validator staking'] },
-      dot:  { coinId: 'dot',  staticApr: 10.0, minStakeNative: 0, lockupDays: 0,  liquid: false, features: ['Flexible lending yield on DOT'] },
+      eth:  { coinId: 'eth',  staticApr: 5.0,  minStakeNative: 0, minStakeUsd: 500, lockupDays: 0,  liquid: false, features: ['Lending-based yield, not validator staking', 'Flexible terms', 'Earns only on at least about $500 of each coin (since November 2025)', 'Exited US market 2023', 'Regulatory investigation in Bulgaria'] },
+      sol:  { coinId: 'sol',  staticApr: 7.0,  minStakeNative: 0, minStakeUsd: 500, lockupDays: 0,  liquid: false, features: ['Lending-based yield', 'Paid from loans to institutional borrowers'] },
+      bnb:  { coinId: 'bnb',  staticApr: 6.0,  minStakeNative: 0, minStakeUsd: 500, lockupDays: 0,  liquid: false, features: ['Flexible lending yield'] },
+      avax: { coinId: 'avax', staticApr: 7.0,  minStakeNative: 0, minStakeUsd: 500, lockupDays: 0,  liquid: false, features: ['Lending-based, not validator staking'] },
+      dot:  { coinId: 'dot',  staticApr: 10.0, minStakeNative: 0, minStakeUsd: 500, lockupDays: 0,  liquid: false, features: ['Flexible lending yield on DOT'] },
     },
   },
 
