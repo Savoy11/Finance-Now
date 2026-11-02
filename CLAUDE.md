@@ -767,6 +767,10 @@ Central data file for the Staking Opportunities page.
   the check page reads so it stops asking, and a test fails if a field so marked carries a figure. The page and API show none.
   **A contract's live setting read from its blockchain counts too (D182, 2026-11-01)**, with the contract, block and node in the
   note: Kelp's and Meta Pool's minimums are admin settings the code shows only at launch.
+  **A deeper search pass settled 26 of the 84 open exchange facts (D184, 2026-11-02)**, from snippets of the exchanges' own
+  pages. An exchange's tradable receipt token (Gate's GTETH, HTX's and OKX's BETH, KuCoin's ksETH, Bitget's BGSOL) is
+  recorded with a 0 lock-up under D162; a minimum listed as the coin's smallest unit is 0, and one given only in dollars
+  (Nexo, Robinhood) is left open, never converted.
 
 To add a provider: append to `STAKING_PROVIDERS` following the pattern. Celsius should always be kept — it's used as the educational cautionary example.
 
