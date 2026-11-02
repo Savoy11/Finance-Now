@@ -322,7 +322,7 @@ function ProviderCard({
                 <div className="flex items-center gap-1 w-28 shrink-0">
                   <span className="text-xs text-text-muted">Min:</span>
                   <span className="text-xs text-text-secondary font-mono">
-                    {asset.minStakeNative === 0 ? 'None' : `${asset.minStakeNative} ${info.symbol}`}
+                    {asset.minStakeUsd != null ? `$${asset.minStakeUsd.toLocaleString('en-US')}` : asset.minStakeNative === 0 ? 'None' : `${asset.minStakeNative} ${info.symbol}`}
                   </span>
                 </div>
 

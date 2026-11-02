@@ -117,6 +117,8 @@ export async function GET(req: NextRequest) {
         liquid:          asset.liquid,
         receiptToken:    asset.receiptToken ?? null,
         minStakeNative:  asset.minStakeNative,
+        // A minimum the provider states only in dollars (D185); minStakeNative is then 0.
+        minStakeUsd:     asset.minStakeUsd ?? null,
         custodyModel:    provider.custodyModel,
         // No risk figures of any kind (D14 removed the composite, D26 the six
         // dimensions). custodyModel, lockup, liquidity and TVL are facts; the

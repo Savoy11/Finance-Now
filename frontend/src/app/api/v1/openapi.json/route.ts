@@ -458,6 +458,7 @@ const SPEC = {
                 liquid:         { type: 'boolean', description: 'True if the staked position is itself liquid/tradeable' },
                 receiptToken:   { type: 'string', nullable: true, example: 'stETH' },
                 minStakeNative: { type: 'number', example: 0 },
+                minStakeUsd:    { type: 'number', nullable: true, example: null, description: 'A minimum the provider states only in US dollars; when set, minStakeNative is 0' },
                 custodyModel:   { type: 'string', enum: ['custodial', 'non-custodial', 'smart-contract'] },
                 features:    { type: 'array', items: { type: 'string' } },
                 tvlBillions: { type: 'number', nullable: true },

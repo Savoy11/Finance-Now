@@ -299,8 +299,9 @@ describe('the rows, from the real catalog', () => {
     expect(rows.filter((r) => r.kind === 'terms').map((r) => r.key).sort()).toEqual(expected)
     for (const r of rows.filter((x) => x.kind === 'terms')) {
       const a = STAKING_PROVIDERS.find((p) => p.id === r.providerId)!.assets[r.coin!]!
-      expect(r.fields.map((f) => f.catalog)).toEqual([a.minStakeNative, a.lockupDays])
-      expect(r.fields[0].unit).toBe(STAKING_COIN_INFO[r.coin!].symbol)
+      // A minimum stated only in dollars is checked in dollars (D185).
+      expect(r.fields.map((f) => f.catalog)).toEqual([a.minStakeUsd ?? a.minStakeNative, a.lockupDays])
+      expect(r.fields[0].unit).toBe(a.minStakeUsd != null ? 'USD' : STAKING_COIN_INFO[r.coin!].symbol)
     }
   })
 

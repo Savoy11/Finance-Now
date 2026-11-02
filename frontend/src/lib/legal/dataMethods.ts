@@ -36,6 +36,7 @@ export const DATA_METHODS: readonly MethodSection[] = [
       'Where a provider gives a range, the longest figure is shown and the range is quoted in the note.',
       `These figures are kept by hand for ${liveProviders} providers, from each provider’s own pages or, where those cannot be read, from search results quoting them, the provider’s public code repository, or the provider’s own contract settings read from its blockchain. The staking page says when the list was last checked as a whole (${STAKING_DATA_LAST_VERIFIED}). No provider is given a risk score or grade.`,
       'A staking total or an audit count is shown only where the provider itself publishes it. Where it publishes none, no figure is shown.',
+      'A minimum the provider states only in dollars is shown in dollars, never converted into coins.',
     ],
   },
   {

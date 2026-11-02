@@ -297,7 +297,7 @@ server.tool(
         provider: string; providerName: string; category: string; defunct: boolean
         coin: string; coinId: string; apr: number; aprSource: string
         lockupDays: number; lockupNote: string | null; liquid: boolean
-        receiptToken: string | null; minStakeNative: number
+        receiptToken: string | null; minStakeNative: number; minStakeUsd?: number | null
         custodyModel: string; features: string[]
         tvlBillions: number | null; auditCount: number | null
       }>
@@ -329,7 +329,8 @@ server.tool(
         if (opp.receiptToken) text += ` → ${opp.receiptToken}${opp.liquid ? ' (liquid)' : ''}`
         text += '\n'
         text += `  Lock-up: ${opp.lockupDays === 0 ? 'None' : `${opp.lockupDays} days`}`
-        if (opp.minStakeNative > 0) text += ` | Min: ${opp.minStakeNative} ${opp.coinId.toUpperCase()}`
+        if (opp.minStakeUsd != null) text += ` | Min: $${opp.minStakeUsd}`
+        else if (opp.minStakeNative > 0) text += ` | Min: ${opp.minStakeNative} ${opp.coinId.toUpperCase()}`
         text += '\n'
         const extras: string[] = []
         if (opp.tvlBillions) extras.push(`TVL: $${opp.tvlBillions}B`)
