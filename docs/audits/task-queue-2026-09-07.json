@@ -59,25 +59,25 @@
   "critic_gaps_added": 0
  },
  "counts": {
-  "total_verified": 398,
-  "outstanding": 382,
+  "total_verified": 399,
+  "outstanding": 383,
   "by_status": {
-   "closed": 238,
+   "closed": 239,
    "parked": 131,
    "open": 8,
    "blocked": 5
   },
   "by_owner_role": {
-   "remote-dev": 94,
+   "remote-dev": 95,
    "either": 51,
    "owner-decision": 151,
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 238,
+  "closed_by_annotation": 239,
   "counts_recomputed_on": "2026-11-05",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
-  "total": 382
+  "total": 383
  },
  "blocking_decisions": [
   {
@@ -15473,6 +15473,52 @@
    "progress": {
     "noted_on": "2026-11-05",
     "note": "Owner, 2026-11-05: ankr_avax left the measured backups (D187), since its small DefiLlama pool read 0.21%, 9.98% and 11.04% over nine days; it stays as an undated estimate and its live rate is unchanged. The test run of the fresh-session task read and committed correctly but could not push (no repository attached), so the reading landed as #462 from the owner's session, and the owner chose to run the weekly task in that session (D188): it fires there each Monday and asks before mixing its commit with another open pull request. The fresh-session task is switched off, not deleted."
+   }
+  },
+  {
+   "id": "T-443",
+   "title": "Re-check the Reserve Monitor's stablecoin issuer table, and pick each coin by its id rather than its ticker",
+   "status": "closed",
+   "confidence": "high",
+   "blocking_decision": null,
+   "opened": {
+    "on": "2026-11-05",
+    "by": "owner request, filed by the session",
+    "why": "Owner, 2026-11-05, choosing the stablecoin issuer re-check from “What’s next”: re-check each from search results of the issuers’ own reports and record the sources, as search answers counted for staking facts (D178). The table was last checked 2026-07-28 and its clock would fire 2026-11-26."
+   },
+   "owner_role": "remote-dev",
+   "category": "data-accuracy",
+   "effort": "small",
+   "related_ids": [
+    "D190",
+    "D178",
+    "D181",
+    "D149"
+   ],
+   "summary": "The issuer table behind the Reserve Monitor (auditor, last report, backing ratio, reserve mix) had seven changed fields and several wrong ones: USDP’s monthly KPMG reports never stopped, USDC’s and USDT’s reserve mixes were out of date, Paxos is regulated by the OCC since 2025-12-12, and the FRAX row described frxUSD while showing the legacy Frax Dollar. The route matched coins by ticker and kept the largest, so the GUSD row showed Gate USD under Gemini’s auditor.",
+   "next_action": "None. The table’s clock now fires 120 days after 2026-11-05.",
+   "sources": [
+    {
+     "file": "frontend/src/lib/data/stablecoinMeta.ts",
+     "lines": "DEFILLAMA_STABLECOINS",
+     "quote": "A ticker is not an identity; these ids are"
+    }
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-11-05",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "Every row re-read from search results (no issuer page opened, D149); every field, verdict and source is in docs/audits/stablecoin-issuers-2026-11-05.md. The owner chose to track both FRAX and frxUSD and to show “not disclosed” for the three ratios no source confirmed (DAI, LUSD, TUSD) (D190). The route picks coins by DefiLlama id and CoinGecko id and names any it cannot find; META_AS_OF moved to 2026-11-05.",
+    "approved_by": "owner, 2026-11-05: chose “Track both” and “Show ‘not disclosed’ (Recommended)”",
+    "evidence": [
+     "frontend/src/lib/data/stablecoinMeta.ts",
+     "frontend/src/app/live-data/reserves/route.ts",
+     "frontend/src/lib/data/__tests__/stablecoinMeta.test.ts",
+     "docs/audits/stablecoin-issuers-2026-11-05.md",
+     "docs/decisions/2026-11-05-owner-decisions.md"
+    ],
+    "known_gap": "Several 2026 figures rest on one tracker or one search snippet (USDC’s September totals, PYUSD’s September mix, GUSD’s possible gap after May). The legacy FRAX coin still trades near $0.99 under a $1.00 peg target in the alerts feed, which is not part of this change."
    }
   }
  ],
