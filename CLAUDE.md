@@ -617,6 +617,12 @@ const { data } = useQuery({
 > ⚠ **Not every clock is a disclosure clock.** `stakingRates.ts`'s 14-day
 > `FALLBACK_STALE_AFTER_DAYS` **withholds** the rate (`delete rates[key]` → a dash);
 > the `*_LAST_VERIFIED` windows only change what a notice says. Do not unify them.
+> **That clock is kept fresh by a weekly scheduled cloud session (D186, 2026-11-05)**, "Staking
+> backup-rate refresh": it runs `npm run staking:refresh-fallbacks -- --direct --write`, which
+> reads the route's collector with no app running and writes only a whole reading, then opens a
+> draft pull request listing every rate that moved, for the owner to merge. A cloud run is allowed
+> here because a rate is the same whoever asks and a source that cannot be reached leaves the
+> reading refused; which sources *work* is still measured on the owner's machine.
 > `YIELD_SHOWN_FOR_DAYS` (D166) is the second withholding clock, per figure: a fund yield
 > older than it is not shown. `npm run accuracy-check` lists every clock and every dated fund
 > figure in one quarterly report (see the fund catalog section).
