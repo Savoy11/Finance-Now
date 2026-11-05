@@ -5,6 +5,7 @@ import { DATA_METHODS } from '../dataMethods'
 import { LEGAL_PATHS } from '../links'
 import { YIELD_KIND_NAMES, FUND_CATALOG, FUND_FEES_LAST_VERIFIED, YIELD_CHECK_AFTER_DAYS, YIELD_SHOWN_FOR_DAYS } from '@/lib/data/fundCatalog'
 import { STAKING_PROVIDERS, STAKING_DATA_LAST_VERIFIED } from '@/lib/data/stakingProviders'
+import { META_AS_OF, MONITORED_STABLECOINS, getStablecoinMetaProvenance } from '@/lib/data/stablecoinMeta'
 
 // The page that tells readers how the figures are worked out (D163) is only worth having while
 // it says what the code does. These hold the parts a later change could quietly falsify.
@@ -60,6 +61,23 @@ describe('how our figures are worked out (D163)', () => {
     expect(t).toMatch(/SEC annual report/)
     expect(t).toMatch(/same fiscal year/)
     expect(t).toMatch(/link beside each figure opens the company’s SEC filings/)
+  })
+
+  it('states where the stablecoin reserve figures come from (D190, D192)', () => {
+    // #467 changed how these figures are worked out without this page, and several came
+    // from news and tracker sites quoting the issuers' reports, while the re-check section
+    // said "never from another site's copy". The owner chose to say so (D192).
+    const t = text('stablecoin-reserves')
+    expect(t).toContain(String(MONITORED_STABLECOINS.length))
+    expect(t).toContain(META_AS_OF)
+    expect(t).toMatch(/never by its ticker/)
+    expect(t).toMatch(/quoting that report/)
+    expect(t).toMatch(/“not disclosed”/)
+    expect(t).toMatch(/alert bell checks frxUSD/)
+    expect(text('rechecks')).not.toMatch(/never from another site/)
+    expect(text('rechecks')).toMatch(/section above says so/)
+    // The notice on the Reserve Monitor itself says the same.
+    expect(getStablecoinMetaProvenance().source).toMatch(/news and stablecoin trackers/)
   })
 
   it('states the liquid lock-up rule the staking catalog follows (D162)', () => {

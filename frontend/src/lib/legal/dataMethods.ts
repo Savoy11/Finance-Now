@@ -2,6 +2,7 @@ import { STAKING_PROVIDERS, STAKING_DATA_LAST_VERIFIED } from '@/lib/data/stakin
 import { FALLBACK_STALE_AFTER_DAYS } from '@/lib/server/stakingRates'
 import { DISCOVERY_APY_MAX } from '@/lib/data/discoveryApy'
 import { FUND_CATALOG, FUND_FEES_LAST_VERIFIED, YIELD_CHECK_AFTER_DAYS, YIELD_KIND_NAMES, YIELD_SHOWN_FOR_DAYS } from '@/lib/data/fundCatalog'
+import { META_AS_OF, MONITORED_STABLECOINS } from '@/lib/data/stablecoinMeta'
 
 /**
  * "How our figures are worked out" (/about/data-methods, D163): the rules behind the figures
@@ -121,6 +122,17 @@ export const DATA_METHODS: readonly MethodSection[] = [
     ],
   },
   {
+    id: 'stablecoin-reserves',
+    title: 'Stablecoin reserves',
+    decided: '2026-11-05',
+    paragraphs: [
+      `The Reserve Monitor follows ${MONITORED_STABLECOINS.length} stablecoins. Each coin’s supply in circulation is read live from DefiLlama. Each coin is matched by its own identifier, never by its ticker, because several coins share a ticker; a coin that cannot be matched is named as not found rather than quietly left out.`,
+      `The auditor, the date of the latest report, the backing ratio and the reserve mix come from each issuer’s own reports, kept by hand and last checked as a whole on ${META_AS_OF}. Where the issuer’s report itself could not be read, the figure is taken from search results, news reports or stablecoin trackers quoting that report, and carries the date of the report it quotes. These figures are not live.`,
+      'A backing ratio is the assets held against the coins issued. Where no current source confirms one, none is shown, and the coin reads “not disclosed”. No stablecoin is given a risk score or grade.',
+      'The legacy Frax Dollar (FRAX) and Frax USD (frxUSD) are separate coins. The legacy coin has no $1 guarantee and publishes no reserve report, so it shows none. The alert bell checks frxUSD against $1, not the legacy coin.',
+    ],
+  },
+  {
     id: 'treasury-yields',
     title: 'Treasury yields',
     paragraphs: [
@@ -133,7 +145,7 @@ export const DATA_METHODS: readonly MethodSection[] = [
     decided: '2026-10-25',
     paragraphs: [
       'Figures kept by hand are re-checked on a schedule. At the start of each quarter, a report lists every such figure with the date it was read and when it is due: each shown fund yield, each fund’s net assets, and every hand-kept table, such as staking terms. It also lists every stock whose SEC figures have not moved to a newer annual report when one is due, or that have none.',
-      'A figure is re-read from its own source, never from another site’s copy of it, and a change is applied only after it has been checked. Each table’s page says when it was last checked.',
+      'A figure is re-read from its own source, and a change is applied only after it has been checked. Where the source itself cannot be read and the figure is taken from another site quoting it, that table’s section above says so, as the staking and stablecoin sections do. Each table’s page says when it was last checked.',
     ],
   },
   {

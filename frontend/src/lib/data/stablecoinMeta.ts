@@ -48,7 +48,7 @@ export function getStablecoinMetaProvenance(now: Date = new Date()): StablecoinM
   const confidence: StablecoinMetaConfidence =
     ageDays <= 60 ? 'high' : ageDays <= META_STALE_AFTER_DAYS ? 'medium' : 'low'
   return {
-    source: 'Curated snapshot of public issuer disclosures (attestations, reserve reports), re-read from search results of those reports',
+    source: 'Curated snapshot of public issuer disclosures (attestations, reserve reports), re-read from those reports as quoted in search results, news and stablecoin trackers',
     verifiedAt: META_AS_OF,
     ageDays,
     stale,

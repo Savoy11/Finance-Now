@@ -4760,7 +4760,7 @@
    ],
    "progress": {
     "noted_on": "2026-10-26",
-    "note": "2026-10-26: the brief for counsel is written: docs/assessments/counsel-brief-2026-10-26.md. It gathers every question the project has left for counsel in one document: a fact sheet on the app and the owner, the central question (information versus advice), and the questions grouped by the six areas (A advice, B broker-dealer and securities, C the FTC and the disclosures, D data licensing, E privacy and breach notice, F crypto promotion), plus the company and insurance. Each is tagged Live, Unblocks or Launch, with the ledger items its answer would release. The T-419 memo's twelve questions are area A. Two attachments live outside the repository: the breach plan (T-426) and the Disclosure Set with the consent comments (T-436). Earlier: The investment-adviser part of the brief for counsel is written: §8 of the T-419 memo (twelve questions), with §3 as the background (docs/assessments/risk-ratings-by-asset-type-2026-10-07.md). D92 (2026-10-07) shows no risk rating until counsel confirms the impersonal form.",
+    "note": "2026-10-26: the brief for counsel is written: docs/assessments/counsel-brief-2026-10-26.md. It gathers every question the project has left for counsel in one document: a fact sheet on the app and the owner, the central question (information versus advice), and the questions grouped by the six areas (A advice, B broker-dealer and securities, C the FTC and the disclosures, D data licensing, E privacy and breach notice, F crypto promotion), plus the company and insurance. Each is tagged Live, Unblocks or Launch, with the ledger items its answer would release. The T-419 memo's twelve questions are area A. Two attachments live outside the repository: the breach plan (T-426) and the Disclosure Set with the consent comments (T-436). Earlier: The investment-adviser part of the brief for counsel is written: §8 of the T-419 memo (twelve questions), with §3 as the background (docs/assessments/risk-ratings-by-asset-type-2026-10-07.md). D92 (2026-10-07) shows no risk rating until counsel confirms the impersonal form. 2026-11-05: section 6 added to the brief: the decisions since it was written (D171 to D192) that change a fact or touch a question, and four new questions (A16 backtests, C3 sourced figures, C5 adverse facts about named companies, D7 API keys).",
     "evidence": [
      "docs/assessments/risk-ratings-by-asset-type-2026-10-07.md"
     ],
@@ -15494,7 +15494,8 @@
     "D178",
     "D181",
     "D149",
-    "D191"
+    "D191",
+    "D192"
    ],
    "summary": "The issuer table behind the Reserve Monitor (auditor, last report, backing ratio, reserve mix) had seven changed fields and several wrong ones: USDP’s monthly KPMG reports never stopped, USDC’s and USDT’s reserve mixes were out of date, Paxos is regulated by the OCC since 2025-12-12, and the FRAX row described frxUSD while showing the legacy Frax Dollar. The route matched coins by ticker and kept the largest, so the GUSD row showed Gate USD under Gemini’s auditor.",
    "next_action": "None. The table’s clock now fires 120 days after 2026-11-05.",
@@ -15523,7 +15524,7 @@
    },
    "progress": {
     "noted_on": "2026-11-05",
-    "note": "The known gap is closed: the owner chose to switch the alerts feed from the legacy Frax Dollar to frxUSD (D191), so the bell no longer carries a standing FRAX warning."
+    "note": "The known gap is closed: the owner chose to switch the alerts feed from the legacy Frax Dollar to frxUSD (D191), so the bell no longer carries a standing FRAX warning. The methods page, which #467 had missed, gained a Stablecoin reserves section saying where the figures come from, including those quoted by news and trackers (D192)."
    }
   }
  ],

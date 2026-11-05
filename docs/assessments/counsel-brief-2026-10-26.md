@@ -1,8 +1,9 @@
 # Brief for counsel — Finance Now (T-289)
 
-**Status:** draft, 2026-10-26, for the owner to review before it goes to a lawyer. It is not
-legal advice. Everything in it was gathered from this repository, and each question says where
-the project records it.
+**Status:** draft, 2026-10-26, for the owner to review before it goes to a lawyer, **updated
+2026-11-05** with section 6 (decisions made since, and four new questions marked *new*). It is
+not legal advice. Everything in it was gathered from this repository, and each question says
+where the project records it.
 
 **Why this exists.** Many decisions in this project wait on "the lawyer review before launch"
 (owner decision D4, 2026-09-14), but the questions for that review were spread across a dozen
@@ -179,6 +180,9 @@ question if trading were ever proposed (B2).
 | E1, E2 | The breach plan (T-426); possibly a residence field (T-438) |
 | G1 | Insurance (T-427) |
 | C4, F2 | The affiliate items, after launch (T-120, T-123, T-124, T-125) |
+| A16 (new) | Restoring the hidden backtests (T-016) |
+| C3, C5 (new) | Confirms how sourced facts and figures are stated, including adverse facts about named companies |
+| D7 (new) | Giving anyone but the owner a key to the public API |
 
 If counsel can only take part of this, **A1, A2, A6, A7, A8, C1 and C2** do the most. They
 settle the line the whole app is built on, the two features already shown that come closest to
@@ -207,6 +211,36 @@ Kept outside this repository, attached by the owner:
 
 ---
 
+## 6. Update, 2026-11-05: decisions since this brief
+
+The brief was written on 2026-10-26. These later owner decisions change a fact in section 1 or
+touch a question in section 3. The rest (staking-rate refreshes, package updates, chart
+arithmetic and catalog clean-ups) change nothing for counsel.
+
+| Decision | What changed | Touches |
+|---|---|---|
+| D173 (2026-10-26) | The public API (`/api/v1`) now needs a key the owner issues, with a limit of 60 requests a minute and 2,000 a day per key. With no keys set it answers only on the owner's own machine. It passes provider data to whoever holds a key: CoinGecko prices, stock quotes and charts, and publisher headlines (T-087). | New question D7 |
+| D174 (2026-10-26) | Sign-in stays off until launch. Instead, any copy of the app on a host other than the owner's machine is locked to the owner until a setting (`FN_SITE_OPEN`) is turned on at launch: everyone else sees only an unlock page. So a test copy can be put online without being a launch (D22). Nothing has been deployed yet (T-112). | Section 1, "What launch means" |
+| D171 (2026-10-26) | The re-reading of fund yields and net assets is parked until before launch. The owner expects a paid data subscription may supply the figures fund pages do not print. | D6: one more vendor agreement may come |
+| D172 (2026-10-26) | The backtesting tools were corrected while hidden (their arithmetic, any ticker, a 2-year range). All three backtest screens stay hidden; restoring them (T-016) is the owner's call. | New question A16 |
+| D176, D178, D182, D184 (2026-10-30 to 11-02) | Staking facts (minimums, lock-ups, audit counts, founding years) were checked from search results quoting the providers' pages, from the providers' public code, and from their contract settings read on the blockchain, each with its sources recorded. The owner counts these as verified. No provider's own website was opened by software (D149). | C3 |
+| D190, D192 (2026-11-05) | The stablecoin issuer table (auditor, report date, backing ratio, reserve mix) was re-checked the same way. Several figures came from news reports and stablecoin trackers quoting the issuers' reports, not from the reports themselves, and the public methods page (`/about/data-methods`) now says so. | C3 |
+| D181, D190 (2026-11-01, 11-05) | A figure no source publishes or confirms is left out rather than estimated: 15 staking figures, and three stablecoins' backing ratios, which now read "not disclosed". | C3 |
+| D180 (2026-11-01) | The staking page now states, with sources named in the code, that Bitget lost about $387.5M in a hack on 2026-09-24. Catalog text states facts, never grades of risk (D137). | New question C5 |
+
+### New questions
+
+| # | Question | Tag | An answer would release |
+|---|---|---|---|
+| A16 (new) | The hidden backtests show how a simple trading rule would have done on past prices, for any stock or coin the user picks. If they return, is that information, and what must the page say about hypothetical past results? | Unblocks | T-016, the restore |
+| C3 (added) | For C3 above: is a figure taken from search results, news reports or a tracker that quotes the issuer's own report, labelled with that report's date, adequately substantiated, given that the methods page says so? | Live | The staking facts and the stablecoin issuer table, shown today |
+| C5 (new) | The staking catalog states adverse facts about named companies: Bitget's 2026 hack, Kraken's 2023 SEC settlement, and Celsius's collapse (kept as a cautionary example). Celsius's note goes further than a fact: it says the company's conduct had "characteristics of a Ponzi scheme" (`frontend/src/lib/data/stakingProviders.ts`). Is a sourced statement of fact enough, should a characterisation like that one be reworded, and should such a statement be reviewed before it is published? | Live | The staking page's provider descriptions |
+| D7 (new) | The public API passes provider data to anyone holding a key. Does giving a key to anyone other than the owner count as launch (D22), and as redistribution under the providers' terms? | Launch | Issuing keys to anyone but the owner |
+
+If counsel can take only part, the priority list in section 4 stands; C3 and C5 can ride with C1.
+
+---
+
 ## Sources
 
 - T-289's six areas: `docs/BUSINESS-CHECKLIST.md`, the "Federal regulations" item.
@@ -220,3 +254,6 @@ Kept outside this repository, attached by the owner:
   `docs/licensing/`; D25, D42, D96, D129, D130, D133.
 - Area E: the breach plan (attached); D122, D123, D125.
 - Facts: D21, D22, D28, D30, D96; CLAUDE.md.
+- Section 6: D137, D149, D171 to D174, D176, D178, D180 to D182, D184, D190, D192;
+  `docs/audits/stablecoin-issuers-2026-11-05.md`; `frontend/src/lib/legal/dataMethods.ts`;
+  T-016, T-087, T-112.
