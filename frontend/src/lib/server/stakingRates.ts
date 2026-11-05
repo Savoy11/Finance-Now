@@ -90,6 +90,13 @@ export interface StakingRatesResponse {
 //   estimates, never withheld by the 14-day clock. Put a key back when its
 //   source reads again and a refresh measures it.
 //
+//   One more left on 2026-11-05 (D187): ankr_avax. Its DefiLlama pool (ANKRAVAX
+//   on Avalanche, about $120,000 staked) read 0.21% on 2026-10-27, 9.98% on
+//   2026-11-03 and 11.04% on 2026-11-05: a pool that small swings too far for its
+//   reading to be stored as a measured backup. It keeps its last measured value
+//   as an undated estimate, and the page still shows DefiLlama's live reading
+//   whenever it answers (LLAMA_MAP keeps the key).
+//
 //   WHAT THE 2026-09-09 PASS FOUND, and why this was worth doing: 22 of the 27
 //   were off by ≥25%, and every one of them was OVERSTATED —
 //
@@ -264,7 +271,8 @@ function expiredMeasurement(key: string, now: Date = new Date()): boolean {
  * FALLBACK, so the two cannot drift apart in a later edit.
  */
 const FALLBACK_MEASURED: ReadonlySet<string> = new Set([
-  'ankr_avax', 'ankr_bnb', 'ankr_eth', 'bedrock_eth', 'benqi_avax',
+  // ankr_avax left on 2026-11-05 (D187); see the table's header.
+  'ankr_bnb', 'ankr_eth', 'bedrock_eth', 'benqi_avax',
   'bifrost_dot', 'bifrost_ksm', 'etherfi_eth', 'frax_eth', 'jito_sol',
   'kelp_eth', 'lido_eth', 'lombard_btc', 'marinade_sol', 'native_inj',
   'origin_eth', 'puffer_eth', 'renzo_eth', 'rocketpool_eth', 'sanctum_sol',

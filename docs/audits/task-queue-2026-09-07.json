@@ -15443,7 +15443,8 @@
    "effort": "small",
    "related_ids": [
     "D186",
-    "D175"
+    "D175",
+    "D187"
    ],
    "summary": "The staking page's 22 measured backup rates are withheld once 14 days old, and refreshing them meant the owner running npm run staking:refresh-fallbacks on their own machine with the app running. On 2026-11-03 all six staking sources answered from a cloud session and a full reading read all 22, so the refresh can run without the owner.",
    "next_action": "None. Each Monday the scheduled task opens a draft pull request with the new reading; the owner merges it. A refused reading changes nothing and the run says which source did not answer.",
@@ -15467,6 +15468,10 @@
      "docs/decisions/2026-11-05-owner-decisions.md"
     ],
     "known_gap": "The first scheduled run (2026-11-09) had not happened when this closed. The scheduled task stores no connectors, so each run attaches the repository itself before it can open a pull request; a test run after this change merges is what shows that works."
+   },
+   "progress": {
+    "noted_on": "2026-11-05",
+    "note": "Owner, 2026-11-05 (D187): ankr_avax left the measured backups, since its small DefiLlama pool read 0.21%, 9.98% and 11.04% over nine days. It stays as an undated estimate and its live rate is unchanged; the scheduled task's instructions name the measured list instead of a count."
    }
   }
  ],
