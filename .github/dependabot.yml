@@ -64,6 +64,12 @@ updates:
         update-types: [version-update:semver-major]
       - dependency-name: react-dom
         update-types: [version-update:semver-major]
+      # @types/node describes one Node version. The app runs Node 24 (Dockerfile,
+      # CI, package.json "engines"), so types for a newer Node would let code use
+      # features its servers do not have. Move these up with the runtime, by
+      # hand (owner, 2026-11-05: #450, @types/node 26, closed unmerged).
+      - dependency-name: "@types/node"
+        update-types: [version-update:semver-major]
 
   # ── MCP server ────────────────────────────────────────────────────────────
   - package-ecosystem: npm

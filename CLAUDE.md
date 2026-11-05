@@ -622,7 +622,10 @@ const { data } = useQuery({
 > reads the route's collector with no app running and writes only a whole reading, then opens a
 > draft pull request listing every rate that moved, for the owner to merge. A cloud run is allowed
 > here because a rate is the same whoever asks and a source that cannot be reached leaves the
-> reading refused; which sources *work* is still measured on the owner's machine.
+> reading refused; which sources *work* is still measured on the owner's machine. ⚠ **It fires
+> into the owner's own Claude session, not a fresh one (D188)**: a fresh scheduled session has no
+> repository attached and its push is refused, which is how the first test run ended. A rate that
+> keeps swinging leaves the measured list only by the owner's decision (D175, D187: Ankr AVAX).
 > `YIELD_SHOWN_FOR_DAYS` (D166) is the second withholding clock, per figure: a fund yield
 > older than it is not shown. `npm run accuracy-check` lists every clock and every dated fund
 > figure in one quarterly report (see the fund catalog section).
@@ -2261,6 +2264,15 @@ ever published, so npm stopped reporting it and the gate warned that the entry w
 `audit-exceptions.json` lists none now, and T-418 is closed. The same day undici went to 7.30.1 and
 zod to 4.6.7 for two new high advisories (GHSA-xjj6-f33q-929c, GHSA-mrhx-c7xc-m3w5), both fixed
 within the ranges already allowed.
+
+**`npm audit` reports nothing in the frontend since 2026-11-05 (D189)**, through two overrides in
+`frontend/package.json`: `"minimatch@^10": "^11.0.4"` (the copy inside ESLint and typescript-eslint;
+lint findings were compared file by file and are identical) and `"@esbuild-kit/core-utils": {
+"esbuild": "^0.25.12" }` (the old esbuild inside drizzle-kit; `drizzle-kit generate` and `check` still
+work). Both advisories were in development tools only. Drop an override once its parent package
+moves past the affected version on its own. The same pass merged openai 7, undici 8 and postgres 4
+(postgres 4 checked against a real database first) and left `@types/node` at the Node major the app
+runs: `.github/dependabot.yml` ignores its majors, to be moved up with the runtime by hand.
 
 ---
 
