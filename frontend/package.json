@@ -87,7 +87,7 @@
     "recharts": "^3.10.1",
     "tailwindcss": "^4.3.3",
     "typescript": "^5.4.0",
-    "undici": "^7.30.1",
+    "undici": "^8.12.3",
     "zustand": "^5.0.16"
   },
   "overrides": {
