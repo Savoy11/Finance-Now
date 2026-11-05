@@ -16,9 +16,11 @@ import { discoverFrom, firstStaleDay, utc } from '../../../../scripts/check-stal
 const DAY = 86_400_000
 const VENUES: TradingVenue[] = ['us-exchange', 'fund-nav', 'crypto', 'futures', 'fx', 'us-rates']
 
+// A schedule known only by its date, so these tests hold the date-only rule.
 const schedule = (launchStatus: OvernightSchedule['launchStatus']): OvernightSchedule => ({
   ...NASDAQ_OVERNIGHT,
   launch: '2026-12-06',
+  opensAt: undefined,
   launchStatus,
 })
 const LAUNCH = utc('2026-12-06')
@@ -34,10 +36,20 @@ describe('the overnight session only goes live once confirmed', () => {
     }
   })
 
-  it('a CONFIRMED start goes live at 00:00 UTC on its date, not a moment before', () => {
+  it('a CONFIRMED start known only by its date goes live at 00:00 UTC on it, not a moment before', () => {
     expect(overnightSessionLive(new Date(LAUNCH - 1), schedule('confirmed'))).toBe(false)
     expect(overnightSessionLive(new Date(LAUNCH), schedule('confirmed'))).toBe(true)
     expect(overnightSessionLive(AFTER, schedule('confirmed'))).toBe(true)
+  })
+
+  it('Nasdaq’s session goes live when it opens, 9 pm ET on 6 December, not the evening before', () => {
+    // 00:00 UTC on the 6th is 7 pm ET on Saturday the 5th: the label said "trades overnight" 26
+    // hours before the first session (audit 2026-11-05).
+    expect(NASDAQ_OVERNIGHT.opensAt!.startsWith(NASDAQ_OVERNIGHT.launch)).toBe(true)
+    expect(overnightSessionLive(new Date('2026-12-06T00:00:00Z'))).toBe(false)
+    expect(overnightSessionLive(new Date('2026-12-06T20:59:00-05:00'))).toBe(false)
+    expect(overnightSessionLive(new Date('2026-12-06T21:00:00-05:00'))).toBe(true)
+    expect(overnightSessionLive(new Date('2026-12-07T02:00:00Z'))).toBe(true)
   })
 })
 

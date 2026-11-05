@@ -23,8 +23,8 @@ export interface LiveReserveAsset {
   collateralizationRatio: number | null  // null = not publicly disclosed
 }
 
-// Attestation metadata, reserve composition, and META_AS_OF now live in
-// src/lib/data/stablecoinMeta.ts — shared with the risk-scores engine.
+// Attestation metadata, reserve composition, META_AS_OF and the coins' DefiLlama ids live in
+// src/lib/data/stablecoinMeta.ts (D190). The risk-scores engine that also read them went in RP-6.
 
 interface DefiLlamaStablecoin {
   id: string
@@ -65,7 +65,7 @@ export async function GET() {
       // Composition percentages are shares of the RESERVE POOL, not of
       // circulating supply, so the dollar figures have to scale by the
       // collateralization ratio. Multiplying circulating supply alone is only
-      // right at a 1.0 ratio: DAI is disclosed at 1.5, so every leg was
+      // right at a 1.0 ratio: DAI was then disclosed at 1.5, so every leg was
       // understated by a third (~$1.51B shown for ETH collateral against
       // ~$2.27B disclosed) while the centre of the same donut read
       // "150.0% Collat." — one chart contradicting itself. LUSD (1.1) had the

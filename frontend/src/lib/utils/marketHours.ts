@@ -48,6 +48,12 @@ export const MARKET_HOURS_STALE_AFTER_DAYS = 60
 export interface OvernightSchedule {
   /** ISO date the overnight session starts (or is reported to start). */
   launch: string
+  /**
+   * The moment the first session opens, with its UTC offset, when it is known. Without it the
+   * label switches at 00:00 UTC on `launch`, which for a session opening at 9 pm ET is 7 pm ET the
+   * evening before: the label said "trades overnight" 26 hours early (audit 2026-11-05).
+   */
+  opensAt?: string
   /** 'reported' until a primary source confirms the start; only 'confirmed' can make the label say it trades. */
   launchStatus: 'reported' | 'confirmed'
   /** The added session, in exchange time. */
@@ -61,15 +67,19 @@ export interface OvernightSchedule {
 // The SEC-approved rule (Rel. 34-105199, 2026-04-10) makes all NMS stocks and exchange-traded
 // products eligible, so the unqualified "Nasdaq also trades overnight" holds for stocks and
 // ETFs. Because a confirmed start flips the label by itself on the day, a check on 2026-12-07
-// confirms the session opened; if it slipped, set this back to 'reported' with the new date.
+// confirms the session opened (a scheduled task in the owner's Claude session; if it does not run,
+// this file's clock fires on 2027-01-05); if it slipped, set this back to 'reported' with the new date.
 export const NASDAQ_OVERNIGHT: OvernightSchedule = {
   launch: '2026-12-06',
+  // 9 pm Eastern Standard Time on Sunday 6 December (US daylight time ended on 1 November).
+  opensAt: '2026-12-06T21:00:00-05:00',
   launchStatus: 'confirmed',
   session: '9 pm–4 am ET',
   source: 'Nasdaq Equity Trader Alert #2026-46 (new trading hours effective 2026-12-06, pending SIP readiness); SEC approval, Rel. 34-105199 (2026-04-10)',
 }
 
-const launchTime = (schedule: OvernightSchedule) => Date.parse(`${schedule.launch}T00:00:00Z`)
+const launchTime = (schedule: OvernightSchedule) =>
+  Date.parse(schedule.opensAt ?? `${schedule.launch}T00:00:00Z`)
 
 /** True only once the start is confirmed AND its date has arrived. */
 export function overnightSessionLive(now: Date, schedule: OvernightSchedule = NASDAQ_OVERNIGHT): boolean {

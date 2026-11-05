@@ -47,22 +47,34 @@ import type { LiveReserveAsset } from '@/app/live-data/reserves/route'
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
 export interface LiveReservesResponse {
+  /** false when DefiLlama could not be read; the route still answers 200. */
+  ok?: boolean
+  error?: string
   assets: LiveReserveAsset[]
+  /** Monitored coins DefiLlama no longer lists under their id (D190). */
+  notFound?: { key: string; reason: string }[]
   updatedAt: string
   metaAsOf?: string
 }
 
-async function fetchLiveReserves(): Promise<LiveReservesResponse> {
-  const res = await fetch('/live-data/reserves')
+/**
+ * The route answers 200 even when DefiLlama failed, with `ok: false`. Reading only the HTTP status
+ * showed a failed read as "Live supply via DefiLlama (updated <now>)" over an empty table (audit
+ * 2026-11-05), so a reported failure is an error here, and the panel says the data is unavailable.
+ */
+export async function fetchLiveReserves(fetcher: typeof fetch = fetch): Promise<LiveReservesResponse> {
+  const res = await fetcher('/live-data/reserves')
   if (!res.ok) throw new Error('Failed to fetch reserve data')
-  return res.json()
+  const data = (await res.json()) as LiveReservesResponse
+  if (data.ok === false) throw new Error(data.error || 'DefiLlama returned no reserve data')
+  return data
 }
 
 /** Single query definition, so every surface shares one cache entry and one refresh cadence. */
 export function useLiveReserves() {
   return useQuery({
     queryKey: ['live-reserves'],
-    queryFn: fetchLiveReserves,
+    queryFn: () => fetchLiveReserves(),
     enabled: LIVE_DATA,
     staleTime: 5 * 60 * 1000,
     refetchInterval: 10 * 60 * 1000,
@@ -272,7 +284,7 @@ export function ReserveMonitorPanel() {
       <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-6 text-center">
         <AlertTriangle className="mx-auto h-7 w-7 text-red-400/70" />
         <p className="mt-2 text-sm font-medium text-slate-200">Could not reach DefiLlama</p>
-        <p className="mt-1 text-xs text-slate-400">Reserve data is temporarily unavailable.</p>
+        <p className="mt-1 text-xs text-slate-400">Reserve data is temporarily unavailable. Nothing below is shown as live until it answers.</p>
         <button onClick={() => refetch()} className="mt-3 text-xs text-blue-400 hover:text-blue-300 underline">
           Retry
         </button>
@@ -295,6 +307,20 @@ export function ReserveMonitorPanel() {
       </div>
 
       <ReserveProvenance updatedAt={data?.updatedAt} />
+
+      {(data?.notFound?.length ?? 0) > 0 && (
+        <div className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-300">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          <span>
+            Not shown, because DefiLlama no longer lists {data!.notFound!.length === 1 ? 'this coin' : 'these coins'} under the
+            identifier checked: {data!.notFound!.map((m) => `${m.key} (${m.reason})`).join('; ')}.
+          </span>
+        </div>
+      )}
+
+      {reserves.length === 0 && (
+        <p className="text-sm text-slate-400">DefiLlama answered, but none of the monitored coins was found in its list.</p>
+      )}
 
       {reserves.length > 0 && (
         <>

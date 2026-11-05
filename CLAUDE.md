@@ -402,20 +402,22 @@ preference to be traded off against tidiness:
   do not build it and gate it behind a flag.
 
 **Audited when the rule was set, so "nothing violates this" is measured, not assumed.**
-The whole repo contains exactly **two** deletion operations, and neither touches a
-project file:
+The whole repo contains exactly **three** deletion operations, and none touches a
+project file. (This said two until 2026-11-05: the search below could not see Windows'
+`rmdir`, so the npm `restart` script was missed. Audit 2026-11-05, D193.)
 
 | Where | What | Why it is not a violation |
 |---|---|---|
 | `frontend/restart-dev.ps1:56` | `Remove-Item -Recurse -Force $buildDir` (`.next`, by full path) | Next.js **build output**, gitignored and regenerated on every build. It is also the documented fix for the OneDrive lock that kills the dev server mid-session. Deleting it loses nothing. Was line 11, a relative `".next"`, until 2026-10-14; the root `restart-dev.ps1` now runs this file and holds no deletion of its own (`restartScript.test.ts`) |
 | `lib/api/__tests__/providerStatus.test.ts:31` | `rmSync(dir, …)` | Removes only the `mkdtempSync` directory that same test created, in teardown |
+| `frontend/package.json:31` | `"restart": "npx kill-port 3000 & rmdir /s /q .next & npm run dev"`, also run by `update` | The same `.next` build output as the first row, by a Windows `cmd.exe` command. Deleting it loses nothing |
 
-No CI/CD workflow has a delete, prune or cleanup step; no `package.json` script does
-either. **The line is regenerable build output vs. anything tracked in git** — `.next`
+No CI/CD workflow has a delete, prune or cleanup step; the one `package.json` script that
+deletes is `restart`, above, and it removes only `.next`. **The line is regenerable build output vs. anything tracked in git** — `.next`
 is fine, a tracked file never is. Re-run the audit before adding any deletion:
 
 ```bash
-grep -rnE 'rm -rf|Remove-Item|rmSync|unlinkSync|rimraf' -r . | grep -v -e node_modules -e '\.claude/'
+grep -rnE 'rm -rf|Remove-Item|rmSync|unlinkSync|rimraf|\brmdir\b|\brd /s|\bdel /' -r . | grep -v -e node_modules -e '\.claude/'
 grep -rniE 'delete|prune|cleanup' .github/workflows/
 ```
 
@@ -428,9 +430,14 @@ two benign hits plus `package-lock` dependency metadata, and re-run 2026-10-14
 ```powershell
 Get-ChildItem -Recurse -File -Include *.ts,*.tsx,*.mjs,*.js,*.ps1,*.json,*.yml |
   Where-Object { $_.FullName -notmatch '\\node_modules\\|\\\.next\\|\\coverage\\|\\\.claude\\' } |
-  Select-String -Pattern 'rm -rf|Remove-Item|rmSync|unlinkSync|rimraf'
+  Select-String -Pattern 'rm -rf|Remove-Item|rmSync|unlinkSync|rimraf|\brmdir\b|\brd /s|\bdel /'
 Select-String -Path .github/workflows/*.yml -Pattern 'delete|prune|cleanup'
 ```
+
+Re-run 2026-11-05 with the Windows commands added (`rmdir`, `rd /s`, `del /`): the three rows
+above, plus `providerStatus.test.ts:2`, the test's import. A text search still cannot see
+PowerShell's bare aliases (`rm`, `del`, `ri`, `erase` with no switch), so read any new `.ps1`
+file yourself.
 
 `.claude\` is left out because it is gitignored and not the project: an old agent worktree
 under `.claude\worktrees\` keeps a copy of the pre-fix restart script, and the audit is about

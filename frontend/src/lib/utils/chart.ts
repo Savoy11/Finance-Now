@@ -21,12 +21,19 @@ export const RISK_BAND_CHART_COLORS: Record<RiskBand, string> = {
   critical: '#ef4444',
 }
 
-export const RESERVE_COMPOSITION_COLORS: Record<string, string> = {
-  'Cash & Equivalents': '#10b981',
-  'T-Bills': '#3b82f6',
-  'Commercial Paper': '#f59e0b',
-  'Crypto Assets': '#f97316',
-  'Other': '#64748b',
+/**
+ * Reserve donut slices are coloured by position, not by category name. The old map keyed five
+ * names ('T-Bills', 'Crypto Assets'…) that no issuer table used, so every slice fell back to one
+ * grey and the donut could not be read (audit 2026-11-05). The palette leaves out red, orange,
+ * amber and emerald, which this app uses for risk levels: a slice is a kind of asset, not a grade.
+ * A slice the sources do not name ("Not confirmed", "Undisclosed") stays grey.
+ */
+export const RESERVE_SLICE_COLORS = ['#3b82f6', '#8b5cf6', '#06b6d4', '#ec4899', '#84cc16', '#6366f1', '#14b8a6', '#0ea5e9'] as const
+export const RESERVE_UNNAMED_COLOR = '#64748b'
+
+export function reserveSliceColor(category: string, index: number): string {
+  if (/undisclosed|not confirmed/i.test(category)) return RESERVE_UNNAMED_COLOR
+  return RESERVE_SLICE_COLORS[index % RESERVE_SLICE_COLORS.length]
 }
 
 export const CHART_THEME = {

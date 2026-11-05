@@ -34,6 +34,29 @@ describe('on the owner’s machine', () => {
   })
 })
 
+describe('a forged Host header (audit 2026-11-05, D193)', () => {
+  // The client chooses its Host header, so "localhost" proves nothing about where a request came
+  // from. Measured: with FN_ADMIN_TOKEN set, `Host: localhost` opened every page and route of a
+  // built app. Once the token is set, as every host must set it, only the owner cookie counts.
+  it('does not open the lock once FN_ADMIN_TOKEN is set', () => {
+    vi.stubEnv('FN_ADMIN_TOKEN', TOKEN)
+    for (const host of ['localhost', 'localhost:8080', '127.0.0.1', '[::1]:3000']) {
+      expect(siteLockAllows(req('/headlines', { host })), host).toBe(false)
+      expect(siteLockAllows(req('/live-data/config', { host })), host).toBe(false)
+    }
+    expect(siteLockResponse(req('/headlines', { host: 'localhost:3000' }))!.status).toBe(307)
+    // The owner, unlocked at /owner, still gets in, on any Host.
+    expect(siteLockAllows(req('/headlines', { host: 'localhost:3000', cookie: ownerCookie }))).toBe(true)
+    expect(siteLockAllows(req('/headlines', { cookie: ownerCookie }))).toBe(true)
+  })
+
+  it('accepts the admin token itself as a header, as the owner’s tools do', () => {
+    vi.stubEnv('FN_ADMIN_TOKEN', TOKEN)
+    expect(siteLockAllows(req('/live-data/config', { headers: { 'x-fn-token': TOKEN } }))).toBe(true)
+    expect(siteLockAllows(req('/live-data/config', { headers: { 'x-fn-token': TOKEN + 'x' } }))).toBe(false)
+  })
+})
+
 describe('on any other host', () => {
   it('sends a page to /owner, marked locked, and never caches the answer', () => {
     const res = siteLockResponse(req('/headlines'))!
