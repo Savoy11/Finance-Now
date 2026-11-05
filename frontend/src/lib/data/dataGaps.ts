@@ -141,7 +141,9 @@ export const GAP_REASONS: Record<GapReasonId, GapReason> = {
       'back to its last measured reading — but that reading is older than the window ' +
       'the value stays meaningful for, so no number is shown instead of a stale one.',
     fixability: 'transient',
-    fix: 'Re-measure from the owner machine: npm run staking:refresh-fallbacks.',
+    fix:
+      'Re-measure: npm run staking:refresh-fallbacks -- --direct --write. A weekly ' +
+      'scheduled session does this and opens a pull request to merge (D186).',
   },
   'needs-api-key': {
     id: 'needs-api-key',

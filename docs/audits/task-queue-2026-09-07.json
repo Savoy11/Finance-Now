@@ -60,24 +60,24 @@
  },
  "counts": {
   "total_verified": 398,
-  "outstanding": 381,
+  "outstanding": 382,
   "by_status": {
-   "closed": 237,
+   "closed": 238,
    "parked": 131,
    "open": 8,
    "blocked": 5
   },
   "by_owner_role": {
-   "remote-dev": 93,
+   "remote-dev": 94,
    "either": 51,
    "owner-decision": 151,
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 237,
-  "counts_recomputed_on": "2026-10-26",
+  "closed_by_annotation": 238,
+  "counts_recomputed_on": "2026-11-05",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
-  "total": 381
+  "total": 382
  },
  "blocking_decisions": [
   {
@@ -15425,6 +15425,48 @@
      "docs/decisions/2026-10-18-owner-decisions.md"
     ],
     "known_gap": "Twelve Data's history, the chart's third rung, is still not dividend-adjusted (its adjust=all changed nothing on 2026-09-18), so a fall to it still moves a dividend payer's history; whether it is split-adjusted has not been checked. The fetcher's fields were read through the owner's FMP connector, not the app's key; the app's key was last read against this endpoint on 2026-09-18. Called without dates, as /full was, the endpoint's default history length was not compared with /full's, so a 5Y or MAX chart served by FMP is worth one look on the owner's machine."
+   }
+  },
+  {
+   "id": "T-442",
+   "title": "Run the staking backup-rate refresh automatically, so the 14-day clock does not wait on the owner",
+   "status": "closed",
+   "confidence": "high",
+   "blocking_decision": null,
+   "opened": {
+    "on": "2026-11-05",
+    "by": "owner request, filed by the session",
+    "why": "Owner, 2026-11-05: “Can we automate an agent to run the refresh?” The 22 measured staking backups, last refreshed 2026-10-27, would have been withheld from 2026-11-11."
+   },
+   "owner_role": "remote-dev",
+   "category": "process",
+   "effort": "small",
+   "related_ids": [
+    "D186",
+    "D175"
+   ],
+   "summary": "The staking page's 22 measured backup rates are withheld once 14 days old, and refreshing them meant the owner running npm run staking:refresh-fallbacks on their own machine with the app running. On 2026-11-03 all six staking sources answered from a cloud session and a full reading read all 22, so the refresh can run without the owner.",
+   "next_action": "None. Each Monday the scheduled task opens a draft pull request with the new reading; the owner merges it. A refused reading changes nothing and the run says which source did not answer.",
+   "sources": [
+    {
+     "file": "frontend/scripts/refresh-staking-fallbacks.mjs",
+     "lines": "header",
+     "quote": "IT MAY RUN IN THE CLOUD SINCE 2026-11-05 (D186)."
+    }
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-11-05",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "Owner chose the weekly cloud agent (D186). The refresh gained --direct, which reads the route's own collector with no app running (the npm script now runs under tsx so it can import the TypeScript collector); it still writes only a whole reading. A weekly scheduled task, “Staking backup-rate refresh” (Mondays 4:35 PM Eastern, a fresh session each time), runs --direct --write, gathers the source's own figures for every rate that moved 25% or more, runs the checks and opens a draft pull request changing only stakingRates.ts, which it never merges. The comments and the data-gap fix text that said a cloud run is refused by every host were corrected.",
+    "approved_by": "owner, 2026-11-05: chose “Weekly cloud agent (Recommended)”",
+    "evidence": [
+     "frontend/scripts/refresh-staking-fallbacks.mjs",
+     "frontend/src/lib/server/__tests__/stakingFallbackProvenance.test.ts",
+     "docs/decisions/2026-11-05-owner-decisions.md"
+    ],
+    "known_gap": "The first scheduled run (2026-11-09) had not happened when this closed. The scheduled task stores no connectors, so each run attaches the repository itself before it can open a pull request; a test run after this change merges is what shows that works."
    }
   }
  ],

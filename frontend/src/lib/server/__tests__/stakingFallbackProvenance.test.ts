@@ -107,6 +107,18 @@ describe('staking FALLBACK provenance', () => {
     expect(script).toMatch(/if \(refusal\) \{[\s\S]*?process\.exit\(1\)/)
   })
 
+  it('can take its reading from the collector, with no app running (D186)', () => {
+    // The weekly scheduled session runs `--direct --write`. The collector is
+    // TypeScript, so the npm script must run the file with tsx: under plain node
+    // the import fails, and only on the day a refresh is due.
+    const script = readFileSync(join(process.cwd(), 'scripts/refresh-staking-fallbacks.mjs'), 'utf8')
+    expect(script).toMatch(
+      /if \(DIRECT\) \{[\s\S]*?await import\('\.\.\/src\/lib\/server\/stakingRates\.ts'\)[\s\S]*?return collectStakingRates\(\)/,
+    )
+    const pkg = JSON.parse(readFileSync(join(process.cwd(), 'package.json'), 'utf8'))
+    expect(pkg.scripts['staking:refresh-fallbacks']).toBe('tsx scripts/refresh-staking-fallbacks.mjs')
+  })
+
   it('keeps every measured value plausible for a staking APR', () => {
     // Guards a decimal slip in a hand-edit (a 4.86 becoming 486). Deliberately
     // wide: real readings in this table span 0.17% to 14.3%, and a tight band

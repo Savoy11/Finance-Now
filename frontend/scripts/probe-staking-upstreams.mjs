@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 // Which of the staking upstreams still serve a live APR?
-// — RUN THIS ON THE OWNER'S MACHINE. Every host here is refused at the gateway
-//   from a cloud session, so a cloud run produces a uniformly wrong "everything
-//   is dead" baseline. Same rule as the data audits: availability verdicts come
-//   from the owner's network. The probe says so itself and exits 2 when it
-//   notices most hosts were blocked locally.
+// — Availability verdicts come from the owner's network, the same rule as the
+//   data audits. This said every host here is refused from a cloud session; on
+//   2026-11-03 all six answered from one, which is why the fallback refresh may
+//   now run in the cloud (D186). A run where most hosts are blocked still says so
+//   and exits 2, so a run in the wrong place cannot pass for a dead source.
 //
 // The list is 8 as of 2026-09-09, down from 17: a sequential run on the owner's
 // machine found nine rungs genuinely dead (four DNS failures, two now needing a
@@ -212,7 +212,7 @@ async function main() {
   out(` Mode: ${PARALLEL
     ? `PARALLEL — reproducing the route (all at once, shared ${ROUTE_BUDGET_MS / 1000}s). Timeouts here are NOT host verdicts.`
     : 'SEQUENTIAL — one at a time, so a timeout means that host really is slow.'}\n`)
-  out(` Run this on the owner's machine; a cloud run 403s on every host.\n${'─'.repeat(78)}\n\n`)
+  out(` Verdicts are for this machine's network; a run blocked at most hosts exits 2.\n${'─'.repeat(78)}\n\n`)
 
   let results
   if (PARALLEL) {

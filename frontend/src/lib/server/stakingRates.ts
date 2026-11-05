@@ -72,7 +72,9 @@ export interface StakingRatesResponse {
 //   The keys in FALLBACK_MEASURED are set from a live reading of this route on
 //   the owner's machine — first on 2026-09-09 (27 of 51 then), refreshed since
 //   with `npm run staking:refresh-fallbacks`, which writes only a whole reading.
-//   FALLBACK_MEASURED_ON dates them.
+//   FALLBACK_MEASURED_ON dates them. Since 2026-11-05 a weekly scheduled cloud
+//   session takes that reading (`-- --direct --write`, no app running) and opens
+//   a pull request for the owner to merge (D186).
 //
 //   The rest are undated estimates. Most have no upstream and were never
 //   measured: the original hand-written figures, of unknown vintage.
