@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { ATTESTATION_META, COMPOSITION_MAP, META_AS_OF, MONITORED_STABLECOINS, getStablecoinMetaProvenance } from '@/lib/data/stablecoinMeta'
+import { ATTESTATION_META, COMPOSITION_MAP, META_AS_OF, getStablecoinMetaProvenance, pickMonitoredStablecoins } from '@/lib/data/stablecoinMeta'
 import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 
 export const dynamic = 'force-dynamic'
@@ -28,6 +28,7 @@ export interface LiveReserveAsset {
 
 interface DefiLlamaStablecoin {
   id: string
+  gecko_id?: string | null
   name: string
   symbol: string
   pegType: string
@@ -37,8 +38,6 @@ interface DefiLlamaStablecoin {
   priceSource?: string
   chains?: string[]
 }
-
-const TARGET_SYMBOLS = new Set<string>(MONITORED_STABLECOINS)
 
 export async function GET() {
   try {
@@ -50,28 +49,17 @@ export async function GET() {
     const data = await res.json()
 
     const coins: DefiLlamaStablecoin[] = data.peggedAssets ?? []
-    const filtered = coins.filter((c) => TARGET_SYMBOLS.has(c.symbol?.toUpperCase()))
 
-    // DefiLlama returns several distinct tokens that share a ticker (e.g. multiple "USDP"/"USDp",
-    // duplicate "GUSD"). Uppercasing the symbol for matching collapses these together, so without
-    // de-duping we double-count supply AND attach an issuer's real attestation (e.g. Paxos/Withum)
-    // to an unrelated lookalike token. Keep only the canonical entry per symbol — the one with the
-    // largest circulating supply, which is reliably the real major stablecoin for our target set.
-    const bySymbol = new Map<string, DefiLlamaStablecoin>()
-    for (const coin of filtered) {
-      const sym = coin.symbol?.toUpperCase() ?? ''
-      const existing = bySymbol.get(sym)
-      const circ = coin.circulating?.peggedUSD ?? 0
-      if (!existing || circ > (existing.circulating?.peggedUSD ?? 0)) {
-        bySymbol.set(sym, coin)
-      }
-    }
-    const deduped = Array.from(bySymbol.values())
+    // DefiLlama lists several tokens under one ticker ("GUSD" is Gate USD AND
+    // Gemini Dollar; "USDP" is Pax Dollar and others). Each monitored coin is
+    // picked by DefiLlama's id instead (stablecoinMeta.ts says why: the old
+    // largest-supply rule showed Gate USD under Gemini's auditor), and a coin
+    // that cannot be found is named in notFound rather than dropped quietly.
+    const { picked, notFound } = pickMonitoredStablecoins(coins)
 
-    const assets: LiveReserveAsset[] = deduped.map((coin): LiveReserveAsset => {
-      const sym = coin.symbol?.toUpperCase() ?? ''
-      const meta = ATTESTATION_META[sym] ?? null
-      const rawComposition = COMPOSITION_MAP[sym] ?? []
+    const assets: LiveReserveAsset[] = picked.map(({ key, coin }): LiveReserveAsset => {
+      const meta = ATTESTATION_META[key] ?? null
+      const rawComposition = COMPOSITION_MAP[key] ?? []
       const circulatingUsd = coin.circulating?.peggedUSD ?? 0
 
       // Composition percentages are shares of the RESERVE POOL, not of
@@ -81,7 +69,8 @@ export async function GET() {
       // understated by a third (~$1.51B shown for ETH collateral against
       // ~$2.27B disclosed) while the centre of the same donut read
       // "150.0% Collat." — one chart contradicting itself. LUSD (1.1) had the
-      // same defect.
+      // same defect. A coin with no confirmed ratio (DAI since 2026-11-05,
+      // D190) is scaled by 1, so its amounts are shares of its own supply.
       const reservePoolUsd = circulatingUsd * (meta?.collateralizationRatio ?? 1)
       const composition = rawComposition.map((c) => ({
         category: c.category,
@@ -110,7 +99,7 @@ export async function GET() {
 
     assets.sort((a, b) => b.circulatingUsd - a.circulatingUsd)
 
-    return NextResponse.json({ ok: true, assets, metaAsOf: META_AS_OF, metaProvenance: getStablecoinMetaProvenance(), updatedAt: new Date().toISOString() })
+    return NextResponse.json({ ok: true, assets, notFound, metaAsOf: META_AS_OF, metaProvenance: getStablecoinMetaProvenance(), updatedAt: new Date().toISOString() })
   } catch (err) {
     return NextResponse.json(
       { ok: false, assets: [], error: String(err), updatedAt: new Date().toISOString() },

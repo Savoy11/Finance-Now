@@ -398,7 +398,10 @@ const tests = [
 
   { group: 'crypto/market', path: '/live-data/reserves', name: 'reserves', check: (j) => {
     if (!j.ok || !Array.isArray(j.assets) || j.assets.length === 0) throw new Error('no reserve assets')
-    return `${j.assets.length} stablecoins`
+    // A monitored coin DefiLlama no longer lists under its id is named, never
+    // just left out of the count.
+    const missing = Array.isArray(j.notFound) ? j.notFound : []
+    return `${j.assets.length} stablecoins` + (missing.length ? `; not found: ${missing.map((m) => `${m.key} (${m.reason})`).join(', ')}` : '')
   }},
 
   // /live-data/risk-scores was REMOVED on 2026-08-29 (RP-6): the owner's position
