@@ -15493,7 +15493,8 @@
     "D190",
     "D178",
     "D181",
-    "D149"
+    "D149",
+    "D191"
    ],
    "summary": "The issuer table behind the Reserve Monitor (auditor, last report, backing ratio, reserve mix) had seven changed fields and several wrong ones: USDP’s monthly KPMG reports never stopped, USDC’s and USDT’s reserve mixes were out of date, Paxos is regulated by the OCC since 2025-12-12, and the FRAX row described frxUSD while showing the legacy Frax Dollar. The route matched coins by ticker and kept the largest, so the GUSD row showed Gate USD under Gemini’s auditor.",
    "next_action": "None. The table’s clock now fires 120 days after 2026-11-05.",
@@ -15519,6 +15520,10 @@
      "docs/decisions/2026-11-05-owner-decisions.md"
     ],
     "known_gap": "Several 2026 figures rest on one tracker or one search snippet (USDC’s September totals, PYUSD’s September mix, GUSD’s possible gap after May). The legacy FRAX coin still trades near $0.99 under a $1.00 peg target in the alerts feed, which is not part of this change."
+   },
+   "progress": {
+    "noted_on": "2026-11-05",
+    "note": "The known gap is closed: the owner chose to switch the alerts feed from the legacy Frax Dollar to frxUSD (D191), so the bell no longer carries a standing FRAX warning."
    }
   }
  ],

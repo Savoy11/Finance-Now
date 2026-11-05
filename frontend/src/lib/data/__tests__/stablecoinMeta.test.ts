@@ -105,6 +105,18 @@ describe('what the 2026-11-05 re-check decided (D190)', () => {
   })
 })
 
+describe('the alerts feed (D191)', () => {
+  const alerts = readFileSync(join(__dirname, '../../../app/live-data/alerts/route.ts'), 'utf8')
+
+  it('watches frxUSD against its peg, not the legacy Frax Dollar', () => {
+    // CoinGecko's 'frax' is the legacy coin, which trades near $0.99 with no $1
+    // guarantee, so a $1.00 peg check on it was a standing warning. Mutation:
+    // put { id: 'frax', … } back and this fails.
+    expect(alerts).toMatch(/id:\s*'frax-usd'/)
+    expect(alerts).not.toMatch(/id:\s*'frax'\s*,/)
+  })
+})
+
 describe('the reserves route', () => {
   const route = readFileSync(join(__dirname, '../../../app/live-data/reserves/route.ts'), 'utf8')
 
