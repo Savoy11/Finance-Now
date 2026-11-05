@@ -33,7 +33,7 @@
  * before the reported date — `marketHours.test.ts` fails if, while the start is only
  * reported, this clock would fire on or after it.
  */
-export const MARKET_HOURS_LAST_VERIFIED = '2026-10-01'
+export const MARKET_HOURS_LAST_VERIFIED = '2026-11-05'
 /**
  * When `npm run staleness:check` fires, check whether the launch happened or is
  * confirmed: if so, set `launchStatus: 'confirmed'` (correcting the date if it moved) and
@@ -55,11 +55,18 @@ export interface OvernightSchedule {
   source: string
 }
 
+// Confirmed 2026-11-05 from Nasdaq's own notice, Equity Trader Alert #2026-46 ("New Trading
+// Hours Effective December 6, 2026", nasdaqtrader.com): the night session opens Sunday
+// 2026-12-06 at 9 pm ET, "pending SIP readiness as well as any applicable SEC rule changes".
+// The SEC-approved rule (Rel. 34-105199, 2026-04-10) makes all NMS stocks and exchange-traded
+// products eligible, so the unqualified "Nasdaq also trades overnight" holds for stocks and
+// ETFs. Because a confirmed start flips the label by itself on the day, a check on 2026-12-07
+// confirms the session opened; if it slipped, set this back to 'reported' with the new date.
 export const NASDAQ_OVERNIGHT: OvernightSchedule = {
   launch: '2026-12-06',
-  launchStatus: 'reported',
+  launchStatus: 'confirmed',
   session: '9 pm–4 am ET',
-  source: 'SEC approval, Rel. 34-105199 (2026-04-10); start date as reported in the press, not yet confirmed by Nasdaq',
+  source: 'Nasdaq Equity Trader Alert #2026-46 (new trading hours effective 2026-12-06, pending SIP readiness); SEC approval, Rel. 34-105199 (2026-04-10)',
 }
 
 const launchTime = (schedule: OvernightSchedule) => Date.parse(`${schedule.launch}T00:00:00Z`)
