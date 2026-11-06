@@ -66,7 +66,9 @@ decided together as one "actions on every asset page" item.
 
 ## 1. Price and chart every currency pair from the European Central Bank's daily rates · proposed `P1` · target section: ledger, new item (category `feature`, Macro Markets)
 
-**Status:** PENDING
+**Status:** APPROVED (owner, 2026-11-06, D197: all eight approved; the decision each one names is asked when it is built)
+
+**Filed as:** T-445 in `docs/audits/task-queue-2026-09-07.json` (2026-11-06).
 
 **What:** Show each currency pair's latest ECB reference rate (with its date, labelled "daily, not a
 live quote") wherever the pair now shows a dash: the Currencies table, the 17 pair pages and the Macro
@@ -119,7 +121,9 @@ reading and one design choice.
 
 ## 2. Bonds & Rates: yield history charts and the bond market's inflation outlook, from the Treasury · proposed `P1` · target section: ledger, new item (category `feature`, Macro Markets)
 
-**Status:** PENDING
+**Status:** APPROVED (owner, 2026-11-06, D197: all eight approved; the decision each one names is asked when it is built)
+
+**Filed as:** T-446 in `docs/audits/task-queue-2026-09-07.json` (2026-11-06).
 
 **What:** Two things from the same official source the app already uses:
 1. **History charts for the four Treasury yields** (13-week, 5-, 10- and 30-year), drawn from the
@@ -168,7 +172,9 @@ the first part.
 
 ## 3. Import trades from a broker's CSV file into a tracked portfolio · proposed `P1` · target section: ledger, new item (category `feature`, Portfolios → Tracked)
 
-**Status:** PENDING
+**Status:** APPROVED (owner, 2026-11-06, D197: all eight approved; the decision each one names is asked when it is built)
+
+**Filed as:** T-447 in `docs/audits/task-queue-2026-09-07.json` (2026-11-06).
 
 **What:** On `/portfolios/tracked`, upload a CSV file of trades exported from a broker or exchange.
 Map its columns once (date, buy/sell, symbol, units, price, fee), see every row checked before
@@ -214,7 +220,9 @@ append-only rule shapes the design but does not block it.
 
 ## 4. What your funds cost you each year, across a whole portfolio · proposed `P1` · target section: ledger, new item (category `feature`, Portfolios)
 
-**Status:** PENDING
+**Status:** APPROVED (owner, 2026-11-06, D197: all eight approved; the decision each one names is asked when it is built)
+
+**Filed as:** T-448 in `docs/audits/task-queue-2026-09-07.json` (2026-11-06).
 
 **What:** A "Costs" card on Portfolios and on each tracked portfolio. It shows the weighted expense
 ratio of the funds held, the cost in dollars per year (from live values on a tracked portfolio, or per
@@ -252,7 +260,9 @@ checked data. · *Practicality:* Very good.
 
 ## 5. Show figures the app already downloads and throws away · proposed `P1` · target section: ledger, new item (category `feature`, three parts: Crypto and Funds)
 
-**Status:** PENDING
+**Status:** APPROVED (owner, 2026-11-06, D197: all eight approved; the decision each one names is asked when it is built)
+
+**Filed as:** T-449 in `docs/audits/task-queue-2026-09-07.json` (2026-11-06), one item carrying parts (a), (b) and (c).
 
 **What:** Three small additions, each from a response the app already fetches. Each can be approved
 on its own.
@@ -304,7 +314,9 @@ the data is already in hand. · *Practicality:* Very good.
 
 ## 6. A Stock Registry past 79 names, built from SEC data (re-prioritises parked T-076) · proposed `P2` · target section: ledger, annotate T-076 and file the build as a new item (category `feature`, Equities)
 
-**Status:** PENDING
+**Status:** APPROVED (owner, 2026-11-06, D197: all eight approved; the decision each one names is asked when it is built)
+
+**Filed as:** T-450 in `docs/audits/task-queue-2026-09-07.json` (2026-11-06); T-076 gained a progress note naming T-450 and D197, and stays parked.
 
 **What:** A "wider list" mode on the Stock Registry: every SEC-filing company with a ticker, with its
 name and its SEC figures (earnings and dividends per share, share count and how it changed). Search and
@@ -348,7 +360,9 @@ over-the-counter too?
 
 ## 7. Record dividends, interest and staking rewards in a tracked portfolio · proposed `P2` · target section: ledger, new item (category `feature`, Portfolios → Tracked)
 
-**Status:** PENDING
+**Status:** APPROVED (owner, 2026-11-06, D197: all eight approved; the decision each one names is asked when it is built)
+
+**Filed as:** T-451 in `docs/audits/task-queue-2026-09-07.json` (2026-11-06).
 
 **What:** Two new kinds of entry in a tracked portfolio. **Cash income** (a dividend, interest, or a
 fund distribution: an amount, a date and a holding; no units move). **Units received** (a staking reward,
@@ -383,7 +397,9 @@ work is the template. · *Practicality:* Good: one decision.
 
 ## 8. "Download my data": a copy of everything saved for an account · proposed `P2` · target section: ledger, new item (category `feature`, core / launch readiness)
 
-**Status:** PENDING
+**Status:** APPROVED (owner, 2026-11-06, D197: all eight approved; the decision each one names is asked when it is built)
+
+**Filed as:** T-452 in `docs/audits/task-queue-2026-09-07.json` (2026-11-06).
 
 **What:** One function that gathers everything stored for a user into a file: account (email, created),
 the email-notice agreement, portfolios and holdings, tracked portfolios with every trade, split and
