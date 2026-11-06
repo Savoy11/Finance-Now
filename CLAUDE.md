@@ -1403,6 +1403,22 @@ for the reason 0008's are, so sign-in is untouched. Until it runs, sign-up answe
 instruction and creates nothing. Draft wording for counsel (D4). Guarded, with mutations, by
 `lib/auth/__tests__/electronicConsent.test.ts`.
 
+**"Download my data" (T-452, D199, 2026-11-06).** The draft Privacy Policy (§11) promises anyone a
+copy of the personal information held about them within 30 days. Two ways in, one reader:
+
+- **Settings → Your data** downloads the signed-in account's own copy: everything as one JSON
+  file, or its trades and its what-if holdings as CSV (`GET /api/user/export`, `?part=trades|holdings`).
+  The route takes the account from `getCurrentUserId()` only; nothing in the request can name another.
+- **`npm run user:export -- --user <email> [--out <folder>]`** answers a request for someone else,
+  writing the same three files (default folder `user-export-<date>/`, gitignored: it is personal data).
+
+The tables are **found, not listed** (`lib/server/userExportCollect.ts`): every table in the schema
+with a `user_id` column is read, so a new table is exported without anyone remembering it; only
+`password_reset_tokens` is left out, with its reason (`EXCLUDED_TABLES`). The password hash and any
+`*_token_hash` column are removed, a table a migration has not created is named rather than failing,
+and a spreadsheet cell typed as a formula opens as text. It reads only and deletes nothing.
+Guarded by `lib/data/__tests__/userExport.test.ts`.
+
 **Server-side secret stores** (gitignored, written at repo `frontend/` root):
 `.provider-config.json` (provider API keys) and `.agent-prompts.json` (agent overrides).
 

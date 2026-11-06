@@ -62,9 +62,9 @@
   "total_verified": 408,
   "outstanding": 392,
   "by_status": {
-   "closed": 241,
+   "closed": 242,
    "parked": 131,
-   "open": 15,
+   "open": 14,
    "blocked": 5
   },
   "by_owner_role": {
@@ -74,7 +74,7 @@
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 241,
+  "closed_by_annotation": 242,
   "counts_recomputed_on": "2026-11-06",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 392
@@ -15942,7 +15942,7 @@
   {
    "id": "T-452",
    "title": "“Download my data”: a copy of everything saved for an account, by owner command and a Settings button",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "blocking_decision": null,
    "opened": {
@@ -15980,7 +15980,23 @@
      "lines": "27-28",
      "quote": "\"auth:reset\": \"tsx scripts/auth-reset.ts\","
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-11-06",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "Built as the owner chose (D199): the owner command `npm run user:export -- --user <email>` and a \"Your data\" section in Settings, both reading every table with a user_id column, found from the schema rather than listed (the retained Budget and plan tables included, which the next_action asked to check). The account comes from the session only; the password hash, any token hash and the reset-link table are left out and said so; tables a migration has not created are named. Tested against a real PostgreSQL 16 database with two accounts. The Privacy Policy is unchanged: mentioning the button there is a change to the owner's document first.",
+    "approved_by": "owner, 2026-11-06: chose T-452 next, with the command and the Settings button",
+    "evidence": [
+     "frontend/src/lib/data/userExport.ts",
+     "frontend/src/lib/server/userExportCollect.ts",
+     "frontend/src/app/api/user/export/route.ts",
+     "frontend/src/components/settings/YourDataPanel.tsx",
+     "frontend/scripts/user-export.ts",
+     "frontend/src/lib/data/__tests__/userExport.test.ts"
+    ]
+   }
   }
  ],
  "closed_but_still_listed_as_open_in_docs": [
