@@ -2,6 +2,15 @@ version: '3.9'
 
 # Production overrides for docker-compose.yml
 # Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# ⚠ NOT USABLE AS IT STANDS (noted 2026-11-06, code audit 2026-11-05). This file was
+# written for the Python backend retired by D2 (backend/FROZEN.md): it runs three
+# backend replicas, sets the retired NEXT_PUBLIC_API_URL, and mounts
+# ./nginx/nginx.prod.conf, which does not exist. The nginx.conf that does exist routes
+# /api to that backend, so the app's own /api routes would not be served. Pointing the
+# mount at nginx.conf would only hide the fault. The hosting brief
+# (docs/deployment/hosting-brief-2026-10-26.md) compares where to run the app; if the
+# choice is a rented server with Docker Compose, this file is rewritten for it then.
 
 services:
   backend:

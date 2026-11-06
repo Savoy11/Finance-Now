@@ -15576,6 +15576,10 @@
      "docs/decisions/2026-11-05-owner-decisions.md"
     ],
     "known_gap": "A host deployed without FN_ADMIN_TOKEN still trusts the Host header; the hosting brief requires the token on every host."
+   },
+   "progress": {
+    "noted_on": "2026-11-06",
+    "note": "The four minor findings the audit set aside were re-checked on 2026-11-06 at the owner's request (D195). Two were fixed: JetBrains Mono, the chart font, now loads through next/font, as Inter already did (the Google Fonts @import in globals.css came after Tailwind's rules, so browsers ignored it); and `npm run data-sources` leaves DATA-SOURCES.md untouched when only its date would change. Two were recorded instead of changed: docker-compose.prod.yml now says it is not usable as it stands (it was written for the retired backend, and pointing its missing nginx.prod.conf at nginx.conf would send /api to that backend), and `npm ls --all` exits 1 for two expected reasons (the D189 minimatch override, which npm lists as invalid, and ESLint 10 being newer than eslint-config-next's plugins declare), which nothing in the repository runs. Record: the dated addendum in docs/audits/code-audit-2026-11-05.md."
    }
   }
  ],

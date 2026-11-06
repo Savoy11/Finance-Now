@@ -104,3 +104,34 @@ the D189 minimatch override (nothing calls it); `data-sources --verify` dirtying
    mutual-fund counts and staking-provider count.
 6. **Deletion record.** CLAUDE.md lists the third deletion and its search now includes `rmdir`,
    `rd /s` and `del /`; re-run, it finds the three rows and nothing else.
+
+## Addendum, 2026-11-06: the four set-aside findings (D195)
+
+The owner asked for the minor findings above to be fixed. Each was re-checked first.
+
+1. **The chart font never loaded. Fixed.** The built CSS held an `@font-face` for Inter
+   (from `next/font`, in `layout.tsx`) and none for JetBrains Mono: the Google Fonts
+   `@import` in `globals.css` came after Tailwind's rules, so a browser ignores it, and the
+   build dropped it. JetBrains Mono now comes from `next/font` as well, and the `@import` is
+   gone; a build was checked to carry its `@font-face`. `src/app/__tests__/fonts.test.ts`
+   fails if a CSS `@import` comes back.
+2. **`npm run data-sources -- --verify` dirtied the tree. Fixed.** The script now leaves
+   `DATA-SOURCES.md` untouched when only its "Last generated" date would change
+   (`scripts/lib/generatedDate.mjs`, tested in `generatedDate.test.ts`, which also reads the
+   date pattern from the script and checks it against the real file).
+3. **`docker-compose.prod.yml` mounts an `nginx.prod.conf` that does not exist. Recorded, not
+   patched.** The file was written for the backend D2 retired: three backend replicas, the
+   retired `NEXT_PUBLIC_API_URL`, and an nginx whose existing `nginx.conf` sends `/api` to that
+   backend. Pointing the mount at `nginx.conf` would make a setup that cannot serve the app's
+   own `/api` routes look ready. The file now opens with a note saying so and pointing at the
+   hosting brief (`docs/deployment/hosting-brief-2026-10-26.md`), which already finds the
+   repository's deployment setup not ready; it is rewritten if the owner chooses a rented
+   server with Docker Compose.
+4. **`npm ls --all` exits 1. Recorded, not changed.** Two causes, both expected: npm lists
+   the D189 override (minimatch 11 where `@eslint/config-array` and
+   `@typescript-eslint/typescript-estree` ask for ^10) as "invalid", which is what an override
+   outside a declared range looks like; and ESLint 10 is newer than the ESLint versions
+   `eslint-config-next`'s import, jsx-a11y and react plugins declare. Lint runs and reports
+   the same findings (D189), and nothing in the repository or CI runs `npm ls`. (A third line,
+   an extraneous `@img/sharp-wasm32`, is in this container's `node_modules` only, not the
+   lockfile.)
