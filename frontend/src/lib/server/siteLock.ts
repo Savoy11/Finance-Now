@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
-import { isLocalRequest } from './apiGuard'
+import { isOwnerRequest } from './apiGuard'
 import { INTERNAL_HEADER, internalApiToken, presentedKey } from './apiKeys'
-import { adminToken, isHttps, ownerCookieMatches, sameSecret } from './ownerAccess'
+import { isHttps, sameSecret } from './ownerAccess'
 
 // The site is locked to its owner until launch (hosting brief §4 item 1; owner decision D174,
 // 2026-10-26: "Keep sign-in off until launch").
@@ -12,7 +12,9 @@ import { adminToken, isHttps, ownerCookieMatches, sameSecret } from './ownerAcce
 // and production outright), which hold only while the owner is the only user (D96). With sign-in
 // off until launch, sign-in cannot be the lock, so the owner cookie /owner issues is:
 //
-// - On the owner's machine (localhost) nothing changes.
+// - On the owner's machine (localhost) with no FN_ADMIN_TOKEN set, nothing changes. Once the token
+//   is set, as every host must set it, the Host header is not trusted at all, so a forged
+//   `Host: localhost` no longer opens the lock (audit 2026-11-05, D193); the owner unlocks at /owner.
 // - On any other host, every page and route needs the owner cookie, unless FN_SITE_OPEN=true.
 //   Setting it is the launch, and nothing else opens the site.
 // - Pages redirect to /owner, where the owner types FN_ADMIN_TOKEN once; routes answer 401.
@@ -45,15 +47,15 @@ function isRoute(pathname: string): boolean {
 
 /** Whether the lock lets this request through. */
 export function siteLockAllows(req: NextRequest): boolean {
-  if (siteOpen() || isLocalRequest(req)) return true
+  if (siteOpen()) return true
   const { pathname } = req.nextUrl
   if (exempt(pathname)) return true
   const internal = req.headers.get(INTERNAL_HEADER)
   if (internal && sameSecret(internal, internalApiToken())) return true
   // The key itself is checked by guardApiV1, the first statement of every /api/v1 handler.
   if (pathname.startsWith('/api/v1') && presentedKey(req)) return true
-  const token = adminToken()
-  return !!token && ownerCookieMatches(req, token)
+  // The owner cookie or token when FN_ADMIN_TOKEN is set; localhost only when it is not.
+  return isOwnerRequest(req)
 }
 
 /** The lock's answer: null to proceed, else a redirect to /owner (pages) or a 401 (routes). */

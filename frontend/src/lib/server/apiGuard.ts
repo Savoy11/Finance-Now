@@ -17,16 +17,30 @@ import { adminToken as configuredAdminToken, ownerCookieMatches, sameSecret } fr
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]', '::1'])
 
 // ⚠ Both the localhost check below and clientKey() read client-controlled
-// headers (Host, x-forwarded-for). That is sound for this app as deployed —
-// single instance, no proxy in front — and the FN_ADMIN_TOKEN path does not
-// depend on either. But behind a proxy that does not normalize them, a spoofed
-// Host defeats the localhost fallback and a spoofed x-forwarded-for defeats
-// per-IP rate limiting. If this ever goes behind a proxy: set FN_ADMIN_TOKEN
-// (so access control stops relying on Host at all) and derive the client key
-// from the proxy's trusted forwarding header only (audit L8).
+// headers (Host, x-forwarded-for). The client chooses its Host header outright,
+// with or without a proxy in front (a proxy passing `Host $host` forwards
+// whatever the client sent), so a forged `Host: localhost` passes this check from
+// anywhere. That is why access control asks isOwnerRequest(), never this check
+// alone: once FN_ADMIN_TOKEN is set, as every host must set it, the Host header
+// is not consulted at all (audit 2026-11-05, D193). Without the token the check
+// stands for the owner's own machine. A spoofed x-forwarded-for can still move a
+// request between per-IP rate-limit buckets (audit L8).
 export function isLocalRequest(req: NextRequest): boolean {
   const host = (req.headers.get('host') ?? '').split(':')[0].toLowerCase()
   return LOCAL_HOSTS.has(host)
+}
+
+/**
+ * Whether a request is the owner's. With FN_ADMIN_TOKEN set, only the token (as
+ * a header) or the owner cookie /owner issues counts; the Host header is never
+ * trusted, because the client chooses it. With no token set, a localhost Host is
+ * the owner's own machine, as before. The site lock and the keyless public API
+ * both ask this (D193); guardSensitiveRoute below has always applied the same rule.
+ */
+export function isOwnerRequest(req: NextRequest): boolean {
+  const token = configuredAdminToken()
+  if (token) return tokenMatches(req, token) || ownerCookieMatches(req, token)
+  return isLocalRequest(req)
 }
 
 function tokenMatches(req: NextRequest, expected: string): boolean {
