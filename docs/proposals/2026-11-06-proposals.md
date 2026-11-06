@@ -68,6 +68,8 @@ decided together as one "actions on every asset page" item.
 
 **Status:** APPROVED (owner, 2026-11-06, D197: all eight approved; the decision each one names is asked when it is built)
 
+**Filed as:** T-445 in `docs/audits/task-queue-2026-09-07.json` (2026-11-06).
+
 **What:** Show each currency pair's latest ECB reference rate (with its date, labelled "daily, not a
 live quote") wherever the pair now shows a dash: the Currencies table, the 17 pair pages and the Macro
 overview. Draw each pair's price chart from the ECB's daily history. As a second step, let the Macro
@@ -121,6 +123,8 @@ reading and one design choice.
 
 **Status:** APPROVED (owner, 2026-11-06, D197: all eight approved; the decision each one names is asked when it is built)
 
+**Filed as:** T-446 in `docs/audits/task-queue-2026-09-07.json` (2026-11-06).
+
 **What:** Two things from the same official source the app already uses:
 1. **History charts for the four Treasury yields** (13-week, 5-, 10- and 30-year), drawn from the
    Treasury's daily par curve instead of the quote ladder that never answers for them. The Macro
@@ -170,6 +174,8 @@ the first part.
 
 **Status:** APPROVED (owner, 2026-11-06, D197: all eight approved; the decision each one names is asked when it is built)
 
+**Filed as:** T-447 in `docs/audits/task-queue-2026-09-07.json` (2026-11-06).
+
 **What:** On `/portfolios/tracked`, upload a CSV file of trades exported from a broker or exchange.
 Map its columns once (date, buy/sell, symbol, units, price, fee), see every row checked before
 anything is saved, then save them together. The mapping is remembered for that file layout, and rows
@@ -216,6 +222,8 @@ append-only rule shapes the design but does not block it.
 
 **Status:** APPROVED (owner, 2026-11-06, D197: all eight approved; the decision each one names is asked when it is built)
 
+**Filed as:** T-448 in `docs/audits/task-queue-2026-09-07.json` (2026-11-06).
+
 **What:** A "Costs" card on Portfolios and on each tracked portfolio. It shows the weighted expense
 ratio of the funds held, the cost in dollars per year (from live values on a tracked portfolio, or per
 $10,000 on a what-if one), and the 10-year cost compared with a 0.03% index fund. Sales charges are
@@ -253,6 +261,8 @@ checked data. · *Practicality:* Very good.
 ## 5. Show figures the app already downloads and throws away · proposed `P1` · target section: ledger, new item (category `feature`, three parts: Crypto and Funds)
 
 **Status:** APPROVED (owner, 2026-11-06, D197: all eight approved; the decision each one names is asked when it is built)
+
+**Filed as:** T-449 in `docs/audits/task-queue-2026-09-07.json` (2026-11-06), one item carrying parts (a), (b) and (c).
 
 **What:** Three small additions, each from a response the app already fetches. Each can be approved
 on its own.
@@ -306,6 +316,8 @@ the data is already in hand. · *Practicality:* Very good.
 
 **Status:** APPROVED (owner, 2026-11-06, D197: all eight approved; the decision each one names is asked when it is built)
 
+**Filed as:** T-450 in `docs/audits/task-queue-2026-09-07.json` (2026-11-06); T-076 gained a progress note naming T-450 and D197, and stays parked.
+
 **What:** A "wider list" mode on the Stock Registry: every SEC-filing company with a ticker, with its
 name and its SEC figures (earnings and dividends per share, share count and how it changed). Search and
 filters on those figures work over the whole list. Live price, market cap, P/E and yield appear for the
@@ -350,6 +362,8 @@ over-the-counter too?
 
 **Status:** APPROVED (owner, 2026-11-06, D197: all eight approved; the decision each one names is asked when it is built)
 
+**Filed as:** T-451 in `docs/audits/task-queue-2026-09-07.json` (2026-11-06).
+
 **What:** Two new kinds of entry in a tracked portfolio. **Cash income** (a dividend, interest, or a
 fund distribution: an amount, a date and a holding; no units move). **Units received** (a staking reward,
 or a dividend paid in shares: units and their value that day, which adds a new lot). The portfolio then
@@ -384,6 +398,8 @@ work is the template. · *Practicality:* Good: one decision.
 ## 8. "Download my data": a copy of everything saved for an account · proposed `P2` · target section: ledger, new item (category `feature`, core / launch readiness)
 
 **Status:** APPROVED (owner, 2026-11-06, D197: all eight approved; the decision each one names is asked when it is built)
+
+**Filed as:** T-452 in `docs/audits/task-queue-2026-09-07.json` (2026-11-06).
 
 **What:** One function that gathers everything stored for a user into a file: account (email, created),
 the email-notice agreement, portfolios and holdings, tracked portfolios with every trade, split and

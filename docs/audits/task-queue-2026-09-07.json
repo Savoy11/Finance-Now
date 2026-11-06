@@ -59,25 +59,25 @@
   "critic_gaps_added": 0
  },
  "counts": {
-  "total_verified": 400,
-  "outstanding": 384,
+  "total_verified": 408,
+  "outstanding": 392,
   "by_status": {
    "closed": 240,
    "parked": 131,
-   "open": 8,
+   "open": 16,
    "blocked": 5
   },
   "by_owner_role": {
-   "remote-dev": 96,
-   "either": 51,
+   "remote-dev": 103,
+   "either": 52,
    "owner-decision": 151,
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
   "closed_by_annotation": 240,
-  "counts_recomputed_on": "2026-11-05",
+  "counts_recomputed_on": "2026-11-06",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
-  "total": 384
+  "total": 392
  },
  "blocking_decisions": [
   {
@@ -11399,7 +11399,9 @@
    "blocking_decision": "Paid FMP plan vs a different universe source (interlocks with D2) — deferred until near release",
    "related_ids": [
     "D2",
-    "action item 9"
+    "action item 9",
+    "D197",
+    "T-450"
    ],
    "summary": "company-screener is paid-only; without it the registry is the 79-name catalog and the outlier screener sees 66 names; interlocks with D2.",
    "next_action": "Nothing until near release; then buy the FMP plan that unlocks company-screener and re-run `npm run audit` on the owner's machine to confirm stock-universe reports source:'fmp' instead of 'catalog', and tick item 9 in DATA-AVAILABILITY.md.",
@@ -11414,7 +11416,15 @@
      "lines": "116-117",
      "quote": "**DATA-AVAILABILITY action items 9, 15, 17, 18** — paid FMP decision, staking live coverage (4/51), CoinGecko harness pacing, macro quote check."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-11-06",
+    "note": "2026-11-06 (D197): the owner approved proposal 6 of docs/proposals/2026-11-06-proposals.md, which re-prioritises this item’s “different universe source” half: a wider Stock Registry list built from SEC data with no paid plan, filed as T-450 to be built now. This item stays parked: its paid-FMP half is still decided near release, and T-450 does not need it. T-450 asks the owner, when it is built, to confirm that split and which listings count.",
+    "evidence": [
+     "docs/proposals/2026-11-06-proposals.md",
+     "docs/decisions/2026-11-06-owner-decisions.md"
+    ]
+   }
   },
   {
    "id": "T-077",
@@ -15581,6 +15591,382 @@
     "noted_on": "2026-11-06",
     "note": "The four minor findings the audit set aside were re-checked on 2026-11-06 at the owner's request (D195). Two were fixed: JetBrains Mono, the chart font, now loads through next/font, as Inter already did (the Google Fonts @import in globals.css came after Tailwind's rules, so browsers ignored it); and `npm run data-sources` leaves DATA-SOURCES.md untouched when only its date would change. Two were recorded instead of changed: docker-compose.prod.yml now says it is not usable as it stands (it was written for the retired backend, and pointing its missing nginx.prod.conf at nginx.conf would send /api to that backend), and `npm ls --all` exits 1 for two expected reasons (the D189 minimatch override, which npm lists as invalid, and ESLint 10 being newer than eslint-config-next's plugins declare), which nothing in the repository runs. Record: the dated addendum in docs/audits/code-audit-2026-11-05.md."
    }
+  },
+  {
+   "id": "T-445",
+   "title": "Price and chart every currency pair from the European Central Bank’s daily reference rates",
+   "status": "open",
+   "confidence": "high",
+   "blocking_decision": null,
+   "opened": {
+    "on": "2026-11-06",
+    "by": "opportunity-scout FILE mode, owner-approved 2026-11-06 (D197)",
+    "why": "Proposal 1 of docs/proposals/2026-11-06-proposals.md, proposed P1 (Importance high, Efficiency high, Practicality good), approved by the owner with the other seven on 2026-11-06 (D197). The decision it names is asked when the item is built, with the proposal’s recommended answer offered first; nothing was built by the approval."
+   },
+   "owner_role": "either",
+   "category": "feature",
+   "effort": "medium",
+   "related_ids": [
+    "D197",
+    "D3",
+    "D163",
+    "D21",
+    "T-446"
+   ],
+   "summary": "Every currency pair on /macro/currencies, its 17 pair pages and the Macro overview shows a dash: pair prices come only from the keyed quote ladder, which has served no macro quote on any owner-machine audit since 2026-09-09. The same Currencies page already downloads the ECB’s daily reference rates for its converter (/live-data/fx-rates, keyless), every currency in the 17 pairs is in that set, and the ECB’s daily history is on the same host. This shows each pair’s latest ECB rate with its date, labelled daily rather than live, charts it from the daily history, and later lets the Macro technical-analysis page and scanner read those closes: the move D3 made for Treasury yields. The Dollar Index stays a dash, since it is ICE’s index and the ECB does not publish it. No key and no recurring cost.",
+   "next_action": "(1) Terms first: read the ECB’s own reuse terms for its reference rates and register them in frontend/src/lib/server/sourceTerms.ts, as the Federal Reserve Board was registered for the FOMC table without being fetched; the existing fx-rates entry says the ECB’s terms were not part of its reading. (2) When building, ask the owner the proposal’s decision, recommended answer first: where the rate lives. (a) Page by page, as D3 did for yields (recommended: smaller); or (b) as a last, labelled step in the shared quote ladder, so Compare, watchlists and portfolios holding a pair get it too, which needs a daily-not-live marker every consumer respects. Decide it together with T-446’s question about yields in Compare. (3) Build: the dated rate on the Currencies table, the pair pages and the Macro overview; a chart from the daily history, one cached request per pair per day; and a line in frontend/src/lib/legal/dataMethods.ts (D163) for how a USD-based pair is worked out from the ECB’s euro-based rates. (4) Second step: the Macro technical-analysis page and scanner read the daily closes, and the scanner’s stated reason for leaving out the 10 emerging-market and cross pairs is re-checked.",
+   "sources": [
+    {
+     "file": "docs/proposals/2026-11-06-proposals.md",
+     "lines": "Proposal 1",
+     "quote": "Show each currency pair's latest ECB reference rate (with its date, labelled \"daily, not a"
+    },
+    {
+     "file": "frontend/src/app/(dashboard)/macro/currencies/CurrenciesClient.tsx",
+     "lines": "42, 299",
+     "quote": "queryFn: () => fetch('/live-data/fx-rates').then((r) => r.json()),"
+    },
+    {
+     "file": "frontend/src/app/(dashboard)/macro/currencies/[slug]/CurrencyDetailClient.tsx",
+     "lines": "86",
+     "quote": "<PriceChartCard symbol={entry.symbol} valueFormat=\"plain\" />"
+    },
+    {
+     "file": "frontend/src/lib/server/sourceTerms.ts",
+     "lines": "1034",
+     "quote": "own reuse terms, which govern the rates, were not part of that reading."
+    }
+   ]
+  },
+  {
+   "id": "T-446",
+   "title": "Bonds & Rates: chart the four Treasury yields’ history from the official curve, and add real yields and breakeven inflation",
+   "status": "open",
+   "confidence": "high",
+   "blocking_decision": null,
+   "opened": {
+    "on": "2026-11-06",
+    "by": "opportunity-scout FILE mode, owner-approved 2026-11-06 (D197)",
+    "why": "Proposal 2 of docs/proposals/2026-11-06-proposals.md, proposed P1 (Importance high, Efficiency high, Practicality very good), approved by the owner with the other seven on 2026-11-06 (D197). The decision it names is asked when the item is built, with the proposal’s recommended answer offered first; nothing was built by the approval."
+   },
+   "owner_role": "remote-dev",
+   "category": "feature",
+   "effort": "medium",
+   "related_ids": [
+    "D197",
+    "D3",
+    "D157",
+    "D163",
+    "T-129",
+    "T-445"
+   ],
+   "summary": "The four yield pages (13-week, 5-, 10- and 30-year) show today’s yield from the Treasury’s official par curve, then chart through the quote ladder, which no free provider answers for those symbols (D3), so the chart is empty for every user. fetchCurveYear() in frontend/src/lib/server/treasuryCurve.ts already reads a whole calendar year of the curve in one request. The Treasury also publishes real (inflation-protected) yields at 5, 7, 10, 20 and 30 years from the same verified source; ordinary minus real yield at a maturity is the inflation the bond market expects over that period. Both are arithmetic on official published figures, not a forecast of the app’s own. The real-yield feed was confirmed by one read from the proposing session (213 days of 2026, latest 2026-11-05), not by an owner-machine audit. No key and no recurring cost.",
+   "next_action": "(1) Yield history first, which no decision blocks: draw each yield page’s chart from the official curve’s daily history instead of the quote ladder, cached daily and labelled daily as the headline figure already is (curveYieldSourceLabel); then let the Macro technical-analysis page and scanner include the four yields again, reading closing figures only (they left the scanner on 2026-10-24, T-129 D, D157, because no provider sent their history). (2) Real yields and breakeven inflation on /macro/rates, with history, and an entry in frontend/src/lib/legal/dataMethods.ts for the subtraction (D163). (3) When building, ask the owner the proposal’s decision, recommended answer first: whether yields should also reach Compare, which means letting security-chart answer the four yield symbols from the curve. Recommended: decide it together with T-445’s question about where the ECB rate lives.",
+   "sources": [
+    {
+     "file": "docs/proposals/2026-11-06-proposals.md",
+     "lines": "Proposal 2",
+     "quote": "History charts for the four Treasury yields"
+    },
+    {
+     "file": "frontend/src/app/(dashboard)/macro/rates/[slug]/RatesDetailClient.tsx",
+     "lines": "122",
+     "quote": "<PriceChartCard symbol={entry.symbol} valueFormat=\"plain\" />"
+    },
+    {
+     "file": "frontend/src/lib/server/treasuryCurve.ts",
+     "lines": "99",
+     "quote": "export async function fetchCurveYear(year: number): Promise<CurveSnapshot[]> {"
+    },
+    {
+     "file": "frontend/src/lib/data/ratesFromCurve.ts",
+     "lines": "12",
+     "quote": "behind a plan upgrade (HTTP 402), Finnhub returns no quote, Twelve Data"
+    }
+   ]
+  },
+  {
+   "id": "T-447",
+   "title": "Import trades from a broker’s CSV file into a tracked portfolio",
+   "status": "open",
+   "confidence": "high",
+   "blocking_decision": null,
+   "opened": {
+    "on": "2026-11-06",
+    "by": "opportunity-scout FILE mode, owner-approved 2026-11-06 (D197)",
+    "why": "Proposal 3 of docs/proposals/2026-11-06-proposals.md, proposed P1 (Importance high, Efficiency good, Practicality good), approved by the owner with the other seven on 2026-11-06 (D197). The decision it names is asked when the item is built, with the proposal’s recommended answer offered first; nothing was built by the approval."
+   },
+   "owner_role": "remote-dev",
+   "category": "feature",
+   "effort": "large",
+   "related_ids": [
+    "D197",
+    "T-027",
+    "D65",
+    "T-421",
+    "D190",
+    "T-451"
+   ],
+   "summary": "A tracked portfolio is built one entry at a time: TradeForm.tsx is the form for recording one trade, and the trades route records one trade per POST, so a few years of history means hundreds of hand entries before the FIFO gains (T-027, D65) mean anything. This adds a CSV upload on /portfolios/tracked: map the file’s columns once (date, buy/sell, symbol, units, price, fee), see every row checked before anything is saved, save them together, remember the mapping for that file layout, and skip rows already imported when a file is uploaded again. The removed Budget module built exactly this (column mapping, saved import profiles matched by the header row, duplicate-proof re-imports), and it is recoverable by name from archive/wave-two-pre-reset. No key, no host and no recurring cost; about a week.",
+   "next_action": "When building, ask the owner the proposal’s two decisions, recommended answer first: (1) may one step cancel a whole import? Recommended: yes, done with cancellation rows, so nothing is removed. (2) Generic column mapping only, or also ready-made layouts for the brokers the owner uses? Those need a sample file from the owner with the numbers blanked. Rules that are not optional: the ledger stays append-only (a mistake is cancelled, never edited or removed), so the preview step carries the weight; coins are never matched by ticker alone (D190: Gate USD was shown as Gemini’s GUSD), only to the catalog’s coin ids or by asking the user; every row passes parseTradeInput, as a typed trade does, and the rows skipped are counted and shown. Start from frontend/src/lib/budget/csv.ts, its tests and the import-profiles route on archive/wave-two-pre-reset. Import batches and saved layouts probably need a small table of their own (tables, not columns, as tracked_portfolios did), so a migration the owner runs with npm run db:migrate. Pairs with T-451: broker files carry dividends.",
+   "sources": [
+    {
+     "file": "docs/proposals/2026-11-06-proposals.md",
+     "lines": "Proposal 3",
+     "quote": "On `/portfolios/tracked`, upload a CSV file of trades exported from a broker or exchange."
+    },
+    {
+     "file": "frontend/src/components/portfolio/tracked/TradeForm.tsx",
+     "lines": "11",
+     "quote": "The form for recording one trade in a tracked portfolio (T-027, D65)"
+    },
+    {
+     "file": "frontend/src/app/api/user/tracked-portfolios/[id]/trades/route.ts",
+     "lines": "17",
+     "quote": "POST /api/user/tracked-portfolios/[id]/trades  → record one trade"
+    },
+    {
+     "file": "archive/wave-two-pre-reset:frontend/src/lib/budget/csv.ts",
+     "lines": "1-4",
+     "quote": "CSV parsing + column mapping for bank statement imports (Budget module)."
+    }
+   ]
+  },
+  {
+   "id": "T-448",
+   "title": "Show what a portfolio’s funds cost each year: a Costs card on Portfolios and on each tracked portfolio",
+   "status": "open",
+   "confidence": "high",
+   "blocking_decision": null,
+   "opened": {
+    "on": "2026-11-06",
+    "by": "opportunity-scout FILE mode, owner-approved 2026-11-06 (D197)",
+    "why": "Proposal 4 of docs/proposals/2026-11-06-proposals.md, proposed P1 (Importance high, Efficiency very high, Practicality very good), approved by the owner with the other seven on 2026-11-06 (D197). The decision it names is asked when the item is built, with the proposal’s recommended answer offered first; nothing was built by the approval."
+   },
+   "owner_role": "remote-dev",
+   "category": "feature",
+   "effort": "small",
+   "related_ids": [
+    "D197",
+    "D163",
+    "D92"
+   ],
+   "summary": "The fee arithmetic exists three times over and none of it reaches a portfolio: the Fee Drag Analyzer on each fund page (computeFeeDrag), the Portfolio Builder’s fees summary for plans, and reviewPlan’s fee-creep check. /portfolios and the tracked-portfolio screen show no expense ratio at all. This adds a Costs card: the weighted expense ratio of the funds held, the cost in dollars a year (from live values on a tracked portfolio, per $10,000 on a what-if one), and the 10-year cost against a 0.03% index fund, with sales charges counted where the rate is verified and disclosed where it is not, as the fund page does, and a coverage line naming any fund with no fee on file. The fees are checked against SEC filings (FUND_FEES_LAST_VERIFIED), so they can carry a total. No key, no host and no recurring cost.",
+   "next_action": "Build it pure and tested, the house rule for a dollar figure, reusing computeFeeDrag and fundSalesCharge, with an entry in frontend/src/lib/legal/dataMethods.ts (D163). No warning or threshold: the code-checker’s do-not-fix registry records the Portfolio Builder’s deliberate absence of a fee warning, and this card is a figure, not a verdict; it rates nothing (D92). The proposal names no required decision; when building, offer the owner its one option: also show the card on the Look-through tab.",
+   "sources": [
+    {
+     "file": "docs/proposals/2026-11-06-proposals.md",
+     "lines": "Proposal 4",
+     "quote": "A \"Costs\" card on Portfolios and on each tracked portfolio."
+    },
+    {
+     "file": "frontend/src/lib/data/fundCatalog.ts",
+     "lines": "1012",
+     "quote": "export function computeFeeDrag("
+    },
+    {
+     "file": "docs/FEATURE-ADDITIONS.md",
+     "lines": "31-32",
+     "quote": "Expense-ratio compounding is the single most decision-relevant fact"
+    },
+    {
+     "file": "docs/agents/code-checker.md",
+     "lines": "142",
+     "quote": "No fee warning at build time in Portfolio Builder"
+    }
+   ]
+  },
+  {
+   "id": "T-449",
+   "title": "Show three figures the app already downloads and drops: stablecoin supply change, coin supply facts, and issuer and size for funds outside the catalog",
+   "status": "open",
+   "confidence": "high",
+   "blocking_decision": null,
+   "opened": {
+    "on": "2026-11-06",
+    "by": "opportunity-scout FILE mode, owner-approved 2026-11-06 (D197)",
+    "why": "Proposal 5 of docs/proposals/2026-11-06-proposals.md, proposed P1 (Importance medium to high, Efficiency very high, Practicality very good), approved by the owner with the other seven on 2026-11-06 (D197). The decision it names is asked when the item is built, with the proposal’s recommended answer offered first; nothing was built by the approval."
+   },
+   "owner_role": "remote-dev",
+   "category": "feature",
+   "effort": "medium",
+   "related_ids": [
+    "D197",
+    "T-392",
+    "T-425",
+    "D163"
+   ],
+   "summary": "Three small additions, each read from a response the app already fetches, filed as one item with three parts as T-129 carried its parts; each part can ship and be noted on its own. (a) Stablecoin supply change: /live-data/reserves keeps only each coin’s circulating supply from DefiLlama’s stablecoin response, which also carries the previous day’s, week’s and month’s supply and the split across blockchains (fields confirmed by one read from the proposing session). Show the 1-, 7- and 30-day change and the chain split on the Reserves tab and each stablecoin’s page. (b) Supply facts on every coin page: /live-data/markets already returns fully diluted value, total and maximum supply, the 7- and 30-day change and the distance below the all-time high, but the coin page’s MarketData type has no field for most of them, so the page shows circulating supply only. (c) Issuer and net assets for funds outside the 140-fund catalog: frontend/src/lib/data/fundFacts.generated.json holds both for 25,003 fund tickers (N-PORT, 2026-07) and nothing reads it (T-392, closed moot), while fund-universe’s non-catalog rows set issuer and aumB to null. No key, no new host and no recurring cost; about a day each.",
+   "next_action": "When building part (a), ask the owner the proposal’s decision: whether a large fall in supply should also raise a bell alert, and at what size of fall. The proposal offers no recommended answer, because the threshold is a judgement; build the facts first either way. Part (a) rests on DefiLlama, with the standing the Reserves tab already has (no terms document, personal use before launch, enquiry parked under T-425). Part (b) is CoinGecko data, whose credit the coin page already shows. Part (c) labels the figure as the build script’s header requires (fund net assets, all share classes), dated by quarter, and needs a review clock that staleness:check finds and a quarterly re-run of build-fund-facts.mjs on the owner’s machine. Each part adds its change percentages or figure to frontend/src/lib/legal/dataMethods.ts (D163).",
+   "sources": [
+    {
+     "file": "docs/proposals/2026-11-06-proposals.md",
+     "lines": "Proposal 5",
+     "quote": "Three small additions, each from a response the app already fetches."
+    },
+    {
+     "file": "frontend/src/app/live-data/reserves/route.ts",
+     "lines": "36",
+     "quote": "circulating?: { peggedUSD?: number }"
+    },
+    {
+     "file": "frontend/src/app/live-data/markets/route.ts",
+     "lines": "76-83",
+     "quote": "athChangePct: row.ath_change_percentage ?? null,"
+    },
+    {
+     "file": "frontend/src/types/asset.ts",
+     "lines": "91-105",
+     "quote": "circulatingSupply: number | null"
+    },
+    {
+     "file": "frontend/src/app/live-data/fund-universe/route.ts",
+     "lines": "245",
+     "quote": "category: null, issuer: null, expenseRatioPct: null, aumB: null,"
+    },
+    {
+     "file": "docs/audits/task-queue-2026-09-07.json",
+     "lines": "T-392 closure",
+     "quote": "wiring it into the fund pages, or removing it, would be its own item if wanted."
+    }
+   ]
+  },
+  {
+   "id": "T-450",
+   "title": "Widen the Stock Registry past 79 names with SEC data, without a paid plan (the build half of parked T-076)",
+   "status": "open",
+   "confidence": "high",
+   "blocking_decision": null,
+   "opened": {
+    "on": "2026-11-06",
+    "by": "opportunity-scout FILE mode, owner-approved 2026-11-06 (D197)",
+    "why": "Proposal 6 of docs/proposals/2026-11-06-proposals.md, proposed P2 (Importance high, Efficiency medium, Practicality medium; a re-prioritisation of parked T-076), approved by the owner with the other seven on 2026-11-06 (D197). The decision it names is asked when the item is built, with the proposal’s recommended answer offered first; nothing was built by the approval."
+   },
+   "owner_role": "remote-dev",
+   "category": "feature",
+   "effort": "large",
+   "related_ids": [
+    "D197",
+    "T-076",
+    "D167",
+    "D170",
+    "D21"
+   ],
+   "summary": "On the free FMP key the Stock Registry is the 79-name curated catalog, because FMP’s company-screener is paid-only; T-076 (parked until near release) asks for a paid FMP plan or a different universe source, and the 2026-10-14 coverage matrix lists stock-universe as stranded if FMP is dropped. This is the different-source half, built now: a wider-list mode listing every SEC-filing company with a ticker, with its name and its SEC figures (earnings and dividends per share, share count and its change), searchable and filterable on those figures over the whole list. Live price, market cap, P/E and yield appear for the rows on screen, as now, and sorting or filtering on a price-based figure over the whole list is refused, since only the visible rows have a price (the rule set when fund return screening was switched off). The server already reads what it needs: frontend/src/lib/server/stockPerShare.ts reads the SEC’s XBRL frames for every filer in a fixed handful of requests, and frontend/src/lib/server/edgar.ts loads the SEC’s ticker list. It also lets a stock outside the 79 resolve its name with no FMP key. No key, no new host and no recurring cost; about a week.",
+   "next_action": "When building, ask the owner the proposal’s two decisions: (1) confirm the re-prioritisation it makes, building the SEC list now and leaving T-076’s paid-FMP question for release (the proposal’s own answer); (2) which listings count: NYSE and Nasdaq common stock only (recommended), or over-the-counter too. The SEC’s company_tickers_exchange.json, on the same host as its ticker list, names each listing’s exchange, which is how funds, preferred shares and over-the-counter names are filtered out. State the limits on the page: no sector outside the 79 (the SEC’s industry code needs one request per company), and price-based screens refused over the whole list. The SEC’s fair-access rules are already followed.",
+   "sources": [
+    {
+     "file": "docs/proposals/2026-11-06-proposals.md",
+     "lines": "Proposal 6",
+     "quote": "A \"wider list\" mode on the Stock Registry"
+    },
+    {
+     "file": "docs/audits/task-queue-2026-09-07.json",
+     "lines": "T-076",
+     "quote": "DATA-AVAILABILITY item 9 — paid FMP plan or a different Stock Registry universe source"
+    },
+    {
+     "file": "frontend/src/lib/server/stockPerShare.ts",
+     "lines": "7",
+     "quote": "Earnings and dividends per share for every SEC filer, from the XBRL \"frames\" API"
+    },
+    {
+     "file": "frontend/src/lib/server/edgar.ts",
+     "lines": "26",
+     "quote": "company_tickers.json"
+    },
+    {
+     "file": "docs/audits/coverage-matrix-2026-10-14.md",
+     "lines": "110",
+     "quote": "**Stock Registry universe** (`stock-universe`) — only FMP"
+    }
+   ]
+  },
+  {
+   "id": "T-451",
+   "title": "Record dividends, interest and staking rewards in a tracked portfolio",
+   "status": "open",
+   "confidence": "high",
+   "blocking_decision": null,
+   "opened": {
+    "on": "2026-11-06",
+    "by": "opportunity-scout FILE mode, owner-approved 2026-11-06 (D197)",
+    "why": "Proposal 7 of docs/proposals/2026-11-06-proposals.md, proposed P2 (Importance medium to high, Efficiency high, Practicality good), approved by the owner with the other seven on 2026-11-06 (D197). The decision it names is asked when the item is built, with the proposal’s recommended answer offered first; nothing was built by the approval."
+   },
+   "owner_role": "remote-dev",
+   "category": "feature",
+   "effort": "medium",
+   "related_ids": [
+    "D197",
+    "T-027",
+    "D65",
+    "T-421",
+    "D48",
+    "T-058",
+    "T-447"
+   ],
+   "summary": "Tracked portfolios, the ones holding real money, record no income: TRADE_SIDES is buy, sell, transfer in, transfer out and split, so a dividend payer’s or a staked coin’s return is understated and the cash it paid appears nowhere, while what-if portfolios already show an estimated annual income (computeAnnualIncome, D48). This adds two kinds of entry: cash income (a dividend, interest or a fund distribution: an amount, a date and a holding; no units move) and units received (a staking reward, or a dividend paid in shares: units and their value that day, which adds a new lot), and shows income received to date and over the last 12 months, per holding and in total. side is text, so the kind itself needs no migration; the amount probably needs a small table of its own, as splits did (trade_splits, T-421). No key and no host.",
+   "next_action": "When building, ask the owner the proposal’s decision, recommended answer first: what a unit received as income costs for later gains: its value on the day as entered (recommended), or zero. Either way the label stays plain and says no tax rule is applied (REALIZED_METHOD_LABEL). Build it pure and tested in frontend/src/lib/data/costBasis.ts and tradeLedger.ts, keep the cancel-never-edit rule, and add a migration the owner runs with npm run db:migrate if the amount gets its own table. The federal sale-tax estimator stays a separate parked item behind D4 (T-058). Pairs with T-447: broker files carry dividends.",
+   "sources": [
+    {
+     "file": "docs/proposals/2026-11-06-proposals.md",
+     "lines": "Proposal 7",
+     "quote": "Two new kinds of entry in a tracked portfolio."
+    },
+    {
+     "file": "frontend/src/lib/db/schema/invest.ts",
+     "lines": "71-72",
+     "quote": "side is text, so adding a kind needs no migration."
+    },
+    {
+     "file": "frontend/src/lib/data/portfolioUtils.ts",
+     "lines": "291",
+     "quote": "export function computeAnnualIncome("
+    }
+   ]
+  },
+  {
+   "id": "T-452",
+   "title": "“Download my data”: a copy of everything saved for an account, by owner command and a Settings button",
+   "status": "open",
+   "confidence": "high",
+   "blocking_decision": null,
+   "opened": {
+    "on": "2026-11-06",
+    "by": "opportunity-scout FILE mode, owner-approved 2026-11-06 (D197)",
+    "why": "Proposal 8 of docs/proposals/2026-11-06-proposals.md, proposed P2 (Importance medium, Efficiency high, Practicality very good), approved by the owner with the other seven on 2026-11-06 (D197). The decision it names is asked when the item is built, with the proposal’s recommended answer offered first; nothing was built by the approval."
+   },
+   "owner_role": "remote-dev",
+   "category": "feature",
+   "effort": "small",
+   "related_ids": [
+    "D197",
+    "D174",
+    "D50",
+    "D60",
+    "T-436",
+    "T-160",
+    "T-132"
+   ],
+   "summary": "The draft Privacy Policy, section 11 (frontend/src/lib/legal/disclosures.ts), says anyone may ask us to tell them what personal information we hold about them and give them a copy, answered within 30 days, and the About page says the same. Today the only way to answer is the owner querying Postgres by hand across about a dozen tables. This adds one function that gathers everything stored for a user into one JSON file plus CSV files for trades and holdings: account (email, created), the email-notice agreement, portfolios and holdings, tracked portfolios with every trade, split and cancellation, watchlists, Portfolio Builder plans and saved checks, and saved wallet addresses. Two ways in: an owner command, npm run user:export -- --user <email>, beside auth:reset and auth:consent, and a “Download my data” button in Settings for the signed-in user. It exports only and deletes nothing, leaves out the password hash and reset tokens and says so, and says that browser-stored items (alerts, notes, chart settings) live on the device, as the Privacy Policy already does. No key and no host.",
+   "next_action": "When building, ask the owner the proposal’s decision: the owner command only for now, or the Settings button too. The proposal recommends neither; it notes that the button matters once sign-in is on (D174: at launch) and serves the local user until then, and that if the button is built the Privacy Policy could mention it, which is a change to the owner’s document first, then copied in (D50, D60). Also check the retained Budget tables (frontend/src/lib/db/schema/budget.ts, scoped by user_id; see parked T-160), which the proposal’s list leaves out: if any account has rows there, they are personal information the export should cover or name.",
+   "sources": [
+    {
+     "file": "docs/proposals/2026-11-06-proposals.md",
+     "lines": "Proposal 8",
+     "quote": "One function that gathers everything stored for a user into a file"
+    },
+    {
+     "file": "frontend/src/lib/legal/disclosures.ts",
+     "lines": "316, 320",
+     "quote": "tell you what personal information we hold about you and give you a copy;"
+    },
+    {
+     "file": "frontend/package.json",
+     "lines": "27-28",
+     "quote": "\"auth:reset\": \"tsx scripts/auth-reset.ts\","
+    }
+   ]
   }
  ],
  "closed_but_still_listed_as_open_in_docs": [
@@ -41586,6 +41972,14 @@
     "what": "T-440 progress (no status change, D168): fund-assets-check written; 10 filed asset figures updated to their August N-PORTs; CPER and Teucrium dated from 10-Qs; page notes beside 14 fund links. 14 yields left for the owner. Counts unchanged.",
     "evidence": [
      "docs/decisions/2026-10-25-owner-decisions.md"
+    ]
+   },
+   {
+    "on": "2026-11-06",
+    "what": "D197 filed (opportunity-scout FILE mode): the owner approved all eight proposals in docs/proposals/2026-11-06-proposals.md, filed as T-445 to T-452, all open, each next_action naming the decision its proposal says is asked when it is built. Proposal 5’s three parts are one item (T-449), as T-129 carried its parts. T-076 gained a progress note naming T-450 and D197 and stays parked: its paid-FMP half is still decided near release. Nothing was rejected or deferred, so docs/audits/rejected-proposals.md is unchanged. Counts recomputed: open 8 to 16, remote-dev 96 to 103, either 51 to 52, total 384 to 392.",
+    "evidence": [
+     "docs/proposals/2026-11-06-proposals.md",
+     "docs/decisions/2026-11-06-owner-decisions.md"
     ]
    }
   ]
