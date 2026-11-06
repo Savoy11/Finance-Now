@@ -6,18 +6,25 @@ import { clsx } from 'clsx'
 import { Banknote, Gem, Globe, Percent } from 'lucide-react'
 import { ModuleGate } from '@/components/layout/ModuleGate'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { STALE_TIME_SHORT } from '@/lib/constants'
+import { STALE_TIME_LONG, STALE_TIME_SHORT } from '@/lib/constants'
 import { SourceLine } from '@/components/ui/SourceLine'
+import { RATES_CATALOG } from '@/lib/data/ratesCatalog'
+import { curveYieldSourceLabel, yieldFromCurve, type CurveYield } from '@/lib/data/ratesFromCurve'
+import type { YieldCurveResponse } from '@/app/live-data/treasury-yield-curve/route'
 
 // Macro Markets overview — the module's landing page while the three area
 // toolsets build out (owner spec: docs/ROADMAP.md, "Macro Markets").
-// Everything shown is live via the existing security-quotes route; if a
-// symbol can't be priced it renders an explicit dash, never a made-up value.
+// Commodity and currency rows are live via the security-quotes route. The four
+// Treasury yields are read from the official par curve, as /macro/rates reads
+// them (D3, lib/data/ratesFromCurve.ts): no free provider quotes ^IRX/^FVX/
+// ^TNX/^TYX, so asking the quote ladder for them left this strip all dashes
+// while the rates page showed the same yields (found 2026-11-06). Anything that
+// can't be priced renders an explicit dash, never a made-up value.
 
 interface MacroSymbol {
   symbol: string
   label: string
-  /** How to render the quote value. */
+  /** How to render the quote value. A 'pct-yield' row reads the Treasury curve, never a quote. */
   kind: 'usd' | 'pct-yield' | 'fx'
 }
 
@@ -63,7 +70,7 @@ const AREAS: MacroArea[] = [
     title: 'Bonds & Rates',
     icon: Percent,
     accent: '#64748b',
-    blurb: 'The official treasury yield curve, live yields and bond futures, and the bond ETF shelf. CUSIP-level bond quotes are licensed data — the page says so rather than pretending.',
+    blurb: 'The official treasury yield curve, daily Treasury yields, live bond futures, and the bond ETF shelf. CUSIP-level bond quotes are licensed data — the page says so rather than pretending.',
     href: '/macro/rates',
     symbols: [
       { symbol: '^IRX', label: '3-Month', kind: 'pct-yield' },
@@ -74,7 +81,15 @@ const AREAS: MacroArea[] = [
   },
 ]
 
-const ALL_SYMBOLS = AREAS.flatMap((a) => a.symbols.map((s) => s.symbol))
+/** Only these go to the quote ladder; the yields come from the curve. */
+const QUOTED_SYMBOLS = AREAS.flatMap((a) => a.symbols.filter((s) => s.kind !== 'pct-yield').map((s) => s.symbol))
+
+/** A yield row's reading from the curve, or null (a dash). */
+function curveYield(symbol: string, curve: YieldCurveResponse | undefined): CurveYield | null {
+  const entry = RATES_CATALOG.find((r) => r.symbol === symbol)
+  if (!entry || !curve?.ok) return null
+  return yieldFromCurve(entry, curve.latest ?? null)
+}
 
 interface Quote {
   price: number | null
@@ -95,13 +110,20 @@ function MacroContent() {
   const { data, isLoading, isError } = useQuery<Record<string, Quote>>({
     queryKey: ['macro-overview-quotes'],
     queryFn: async () => {
-      const res = await fetch(`/live-data/security-quotes?symbols=${encodeURIComponent(ALL_SYMBOLS.join(','))}`)
+      const res = await fetch(`/live-data/security-quotes?symbols=${encodeURIComponent(QUOTED_SYMBOLS.join(','))}`)
       const json: QuotesResponse = await res.json()
       if (!json.ok || !json.quotes) throw new Error('quotes unavailable')
       return json.quotes
     },
     staleTime: STALE_TIME_SHORT,
     refetchInterval: 1000 * 60 * 2,
+  })
+
+  // The same query key as /macro/rates, so the two pages share one cached curve.
+  const { data: curve, isLoading: curveLoading } = useQuery<YieldCurveResponse>({
+    queryKey: ['treasury-yield-curve'],
+    queryFn: () => fetch('/live-data/treasury-yield-curve').then((r) => r.json()),
+    staleTime: STALE_TIME_LONG,
   })
 
   return (
@@ -145,18 +167,41 @@ function MacroContent() {
                   Derived from the priced count instead — the commodities
                   page's own "N priced live" pattern. */}
               {(() => {
-                const priced = area.symbols.filter((s) => data?.[s.symbol]?.price != null).length
-                const live = priced > 0
+                // A curve yield is a daily official reading, so it is counted
+                // as "daily", never as "live".
+                const fromCurve = area.symbols.every((s) => s.kind === 'pct-yield')
+                const priced = area.symbols.filter((s) =>
+                  s.kind === 'pct-yield' ? curveYield(s.symbol, curve) != null : data?.[s.symbol]?.price != null,
+                ).length
+                const loading = fromCurve ? curveLoading : isLoading
+                const any = priced > 0
                 return (
                   <span className={clsx('px-2 py-0.5 rounded-sm text-[10px] font-medium uppercase tracking-wider border',
-                    live ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-bg-elevated border-border text-text-muted')}>
-                    {isLoading ? '…' : live ? `${priced}/${area.symbols.length} live` : 'no live quotes'}
+                    any ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-bg-elevated border-border text-text-muted')}>
+                    {loading ? '…' : any ? `${priced}/${area.symbols.length} ${fromCurve ? 'daily' : 'live'}` : fromCurve ? 'no reading' : 'no live quotes'}
                   </span>
                 )
               })()}
             </div>
             <div className="divide-y divide-border/40">
               {area.symbols.map((s) => {
+                if (s.kind === 'pct-yield') {
+                  const cy = curveYield(s.symbol, curve)
+                  return (
+                    <div key={s.symbol} className="px-4 py-2 flex items-center gap-3 text-sm">
+                      <span className="text-xs text-text-secondary flex-1">{s.label}</span>
+                      {cy ? (
+                        <>
+                          <span className="font-mono tabular-nums text-text-primary">{fmtValue(s.kind, cy.yieldPct)}</span>
+                          {/* A daily curve reading has no intraday change: say so rather than show none. */}
+                          <span className="font-mono text-xs w-16 text-right text-text-muted" title={curveYieldSourceLabel(cy)}>daily</span>
+                        </>
+                      ) : (
+                        <span className="font-mono text-xs text-text-muted">{curveLoading ? '…' : '—'}</span>
+                      )}
+                    </div>
+                  )
+                }
                 const q = data?.[s.symbol]
                 const up = (q?.changePercent ?? 0) >= 0
                 return (
@@ -188,8 +233,9 @@ function MacroContent() {
           The quoting-convention note stays, since that's about how to READ the
           numbers, not where they came from. */}
       <SourceLine id="macro-quotes" className="justify-center" />
+      <SourceLine id="treasury-yield-curve" className="justify-center" />
       <p className="text-[11px] text-text-muted text-center leading-relaxed">
-        Yield figures are index levels quoted in percent; futures are front-month continuous contracts.
+        Treasury yields are the official par curve, published once a day, not intraday quotes; futures are front-month continuous contracts.
       </p>
     </div>
   )

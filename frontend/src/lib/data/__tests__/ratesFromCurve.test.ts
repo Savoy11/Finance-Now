@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { yieldFromCurve, curveYieldSourceLabel, MATURITY_TOLERANCE_YEARS } from '../ratesFromCurve'
 import { RATES_CATALOG } from '../ratesCatalog'
 
@@ -104,5 +106,30 @@ describe('curveYieldSourceLabel', () => {
   it('says daily even for a same-day reading — absence must not read as live', () => {
     const today = { ...CURVE, date: new Date().toISOString().slice(0, 10) }
     expect(curveYieldSourceLabel(yieldFromCurve(bySymbol('^TNX'), today)!)).toContain('daily')
+  })
+})
+
+describe('the Macro overview reads the yields from the curve too', () => {
+  // Found 2026-11-06: /macro/rates read ^IRX/^FVX/^TNX/^TYX off the curve (D3)
+  // while the Macro overview still asked the quote ladder for them, which no free
+  // provider answers, so its Bonds & Rates strip was all dashes.
+  const page = readFileSync(join(__dirname, '../../../app/(dashboard)/macro/page.tsx'), 'utf8')
+
+  it('sends no yield index to the quote ladder', () => {
+    // Mutation: request every symbol again (the old ALL_SYMBOLS) and this fails.
+    expect(page).toMatch(/const QUOTED_SYMBOLS = [^\n]*filter\(\(s\) => s\.kind !== 'pct-yield'\)/)
+    expect(page).toMatch(/security-quotes\?symbols=\$\{encodeURIComponent\(QUOTED_SYMBOLS\.join/)
+  })
+
+  it('reads each yield row with yieldFromCurve, labelled daily', () => {
+    expect(page).toMatch(/yieldFromCurve\(entry, curve\.latest/)
+    expect(page).toMatch(/\/live-data\/treasury-yield-curve/)
+    expect(page).toMatch(/curveYieldSourceLabel\(cy\)/)
+  })
+
+  it('lists only yield indices the curve can answer', () => {
+    const yieldSymbols = [...page.matchAll(/symbol: '([^']+)', label: '[^']+', kind: 'pct-yield'/g)].map((m) => m[1])
+    expect(yieldSymbols).toEqual(['^IRX', '^FVX', '^TNX', '^TYX'])
+    for (const s of yieldSymbols) expect(yieldFromCurve(bySymbol(s), CURVE)).not.toBeNull()
   })
 })
