@@ -30,6 +30,8 @@ import type { StockUniverseResponse } from '@/app/live-data/stock-universe/route
 import { fetchInstrumentPrices } from '@/lib/api/instrumentPrices'
 import type { PortfolioHistoryResponse } from '@/app/live-data/portfolio-history/route'
 import { PortfolioLookThrough } from '@/components/portfolio/PortfolioLookThrough'
+import { PortfolioCostsCard } from '@/components/portfolio/PortfolioCostsCard'
+import { whatIfCostPositions } from '@/lib/data/portfolioCosts'
 import { useInstrumentSearch, type InstrumentCandidate } from '@/components/portfolio/useInstrumentSearch'
 import { RISK_RATINGS_SHOWN } from '@/lib/risk/visibility'
 
@@ -613,6 +615,8 @@ function PortfolioDetail({ portfolio, onEdit, onBack }: {
     .filter((u) => u.dividendState === 'paid' && u.dividendsPerShare != null)
     .map((u) => [u.symbol, u.dividendsPerShare as number])), [stockSec])
   const annualIncome = useMemo(() => computeAnnualIncome(holdings, stockDividends), [holdings, stockDividends])
+  // T-448: a what-if portfolio has no real dollars, so its fund costs are per $10,000 in its mix.
+  const costPositions = useMemo(() => whatIfCostPositions(portfolio.holdings), [portfolio.holdings])
 
   const TAB_LABELS: Record<DetailTab, string> = { overview: 'Overview', analysis: 'Analysis', 'look-through': 'Look-through' }
 
@@ -876,6 +880,9 @@ function PortfolioDetail({ portfolio, onEdit, onBack }: {
               </div>
             </div>
           </div>
+
+          {/* What the funds held cost each year (T-448): figures only, no warning. */}
+          <PortfolioCostsCard positions={costPositions} basis="what-if" />
 
           {/* Diversification warnings */}
           {warnings.length > 0 && (
