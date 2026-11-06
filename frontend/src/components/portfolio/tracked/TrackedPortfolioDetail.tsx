@@ -15,6 +15,8 @@ import {
   MAX_DESCRIPTION_LENGTH, MAX_NAME_LENGTH, formatUsd, formatUsdChange, valueLedger,
 } from '@/lib/data/tradeLedger'
 import { HoldingsTable } from './HoldingsTable'
+import { PortfolioCostsCard } from '@/components/portfolio/PortfolioCostsCard'
+import { trackedCostPositions } from '@/lib/data/portfolioCosts'
 import { TradeForm } from './TradeForm'
 import { TradesTable } from './TradesTable'
 
@@ -79,6 +81,8 @@ export function TrackedPortfolioDetail({ portfolio, onBack }: {
   })
   const pricesPending = heldKeys.length > 0 && prices.isPending
   const valued = useMemo(() => (view ? valueLedger(view, prices.data?.prices ?? {}) : null), [view, prices.data])
+  // T-448: the funds held, at live values, for the costs card.
+  const costPositions = useMemo(() => (valued ? trackedCostPositions(valued.holdings) : []), [valued])
 
   const [editing, setEditing] = useState(false)
   const [name, setName] = useState('')
@@ -266,6 +270,9 @@ export function TrackedPortfolioDetail({ portfolio, onBack }: {
             <h3 id={`${uid}-holdings`} className="text-sm font-semibold text-text-primary">Holdings</h3>
             <HoldingsTable holdings={valued.holdings} methodLabel={view.methodLabel} />
           </section>
+
+          {/* What the funds held cost each year (T-448): figures only, no warning. */}
+          {!pricesPending && <PortfolioCostsCard positions={costPositions} basis="tracked" />}
 
           <TradeForm view={view} onSubmit={addTrade} busy={busy === 'trade'} />
 

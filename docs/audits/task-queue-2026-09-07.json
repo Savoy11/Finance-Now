@@ -62,9 +62,9 @@
   "total_verified": 408,
   "outstanding": 392,
   "by_status": {
-   "closed": 240,
+   "closed": 241,
    "parked": 131,
-   "open": 16,
+   "open": 15,
    "blocked": 5
   },
   "by_owner_role": {
@@ -74,7 +74,7 @@
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 240,
+  "closed_by_annotation": 241,
   "counts_recomputed_on": "2026-11-06",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 392
@@ -15735,7 +15735,7 @@
   {
    "id": "T-448",
    "title": "Show what a portfolio’s funds cost each year: a Costs card on Portfolios and on each tracked portfolio",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "blocking_decision": null,
    "opened": {
@@ -15774,7 +15774,21 @@
      "lines": "142",
      "quote": "No fee warning at build time in Portfolio Builder"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-11-06",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "Built as the owner chose (T-448 first, after D197). A \"What your funds cost\" card on the what-if portfolio's Analysis tab and on each tracked portfolio: the funds' expense ratio weighted by value, the cost in dollars a year (live values on a tracked portfolio, per $10,000 of the mix on a what-if one), and the 10-year cost against a 0.03% index fund at 7% a year, through feeImpact, the engine the fund page and the Fund Registry use, verified front loads included and an unverified load named. A fund with no live price is left out and named; a security in neither catalog is named as fee not on file. No threshold or warning (the do-not-fix registry), nothing rated (D92). The methods page's Fund costs section says how it is worked out (D163). The proposal's one option, also showing the card on the Look-through tab, was not built and is the owner's to ask for.",
+    "approved_by": "owner, 2026-11-06: chose T-448 to build first",
+    "evidence": [
+     "frontend/src/lib/data/portfolioCosts.ts",
+     "frontend/src/components/portfolio/PortfolioCostsCard.tsx",
+     "frontend/src/lib/data/__tests__/portfolioCosts.test.ts",
+     "frontend/src/lib/legal/dataMethods.ts"
+    ]
+   }
   },
   {
    "id": "T-449",

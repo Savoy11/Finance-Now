@@ -3,6 +3,7 @@ import { FALLBACK_STALE_AFTER_DAYS } from '@/lib/server/stakingRates'
 import { DISCOVERY_APY_MAX } from '@/lib/data/discoveryApy'
 import { FUND_CATALOG, FUND_FEES_LAST_VERIFIED, YIELD_CHECK_AFTER_DAYS, YIELD_KIND_NAMES, YIELD_SHOWN_FOR_DAYS } from '@/lib/data/fundCatalog'
 import { META_AS_OF, MONITORED_STABLECOINS } from '@/lib/data/stablecoinMeta'
+import { COST_BENCHMARK_ER_PCT, COST_HORIZON_YEARS, COST_RETURN_PCT, PER_WHAT_IF_USD } from '@/lib/data/portfolioCosts'
 
 /**
  * "How our figures are worked out" (/about/data-methods, D163): the rules behind the figures
@@ -102,6 +103,7 @@ export const DATA_METHODS: readonly MethodSection[] = [
     paragraphs: [
       `Expense ratios for all ${FUND_CATALOG.length} funds are checked against each fund’s own SEC filings; the oldest check still standing is from ${FUND_FEES_LAST_VERIFIED}. Where the issuer waives part of the fee, the figure is the fee paid today.`,
       'A sales charge (load) is included in the Fee Drag projection only once its rate is verified from the prospectus. An unverified load is named in words and left out of the figures, which then understate the cost, and the page says so.',
+      `A portfolio's costs card adds these expense ratios up across the funds it holds: the expense ratio weighted by value, what it costs in dollars a year, and what it costs over ${COST_HORIZON_YEARS} years against a ${COST_BENCHMARK_ER_PCT}% index fund at ${COST_RETURN_PCT}% a year before fees, worked out as the fund pages work it out, verified sales charges included. On a tracked portfolio the dollars are the funds' values at live prices, and a fund with no live price is left out and named. A what-if portfolio has no real dollars, so its costs are shown per ${PER_WHAT_IF_USD.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })} invested in its mix. Stocks and coins held directly carry no expense ratio. The card shows figures only: it sets no threshold and gives no warning.`,
     ],
   },
   {
