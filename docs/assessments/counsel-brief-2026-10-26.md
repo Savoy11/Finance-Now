@@ -221,6 +221,7 @@ arithmetic and catalog clean-ups) change nothing for counsel.
 |---|---|---|
 | D173 (2026-10-26) | The public API (`/api/v1`) now needs a key the owner issues, with a limit of 60 requests a minute and 2,000 a day per key. With no keys set it answers only on the owner's own machine. It passes provider data to whoever holds a key: CoinGecko prices, stock quotes and charts, and publisher headlines (T-087). | New question D7 |
 | D174 (2026-10-26) | Sign-in stays off until launch. Instead, any copy of the app on a host other than the owner's machine is locked to the owner until a setting (`FN_SITE_OPEN`) is turned on at launch: everyone else sees only an unlock page. So a test copy can be put online without being a launch (D22). Nothing has been deployed yet (T-112). | Section 1, "What launch means" |
+| D193 (2026-11-05) | A code audit found that the lock in D174 could be opened by a request claiming to come from the owner's own machine (a forged `Host` header). It is fixed: on a host, only the owner's admin token or the cookie it sets opens the lock, so every host must set `FN_ADMIN_TOKEN`. Nothing had been deployed, so no one but the owner could have reached the app. | Section 1, "What launch means" |
 | D171 (2026-10-26) | The re-reading of fund yields and net assets is parked until before launch. The owner expects a paid data subscription may supply the figures fund pages do not print. | D6: one more vendor agreement may come |
 | D172 (2026-10-26) | The backtesting tools were corrected while hidden (their arithmetic, any ticker, a 2-year range). All three backtest screens stay hidden; restoring them (T-016) is the owner's call. | New question A16 |
 | D176, D178, D182, D184 (2026-10-30 to 11-02) | Staking facts (minimums, lock-ups, audit counts, founding years) were checked from search results quoting the providers' pages, from the providers' public code, and from their contract settings read on the blockchain, each with its sources recorded. The owner counts these as verified. No provider's own website was opened by software (D149). | C3 |
@@ -254,6 +255,6 @@ If counsel can take only part, the priority list in section 4 stands; C3 and C5 
   `docs/licensing/`; D25, D42, D96, D129, D130, D133.
 - Area E: the breach plan (attached); D122, D123, D125.
 - Facts: D21, D22, D28, D30, D96; CLAUDE.md.
-- Section 6: D137, D149, D171 to D174, D176, D178, D180 to D182, D184, D190, D192;
+- Section 6: D137, D149, D171 to D174, D176, D178, D180 to D182, D184, D190, D192, D193;
   `docs/audits/stablecoin-issuers-2026-11-05.md`; `frontend/src/lib/legal/dataMethods.ts`;
   T-016, T-087, T-112.
