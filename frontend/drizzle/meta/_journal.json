@@ -71,6 +71,13 @@
       "when": 1792247374471,
       "tag": "0009_communication-consents",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1794012381838,
+      "tag": "0010_trade-imports",
+      "breakpoints": true
     }
   ]
 }

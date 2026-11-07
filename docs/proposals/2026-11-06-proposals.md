@@ -176,6 +176,8 @@ the first part.
 
 **Filed as:** T-447 in `docs/audits/task-queue-2026-09-07.json` (2026-11-06).
 
+**Built:** 2026-11-07 (D200): generic column matching, and one step cancels a whole import by adding cancellation rows.
+
 **What:** On `/portfolios/tracked`, upload a CSV file of trades exported from a broker or exchange.
 Map its columns once (date, buy/sell, symbol, units, price, fee), see every row checked before
 anything is saved, then save them together. The mapping is remembered for that file layout, and rows
