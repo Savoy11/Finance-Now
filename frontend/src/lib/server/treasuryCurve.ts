@@ -1,6 +1,7 @@
 import 'server-only'
 
 import { recordProviderFetch } from '@/lib/api/live/providers'
+import { expectedInflationTable, type ExpectedInflationRow } from '@/lib/data/yieldHistory'
 
 // Official daily Treasury par yield curve (treasury.gov XML, keyless).
 // Shared by /live-data/treasury-yield-curve (UI) and /api/v1/macro/yield-curve
@@ -55,6 +56,12 @@ export interface YieldCurveData {
   /** 10Y minus 3M, the Fed's preferred version. */
   spread3m10y?: number
   shape?: 'normal' | 'flat' | 'inverted'
+  /**
+   * The bond market's expected inflation (T-446, D202): at each maturity the Treasury
+   * publishes a real yield for, the ordinary par yield minus the real par yield, both
+   * from the same day. Absent when the real curve could not be read.
+   */
+  expectedInflation?: { date: string; rows: ExpectedInflationRow[] }
 }
 
 // Maturity fields in the XML, in curve order. BC_1_5MONTH and the 30-year
@@ -75,17 +82,30 @@ const FIELDS: Array<{ tag: string; label: string; years: number }> = [
   { tag: 'BC_30YEAR',  label: '30Y', years: 30 },
 ]
 
-function parseEntry(xml: string): CurveSnapshot | null {
+// The real (inflation-protected) par curve's fields, in curve order (T-446).
+const REAL_FIELDS: Array<{ tag: string; label: string; years: number }> = [
+  { tag: 'TC_5YEAR',  label: '5Y',  years: 5 },
+  { tag: 'TC_7YEAR',  label: '7Y',  years: 7 },
+  { tag: 'TC_10YEAR', label: '10Y', years: 10 },
+  { tag: 'TC_20YEAR', label: '20Y', years: 20 },
+  { tag: 'TC_30YEAR', label: '30Y', years: 30 },
+]
+
+export type CurveKind = 'par' | 'real'
+
+/** One entry of a curve file. Exported for its tests, which read saved XML rather than the network. */
+export function parseEntry(xml: string, kind: CurveKind = 'par'): CurveSnapshot | null {
   const dateMatch = xml.match(/<d:NEW_DATE[^>]*>(\d{4}-\d{2}-\d{2})/)
   if (!dateMatch) return null
   const points: CurvePoint[] = []
-  for (const f of FIELDS) {
+  for (const f of kind === 'real' ? REAL_FIELDS : FIELDS) {
     const m = xml.match(new RegExp(`<d:${f.tag}[^>]*>([\\d.]+)</d:${f.tag}>`))
     if (m) points.push({ label: f.label, years: f.years, yieldPct: parseFloat(m[1]) })
   }
-  // A curve missing its long end is a partial row — refuse it rather than
-  // draw a misleading chart.
-  if (points.length < 8) return null
+  // A par curve missing its long end is a partial row — refuse it rather than
+  // draw a misleading chart. The real curve has five maturities; a day with any
+  // of them is kept, and a maturity it lacks is simply absent that day.
+  if (points.length < (kind === 'real' ? 1 : 8)) return null
   return { date: dateMatch[1], points }
 }
 
@@ -93,23 +113,34 @@ function yieldAt(curve: CurveSnapshot, label: string): number | undefined {
   return curve.points.find((p) => p.label === label)?.yieldPct
 }
 
-const CURVE_XML = 'https://home.treasury.gov/resource-center/data-chart-center/interest-rates/pages/xml?data=daily_treasury_yield_curve'
+const CURVE_XML: Record<CurveKind, string> = {
+  par: 'https://home.treasury.gov/resource-center/data-chart-center/interest-rates/pages/xml?data=daily_treasury_yield_curve',
+  real: 'https://home.treasury.gov/resource-center/data-chart-center/interest-rates/pages/xml?data=daily_treasury_real_yield_curve',
+}
 
-/** One calendar year of the daily par curve, oldest first. Throws on HTTP failure. */
-export async function fetchCurveYear(year: number): Promise<CurveSnapshot[]> {
-  const res = await fetch(`${CURVE_XML}&field_tdr_date_value=${year}`, {
-    next: { revalidate: 14_400 }, // 4h — the series updates once a day
-    headers: { Accept: 'application/xml' },
-  })
-  if (!res.ok) throw new Error(`treasury.gov ${res.status}`)
-  const xml = await res.text()
-
+/** Every entry of a curve file, oldest first. */
+export function parseCurveFile(xml: string, kind: CurveKind = 'par'): CurveSnapshot[] {
   return xml
     .split('<entry>')
     .slice(1)
-    .map(parseEntry)
+    .map((e) => parseEntry(e, kind))
     .filter((s): s is CurveSnapshot => s !== null)
     .sort((a, b) => a.date.localeCompare(b.date))
+}
+
+/**
+ * One calendar year of a daily curve, oldest first: the par curve, or the real
+ * (inflation-protected) one (T-446). Throws on HTTP failure. The current year is
+ * revalidated every 4 hours, since it gains a reading each business day; an
+ * earlier year once a day, since it only changes if the Treasury revises it.
+ */
+export async function fetchCurveYear(year: number, kind: CurveKind = 'par', now: Date = new Date()): Promise<CurveSnapshot[]> {
+  const res = await fetch(`${CURVE_XML[kind]}&field_tdr_date_value=${year}`, {
+    next: { revalidate: year >= now.getUTCFullYear() ? 14_400 : 86_400 },
+    headers: { Accept: 'application/xml' },
+  })
+  if (!res.ok) throw new Error(`treasury.gov ${res.status}`)
+  return parseCurveFile(await res.text(), kind)
 }
 
 /**
@@ -195,7 +226,7 @@ export function spreadsOf(snapshot: CurveSnapshot): CurveSpreads {
 export async function fetchTreasuryYieldCurve(now: Date = new Date()): Promise<YieldCurveData> {
   try {
     const year = now.getUTCFullYear()
-    const current = await fetchCurveYear(year)
+    const current = await fetchCurveYear(year, 'par', now)
 
     const spanDays = current.length > 0
       ? (new Date(current[current.length - 1].date).getTime() - new Date(current[0].date).getTime()) / 86_400_000
@@ -206,13 +237,22 @@ export async function fetchTreasuryYieldCurve(now: Date = new Date()): Promise<Y
       // Best-effort: if the prior year can't be fetched we still render off the
       // current year, which is strictly better than failing outright.
       try {
-        snapshots = [...(await fetchCurveYear(year - 1)), ...current]
+        snapshots = [...(await fetchCurveYear(year - 1, 'par', now)), ...current]
       } catch {
         if (current.length === 0) throw new Error('no parsable curve entries')
       }
     }
 
     const data = buildCurveData(snapshots)
+    // Expected inflation (T-446) is best-effort: the curve stands without it.
+    try {
+      let real = await fetchCurveYear(year, 'real', now)
+      if (real.length === 0) real = await fetchCurveYear(year - 1, 'real', now)
+      const table = expectedInflationTable(snapshots, real)
+      if (table) data.expectedInflation = table
+    } catch {
+      // Leave it out: the page and the API say so by its absence.
+    }
     recordProviderFetch('treasury-gov', { count: snapshots.length })
     return data
   } catch (err) {

@@ -125,6 +125,8 @@ reading and one design choice.
 
 **Filed as:** T-446 in `docs/audits/task-queue-2026-09-07.json` (2026-11-06).
 
+**Built:** 2026-11-07 (D202): yield history charts, expected inflation, and the yields back on the Macro TA page and scanner; Compare is decided later with T-445.
+
 **What:** Two things from the same official source the app already uses:
 1. **History charts for the four Treasury yields** (13-week, 5-, 10- and 30-year), drawn from the
    Treasury's daily par curve instead of the quote ladder that never answers for them. The Macro

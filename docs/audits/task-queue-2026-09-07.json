@@ -62,9 +62,9 @@
   "total_verified": 408,
   "outstanding": 392,
   "by_status": {
-   "closed": 244,
+   "closed": 245,
    "parked": 131,
-   "open": 12,
+   "open": 11,
    "blocked": 5
   },
   "by_owner_role": {
@@ -74,7 +74,7 @@
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 244,
+  "closed_by_annotation": 245,
   "counts_recomputed_on": "2026-11-07",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 392
@@ -15641,7 +15641,7 @@
   {
    "id": "T-446",
    "title": "Bonds & Rates: chart the four Treasury yields’ history from the official curve, and add real yields and breakeven inflation",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "blocking_decision": null,
    "opened": {
@@ -15658,7 +15658,8 @@
     "D157",
     "D163",
     "T-129",
-    "T-445"
+    "T-445",
+    "D202"
    ],
    "summary": "The four yield pages (13-week, 5-, 10- and 30-year) show today’s yield from the Treasury’s official par curve, then chart through the quote ladder, which no free provider answers for those symbols (D3), so the chart is empty for every user. fetchCurveYear() in frontend/src/lib/server/treasuryCurve.ts already reads a whole calendar year of the curve in one request. The Treasury also publishes real (inflation-protected) yields at 5, 7, 10, 20 and 30 years from the same verified source; ordinary minus real yield at a maturity is the inflation the bond market expects over that period. Both are arithmetic on official published figures, not a forecast of the app’s own. The real-yield feed was confirmed by one read from the proposing session (213 days of 2026, latest 2026-11-05), not by an owner-machine audit. No key and no recurring cost.",
    "next_action": "(1) Yield history first, which no decision blocks: draw each yield page’s chart from the official curve’s daily history instead of the quote ladder, cached daily and labelled daily as the headline figure already is (curveYieldSourceLabel); then let the Macro technical-analysis page and scanner include the four yields again, reading closing figures only (they left the scanner on 2026-10-24, T-129 D, D157, because no provider sent their history). (2) Real yields and breakeven inflation on /macro/rates, with history, and an entry in frontend/src/lib/legal/dataMethods.ts for the subtraction (D163). (3) When building, ask the owner the proposal’s decision, recommended answer first: whether yields should also reach Compare, which means letting security-chart answer the four yield symbols from the curve. Recommended: decide it together with T-445’s question about where the ECB rate lives.",
@@ -15683,7 +15684,25 @@
      "lines": "12",
      "quote": "behind a plan upgrade (HTTP 402), Finnhub returns no quote, Twelve Data"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-11-07",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "Built as the owner chose (D202): each yield page charts its history from the official daily par curve through /live-data/treasury-yield-history (daily up to a year, weekly beyond, cached daily), labelled daily; the Macro TA page and scanner include the four yields again, reading closing figures only (a line, closes-only indicators, no patterns, close-vote signal). Real yields and expected inflation (ordinary minus real par yield, same day, at 5Y, 7Y, 10Y, 20Y and 30Y) are on /macro/rates with history, in the curve route and the v1 API, and handed to the macro agent worked out; the methods page states the subtraction (D163). Compare was decided for later, together with T-445, at the owner's choice. Checked against the live Treasury feed on a built app and in a browser.",
+    "approved_by": "owner, 2026-11-07: chose T-446 next, with Compare decided later together with the currency pairs",
+    "evidence": [
+     "frontend/src/lib/data/yieldHistory.ts",
+     "frontend/src/lib/server/treasuryHistory.ts",
+     "frontend/src/app/live-data/treasury-yield-history/route.ts",
+     "frontend/src/components/markets/YieldHistoryCard.tsx",
+     "frontend/src/app/(dashboard)/macro/rates/RatesClient.tsx",
+     "frontend/src/app/(dashboard)/macro/technical-analysis/page.tsx",
+     "frontend/src/lib/data/__tests__/yieldHistory.test.ts",
+     "docs/decisions/2026-11-07-owner-decisions.md"
+    ]
+   }
   },
   {
    "id": "T-447",

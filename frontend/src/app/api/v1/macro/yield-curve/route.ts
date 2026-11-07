@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { CORS, options } from '../../../_cors'
 import { fetchTreasuryYieldCurve, type CurveChange, type CurveSnapshot, type CurveSpreads } from '@/lib/server/treasuryCurve'
 import { guardApiV1 } from '@/lib/server/apiKeys'
+import type { ExpectedInflationRow } from '@/lib/data/yieldHistory'
 
 // Public agent API — the official US Treasury daily par yield curve
 // (13 maturities, treasury.gov, keyless) with headline spreads and shape.
@@ -25,6 +26,12 @@ export interface V1YieldCurveResponse {
   /** 10Y minus 3M, the Fed's preferred version. */
   spread3m10y?: number
   shape?: 'normal' | 'flat' | 'inverted'
+  /**
+   * The bond market's expected inflation (T-446): at 5Y, 7Y, 10Y, 20Y and 30Y, the
+   * ordinary par yield minus the real (inflation-protected) par yield, both from the
+   * same day. Absent if the real curve could not be read.
+   */
+  expectedInflation?: { date: string; rows: ExpectedInflationRow[] }
   source: 'treasury-gov'
   updatedAt: string
 }
@@ -45,6 +52,7 @@ export async function GET(req: NextRequest) {
       spread2s10s: curve.spread2s10s,
       spread3m10y: curve.spread3m10y,
       shape: curve.shape,
+      expectedInflation: curve.expectedInflation,
       source: 'treasury-gov',
       updatedAt: new Date().toISOString(),
     } satisfies V1YieldCurveResponse, { headers: CORS })

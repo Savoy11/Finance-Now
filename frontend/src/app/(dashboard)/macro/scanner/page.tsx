@@ -17,6 +17,8 @@ import {
   type MacroGroup, type MacroInstrument,
 } from '../macroInstruments'
 import type { SecurityOhlcvResponse } from '@/app/live-data/security-ohlcv/route'
+import type { YieldHistoryResponse } from '@/app/live-data/treasury-yield-history/route'
+import { closingCandles } from '@/lib/data/yieldHistory'
 
 // ─── Macro Scanner ────────────────────────────────────────────────────────────
 //
@@ -26,7 +28,9 @@ import type { SecurityOhlcvResponse } from '@/app/live-data/security-ohlcv/route
 // Universe is the LIQUID subset of the macro instruments. The delisted-ETF
 // commodities and the EM/cross FX pairs gap enough that a ranked RSI beside a
 // liquid contract would read as comparable when it is not. The four Treasury
-// yields left too on 2026-10-24 (T-129 D): no provider sends their history (D3).
+// yields left on 2026-10-24 (T-129 D), since no provider sends their history (D3),
+// and came back with T-446 (D202): their history is the official curve's, one
+// figure a day, so their signal counts only the votes that read a close.
 // Every instrument still charts on the TA page; the exclusions are stated
 // on-page, not silently applied.
 
@@ -55,9 +59,14 @@ function ScannerTab() {
 
   const queries = useQueries({
     queries: SCANNER_INSTRUMENTS.map((m) => ({
-      queryKey: ['security-ohlcv', m.symbol, '6M'],
-      queryFn: () => fetch(`/live-data/security-ohlcv?symbol=${encodeURIComponent(m.symbol)}&range=6M`)
-        .then((r) => r.json() as Promise<SecurityOhlcvResponse>),
+      queryKey: m.curveMaturity ? ['treasury-yield-history', m.curveMaturity, '6mo'] : ['security-ohlcv', m.symbol, '6M'],
+      // A Treasury yield reads the official curve's history (keyless); everything else a keyed provider's candles.
+      queryFn: () => (m.curveMaturity
+        ? fetch(`/live-data/treasury-yield-history?maturity=${m.curveMaturity}&range=6mo`)
+          .then((r) => r.json() as Promise<YieldHistoryResponse>)
+          .then((h): Pick<SecurityOhlcvResponse, 'candles'> => ({ candles: h.ok ? closingCandles(h.points ?? []) : [] }))
+        : fetch(`/live-data/security-ohlcv?symbol=${encodeURIComponent(m.symbol)}&range=6M`)
+          .then((r) => r.json() as Promise<SecurityOhlcvResponse>)),
       staleTime: 10 * 60 * 1000,
       enabled: hasRun,
       refetchOnWindowFocus: false,
@@ -97,7 +106,8 @@ function ScannerTab() {
         level: last,
         rsi14: rsiVals[rsiVals.length - 1],
         vsSma50Pct: sma50 ? ((last - sma50) / sma50) * 100 : null,
-        overall: computeSignalSummary(candles).overall,
+        // One figure a day for a curve yield: only the votes that read a close.
+        overall: computeSignalSummary(candles, m.curveYield ? 'close' : 'ohlc').overall,
       }
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -222,8 +232,8 @@ function MacroScannerInner() {
           subtitle="RSI, trend-vs-average and composite signal across the liquid macro universe"
           description="Ranks commodities, currencies and rates on the same indicator engine the crypto and equity scanners use. Levels follow each market's own convention — grains in cents per bushel, yields in percent, bond futures in points of par."
           details={[
-            { label: 'Universe', text: `The liquid subset: ${SCANNER_INSTRUMENTS.length} of ${MACRO_INSTRUMENTS.length} macro instruments. Thin contracts and EM/cross FX pairs are excluded because a ranked reading beside a liquid one reads as comparable when it is not — they all still chart on Technical Analysis. The ${CURVE_YIELD_INSTRUMENTS.length} Treasury yields are left out too: no provider sends their history, and Bonds & Rates reads them off the official curve.` },
-            { label: 'When it runs', text: `When you press Run scan. Each instrument is one request to a keyed provider, so opening the page spends nothing.` },
+            { label: 'Universe', text: `The liquid subset: ${SCANNER_INSTRUMENTS.length} of ${MACRO_INSTRUMENTS.length} macro instruments. Thin contracts and EM/cross FX pairs are excluded because a ranked reading beside a liquid one reads as comparable when it is not — they all still chart on Technical Analysis. The ${CURVE_YIELD_INSTRUMENTS.length} Treasury yields are read from the official daily curve, one figure a day, so their signal counts only the readings that use a closing figure.` },
+            { label: 'When it runs', text: `When you press Run scan. Each instrument but the Treasury yields is one request to a keyed provider, so opening the page spends nothing.` },
             { label: 'What it is', text: 'A discovery tool across instruments. The TA page is the other half: it charts the one instrument you picked.' },
           ]}
         />

@@ -8,6 +8,7 @@ import { FUND_CATALOG, FUND_CATEGORY_INFO, fundAssetsFact, fundYieldFact } from 
 import { COMMODITY_CATALOG, COMMODITY_CATEGORY_INFO } from '@/lib/data/commodityCatalog'
 import { CURRENCY_CATALOG, CURRENCY_CATEGORY_INFO } from '@/lib/data/currencyCatalog'
 import { RATES_CATALOG, RATES_CATEGORY_INFO } from '@/lib/data/ratesCatalog'
+import { parLabelFor } from '@/lib/data/yieldHistory'
 import { ohlcvSourceLabel } from '@/lib/utils/ohlcvSource'
 import { candleGranularity, candleSizeWords } from '@/lib/utils/candleGranularity'
 import { RISK_RATINGS_SHOWN } from '@/lib/risk/visibility'
@@ -377,7 +378,7 @@ const TOOL_REGISTRY: RegisteredTool[] = [
     market: 'macro',
     tool: {
       name: 'get_macro_price_history',
-      description: 'Get OHLC history summary for a macro symbol (futures contract, FX pair, or yield index) over a range: first/last, high, low, and percent change.',
+      description: 'Get OHLC history summary for a macro symbol (futures contract, FX pair, or yield index) over a range: first/last, high, low, and percent change. For a Treasury yield (^IRX/^FVX/^TNX/^TYX) it reads the official daily curve instead, one figure a day: first/last, highest/lowest yield and the change in basis points, worked out for you.',
       input_schema: {
         type: 'object',
         properties: {
@@ -392,7 +393,7 @@ const TOOL_REGISTRY: RegisteredTool[] = [
     market: 'macro',
     tool: {
       name: 'get_yield_curve',
-      description: 'Get the official US Treasury par yield curve (13 maturities, treasury.gov daily data) with 2s10s and 3m10y spreads, curve shape (normal/flat/inverted), and month-ago / year-start snapshots for comparison, each with its own spreads (monthAgoSpreads, yearStartSpreads) and each maturity\'s change since then in basis points (changeSinceMonthAgo, changeSinceYearStart): quote those to say how far a yield has moved and whether the curve has steepened or flattened, rather than working them out yourself. The authoritative rates tool — prefer it over quoting ^TNX for curve questions.',
+      description: 'Get the official US Treasury par yield curve (13 maturities, treasury.gov daily data) with 2s10s and 3m10y spreads, curve shape (normal/flat/inverted), and month-ago / year-start snapshots for comparison, each with its own spreads (monthAgoSpreads, yearStartSpreads) and each maturity\'s change since then in basis points (changeSinceMonthAgo, changeSinceYearStart): quote those to say how far a yield has moved and whether the curve has steepened or flattened, rather than working them out yourself. It also returns expectedInflation: at 5Y, 7Y, 10Y, 20Y and 30Y, the ordinary yield, the inflation-protected (real) yield and their difference, the inflation the bond market prices in, all from one day; quote it rather than subtracting. The authoritative rates tool — prefer it over quoting ^TNX for curve questions.',
       input_schema: { type: 'object', properties: {} },
     },
   },
@@ -993,6 +994,25 @@ async function execute(
       case 'get_macro_price_history': {
         const symbol = String(input.symbol ?? '').toUpperCase()
         const range = String(input.range ?? '1Y')
+        // T-446: a Treasury yield has no candles anywhere (D3); its history is the official curve's.
+        const curveEntry = RATES_CATALOG.find((r) => r.quoteBasis === 'pct' && r.symbol === symbol)
+        const maturity = curveEntry ? parLabelFor(curveEntry.maturityYears) : null
+        if (maturity) {
+          const hRange = ({ '1M': '1mo', '3M': '3mo', '6M': '6mo', '1Y': '1y', '5Y': '5y', MAX: '10y' } as Record<string, string>)[range] ?? '1y'
+          const h = (await get(`/live-data/treasury-yield-history?maturity=${maturity}&range=${hRange}`)) as {
+            ok?: boolean; error?: string; interval?: string; points?: { date: string; yieldPct: number }[]
+          }
+          const pts = h.points ?? []
+          if (!h.ok || pts.length === 0) return { error: h.error ?? 'no yield history available', symbol, range }
+          const ys = pts.map((p) => p.yieldPct)
+          return {
+            symbol, maturity, range, source: 'treasury.gov official daily par curve', interval: h.interval, readings: pts.length,
+            note: 'One official figure a day, in percent; there is no intraday high or low.',
+            firstDate: pts[0].date, firstYieldPct: ys[0], lastDate: pts[pts.length - 1].date, lastYieldPct: ys[ys.length - 1],
+            highestYieldPct: Math.max(...ys), lowestYieldPct: Math.min(...ys),
+            changeBp: Math.round((ys[ys.length - 1] - ys[0]) * 100),
+          }
+        }
         const data = (await get(`/live-data/security-ohlcv?symbol=${encodeURIComponent(symbol)}&range=${range}`)) as {
           ok?: boolean; candles?: { time: number; open: number; high: number; low: number; close: number }[]; source?: string
         }
@@ -1015,7 +1035,7 @@ async function execute(
           ok?: boolean; error?: string; latest?: unknown; monthAgo?: unknown; yearStart?: unknown
           spread2s10s?: number; spread3m10y?: number; shape?: string
           monthAgoSpreads?: unknown; yearStartSpreads?: unknown
-          changeSinceMonthAgo?: unknown; changeSinceYearStart?: unknown
+          changeSinceMonthAgo?: unknown; changeSinceYearStart?: unknown; expectedInflation?: unknown
         }
         if (!data.ok) return { error: data.error ?? 'yield curve unavailable' }
         // The comparison curves' spreads and each maturity's change come worked out, so a
@@ -1026,6 +1046,7 @@ async function execute(
           spread2s10s: data.spread2s10s, spread3m10y: data.spread3m10y, shape: data.shape,
           monthAgoSpreads: data.monthAgoSpreads, yearStartSpreads: data.yearStartSpreads,
           changeSinceMonthAgo: data.changeSinceMonthAgo, changeSinceYearStart: data.changeSinceYearStart,
+          expectedInflation: data.expectedInflation,
           source: 'treasury.gov official daily par curve',
         }
       }

@@ -9,6 +9,8 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { SourceLine } from '@/components/ui/SourceLine'
 import { MetricCard } from '@/components/ui/MetricCard'
 import { LineChart } from '@/components/charts/LineChart'
+import { YieldHistoryCard } from '@/components/markets/YieldHistoryCard'
+import { REAL_MATURITIES } from '@/lib/data/yieldHistory'
 import {
   BOND_ETF_SHELF_GROUPS, RATES_CATALOG, RATES_CATEGORY_INFO, formatRatesQuote,
 } from '@/lib/data/ratesCatalog'
@@ -89,8 +91,8 @@ export function RatesClient() {
         </div>
         <PageHeader
           title="Bonds & Rates"
-          subtitle="The official treasury curve, live yields, futures, and the bond ETF shelf"
-          description="The yield curve below is the US Treasury's official daily par curve — 13 maturities, not an approximation. Yield indices and bond futures quote live intraday. Individual corporate and municipal bond quotes are licensed data with no free source, so this page deliberately does not show them."
+          subtitle="The official treasury curve, daily yields and expected inflation, futures, and the bond ETF shelf"
+          description="The yield curve below is the US Treasury's official daily par curve — 13 maturities, not an approximation. The yields are its daily readings; bond futures quote live intraday. Individual corporate and municipal bond quotes are licensed data with no free source, so this page deliberately does not show them."
         />
       </div>
 
@@ -160,6 +162,55 @@ export function RatesClient() {
             {curve && !curve.ok ? 'The treasury.gov curve feed could not be reached — the curve returns when it recovers.' : 'Loading official curve…'}
           </p>
         )}
+      </div>
+
+      {/* T-446: real yields and the market's expected inflation, from the same official source. */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+        <div className="rounded-card border border-border bg-bg-card p-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <h2 className="text-sm font-medium text-text-secondary">Expected inflation</h2>
+            {curve?.ok && curve.expectedInflation && (
+              <span className="text-[11px] font-mono text-text-muted">as of {curve.expectedInflation.date}</span>
+            )}
+          </div>
+          {curve?.ok && curve.expectedInflation ? (
+            <>
+              <table className="w-full text-xs">
+                <caption className="sr-only">Ordinary yield, real yield and expected inflation by maturity</caption>
+                <thead>
+                  <tr className="text-[10px] text-text-muted uppercase tracking-wider">
+                    <th scope="col" className="text-left font-medium py-1.5">Maturity</th>
+                    <th scope="col" className="text-right font-medium py-1.5">Yield</th>
+                    <th scope="col" className="text-right font-medium py-1.5">Real yield</th>
+                    <th scope="col" className="text-right font-medium py-1.5">Expected inflation</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/50">
+                  {curve.expectedInflation.rows.map((r) => (
+                    <tr key={r.label}>
+                      <th scope="row" className="text-left font-mono font-normal py-1.5 text-text-secondary">{r.label}</th>
+                      <td className="text-right font-mono tabular-nums py-1.5 text-text-primary">{r.yieldPct.toFixed(2)}%</td>
+                      <td className="text-right font-mono tabular-nums py-1.5 text-text-secondary">{r.realPct.toFixed(2)}%</td>
+                      <td className="text-right font-mono tabular-nums py-1.5 text-amber-300">{r.breakevenPct.toFixed(2)}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <p className="mt-3 text-[11px] text-text-muted leading-relaxed">
+                The ordinary Treasury yield minus the inflation-protected (real) yield at the same maturity, both from the
+                Treasury’s daily curves on the same day: the yearly inflation the bond market prices in over that span. It is
+                arithmetic on two official figures, not a forecast of ours.
+              </p>
+            </>
+          ) : (
+            <p className="py-6 text-center text-xs text-text-muted">
+              {curve && curve.ok ? 'The Treasury’s real yield curve could not be read just now.' : 'Loading…'}
+            </p>
+          )}
+        </div>
+        <div className="xl:col-span-2">
+          <YieldHistoryCard maturities={REAL_MATURITIES} defaultMaturity="10Y" title="Yield, real yield and expected inflation over time" />
+        </div>
       </div>
 
       {/* Live instruments */}
@@ -258,7 +309,7 @@ export function RatesClient() {
       </div>
 
       <p className="text-[11px] text-text-muted text-center leading-relaxed">
-        Yield curve: US Treasury (official daily par rates). Intraday yields and futures via the suite&rsquo;s live
+        Yield curve, yields and expected inflation: US Treasury (official daily par and real par rates). Futures via the suite&rsquo;s live
         quote route. Individual bond quotes (CUSIPs) require licensed data and are intentionally absent.
       </p>
     </div>
