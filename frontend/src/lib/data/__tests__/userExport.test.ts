@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import {
-  EXCLUDED_TABLES, LEFT_OUT, buildUserExport, csvField, exportFileName, holdingsCsv, tradesCsv,
+  EXCLUDED_TABLES, LEFT_OUT, buildUserExport, csvField, entryPriceUnit, exportFileName, holdingsCsv, tradesCsv,
   type CollectedExport,
 } from '../userExport'
 import { collectUserExport, tablesWithUserId, userExportTables } from '@/lib/server/userExportCollect'
@@ -94,10 +94,27 @@ describe('the spreadsheets', () => {
 
   it('lists what-if holdings with their target and entry price', () => {
     expect(holdingsCsv(sample()).trimEnd().split('\r\n')).toEqual([
-      'portfolio,symbol,name,target_allocation_pct,entry_price_usd,quantity',
-      'What-if mix,BND,Vanguard Total Bond Market ETF,40.0000,72.10,',
-      'What-if mix,VOO,Vanguard S&P 500 ETF,60.0000,,',
+      'portfolio,symbol,name,target_allocation_pct,entry_price,entry_price_unit,quantity',
+      'What-if mix,BND,Vanguard Total Bond Market ETF,40.0000,72.10,USD,',
+      'What-if mix,VOO,Vanguard S&P 500 ETF,60.0000,,USD,',
     ])
+  })
+
+  it('names the unit each entry price was typed in, as the Portfolios page does (audit 2026-11-07)', () => {
+    // The column said entry_price_usd for every holding, while corn is typed in cents, a
+    // Treasury yield in percent, a bond future in points and a currency pair in its quote currency.
+    expect(entryPriceUnit({ symbol: 'ZC=F', asset_class: 'commodity' })).toBe('US cents')
+    expect(entryPriceUnit({ symbol: 'GC=F', asset_class: 'commodity' })).toBe('USD')
+    expect(entryPriceUnit({ symbol: '^TNX', asset_class: 'rate' })).toBe('percent')
+    expect(entryPriceUnit({ symbol: 'ZN=F', asset_class: 'rate' })).toBe('points of par')
+    expect(entryPriceUnit({ symbol: 'JPY=X', asset_class: 'currency' })).toBe('JPY')
+    expect(entryPriceUnit({ symbol: 'bitcoin', asset_class: 'crypto' })).toBe('USD')
+    expect(entryPriceUnit({ symbol: 'House', asset_class: 'manual', currency: 'EUR' })).toBe('EUR')
+    expect(entryPriceUnit(undefined)).toBe('')
+    const withCorn = sample()
+    withCorn.tables.holdings = [{ id: 'h3', user_id: UID, portfolio_id: 'p-what', instrument_id: 'i-corn', target_alloc_pct: '5.0000', avg_cost_basis: '472.75', quantity: null }]
+    withCorn.instruments = [{ id: 'i-corn', symbol: 'ZC=F', name: 'Corn', asset_class: 'commodity', user_id: null }]
+    expect(holdingsCsv(withCorn).trimEnd().split('\r\n')[1]).toBe('What-if mix,ZC=F,Corn,5.0000,472.75,US cents,')
   })
 
   it('names the files by day', () => {

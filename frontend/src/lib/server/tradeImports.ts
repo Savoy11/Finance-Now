@@ -12,7 +12,7 @@ import {
   classifyImport, importCancelReason, looseIdentity, readLayout, rowsToSave,
   type ExistingForImport, type ImportLayout, type ImportRequest, type ImportRowStatus,
 } from '@/lib/data/tradeImport'
-import { countTrades, loadTrades, type Queryable } from './trackedPortfolios'
+import { countTrades, loadTrades, portfolioSaveLock, type Queryable } from './trackedPortfolios'
 import { resolveInstruments } from './instrumentResolve'
 
 // ─── Importing trades from a file: persistence (T-447, owner decision D200) ──
@@ -102,7 +102,7 @@ export async function saveImport(userId: string, portfolioId: string, req: Impor
   })))
 
   return db.transaction(async (tx) => {
-    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`trade-import:${portfolioId}`}))`)
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${portfolioSaveLock(portfolioId)}))`)
     const { existing } = await existingForImport(userId, portfolioId, tx)
     const statuses = classifyImport(req.rows, existing)
     const toSave = rowsToSave(statuses, req.include)

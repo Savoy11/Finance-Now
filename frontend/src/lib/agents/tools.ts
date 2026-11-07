@@ -24,6 +24,17 @@ import { selfRequestHeaders } from '@/lib/server/apiKeys'
 // truth. The executor fetches against the app's own origin (passed in from the
 // route handler), avoiding any external hop or duplicated data logic.
 
+/**
+ * What the highest and lowest figures of a daily-history summary are of. Over a long range the
+ * routes send each week's last reading, so a day's peak between them is not seen; an agent
+ * quoting the "high" must say so (audit 2026-11-07, finding 4).
+ */
+export function extremesNote(interval: string | undefined): string {
+  return interval === 'weekly'
+    ? " Over this range the readings are each week's last, so the highest and lowest are of those weekly readings, not of every day."
+    : ''
+}
+
 export type ToolMarket = 'crypto' | 'equities' | 'macro'
 /** Which tool set an agent may call. 'all' exposes every market (App Assistant). */
 export type ToolSet = 'crypto' | 'equities' | 'macro' | 'all'
@@ -1008,7 +1019,7 @@ async function execute(
           const ys = pts.map((p) => p.yieldPct)
           return {
             symbol, maturity, range, source: 'treasury.gov official daily par curve', interval: h.interval, readings: pts.length,
-            note: 'One official figure a day, in percent; there is no intraday high or low.',
+            note: `One official figure a day, in percent; there is no intraday high or low.${extremesNote(h.interval)}`,
             firstDate: pts[0].date, firstYieldPct: ys[0], lastDate: pts[pts.length - 1].date, lastYieldPct: ys[ys.length - 1],
             highestYieldPct: Math.max(...ys), lowestYieldPct: Math.min(...ys),
             changeBp: Math.round((ys[ys.length - 1] - ys[0]) * 100),
@@ -1026,7 +1037,7 @@ async function execute(
           const rs = pts.map((p) => p.rate)
           return {
             symbol, pair: pair.name, range, source: 'European Central Bank euro reference rates (via Frankfurter)', interval: h.interval, readings: pts.length,
-            note: `${ECB_RATE_NOTE} One figure a working day; there is no intraday high or low. ${pairRateBasis(pair)}`,
+            note: `${ECB_RATE_NOTE} One figure a working day; there is no intraday high or low.${extremesNote(h.interval)} ${pairRateBasis(pair)}`,
             firstDate: pts[0].date, firstRate: rs[0], lastDate: pts[pts.length - 1].date, lastRate: rs[rs.length - 1],
             highestRate: Math.max(...rs), lowestRate: Math.min(...rs),
             changePct: Number((((rs[rs.length - 1] - rs[0]) / rs[0]) * 100).toFixed(2)),

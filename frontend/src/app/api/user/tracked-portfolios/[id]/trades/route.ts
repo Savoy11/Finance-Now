@@ -7,7 +7,7 @@ import {
   type LedgerView, type TradeView,
 } from '@/lib/data/tradeLedger'
 import {
-  countTrades, dbUnavailable, hasStartingPosition, insertTrade, loadTrades, notMigrated, notMigratedForIncome,
+  dbUnavailable, insertTrade, loadTrades, notMigrated, notMigratedForIncome,
   notMigratedForSplits, ownedTrackedPortfolio, resolveTradeInstrument,
 } from '@/lib/server/trackedPortfolios'
 
@@ -81,21 +81,22 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     if (!(await ownedTrackedPortfolio(userId, id))) {
       return NextResponse.json({ ok: false, error: 'Tracked portfolio not found' }, { status: 404 })
     }
-    if ((await countTrades(userId, id)) >= MAX_TRADES_PER_PORTFOLIO) {
+    const instrumentId = await resolveTradeInstrument(trade)
+    // Both checks are made inside the save, under the portfolio's lock (audit 2026-11-07).
+    const saved = await insertTrade(userId, id, instrumentId, trade)
+    if (saved.status === 'full') {
       return NextResponse.json(
         { ok: false, error: `This portfolio already holds ${MAX_TRADES_PER_PORTFOLIO.toLocaleString('en-US')} trades, the most one portfolio keeps. Nothing was removed to make room.` },
         { status: 409 },
       )
     }
-    const instrumentId = await resolveTradeInstrument(trade)
-    if (trade.opening && (await hasStartingPosition(userId, id, instrumentId))) {
+    if (saved.status === 'has-starting-position') {
       return NextResponse.json(
         { ok: false, error: 'This holding already has a starting position. Cancel that one first if it is wrong.' },
         { status: 409 },
       )
     }
-    const saved = await insertTrade(userId, id, instrumentId, trade)
-    return NextResponse.json<LedgerResponse>({ ok: true, trade: toTradeView(saved) }, { status: 201 })
+    return NextResponse.json<LedgerResponse>({ ok: true, trade: toTradeView(saved.trade) }, { status: 201 })
   } catch (e) {
     if (isSchemaBehindError(e)) return trade.split ? notMigratedForSplits() : trade.income ? notMigratedForIncome() : notMigrated()
     throw e

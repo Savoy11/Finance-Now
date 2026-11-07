@@ -9,6 +9,8 @@
 //
 // It exports only. Nothing here changes or deletes anything.
 
+import { entryUnitName } from './instruments'
+
 export type Row = Record<string, unknown>
 
 export const USER_EXPORT_FORMAT = 'finance-now-user-export'
@@ -158,8 +160,22 @@ export function tradesCsv(c: CollectedExport): string {
 }
 
 export const HOLDINGS_CSV_HEADER = [
-  'portfolio', 'symbol', 'name', 'target_allocation_pct', 'entry_price_usd', 'quantity',
+  'portfolio', 'symbol', 'name', 'target_allocation_pct', 'entry_price', 'entry_price_unit', 'quantity',
 ] as const
+
+/**
+ * The unit a what-if holding's entry price was typed in, the one the Portfolios page names
+ * beside its box: dollars for a coin or a stock, but US cents for corn, percent for a Treasury
+ * yield, points of par for a bond future and the quote currency for a currency pair. The column
+ * was called entry_price_usd and said dollars for every one (audit 2026-11-07, finding 5).
+ */
+export function entryPriceUnit(inst: Row | undefined): string {
+  if (!inst) return ''
+  const cls = text(inst.asset_class)
+  if (cls === 'crypto') return 'USD'
+  if (cls === 'manual' || cls === 'cash') return text(inst.currency) || 'USD'
+  return entryUnitName(`sec:${text(inst.symbol)}`)
+}
 
 /** Every holding in a what-if portfolio. A tracked portfolio's positions come from its trades. */
 export function holdingsCsv(c: CollectedExport): string {
@@ -171,7 +187,7 @@ export function holdingsCsv(c: CollectedExport): string {
     h,
   })).sort((a, b) => a.portfolio.localeCompare(b.portfolio) || text(a.inst?.symbol).localeCompare(text(b.inst?.symbol)))
   return csv(HOLDINGS_CSV_HEADER, rows.map(({ portfolio, inst, h }) => [
-    portfolio, inst?.symbol, inst?.name, h.target_alloc_pct, h.avg_cost_basis, h.quantity,
+    portfolio, inst?.symbol, inst?.name, h.target_alloc_pct, h.avg_cost_basis, entryPriceUnit(inst), h.quantity,
   ]))
 }
 

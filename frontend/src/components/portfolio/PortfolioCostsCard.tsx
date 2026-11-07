@@ -31,12 +31,13 @@ export function PortfolioCostsCard({ positions, basis }: {
   basis: 'tracked' | 'what-if'
 }) {
   const uid = useId()
-  const costs = useMemo(() => portfolioFundCosts(positions), [positions])
+  const costs = useMemo(() => portfolioFundCosts(positions, { held: basis === 'tracked' }), [positions, basis])
   const fundCount = costs.funds.length
   const perWhatIf = basis === 'what-if'
   const horizon = feeCostDisplay(costs.horizonCostUsd)
   const unverified = costs.funds.filter((f) => f.unverifiedLoad).map((f) => f.symbol)
   const withLoad = costs.funds.filter((f) => f.includesLoad).map((f) => f.symbol)
+  const loadPaid = costs.funds.filter((f) => f.frontLoadPaid).map((f) => f.symbol)
 
   return (
     <section className="bg-bg-card border border-border rounded-xl p-5 space-y-4" aria-labelledby={`${uid}-costs`}>
@@ -110,6 +111,9 @@ export function PortfolioCostsCard({ positions, basis }: {
       <div className="space-y-1.5 text-[11px] text-text-muted leading-relaxed">
         {withLoad.length > 0 && (
           <p>The {COST_HORIZON_YEARS}-year figure for {list(withLoad)} includes {withLoad.length === 1 ? 'its' : 'their'} sales charge, paid once at purchase, as the fund page counts it. The yearly cost is the expense ratio alone.</p>
+        )}
+        {loadPaid.length > 0 && (
+          <p>{list(loadPaid)} {loadPaid.length === 1 ? 'carries a sales charge' : 'carry sales charges'} paid once at purchase. These funds are already held, so the {COST_HORIZON_YEARS}-year figure leaves {loadPaid.length === 1 ? 'it' : 'them'} out; the fund page counts {loadPaid.length === 1 ? 'it' : 'them'} for a new purchase.</p>
         )}
         {unverified.length > 0 && (
           <p className="text-amber-400">{list(unverified)} {unverified.length === 1 ? 'carries a sales charge' : 'carry sales charges'} whose rate is not verified, so it is left out and these figures understate the cost. The fund page links the prospectus.</p>

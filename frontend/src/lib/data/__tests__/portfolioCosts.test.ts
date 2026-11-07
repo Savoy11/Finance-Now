@@ -52,6 +52,36 @@ describe('portfolioFundCosts (T-448)', () => {
     expect(agthx.annualCostUsd).toBeCloseTo(23.6, 10)
   })
 
+  it('leaves a front load out on funds already held: it was paid at purchase (audit 2026-11-07)', () => {
+    // AGTHX worth $50,000 in a tracked portfolio was shown $10,687 over ten years, its 5.75% load
+    // counted again on money already invested; the expense ratio alone gives about $5,357.
+    const held = portfolioFundCosts([{ key: 'sec:AGTHX', symbol: 'AGTHX', valueUsd: 50_000 }], { held: true }).funds[0]
+    const bought = portfolioFundCosts([{ key: 'sec:AGTHX', symbol: 'AGTHX', valueUsd: 50_000 }]).funds[0]
+    expect(held.includesLoad).toBe(false)
+    expect(held.frontLoadPaid).toBe(true)
+    expect(held.horizonCostUsd).toBe(feeImpact(getFund('AGTHX'), { ...params(50_000), alreadyHeld: true })?.costUsd)
+    expect(Math.round(held.horizonCostUsd)).toBe(5_357)
+    expect(Math.round(bought.horizonCostUsd)).toBe(10_687)
+    expect(bought.includesLoad).toBe(true)
+    expect(bought.frontLoadPaid).toBe(false)
+    // The yearly cost is the expense ratio either way.
+    expect(held.annualCostUsd).toBe(bought.annualCostUsd)
+    // VOO has no load: held or not, the same figure.
+    const voo = (h: boolean) => portfolioFundCosts([{ key: 'sec:VOO', symbol: 'VOO', valueUsd: 50_000 }], { held: h }).funds[0]
+    expect(voo(true).horizonCostUsd).toBe(voo(false).horizonCostUsd)
+    expect(voo(true).frontLoadPaid).toBe(false)
+  })
+
+  it('does not call a held fund\'s unverified front load an understatement, since it is behind the holder', () => {
+    for (const f of FUND_CATALOG) {
+      const charge = fundSalesCharge(f)
+      const line = portfolioFundCosts([{ key: `sec:${f.symbol}`, symbol: f.symbol, valueUsd: 1_000 }], { held: true }).funds[0]
+      expect(line.unverifiedLoad, f.symbol).toBe(charge != null && charge.maxPct == null && charge.kind !== 'front')
+    }
+    const card = readFileSync(join(process.cwd(), 'src/components/portfolio/PortfolioCostsCard.tsx'), 'utf8')
+    expect(card).toContain("portfolioFundCosts(positions, { held: basis === 'tracked' })")
+  })
+
   it('flags an unverified load wherever the fund page would', () => {
     for (const f of FUND_CATALOG) {
       const line = portfolioFundCosts([{ key: `sec:${f.symbol}`, symbol: f.symbol, valueUsd: 1_000 }]).funds[0]
