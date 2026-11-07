@@ -14,7 +14,7 @@ import {
   type CsvTable, type ImportLayout, type ImportSide, type PlannedRow,
 } from '@/lib/data/tradeImport'
 import { INSTRUMENT_BY_KEY, SEC_PREFIX } from '@/lib/data/instruments'
-import { formatUnitPrice, formatUnits, tradeKindLabel } from '@/lib/data/tradeLedger'
+import { INCOME_KIND_LABELS, formatUnitPrice, formatUnits, formatUsd, tradeKindLabel } from '@/lib/data/tradeLedger'
 import { useInstrumentSearch } from '@/components/portfolio/useInstrumentSearch'
 import { formatRecordedDate, formatTradeDate } from './TradesTable'
 
@@ -43,6 +43,7 @@ const COLUMN_FIELDS: Array<{ key: ColumnKey; label: string; optional?: boolean; 
   { key: 'price', label: 'Price per unit (USD)' },
   { key: 'fee', label: 'Fee (USD)', optional: true },
   { key: 'note', label: 'Note', optional: true },
+  { key: 'amount', label: 'Amount (USD, for cash income)', optional: true },
 ]
 
 type Loaded = { fileName: string; table: CsvTable; signature: string; savedLayout: boolean }
@@ -204,7 +205,7 @@ export function ImportTradesPanel({ portfolioId, onSaved }: {
     if (!layout) return
     const columns = { ...layout.columns }
     if (value) columns[key] = value
-    else if (key === 'fee' || key === 'note' || key === 'action') delete columns[key]
+    else if (key === 'fee' || key === 'note' || key === 'action' || key === 'amount') delete columns[key]
     else columns[key] = ''
     changeLayout({ ...layout, columns })
   }
@@ -384,9 +385,10 @@ export function ImportTradesPanel({ portfolioId, onSaved }: {
                 <div className="space-y-2">
                   <span className={labelCls}>3. What each kind of row means</span>
                   <p className="text-[11px] text-text-muted leading-relaxed">
-                    The app suggests each from its words; change any that are wrong. Dividends, interest and staking rewards cannot be
-                    recorded yet, so leave those rows out. A transfer in takes the file’s price as what you paid; if that price is the
-                    market price on the day rather than your cost, the cost will be off.
+                    The app suggests each from its words; change any that are wrong. A dividend, interest or fund distribution is cash
+                    income, read from the amount column. A staking reward is units received as income: they cost their value that day,
+                    the file’s price, so a later sale’s gain starts from there. A transfer in takes the file’s price as what you paid;
+                    if that price is the market price on the day rather than your cost, the cost will be off.
                   </p>
                   <div className="border border-border rounded-lg divide-y divide-border/50 max-h-72 overflow-y-auto">
                     {actionValues.slice(0, MAX_DISTINCT_VALUES).map((v) => (
@@ -505,7 +507,7 @@ export function ImportTradesPanel({ portfolioId, onSaved }: {
                           <th scope="col" className="text-left font-medium px-3 py-2">Kind</th>
                           <th scope="col" className="text-left font-medium px-3 py-2">Instrument</th>
                           <th scope="col" className="text-right font-medium px-3 py-2">Units</th>
-                          <th scope="col" className="text-right font-medium px-3 py-2">Price</th>
+                          <th scope="col" className="text-right font-medium px-3 py-2">Price or amount</th>
                           <th scope="col" className="text-right font-medium px-3 py-2">Fee</th>
                           <th scope="col" className="text-left font-medium px-3 py-2">What happens</th>
                         </tr>
@@ -520,11 +522,18 @@ export function ImportTradesPanel({ portfolioId, onSaved }: {
                               {r.status === 'ready' ? (
                                 <>
                                   <td className="px-3 py-1.5 whitespace-nowrap">{formatTradeDate(new Date(r.trade.executedAt).toISOString())}</td>
-                                  <td className="px-3 py-1.5 whitespace-nowrap">{tradeKindLabel({ side: r.trade.side, opening: false })}</td>
+                                  <td className="px-3 py-1.5 whitespace-nowrap">
+                                    {r.trade.side === 'income' && r.trade.incomeKind
+                                      ? INCOME_KIND_LABELS[r.trade.incomeKind]
+                                      : tradeKindLabel({ side: r.trade.side, opening: false })}
+                                  </td>
                                   <td className="px-3 py-1.5 whitespace-nowrap" title={r.trade.name}>{r.trade.instrument.startsWith(SEC_PREFIX) ? r.trade.instrument.slice(SEC_PREFIX.length) : r.trade.name}</td>
-                                  <td className="px-3 py-1.5 text-right font-mono">{formatUnits(r.trade.quantity)}</td>
-                                  <td className="px-3 py-1.5 text-right font-mono">{r.trade.side === 'transfer_out' ? '—' : formatUnitPrice(r.trade.pricePerUnit)}</td>
-                                  <td className="px-3 py-1.5 text-right font-mono">{r.trade.feeUsd === '0' ? '—' : formatUnitPrice(r.trade.feeUsd)}</td>
+                                  <td className="px-3 py-1.5 text-right font-mono">{r.trade.quantity ? formatUnits(r.trade.quantity) : '—'}</td>
+                                  <td className="px-3 py-1.5 text-right font-mono">
+                                    {r.trade.amountUsd ? formatUsd(r.trade.amountUsd)
+                                      : r.trade.side === 'transfer_out' || !r.trade.pricePerUnit ? '—' : formatUnitPrice(r.trade.pricePerUnit)}
+                                  </td>
+                                  <td className="px-3 py-1.5 text-right font-mono">{!r.trade.feeUsd || r.trade.feeUsd === '0' ? '—' : formatUnitPrice(r.trade.feeUsd)}</td>
                                 </>
                               ) : (
                                 <td colSpan={6} className="px-3 py-1.5 text-text-muted">{[r.action, r.symbol].filter(Boolean).join(' · ') || '—'}</td>

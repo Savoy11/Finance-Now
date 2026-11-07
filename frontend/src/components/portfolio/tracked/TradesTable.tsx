@@ -60,7 +60,7 @@ export function TradesTable({ trades, onCancel, busyId }: {
               <th scope="col" className="text-left font-medium px-3 py-2">Kind</th>
               <th scope="col" className="text-left font-medium px-3 py-2">Holding</th>
               <th scope="col" className="text-right font-medium px-3 py-2">Units</th>
-              <th scope="col" className="text-right font-medium px-3 py-2">Price</th>
+              <th scope="col" className="text-right font-medium px-3 py-2">Price or amount</th>
               <th scope="col" className="text-right font-medium px-3 py-2">Fee</th>
               <th scope="col" className="text-left font-medium px-3 py-2">Note</th>
               <th scope="col" className="px-4 py-2"><span className="sr-only">Actions</span></th>
@@ -69,9 +69,11 @@ export function TradesTable({ trades, onCancel, busyId }: {
           <tbody>
             {trades.map((t) => {
               const cancelled = !!t.cancelled
-              // A split is a ratio, so it has no units, price or fee of its own (T-421).
+              // A split is a ratio, so it has no units, price or fee of its own (T-421);
+              // cash income is an amount, shown where a price would be (T-451).
               const isSplit = t.side === 'split'
-              const priced = t.side !== 'transfer_out' && !isSplit
+              const isIncome = t.side === 'income'
+              const priced = t.side !== 'transfer_out' && !isSplit && !isIncome
               return (
                 <tr key={t.id} className={clsx('border-b border-border/50 last:border-0 align-top', cancelled && 'opacity-60')}>
                   <td className={clsx('px-4 py-2.5 whitespace-nowrap text-text-secondary', cancelled && 'line-through')}>{formatTradeDate(t.executedAt)}</td>
@@ -83,10 +85,10 @@ export function TradesTable({ trades, onCancel, busyId }: {
                   </td>
                   <td className={clsx('px-3 py-2.5 whitespace-nowrap font-semibold text-text-primary', cancelled && 'line-through')}>{t.symbol}</td>
                   <td className={clsx('px-3 py-2.5 text-right font-mono whitespace-nowrap', cancelled && 'line-through')}>
-                    {isSplit ? '—' : formatUnits(trimDecimal(t.quantity))}
+                    {isSplit || isIncome ? '—' : formatUnits(trimDecimal(t.quantity))}
                   </td>
                   <td className={clsx('px-3 py-2.5 text-right font-mono whitespace-nowrap text-text-secondary', cancelled && 'line-through')}>
-                    {priced ? formatUnitPrice(trimDecimal(t.pricePerUnit)) : '—'}
+                    {isIncome && t.income ? formatUsd(t.income.amountUsd) : priced ? formatUnitPrice(trimDecimal(t.pricePerUnit)) : '—'}
                   </td>
                   <td className={clsx('px-3 py-2.5 text-right font-mono whitespace-nowrap text-text-secondary', cancelled && 'line-through')}>
                     {/^0(\.0+)?$/.test(t.feeUsd) ? '—' : formatUsd(t.feeUsd)}

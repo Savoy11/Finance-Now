@@ -62,9 +62,9 @@
   "total_verified": 408,
   "outstanding": 392,
   "by_status": {
-   "closed": 243,
+   "closed": 244,
    "parked": 131,
-   "open": 13,
+   "open": 12,
    "blocked": 5
   },
   "by_owner_role": {
@@ -74,7 +74,7 @@
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 243,
+  "closed_by_annotation": 244,
   "counts_recomputed_on": "2026-11-07",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 392
@@ -15918,7 +15918,7 @@
   {
    "id": "T-451",
    "title": "Record dividends, interest and staking rewards in a tracked portfolio",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "blocking_decision": null,
    "opened": {
@@ -15936,7 +15936,8 @@
     "T-421",
     "D48",
     "T-058",
-    "T-447"
+    "T-447",
+    "D201"
    ],
    "summary": "Tracked portfolios, the ones holding real money, record no income: TRADE_SIDES is buy, sell, transfer in, transfer out and split, so a dividend payer’s or a staked coin’s return is understated and the cash it paid appears nowhere, while what-if portfolios already show an estimated annual income (computeAnnualIncome, D48). This adds two kinds of entry: cash income (a dividend, interest or a fund distribution: an amount, a date and a holding; no units move) and units received (a staking reward, or a dividend paid in shares: units and their value that day, which adds a new lot), and shows income received to date and over the last 12 months, per holding and in total. side is text, so the kind itself needs no migration; the amount probably needs a small table of its own, as splits did (trade_splits, T-421). No key and no host.",
    "next_action": "When building, ask the owner the proposal’s decision, recommended answer first: what a unit received as income costs for later gains: its value on the day as entered (recommended), or zero. Either way the label stays plain and says no tax rule is applied (REALIZED_METHOD_LABEL). Build it pure and tested in frontend/src/lib/data/costBasis.ts and tradeLedger.ts, keep the cancel-never-edit rule, and add a migration the owner runs with npm run db:migrate if the amount gets its own table. The federal sale-tax estimator stays a separate parked item behind D4 (T-058). Pairs with T-447: broker files carry dividends.",
@@ -15956,7 +15957,26 @@
      "lines": "291",
      "quote": "export function computeAnnualIncome("
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-11-07",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "Built as the owner chose (D201): cash income (a dividend, interest or fund distribution: an amount, a kind and a date, no units) and units received (a staking reward or a dividend paid in shares: a new lot whose cost is its value on the day as entered). Both count as income received, shown apart from the gains, to date and over the last 12 months, per holding and in total. Pure and tested in costBasis.ts and tradeLedger.ts; cancel-never-edit kept. Cash income's amount is in trade_income (migration 0011, which the owner runs with npm run db:migrate); units received need no table. The trade import (T-447) reads dividend rows as cash income from the amount column and staking rewards as units received. Checked against a real PostgreSQL 16 database on a built app. The federal sale-tax estimator stays parked behind D4 (T-058).",
+    "approved_by": "owner, 2026-11-07: chose T-451 next, with units received costing their value on the day",
+    "evidence": [
+     "frontend/src/lib/data/costBasis.ts",
+     "frontend/src/lib/data/tradeLedger.ts",
+     "frontend/src/lib/data/tradeImport.ts",
+     "frontend/src/components/portfolio/tracked/TradeForm.tsx",
+     "frontend/src/components/portfolio/tracked/HoldingsTable.tsx",
+     "frontend/drizzle/0011_trade-income.sql",
+     "frontend/src/lib/data/__tests__/costBasis.test.ts",
+     "frontend/src/lib/data/__tests__/tradeLedger.test.ts",
+     "docs/decisions/2026-11-07-owner-decisions.md"
+    ]
+   }
   },
   {
    "id": "T-452",

@@ -5,11 +5,11 @@ import { and, asc, count, desc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { isSchemaBehindError } from '@/lib/db/errors'
 import {
-  instrumentCrypto, instruments, portfolios, trackedPortfolios, tradeCancellations, tradeSplits, tradeTransactions,
+  instrumentCrypto, instruments, portfolios, trackedPortfolios, tradeCancellations, tradeIncome, tradeSplits, tradeTransactions,
   type AssetClass,
 } from '@/lib/db/schema'
 import { clientKeyFor, resolveInstruments } from './instrumentResolve'
-import type { NewTrade, SplitDetails, StoredCancellation, StoredTrade } from '@/lib/data/tradeLedger'
+import type { IncomeDetails, NewTrade, SplitDetails, StoredCancellation, StoredTrade } from '@/lib/data/tradeLedger'
 
 // ─── Tracked portfolio persistence (T-027 step 2, owner decision D65) ────────
 // Shared by the routes under /api/user/tracked-portfolios, and by the what-if
@@ -26,6 +26,10 @@ import type { NewTrade, SplitDetails, StoredCancellation, StoredTrade } from '@/
 // Migration 0006 adds trade_splits (T-421). It is read only for split rows,
 // and none can exist before it is applied, so everything else keeps working
 // without it; recording a split answers 503 until it is.
+//
+// Migration 0011 adds trade_income (T-451) the same way: read only for cash
+// income rows, so recording cash income answers 503 until it is applied and
+// nothing else changes. Units received as income need no table of their own.
 
 export function dbUnavailable() {
   return NextResponse.json(
@@ -45,6 +49,14 @@ export function notMigrated() {
 export function notMigratedForSplits() {
   return NextResponse.json(
     { ok: false, error: 'Recording a split needs a database update that has not been applied yet. Run `npm run db:migrate` in frontend/, then try again. Nothing was saved.' },
+    { status: 503 },
+  )
+}
+
+/** Recording cash income needs migration 0011 (trade_income); every other trade works without it. */
+export function notMigratedForIncome() {
+  return NextResponse.json(
+    { ok: false, error: 'Recording cash income needs a database update that has not been applied yet. Run `npm run db:migrate` in frontend/, then try again. Nothing was saved.' },
     { status: 503 },
   )
 }
@@ -217,7 +229,7 @@ type TradeRow = {
   symbol: string; name: string; assetClass: AssetClass; coingeckoId: string | null
 }
 
-const toStored = (r: TradeRow, split: SplitDetails | null = null): StoredTrade => ({
+const toStored = (r: TradeRow, split: SplitDetails | null = null, income: IncomeDetails | null = null): StoredTrade => ({
   id: r.id,
   instrumentKey: clientKeyFor(r.assetClass, r.symbol, r.coingeckoId),
   symbol: r.symbol,
@@ -231,6 +243,7 @@ const toStored = (r: TradeRow, split: SplitDetails | null = null): StoredTrade =
   note: r.note,
   createdAt: r.createdAt,
   split,
+  income,
 })
 
 /** The terms of these split trades, by trade id. Queried only when there are some (see the header). */
@@ -246,6 +259,15 @@ async function loadSplitTerms(userId: string, tradeIds: string[], q: Queryable =
 
 /** Something queries can be run on: the database, or a transaction on it. */
 export type Queryable = Pick<typeof db, 'select'>
+
+/** The amount and kind of these cash income trades, by trade id. Queried only when there are some (see the header). */
+async function loadIncomeTerms(userId: string, tradeIds: string[], q: Queryable = db): Promise<Map<string, IncomeDetails>> {
+  if (tradeIds.length === 0) return new Map()
+  const rows = await q.select({ tradeId: tradeIncome.tradeId, amountUsd: tradeIncome.amountUsd, kind: tradeIncome.kind })
+    .from(tradeIncome)
+    .where(and(inArray(tradeIncome.tradeId, tradeIds), eq(tradeIncome.userId, userId)))
+  return new Map(rows.map((r) => [r.tradeId, { amountUsd: r.amountUsd, kind: r.kind }]))
+}
 
 /** Every trade in the portfolio, cancelled ones included, and the cancellations. Pass a transaction to read inside it. */
 export async function loadTrades(
@@ -264,7 +286,8 @@ export async function loadTrades(
     .innerJoin(tradeTransactions, eq(tradeTransactions.id, tradeCancellations.tradeId))
     .where(and(eq(tradeTransactions.portfolioId, portfolioId), eq(tradeCancellations.userId, userId)))
   const splits = await loadSplitTerms(userId, rows.filter((r) => r.side === 'split').map((r) => r.id), q)
-  return { trades: rows.map((r) => toStored(r, splits.get(r.id) ?? null)), cancellations }
+  const income = await loadIncomeTerms(userId, rows.filter((r) => r.side === 'income').map((r) => r.id), q)
+  return { trades: rows.map((r) => toStored(r, splits.get(r.id) ?? null, income.get(r.id) ?? null)), cancellations }
 }
 
 /** Every trade row in the portfolio, cancelled ones included: the table only grows. */
@@ -295,7 +318,7 @@ export async function hasStartingPosition(userId: string, portfolioId: string, i
   return !!row
 }
 
-/** Saves one trade; a split's terms go in with it, in one transaction, so neither is ever saved alone. */
+/** Saves one trade; a split's terms or cash income's amount go in with it, in one transaction, so neither is ever saved alone. */
 export async function insertTrade(userId: string, portfolioId: string, instrumentId: string, t: NewTrade): Promise<StoredTrade> {
   const id = await db.transaction(async (tx) => {
     const [row] = await tx.insert(tradeTransactions).values({
@@ -319,6 +342,9 @@ export async function insertTrade(userId: string, portfolioId: string, instrumen
         cashInLieuUsd: t.split.cashInLieuUsd,
       })
     }
+    if (t.income) {
+      await tx.insert(tradeIncome).values({ tradeId: row.id, userId, amountUsd: t.income.amountUsd, kind: t.income.kind })
+    }
     return row.id
   })
   const [row] = await db.select(tradeColumns).from(tradeTransactions)
@@ -326,7 +352,7 @@ export async function insertTrade(userId: string, portfolioId: string, instrumen
     .leftJoin(instrumentCrypto, eq(instrumentCrypto.instrumentId, instruments.id))
     .where(eq(tradeTransactions.id, id))
     .limit(1)
-  return toStored(row, t.split)
+  return toStored(row, t.split, t.income)
 }
 
 /**

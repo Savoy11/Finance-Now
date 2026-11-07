@@ -64,6 +64,9 @@ export interface TradeInput {
   unitsAfter?: number | string
   unitsBefore?: number | string
   cashInLieuUsd?: string
+  /** On cash income only (T-451): the amount received and its kind. */
+  amountUsd?: string
+  incomeKind?: 'dividend' | 'interest' | 'distribution' | 'other'
 }
 
 /** What the import screen sends (T-447): the ready rows, and what to do with those that look already recorded. */

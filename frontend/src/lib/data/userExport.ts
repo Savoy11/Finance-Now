@@ -127,8 +127,8 @@ const byId = (rows: readonly Row[] | undefined, key = 'id') =>
 
 export const TRADES_CSV_HEADER = [
   'portfolio', 'date', 'symbol', 'name', 'side', 'starting_position', 'quantity', 'price_per_unit_usd',
-  'fee_usd', 'split_units_after', 'split_units_before', 'cash_in_lieu_usd', 'cancelled', 'cancel_reason',
-  'note', 'recorded_at',
+  'fee_usd', 'split_units_after', 'split_units_before', 'cash_in_lieu_usd', 'income_usd', 'income_kind',
+  'cancelled', 'cancel_reason', 'note', 'recorded_at',
 ] as const
 
 /** Every trade in a tracked portfolio, cancelled ones included and marked, in date order. */
@@ -137,6 +137,7 @@ export function tradesCsv(c: CollectedExport): string {
   const instruments = byId(c.instruments)
   const cancels = byId(c.tables.trade_cancellations, 'trade_id')
   const splits = byId(c.tables.trade_splits, 'trade_id')
+  const income = byId(c.tables.trade_income, 'trade_id')
   const time = (v: unknown) => (v instanceof Date ? v.getTime() : v == null ? -Infinity : Date.parse(String(v)))
   const trades = [...(c.tables.trade_transactions ?? [])].sort((a, b) =>
     text(portfolios.get(String(a.portfolio_id))?.name).localeCompare(text(portfolios.get(String(b.portfolio_id))?.name))
@@ -146,10 +147,11 @@ export function tradesCsv(c: CollectedExport): string {
     const inst = instruments.get(String(t.instrument_id))
     const cancel = cancels.get(String(t.id))
     const split = splits.get(String(t.id))
+    const inc = income.get(String(t.id))
     return [
       portfolios.get(String(t.portfolio_id))?.name, t.executed_at, inst?.symbol, inst?.name, t.side,
       t.opening ? 'yes' : 'no', t.quantity, t.price_per_unit, t.fee_usd,
-      split?.units_after, split?.units_before, split?.cash_in_lieu_usd,
+      split?.units_after, split?.units_before, split?.cash_in_lieu_usd, inc?.amount_usd, inc?.kind,
       cancel ? 'yes' : 'no', cancel?.reason, t.note, t.created_at,
     ]
   }))

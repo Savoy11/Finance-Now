@@ -4,16 +4,17 @@ import { useId, useMemo, useState } from 'react'
 import { Search, X } from 'lucide-react'
 import { clsx } from 'clsx'
 import { CLASS_LABELS } from '@/lib/data/instruments'
-import { TRACKABLE_CLASSES, formatUnits, parseTradeInput, type LedgerView } from '@/lib/data/tradeLedger'
+import { INCOME_KIND_LABELS, TRACKABLE_CLASSES, formatUnits, parseTradeInput, type LedgerView } from '@/lib/data/tradeLedger'
+import type { IncomeKind } from '@/lib/db/schema/invest'
 import { useInstrumentSearch, type InstrumentCandidate } from '@/components/portfolio/useInstrumentSearch'
 import type { TradeInput } from '@/lib/api/trackedPortfolios'
 
-// The form for recording one trade in a tracked portfolio (T-027, D65), or a
-// split (T-421). It checks the entry with the same rules the server applies
+// The form for recording one trade in a tracked portfolio (T-027, D65), a
+// split (T-421), or income (T-451, D201): cash income, or units received. It checks the entry with the same rules the server applies
 // (parseTradeInput) before sending it, so a mistake is explained here rather
 // than after a round trip, and the server still checks it again.
 
-type Kind = 'buy' | 'sell' | 'transfer_in' | 'transfer_out' | 'starting' | 'split'
+type Kind = 'buy' | 'sell' | 'transfer_in' | 'transfer_out' | 'starting' | 'split' | 'income' | 'income_units'
 
 const KINDS: Array<{ id: Kind; label: string; hint: string }> = [
   { id: 'buy', label: 'Buy', hint: 'Units bought, at the price paid per unit. The fee is added to their cost.' },
@@ -22,6 +23,8 @@ const KINDS: Array<{ id: Kind; label: string; hint: string }> = [
   { id: 'transfer_in', label: 'Transfer in', hint: 'Units moved in from elsewhere, carrying the cost you paid for them.' },
   { id: 'transfer_out', label: 'Transfer out', hint: 'Units moved out without being sold. Their cost leaves with them; there is no gain or loss.' },
   { id: 'split', label: 'Split', hint: 'A split or reverse split: how many units you have after it for every so many before, such as 2 for 1, or 1 for 10. Every unit held before its date is changed by that ratio and keeps its cost, so the cost per unit changes.' },
+  { id: 'income', label: 'Cash income', hint: 'A dividend, interest or a fund distribution paid in cash: the amount you received. No units move, so it changes no cost or gain; it is counted as income.' },
+  { id: 'income_units', label: 'Units received', hint: 'Units received as income, such as a staking reward or a dividend paid in shares. They cost their value on the day you received them, so a later sale’s gain starts from there. They count as income too.' },
 ]
 
 /** Today on the reader's own calendar, as the date input writes it. */
@@ -49,6 +52,8 @@ export function TradeForm({ view, onSubmit, busy }: {
   const [unitsAfter, setUnitsAfter] = useState('')
   const [unitsBefore, setUnitsBefore] = useState('')
   const [cash, setCash] = useState('')
+  const [amount, setAmount] = useState('')
+  const [incomeKind, setIncomeKind] = useState<IncomeKind>('dividend')
   const [date, setDate] = useState(localToday)
   const [note, setNote] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -68,9 +73,11 @@ export function TradeForm({ view, onSubmit, busy }: {
 
   const starting = kind === 'starting'
   const isSplit = kind === 'split'
-  const needsPrice = kind !== 'transfer_out' && !isSplit
-  const showsFee = !starting && !isSplit
+  const isIncome = kind === 'income'
+  const needsPrice = kind !== 'transfer_out' && !isSplit && !isIncome
+  const showsFee = !starting && !isSplit && !isIncome && kind !== 'income_units'
   const priceLabel = starting ? 'Average price paid per unit (USD)'
+    : kind === 'income_units' ? 'Value per unit that day (USD)'
     : kind === 'sell' ? 'Price received per unit (USD)'
     : kind === 'transfer_in' ? 'Cost per unit you paid (USD)'
     : 'Price paid per unit (USD)'
@@ -94,8 +101,18 @@ export function TradeForm({ view, onSubmit, busy }: {
     e.preventDefault()
     if (!instrument) { setError('Choose what was traded first.'); return }
     if (starting && hasStartingPosition) { setError('This holding already has a starting position. Cancel that one first if it is wrong.'); return }
-    // A split is a ratio, not an amount: it sends no units, price or fee.
-    const trade: TradeInput = isSplit
+    // A split is a ratio and cash income an amount: neither sends units, a price or a fee.
+    const trade: TradeInput = isIncome
+      ? {
+        instrument: instrument.key,
+        name: instrument.name,
+        side: 'income',
+        amountUsd: amount.trim(),
+        incomeKind,
+        ...(date ? { executedAt: date } : {}),
+        ...(note.trim() ? { note: note.trim() } : {}),
+      }
+      : isSplit
       ? {
         instrument: instrument.key,
         name: instrument.name,
@@ -129,6 +146,7 @@ export function TradeForm({ view, onSubmit, busy }: {
     setUnitsAfter('')
     setUnitsBefore('')
     setCash('')
+    setAmount('')
     setNote('')
     if (starting) pickKind('buy')
   }
@@ -222,9 +240,24 @@ export function TradeForm({ view, onSubmit, busy }: {
               <p className="text-[11px] text-text-muted mt-1">If your broker paid cash instead of a fraction of a unit, enter it. The fraction counts as sold for that amount.</p>
             </div>
           </>
+        ) : isIncome ? (
+          <>
+            <div>
+              <label className={labelCls} htmlFor={`${uid}-amount`}>Amount received (USD)</label>
+              <input id={`${uid}-amount`} className={inputCls} inputMode="decimal" placeholder="e.g. 12.34"
+                value={amount} onChange={(e) => setAmount(e.target.value)} />
+            </div>
+            <div>
+              <label className={labelCls} htmlFor={`${uid}-income-kind`}>Kind of income</label>
+              <select id={`${uid}-income-kind`} className={inputCls} value={incomeKind}
+                onChange={(e) => setIncomeKind(e.target.value as IncomeKind)}>
+                {(Object.keys(INCOME_KIND_LABELS) as IncomeKind[]).map((k) => <option key={k} value={k}>{INCOME_KIND_LABELS[k]}</option>)}
+              </select>
+            </div>
+          </>
         ) : (
           <div>
-            <label className={labelCls} htmlFor={`${uid}-qty`}>Units</label>
+            <label className={labelCls} htmlFor={`${uid}-qty`}>{kind === 'income_units' ? 'Units received' : 'Units'}</label>
             <input id={`${uid}-qty`} className={inputCls} inputMode="decimal" placeholder="e.g. 10 or 0.25"
               value={quantity} onChange={(e) => setQuantity(e.target.value)} />
           </div>
@@ -244,7 +277,9 @@ export function TradeForm({ view, onSubmit, busy }: {
           </div>
         )}
         <div>
-          <label className={labelCls} htmlFor={`${uid}-date`}>{starting ? 'Date bought (optional)' : isSplit ? 'Date it took effect' : 'Date'}</label>
+          <label className={labelCls} htmlFor={`${uid}-date`}>
+            {starting ? 'Date bought (optional)' : isSplit ? 'Date it took effect' : isIncome || kind === 'income_units' ? 'Date received' : 'Date'}
+          </label>
           <input id={`${uid}-date`} type="date" className={inputCls} max={localToday()}
             value={date} onChange={(e) => setDate(e.target.value)} />
           {starting && <p className="text-[11px] text-text-muted mt-1">Leave it blank if you don&apos;t know it. A starting position counts as your oldest units either way.</p>}
@@ -262,7 +297,7 @@ export function TradeForm({ view, onSubmit, busy }: {
       <div className="flex justify-end">
         <button type="submit" disabled={busy}
           className="px-4 py-2 bg-accent-blue hover:bg-blue-600 disabled:opacity-50 text-white rounded-lg font-medium text-sm transition-colors">
-          {busy ? 'Saving…' : isSplit ? 'Save split' : 'Save trade'}
+          {busy ? 'Saving…' : isSplit ? 'Save split' : isIncome || kind === 'income_units' ? 'Save income' : 'Save trade'}
         </button>
       </div>
     </form>

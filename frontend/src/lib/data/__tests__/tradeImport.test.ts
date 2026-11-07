@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import {
-  CASH_SYMBOLS, MAX_IMPORT_ROWS, classifyImport, coinSuggestions, distinctValues, guessDateOrder, guessLayout,
-  guessSide, headerSignature, importCancelReason, importFingerprints, importIssues, layoutProblem, looseIdentity,
+  CASH_SYMBOLS, MAX_IMPORT_ROWS, classifyImport, coinSuggestions, distinctValues, guessDateOrder, guessIncomeKind,
+  guessLayout, guessSide, headerSignature, importCancelReason, importFingerprints, importIssues, layoutProblem, looseIdentity,
   normaliseTicker, parseImportRequest, planImport, readCsv, readDate, readLayout, readNumber, rowsToSave,
   symbolChoice, withActionChoices,
   type ImportLayout,
@@ -120,7 +120,7 @@ describe('guessing the layout', () => {
     const l = guessLayout(readCsv(BROKER))
     expect(l.columns).toEqual({
       date: 'Trade Date', symbol: 'Symbol', quantity: 'Quantity', price: 'Price',
-      action: 'Action', fee: 'Fees & Comm', note: 'Description',
+      action: 'Action', fee: 'Fees & Comm', note: 'Description', amount: 'Amount',
     })
     expect(l.dateOrder).toBe('MDY')
     expect(l.sideFrom).toBe('column')
@@ -137,12 +137,21 @@ describe('guessing the layout', () => {
     expect(plan.rows.map((r) => (r.status === 'ready' ? r.trade.side : r.status))).toEqual(['buy', 'sell'])
   })
 
-  it('suggests what each kind of row means, leaving out anything that is not a trade of units', () => {
+  it('suggests what each kind of row means: income as income, and anything else not a trade of units left out', () => {
     expect(guessSide('YOU BOUGHT APPLE INC (AAPL)')).toBe('buy')
     expect(guessSide('Advanced Trade Sell')).toBe('sell')
-    expect(guessSide('Reinvest Dividend')).toBe('buy')
-    expect(guessSide('Qualified Dividend')).toBe('skip')
-    expect(guessSide('Staking Income')).toBe('skip')
+    // T-451: a reinvested dividend is income once and a purchase once, never both on one row.
+    expect(guessSide('Reinvest Dividend')).toBe('income')
+    expect(guessSide('Reinvest Shares')).toBe('buy')
+    expect(guessSide('REINVESTMENT')).toBe('buy')
+    expect(guessSide('Qualified Dividend')).toBe('income')
+    expect(guessSide('DIVIDEND RECEIVED')).toBe('income')
+    expect(guessSide('Bank Interest')).toBe('income')
+    expect(guessSide('Long Term Cap Gain')).toBe('income')
+    expect(guessSide('Margin Interest')).toBe('skip')
+    expect(guessSide('Staking Income')).toBe('income_units')
+    expect(guessSide('Learning Reward')).toBe('income_units')
+    expect(guessSide('Foreign Tax Paid')).toBe('skip')
     expect(guessSide('Convert')).toBe('skip')
     expect(guessSide('Send')).toBe('transfer_out')
     expect(guessSide('Receive')).toBe('transfer_in')
@@ -154,7 +163,7 @@ describe('guessing the layout', () => {
     const t = readCsv(BROKER)
     expect(distinctValues(t, 'Action').slice(0, 2)).toEqual([{ value: 'Buy', rows: 3 }, { value: 'Qualified Dividend', rows: 1 }])
     const l = withActionChoices({ ...guessLayout(t), actions: { Sell: 'transfer_out', Older: 'buy' } }, t)
-    expect(l.actions).toMatchObject({ Sell: 'transfer_out', Buy: 'buy', 'Qualified Dividend': 'skip', Older: 'buy' })
+    expect(l.actions).toMatchObject({ Sell: 'transfer_out', Buy: 'buy', 'Qualified Dividend': 'income', Older: 'buy' })
   })
 })
 
@@ -197,12 +206,14 @@ describe('planning the import', () => {
       status: 'ready',
       trade: { instrument: 'sec:VTI', side: 'sell', quantity: '2', pricePerUnit: '301.25', feeUsd: '0.00', executedAt: '2026-11-03', note: 'VANGUARD TOTAL STOCK MARKET, ETF' },
     })
-    expect(byLine[5]).toMatchObject({ status: 'left-out', reason: '"Qualified Dividend" is set to be left out.' })
+    // T-451: a dividend row is cash income from the file's amount column.
+    expect(byLine[5]).toMatchObject({ status: 'ready', trade: { instrument: 'sec:VTI', side: 'income', amountUsd: '12.34', incomeKind: 'dividend', executedAt: '2026-10-15' } })
+    expect((byLine[5] as { trade: object }).trade).not.toHaveProperty('quantity')
     expect(byLine[6]).toMatchObject({ status: 'ready', trade: { instrument: 'sec:BRK-B', quantity: '1.5', feeUsd: '1.00' } })
     expect(byLine[7]).toMatchObject({ status: 'ready', trade: { feeUsd: '0' } })
     expect(byLine[8]).toMatchObject({ status: 'ready', trade: { instrument: 'sec:SPAXX' } })
     expect(byLine[9]).toMatchObject({ status: 'refused', reason: 'The kind of trade is empty.' })
-    expect([plan.ready, plan.leftOut, plan.refused]).toEqual([4, 1, 1])
+    expect([plan.ready, plan.leftOut, plan.refused]).toEqual([5, 0, 1])
   })
 
   it('sends every ready row through the trade route\'s own checks', () => {
@@ -226,7 +237,8 @@ describe('planning the import', () => {
     const rows = planImport(t, l, NOW).rows
     expect(rows[0]).toMatchObject({ status: 'ready', trade: { instrument: 'bitcoin', quantity: '0.0125', pricePerUnit: '64000.00', feeUsd: '2.50' } })
     expect(rows[1]).toMatchObject({ status: 'ready', trade: { instrument: 'ethereum', quantity: '0.012', feeUsd: '0.45' } })
-    expect(rows[2]).toMatchObject({ status: 'left-out' })
+    // T-451: a staking reward is units received, at the file's price that day (D201).
+    expect(rows[2]).toMatchObject({ status: 'ready', trade: { instrument: 'ethereum', side: 'income_units', quantity: '0.0001', pricePerUnit: '3150' } })
     // A transfer out needs no price.
     expect(rows[3]).toMatchObject({ status: 'ready', trade: { side: 'transfer_out', pricePerUnit: '0' } })
   })
@@ -261,6 +273,47 @@ describe('recognising rows already imported', () => {
   })
 })
 
+describe('income rows (T-451)', () => {
+  const FILE = [
+    'Date,Action,Symbol,Quantity,Price,Amount',
+    '2026-03-15,Qualified Dividend,KO,,,$4.12',
+    '2026-03-15,Qualified Dividend,KO,,,$4.12',
+    '2026-03-16,Bank Interest,SPAXX,,,0.37',
+    '2026-03-17,Dividend Adjustment,KO,,,-4.12',
+  ].join('\n')
+
+  it('reads cash income from the amount column, naming its kind, and refuses a negative amount', () => {
+    const t = readCsv(FILE)
+    const l = withActionChoices({ ...guessLayout(t), actions: { 'Dividend Adjustment': 'income' } }, t)
+    const rows = planImport(t, l, NOW).rows
+    expect(rows[0]).toMatchObject({ status: 'ready', trade: { side: 'income', amountUsd: '4.12', incomeKind: 'dividend' } })
+    expect(rows[2]).toMatchObject({ status: 'ready', trade: { instrument: 'sec:SPAXX', incomeKind: 'interest', amountUsd: '0.37' } })
+    expect(rows[3]).toMatchObject({ status: 'refused', reason: expect.stringContaining('below zero') })
+    expect(guessIncomeKind('Long Term Cap Gain')).toBe('distribution')
+  })
+
+  it('asks for the amount column before reading income', () => {
+    const t = readCsv(FILE)
+    const l = withActionChoices(guessLayout(t), t)
+    const { amount: _drop, ...columns } = l.columns
+    void _drop
+    expect(planImport(t, { ...l, columns }, NOW).rows[0]).toMatchObject({ status: 'refused', reason: 'Choose the amount column: cash income is read from it.' })
+  })
+
+  it('tells two dividends apart by their amount, and two equal ones by their order', () => {
+    const parsed = parseImportRequest({ rows: planImport(readCsv(FILE), withActionChoices(guessLayout(readCsv(FILE)), readCsv(FILE)), NOW).rows
+      .flatMap((r) => (r.status === 'ready' ? [{ line: r.line, trade: r.trade }] : [])) }, NOW)
+    if (!parsed.ok) throw new Error(parsed.error)
+    const [a, b] = parsed.value.rows
+    const fps = importFingerprints([a.trade, b.trade, { ...a.trade, income: { amountUsd: '5', kind: 'dividend' as const } }])
+    expect(new Set(fps).size).toBe(3)
+    expect(fps[0]).toMatch(/\|4\.12#1$/)
+    // A buy's fingerprint is as it was before income existed, so earlier imports are still recognised.
+    expect(importFingerprints([{ executedAt: new Date('2026-01-02'), side: 'buy', instrumentKey: 'sec:VTI', quantity: '1', pricePerUnit: '2', feeUsd: '0' }]))
+      .toEqual(['2026-01-02|buy|sec:VTI|1|2|0#1'])
+  })
+})
+
 describe('saved layouts', () => {
   it('round-trips a layout and refuses a malformed one', () => {
     const l = { ...brokerLayout(), symbols: { BTC: { kind: 'coin' as const, coinId: 'bitcoin', name: 'Bitcoin' } } }
@@ -277,7 +330,7 @@ describe('what the import route receives', () => {
 
   it('checks every row again, and one bad row refuses the whole request with its line', () => {
     const ok = parseImportRequest({ fileName: 'a.csv', headerSignature: 'x', rows: ready() }, NOW)
-    expect(ok.ok && ok.value.rows).toHaveLength(4)
+    expect(ok.ok && ok.value.rows).toHaveLength(5)
     // Mutation: skip parseTradeInput here and the bad price is accepted.
     const bad = parseImportRequest({ rows: [...ready(), { line: 99, trade: { ...ready()[0].trade, pricePerUnit: '-1' } }] }, NOW)
     expect(bad).toMatchObject({ ok: false, error: expect.stringMatching(/^Line 99: .*Nothing was saved\.$/) })
@@ -300,9 +353,9 @@ describe('what the import route receives', () => {
     const fps = importFingerprints(rows.map((r) => r.trade))
     const typed = new Map([[looseIdentity(rows[2].trade), 1]])
     const statuses = classifyImport(rows, { importedFingerprints: new Set([fps[0]]), typedTrades: typed })
-    expect(statuses.map((s) => s.status)).toEqual(['already-imported', 'new', 'looks-recorded', 'new'])
-    expect(rowsToSave(statuses, new Set()).map((s) => s.line)).toEqual([6, 8])
-    expect(rowsToSave(statuses, new Set([7])).map((s) => s.line)).toEqual([6, 7, 8])
+    expect(statuses.map((s) => s.status)).toEqual(['already-imported', 'new', 'looks-recorded', 'new', 'new'])
+    expect(rowsToSave(statuses, new Set()).map((s) => s.line)).toEqual([5, 7, 8])
+    expect(rowsToSave(statuses, new Set([6])).map((s) => s.line)).toEqual([5, 6, 7, 8])
     // Mutation: drop the occurrence count from the fingerprint and a second identical row reads as a repeat.
     const twice = classifyImport([rows[1], { ...rows[1], line: 50 }], { importedFingerprints: new Set([importFingerprints([rows[1].trade])[0]]), typedTrades: new Map() })
     expect(twice.map((s) => s.status)).toEqual(['already-imported', 'new'])
@@ -319,7 +372,7 @@ describe('what the import route receives', () => {
     // A trade already recorded counts: an earlier typed buy covers the sale.
     const typedBuy: StoredTrade = {
       id: 't1', instrumentKey: 'sec:VTI', symbol: 'VTI', name: 'VTI', side: 'buy', quantity: '5', pricePerUnit: '250', feeUsd: '0',
-      executedAt: new Date('2026-01-02'), opening: false, note: null, createdAt: NOW, split: null,
+      executedAt: new Date('2026-01-02'), opening: false, note: null, createdAt: NOW, split: null, income: null,
     }
     expect(importIssues({ trades: [typedBuy], cancellations: [] }, onlySale, NOW)).toEqual([])
   })

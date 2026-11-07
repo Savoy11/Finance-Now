@@ -19,8 +19,11 @@
 //     coins put the wrong issuer's figures on a page). The person picks the
 //     coin for each symbol once, and the layout remembers it. A stock or fund
 //     is its ticker, as everywhere else in the app.
-//   - Rows the file uses for anything else (dividends, interest, deposits) are
-//     left out by default and counted, never silently dropped.
+//   - Dividends, interest and fund distributions are read as cash income from
+//     the amount column, and staking rewards as units received at the file's
+//     price that day, which is then what they cost (T-451, D201). Rows the file
+//     uses for anything else (deposits, fees, conversions) are left out by
+//     default and counted, never silently dropped.
 // It imports nothing and saves nothing.
 
 import { INSTRUMENTS, INSTRUMENT_BY_KEY, SEC_PREFIX } from './instruments'
@@ -28,6 +31,7 @@ import {
   MAX_NOTE_LENGTH, MAX_REASON_LENGTH, buildLedgerView, parseTradeInput, trimDecimal,
   type NewTrade, type StoredCancellation, type StoredTrade,
 } from './tradeLedger'
+import type { IncomeKind } from '@/lib/db/schema/invest'
 
 /** The largest file the screen reads. A broker's whole history is far smaller. */
 export const MAX_IMPORT_FILE_BYTES = 5_000_000
@@ -192,13 +196,15 @@ export const DATE_ORDER_LABELS: Record<DateOrder, string> = {
 }
 
 /** What a row of the file becomes. Splits and starting positions are entered by hand. */
-export const IMPORT_SIDES = ['buy', 'sell', 'transfer_in', 'transfer_out', 'skip'] as const
+export const IMPORT_SIDES = ['buy', 'sell', 'transfer_in', 'transfer_out', 'income', 'income_units', 'skip'] as const
 export type ImportSide = (typeof IMPORT_SIDES)[number]
 export const IMPORT_SIDE_LABELS: Record<ImportSide, string> = {
   buy: 'Buy',
   sell: 'Sell',
   transfer_in: 'Transfer in',
   transfer_out: 'Transfer out',
+  income: 'Cash income',
+  income_units: 'Units received as income',
   skip: 'Leave out',
 }
 
@@ -222,6 +228,8 @@ export interface ImportLayout {
     action?: string
     fee?: string
     note?: string
+    /** The dollar amount of a row: read only for cash income (T-451). */
+    amount?: string
   }
   dateOrder: DateOrder
   /** Where buy or sell comes from: a column of words, or the sign of the units (negative is a sale). */
@@ -242,6 +250,7 @@ const COLUMN_GUESSES: Record<keyof ImportLayout['columns'], RegExp[]> = {
   price: [/^price/i, /share price/i, /price/i],
   fee: [/^fees?\b/i, /commission/i, /fee/i],
   note: [/^description$/i, /^notes?$/i, /^memo$/i, /description|notes?|memo/i],
+  amount: [/^amount/i, /^net amount/i, /\bamount\b/i],
 }
 
 /** The first column name matching each pattern, in order of the patterns, skipping names already taken. */
@@ -270,17 +279,36 @@ export function guessDateOrder(values: readonly string[]): DateOrder {
 /**
  * What a value in the "kind of trade" column most likely means, from its words.
  * Only a starting suggestion: the screen shows every value with its choice, and
- * the person changes any of them. Anything not plainly a buy, sale or transfer
- * of units (dividends, interest, deposits of cash, fees, conversions) is left out.
+ * the person changes any of them.
+ *
+ * Staking rewards and airdrops are units received as income. Shares bought with
+ * a dividend ("Reinvest Shares", "Reinvestment") are a purchase, while the
+ * dividend itself ("Reinvest Dividend", "Qualified Dividend") is cash income, so
+ * a reinvested dividend is counted once as income and once as the units it
+ * bought. Interest charged (margin interest) is not income. Anything else not
+ * plainly a buy, sale or transfer of units (deposits of cash, fees, taxes,
+ * conversions) is left out.
  */
 export function guessSide(value: string): ImportSide {
   const v = value.toLowerCase()
+  if (/\b(staking|rewards?|airdrops?)\b/.test(v)) return 'income_units'
+  if (/\breinvest(ed|ment)?\b/.test(v) && /\bshares?\b|\breinvestment\b|\bbought\b/.test(v)) return 'buy'
+  if (/\b(dividends?|interest|distributions?|cap(ital)? gains?)\b/.test(v) && !/\b(margin|charged?|paid|expense)\b/.test(v)) return 'income'
   if (/\btransfer(red)? in\b|\breceived?\b|\bincoming\b/.test(v)) return 'transfer_in'
   if (/\btransfer(red)? out\b|\bsen[dt]\b|\bwithdraw(al|n)?\b|\boutgoing\b/.test(v)) return 'transfer_out'
-  if (/\b(dividend|interest|fee|tax|deposit|journal|convert|conversion|reward|income|staking|split|merger|spin)/.test(v) && !/\breinvest/.test(v)) return 'skip'
+  if (/\b(interest|fee|tax|deposit|journal|convert|conversion|income|split|merger|spin)/.test(v)) return 'skip'
   if (/\b(buy|bought|purchased?|reinvest(ed|ment)?)\b/.test(v)) return 'buy'
   if (/\b(sell|sold|sale)\b/.test(v)) return 'sell'
   return 'skip'
+}
+
+/** The kind of cash income a row's words name, for its label. */
+export function guessIncomeKind(value: string): IncomeKind {
+  const v = value.toLowerCase()
+  if (/\binterest\b/.test(v)) return 'interest'
+  if (/\b(distributions?|cap(ital)? gains?)\b/.test(v)) return 'distribution'
+  if (/\bdividends?\b/.test(v)) return 'dividend'
+  return 'other'
 }
 
 /** A layout guessed from the column names and the first rows. Never applied without being shown. */
@@ -298,6 +326,7 @@ export function guessLayout(table: CsvTable): ImportLayout {
   const action = pick('action')
   const fee = pick('fee')
   const note = pick('note')
+  const amount = pick('amount')
   const col = (name: string | undefined) => (name ? table.headers.indexOf(name) : -1)
   const sample = (name: string | undefined) => table.rows.slice(0, 50).map((r) => r.cells[col(name)] ?? '')
   const negativeUnits = sample(quantity).some((q) => /^\s*(-|\()/.test(q))
@@ -311,6 +340,7 @@ export function guessLayout(table: CsvTable): ImportLayout {
       ...(action ? { action } : {}),
       ...(fee ? { fee } : {}),
       ...(note ? { note } : {}),
+      ...(amount ? { amount } : {}),
     },
     dateOrder: guessDateOrder(sample(date)),
     sideFrom: action || !negativeUnits ? 'column' : 'quantity-sign',
@@ -328,7 +358,7 @@ export function readLayout(raw: unknown): ImportLayout | null {
   const str = (v: unknown, max = 200) => typeof v === 'string' && v.length <= max
   if (l.version !== LAYOUT_VERSION || typeof c !== 'object' || c === null) return null
   for (const k of ['date', 'symbol', 'quantity', 'price'] as const) if (!str(c[k])) return null
-  for (const k of ['action', 'fee', 'note'] as const) if (c[k] !== undefined && !str(c[k])) return null
+  for (const k of ['action', 'fee', 'note', 'amount'] as const) if (c[k] !== undefined && !str(c[k])) return null
   if (!(DATE_ORDERS as readonly unknown[]).includes(l.dateOrder)) return null
   if (l.sideFrom !== 'column' && l.sideFrom !== 'quantity-sign') return null
   if (l.holds !== 'securities' && l.holds !== 'coins') return null
@@ -357,6 +387,7 @@ export function readLayout(raw: unknown): ImportLayout | null {
       ...(c.action ? { action: c.action as string } : {}),
       ...(c.fee ? { fee: c.fee as string } : {}),
       ...(c.note ? { note: c.note as string } : {}),
+      ...(c.amount ? { amount: c.amount as string } : {}),
     },
     dateOrder: l.dateOrder as DateOrder,
     sideFrom: l.sideFrom,
@@ -499,12 +530,16 @@ export function readDate(raw: string, order: DateOrder): Read<string> {
 export interface ImportTrade {
   instrument: string
   name: string
-  side: 'buy' | 'sell' | 'transfer_in' | 'transfer_out'
-  quantity: string
-  pricePerUnit: string
-  feeUsd: string
+  side: 'buy' | 'sell' | 'transfer_in' | 'transfer_out' | 'income' | 'income_units'
+  /** Left out on cash income, which is an amount rather than units. */
+  quantity?: string
+  pricePerUnit?: string
+  feeUsd?: string
   executedAt: string
   note?: string
+  /** On cash income only (T-451). */
+  amountUsd?: string
+  incomeKind?: IncomeKind
 }
 
 export type PlannedRow =
@@ -531,11 +566,12 @@ export function layoutProblem(layout: ImportLayout, table: CsvTable): string | n
     if (!name) return `Choose the ${label} column.`
     if (!table.headers.includes(name)) return `The file has no column named "${name}" (the ${label} column).`
   }
-  for (const [label, name] of [['fee', layout.columns.fee], ['note', layout.columns.note]] as const) {
+  for (const [label, name] of [['fee', layout.columns.fee], ['note', layout.columns.note], ['amount', layout.columns.amount]] as const) {
     if (name && !table.headers.includes(name)) return `The file has no column named "${name}" (the ${label} column).`
   }
   const chosen = [layout.columns.date, layout.columns.symbol, layout.columns.quantity, layout.columns.price,
-    layout.sideFrom === 'column' ? layout.columns.action : undefined, layout.columns.fee, layout.columns.note].filter(Boolean)
+    layout.sideFrom === 'column' ? layout.columns.action : undefined, layout.columns.fee, layout.columns.note,
+    layout.columns.amount].filter(Boolean)
   if (new Set(chosen).size !== chosen.length) return 'The same column is chosen for two things.'
   return null
 }
@@ -582,6 +618,30 @@ function planRow(row: CsvRow, layout: ImportLayout, col: (name: string | undefin
   // The date, the units, the price and the fee.
   const date = readDate(col(layout.columns.date), layout.dateOrder)
   if (!date.ok) return out('refused', `The date ${date.error}.`)
+
+  let note = layout.columns.note ? col(layout.columns.note).replace(/\s+/g, ' ').trim() : ''
+  if (note.length > MAX_NOTE_LENGTH) note = `${note.slice(0, MAX_NOTE_LENGTH - 1)}…`
+
+  // Cash income (T-451) is the row's amount: no units, price or fee.
+  if (side === 'income') {
+    if (!layout.columns.amount) return out('refused', 'Choose the amount column: cash income is read from it.')
+    const amountCell = col(layout.columns.amount)
+    const amount = readNumber(amountCell)
+    if (!amount.ok) return out('refused', `The amount ${amount.error}.`)
+    if (amount.value.negative) return out('refused', `The amount "${amountCell}" is below zero, which reads as a charge rather than income.`)
+    if (isZeroDigits(amount.value.digits)) return out('refused', 'The amount is 0.')
+    const trade: ImportTrade = {
+      instrument, name, side,
+      amountUsd: amount.value.digits,
+      incomeKind: guessIncomeKind(action),
+      executedAt: date.value,
+      ...(note ? { note } : {}),
+    }
+    const checked = parseTradeInput(trade, now)
+    if (!checked.ok) return out('refused', checked.error)
+    return { line: row.line, status: 'ready', trade, symbol, action }
+  }
+
   if (!units.ok) return out('refused', `The units ${units.error}.`)
   if (isZeroDigits(units.value.digits)) return out('refused', 'The units are 0.')
 
@@ -604,9 +664,6 @@ function planRow(row: CsvRow, layout: ImportLayout, col: (name: string | undefin
     // Brokers write a fee as money out, often with a minus sign; it is a cost either way.
     feeUsd = fee.value.digits
   }
-
-  let note = layout.columns.note ? col(layout.columns.note).replace(/\s+/g, ' ').trim() : ''
-  if (note.length > MAX_NOTE_LENGTH) note = `${note.slice(0, MAX_NOTE_LENGTH - 1)}…`
 
   const trade: ImportTrade = {
     instrument, name, side,
@@ -646,10 +703,18 @@ const canon = (v: string) => {
   return t === '' ? '0' : t
 }
 
+type Identified = Pick<NewTrade, 'executedAt' | 'side' | 'instrumentKey' | 'quantity' | 'pricePerUnit'> & {
+  /** Cash income's amount is what tells two dividends on one day apart (T-451). */
+  income?: { amountUsd: string } | null
+}
+
+/** Cash income's amount, or nothing for every other kind, so older fingerprints are unchanged. */
+const incomePart = (t: Identified) => (t.income ? [canon(t.income.amountUsd)] : [])
+
 /** What identifies a trade for spotting a repeat: its day, kind, instrument and figures. */
-export function tradeIdentity(t: Pick<NewTrade, 'executedAt' | 'side' | 'instrumentKey' | 'quantity' | 'pricePerUnit' | 'feeUsd'>): string {
+export function tradeIdentity(t: Identified & Pick<NewTrade, 'feeUsd'>): string {
   const day = t.executedAt ? t.executedAt.toISOString().slice(0, 10) : 'undated'
-  return [day, t.side, t.instrumentKey, canon(t.quantity), canon(t.pricePerUnit), canon(t.feeUsd)].join('|')
+  return [day, t.side, t.instrumentKey, canon(t.quantity), canon(t.pricePerUnit), canon(t.feeUsd), ...incomePart(t)].join('|')
 }
 
 /**
@@ -669,9 +734,9 @@ export function importFingerprints(trades: ReadonlyArray<Parameters<typeof trade
 }
 
 /** The same trade without its fee: a trade typed by hand may give the fee differently, or not at all. */
-export function looseIdentity(t: Pick<NewTrade, 'executedAt' | 'side' | 'instrumentKey' | 'quantity' | 'pricePerUnit'>): string {
+export function looseIdentity(t: Identified): string {
   const day = t.executedAt ? t.executedAt.toISOString().slice(0, 10) : 'undated'
-  return [day, t.side, t.instrumentKey, canon(t.quantity), canon(t.pricePerUnit)].join('|')
+  return [day, t.side, t.instrumentKey, canon(t.quantity), canon(t.pricePerUnit), ...incomePart(t)].join('|')
 }
 
 /** The reason a whole import's trades were cancelled, as each cancellation keeps it. */
@@ -820,6 +885,7 @@ export function importIssues(
     note: r.trade.note,
     createdAt: now,
     split: null,
+    income: r.trade.income,
   }))
   const view = buildLedgerView([...existing.trades, ...added], existing.cancellations, now)
   const out: Array<{ line: number; message: string }> = []

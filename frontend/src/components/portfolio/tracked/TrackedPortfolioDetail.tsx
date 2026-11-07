@@ -104,7 +104,7 @@ export function TrackedPortfolioDetail({ portfolio, onBack }: {
     try {
       await trackedApi.addTrade(portfolio.id, trade)
       await refresh()
-      toast.success('Trade saved')
+      toast.success(trade.side === 'income' || trade.side === 'income_units' ? 'Income saved' : 'Trade saved')
       return null
     } catch (e) {
       return errorText(e, 'The trade was not saved.')
@@ -226,7 +226,7 @@ export function TrackedPortfolioDetail({ portfolio, onBack }: {
       {view && valued && totals && (
         <>
           {/* One column on a phone: a dollar figure is never cut short. */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
             <Tile label="Cost of holdings" value={formatUsd(totals.costHeldUsd)}>
               {totals.heldCount === 0 ? 'Nothing held' : `${plural(totals.heldCount, 'holding')}, fees included`}
             </Tile>
@@ -249,6 +249,12 @@ export function TrackedPortfolioDetail({ portfolio, onBack }: {
               {!isZero(totals.realizedFromStartingPositionUsd) && (
                 <> {formatUsdChange(totals.realizedFromStartingPositionUsd)} of it from starting positions.</>
               )}
+            </Tile>
+            {/* T-451: income received, kept apart from the gains. */}
+            <Tile label="Income received" value={formatUsd(totals.incomeUsd)}>
+              {isZero(totals.incomeUsd)
+                ? 'Dividends, interest and rewards you record'
+                : `${formatUsd(totals.incomeLast12MonthsUsd)} in the last 12 months`}
             </Tile>
           </div>
 

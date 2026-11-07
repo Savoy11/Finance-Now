@@ -46,6 +46,14 @@ describe('how our figures are worked out (D163)', () => {
     expect(src).not.toMatch(/for \d+ providers|all \d+ funds/)
   })
 
+  it('states how tracked-portfolio income is counted (D201)', () => {
+    const t = text('tracked-gains-income')
+    expect(t).toMatch(/first in, first out/)
+    expect(t).toMatch(/no tax rule is applied/)
+    expect(t).toMatch(/value on the day, as you enter it, and that value is also what they cost/)
+    expect(t).toMatch(/shown apart from the gains/)
+  })
+
   it('states the yield rule the fund pages follow (D166), with the windows they use', () => {
     const t = text('fund-yields')
     expect(t).toMatch(/link beside it to the fund’s own page/)
