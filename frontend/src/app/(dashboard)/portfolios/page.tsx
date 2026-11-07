@@ -601,6 +601,7 @@ function PortfolioDetail({ portfolio, onEdit, onBack }: {
   const annualIncome = useMemo(() => computeAnnualIncome(holdings, stockDividends), [holdings, stockDividends])
   // T-448: a what-if portfolio has no real dollars, so its fund costs are per $10,000 in its mix.
   const costPositions = useMemo(() => whatIfCostPositions(portfolio.holdings), [portfolio.holdings])
+  const lookThroughPositions = useMemo(() => whatIfLookThroughPositions(portfolio), [portfolio])
 
   const TAB_LABELS: Record<DetailTab, string> = { overview: 'Overview', analysis: 'Analysis', 'look-through': 'Look-through' }
 
@@ -913,7 +914,7 @@ function PortfolioDetail({ portfolio, onEdit, onBack }: {
       )}
 
       {/* ── Look-through ── */}
-      {tab === 'look-through' && <PortfolioLookThrough positions={whatIfLookThroughPositions(portfolio)} basis="target" />}
+      {tab === 'look-through' && <PortfolioLookThrough positions={lookThroughPositions} basis="target" />}
 
       {/* ── Backtest ── */}
       {/* Backtest tab hidden 2026-08-20 — BacktestPanel retained. */}

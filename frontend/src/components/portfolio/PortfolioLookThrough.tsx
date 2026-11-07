@@ -1,8 +1,8 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
 import Link from 'next/link'
-import { useQueries } from '@tanstack/react-query'
+import { useQueries, type UseQueryResult } from '@tanstack/react-query'
 import { clsx } from 'clsx'
 import { Layers, AlertTriangle, Link2 } from 'lucide-react'
 import {
@@ -57,26 +57,11 @@ export function PortfolioLookThrough({ positions, basis, unpriced = [] }: {
     [positions],
   )
 
-  const queries = useQueries({
-    queries: fundSymbols.map((symbol) => ({
-      queryKey: ['fund-holdings', symbol],
-      queryFn: (): Promise<FundHoldingsResponse> =>
-        fetch(`/live-data/fund-holdings?symbol=${encodeURIComponent(symbol)}`).then((r) => r.json()),
-      staleTime: STALE_TIME_LONG,
-      retry: 1,
-    })),
-  })
-
-  const loading = queries.some((q) => q.isLoading)
-
-  // Hoisted so the dependency lists below are simple expressions — same pattern
-  // the Compare page uses for its parallel chart queries.
-  const fundKey = fundSymbols.join(',')
-  const dataKey = queries.map((q) => q.dataUpdatedAt).join(',')
-
-  const result = useMemo(() => {
+  // The fund portfolios, gathered by `combine`, which React Query runs again only when a
+  // query's result changes, so the tally below never redoes itself on an unchanged render.
+  const combine = useCallback((results: UseQueryResult<FundHoldingsResponse>[]) => {
     const holdingsByFund: Record<string, FundHoldings> = {}
-    queries.forEach((q, i) => {
+    results.forEach((q, i) => {
       const d = q.data
       if (!d?.ok || !d.holdings?.length) return
       holdingsByFund[fundSymbols[i]] = {
@@ -88,10 +73,21 @@ export function PortfolioLookThrough({ positions, basis, unpriced = [] }: {
         holdingsCount: d.holdingsCount,
       }
     })
+    return { holdingsByFund, loading: results.some((q) => q.isLoading) }
+  }, [fundSymbols])
 
-    return computeLookThrough(positions, holdingsByFund)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [positions, fundKey, dataKey])
+  const { holdingsByFund, loading } = useQueries({
+    queries: fundSymbols.map((symbol) => ({
+      queryKey: ['fund-holdings', symbol],
+      queryFn: (): Promise<FundHoldingsResponse> =>
+        fetch(`/live-data/fund-holdings?symbol=${encodeURIComponent(symbol)}`).then((r) => r.json()),
+      staleTime: STALE_TIME_LONG,
+      retry: 1,
+    })),
+    combine,
+  })
+
+  const result = useMemo(() => computeLookThrough(positions, holdingsByFund), [positions, holdingsByFund])
 
   if (fundSymbols.length === 0) {
     return (

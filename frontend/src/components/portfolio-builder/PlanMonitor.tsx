@@ -86,8 +86,7 @@ export function PlanMonitor({ saved }: { saved: SavedPlan }) {
       setPortfolioId(linkedChoice ? linkedChoice.id : keep)
     }
     if (!sourceTouched.current) setSource('portfolio')
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [choices.length, linkedChoice?.id])
+  }, [choices, linkedChoice, portfolioId])
 
   const linkMutation = useMutation({
     mutationFn: async (id: string) => {
