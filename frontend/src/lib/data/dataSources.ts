@@ -480,7 +480,14 @@ export const DATA_SOURCES: DataSourceEntry[] = [
     id: 'treasury-yield-curve', surface: 'Treasury par yield curve', module: 'macro',
     route: '/live-data/treasury-yield-curve', status: 'live',
     providers: [{ name: 'U.S. Treasury', host: 'home.treasury.gov', url: 'https://home.treasury.gov', role: 'primary', auth: 'none' }],
-    cadence: '4h revalidate', notes: 'Official 13-maturity daily par curve (XML).',
+    cadence: '4h revalidate', notes: 'Official 13-maturity daily par curve (XML), and since T-446 the real (inflation-protected) par curve for expected inflation.',
+  },
+  {
+    id: 'treasury-yield-history', surface: 'Treasury yield history and expected inflation', module: 'macro',
+    route: '/live-data/treasury-yield-history', status: 'live',
+    providers: [{ name: 'U.S. Treasury', host: 'home.treasury.gov', url: 'https://home.treasury.gov', role: 'primary', auth: 'none' }],
+    cadence: '4h revalidate (current year); 1 day (earlier years)',
+    notes: 'One maturity’s daily history from the official par curve, one file per calendar year, with the real yield and expected inflation (ordinary minus real yield, same day) at 5Y, 7Y, 10Y, 20Y and 30Y (T-446).',
   },
   {
     id: 'macro-news', surface: 'Macro news (commodities/bonds/FX)', module: 'macro',

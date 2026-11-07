@@ -381,6 +381,8 @@ describe('which yields are shown (D166)', () => {
       'src/app/(dashboard)/macro/rates/[slug]/RatesDetailClient.tsx': 'Treasury curve',
       'src/app/(dashboard)/macro/rates/RatesClient.tsx': 'Treasury curve',
       'src/app/(dashboard)/macro/page.tsx': 'Treasury curve (the overview strip, D196)',
+      'src/lib/data/yieldHistory.ts': 'Treasury curve (yield history and expected inflation, D202)',
+      'src/components/markets/YieldHistoryCard.tsx': 'Treasury curve (yield history and expected inflation, D202)',
     }
     const walk = (dir: string): string[] => readdirSync(dir).flatMap((n) => {
       const p = join(dir, n)

@@ -938,6 +938,17 @@ const tests = [
     return `${pts} maturities, 2s10s=${j.spread2s10s}, 3m10y=${j.spread3m10y}, shape=${j.shape}`
   }},
 
+  { group: 'macro', path: '/live-data/treasury-yield-history?maturity=10Y&range=1y', name: 'treasury-yield-history 10Y (treasury.gov)', check: (j) => {
+    if (!j.ok) throw new Error(j.error ?? 'not ok')
+    const pts = j.points ?? []
+    if (pts.length < 150) return fallback(`only ${pts.length} daily readings for a year`)
+    const withReal = pts.filter((p) => p.breakevenPct != null).length
+    if (withReal === 0) return fallback('no real yield, so no expected inflation, on any day')
+    if ((j.missingYears ?? []).length > 0) return fallback(`years not read: ${j.missingYears.join(', ')}`)
+    const last = pts[pts.length - 1]
+    return `${pts.length} readings to ${last.date}, 10Y ${last.yieldPct}%, expected inflation ${last.breakevenPct ?? '—'}%`
+  }},
+
   // No source since 2026-08-06: dated contract months were priced through Yahoo,
   // removed on terms, and nothing else the app can reach quotes them. The route
   // still resolves the months and answers ok:false with the reason. Gold is a

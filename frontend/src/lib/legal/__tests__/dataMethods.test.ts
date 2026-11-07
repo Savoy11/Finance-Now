@@ -46,6 +46,13 @@ describe('how our figures are worked out (D163)', () => {
     expect(src).not.toMatch(/for \d+ providers|all \d+ funds/)
   })
 
+  it('states how expected inflation is worked out (D202)', () => {
+    const t = text('treasury-yields')
+    expect(t).toMatch(/ordinary par yield minus the Treasury’s inflation-protected \(real\) par yield at the same maturity, both from the same day/)
+    expect(t).toMatch(/not a forecast of ours/)
+    expect(t).toMatch(/only what reads closing figures/)
+  })
+
   it('states how tracked-portfolio income is counted (D201)', () => {
     const t = text('tracked-gains-income')
     expect(t).toMatch(/first in, first out/)

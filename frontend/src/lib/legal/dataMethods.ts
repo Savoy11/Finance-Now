@@ -137,8 +137,11 @@ export const DATA_METHODS: readonly MethodSection[] = [
   {
     id: 'treasury-yields',
     title: 'Treasury yields',
+    decided: '2026-11-07',
     paragraphs: [
       'Treasury yields come from the US Treasury’s official daily par yield curve. It is published once a day, so these yields show no change during the day.',
+      'Their history is the same curve’s, one reading a day; over five or ten years each week’s last reading is drawn. Because there is only one figure a day, the technical-analysis page draws a yield as a line and offers only what reads closing figures, and the scanner counts only those readings.',
+      'Expected inflation at a maturity is the ordinary par yield minus the Treasury’s inflation-protected (real) par yield at the same maturity, both from the same day. The Treasury publishes real yields at 5, 7, 10, 20 and 30 years, so expected inflation is shown only at those. It is what the bond market prices in, not a forecast of ours.',
     ],
   },
   {
