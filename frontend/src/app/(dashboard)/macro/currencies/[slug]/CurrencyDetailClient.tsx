@@ -7,6 +7,7 @@ import { ArrowLeft, ExternalLink } from 'lucide-react'
 import { PriceChartCard } from '@/components/markets/PriceChartCard'
 import { FxHistoryCard, useFxReferencePairs } from '@/components/markets/FxHistoryCard'
 import { SourceLine } from '@/components/ui/SourceLine'
+import { AssetActions } from '@/components/markets/AssetActions'
 import { CURRENCY_CATEGORY_INFO, formatFxRate, getCurrency } from '@/lib/data/currencyCatalog'
 import { getFund } from '@/lib/data/fundCatalog'
 import { ecbPairBySlug, isWorkedOut, shownPairRate } from '@/lib/data/fxReference'
@@ -95,6 +96,10 @@ export function CurrencyDetailClient({ slug }: { slug: string }) {
           specific numbers was the one with no attribution. */}
       <SourceLine id="macro-quotes" />
       {ecbPair && <SourceLine id="fx-pair-history" />}
+
+      {/* Watch it, compare it, ask the AI (T-454). No price alert: macro quotes are
+          mostly unserved, and their units are not dollars. */}
+      <AssetActions asset={{ kind: 'macro', symbol: entry.symbol, name: entry.name, key: `sec:${entry.symbol}` }} />
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
         <div className="xl:col-span-2">

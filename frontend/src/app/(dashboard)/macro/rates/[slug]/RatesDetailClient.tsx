@@ -9,6 +9,7 @@ import { YieldHistoryCard } from '@/components/markets/YieldHistoryCard'
 import { parLabelFor } from '@/lib/data/yieldHistory'
 import { TermStructureCard } from '@/components/markets/TermStructureCard'
 import { SourceLine } from '@/components/ui/SourceLine'
+import { AssetActions } from '@/components/markets/AssetActions'
 import { RATES_CATEGORY_INFO, formatRatesQuote, getRatesEntry } from '@/lib/data/ratesCatalog'
 import { getFund } from '@/lib/data/fundCatalog'
 import { yieldFromCurve, curveYieldSourceLabel } from '@/lib/data/ratesFromCurve'
@@ -118,6 +119,10 @@ export function RatesDetailClient({ slug }: { slug: string }) {
           SourceLine while every registry page did, so the page with the most
           specific numbers was the one with no attribution. */}
       <SourceLine id={isYield ? 'treasury-yield-curve' : 'macro-quotes'} />
+
+      {/* Watch it, compare it, ask the AI (T-454). No price alert: macro quotes are
+          mostly unserved, and their units are not dollars. */}
+      <AssetActions asset={{ kind: 'macro', symbol: entry.symbol, name: entry.name, key: `sec:${entry.symbol}` }} />
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
         <div className="xl:col-span-2">

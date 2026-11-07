@@ -62,9 +62,9 @@
   "total_verified": 414,
   "outstanding": 398,
   "by_status": {
-   "closed": 249,
+   "closed": 250,
    "parked": 131,
-   "open": 13,
+   "open": 12,
    "blocked": 5
   },
   "by_owner_role": {
@@ -74,7 +74,7 @@
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 249,
+  "closed_by_annotation": 250,
   "counts_recomputed_on": "2026-11-07",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 398
@@ -16205,7 +16205,7 @@
   {
    "id": "T-454",
    "title": "One row of actions on every asset page: add to watchlist, set a price alert, compare it, ask the AI",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "blocking_decision": null,
    "opened": {
@@ -16218,7 +16218,8 @@
    "effort": "medium",
    "related_ids": [
     "D207",
-    "T-131"
+    "T-131",
+    "D209"
    ],
    "summary": "Every coin, stock, fund and macro instrument page is a dead end for the app’s own loop. The price-alert machinery is built and nothing feeds it: usePriceAlertMonitor runs from the dashboard layout on every page, checks prices once a minute, refuses to fire on a reference price and carries CoinGecko’s credit, and usePriceAlertStore has addAlert, removeAlert and rearmAlert, but no component calls any of them. The market assessment’s positioning says the product “watches your pegs and positions”, and its pricing table puts alerts in both tiers (docs/MARKET-ASSESSMENT.md §5); the bell watches pegs, and nothing watches a user’s positions. useWatchlistStore.addKey is called only on /watchlist. Compare reads ?symbols= and Research reads ?symbol= and ?agent=, but only the stock page links to either, and the sidebar is the only way into Compare. This adds one shared row in components/markets (module boundary rule 1) at the top of every asset page: Add to watchlist, choosing the list (every page); Set a price alert, above or below a typed price (coin, stock and fund pages), with a short list of the user’s alerts on the Watchlist page where each can be seen, removed or re-armed; Compare, opening /compare with this asset already chosen; and Ask the AI, opening Research with this asset and its module’s agent. No key, host or recurring cost.",
    "next_action": "Build the shared component in components/markets and place it on the coin, stock, fund and macro instrument pages; the stock page’s existing Analyze with AI link moves into it. State the alert’s limits beside its form: it fires only while Finance Now is open in a browser, since alerts are kept on the device (the draft Privacy Policy already lists alerts among what stays in the browser), and a stock or fund alert needs a live quote, so a quote key, because the monitor never fires on a reference price. No alerts on macro instruments: most of their quotes are unserved, and the alert text is in dollars while grains are quoted in cents and yields in percent. The proposal names no decision now. Later, at launch with sign-in (T-131), ask the owner whether alerts move from the browser into the account, so they follow the user between devices.",
@@ -16263,7 +16264,24 @@
      "lines": "Proposals 2 and 4",
      "quote": "A way into Compare from where the user already is"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-11-07",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "Built as approved (D209), with no decision needed. Every coin, stock, fund and macro instrument page has one row: add to watchlist (choosing or making a list), set a price alert (coins, stocks and funds only; the limits are stated beside the form: checked once a minute while the app is open, kept in this browser, a stock or fund needs a live quote), Compare with the asset chosen (linked only where Compare's address opens that same asset; its list moved to lib/data/compareUniverse.ts), and Ask the AI (Research with a question typed in; the stock page's Analyze with AI link moved into the row). The Watchlist page lists every alert with re-arm and remove, and names registry coins outside the instrument list. Rules pure and tested in lib/data/assetActions.ts, each broken on purpose and seen to fail. Whether alerts move into the account is left for launch with sign-in (T-131).",
+    "approved_by": "owner, 2026-11-07: chose “T-454 Action row (Recommended)”",
+    "evidence": [
+     "frontend/src/lib/data/assetActions.ts",
+     "frontend/src/lib/data/compareUniverse.ts",
+     "frontend/src/lib/data/__tests__/assetActions.test.ts",
+     "frontend/src/components/markets/AssetActions.tsx",
+     "frontend/src/components/alerts/PriceAlertList.tsx",
+     "frontend/src/app/(dashboard)/watchlist/page.tsx",
+     "docs/decisions/2026-11-07-owner-decisions.md"
+    ]
+   }
   },
   {
    "id": "T-455",

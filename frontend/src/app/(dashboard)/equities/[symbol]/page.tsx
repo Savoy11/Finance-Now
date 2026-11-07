@@ -4,7 +4,8 @@ import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import { clsx } from 'clsx'
-import { ArrowLeft, ExternalLink, FileText, Sparkles, TrendingDown, TrendingUp } from 'lucide-react'
+import { ArrowLeft, ExternalLink, FileText, TrendingDown, TrendingUp } from 'lucide-react'
+import { AssetActions } from '@/components/markets/AssetActions'
 import { ModuleGate } from '@/components/layout/ModuleGate'
 import { SourceLine } from '@/components/ui/SourceLine'
 import { PriceChartCard, FiftyTwoWeekBar } from '@/components/markets/PriceChartCard'
@@ -162,13 +163,6 @@ function EquityDetailInner() {
                 {formatPercent(change, 2)} today
               </p>
             )}
-            <Link
-              href={`/research?symbol=${encodeURIComponent(symbol)}`}
-              className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-600 text-xs font-medium text-white hover:bg-violet-500 transition-colors"
-              title="Run the Equity Research Agent on this stock"
-            >
-              <Sparkles size={13} aria-hidden /> Analyze with AI
-            </Link>
           </div>
         </div>
       </div>
@@ -177,6 +171,10 @@ function EquityDetailInner() {
           while every registry page did, so the page with the most specific
           numbers was the one with no attribution. */}
       <SourceLine id="security-quotes" />
+
+      {/* Watch it, set a price alert, compare it, ask the AI (T-454). The page's
+          "Analyze with AI" link moved into this row as "Ask the AI". */}
+      <AssetActions asset={{ kind: 'stock', symbol, name: entry.name, key: `sec:${symbol}` }} livePrice={price} />
 
       {/* Measured-risk rating (T-420, D92). Renders nothing while
           ASSET_PAGE_RATINGS_SHOWN is false (lib/risk/visibility.ts). */}
