@@ -62,9 +62,9 @@
   "total_verified": 408,
   "outstanding": 392,
   "by_status": {
-   "closed": 245,
+   "closed": 246,
    "parked": 131,
-   "open": 11,
+   "open": 10,
    "blocked": 5
   },
   "by_owner_role": {
@@ -74,7 +74,7 @@
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 245,
+  "closed_by_annotation": 246,
   "counts_recomputed_on": "2026-11-07",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 392
@@ -15595,7 +15595,7 @@
   {
    "id": "T-445",
    "title": "Price and chart every currency pair from the European Central Bank’s daily reference rates",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "blocking_decision": null,
    "opened": {
@@ -15611,7 +15611,8 @@
     "D3",
     "D163",
     "D21",
-    "T-446"
+    "T-446",
+    "D203"
    ],
    "summary": "Every currency pair on /macro/currencies, its 17 pair pages and the Macro overview shows a dash: pair prices come only from the keyed quote ladder, which has served no macro quote on any owner-machine audit since 2026-09-09. The same Currencies page already downloads the ECB’s daily reference rates for its converter (/live-data/fx-rates, keyless), every currency in the 17 pairs is in that set, and the ECB’s daily history is on the same host. This shows each pair’s latest ECB rate with its date, labelled daily rather than live, charts it from the daily history, and later lets the Macro technical-analysis page and scanner read those closes: the move D3 made for Treasury yields. The Dollar Index stays a dash, since it is ICE’s index and the ECB does not publish it. No key and no recurring cost.",
    "next_action": "(1) Terms first: read the ECB’s own reuse terms for its reference rates and register them in frontend/src/lib/server/sourceTerms.ts, as the Federal Reserve Board was registered for the FOMC table without being fetched; the existing fx-rates entry says the ECB’s terms were not part of its reading. (2) When building, ask the owner the proposal’s decision, recommended answer first: where the rate lives. (a) Page by page, as D3 did for yields (recommended: smaller); or (b) as a last, labelled step in the shared quote ladder, so Compare, watchlists and portfolios holding a pair get it too, which needs a daily-not-live marker every consumer respects. Decide it together with T-446’s question about yields in Compare. (3) Build: the dated rate on the Currencies table, the pair pages and the Macro overview; a chart from the daily history, one cached request per pair per day; and a line in frontend/src/lib/legal/dataMethods.ts (D163) for how a USD-based pair is worked out from the ECB’s euro-based rates. (4) Second step: the Macro technical-analysis page and scanner read the daily closes, and the scanner’s stated reason for leaving out the 10 emerging-market and cross pairs is re-checked.",
@@ -15636,7 +15637,27 @@
      "lines": "1034",
      "quote": "own reuse terms, which govern the rates, were not part of that reading."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-11-07",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "Built as the owner chose (D203): the rate lives on the pairs' own pages, as D3 did for yields. The ECB's reuse terms were read first and registered (lib/server/sourceTerms.ts, ecb.europa.eu, seeded: cite the ECB, state a changed figure, information only, and at launch tell buyers before they pay that the Bank publishes the rates free). /live-data/fx-reference-pairs gives every catalog pair but the Dollar Index at the ECB's newest rate with the change since its previous working day, and /live-data/fx-pair-history one pair's history (1M to 10Y, weekly beyond a year), both through the already verified Frankfurter, a pair without the euro worked out from two euro rates of the same day. The Currencies table, each pair page and the Macro overview show a live quote first and the ECB rate, marked ECB with its date, only where there is none; every pair page charts the ECB history. The Macro TA page and scanner read the pairs' daily closes (a line, closes-only indicators, no patterns, close-vote signal), and the 10 EM and cross pairs, left out for a provider's gappy series, are scanned again. The macro agent's get_fx_rates returns each pair's rate worked out and get_macro_price_history reads the ECB history. The methods page gains \"Currency pairs\" (D163). Compare, watchlists and portfolios are unchanged, so the Treasury yields stay out of Compare too, as the owner chose. Checked against the live feed on a built app and in a browser.",
+    "approved_by": "owner, 2026-11-07: chose T-445 next, with the rate on the pairs' own pages only",
+    "evidence": [
+     "frontend/src/lib/data/fxReference.ts",
+     "frontend/src/lib/server/ecbReference.ts",
+     "frontend/src/app/live-data/fx-reference-pairs/route.ts",
+     "frontend/src/app/live-data/fx-pair-history/route.ts",
+     "frontend/src/components/markets/FxHistoryCard.tsx",
+     "frontend/src/app/(dashboard)/macro/currencies/CurrenciesClient.tsx",
+     "frontend/src/app/(dashboard)/macro/scanner/page.tsx",
+     "frontend/src/lib/server/sourceTerms.ts",
+     "frontend/src/lib/data/__tests__/fxReference.test.ts",
+     "docs/decisions/2026-11-07-owner-decisions.md"
+    ]
+   }
   },
   {
    "id": "T-446",

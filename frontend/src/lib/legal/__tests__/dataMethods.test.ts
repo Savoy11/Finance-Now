@@ -53,6 +53,15 @@ describe('how our figures are worked out (D163)', () => {
     expect(t).toMatch(/only what reads closing figures/)
   })
 
+  it('states how a currency pair is worked out from the ECB’s euro rates (D203)', () => {
+    const t = text('currency-pairs')
+    expect(t).toMatch(/live quote where our quote source has one/)
+    expect(t).toMatch(/second currency per euro divided by the first currency per euro/)
+    expect(t).toMatch(/for information only/)
+    expect(t).toMatch(/since the Bank’s previous working day/)
+    expect(t).toMatch(/only what reads closing figures/)
+  })
+
   it('states how tracked-portfolio income is counted (D201)', () => {
     const t = text('tracked-gains-income')
     expect(t).toMatch(/first in, first out/)

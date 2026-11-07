@@ -17,7 +17,9 @@ import { LiveUnavailable } from '@/components/ui/LiveUnavailable'
 import type { ChartType, DrawingTool, Drawing } from '@/components/charts/CandlestickChart'
 import { indicatorsFor, NOT_FROM_CLOSES, VOLUME_INDICATORS } from '@/components/charts/indicatorRegistry'
 import { useYieldHistory } from '@/components/markets/YieldHistoryCard'
+import { useFxPairHistory } from '@/components/markets/FxHistoryCard'
 import { closingCandles, type YieldHistoryRange } from '@/lib/data/yieldHistory'
+import { pairClosingCandles } from '@/lib/data/fxReference'
 import { IndicatorPicker } from '@/components/charts/IndicatorPicker'
 import { DrawingToolbar } from '@/components/charts/DrawingToolbar'
 import type { LucideIcon } from 'lucide-react'
@@ -79,6 +81,8 @@ const MACRO_INDICATORS = indicatorsFor(false)
 
 // T-446 (D202): a Treasury yield charts from the official curve's daily history,
 // one figure a day, so it draws as a line and offers only what reads closes alone.
+// T-445 (D203): so does every currency pair but the Dollar Index, from the ECB's
+// daily reference rates.
 const CLOSES_INDICATORS = indicatorsFor(false, false)
 const CLOSES_KEYS = new Set(CLOSES_INDICATORS.map((i) => i.key))
 const LINE_TYPES = new Set<ChartType>(['line', 'area', 'baseline'])
@@ -117,16 +121,24 @@ function ChartTab() {
 
   const entry = BY_SYMBOL.get(symbol)
   const curveMaturity = entry?.curveMaturity ?? null
-  const closesOnly = curveMaturity !== null
+  const ecbPair = entry?.ecbPair ?? null
+  // One official figure a day (macroInstruments' closesOnly, written out for the React compiler).
+  const closesOnly = curveMaturity !== null || ecbPair !== null
   const ohlcv = useOhlcv(symbol, range, !closesOnly)
-  const history = useYieldHistory(curveMaturity ?? '10Y', HISTORY_RANGE[range], closesOnly)
+  const yieldHistory = useYieldHistory(curveMaturity ?? '10Y', HISTORY_RANGE[range], curveMaturity !== null)
+  const pairHistory = useFxPairHistory(ecbPair ?? 'eur-usd', HISTORY_RANGE[range], ecbPair !== null)
+  const history = ecbPair !== null ? pairHistory : yieldHistory
   const { data, isLoading, isFetching, refetch } = closesOnly
     ? { data: undefined, isLoading: history.isLoading, isFetching: history.isFetching, refetch: history.refetch }
     : ohlcv
-  const candles = useMemo(
-    () => (closesOnly ? (history.data?.ok ? closingCandles(history.data.points ?? []) : []) : data?.candles ?? []),
-    [closesOnly, history.data, data],
-  )
+  const pairData = pairHistory.data
+  const yieldData = yieldHistory.data
+  const candles = useMemo(() => {
+    const m = BY_SYMBOL.get(symbol)
+    if (m?.ecbPair) return pairData?.ok ? pairClosingCandles(pairData.points ?? []) : []
+    if (m?.curveMaturity) return yieldData?.ok ? closingCandles(yieldData.points ?? []) : []
+    return data?.candles ?? []
+  }, [symbol, pairData, yieldData, data])
   const shownType: ChartType = closesOnly && !LINE_TYPES.has(chartType) ? 'line' : chartType
   const shownIndicators = useMemo(
     () => (closesOnly ? new Set([...active].filter((k) => CLOSES_KEYS.has(k))) : active),
@@ -217,9 +229,11 @@ function ChartTab() {
 
       {closesOnly && (
         <p className="text-[11px] text-text-muted leading-relaxed rounded-sm border border-border bg-bg-elevated/40 px-3 py-2">
-          The official US Treasury par yield, one figure a day, drawn as a line. The candle chart types, the{' '}
-          {NOT_FROM_CLOSES.length} indicators that read a day’s high, low or volume, and pattern detection are not offered
-          for it, and its signal summary counts only the readings that use a closing figure.
+          {ecbPair !== null
+            ? 'The European Central Bank’s euro reference rate, one figure a working day (worked out from two euro rates where the pair has no euro leg), drawn as a line.'
+            : 'The official US Treasury par yield, one figure a day, drawn as a line.'}{' '}
+          The candle chart types, the {NOT_FROM_CLOSES.length} indicators that read a day’s high, low or volume, and pattern
+          detection are not offered for it, and its signal summary counts only the readings that use a closing figure.
         </p>
       )}
 
@@ -266,7 +280,7 @@ function ChartTab() {
           ) : (
             closesOnly ? (
               <p className="my-12 text-center text-xs text-text-muted">
-                The Treasury’s yield history could not be read{history.data?.error ? ` (${history.data.error})` : ''}. It returns when the feed recovers.
+                {ecbPair !== null ? 'The ECB’s reference rates' : 'The Treasury’s yield history'} could not be read{history.data?.error ? ` (${history.data.error})` : ''}. It returns when the feed recovers.
               </p>
             ) : <LiveUnavailable
               reason="needs-api-key"
@@ -274,7 +288,8 @@ function ChartTab() {
               message={`No OHLCV history came back for ${symbol}. Macro contracts chart through the same keyed provider ladder as equities, and coverage of futures, FX pairs and yield indices is narrower than it was before the keyless source was withdrawn on terms grounds — many macro symbols are simply not carried. Front-month futures and thin FX crosses can also gap over holidays.`}
             />
           )}
-          {closesOnly && <SourceLine id="treasury-yield-history" className="mt-2" />}
+          {curveMaturity !== null && <SourceLine id="treasury-yield-history" className="mt-2" />}
+          {ecbPair !== null && <SourceLine id="fx-pair-history" className="mt-2" />}
         </div>
 
         <div className="space-y-4">
@@ -341,7 +356,9 @@ function ChartTab() {
               </ul>
             ) : (
               <p className="text-xs text-text-muted">
-                {closesOnly ? 'Not detected for a Treasury yield: patterns read each day’s high and low, and the curve publishes one figure a day.' : 'No chart patterns detected in this range.'}
+                {closesOnly
+                  ? `Not detected for ${ecbPair !== null ? 'an ECB reference rate' : 'a Treasury yield'}: patterns read each day’s high and low, and ${ecbPair !== null ? 'the Bank' : 'the curve'} publishes one figure a day.`
+                  : 'No chart patterns detected in this range.'}
               </p>
             )}
           </div>

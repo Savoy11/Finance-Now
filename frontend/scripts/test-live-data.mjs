@@ -949,6 +949,25 @@ const tests = [
     return `${pts.length} readings to ${last.date}, 10Y ${last.yieldPct}%, expected inflation ${last.breakevenPct ?? '—'}%`
   }},
 
+  // T-445 (D203): every currency pair at the ECB's daily reference rate, and one pair's history.
+  { group: 'macro', path: '/live-data/fx-reference-pairs', name: 'fx-reference-pairs (ECB via Frankfurter)', check: (j) => {
+    if (!j.ok) throw new Error(j.error ?? 'not ok')
+    const n = Object.keys(j.pairs ?? {}).length
+    if (n === 0) throw new Error('no pair priced')
+    if ((j.missing ?? []).length > 0) return fallback(`${n} pairs priced, ${j.missing.length} not (${j.missing.join(', ')})`)
+    const eurusd = j.pairs['eur-usd']
+    return `${n} pairs at the ECB rate of ${j.date}, EUR/USD ${eurusd?.rate ?? '—'} (${eurusd?.changePct ?? '—'}% since ${eurusd?.previousDate ?? '—'})`
+  }},
+
+  { group: 'macro', path: '/live-data/fx-pair-history?pair=usd-jpy&range=1y', name: 'fx-pair-history USD/JPY (ECB via Frankfurter)', check: (j) => {
+    if (!j.ok) throw new Error(j.error ?? 'not ok')
+    const pts = j.points ?? []
+    if (pts.length < 150) return fallback(`only ${pts.length} daily rates for a year`)
+    if (j.workedOut !== true) throw new Error('USD/JPY must be marked as worked out from two euro rates')
+    const last = pts[pts.length - 1]
+    return `${pts.length} rates to ${last.date}, USD/JPY ${last.rate}`
+  }},
+
   // No source since 2026-08-06: dated contract months were priced through Yahoo,
   // removed on terms, and nothing else the app can reach quotes them. The route
   // still resolves the months and answers ok:false with the reason. Gold is a

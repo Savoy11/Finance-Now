@@ -468,7 +468,21 @@ export const DATA_SOURCES: DataSourceEntry[] = [
     id: 'fx-rates', surface: 'FX rates (official tier)', module: 'macro',
     route: '/live-data/fx-rates', status: 'live',
     providers: [{ name: 'ECB via Frankfurter', host: 'api.frankfurter.dev', url: 'https://frankfurter.dev', role: 'primary', auth: 'none' }],
-    notes: 'ECB’s complete published set of ~30 reference currencies.',
+    notes: 'ECB’s complete published set of ~30 reference currencies. The ECB’s own reuse terms are registered under ecb.europa.eu (read 2026-11-07, T-445); the Bank is not fetched directly, so it is not named here as a provider, which would count it as a second vendor in the coverage matrix.',
+  },
+  {
+    id: 'fx-reference-pairs', surface: 'FX pairs at the ECB’s daily reference rate', module: 'macro',
+    route: '/live-data/fx-reference-pairs', status: 'live',
+    providers: [{ name: 'ECB via Frankfurter', host: 'api.frankfurter.dev', url: 'https://frankfurter.dev', role: 'primary', auth: 'none' }],
+    cadence: '1h revalidate (the ECB publishes once a working day, around 16:00 CET)',
+    notes: 'T-445 (D203). Every catalog pair but the Dollar Index at the ECB’s newest reference rate, with the change since its previous working day. A pair without the euro is worked out from the two euro rates of the same day, and the pages say so (an ECB condition on modified figures). The pages show a live quote first where the keyed ladder has one; this is what replaces the dash.',
+  },
+  {
+    id: 'fx-pair-history', surface: 'FX pair history (ECB reference rates)', module: 'macro',
+    route: '/live-data/fx-pair-history', status: 'live',
+    providers: [{ name: 'ECB via Frankfurter', host: 'api.frankfurter.dev', url: 'https://frankfurter.dev', role: 'primary', auth: 'none' }],
+    cadence: '1h revalidate (up to a year); 6h (5 and 10 years)',
+    notes: 'T-445 (D203). One pair’s daily reference rate over 1 month to 10 years, each week’s last rate over a span longer than a year. Charts every pair page and feeds the Macro TA page and scanner as closing figures only.',
   },
   {
     id: 'fx-rates-extended', surface: 'FX rates (extended tier, +126)', module: 'macro',
