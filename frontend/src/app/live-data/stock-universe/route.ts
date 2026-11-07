@@ -5,10 +5,13 @@ import { fetchStockPerShare } from '@/lib/server/stockPerShare'
 import type { DividendState } from '@/lib/data/stockPerShare'
 import type { SharesFact } from '@/lib/data/stockShares'
 import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
+import { fetchSecListings } from '@/lib/server/secListings'
+import { LISTED_EXCHANGES, rankSearch, type LeftOutReason, type SecListing } from '@/lib/data/secListings'
 
 // The equities universe for the Stock Registry.
 //   GET /live-data/stock-universe            → full universe (daily-refreshed)
 //   GET /live-data/stock-universe?symbol=IBM → single entry (detail-page lookup)
+//   GET /live-data/stock-universe?list=sec   → every NYSE and Nasdaq common stock the SEC names
 //
 // With an FMP key it pulls the whole active common-stock universe from FMP's
 // stock-screener (sector-tagged, sorted by market cap) and caches it for a day
@@ -29,6 +32,12 @@ import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 // SEC per-share figures and the cover-page share count (`shares`). Each page works out P/E,
 // yield and market cap against a LIVE quote (stockFigures, marketCapUsd), and shows a dash
 // without one. Beta is worked out on the stock's own page from a year of prices.
+//
+// THE WIDER LIST (T-450, D205). `?list=sec` serves every NYSE and Nasdaq common stock in the
+// SEC's ticker-and-exchange file, keyless, with the same SEC figures: the curated catalog's
+// names keep their sector and description, every other stock has sector 'other'. The same file
+// lets search (`?q=`) and a single lookup (`?symbol=`) find a stock outside the 79 with no FMP
+// key. Which listings count is in lib/data/secListings.ts.
 
 export const dynamic = 'force-dynamic'
 
@@ -49,6 +58,11 @@ export interface UniverseEntry {
   /** Latest share count ÷ the count after `perShareAsOf`: outside the band, a split (stockShares.ts). */
   shareChange: number | null
   exchange: string | null
+  /**
+   * On the wider list only: how many of the company's tickers are on it. More than one is a
+   * company with several share classes, whose SEC per-share figures may be stated for one class.
+   */
+  shareClasses?: number
   /** Present only for curated names. */
   description?: string
   website?: string
@@ -57,13 +71,17 @@ export interface UniverseEntry {
 export interface StockUniverseResponse {
   ok: boolean
   configured: boolean          // true when the live FMP universe is active
-  source: 'fmp' | 'catalog'
+  source: 'fmp' | 'catalog' | 'sec'
   count: number
   entries: UniverseEntry[]
   /** How many entries carry an SEC earnings figure (D167). */
   peEnriched?: number
   /** False when the SEC could not be reached, so every P/E and yield is unknown. */
   secReached?: boolean
+  /** The wider list only: how many of the SEC file's tickers were left out, and why. */
+  leftOut?: Record<LeftOutReason, number>
+  /** The wider list only: the exchanges it keeps. */
+  listedOn?: readonly string[]
   updatedAt: string
   error?: string
 }
@@ -130,6 +148,32 @@ function catalogUniverse(): UniverseEntry[] {
   return EQUITY_CATALOG.map((e) => curatedEntry(e.symbol)!)
 }
 
+/** A wider-list entry: the catalog's facts where it has the stock, the SEC's name otherwise. */
+function secEntry(l: SecListing): UniverseEntry {
+  const curated = curatedEntry(l.symbol)
+  return curated
+    ? { ...curated, exchange: l.exchange, shareClasses: l.shareClasses }
+    : { symbol: l.symbol, name: l.name, sector: 'other', industry: '—', ...NO_PER_SHARE, exchange: l.exchange, shareClasses: l.shareClasses }
+}
+
+/**
+ * The SEC's list in its own order, with every catalog stock on it: one the file left out (or
+ * lists elsewhere) is added at the end, so the curated 79 are never missing from the wider list.
+ */
+function withCatalogInPlace(listings: readonly SecListing[]): UniverseEntry[] {
+  const entries = listings.map(secEntry)
+  const have = new Set(entries.map((e) => e.symbol))
+  for (const e of EQUITY_CATALOG) if (!have.has(e.symbol.toUpperCase())) entries.push(curatedEntry(e.symbol)!)
+  return entries
+}
+
+/** The catalog first, then the rest of the SEC's list: search shows a curated match before others. */
+function withCatalogFirst(listings: readonly SecListing[]): UniverseEntry[] {
+  const catalog = catalogUniverse()
+  const have = new Set(catalog.map((e) => e.symbol))
+  return [...catalog, ...listings.filter((l) => !have.has(l.symbol)).map(secEntry)]
+}
+
 /**
  * Convert one FMP screener row to a UniverseEntry, enriched with curated data. FMP's market cap
  * only screens out shells and orders the list; neither it, its price nor its beta is served.
@@ -188,22 +232,24 @@ export async function GET(req: NextRequest) {
   const q = req.nextUrl.searchParams.get('q')?.trim().toLowerCase()
   const key = getProviderKey('fmp')
 
-  // Search mode: substring over symbol+name of the whole universe (top 10).
+  // Search mode: the ten best matches over symbol+name of the whole universe (rankSearch).
   // With an FMP key that is the full screener list (day-cached — this filters
-  // cached data, it does not re-download); keyless it is honestly the curated
-  // catalog, the same coverage the registry itself has without a key.
+  // cached data, it does not re-download); keyless, or with FMP down, it is every
+  // NYSE and Nasdaq stock the SEC names, the curated catalog first (T-450).
   if (q && !symbolParam) {
-    let pool: UniverseEntry[]
-    let source: 'fmp' | 'catalog' = 'catalog'
+    let pool: UniverseEntry[] | null = null
+    let source: 'fmp' | 'catalog' | 'sec' = 'catalog'
     if (key) {
       try { pool = await fetchFmpUniverse(key); source = 'fmp' }
-      catch { pool = catalogUniverse() }
-    } else {
-      pool = catalogUniverse()
+      catch { /* the SEC's list below */ }
     }
-    const entries = pool.filter(e =>
-      e.symbol.toLowerCase().includes(q) || e.name.toLowerCase().includes(q)
-    ).slice(0, 10)
+    if (!pool) {
+      // Keyless, or FMP down: every NYSE and Nasdaq stock the SEC names, the catalog first.
+      const sec = await fetchSecListings()
+      pool = sec.reached ? withCatalogFirst(sec.listings) : catalogUniverse()
+      if (sec.reached) source = 'sec'
+    }
+    const entries = rankSearch(pool, q, 10)
     const { reached } = await applyPerShare(entries)
     return NextResponse.json({ ok: true, configured: !!key, source, count: entries.length, entries, secReached: reached, updatedAt: new Date().toISOString() } satisfies StockUniverseResponse)
   }
@@ -244,9 +290,35 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ ok: true, configured: true, source: 'fmp', count: 1, entries: [entry], secReached: reached, updatedAt: new Date().toISOString() } satisfies StockUniverseResponse)
           }
         }
-      } catch { /* fall through to not-found */ }
+      } catch { /* fall through to the SEC's list */ }
+    }
+    // Any NYSE or Nasdaq stock the SEC names resolves with no FMP key (T-450): its name and
+    // exchange from the SEC's list, its SEC figures as for every stock, and no sector.
+    const sec = await fetchSecListings()
+    const listing = sec.listings.find((l) => l.symbol === symbolParam)
+    if (listing) {
+      const entry = secEntry(listing)
+      const { reached } = await applyPerShare([entry])
+      return NextResponse.json({ ok: true, configured: !!key, source: 'sec', count: 1, entries: [entry], secReached: reached, updatedAt: new Date().toISOString() } satisfies StockUniverseResponse)
     }
     return NextResponse.json({ ok: false, configured: !!key, source: 'catalog', count: 0, entries: [], updatedAt: new Date().toISOString(), error: `Unknown symbol ${symbolParam}` }, { status: 404 })
+  }
+
+  // The wider list (T-450): every NYSE and Nasdaq common stock the SEC names.
+  if (req.nextUrl.searchParams.get('list') === 'sec') {
+    const sec = await fetchSecListings()
+    if (!sec.reached) {
+      return NextResponse.json({
+        ok: false, configured: !!key, source: 'sec', count: 0, entries: [], listedOn: LISTED_EXCHANGES,
+        updatedAt: new Date().toISOString(), error: sec.error ?? 'The SEC’s list could not be read',
+      } satisfies StockUniverseResponse, { status: 502 })
+    }
+    const entries = withCatalogInPlace(sec.listings)
+    const { withEps, reached } = await applyPerShare(entries)
+    return NextResponse.json({
+      ok: true, configured: !!key, source: 'sec', count: entries.length, entries, peEnriched: withEps, secReached: reached,
+      leftOut: sec.leftOut, listedOn: LISTED_EXCHANGES, updatedAt: new Date().toISOString(),
+    } satisfies StockUniverseResponse)
   }
 
   // Full universe.

@@ -62,9 +62,9 @@
   "total_verified": 408,
   "outstanding": 392,
   "by_status": {
-   "closed": 247,
+   "closed": 248,
    "parked": 131,
-   "open": 9,
+   "open": 8,
    "blocked": 5
   },
   "by_owner_role": {
@@ -74,7 +74,7 @@
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 247,
+  "closed_by_annotation": 248,
   "counts_recomputed_on": "2026-11-07",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 392
@@ -11418,11 +11418,12 @@
     }
    ],
    "progress": {
-    "noted_on": "2026-11-06",
-    "note": "2026-11-06 (D197): the owner approved proposal 6 of docs/proposals/2026-11-06-proposals.md, which re-prioritises this item’s “different universe source” half: a wider Stock Registry list built from SEC data with no paid plan, filed as T-450 to be built now. This item stays parked: its paid-FMP half is still decided near release, and T-450 does not need it. T-450 asks the owner, when it is built, to confirm that split and which listings count.",
+    "noted_on": "2026-11-07",
+    "note": "2026-11-06 (D197): the owner approved proposal 6 of docs/proposals/2026-11-06-proposals.md, which re-prioritised this item’s “different universe source” half as T-450. 2026-11-07 (D205): T-450 is built and closed: the Stock Registry’s “Every NYSE & Nasdaq stock” list reads the SEC’s ticker-and-exchange file, keyless, so dropping FMP no longer leaves the registry at 79 names. This item stays parked for its paid-FMP half, decided near release: sectors outside the 79, and the outlier screen, which still runs over the main list.",
     "evidence": [
      "docs/proposals/2026-11-06-proposals.md",
-     "docs/decisions/2026-11-06-owner-decisions.md"
+     "docs/decisions/2026-11-06-owner-decisions.md",
+     "docs/decisions/2026-11-07-owner-decisions.md"
     ]
    }
   },
@@ -15928,7 +15929,7 @@
   {
    "id": "T-450",
    "title": "Widen the Stock Registry past 79 names with SEC data, without a paid plan (the build half of parked T-076)",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "blocking_decision": null,
    "opened": {
@@ -15974,7 +15975,25 @@
      "lines": "110",
      "quote": "**Stock Registry universe** (`stock-universe`) — only FMP"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-11-07",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "Built as the owner chose (D205): the SEC list now, T-076's paid-FMP question left for release, and NYSE and Nasdaq common stock only. The Stock Registry has a second list, “Every NYSE & Nasdaq stock”, from the SEC's company_tickers_exchange.json, keyless (/live-data/stock-universe?list=sec). Preferred shares, warrants, units, rights, notes a company lists under its own number, and funds are left out and counted; the curated 79 always stay. Screens and sorts run on the SEC figures (earnings and dividends per share, shares outstanding) over every stock; price, market cap, P/E and yield are worked out for the 50 rows on screen only and are never sorted or screened over the whole list. No sector outside the 79, as the page says; a stock page found through the list says “Sector not on file”. Search and a stock page find any listed stock with no FMP key. The rules were measured on the SEC ticker list the app had saved (10,409 tickers, no request sent); the exchange file itself was not read from the cloud session, since the app names the owner's email as its SEC contact, so npm run audit checks the wider list on the owner's machine. Methods-page section added (D163).",
+    "approved_by": "owner, 2026-11-07: chose to build T-450 now, NYSE and Nasdaq common stock only",
+    "evidence": [
+     "frontend/src/lib/data/secListings.ts",
+     "frontend/src/lib/server/secListings.ts",
+     "frontend/src/app/live-data/stock-universe/route.ts",
+     "frontend/src/app/(dashboard)/equities/SecWideList.tsx",
+     "frontend/src/app/(dashboard)/equities/EquitiesClient.tsx",
+     "frontend/src/lib/data/__tests__/secListings.test.ts",
+     "frontend/scripts/test-live-data.mjs",
+     "docs/decisions/2026-11-07-owner-decisions.md"
+    ]
+   }
   },
   {
    "id": "T-451",

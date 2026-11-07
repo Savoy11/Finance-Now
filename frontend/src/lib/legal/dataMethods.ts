@@ -86,7 +86,7 @@ export const DATA_METHODS: readonly MethodSection[] = [
       'A stock’s P/E is its price divided by its earnings per share for its latest fiscal year (diluted, or basic where the company reports no diluted figure). Its dividend yield is the dividends per share for that same fiscal year divided by its price. Both per-share figures come from the company’s own SEC annual report, and each figure shows the fiscal year it is for.',
       'The price is always the live quote. With no live quote, the P/E and yield show a dash and say why: no stored price is used.',
       'If a company’s share count has changed by a split’s worth since that fiscal year, as after a stock split, its per-share figures for that year are in the old shares and the price is in the new. Its P/E and yield then show a dash until its next annual report, and are never adjusted by a guessed ratio.',
-      'A dividend counts only when it is for the same fiscal year as the earnings, so a dividend a company has since stopped is never shown as a current yield. A company that lost money shows “Loss” for its P/E. Where the SEC data has no usable figure, the page shows a dash, never a guess. A link beside each figure opens the company’s SEC filings.',
+      'A dividend counts only when it is for the same fiscal year as the earnings, so a dividend a company has since stopped is never shown as a current yield. A company that lost money shows “Loss” for its P/E. Where the SEC data has no usable figure, the page shows a dash, never a guess. A per-share figure above $100,000 is taken for an error in the filing’s data and not used: the largest real ones, Berkshire Hathaway’s class A shares, earn tens of thousands of dollars each. A link beside each figure opens the company’s SEC filings.',
     ],
   },
   {
@@ -96,6 +96,17 @@ export const DATA_METHODS: readonly MethodSection[] = [
     paragraphs: [
       'A stock’s market cap is its shares outstanding, from the cover page of the company’s latest SEC filing, multiplied by the live price. The figure shows the date of the share count. Without a live price there is no market cap. A company with more than one class of stock reports a share count for each class, so no single count is available and its market cap shows a dash.',
       'A stock’s beta is worked out on its own page from one year of daily closing prices, against the SPDR S&P 500 ETF (SPY): how much the stock’s daily returns have moved with the market’s. It is a measure of the past year, not a forecast. Where the only prices available are not adjusted for stock splits, no beta is worked out, since a split would read as a single day’s move. It is not shown in lists or screens, which would need a year of prices for every stock at once.',
+    ],
+  },
+  {
+    id: 'stock-list',
+    title: 'Which stocks the Stock Registry lists',
+    decided: '2026-11-07',
+    paragraphs: [
+      'The Stock Registry has two lists. The curated list is 79 large US companies, each with its sector. “Every NYSE & Nasdaq stock” is every common stock that the SEC’s own list of companies, tickers and exchanges names on the New York Stock Exchange or Nasdaq. It needs no data subscription and is refreshed daily.',
+      'That list leaves out tickers listed on other exchanges or traded over the counter; preferred shares, warrants, units and rights, which are told apart by the form of their ticker; and funds and exchange-traded trusts, meaning tickers the app already knows as funds and names that say ETF, ETN or Fund. A few closed-end funds or trusts that file reports the way companies do may remain. The page says how many tickers it left out, and why.',
+      'Earnings and dividends per share, and shares outstanding, come from each company’s SEC filings by the same rules as P/E and yield above, and the list can be screened and sorted on them across every stock. Price, market cap, P/E and yield need a live quote, so they are worked out only for the 50 stocks on screen, and the list is never sorted or screened on them: a sort that had seen fifty stocks would order them as though it had seen every one. Where a company lists more than one class of shares, its per-share figures are the company’s own and may be stated for one class only, and the row says so.',
+      'A sector is known only for the 79 curated stocks. The SEC records each company’s industry, but reading it takes one request per company.',
     ],
   },
   {

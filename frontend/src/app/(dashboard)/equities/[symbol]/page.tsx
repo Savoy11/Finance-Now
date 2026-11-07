@@ -29,7 +29,16 @@ interface DetailEntry {
   sector: SectorId
   industry: string
   website: string
+  /**
+   * False for a stock found only on the SEC's list (T-450): the app knows a sector for its
+   * curated 79 alone, and the SEC's industry code needs one request per company.
+   */
+  sectorKnown: boolean
+  exchange: string | null
 }
+
+const SECTOR_UNKNOWN_TITLE =
+  'The app has a sector only for its 79 curated stocks. This one was found on the SEC’s list of NYSE and Nasdaq stocks, which names its exchange but not its industry.'
 
 // The gate wraps at the COMPONENT boundary, not inside the returned JSX. Placed
 // inside, the inner component still mounts and its useQuery hooks still run and
@@ -49,7 +58,8 @@ function EquityDetailInner() {
   const symbol = (params.symbol ?? '').toUpperCase()
   const staticEntry = getEquity(symbol)
 
-  // Resolve non-catalog tickers from the live universe (FMP profile lookup). Asked for catalog
+  // Resolve non-catalog tickers from the live universe (FMP profile lookup, else the SEC's list
+  // of NYSE and Nasdaq stocks, T-450). Asked for catalog
   // stocks too since D170: its share-count change is the split guard for P/E and yield.
   const { data: uniData, isLoading: uniLoading } = useQuery<StockUniverseResponse>({
     queryKey: ['stock-universe', symbol],
@@ -61,9 +71,12 @@ function EquityDetailInner() {
   const dyn = uniData?.entries?.[0]
 
   const entry: DetailEntry | undefined = staticEntry
-    ? { symbol: staticEntry.symbol, name: staticEntry.name, sector: staticEntry.sector, industry: staticEntry.industry, website: staticEntry.website }
+    ? { symbol: staticEntry.symbol, name: staticEntry.name, sector: staticEntry.sector, industry: staticEntry.industry, website: staticEntry.website, sectorKnown: true, exchange: dyn?.exchange ?? null }
     : dyn
-      ? { symbol: dyn.symbol, name: dyn.name, sector: dyn.sector, industry: dyn.industry, website: dyn.website ?? '' }
+      ? {
+          symbol: dyn.symbol, name: dyn.name, sector: dyn.sector, industry: dyn.industry, website: dyn.website ?? '',
+          sectorKnown: !(uniData?.source === 'sec' && dyn.sector === 'other'), exchange: dyn.exchange,
+        }
       : undefined
 
   const { data } = useQuery<SecurityQuotesResponse>({
@@ -113,13 +126,20 @@ function EquityDetailInner() {
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-semibold text-text-primary">{entry.name}</h1>
               <span className="font-mono text-sm text-text-muted">{symbol}</span>
-              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-sm text-[11px] font-medium border border-border text-text-secondary">
-                <span className="size-1.5 rounded-full" style={{ backgroundColor: sector.color }} aria-hidden />
-                {sector.label}
-              </span>
+              {entry.sectorKnown ? (
+                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-sm text-[11px] font-medium border border-border text-text-secondary">
+                  <span className="size-1.5 rounded-full" style={{ backgroundColor: sector.color }} aria-hidden />
+                  {sector.label}
+                </span>
+              ) : (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-sm text-[11px] font-medium border border-dashed border-border text-text-muted"
+                  title={SECTOR_UNKNOWN_TITLE}>
+                  Sector not on file
+                </span>
+              )}
             </div>
             <p className="mt-1 text-xs text-text-muted">
-              {entry.industry}
+              {entry.sectorKnown ? entry.industry : `Listed on ${entry.exchange ?? 'a US exchange'} · from the SEC’s list of listed companies`}
               {entry.website && (
                 <>
                   {' · '}

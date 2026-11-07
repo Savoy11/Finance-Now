@@ -47,6 +47,15 @@ describe('the per-share rules', () => {
     expect(perShareFrom({ epsDiluted: f(2, '2024-12-31'), epsBasic: f(2.1, '2025-12-31') }).eps).toMatchObject({ basis: 'basic', val: 2.1 })
   })
 
+  it('refuses a per-share figure no company could have, and keeps Berkshire-sized ones (T-450)', () => {
+    // As tagged in the SEC's data: Sentinel Holdings' earnings of $9,390,000 a share against
+    // 9.7 million shares. Berkshire's class A earns tens of thousands a share, and is real.
+    expect(perShareFrom({ epsDiluted: f(9_390_000, '2025-12-31') }).eps).toBeNull()
+    expect(perShareFrom({ epsDiluted: f(-9_390_000, '2025-12-31'), epsBasic: f(1.2, '2025-12-31') }).eps).toMatchObject({ basis: 'basic', val: 1.2 })
+    expect(perShareFrom({ epsDiluted: f(61_000, '2025-12-31') }).eps?.val).toBe(61_000)
+    expect(perShareFrom({ epsDiluted: f(2, '2025-12-31'), dpsDeclared: f(500_000, '2025-12-31') }).dividend).toBe('unknown')
+  })
+
   it('needs a usable price, and refuses a multiple in the thousands', () => {
     const ps = perShareFrom({ epsDiluted: f(0.01, '2025-12-31'), dpsDeclared: f(1, '2025-12-31') })
     expect(stockFigures(ps, 500)).toMatchObject({ pe: null, peState: 'unknown' })
