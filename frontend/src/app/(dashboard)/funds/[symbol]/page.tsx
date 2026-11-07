@@ -12,6 +12,7 @@ import { FundHoldingsSection } from './FundHoldingsSection'
 import { FundRateSensitivityCard } from './FundRateSensitivityCard'
 import { ExplainedLabel } from '@/components/ui/ExplainedLabel'
 import { SourceLine } from '@/components/ui/SourceLine'
+import { AssetActions } from '@/components/markets/AssetActions'
 import { ProvenanceNotice } from '@/components/ui/ProvenanceNotice'
 import { PriceChartCard, FiftyTwoWeekBar } from '@/components/markets/PriceChartCard'
 import { MarketNewsList } from '@/components/markets/MarketNewsList'
@@ -324,6 +325,9 @@ function FundDetailInner() {
           while every registry page did, so the page with the most specific
           numbers was the one with no attribution. */}
       <SourceLine id="security-quotes" />
+
+      {/* Watch it, set a price alert, compare it, ask the AI (T-454). */}
+      <AssetActions asset={{ kind: 'fund', symbol, name, key: `sec:${symbol}` }} livePrice={live ? quote?.price ?? null : null} />
 
       {/* Trading-restriction disclaimer — minimum holding periods, frequent-trading
           policies, and daily-reset leverage warnings */}

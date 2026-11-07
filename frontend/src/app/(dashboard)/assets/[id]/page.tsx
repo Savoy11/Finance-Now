@@ -44,6 +44,8 @@ const EMBED_CHART_TYPES: { type: ChartType; label: string; desc: string; Icon: L
 ]
 import { clsx } from 'clsx'
 import { useAsset } from '@/hooks/useAssets'
+import { AssetActions } from '@/components/markets/AssetActions'
+import { coingeckoIdFor } from '@/lib/api/live/coingeckoIds'
 import { ReserveComposition } from '@/components/analytics/ReserveComposition'
 import { ReserveProvenance, SupplyChangePanel, normalisePegMechanism } from '@/components/analytics/reserves'
 import { PriceHistoryChart } from '@/components/analytics/PriceHistoryChart'
@@ -1163,6 +1165,12 @@ function AssetDetailPageInner() {
           while every registry page did, so the page with the most specific
           numbers was the one with no attribution. */}
       <SourceLine id="markets" />
+
+      {/* Watch it, set a price alert, compare it, ask the AI (T-454). */}
+      <AssetActions
+        asset={{ kind: 'coin', symbol: asset.symbol, name: asset.name, key: coingeckoIdFor(asset.id) ?? null, assetId: asset.id }}
+        livePrice={asset.price ?? null}
+      />
 
       {/* Measured-risk rating (T-420, D92). Renders nothing while
           ASSET_PAGE_RATINGS_SHOWN is false (lib/risk/visibility.ts). */}
