@@ -441,6 +441,7 @@ export const DATA_SOURCES: DataSourceEntry[] = [
     route: '/live-data/fund-universe', status: 'live',
     providers: [{ ...SEC_EDGAR, name: 'SEC', host: 'www.sec.gov' }, { name: 'NASDAQ Trader', host: 'www.nasdaqtrader.com', role: 'primary', auth: 'none' }],
     cadence: 'daily-cached',
+    staticData: ['lib/data/fundFacts.generated.json (SEC N-PORT net assets and filing trust for ~25,000 fund tickers, built by scripts/build-fund-facts.mjs; 120-day review clock in lib/data/fundNetAssets.ts). Filled on symbol lookups and searches for funds outside the catalog (T-449 c)'],
     notes: 'Discovered funds ship as compact {symbol,name} rows (2026-07-30, audit follow-up F3). PAGINATION WAS CONSIDERED AND REJECTED in item 11, not deferred: the registry screens client-side, so a page-at-a-time API would filter as though it had seen the whole universe when it had seen fifty rows. The earlier ~11s / 14MB figure predates the compact shape and is not a current measurement — payload re-measured on the owner’s machine 2026-09-19: 2,274,590 bytes (2.27 MB), carrying 29,009 discovered funds (5,593 ETFs + 23,416 mutual funds).',
   },
   {

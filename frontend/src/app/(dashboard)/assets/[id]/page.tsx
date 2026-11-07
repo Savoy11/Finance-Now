@@ -45,13 +45,14 @@ const EMBED_CHART_TYPES: { type: ChartType; label: string; desc: string; Icon: L
 import { clsx } from 'clsx'
 import { useAsset } from '@/hooks/useAssets'
 import { ReserveComposition } from '@/components/analytics/ReserveComposition'
-import { ReserveProvenance, normalisePegMechanism } from '@/components/analytics/reserves'
+import { ReserveProvenance, SupplyChangePanel, normalisePegMechanism } from '@/components/analytics/reserves'
 import { PriceHistoryChart } from '@/components/analytics/PriceHistoryChart'
 import { MetricCard } from '@/components/ui/MetricCard'
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 import { SourceLine } from '@/components/ui/SourceLine'
-import { formatCompact, formatAddress, formatBps, formatDate, formatAssetPrice, formatOrNA, timeAgoCompact, NA_LABEL } from '@/lib/utils/format'
+import { formatCompact, formatCompactNumber, formatAddress, formatBps, formatDate, formatAssetPrice, formatOrNA, timeAgoCompact, NA_LABEL } from '@/lib/utils/format'
+import { shareOfMaxCirculating, signedPct } from '@/lib/data/coinSupply'
 import { getPegDeviationColorClass } from '@/lib/utils/pegFormat'
 import { ASSET_TYPE_LABELS, BLOCKCHAIN_LABELS, LIVE_DATA } from '@/lib/constants'
 import { PumpReportTab } from '@/components/pump-report/PumpReportTab'
@@ -583,6 +584,47 @@ function AssetHeader({ asset }: { asset: NonNullable<ReturnType<typeof useAsset>
   )
 }
 
+/**
+ * Supply and price facts (T-449 b), all from the same CoinGecko call the page
+ * already makes: total and maximum supply, the share of the maximum circulating,
+ * fully diluted value, the 7- and 30-day change and the distance below the
+ * all-time high. Only the share is worked out here (lib/data/coinSupply.ts).
+ */
+function SupplyFacts({ asset }: { asset: NonNullable<ReturnType<typeof useAsset>['data']> }) {
+  const circulating = asset.circulatingSupply ?? asset.latestMarketData?.circulatingSupply ?? null
+  const share = shareOfMaxCirculating(circulating, asset.maxSupply)
+  const rows: Array<{ label: string; value: string; note?: string }> = [
+    { label: 'Total supply', value: formatOrNA(asset.totalSupply, formatCompactNumber), note: 'Coins created so far, less any destroyed' },
+    {
+      label: 'Maximum supply',
+      value: asset.maxSupply != null ? formatCompactNumber(asset.maxSupply) : 'None listed',
+      note: asset.maxSupply != null ? 'The most that can ever exist' : 'CoinGecko lists no cap',
+    },
+    { label: 'Share of maximum circulating', value: share != null ? `${share.toFixed(1)}%` : NA_LABEL, note: 'Circulating ÷ maximum supply' },
+    { label: 'Fully diluted value', value: formatOrNA(asset.fdv, formatCompact), note: 'CoinGecko’s figure for the value if every coin were out' },
+    { label: 'Price change, 7 days', value: signedPct(asset.priceChange7d) ?? NA_LABEL },
+    { label: 'Price change, 30 days', value: signedPct(asset.priceChange30d) ?? NA_LABEL },
+    { label: 'From its all-time high', value: signedPct(asset.athChangePct, 1) ?? NA_LABEL, note: 'How far below its highest price it trades' },
+  ]
+  if (rows.every((r) => r.value === NA_LABEL || r.value === 'None listed')) return null
+  return (
+    <div>
+      <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-3">Supply &amp; Price History</h3>
+      <div className="rounded-card border border-border bg-bg-card divide-y divide-border/50">
+        {rows.map((r) => (
+          <div key={r.label} className="flex items-center justify-between gap-4 px-4 py-2.5 text-sm">
+            <div className="min-w-0">
+              <p className="text-text-secondary">{r.label}</p>
+              {r.note && <p className="text-[11px] text-text-muted">{r.note}</p>}
+            </div>
+            <span className="font-mono tabular-nums text-text-primary shrink-0">{r.value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function OverviewTab({ asset }: { asset: NonNullable<ReturnType<typeof useAsset>['data']> }) {
   const { latestMarketData: md } = asset
 
@@ -606,7 +648,9 @@ function OverviewTab({ asset }: { asset: NonNullable<ReturnType<typeof useAsset>
           />
           <MetricCard
             title="Circulating Supply"
-            value={formatOrNA(md.circulatingSupply, formatCompact)}
+            // A count of coins, not dollars: formatCompact printed Bitcoin's 19.9M coins as "$19.9M".
+            value={formatOrNA(md.circulatingSupply, formatCompactNumber)}
+            subtitle={md.circulatingSupply != null ? `${asset.symbol} in circulation` : undefined}
             icon={<Globe size={14} />}
             accentColor="#f59e0b"
           />
@@ -627,6 +671,8 @@ function OverviewTab({ asset }: { asset: NonNullable<ReturnType<typeof useAsset>
           )}
         </div>
       </div>
+
+      <SupplyFacts asset={asset} />
 
       {/* L1 network metrics */}
       {asset.assetType === 'layer1' && (
@@ -873,6 +919,12 @@ function LiveReservesView({ liveAsset }: { liveAsset: LiveReserveAsset }) {
           accentColor="#3b82f6"
         />
       </div>
+
+      {(liveAsset.supplyChange || liveAsset.chainSplit) && (
+        <div className="rounded-card border border-border bg-bg-card p-5">
+          <SupplyChangePanel change={liveAsset.supplyChange ?? null} split={liveAsset.chainSplit ?? null} />
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <ErrorBoundary>

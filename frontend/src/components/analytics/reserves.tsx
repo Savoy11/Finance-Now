@@ -43,6 +43,7 @@ import {
 import { formatCurrency, formatCompact, formatDate, formatPercent } from '@/lib/utils/format'
 import { LIVE_DATA } from '@/lib/constants'
 import type { LiveReserveAsset } from '@/app/live-data/reserves/route'
+import { formatSupplyChange, type ChainSplit, type SupplyChange } from '@/lib/data/stablecoinSupply'
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
@@ -93,6 +94,8 @@ export interface ReserveRow {
   /** True when the issuer discloses a ratio. NOT an independent verification. */
   hasDisclosedRatio: boolean
   chains: string[]
+  supplyChange: SupplyChange | null
+  chainSplit: ChainSplit | null
   composition: { category: string; amount: number; percentage: number; description: string }[]
   pegMechanism: string
 }
@@ -109,6 +112,8 @@ export function toReserveRows(assets: LiveReserveAsset[] | undefined): ReserveRo
     collateralizationRatio: a.collateralizationRatio,
     hasDisclosedRatio: a.collateralizationRatio !== null,
     chains: a.chains,
+    supplyChange: a.supplyChange ?? null,
+    chainSplit: a.chainSplit ?? null,
     composition: a.composition.length > 0
       ? a.composition.map((c) => ({ ...c, description: '' }))
       : [{
@@ -251,6 +256,61 @@ export function reserveSubtitle(data: LiveReservesResponse | undefined): string 
 
 // ─── Monitor panel ────────────────────────────────────────────────────────────
 
+const changeClass = (pct: number | null) =>
+  pct === null || pct === 0 ? 'text-slate-400' : pct > 0 ? 'text-emerald-400' : 'text-red-400'
+
+/**
+ * A stablecoin's circulating supply over a day, a week and a month, and the
+ * blockchains it sits on (T-449 a). Facts only: no alert rings on a fall (D204).
+ * Shared by the Reserve Monitor's detail panel and each stablecoin's own page.
+ */
+export function SupplyChangePanel({ change, split }: { change: SupplyChange | null; split: ChainSplit | null }) {
+  if (!change && !split) return null
+  return (
+    <div className="space-y-3 text-xs">
+      {change && (
+        <div>
+          <p className="text-slate-400 mb-1.5">Circulating supply change</p>
+          <div className="grid grid-cols-3 gap-2">
+            {([['1 day', change.day], ['7 days', change.week], ['30 days', change.month]] as const).map(([label, pct]) => (
+              <div key={label} className="rounded-md border border-slate-800 bg-slate-900/40 px-2 py-1.5 text-center">
+                <p className={`font-mono tabular-nums text-sm ${changeClass(pct)}`}>{formatSupplyChange(pct)}</p>
+                <p className="text-[10px] text-slate-500">{label}</p>
+              </div>
+            ))}
+          </div>
+          <p className="mt-1.5 text-[11px] text-slate-500 leading-relaxed">
+            A fall means more coins were redeemed than issued. Supply figures via DefiLlama.
+          </p>
+        </div>
+      )}
+      {split && split.top.length > 0 && (
+        <div>
+          <p className="text-slate-400 mb-1.5">Supply by blockchain</p>
+          <ul className="space-y-1">
+            {split.top.map((c) => (
+              <li key={c.chain} className="flex items-center justify-between gap-2">
+                <span className="text-slate-300 truncate">{c.chain}</span>
+                <span className="font-mono tabular-nums text-slate-400 shrink-0">
+                  {formatCompact(c.amount)} · {c.pct.toFixed(1)}%
+                </span>
+              </li>
+            ))}
+            {split.others && (
+              <li className="flex items-center justify-between gap-2">
+                <span className="text-slate-500">{split.others.count} other {split.others.count === 1 ? 'chain' : 'chains'}</span>
+                <span className="font-mono tabular-nums text-slate-500 shrink-0">
+                  {formatCompact(split.others.amount)} · {split.others.pct.toFixed(1)}%
+                </span>
+              </li>
+            )}
+          </ul>
+        </div>
+      )}
+    </div>
+  )
+}
+
 /**
  * The full reserve monitor: KPIs, attestation table, and a per-asset detail
  * panel. Rendered as the "Reserve Monitor" tab on /assets; previously also the
@@ -378,8 +438,14 @@ export function ReserveMonitorPanel() {
                       <span className="font-medium text-slate-100">{r.symbol}</span>
                       <span className="text-xs text-slate-500">{r.attester}</span>
                     </div>
-                    <span className="col-span-2 font-mono text-xs text-slate-300 tabular-nums self-center">
-                      {formatCurrency(r.totalReservesUsd)}
+                    {/* Short form: the full figure ($176,776,895,353.89) ran into the next column. */}
+                    <span className="col-span-2 font-mono text-xs text-slate-300 tabular-nums self-center" title={formatCurrency(r.totalReservesUsd)}>
+                      {formatCompact(r.totalReservesUsd)}
+                      {r.supplyChange && r.supplyChange.week !== null && (
+                        <span className={`block text-[10px] ${changeClass(r.supplyChange.week)}`} title="Change in circulating supply over 7 days">
+                          {formatSupplyChange(r.supplyChange.week)} 7d
+                        </span>
+                      )}
                     </span>
                     <div className="col-span-2 self-center">
                       {r.pegMechanism
@@ -436,6 +502,11 @@ export function ReserveMonitorPanel() {
                     <DisclosureBadge disclosed={selected.hasDisclosedRatio} />
                   </div>
                 </div>
+                {(selected.supplyChange || selected.chainSplit) && (
+                  <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-4">
+                    <SupplyChangePanel change={selected.supplyChange} split={selected.chainSplit} />
+                  </div>
+                )}
               </div>
             )}
           </div>

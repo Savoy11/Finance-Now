@@ -31,6 +31,7 @@ import { RISK_RATINGS_SHOWN } from '@/lib/risk/visibility'
 import { fundStructureFacts } from '@/lib/data/fundStructure'
 import { FeatureNotice } from '@/components/legal/FeatureNotice'
 import { FundProspectusLink, useFundProspectus } from './FundProspectusLink'
+import { FUND_NET_ASSETS_LABEL, fundFactsAsOfLabel } from '@/lib/data/fundNetAssets'
 
 // ─── Fee drag analyzer ────────────────────────────────────────────────────────
 // Projects what this fund's expense ratio costs versus a 0.03% benchmark fund
@@ -446,11 +447,43 @@ function FundDetailInner() {
           ) : (
             <div className="rounded-card border border-border bg-bg-card p-4">
               <h2 className="text-sm font-medium text-text-secondary mb-2">Fund Facts</h2>
+              {/* T-449 c (D204): the filing trust and the fund's size from the SEC's N-PORT
+                  data set, where it has the ticker. Every share class together, so never
+                  called AUM (lib/data/fundNetAssets.ts). */}
+              {(uniEntry?.registrant || uniEntry?.netAssetsB != null) && (
+                <dl className="space-y-2.5 mb-3">
+                  {uniEntry?.registrant && (
+                    <div className="flex items-center justify-between gap-3 text-sm">
+                      <dt className="text-text-muted shrink-0">
+                        <ExplainedLabel label="Filed by" explain="The trust that files the fund’s reports with the SEC, as named in its N-PORT filing. Often the fund company’s trust rather than its brand name." />
+                      </dt>
+                      <dd className="text-text-primary text-right text-xs">{uniEntry.registrant}</dd>
+                    </div>
+                  )}
+                  {uniEntry?.netAssetsB != null && (
+                    <div className="flex items-center justify-between gap-3 text-sm">
+                      <dt className="text-text-muted shrink-0">
+                        <ExplainedLabel label="Net assets" explain={`${FUND_NET_ASSETS_LABEL}: the SEC reports a fund’s size for all its share classes together, so a fund sold as both an ETF and a mutual fund shows the total of both.`} />
+                      </dt>
+                      <dd className="font-mono tabular-nums text-text-primary text-right text-xs">
+                        {formatCompact(uniEntry.netAssetsB * 1e9)}
+                        <span className="mt-0.5 block font-sans text-[10px] text-text-muted">
+                          {FUND_NET_ASSETS_LABEL.toLowerCase()}
+                          {fundFactsAsOfLabel(uniEntry.netAssetsAsOf) ? ` · ${fundFactsAsOfLabel(uniEntry.netAssetsAsOf)}` : ''}
+                        </span>
+                      </dd>
+                    </div>
+                  )}
+                </dl>
+              )}
               <p className="text-xs text-text-muted leading-relaxed">
-                This fund isn&rsquo;t in the curated catalog, so reference facts (expense ratio,
-                AUM, yield, tracked index) aren&rsquo;t available yet. The quote, chart, holdings
-                breakdown, and change history below are fetched live by ticker — holdings come
-                straight from the fund&rsquo;s SEC N-PORT disclosures.
+                This fund isn&rsquo;t in the curated catalog, so its expense ratio, yield and tracked
+                index aren&rsquo;t available.{' '}
+                {uniEntry?.netAssetsB != null
+                  ? 'The filing trust and size above are from the SEC’s N-PORT data, and may be months old. '
+                  : ''}
+                The quote, chart, holdings breakdown, and change history below are fetched live by
+                ticker — holdings come straight from the fund&rsquo;s SEC N-PORT disclosures.
               </p>
             </div>
           )}

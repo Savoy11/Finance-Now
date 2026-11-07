@@ -75,6 +75,7 @@ export const DATA_METHODS: readonly MethodSection[] = [
     paragraphs: [
       'For an ETF, the figure is that fund’s own net assets; for a Vanguard ETF, the ETF share class’s own figure. For a mutual fund, it is the whole fund, every share class together, since one share class holds only part of it.',
       'A figure taken from the fund’s SEC filing shows the filing’s date. A few trusts report only the fair value of what they hold; those are labelled “holdings at fair value”, which is close to net assets and not the same figure. A figure with no date is approximate and marked ≈.',
+      'For a fund outside the catalog, its size and the trust that filed for it come from the SEC’s quarterly N-PORT data set, which covers about 25,000 fund tickers. That data set reports every share class of a fund together, so the figure is labelled “fund net assets, all share classes” and can be several times one ETF’s own size. It shows when it was built, and may be months old.',
     ],
   },
   {
@@ -132,6 +133,16 @@ export const DATA_METHODS: readonly MethodSection[] = [
       `The auditor, the date of the latest report, the backing ratio and the reserve mix come from each issuer’s own reports, kept by hand and last checked as a whole on ${META_AS_OF}. Where the issuer’s report itself could not be read, the figure is taken from search results, news reports or stablecoin trackers quoting that report, and carries the date of the report it quotes. These figures are not live.`,
       'A backing ratio is the assets held against the coins issued. Where no current source confirms one, none is shown, and the coin reads “not disclosed”. No stablecoin is given a risk score or grade.',
       'The legacy Frax Dollar (FRAX) and Frax USD (frxUSD) are separate coins. The legacy coin has no $1 guarantee and publishes no reserve report, so it shows none. The alert bell checks frxUSD against $1, not the legacy coin.',
+      'A coin’s supply change over 1, 7 and 30 days is its circulating supply now against DefiLlama’s figure for a day, a week and a month earlier, as a percent. A fall means more coins were redeemed than issued. It is shown as a figure only: no alert rings on a fall. The split by blockchain is each chain’s share of the coin’s supply summed across its chains, which can differ slightly from the headline total.',
+    ],
+  },
+  {
+    id: 'coin-supply',
+    title: 'Coin supply and price history',
+    decided: '2026-11-07',
+    paragraphs: [
+      'A coin’s page shows its circulating, total and maximum supply, its fully diluted value, its price change over 7 and 30 days, and how far below its all-time high it trades, all as CoinGecko reports them. A coin with no maximum in CoinGecko’s data shows “None listed”.',
+      'The share of the maximum supply circulating is worked out here: circulating supply divided by maximum supply. Where CoinGecko’s circulating figure is above its maximum, the two disagree and no share is shown.',
     ],
   },
   {

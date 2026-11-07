@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { ATTESTATION_META, COMPOSITION_MAP, META_AS_OF, getStablecoinMetaProvenance, pickMonitoredStablecoins } from '@/lib/data/stablecoinMeta'
 import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
+import { chainSplit, supplyChange, type ChainSplit, type LlamaSupplyFields, type SupplyChange } from '@/lib/data/stablecoinSupply'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,6 +15,10 @@ export interface LiveReserveAsset {
   price: number
   priceSource: string
   chains: string[]
+  /** Circulating supply's change over a day, a week and a month (T-449 a): facts, no alert (D204). */
+  supplyChange: SupplyChange
+  /** Where the supply sits: the largest chains and the rest grouped. */
+  chainSplit: ChainSplit
   // Composition breakdown from DefiLlama (where available)
   composition: { category: string; percentage: number; amount: number; description: string }[]
   // Attestation metadata (static — from known issuer disclosures)
@@ -26,14 +31,13 @@ export interface LiveReserveAsset {
 // Attestation metadata, reserve composition, META_AS_OF and the coins' DefiLlama ids live in
 // src/lib/data/stablecoinMeta.ts (D190). The risk-scores engine that also read them went in RP-6.
 
-interface DefiLlamaStablecoin {
+interface DefiLlamaStablecoin extends LlamaSupplyFields {
   id: string
   gecko_id?: string | null
   name: string
   symbol: string
   pegType: string
   pegMechanism: string
-  circulating?: { peggedUSD?: number }
   price?: number
   priceSource?: string
   chains?: string[]
@@ -89,6 +93,8 @@ export async function GET() {
         price: coin.price ?? 1,
         priceSource: coin.priceSource ?? 'DefiLlama',
         chains: coin.chains ?? [],
+        supplyChange: supplyChange(coin, coin.pegType ?? 'peggedUSD'),
+        chainSplit: chainSplit(coin, coin.pegType ?? 'peggedUSD'),
         composition,
         attester: meta?.attester ?? 'Not publicly disclosed',
         attestationUrl: meta?.attestationUrl ?? '#',

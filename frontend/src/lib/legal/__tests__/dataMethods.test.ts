@@ -62,6 +62,12 @@ describe('how our figures are worked out (D163)', () => {
     expect(t).toMatch(/only what reads closing figures/)
   })
 
+  it('states how the supply figures are worked out, and that a fall rings no alert (D204)', () => {
+    expect(text('stablecoin-reserves')).toMatch(/no alert rings on a fall/)
+    expect(text('coin-supply')).toMatch(/circulating supply divided by maximum supply/)
+    expect(text('fund-assets')).toMatch(/fund net assets, all share classes/)
+  })
+
   it('states how tracked-portfolio income is counted (D201)', () => {
     const t = text('tracked-gains-income')
     expect(t).toMatch(/first in, first out/)

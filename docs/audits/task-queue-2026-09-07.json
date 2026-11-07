@@ -62,9 +62,9 @@
   "total_verified": 408,
   "outstanding": 392,
   "by_status": {
-   "closed": 246,
+   "closed": 247,
    "parked": 131,
-   "open": 10,
+   "open": 9,
    "blocked": 5
   },
   "by_owner_role": {
@@ -74,7 +74,7 @@
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 246,
+  "closed_by_annotation": 247,
   "counts_recomputed_on": "2026-11-07",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 392
@@ -15852,7 +15852,7 @@
   {
    "id": "T-449",
    "title": "Show three figures the app already downloads and drops: stablecoin supply change, coin supply facts, and issuer and size for funds outside the catalog",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "blocking_decision": null,
    "opened": {
@@ -15867,7 +15867,8 @@
     "D197",
     "T-392",
     "T-425",
-    "D163"
+    "D163",
+    "D204"
    ],
    "summary": "Three small additions, each read from a response the app already fetches, filed as one item with three parts as T-129 carried its parts; each part can ship and be noted on its own. (a) Stablecoin supply change: /live-data/reserves keeps only each coin’s circulating supply from DefiLlama’s stablecoin response, which also carries the previous day’s, week’s and month’s supply and the split across blockchains (fields confirmed by one read from the proposing session). Show the 1-, 7- and 30-day change and the chain split on the Reserves tab and each stablecoin’s page. (b) Supply facts on every coin page: /live-data/markets already returns fully diluted value, total and maximum supply, the 7- and 30-day change and the distance below the all-time high, but the coin page’s MarketData type has no field for most of them, so the page shows circulating supply only. (c) Issuer and net assets for funds outside the 140-fund catalog: frontend/src/lib/data/fundFacts.generated.json holds both for 25,003 fund tickers (N-PORT, 2026-07) and nothing reads it (T-392, closed moot), while fund-universe’s non-catalog rows set issuer and aumB to null. No key, no new host and no recurring cost; about a day each.",
    "next_action": "When building part (a), ask the owner the proposal’s decision: whether a large fall in supply should also raise a bell alert, and at what size of fall. The proposal offers no recommended answer, because the threshold is a judgement; build the facts first either way. Part (a) rests on DefiLlama, with the standing the Reserves tab already has (no terms document, personal use before launch, enquiry parked under T-425). Part (b) is CoinGecko data, whose credit the coin page already shows. Part (c) labels the figure as the build script’s header requires (fund net assets, all share classes), dated by quarter, and needs a review clock that staleness:check finds and a quarterly re-run of build-fund-facts.mjs on the owner’s machine. Each part adds its change percentages or figure to frontend/src/lib/legal/dataMethods.ts (D163).",
@@ -15902,7 +15903,27 @@
      "lines": "T-392 closure",
      "quote": "wiring it into the fund pages, or removing it, would be its own item if wanted."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-11-07",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "Built as the owner chose (D204), all three parts. (a) /live-data/reserves carries each stablecoin's supply change over 1, 7 and 30 days and its split by blockchain, from fields DefiLlama already sent; the Reserve Monitor and each stablecoin's own Reserves tab show them. Figures only: no alert rings on a fall, at the owner's choice, and a test holds the bell to that. (b) Every coin page shows total and maximum supply, the share of the maximum circulating (the one figure worked out), fully diluted value, the 7- and 30-day change and the distance below the all-time high, from the same CoinGecko call; the Circulating Supply card no longer prints coins as dollars. (c) A fund outside the catalog shows its filing trust and net assets from fundFacts.generated.json, labelled 'fund net assets, all share classes' and dated 'built July 2026', with a 120-day staleness clock acknowledged until the owner re-runs npm run fund-facts; the build script now dates figures by the data set's quarter. Methods-page lines added (D163). Checked against live data on a built app and in a browser.",
+    "approved_by": "owner, 2026-11-07: chose T-449 next, figures only with no bell, and the July fund figures shown now, dated",
+    "evidence": [
+     "frontend/src/lib/data/stablecoinSupply.ts",
+     "frontend/src/lib/data/coinSupply.ts",
+     "frontend/src/lib/data/fundNetAssets.ts",
+     "frontend/src/lib/server/fundFacts.ts",
+     "frontend/scripts/lib/nportQuarter.mjs",
+     "frontend/src/components/analytics/reserves.tsx",
+     "frontend/src/app/(dashboard)/assets/[id]/page.tsx",
+     "frontend/src/app/(dashboard)/funds/[symbol]/page.tsx",
+     "frontend/src/lib/data/__tests__/downloadedFigures.test.ts",
+     "docs/decisions/2026-11-07-owner-decisions.md"
+    ]
+   }
   },
   {
    "id": "T-450",
