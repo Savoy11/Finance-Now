@@ -406,9 +406,9 @@ export const DATA_SOURCES: DataSourceEntry[] = [
   {
     id: 'stock-universe', surface: 'Stock Registry universe', module: 'equities',
     route: '/live-data/stock-universe', status: 'partial',
-    providers: [{ name: 'FMP company-screener', host: 'financialmodelingprep.com', role: 'primary', auth: 'paid' }, { name: 'Curated catalog', role: 'fallback', auth: 'none' }, { ...SEC_EDGAR, name: 'SEC XBRL frames (P/E backfill)', role: 'aggregator' }],
+    providers: [{ name: 'FMP company-screener', host: 'financialmodelingprep.com', role: 'primary', auth: 'paid' }, { name: 'Curated catalog', role: 'fallback', auth: 'none' }, { ...SEC_EDGAR, name: 'SEC XBRL frames (P/E backfill)', role: 'aggregator' }, { ...SEC_EDGAR, name: 'SEC company tickers & exchanges (the wider list)', host: 'www.sec.gov', url: 'https://www.sec.gov/search-filings/edgar-application-programming-interfaces', role: 'primary' }],
     staticData: ['lib/data/equityCatalog.ts (~79 names)'],
-    notes: 'FMP screener is PAID-only; without a key the registry falls back to ~79 curated names. On every path the route serves each company’s SEC per-share figures (D167) and cover-page share count (D170) from the SEC’s XBRL frames, and no price: pages work out P/E, yield and market cap against live quotes.',
+    notes: 'FMP screener is PAID-only; without a key the registry’s main list falls back to ~79 curated names. Since 2026-11-07 (T-450, D205) the registry also has “Every NYSE & Nasdaq stock”: every NYSE and Nasdaq common stock in the SEC’s company_tickers_exchange.json, keyless, which also lets search and a stock page find any listed stock with no FMP key. It has no sector outside the 79, and price-based screens are refused over it (only the 50 rows on screen have a quote). On every path the route serves each company’s SEC per-share figures (D167) and cover-page share count (D170) from the SEC’s XBRL frames, and no price: pages work out P/E, yield and market cap against live quotes.',
   },
   {
     id: 'stock-outliers', surface: 'Equity screener / outliers', module: 'equities',

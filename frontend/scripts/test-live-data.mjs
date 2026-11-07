@@ -711,6 +711,33 @@ const tests = [
     return `${j.count} stocks, source=${j.source}, ${withShares} with an SEC share count`
   }},
 
+  // The wider list (T-450, D205): every NYSE and Nasdaq common stock in the SEC's
+  // company_tickers_exchange.json, keyless. Its rules (which tickers count, which are left
+  // out) were written before the file could be read from a cloud session, so this is where
+  // they first meet the real file: a run on the owner's machine should list thousands, with
+  // AAPL, BRK-B and GOOGL on it and no well-known fund (SPY, QQQ, GLD, IBIT).
+  { group: 'equities', path: '/live-data/stock-universe?list=sec', name: 'stock-universe (wider SEC list)', check: (j) => {
+    if (!j.ok || !Array.isArray(j.entries)) throw new Error(j.error ?? 'no wider list')
+    if (j.source !== 'sec') throw new Error(`source=${j.source}, expected sec`)
+    if (j.entries.length < 2000) throw new Error(`only ${j.entries.length} stocks: the SEC's file lists thousands on NYSE and Nasdaq`)
+    const syms = new Set(j.entries.map((e) => e.symbol))
+    const missing = ['AAPL', 'BRK-B', 'GOOGL', 'JPM'].filter((s) => !syms.has(s))
+    if (missing.length) throw new Error(`missing ${missing.join(', ')}`)
+    const funds = ['SPY', 'QQQ', 'GLD', 'IBIT', 'VOO'].filter((s) => syms.has(s))
+    if (funds.length) throw new Error(`funds on the stock list: ${funds.join(', ')}`)
+    if ('marketCapB' in j.entries[0] || 'referencePrice' in j.entries[0]) throw new Error('serves a market cap or reference price, which D170 removed')
+    const withEps = j.entries.filter((e) => e.eps != null).length
+    const lo = j.leftOut ?? {}
+    return `${j.count} NYSE/Nasdaq stocks, ${withEps} with an SEC earnings figure; left out ${lo['other-exchange'] ?? '?'} elsewhere, ${lo['not-common'] ?? '?'} preferred/warrants/units, ${lo.fund ?? '?'} funds`
+  }},
+
+  { group: 'equities', path: '/live-data/stock-universe?q=ford', name: 'stock-universe (keyless search)', check: (j) => {
+    if (!j.ok || !Array.isArray(j.entries)) throw new Error('search failed')
+    // Keyless, search reads the SEC's list (T-450), so a stock outside the 79 is found.
+    if (!j.entries.some((e) => e.symbol === 'F')) throw new Error(`Ford (F) not found; got ${j.entries.map((e) => e.symbol).join(', ') || 'nothing'} from ${j.source}`)
+    return `${j.entries.length} matches from ${j.source}, Ford first: ${j.entries[0]?.symbol === 'F'}`
+  }},
+
   { group: 'equities', path: '/live-data/stock-universe?symbol=AAPL', name: 'stock-universe (single lookup)', check: (j) => {
     if (!j.ok || j.entries?.[0]?.symbol !== 'AAPL') throw new Error('AAPL lookup failed')
     return `${j.entries[0].name} · ${j.entries[0].sector}`

@@ -16,3 +16,8 @@ export function fundFactsFor(symbol: string): FundFactsEntry | null {
   if (!row || typeof row.netAssetsB !== 'number' || !Number.isFinite(row.netAssetsB) || row.netAssetsB <= 0) return null
   return { netAssetsB: row.netAssetsB, issuer: row.issuer?.trim() || null, asOf: row.asOf }
 }
+
+/** Whether the SEC's N-PORT fund filings name this ticker at all: then it is a fund, not a company. */
+export function isNportFundTicker(symbol: string): boolean {
+  return Object.prototype.hasOwnProperty.call(TABLE, symbol.toUpperCase())
+}
