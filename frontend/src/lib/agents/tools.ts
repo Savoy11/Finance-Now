@@ -273,7 +273,8 @@ const TOOL_REGISTRY: RegisteredTool[] = [
     market: 'equities',
     tool: {
       name: 'search_securities',
-      description: 'Search the equities and funds catalogs (~70 US large-cap stocks, ~55 ETFs/mutual funds) by ticker, name, sector, or category. Use to find the right symbol, discover what stocks/funds the platform tracks, or get facts (sector, industry, expense ratio, top holdings, and for stocks P/E, yield and market cap against the live price).',
+      // The counts are worked out from the catalogs: this said "~70 … ~55" while they held 79 and 140 (D207).
+      description: `Search the equities and funds catalogs (${EQUITY_CATALOG.length} US large-cap stocks, ${FUND_CATALOG.length} ETFs/mutual funds) by ticker, name, sector, or category. Use to find the right symbol, discover what stocks/funds the platform tracks, or get facts (sector, industry, expense ratio, top holdings, and for stocks P/E, yield and market cap against the live price).`,
       input_schema: {
         type: 'object',
         properties: {
