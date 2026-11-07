@@ -35,6 +35,11 @@ export const retryUnlessAnswered = (failures: number, error: unknown) => !(error
 
 const BASE = '/api/user/tracked-portfolios'
 
+/** React Query keys, shared by every screen that reads tracked portfolios so they share one cache. */
+export const TRACKED_LIST_KEY = ['tracked-portfolios'] as const
+export const trackedLedgerKey = (id: string) => ['tracked-ledger', id] as const
+export const trackedPricesKey = (keys: readonly string[]) => ['tracked-prices', keys.join(',')] as const
+
 async function call<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, {
     ...init,

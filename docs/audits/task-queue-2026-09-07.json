@@ -62,9 +62,9 @@
   "total_verified": 414,
   "outstanding": 398,
   "by_status": {
-   "closed": 248,
+   "closed": 249,
    "parked": 131,
-   "open": 14,
+   "open": 13,
    "blocked": 5
   },
   "by_owner_role": {
@@ -74,7 +74,7 @@
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 248,
+  "closed_by_annotation": 249,
   "counts_recomputed_on": "2026-11-07",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 398
@@ -16120,7 +16120,7 @@
   {
    "id": "T-453",
    "title": "Make tracked portfolios the ones the rest of the app reads: the Daily Brief, a look-through and asset split, the Portfolio Builder’s drift check, and a yearly return",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "blocking_decision": null,
    "opened": {
@@ -16145,7 +16145,8 @@
     "D47",
     "T-116",
     "D92",
-    "D163"
+    "D163",
+    "D208"
    ],
    "summary": "A tracked portfolio now holds real history: imported trades (T-447, D200), income (T-451, D201) and its funds’ costs (T-448, D198). Everything else in the app that speaks of “your portfolio” still reads only the what-if portfolios, because a tracked portfolio is marked by a tracked_portfolios row and the what-if routes leave it out. Four parts, each able to ship on its own. (a) The Daily Brief (brief/page.tsx reads usePortfolioStore) adds the tickers held in tracked portfolios: tickers only, never quantities or costs, which keeps it inside the draft Privacy Policy’s sentence on the Brief. (b) A look-through and an asset-class split on each tracked portfolio, from live values, through computeLookThrough (lib/data/lookThrough.ts) and valueLedger (lib/data/tradeLedger.ts); PortfolioLookThrough takes a what-if Portfolio, so it needs a small adapter. (c) The Portfolio Builder’s drift check (PlanMonitor.tsx lists only usePortfolioStore portfolios) can compare a saved plan with a tracked portfolio’s real holdings; builder_plans.linked_portfolio_id references portfolios.id and a tracked portfolio is a portfolios row, so linking one needs no migration. (d) One money-weighted yearly return per tracked portfolio: the yearly rate that turns the dated money put in, less the income and sale proceeds taken out, into today’s value, with a plain total return for a portfolio under a year old, since a yearly rate on a few weeks exaggerates. No key, no host, no migration, no recurring cost.",
    "next_action": "When building, ask the owner the proposal’s two decisions, recommended answers first. (1) For (c): pointed at a tracked portfolio, the drift check’s buy and sell lists become trade lists for real money. D47 cleared build-by-allocation with no legal review and cleared the item-16 clause of T-116’s blocker, so the proposal reads this as inside what is already live, but asks for the owner’s yes; recommended: yes, with the builder’s existing not-advice line beside it. (2) For (d): the yearly figure only once a portfolio is a year old, with a plain total return before that (recommended), or the yearly figure always. (a) and (b) need no decision and can go first. Build (d) pure and tested in frontend/src/lib/data/ with an injectable now (the house rule for a figure a user acts on), and add a paragraph to the methods page’s “Tracked portfolios: gains and income” section in frontend/src/lib/legal/dataMethods.ts (D163). A holding with no live price stays out of every figure and is named, as it is out of “Value now” today; no tax rule is applied (REALIZED_METHOD_LABEL); nothing is rated (D92).",
@@ -16180,7 +16181,26 @@
      "lines": "282",
      "quote": "Daily Brief sends ticker symbols from your portfolios and watchlists, never quantities or costs."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-11-07",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "Built as the owner chose (D208): the drift check reads a tracked portfolio, with the builder's not-advice line beside the figures, and a yearly return only once the money is a year old. (a) The Daily Brief adds the tickers held in tracked portfolios, names and classes only, never units or cost. (b) Each tracked portfolio has a “What it holds” section: how its money splits and the look-through of its funds, both by live value, naming any holding with no live price. (c) PlanMonitor lists tracked portfolios beside the what-if ones and links one with no migration, weighting each holding by its share of live value. (d) A return tile: money-weighted per year once the first money put in is YEARLY_AFTER_DAYS (365) days old, the plain total return before that or when the starting position has no date, and no figure while a holding has no live price or after a transfer out. Pure and tested in lib/data/trackedPortfolioViews.ts; methods-page section added (D163); nothing is rated (D92) and no tax rule is applied.",
+    "approved_by": "owner, 2026-11-07: chose T-453; drift check on a tracked portfolio “Yes, with the notice”; yearly return “After a year”",
+    "evidence": [
+     "frontend/src/lib/data/trackedPortfolioViews.ts",
+     "frontend/src/lib/data/__tests__/trackedPortfolioViews.test.ts",
+     "frontend/src/components/portfolio/tracked/TrackedPortfolioDetail.tsx",
+     "frontend/src/components/portfolio/tracked/TrackedMixCard.tsx",
+     "frontend/src/components/portfolio/PortfolioLookThrough.tsx",
+     "frontend/src/components/portfolio-builder/PlanMonitor.tsx",
+     "frontend/src/app/(dashboard)/brief/page.tsx",
+     "frontend/src/lib/legal/dataMethods.ts",
+     "docs/decisions/2026-11-07-owner-decisions.md"
+    ]
+   }
   },
   {
    "id": "T-454",

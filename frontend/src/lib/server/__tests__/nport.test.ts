@@ -22,6 +22,13 @@ const APPLE = sec(`
 `)
 
 describe('parseNportReport', () => {
+  it('reads a holding name as text, not as escaped XML', () => {
+    const report = parseNportReport(`
+      <edgarSubmission><invstOrSec><name>Eli Lilly &amp; Co</name><title>ELI LILLY &amp; CO</title><pctVal>1.2</pctVal></invstOrSec></edgarSubmission>
+    `)
+    expect(report.holdings[0].name).toBe('Eli Lilly & Co')
+  })
+
   it('extracts as-of date, identifiers, balance, value, and weight', () => {
     const report = parseNportReport(`
       <edgarSubmission>

@@ -29,7 +29,7 @@ import { getEquity } from '@/lib/data/equityCatalog'
 import type { StockUniverseResponse } from '@/app/live-data/stock-universe/route'
 import { fetchInstrumentPrices } from '@/lib/api/instrumentPrices'
 import type { PortfolioHistoryResponse } from '@/app/live-data/portfolio-history/route'
-import { PortfolioLookThrough } from '@/components/portfolio/PortfolioLookThrough'
+import { PortfolioLookThrough, whatIfLookThroughPositions } from '@/components/portfolio/PortfolioLookThrough'
 import { PortfolioCostsCard } from '@/components/portfolio/PortfolioCostsCard'
 import { whatIfCostPositions } from '@/lib/data/portfolioCosts'
 import { useInstrumentSearch, type InstrumentCandidate } from '@/components/portfolio/useInstrumentSearch'
@@ -913,7 +913,7 @@ function PortfolioDetail({ portfolio, onEdit, onBack }: {
       )}
 
       {/* ── Look-through ── */}
-      {tab === 'look-through' && <PortfolioLookThrough portfolio={portfolio} />}
+      {tab === 'look-through' && <PortfolioLookThrough positions={whatIfLookThroughPositions(portfolio)} basis="target" />}
 
       {/* ── Backtest ── */}
       {/* Backtest tab hidden 2026-08-20 — BacktestPanel retained. */}
