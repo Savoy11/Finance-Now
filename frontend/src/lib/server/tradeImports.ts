@@ -5,7 +5,7 @@ import { NextResponse } from 'next/server'
 import { and, count, desc, eq, inArray, sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import {
-  tradeCancellations, tradeImportLayouts, tradeImportRows, tradeImports, tradeTransactions,
+  tradeCancellations, tradeImportLayouts, tradeImportRows, tradeImports, tradeIncome, tradeTransactions,
 } from '@/lib/db/schema'
 import { MAX_TRADES_PER_PORTFOLIO, type NewTrade } from '@/lib/data/tradeLedger'
 import {
@@ -22,7 +22,8 @@ import { resolveInstruments } from './instrumentResolve'
 // every tracked-portfolio query is.
 //
 // Migration 0010 adds the three tables. Until it is applied, importing answers
-// 503 with what to run, and every other trade route is unaffected.
+// 503 with what to run, and every other trade route is unaffected. A file with
+// cash income rows (T-451) also needs migration 0011's trade_income.
 //
 // Nothing here changes or removes a trade. An import adds trades; cancelling an
 // import adds a cancellation row for each of its trades.
@@ -144,6 +145,11 @@ export async function saveImport(userId: string, portfolioId: string, req: Impor
       opening: false,
       note: s.trade.note,
       createdAt: s.createdAt,
+    }))))
+    // Cash income's amount and kind (T-451), as recording one trade writes them.
+    const income = withIds.filter((s) => s.trade.income)
+    await insertInBatches(income, 1000, (batch) => tx.insert(tradeIncome).values(batch.map((s) => ({
+      tradeId: s.id, userId, amountUsd: s.trade.income!.amountUsd, kind: s.trade.income!.kind,
     }))))
     await insertInBatches(withIds, 1000, (batch) => tx.insert(tradeImportRows).values(batch.map((s) => ({
       tradeId: s.id, userId, importId: imp.id, portfolioId, line: s.line, fingerprint: s.fingerprint,

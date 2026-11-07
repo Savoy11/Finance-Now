@@ -366,6 +366,8 @@ over-the-counter too?
 
 **Filed as:** T-451 in `docs/audits/task-queue-2026-09-07.json` (2026-11-06).
 
+**Built:** 2026-11-07 (D201): units received cost their value on the day; broker files' dividend and reward rows are read by the import.
+
 **What:** Two new kinds of entry in a tracked portfolio. **Cash income** (a dividend, interest, or a
 fund distribution: an amount, a date and a holding; no units move). **Units received** (a staking reward,
 or a dividend paid in shares: units and their value that day, which adds a new lot). The portfolio then

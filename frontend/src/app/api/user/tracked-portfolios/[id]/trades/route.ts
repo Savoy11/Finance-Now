@@ -7,8 +7,8 @@ import {
   type LedgerView, type TradeView,
 } from '@/lib/data/tradeLedger'
 import {
-  countTrades, dbUnavailable, hasStartingPosition, insertTrade, loadTrades, notMigrated, notMigratedForSplits,
-  ownedTrackedPortfolio, resolveTradeInstrument,
+  countTrades, dbUnavailable, hasStartingPosition, insertTrade, loadTrades, notMigrated, notMigratedForIncome,
+  notMigratedForSplits, ownedTrackedPortfolio, resolveTradeInstrument,
 } from '@/lib/server/trackedPortfolios'
 
 // A tracked portfolio's trades (T-027 step 2, owner decision D65).
@@ -18,7 +18,10 @@ import {
 //        {instrument, side, quantity, pricePerUnit, feeUsd?, executedAt?,
 //         opening?, note?, name?}, or a split (T-421):
 //        {instrument, side: 'split', unitsAfter, unitsBefore, cashInLieuUsd?,
-//         executedAt, note?, name?}
+//         executedAt, note?, name?}, or cash income (T-451):
+//        {instrument, side: 'income', amountUsd, incomeKind?, executedAt, note?, name?},
+//        or units received as income: {instrument, side: 'income_units',
+//         quantity, pricePerUnit (their value that day), executedAt, note?, name?}
 // Amounts travel as decimal strings, as the database stores them, so nothing
 // is lost to floating point. A trade is never changed or removed; a mistake is
 // cancelled (./[tradeId]/cancel) and the right trade recorded.
@@ -94,7 +97,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const saved = await insertTrade(userId, id, instrumentId, trade)
     return NextResponse.json<LedgerResponse>({ ok: true, trade: toTradeView(saved) }, { status: 201 })
   } catch (e) {
-    if (isSchemaBehindError(e)) return trade.split ? notMigratedForSplits() : notMigrated()
+    if (isSchemaBehindError(e)) return trade.split ? notMigratedForSplits() : trade.income ? notMigratedForIncome() : notMigrated()
     throw e
   }
 }

@@ -69,7 +69,12 @@ export const trackedPortfolios = pgTable('tracked_portfolios', {
 // 'split' (T-421) is a stock split or reverse split: its row moves no units and
 // no money by itself (quantity, price and fee are 0), and its ratio is in
 // trade_splits below. side is text, so adding a kind needs no migration.
-export const TRADE_SIDES = ['buy', 'sell', 'transfer_in', 'transfer_out', 'split'] as const
+// 'income' (T-451) is cash income, a dividend, interest or a fund distribution:
+// its row moves no units (quantity, price and fee are 0) and its amount is in
+// trade_income below. 'income_units' is units received as income, a staking
+// reward or a dividend paid in shares: an ordinary row whose price is the units'
+// value on the day, which is what they cost (D201).
+export const TRADE_SIDES = ['buy', 'sell', 'transfer_in', 'transfer_out', 'split', 'income', 'income_units'] as const
 export type TradeSide = (typeof TRADE_SIDES)[number]
 
 // The append-only ledger cost basis and realized P&L derive from. Nothing here
@@ -126,6 +131,22 @@ export const tradeSplits = pgTable('trade_splits', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (t) => ({
   userIdx: index('trade_splits_user_idx').on(t.userId),
+}))
+
+// Cash income's amount and kind (T-451, D201): one row per 'income' trade,
+// written with it. A table of its own, as trade_splits is, so that recording
+// and reading every other trade keeps working before migration 0011 is applied.
+export const INCOME_KINDS = ['dividend', 'interest', 'distribution', 'other'] as const
+export type IncomeKind = (typeof INCOME_KINDS)[number]
+
+export const tradeIncome = pgTable('trade_income', {
+  tradeId: uuid('trade_id').primaryKey().references(() => tradeTransactions.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  amountUsd: numeric('amount_usd', { precision: 20, scale: 2 }).notNull(),
+  kind: text('kind').$type<IncomeKind>().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  userIdx: index('trade_income_user_idx').on(t.userId),
 }))
 
 // Importing trades from a broker's file (T-447, owner decision D200). Tables of
@@ -212,6 +233,7 @@ export type TradeTransaction = typeof tradeTransactions.$inferSelect
 export type TrackedPortfolio = typeof trackedPortfolios.$inferSelect
 export type TradeCancellation = typeof tradeCancellations.$inferSelect
 export type TradeSplit = typeof tradeSplits.$inferSelect
+export type TradeIncome = typeof tradeIncome.$inferSelect
 export type TradeImport = typeof tradeImports.$inferSelect
 export type TradeImportRow = typeof tradeImportRows.$inferSelect
 export type TradeImportLayout = typeof tradeImportLayouts.$inferSelect

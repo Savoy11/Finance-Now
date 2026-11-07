@@ -455,6 +455,56 @@ describe('computeCostBasis — splits (T-421)', () => {
   })
 })
 
+describe('computeCostBasis — income (T-451, D201)', () => {
+  const cash = (id: string, amountUsd: string, d: string) => trade('income', id, '0', '0', d, { income: { amountUsd } })
+  const units = (id: string, q: string, value: string, d: string) => trade('income_units', id, q, value, d)
+
+  it('counts cash income apart from every lot and gain', () => {
+    const b = run([buy('b1', '10', '100', '2026-01-02'), cash('d1', '12.34', '2026-03-15'), cash('d2', '13.00', '2026-06-15')])
+    expect([b.quantityHeld, b.costHeldUsd, b.realizedGainUsd]).toEqual(['10', '1000', '0'])
+    expect(b.income).toEqual([
+      { tradeId: 'd1', receivedAt: out('2026-03-15'), form: 'cash', amountUsd: '12.34', quantity: null },
+      { tradeId: 'd2', receivedAt: out('2026-06-15'), form: 'cash', amountUsd: '13', quantity: null },
+    ])
+    expect(b.incomeUsd).toBe('25.34')
+    expect(b.issues).toEqual([])
+  })
+
+  it('makes units received a lot that costs their value on the day, so a later sale gains only from there', () => {
+    // D201. Mutation: give the reward lot a zero cost and the sale's gain becomes 30, not 10.
+    const b = run([units('r1', '0.5', '40', '2026-02-01'), sell('s1', '0.5', '60', '2026-05-01')])
+    expect(b.income).toEqual([{ tradeId: 'r1', receivedAt: out('2026-02-01'), form: 'units', amountUsd: '20', quantity: '0.5' }])
+    expect(b.realizedGainUsd).toBe('10')
+    expect(b.sales[0]).toMatchObject({ lotId: 'r1', costUsd: '20', proceedsUsd: '30' })
+  })
+
+  it('counts the last 12 months from the same date a year earlier up to now', () => {
+    const b = run([cash('old', '5', '2025-10-03'), cash('edge', '7', '2025-10-04T12:00:00Z'), cash('new', '9', '2026-09-01')])
+    expect(b.incomeUsd).toBe('21')
+    expect(b.incomeLast12MonthsUsd).toBe('16')
+  })
+
+  it('leaves out income it cannot read, and never treats it as a starting position', () => {
+    const b = run([
+      cash('zero', '0', '2026-01-02'),
+      trade('income', 'none', '0', '0', '2026-01-02'),
+      trade('income', 'undated', '0', '0', null, { income: { amountUsd: '5' } }),
+      units('free', '1', '0', '2026-01-02'),
+      trade('buy', 'wrong', '1', '10', '2026-01-02', { income: { amountUsd: '5' } }),
+    ])
+    expect(b.issues.map((i) => [i.tradeId, i.code])).toEqual([
+      ['zero', 'invalid-trade'], ['none', 'invalid-trade'], ['undated', 'invalid-trade'], ['free', 'invalid-trade'], ['wrong', 'invalid-trade'],
+    ])
+    expect(b.incomeUsd).toBe('0')
+  })
+
+  it('does not flag cash income dated before a starting position', () => {
+    const b = run([start('s', '10', '100', '2026-03-01'), cash('d', '4', '2026-01-15')])
+    expect(b.issues).toEqual([])
+    expect(b.incomeUsd).toBe('4')
+  })
+})
+
 describe('toCents', () => {
   it('rounds to cents, halves away from zero, and shows both decimals', () => {
     expect(toCents('347')).toBe('347.00')

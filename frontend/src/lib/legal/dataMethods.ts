@@ -142,6 +142,16 @@ export const DATA_METHODS: readonly MethodSection[] = [
     ],
   },
   {
+    id: 'tracked-gains-income',
+    title: 'Tracked portfolios: gains and income',
+    decided: '2026-11-07',
+    paragraphs: [
+      'Gains on a tracked portfolio are worked out first in, first out: a sale uses up the oldest units first. They are plain differences between what was paid and what was received, and no tax rule is applied to them.',
+      'Income received is shown apart from the gains. Cash income, such as a dividend, interest or a fund distribution, is the amount you enter; no units move. Units received as income, such as a staking reward or a dividend paid in shares, count as income at their value on the day, as you enter it, and that value is also what they cost. So a later sale of those units shows only what was gained after they arrived.',
+      '“In the last 12 months” counts income received from the same date a year earlier up to today. A file imported from a broker is read the same way: a dividend, interest or distribution row is cash income from the file’s amount, and a staking reward row is units received at the file’s price that day.',
+    ],
+  },
+  {
     id: 'rechecks',
     title: 'How figures are re-checked',
     decided: '2026-10-25',
