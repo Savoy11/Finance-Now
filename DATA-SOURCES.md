@@ -5,7 +5,7 @@ change the registry and regenerate. This is the "where does the data come from" 
 `DATA-AVAILABILITY.md` (which tracks whether each surface is live). The same registry powers the
 in-app **/data-sources** page and the per-page provenance badges, so the app and the docs never diverge._
 
-_Last generated: **2026-10-26**_
+_Last generated: **2026-11-07**_
 
 ## Legend
 
@@ -125,13 +125,15 @@ Provider tags: `key` = needs an API key · `paid` = needs a paid plan · untagge
 | FX rates (official tier) | Live | [ECB via Frankfurter](https://frankfurter.dev) `api.frankfurter.dev` | — | `/live-data/fx-rates` |
 | FX rates (extended tier, +126) | Live | [currency-api (community)](https://github.com/fawazahmed0/currency-api) `cdn.jsdelivr.net` | — | `/live-data/fx-rates-extended` |
 | Treasury par yield curve | Live | [U.S. Treasury](https://home.treasury.gov) `home.treasury.gov` | 4h revalidate | `/live-data/treasury-yield-curve` |
+| Treasury yield history and expected inflation | Live | [U.S. Treasury](https://home.treasury.gov) `home.treasury.gov` | 4h revalidate (current year); 1 day (earlier years) | `/live-data/treasury-yield-history` |
 | Macro news (commodities/bonds/FX) | Live | OilPrice RSS `oilprice.com`<br>FXStreet RSS `www.fxstreet.com`<br>CNBC RSS `search.cnbc.com` | — | `/live-data/macro-news` |
 | Futures term structure (forward curve) | Not available | None — no reachable source quotes dated contract months | — | `/live-data/futures-curve` |
 | Commodity / FX / rate quotes + charts | Key-gated | [FMP](https://site.financialmodelingprep.com/developer/docs) `financialmodelingprep.com` _(key)_<br>[Finnhub](https://finnhub.io/docs/api) `finnhub.io` _(key)_<br>[Twelve Data](https://twelvedata.com/docs) `api.twelvedata.com` _(key)_<br>[Tiingo](https://www.tiingo.com/documentation/general/overview) `api.tiingo.com` _(key)_<br>[Alpha Vantage](https://www.alphavantage.co/documentation/) `www.alphavantage.co` _(key)_ | — | `/live-data/security-quotes · security-chart · security-ohlcv` |
 
 - **FX rates (official tier)** — ECB’s complete published set of ~30 reference currencies.
 - **FX rates (extended tier, +126)** — Community-sourced, not ECB — the UI shows a distinct disclosure and never blends the two tiers without attribution.
-- **Treasury par yield curve** — Official 13-maturity daily par curve (XML).
+- **Treasury par yield curve** — Official 13-maturity daily par curve (XML), and since T-446 the real (inflation-protected) par curve for expected inflation.
+- **Treasury yield history and expected inflation** — One maturity’s daily history from the official par curve, one file per calendar year, with the real yield and expected inflation (ordinary minus real yield, same day) at 5Y, 7Y, 10Y, 20Y and 30Y (T-446).
 - **Macro news (commodities/bonds/FX)** — Keyless RSS feeds from the publishers above, with a content-first pillar classifier. MarketWatch’s feed was removed on terms on 2026-09-20 (Dow Jones ToU §9.4.1), and Investing.com’s three on 2026-10-17 (its Limitations on Use (c), owner decision D133).
 - **Futures term structure (forward curve)** — Dated contract months (CLZ26.NYM style) priced through Yahoo’s v8 chart API, verified 9/9 across NYMEX/COMEX/CBOT by the P2-O1 audit (2026-08-05). Yahoo was withdrawn on terms grounds 2026-08-06 and nothing else the app can reach quotes a dated month — FMP/Tiingo/Finnhub/Twelve Data/Alpha Vantage carry continuous front-months at best, exchange settlement files are licensed. The route resolves the contract months and returns ok:false with the reason; the card states it on-page. Front-month prices are unaffected.
 - **Commodity / FX / rate quotes + charts** — FUTURES and FX PAIRS still price through the equity quote/chart routes (no separate plumbing). The four YIELD INDICES no longer do: since D3 (2026-09-03) ^IRX/^FVX/^TNX/^TYX read the official treasury.gov par curve via lib/data/ratesFromCurve.ts — keyless, plain percent, published daily — after a probe found no free provider quotes them at all (FMP paywalls, Finnhub empty, Twelve Data 404, Alpha Vantage empty, Tiingo has no index space). ⚠ Of what remains, this is still the surface the Yahoo removal hit hardest: GC=F and EURUSD=X were quoted keylessly and are NOT covered by Tiingo, so coverage depends on the keyed provider you configure and is expected to be partial. Catalogs carry no reference prices, so anything unpriced renders an honest dash rather than a stale number. The FX converter and Treasury yield curve are keyless and unaffected. Reference/fallback data: `lib/data/commodityCatalog.ts`, `lib/data/currencyCatalog.ts`, `lib/data/ratesCatalog.ts`.
@@ -157,4 +159,4 @@ Provider tags: `key` = needs an API key · `paid` = needs a paid plan · untagge
 
 ---
 
-_57 surfaces catalogued. Regenerate with `npm run data-sources`; verify against the route code with `npm run data-sources -- --verify`._
+_58 surfaces catalogued. Regenerate with `npm run data-sources`; verify against the route code with `npm run data-sources -- --verify`._
