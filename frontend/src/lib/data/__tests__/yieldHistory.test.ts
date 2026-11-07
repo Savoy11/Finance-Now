@@ -27,6 +27,16 @@ describe('which years and days a range covers', () => {
     expect(yearsFor('1mo', new Date('2026-01-05T12:00:00Z'))).toEqual([2025, 2026])
   })
 
+  it('counts back to the end of a shorter month, never into the next (audit 2026-11-07)', () => {
+    // Date's own month arithmetic rolled 31 March less one month over to 3 March.
+    expect(rangeStart('1mo', new Date('2026-03-31T12:00:00Z'))).toBe('2026-02-28')
+    expect(rangeStart('1mo', new Date('2028-03-31T12:00:00Z'))).toBe('2028-02-29')
+    expect(rangeStart('3mo', new Date('2026-05-31T12:00:00Z'))).toBe('2026-02-28')
+    expect(rangeStart('6mo', new Date('2026-08-31T12:00:00Z'))).toBe('2026-02-28')
+    expect(rangeStart('1y', new Date('2028-02-29T12:00:00Z'))).toBe('2027-02-28')
+    expect(rangeStart('1mo', new Date('2026-01-15T12:00:00Z'))).toBe('2025-12-15')
+  })
+
   it('keeps daily readings up to a year and weekly ones beyond', () => {
     expect(['1mo', '3mo', '6mo', '1y'].map((r) => intervalFor(r as '1y'))).toEqual(['daily', 'daily', 'daily', 'daily'])
     expect(intervalFor('5y')).toBe('weekly')
@@ -118,6 +128,22 @@ describe('reading the Treasury’s files', () => {
 
   it('still refuses a par row missing its long end', () => {
     expect(parseEntry(realEntry, 'par')).toBeNull()
+  })
+
+  it('reads a negative real yield, as the file of 2021 wrote every 10-year one (audit 2026-11-07)', () => {
+    // The pattern took digits and dots only, so -1.08 matched nothing: real yields and expected
+    // inflation for most of 2020 to 2022 were dropped, and the chart drew a line across the gap.
+    const negative = realEntry
+      .replace('2026-11-06', '2021-08-04')
+      .replace('>2.35<', '>-1.73<').replace('>2.48<', '>-1.47<').replace('>2.63<', '>-1.08<')
+      .replace('>2.91<', '>-0.71<').replace('>3.07<', '>-0.38<')
+    expect(parseEntry(negative, 'real')?.points.map((p) => p.yieldPct)).toEqual([-1.73, -1.47, -1.08, -0.71, -0.38])
+  })
+
+  it('leaves a gap where a reading is missing, never a line drawn across it', () => {
+    const card = readFileSync(join(process.cwd(), 'src/components/markets/YieldHistoryCard.tsx'), 'utf8')
+    expect(card).toContain('connectNulls={false}')
+    expect(card).not.toMatch(/connectNulls(\s|\/|>)/)
   })
 })
 

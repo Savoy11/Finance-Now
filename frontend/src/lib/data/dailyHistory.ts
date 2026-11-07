@@ -22,9 +22,13 @@ export const isHistoryRange = (v: string): v is HistoryRange => (HISTORY_RANGES 
 
 /** The first day (YYYY-MM-DD) a range covers, counted back from `end`. */
 export function rangeStart(range: HistoryRange, end: Date): string {
-  const d = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), end.getUTCDate()))
-  d.setUTCMonth(d.getUTCMonth() - RANGE_MONTHS[range])
-  return d.toISOString().slice(0, 10)
+  // The same day of the month the range's months back, or that month's last day when it is
+  // shorter: 31 March less one month is 28 (or 29) February. Date's own month arithmetic rolled
+  // the extra days over, so it gave 3 March (audit 2026-11-07).
+  const total = end.getUTCFullYear() * 12 + end.getUTCMonth() - RANGE_MONTHS[range]
+  const year = Math.floor(total / 12), month = total - year * 12
+  const lastDay = new Date(Date.UTC(year, month + 1, 0)).getUTCDate()
+  return new Date(Date.UTC(year, month, Math.min(end.getUTCDate(), lastDay))).toISOString().slice(0, 10)
 }
 
 /** The calendar years a range needs, oldest first (the Treasury publishes one file per year). */

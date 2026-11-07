@@ -131,9 +131,12 @@ function width(cells: string[]): number {
 
 /**
  * Reads a CSV file. The column names are on the first line that has at least
- * three filled cells and as many cells as most such lines (so a short title
- * line above them is not taken for them); lines above it (a title, an account
- * number) are set aside and shown. A later line with a different number of
+ * three filled cells and at least as many cells as most such lines (so a short
+ * title line above them is not taken for them); lines above it (a title, an
+ * account number) are set aside and shown. "At least", not "as many": when a
+ * file's last columns (fees, a note) are empty on most rows, those rows are
+ * narrower than the column names, and an exact match took the first trade for
+ * the column names (audit 2026-11-07, finding 3). A later line with a different number of
  * cells (a totals line, a disclaimer) is set aside too, never read as a trade.
  * Blank lines are skipped.
  */
@@ -145,7 +148,7 @@ export function readCsv(input: string): CsvTable {
   const widths = new Map<number, number>()
   for (const r of records) if (filled(r.cells) >= 3) widths.set(width(r.cells), (widths.get(width(r.cells)) ?? 0) + 1)
   const common = [...widths.entries()].sort((a, b) => b[1] - a[1] || b[0] - a[0])[0]?.[0]
-  const headerAt = records.findIndex((r) => filled(r.cells) >= 3 && width(r.cells) === common)
+  const headerAt = common == null ? -1 : records.findIndex((r) => filled(r.cells) >= 3 && width(r.cells) >= common)
   if (headerAt < 0) {
     return { headers: [], headerLine: 0, rows: [], setAside: records.map((r) => ({ line: r.line, text: shortText(r.text), reason: 'No line with column names was found.' })), delimiter }
   }

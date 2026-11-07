@@ -99,7 +99,10 @@ export function parseEntry(xml: string, kind: CurveKind = 'par'): CurveSnapshot 
   if (!dateMatch) return null
   const points: CurvePoint[] = []
   for (const f of kind === 'real' ? REAL_FIELDS : FIELDS) {
-    const m = xml.match(new RegExp(`<d:${f.tag}[^>]*>([\\d.]+)</d:${f.tag}>`))
+    // A leading minus is kept: real yields were negative from 2020 to 2022 (the 10-year's
+    // whole of 2021), and a pattern without it dropped every one of those days (audit
+    // 2026-11-07, finding 1).
+    const m = xml.match(new RegExp(`<d:${f.tag}[^>]*>(-?[\\d.]+)</d:${f.tag}>`))
     if (m) points.push({ label: f.label, years: f.years, yieldPct: parseFloat(m[1]) })
   }
   // A par curve missing its long end is a partial row — refuse it rather than

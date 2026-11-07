@@ -44,12 +44,17 @@ export interface FundCostLine {
   expenseRatioPct: number
   /** valueUsd × expense ratio. */
   annualCostUsd: number
-  /** Ten years' fees against the benchmark, a verified front load included. */
+  /** Ten years' fees against the benchmark, a verified front load included unless the fund is held. */
   horizonCostUsd: number
   /** A verified front load is in horizonCostUsd. */
   includesLoad: boolean
   /** A sales charge applies whose rate is not verified: the figures understate the cost. */
   unverifiedLoad: boolean
+  /**
+   * The fund is held and carries a front-end sales charge: paid once at purchase, it is behind
+   * the holder and left out of horizonCostUsd.
+   */
+  frontLoadPaid: boolean
 }
 
 export interface PortfolioCosts {
@@ -79,7 +84,12 @@ function isUnknownSecurity(key: string): boolean {
   return !getFund(sym) && !getEquity(sym) && !INSTRUMENT_BY_KEY[key]
 }
 
-export function portfolioFundCosts(positions: readonly CostPosition[]): PortfolioCosts {
+/**
+ * `held`: the positions are funds already owned (a tracked portfolio), so a front-end sales
+ * charge, paid once at purchase, is not counted as a cost still to come. A what-if portfolio's
+ * "per $10,000 invested" is a purchase, so there it is counted, as the fund page counts it.
+ */
+export function portfolioFundCosts(positions: readonly CostPosition[], { held = false }: { held?: boolean } = {}): PortfolioCosts {
   const funds: FundCostLine[] = []
   const unpricedFunds: string[] = []
   const feeNotOnFile: string[] = []
@@ -94,6 +104,7 @@ export function portfolioFundCosts(positions: readonly CostPosition[]): Portfoli
       principal: p.valueUsd,
       years: COST_HORIZON_YEARS,
       annualReturnPct: COST_RETURN_PCT,
+      alreadyHeld: held,
     })
     const charge = fundSalesCharge(fund)
     funds.push({
@@ -104,7 +115,8 @@ export function portfolioFundCosts(positions: readonly CostPosition[]): Portfoli
       annualCostUsd: (p.valueUsd * fund.expenseRatioPct) / 100,
       horizonCostUsd: impact?.costUsd ?? 0,
       includesLoad: impact?.includesLoad ?? false,
-      unverifiedLoad: charge != null && charge.maxPct == null,
+      unverifiedLoad: impact?.unverifiedLoad ?? false,
+      frontLoadPaid: held && charge?.kind === 'front',
     })
   }
 

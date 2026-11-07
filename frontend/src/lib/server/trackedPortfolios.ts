@@ -9,7 +9,7 @@ import {
   type AssetClass,
 } from '@/lib/db/schema'
 import { clientKeyFor, resolveInstruments } from './instrumentResolve'
-import type { IncomeDetails, NewTrade, SplitDetails, StoredCancellation, StoredTrade } from '@/lib/data/tradeLedger'
+import { MAX_TRADES_PER_PORTFOLIO, type IncomeDetails, type NewTrade, type SplitDetails, type StoredCancellation, type StoredTrade } from '@/lib/data/tradeLedger'
 
 // ─── Tracked portfolio persistence (T-027 step 2, owner decision D65) ────────
 // Shared by the routes under /api/user/tracked-portfolios, and by the what-if
@@ -304,8 +304,8 @@ export async function resolveTradeInstrument(t: NewTrade): Promise<string> {
 }
 
 /** Whether this holding already has a starting position that has not been cancelled. */
-export async function hasStartingPosition(userId: string, portfolioId: string, instrumentId: string): Promise<boolean> {
-  const [row] = await db.select({ id: tradeTransactions.id }).from(tradeTransactions)
+export async function hasStartingPosition(userId: string, portfolioId: string, instrumentId: string, q: Queryable = db): Promise<boolean> {
+  const [row] = await q.select({ id: tradeTransactions.id }).from(tradeTransactions)
     .leftJoin(tradeCancellations, eq(tradeCancellations.tradeId, tradeTransactions.id))
     .where(and(
       eq(tradeTransactions.portfolioId, portfolioId),
@@ -318,9 +318,29 @@ export async function hasStartingPosition(userId: string, portfolioId: string, i
   return !!row
 }
 
-/** Saves one trade; a split's terms or cash income's amount go in with it, in one transaction, so neither is ever saved alone. */
-export async function insertTrade(userId: string, portfolioId: string, instrumentId: string, t: NewTrade): Promise<StoredTrade> {
+/**
+ * The lock every save into one tracked portfolio takes, a single trade or an import, so the
+ * checks made before saving (the trade limit, one starting position per holding, an import's
+ * repeats) still hold when two saves arrive at once (audit 2026-11-07). Its text is the one the
+ * import has used since D200, so both kinds of save wait for each other.
+ */
+export const portfolioSaveLock = (portfolioId: string): string => `trade-import:${portfolioId}`
+
+export type SaveTradeResult =
+  | { status: 'saved'; trade: StoredTrade }
+  | { status: 'full' }
+  | { status: 'has-starting-position' }
+
+/**
+ * Saves one trade under the portfolio's lock, checking inside the same transaction that the
+ * portfolio has room and, for a starting position, that the holding has none yet. A split's
+ * terms or cash income's amount go in with it, so neither is ever saved alone.
+ */
+export async function insertTrade(userId: string, portfolioId: string, instrumentId: string, t: NewTrade): Promise<SaveTradeResult> {
   const id = await db.transaction(async (tx) => {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${portfolioSaveLock(portfolioId)}))`)
+    if ((await countTrades(userId, portfolioId, tx)) >= MAX_TRADES_PER_PORTFOLIO) return 'full' as const
+    if (t.opening && (await hasStartingPosition(userId, portfolioId, instrumentId, tx))) return 'has-starting-position' as const
     const [row] = await tx.insert(tradeTransactions).values({
       userId,
       portfolioId,
@@ -347,12 +367,13 @@ export async function insertTrade(userId: string, portfolioId: string, instrumen
     }
     return row.id
   })
+  if (id === 'full' || id === 'has-starting-position') return { status: id }
   const [row] = await db.select(tradeColumns).from(tradeTransactions)
     .innerJoin(instruments, eq(instruments.id, tradeTransactions.instrumentId))
     .leftJoin(instrumentCrypto, eq(instrumentCrypto.instrumentId, instruments.id))
     .where(eq(tradeTransactions.id, id))
     .limit(1)
-  return toStored(row, t.split, t.income)
+  return { status: 'saved', trade: toStored(row, t.split, t.income) }
 }
 
 /**

@@ -24,7 +24,7 @@ import {
   type Portfolio, type PortfolioHolding,
 } from '@/lib/data/portfolioUtils'
 import type { PortfolioPricesResponse } from '@/app/live-data/portfolio-prices/route'
-import { INSTRUMENT_BY_KEY, CLASS_LABELS, formatInstrumentQuote, isSecurityKey, securitySymbol } from '@/lib/data/instruments'
+import { INSTRUMENT_BY_KEY, CLASS_LABELS, entryUnitLabel, formatInstrumentQuote, isSecurityKey, securitySymbol } from '@/lib/data/instruments'
 import { getEquity } from '@/lib/data/equityCatalog'
 import type { StockUniverseResponse } from '@/app/live-data/stock-universe/route'
 import { fetchInstrumentPrices } from '@/lib/api/instrumentPrices'
@@ -42,22 +42,6 @@ function fmt$(n: number, decimals = 2) {
   if (n >= 1e6) return `$${(n / 1e6).toFixed(2)}M`
   if (n >= 1e3) return `$${(n / 1e3).toFixed(decimals)}K`
   return `$${n.toFixed(decimals)}`
-}
-/**
- * What the entry-price box is denominated in. '$' is only right for USD-quoted
- * assets; corn quotes in cents/bushel, ^TNX is a percent yield, bond futures
- * are points of par, FX pairs are the quote currency. The stored ratio math is
- * unit-agnostic (entry and current just have to share a unit) — this label is
- * what tells the user WHICH unit to type.
- */
-function entryUnitLabel(key: string): string {
-  const q = INSTRUMENT_BY_KEY[key]?.quoteKind
-  if (q === 'cents') return '¢'
-  if (q === 'percent') return '%'
-  if (q === 'points') return 'pts'
-  if (q === 'index') return 'idx'
-  if (q === 'fx') return INSTRUMENT_BY_KEY[key]?.quoteCurrency ?? 'fx'
-  return '$'
 }
 
 function fmtPct(n: number, showSign = true) {

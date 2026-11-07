@@ -70,6 +70,29 @@ describe('reading the file', () => {
     expect(readCsv('Date,Action,Symbol,\n2026-01-02,Buy,VTI,\n').rows[0].cells).toEqual(['2026-01-02', 'Buy', 'VTI'])
   })
 
+  it('finds the column names when the last columns are empty on most rows (audit 2026-11-07)', () => {
+    // Most rows leave Fees and Note empty, so they are narrower than the column names. Matching
+    // the most common width exactly took the first trade for the column names, set the real
+    // ones aside, and set aside every row whose fee or note was filled.
+    const file = [
+      'Account report,Account 1234,Generated 2026-11-07',
+      'Date,Action,Symbol,Quantity,Price,Fees,Note',
+      '2026-01-02,Buy,AAPL,10,150,,',
+      '2026-01-03,Buy,MSFT,5,400,,',
+      '2026-01-04,Sell,AAPL,2,160,1.00,partial',
+      '2026-01-05,Buy,VOO,1,500,,',
+    ].join('\n')
+    const t = readCsv(file)
+    expect(t.headers).toEqual(['Date', 'Action', 'Symbol', 'Quantity', 'Price', 'Fees', 'Note'])
+    expect(t.headerLine).toBe(2)
+    expect(t.rows.map((r) => r.line)).toEqual([3, 4, 5, 6])
+    expect(t.rows[2].cells).toEqual(['2026-01-04', 'Sell', 'AAPL', '2', '160', '1.00', 'partial'])
+    expect(t.setAside).toEqual([{ line: 1, text: 'Account report,Account 1234,Generated 2026-11-07', reason: 'Above the column names.' }])
+    const plan = planImport(t, withActionChoices(guessLayout(t), t), NOW)
+    expect(plan.layoutProblem).toBeNull()
+    expect(plan.ready).toBe(4)
+  })
+
   it('fingerprints the layout by its column names, not their case', () => {
     expect(headerSignature(['Trade Date', 'Symbol'])).toBe(headerSignature([' trade date', 'SYMBOL ']))
     expect(headerSignature(['Symbol', 'Trade Date'])).not.toBe(headerSignature(['Trade Date', 'Symbol']))

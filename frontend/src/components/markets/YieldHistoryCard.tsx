@@ -93,7 +93,7 @@ export function YieldHistoryCard({ maturities, defaultMaturity, title = 'Yield h
             tooltipFormatter={(v, name) => [pct(v), String(name)]}
             height={260}
             showLegend={hasReal}
-            connectNulls
+            connectNulls={false}
           />
           <p className="mt-2 text-[11px] text-text-muted leading-relaxed">
             Official US Treasury par yields, published once a day{data?.interval === 'weekly' ? '; over this span each week’s last reading is drawn' : ''}.
