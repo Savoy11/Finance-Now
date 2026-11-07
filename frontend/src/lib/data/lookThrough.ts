@@ -139,7 +139,11 @@ export function computeLookThrough(
     const existing = byKey.get(key)
     if (existing) {
       existing.weightPct += weightPct
-      existing.contributions.push({ via, weightPct, direct })
+      // One entry per fund: a bond fund holds many notes of one issuer (BND, dozens of
+      // Treasury notes), and listing each one printed "via BND" dozens of times.
+      const same = existing.contributions.find((c) => c.via === via && c.direct === direct)
+      if (same) same.weightPct += weightPct
+      else existing.contributions.push({ via, weightPct, direct })
       // Filled in once at the end — a running flag here would depend on order.
     } else {
       byKey.set(key, {

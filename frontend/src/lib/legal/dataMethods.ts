@@ -4,6 +4,7 @@ import { DISCOVERY_APY_MAX } from '@/lib/data/discoveryApy'
 import { FUND_CATALOG, FUND_FEES_LAST_VERIFIED, YIELD_CHECK_AFTER_DAYS, YIELD_KIND_NAMES, YIELD_SHOWN_FOR_DAYS } from '@/lib/data/fundCatalog'
 import { META_AS_OF, MONITORED_STABLECOINS } from '@/lib/data/stablecoinMeta'
 import { COST_BENCHMARK_ER_PCT, COST_HORIZON_YEARS, COST_RETURN_PCT, PER_WHAT_IF_USD } from '@/lib/data/portfolioCosts'
+import { YEARLY_AFTER_DAYS } from '@/lib/data/trackedPortfolioViews'
 
 /**
  * "How our figures are worked out" (/about/data-methods, D163): the rules behind the figures
@@ -184,6 +185,16 @@ export const DATA_METHODS: readonly MethodSection[] = [
       'Gains on a tracked portfolio are worked out first in, first out: a sale uses up the oldest units first. They are plain differences between what was paid and what was received, and no tax rule is applied to them.',
       'Income received is shown apart from the gains. Cash income, such as a dividend, interest or a fund distribution, is the amount you enter; no units move. Units received as income, such as a staking reward or a dividend paid in shares, count as income at their value on the day, as you enter it, and that value is also what they cost. So a later sale of those units shows only what was gained after they arrived.',
       '“In the last 12 months” counts income received from the same date a year earlier up to today. A file imported from a broker is read the same way: a dividend, interest or distribution row is cash income from the file’s amount, and a staking reward row is units received at the file’s price that day.',
+    ],
+  },
+  {
+    id: 'tracked-return-mix',
+    title: 'Tracked portfolios: return, mix and drift',
+    decided: '2026-11-07',
+    paragraphs: [
+      'The return on a tracked portfolio is money-weighted. It is the yearly rate at which every amount you put in, from the day you put it in, would grow to what you took out plus what you hold now. Money in is each purchase and each transfer in, a starting position included, at what it cost with its fee. Money out is each sale, after its fee, and each cash income payment. Units received as income and splits move no money, and a cancelled trade is left out.',
+      `It is shown as a yearly rate only once the first money put in is ${YEARLY_AFTER_DAYS} days old. Before that, or when the starting position has no date, the plain total return is shown: what you hold now plus what you took out, less what you put in, as a share of what you put in. No figure is shown while any holding has no live price, since a holding is never valued at its cost, or after a transfer out, since the app does not know what the units moved out were worth.`,
+      'How a tracked portfolio’s money splits, and what its funds hold, are shares of the live value of the holdings that have a live price. Any holding without one is named and left out. The Portfolio Builder’s drift check reads a tracked portfolio the same way, each holding by its share of the live value; it states how much was left out, measured by what those holdings cost. The Daily Brief is sent only the names of the holdings, never how much is held or what it cost.',
     ],
   },
   {

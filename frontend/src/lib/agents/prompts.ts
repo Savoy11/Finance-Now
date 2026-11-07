@@ -234,7 +234,7 @@ Crypto module:
 - Wallets: HIDDEN from the initial rollout (2026-08-22), same posture as Transfer Fees. Exchange API linking was REMOVED entirely on 2026-08-18 (RP-5) on security grounds — it stored an exchange key and secret in plaintext. Never tell a user they can connect an exchange API key; the app does not accept one anywhere
 
 Equities module (/equities):
-- Stock Registry: the full US common-stock universe via FMP's screener, which only a PAID FMP plan serves; with a free key or none it shows the ${EQUITY_CATALOG.length}-name curated fallback. ${SECTOR_COUNT} sectors, live quotes for every stock on the list (P/E, yield and market cap are worked out against them; no live quote, no figure; beta is on each stock's page)
+- Stock Registry: the full US common-stock universe via FMP's screener, which only a PAID FMP plan serves; with a free key or none it shows the ${EQUITY_CATALOG.length}-name curated fallback. ${SECTOR_COUNT} sectors, live quotes for every stock on the list (P/E, yield and market cap are worked out against them; no live quote, no figure; beta is on each stock's page). A second list, "Every NYSE & Nasdaq stock", holds every NYSE and Nasdaq common stock the SEC lists, with no key: it screens and sorts on the SEC figures (earnings and dividends per share, shares outstanding) over every stock, shows price, market cap, P/E and yield only for the stocks on screen, and has a sector only for the curated ones
 - Equity Detail: chart, news, 52-week range, financial ratios from SEC XBRL, revenue/earnings history, company profile, sector peers, SEC filings (10-K/10-Q/8-K)
 - Market News: RSS multi-feed with filters; with a Marketaux key, a stock's own news also includes articles Marketaux tagged with its ticker
 - Stock Social: StockTwits sentiment. Reddit is not read: its robots.txt disallows this app's agent, and the app honours that
@@ -247,8 +247,9 @@ Equities module (/equities):
 
 Macro Markets module (/macro):
 - Commodities (${COMMODITY_CATALOG.length} futures contracts), Currencies (${CURRENCY_CATALOG.length} entries — ${FX_PAIR_COUNT} FX pairs plus the ${CURRENCY_INDEXES.map((c) => c.name).join(' and ')}, with a two-tier converter), Bonds & Rates (${YIELD_INDEX_COUNT} yield indices + ${BOND_FUTURE_COUNT} bond futures, plus the official treasury yield curve)
-- The yield indices read the official treasury.gov par curve, which publishes DAILY — quote them as a daily reading with no intraday change, never as a live tick (D3, 2026-09-03)
-- Macro News classified into commodities/currencies/bonds pillars; Macro TA over all ${MACRO_INSTRUMENT_COUNT} instruments, and a Macro Scanner over the liquid ones (thin contracts and emerging-market and cross FX pairs are left out of its ranking, and still chart)
+- The yield indices read the official treasury.gov par curve, which publishes DAILY — quote them as a daily reading with no intraday change, never as a live tick (D3, 2026-09-03). Each yield page charts its history from that curve, and Bonds & Rates shows expected inflation: the ordinary minus the inflation-protected (real) yield at the same maturity on the same day, what the bond market prices in, not a forecast
+- A currency pair with no live quote shows the European Central Bank's daily reference rate, marked ECB and dated; a pair without the euro is worked out from two euro rates of the same day, and the page says so
+- Macro News classified into commodities/currencies/bonds pillars; Macro TA over all ${MACRO_INSTRUMENT_COUNT} instruments, and a Macro Scanner over the liquid ones (thin contracts are left out of its ranking, and still chart; the Treasury yields and the currency pairs are scanned as one official figure a day)
 
 ETFs & Funds module (/funds):
 - Fund Registry: every US-listed ETF and SEC-registered mutual-fund share class, over a ${FUND_CATALOG.length}-fund curated catalog, with live quotes, expense ratios, AUM, and a fee-impact view showing what a fee costs in dollars over a horizon
@@ -257,7 +258,7 @@ ETFs & Funds module (/funds):
 
 Cross-module:
 - Watchlist: named lists mixing coins, stocks, funds, and macro instruments with live prices
-- Portfolios: cross-asset what-if portfolios with live valuations, P&L and look-through (the Backtest tab is hidden, 2026-08-20). Portfolios → Tracked (/portfolios/tracked) records real trades in coins, stocks and funds (starting positions, buys, sells, splits; a mistake is cancelled, never edited) and works out realized and unrealized gains by FIFO, not adjusted for tax rules
+- Portfolios: cross-asset what-if portfolios with live valuations, P&L and look-through (the Backtest tab is hidden, 2026-08-20). Portfolios → Tracked (/portfolios/tracked) records real trades in coins, stocks and funds (starting positions, buys, sells, splits; a mistake is cancelled, never edited), imports them from a broker's CSV file (read in the browser, every row shown before anything is saved), and records income received (dividends, interest, fund distributions, staking rewards), shown apart from the gains. It works out realized and unrealized gains by FIFO, not adjusted for tax rules. Both kinds of portfolio show what their funds cost a year. A tracked portfolio also shows how its money splits and what its funds hold, by live value, and its return: a money-weighted yearly rate once the first money put in is a year old, the plain total return before that. The Daily Brief covers the tickers it holds, and the Portfolio Builder's drift check can compare a saved plan with it
 - Compare: growth-of-100 comparison of stocks, funds, coins and macro instruments, with window stats, correlation, beta against a chosen benchmark, filed fundamentals, and fund holdings-overlap
 - Daily Brief: AI morning brief grounded in the user's holdings
 - Portfolio Builder (premium): questionnaire-driven diversified allocation with drift and suitability monitoring

@@ -17,6 +17,12 @@ import {
 import { buildRebalanceNotes, type RebalanceNotes } from '@/lib/data/rebalanceNotes'
 import { planHistory, snapshotFromDrift, type SavedCheck } from '@/lib/data/planHistory'
 import { RebalanceNotesPrint } from './RebalanceNotesPrint'
+import {
+  TRACKED_LIST_KEY, retryUnlessAnswered, trackedApi, trackedLedgerKey, trackedPricesKey,
+} from '@/lib/api/trackedPortfolios'
+import { valueLedger } from '@/lib/data/tradeLedger'
+import { actualWeightsFromTracked } from '@/lib/data/trackedPortfolioViews'
+import { FeatureNotice } from '@/components/legal/FeatureNotice'
 
 // Drift + suitability panel for one saved plan. A plan only earns its keep if
 // it's checked against what the user actually holds, so this reads real
@@ -26,8 +32,15 @@ import { RebalanceNotesPrint } from './RebalanceNotesPrint'
 // history (T-065, lib/data/planHistory.ts), kept only when the user presses
 // Save, and printed rebalance notes (T-066, lib/data/rebalanceNotes.ts), which
 // restate the drift table on paper. Both carry the figures on screen, no others.
+//
+// A tracked portfolio (real trades, T-027) can be the one compared against since
+// T-453 (D208): weighted by each holding's live value, with the short
+// not-advice line beside the figures, since these are trades on real money.
 
 type Source = 'portfolio' | 'manual'
+
+/** A portfolio the plan can be compared against: a what-if one, or a tracked one with real trades. */
+interface Choice { id: string; name: string; tracked: boolean }
 
 /** Saved checks shown before "Show all". */
 const HISTORY_SHOWN = 10
@@ -42,27 +55,38 @@ export function PlanMonitor({ saved }: { saved: SavedPlan }) {
   const portfolios = usePortfolioStore((s) => s.portfolios)
   const queryClient = useQueryClient()
   useEffect(() => { void hydratePortfolios() }, [])
+  // Tracked portfolios are rows in the same portfolios table, so a plan can link one.
+  // A database without their tables (migration 0005) answers 503: then there are none.
+  const trackedList = useQuery({ queryKey: TRACKED_LIST_KEY, queryFn: () => trackedApi.list(), retry: retryUnlessAnswered })
+
+  const choices = useMemo<Choice[]>(() => [
+    ...portfolios.map((p) => ({ id: p.id, name: p.name, tracked: false })),
+    ...(trackedList.data ?? []).map((p) => ({ id: p.id, name: p.name, tracked: true })),
+  ], [portfolios, trackedList.data])
 
   // Portfolios are DB-backed with UUID ids, so a plan's comparison target
   // persists server-side (builder_plans.linked_portfolio_id): a saved link
   // wins over the default, and changing the select saves the new link.
-  const linkedStillExists = portfolios.some((p) => p.id === saved.linkedPortfolioId)
-  const [source, setSource] = useState<Source>(portfolios.length > 0 ? 'portfolio' : 'manual')
-  const [portfolioId, setPortfolioId] = useState<string>(
-    (linkedStillExists ? saved.linkedPortfolioId! : portfolios[0]?.id) ?? '')
+  const linkedChoice = choices.find((c) => c.id === saved.linkedPortfolioId)
+  const [source, setSource] = useState<Source>(choices.length > 0 ? 'portfolio' : 'manual')
+  const [portfolioId, setPortfolioId] = useState<string>((linkedChoice ?? choices[0])?.id ?? '')
   const [manual, setManual] = useState<Record<string, string>>({})
 
-  // Portfolios hydrate from the server after first render, so the initial
-  // state above may have been computed against an empty list. Once they
-  // arrive, adopt the persisted link (or first portfolio) and switch the
-  // source toggle over — unless the user has already made choices themselves.
+  // What-if and tracked portfolios arrive from the server after first render,
+  // and not together, so the state above may have been computed against a
+  // partial list. As they arrive, adopt the persisted link (or the first
+  // portfolio) and switch the source toggle over, unless the user has already
+  // chosen themselves.
   const sourceTouched = useRef(false)
+  const portfolioTouched = useRef(false)
   useEffect(() => {
-    if (portfolios.length === 0) return
-    if (!portfolioId) setPortfolioId(linkedStillExists ? saved.linkedPortfolioId! : portfolios[0].id)
+    if (choices.length === 0) return
+    if (!portfolioTouched.current) {
+      const keep = choices.some((c) => c.id === portfolioId) ? portfolioId : choices[0].id
+      setPortfolioId(linkedChoice ? linkedChoice.id : keep)
+    }
     if (!sourceTouched.current) setSource('portfolio')
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [portfolios.length])
+  }, [choices, linkedChoice, portfolioId])
 
   const linkMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -77,21 +101,52 @@ export function PlanMonitor({ saved }: { saved: SavedPlan }) {
   })
 
   const selectPortfolio = (id: string) => {
+    portfolioTouched.current = true
     setPortfolioId(id)
     linkMutation.mutate(id)
   }
 
-  const portfolio = portfolios.find((p) => p.id === portfolioId)
-  const usingPortfolio = source === 'portfolio' && !!portfolio
+  const chosen = choices.find((c) => c.id === portfolioId)
+  const portfolio = chosen && !chosen.tracked ? portfolios.find((p) => p.id === chosen.id) : undefined
+  const trackedId = chosen?.tracked ? chosen.id : null
+  const usingTracked = source === 'portfolio' && !!trackedId
+  const usingPortfolio = source === 'portfolio' && (!!portfolio || usingTracked)
 
-  const { data: priceResult, isLoading: pricesLoading } = useQuery({
+  const { data: priceResult, isLoading: whatIfPricesLoading } = useQuery({
     queryKey: ['builder-drift-prices', portfolio?.id, portfolio?.holdings.length],
     queryFn: () => fetchInstrumentPrices(portfolio!.holdings.map((h) => h.cgId)),
-    enabled: usingPortfolio && (portfolio?.holdings.length ?? 0) > 0,
+    enabled: source === 'portfolio' && !!portfolio && portfolio.holdings.length > 0,
     staleTime: STALE_TIME_SHORT,
   })
 
+  // A tracked portfolio: its ledger, then live prices for what is still held, under
+  // the same query keys as its own page, so the two share one cache.
+  const ledger = useQuery({
+    queryKey: trackedLedgerKey(trackedId ?? ''),
+    queryFn: () => trackedApi.ledger(trackedId!),
+    enabled: usingTracked,
+    retry: retryUnlessAnswered,
+  })
+  const heldKeys = useMemo(
+    () => (ledger.data?.view.holdings ?? []).filter((h) => h.basis.quantityHeld !== '0').map((h) => h.instrumentKey).sort(),
+    [ledger.data],
+  )
+  const trackedPrices = useQuery({
+    queryKey: trackedPricesKey(heldKeys),
+    queryFn: () => fetchInstrumentPrices(heldKeys),
+    enabled: usingTracked && heldKeys.length > 0,
+    staleTime: STALE_TIME_SHORT,
+  })
+  const pricesLoading = usingTracked
+    ? ledger.isPending || (heldKeys.length > 0 && trackedPrices.isPending)
+    : whatIfPricesLoading
+
   const actual = useMemo(() => {
+    if (usingTracked) {
+      if (!ledger.data || (heldKeys.length > 0 && !trackedPrices.data)) return null
+      const r = actualWeightsFromTracked(valueLedger(ledger.data.view, trackedPrices.data?.prices ?? {}).holdings)
+      return Object.keys(r.weights).length > 0 ? r : null
+    }
     if (usingPortfolio) {
       if (!priceResult) return null
       const r = actualWeightsFromPortfolio(portfolio!, priceResult.prices)
@@ -105,7 +160,8 @@ export function PlanMonitor({ saved }: { saved: SavedPlan }) {
     return Object.keys(weights).length > 0
       ? { weights, valueUsd: saved.plan.inputs.amount, pricedPct: 100, unpricedPct: 0, noCostBasisPct: 0 }
       : null
-  }, [usingPortfolio, priceResult, portfolio, manual, saved.plan.inputs.amount])
+  }, [usingTracked, ledger.data, heldKeys, trackedPrices.data, usingPortfolio, priceResult, portfolio, manual, saved.plan.inputs.amount])
+  const portfolioName = usingPortfolio ? chosen?.name ?? null : null
 
   const drift = useMemo(
     () => (actual ? checkDrift(saved.plan, actual.weights, actual.valueUsd) : null),
@@ -138,7 +194,7 @@ export function PlanMonitor({ saved }: { saved: SavedPlan }) {
     mutationFn: async () => {
       if (!drift || !actual) throw new Error('There is no check to save yet')
       const snapshot = snapshotFromDrift(drift, {
-        portfolioName: usingPortfolio ? portfolio!.name : null,
+        portfolioName,
         valueUsd: actual.valueUsd, pricedPct: actual.pricedPct, bandPct: saved.plan.driftBandPct,
       })
       const res = await fetch(`/api/user/builder-plans/${saved.id}/snapshots`, {
@@ -158,7 +214,7 @@ export function PlanMonitor({ saved }: { saved: SavedPlan }) {
   const printRebalanceNotes = () => {
     if (!drift || !actual) return
     setPrintNotes(buildRebalanceNotes({
-      planName: saved.name, drift, portfolioName: usingPortfolio ? portfolio!.name : null,
+      planName: saved.name, drift, portfolioName,
       valueUsd: actual.valueUsd, pricedPct: actual.pricedPct, bandPct: saved.plan.driftBandPct,
       preparedAt: new Date(),
     }))
@@ -172,7 +228,7 @@ export function PlanMonitor({ saved }: { saved: SavedPlan }) {
         <div className="flex items-center gap-0.5 bg-bg-elevated border border-border rounded-sm p-0.5">
           <button
             onClick={() => { sourceTouched.current = true; setSource('portfolio') }}
-            disabled={portfolios.length === 0}
+            disabled={choices.length === 0}
             className={clsx('px-2.5 py-1 rounded-sm text-xs font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed',
               source === 'portfolio' ? 'bg-accent-blue/20 text-accent-blue' : 'text-text-muted hover:text-text-secondary')}
           >
@@ -188,13 +244,23 @@ export function PlanMonitor({ saved }: { saved: SavedPlan }) {
         </div>
 
         {source === 'portfolio' && (
-          portfolios.length > 0 ? (
+          choices.length > 0 ? (
             <select
               value={portfolioId}
               onChange={(e) => selectPortfolio(e.target.value)}
+              aria-label="Portfolio to compare against"
               className="rounded-sm border border-border bg-bg-card px-2 py-1 text-xs text-text-primary focus:border-accent-blue/50 focus:outline-hidden"
             >
-              {portfolios.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              {portfolios.length > 0 && (
+                <optgroup label="What-if portfolios">
+                  {portfolios.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </optgroup>
+              )}
+              {(trackedList.data?.length ?? 0) > 0 && (
+                <optgroup label="Tracked portfolios (real trades)">
+                  {trackedList.data!.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </optgroup>
+              )}
             </select>
           ) : (
             <span className="text-xs text-text-muted">No portfolios yet — build one on the Portfolios page, or enter weights by hand.</span>
@@ -239,7 +305,21 @@ export function PlanMonitor({ saved }: { saved: SavedPlan }) {
         <p className="text-xs text-text-muted">Fetching live prices…</p>
       )}
 
-      {usingPortfolio && !pricesLoading && !actual && (
+      {usingTracked && ledger.isError && (
+        <p className="text-xs text-amber-400">
+          This tracked portfolio’s trades could not be loaded: {ledger.error instanceof Error ? ledger.error.message : 'the request failed'}.
+        </p>
+      )}
+
+      {usingTracked && !pricesLoading && !ledger.isError && !actual && (
+        <p className="text-xs text-amber-400">
+          {heldKeys.length === 0
+            ? 'This tracked portfolio holds nothing right now, so there is nothing to compare.'
+            : 'None of this portfolio’s holdings has a live price right now, so drift can’t be worked out. A holding is never valued at its cost.'}
+        </p>
+      )}
+
+      {usingPortfolio && !usingTracked && !pricesLoading && !actual && (
         <p className="text-xs text-amber-400">
           None of this portfolio’s positions could be marked to market, so drift can’t be calculated.
           A position needs both a live price and an entry price; without both it is excluded rather than
@@ -250,7 +330,7 @@ export function PlanMonitor({ saved }: { saved: SavedPlan }) {
 
       {usingPortfolio && actual && actual.pricedPct < 99 && (
         <p className="text-xs text-amber-400">
-          Only {actual.pricedPct}% of the portfolio could be marked to market; the rest is excluded from
+          Only {actual.pricedPct}% of the portfolio{usingTracked ? ' (measured by what it cost)' : ''} could be marked to market; the rest is excluded from
           these weights
           {actual.unpricedPct > 0 && ` (${actual.unpricedPct}% has no live price`}
           {actual.unpricedPct > 0 && actual.noCostBasisPct > 0 && ','}
@@ -264,6 +344,8 @@ export function PlanMonitor({ saved }: { saved: SavedPlan }) {
       {/* Drift table */}
       {drift && (
         <>
+          {/* Real money (T-453, D208): the not-advice line sits beside the figures. */}
+          {usingTracked && <FeatureNotice feature="portfolioBuilder" />}
           <div className="flex flex-wrap items-center gap-4 text-xs">
             <span className={clsx('flex items-center gap-1.5 px-2 py-0.5 rounded-sm font-medium border',
               drift.rebalanceDue

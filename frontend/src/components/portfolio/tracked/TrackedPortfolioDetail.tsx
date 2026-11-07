@@ -10,13 +10,22 @@ import { SourceLine } from '@/components/ui/SourceLine'
 import { STALE_TIME_SHORT } from '@/lib/constants'
 import { isSecurityKey } from '@/lib/data/instruments'
 import { fetchInstrumentPrices } from '@/lib/api/instrumentPrices'
-import { retryUnlessAnswered, trackedApi, type TradeInput, type TrackedPortfolioSummary } from '@/lib/api/trackedPortfolios'
+import {
+  TRACKED_LIST_KEY, retryUnlessAnswered, trackedApi, trackedLedgerKey, trackedPricesKey,
+  type TradeInput, type TrackedPortfolioSummary,
+} from '@/lib/api/trackedPortfolios'
 import {
   MAX_DESCRIPTION_LENGTH, MAX_NAME_LENGTH, formatUsd, formatUsdChange, valueLedger,
 } from '@/lib/data/tradeLedger'
 import { HoldingsTable } from './HoldingsTable'
 import { PortfolioCostsCard } from '@/components/portfolio/PortfolioCostsCard'
+import { PortfolioLookThrough } from '@/components/portfolio/PortfolioLookThrough'
 import { trackedCostPositions } from '@/lib/data/portfolioCosts'
+import {
+  YEARLY_AFTER_DAYS, formatReturnPct, portfolioReturn, trackedClassSplit, trackedLookThroughPositions,
+  type PortfolioReturn,
+} from '@/lib/data/trackedPortfolioViews'
+import { TrackedMixCard } from './TrackedMixCard'
 import { TradeForm } from './TradeForm'
 import { ImportTradesPanel } from './ImportTradesPanel'
 import { TradesTable } from './TradesTable'
@@ -27,7 +36,7 @@ import { TradesTable } from './TradesTable'
 // ledger view; live prices are applied here, and a holding with no live price
 // is left out of the totals, never valued at its cost.
 
-export const TRACKED_LIST_KEY = ['tracked-portfolios'] as const
+export { TRACKED_LIST_KEY }
 
 const errorText = (e: unknown, fallback: string) => (e instanceof Error && e.message ? e.message : fallback)
 
@@ -36,6 +45,43 @@ const toneCls = (usd: string) => (isZero(usd) ? 'text-text-primary' : usd.starts
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
 
 const inputCls = 'w-full bg-bg-elevated border border-border rounded-sm px-2.5 py-1.5 text-sm text-text-primary placeholder:text-text-muted focus:outline-hidden focus:border-accent-blue'
+
+const RETURN_TONE = (pct: number) => (Math.round(pct * 10) === 0 ? 'text-text-primary' : pct < 0 ? 'text-red-400' : 'text-emerald-400')
+
+/**
+ * What the money has earned (T-453 d, D208): money-weighted per year once the first money put
+ * in is a year old, the plain total return before that. Never a figure that leaves out an
+ * unpriced holding.
+ */
+function ReturnTile({ r }: { r: PortfolioReturn }) {
+  if (r.kind === 'yearly') {
+    return (
+      <Tile label="Return per year" value={`${formatReturnPct(r.ratePct)} a year`} valueCls={RETURN_TONE(r.ratePct)}>
+        Money-weighted since {r.since}: what you put in and when, against what you took out and hold now
+      </Tile>
+    )
+  }
+  if (r.kind === 'total') {
+    return (
+      <Tile label="Total return so far" value={formatReturnPct(r.pct)} valueCls={RETURN_TONE(r.pct)}>
+        {r.why === 'under-a-year'
+          ? `Since ${r.since}. A yearly figure shows once the first money put in is ${YEARLY_AFTER_DAYS} days old`
+          : r.why === 'undated-start'
+            ? 'The starting position has no date, so there is no yearly figure. Add its date to see one'
+            : 'No yearly rate fits these figures, so the plain total is shown'}
+      </Tile>
+    )
+  }
+  return (
+    <Tile label="Return" value="—">
+      {r.why === 'unpriced'
+        ? `Needs a live price for every holding; none for ${r.unpriced?.join(', ')}`
+        : r.why === 'transfer-out'
+          ? 'Not worked out after a transfer out: the app does not know what the units moved out were worth'
+          : 'Nothing put in yet'}
+    </Tile>
+  )
+}
 
 function Tile({ label, value, valueCls, children }: {
   label: string
@@ -58,7 +104,7 @@ export function TrackedPortfolioDetail({ portfolio, onBack }: {
 }) {
   const uid = useId()
   const qc = useQueryClient()
-  const ledgerKey = ['tracked-ledger', portfolio.id]
+  const ledgerKey = trackedLedgerKey(portfolio.id)
 
   const ledger = useQuery({
     queryKey: ledgerKey,
@@ -74,7 +120,7 @@ export function TrackedPortfolioDetail({ portfolio, onBack }: {
     [view],
   )
   const prices = useQuery({
-    queryKey: ['tracked-prices', heldKeys.join(',')],
+    queryKey: trackedPricesKey(heldKeys),
     queryFn: () => fetchInstrumentPrices(heldKeys),
     enabled: heldKeys.length > 0,
     staleTime: STALE_TIME_SHORT,
@@ -84,6 +130,10 @@ export function TrackedPortfolioDetail({ portfolio, onBack }: {
   const valued = useMemo(() => (view ? valueLedger(view, prices.data?.prices ?? {}) : null), [view, prices.data])
   // T-448: the funds held, at live values, for the costs card.
   const costPositions = useMemo(() => (valued ? trackedCostPositions(valued.holdings) : []), [valued])
+  // T-453: how the money splits, what the funds hold, and what the money has earned.
+  const split = useMemo(() => (valued ? trackedClassSplit(valued.holdings) : null), [valued])
+  const lookThrough = useMemo(() => (valued ? trackedLookThroughPositions(valued.holdings) : null), [valued])
+  const earned = useMemo(() => (view && valued ? portfolioReturn(view.trades, valued.totals) : null), [view, valued])
 
   const [editing, setEditing] = useState(false)
   const [name, setName] = useState('')
@@ -226,7 +276,7 @@ export function TrackedPortfolioDetail({ portfolio, onBack }: {
       {view && valued && totals && (
         <>
           {/* One column on a phone: a dollar figure is never cut short. */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
             <Tile label="Cost of holdings" value={formatUsd(totals.costHeldUsd)}>
               {totals.heldCount === 0 ? 'Nothing held' : `${plural(totals.heldCount, 'holding')}, fees included`}
             </Tile>
@@ -256,6 +306,7 @@ export function TrackedPortfolioDetail({ portfolio, onBack }: {
                 ? 'Dividends, interest and rewards you record'
                 : `${formatUsd(totals.incomeLast12MonthsUsd)} in the last 12 months`}
             </Tile>
+            {pricesPending ? <Tile label="Return" value="—">Fetching live prices…</Tile> : earned && <ReturnTile r={earned} />}
           </div>
 
           {!pricesPending && totals.unpriced.length > 0 && (
@@ -280,6 +331,17 @@ export function TrackedPortfolioDetail({ portfolio, onBack }: {
 
           {/* What the funds held cost each year (T-448): figures only, no warning. */}
           {!pricesPending && <PortfolioCostsCard positions={costPositions} basis="tracked" />}
+
+          {/* T-453 (b): how the money splits, and what the funds hold, by live value. */}
+          {!pricesPending && totals.heldCount > 0 && split && lookThrough && (
+            <section className="space-y-3" aria-labelledby={`${uid}-mix`}>
+              <h3 id={`${uid}-mix`} className="text-sm font-semibold text-text-primary">What it holds</h3>
+              <TrackedMixCard split={split} />
+              {lookThrough.positions.length > 0 && (
+                <PortfolioLookThrough positions={lookThrough.positions} basis="value" unpriced={lookThrough.unpriced} />
+              )}
+            </section>
+          )}
 
           <TradeForm view={view} onSubmit={addTrade} busy={busy === 'trade'} />
 

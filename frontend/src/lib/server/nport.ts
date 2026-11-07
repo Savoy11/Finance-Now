@@ -8,6 +8,7 @@
 // that series (browse-edgar atom) → primary_doc.xml → parsed holdings.
 
 import { EDGAR_HEADERS } from './edgar'
+import { decodeEntities } from '@/lib/utils/html'
 
 export interface FundSeries {
   seriesId: string
@@ -192,7 +193,9 @@ export function parseNportReport(xml: string): NportReport {
   const blocks = xml.split(/<invstOrSec>/).slice(1)
   for (const raw of blocks) {
     const block = raw.split(/<\/invstOrSec>/)[0]
-    const name = tag(block, 'name') ?? tag(block, 'title') ?? 'Unknown'
+    // The filing is XML, so "Eli Lilly & Co" arrives as "Eli Lilly &amp; Co".
+    const rawName = tag(block, 'name') ?? tag(block, 'title')
+    const name = rawName ? decodeEntities(rawName) : 'Unknown'
     const cusipRaw = tag(block, 'cusip')
     // EDGAR uses sentinel strings for missing identifiers
     const cusip = cusipRaw && !/^(N\/A|0{9})$/i.test(cusipRaw) ? cusipRaw : null

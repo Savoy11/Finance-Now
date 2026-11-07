@@ -1,8 +1,8 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
 import Link from 'next/link'
-import { useQueries } from '@tanstack/react-query'
+import { useQueries, type UseQueryResult } from '@tanstack/react-query'
 import { clsx } from 'clsx'
 import { Layers, AlertTriangle, Link2 } from 'lucide-react'
 import {
@@ -15,11 +15,15 @@ import type { FundHoldingsResponse } from '@/app/live-data/fund-holdings/route'
 
 // What you actually own underneath your funds (W4-B1).
 //
-// Weights are the portfolio's TARGET allocations, stated plainly below. Using
-// live marked-to-market weights would be better in principle, but a portfolio
-// can only be marked where every position has both a price and a cost basis —
-// see the W4-C1 fix in portfolioBuilder.ts. Target allocation is always
-// available and always means one thing, so the basis is honest either way.
+// On a what-if portfolio the weights are its TARGET allocations, stated plainly
+// below. Using live marked-to-market weights would be better in principle, but a
+// what-if portfolio can only be marked where every position has both a price and
+// a cost basis — see the W4-C1 fix in portfolioBuilder.ts. Target allocation is
+// always available and always means one thing, so the basis is honest either way.
+//
+// A tracked portfolio (T-453, D208) has real holdings, so its weights are each
+// holding's share of live value, and a holding with no live price is left out and
+// named. The panel says which basis it is showing.
 
 const SOURCE_LABEL: Record<string, string> = {
   sec: 'SEC N-PORT',
@@ -32,32 +36,32 @@ const isFundClass = (key: string): boolean => {
   return cls === 'etf' || cls === 'mutual'
 }
 
-export function PortfolioLookThrough({ portfolio }: { portfolio: Portfolio }) {
+/** A what-if portfolio's positions, weighted by target allocation. */
+export function whatIfLookThroughPositions(portfolio: Portfolio): LookThroughPosition[] {
+  return portfolio.holdings.map((h) => ({
+    symbol: h.symbol.toUpperCase(),
+    weightPct: h.targetAlloc,
+    isFund: isFundClass(h.cgId),
+  }))
+}
+
+export function PortfolioLookThrough({ positions, basis, unpriced = [] }: {
+  positions: LookThroughPosition[]
+  /** 'target': a what-if portfolio's target allocation. 'value': a tracked portfolio's live values. */
+  basis: 'target' | 'value'
+  /** Held with no live price, left out (basis 'value' only). */
+  unpriced?: string[]
+}) {
   const fundSymbols = useMemo(
-    () => portfolio.holdings.filter((h) => isFundClass(h.cgId)).map((h) => h.symbol.toUpperCase()),
-    [portfolio.holdings],
+    () => positions.filter((p) => p.isFund).map((p) => p.symbol),
+    [positions],
   )
 
-  const queries = useQueries({
-    queries: fundSymbols.map((symbol) => ({
-      queryKey: ['fund-holdings', symbol],
-      queryFn: (): Promise<FundHoldingsResponse> =>
-        fetch(`/live-data/fund-holdings?symbol=${encodeURIComponent(symbol)}`).then((r) => r.json()),
-      staleTime: STALE_TIME_LONG,
-      retry: 1,
-    })),
-  })
-
-  const loading = queries.some((q) => q.isLoading)
-
-  // Hoisted so the dependency lists below are simple expressions — same pattern
-  // the Compare page uses for its parallel chart queries.
-  const fundKey = fundSymbols.join(',')
-  const dataKey = queries.map((q) => q.dataUpdatedAt).join(',')
-
-  const result = useMemo(() => {
+  // The fund portfolios, gathered by `combine`, which React Query runs again only when a
+  // query's result changes, so the tally below never redoes itself on an unchanged render.
+  const combine = useCallback((results: UseQueryResult<FundHoldingsResponse>[]) => {
     const holdingsByFund: Record<string, FundHoldings> = {}
-    queries.forEach((q, i) => {
+    results.forEach((q, i) => {
       const d = q.data
       if (!d?.ok || !d.holdings?.length) return
       holdingsByFund[fundSymbols[i]] = {
@@ -69,16 +73,21 @@ export function PortfolioLookThrough({ portfolio }: { portfolio: Portfolio }) {
         holdingsCount: d.holdingsCount,
       }
     })
+    return { holdingsByFund, loading: results.some((q) => q.isLoading) }
+  }, [fundSymbols])
 
-    const positions: LookThroughPosition[] = portfolio.holdings.map((h) => ({
-      symbol: h.symbol.toUpperCase(),
-      weightPct: h.targetAlloc,
-      isFund: isFundClass(h.cgId),
-    }))
+  const { holdingsByFund, loading } = useQueries({
+    queries: fundSymbols.map((symbol) => ({
+      queryKey: ['fund-holdings', symbol],
+      queryFn: (): Promise<FundHoldingsResponse> =>
+        fetch(`/live-data/fund-holdings?symbol=${encodeURIComponent(symbol)}`).then((r) => r.json()),
+      staleTime: STALE_TIME_LONG,
+      retry: 1,
+    })),
+    combine,
+  })
 
-    return computeLookThrough(positions, holdingsByFund)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [portfolio.holdings, fundKey, dataKey])
+  const result = useMemo(() => computeLookThrough(positions, holdingsByFund), [positions, holdingsByFund])
 
   if (fundSymbols.length === 0) {
     return (
@@ -117,9 +126,14 @@ export function PortfolioLookThrough({ portfolio }: { portfolio: Portfolio }) {
           </h2>
         </div>
         <p className="mt-2 text-xs text-text-muted leading-relaxed">
-          Each fund’s portfolio weights multiplied by this portfolio’s <strong>target allocation</strong>,
+          Each fund’s portfolio weights multiplied by {basis === 'target'
+            ? <>this portfolio’s <strong>target allocation</strong></>
+            : <>each holding’s <strong>share of live value</strong></>},
           then summed by company. Three funds can look like diversification while two of them are
           largely the same mega-caps — this is where that shows up.
+          {basis === 'value' && unpriced.length > 0 && (
+            <> No live price right now for {unpriced.join(', ')}, so {unpriced.length === 1 ? 'it is' : 'they are'} left out.</>
+          )}
         </p>
 
         <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
