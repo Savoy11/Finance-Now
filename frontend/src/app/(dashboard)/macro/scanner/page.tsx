@@ -13,12 +13,15 @@ import { SignalBadge } from '@/components/charts/SignalBadge'
 import { AgentScanPanel } from '@/components/markets/AgentScanPanel'
 import { MACRO_MOVERS_SCAN } from '@/components/markets/agentScans'
 import {
-  MACRO_INSTRUMENTS, SCANNER_INSTRUMENTS, CURVE_YIELD_INSTRUMENTS, GROUPS, fmtLevel,
+  MACRO_INSTRUMENTS, SCANNER_INSTRUMENTS, CURVE_YIELD_INSTRUMENTS, ECB_PAIR_INSTRUMENTS, KEYED_SCANNER_INSTRUMENTS,
+  GROUPS, closesOnly, fmtLevel,
   type MacroGroup, type MacroInstrument,
 } from '../macroInstruments'
 import type { SecurityOhlcvResponse } from '@/app/live-data/security-ohlcv/route'
 import type { YieldHistoryResponse } from '@/app/live-data/treasury-yield-history/route'
+import type { FxPairHistoryResponse } from '@/app/live-data/fx-pair-history/route'
 import { closingCandles } from '@/lib/data/yieldHistory'
+import { pairClosingCandles } from '@/lib/data/fxReference'
 
 // ─── Macro Scanner ────────────────────────────────────────────────────────────
 //
@@ -26,12 +29,14 @@ import { closingCandles } from '@/lib/data/yieldHistory'
 // 6/7: one scanner per section, promoted to nav).
 //
 // Universe is the LIQUID subset of the macro instruments. The delisted-ETF
-// commodities and the EM/cross FX pairs gap enough that a ranked RSI beside a
-// liquid contract would read as comparable when it is not. The four Treasury
-// yields left on 2026-10-24 (T-129 D), since no provider sends their history (D3),
-// and came back with T-446 (D202): their history is the official curve's, one
-// figure a day, so their signal counts only the votes that read a close.
-// Every instrument still charts on the TA page; the exclusions are stated
+// commodities gap enough that a ranked RSI beside a liquid contract would read
+// as comparable when it is not. The four Treasury yields left on 2026-10-24
+// (T-129 D), since no provider sends their history (D3), and came back with
+// T-446 (D202): their history is the official curve's, one figure a day, so
+// their signal counts only the votes that read a close. The currency pairs read
+// the ECB's daily reference rates the same way since T-445 (D203), and the EM
+// pairs and crosses, once left out for gaps in a provider's series, came in with
+// them. Every instrument still charts on the TA page; the exclusions are stated
 // on-page, not silently applied.
 
 // ─── Scanner tab ──────────────────────────────────────────────────────────────
@@ -59,14 +64,20 @@ function ScannerTab() {
 
   const queries = useQueries({
     queries: SCANNER_INSTRUMENTS.map((m) => ({
-      queryKey: m.curveMaturity ? ['treasury-yield-history', m.curveMaturity, '6mo'] : ['security-ohlcv', m.symbol, '6M'],
-      // A Treasury yield reads the official curve's history (keyless); everything else a keyed provider's candles.
+      queryKey: m.curveMaturity ? ['treasury-yield-history', m.curveMaturity, '6mo']
+        : m.ecbPair ? ['fx-pair-history', m.ecbPair, '6mo'] : ['security-ohlcv', m.symbol, '6M'],
+      // A Treasury yield reads the official curve's history and a currency pair the
+      // ECB's (both keyless); everything else a keyed provider's candles.
       queryFn: () => (m.curveMaturity
         ? fetch(`/live-data/treasury-yield-history?maturity=${m.curveMaturity}&range=6mo`)
           .then((r) => r.json() as Promise<YieldHistoryResponse>)
           .then((h): Pick<SecurityOhlcvResponse, 'candles'> => ({ candles: h.ok ? closingCandles(h.points ?? []) : [] }))
-        : fetch(`/live-data/security-ohlcv?symbol=${encodeURIComponent(m.symbol)}&range=6M`)
-          .then((r) => r.json() as Promise<SecurityOhlcvResponse>)),
+        : m.ecbPair
+          ? fetch(`/live-data/fx-pair-history?pair=${m.ecbPair}&range=6mo`)
+            .then((r) => r.json() as Promise<FxPairHistoryResponse>)
+            .then((h): Pick<SecurityOhlcvResponse, 'candles'> => ({ candles: h.ok ? pairClosingCandles(h.points ?? []) : [] }))
+          : fetch(`/live-data/security-ohlcv?symbol=${encodeURIComponent(m.symbol)}&range=6M`)
+            .then((r) => r.json() as Promise<SecurityOhlcvResponse>)),
       staleTime: 10 * 60 * 1000,
       enabled: hasRun,
       refetchOnWindowFocus: false,
@@ -106,8 +117,8 @@ function ScannerTab() {
         level: last,
         rsi14: rsiVals[rsiVals.length - 1],
         vsSma50Pct: sma50 ? ((last - sma50) / sma50) * 100 : null,
-        // One figure a day for a curve yield: only the votes that read a close.
-        overall: computeSignalSummary(candles, m.curveYield ? 'close' : 'ohlc').overall,
+        // One figure a day for a curve yield or an ECB pair: only the votes that read a close.
+        overall: computeSignalSummary(candles, closesOnly(m) ? 'close' : 'ohlc').overall,
       }
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -146,23 +157,24 @@ function ScannerTab() {
 
       {!hasRun && (
         <p className="rounded-card border border-border bg-bg-card p-3 text-xs text-text-muted">
-          Press <strong>Run scan</strong> to sweep the list. One scan is {SCANNER_INSTRUMENTS.length} keyed
-          provider requests, so it runs when you ask rather than on every visit.
+          Press <strong>Run scan</strong> to sweep the list. One scan is {KEYED_SCANNER_INSTRUMENTS.length} keyed
+          provider requests, so it runs when you ask rather than on every visit; the other{' '}
+          {SCANNER_INSTRUMENTS.length - KEYED_SCANNER_INSTRUMENTS.length} rows read free official figures.
         </p>
       )}
 
       {/* Never silently cap coverage — say what was left out and why. */}
       <p className="text-xs text-text-muted leading-relaxed">
         Scanning {SCANNER_INSTRUMENTS.length} of {MACRO_INSTRUMENTS.length} macro instruments over
-        6 months of daily history. {skipped} thin {skipped === 1 ? 'market is' : 'markets are'} excluded —
-        the delisted-ETF commodities (heating oil, coffee, cocoa, cotton, cattle, hogs) and the EM and
-        cross FX pairs, whose series gap enough that a ranked RSI beside a liquid contract would read
-        as comparable when it isn’t. All of them still chart on the Chart tab.{' '}
-        {/* T-129 D: no provider serves these any history (D3); asking cost four
-            keyed requests a scan that could never succeed. */}
-        The {CURVE_YIELD_INSTRUMENTS.length} Treasury yields ({CURVE_YIELD_INSTRUMENTS.map((m) => m.symbol).join(', ')})
-        are not scanned either: no provider sends their history, so they are read once a day off the
-        official Treasury curve on <Link href="/macro/rates" className="text-accent-blue hover:underline">Bonds &amp; Rates</Link>.
+        6 months of daily history. {skipped} thin {skipped === 1 ? 'market is' : 'markets are'} excluded:
+        the delisted-ETF commodities ({MACRO_INSTRUMENTS.filter((m) => !m.liquid).map((m) => m.name).join(', ')}), whose
+        series gap enough that a ranked RSI beside a liquid contract would read as comparable when it isn’t. All of
+        them still chart on Technical Analysis.{' '}
+        The {CURVE_YIELD_INSTRUMENTS.length} Treasury yields are read from the official Treasury curve and
+        the {ECB_PAIR_INSTRUMENTS.length} currency pairs from the European Central Bank’s reference rates,
+        one figure a working day each, so their signal counts only the readings that use a closing figure (see{' '}
+        <Link href="/macro/rates" className="text-accent-blue hover:underline">Bonds &amp; Rates</Link> and{' '}
+        <Link href="/macro/currencies" className="text-accent-blue hover:underline">Currencies</Link>).
       </p>
 
       <div className="rounded-card border border-border bg-bg-card overflow-x-auto">
@@ -232,13 +244,15 @@ function MacroScannerInner() {
           subtitle="RSI, trend-vs-average and composite signal across the liquid macro universe"
           description="Ranks commodities, currencies and rates on the same indicator engine the crypto and equity scanners use. Levels follow each market's own convention — grains in cents per bushel, yields in percent, bond futures in points of par."
           details={[
-            { label: 'Universe', text: `The liquid subset: ${SCANNER_INSTRUMENTS.length} of ${MACRO_INSTRUMENTS.length} macro instruments. Thin contracts and EM/cross FX pairs are excluded because a ranked reading beside a liquid one reads as comparable when it is not — they all still chart on Technical Analysis. The ${CURVE_YIELD_INSTRUMENTS.length} Treasury yields are read from the official daily curve, one figure a day, so their signal counts only the readings that use a closing figure.` },
-            { label: 'When it runs', text: `When you press Run scan. Each instrument but the Treasury yields is one request to a keyed provider, so opening the page spends nothing.` },
+            { label: 'Universe', text: `The liquid subset: ${SCANNER_INSTRUMENTS.length} of ${MACRO_INSTRUMENTS.length} macro instruments. Thin contracts are excluded because a ranked reading beside a liquid one reads as comparable when it is not — they all still chart on Technical Analysis. The ${CURVE_YIELD_INSTRUMENTS.length} Treasury yields are read from the official daily curve and the ${ECB_PAIR_INSTRUMENTS.length} currency pairs from the European Central Bank’s daily reference rates, one figure a working day, so their signal counts only the readings that use a closing figure.` },
+            { label: 'When it runs', text: `When you press Run scan. ${KEYED_SCANNER_INSTRUMENTS.length} of the rows are one request each to a keyed provider; the Treasury yields and the currency pairs are free official figures. Opening the page spends nothing.` },
             { label: 'What it is', text: 'A discovery tool across instruments. The TA page is the other half: it charts the one instrument you picked.' },
           ]}
         />
       </div>
       <SourceLine id="macro-quotes" />
+      <SourceLine id="treasury-yield-history" />
+      <SourceLine id="fx-pair-history" />
       {/* The Macro Screener agent's own run button (NT6, 2026-10-01). Same panel
           as the equities AI Outlier Scan, so a fix to one reaches both. */}
       <AgentScanPanel scan={MACRO_MOVERS_SCAN} />

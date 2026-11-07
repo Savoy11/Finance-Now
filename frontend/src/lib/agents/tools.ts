@@ -9,6 +9,7 @@ import { COMMODITY_CATALOG, COMMODITY_CATEGORY_INFO } from '@/lib/data/commodity
 import { CURRENCY_CATALOG, CURRENCY_CATEGORY_INFO } from '@/lib/data/currencyCatalog'
 import { RATES_CATALOG, RATES_CATEGORY_INFO } from '@/lib/data/ratesCatalog'
 import { parLabelFor } from '@/lib/data/yieldHistory'
+import { ECB_RATE_NOTE, ecbPairBySymbol, pairRateBasis } from '@/lib/data/fxReference'
 import { ohlcvSourceLabel } from '@/lib/utils/ohlcvSource'
 import { candleGranularity, candleSizeWords } from '@/lib/utils/candleGranularity'
 import { RISK_RATINGS_SHOWN } from '@/lib/risk/visibility'
@@ -364,7 +365,7 @@ const TOOL_REGISTRY: RegisteredTool[] = [
     market: 'macro',
     tool: {
       name: 'get_macro_quote',
-      description: 'Get live prices for macro symbols: commodity futures (GC=F, CL=F), FX pairs (EURUSD=X, JPY=X), the dollar index (DX-Y.NYB), and bond futures (ZN=F). Mind each market\'s quote convention from search_macro_instruments (grains quote in cents). Treasury yield indices (^IRX/^FVX/^TNX/^TYX) are NOT quoted here — no free provider carries them; use get_yield_curve, which returns the official yields in plain percent.',
+      description: 'Get live prices for macro symbols: commodity futures (GC=F, CL=F), FX pairs (EURUSD=X, JPY=X), the dollar index (DX-Y.NYB), and bond futures (ZN=F). Mind each market\'s quote convention from search_macro_instruments (grains quote in cents). Treasury yield indices (^IRX/^FVX/^TNX/^TYX) are NOT quoted here — no free provider carries them; use get_yield_curve, which returns the official yields in plain percent. Where this returns nothing for an FX pair, get_fx_rates returns every catalog pair at the European Central Bank\'s daily reference rate, worked out for you: quote that, saying it is the ECB\'s daily rate and giving its date, not a live quote.',
       input_schema: {
         type: 'object',
         properties: {
@@ -378,7 +379,7 @@ const TOOL_REGISTRY: RegisteredTool[] = [
     market: 'macro',
     tool: {
       name: 'get_macro_price_history',
-      description: 'Get OHLC history summary for a macro symbol (futures contract, FX pair, or yield index) over a range: first/last, high, low, and percent change. For a Treasury yield (^IRX/^FVX/^TNX/^TYX) it reads the official daily curve instead, one figure a day: first/last, highest/lowest yield and the change in basis points, worked out for you.',
+      description: 'Get OHLC history summary for a macro symbol (futures contract, FX pair, or yield index) over a range: first/last, high, low, and percent change. For a Treasury yield (^IRX/^FVX/^TNX/^TYX) it reads the official daily curve instead, one figure a day: first/last, highest/lowest yield and the change in basis points, worked out for you. For an FX pair (all but the dollar index) it reads the European Central Bank\'s daily reference rates, one figure a working day: first/last, highest/lowest rate and the percent change, worked out for you.',
       input_schema: {
         type: 'object',
         properties: {
@@ -410,7 +411,7 @@ const TOOL_REGISTRY: RegisteredTool[] = [
       // Corrected 2026-09-22: it said 127 until then. It has been 126 since 'bgn' was
       // removed on 2026-07-22, when Bulgaria adopted the euro — and an agent reads this
       // number out to a user.
-      description: 'Get daily USD-based FX reference rates: 30 currencies from the ECB (official tier) and, when include_extended is true, 126 more community-sourced currencies (labeled non-official). For intraday pair quotes use get_macro_quote instead.',
+      description: 'Get daily USD-based FX reference rates: 30 currencies from the ECB (official tier) and, when include_extended is true, 126 more community-sourced currencies (labeled non-official). Also returns pairRates: every catalog FX pair (EUR/USD, USD/JPY, EUR/GBP…) at the ECB\'s newest daily rate, with its date and the percent change since the ECB\'s previous working day, worked out for you; quote those rather than dividing rates yourself. For intraday pair quotes use get_macro_quote instead.',
       input_schema: {
         type: 'object',
         properties: {
@@ -1013,6 +1014,24 @@ async function execute(
             changeBp: Math.round((ys[ys.length - 1] - ys[0]) * 100),
           }
         }
+        // T-445: an FX pair's history is the ECB's daily reference rates; no keyed provider has sent one since 2026-09-09.
+        const pair = ecbPairBySymbol(symbol)
+        if (pair) {
+          const hRange = ({ '1M': '1mo', '3M': '3mo', '6M': '6mo', '1Y': '1y', '5Y': '5y', MAX: '10y' } as Record<string, string>)[range] ?? '1y'
+          const h = (await get(`/live-data/fx-pair-history?pair=${pair.slug}&range=${hRange}`)) as {
+            ok?: boolean; error?: string; interval?: string; points?: { date: string; rate: number }[]
+          }
+          const pts = h.points ?? []
+          if (!h.ok || pts.length === 0) return { error: h.error ?? 'no reference rate history available', symbol, range }
+          const rs = pts.map((p) => p.rate)
+          return {
+            symbol, pair: pair.name, range, source: 'European Central Bank euro reference rates (via Frankfurter)', interval: h.interval, readings: pts.length,
+            note: `${ECB_RATE_NOTE} One figure a working day; there is no intraday high or low. ${pairRateBasis(pair)}`,
+            firstDate: pts[0].date, firstRate: rs[0], lastDate: pts[pts.length - 1].date, lastRate: rs[rs.length - 1],
+            highestRate: Math.max(...rs), lowestRate: Math.min(...rs),
+            changePct: Number((((rs[rs.length - 1] - rs[0]) / rs[0]) * 100).toFixed(2)),
+          }
+        }
         const data = (await get(`/live-data/security-ohlcv?symbol=${encodeURIComponent(symbol)}&range=${range}`)) as {
           ok?: boolean; candles?: { time: number; open: number; high: number; low: number; close: number }[]; source?: string
         }
@@ -1073,6 +1092,20 @@ async function execute(
           }
         }
         out.base = 'USD'
+        // T-445: each catalog pair at the ECB's newest rate, already worked out, with its change.
+        const ref = (await get(`/live-data/fx-reference-pairs`)) as {
+          ok?: boolean; error?: string; date?: string
+          pairs?: Record<string, { date: string; rate: number; previousDate?: string; changePct?: number }>
+        }
+        if (ref.ok) {
+          const wantedPair = (code: string, name: string) => !wanted?.length || name.split('/').some((c) => wanted.includes(c)) || wanted.includes(code)
+          out.pairRates = CURRENCY_CATALOG.filter((c) => ref.pairs?.[c.slug] && wantedPair(c.symbol, c.name)).map((c) => ({
+            pair: c.name, symbol: c.symbol, ...ref.pairs![c.slug],
+          }))
+          out.pairRatesNote = `${ECB_RATE_NOTE} changePct is since the ECB's previous working day (previousDate). A pair without the euro is worked out from the two euro rates of the same day.`
+        } else {
+          out.pairRatesError = ref.error ?? 'ECB pair rates unavailable'
+        }
         return out
       }
       case 'get_macro_news': {

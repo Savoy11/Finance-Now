@@ -145,6 +145,16 @@ export const DATA_METHODS: readonly MethodSection[] = [
     ],
   },
   {
+    id: 'currency-pairs',
+    title: 'Currency pairs',
+    decided: '2026-11-07',
+    paragraphs: [
+      'A currency pair shows a live quote where our quote source has one. Where it has none, it shows the European Central Bank’s euro reference rate for the day, marked “ECB” with its date. The Bank publishes these once a working day, around 16:00 Central European Time, for information only; they are not a price anyone can deal at.',
+      'The Bank publishes every currency against the euro. A pair without the euro is worked out from two of those rates on the same day: one unit of the first currency, in the second, is the second currency per euro divided by the first currency per euro. So USD/JPY is the yen per euro divided by the dollar per euro. The change shown beside an ECB rate is since the Bank’s previous working day.',
+      'Each pair’s chart is the same daily rates; over five or ten years each week’s last rate is drawn. Because there is only one figure a day, the technical-analysis page draws a pair as a line and offers only what reads closing figures, and the scanner counts only those readings. The Dollar Index is ICE’s index, which the Bank does not publish, so it has no such rate.',
+    ],
+  },
+  {
     id: 'tracked-gains-income',
     title: 'Tracked portfolios: gains and income',
     decided: '2026-11-07',

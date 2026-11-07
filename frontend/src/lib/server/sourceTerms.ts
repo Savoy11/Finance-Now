@@ -1023,9 +1023,33 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     confidence: 'high',
   },
   {
+    // READ 2026-11-07 (T-445, D203) from this cloud session, not the owner's machine, so `seeded`
+    // until the owner marks it read: the Disclaimer & Copyright page (verbatim) and the euro
+    // reference rates page, plus the "Framework for the euro foreign exchange reference rates"
+    // (23 June 2026 PDF). No terms document is specific to the reference rates.
+    // NOT FETCHED AT RUNTIME: the rates arrive through Frankfurter (the next entry), which says
+    // "The rates themselves fall under each provider’s terms." These are those terms.
+    domain: 'ecb.europa.eu',
+    name: 'European Central Bank (euro foreign exchange reference rates)',
+    verdict: 'conditional',
+    termsUrl: 'https://www.ecb.europa.eu/services/disclaimer/html/index.en.html',
+    finding:
+      'Disclaimer & Copyright, read 2026-11-07: "Subject to the exception below, users of this website may make free use of the information obtained directly from it subject to the following conditions:" "When such information is distributed or reproduced, it must appear accurately and the ECB must be cited as the source." "Where the information is incorporated in documents that are sold (regardless of the medium), the natural or legal person publishing the information must inform buyers, both before they pay any subscription or fee and each time they access the information taken from this website, that the information may be obtained free of charge through this website." "If the information is modified by the user (e.g. by seasonal adjustment of statistical data or calculation of growth rates) this must be stated explicitly." The exception covers documents bearing authors\' names (working papers), not the rates. The reference rates page: "The reference rates are published for information purposes only. Using the rates for transaction purposes is strongly discouraged." The Framework (23 June 2026): the rates are "not intended to be used in any market transactions" and "intended for information purposes only". Nothing on automated retrieval. The app reads the rates through Frankfurter, not the ECB\'s own site.',
+    conditions: [
+      'Cite the ECB as the source wherever the rates appear: every surface names the European Central Bank (lib/data/fxReference.ts, ECB_RATE_DESCRIPTION), and the agent tools return it with the figures.',
+      'State modification explicitly. A pair without the euro (USD/JPY, GBP/USD …) and the change since the previous working day are worked out from the ECB\'s figures; every surface says how (pairRateBasis, and the methods page section "Currency pairs").',
+      'Information only, not for transactions: shown as "for information only, not a dealable price", never as a quote to trade on.',
+      '⚠ AT LAUNCH, IF THE MACRO MODULE IS SOLD: buyers must be told, before they pay and each time they see the rates, that the ECB publishes them free of charge. The "each time" half is on every surface already (ECB_FREE_OF_CHARGE); the "before they pay" half belongs on whatever page sells the module, which does not exist yet.',
+    ],
+    reviewedAt: '2026-11-07',
+    review: 'seeded',
+    confidence: 'high',
+  },
+  {
     // READ 2026-09-26 (T-005; docs/audits/terms-review-seeded-2026-09-26.md); marked verified 2026-10-04 (D54):
     // FAVOURABLE — "Is the API free for commercial use? Yes. The rates themselves fall under each
     // provider’s terms." No quotas; abuse rate-limiting; open source.
+    // The ECB's own terms, which that sentence points to, are the entry above (read 2026-11-07).
     domain: 'frankfurter.dev',
     name: 'Frankfurter (ECB reference rates)',
     verdict: 'approved',

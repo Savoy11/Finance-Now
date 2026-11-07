@@ -5,13 +5,17 @@ import { useQuery } from '@tanstack/react-query'
 import { clsx } from 'clsx'
 import { ArrowLeft, ExternalLink } from 'lucide-react'
 import { PriceChartCard } from '@/components/markets/PriceChartCard'
+import { FxHistoryCard, useFxReferencePairs } from '@/components/markets/FxHistoryCard'
 import { SourceLine } from '@/components/ui/SourceLine'
 import { CURRENCY_CATEGORY_INFO, formatFxRate, getCurrency } from '@/lib/data/currencyCatalog'
 import { getFund } from '@/lib/data/fundCatalog'
+import { ecbPairBySlug, isWorkedOut, shownPairRate } from '@/lib/data/fxReference'
 import { STALE_TIME_SHORT } from '@/lib/constants'
 
-// FX pair detail — live rate, history chart (shared markets shell), and
-// pair facts including the inverse rate.
+// FX pair detail — rate, history chart, and pair facts including the inverse
+// rate. Since T-445 (D203) every pair but the Dollar Index charts from the
+// European Central Bank's daily reference rates, and its headline shows the
+// ECB's rate for the day where there is no live quote, labelled as such.
 
 interface Quote { price: number | null; change: number | null; changePercent: number | null; previousClose: number | null }
 interface QuotesResponse { ok: boolean; quotes?: Record<string, Quote> }
@@ -33,7 +37,12 @@ export function CurrencyDetailClient({ slug }: { slug: string }) {
     refetchInterval: 1000 * 60 * 2,
   })
 
-  const up = (quote?.changePercent ?? 0) >= 0
+  // Every pair but the Dollar Index (ICE's index, which the ECB does not publish).
+  const ecbPair = ecbPairBySlug(slug)
+  const { data: reference, isLoading: referenceLoading } = useFxReferencePairs(ecbPair !== undefined)
+  const ecbLatest = reference?.ok ? reference.pairs?.[slug] : undefined
+  const shown = shownPairRate(quote, ecbLatest)
+  const up = (shown?.changePct ?? 0) >= 0
   const proxies = entry.etfProxies
     .map((symbol) => ({ symbol, fund: getFund(symbol) }))
     .filter((p) => p.fund != null)
@@ -59,19 +68,24 @@ export function CurrencyDetailClient({ slug }: { slug: string }) {
           </p>
         </div>
         <div className="text-right">
-          {quote?.price != null ? (
+          {shown ? (
             <>
               <p className="text-2xl font-mono tabular-nums font-semibold text-text-primary">
-                {formatFxRate(entry, quote.price)}
+                {formatFxRate(entry, shown.price)}
               </p>
-              {quote.changePercent != null && (
+              {shown.changePct != null && (
                 <p className={clsx('text-sm font-mono tabular-nums', up ? 'text-emerald-400' : 'text-red-400')}>
-                  {up ? '+' : ''}{quote.changePercent.toFixed(2)}% today
+                  {up ? '+' : ''}{shown.changePct.toFixed(2)}% {shown.basis === 'ecb' ? `since ${shown.previousDate}` : 'today'}
+                </p>
+              )}
+              {shown.basis === 'ecb' && (
+                <p className="text-[11px] text-text-muted">
+                  ECB reference rate of {shown.date} · daily, not a live quote{ecbPair && isWorkedOut(ecbPair) ? ' · worked out from the Bank’s euro rates' : ''}
                 </p>
               )}
             </>
           ) : (
-            <p className="text-sm text-text-muted">{isLoading ? 'Fetching live rate…' : 'Live rate unavailable'}</p>
+            <p className="text-sm text-text-muted">{isLoading || referenceLoading ? 'Fetching rate…' : 'Rate unavailable'}</p>
           )}
         </div>
       </div>
@@ -80,10 +94,13 @@ export function CurrencyDetailClient({ slug }: { slug: string }) {
           SourceLine while every registry page did, so the page with the most
           specific numbers was the one with no attribution. */}
       <SourceLine id="macro-quotes" />
+      {ecbPair && <SourceLine id="fx-pair-history" />}
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
         <div className="xl:col-span-2">
-          <PriceChartCard symbol={entry.symbol} valueFormat="plain" />
+          {/* The keyed ladder has sent no pair's history on any audit since
+              2026-09-09; the ECB's is official, daily and free (D203). */}
+          {ecbPair ? <FxHistoryCard pair={ecbPair} /> : <PriceChartCard symbol={entry.symbol} valueFormat="plain" />}
         </div>
 
         <div className="space-y-4">
@@ -97,18 +114,22 @@ export function CurrencyDetailClient({ slug }: { slug: string }) {
                 </>
               )}
               <div className="flex justify-between"><dt className="text-text-muted">Category</dt><dd className="text-text-primary">{info.label}</dd></div>
-              {quote?.previousClose != null && (
+              {shown?.basis === 'live' && quote?.previousClose != null && (
                 <div className="flex justify-between"><dt className="text-text-muted">Previous close</dt><dd className="text-text-primary font-mono tabular-nums">{formatFxRate(entry, quote.previousClose)}</dd></div>
               )}
-              {!isIndex && quote?.price != null && quote.price > 0 && (
+              {shown?.basis === 'ecb' && ecbLatest?.previousRate != null && (
+                <div className="flex justify-between"><dt className="text-text-muted">ECB rate, {ecbLatest.previousDate}</dt><dd className="text-text-primary font-mono tabular-nums">{formatFxRate(entry, ecbLatest.previousRate)}</dd></div>
+              )}
+              {!isIndex && shown != null && shown.price > 0 && (
                 <div className="flex justify-between">
                   <dt className="text-text-muted">Inverse</dt>
                   <dd className="text-text-primary font-mono tabular-nums">
-                    1 {entry.quote} = {(1 / quote.price).toLocaleString(undefined, { maximumFractionDigits: 4 })} {entry.base}
+                    1 {entry.quote} = {(1 / shown.price).toLocaleString(undefined, { maximumFractionDigits: 4 })} {entry.base}
                   </dd>
                 </div>
               )}
             </dl>
+
             <p className="mt-3 pt-3 border-t border-border/60 text-xs text-text-muted leading-relaxed">{entry.description}</p>
             <p className="mt-3 text-[11px] text-text-muted leading-relaxed">
               A rising rate means a stronger {isIndex ? 'dollar' : entry.base} against the {isIndex ? 'basket' : entry.quote}.

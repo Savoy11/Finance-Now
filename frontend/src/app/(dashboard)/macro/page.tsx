@@ -9,8 +9,11 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { STALE_TIME_LONG, STALE_TIME_SHORT } from '@/lib/constants'
 import { SourceLine } from '@/components/ui/SourceLine'
 import { RATES_CATALOG } from '@/lib/data/ratesCatalog'
+import { CURRENCY_CATALOG, formatFxRate } from '@/lib/data/currencyCatalog'
 import { curveYieldSourceLabel, yieldFromCurve, type CurveYield } from '@/lib/data/ratesFromCurve'
 import type { YieldCurveResponse } from '@/app/live-data/treasury-yield-curve/route'
+import { ecbPairBySymbol, isWorkedOut, shownPairRate } from '@/lib/data/fxReference'
+import { EcbFreeOfCharge, useFxReferencePairs } from '@/components/markets/FxHistoryCard'
 
 // Macro Markets overview — the module's landing page while the three area
 // toolsets build out (owner spec: docs/ROADMAP.md, "Macro Markets").
@@ -18,8 +21,10 @@ import type { YieldCurveResponse } from '@/app/live-data/treasury-yield-curve/ro
 // Treasury yields are read from the official par curve, as /macro/rates reads
 // them (D3, lib/data/ratesFromCurve.ts): no free provider quotes ^IRX/^FVX/
 // ^TNX/^TYX, so asking the quote ladder for them left this strip all dashes
-// while the rates page showed the same yields (found 2026-11-06). Anything that
-// can't be priced renders an explicit dash, never a made-up value.
+// while the rates page showed the same yields (found 2026-11-06). A currency
+// pair with no live quote shows the European Central Bank's daily reference
+// rate, marked "ECB" (T-445, D203); the Dollar Index has no such rate. Anything
+// that can't be priced renders an explicit dash, never a made-up value.
 
 interface MacroSymbol {
   symbol: string
@@ -57,7 +62,7 @@ const AREAS: MacroArea[] = [
     title: 'Currencies',
     icon: Banknote,
     accent: '#22c55e',
-    blurb: 'Major and EM FX pairs, dollar index, and a converter — intraday via live quotes, daily ECB reference crosses.',
+    blurb: 'Major and EM FX pairs, dollar index, and a converter: live quotes where available, otherwise the ECB’s daily reference rates, which also chart every pair.',
     href: '/macro/currencies',
     symbols: [
       { symbol: 'EURUSD=X', label: 'EUR/USD', kind: 'fx' },
@@ -81,6 +86,12 @@ const AREAS: MacroArea[] = [
   },
 ]
 
+/** The strip's pairs whose ECB rate is worked out from two euro rates (no euro leg). */
+const WORKED_OUT_PAIRS = AREAS.flatMap((a) => a.symbols)
+  .map((s) => ecbPairBySymbol(s.symbol))
+  .filter((p): p is NonNullable<typeof p> => p !== undefined && isWorkedOut(p))
+  .map((p) => p.name)
+
 /** Only these go to the quote ladder; the yields come from the curve. */
 const QUOTED_SYMBOLS = AREAS.flatMap((a) => a.symbols.filter((s) => s.kind !== 'pct-yield').map((s) => s.symbol))
 
@@ -100,9 +111,14 @@ interface QuotesResponse {
   quotes?: Record<string, { price: number | null; changePercent: number | null }>
 }
 
-function fmtValue(kind: MacroSymbol['kind'], price: number): string {
+function fmtValue(kind: MacroSymbol['kind'], price: number, symbol?: string): string {
   if (kind === 'pct-yield') return `${price.toFixed(2)}%`
-  if (kind === 'fx') return price >= 10 ? price.toFixed(2) : price.toFixed(4)
+  if (kind === 'fx') {
+    // The pair's own precision, as the Currencies table shows it, so the two pages agree.
+    const entry = CURRENCY_CATALOG.find((c) => c.symbol === symbol)
+    if (entry) return formatFxRate(entry, price)
+    return price >= 10 ? price.toFixed(2) : price.toFixed(4)
+  }
   return price >= 100 ? `$${price.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : `$${price.toFixed(2)}`
 }
 
@@ -118,6 +134,14 @@ function MacroContent() {
     staleTime: STALE_TIME_SHORT,
     refetchInterval: 1000 * 60 * 2,
   })
+
+  // The same query key as /macro/currencies, so the pages share one cached answer.
+  const { data: reference, isLoading: referenceLoading } = useFxReferencePairs()
+  /** A currency row's figure: the live quote, else the ECB's daily rate (D203), else null. */
+  const fxShown = (symbol: string) => {
+    const pair = ecbPairBySymbol(symbol)
+    return shownPairRate(data?.[symbol], pair && reference?.ok ? reference.pairs?.[pair.slug] : null)
+  }
 
   // The same query key as /macro/rates, so the two pages share one cached curve.
   const { data: curve, isLoading: curveLoading } = useQuery<YieldCurveResponse>({
@@ -169,16 +193,22 @@ function MacroContent() {
               {(() => {
                 // A curve yield is a daily official reading, so it is counted
                 // as "daily", never as "live".
+                // An ECB rate is counted as "daily", never as "live", as a curve yield is.
                 const fromCurve = area.symbols.every((s) => s.kind === 'pct-yield')
-                const priced = area.symbols.filter((s) =>
-                  s.kind === 'pct-yield' ? curveYield(s.symbol, curve) != null : data?.[s.symbol]?.price != null,
+                const live = area.symbols.filter((s) =>
+                  s.kind === 'fx' ? fxShown(s.symbol)?.basis === 'live' : s.kind !== 'pct-yield' && data?.[s.symbol]?.price != null,
                 ).length
-                const loading = fromCurve ? curveLoading : isLoading
-                const any = priced > 0
+                const daily = area.symbols.filter((s) =>
+                  s.kind === 'pct-yield' ? curveYield(s.symbol, curve) != null : s.kind === 'fx' && fxShown(s.symbol)?.basis === 'ecb',
+                ).length
+                const loading = fromCurve ? curveLoading : isLoading || (area.symbols.some((s) => s.kind === 'fx') && referenceLoading)
+                const n = area.symbols.length
+                const label = live > 0 && daily > 0 ? `${live} live · ${daily} daily` : live > 0 ? `${live}/${n} live` : `${daily}/${n} daily`
+                const any = live + daily > 0
                 return (
                   <span className={clsx('px-2 py-0.5 rounded-sm text-[10px] font-medium uppercase tracking-wider border',
                     any ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-bg-elevated border-border text-text-muted')}>
-                    {loading ? '…' : any ? `${priced}/${area.symbols.length} ${fromCurve ? 'daily' : 'live'}` : fromCurve ? 'no reading' : 'no live quotes'}
+                    {loading ? '…' : any ? label : fromCurve ? 'no reading' : 'no live quotes'}
                   </span>
                 )
               })()}
@@ -202,22 +232,34 @@ function MacroContent() {
                     </div>
                   )
                 }
-                const q = data?.[s.symbol]
-                const up = (q?.changePercent ?? 0) >= 0
+                const raw = data?.[s.symbol]
+                const q = s.kind === 'fx'
+                  ? fxShown(s.symbol)
+                  : raw?.price != null ? { price: raw.price, changePct: raw.changePercent, basis: 'live' as const, date: undefined } : null
+                const up = (q?.changePct ?? 0) >= 0
                 return (
                   <div key={s.symbol} className="px-4 py-2 flex items-center gap-3 text-sm">
-                    <span className="text-xs text-text-secondary flex-1">{s.label}</span>
-                    {q?.price != null ? (
+                    <span className="text-xs text-text-secondary flex-1">
+                      {s.label}
+                      {q?.basis === 'ecb' && (
+                        <span className="ml-1.5 rounded-sm border border-border px-1 text-[9px] font-medium uppercase tracking-wider text-text-muted"
+                          title={`ECB reference rate, ${q.date}: daily, not a live quote`}>
+                          ECB
+                        </span>
+                      )}
+                    </span>
+                    {q ? (
                       <>
-                        <span className="font-mono tabular-nums text-text-primary">{fmtValue(s.kind, q.price)}</span>
-                        {q.changePercent != null && (
-                          <span className={clsx('font-mono tabular-nums text-xs w-16 text-right', up ? 'text-emerald-400' : 'text-red-400')}>
-                            {up ? '+' : ''}{q.changePercent.toFixed(2)}%
+                        <span className="font-mono tabular-nums text-text-primary">{fmtValue(s.kind, q.price, s.symbol)}</span>
+                        {q.changePct != null && (
+                          <span className={clsx('font-mono tabular-nums text-xs w-16 text-right', up ? 'text-emerald-400' : 'text-red-400')}
+                            title={q.basis === 'ecb' ? 'Since the ECB’s previous working day' : undefined}>
+                            {up ? '+' : ''}{q.changePct.toFixed(2)}%
                           </span>
                         )}
                       </>
                     ) : (
-                      <span className="font-mono text-xs text-text-muted">{isLoading ? '…' : '—'}</span>
+                      <span className="font-mono text-xs text-text-muted">{isLoading || (s.kind === 'fx' && referenceLoading) ? '…' : '—'}</span>
                     )}
                   </div>
                 )
@@ -234,8 +276,12 @@ function MacroContent() {
           numbers, not where they came from. */}
       <SourceLine id="macro-quotes" className="justify-center" />
       <SourceLine id="treasury-yield-curve" className="justify-center" />
+      <SourceLine id="fx-reference-pairs" className="justify-center" />
       <p className="text-[11px] text-text-muted text-center leading-relaxed">
         Treasury yields are the official par curve, published once a day, not intraday quotes; futures are front-month continuous contracts.
+        A currency rate marked ECB is the European Central Bank’s reference rate{reference?.ok && reference.date ? ` of ${reference.date}` : ''}, published once a working
+        day for information only, its change since the Bank’s previous working day; {WORKED_OUT_PAIRS.join(' and ')} {WORKED_OUT_PAIRS.length === 1 ? 'is' : 'are'} worked
+        out from the Bank’s euro rates of the same day. <EcbFreeOfCharge />
       </p>
     </div>
   )

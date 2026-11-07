@@ -123,6 +123,8 @@ Provider tags: `key` = needs an API key · `paid` = needs a paid plan · untagge
 | Surface | Status | Provider(s) | Cadence | Route |
 |---------|--------|-------------|---------|-------|
 | FX rates (official tier) | Live | [ECB via Frankfurter](https://frankfurter.dev) `api.frankfurter.dev` | — | `/live-data/fx-rates` |
+| FX pairs at the ECB’s daily reference rate | Live | [ECB via Frankfurter](https://frankfurter.dev) `api.frankfurter.dev` | 1h revalidate (the ECB publishes once a working day, around 16:00 CET) | `/live-data/fx-reference-pairs` |
+| FX pair history (ECB reference rates) | Live | [ECB via Frankfurter](https://frankfurter.dev) `api.frankfurter.dev` | 1h revalidate (up to a year); 6h (5 and 10 years) | `/live-data/fx-pair-history` |
 | FX rates (extended tier, +126) | Live | [currency-api (community)](https://github.com/fawazahmed0/currency-api) `cdn.jsdelivr.net` | — | `/live-data/fx-rates-extended` |
 | Treasury par yield curve | Live | [U.S. Treasury](https://home.treasury.gov) `home.treasury.gov` | 4h revalidate | `/live-data/treasury-yield-curve` |
 | Treasury yield history and expected inflation | Live | [U.S. Treasury](https://home.treasury.gov) `home.treasury.gov` | 4h revalidate (current year); 1 day (earlier years) | `/live-data/treasury-yield-history` |
@@ -130,7 +132,9 @@ Provider tags: `key` = needs an API key · `paid` = needs a paid plan · untagge
 | Futures term structure (forward curve) | Not available | None — no reachable source quotes dated contract months | — | `/live-data/futures-curve` |
 | Commodity / FX / rate quotes + charts | Key-gated | [FMP](https://site.financialmodelingprep.com/developer/docs) `financialmodelingprep.com` _(key)_<br>[Finnhub](https://finnhub.io/docs/api) `finnhub.io` _(key)_<br>[Twelve Data](https://twelvedata.com/docs) `api.twelvedata.com` _(key)_<br>[Tiingo](https://www.tiingo.com/documentation/general/overview) `api.tiingo.com` _(key)_<br>[Alpha Vantage](https://www.alphavantage.co/documentation/) `www.alphavantage.co` _(key)_ | — | `/live-data/security-quotes · security-chart · security-ohlcv` |
 
-- **FX rates (official tier)** — ECB’s complete published set of ~30 reference currencies.
+- **FX rates (official tier)** — ECB’s complete published set of ~30 reference currencies. The ECB’s own reuse terms are registered under ecb.europa.eu (read 2026-11-07, T-445); the Bank is not fetched directly, so it is not named here as a provider, which would count it as a second vendor in the coverage matrix.
+- **FX pairs at the ECB’s daily reference rate** — T-445 (D203). Every catalog pair but the Dollar Index at the ECB’s newest reference rate, with the change since its previous working day. A pair without the euro is worked out from the two euro rates of the same day, and the pages say so (an ECB condition on modified figures). The pages show a live quote first where the keyed ladder has one; this is what replaces the dash.
+- **FX pair history (ECB reference rates)** — T-445 (D203). One pair’s daily reference rate over 1 month to 10 years, each week’s last rate over a span longer than a year. Charts every pair page and feeds the Macro TA page and scanner as closing figures only.
 - **FX rates (extended tier, +126)** — Community-sourced, not ECB — the UI shows a distinct disclosure and never blends the two tiers without attribution.
 - **Treasury par yield curve** — Official 13-maturity daily par curve (XML), and since T-446 the real (inflation-protected) par curve for expected inflation.
 - **Treasury yield history and expected inflation** — One maturity’s daily history from the official par curve, one file per calendar year, with the real yield and expected inflation (ordinary minus real yield, same day) at 5Y, 7Y, 10Y, 20Y and 30Y (T-446).
@@ -159,4 +163,4 @@ Provider tags: `key` = needs an API key · `paid` = needs a paid plan · untagge
 
 ---
 
-_58 surfaces catalogued. Regenerate with `npm run data-sources`; verify against the route code with `npm run data-sources -- --verify`._
+_60 surfaces catalogued. Regenerate with `npm run data-sources`; verify against the route code with `npm run data-sources -- --verify`._

@@ -11,6 +11,11 @@
 // week's last reading, which the response says (`interval`), so a chart of ten
 // years is not ten thousand points drawn as one line.
 
+import {
+  HISTORY_RANGES, HISTORY_RANGE_LABELS, closingCandlesOf, intervalFor, isHistoryRange, lastOfEachWeek, rangeStart, yearsFor,
+  type ClosingCandle, type HistoryRange,
+} from './dailyHistory'
+
 /** The 13 maturities of the daily par curve, in curve order. */
 export const PAR_MATURITIES: ReadonlyArray<{ label: string; years: number }> = [
   { label: '1M', years: 1 / 12 },
@@ -31,41 +36,19 @@ export const PAR_MATURITIES: ReadonlyArray<{ label: string; years: number }> = [
 /** The maturities of the daily real (inflation-protected) par curve. Expected inflation exists only for these. */
 export const REAL_MATURITIES: readonly string[] = ['5Y', '7Y', '10Y', '20Y', '30Y']
 
-export const YIELD_HISTORY_RANGES = ['1mo', '3mo', '6mo', '1y', '5y', '10y'] as const
-export type YieldHistoryRange = (typeof YIELD_HISTORY_RANGES)[number]
-export const YIELD_HISTORY_RANGE_LABELS: Record<YieldHistoryRange, string> = {
-  '1mo': '1M', '3mo': '3M', '6mo': '6M', '1y': '1Y', '5y': '5Y', '10y': '10Y',
-}
-
-/** Months each range spans. */
-const RANGE_MONTHS: Record<YieldHistoryRange, number> = { '1mo': 1, '3mo': 3, '6mo': 6, '1y': 12, '5y': 60, '10y': 120 }
-
-/** Ranges longer than this many months keep each week's last reading. */
-const WEEKLY_AFTER_MONTHS = 12
-
-export const isYieldHistoryRange = (v: string): v is YieldHistoryRange => (YIELD_HISTORY_RANGES as readonly string[]).includes(v)
+// The ranges and the weekly spacing are shared with the currency reference
+// rates (T-445), in dailyHistory.ts; the yield names stay for their callers.
+export const YIELD_HISTORY_RANGES = HISTORY_RANGES
+export type YieldHistoryRange = HistoryRange
+export const YIELD_HISTORY_RANGE_LABELS = HISTORY_RANGE_LABELS
+export const isYieldHistoryRange = isHistoryRange
+export { rangeStart, yearsFor, intervalFor }
 export const isParMaturity = (v: string) => PAR_MATURITIES.some((m) => m.label === v)
 
 /** The par-curve label for a maturity in years (0.25 → '3M'), or null when the curve publishes none. */
 export function parLabelFor(years: number): string | null {
   return PAR_MATURITIES.find((m) => Math.abs(m.years - years) <= 0.02)?.label ?? null
 }
-
-/** The first day (YYYY-MM-DD) a range covers, counted back from `end`. */
-export function rangeStart(range: YieldHistoryRange, end: Date): string {
-  const d = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), end.getUTCDate()))
-  d.setUTCMonth(d.getUTCMonth() - RANGE_MONTHS[range])
-  return d.toISOString().slice(0, 10)
-}
-
-/** The calendar years a range needs, oldest first: the Treasury publishes one file per year. */
-export function yearsFor(range: YieldHistoryRange, now: Date): number[] {
-  const first = Number(rangeStart(range, now).slice(0, 4))
-  const last = now.getUTCFullYear()
-  return Array.from({ length: last - first + 1 }, (_, i) => first + i)
-}
-
-export const intervalFor = (range: YieldHistoryRange): 'daily' | 'weekly' => (RANGE_MONTHS[range] > WEEKLY_AFTER_MONTHS ? 'weekly' : 'daily')
 
 export interface DatedCurve {
   /** YYYY-MM-DD */
@@ -89,13 +72,6 @@ const round2 = (v: number) => Math.round(v * 100) / 100
 /** Ordinary minus real yield, to hundredths of a percentage point. */
 export function breakeven(yieldPct: number, realPct: number): number {
   return round2(yieldPct - realPct)
-}
-
-/** Monday of the week a date falls in, as YYYY-MM-DD, for keeping one reading a week. */
-function weekOf(date: string): string {
-  const d = new Date(`${date}T00:00:00Z`)
-  d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7))
-  return d.toISOString().slice(0, 10)
 }
 
 /**
@@ -128,10 +104,7 @@ export function buildYieldHistory(
       ? { date: c.date, yieldPct: p.yieldPct }
       : { date: c.date, yieldPct: p.yieldPct, realPct, breakevenPct: breakeven(p.yieldPct, realPct) })
   }
-  if (interval === 'daily') return out
-  const lastOfWeek = new Map<string, YieldHistoryPoint>()
-  for (const p of out) lastOfWeek.set(weekOf(p.date), p)
-  return [...lastOfWeek.values()]
+  return interval === 'daily' ? out : lastOfEachWeek(out)
 }
 
 export interface ExpectedInflationRow {
@@ -173,9 +146,6 @@ export function expectedInflationTable(
  * is no volume. Only what reads closes alone may be drawn from them (the
  * Macro TA page and scanner hold to that).
  */
-export function closingCandles(points: readonly YieldHistoryPoint[]): Array<{ time: number; open: number; high: number; low: number; close: number; volume: number }> {
-  return points.map((p) => {
-    const v = p.yieldPct
-    return { time: Math.floor(Date.parse(`${p.date}T00:00:00Z`) / 1000), open: v, high: v, low: v, close: v, volume: 0 }
-  })
+export function closingCandles(points: readonly YieldHistoryPoint[]): ClosingCandle[] {
+  return closingCandlesOf(points, (p) => p.yieldPct)
 }

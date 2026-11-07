@@ -35,6 +35,12 @@ interface LineChartProps {
   showLegend?: boolean
   /** Bridge gaps where a series has no value for a row (mixed-granularity data). */
   connectNulls?: boolean
+  /**
+   * The value axis's range. Left unset it starts at zero, which suits a share or a
+   * yield; ['auto', 'auto'] fits it to the data, for a series such as an exchange
+   * rate whose moves would look flat drawn from zero.
+   */
+  yDomain?: [number | 'auto' | 'dataMin' | 'dataMax', number | 'auto' | 'dataMin' | 'dataMax']
 }
 
 export function LineChart({
@@ -49,6 +55,7 @@ export function LineChart({
   showGrid = true,
   showLegend = false,
   connectNulls = false,
+  yDomain,
 }: LineChartProps) {
   return (
     <ResponsiveContainer width="100%" height={height}>
@@ -72,6 +79,7 @@ export function LineChart({
           axisLine={false}
           tickFormatter={yFormatter}
           width={60}
+          domain={yDomain}
         />
 
         <Tooltip
