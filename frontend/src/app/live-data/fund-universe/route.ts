@@ -5,6 +5,7 @@ import {
 } from '@/lib/data/fundCatalog'
 import type { SectorId } from '@/lib/data/equityCatalog'
 import { RISK_RATINGS_SHOWN } from '@/lib/risk/visibility'
+import { fundFactsFor } from '@/lib/server/fundFacts'
 
 // Full ETF universe for the Fund Registry — every US-listed ETF, not just the
 // curated catalog. Mirrors /live-data/stock-universe.
@@ -60,6 +61,15 @@ export interface FundUniverseEntry {
   riskLevel?: FundRiskLevel | null
   /** Minimum-holding / frequent-trading / daily-reset disclaimer, when applicable. */
   tradingRestriction: string | null
+  /**
+   * Funds outside the catalog, on a symbol lookup or a search (T-449 c): the trust that filed
+   * its SEC N-PORT report, and its net assets, every share class together, from the
+   * fund-facts file (lib/data/fundNetAssets.ts says what the figure is and how it is dated).
+   * Absent on catalog rows, which carry their own dated figures, and on the full list.
+   */
+  registrant?: string | null
+  netAssetsB?: number | null
+  netAssetsAsOf?: string | null
 }
 
 /**
@@ -240,7 +250,11 @@ async function fetchSecMutualFunds(): Promise<Array<{ symbol: string; name: stri
 }
 
 function skeleton(e: { symbol: string; name: string }, type: FundType): FundUniverseEntry {
+  const facts = fundFactsFor(e.symbol)
   return {
+    registrant: facts?.issuer ?? null,
+    netAssetsB: facts?.netAssetsB ?? null,
+    netAssetsAsOf: facts?.asOf ?? null,
     symbol: e.symbol, name: e.name, type, inCatalog: false,
     category: null, issuer: null, expenseRatioPct: null, aumB: null,
     referencePrice: null, yieldPct: null, yieldAsOf: null, inceptionYear: null,

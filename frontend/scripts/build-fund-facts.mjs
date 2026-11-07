@@ -33,6 +33,7 @@ import path from 'node:path'
 import os from 'node:os'
 import { execFileSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
+import { cachedArchiveIsCurrent, quarterFromDatasetUrl } from './lib/nportQuarter.mjs'
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const OUT = path.join(ROOT, 'src/lib/data/fundFacts.generated.json')
@@ -93,19 +94,28 @@ const NEEDED = ['FUND_REPORTED_INFO', 'REGISTRANT']
 async function main() {
   const inspect = process.argv.includes('--inspect')
   // Cached in a stable location rather than a temp dir: the archive is 420 MB
-  // and re-downloading it to re-check a column name is wasteful. Delete the
-  // folder to force a fresh pull.
+  // and re-downloading it to re-check a column name is wasteful. A newer
+  // quarter replaces it by itself (quarter.txt, below), so nothing needs clearing.
   const work = path.join(os.tmpdir(), 'fn-nport-cache')
   fs.mkdirSync(work, { recursive: true })
   const zip = path.join(work, 'nport.zip')
+  // The data set's quarter, kept beside the archive (T-449 c): it dates every figure, and it is
+  // how a cached archive is known to be the newest one rather than an older pull.
+  const quarterFile = path.join(work, 'quarter.txt')
 
   {
-    if (!fs.existsSync(zip)) {
-      await download(await newestDatasetUrl(), zip)
+    const url = await newestDatasetUrl()
+    const quarter = quarterFromDatasetUrl(url)
+    if (!quarter) throw new Error(`cannot tell the data set's quarter from ${url}; refusing to write undated figures`)
+    const cachedQuarter = fs.existsSync(quarterFile) ? fs.readFileSync(quarterFile, 'utf8').trim() : null
+    if (cachedArchiveIsCurrent({ zipExists: fs.existsSync(zip), cachedQuarter, newestQuarter: quarter })) {
+      log(`using cached ${quarter} archive (${(fs.statSync(zip).size / 1048576).toFixed(1)} MB)`)
+      if (!fs.existsSync(path.join(work, 'FUND_REPORTED_INFO.tsv'))) extract(zip, work)
     } else {
-      log(`using cached archive (${(fs.statSync(zip).size / 1048576).toFixed(1)} MB)`)
+      await download(url, zip)
+      extract(zip, work)
+      fs.writeFileSync(quarterFile, quarter)
     }
-    if (!fs.existsSync(path.join(work, 'FUND_REPORTED_INFO.tsv'))) extract(zip, work)
 
     const files = fs.readdirSync(work).filter((f) => /\.(tsv|txt|csv)$/i.test(f))
 
@@ -136,11 +146,9 @@ async function main() {
     const iNet = col('NET_ASSETS')
     if (iSeries < 0 || iNet < 0) throw new Error(`unexpected columns: ${header.join(', ')}`)
 
-    // The table carries no report date, so the dataset's own quarter is the
-    // as-of. Later rows win on duplicates — a series can appear more than once
-    // within a quarter when an amended filing is included.
-    const quarter = (fs.readdirSync(work).find((f) => /\d{4}q\d/.test(f)) ?? '')
-      .match(/(\d{4}q\d)/i)?.[1] ?? new Date().toISOString().slice(0, 7)
+    // The table carries no report date, so the data set's own quarter (from its
+    // address, above) is the as-of. Later rows win on duplicates — a series can
+    // appear more than once within a quarter when an amended filing is included.
 
     const bySeries = new Map()
     for (const r of rows) {
@@ -171,7 +179,9 @@ async function main() {
     }
 
     fs.writeFileSync(OUT, JSON.stringify(out, null, 0))
-    log(`\nwrote ${Object.keys(out).length} tickers → ${path.relative(ROOT, OUT)}`)
+    log(`\nwrote ${Object.keys(out).length} tickers from the ${quarter} data set → ${path.relative(ROOT, OUT)}`)
+    log(`Now set FUND_FACTS_BUILT_ON in src/lib/data/fundNetAssets.ts to ${new Date().toISOString().slice(0, 10)}`)
+    log('and remove the STALENESS-ACK above it: the figures are the new data set\'s, not July 2026\'s.')
   }
 }
 
