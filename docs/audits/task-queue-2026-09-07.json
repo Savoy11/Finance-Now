@@ -62,9 +62,9 @@
   "total_verified": 408,
   "outstanding": 392,
   "by_status": {
-   "closed": 242,
+   "closed": 243,
    "parked": 131,
-   "open": 14,
+   "open": 13,
    "blocked": 5
   },
   "by_owner_role": {
@@ -74,8 +74,8 @@
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 242,
-  "counts_recomputed_on": "2026-11-06",
+  "closed_by_annotation": 243,
+  "counts_recomputed_on": "2026-11-07",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 392
  },
@@ -15688,7 +15688,7 @@
   {
    "id": "T-447",
    "title": "Import trades from a broker’s CSV file into a tracked portfolio",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "blocking_decision": null,
    "opened": {
@@ -15705,7 +15705,8 @@
     "D65",
     "T-421",
     "D190",
-    "T-451"
+    "T-451",
+    "D200"
    ],
    "summary": "A tracked portfolio is built one entry at a time: TradeForm.tsx is the form for recording one trade, and the trades route records one trade per POST, so a few years of history means hundreds of hand entries before the FIFO gains (T-027, D65) mean anything. This adds a CSV upload on /portfolios/tracked: map the file’s columns once (date, buy/sell, symbol, units, price, fee), see every row checked before anything is saved, save them together, remember the mapping for that file layout, and skip rows already imported when a file is uploaded again. The removed Budget module built exactly this (column mapping, saved import profiles matched by the header row, duplicate-proof re-imports), and it is recoverable by name from archive/wave-two-pre-reset. No key, no host and no recurring cost; about a week.",
    "next_action": "When building, ask the owner the proposal’s two decisions, recommended answer first: (1) may one step cancel a whole import? Recommended: yes, done with cancellation rows, so nothing is removed. (2) Generic column mapping only, or also ready-made layouts for the brokers the owner uses? Those need a sample file from the owner with the numbers blanked. Rules that are not optional: the ledger stays append-only (a mistake is cancelled, never edited or removed), so the preview step carries the weight; coins are never matched by ticker alone (D190: Gate USD was shown as Gemini’s GUSD), only to the catalog’s coin ids or by asking the user; every row passes parseTradeInput, as a typed trade does, and the rows skipped are counted and shown. Start from frontend/src/lib/budget/csv.ts, its tests and the import-profiles route on archive/wave-two-pre-reset. Import batches and saved layouts probably need a small table of their own (tables, not columns, as tracked_portfolios did), so a migration the owner runs with npm run db:migrate. Pairs with T-451: broker files carry dividends.",
@@ -15730,7 +15731,25 @@
      "lines": "1-4",
      "quote": "CSV parsing + column mapping for bank statement imports (Budget module)."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-11-07",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "Built as the owner chose (D200): \"Import trades from a file\" on each tracked portfolio, with column matching for any broker's CSV (remembered per set of column names) and one step that cancels a whole import by adding a cancellation row for each of its trades, removing nothing. Every row is shown with what it becomes before saving and passes parseTradeInput, as a typed trade does; a coin is only ever the coin the person picks (D190); rows an earlier import saved are not saved twice, and rows matching a hand-typed trade are held back unless included. Three new tables in migration 0010, which the owner runs with npm run db:migrate; until then importing answers 503 and nothing else changes. Checked against a real PostgreSQL 16 database on a built app, including two saves sent at once, a repeat upload, cancelling and importing again. Ready-made layouts for named brokers were not chosen; dividends and income stay with T-451.",
+    "approved_by": "owner, 2026-11-07: chose T-447 next, with one-step cancelling of a whole import and column matching for any broker",
+    "evidence": [
+     "frontend/src/lib/data/tradeImport.ts",
+     "frontend/src/lib/server/tradeImports.ts",
+     "frontend/src/app/api/user/tracked-portfolios/[id]/imports/route.ts",
+     "frontend/src/app/api/user/tracked-portfolios/[id]/imports/[importId]/cancel/route.ts",
+     "frontend/src/components/portfolio/tracked/ImportTradesPanel.tsx",
+     "frontend/drizzle/0010_trade-imports.sql",
+     "frontend/src/lib/data/__tests__/tradeImport.test.ts",
+     "docs/decisions/2026-11-07-owner-decisions.md"
+    ]
+   }
   },
   {
    "id": "T-448",

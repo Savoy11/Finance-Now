@@ -18,6 +18,7 @@ import { HoldingsTable } from './HoldingsTable'
 import { PortfolioCostsCard } from '@/components/portfolio/PortfolioCostsCard'
 import { trackedCostPositions } from '@/lib/data/portfolioCosts'
 import { TradeForm } from './TradeForm'
+import { ImportTradesPanel } from './ImportTradesPanel'
 import { TradesTable } from './TradesTable'
 
 // One tracked portfolio (T-027, owner decision D65): what is held and what it
@@ -275,6 +276,9 @@ export function TrackedPortfolioDetail({ portfolio, onBack }: {
           {!pricesPending && <PortfolioCostsCard positions={costPositions} basis="tracked" />}
 
           <TradeForm view={view} onSubmit={addTrade} busy={busy === 'trade'} />
+
+          {/* T-447: many trades at once, from a broker's file, each row checked before saving. */}
+          <ImportTradesPanel portfolioId={portfolio.id} onSaved={refresh} />
 
           <section className="space-y-2" aria-labelledby={`${uid}-trades`}>
             <h3 id={`${uid}-trades`} className="text-sm font-semibold text-text-primary">

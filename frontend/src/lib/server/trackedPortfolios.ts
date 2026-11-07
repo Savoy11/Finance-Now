@@ -234,9 +234,9 @@ const toStored = (r: TradeRow, split: SplitDetails | null = null): StoredTrade =
 })
 
 /** The terms of these split trades, by trade id. Queried only when there are some (see the header). */
-async function loadSplitTerms(userId: string, tradeIds: string[]): Promise<Map<string, SplitDetails>> {
+async function loadSplitTerms(userId: string, tradeIds: string[], q: Queryable = db): Promise<Map<string, SplitDetails>> {
   if (tradeIds.length === 0) return new Map()
-  const rows = await db.select({
+  const rows = await q.select({
     tradeId: tradeSplits.tradeId, unitsAfter: tradeSplits.unitsAfter, unitsBefore: tradeSplits.unitsBefore,
     cashInLieuUsd: tradeSplits.cashInLieuUsd,
   }).from(tradeSplits)
@@ -244,25 +244,32 @@ async function loadSplitTerms(userId: string, tradeIds: string[]): Promise<Map<s
   return new Map(rows.map((r) => [r.tradeId, { unitsAfter: r.unitsAfter, unitsBefore: r.unitsBefore, cashInLieuUsd: r.cashInLieuUsd }]))
 }
 
-/** Every trade in the portfolio, cancelled ones included, and the cancellations. */
-export async function loadTrades(userId: string, portfolioId: string): Promise<{ trades: StoredTrade[]; cancellations: StoredCancellation[] }> {
-  const rows = await db.select(tradeColumns).from(tradeTransactions)
+/** Something queries can be run on: the database, or a transaction on it. */
+export type Queryable = Pick<typeof db, 'select'>
+
+/** Every trade in the portfolio, cancelled ones included, and the cancellations. Pass a transaction to read inside it. */
+export async function loadTrades(
+  userId: string,
+  portfolioId: string,
+  q: Queryable = db,
+): Promise<{ trades: StoredTrade[]; cancellations: StoredCancellation[] }> {
+  const rows = await q.select(tradeColumns).from(tradeTransactions)
     .innerJoin(instruments, eq(instruments.id, tradeTransactions.instrumentId))
     .leftJoin(instrumentCrypto, eq(instrumentCrypto.instrumentId, instruments.id))
     .where(and(eq(tradeTransactions.portfolioId, portfolioId), eq(tradeTransactions.userId, userId)))
     .orderBy(sql`${tradeTransactions.executedAt} asc nulls first`, asc(tradeTransactions.createdAt))
-  const cancellations = await db.select({
+  const cancellations = await q.select({
     tradeId: tradeCancellations.tradeId, reason: tradeCancellations.reason, createdAt: tradeCancellations.createdAt,
   }).from(tradeCancellations)
     .innerJoin(tradeTransactions, eq(tradeTransactions.id, tradeCancellations.tradeId))
     .where(and(eq(tradeTransactions.portfolioId, portfolioId), eq(tradeCancellations.userId, userId)))
-  const splits = await loadSplitTerms(userId, rows.filter((r) => r.side === 'split').map((r) => r.id))
+  const splits = await loadSplitTerms(userId, rows.filter((r) => r.side === 'split').map((r) => r.id), q)
   return { trades: rows.map((r) => toStored(r, splits.get(r.id) ?? null)), cancellations }
 }
 
 /** Every trade row in the portfolio, cancelled ones included: the table only grows. */
-export async function countTrades(userId: string, portfolioId: string): Promise<number> {
-  const [{ n }] = await db.select({ n: count() }).from(tradeTransactions)
+export async function countTrades(userId: string, portfolioId: string, q: Queryable = db): Promise<number> {
+  const [{ n }] = await q.select({ n: count() }).from(tradeTransactions)
     .where(and(eq(tradeTransactions.portfolioId, portfolioId), eq(tradeTransactions.userId, userId)))
   return n
 }

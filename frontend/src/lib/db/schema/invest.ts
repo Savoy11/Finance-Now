@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid, numeric, integer, boolean, uniqueIndex, index } from 'drizzle-orm/pg-core'
+import { pgTable, text, timestamp, uuid, numeric, integer, boolean, jsonb, uniqueIndex, index } from 'drizzle-orm/pg-core'
 import { users } from './auth'
 import { instruments } from './instruments'
 
@@ -128,6 +128,61 @@ export const tradeSplits = pgTable('trade_splits', {
   userIdx: index('trade_splits_user_idx').on(t.userId),
 }))
 
+// Importing trades from a broker's file (T-447, owner decision D200). Tables of
+// their own, as trade_splits is, so that every trade route keeps working before
+// migration 0010 is applied; only importing needs them.
+//
+// One row per import: the file it came from and what the screen sent. The
+// trades it saved are ordinary trade_transactions rows, named in
+// trade_import_rows, so cancelling a whole import is a cancellation row for
+// each of its trades and nothing is ever changed or removed.
+export const tradeImports = pgTable('trade_imports', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  portfolioId: uuid('portfolio_id').notNull().references(() => portfolios.id, { onDelete: 'cascade' }),
+  fileName: text('file_name').notNull().default(''),
+  // The file's column names, as headerSignature() writes them (lib/data/tradeImport.ts).
+  headerSignature: text('header_signature').notNull().default(''),
+  // Rows the screen sent, and how many of them were recognised as already imported and not saved again.
+  rowsSent: integer('rows_sent').notNull(),
+  skippedRepeats: integer('skipped_repeats').notNull().default(0),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  userIdx: index('trade_imports_user_idx').on(t.userId),
+  portfolioIdx: index('trade_imports_portfolio_idx').on(t.portfolioId),
+}))
+
+// Which trades an import saved, the file line each came from, and its
+// fingerprint (importFingerprints in lib/data/tradeImport.ts): a later import
+// of the same rows into the same portfolio is recognised and not saved twice,
+// unless the earlier trade was cancelled.
+export const tradeImportRows = pgTable('trade_import_rows', {
+  tradeId: uuid('trade_id').primaryKey().references(() => tradeTransactions.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  importId: uuid('import_id').notNull().references(() => tradeImports.id, { onDelete: 'cascade' }),
+  portfolioId: uuid('portfolio_id').notNull().references(() => portfolios.id, { onDelete: 'cascade' }),
+  line: integer('line').notNull(),
+  fingerprint: text('fingerprint').notNull(),
+}, (t) => ({
+  userIdx: index('trade_import_rows_user_idx').on(t.userId),
+  importIdx: index('trade_import_rows_import_idx').on(t.importId),
+  fingerprintIdx: index('trade_import_rows_fingerprint_idx').on(t.portfolioId, t.fingerprint),
+}))
+
+// A file layout the person matched once (ImportLayout in lib/data/tradeImport.ts),
+// keyed by the file's column names, so the next file from the same broker needs
+// no matching. Saved with an import; a later import of the same layout replaces it.
+export const tradeImportLayouts = pgTable('trade_import_layouts', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  headerSignature: text('header_signature').notNull(),
+  layout: jsonb('layout').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  signatureUnique: uniqueIndex('trade_import_layouts_signature_unique').on(t.userId, t.headerSignature),
+}))
+
 export const watchlists = pgTable('watchlists', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
@@ -157,5 +212,8 @@ export type TradeTransaction = typeof tradeTransactions.$inferSelect
 export type TrackedPortfolio = typeof trackedPortfolios.$inferSelect
 export type TradeCancellation = typeof tradeCancellations.$inferSelect
 export type TradeSplit = typeof tradeSplits.$inferSelect
+export type TradeImport = typeof tradeImports.$inferSelect
+export type TradeImportRow = typeof tradeImportRows.$inferSelect
+export type TradeImportLayout = typeof tradeImportLayouts.$inferSelect
 export type Watchlist = typeof watchlists.$inferSelect
 export type WatchlistItem = typeof watchlistItems.$inferSelect

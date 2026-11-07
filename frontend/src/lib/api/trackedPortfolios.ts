@@ -5,6 +5,8 @@
 
 import type { TrackedPortfoliosResponse } from '@/app/api/user/tracked-portfolios/route'
 import type { LedgerResponse } from '@/app/api/user/tracked-portfolios/[id]/trades/route'
+import type { ImportCheckResponse, ImportsResponse } from '@/app/api/user/tracked-portfolios/[id]/imports/route'
+import type { ImportLayout, ImportTrade } from '@/lib/data/tradeImport'
 import type { TrackedPortfolioSummary } from '@/lib/server/trackedPortfolios'
 import type { LedgerView, TradeView } from '@/lib/data/tradeLedger'
 
@@ -64,6 +66,16 @@ export interface TradeInput {
   cashInLieuUsd?: string
 }
 
+/** What the import screen sends (T-447): the ready rows, and what to do with those that look already recorded. */
+export interface ImportBody {
+  fileName: string
+  headerSignature: string
+  rows: Array<{ line: number; trade: ImportTrade }>
+  /** Lines that look already recorded by hand, to save anyway. */
+  include?: number[]
+  layout?: ImportLayout
+}
+
 export const trackedApi = {
   list: () => call<TrackedPortfoliosResponse>(BASE).then((r) => r.portfolios ?? []),
   create: (v: { id?: string; name: string; description?: string }) =>
@@ -79,4 +91,13 @@ export const trackedApi = {
     call<LedgerResponse>(`${BASE}/${id}/trades`, json('POST', trade)).then((r) => r.trade!),
   cancelTrade: (id: string, tradeId: string, reason: string) =>
     call<{ ok: boolean }>(`${BASE}/${id}/trades/${tradeId}/cancel`, json('POST', { reason })),
+  imports: (id: string) => call<ImportsResponse>(`${BASE}/${id}/imports`)
+    .then((r) => ({ imports: r.imports ?? [], layouts: r.layouts ?? [] })),
+  /** Says what an import would save, saving nothing. */
+  checkImport: (id: string, body: ImportBody) =>
+    call<ImportCheckResponse>(`${BASE}/${id}/imports`, json('POST', { ...body, dryRun: true })),
+  saveImport: (id: string, body: ImportBody) =>
+    call<ImportCheckResponse>(`${BASE}/${id}/imports`, json('POST', body)),
+  cancelImport: (id: string, importId: string, reason: string) =>
+    call<{ ok: boolean; cancelled: number; alreadyCancelled: number }>(`${BASE}/${id}/imports/${importId}/cancel`, json('POST', { reason })),
 }
