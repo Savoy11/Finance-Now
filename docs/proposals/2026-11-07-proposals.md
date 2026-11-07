@@ -30,7 +30,7 @@ is the net of the three. Effort is given in rough working days for one developer
 > dates and never fetched. No mock data, no deletion of project files, no hidden surface restored, and no
 > parked item un-parked. Nothing below is an existing ledger item.
 >
-> **Five earlier proposals are folded in.** Proposals 2, 4 and 5 take in five of the nine proposals still
+> **Six earlier proposals are folded in.** Proposals 2, 4 and 5 take in six of the nine proposals still
 > waiting for your ruling (the table below). Each says which, so marking it settles those too.
 >
 > **No network requests were made from this session.** Nothing went to sec.gov or data.sec.gov, and the
@@ -64,7 +64,7 @@ was re-checked in today's tree.
 
 ## 1. Make tracked portfolios the ones the rest of the app reads · proposed `P1` · target section: ledger, new item (category `feature`, Portfolios → Tracked)
 
-**Status:** APPROVED (owner, 2026-11-07, D207: all six approved; the decision each one names is asked when it is built)
+**Status:** APPROVED (owner, 2026-11-07, D207: all six approved; the decision each one names is asked when it is built) · **Filed as:** T-453
 
 **What:** Since this week a tracked portfolio holds real history: imported trades (T-447), income (T-451)
 and its fund costs (T-448). But everything else in the app that talks about "your portfolio" still reads only
@@ -129,7 +129,7 @@ High: every part reuses a tested engine. · *Practicality:* Very good: one yes f
 
 ## 2. One row of actions on every asset page: watch it, set an alert, compare it, ask the AI · proposed `P1` · target section: ledger, new item (category `feature`, core, cross-module)
 
-**Status:** APPROVED (owner, 2026-11-07, D207: all six approved; the decision each one names is asked when it is built)
+**Status:** APPROVED (owner, 2026-11-07, D207: all six approved; the decision each one names is asked when it is built) · **Filed as:** T-454
 
 **Folds in four earlier proposals:** 2026-09-08 #1 (price alerts), 2026-09-08 #2 (add to watchlist),
 2026-09-22 #2 (links into Compare) and 2026-09-22 #4 ("Analyze with AI" for coins and macro). Marking this
@@ -178,7 +178,7 @@ store, monitor and deep links exist. · *Practicality:* Very good.
 
 ## 3. Where a fund invests: countries and currencies, and for bond funds, who borrowed and when it is repaid · proposed `P1` · target section: ledger, new item (category `feature`, ETFs & Funds)
 
-**Status:** APPROVED (owner, 2026-11-07, D207: all six approved; the decision each one names is asked when it is built)
+**Status:** APPROVED (owner, 2026-11-07, D207: all six approved; the decision each one names is asked when it is built) · **Filed as:** T-455
 
 **What:** On each fund page, beside the asset mix it already shows:
 - **(a) Countries and currencies:** how the fund's money splits by the country of the companies or governments
@@ -231,7 +231,7 @@ high: the data is already downloaded. · *Practicality:* Good: one fixture to re
 
 ## 4. The Macro module: Fed meetings, release dates and news where its readers look · proposed `P1` · target section: ledger, new item (category `feature`, Macro Markets)
 
-**Status:** APPROVED (owner, 2026-11-07, D207: all six approved; the decision each one names is asked when it is built)
+**Status:** APPROVED (owner, 2026-11-07, D207: all six approved; the decision each one names is asked when it is built) · **Filed as:** T-456
 
 **Folds in one earlier proposal:** 2026-09-08 #4 (macro stories on Headlines), as part (c).
 
@@ -285,7 +285,7 @@ high for (a) to (c), which reuse what is in hand. · *Practicality:* Very good f
 
 ## 5. Let the AI see the Funds module and the Reserve Monitor · proposed `P2` · target section: ledger, new item (category `feature`, AI agents)
 
-**Status:** APPROVED (owner, 2026-11-07, D207: all six approved; the decision each one names is asked when it is built)
+**Status:** APPROVED (owner, 2026-11-07, D207: all six approved; the decision each one names is asked when it is built) · **Filed as:** T-457
 
 **Folds in one earlier proposal:** 2026-09-08 #5 (funds and SEC fundamentals on `/api/v1` and the MCP server),
 as part (b).
@@ -332,7 +332,7 @@ server to cover funds.
 
 ## 6. The next earnings date where you look, with a second source · proposed `P2` · target section: ledger, new item (category `feature`, Equities)
 
-**Status:** APPROVED (owner, 2026-11-07, D207: all six approved; the decision each one names is asked when it is built)
+**Status:** APPROVED (owner, 2026-11-07, D207: all six approved; the decision each one names is asked when it is built) · **Filed as:** T-458
 
 **What:** Show the next expected earnings date on each stock page, mark stocks on a watchlist whose earnings
 fall in the next two weeks, and add a "my watchlist only" switch to the Market Calendar. Add Alpha Vantage's

@@ -59,17 +59,17 @@
   "critic_gaps_added": 0
  },
  "counts": {
-  "total_verified": 408,
-  "outstanding": 392,
+  "total_verified": 414,
+  "outstanding": 398,
   "by_status": {
    "closed": 248,
    "parked": 131,
-   "open": 8,
+   "open": 14,
    "blocked": 5
   },
   "by_owner_role": {
-   "remote-dev": 103,
-   "either": 52,
+   "remote-dev": 106,
+   "either": 55,
    "owner-decision": 151,
    "owner-machine": 86
   },
@@ -77,7 +77,7 @@
   "closed_by_annotation": 248,
   "counts_recomputed_on": "2026-11-07",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
-  "total": 392
+  "total": 398
  },
  "blocking_decisions": [
   {
@@ -16116,6 +16116,342 @@
      "frontend/src/lib/data/__tests__/userExport.test.ts"
     ]
    }
+  },
+  {
+   "id": "T-453",
+   "title": "Make tracked portfolios the ones the rest of the app reads: the Daily Brief, a look-through and asset split, the Portfolio Builder’s drift check, and a yearly return",
+   "status": "open",
+   "confidence": "high",
+   "blocking_decision": null,
+   "opened": {
+    "on": "2026-11-07",
+    "by": "opportunity-scout FILE mode, owner-approved 2026-11-07 (D207)",
+    "why": "Proposal 1 of docs/proposals/2026-11-07-proposals.md, proposed P1 (Importance high, Efficiency high, Practicality very good), approved by the owner with the other five on 2026-11-07 (D207). The two decisions it names, for parts (c) and (d), are asked when the item is built, with the proposal’s recommended answers offered first; nothing was built by the approval."
+   },
+   "owner_role": "remote-dev",
+   "category": "feature",
+   "effort": "large",
+   "related_ids": [
+    "D207",
+    "T-027",
+    "D65",
+    "T-447",
+    "D200",
+    "T-451",
+    "D201",
+    "T-448",
+    "D198",
+    "T-455",
+    "D47",
+    "T-116",
+    "D92",
+    "D163"
+   ],
+   "summary": "A tracked portfolio now holds real history: imported trades (T-447, D200), income (T-451, D201) and its funds’ costs (T-448, D198). Everything else in the app that speaks of “your portfolio” still reads only the what-if portfolios, because a tracked portfolio is marked by a tracked_portfolios row and the what-if routes leave it out. Four parts, each able to ship on its own. (a) The Daily Brief (brief/page.tsx reads usePortfolioStore) adds the tickers held in tracked portfolios: tickers only, never quantities or costs, which keeps it inside the draft Privacy Policy’s sentence on the Brief. (b) A look-through and an asset-class split on each tracked portfolio, from live values, through computeLookThrough (lib/data/lookThrough.ts) and valueLedger (lib/data/tradeLedger.ts); PortfolioLookThrough takes a what-if Portfolio, so it needs a small adapter. (c) The Portfolio Builder’s drift check (PlanMonitor.tsx lists only usePortfolioStore portfolios) can compare a saved plan with a tracked portfolio’s real holdings; builder_plans.linked_portfolio_id references portfolios.id and a tracked portfolio is a portfolios row, so linking one needs no migration. (d) One money-weighted yearly return per tracked portfolio: the yearly rate that turns the dated money put in, less the income and sale proceeds taken out, into today’s value, with a plain total return for a portfolio under a year old, since a yearly rate on a few weeks exaggerates. No key, no host, no migration, no recurring cost.",
+   "next_action": "When building, ask the owner the proposal’s two decisions, recommended answers first. (1) For (c): pointed at a tracked portfolio, the drift check’s buy and sell lists become trade lists for real money. D47 cleared build-by-allocation with no legal review and cleared the item-16 clause of T-116’s blocker, so the proposal reads this as inside what is already live, but asks for the owner’s yes; recommended: yes, with the builder’s existing not-advice line beside it. (2) For (d): the yearly figure only once a portfolio is a year old, with a plain total return before that (recommended), or the yearly figure always. (a) and (b) need no decision and can go first. Build (d) pure and tested in frontend/src/lib/data/ with an injectable now (the house rule for a figure a user acts on), and add a paragraph to the methods page’s “Tracked portfolios: gains and income” section in frontend/src/lib/legal/dataMethods.ts (D163). A holding with no live price stays out of every figure and is named, as it is out of “Value now” today; no tax rule is applied (REALIZED_METHOD_LABEL); nothing is rated (D92).",
+   "sources": [
+    {
+     "file": "docs/proposals/2026-11-07-proposals.md",
+     "lines": "Proposal 1",
+     "quote": "everything else in the app that talks about \"your portfolio\" still reads only"
+    },
+    {
+     "file": "frontend/src/app/(dashboard)/brief/page.tsx",
+     "lines": "55",
+     "quote": "const { portfolios } = usePortfolioStore()"
+    },
+    {
+     "file": "frontend/src/components/portfolio-builder/PlanMonitor.tsx",
+     "lines": "42",
+     "quote": "const portfolios = usePortfolioStore((s) => s.portfolios)"
+    },
+    {
+     "file": "frontend/src/components/portfolio/PortfolioLookThrough.tsx",
+     "lines": "35",
+     "quote": "export function PortfolioLookThrough({ portfolio }: { portfolio: Portfolio }) {"
+    },
+    {
+     "file": "frontend/src/lib/db/schema/invest.ts",
+     "lines": "62",
+     "quote": "portfolioId: uuid('portfolio_id').primaryKey().references(() => portfolios.id, { onDelete: 'cascade' }),"
+    },
+    {
+     "file": "frontend/src/lib/legal/disclosures.ts",
+     "lines": "282",
+     "quote": "Daily Brief sends ticker symbols from your portfolios and watchlists, never quantities or costs."
+    }
+   ]
+  },
+  {
+   "id": "T-454",
+   "title": "One row of actions on every asset page: add to watchlist, set a price alert, compare it, ask the AI",
+   "status": "open",
+   "confidence": "high",
+   "blocking_decision": null,
+   "opened": {
+    "on": "2026-11-07",
+    "by": "opportunity-scout FILE mode, owner-approved 2026-11-07 (D207)",
+    "why": "Proposal 2 of docs/proposals/2026-11-07-proposals.md, proposed P1 (Importance high, Efficiency high, Practicality very good), approved by the owner with the other five on 2026-11-07 (D207). It folds in four earlier proposals that were never marked, and this approval settles them: 2026-09-08 #1 (a way to create a price alert) and #2 (add to watchlist from detail pages), and 2026-09-22 #2 (links into Compare) and #4 (“Analyze with AI” for coins and macro instruments). It names no decision needed now; nothing was built by the approval."
+   },
+   "owner_role": "remote-dev",
+   "category": "feature",
+   "effort": "medium",
+   "related_ids": [
+    "D207",
+    "T-131"
+   ],
+   "summary": "Every coin, stock, fund and macro instrument page is a dead end for the app’s own loop. The price-alert machinery is built and nothing feeds it: usePriceAlertMonitor runs from the dashboard layout on every page, checks prices once a minute, refuses to fire on a reference price and carries CoinGecko’s credit, and usePriceAlertStore has addAlert, removeAlert and rearmAlert, but no component calls any of them. The market assessment’s positioning says the product “watches your pegs and positions”, and its pricing table puts alerts in both tiers (docs/MARKET-ASSESSMENT.md §5); the bell watches pegs, and nothing watches a user’s positions. useWatchlistStore.addKey is called only on /watchlist. Compare reads ?symbols= and Research reads ?symbol= and ?agent=, but only the stock page links to either, and the sidebar is the only way into Compare. This adds one shared row in components/markets (module boundary rule 1) at the top of every asset page: Add to watchlist, choosing the list (every page); Set a price alert, above or below a typed price (coin, stock and fund pages), with a short list of the user’s alerts on the Watchlist page where each can be seen, removed or re-armed; Compare, opening /compare with this asset already chosen; and Ask the AI, opening Research with this asset and its module’s agent. No key, host or recurring cost.",
+   "next_action": "Build the shared component in components/markets and place it on the coin, stock, fund and macro instrument pages; the stock page’s existing Analyze with AI link moves into it. State the alert’s limits beside its form: it fires only while Finance Now is open in a browser, since alerts are kept on the device (the draft Privacy Policy already lists alerts among what stays in the browser), and a stock or fund alert needs a live quote, so a quote key, because the monitor never fires on a reference price. No alerts on macro instruments: most of their quotes are unserved, and the alert text is in dollars while grains are quoted in cents and yields in percent. The proposal names no decision now. Later, at launch with sign-in (T-131), ask the owner whether alerts move from the browser into the account, so they follow the user between devices.",
+   "sources": [
+    {
+     "file": "docs/proposals/2026-11-07-proposals.md",
+     "lines": "Proposal 2",
+     "quote": "One shared row of buttons at the top of every coin, stock, fund and macro instrument page"
+    },
+    {
+     "file": "frontend/src/store/usePriceAlertStore.ts",
+     "lines": "36-38",
+     "quote": "addAlert: (a: Omit<PriceAlert, 'id' | 'createdAt' | 'triggeredAt' | 'triggeredPrice'>) => void"
+    },
+    {
+     "file": "frontend/src/app/(dashboard)/layout.tsx",
+     "lines": "41",
+     "quote": "usePriceAlertMonitor()                   // user price alerts, app-wide"
+    },
+    {
+     "file": "frontend/src/app/(dashboard)/watchlist/page.tsx",
+     "lines": "61",
+     "quote": "addKey(active.id, key)"
+    },
+    {
+     "file": "frontend/src/app/(dashboard)/equities/[symbol]/page.tsx",
+     "lines": "166",
+     "quote": "href={`/research?symbol=${encodeURIComponent(symbol)}`}"
+    },
+    {
+     "file": "docs/MARKET-ASSESSMENT.md",
+     "lines": "259",
+     "quote": "| Free | $0 | Full ops tools with keyless data (CoinGecko/RSS/Reddit), limited alerts |"
+    },
+    {
+     "file": "docs/proposals/2026-09-08-proposals.md",
+     "lines": "Proposals 1 and 2",
+     "quote": "A way to create a price alert"
+    },
+    {
+     "file": "docs/proposals/2026-09-22-proposals.md",
+     "lines": "Proposals 2 and 4",
+     "quote": "A way into Compare from where the user already is"
+    }
+   ]
+  },
+  {
+   "id": "T-455",
+   "title": "Where a fund invests: countries and currencies, and for bond funds the kind of borrower and when the bonds fall due, from the N-PORT filing the app already reads",
+   "status": "open",
+   "confidence": "high",
+   "blocking_decision": null,
+   "opened": {
+    "on": "2026-11-07",
+    "by": "opportunity-scout FILE mode, owner-approved 2026-11-07 (D207)",
+    "why": "Proposal 3 of docs/proposals/2026-11-07-proposals.md, proposed P1 (Importance medium to high, Efficiency very high, Practicality good), approved by the owner with the other five on 2026-11-07 (D207). It names no decision required; part (c) is optional and is the owner’s to choose when the item is built. Nothing was built by the approval."
+   },
+   "owner_role": "either",
+   "category": "feature",
+   "effort": "medium",
+   "related_ids": [
+    "D207",
+    "T-158",
+    "T-449",
+    "D92",
+    "D163",
+    "T-453",
+    "T-457"
+   ],
+   "summary": "/live-data/fund-holdings already downloads each fund’s full N-PORT filing and reads every holding in it (parseNportReport in frontend/src/lib/server/nport.ts), keeping each holding’s ticker, name, identifiers, units, value, weight and asset category and dropping the rest. The form asks more of every holding: the issuer’s country, the holding’s currency, the issuer type, and for a bond its maturity date (in the XML, per the SEC’s published form rather than a filing read: invCountry, curCd, issuerCat and debtSec’s maturityDt), none parsed per holding. So the international funds (VXUS, VGK, EWJ, VSS, BNDX and EMB among them) cannot say which countries they hold, and a bond fund’s “If Rates Move” card gives its duration but not who borrowed or when the bonds are repaid. This adds, beside the asset mix on each fund page: (a) splits by the issuer’s country and by the holding’s currency; (b) for bond funds, splits by kind of borrower (US Treasury, government agencies, companies, cities and states, foreign governments) and by when the bonds fall due (under 1 year, 1 to 3, 3 to 5, 5 to 10, 10 to 20, over 20); and optionally (c) the country split across a whole portfolio on the Look-through tab, and on tracked portfolios with T-453’s part (b). Each split is dated by the filing’s report date and shows how much it covers, as the asset mix does (NT9). The filing is already fetched and cached: no key, no new host, no recurring cost.",
+   "next_action": "(1) First, on the owner’s machine: read one real N-PORT filing and copy its holding fields into frontend/src/lib/server/__tests__/nport.test.ts as a fixture, as IEF’s and BND’s interest-rate sections were, to confirm the field names before the parser relies on them; a cloud session sends nothing to the SEC, whose requests carry the owner’s email as the contact. (2) Build the aggregation pure and tested in frontend/src/lib/utils/, like assetMix.ts, with lines in frontend/src/lib/legal/dataMethods.ts (D163). State the limits on the page: a holding’s country is the issuer’s as the fund reports it (a company’s home, not where it sells); a field the filer left blank lowers the split’s coverage and is never guessed; N-PORT carries no credit ratings, so there is no quality split and none is implied; trusts that file no N-PORT, such as SPY, show nothing. Facts from the fund’s own filing only, no rating (D92). (3) When building, ask the owner whether to add part (c); the proposal makes it optional and recommends neither way.",
+   "sources": [
+    {
+     "file": "docs/proposals/2026-11-07-proposals.md",
+     "lines": "Proposal 3",
+     "quote": "how the fund's money splits by the country of the companies or governments"
+    },
+    {
+     "file": "frontend/src/lib/server/nport.ts",
+     "lines": "188, 207",
+     "quote": "export function parseNportReport(xml: string): NportReport {"
+    },
+    {
+     "file": "frontend/src/app/live-data/fund-holdings/route.ts",
+     "lines": "144",
+     "quote": "// NT9: the mix is computed from the WHOLE report, before the pctVal > 0 filter"
+    },
+    {
+     "file": "frontend/src/lib/server/__tests__/nport.test.ts",
+     "lines": "94",
+     "quote": "// IEF (accession 0002071691-26-016715, positive figures) and Vanguard BND"
+    }
+   ]
+  },
+  {
+   "id": "T-456",
+   "title": "The Macro module: Fed meeting dates on its pages and agents, news on each instrument’s page, a Macro section on Headlines, and official US release dates",
+   "status": "open",
+   "confidence": "high",
+   "blocking_decision": null,
+   "opened": {
+    "on": "2026-11-07",
+    "by": "opportunity-scout FILE mode, owner-approved 2026-11-07 (D207)",
+    "why": "Proposal 4 of docs/proposals/2026-11-07-proposals.md, proposed P1 (Importance medium to high, Efficiency very high for parts (a) to (c), Practicality very good for (a) to (c) and good for (d)), approved by the owner with the other five on 2026-11-07 (D207). It folds in 2026-09-08 proposal #4 (macro stories on Headlines), never marked, as part (c), and this approval settles it. The decision it names, for part (d), is asked when the item is built, with the proposal’s recommended answer offered first; nothing was built by the approval."
+   },
+   "owner_role": "either",
+   "category": "feature",
+   "effort": "medium",
+   "related_ids": [
+    "D207",
+    "T-458",
+    "T-250",
+    "D21",
+    "D163"
+   ],
+   "summary": "Four parts, each able to ship on its own. (a) Fed meetings: frontend/src/lib/data/fomcCalendar.ts (keyless, the Federal Reserve Board registered in sourceTerms.ts, a 90-day review clock) is read only by /live-data/market-calendar and /equities/calendar, so a reader with Macro and without Equities never sees when the Fed meets; and get_market_calendar is tagged market equities in frontend/src/lib/agents/tools.ts, so toolsForAgent('macro') leaves it out and macro-research cannot answer “when is the next Fed meeting”, a question that tool’s own description says it answers. This shows “Next Fed meeting” on /macro and /macro/rates and the year’s schedule on Bonds & Rates, and gives the macro agents the calendar. (b) /live-data/macro-news already tags each story with the instruments it names (related, from detectRelated, each with that instrument’s page) and only /macro/news reads the tags; each commodity, currency and yield page shows the stories that name it. (c) Headlines renders crypto and markets sections only; it gains a Macro section for readers with the module on. (d) A hand-kept table of official US release dates (CPI, the jobs report, GDP and PCE inflation), copied from the Bureau of Labor Statistics’ and the Bureau of Economic Analysis’ published schedules with a review clock like the Fed table’s, shown on the Macro pages and the Equities calendar: the free way to fill the economic calendar FMP serves only on a paid plan, which docs/BUSINESS-CHECKLIST.md §5.1.1 accepts as empty on the free tier. No key, no recurring cost.",
+   "next_action": "(a) to (c) need no decision and use only what the app already reads; build them first. For (d): (1) read the terms of bls.gov and bea.gov and register each in frontend/src/lib/server/sourceTerms.ts as the Federal Reserve Board was, copied by hand and never fetched; both are federal agencies whose own material is usually public domain, which is to be read, not assumed, and bls.gov tends to refuse automated reads, so the reading may have to be in the owner’s browser. (2) When building (d), ask the owner the proposal’s decision, recommended answer first: yes or no, and which releases (recommended: CPI and the jobs report, which the calendar tool’s description already names, plus GDP and PCE inflation). (3) Build the table with provenance and a staleness:check clock, like fomcCalendar.ts; it is re-copied once a year when the agencies publish the next year’s schedule and checked whenever a date moves, since they have moved releases before.",
+   "sources": [
+    {
+     "file": "docs/proposals/2026-11-07-proposals.md",
+     "lines": "Proposal 4",
+     "quote": "\"Next Fed meeting\" on `/macro` and `/macro/rates`"
+    },
+    {
+     "file": "frontend/src/lib/agents/tools.ts",
+     "lines": "302, 305",
+     "quote": "when is the next Fed meeting"
+    },
+    {
+     "file": "frontend/src/app/live-data/market-calendar/route.ts",
+     "lines": "6",
+     "quote": "import { fomcScheduleThrough } from '@/lib/data/fomcCalendar'"
+    },
+    {
+     "file": "frontend/src/app/live-data/macro-news/route.ts",
+     "lines": "245",
+     "quote": "related: detectRelated(text),"
+    },
+    {
+     "file": "frontend/src/app/(dashboard)/headlines/page.tsx",
+     "lines": "34",
+     "quote": "type StoryModule = 'crypto' | 'markets'"
+    },
+    {
+     "file": "docs/BUSINESS-CHECKLIST.md",
+     "lines": "205",
+     "quote": "*accepted 🟡: earnings live, economic calendar empty on the free tier*"
+    },
+    {
+     "file": "docs/proposals/2026-09-08-proposals.md",
+     "lines": "Proposal 4",
+     "quote": "Macro stories on the Headlines landing page"
+    }
+   ]
+  },
+  {
+   "id": "T-457",
+   "title": "Let the AI see the Funds module and the Reserve Monitor: agent tools for a fund’s filed details and for stablecoin reserves, then the same on /api/v1 and the MCP server",
+   "status": "open",
+   "confidence": "high",
+   "blocking_decision": null,
+   "opened": {
+    "on": "2026-11-07",
+    "by": "opportunity-scout FILE mode, owner-approved 2026-11-07 (D207)",
+    "why": "Proposal 5 of docs/proposals/2026-11-07-proposals.md, proposed P2 (Importance medium, Efficiency high, Practicality very good), approved by the owner with the other five on 2026-11-07 (D207). It folds in 2026-09-08 proposal #5 (funds and filed fundamentals on /api/v1 and the MCP server), never marked, as part (b), and this approval settles it. The decision it names is asked when the item is built, with the proposal’s recommended answer offered first; nothing was built by the approval."
+   },
+   "owner_role": "remote-dev",
+   "category": "feature",
+   "effort": "medium",
+   "related_ids": [
+    "D207",
+    "T-449",
+    "D204",
+    "D101",
+    "D173",
+    "D20",
+    "T-130",
+    "T-425",
+    "D96",
+    "T-094",
+    "T-455"
+   ],
+   "summary": "The agent tools are tagged crypto, equities and macro (frontend/src/lib/agents/tools.ts), and none reads /live-data/fund-holdings or /live-data/reserves. For a fund the only tool is search_securities, which returns the catalog’s indicative top holdings rather than the filing; for a stablecoin an agent has a price and nothing more, so the Reserve Monitor, which gained supply change on 2026-11-07 (T-449, D204), is invisible to every agent. (a) Two tools for the in-app agents (the Assistant, Research and the Daily Brief), reading the routes the pages read: fund details (holdings and asset mix from the filing, duration where filed, net assets and their date, the prospectus link) and stablecoin reserves (price against its peg, supply change over 1, 7 and 30 days, the split across blockchains, and the issuer’s last attestation with the date that says how old that curated part is). Credits travel on their own: runToolWithCredits collects each response’s required credit (D101), so a new tool needs no credit work. (b) The same two, plus the SEC fundamentals behind get_stock_financials, as /api/v1 routes and MCP tools: app/api/v1/ has no fund, fundamentals or reserves route today, and the market assessment counts the agent surface among what the product wins on (§4) and five external consumers of the API/MCP surface among its milestones (§8). No key, no host, no recurring cost.",
+   "next_action": "When building, ask the owner the proposal’s decision, recommended answer first: (a) now, and (b) when the owner wants the MCP server to cover funds (recommended), or (a) and (b) together. (b) means routes, the OpenAPI file, MCP tools, and guardApiV1 as each new route’s first statement (D173, held by apiKeys.test.ts); a reserves endpoint carries the launch step the Reserves tab already has, since DefiLlama publishes no terms document (fine before launch, D96; the enquiry is parked under T-425). After (a), re-running npm run agent-eval for the agents that gain a tool is worth doing on the owner’s machine; it bills a few dollars, so it is the owner’s call (D20). If T-455 lands first, the fund tool can return its country and maturity splits too.",
+   "sources": [
+    {
+     "file": "docs/proposals/2026-11-07-proposals.md",
+     "lines": "Proposal 5",
+     "quote": "Two tools for the in-app agents"
+    },
+    {
+     "file": "frontend/src/lib/agents/tools.ts",
+     "lines": "466",
+     "quote": "export function toolsForAgent(toolset: ToolSet = 'crypto'): Anthropic.Tool[] {"
+    },
+    {
+     "file": "docs/MARKET-ASSESSMENT.md",
+     "lines": "357",
+     "quote": "- [ ] 5 external consumers of the API/MCP surface (validates the agent bet)"
+    },
+    {
+     "file": "docs/proposals/2026-09-08-proposals.md",
+     "lines": "Proposal 5",
+     "quote": "Funds and filed fundamentals on `/api/v1` + MCP"
+    }
+   ]
+  },
+  {
+   "id": "T-458",
+   "title": "The next expected earnings date on each stock page and on watchlists, a “my watchlist only” switch on the Market Calendar, and Alpha Vantage’s earnings calendar behind FMP",
+   "status": "open",
+   "confidence": "high",
+   "blocking_decision": null,
+   "opened": {
+    "on": "2026-11-07",
+    "by": "opportunity-scout FILE mode, owner-approved 2026-11-07 (D207)",
+    "why": "Proposal 6 of docs/proposals/2026-11-07-proposals.md, proposed P2 (Importance medium, Efficiency high, Practicality very good), approved by the owner with the other five on 2026-11-07 (D207). It names no decision; nothing was built by the approval."
+   },
+   "owner_role": "either",
+   "category": "feature",
+   "effort": "small",
+   "related_ids": [
+    "D207",
+    "D21",
+    "T-154",
+    "T-384",
+    "D96",
+    "T-456"
+   ],
+   "summary": "Earnings dates appear only on /equities/calendar and through the agents’ calendar tool; the stock pages (equities/[symbol]) and /watchlist show none. FMP is their only source: /live-data/market-calendar reads earnings from FMP’s stable API and nothing else, and D21 asks that losing any one vendor degrade a surface rather than remove it. Alpha Vantage is already in the app on the same free key (/live-data/ipo-calendar calls its IPO_CALENDAR), and its EARNINGS_CALENDAR is the sister call: one request returns every US company’s expected dates for the next three months, so one call a day covers every stock. This shows the next expected earnings date on each stock page, marks stocks on a watchlist whose earnings fall in the next two weeks, adds a “my watchlist only” switch to the Market Calendar, and adds Alpha Vantage as a second source behind FMP so earnings dates survive losing FMP. Dates are labelled expected, since companies often confirm late and a date can move. No new host, no recurring cost.",
+   "next_action": "Build it on one cached Alpha Vantage request a day, which fits the free tier’s 25 a day beside the IPO calendar’s four and the quote ladder’s Alpha Vantage rung. Its terms entry (conditional, verified 2026-09-26) licenses personal use, which covers everything before launch (D96), and the entry already names its launch step. Confirm the response’s field names with one live call on the owner’s machine with the key, as the IPO calendar was checked (T-384); a cloud session has no key. The proposal names no decision. When this closes, note on parked T-154 that launching without FMP would then keep earnings dates from Alpha Vantage, subject to Alpha Vantage’s own launch step, rather than hiding the earnings calendar.",
+   "sources": [
+    {
+     "file": "docs/proposals/2026-11-07-proposals.md",
+     "lines": "Proposal 6",
+     "quote": "Show the next expected earnings date on each stock page"
+    },
+    {
+     "file": "frontend/src/app/live-data/market-calendar/route.ts",
+     "lines": "84",
+     "quote": "const stable = 'https://financialmodelingprep.com/stable'"
+    },
+    {
+     "file": "frontend/src/app/live-data/ipo-calendar/route.ts",
+     "lines": "37, 72",
+     "quote": "/** 6 hours — 4 upstream calls a day at most, well inside the 25/day condition. */"
+    },
+    {
+     "file": "frontend/src/lib/server/sourceTerms.ts",
+     "lines": "746",
+     "quote": "'Valid API key required', 'Free tier is 25 requests/day — do not exceed',"
+    }
+   ]
   }
  ],
  "closed_but_still_listed_as_open_in_docs": [
@@ -42129,6 +42465,14 @@
     "evidence": [
      "docs/proposals/2026-11-06-proposals.md",
      "docs/decisions/2026-11-06-owner-decisions.md"
+    ]
+   },
+   {
+    "on": "2026-11-07",
+    "what": "D207 filed (opportunity-scout FILE mode): the owner approved all six proposals in docs/proposals/2026-11-07-proposals.md, filed as T-453 to T-458 in proposal order, all open, each next_action naming the decision its proposal says is asked when it is built. Proposals 2, 4 and 5 fold in six earlier proposals that were never marked (2026-09-08 #1, #2, #4 and #5; 2026-09-22 #2 and #4), which this approval settles; each item’s opened.why names them. The other three in that file’s “Still waiting on your ruling” table (2026-09-08 #3, 2026-09-22 #1 and #3) are not ruled on and stay unfiled. No existing item changed: T-116 and T-154 are named in related_ids, and T-458’s next_action says what T-154 should learn when it closes. Nothing was rejected or deferred, so docs/audits/rejected-proposals.md is unchanged. Counts recomputed: open 8 to 14, remote-dev 103 to 106, either 52 to 55, total 392 to 398.",
+    "evidence": [
+     "docs/proposals/2026-11-07-proposals.md",
+     "docs/decisions/2026-11-07-owner-decisions.md"
     ]
    }
   ]
