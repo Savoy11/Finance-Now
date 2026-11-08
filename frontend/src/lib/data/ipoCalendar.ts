@@ -10,6 +10,8 @@
 //   JONE,Jones Energy Inc,2026-09-03,0,0,USD,NASDAQ
 //   PTT,Ptt PCL,2026-09-08,0,0,USD,NASDAQ
 
+import { fitRow, readAlphaVantageCsv, type AlphaVantageFailure } from './alphaVantageCsv'
+
 /** One expected listing. */
 export interface IpoEvent {
   symbol: string
@@ -33,16 +35,11 @@ export interface IpoEvent {
 export type IpoParseOutcome =
   | { ok: true; events: IpoEvent[] }
   /**
-   * The provider answered, but not with data.
-   *
-   * `rate-limited` is separated from every other failure on purpose: Alpha
-   * Vantage's free tier is 25 requests/day (a documented CONDITION of its terms
-   * entry, not just a quota), and when exceeded it returns HTTP 200 carrying a
-   * JSON note rather than an error status. Reported as an empty calendar that
-   * would read as "no IPOs are coming", which is a factual claim about the
-   * market rather than about our quota.
+   * The provider answered, but not with data. `rate-limited` is separated from every other
+   * failure on purpose: see AlphaVantageFailure (lib/data/alphaVantageCsv.ts), shared with the
+   * earnings calendar since T-458.
    */
-  | { ok: false; reason: 'rate-limited' | 'provider-message' | 'unparseable'; detail: string }
+  | AlphaVantageFailure
 
 /** Header the feed is expected to emit, lower-cased for comparison. */
 const EXPECTED_HEADER = ['symbol', 'name', 'ipodate', 'pricerangelow', 'pricerangehigh', 'currency', 'exchange']
@@ -62,40 +59,22 @@ function num(raw: string | undefined): number | null {
  * its CSV success from its JSON failures.
  */
 export function parseIpoCalendar(body: string): IpoParseOutcome {
-  const text = (body ?? '').trim()
-  if (!text) return { ok: false, reason: 'unparseable', detail: 'empty response body' }
-
-  // Alpha Vantage signals throttling and key problems as JSON, with HTTP 200.
-  if (text.startsWith('{')) {
-    let msg = text.slice(0, 300)
-    try {
-      const j = JSON.parse(text) as Record<string, string>
-      msg = j.Information ?? j.Note ?? j['Error Message'] ?? msg
-    } catch { /* keep the raw prefix */ }
-    const throttled = /rate limit|per day|higher API call|premium|frequency/i.test(msg)
-    return {
-      ok: false,
-      reason: throttled ? 'rate-limited' : 'provider-message',
-      detail: msg,
-    }
-  }
-
-  const lines = text.split(/\r?\n/).filter((l) => l.trim() !== '')
-  if (lines.length === 0) return { ok: false, reason: 'unparseable', detail: 'no lines' }
-
-  const header = lines[0].split(',').map((h) => h.trim().toLowerCase())
+  const csv = readAlphaVantageCsv(body)
+  if (!csv.ok) return csv
+  const { header } = csv
   // Column ORDER is not assumed — resolved by name, so a reordered feed keeps
   // working and a renamed one fails loudly instead of reading the wrong column.
   const idx = Object.fromEntries(EXPECTED_HEADER.map((h) => [h, header.indexOf(h)]))
   for (const required of ['symbol', 'ipodate'] as const) {
     if (idx[required] < 0) {
-      return { ok: false, reason: 'unparseable', detail: `missing "${required}" column; header was: ${lines[0]}` }
+      return { ok: false, reason: 'unparseable', detail: `missing "${required}" column; header was: ${header.join(',')}` }
     }
   }
 
   const events: IpoEvent[] = []
-  for (const line of lines.slice(1)) {
-    const c = line.split(',')
+  for (const raw of csv.rows) {
+    // A name with an unquoted comma ("Jones Energy, Inc.") would shift every later column.
+    const c = fitRow(raw, header.length, idx.name)
     const symbol = c[idx.symbol]?.trim()
     const ipoDate = c[idx.ipodate]?.trim()
     // A row with no symbol or no date is not an event. Skipped, not defaulted:

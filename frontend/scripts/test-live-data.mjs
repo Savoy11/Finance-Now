@@ -816,11 +816,22 @@ const tests = [
   }},
 
   { group: 'equities', path: '/live-data/market-calendar', name: 'market-calendar', check: (j) => {
-    if (j.configured === false) return unconfigured('no FMP key configured (honestly reported)')
+    if (j.configured === false) return unconfigured('no FMP or Alpha Vantage key configured (honestly reported)')
     if (!j.ok) throw new Error('not ok but reports configured')
     const n = (j.earnings ?? []).length + (j.economic ?? []).length
     if (n === 0) return empty('configured but 0 events')
     return `${(j.earnings ?? []).length} earnings, ${(j.economic ?? []).length} economic`
+  }},
+
+  // The next expected earnings date per stock (T-458): FMP, with Alpha Vantage filling in. A null
+  // date with ok:true means "not listed in the next 90 days", never a failed source.
+  { group: 'equities', path: '/live-data/earnings-dates?symbols=AAPL,MSFT,NVDA', name: 'earnings-dates', check: (j) => {
+    if (j.configured === false) return unconfigured('no FMP or Alpha Vantage key configured (honestly reported)')
+    const src = Object.entries(j.sources ?? {}).map(([k, v]) => `${k} ${v.ok ? `ok (${v.count})` : `failed: ${v.detail ?? '?'}`}`).join('; ')
+    if (!j.ok) throw new Error(`no earnings source answered: ${src}`)
+    const listed = Object.entries(j.dates ?? {}).filter(([, v]) => v)
+    if (listed.length === 0) return empty(`answered, but none of AAPL, MSFT, NVDA listed in the next 90 days (${src})`)
+    return `${listed.map(([k, v]) => `${k} ${v.date} via ${v.source}`).join(', ')} · ${src}`
   }},
 
   // Alpha Vantage's IPO_CALENDAR, on its free tier (25 requests a day). The route

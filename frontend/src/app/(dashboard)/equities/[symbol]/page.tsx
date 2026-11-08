@@ -17,6 +17,7 @@ import { CompanyProfileCard } from '@/components/markets/CompanyProfileCard'
 import { SectorPeers } from '@/components/markets/SectorPeers'
 import { AssetRatingPanel } from '@/components/markets/AssetRatingPanel'
 import { StockBetaCard } from '@/components/markets/StockBetaCard'
+import { NextEarningsCard } from '@/components/markets/NextEarnings'
 import { getEquity, secFilingsUrl, SECTOR_INFO, type SectorId } from '@/lib/data/equityCatalog'
 import { formatCurrency, formatPercent } from '@/lib/utils/format'
 import { STALE_TIME_SHORT } from '@/lib/constants'
@@ -190,6 +191,7 @@ function EquityDetailInner() {
         </div>
         <div className="space-y-4">
           <CompanyProfileCard symbol={symbol} name={entry.name} />
+          <NextEarningsCard symbol={symbol} />
           <StockBetaCard symbol={symbol} />
           <div className="rounded-card border border-border bg-bg-card p-4">
             <h2 className="text-sm font-medium text-text-secondary mb-3">Financial Statements</h2>

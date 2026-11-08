@@ -718,7 +718,8 @@ added 2026-07-29; their rows stay ⬜ **Not measured** until the next run.
 | SEC filings | 🟢 Live | SEC EDGAR | Keyless. |
 | Company fundamentals / ratios | 🟢 Live | SEC EDGAR XBRL | AAPL rev $416B, net margin 26.9% — sanity-checked. |
 | Company profile | 🟢 Live | SEC EDGAR + Wikipedia | |
-| Market calendar | 🟡 Partial 🔑 | FMP · Federal Reserve Board (table) | `configured: true` — earnings live (3 upcoming, 2026-09-19). The economic calendar is a **paid** FMP endpoint (402 on free), so FMP's `economic` rows are always empty here. Deferred under D21, not chased. **Since 2026-10-03 `economic` still carries FOMC rate decisions** on every plan, with or without an FMP key: a keyless table (`lib/data/fomcCalendar.ts`) copied from the Board's calendar, not a fetch. |
+| Market calendar | 🟡 Partial 🔑 | FMP · Alpha Vantage (earnings, behind FMP) · Federal Reserve Board, BLS, BEA (tables) | `configured: true` — earnings live (3 upcoming, 2026-09-19). **Since 2026-11-08 (T-458, D213) Alpha Vantage's earnings calendar fills in companies FMP does not list**, and all of them with no FMP key: one request a day, three months ahead; not yet measured by `npm run audit` on the owner's machine. The economic calendar is a **paid** FMP endpoint (402 on free), so FMP's `economic` rows are always empty here. Deferred under D21, not chased. **Since 2026-10-03 `economic` still carries FOMC rate decisions** on every plan, with or without an FMP key: a keyless table (`lib/data/fomcCalendar.ts`) copied from the Board's calendar, not a fetch. |
+| Next earnings date (stock pages, watchlists) | 🟡 Partial 🔑 | FMP · Alpha Vantage | **New 2026-11-08 (T-458, D213)**: `/live-data/earnings-dates`, each stock's next expected report in 90 days from the same two-source list. Needs an FMP or Alpha Vantage key; a stock with no date listed says so. Field names confirmed with one Alpha Vantage call (NVDA, 2026-11-08); not yet measured by `npm run audit`. |
 | IPO calendar | 🟢 Live 🔑 | Alpha Vantage `IPO_CALENDAR` | `configured: true`, `source=alpha-vantage`, 2 upcoming listings (2026-09-19). Fixed in #205: it sent `Accept: text/csv`, which this endpoint **406s** while answering `*/*` with that very CSV — so T-384 read as "needs a key" for weeks when a key would never have helped. One rung deep on purpose; the 25 req/day free tier is a terms condition, hence the 6 h revalidate. **Live-probe evidence only — the harness has no IPO check.** |
 
 ### ETFs & Funds module
@@ -809,7 +810,7 @@ Project convention (CLAUDE.md): every `/live-data` route needs `export const dyn
 results** on any multi-fetch. (CLAUDE.md dropped the blunter "`Promise.allSettled` for any
 multi-fetch" wording in `23654fc`, 2026-07-22 — it adopted the conclusion reached below.)
 
-- ✅ **`force-dynamic`** — all **64** route files comply (`chart` was the sole exception; fixed 2026-07-20).
+- ✅ **`force-dynamic`** — all **65** route files comply (`chart` was the sole exception; fixed 2026-07-20).
   Count and compliance re-verified **statically** on 2026-10-10 (`git ls-files 'src/app/live-data/**/route.ts'`
   vs the files declaring `export const dynamic = 'force-dynamic'`, 60/60). This one line needs no running
   server, so it is current even though the availability statuses above are not. The count moved 56 → 58 as

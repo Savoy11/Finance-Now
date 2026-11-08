@@ -6,6 +6,7 @@ import { META_AS_OF, MONITORED_STABLECOINS } from '@/lib/data/stablecoinMeta'
 import { COST_BENCHMARK_ER_PCT, COST_HORIZON_YEARS, COST_RETURN_PCT, PER_WHAT_IF_USD } from '@/lib/data/portfolioCosts'
 import { YEARLY_AFTER_DAYS } from '@/lib/data/trackedPortfolioViews'
 import { BOND_PROFILE_MIN_PCT, ISSUER_KIND_LABELS, MATURITY_BUCKETS } from '@/lib/utils/fundExposure'
+import { EARNINGS_LOOK_AHEAD_DAYS, EARNINGS_SOON_DAYS } from '@/lib/data/earningsCalendar'
 
 /**
  * "How our figures are worked out" (/about/data-methods, D163): the rules behind the figures
@@ -102,6 +103,15 @@ export const DATA_METHODS: readonly MethodSection[] = [
     paragraphs: [
       'A stock’s market cap is its shares outstanding, from the cover page of the company’s latest SEC filing, multiplied by the live price. The figure shows the date of the share count. Without a live price there is no market cap. A company with more than one class of stock reports a share count for each class, so no single count is available and its market cap shows a dash.',
       'A stock’s beta is worked out on its own page from one year of daily closing prices, against the SPDR S&P 500 ETF (SPY): how much the stock’s daily returns have moved with the market’s. It is a measure of the past year, not a forecast. Where the only prices available are not adjusted for stock splits, no beta is worked out, since a split would read as a single day’s move. It is not shown in lists or screens, which would need a year of prices for every stock at once.',
+    ],
+  },
+  {
+    id: 'earnings-dates',
+    title: 'Earnings dates',
+    decided: '2026-11-08',
+    paragraphs: [
+      'A company’s earnings date comes from Financial Modeling Prep’s earnings calendar first. Alpha Vantage’s earnings calendar, read once a day and covering the next three months, fills in a company Financial Modeling Prep does not list, and every company when Financial Modeling Prep is not available. Where both list a company, Financial Modeling Prep’s date is the one shown, so one company never shows two dates. Each date names the calendar it came from.',
+      `Every date is expected, not confirmed: companies often confirm the date late, and can move it. “Today” is counted in New York, where the US market is. A stock’s page shows its first expected report in the next ${EARNINGS_LOOK_AHEAD_DAYS} days, or says none is listed; a watchlist marks a stock whose report falls in the next ${EARNINGS_SOON_DAYS} days.`,
     ],
   },
   {

@@ -5,10 +5,13 @@ import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 import { fomcEventsBetween, mergeEconomicEvents, releaseEventsBetween, type EconomicEvent } from '@/lib/server/marketCalendar'
 import { fomcScheduleThrough } from '@/lib/data/fomcCalendar'
 import { releaseScheduleSpan } from '@/lib/data/releaseCalendar'
+import { upcomingEarnings, type EarningsSourceStatus } from '@/lib/server/earningsCalendar'
+import type { EarningsSource, EarningsTime } from '@/lib/data/earningsCalendar'
 
 // Earnings + economic calendar for the equities module.
 //
-// - Earnings: FMP, free key.
+// - Earnings: FMP, free key, with Alpha Vantage's earnings calendar behind it (T-458, D213): one
+//   request a day, filling in companies FMP does not list, and every company when FMP is gone.
 // - US economic releases: FMP's economic calendar, a PAID endpoint (402 on free).
 // - FOMC meetings: keyless — the hand-maintained table in lib/data/fomcCalendar.ts,
 //   copied from the Federal Reserve Board's calendar (added 2026-10-03). Returned on
@@ -16,8 +19,8 @@ import { releaseScheduleSpan } from '@/lib/data/releaseCalendar'
 // - CPI, jobs, GDP and PCE release dates: keyless too — lib/data/releaseCalendar.ts, copied
 //   from the BLS and BEA schedules (T-456, added 2026-11-07), returned like the FOMC rows.
 //
-// Without an FMP key the route reports configured:false so the UI shows an honest setup
-// notice for earnings, and still returns the FOMC rows.
+// With neither an FMP nor an Alpha Vantage key the route reports configured:false so the UI shows
+// an honest setup notice for earnings, and still returns the FOMC and release rows.
 
 export const dynamic = 'force-dynamic'
 
@@ -28,19 +31,27 @@ export interface EarningsEvent {
   name: string
   date: string
   epsEstimate: number | null
-  time: string | null
+  /** Before the open or after the close, when the source says. FMP's /stable calendar has not. */
+  time: EarningsTime | null
   inCatalog: boolean
+  /** Which calendar listed it. */
+  source: EarningsSource
 }
 
 export interface MarketCalendarResponse {
   /**
-   * FMP returned at least one row. FOMC rows do NOT count: they are always present, so
-   * counting them would make a dead FMP leg read as "no earnings scheduled" (the research
-   * agent's get_market_calendar tool relies on this).
+   * A keyed source returned at least one row: an earnings row from FMP or Alpha Vantage, or an
+   * FMP economic row. FOMC and release rows do NOT count: they are always present, so counting
+   * them would make dead keyed legs read as "no earnings scheduled" (the research agent's
+   * get_market_calendar tool relies on this).
    */
   ok: boolean
-  /** An FMP key is configured. */
+  /** An earnings source has a key: FMP or Alpha Vantage. */
   configured: boolean
+  /** An FMP key is configured; the economic releases other than the hand-kept ones need it. */
+  fmpConfigured: boolean
+  /** How each earnings source answered. */
+  earningsSources: Record<EarningsSource, EarningsSourceStatus>
   from: string
   to: string
   earnings: EarningsEvent[]
@@ -83,36 +94,44 @@ export async function GET(req: NextRequest) {
 
   // UI-saved key (Integrations page) or FMP_API_KEY env var
   const FMP_KEY = getProviderKey('fmp')
-  if (!FMP_KEY) {
-    return NextResponse.json({ ok: false, configured: false, earnings: [], economic: mergeEconomicEvents([], fomc, 0, releases), ...base } satisfies MarketCalendarResponse)
-  }
-
-  // FMP /stable API. Earnings works on the free tier; the economic calendar is
-  // a paid endpoint (402 on free) — Promise.allSettled lets it fail silently.
   const stable = 'https://financialmodelingprep.com/stable'
-  const [earningsRes, econRes] = await Promise.allSettled([
-    fetch(`${stable}/earnings-calendar?from=${from}&to=${to}&apikey=${FMP_KEY}`, { next: { revalidate: 3600 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) }),
-    fetch(`${stable}/economic-calendar?from=${from}&to=${to}&apikey=${FMP_KEY}`, { next: { revalidate: 3600 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) }),
+  // Earnings (FMP, then Alpha Vantage) and FMP's economic calendar are independent requests.
+  // The economic calendar is a paid endpoint (402 on free); allSettled lets it fail on its own.
+  const [earningsResult, econRes] = await Promise.allSettled([
+    upcomingEarnings(from, to),
+    FMP_KEY
+      ? fetch(`${stable}/economic-calendar?from=${from}&to=${to}&apikey=${FMP_KEY}`, { next: { revalidate: 3600 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) })
+      : Promise.reject(new Error('no FMP key')),
   ])
+  const upcoming = earningsResult.status === 'fulfilled' ? earningsResult.value : null
+  const unanswered: EarningsSourceStatus = { configured: false, ok: false, count: 0, detail: 'not asked' }
+  const earningsSources = upcoming?.sources ?? { fmp: unanswered, 'alpha-vantage': unanswered }
+
+  if (!upcoming?.configured && !FMP_KEY) {
+    return NextResponse.json({
+      ok: false, configured: false, fmpConfigured: false, earningsSources, earnings: [],
+      economic: mergeEconomicEvents([], fomc, 0, releases), ...base,
+    } satisfies MarketCalendarResponse)
+  }
 
   const earnings: EarningsEvent[] = []
-  if (earningsRes.status === 'fulfilled' && earningsRes.value.ok) {
-    const rows = await earningsRes.value.json() as Array<{ symbol: string; date: string; epsEstimated: number | null }>
-    for (const row of rows) {
-      const entry = EQUITY_BY_SYMBOL[row.symbol?.toUpperCase() ?? '']
-      // Catalog names first; cap the long tail of non-catalog names
-      if (!entry && earnings.filter((e) => !e.inCatalog).length >= 120) continue
-      earnings.push({
-        symbol: row.symbol,
-        name: entry?.name ?? row.symbol,
-        date: row.date,
-        epsEstimate: row.epsEstimated ?? null,
-        time: null, // /stable earnings-calendar has no BMO/AMC session field
-        inCatalog: !!entry,
-      })
-    }
-    earnings.sort((a, b) => Number(b.inCatalog) - Number(a.inCatalog) || a.date.localeCompare(b.date))
+  let outsideCatalog = 0
+  for (const row of upcoming?.events ?? []) {
+    const entry = EQUITY_BY_SYMBOL[row.symbol]
+    // Catalog names first; cap the long tail of non-catalog names
+    if (!entry && outsideCatalog >= 120) continue
+    if (!entry) outsideCatalog++
+    earnings.push({
+      symbol: row.symbol,
+      name: entry?.name ?? (row.name !== row.symbol ? row.name : row.symbol),
+      date: row.date,
+      epsEstimate: row.epsEstimate,
+      time: row.time,
+      inCatalog: !!entry,
+      source: row.source,
+    })
   }
+  earnings.sort((a, b) => Number(b.inCatalog) - Number(a.inCatalog) || a.date.localeCompare(b.date))
 
   // Every US medium/high row; mergeEconomicEvents applies the cap (high impact first)
   // and drops FMP's copy of an FOMC decision the table already carries.
@@ -128,7 +147,9 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({
     ok: earnings.length > 0 || fmpEconomic.length > 0,
-    configured: true,
+    configured: !!upcoming?.configured,
+    fmpConfigured: !!FMP_KEY,
+    earningsSources,
     earnings: earnings.slice(0, 120),
     economic: mergeEconomicEvents(fmpEconomic, fomc, undefined, releases),
     ...base,
