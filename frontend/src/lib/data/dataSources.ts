@@ -427,6 +427,9 @@ export const DATA_SOURCES: DataSourceEntry[] = [
     route: '/live-data/market-calendar', status: 'key-gated',
     providers: [
       { name: 'FMP', host: 'financialmodelingprep.com', role: 'primary', auth: 'key' },
+      // T-458 (D213): earnings for companies FMP does not list, and for all of them when FMP is gone.
+      // One request a day, its whole three-month list.
+      { name: 'Alpha Vantage', host: 'www.alphavantage.co', url: 'https://www.alphavantage.co/documentation/#earnings-calendar', role: 'fallback', auth: 'key' },
       // Not fetched: the host is named so the source-terms test holds the Board's reuse terms
       // to the same check as every other source. The dates are a hand-copied table.
       { name: 'Federal Reserve Board', host: 'www.federalreserve.gov', url: 'https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm', role: 'primary', auth: 'none' },
@@ -439,7 +442,16 @@ export const DATA_SOURCES: DataSourceEntry[] = [
       'lib/data/fomcCalendar.ts (FOMC meeting dates, copied from the Board’s calendar; 90-day review clock)',
       'lib/data/releaseCalendar.ts (CPI, jobs report, GDP and PCE release dates, copied from the BLS and BEA schedules; 90-day review clock)',
     ],
-    notes: 'Earnings needs a free FMP key; other US economic releases need a paid one, except the CPI, jobs-report, GDP and PCE dates, which are keyless and not fetched: a dated table copied from the BLS and BEA schedules (both public domain; each asks to be cited), shown on every plan like the FOMC rows (T-456). FOMC meeting dates are KEYLESS and NOT FETCHED: a dated table copied by hand from the Federal Reserve Board’s calendar (public domain; the Board asks to be cited), returned on every plan — including with no FMP key, where the route still reports configured:false — and never counted against the 40-row FMP cap, which keeps high-impact rows first. `ok` counts FMP rows only, so a dead FMP leg still reads ok:false.',
+    notes: 'Earnings need a free FMP key or a free Alpha Vantage key: FMP first, and Alpha Vantage’s earnings calendar (one request a day, three months ahead) fills in companies FMP does not list, or all of them without FMP (T-458). Other US economic releases need a paid FMP plan, except the CPI, jobs-report, GDP and PCE dates, which are keyless and not fetched: a dated table copied from the BLS and BEA schedules (both public domain; each asks to be cited), shown on every plan like the FOMC rows (T-456). FOMC meeting dates are KEYLESS and NOT FETCHED: a dated table copied by hand from the Federal Reserve Board’s calendar (public domain; the Board asks to be cited), returned on every plan — including with no FMP key, where the route still reports configured:false — and never counted against the 40-row FMP cap, which keeps high-impact rows first. `ok` counts keyed rows only (earnings and FMP economic releases), so dead keyed legs still read ok:false.',
+  },
+  {
+    id: 'earnings-dates', surface: 'Next earnings date (stock pages, watchlists)', module: 'equities',
+    route: '/live-data/earnings-dates', status: 'key-gated',
+    providers: [
+      { name: 'FMP', host: 'financialmodelingprep.com', role: 'primary', auth: 'key' },
+      { name: 'Alpha Vantage', host: 'www.alphavantage.co', url: 'https://www.alphavantage.co/documentation/#earnings-calendar', role: 'fallback', auth: 'key' },
+    ],
+    notes: 'T-458 (D213): each stock’s next expected report in the next 90 days, from the same two-source list as the Market Calendar (lib/server/earningsCalendar.ts). FMP’s dates stand where FMP lists a company; Alpha Vantage’s fill in the rest. Alpha Vantage’s whole list is one request a day, so asking about more stocks costs nothing more. Every date is labelled expected.',
   },
 
   // ── FUNDS ──────────────────────────────────────────────────────────────────

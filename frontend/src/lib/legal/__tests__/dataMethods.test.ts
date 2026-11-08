@@ -7,6 +7,7 @@ import { YIELD_KIND_NAMES, FUND_CATALOG, FUND_FEES_LAST_VERIFIED, YIELD_CHECK_AF
 import { STAKING_PROVIDERS, STAKING_DATA_LAST_VERIFIED } from '@/lib/data/stakingProviders'
 import { META_AS_OF, MONITORED_STABLECOINS, getStablecoinMetaProvenance } from '@/lib/data/stablecoinMeta'
 import { BOND_PROFILE_MIN_PCT, MATURITY_BUCKETS } from '@/lib/utils/fundExposure'
+import { EARNINGS_LOOK_AHEAD_DAYS, EARNINGS_SOON_DAYS } from '@/lib/data/earningsCalendar'
 
 // The page that tells readers how the figures are worked out (D163) is only worth having while
 // it says what the code does. These hold the parts a later change could quietly falsify.
@@ -45,6 +46,16 @@ describe('how our figures are worked out (D163)', () => {
     expect(text('fund-costs')).toContain(FUND_FEES_LAST_VERIFIED)
     const src = fs.readFileSync(path.join(process.cwd(), 'src/lib/legal/dataMethods.ts'), 'utf8')
     expect(src).not.toMatch(/for \d+ providers|all \d+ funds/)
+  })
+
+  it('states where earnings dates come from and that they are expected (T-458)', () => {
+    const t = text('earnings-dates')
+    expect(t).toMatch(/Financial Modeling Prep’s earnings calendar first/)
+    expect(t).toMatch(/Alpha Vantage’s earnings calendar, read once a day/)
+    expect(t).toMatch(/expected, not confirmed/)
+    expect(t).toMatch(/counted in New York/)
+    expect(t).toContain(`next ${EARNINGS_SOON_DAYS} days`)
+    expect(t).toContain(`next ${EARNINGS_LOOK_AHEAD_DAYS} days`)
   })
 
   it('states how a fund’s countries, currencies and bond splits are worked out (T-455)', () => {

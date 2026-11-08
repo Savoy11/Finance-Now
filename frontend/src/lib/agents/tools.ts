@@ -1125,7 +1125,7 @@ async function execute(
           return {
             from: data.from, to: data.to,
             earnings: [],
-            earningsUnavailable: 'Earnings, and economic releases other than the Fed meetings and the CPI, jobs report, GDP and PCE dates, need an FMP API key (FMP_API_KEY) — not configured on this instance.',
+            earningsUnavailable: 'Earnings need an FMP or Alpha Vantage API key, and economic releases other than the Fed meetings and the CPI, jobs report, GDP and PCE dates need an FMP key; neither is configured on this instance.',
             economic: (data.economic ?? []).slice(0, 25),
           }
         }
@@ -1138,6 +1138,7 @@ async function execute(
         return {
           from: data.from, to: data.to,
           earnings: (data.earnings ?? []).slice(0, 40),
+          earningsNote: 'Earnings dates are expected, not confirmed: companies often confirm late and can move a date. Each row names its source: FMP first, Alpha Vantage for companies FMP does not list.',
           economic: (data.economic ?? []).slice(0, 25),
         }
       }

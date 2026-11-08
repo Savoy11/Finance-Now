@@ -16,6 +16,8 @@ import { ASSET_ID_BY_COINGECKO } from '@/lib/api/live/coingeckoIds'
 import { fetchInstrumentPrices } from '@/lib/api/instrumentPrices'
 import { STALE_TIME_SHORT } from '@/lib/constants'
 import { hydrateWatchlists, useWatchlistStore } from '@/store/useWatchlistStore'
+import { earningsDay, useEarningsDates } from '@/components/markets/NextEarnings'
+import { EARNINGS_SOON_DAYS, earningsTimeLabel, isEarningsSoon, marketToday } from '@/lib/data/earningsCalendar'
 
 // Multi-list, cross-module watchlists: any coin, stock, ETF, or mutual fund
 // in any number of named lists, with live prices. DB-backed via
@@ -51,6 +53,14 @@ export default function WatchlistPage() {
     staleTime: STALE_TIME_SHORT,
     refetchInterval: 60_000,
   })
+
+  // T-458: stocks on this list, for their next expected earnings date. Funds and macro
+  // instruments report no earnings; a stock outside the instrument list is still a stock.
+  const stockSymbols = useMemo(() => keys
+    .filter((k) => isSecurityKey(k) && (INSTRUMENT_BY_KEY[k]?.class ?? 'equity') === 'equity')
+    .map((k) => securitySymbol(k)), [keys])
+  const { data: earnings } = useEarningsDates(stockSymbols)
+  const today = marketToday()
 
   const matches = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -201,6 +211,17 @@ export default function WatchlistPage() {
                   <Link href={detailHref(key)} className="col-span-3 flex flex-col group">
                     <span className="font-medium text-slate-100 group-hover:text-accent-blue transition-colors">{named?.symbol ?? key}</span>
                     <span className="text-xs text-slate-500">{named?.name ?? 'Unknown instrument'}</span>
+                    {(() => {
+                      const next = isSecurityKey(key) ? earnings?.dates?.[securitySymbol(key).toUpperCase()] : null
+                      if (!next || !isEarningsSoon(next, today)) return null
+                      const when = earningsTimeLabel(next.time)
+                      return (
+                        <span className="mt-0.5 self-start rounded-sm bg-amber-400/10 px-1.5 py-px text-[10px] font-medium text-amber-300"
+                          title={`Expected, as listed by the earnings calendar; companies can move the date.`}>
+                          Earnings {earningsDay(next.date)}{when ? `, ${when}` : ''}
+                        </span>
+                      )
+                    })()}
                   </Link>
                   <span className="text-xs text-slate-400">{named?.classLabel ?? '—'}</span>
                   <span className="col-span-2 text-right font-mono text-slate-300 tabular-nums">
@@ -217,6 +238,17 @@ export default function WatchlistPage() {
           </div>
         )}
       </div>
+
+      {stockSymbols.length > 0 && earnings?.configured && (
+        <div className="space-y-1">
+          <p className="text-[11px] text-text-muted text-center">
+            {earnings.ok
+              ? `Stocks reporting earnings in the next ${EARNINGS_SOON_DAYS} days are marked. The dates are expected, not confirmed: companies can move them.`
+              : 'The earnings calendars could not be reached right now, so no earnings dates are marked.'}
+          </p>
+          {earnings.ok && <SourceLine id="earnings-dates" />}
+        </div>
+      )}
 
       {priceData && priceData.source !== 'live' && keys.length > 0 && (
         <p className="text-[11px] text-text-muted text-center">

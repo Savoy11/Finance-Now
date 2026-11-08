@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
 import { CalendarDays, ChevronLeft, ChevronRight, KeyRound, Landmark } from 'lucide-react'
@@ -14,6 +14,9 @@ import { FOMC_SOURCE_URL, getFomcCalendarProvenance } from '@/lib/data/fomcCalen
 import { RELEASE_AGENCIES, getReleaseDatesProvenance } from '@/lib/data/releaseCalendar'
 import type { EarningsEvent, EconomicEvent, MarketCalendarResponse } from '@/app/live-data/market-calendar/route'
 import { IpoCalendarSection } from './IpoCalendarSection'
+import { isSecurityKey, securitySymbol, INSTRUMENT_BY_KEY } from '@/lib/data/instruments'
+import { EARNINGS_SOURCE_NAMES, earningsTimeLabel } from '@/lib/data/earningsCalendar'
+import { hydrateWatchlists, useWatchlistStore } from '@/store/useWatchlistStore'
 
 // W3-6 (2026-08-20): "the calendar should look more like a calendar and allow
 // users to flip through the months." The list view became a month GRID with
@@ -64,6 +67,17 @@ function CalendarContent() {
   const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
   const [month, setMonth] = useState<MonthRef>({ year: today.getFullYear(), month: today.getMonth() })
   const [selectedDay, setSelectedDay] = useState<string | null>(todayIso)
+  // T-458: show only the stocks on any of the reader's watchlists.
+  const [watchedOnly, setWatchedOnly] = useState(false)
+  const lists = useWatchlistStore((st) => st.lists)
+  useEffect(() => { void hydrateWatchlists() }, [])
+  const watched = useMemo(() => {
+    const set = new Set<string>()
+    for (const l of lists) for (const k of l.keys) {
+      if (isSecurityKey(k) && (INSTRUMENT_BY_KEY[k]?.class ?? 'equity') === 'equity') set.add(securitySymbol(k).toUpperCase())
+    }
+    return set
+  }, [lists])
 
   const { data, isLoading, isFetching } = useQuery<MarketCalendarResponse>({
     queryKey: ['market-calendar', monthKey(month)],
@@ -77,6 +91,7 @@ function CalendarContent() {
   const { earningsByDay, econByDay } = useMemo(() => {
     const e = new Map<string, EarningsEvent[]>()
     for (const row of data?.earnings ?? []) {
+      if (watchedOnly && !watched.has(row.symbol.toUpperCase())) continue
       const day = row.date.slice(0, 10)
       e.set(day, [...(e.get(day) ?? []), row])
     }
@@ -86,7 +101,7 @@ function CalendarContent() {
       c.set(day, [...(c.get(day) ?? []), row])
     }
     return { earningsByDay: e, econByDay: c }
-  }, [data])
+  }, [data, watchedOnly, watched])
 
   const cells = useMemo(() => monthCells(month), [month])
   const offset = monthOffsetFromNow(month)
@@ -106,7 +121,7 @@ function CalendarContent() {
           title="Market Calendar"
           subtitle="Earnings, IPOs, Fed meetings and high-impact US economic events"
           description="A month grid of earnings dates for tracked and notable stocks, FOMC rate decisions, and medium/high-impact US economic releases. Click a day for its full list; flip months with the arrows."
-          details={[{ label: 'Data source', text: 'Financial Modeling Prep for earnings (free key) and other US economic releases (a paid FMP endpoint, empty on the free tier). FOMC meeting dates come from the Federal Reserve Board’s published calendar, and the CPI, jobs report, GDP and PCE dates from the Bureau of Labor Statistics’ and Bureau of Economic Analysis’ published schedules; all of these need no key.' }]}
+          details={[{ label: 'Data source', text: 'Financial Modeling Prep for earnings (free key), with Alpha Vantage’s earnings calendar (free key) filling in companies FMP does not list, and other US economic releases (a paid FMP endpoint, empty on the free tier). FOMC meeting dates come from the Federal Reserve Board’s published calendar, and the CPI, jobs report, GDP and PCE dates from the Bureau of Labor Statistics’ and Bureau of Economic Analysis’ published schedules; all of these need no key.' }]}
         />
       </div>
 
@@ -145,21 +160,27 @@ function CalendarContent() {
         <div className="h-96 animate-shimmer bg-shimmer-gradient bg-size-[200%_100%] rounded-card" />
       ) : (
         <>
-          {/* No FMP key: the grid still renders, because FOMC dates are keyless. */}
+          {/* No earnings key: the grid still renders, because the Fed and release dates are keyless. */}
           {!configured && (
             <div className="flex items-start gap-3 rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3">
               <KeyRound className="mt-0.5 h-5 w-5 shrink-0 text-amber-400/70" aria-hidden />
               <div>
-                <p className="text-sm font-medium text-slate-200">Earnings need a (free) FMP API key</p>
+                <p className="text-sm font-medium text-slate-200">Earnings need a free FMP or Alpha Vantage key</p>
                 <p className="mt-0.5 text-xs text-slate-400 leading-relaxed">
-                  Fed meetings below need no key. Earnings and other economic releases come from Financial Modeling Prep. Grab a free key at
-                  financialmodelingprep.com, then add it in{' '}
+                  Fed meetings and the CPI, jobs, GDP and PCE dates below need no key. Earnings come from Financial Modeling Prep,
+                  with Alpha Vantage behind it; either free key will do. Add one in{' '}
                   <Link href="/settings" className="text-accent-blue hover:underline">Settings → Integrations → Equity Market Data</Link>{' '}
-                  (Financial Modeling Prep) — or set <code className="font-mono text-slate-300">FMP_API_KEY</code> in{' '}
-                  <code className="font-mono text-slate-300">frontend/.env.local</code>. The same key upgrades stock quotes suite-wide.
+                  — or set <code className="font-mono text-slate-300">FMP_API_KEY</code> or{' '}
+                  <code className="font-mono text-slate-300">ALPHA_VANTAGE_API_KEY</code> in{' '}
+                  <code className="font-mono text-slate-300">frontend/.env.local</code>. An FMP key also upgrades stock quotes suite-wide.
                 </p>
               </div>
             </div>
+          )}
+          {configured && data && !data.fmpConfigured && (
+            <p className="px-1 text-[11px] text-text-muted">
+              Earnings here come from Alpha Vantage, which lists the next three months; with no FMP key, earlier and later months show none.
+            </p>
           )}
           {/* Month navigation */}
           <div className="flex items-center justify-between rounded-card border border-border bg-bg-card px-4 py-2.5">
@@ -182,6 +203,11 @@ function CalendarContent() {
                 </button>
               )}
               {isFetching && <span className="text-[11px] text-text-muted">updating…</span>}
+              <label className="flex items-center gap-1.5 text-[11px] text-text-muted" title={watched.size === 0 ? 'No stocks on your watchlists yet' : undefined}>
+                <input type="checkbox" checked={watchedOnly} onChange={(e) => setWatchedOnly(e.target.checked)}
+                  className="rounded-sm border-border" disabled={watched.size === 0} />
+                My watchlists only
+              </label>
             </div>
             <button
               onClick={() => { setMonth((m) => shiftMonth(m, 1)); setSelectedDay(null) }}
@@ -284,7 +310,8 @@ function CalendarContent() {
                 <div className="max-h-80 divide-y divide-border/60 overflow-y-auto">
                   {selEarnings.length === 0 && (
                     <p className="px-4 py-6 text-center text-sm text-text-muted">
-                      {configured ? 'No earnings this day.' : 'Earnings need an FMP key (see above).'}
+                      {!configured ? 'Earnings need an FMP or Alpha Vantage key (see above).'
+                        : watchedOnly ? 'None of your watched stocks reports this day.' : 'No earnings this day.'}
                     </p>
                   )}
                   {selEarnings.map((e, i) => (
@@ -294,8 +321,13 @@ function CalendarContent() {
                       ) : (
                         <span className="w-16 truncate font-mono text-text-secondary">{e.symbol}</span>
                       )}
-                      <span className="flex-1 truncate text-xs text-text-muted">{e.name}</span>
+                      <span className="flex-1 truncate text-xs text-text-muted">
+                        {e.name}{earningsTimeLabel(e.time) ? ` · ${earningsTimeLabel(e.time)}` : ''}
+                      </span>
                       {e.epsEstimate != null && <span className="font-mono text-[11px] text-text-muted">est. EPS {e.epsEstimate.toFixed(2)}</span>}
+                      {e.source === 'alpha-vantage' && (
+                        <span className="text-[10px] text-text-muted" title="Not on FMP's list; listed by Alpha Vantage">{EARNINGS_SOURCE_NAMES[e.source]}</span>
+                      )}
                     </div>
                   ))}
                 </div>
