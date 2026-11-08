@@ -62,9 +62,9 @@
   "total_verified": 414,
   "outstanding": 398,
   "by_status": {
-   "closed": 251,
+   "closed": 252,
    "parked": 132,
-   "open": 10,
+   "open": 9,
    "blocked": 5
   },
   "by_owner_role": {
@@ -74,8 +74,8 @@
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 251,
-  "counts_recomputed_on": "2026-11-07",
+  "closed_by_annotation": 252,
+  "counts_recomputed_on": "2026-11-08",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 398
  },
@@ -16286,7 +16286,7 @@
   {
    "id": "T-455",
    "title": "Where a fund invests: countries and currencies, and for bond funds the kind of borrower and when the bonds fall due, from the N-PORT filing the app already reads",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "blocking_decision": null,
    "opened": {
@@ -16304,7 +16304,8 @@
     "D92",
     "D163",
     "T-453",
-    "T-457"
+    "T-457",
+    "D212"
    ],
    "summary": "/live-data/fund-holdings already downloads each fund’s full N-PORT filing and reads every holding in it (parseNportReport in frontend/src/lib/server/nport.ts), keeping each holding’s ticker, name, identifiers, units, value, weight and asset category and dropping the rest. The form asks more of every holding: the issuer’s country, the holding’s currency, the issuer type, and for a bond its maturity date (in the XML, per the SEC’s published form rather than a filing read: invCountry, curCd, issuerCat and debtSec’s maturityDt), none parsed per holding. So the international funds (VXUS, VGK, EWJ, VSS, BNDX and EMB among them) cannot say which countries they hold, and a bond fund’s “If Rates Move” card gives its duration but not who borrowed or when the bonds are repaid. This adds, beside the asset mix on each fund page: (a) splits by the issuer’s country and by the holding’s currency; (b) for bond funds, splits by kind of borrower (US Treasury, government agencies, companies, cities and states, foreign governments) and by when the bonds fall due (under 1 year, 1 to 3, 3 to 5, 5 to 10, 10 to 20, over 20); and optionally (c) the country split across a whole portfolio on the Look-through tab, and on tracked portfolios with T-453’s part (b). Each split is dated by the filing’s report date and shows how much it covers, as the asset mix does (NT9). The filing is already fetched and cached: no key, no new host, no recurring cost.",
    "next_action": "(1) First, on the owner’s machine: read one real N-PORT filing and copy its holding fields into frontend/src/lib/server/__tests__/nport.test.ts as a fixture, as IEF’s and BND’s interest-rate sections were, to confirm the field names before the parser relies on them; a cloud session sends nothing to the SEC, whose requests carry the owner’s email as the contact. (2) Build the aggregation pure and tested in frontend/src/lib/utils/, like assetMix.ts, with lines in frontend/src/lib/legal/dataMethods.ts (D163). State the limits on the page: a holding’s country is the issuer’s as the fund reports it (a company’s home, not where it sells); a field the filer left blank lowers the split’s coverage and is never guessed; N-PORT carries no credit ratings, so there is no quality split and none is implied; trusts that file no N-PORT, such as SPY, show nothing. Facts from the fund’s own filing only, no rating (D92). (3) When building, ask the owner whether to add part (c); the proposal makes it optional and recommends neither way.",
@@ -16329,7 +16330,26 @@
      "lines": "94",
      "quote": "// IEF (accession 0002071691-26-016715, positive figures) and Vanguard BND"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-11-08",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "Built, all three parts, as the owner chose (D212: T-455, with part (c)). Step (1) did not need the owner's machine after all: five real N-PORT filings were already saved in the build machine's fetch cache from the app's earlier runs, so the field names were confirmed from them with nothing sent to the SEC, and four holdings are copied verbatim into nport.test.ts (L'Oréal in euros via currencyConditional, Uber's 2028 convertible with its maturity, a cash fund, and a Vanguard 500 swap whose country is \"N/A\"). parseNportReport now keeps each holding's country, currency, issuer kind and maturity, read only from the holding's own lines. (a) Each fund page has a Where It Invests card with its countries and currencies; (b) a fund whose bonds are at least 25% of net assets also shows who borrowed and when the bonds are repaid; (c) the Look-through panel, on what-if and tracked portfolios, adds up the funds' countries by weight and names funds with no filing and what is held directly. Shares of net assets as filed, never rescaled; blanks lower the coverage and are never guessed; no credit ratings, so no quality split. Rules pure and tested in lib/utils/fundExposure.ts; methods page section fund-countries; get_fund_details gives the same splits. None of the saved filings is a bond fund, so the bond splits rest on Growth Fund of America's one bond and the SEC's form; one look at a bond fund's page on the owner's machine confirms them on real data.",
+    "approved_by": "owner, 2026-11-08: “T-455 fund countries (Recommended)” and part (c) “Include (c)”",
+    "evidence": [
+     "frontend/src/lib/server/nport.ts",
+     "frontend/src/lib/server/__tests__/nport.test.ts",
+     "frontend/src/lib/utils/fundExposure.ts",
+     "frontend/src/lib/utils/__tests__/fundExposure.test.ts",
+     "frontend/src/app/(dashboard)/funds/[symbol]/FundExposureCard.tsx",
+     "frontend/src/components/portfolio/PortfolioCountrySplit.tsx",
+     "frontend/src/app/live-data/fund-holdings/route.ts",
+     "frontend/src/lib/legal/dataMethods.ts",
+     "docs/decisions/2026-11-08-owner-decisions.md"
+    ]
+   }
   },
   {
    "id": "T-456",

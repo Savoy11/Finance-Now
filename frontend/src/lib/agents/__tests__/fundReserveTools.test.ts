@@ -76,6 +76,36 @@ describe('get_fund_details', () => {
     expect(out.filing.duration).toMatchObject({ years: 5.8, asOf: '2026-09-30' })
   })
 
+  it('gives where a fund invests from its filing, and nothing for a fund without one (T-455)', async () => {
+    const split = (slices: Array<[string, string, number]>, statedPct: number) =>
+      ({ slices: slices.map(([code, label, pct]) => ({ code, label, pct })), statedPct, listedPct: 99.8, unstatedCount: 2 })
+    routes({
+      '/live-data/fund-holdings': holdingsFor('BNDX', {
+        exposure: {
+          asOf: '2026-09-30',
+          countries: split([['JP', 'Japan', 20], ['FR', 'France', 12]], 97.5),
+          currencies: split([['EUR', 'Euro', 40], ['JPY', 'Japanese Yen', 20]], 99.8),
+          bonds: { bondsPct: 98, borrowers: split([['NUSS', 'Foreign governments', 70]], 98), maturities: split([['5-10', '5 to 10 years', 30]], 96) },
+        },
+      }),
+      '/live-data/fund-prospectus': prospectusFor('BNDX'),
+    })
+    const out = await runTool('get_fund_details', { symbol: 'BNDX' }, 'http://x') as Record<string, any>
+    expect(out.filing.whereItInvests).toMatchObject({
+      asOf: '2026-09-30',
+      countries: [{ name: 'Japan', code: 'JP', pct: 20 }, { name: 'France', code: 'FR', pct: 12 }],
+      countriesStatedPct: 97.5,
+      currencies: [{ name: 'Euro', code: 'EUR', pct: 40 }, { name: 'Japanese Yen', code: 'JPY', pct: 20 }],
+      bonds: { bondsPct: 98, borrowers: [{ kind: 'Foreign governments', pct: 70 }], maturities: [{ repaid: '5 to 10 years', pct: 30 }] },
+    })
+    expect(out.filing.whereItInvests.note).toMatch(/never guessed/)
+    expect(out.filing.whereItInvests.note).toMatch(/no credit ratings/)
+
+    routes({ '/live-data/fund-holdings': holdingsFor('VOO', { exposure: null }), '/live-data/fund-prospectus': prospectusFor('VOO') })
+    const none = await runTool('get_fund_details', { symbol: 'VOO' }, 'http://x') as Record<string, any>
+    expect(none.filing.whereItInvests).toBeNull()
+  })
+
   it('gives a yield only where the fund’s page shows one, as the pages do (D166)', async () => {
     routes({ '/live-data/fund-holdings': holdingsFor('IVV'), '/live-data/fund-prospectus': prospectusFor('IVV') })
     const out = await runTool('get_fund_details', { symbol: 'IVV' }, 'http://x') as Record<string, any>

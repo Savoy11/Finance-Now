@@ -6,6 +6,7 @@ import { LEGAL_PATHS } from '../links'
 import { YIELD_KIND_NAMES, FUND_CATALOG, FUND_FEES_LAST_VERIFIED, YIELD_CHECK_AFTER_DAYS, YIELD_SHOWN_FOR_DAYS } from '@/lib/data/fundCatalog'
 import { STAKING_PROVIDERS, STAKING_DATA_LAST_VERIFIED } from '@/lib/data/stakingProviders'
 import { META_AS_OF, MONITORED_STABLECOINS, getStablecoinMetaProvenance } from '@/lib/data/stablecoinMeta'
+import { BOND_PROFILE_MIN_PCT, MATURITY_BUCKETS } from '@/lib/utils/fundExposure'
 
 // The page that tells readers how the figures are worked out (D163) is only worth having while
 // it says what the code does. These hold the parts a later change could quietly falsify.
@@ -44,6 +45,18 @@ describe('how our figures are worked out (D163)', () => {
     expect(text('fund-costs')).toContain(FUND_FEES_LAST_VERIFIED)
     const src = fs.readFileSync(path.join(process.cwd(), 'src/lib/legal/dataMethods.ts'), 'utf8')
     expect(src).not.toMatch(/for \d+ providers|all \d+ funds/)
+  })
+
+  it('states how a fund’s countries, currencies and bond splits are worked out (T-455)', () => {
+    const t = text('fund-countries')
+    expect(t).toMatch(/where the issuer is based, not where a company sells/)
+    expect(t).toMatch(/left out rather than guessed/)
+    expect(t).toMatch(/Nothing is rescaled to 100%/)
+    expect(t).toContain(`at least ${BOND_PROFILE_MIN_PCT}% of its net assets`)
+    for (const b of MATURITY_BUCKETS) expect(t).toContain(b.label.toLowerCase())
+    expect(t).toContain('US Treasury')
+    expect(t).toMatch(/no credit ratings/)
+    expect(t).toMatch(/held directly are left out/)
   })
 
   it('states how expected inflation is worked out (D202)', () => {

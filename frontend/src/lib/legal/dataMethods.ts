@@ -5,6 +5,7 @@ import { FUND_CATALOG, FUND_FEES_LAST_VERIFIED, YIELD_CHECK_AFTER_DAYS, YIELD_KI
 import { META_AS_OF, MONITORED_STABLECOINS } from '@/lib/data/stablecoinMeta'
 import { COST_BENCHMARK_ER_PCT, COST_HORIZON_YEARS, COST_RETURN_PCT, PER_WHAT_IF_USD } from '@/lib/data/portfolioCosts'
 import { YEARLY_AFTER_DAYS } from '@/lib/data/trackedPortfolioViews'
+import { BOND_PROFILE_MIN_PCT, ISSUER_KIND_LABELS, MATURITY_BUCKETS } from '@/lib/utils/fundExposure'
 
 /**
  * "How our figures are worked out" (/about/data-methods, D163): the rules behind the figures
@@ -27,6 +28,10 @@ export interface MethodSection {
 }
 
 const liveProviders = STAKING_PROVIDERS.filter((p) => !p.defunct).length
+
+/** "Cities and states" → "cities and states", but "US Treasury" stays. */
+const inSentence = (label: string) => (/^[A-Z]{2}/.test(label) ? label : label[0].toLowerCase() + label.slice(1))
+const listed = (xs: string[]) => `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`
 
 export const DATA_METHODS: readonly MethodSection[] = [
   {
@@ -124,6 +129,17 @@ export const DATA_METHODS: readonly MethodSection[] = [
     title: 'Bond fund duration',
     paragraphs: [
       'A bond fund’s duration comes from its own quarterly holdings filing (Form N-PORT): the sum of its holdings’ dollar value of one basis point (DV01), as a positive number, divided by the fund’s net assets, times 10,000. A fund whose filing has no interest-rate section shows no duration.',
+    ],
+  },
+  {
+    id: 'fund-countries',
+    title: 'Where a fund invests',
+    decided: '2026-11-08',
+    paragraphs: [
+      'A fund’s countries and currencies come from its own quarterly holdings filing (Form N-PORT), the same filing as its holdings and its stock, bond and cash mix. Each holding’s share of the fund’s net assets is added up under the country the fund reports for the company or government that issued it, and under the currency the holding is bought in. A country is where the issuer is based, not where a company sells, and it can differ from the currency. A holding whose filing leaves a field blank, or writes “N/A” as swaps do, is left out rather than guessed, and each split says how much of the fund it covers. Nothing is rescaled to 100%.',
+      `For a fund whose bonds are at least ${BOND_PROFILE_MIN_PCT}% of its net assets, the line at which the form itself asks for interest-rate risk, the bonds are also split by the kind of borrower the filing names (${listed(Object.values(ISSUER_KIND_LABELS).map(inSentence))}) and by when they are repaid, counted in calendar years from the filing’s report date: ${listed(MATURITY_BUCKETS.map((b) => b.label.toLowerCase()))}. A bond with no repayment date, or one already past it, is left out of that split. The filing gives no credit ratings, so there is no split by bond quality.`,
+      'Across a portfolio, on the Look-through tab and on a tracked portfolio, each fund’s country split is weighted by the fund’s share of the portfolio and added up. Stocks and coins held directly are left out and their share named, since the app records no home country for them outside a fund’s filing; so is a fund whose own filing is not available.',
+      'A fund that files no N-PORT, such as a unit investment trust like SPY, shows none of this.',
     ],
   },
   {

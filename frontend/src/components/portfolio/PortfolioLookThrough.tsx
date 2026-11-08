@@ -9,6 +9,8 @@ import {
   computeLookThrough, type FundHoldings, type LookThroughPosition,
 } from '@/lib/data/lookThrough'
 import { INSTRUMENT_BY_KEY } from '@/lib/data/instruments'
+import { computePortfolioCountries, type ExposureSplit } from '@/lib/utils/fundExposure'
+import { PortfolioCountrySplit } from './PortfolioCountrySplit'
 import type { Portfolio } from '@/lib/data/portfolioUtils'
 import { STALE_TIME_LONG } from '@/lib/constants'
 import type { FundHoldingsResponse } from '@/app/live-data/fund-holdings/route'
@@ -61,8 +63,11 @@ export function PortfolioLookThrough({ positions, basis, unpriced = [] }: {
   // query's result changes, so the tally below never redoes itself on an unchanged render.
   const combine = useCallback((results: UseQueryResult<FundHoldingsResponse>[]) => {
     const holdingsByFund: Record<string, FundHoldings> = {}
+    // T-455 c: each fund's country split, from the same response.
+    const countriesByFund: Record<string, ExposureSplit> = {}
     results.forEach((q, i) => {
       const d = q.data
+      if (d?.ok && d.exposure) countriesByFund[fundSymbols[i]] = d.exposure.countries
       if (!d?.ok || !d.holdings?.length) return
       holdingsByFund[fundSymbols[i]] = {
         symbol: fundSymbols[i],
@@ -73,10 +78,10 @@ export function PortfolioLookThrough({ positions, basis, unpriced = [] }: {
         holdingsCount: d.holdingsCount,
       }
     })
-    return { holdingsByFund, loading: results.some((q) => q.isLoading) }
+    return { holdingsByFund, countriesByFund, loading: results.some((q) => q.isLoading) }
   }, [fundSymbols])
 
-  const { holdingsByFund, loading } = useQueries({
+  const { holdingsByFund, countriesByFund, loading } = useQueries({
     queries: fundSymbols.map((symbol) => ({
       queryKey: ['fund-holdings', symbol],
       queryFn: (): Promise<FundHoldingsResponse> =>
@@ -88,6 +93,7 @@ export function PortfolioLookThrough({ positions, basis, unpriced = [] }: {
   })
 
   const result = useMemo(() => computeLookThrough(positions, holdingsByFund), [positions, holdingsByFund])
+  const countries = useMemo(() => computePortfolioCountries(positions, countriesByFund), [positions, countriesByFund])
 
   if (fundSymbols.length === 0) {
     return (
@@ -233,6 +239,8 @@ export function PortfolioLookThrough({ positions, basis, unpriced = [] }: {
           </p>
         )}
       </div>
+
+      <PortfolioCountrySplit result={countries} basis={basis} />
 
       {/* Coverage travels with the numbers, per fund — a full N-PORT list and a
           a partial indicative list are different objects and must never be blended silently. */}
