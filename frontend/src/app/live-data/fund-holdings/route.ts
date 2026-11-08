@@ -3,6 +3,7 @@ import { getProviderKey } from '@/lib/api/live/providers'
 import { getFund } from '@/lib/data/fundCatalog'
 import { resolveFundSeries, listNportFilings, fetchNportReport } from '@/lib/server/nport'
 import { computeAssetMix } from '@/lib/utils/assetMix'
+import { computeFundExposure, type FundExposure } from '@/lib/utils/fundExposure'
 import { fundRateSensitivity, type FundRateSensitivity } from '@/lib/utils/fundRateSensitivity'
 import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 
@@ -97,6 +98,12 @@ export interface FundHoldingsResponse {
    * under 25% in debt files none) or the exposure is negligible.
    */
   rateSensitivity: FundRateSensitivity | null
+  /**
+   * Where the fund invests: countries and currencies, and for a bond fund the kind of borrower
+   * and when its bonds are repaid (T-455), from the same N-PORT filing as the holdings. Only on
+   * the `sec` path: FMP's holdings and the catalog carry none of these fields.
+   */
+  exposure: FundExposure | null
   error?: string
 }
 
@@ -113,10 +120,12 @@ type SecHoldingsResult = FmpHoldingsResult & {
   assetAllocation: AssetAllocationSlice[]
   assetAllocationCoverage: AssetAllocationCoverage | null
   rateSensitivity: FundRateSensitivity | null
+  exposure: FundExposure | null
 }
 
 const EMPTY_SEC: SecHoldingsResult = {
   holdings: [], asOf: null, totalCount: 0, assetAllocation: [], assetAllocationCoverage: null, rateSensitivity: null,
+  exposure: null,
 }
 
 async function fetchSecHoldings(symbol: string): Promise<SecHoldingsResult> {
@@ -145,10 +154,8 @@ async function fetchSecHoldings(symbol: string): Promise<SecHoldingsResult> {
   // and the MAX_ROWS truncation above. Deriving it from `rows` instead would
   // drop short positions and everything past row 500 — the mix would look
   // complete while describing a subset, which is worse than not rendering it.
-  const mix = computeAssetMix(report.holdings.map((h) => ({
-    pctVal: h.pctVal == null ? null : h.pctVal * scale,
-    assetCat: h.assetCat,
-  })))
+  const scaled = report.holdings.map((h) => ({ ...h, pctVal: h.pctVal == null ? null : h.pctVal * scale }))
+  const mix = computeAssetMix(scaled)
 
   return {
     holdings: holdings.slice(0, MAX_ROWS),
@@ -159,6 +166,8 @@ async function fetchSecHoldings(symbol: string): Promise<SecHoldingsResult> {
       ? { coveredPct: mix.coveredPct, unclassifiedCount: mix.unclassifiedCount }
       : null,
     rateSensitivity: fundRateSensitivity(report.rateRisk, report.netAssets, report.asOf),
+    // T-455: from the whole report too, for the same reason as the mix.
+    exposure: report.holdings.length > 0 ? computeFundExposure(scaled, report.asOf) : null,
   }
 }
 
@@ -277,6 +286,7 @@ export async function GET(request: NextRequest) {
       assetAllocation: forced === 'sec' ? sec.assetAllocation : [],
       assetAllocationCoverage: forced === 'sec' ? sec.assetAllocationCoverage : null,
       rateSensitivity: forced === 'sec' ? sec.rateSensitivity : null,
+      exposure: forced === 'sec' ? sec.exposure : null,
       holdingsCount: picked.count,
       ...(picked.holdings.length === 0 ? {
         error: forced === 'fmp' && !fmpKey()
@@ -294,6 +304,7 @@ export async function GET(request: NextRequest) {
       assetAllocation: sec.assetAllocation,
       assetAllocationCoverage: sec.assetAllocationCoverage,
       rateSensitivity: sec.rateSensitivity,
+      exposure: sec.exposure,
       holdingsCount: sec.totalCount,
     } satisfies FundHoldingsResponse)
   }
@@ -308,6 +319,7 @@ export async function GET(request: NextRequest) {
       assetAllocation: [],
       assetAllocationCoverage: null,
       rateSensitivity: null,
+      exposure: null,
       holdingsCount: fmp.holdings.length,
     } satisfies FundHoldingsResponse)
   }
@@ -322,6 +334,7 @@ export async function GET(request: NextRequest) {
     assetAllocation: [],
     assetAllocationCoverage: null,
     rateSensitivity: null,
+    exposure: null,
     holdingsCount: null,
   } satisfies FundHoldingsResponse)
 }

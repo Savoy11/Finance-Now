@@ -45,6 +45,24 @@ export interface NportHolding {
    * derived from, keylessly, from a filing the app already fetches.
    */
   assetCat: string | null
+  /**
+   * The issuer's country as the filer reports it (Item C.6, `invCountry`): an ISO 3166 two-letter
+   * code, a company's home rather than where it sells. Null when the filer wrote "N/A" (swaps and
+   * other derivatives do) or nothing. T-455.
+   */
+  country: string | null
+  /**
+   * The currency the holding is in (Item C.2.c): `<curCd>`, or for a holding outside US dollars
+   * the `curCd` attribute of `<currencyConditional>`, which carries the exchange rate beside it.
+   */
+  currency: string | null
+  /**
+   * The kind of issuer (Item C.5): CORP, UST, USGA, USGSE, MUN, NUSS, PF, RF or OTHER, from
+   * `<issuerCat>` or the `issuerCat` attribute of `<issuerConditional>`.
+   */
+  issuerCat: string | null
+  /** A debt holding's maturity date (Item C.9.a, `debtSec`'s `maturityDt`), YYYY-MM-DD. */
+  maturity: string | null
 }
 
 /**
@@ -141,6 +159,26 @@ const tag = (block: string, name: string): string | undefined =>
 const attr = (block: string, name: string): string | undefined =>
   block.match(new RegExp(`<${name}[^>]*\\bvalue="([^"]*)"`))?.[1]
 
+/**
+ * The holding's own lines, before the nested sections. A holding's country, currency and issuer
+ * kind come before `<isRestrictedSec>`; what follows (a bond's `<debtSec>`, a swap's
+ * `<derivativeInfo>`) carries other instruments' currencies and names. Read only the head, or a
+ * convertible bond's reference stock lends the bond its currency (T-455).
+ */
+function holdingHead(block: string): string {
+  const cut = block.search(/<(isRestrictedSec|fairValLevel|securityLending|debtSec|derivativeInfo|repurchaseAgrmt)\b/)
+  return cut >= 0 ? block.slice(0, cut) : block
+}
+
+/** `<name>X</name>`, else `<nameConditional ... name="X"/>`. */
+const tagOrConditional = (head: string, name: string, conditional: string): string | undefined =>
+  tag(head, name) ?? head.match(new RegExp(`<${conditional}\\b[^>]*\\b${name}="([^"]*)"`))?.[1]
+
+const code = (raw: string | undefined, pattern: RegExp): string | null => {
+  const v = raw?.trim().toUpperCase()
+  return v && pattern.test(v) ? v : null
+}
+
 const RATE_BUCKETS = ['period3Mon', 'period1Yr', 'period5Yr', 'period10Yr', 'period30Yr'] as const
 
 /** Sum the five maturity-bucket attributes of the `<intrstRtRiskdv01>` element.
@@ -202,12 +240,18 @@ export function parseNportReport(xml: string): NportReport {
     const isin = attr(block, 'isin') ?? null
     const tickerRaw = attr(block, 'ticker') ?? null
     const ticker = tickerRaw && /^[A-Za-z.-]{1,10}$/.test(tickerRaw) ? tickerRaw.toUpperCase() : null
+    const head = holdingHead(block)
+    const debt = block.match(/<debtSec>([\s\S]*?)<\/debtSec>/)?.[1]
     holdings.push({
       ticker, name, cusip, isin,
       balance: num(tag(block, 'balance')),
       valueUsd: num(tag(block, 'valUSD')),
       pctVal: num(tag(block, 'pctVal')),
       assetCat: tag(block, 'assetCat')?.trim().toUpperCase() || null,
+      country: code(tag(head, 'invCountry'), /^[A-Z]{2}$/),
+      currency: code(tagOrConditional(head, 'curCd', 'currencyConditional'), /^[A-Z]{3}$/),
+      issuerCat: code(tagOrConditional(head, 'issuerCat', 'issuerConditional'), /^[A-Z]{2,6}$/),
+      maturity: debt ? (tag(debt, 'maturityDt')?.match(/^\d{4}-\d{2}-\d{2}$/)?.[0] ?? null) : null,
     })
   }
   return {

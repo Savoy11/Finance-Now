@@ -10,6 +10,7 @@ import { ModuleGate } from '@/components/layout/ModuleGate'
 import { FundHoldingsHistory } from './FundHoldingsHistory'
 import { FundHoldingsSection } from './FundHoldingsSection'
 import { FundRateSensitivityCard } from './FundRateSensitivityCard'
+import { FundExposureCard } from './FundExposureCard'
 import { ExplainedLabel } from '@/components/ui/ExplainedLabel'
 import { SourceLine } from '@/components/ui/SourceLine'
 import { AssetActions } from '@/components/markets/AssetActions'
@@ -496,6 +497,7 @@ function FundDetailInner() {
 
       {/* Full breakdown of underlying investments + quarter-over-quarter changes */}
       <FundHoldingsSection symbol={symbol} />
+      <FundExposureCard symbol={symbol} />
       <FundHoldingsHistory symbol={symbol} />
 
       {/* News — mutual funds rarely have ticker news, show general market feed */}

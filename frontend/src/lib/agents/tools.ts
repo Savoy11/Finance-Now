@@ -6,6 +6,7 @@ import type { StockUniverseResponse } from '@/app/live-data/stock-universe/route
 import type { SecurityQuotesResponse } from '@/app/live-data/security-quotes/route'
 import { FUND_CATALOG, FUND_CATEGORY_INFO, fundAssetsFact, fundSalesCharge, fundYieldFact, getFund, getFundFeeProvenance } from '@/lib/data/fundCatalog'
 import type { FundHoldingsResponse } from '@/app/live-data/fund-holdings/route'
+import type { FundExposure } from '@/lib/utils/fundExposure'
 import type { FundProspectusResponse } from '@/app/live-data/fund-prospectus/route'
 import type { LiveReserveAsset } from '@/app/live-data/reserves/route'
 import { COMMODITY_CATALOG, COMMODITY_CATEGORY_INFO } from '@/lib/data/commodityCatalog'
@@ -290,7 +291,7 @@ const TOOL_REGISTRY: RegisteredTool[] = [
     market: 'equities',
     tool: {
       name: 'get_fund_details',
-      description: "Get an ETF or mutual fund's details from its own filings, as its page shows them: its largest holdings and how many it holds, its stock/bond/cash mix, its duration where it files one (bond funds), the date of the filing, its summary prospectus link, and, for a fund in the app's catalog, its expense ratio, sales charge, net assets and yield. Use it for questions about what a fund holds or costs; search_securities only finds funds.",
+      description: "Get an ETF or mutual fund's details from its own filings, as its page shows them: its largest holdings and how many it holds, its stock/bond/cash mix, where it invests by country and currency and, for a bond fund, who borrowed and when the bonds are repaid, its duration where it files one (bond funds), the date of the filing, its summary prospectus link, and, for a fund in the app's catalog, its expense ratio, sales charge, net assets and yield. Use it for questions about what a fund holds or costs; search_securities only finds funds.",
       input_schema: {
         type: 'object',
         properties: {
@@ -604,6 +605,26 @@ export function salesChargeFact(charge: NonNullable<ReturnType<typeof fundSalesC
     : { kind: charge.kind, maxPct: charge.maxPct, note: `Read from ${charge.source} on ${charge.verifiedAt}.` }
 }
 
+/** Where a fund invests, for an agent (T-455): the largest countries and currencies, and a bond fund's splits. */
+function whereItInvests(e: NonNullable<FundHoldingsResponse['exposure']>): Record<string, unknown> {
+  const list = (s: FundExposure['countries'], n: number) => s.slices.slice(0, n).map((x) => ({ name: x.label, code: x.code, pct: x.pct }))
+  return {
+    asOf: e.asOf,
+    countries: list(e.countries, 10),
+    countriesStatedPct: e.countries.statedPct,
+    currencies: list(e.currencies, 8),
+    currenciesStatedPct: e.currencies.statedPct,
+    bonds: e.bonds
+      ? {
+        bondsPct: e.bonds.bondsPct,
+        borrowers: e.bonds.borrowers.slices.map((x) => ({ kind: x.label, pct: x.pct })),
+        maturities: e.bonds.maturities.slices.map((x) => ({ repaid: x.label, pct: x.pct })),
+      }
+      : null,
+    note: "Shares of the fund's net assets from its own N-PORT filing, never rescaled to 100. A holding's country is where its issuer is based, not where a company sells. A field the filer left blank is left out, never guessed; the stated percent says how much of the fund each split covers. The filing carries no credit ratings, so say nothing about bond quality from it.",
+  }
+}
+
 /** Exported for its tests. */
 export function fundDetails(
   symbol: string,
@@ -647,6 +668,7 @@ export function fundDetails(
           note: "Worked out from the interest-rate risk the fund reports in the same filing: roughly the percent its value changes for each one-point move in rates.",
         }
         : null,
+      whereItInvests: holdings.exposure ? whereItInvests(holdings.exposure) : null,
       weightsNote: 'Weights are percent of the fund’s net assets as filed, never rescaled to 100.',
     }
   }
