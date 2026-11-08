@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { summaryPermitted } from '@/lib/server/sourceTerms'
-import { COMMODITY_CATALOG } from '@/lib/data/commodityCatalog'
+import { detectMacroRelated } from '@/lib/data/macroNewsMatchers'
 import { getMacroProviders, recordProviderFetch, type AnyActiveProvider } from '@/lib/api/live/providers'
 import { fetchCustomUrl, findArray, pickDate, pickString, type ActiveCustom } from '@/lib/server/customFeeds'
 import { parseFeedItems } from '@/lib/server/feedParse'
@@ -124,39 +124,8 @@ function scoreSentiment(text: string): MacroSentiment {
 
 // ─── Related-instrument detection → catalog detail links ─────────────────────
 
-const RELATED_MATCHERS: Array<{ pattern: RegExp; label: string; href: string }> = [
-  // Commodities from the catalog (name match, plus common aliases)
-  ...COMMODITY_CATALOG.map((c) => ({
-    pattern: new RegExp(`\\b${c.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i'),
-    label: c.name,
-    href: `/macro/commodities/${c.slug}`,
-  })),
-  { pattern: /\b(crude|oil price|opec|barrel)\b/i, label: 'WTI Crude Oil', href: '/macro/commodities/wti-crude' },
-  { pattern: /\bbrent\b/i,                         label: 'Brent Crude Oil', href: '/macro/commodities/brent-crude' },
-  // Currencies
-  { pattern: /\b(eur\/usd|euro)\b/i,               label: 'EUR/USD', href: '/macro/currencies/eur-usd' },
-  { pattern: /\b(gbp\/usd|sterling|pound|cable)\b/i, label: 'GBP/USD', href: '/macro/currencies/gbp-usd' },
-  { pattern: /\b(usd\/jpy|yen)\b/i,                label: 'USD/JPY', href: '/macro/currencies/usd-jpy' },
-  { pattern: /\b(dollar index|dxy)\b/i,            label: 'Dollar Index', href: '/macro/currencies/dollar-index' },
-  { pattern: /\byuan|renminbi|usd\/cny\b/i,        label: 'USD/CNY', href: '/macro/currencies/usd-cny' },
-  // Bonds & rates
-  { pattern: /\b(10-year|10 year|ten-year)\b/i,    label: '10-Year Yield', href: '/macro/rates/10-year-yield' },
-  { pattern: /\b(30-year|30 year|long bond)\b/i,   label: '30-Year Yield', href: '/macro/rates/30-year-yield' },
-  { pattern: /\b(t-bill|3-month|13-week)\b/i,      label: '13-Week Yield', href: '/macro/rates/13-week-yield' },
-]
-
-function detectRelated(text: string): MacroRelated[] {
-  const seen = new Set<string>()
-  const out: MacroRelated[] = []
-  for (const m of RELATED_MATCHERS) {
-    if (out.length >= 4) break
-    if (!seen.has(m.href) && m.pattern.test(text)) {
-      seen.add(m.href)
-      out.push({ label: m.label, href: m.href })
-    }
-  }
-  return out
-}
+// The rules moved to lib/data/macroNewsMatchers.ts (T-456), which instrument pages read too.
+const detectRelated = (text: string): MacroRelated[] => detectMacroRelated(text)
 
 // ─── Route ───────────────────────────────────────────────────────────────────
 

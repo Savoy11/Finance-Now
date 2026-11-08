@@ -430,9 +430,16 @@ export const DATA_SOURCES: DataSourceEntry[] = [
       // Not fetched: the host is named so the source-terms test holds the Board's reuse terms
       // to the same check as every other source. The dates are a hand-copied table.
       { name: 'Federal Reserve Board', host: 'www.federalreserve.gov', url: 'https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm', role: 'primary', auth: 'none' },
+      // Not fetched either (T-456 d): CPI and jobs-report dates from BLS, GDP and PCE dates from BEA,
+      // copied by hand into lib/data/releaseCalendar.ts.
+      { name: 'U.S. Bureau of Labor Statistics', host: 'www.bls.gov', url: 'https://www.bls.gov/schedule/news_release/cpi.htm', role: 'primary', auth: 'none' },
+      { name: 'U.S. Bureau of Economic Analysis', host: 'www.bea.gov', url: 'https://www.bea.gov/news/schedule/full', role: 'primary', auth: 'none' },
     ],
-    staticData: ['lib/data/fomcCalendar.ts (FOMC meeting dates, copied from the Board’s calendar; 90-day review clock)'],
-    notes: 'Earnings needs a free FMP key; other US economic releases need a paid one. FOMC meeting dates are KEYLESS and NOT FETCHED: a dated table copied by hand from the Federal Reserve Board’s calendar (public domain; the Board asks to be cited), returned on every plan — including with no FMP key, where the route still reports configured:false — and never counted against the 40-row FMP cap, which keeps high-impact rows first. `ok` counts FMP rows only, so a dead FMP leg still reads ok:false.',
+    staticData: [
+      'lib/data/fomcCalendar.ts (FOMC meeting dates, copied from the Board’s calendar; 90-day review clock)',
+      'lib/data/releaseCalendar.ts (CPI, jobs report, GDP and PCE release dates, copied from the BLS and BEA schedules; 90-day review clock)',
+    ],
+    notes: 'Earnings needs a free FMP key; other US economic releases need a paid one, except the CPI, jobs-report, GDP and PCE dates, which are keyless and not fetched: a dated table copied from the BLS and BEA schedules (both public domain; each asks to be cited), shown on every plan like the FOMC rows (T-456). FOMC meeting dates are KEYLESS and NOT FETCHED: a dated table copied by hand from the Federal Reserve Board’s calendar (public domain; the Board asks to be cited), returned on every plan — including with no FMP key, where the route still reports configured:false — and never counted against the 40-row FMP cap, which keeps high-impact rows first. `ok` counts FMP rows only, so a dead FMP leg still reads ok:false.',
   },
 
   // ── FUNDS ──────────────────────────────────────────────────────────────────
@@ -543,8 +550,8 @@ export const DATA_SOURCES: DataSourceEntry[] = [
   // ── SHARED / OTHER ─────────────────────────────────────────────────────────
   {
     id: 'headlines', surface: 'Headlines (cross-module landing feed)', module: 'shared',
-    route: '/live-data/news + /live-data/market-news', status: 'live',
-    providers: [{ name: 'Crypto + equity news feeds (merged client-side)', role: 'aggregator', auth: 'none' }],
+    route: '/live-data/news + /live-data/market-news + /live-data/macro-news', status: 'live',
+    providers: [{ name: 'Crypto, equity and macro news feeds (merged client-side)', role: 'aggregator', auth: 'none' }],
   },
   {
     id: 'watchlist', surface: 'Watchlist (cross-module live prices)', module: 'shared',

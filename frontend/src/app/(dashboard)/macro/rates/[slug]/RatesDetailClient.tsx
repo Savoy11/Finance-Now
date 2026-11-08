@@ -10,6 +10,7 @@ import { parLabelFor } from '@/lib/data/yieldHistory'
 import { TermStructureCard } from '@/components/markets/TermStructureCard'
 import { SourceLine } from '@/components/ui/SourceLine'
 import { AssetActions } from '@/components/markets/AssetActions'
+import { InstrumentNewsCard } from '@/components/markets/InstrumentNewsCard'
 import { RATES_CATEGORY_INFO, formatRatesQuote, getRatesEntry } from '@/lib/data/ratesCatalog'
 import { getFund } from '@/lib/data/fundCatalog'
 import { yieldFromCurve, curveYieldSourceLabel } from '@/lib/data/ratesFromCurve'
@@ -232,6 +233,9 @@ export function RatesDetailClient({ slug }: { slug: string }) {
           </div>
         </div>
       </div>
+
+      {/* The macro stories that name this instrument (T-456 b). */}
+      <InstrumentNewsCard href={`/macro/rates/${slug}`} name={entry.name} />
     </div>
   )
 }

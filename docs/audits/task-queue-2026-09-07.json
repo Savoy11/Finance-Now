@@ -62,9 +62,9 @@
   "total_verified": 414,
   "outstanding": 398,
   "by_status": {
-   "closed": 250,
-   "parked": 131,
-   "open": 12,
+   "closed": 251,
+   "parked": 132,
+   "open": 10,
    "blocked": 5
   },
   "by_owner_role": {
@@ -74,7 +74,7 @@
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 250,
+  "closed_by_annotation": 251,
   "counts_recomputed_on": "2026-11-07",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 398
@@ -16334,7 +16334,7 @@
   {
    "id": "T-456",
    "title": "The Macro module: Fed meeting dates on its pages and agents, news on each instrument’s page, a Macro section on Headlines, and official US release dates",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "blocking_decision": null,
    "opened": {
@@ -16350,7 +16350,8 @@
     "T-458",
     "T-250",
     "D21",
-    "D163"
+    "D163",
+    "D211"
    ],
    "summary": "Four parts, each able to ship on its own. (a) Fed meetings: frontend/src/lib/data/fomcCalendar.ts (keyless, the Federal Reserve Board registered in sourceTerms.ts, a 90-day review clock) is read only by /live-data/market-calendar and /equities/calendar, so a reader with Macro and without Equities never sees when the Fed meets; and get_market_calendar is tagged market equities in frontend/src/lib/agents/tools.ts, so toolsForAgent('macro') leaves it out and macro-research cannot answer “when is the next Fed meeting”, a question that tool’s own description says it answers. This shows “Next Fed meeting” on /macro and /macro/rates and the year’s schedule on Bonds & Rates, and gives the macro agents the calendar. (b) /live-data/macro-news already tags each story with the instruments it names (related, from detectRelated, each with that instrument’s page) and only /macro/news reads the tags; each commodity, currency and yield page shows the stories that name it. (c) Headlines renders crypto and markets sections only; it gains a Macro section for readers with the module on. (d) A hand-kept table of official US release dates (CPI, the jobs report, GDP and PCE inflation), copied from the Bureau of Labor Statistics’ and the Bureau of Economic Analysis’ published schedules with a review clock like the Fed table’s, shown on the Macro pages and the Equities calendar: the free way to fill the economic calendar FMP serves only on a paid plan, which docs/BUSINESS-CHECKLIST.md §5.1.1 accepts as empty on the free tier. No key, no recurring cost.",
    "next_action": "(a) to (c) need no decision and use only what the app already reads; build them first. For (d): (1) read the terms of bls.gov and bea.gov and register each in frontend/src/lib/server/sourceTerms.ts as the Federal Reserve Board was, copied by hand and never fetched; both are federal agencies whose own material is usually public domain, which is to be read, not assumed, and bls.gov tends to refuse automated reads, so the reading may have to be in the owner’s browser. (2) When building (d), ask the owner the proposal’s decision, recommended answer first: yes or no, and which releases (recommended: CPI and the jobs report, which the calendar tool’s description already names, plus GDP and PCE inflation). (3) Build the table with provenance and a staleness:check clock, like fomcCalendar.ts; it is re-copied once a year when the agencies publish the next year’s schedule and checked whenever a date moves, since they have moved releases before.",
@@ -16390,14 +16391,34 @@
      "lines": "Proposal 4",
      "quote": "Macro stories on the Headlines landing page"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-11-07",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "Built, all four parts, as the owner chose (D211: release dates yes, CPI, jobs, GDP and PCE). (a) The Macro overview and Bonds & Rates show the next Fed meeting and the next release of each kind, Bonds & Rates also the Fed's schedule for this year and next (components/markets/MacroCalendarCard.tsx), and the macro agents gain get_economic_calendar. (b) Each commodity, currency and yield page lists the macro stories that name it (InstrumentNewsCard); the matching rules moved to lib/data/macroNewsMatchers.ts and now recognise every currency pair by its written form, and a page the feed cannot recognise says so. (c) Headlines has a Macro section. (d) lib/data/releaseCalendar.ts holds every CPI, jobs, GDP and PCE date from 2026-11-06 to 2027-12-22, copied from the BLS and BEA schedules after reading both agencies' terms (public domain, citation asked; both registered seeded), with a 90-day review clock; /live-data/market-calendar serves them keyless beside the Fed's rows and the Equities calendar names each agency. Rules pure and tested.",
+    "approved_by": "owner, 2026-11-07: chose T-456 with T-457; release dates “Yes: CPI, jobs, GDP, PCE (Recommended)”",
+    "evidence": [
+     "frontend/src/lib/data/releaseCalendar.ts",
+     "frontend/src/lib/data/macroCalendar.ts",
+     "frontend/src/lib/data/macroNewsMatchers.ts",
+     "frontend/src/lib/data/__tests__/macroCalendar.test.ts",
+     "frontend/src/components/markets/MacroCalendarCard.tsx",
+     "frontend/src/components/markets/InstrumentNewsCard.tsx",
+     "frontend/src/lib/server/marketCalendar.ts",
+     "frontend/src/app/(dashboard)/headlines/page.tsx",
+     "frontend/src/lib/server/sourceTerms.ts",
+     "docs/decisions/2026-11-07-owner-decisions.md"
+    ]
+   }
   },
   {
    "id": "T-457",
    "title": "Let the AI see the Funds module and the Reserve Monitor: agent tools for a fund’s filed details and for stablecoin reserves, then the same on /api/v1 and the MCP server",
-   "status": "open",
+   "status": "parked",
    "confidence": "high",
-   "blocking_decision": null,
+   "blocking_decision": "D210 (2026-11-07): the owner chose the in-app tools only for now. Part (b), the same two tools plus the SEC fundamentals behind get_stock_financials on /api/v1 and the MCP server, waits until the owner wants the Claude Desktop add-on to cover funds.",
    "opened": {
     "on": "2026-11-07",
     "by": "opportunity-scout FILE mode, owner-approved 2026-11-07 (D207)",
@@ -16417,10 +16438,11 @@
     "T-425",
     "D96",
     "T-094",
-    "T-455"
+    "T-455",
+    "D210"
    ],
    "summary": "The agent tools are tagged crypto, equities and macro (frontend/src/lib/agents/tools.ts), and none reads /live-data/fund-holdings or /live-data/reserves. For a fund the only tool is search_securities, which returns the catalog’s indicative top holdings rather than the filing; for a stablecoin an agent has a price and nothing more, so the Reserve Monitor, which gained supply change on 2026-11-07 (T-449, D204), is invisible to every agent. (a) Two tools for the in-app agents (the Assistant, Research and the Daily Brief), reading the routes the pages read: fund details (holdings and asset mix from the filing, duration where filed, net assets and their date, the prospectus link) and stablecoin reserves (price against its peg, supply change over 1, 7 and 30 days, the split across blockchains, and the issuer’s last attestation with the date that says how old that curated part is). Credits travel on their own: runToolWithCredits collects each response’s required credit (D101), so a new tool needs no credit work. (b) The same two, plus the SEC fundamentals behind get_stock_financials, as /api/v1 routes and MCP tools: app/api/v1/ has no fund, fundamentals or reserves route today, and the market assessment counts the agent surface among what the product wins on (§4) and five external consumers of the API/MCP surface among its milestones (§8). No key, no host, no recurring cost.",
-   "next_action": "When building, ask the owner the proposal’s decision, recommended answer first: (a) now, and (b) when the owner wants the MCP server to cover funds (recommended), or (a) and (b) together. (b) means routes, the OpenAPI file, MCP tools, and guardApiV1 as each new route’s first statement (D173, held by apiKeys.test.ts); a reserves endpoint carries the launch step the Reserves tab already has, since DefiLlama publishes no terms document (fine before launch, D96; the enquiry is parked under T-425). After (a), re-running npm run agent-eval for the agents that gain a tool is worth doing on the owner’s machine; it bills a few dollars, so it is the owner’s call (D20). If T-455 lands first, the fund tool can return its country and maturity splits too.",
+   "next_action": "When the owner asks for (b): add /api/v1 routes for a fund's filed details, stablecoin reserves and a stock's SEC fundamentals, each calling guardApiV1 as its first statement (D173, apiKeys.test.ts), add them to the OpenAPI file, and add MCP tools in mcp-server/src/index.ts that read them (mcpDataOnly.test.ts). A reserves endpoint carries the launch step the Reserves tab already has: DefiLlama publishes no terms document (fine before launch, D96; enquiry parked under T-425).",
    "sources": [
     {
      "file": "docs/proposals/2026-11-07-proposals.md",
@@ -16442,7 +16464,12 @@
      "lines": "Proposal 5",
      "quote": "Funds and filed fundamentals on `/api/v1` + MCP"
     }
-   ]
+   ],
+   "parked_on": "2026-11-07",
+   "progress": {
+    "noted_on": "2026-11-07",
+    "note": "Part (a) BUILT 2026-11-07 (D210): get_fund_details (equities agents and the Assistant) and get_stablecoin_reserves (crypto agents and the Assistant) in frontend/src/lib/agents/tools.ts, reading the routes the pages read, tested in lib/agents/__tests__/fundReserveTools.test.ts. Re-running npm run agent-eval for the agents that gained a tool is the owner's call (it bills, D20)."
+   }
   },
   {
    "id": "T-458",

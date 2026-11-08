@@ -8,6 +8,7 @@ import { ModuleGate } from '@/components/layout/ModuleGate'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { STALE_TIME_LONG, STALE_TIME_SHORT } from '@/lib/constants'
 import { SourceLine } from '@/components/ui/SourceLine'
+import { MacroCalendarCard } from '@/components/markets/MacroCalendarCard'
 import { RATES_CATALOG } from '@/lib/data/ratesCatalog'
 import { CURRENCY_CATALOG, formatFxRate } from '@/lib/data/currencyCatalog'
 import { curveYieldSourceLabel, yieldFromCurve, type CurveYield } from '@/lib/data/ratesFromCurve'
@@ -269,6 +270,9 @@ function MacroContent() {
           </div>
         ))}
       </div>
+
+      {/* The Fed's meetings and the four US releases (T-456). */}
+      <MacroCalendarCard />
 
       {/* Attribution comes from the registry, not hand-written prose — prose
           drifts when a provider changes and nothing forces it to be updated.
