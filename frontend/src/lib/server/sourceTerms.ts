@@ -1023,6 +1023,38 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     confidence: 'high',
   },
   {
+    // READ 2026-11-07 (T-456 d, D211) from a cloud session, not the owner's machine, so `seeded` until
+    // the owner marks it read: "Linking and Copyright Information" (/bls/linksite.htm, last modified
+    // 2016-08-05) and "BLS Copyright Information" (/opub/copyright-information.htm), which say the same.
+    // NOT FETCHED AT RUNTIME: the CPI and jobs-report dates are copied by hand into
+    // lib/data/releaseCalendar.ts. Registered because the app reuses BLS's information.
+    domain: 'bls.gov',
+    name: 'U.S. Bureau of Labor Statistics',
+    verdict: 'approved',
+    termsUrl: 'https://www.bls.gov/bls/linksite.htm',
+    finding:
+      'Linking and Copyright Information, read 2026-11-07: "everything that we publish, both in hard copy and electronically, is in the public domain, except for previously copyrighted photographs and illustrations. You are free to use our public domain material without specific permission, although we do ask that you cite the Bureau of Labor Statistics as the source." Linking needs no permission. The BLS emblem is a registered trademark and is not used. Nothing on automated access. Used for the CPI and jobs-report release dates only, copied by hand; every surface showing them names BLS.',
+    reviewedAt: '2026-11-07',
+    review: 'seeded',
+    confidence: 'high',
+  },
+  {
+    // READ 2026-11-07 (T-456 d, D211) from a cloud session, so `seeded` until the owner marks it read:
+    // the Linking Policy (/about/policies-and-information/linking, last modified 2018-05-09), the
+    // Policies and Information page and the Guidelines for Citing BEA. Its copyright-policy address
+    // answers 404; the linking policy carries the statement.
+    // NOT FETCHED AT RUNTIME: the GDP and PCE dates are copied by hand into lib/data/releaseCalendar.ts.
+    domain: 'bea.gov',
+    name: 'U.S. Bureau of Economic Analysis',
+    verdict: 'approved',
+    termsUrl: 'https://www.bea.gov/about/policies-and-information/linking',
+    finding:
+      'Linking Policy, read 2026-11-07: "unless stated otherwise, the information posted on the BEA Web site is in the public domain and may be used or reproduced without specific permission. A citation such as "Source: U.S. Bureau of Economic Analysis" would be appreciated." "As a U.S. Government agency, BEA is not permitted to endorse or recommend any commercial products or services"; a reference must not suggest an endorsement. The logo may be used only to identify a link, and is not used. Nothing on automated access. Used for the GDP and PCE (Personal Income and Outlays) release dates only, copied by hand; every surface showing them names BEA.',
+    reviewedAt: '2026-11-07',
+    review: 'seeded',
+    confidence: 'high',
+  },
+  {
     // READ 2026-11-07 (T-445, D203) from this cloud session, not the owner's machine, so `seeded`
     // until the owner marks it read: the Disclaimer & Copyright page (verbatim) and the euro
     // reference rates page, plus the "Framework for the euro foreign exchange reference rates"

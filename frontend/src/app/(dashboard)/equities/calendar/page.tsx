@@ -11,6 +11,7 @@ import { SourceLine } from '@/components/ui/SourceLine'
 import { ProvenanceNotice } from '@/components/ui/ProvenanceNotice'
 import { STALE_TIME_LONG } from '@/lib/constants'
 import { FOMC_SOURCE_URL, getFomcCalendarProvenance } from '@/lib/data/fomcCalendar'
+import { RELEASE_AGENCIES, getReleaseDatesProvenance } from '@/lib/data/releaseCalendar'
 import type { EarningsEvent, EconomicEvent, MarketCalendarResponse } from '@/app/live-data/market-calendar/route'
 import { IpoCalendarSection } from './IpoCalendarSection'
 
@@ -93,6 +94,7 @@ function CalendarContent() {
   const selEcon = selectedDay ? econByDay.get(selectedDay) ?? [] : []
   const configured = !!data?.configured
   const fomc = getFomcCalendarProvenance()
+  const releases = getReleaseDatesProvenance()
   // Past the table's last row, "no FOMC meeting" means "not published yet", so say so.
   const pastFomcSchedule = monthKey(month) > fomc.through.slice(0, 7)
 
@@ -104,7 +106,7 @@ function CalendarContent() {
           title="Market Calendar"
           subtitle="Earnings, IPOs, Fed meetings and high-impact US economic events"
           description="A month grid of earnings dates for tracked and notable stocks, FOMC rate decisions, and medium/high-impact US economic releases. Click a day for its full list; flip months with the arrows."
-          details={[{ label: 'Data source', text: 'Financial Modeling Prep for earnings (free key) and other US economic releases (a paid FMP endpoint, empty on the free tier). FOMC meeting dates come from the Federal Reserve Board’s published calendar and need no key.' }]}
+          details={[{ label: 'Data source', text: 'Financial Modeling Prep for earnings (free key) and other US economic releases (a paid FMP endpoint, empty on the free tier). FOMC meeting dates come from the Federal Reserve Board’s published calendar, and the CPI, jobs report, GDP and PCE dates from the Bureau of Labor Statistics’ and Bureau of Economic Analysis’ published schedules; all of these need no key.' }]}
         />
       </div>
 
@@ -120,6 +122,19 @@ function CalendarContent() {
         <a href={FOMC_SOURCE_URL} target="_blank" rel="noreferrer" className="underline hover:text-slate-200">Federal Reserve Board’s FOMC calendar</a>,
         last checked {fomc.verifiedAt} ({fomc.ageDays} day{fomc.ageDays === 1 ? '' : 's'} ago). The Fed treats each date as tentative until
         the meeting before it confirms it. Unscheduled meetings are not shown.
+      </ProvenanceNotice>
+
+      <ProvenanceNotice
+        label="CPI, jobs, GDP and PCE dates: BLS and BEA"
+        staleLabel="Release dates may be out of date"
+        confidence={releases.confidence}
+        stale={releases.stale}
+      >
+        Release dates copied from the published schedules of the{' '}
+        <a href={RELEASE_AGENCIES.bls.scheduleUrls[0]} target="_blank" rel="noreferrer" className="underline hover:text-slate-200">{RELEASE_AGENCIES.bls.name}</a>{' '}
+        (CPI and the jobs report) and the{' '}
+        <a href={RELEASE_AGENCIES.bea.scheduleUrls[0]} target="_blank" rel="noreferrer" className="underline hover:text-slate-200">{RELEASE_AGENCIES.bea.name}</a>{' '}
+        (GDP and PCE inflation), last checked {releases.verifiedAt}, through {releases.through}. An agency can move a date; its own page is the authority.
       </ProvenanceNotice>
 
       {/* Outside the FMP gate on purpose — IPOs come from Alpha Vantage, so
@@ -198,7 +213,8 @@ function CalendarContent() {
                 const dayEarnings = earningsByDay.get(iso) ?? []
                 const dayEcon = econByDay.get(iso) ?? []
                 const dayFomc = dayEcon.find((e) => e.source === 'federal-reserve')
-                const otherEcon = dayEcon.filter((e) => e.source !== 'federal-reserve')
+                const dayReleases = dayEcon.filter((e) => e.source === 'bls' || e.source === 'bea')
+                const otherEcon = dayEcon.filter((e) => e.source === 'fmp')
                 const catalogRows = dayEarnings.filter((e) => e.inCatalog)
                 const isToday = iso === todayIso
                 const isSelected = iso === selectedDay
@@ -227,6 +243,11 @@ function CalendarContent() {
                           FOMC{dayFomc.tentative ? ' (tent.)' : ''}
                         </span>
                       )}
+                      {dayReleases.map((e) => (
+                        <span key={e.event} className="block truncate rounded-sm bg-amber-400/10 px-1 py-px text-[10px] font-semibold text-amber-400">
+                          {releaseChip(e.event)}
+                        </span>
+                      ))}
                       {/* Tracked names first, at most three chips per cell —
                           the day panel below carries the full list. */}
                       {catalogRows.slice(0, 3).map((e) => (
@@ -287,14 +308,14 @@ function CalendarContent() {
                 <div className="max-h-80 divide-y divide-border/60 overflow-y-auto">
                   {selEcon.length === 0 && (
                     <p className="px-4 py-6 text-center text-xs text-text-muted leading-relaxed">
-                      No events this day. Fed meetings always show; other releases (CPI, jobs, GDP) come from
-                      FMP&rsquo;s economic calendar, a <span className="text-text-secondary">paid-tier endpoint</span> that
+                      No events this day. Fed meetings and the CPI, jobs, GDP and PCE releases always show; other
+                      releases come from FMP&rsquo;s economic calendar, a <span className="text-text-secondary">paid-tier endpoint</span> that
                       is empty on a free key (earnings are unaffected).
                     </p>
                   )}
                   {selEcon.map((ev, i) => (
                     <div key={`${ev.event}-${i}`} className="flex items-center gap-3 px-4 py-2 text-sm">
-                      {ev.source === 'federal-reserve' && ev.url ? (
+                      {ev.source !== 'fmp' && ev.url ? (
                         <a href={ev.url} target="_blank" rel="noreferrer" className="flex-1 text-xs text-text-secondary hover:text-text-primary hover:underline">
                           {ev.event}
                         </a>
@@ -327,6 +348,15 @@ function CalendarContent() {
       )}
     </div>
   )
+}
+
+/** A release row's short name for a calendar cell: "CPI", "Jobs", "GDP", "PCE". */
+function releaseChip(event: string): string {
+  if (event.startsWith('CPI')) return 'CPI'
+  if (event.startsWith('Jobs')) return 'Jobs'
+  if (event.startsWith('GDP')) return 'GDP'
+  if (event.startsWith('PCE')) return 'PCE'
+  return 'Release'
 }
 
 export default function MarketCalendarPage() {

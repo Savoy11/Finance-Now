@@ -4,12 +4,18 @@ import { peText, perShareFromFields, stockFigures, stockFiguresLink, yieldText }
 import { marketCapText, marketCapUsd } from '@/lib/data/stockShares'
 import type { StockUniverseResponse } from '@/app/live-data/stock-universe/route'
 import type { SecurityQuotesResponse } from '@/app/live-data/security-quotes/route'
-import { FUND_CATALOG, FUND_CATEGORY_INFO, fundAssetsFact, fundYieldFact } from '@/lib/data/fundCatalog'
+import { FUND_CATALOG, FUND_CATEGORY_INFO, fundAssetsFact, fundSalesCharge, fundYieldFact, getFund, getFundFeeProvenance } from '@/lib/data/fundCatalog'
+import type { FundHoldingsResponse } from '@/app/live-data/fund-holdings/route'
+import type { FundProspectusResponse } from '@/app/live-data/fund-prospectus/route'
+import type { LiveReserveAsset } from '@/app/live-data/reserves/route'
 import { COMMODITY_CATALOG, COMMODITY_CATEGORY_INFO } from '@/lib/data/commodityCatalog'
 import { CURRENCY_CATALOG, CURRENCY_CATEGORY_INFO } from '@/lib/data/currencyCatalog'
 import { RATES_CATALOG, RATES_CATEGORY_INFO } from '@/lib/data/ratesCatalog'
 import { parLabelFor } from '@/lib/data/yieldHistory'
 import { ECB_RATE_NOTE, ecbPairBySymbol, pairRateBasis } from '@/lib/data/fxReference'
+import { FOMC_SOURCE_URL, getFomcCalendarProvenance } from '@/lib/data/fomcCalendar'
+import { RELEASE_AGENCIES, getReleaseDatesProvenance } from '@/lib/data/releaseCalendar'
+import { macroCalendarAhead } from '@/lib/data/macroCalendar'
 import { ohlcvSourceLabel } from '@/lib/utils/ohlcvSource'
 import { candleGranularity, candleSizeWords } from '@/lib/utils/candleGranularity'
 import { RISK_RATINGS_SHOWN } from '@/lib/risk/visibility'
@@ -121,6 +127,17 @@ const TOOL_REGISTRY: RegisteredTool[] = [
           category: { type: 'string', enum: ['cefi', 'wallet', 'liquid'], description: 'Optional provider category' },
         },
         required: ['coin'],
+      },
+    },
+  },
+  {
+    market: 'crypto',
+    tool: {
+      name: 'get_stablecoin_reserves',
+      description: "Get the Reserve Monitor's figures for the monitored stablecoins, or one of them: price against its peg, circulating supply and its change over 1, 7 and 30 days, which blockchains it sits on, and the issuer's last attestation (who attests, when, the collateral ratio where disclosed, and the reserve mix). Price and supply are live; the attestation facts are kept by hand and dated (asOf). Report figures; do not grade a stablecoin's safety.",
+      input_schema: {
+        type: 'object',
+        properties: { symbol: { type: 'string', description: 'Optional stablecoin ticker, e.g. "USDC". Omit for every monitored coin.' } },
       },
     },
   },
@@ -266,6 +283,21 @@ const TOOL_REGISTRY: RegisteredTool[] = [
         properties: {
           min_mcap: { type: 'number', description: 'Minimum market cap in $B to include (default 2 — filters out micro-caps)' },
         },
+      },
+    },
+  },
+  {
+    market: 'equities',
+    tool: {
+      name: 'get_fund_details',
+      description: "Get an ETF or mutual fund's details from its own filings, as its page shows them: its largest holdings and how many it holds, its stock/bond/cash mix, its duration where it files one (bond funds), the date of the filing, its summary prospectus link, and, for a fund in the app's catalog, its expense ratio, sales charge, net assets and yield. Use it for questions about what a fund holds or costs; search_securities only finds funds.",
+      input_schema: {
+        type: 'object',
+        properties: {
+          symbol: { type: 'string', description: 'Fund ticker, e.g. "VOO" or "BND"' },
+          top: { type: 'number', description: 'How many of the largest holdings to list (default 15, max 40)' },
+        },
+        required: ['symbol'],
       },
     },
   },
@@ -447,6 +479,17 @@ const TOOL_REGISTRY: RegisteredTool[] = [
       },
     },
   },
+  {
+    market: 'macro',
+    tool: {
+      name: 'get_economic_calendar',
+      description: "Get the dates of the Fed's rate decisions and of the US CPI, jobs report, GDP and PCE inflation releases in the days ahead, from the app's tables copied from the Federal Reserve Board's calendar and the BLS and BEA schedules. Use for \"when is the next Fed meeting / CPI / jobs report\". Name the source of each date; an agency can move a date, and the table ends where the published schedules end (scheduleThrough).",
+      input_schema: {
+        type: 'object',
+        properties: { days: { type: 'number', description: 'How many days ahead (default 60, max 400)' } },
+      },
+    },
+  },
 ]
 
 /**
@@ -542,6 +585,122 @@ export interface ToolOutcome {
 }
 
 /** Execute a tool by name and return a JSON-serializable result for the model. */
+// ─── Fund details and stablecoin reserves (T-457, D210) ─────────────────────
+//
+// What the fund pages and the Reserve Monitor show, for the agents: read from the same routes,
+// shaped here with what an agent needs to report it honestly (where each figure comes from and
+// how old it is).
+
+const HOLDINGS_SOURCE: Record<FundHoldingsResponse['source'], string> = {
+  sec: "the fund's own N-PORT filing to the SEC",
+  fmp: 'Financial Modeling Prep',
+  catalog: "the app's catalog: a few indicative holdings typed in by hand, not a filing; say so if you use them",
+}
+
+/** A fund's sales charge for an agent: never a rate nobody has verified (fundCatalog's SalesCharge rule). */
+export function salesChargeFact(charge: NonNullable<ReturnType<typeof fundSalesCharge>>): { kind: string; maxPct: number | null; note: string } {
+  return charge.maxPct == null
+    ? { kind: charge.kind, maxPct: null, note: 'A sales charge applies; its rate has not been verified, so do not state one.' }
+    : { kind: charge.kind, maxPct: charge.maxPct, note: `Read from ${charge.source} on ${charge.verifiedAt}.` }
+}
+
+/** Exported for its tests. */
+export function fundDetails(
+  symbol: string,
+  holdings: FundHoldingsResponse | Error,
+  prospectus: FundProspectusResponse | Error,
+  top: number,
+): Record<string, unknown> {
+  const f = getFund(symbol)
+  const charge = f ? fundSalesCharge(f) : null
+  const y = f ? fundYieldFact(f) : null
+  const catalog = f ? {
+    name: f.name, issuer: f.issuer, type: f.type,
+    category: FUND_CATEGORY_INFO[f.category].label, indexTracked: f.indexTracked,
+    expenseRatioPct: f.expenseRatioPct,
+    expenseRatioCheckedOn: getFundFeeProvenance().verifiedAt,
+    salesCharge: charge ? salesChargeFact(charge) : null,
+    netAssetsB: f.aumB, netAssetsAsOf: f.aumAsOf ?? null, netAssetsMeasure: fundAssetsFact(f, String).label,
+    yieldPct: y?.shown ? f.yieldPct : null, yieldKind: y?.shown ? y.kind : null, yieldAsOf: y?.shown ? y.asOf : null,
+    yieldNote: y?.explain ?? null,
+    website: f.website,
+  } : null
+
+  let filing: Record<string, unknown>
+  if (holdings instanceof Error) filing = { error: `holdings unavailable: ${holdings.message}` }
+  else if (!holdings.ok) filing = { error: `holdings unavailable: ${holdings.error ?? 'the route reported a failure'}` }
+  else {
+    const shown = holdings.holdings.slice(0, top)
+    filing = {
+      source: HOLDINGS_SOURCE[holdings.source],
+      asOf: holdings.asOf,
+      positions: holdings.holdingsCount,
+      completeList: holdings.full,
+      largestHoldings: shown.map((h) => ({ name: h.name, symbol: h.symbol, weightPct: Math.round(h.weightPct * 100) / 100 })),
+      largestHoldingsTotalPct: Math.round(shown.reduce((s, h) => s + h.weightPct, 0) * 10) / 10,
+      assetMix: holdings.assetAllocation.length ? holdings.assetAllocation : null,
+      assetMixCoveredPct: holdings.assetAllocationCoverage?.coveredPct ?? null,
+      sectorWeights: holdings.sectorWeights.length ? holdings.sectorWeights : null,
+      duration: holdings.rateSensitivity
+        ? {
+          years: holdings.rateSensitivity.durationYears, asOf: holdings.rateSensitivity.asOf,
+          note: "Worked out from the interest-rate risk the fund reports in the same filing: roughly the percent its value changes for each one-point move in rates.",
+        }
+        : null,
+      weightsNote: 'Weights are percent of the fund’s net assets as filed, never rescaled to 100.',
+    }
+  }
+
+  const prospectusOut = prospectus instanceof Error
+    ? { error: `prospectus lookup failed: ${prospectus.message}` }
+    : prospectus.prospectus
+      ? { kind: prospectus.prospectus.kind, filedAt: prospectus.prospectus.filedAt, url: prospectus.prospectus.url }
+      : { none: prospectus.reason ?? prospectus.error ?? 'No prospectus was found.' }
+
+  return {
+    symbol,
+    inCatalog: !!f,
+    catalog,
+    filing,
+    prospectus: prospectusOut,
+    ...(f ? {} : { note: `${symbol} is not in the app's fund catalog, so there is no expense ratio, sales charge or yield here; the filing figures above are still the fund's own. Do not estimate the missing ones.` }),
+  }
+}
+
+/** Exported for its tests. */
+export function stablecoinReserves(
+  assets: LiveReserveAsset[],
+  notFound: string[],
+  metaAsOf: string | null,
+  symbol: string | null,
+): Record<string, unknown> {
+  const wanted = symbol?.trim().toUpperCase() || null
+  const picked = wanted ? assets.filter((a) => a.symbol.toUpperCase() === wanted) : assets
+  if (wanted && picked.length === 0) {
+    return { error: `${wanted} is not among the monitored stablecoins.`, monitored: assets.map((a) => a.symbol) }
+  }
+  return {
+    coins: picked.map((a) => ({
+      symbol: a.symbol, name: a.name, pegType: a.pegType, pegMechanism: a.pegMechanism,
+      priceUsd: a.price,
+      // Only a dollar coin's price is against its own peg; a euro coin's dollar price is not.
+      pegDeviationBps: a.pegType === 'peggedUSD' ? Math.round((a.price - 1) * 10_000) : null,
+      circulatingUsd: Math.round(a.circulatingUsd),
+      supplyChangePct: a.supplyChange,
+      largestChains: a.chainSplit.top.map((c) => ({ chain: c.chain, pct: c.pct })),
+      otherChains: a.chainSplit.others ? { count: a.chainSplit.others.count, pct: a.chainSplit.others.pct } : null,
+      attester: a.attester,
+      attestationUrl: a.attestationUrl === '#' ? null : a.attestationUrl,
+      lastAttestedDate: a.lastAttestedDate,
+      collateralizationRatio: a.collateralizationRatio,
+      reserveMix: a.composition.map((c) => ({ category: c.category, pct: c.percentage })),
+    })),
+    attestationFactsAsOf: metaAsOf,
+    notFound,
+    note: `Price and supply are live from DefiLlama. The attester, attestation date, collateral ratio and reserve mix are kept by hand${metaAsOf ? ` as of ${metaAsOf}` : ''}, not live; several were taken from news reports and trackers quoting the issuers, and a null collateral ratio means it is not publicly disclosed. pegDeviationBps is the price's distance from $1 in hundredths of a percent, for dollar coins only. Report the figures; do not grade a coin's safety.`,
+  }
+}
+
 export async function runTool(
   name: string,
   input: ToolInput,
@@ -621,6 +780,14 @@ async function execute(
         // so forwarding the param would set a filter the API silently ignores.
         return await get(`/api/v1/staking/opportunities?${p.toString()}`)
       }
+      case 'get_stablecoin_reserves': {
+        const data = (await get('/live-data/reserves')) as {
+          ok?: boolean; error?: string; assets?: LiveReserveAsset[]; notFound?: string[]; metaAsOf?: string
+        }
+        const failure = routeFailed(data)
+        if (failure) return { error: `reserve data unavailable: ${failure}` }
+        return stablecoinReserves(data.assets ?? [], data.notFound ?? [], data.metaAsOf ?? null, input.symbol ? String(input.symbol) : null)
+      }
       case 'get_news': {
         const p = new URLSearchParams({ coin: String(input.coin ?? '') })
         p.set('limit', String(input.limit ?? 10))
@@ -683,6 +850,17 @@ async function execute(
           periodHigh: Math.max(...rows.map((c) => c.high)), periodLow: Math.min(...rows.map((c) => c.low)),
           changePct,
         }
+      }
+      case 'get_fund_details': {
+        const symbol = String(input.symbol ?? '').trim().toUpperCase()
+        if (!/^[A-Z][A-Z0-9.-]{0,9}$/.test(symbol)) return { error: 'Pass a fund ticker, e.g. "VOO".' }
+        const top = Math.min(Math.max(Math.round(Number(input.top ?? 15)) || 15, 1), 40)
+        const q = encodeURIComponent(symbol)
+        const [holdings, prospectus] = await Promise.all([
+          (get(`/live-data/fund-holdings?symbol=${q}`) as Promise<FundHoldingsResponse>).catch((e: Error) => e),
+          (get(`/live-data/fund-prospectus?symbol=${q}`) as Promise<FundProspectusResponse>).catch((e: Error) => e),
+        ])
+        return fundDetails(symbol, holdings, prospectus, top)
       }
       case 'search_securities': {
         const query = String(input.query ?? '').trim().toLowerCase()
@@ -925,7 +1103,7 @@ async function execute(
           return {
             from: data.from, to: data.to,
             earnings: [],
-            earningsUnavailable: 'Earnings and non-Fed economic releases need an FMP API key (FMP_API_KEY) — not configured on this instance.',
+            earningsUnavailable: 'Earnings, and economic releases other than the Fed meetings and the CPI, jobs report, GDP and PCE dates, need an FMP API key (FMP_API_KEY) — not configured on this instance.',
             economic: (data.economic ?? []).slice(0, 25),
           }
         }
@@ -1119,6 +1297,22 @@ async function execute(
           out.pairRatesError = ref.error ?? 'ECB pair rates unavailable'
         }
         return out
+      }
+      case 'get_economic_calendar': {
+        const days = Math.min(Math.max(Math.round(Number(input.days ?? 60)) || 60, 1), 400)
+        const fomc = getFomcCalendarProvenance()
+        const rel = getReleaseDatesProvenance()
+        return {
+          days,
+          events: macroCalendarAhead(days),
+          scheduleThrough: { fedMeetings: fomc.through, releases: rel.through },
+          checkedOn: { fedMeetings: fomc.verifiedAt, releases: rel.verifiedAt },
+          sources: {
+            fedMeetings: `Federal Reserve Board, ${FOMC_SOURCE_URL}`,
+            releases: `U.S. Bureau of Labor Statistics (CPI, jobs report) and U.S. Bureau of Economic Analysis (GDP, PCE), ${RELEASE_AGENCIES.bls.scheduleUrls.join(', ')}, ${RELEASE_AGENCIES.bea.scheduleUrls.join(', ')}`,
+          },
+          note: 'Copied by hand from each publisher; times are as the schedules list them, with no time zone written. A Fed date stays tentative until the meeting before it. Past scheduleThrough, no date means none published yet, not none planned.',
+        }
       }
       case 'get_macro_news': {
         const limit = Math.min(Number(input.limit ?? 10) || 10, 25)

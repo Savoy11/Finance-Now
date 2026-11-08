@@ -4,17 +4,22 @@
 // lib/data/fomcCalendar.ts and need no key.
 
 import { FOMC_SOURCE_URL, fomcMeetingsBetween, isFomcMeetingTentative } from '@/lib/data/fomcCalendar'
+import { RELEASE_AGENCIES, RELEASE_KINDS, releaseLabel, releasesBetween } from '@/lib/data/releaseCalendar'
 
 export interface EconomicEvent {
   event: string
   date: string
   country: string
   impact: string | null
-  /** Who published the row. FOMC rows are keyless; FMP rows need FMP's paid plan. */
-  source: 'fmp' | 'federal-reserve'
+  /**
+   * Who published the row. FOMC rows (the Federal Reserve Board) and the release rows (the
+   * Bureau of Labor Statistics and the Bureau of Economic Analysis, T-456) are keyless tables
+   * copied by hand; FMP rows need FMP's paid plan.
+   */
+  source: 'fmp' | 'federal-reserve' | 'bls' | 'bea'
   /** FOMC rows only: the Board marks a date tentative until the meeting before it confirms it. */
   tentative?: boolean
-  /** FOMC rows only: the Board's calendar page, which the Board asks to be cited. */
+  /** Keyless rows only: the publisher's own schedule page, which each asks to be cited. */
   url?: string
 }
 
@@ -53,6 +58,28 @@ export function fomcEventsBetween(from: string, to: string, now: Date = new Date
   }))
 }
 
+/** One row per CPI, jobs, GDP and PCE release whose day falls in [from, to] (T-456 d). */
+export function releaseEventsBetween(from: string, to: string): EconomicEvent[] {
+  return releasesBetween(from, to).map((rel) => {
+    const agency = RELEASE_KINDS[rel.kind].agency
+    const pages = RELEASE_AGENCIES[agency].scheduleUrls
+    return {
+      event: `${releaseLabel(rel)} (${RELEASE_KINDS[rel.kind].what}, ${rel.time})`,
+      date: rel.date,
+      country: 'US',
+      impact: 'High',
+      source: agency,
+      // BLS keeps one schedule page per release; BEA one per year.
+      url: agency === 'bls' ? pages[rel.kind === 'cpi' ? 0 : 1] : pages[rel.date < '2027-01-01' ? 0 : 1],
+    }
+  })
+}
+
+// FMP's own copies of the four releases the table carries, dropped on the table's own days so
+// a day does not list the same release twice. FMP's sub-figures (core CPI, the unemployment
+// rate, GDP price index) are kept: the table names the release, not each figure in it.
+const FMP_RELEASE_COPY = /^(cpi|inflation rate)( yoy| mom)?$|^non ?farm payrolls$|^gdp growth rate|^pce price index( yoy| mom)?$/i
+
 // FMP's own rows for the decision itself. Dropped on an FOMC decision day so the day does
 // not list the same decision twice; FMP's other Fed rows (press conference, minutes,
 // speeches) are kept.
@@ -71,13 +98,16 @@ export function mergeEconomicEvents(
   fmp: EconomicEvent[],
   fomc: EconomicEvent[],
   cap: number = FMP_ECON_CAP,
+  releases: EconomicEvent[] = [],
 ): EconomicEvent[] {
   const fomcDays = new Set(fomc.map((e) => e.date.slice(0, 10)))
+  const releaseDays = new Set(releases.map((e) => e.date.slice(0, 10)))
   const kept = fmp
     .filter((e) => !(fomcDays.has(e.date.slice(0, 10)) && FMP_FED_DECISION.test(e.event)))
+    .filter((e) => !(releaseDays.has(e.date.slice(0, 10)) && FMP_RELEASE_COPY.test(e.event.trim())))
     .map((e, i) => ({ e, i }))
     .sort((a, b) => rank(a.e) - rank(b.e) || a.e.date.localeCompare(b.e.date) || a.i - b.i)
     .slice(0, cap)
     .map(({ e }) => e)
-  return [...fomc, ...kept].sort((a, b) => a.date.slice(0, 10).localeCompare(b.date.slice(0, 10)))
+  return [...fomc, ...releases, ...kept].sort((a, b) => a.date.slice(0, 10).localeCompare(b.date.slice(0, 10)))
 }

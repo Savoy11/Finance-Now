@@ -8,6 +8,7 @@ import { PriceChartCard } from '@/components/markets/PriceChartCard'
 import { TermStructureCard } from '@/components/markets/TermStructureCard'
 import { SourceLine } from '@/components/ui/SourceLine'
 import { AssetActions } from '@/components/markets/AssetActions'
+import { InstrumentNewsCard } from '@/components/markets/InstrumentNewsCard'
 import {
   COMMODITY_CATEGORY_INFO, getCommodity, formatCommodityPrice,
 } from '@/lib/data/commodityCatalog'
@@ -141,6 +142,9 @@ export function CommodityDetailClient({ slug }: { slug: string }) {
           </div>
         </div>
       </div>
+
+      {/* The macro stories that name this instrument (T-456 b). */}
+      <InstrumentNewsCard href={`/macro/commodities/${slug}`} name={entry.name} />
     </div>
   )
 }

@@ -3,7 +3,7 @@
 import { useMemo } from 'react'
 import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
-import { Newspaper, ExternalLink, Clock, Tag, Zap, Loader2, RefreshCw, Coins, LineChart, Star } from 'lucide-react'
+import { Newspaper, ExternalLink, Clock, Tag, Zap, Loader2, RefreshCw, Coins, LineChart, Star, Globe } from 'lucide-react'
 import { clsx } from 'clsx'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { SourceLine } from '@/components/ui/SourceLine'
@@ -13,10 +13,12 @@ import { useWatchlistBias } from '@/lib/watchlist/useWatchlistBias'
 import { applyBias, matchesWatchlist } from '@/lib/watchlist/bias'
 import type { LiveNewsArticle } from '@/app/live-data/news/route'
 import type { MarketNewsResponse } from '@/app/live-data/market-news/route'
+import type { MacroNewsResponse } from '@/app/live-data/macro-news/route'
 import { timeAgoCompact } from '@/lib/utils/format'
 
-// Aggregate landing feed. Merges the two general news sources the suite has —
-// /live-data/news (crypto) and /live-data/market-news (equities) — into one
+// Aggregate landing feed. Merges the general news sources the suite has —
+// /live-data/news (crypto), /live-data/market-news (equities) and, since T-456,
+// /live-data/macro-news (macro) — into one
 // normalized Story shape, then renders a cross-module "Top Stories" strip
 // followed by a section per enabled module.
 //
@@ -31,7 +33,7 @@ interface CryptoNewsResponse {
   providers: Array<{ id: string; name: string }>
 }
 
-type StoryModule = 'crypto' | 'markets'
+type StoryModule = 'crypto' | 'markets' | 'macro'
 
 interface Story {
   id: string
@@ -50,6 +52,8 @@ interface Story {
    * tickers are already their tags.
    */
   stockTags: string[]
+  /** Macro stories: the instruments named, each with its page. Replaces `tags`, which are ids or tickers. */
+  tagLinks?: Array<{ label: string; href: string }>
   isBreaking: boolean
   module: StoryModule
 }
@@ -68,6 +72,14 @@ const MODULE_META: Record<StoryModule, { label: string; icon: typeof Coins; badg
     badge: 'text-violet-400 bg-violet-400/10 border-violet-500/25',
     accent: 'text-violet-400',
     tagHref: (t) => `/equities/${t.toLowerCase()}`,
+  },
+  macro: {
+    label: 'Macro',
+    icon: Globe,
+    badge: 'text-teal-300 bg-teal-400/10 border-teal-500/25',
+    accent: 'text-teal-300',
+    // Macro stories link through tagLinks; their tags are never ids.
+    tagHref: () => '/macro/news',
   },
 }
 
@@ -147,10 +159,19 @@ function StoryCard({ story, showModule = false, onWatchlist = false }: { story: 
 
       <div className="flex items-center justify-between gap-2 pt-1 border-t border-border/60">
         <div className="flex items-center gap-1.5 min-w-0">
-          {(story.tags.length > 0 || story.stockTags.length > 0) && (
+          {(story.tags.length > 0 || story.stockTags.length > 0 || (story.tagLinks?.length ?? 0) > 0) && (
             <>
               <Tag size={10} className="text-text-muted shrink-0" aria-hidden />
               <div className="flex flex-wrap gap-1">
+                {(story.tagLinks ?? []).slice(0, 4).map((t) => (
+                  <Link
+                    key={t.href}
+                    href={t.href}
+                    className="px-1.5 py-0.5 rounded-sm bg-teal-400/10 border border-teal-500/20 text-[10px] font-mono text-teal-300 hover:bg-teal-400/20 transition-colors"
+                  >
+                    {t.label}
+                  </Link>
+                ))}
                 {story.tags.slice(0, 4).map((tag) => (
                   <Link
                     key={tag}
@@ -195,6 +216,7 @@ export default function HeadlinesPage() {
   const equitiesOn = useEntitlementStore((s) => s.isEnabled('equities'))
   const fundsOn = useEntitlementStore((s) => s.isEnabled('funds'))
   const marketsOn = equitiesOn || fundsOn
+  const macroOn = useEntitlementStore((s) => s.isEnabled('macro'))
 
   const watchlist = useWatchlistBias()
   const biasStrength = useFeedBiasStore((s) => s.getStrength('headlines'))
@@ -221,6 +243,14 @@ export default function HeadlinesPage() {
     queryKey: ['headlines', 'markets'],
     queryFn: () => fetch('/live-data/market-news?limit=40').then((r) => r.json()),
     enabled: marketsOn,
+    staleTime: 2 * 60 * 1000,
+    refetchInterval: 5 * 60 * 1000,
+  })
+
+  const macroQuery = useQuery<MacroNewsResponse>({
+    queryKey: ['headlines', 'macro'],
+    queryFn: () => fetch('/live-data/macro-news?limit=40').then((r) => r.json()),
+    enabled: macroOn,
     staleTime: 2 * 60 * 1000,
     refetchInterval: 5 * 60 * 1000,
   })
@@ -269,13 +299,33 @@ export default function HeadlinesPage() {
     }))
   }, [marketsOn, marketsQuery.data])
 
+  const macroStories = useMemo<Story[]>(() => {
+    if (!macroOn) return []
+    const articles = macroQuery.data?.articles ?? []
+    return articles.map((a) => ({
+      id: `macro:${a.id}`,
+      title: a.title,
+      summary: a.summary,
+      source: a.source,
+      url: a.url,
+      publishedAt: a.publishedAt,
+      sentiment: a.sentiment,
+      category: a.pillar,
+      tags: [],
+      stockTags: [],
+      tagLinks: a.related,
+      isBreaking: a.isBreaking,
+      module: 'macro' as const,
+    }))
+  }, [macroOn, macroQuery.data])
+
   const topStories = useMemo(() => {
     // Round-robin across modules rather than a straight global sort. The two
     // feeds don't flag "breaking" on comparable terms — market-news marks
     // anything under an hour old — so a global sort lets whichever feed is
     // noisiest monopolize the strip, which defeats the point of a bundle-wide
     // view. Pick evenly from each module, then sort the winners for display.
-    const pools = [cryptoStories, marketStories]
+    const pools = [cryptoStories, marketStories, macroStories]
       .filter((p) => p.length > 0)
       .map((p) => [...p].sort(rank))
 
@@ -292,7 +342,7 @@ export default function HeadlinesPage() {
     // take it over.
     return applyBias(picked.sort(rank), watchlist, biasStrength, toBiasable)
 
-  }, [cryptoStories, marketStories, watchlist, biasStrength])
+  }, [cryptoStories, marketStories, macroStories, watchlist, biasStrength])
 
   // Sections exclude whatever was promoted to the top strip, so nothing repeats.
   const promoted = useMemo(() => new Set(topStories.map((s) => s.id)), [topStories])
@@ -315,17 +365,25 @@ export default function HeadlinesPage() {
         stories: applyBias(marketStories.filter((s) => !promoted.has(s.id)).sort(rank), watchlist, biasStrength, toBiasable).slice(0, SECTION_STORY_COUNT),
       })
     }
+    if (macroOn) {
+      out.push({
+        module: 'macro',
+        href: '/macro/news',
+        stories: applyBias(macroStories.filter((s) => !promoted.has(s.id)).sort(rank), watchlist, biasStrength, toBiasable).slice(0, SECTION_STORY_COUNT),
+      })
+    }
     return out
 
-  }, [cryptoOn, marketsOn, cryptoStories, marketStories, promoted, watchlist, biasStrength])
+  }, [cryptoOn, marketsOn, macroOn, cryptoStories, marketStories, macroStories, promoted, watchlist, biasStrength])
 
-  const isLoading = (cryptoOn && cryptoQuery.isLoading) || (marketsOn && marketsQuery.isLoading)
-  const isFetching = cryptoQuery.isFetching || marketsQuery.isFetching
-  const totalStories = cryptoStories.length + marketStories.length
+  const isLoading = (cryptoOn && cryptoQuery.isLoading) || (marketsOn && marketsQuery.isLoading) || (macroOn && macroQuery.isLoading)
+  const isFetching = cryptoQuery.isFetching || marketsQuery.isFetching || macroQuery.isFetching
+  const totalStories = cryptoStories.length + marketStories.length + macroStories.length
 
   const refetchAll = () => {
     if (cryptoOn) cryptoQuery.refetch()
     if (marketsOn) marketsQuery.refetch()
+    if (macroOn) macroQuery.refetch()
   }
 
   return (
@@ -342,7 +400,7 @@ export default function HeadlinesPage() {
             description="Merges the suite's general news feeds into one ranked view. Only modules enabled in your bundle contribute stories, so the sections below change with your entitlements."
             details={[
               { label: 'Ranking', text: 'Breaking stories first, then most recent. The top strip draws from all enabled modules; module sections below exclude anything already promoted so nothing repeats.' },
-              { label: 'Sources', text: 'Crypto stories come from /live-data/news (multi-provider RSS + JSON). Market stories come from /live-data/market-news (CNBC).' },
+              { label: 'Sources', text: 'Crypto stories come from /live-data/news (multi-provider RSS + JSON). Market stories come from /live-data/market-news (CNBC). Macro stories come from /live-data/macro-news (OilPrice, FXStreet and CNBC), each tagged with the instruments it names.' },
               { label: 'Funds', text: 'The Funds module has no general feed of its own — fund coverage is symbol-scoped on fund detail pages — so it shares the Markets section with Equities.' },
             ]}
           />
@@ -372,7 +430,7 @@ export default function HeadlinesPage() {
       )}
 
       {/* No modules enabled */}
-      {!cryptoOn && !marketsOn && (
+      {!cryptoOn && !marketsOn && !macroOn && (
         <div className="flex flex-col items-center justify-center py-16 text-text-muted text-center">
           <Newspaper size={36} className="mb-3 opacity-30" aria-hidden />
           <p className="text-sm">No news-carrying modules are enabled in your bundle.</p>

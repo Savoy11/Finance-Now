@@ -20,7 +20,7 @@ Integrations page.
 > ⚠ **Part of the registry is still `seeded`, and that is a deliberate,
 > visible state — not a claim of review.** It was authored in an environment whose
 > network policy blocked every publisher and provider host at the gateway, so no
-> terms document could be opened. **20 of 76 entries** are still starting positions
+> terms document could be opened. **22 of 78 entries** are still starting positions
 > drawn from documented posture, or readings not yet ratified (the 57th, the **Federal Reserve Board**, was added
 > 2026-10-03 for the Market Calendar's FOMC dates: read that day, not yet ratified; the 58th,
 > **Marketaux**, was read 2026-10-07 for company news on stock pages, T-430; six of the wallet

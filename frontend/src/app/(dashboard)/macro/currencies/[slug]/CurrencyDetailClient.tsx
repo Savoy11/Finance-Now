@@ -8,6 +8,7 @@ import { PriceChartCard } from '@/components/markets/PriceChartCard'
 import { FxHistoryCard, useFxReferencePairs } from '@/components/markets/FxHistoryCard'
 import { SourceLine } from '@/components/ui/SourceLine'
 import { AssetActions } from '@/components/markets/AssetActions'
+import { InstrumentNewsCard } from '@/components/markets/InstrumentNewsCard'
 import { CURRENCY_CATEGORY_INFO, formatFxRate, getCurrency } from '@/lib/data/currencyCatalog'
 import { getFund } from '@/lib/data/fundCatalog'
 import { ecbPairBySlug, isWorkedOut, shownPairRate } from '@/lib/data/fxReference'
@@ -166,6 +167,9 @@ export function CurrencyDetailClient({ slug }: { slug: string }) {
           </div>
         </div>
       </div>
+
+      {/* The macro stories that name this instrument (T-456 b). */}
+      <InstrumentNewsCard href={`/macro/currencies/${slug}`} name={entry.name} />
     </div>
   )
 }

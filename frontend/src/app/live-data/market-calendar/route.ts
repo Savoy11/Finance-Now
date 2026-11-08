@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { EQUITY_BY_SYMBOL } from '@/lib/data/equityCatalog'
 import { getProviderKey } from '@/lib/api/live/providers'
 import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
-import { fomcEventsBetween, mergeEconomicEvents, type EconomicEvent } from '@/lib/server/marketCalendar'
+import { fomcEventsBetween, mergeEconomicEvents, releaseEventsBetween, type EconomicEvent } from '@/lib/server/marketCalendar'
 import { fomcScheduleThrough } from '@/lib/data/fomcCalendar'
+import { releaseScheduleSpan } from '@/lib/data/releaseCalendar'
 
 // Earnings + economic calendar for the equities module.
 //
@@ -12,6 +13,8 @@ import { fomcScheduleThrough } from '@/lib/data/fomcCalendar'
 // - FOMC meetings: keyless — the hand-maintained table in lib/data/fomcCalendar.ts,
 //   copied from the Federal Reserve Board's calendar (added 2026-10-03). Returned on
 //   every plan, including with no FMP key at all.
+// - CPI, jobs, GDP and PCE release dates: keyless too — lib/data/releaseCalendar.ts, copied
+//   from the BLS and BEA schedules (T-456, added 2026-11-07), returned like the FOMC rows.
 //
 // Without an FMP key the route reports configured:false so the UI shows an honest setup
 // notice for earnings, and still returns the FOMC rows.
@@ -44,6 +47,9 @@ export interface MarketCalendarResponse {
   economic: EconomicEvent[]
   /** Last date the FOMC table covers. Past it, no FOMC row means "not published yet". */
   fomcThrough: string
+  /** Dates the release table covers (CPI, jobs, GDP, PCE). Outside them, no release row means "not in the table". */
+  releasesFrom: string
+  releasesThrough: string
   updatedAt: string
 }
 
@@ -68,15 +74,17 @@ export async function GET(req: NextRequest) {
     from = new Date().toISOString().slice(0, 10)
     to = new Date(Date.now() + days * 86_400_000).toISOString().slice(0, 10)
   }
-  const base = { from, to, fomcThrough: fomcScheduleThrough(), updatedAt: new Date().toISOString() }
+  const span = releaseScheduleSpan()
+  const base = { from, to, fomcThrough: fomcScheduleThrough(), releasesFrom: span.from, releasesThrough: span.through, updatedAt: new Date().toISOString() }
 
   // Keyless, so computed before the key check: these show on every plan.
   const fomc = fomcEventsBetween(from, to)
+  const releases = releaseEventsBetween(from, to)
 
   // UI-saved key (Integrations page) or FMP_API_KEY env var
   const FMP_KEY = getProviderKey('fmp')
   if (!FMP_KEY) {
-    return NextResponse.json({ ok: false, configured: false, earnings: [], economic: fomc, ...base } satisfies MarketCalendarResponse)
+    return NextResponse.json({ ok: false, configured: false, earnings: [], economic: mergeEconomicEvents([], fomc, 0, releases), ...base } satisfies MarketCalendarResponse)
   }
 
   // FMP /stable API. Earnings works on the free tier; the economic calendar is
@@ -122,7 +130,7 @@ export async function GET(req: NextRequest) {
     ok: earnings.length > 0 || fmpEconomic.length > 0,
     configured: true,
     earnings: earnings.slice(0, 120),
-    economic: mergeEconomicEvents(fmpEconomic, fomc),
+    economic: mergeEconomicEvents(fmpEconomic, fomc, undefined, releases),
     ...base,
   } satisfies MarketCalendarResponse)
 }

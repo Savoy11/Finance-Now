@@ -10,6 +10,7 @@ import { SourceLine } from '@/components/ui/SourceLine'
 import { MetricCard } from '@/components/ui/MetricCard'
 import { LineChart } from '@/components/charts/LineChart'
 import { YieldHistoryCard } from '@/components/markets/YieldHistoryCard'
+import { MacroCalendarCard } from '@/components/markets/MacroCalendarCard'
 import { REAL_MATURITIES } from '@/lib/data/yieldHistory'
 import {
   BOND_ETF_SHELF_GROUPS, RATES_CATALOG, RATES_CATEGORY_INFO, formatRatesQuote,
@@ -127,6 +128,9 @@ export function RatesClient() {
           accentColor={shape === 'inverted' ? '#ef4444' : shape === 'flat' ? '#f59e0b' : '#10b981'}
         />
       </div>
+
+      {/* The Fed's meetings, this year's and next, and the four US releases (T-456). */}
+      <MacroCalendarCard full />
 
       {/* Yield curve */}
       <div className="rounded-card border border-border bg-bg-card p-4">
