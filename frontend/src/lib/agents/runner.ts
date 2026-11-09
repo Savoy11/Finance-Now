@@ -3,7 +3,6 @@ import OpenAI from 'openai'
 import { toolsForAgent, runToolWithCredits } from './tools'
 import { type ProviderId } from './prompts'
 import { loadAgentConfig } from './config'
-import { anthropicSampling } from './sampling'
 import { getProviderKey } from '@/lib/api/live/providers'
 import type { RequiredCredit } from '@/lib/data/dataSources'
 
@@ -158,8 +157,7 @@ async function runAgentAnthropic(
     const response = await client.messages.create({
       model: cfg.model,
       max_tokens: opts.maxTokens ?? 2048,
-      // Only models that accept it: Claude Sonnet 5 and newer refuse a temperature (sampling.ts).
-      ...anthropicSampling(cfg.model, cfg.temperature),
+      // No temperature: API version 2026-10-21 refuses one on every Claude model (D215).
       system,
       tools,
       messages,
@@ -223,11 +221,11 @@ function toOpenAIMessages(
     if (typeof m.content === 'string') {
       out.push({ role: m.role as 'user' | 'assistant', content: m.content })
     } else if (Array.isArray(m.content)) {
-      // Flatten content blocks to string for simplicity
-      const text = m.content
-        .filter((b): b is Anthropic.TextBlockParam => b.type === 'text')
-        .map((b) => b.text)
-        .join('\n')
+      // Flatten content blocks to string for simplicity. A loop rather than a typed filter:
+      // since SDK 1.x, MessageParam is one type per role, so `content` is a union of arrays.
+      const parts: string[] = []
+      for (const b of m.content) if (b.type === 'text') parts.push(b.text)
+      const text = parts.join('\n')
       if (text) out.push({ role: m.role as 'user' | 'assistant', content: text })
     }
   }
