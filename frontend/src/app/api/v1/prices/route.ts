@@ -3,6 +3,7 @@ import { CORS, options } from '../../_cors'
 import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 import { COINGECKO_ATTRIBUTION } from '@/lib/data/dataSources'
 import { guardApiV1 } from '@/lib/server/apiKeys'
+import { coingeckoBase, coingeckoHeaders } from '@/lib/api/live/coingecko'
 
 export const dynamic = 'force-dynamic'
 export { options as OPTIONS }
@@ -42,8 +43,8 @@ export async function GET(req: NextRequest) {
 
   try {
     const res = await fetch(
-      `https://api.coingecko.com/api/v3/simple/price?ids=${cgIds}&vs_currencies=usd&precision=4`,
-      { headers: { Accept: 'application/json' }, next: { revalidate: 60 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) }
+      `${coingeckoBase()}/simple/price?ids=${cgIds}&vs_currencies=usd&precision=4`,
+      { headers: coingeckoHeaders(), next: { revalidate: 60 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) }
     )
     if (res.ok) {
       const data = await res.json() as Record<string, { usd: number }>

@@ -14,6 +14,7 @@ import { pinnedFetch } from '@/lib/server/pinnedFetch'
 import { termsGatedFetch } from '@/lib/server/termsGatedFetch'
 import { probeSiteTerms, type TermsProbeReport } from '@/lib/server/termsProbe'
 import { describeThrottle } from '@/lib/server/coingeckoThrottle'
+import { coingeckoBase } from '@/lib/api/live/coingecko'
 import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 import { providerRefusal } from '@/lib/server/providerRefusal'
 import { DEFAULT_ANTHROPIC_MODEL } from '@/lib/agents/prompts'
@@ -261,7 +262,7 @@ async function testCustomProvider(url: string, key?: string): Promise<TestResult
 async function testCoinGecko(key?: string): Promise<TestResult> {
   const headers: Record<string, string> = { Accept: 'application/json' }
   if (key) headers['x-cg-demo-api-key'] = key
-  const res = await termsGatedFetch('https://api.coingecko.com/api/v3/ping', { signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS), headers })
+  const res = await termsGatedFetch(`${coingeckoBase()}/ping`, { signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS), headers })
   // A 429 on the connection test is the one place a user can act on the stated
   // limit directly, so report it rather than a bare status. The other providers'
   // tests below keep the plain form — this is the CoinGecko call site, and

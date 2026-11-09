@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { FN_TRACKED_IDS, UTILITY_MAP, CATEGORY_INFO } from '@/lib/data/coinCatalog'
 import { fetchCoinGeckoPages } from '@/lib/server/coingeckoPages'
+import { coingeckoBase } from '@/lib/api/live/coingecko'
 import {
   fetchTokenizedSecurityIndex, partitionTokenizedSecurities, type ExcludedSecurity,
 } from '@/lib/server/tokenizedSecurities'
@@ -88,7 +89,7 @@ export async function GET(req: Request) {
   const { pages: pageRows, errors: upstreamErrors } = await fetchCoinGeckoPages<RawCoin>(
     pages,
     (page) =>
-      'https://api.coingecko.com/api/v3/coins/markets' +
+      `${coingeckoBase()}/coins/markets` +
       `?vs_currency=usd&order=market_cap_desc&per_page=250&page=${page}` +
       '&sparkline=false&price_change_percentage=7d',
     { revalidate: 900 },
@@ -105,7 +106,7 @@ export async function GET(req: Request) {
         tokenizedSecurities: { checked: false, partial: false, failed: [], excluded: [] },
         stablecoins: { checked: false, error: 'not tried: the market list did not load' },
         updatedAt: new Date().toISOString(),
-        source: { name: 'CoinGecko', limit, url: 'https://api.coingecko.com/api/v3/coins/markets' },
+        source: { name: 'CoinGecko', limit, url: `${coingeckoBase()}/coins/markets` },
         error: `CoinGecko markets unavailable (${upstreamErrors.join('; ') || 'empty response'})`,
       } satisfies CoinDiscoveryResponse,
       { status: 503 }
@@ -168,7 +169,7 @@ export async function GET(req: Request) {
     source: {
       name: 'CoinGecko',
       limit,
-      url: 'https://api.coingecko.com/api/v3/coins/markets',
+      url: `${coingeckoBase()}/coins/markets`,
     },
   } satisfies CoinDiscoveryResponse)
 }
