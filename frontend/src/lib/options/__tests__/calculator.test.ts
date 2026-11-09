@@ -6,6 +6,8 @@ import {
   type CalcLeg, type CalcPosition,
 } from '../payoff'
 import { blackScholes, normCdf, positionGreeks } from '../greeks'
+import { whatIf } from '../whatIf'
+import { buildPreset, PRESETS } from '../presets'
 
 const leg = (side: CalcLeg['side'], type: CalcLeg['type'], strike: number, premium: number, contracts = 1): CalcLeg =>
   ({ side, type, strike, premium, contracts })
@@ -178,14 +180,18 @@ describe('the calculator stays ungraded (D92, D93)', () => {
   const files = [
     'src/lib/options/payoff.ts',
     'src/lib/options/greeks.ts',
+    'src/lib/options/whatIf.ts',
+    'src/lib/options/presets.ts',
     'src/app/(dashboard)/equities/options-calculator/page.tsx',
   ]
 
   it('nothing in it imports the risk engine', () => {
     for (const f of files) {
       const src = fs.readFileSync(path.join(ROOT, f), 'utf8')
-      expect(src, f).not.toMatch(/from ['"]@\/lib\/risk/)
-      expect(src, f).not.toMatch(/from ['"]\.\.\/risk/)
+      // Any import of it: `from '…'`, a bare `import '…'`, or `import('…')` (the bare form got
+      // past this test until 2026-11-09).
+      expect(src, f).not.toMatch(/(?:from|import)\s*\(?\s*['"]@\/lib\/risk/)
+      expect(src, f).not.toMatch(/(?:from|import)\s*\(?\s*['"](?:\.\.\/)+risk/)
     }
   })
 
@@ -193,5 +199,28 @@ describe('the calculator stays ungraded (D92, D93)', () => {
     const s = summarizePayoff({ legs: [leg('long', 'call', 100, 5)] })
     const keys = Object.keys(s).join(' ').toLowerCase()
     expect(keys).not.toMatch(/score|grade|rating|safe/)
+    // The "what if" result too (D216).
+    const w = whatIf({ legs: [leg('long', 'call', 100, 5)] }, [20],
+      { spot: 100, daysToExpiry: 30, ratePct: 0, dividendYieldPct: 0 }, { priceMovePct: 5, volShiftPts: 2 })
+    expect([...Object.keys(w), ...Object.keys(w.greeks)].join(' ').toLowerCase()).not.toMatch(/score|grade|rating|safe/)
+  })
+
+  it('takes as many legs as the options API does (T-061)', () => {
+    const page = fs.readFileSync(path.join(ROOT, 'src/app/(dashboard)/equities/options-calculator/page.tsx'), 'utf8')
+    const api = fs.readFileSync(path.join(ROOT, 'src/app/api/v1/options/score/route.ts'), 'utf8')
+    const pageMax = Number(page.match(/const MAX_LEGS = (\d+)/)?.[1])
+    const apiMax = Number(api.match(/rawLegs\.length > (\d+)/)?.[1])
+    expect(pageMax).toBe(8)
+    expect(pageMax).toBe(apiMax)
+  })
+
+  it('the page tells no one which structure to pick', () => {
+    // The presets describe structures; the page offers them in a row, unranked. No word
+    // that grades or advises appears in their labels, descriptions or notes.
+    const words = /\b(best|safest|safer|recommended|should|ideal|top pick|risk-free)\b/i
+    for (const p of PRESETS) {
+      expect(`${p.label} ${p.description}`, p.id).not.toMatch(words)
+      expect(buildPreset(p.id, 100).note, p.id).not.toMatch(words)
+    }
   })
 })

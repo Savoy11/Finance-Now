@@ -3,9 +3,9 @@
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { clsx } from 'clsx'
-import { Calculator, ExternalLink, Plus, Search, Trash2 } from 'lucide-react'
+import { Calculator, ExternalLink, Plus, RotateCcw, Search, Trash2 } from 'lucide-react'
 import {
-  Area, AreaChart, CartesianGrid, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis,
+  Area, CartesianGrid, ComposedChart, Line, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts'
 import { ModuleGate } from '@/components/layout/ModuleGate'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -13,14 +13,18 @@ import { SourceLine } from '@/components/ui/SourceLine'
 import { FeatureNotice } from '@/components/legal/FeatureNotice'
 import { buildPreset, PRESETS, type PresetId } from '@/lib/options/presets'
 import {
-  chartRange, payoffSeries, summarizePayoff, type CalcLeg, type CalcPosition,
+  chartRange, payoffAtExpiry, payoffSeries, summarizePayoff, type CalcLeg, type CalcPosition,
 } from '@/lib/options/payoff'
-import { positionGreeks, type PositionGreeks } from '@/lib/options/greeks'
+import { positionGreeks, type GreeksMarket, type PositionGreeks } from '@/lib/options/greeks'
+import {
+  modelPnlAt, PRICE_MOVE_MAX_PCT, shiftedVols, volShiftBounds, whatIf, type WhatIfResult,
+} from '@/lib/options/whatIf'
 import { CHART_THEME } from '@/lib/utils/chart'
 import { STALE_TIME_SHORT } from '@/lib/constants'
 import type { SecurityQuotesResponse } from '@/app/live-data/security-quotes/route'
 
-// Options Calculator (T-420 item 4; owner decision D93, 2026-10-07).
+// Options Calculator (T-420 item 4; owner decision D93, 2026-10-07). Up to 8 legs, more
+// presets and the "what if" sliders since 2026-11-09 (T-061, T-062 on the calculator; D216).
 //
 // Arithmetic on a position the user enters: payoff at expiry, maximum gain
 // and loss, breakevens, and the position's Greeks from the volatility the user
@@ -54,7 +58,8 @@ const num = (s: string): number | undefined => {
   return Number.isFinite(v) ? v : undefined
 }
 
-const MAX_LEGS = 4
+// Eight, as the scoring API takes (T-061). Presets stay at four, the switched-off scorer's form.
+const MAX_LEGS = 8
 
 interface Parsed {
   position: CalcPosition | null
@@ -183,6 +188,9 @@ function OptionsCalculatorInner() {
   const [shares, setShares] = useState('')
   const [shareCost, setShareCost] = useState('')
   const [presetNote, setPresetNote] = useState<string | null>(null)
+  // The "what if" sliders: a move in the underlying (percent) and in every leg's volatility (points).
+  const [priceMovePct, setPriceMovePct] = useState(0)
+  const [volShiftPts, setVolShiftPts] = useState(0)
 
   // The one live number on the page: fetched on a button press, labelled.
   const cleanSymbol = symbol.trim().toUpperCase()
@@ -210,8 +218,9 @@ function OptionsCalculatorInner() {
     }
     const preset = buildPreset(id, px)
     setLegs(preset.legs.map((l) => ({ ...emptyLeg(), side: l.side, type: l.type, strike: String(l.strike) })))
-    // A covered call is written against shares held; the others carry none.
-    if (id === 'covered-call') { setShares('100'); setShareCost(String(px)) } else { setShares(''); setShareCost('') }
+    // A covered call, protective put or collar is written against shares held; the others carry none.
+    if (preset.withShares) { setShares('100'); setShareCost(String(px)) } else { setShares(''); setShareCost('') }
+    setPriceMovePct(0); setVolShiftPts(0)
     setPresetNote(`${preset.note} Premiums and volatility stay blank: copy them from your broker's chain.`)
   }
 
@@ -232,20 +241,41 @@ function OptionsCalculatorInner() {
   }, [parsed.position, parsed.underlying])
 
   // Greeks need a volatility on every leg and time left; otherwise say what's missing.
-  const greeks = useMemo((): { g: PositionGreeks | null; why: string | null } => {
-    if (!parsed.position || parsed.underlying == null || parsed.days == null) return { g: null, why: null }
-    if (parsed.position.legs.length === 0) return { g: null, why: 'Add an option leg to see Greeks.' }
-    if (parsed.days <= 0) return { g: null, why: 'At expiry there is no time value, so the Greeks are not defined.' }
+  // The same inputs drive the "what if" figures and the chart's "today" line.
+  const greeks = useMemo((): {
+    g: PositionGreeks | null; why: string | null; vols: number[] | null; market: GreeksMarket | null
+  } => {
+    const none = { g: null, vols: null, market: null }
+    if (!parsed.position || parsed.underlying == null || parsed.days == null) return { ...none, why: null }
+    if (parsed.position.legs.length === 0) return { ...none, why: 'Add an option leg to see Greeks.' }
+    if (parsed.days <= 0) return { ...none, why: 'At expiry there is no time value, so the Greeks are not defined.' }
     const vols = legs.map((l) => num(l.iv))
-    if (vols.some((v) => v === undefined || v <= 0)) return { g: null, why: 'Enter an implied volatility above 0 for every leg to see Greeks.' }
-    return {
-      g: positionGreeks(parsed.position, vols as number[], {
-        spot: parsed.underlying, daysToExpiry: parsed.days,
-        ratePct: num(ratePct) ?? 0, dividendYieldPct: num(divPct) ?? 0,
-      }),
-      why: null,
+    if (vols.some((v) => v === undefined || v <= 0)) return { ...none, why: 'Enter an implied volatility above 0 for every leg to see Greeks.' }
+    const market: GreeksMarket = {
+      spot: parsed.underlying, daysToExpiry: parsed.days,
+      ratePct: num(ratePct) ?? 0, dividendYieldPct: num(divPct) ?? 0,
     }
+    return { g: positionGreeks(parsed.position, vols as number[], market), why: null, vols: vols as number[], market }
   }, [parsed, legs, ratePct, divPct])
+
+  // The slider's lower end keeps every leg's volatility above 0; a leg edited lower pulls it in.
+  const volBounds = useMemo(() => volShiftBounds(greeks.vols ?? []), [greeks.vols])
+  const volShift = Math.min(Math.max(volShiftPts, volBounds.min), volBounds.max)
+
+  const scenario = useMemo((): WhatIfResult | null => {
+    if (!parsed.position || !greeks.vols || !greeks.market) return null
+    return whatIf(parsed.position, greeks.vols, greeks.market, { priceMovePct, volShiftPts: volShift })
+  }, [parsed.position, greeks.vols, greeks.market, priceMovePct, volShift])
+
+  const movedPrice = parsed.underlying != null ? parsed.underlying * (1 + priceMovePct / 100) : null
+
+  // The chart's second line: model profit or loss now, at the slider's volatility.
+  const chartData = useMemo(() => {
+    if (!parsed.position || !greeks.vols || !greeks.market) return series
+    const vols = shiftedVols(greeks.vols, volShift)
+    const today = modelPnlAt(parsed.position, vols, greeks.market, series.map((p) => p.price))
+    return series.map((p, i) => ({ ...p, today: Math.round(today[i] * 100) / 100 }))
+  }, [series, parsed.position, greeks.vols, greeks.market, volShift])
 
   const hasShortCall = parsed.position?.legs.some((l) => l.side === 'short' && l.type === 'call') ?? false
   const exDiv = num(exDivDays)
@@ -444,10 +474,10 @@ function OptionsCalculatorInner() {
               </div>
 
               <div className="rounded-card border border-border bg-bg-card p-4 space-y-2">
-                <h2 className="text-sm font-medium text-text-secondary">Profit or loss at expiry</h2>
+                <h2 className="text-sm font-medium text-text-secondary">Profit or loss{scenario ? <span className="text-text-muted font-normal"> (at expiry, and today by the model)</span> : <> at expiry</>}</h2>
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={series} margin={{ top: 20, right: 8, bottom: 0, left: 0 }}>
+                    <ComposedChart data={chartData} margin={{ top: 20, right: 8, bottom: 0, left: 0 }}>
                       <defs>
                         <linearGradient id="pnl-split" x1="0" y1="0" x2="0" y2="1">
                           <stop offset={zeroAt} stopColor="#10b981" stopOpacity={0.25} />
@@ -476,7 +506,7 @@ function OptionsCalculatorInner() {
                           borderRadius: '6px', fontSize: '12px', color: CHART_THEME.tooltip.text,
                         }}
                         labelFormatter={(v) => `Underlying ${price(Number(v))}`}
-                        formatter={(v) => [usd(Number(v)), 'P/L at expiry']}
+                        formatter={(v, name) => [usd(Number(v)), name === 'today' ? 'P/L today, by the model' : 'P/L at expiry']}
                       />
                       <ReferenceLine y={0} stroke="#475569" />
                       {parsed.underlying != null && (
@@ -486,13 +516,24 @@ function OptionsCalculatorInner() {
                       {summary.breakevens.map((b) => (
                         <ReferenceLine key={b} x={b} stroke="#64748b" strokeDasharray="2 3" />
                       ))}
+                      {movedPrice != null && priceMovePct !== 0 && (
+                        <ReferenceLine x={movedPrice} stroke="#f59e0b" strokeDasharray="4 4"
+                          label={{ value: 'what if', fill: '#f59e0b', fontSize: 10, position: 'top' }} />
+                      )}
                       <Area type="linear" dataKey="pnl" stroke="url(#pnl-line)" strokeWidth={1.5}
                         fill="url(#pnl-split)" baseValue={0} dot={false} isAnimationActive={false} />
-                    </AreaChart>
+                      {scenario && (
+                        <Line type="monotone" dataKey="today" stroke="#a78bfa" strokeWidth={1.5}
+                          strokeDasharray="5 3" dot={false} isAnimationActive={false} />
+                      )}
+                    </ComposedChart>
                   </ResponsiveContainer>
                 </div>
                 <p className="text-[11px] text-text-muted">
-                  Dashed grey lines mark the breakevens; the blue line is the price you entered.
+                  The shaded line is profit or loss at expiry. Dashed grey lines mark the breakevens; the
+                  blue line is the price you entered.
+                  {scenario && <> The dashed purple line is profit or loss if the price were there today, by the model, at the volatility the slider sets.</>}
+                  {priceMovePct !== 0 && <> The amber line is the &ldquo;what if&rdquo; price.</>}
                 </p>
               </div>
 
@@ -515,6 +556,19 @@ function OptionsCalculatorInner() {
                 </p>
               </div>
 
+              <WhatIfPanel
+                underlying={parsed.underlying}
+                movedPrice={movedPrice}
+                priceMovePct={priceMovePct}
+                onPriceMove={setPriceMovePct}
+                volShift={volShift}
+                volBounds={volBounds}
+                onVolShift={setVolShiftPts}
+                scenario={scenario}
+                pnlAtExpiry={parsed.position && movedPrice != null ? payoffAtExpiry(parsed.position, movedPrice) : null}
+                why={greeks.why}
+              />
+
               {hasShortCall && exDivBeforeExpiry && (
                 <p className="text-[11px] text-text-muted leading-relaxed rounded-card border border-border bg-bg-card p-3">
                   The ex-dividend date you entered falls before expiry. A sold call can be exercised
@@ -526,6 +580,116 @@ function OptionsCalculatorInner() {
           <FeatureNotice feature="calculators" />
         </div>
       </div>
+    </div>
+  )
+}
+
+// ─── "What if" sliders (T-062 on the calculator, D216) ───────────────────────
+
+function WhatIfPanel({
+  underlying, movedPrice, priceMovePct, onPriceMove, volShift, volBounds, onVolShift, scenario, pnlAtExpiry, why,
+}: {
+  underlying: number | null
+  movedPrice: number | null
+  priceMovePct: number
+  onPriceMove: (v: number) => void
+  volShift: number
+  volBounds: { min: number; max: number }
+  onVolShift: (v: number) => void
+  scenario: WhatIfResult | null
+  pnlAtExpiry: number | null
+  why: string | null
+}) {
+  const moved = priceMovePct !== 0 || volShift !== 0
+  return (
+    <div className="rounded-card border border-border bg-bg-card p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-medium text-text-secondary">What if</h2>
+        <button
+          type="button"
+          onClick={() => { onPriceMove(0); onVolShift(0) }}
+          disabled={!moved}
+          className="flex items-center gap-1 px-2 py-1 rounded-sm border border-border bg-bg-elevated text-xs text-text-secondary hover:text-text-primary disabled:opacity-40 transition-colors"
+        >
+          <RotateCcw size={12} aria-hidden /> Reset
+        </button>
+      </div>
+
+      <label className="block">
+        <span className="flex items-baseline justify-between">
+          <span className={LABEL}>Underlying price</span>
+          <span className="text-xs font-mono tabular-nums text-text-primary">
+            {movedPrice != null ? price(movedPrice) : '—'}{' '}
+            <span className="text-text-muted">({signed(priceMovePct, 0)}%)</span>
+          </span>
+        </span>
+        <input
+          type="range"
+          min={-PRICE_MOVE_MAX_PCT}
+          max={PRICE_MOVE_MAX_PCT}
+          step={1}
+          value={priceMovePct}
+          onChange={(e) => onPriceMove(Number(e.target.value))}
+          disabled={underlying == null}
+          aria-label="Move the underlying price, in percent"
+          className="mt-1 w-full accent-accent-blue disabled:opacity-40"
+        />
+      </label>
+
+      <label className="block">
+        <span className="flex items-baseline justify-between">
+          <span className={LABEL}>Implied volatility, every leg</span>
+          <span className="text-xs font-mono tabular-nums text-text-primary">
+            {signed(volShift, 0)} points
+          </span>
+        </span>
+        <input
+          type="range"
+          min={volBounds.min}
+          max={volBounds.max}
+          step={1}
+          value={volShift}
+          onChange={(e) => onVolShift(Number(e.target.value))}
+          disabled={!scenario}
+          aria-label="Move every leg's implied volatility, in percentage points"
+          className="mt-1 w-full accent-accent-blue disabled:opacity-40"
+        />
+      </label>
+
+      <div className="grid grid-cols-2 gap-3">
+        <Stat
+          label="Change if this happened now"
+          value={scenario ? usd(scenario.changeFromNow) : '—'}
+          tone={scenario ? (scenario.changeFromNow > 0 ? 'gain' : scenario.changeFromNow < 0 ? 'loss' : undefined) : undefined}
+          note="by the model, from the position as entered"
+        />
+        <Stat
+          label="P/L at expiry at this price"
+          value={pnlAtExpiry != null ? usd(pnlAtExpiry) : '—'}
+          tone={pnlAtExpiry != null ? (pnlAtExpiry > 0 ? 'gain' : pnlAtExpiry < 0 ? 'loss' : undefined) : undefined}
+          note="the volatility makes no difference here"
+        />
+      </div>
+
+      {scenario ? (
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <Stat label="Delta" value={signed(scenario.greeks.delta, 1)} note="at this price" />
+            <Stat label="Gamma" value={signed(scenario.greeks.gamma, 3)} />
+            <Stat label="Theta" value={usd(scenario.greeks.thetaPerDay)} note="per day" />
+            <Stat label="Vega" value={usd(scenario.greeks.vegaPerPoint)} note="per point" />
+          </div>
+          <p className="text-[11px] text-text-muted leading-relaxed">
+            &ldquo;Now&rdquo; values each option by the same model as the Greeks, at the moved price and
+            volatility. That is a model&rsquo;s value, not a price anyone will pay, and it may differ from
+            the premiums you entered: profit or loss today, by the model, is {usd(scenario.pnlNow)}.
+          </p>
+        </>
+      ) : (
+        <p className="text-xs text-text-muted">
+          {why ?? 'Fill in the position to use the sliders.'} The price slider still moves the expiry figure.
+        </p>
+      )}
     </div>
   )
 }
