@@ -62,8 +62,8 @@
   "total_verified": 414,
   "outstanding": 398,
   "by_status": {
-   "closed": 253,
-   "parked": 132,
+   "closed": 258,
+   "parked": 127,
    "open": 8,
    "blocked": 5
   },
@@ -74,8 +74,8 @@
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 253,
-  "counts_recomputed_on": "2026-11-08",
+  "closed_by_annotation": 258,
+  "counts_recomputed_on": "2026-11-09",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 398
  },
@@ -3105,8 +3105,7 @@
   {
    "id": "T-352",
    "title": "Bond profile follow-up — scale duration by realized rate volatility",
-   "status": "parked",
-   "parked_on": "2026-09-26",
+   "status": "closed",
    "confidence": "medium",
    "owner_role": "remote-dev",
    "category": "feature",
@@ -3133,6 +3132,19 @@
      "frontend/src/lib/data/instruments.ts",
      "docs/decisions/2026-09-14-owner-decisions.md"
     ]
+   },
+   "closure": {
+    "status_was": "parked",
+    "closed_on": "2026-11-09",
+    "basis": "owner-ruling",
+    "verdict": "superseded",
+    "reason": "SUPERSEDED under D218 by D92 (2026-10-07). This item would build a bond (rate instrument) risk score, and D92 chose facts, not ratings, for this asset type: ratings return, if counsel allows, only for crypto coins and stocks on their own pages. D92 kept it parked because it had \"no surface to come back to\"; the owner closed it on that reading. No code changes: lib/risk stays as it is behind RISK_RATINGS_SHOWN (false).",
+    "approved_by": "owner, 2026-11-09: \"Close them (Recommended)\"",
+    "evidence": [
+     "docs/decisions/2026-11-09-owner-decisions.md",
+     "docs/decisions/2026-10-07-owner-decisions.md"
+    ],
+    "parked_on_was": "2026-09-26"
    }
   },
   {
@@ -4036,8 +4048,7 @@
   {
    "id": "T-353",
    "title": "ETF/fund risk profile (fund.ts)",
-   "status": "parked",
-   "parked_on": "2026-09-26",
+   "status": "closed",
    "confidence": "medium",
    "owner_role": "either",
    "category": "feature",
@@ -4063,6 +4074,19 @@
      "docs/decisions/2026-09-14-owner-decisions.md",
      "docs/decisions/2026-09-25-owner-decisions.md"
     ]
+   },
+   "closure": {
+    "status_was": "parked",
+    "closed_on": "2026-11-09",
+    "basis": "owner-ruling",
+    "verdict": "superseded",
+    "reason": "SUPERSEDED under D218 by D92 (2026-10-07). This item would build a fund risk score, and D92 chose facts, not ratings, for this asset type: ratings return, if counsel allows, only for crypto coins and stocks on their own pages. D92 kept it parked because it had \"no surface to come back to\"; the owner closed it on that reading. No code changes: lib/risk stays as it is behind RISK_RATINGS_SHOWN (false).",
+    "approved_by": "owner, 2026-11-09: \"Close them (Recommended)\"",
+    "evidence": [
+     "docs/decisions/2026-11-09-owner-decisions.md",
+     "docs/decisions/2026-10-07-owner-decisions.md"
+    ],
+    "parked_on_was": "2026-09-26"
    }
   },
   {
@@ -4114,12 +4138,12 @@
    "id": "T-060",
    "title": "S4 first decision — do saved options positions join the DB?",
    "status": "parked",
-   "parked_on": "2026-09-30",
+   "parked_on": "2026-11-09",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "decision",
    "effort": "small",
-   "blocking_decision": "PARKED 2026-09-30 — D9 (2026-09-14): the S4 options subproject is deferred with the rollout (D1), and behind the D4 legal review since it expands an advice-adjacent tool. D9 names T-061, T-062 and T-063; T-060 is S4's first decision. The ledger carried it as open until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md). 2026-10-05 (D82): it also waits on the risk engine rebuild (T-420). S4 extends the options Trade Risk Scorer, which D64 (2026-10-04) switched off until the engine is rebuilt. 2026-10-07 (D92): the options scorer stays off; T-420 may build an ungraded calculator (maximum loss and gain, breakevens, payoff) only after counsel answers the T-419 memo's §8 question 7. 2026-10-24 (D161): overtaken in part. The ungraded calculator did not wait for counsel: D93 (2026-10-07) built and showed it at /equities/options-calculator. This item stays parked because it extends the switched-off scorer (D93: \"T-060 to T-063 stay parked, since they extend the scorer\").",
+   "blocking_decision": "PARKED 2026-09-30 — D9 (2026-09-14): the S4 options subproject is deferred with the rollout (D1), and behind the D4 legal review since it expands an advice-adjacent tool. D9 names T-061, T-062 and T-063; T-060 is S4's first decision. The ledger carried it as open until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md). 2026-10-05 (D82): it also waits on the risk engine rebuild (T-420). S4 extends the options Trade Risk Scorer, which D64 (2026-10-04) switched off until the engine is rebuilt. 2026-10-07 (D92): the options scorer stays off; T-420 may build an ungraded calculator (maximum loss and gain, breakevens, payoff) only after counsel answers the T-419 memo's §8 question 7. 2026-10-24 (D161): overtaken in part. The ungraded calculator did not wait for counsel: D93 (2026-10-07) built and showed it at /equities/options-calculator. This item stays parked because it extends the switched-off scorer (D93: \"T-060 to T-063 stay parked, since they extend the scorer\"). 2026-11-09 (D216): re-parked. The owner chose the calculator's sliders and 8 legs and left saving positions out: a Save button needs a new database table and a migration, and nothing else asks for one yet.",
    "related_ids": [
     "P2-O2",
     "S4",
@@ -4127,7 +4151,7 @@
     "D161"
    ],
    "summary": "user_positions table, same optimistic pattern as wallets; the one architectural call in S4.",
-   "next_action": "Owner decides whether saved options positions join the DB (user_positions, optimistic pattern as wallets) and whether to activate S4; a remote dev then scopes the migration and route under /api/user/.",
+   "next_action": "Nothing now. If the owner asks to save calculator positions: a user-scoped table and route under /api/user/ (the optimistic pattern the wallets use), a migration, and a Save button on /equities/options-calculator; the owner then runs npm run db:migrate. The scorer is not involved: it stays off (D64, D92).",
    "sources": [
     {
      "file": "docs/TASK-QUEUE.md",
@@ -7616,8 +7640,7 @@
   {
    "id": "T-061",
    "title": "S4 — UI parity with the API (8 legs, more presets)",
-   "status": "parked",
-   "parked_on": "2026-09-30",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "feature",
@@ -7637,13 +7660,30 @@
      "lines": "1949",
      "quote": "**Build-out:** (1) UI parity with the API — 8 legs, more structure presets;"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "parked",
+    "closed_on": "2026-11-09",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "Built on the Options Calculator, where the owner chose to put it (D216). /equities/options-calculator takes 8 legs, as POST /api/v1/options/score does (a test reads both limits), and the presets went from 4 to 15: long call, long put, protective put, collar, bear put spread, bull put spread, bear call spread, long straddle, long strangle, iron butterfly and call butterfly join the first four. Each stays at four legs or fewer, since the switched-off scorer's form takes four, and a new strikeLadder keeps a preset's strikes apart at low prices (at $5 the iron condor had put two legs on one strike). The scorer page itself is unchanged: it is off (D64), and its 4-leg form comes back with it if T-420 restores it. D93 had kept this parked as an extension of the scorer; D216 carries the idea to the calculator instead.",
+    "approved_by": "owner, 2026-11-09: \"Sliders and 8 legs (Recommended)\"",
+    "evidence": [
+     "frontend/src/lib/options/whatIf.ts",
+     "frontend/src/lib/options/presets.ts",
+     "frontend/src/app/(dashboard)/equities/options-calculator/page.tsx",
+     "frontend/src/lib/options/__tests__/whatIf.test.ts",
+     "frontend/src/lib/options/__tests__/presets.test.ts",
+     "frontend/src/lib/options/__tests__/calculator.test.ts",
+     "docs/decisions/2026-11-09-owner-decisions.md"
+    ],
+    "parked_on_was": "2026-09-30"
+   }
   },
   {
    "id": "T-062",
    "title": "S4 — what-if sliders (IV / underlying move)",
-   "status": "parked",
-   "parked_on": "2026-09-30",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "feature",
@@ -7662,18 +7702,36 @@
      "lines": "1951-1952",
      "quote": "(3) what-if sliders (IV/underlying move) — the engine is pure, so this is cheap;"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "parked",
+    "closed_on": "2026-11-09",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "Built on the Options Calculator (D216): a \"What if\" card with two sliders, the underlying price (up to 50% either way) and every leg's implied volatility (up to 30 points either way, stopping before any leg reaches 1%). It shows the change if that happened now by the Black-Scholes-Merton model the Greeks already use, the profit or loss at expiry at that price, and the Greeks at that point; the payoff chart gains a \"today, by the model\" line and a marker at the moved price. Arithmetic only: lib/options/whatIf.ts is pure and tested (a synthetic long stock moves dollar for dollar at any volatility), and calculator.test.ts now also fails on a bare or dynamic import of the risk engine, which the earlier pattern let through. The scorer's own sliders (per risk dimension) stay with the scorer.",
+    "approved_by": "owner, 2026-11-09: \"Sliders and 8 legs (Recommended)\"",
+    "evidence": [
+     "frontend/src/lib/options/whatIf.ts",
+     "frontend/src/lib/options/presets.ts",
+     "frontend/src/app/(dashboard)/equities/options-calculator/page.tsx",
+     "frontend/src/lib/options/__tests__/whatIf.test.ts",
+     "frontend/src/lib/options/__tests__/presets.test.ts",
+     "frontend/src/lib/options/__tests__/calculator.test.ts",
+     "docs/decisions/2026-11-09-owner-decisions.md"
+    ],
+    "parked_on_was": "2026-09-30"
+   }
   },
   {
    "id": "T-063",
    "title": "S4 — plain-language explanations per risk dimension",
    "status": "parked",
-   "parked_on": "2026-09-30",
+   "parked_on": "2026-11-09",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "feature",
    "effort": "small",
-   "blocking_decision": "PARKED 2026-09-30 — D9 (2026-09-14): the S4 options subproject is deferred with the rollout (D1), and behind the D4 legal review since it expands an advice-adjacent tool. D9 names T-061, T-062 and T-063; T-060 is S4's first decision. The ledger carried it as blocked until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md). Was: \"S4 activation (owner)\" 2026-10-05 (D82): it also waits on the risk engine rebuild (T-420). S4 extends the options Trade Risk Scorer, which D64 (2026-10-04) switched off until the engine is rebuilt. 2026-10-07 (D92): the options scorer stays off; T-420 may build an ungraded calculator (maximum loss and gain, breakevens, payoff) only after counsel answers the T-419 memo's §8 question 7. 2026-10-24 (D161): overtaken in part. The ungraded calculator did not wait for counsel: D93 (2026-10-07) built and showed it at /equities/options-calculator. This item stays parked because it extends the switched-off scorer (D93: \"T-060 to T-063 stay parked, since they extend the scorer\").",
+   "blocking_decision": "PARKED 2026-09-30 — D9 (2026-09-14): the S4 options subproject is deferred with the rollout (D1), and behind the D4 legal review since it expands an advice-adjacent tool. D9 names T-061, T-062 and T-063; T-060 is S4's first decision. The ledger carried it as blocked until the 2026-09-30 queue sweep (docs/audits/queue-sweep-2026-09-30.md). Was: \"S4 activation (owner)\" 2026-10-05 (D82): it also waits on the risk engine rebuild (T-420). S4 extends the options Trade Risk Scorer, which D64 (2026-10-04) switched off until the engine is rebuilt. 2026-10-07 (D92): the options scorer stays off; T-420 may build an ungraded calculator (maximum loss and gain, breakevens, payoff) only after counsel answers the T-419 memo's §8 question 7. 2026-10-24 (D161): overtaken in part. The ungraded calculator did not wait for counsel: D93 (2026-10-07) built and showed it at /equities/options-calculator. This item stays parked because it extends the switched-off scorer (D93: \"T-060 to T-063 stay parked, since they extend the scorer\"). 2026-11-09 (D216): stays parked. Its explanations are per risk dimension, which only the graded scorer has; the calculator has no dimensions to explain. T-061 and T-062 were built on the calculator instead.",
    "related_ids": [
     "RP-3",
     "S4",
@@ -7681,7 +7739,7 @@
     "D161"
    ],
    "summary": "Must keep the explains-not-recommends stance (RP-3).",
-   "next_action": "After S4 activation: add a `narrative` per dimension in lib/risk/profiles/optionsTrade.ts (pure, tested — tests should assert no 'buy/sell/should' instruction wording, mirroring taxCharacter.test.ts) and render it beside each dimension on /equities/options.",
+   "next_action": "Nothing while the scorer is off (D64, D92). If T-420 brings the scorer back, do this then, as written: a narrative per dimension in lib/risk/profiles/optionsTrade.ts, tested for no buy/sell/should wording, shown beside each dimension on /equities/options.",
    "sources": [
     {
      "file": "docs/TASK-QUEUE.md",
@@ -7776,10 +7834,10 @@
    "owner_role": "remote-dev",
    "category": "feature",
    "effort": "medium",
-   "blocking_decision": "PARKED 2026-10-04 — D57 (2026-10-04): parked with its siblings from the old Enterprise Sales Readiness list (T-188 usage metering, T-191 per-key IP allowlists). It comes back when the launch is planned, after the owner reassesses pricing (D29, parked under D21) and decides whether /api/v1 gets API keys (T-087). The ledger carried it as blocked until 2026-10-04. Was: \"Billing model: per-module licenses vs. tiered bundles — Phase 6 (ROADMAP.md:487); D2 /api/v1 auth\"",
+   "blocking_decision": "PARKED 2026-10-04 — D57 (2026-10-04): parked with its siblings from the old Enterprise Sales Readiness list (T-188 usage metering, T-191 per-key IP allowlists). It comes back when the launch is planned, after the owner reassesses pricing (D29, parked under D21) and decides whether /api/v1 gets API keys (T-087). The ledger carried it as blocked until 2026-10-04. Was: \"Billing model: per-module licenses vs. tiered bundles — Phase 6 (ROADMAP.md:487); D2 /api/v1 auth\" 2026-11-09 (D219): D173 (2026-10-26) put an API key and a rate limit on /api/v1: owner-issued keys listed in FN_API_KEYS, 60 requests a minute and 2,000 a day per key, counted in the server's memory (lib/server/apiKeys.ts), and documented in the OpenAPI file. That is one tier for every key.",
    "related_ids": [],
    "summary": "No plan-based limits exist, and /api/v1 has no rate limit or API keys at all (measured 2026-10-04); the per-visitor limits in lib/server/apiGuard.ts cover other routes. Nobody else can reach the app while no deployed instance exists (D22).",
-   "next_action": "Leave parked until the launch is planned: the owner reassesses pricing (D29) and decides whether /api/v1 gets API keys (T-087, the P3 production review's D2). First code step afterwards: a rate limiter on frontend/src/app/api/v1 keyed by API key with a per-plan limit table, since that is the surface that ships.",
+   "next_action": "Leave parked until the launch is planned and the owner reassesses pricing (D29, T-085). Then give each key a plan in FN_API_KEYS (or the T-113 table) and look up its limits in guardApiV1 in place of the fixed API_PER_MINUTE and API_PER_DAY.",
    "sources": [
     {
      "file": "docs/audits/production-readiness-scorecard.md",
@@ -9477,7 +9535,7 @@
    "owner_role": "owner-decision",
    "category": "decision",
    "effort": "small",
-   "blocking_decision": "Owner activation of S4/S5 and their first decisions (S4: persist saved positions?; S5: scope boundary with the personal-finance product + legality note)",
+   "blocking_decision": "Owner activation of S4/S5 and their first decisions (S4: persist saved positions?; S5: scope boundary with the personal-finance product + legality note) 2026-11-09 (D219): question (1) is answered. D64 and D92 keep the graded options scorer off; D216 built the options subproject’s sliders and 8 legs on the ungraded calculator and left saving positions (T-060) parked. Question (2), S5, is still open and still waits on the legal review (D4).",
    "related_ids": [
     "S3",
     "S4",
@@ -9486,7 +9544,7 @@
     "W3-10"
    ],
    "summary": "Four charters drafted 2026-08-20 as PROPOSED; each carries an owner first decision; suggested order S3 first.",
-   "next_action": "Ask the owner two questions and record the answers in docs/TASK-QUEUE.md via propose → approve → apply: (1) activate S4? and if so, do saved options positions join the DB (a user_positions table) or stay ephemeral; (2) activate S5? and if so, where is the line between portfolio construction (stays) and financial planning (moved to the separate tool), plus the item-16 legality note. Also propose a steward annotation on W3-10 recording S6's 2026-09-05 activation and S3's withheld state.",
+   "next_action": "Question (1) is settled (D64, D92, D216). Ask the owner question (2) when the legal review (D4) allows: activate S5? and if so, where is the line between portfolio construction (stays) and financial planning (moved to the separate tool), plus the item-16 legality note (T-064). Also propose a steward annotation on W3-10 recording S6's 2026-09-05 activation and S3's withheld state.",
    "sources": [
     {
      "file": "docs/TASK-QUEUE.md",
@@ -9845,8 +9903,7 @@
   {
    "id": "T-355",
    "title": "Futures position risk profile",
-   "status": "parked",
-   "parked_on": "2026-10-05",
+   "status": "closed",
    "confidence": "medium",
    "owner_role": "owner-decision",
    "category": "feature",
@@ -9875,6 +9932,19 @@
      "docs/decisions/2026-10-05-owner-decisions.md",
      "docs/architecture/risk-scale-spec.md"
     ]
+   },
+   "closure": {
+    "status_was": "parked",
+    "closed_on": "2026-11-09",
+    "basis": "owner-ruling",
+    "verdict": "superseded",
+    "reason": "SUPERSEDED under D218 by D92 (2026-10-07). This item would build a futures risk score, and D92 chose facts, not ratings, for this asset type: ratings return, if counsel allows, only for crypto coins and stocks on their own pages. D92 kept it parked because it had \"no surface to come back to\"; the owner closed it on that reading. No code changes: lib/risk stays as it is behind RISK_RATINGS_SHOWN (false).",
+    "approved_by": "owner, 2026-11-09: \"Close them (Recommended)\"",
+    "evidence": [
+     "docs/decisions/2026-11-09-owner-decisions.md",
+     "docs/decisions/2026-10-07-owner-decisions.md"
+    ],
+    "parked_on_was": "2026-10-05"
    }
   },
   {
@@ -10491,13 +10561,13 @@
    "owner_role": "remote-dev",
    "category": "feature",
    "effort": "medium",
-   "blocking_decision": "Billing model: per-module licenses vs. tiered bundles — Phase 6 (the Billing model entry in ROADMAP.md; D29's working plan, tiered bundles, awaits the owner's reassessment); and D2 public /api/v1 exposure",
+   "blocking_decision": "Billing model: per-module licenses vs. tiered bundles — Phase 6 (the Billing model entry in ROADMAP.md; D29's working plan, tiered bundles, awaits the owner's reassessment); and D2 public /api/v1 exposure 2026-11-09 (D219): D173 (2026-10-26) put an API key and a rate limit on /api/v1: owner-issued keys listed in FN_API_KEYS, 60 requests a minute and 2,000 a day per key, counted in the server's memory (lib/server/apiKeys.ts), and documented in the OpenAPI file.",
    "related_ids": [
     "Risk F",
     "D161"
    ],
    "summary": "No metering counter.",
-   "next_action": "Leave parked until the Phase 6 billing model (ROADMAP.md's Billing model entry) and D2 (/api/v1 auth) are decided; metering belongs on whichever key middleware ships — most likely a new one in frontend/src/app/api/v1, not backend/app/models/api_key.py.",
+   "next_action": "Leave parked until the billing model (ROADMAP.md's Billing model entry, T-085) is decided. Metering then goes in guardApiV1 (frontend/src/lib/server/apiKeys.ts), which every /api/v1 data route already calls first; its counts are in memory today, so metering for billing needs a shared store (the same one T-315 needs).",
    "sources": [
     {
      "file": "docs/audits/production-readiness-scorecard.md",
@@ -11920,10 +11990,10 @@
    "owner_role": "owner-decision",
    "category": "decision",
    "effort": "unknown",
-   "blocking_decision": "Owner decision on whether Transfer Fees ships in the rollout (S3 withhold, 2026-08-22); rollout gate parked 2026-09-05.",
+   "blocking_decision": "Owner decision on whether Transfer Fees ships in the rollout (S3 withhold, 2026-08-22); rollout gate parked 2026-09-05. 2026-11-09 (D219): its \"meanwhile\" step is done. docs/MARKET-ASSESSMENT.md carries the Transfer Fees caveat (the banner at line 98 and the 2026-09-22 annotations), so nothing is owed before rollout planning.",
    "related_ids": [],
    "summary": "Contradicted by the rollout hide.",
-   "next_action": "When rollout planning resumes, the owner decides whether Transfer Fees rejoins the suite; if yes, the S3 restore recipe in docs/TASK-QUEUE.md:1695-1700 applies and the wedge positioning can be re-evaluated. Meanwhile propose a caveat on MARKET-ASSESSMENT.md:146-147 noting the 2026-08-22 withhold.",
+   "next_action": "When rollout planning resumes, the owner decides whether Transfer Fees rejoins the suite; if yes, the S3 restore recipe in docs/TASK-QUEUE.md:1695-1700 applies and the wedge positioning can be re-evaluated.",
    "sources": [
     {
      "file": "docs/MARKET-ASSESSMENT.md",
@@ -12022,18 +12092,18 @@
    "id": "T-057",
    "title": "Live L2 gas (Arbitrum/Optimism/Base) via GasPriceOracle predeploy + Fjord size model",
    "status": "parked",
-   "parked_on": "2026-09-07",
+   "parked_on": "2026-11-09",
    "confidence": "medium",
    "owner_role": "owner-decision",
    "category": "feature",
    "effort": "medium",
-   "blocking_decision": "Owner activation (S3 resumption or standalone approval under ruling 6)",
+   "blocking_decision": "Owner activation (S3 resumption or standalone approval under ruling 6) 2026-11-09 (D217): kept parked until Transfer Fees returns (T-028), at the owner's choice. Its terms question is settled: Arbitrum's, Base's and Optimism's own public RPC endpoints were read and marked verified on 2026-10-14 (D105), and the publicnode hostnames on 2026-09-24 (D25). These fees are fractions of a cent and matter mostly to the hidden Transfer Fees page.",
    "related_ids": [
     "#107",
     "S3"
    ],
    "summary": "eth_gasPrice omits the L1 data fee so L2s stay estimates (networkFees.ts:136-146); a test pins the exclusion.",
-   "next_action": "If the owner wants it before S3 resumes, approve it as a standalone queue item; then a remote dev reads GasPriceOracle (0x420000000000000000000000000000000000000F) via keyless RPC, applies the Fjord size model, updates the pinned test deliberately, registers any new RPC host in sourceTerms.ts/dataSources.ts, and the owner verifies with npm run gas-probe.",
+   "next_action": "Nothing until Transfer Fees is restored (T-028). Then, in that work or straight after: read GasPriceOracle (0x420000000000000000000000000000000000000F) through the keyless RPCs already in the terms registry, apply the Fjord size model, update the pinned test deliberately, and have the owner confirm with npm run gas-probe.",
    "sources": [
     {
      "file": "docs/TASK-QUEUE.md",
@@ -12128,10 +12198,10 @@
    "owner_role": "owner-decision",
    "category": "security",
    "effort": "large",
-   "blocking_decision": "Rollout posture (2026-09-05 ruling) and D2 for the rate-limiting piece; auth wall re-enablement (auth.md Goal B step 3) for 2FA",
+   "blocking_decision": "Rollout posture (2026-09-05 ruling) and D2 for the rate-limiting piece; auth wall re-enablement (auth.md Goal B step 3) for 2FA 2026-11-09 (D219): the /api/v1 rate limiting part is done by D173 (2026-10-26) put an API key and a rate limit on /api/v1: owner-issued keys listed in FN_API_KEYS, 60 requests a minute and 2,000 a day per key, counted in the server's memory (lib/server/apiKeys.ts), and documented in the OpenAPI file.",
    "related_ids": [],
    "summary": "None started.",
-   "next_action": "Nothing until rollout planning; when the owner settles D2 and re-enables the auth wall, queue three separate items (v1 rate limiting per D2's choice, 2FA/TOTP on the Auth.js credentials flow, audit logging for /api/user and admin endpoints) through propose -> approve -> apply.",
+   "next_action": "Nothing until rollout planning. The /api/v1 rate limit exists (D173). What remains, when the owner re-enables sign-in (T-131): two separate items through propose → approve → apply, two-step sign-in (TOTP) on the Auth.js credentials flow, and audit logging for /api/user and the owner's routes (with T-185's append-only table).",
    "sources": [
     {
      "file": "docs/ROADMAP.md",
@@ -12157,12 +12227,12 @@
    "owner_role": "owner-decision",
    "category": "decision",
    "effort": "large",
-   "blocking_decision": "PARKED 2026-09-07, reason written 2026-10-05 — D84 (2026-10-05): it waits on launch planning: how the public data connection is exposed (T-087), settled with hosting and the business-key question. The P3 review's D5 was settled by D68.",
+   "blocking_decision": "PARKED 2026-09-07, reason written 2026-10-05 — D84 (2026-10-05): it waits on launch planning: how the public data connection is exposed (T-087), settled with hosting and the business-key question. The P3 review's D5 was settled by D68. 2026-11-09 (D219): its API auth and rate-limit half is settled by D173 (2026-10-26) put an API key and a rate limit on /api/v1: owner-issued keys listed in FN_API_KEYS, 60 requests a minute and 2,000 a day per key, counted in the server's memory (lib/server/apiKeys.ts), and documented in the OpenAPI file.",
    "related_ids": [
     "D5"
    ],
    "summary": "Phase 3 'agent bet'; interacts with D5.",
-   "next_action": "No action now. Revisit at the owner's planning session once D2 (API auth/rate limiting, enterprise key, hosting) is settled; the P3 review's D5 was settled on 2026-10-04 (D68: run_audit removed, the server is data-only). The 2026-09-05 rollout ruling defers all launch-shaped work.",
+   "next_action": "No action now. Revisit at the owner's planning session. API keys and a rate limit exist (D173); what is still open is the host (T-112) and the licences for data served to other people from the app's keys (T-314, T-151). The 2026-09-05 rollout ruling defers all launch-shaped work.",
    "sources": [
     {
      "file": "docs/MARKET-ASSESSMENT.md",
@@ -12184,10 +12254,10 @@
    "owner_role": "owner-decision",
    "category": "feature",
    "effort": "large",
-   "blocking_decision": "PARKED 2026-09-07, reason written 2026-10-05 — D84 (2026-10-05): it waits on launch planning: database-backed entitlements (T-083), sign-in and limits on the public data connection (T-087), and the sign-in wall (T-131).",
+   "blocking_decision": "PARKED 2026-09-07, reason written 2026-10-05 — D84 (2026-10-05): it waits on launch planning: database-backed entitlements (T-083), sign-in and limits on the public data connection (T-087), and the sign-in wall (T-131). 2026-11-09 (D219): D173 (2026-10-26) put an API key and a rate limit on /api/v1: owner-issued keys listed in FN_API_KEYS, 60 requests a minute and 2,000 a day per key, counted in the server's memory (lib/server/apiKeys.ts), and documented in the OpenAPI file. Those keys are the owner's, carry no user identity, and live in an environment variable, so they do not serve this item: personal data needs per-user keys tied to sign-in.",
    "related_ids": [],
    "summary": "Phase 6 bullet; monetization path for Portfolio Builder.",
-   "next_action": "No dev action until the owner's planning session settles D1 (DB-backed entitlements / paid-vs-free) and D2 (API auth + rate limiting) and re-enables the auth wall (auth.md Goal B steps 1-5). Then: api_keys table + issuance UI, key-gated /api/v1/user/* routes, MCP tool mirrors — scoped to portfolios, watchlists, builder plans, wallets.",
+   "next_action": "No dev action until the owner settles database-backed entitlements (T-083) and turns sign-in on (T-131). Then: an api_keys table with a page to issue them, key-gated /api/v1/user/* routes that reuse guardApiV1's limits, and MCP tool mirrors, scoped to portfolios, watchlists, builder plans and wallets.",
    "sources": [
     {
      "file": "docs/ROADMAP.md",
@@ -12273,14 +12343,14 @@
    "owner_role": "owner-decision",
    "category": "security",
    "effort": "medium",
-   "blocking_decision": "PARKED 2026-09-07, reason re-anchored 2026-10-05 — D82 (2026-10-05): It waited on \"whether the FastAPI backend returns\", which D2 (2026-09-14) settled: the backend is retired and frozen. It now waits on T-087: whether the public data connection (/api/v1) gets API keys at all. It is on D73's list of security features. Was: \"Whether the FastAPI backend returns / whether /api/v1 gets API-key auth at all (enterprise roadmap not adopted)\"",
+   "blocking_decision": "PARKED 2026-09-07, reason re-anchored 2026-10-05 — D82 (2026-10-05): It waited on \"whether the FastAPI backend returns\", which D2 (2026-09-14) settled: the backend is retired and frozen. It now waits on T-087: whether the public data connection (/api/v1) gets API keys at all. It is on D73's list of security features. Was: \"Whether the FastAPI backend returns / whether /api/v1 gets API-key auth at all (enterprise roadmap not adopted)\" 2026-11-09 (D219): the keys exist since D173 (2026-10-26) put an API key and a rate limit on /api/v1: owner-issued keys listed in FN_API_KEYS, 60 requests a minute and 2,000 a day per key, counted in the server's memory (lib/server/apiKeys.ts), and documented in the OpenAPI file.",
    "related_ids": [
     "T-087",
     "T-260",
     "T-206"
    ],
    "summary": "Enterprise requirement, not done.",
-   "next_action": "No action until T-087 decides whether /api/v1 gets per-user API keys. If it does: add an allowed_ips column to that key table (a new Drizzle table in frontend/src/lib/db/schema) and enforce it in the key check, taking the caller's address the way T-260 settles for the app behind a proxy.",
+   "next_action": "No action until launch planning. Keys exist (D173) but live in FN_API_KEYS, not a table. An allowlist would be a list of addresses per key there, or a column once keys move into the database (T-113). It also waits on T-260, which settles which address to trust behind the host's proxy.",
    "sources": [
     {
      "file": "docs/audits/production-readiness-scorecard.md",
@@ -12476,10 +12546,10 @@
    "owner_role": "owner-decision",
    "category": "ops-infra",
    "effort": "medium",
-   "blocking_decision": "The enterprise-key question (owner planning session; paid, so D21); the public /api/v1 exposure part was settled 2026-10-26 by D173. Was: \"D2 — public /api/v1 exposure and the enterprise-key question (owner planning session).\"",
+   "blocking_decision": "The enterprise-key question (owner planning session; paid, so D21); the public /api/v1 exposure part was settled 2026-10-26 by D173. Was: \"D2 — public /api/v1 exposure and the enterprise-key question (owner planning session).\" 2026-11-09 (D219): the per-caller limit this item asked for is done by D173 (per key rather than per address), and the OpenAPI file records it.",
    "related_ids": [],
    "summary": "CoinGecko ~30/min.",
-   "next_action": "Owner settles D2 (ship / gate / fence /api/v1, and whether an enterprise CoinGecko/FMP key is bought). If 'ship', a remote-dev task follows: add a per-IP token bucket in frontend/src/app/api/_cors.ts-adjacent middleware for /api/v1 and record the limit in the OpenAPI spec.",
+   "next_action": "What remains is the enterprise-key question (paid, so D21: at release, with T-314) and, once the app runs on more than one server, a shared store for guardApiV1's counts, which are in each server's memory today. Neither is needed before the host is chosen (T-112).",
    "sources": [
     {
      "file": "docs/MARKET-ASSESSMENT.md",
@@ -42600,6 +42670,14 @@
     "evidence": [
      "docs/proposals/2026-11-07-proposals.md",
      "docs/decisions/2026-11-07-owner-decisions.md"
+    ]
+   },
+   {
+    "on": "2026-11-09",
+    "what": "Owner-requested review of every parked and blocked item (132 parked, 5 blocked), recorded in docs/audits/parked-review-2026-11-09.md. D216: T-061 and T-062 built on the Options Calculator and closed; T-060 and T-063 re-parked with the reason. D217: T-057 kept parked until Transfer Fees returns, its terms question noted as settled (D105, D25). D218: T-352, T-353 and T-355 closed as superseded by D92. D219: the wording of nine parked or blocked items brought up to date (T-026, T-088, T-094, T-113, T-188, T-191, T-192, T-312, T-315); T-246 was in the owner's list of ten but left unchanged, because the note it asks for was never written (Claude's question said it was), and is raised with the owner instead. Counts recomputed: closed 253 to 258, parked 132 to 127.",
+    "evidence": [
+     "docs/decisions/2026-11-09-owner-decisions.md",
+     "docs/audits/parked-review-2026-11-09.md"
     ]
    }
   ]

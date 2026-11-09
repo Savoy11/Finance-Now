@@ -131,6 +131,7 @@ describe('no page shows the catalog’s hand-typed P/E or yield (D167)', () => {
       'src/lib/data/portfolioUtils.ts': 'names its parameter; stock yields come from SEC dividends per share',
       // Unrelated fields of the same name.
       'src/lib/options/greeks.ts': 'the options calculator’s typed-in dividend yield',
+      'src/lib/options/whatIf.ts': 'the options calculator’s typed-in dividend yield, passed to the model for the what-if sliders (D216)',
       'src/app/(dashboard)/equities/options-calculator/page.tsx': 'the options calculator’s typed-in dividend yield',
     }
     const walk = (dir: string): string[] => readdirSync(dir).flatMap((n) => {
