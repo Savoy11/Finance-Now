@@ -17,8 +17,9 @@ day, so it has not fired.
 **What changed.** Four groups were put to the owner: the options follow-ups that no longer
 waited on anything (D216), live L2 gas (D217), three risk-score items with no surface left
 (D218), and ten items whose wording was out of date (D219). One claim in that last question
-was wrong: the note T-246 asks for was never written. T-246 was left as it was and raised
-with the owner. Every other item stays parked or blocked as it was.
+was wrong: the note T-246 asks for had never been written. T-246 was held back and the error
+raised with the owner, who had the note written in the same pull request (D220), so all ten
+are reworded. Every other item stays parked or blocked as it was.
 
 ## Acted on today (D216 to D219) (8)
 

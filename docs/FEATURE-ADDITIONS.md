@@ -224,6 +224,14 @@ Alerts filter sidebar isn't wired to the mock feed (live mode unaffected);
 CBDC→USDC/USDT regulatory inference is by design; ATR uses SMA smoothing
 rather than Wilder's.
 
+> **Annotated 2026-11-09 (D220): the Reddit vote metrics now wait on Reddit's own
+> permission, not on a code change.** Since 2026-08-29 the app reads no Reddit page at all
+> unless `REDDIT_CLIENT_ID` is set, because Reddit's robots.txt disallows this app's agent.
+> The JSON listing that carries `score` and `upvote_ratio` is part of Reddit's Data API,
+> which the owner will apply for after launch (D58). Until Reddit grants access, the
+> "JSON migration" above cannot be done. It is tracked as T-246, beside T-245 (the
+> application itself and the OAuth reader that comes first).
+
 ---
 
 ## Deliberately NOT added yet (candidates for next session)
