@@ -533,8 +533,14 @@ const tests = [
   { group: 'crypto/video', path: '/live-data/videos', name: 'videos', check: (j) => {
     if (!j.ok) throw new Error(j.error ?? 'not ok')
     const v = j.videos ?? []
-    if (v.length === 0) return empty('0 videos')
-    return `${v.length} videos`
+    // Since 2026-11-09 the route names each channel feed it could not read: "0 videos" alone
+    // could not tell a changed YouTube feed from a blocked one.
+    const failed = j.failed ?? []
+    const why = failed.length
+      ? `; ${failed.length}/${j.tried ?? '?'} channel feeds failed: ${[...new Set(failed.map((f) => f.error))].slice(0, 3).join('; ')}`
+      : ''
+    if (v.length === 0) return empty(`0 videos${why}`)
+    return `${v.length} videos${why}`
   }},
 
   { group: 'crypto/video', path: '/live-data/video-search?q=bitcoin', name: 'video-search', check: (j) => {

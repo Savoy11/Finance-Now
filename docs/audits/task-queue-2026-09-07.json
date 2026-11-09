@@ -15791,6 +15791,10 @@
      "frontend/src/lib/data/__tests__/tradeImport.test.ts",
      "docs/decisions/2026-11-07-owner-decisions.md"
     ]
+   },
+   "progress": {
+    "noted_on": "2026-11-09",
+    "note": "2026-11-09: the owner ran npm run db:migrate (\"migrations applied\"), so migration 0010 is applied on the owner's machine and importing trades from a file works there (docs/audits/live-data-audit-2026-11-09.md)."
    }
   },
   {
@@ -15925,6 +15929,10 @@
      "frontend/src/lib/data/__tests__/downloadedFigures.test.ts",
      "docs/decisions/2026-11-07-owner-decisions.md"
     ]
+   },
+   "progress": {
+    "noted_on": "2026-11-09",
+    "note": "2026-11-09: the owner ran npm run fund-facts, which rebuilt fundFacts.generated.json from the SEC's 2026q3 N-PORT data set (14,066 registrants, 13,199 series with reported net assets, 25,009 tickers). The file is on the owner's machine and not yet in the repository; once it is, FUND_FACTS_BUILT_ON moves to 2026-11-09 and its STALENESS-ACK comes out (docs/audits/live-data-audit-2026-11-09.md)."
    }
   },
   {
@@ -15994,6 +16002,10 @@
      "frontend/scripts/test-live-data.mjs",
      "docs/decisions/2026-11-07-owner-decisions.md"
     ]
+   },
+   "progress": {
+    "noted_on": "2026-11-09",
+    "note": "2026-11-09: the wider list read the real SEC file for the first time, on the owner's machine (npm run audit, docs/audits/live-data-audit-2026-11-09.md): 5,723 NYSE and Nasdaq stocks, 4,328 with an SEC earnings figure; left out 2,783 listed elsewhere, 1,565 preferred shares, warrants and units, and 338 funds. The keyless search for \"ford\" put Ford first."
    }
   },
   {
@@ -16057,6 +16069,10 @@
      "frontend/src/lib/data/__tests__/tradeLedger.test.ts",
      "docs/decisions/2026-11-07-owner-decisions.md"
     ]
+   },
+   "progress": {
+    "noted_on": "2026-11-09",
+    "note": "2026-11-09: the owner ran npm run db:migrate (\"migrations applied\"), so migration 0011 is applied on the owner's machine and cash income can be recorded there (docs/audits/live-data-audit-2026-11-09.md)."
    }
   },
   {
@@ -16558,6 +16574,10 @@
      "frontend/src/app/(dashboard)/watchlist/page.tsx",
      "docs/decisions/2026-11-08-owner-decisions.md"
     ]
+   },
+   "progress": {
+    "noted_on": "2026-11-09",
+    "note": "2026-11-09: measured on the owner's machine by npm run audit (docs/audits/live-data-audit-2026-11-09.md): AAPL 2027-02-04, MSFT 2027-01-27 and NVDA 2026-11-17, each from FMP; over the 90 days FMP answered with 63 dates and Alpha Vantage with 1,873, so most companies' dates come from Alpha Vantage. The Market Calendar read 120 earnings and 1 economic event."
    }
   }
  ],

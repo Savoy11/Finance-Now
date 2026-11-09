@@ -1,3 +1,4 @@
+import { coingeckoHeaders } from '@/lib/api/live/coingecko'
 import { describeThrottle } from './coingeckoThrottle'
 
 // Paged CoinGecko fetching that survives the free tier's rate limit.
@@ -59,7 +60,7 @@ export async function fetchCoinGeckoPages<T>(
     let res: Response
     try {
       res = await fetch(buildUrl(page), {
-        headers: { Accept: 'application/json' },
+        headers: coingeckoHeaders(),
         next: { revalidate },
       })
     } catch (err) {
@@ -76,7 +77,7 @@ export async function fetchCoinGeckoPages<T>(
       if (waitMs > 0 && waitMs <= maxRetryWaitMs) {
         await sleep(waitMs)
         try {
-          res = await fetch(buildUrl(page), { headers: { Accept: 'application/json' }, next: { revalidate } })
+          res = await fetch(buildUrl(page), { headers: coingeckoHeaders(), next: { revalidate } })
         } catch (err) {
           errors.push(`page ${page}: ${err instanceof Error ? err.message : String(err)}`)
           continue

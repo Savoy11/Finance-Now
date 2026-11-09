@@ -303,7 +303,17 @@ export const FEE_PROVIDERS: FeeProvider[] = [
   evmGasProvider('avalanche', 'publicnode eth_gasPrice'),
 ]
 
-async function fetchLivePrices(): Promise<{ prices: Record<string, number>; source: 'live' | 'fallback' }> {
+/**
+ * Where CoinGecko is and the headers that carry the key. The server routes pass
+ * `{ base: coingeckoBase(), headers: coingeckoHeaders() }`; this file cannot import those
+ * itself, because the Transfer Fees page loads it in the browser and the key lives on the server.
+ */
+export interface CoinGeckoRequest {
+  base: string
+  headers: Record<string, string>
+}
+
+async function fetchLivePrices(coingecko: CoinGeckoRequest): Promise<{ prices: Record<string, number>; source: 'live' | 'fallback' }> {
   const prices = { ...FALLBACK_PRICES }
   // CoinGecko id → priceKey, for both gas tokens and auxiliary coins.
   const idToKey = new Map<string, string>()
@@ -312,8 +322,8 @@ async function fetchLivePrices(): Promise<{ prices: Record<string, number>; sour
   const ids = Array.from(idToKey.keys()).join(',')
   try {
     const r = await fetch(
-      `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&precision=6`,
-      { headers: { Accept: 'application/json' }, next: { revalidate: 300 } }
+      `${coingecko.base}/simple/price?ids=${ids}&vs_currencies=usd&precision=6`,
+      { headers: coingecko.headers, next: { revalidate: 300 } }
     )
     if (!r.ok) return { prices, source: 'fallback' }
     const data = (await r.json()) as Record<string, { usd: number }>
@@ -335,9 +345,9 @@ async function fetchLivePrices(): Promise<{ prices: Record<string, number>; sour
  * Computes fees for every network from the single source of truth. Fetches live
  * prices + runs all registered FeeProviders, all resilient (Promise.allSettled).
  */
-export async function computeNetworkFees(): Promise<ComputedNetworkFees> {
+export async function computeNetworkFees(coingecko: CoinGeckoRequest): Promise<ComputedNetworkFees> {
   const [{ prices, source: priceSource }, ...providerResults] = await Promise.all([
-    fetchLivePrices(),
+    fetchLivePrices(coingecko),
     ...FEE_PROVIDERS.map((p) => p.fetchFee().catch(() => null)),
   ])
 
