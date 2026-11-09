@@ -705,8 +705,9 @@ export function stablecoinReserves(
     coins: picked.map((a) => ({
       symbol: a.symbol, name: a.name, pegType: a.pegType, pegMechanism: a.pegMechanism,
       priceUsd: a.price,
-      // Only a dollar coin's price is against its own peg; a euro coin's dollar price is not.
-      pegDeviationBps: a.pegType === 'peggedUSD' ? Math.round((a.price - 1) * 10_000) : null,
+      // Only a dollar coin's price is against its own peg; a euro coin's dollar price is not. No
+      // price, no distance from the peg (D214).
+      pegDeviationBps: a.pegType === 'peggedUSD' && a.price !== null ? Math.round((a.price - 1) * 10_000) : null,
       circulatingUsd: Math.round(a.circulatingUsd),
       supplyChangePct: a.supplyChange,
       largestChains: a.chainSplit.top.map((c) => ({ chain: c.chain, pct: c.pct })),
@@ -719,7 +720,7 @@ export function stablecoinReserves(
     })),
     attestationFactsAsOf: metaAsOf,
     notFound,
-    note: `Price and supply are live from DefiLlama. The attester, attestation date, collateral ratio and reserve mix are kept by hand${metaAsOf ? ` as of ${metaAsOf}` : ''}, not live; several were taken from news reports and trackers quoting the issuers, and a null collateral ratio means it is not publicly disclosed. pegDeviationBps is the price's distance from $1 in hundredths of a percent, for dollar coins only. Report the figures; do not grade a coin's safety.`,
+    note: `Price and supply are live from DefiLlama. The attester, attestation date, collateral ratio and reserve mix are kept by hand${metaAsOf ? ` as of ${metaAsOf}` : ''}, not live; several were taken from news reports and trackers quoting the issuers, and a null collateral ratio means it is not publicly disclosed. pegDeviationBps is the price's distance from $1 in hundredths of a percent, for dollar coins only. A null priceUsd means DefiLlama sent no price for that coin: say so, and do not call it on its peg. Report the figures; do not grade a coin's safety.`,
   }
 }
 
@@ -1117,6 +1118,7 @@ async function execute(
         const days = Math.min(Number(input.days ?? 14) || 14, 30)
         const data = (await get(`/live-data/market-calendar?days=${days}`)) as {
           ok?: boolean; configured?: boolean; earnings?: unknown[]; economic?: unknown[]; from?: string; to?: string
+          earningsGap?: string | null
         }
         if (data.configured === false) {
           // FOMC meeting dates are keyless (lib/data/fomcCalendar.ts) and still come back;
@@ -1138,7 +1140,8 @@ async function execute(
         return {
           from: data.from, to: data.to,
           earnings: (data.earnings ?? []).slice(0, 40),
-          earningsNote: 'Earnings dates are expected, not confirmed: companies often confirm late and can move a date. Each row names its source: FMP first, Alpha Vantage for companies FMP does not list.',
+          earningsNote: 'Earnings dates are expected, not confirmed: companies often confirm late and can move a date. Each row names its source: FMP first, Alpha Vantage for companies FMP does not list.'
+            + (data.earningsGap ? ` ${data.earningsGap} Do not say a company has no report coming because it is missing here.` : ''),
           economic: (data.economic ?? []).slice(0, 25),
         }
       }

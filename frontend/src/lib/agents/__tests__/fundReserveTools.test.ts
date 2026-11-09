@@ -197,6 +197,13 @@ describe('get_stablecoin_reserves', () => {
     expect(out.note).toContain('do not grade')
   })
 
+  it('reports no price, and no distance from the peg, when DefiLlama sent none (D214)', async () => {
+    routes({ '/live-data/reserves': { ok: true, assets: [coin('USDC', { price: null })], notFound: [], metaAsOf: '2026-11-05' } })
+    const out = await runTool('get_stablecoin_reserves', {}, 'http://x') as Record<string, any>
+    expect(out.coins[0]).toMatchObject({ priceUsd: null, pegDeviationBps: null })
+    expect(out.note).toContain('A null priceUsd means DefiLlama sent no price')
+  })
+
   it('answers for one coin, and names the monitored ones when asked for another', async () => {
     routes({ '/live-data/reserves': { ok: true, assets: [coin('USDC'), coin('USDT')], notFound: [], metaAsOf: '2026-11-05' } })
     const one = await runTool('get_stablecoin_reserves', { symbol: 'usdt' }, 'http://x') as Record<string, any>

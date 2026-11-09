@@ -243,7 +243,7 @@ export default function WatchlistPage() {
         <div className="space-y-1">
           <p className="text-[11px] text-text-muted text-center">
             {earnings.ok
-              ? `Stocks reporting earnings in the next ${EARNINGS_SOON_DAYS} days are marked. The dates are expected, not confirmed: companies can move them.`
+              ? `Stocks reporting earnings in the next ${EARNINGS_SOON_DAYS} days are marked. The dates are expected, not confirmed: companies can move them.${earnings.gap ? ` ${earnings.gap}` : ''}`
               : 'The earnings calendars could not be reached right now, so no earnings dates are marked.'}
           </p>
           {earnings.ok && <SourceLine id="earnings-dates" />}

@@ -1,8 +1,10 @@
 import 'server-only'
+import { revalidateTag } from 'next/cache'
 import { getProviderKey } from '@/lib/api/live/providers'
 import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 import {
-  mergeEarnings, parseAlphaVantageEarnings, parseFmpEarnings, type EarningsSource, type UpcomingEarnings,
+  EARNINGS_LISTED_WINDOW_DAYS, addDays, marketToday, mergeEarnings, parseAlphaVantageEarnings, parseFmpEarnings,
+  type EarningsSource, type UpcomingEarnings,
 } from '@/lib/data/earningsCalendar'
 
 // Upcoming earnings from FMP, with Alpha Vantage behind it (T-458, D213). Used by the Market
@@ -14,6 +16,17 @@ import {
 
 /** One request a day: the address is fixed, so every caller shares the cached answer. */
 const ALPHA_VANTAGE_REVALIDATE_SECONDS = 86_400
+/**
+ * The cache tag on that request. Alpha Vantage sends its rate-limit note with HTTP 200, which the
+ * fetch cache keeps like any answer, so a failure would stand for the whole day (code audit
+ * 2026-11-09, D214). A failed answer marks the tag stale, and the next caller asks again.
+ */
+export const ALPHA_VANTAGE_EARNINGS_TAG = 'alpha-vantage-earnings-calendar'
+
+/** Drop a failed Alpha Vantage answer from the cache. Outside a request (a test, a script) there is no cache to drop. */
+function forgetAlphaVantageAnswer(): void {
+  try { revalidateTag(ALPHA_VANTAGE_EARNINGS_TAG) } catch { /* no request cache here */ }
+}
 const FMP_REVALIDATE_SECONDS = 3_600
 
 /** How one source answered. */
@@ -55,11 +68,14 @@ async function fromAlphaVantage(): Promise<{ status: EarningsSourceStatus; event
   try {
     // No Accept header: Alpha Vantage answers `Accept: text/csv` with a 406 (see the IPO route).
     const res = await fetch(`https://www.alphavantage.co/query?function=EARNINGS_CALENDAR&horizon=3month&apikey=${encodeURIComponent(key)}`, {
-      next: { revalidate: ALPHA_VANTAGE_REVALIDATE_SECONDS }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS),
+      next: { revalidate: ALPHA_VANTAGE_REVALIDATE_SECONDS, tags: [ALPHA_VANTAGE_EARNINGS_TAG] }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS),
     })
     if (!res.ok) return { status: { configured: true, ok: false, count: 0, detail: `Alpha Vantage HTTP ${res.status}` }, events: [] }
     const parsed = parseAlphaVantageEarnings(await res.text())
-    if (!parsed.ok) return { status: { configured: true, ok: false, count: 0, detail: `${parsed.reason}: ${parsed.detail}` }, events: [] }
+    if (!parsed.ok) {
+      forgetAlphaVantageAnswer()
+      return { status: { configured: true, ok: false, count: 0, detail: `${parsed.reason}: ${parsed.detail}` }, events: [] }
+    }
     return { status: { configured: true, ok: true, count: parsed.events.length }, events: parsed.events }
   } catch (err) {
     return { status: { configured: true, ok: false, count: 0, detail: err instanceof Error ? err.message : 'Alpha Vantage request failed' }, events: [] }
@@ -82,7 +98,7 @@ export function upcomingEarnings(from: string, to: string, now = Date.now()): Pr
   const key = `${from}|${to}`
   const hit = memo.get(key)
   if (hit && now - hit.at < MEMO_MS) return hit.value
-  const value = collect(from, to)
+  const value = collect(from, to, now)
   memo.set(key, { at: now, value })
   // A failed collection is not kept: the next caller tries again.
   value.then((r) => { if (!r.sources.fmp.ok && !r.sources['alpha-vantage'].ok) memo.delete(key) }, () => memo.delete(key))
@@ -90,16 +106,25 @@ export function upcomingEarnings(from: string, to: string, now = Date.now()): Pr
   return value
 }
 
-async function collect(from: string, to: string): Promise<UpcomingEarningsResult> {
-  const [fmp, av] = await Promise.all([fromFmp(from, to), fromAlphaVantage()])
+async function collect(from: string, to: string, now: number): Promise<UpcomingEarningsResult> {
+  // Which companies FMP lists is decided over Alpha Vantage's whole reach, the same for every
+  // range asked, so a company shows one date wherever it appears (D214). That window's FMP
+  // request is shared through the fetch cache; it is skipped when the range asked is that window.
+  const today = marketToday(new Date(now))
+  const windowEnd = addDays(today, EARNINGS_LISTED_WINDOW_DAYS)
+  const sameWindow = from === today && to === windowEnd
+  const [fmp, av, fmpWindow] = await Promise.all([
+    fromFmp(from, to), fromAlphaVantage(), sameWindow ? null : fromFmp(today, windowEnd),
+  ])
   const inRange = (e: UpcomingEarnings) => e.date >= from && e.date <= to
   const avInRange = av.events.filter(inRange)
+  const fmpListed = (fmpWindow?.events ?? []).map((e) => e.symbol)
   return {
     configured: fmp.status.configured || av.status.configured,
     sources: {
       fmp: fmp.status,
       'alpha-vantage': { ...av.status, count: avInRange.length },
     },
-    events: mergeEarnings(fmp.events.filter(inRange), avInRange),
+    events: mergeEarnings(fmp.events.filter(inRange), avInRange, fmpListed),
   }
 }

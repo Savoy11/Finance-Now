@@ -12,7 +12,8 @@ export interface LiveReserveAsset {
   pegType: string
   pegMechanism: string
   circulatingUsd: number
-  price: number
+  /** USD price from DefiLlama, or null when it sent none (never a stand-in $1.00, D214). */
+  price: number | null
   priceSource: string
   chains: string[]
   /** Circulating supply's change over a day, a week and a month (T-449 a): facts, no alert (D204). */
@@ -90,7 +91,9 @@ export async function GET() {
         pegType: coin.pegType ?? 'peggedUSD',
         pegMechanism: coin.pegMechanism ?? 'unknown',
         circulatingUsd,
-        price: coin.price ?? 1,
+        // No price from DefiLlama is no price: a stand-in $1.00 read as "live and on the peg" to the
+        // AI's reserves tool (code audit 2026-11-09, D214).
+        price: typeof coin.price === 'number' && Number.isFinite(coin.price) ? coin.price : null,
         priceSource: coin.priceSource ?? 'DefiLlama',
         chains: coin.chains ?? [],
         supplyChange: supplyChange(coin, coin.pegType ?? 'peggedUSD'),

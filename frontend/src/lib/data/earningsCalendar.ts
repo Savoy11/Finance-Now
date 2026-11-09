@@ -1,4 +1,8 @@
 import { fitRow, readAlphaVantageCsv, type AlphaVantageFailure } from './alphaVantageCsv'
+import { addDays, marketToday } from '@/lib/utils/marketDay'
+
+// New York's day, shared with the Macro calendar (lib/utils/marketDay.ts).
+export { addDays, marketToday }
 
 // ─── Upcoming earnings dates (T-458, D213) ───────────────────────────────────
 //
@@ -107,9 +111,14 @@ export function parseFmpEarnings(rows: unknown): UpcomingEarnings[] {
  * FMP first; Alpha Vantage fills in only the companies FMP does not list. Where both list a
  * company, FMP's dates stand and Alpha Vantage's are not mixed in, so one company never shows
  * two different "next" dates from two sources. Sorted by date, then symbol.
+ *
+ * `alsoListed` names companies FMP lists outside the rows passed, over the whole stretch Alpha
+ * Vantage covers (EARNINGS_LISTED_WINDOW_DAYS). Without it, a month's calendar would take Alpha
+ * Vantage's Nov 30 for a company FMP lists on Dec 2, and the next month and the stock page FMP's
+ * (code audit 2026-11-09, D214).
  */
-export function mergeEarnings(primary: UpcomingEarnings[], backup: UpcomingEarnings[]): UpcomingEarnings[] {
-  const listed = new Set(primary.map((e) => e.symbol))
+export function mergeEarnings(primary: UpcomingEarnings[], backup: UpcomingEarnings[], alsoListed: Iterable<string> = []): UpcomingEarnings[] {
+  const listed = new Set([...primary.map((e) => e.symbol), ...alsoListed])
   return [...primary, ...backup.filter((e) => !listed.has(e.symbol))]
     .sort((a, b) => a.date.localeCompare(b.date) || a.symbol.localeCompare(b.symbol))
 }
@@ -128,17 +137,17 @@ export function nextEarningsBySymbol(events: UpcomingEarnings[], today: string):
 /** How far ahead the next-date lookup looks: companies report quarterly, and Alpha Vantage's free list covers three months. */
 export const EARNINGS_LOOK_AHEAD_DAYS = 90
 
+/**
+ * The stretch from today over which "FMP lists this company" is decided, whatever range a page
+ * shows: Alpha Vantage's whole reach, three calendar months, which is never more than 92 days.
+ */
+export const EARNINGS_LISTED_WINDOW_DAYS = 92
+
+
+
 /** A watchlist marks a stock whose next report falls within this many days. */
 export const EARNINGS_SOON_DAYS = 14
 
-/**
- * Today's date in New York, YYYY-MM-DD: earnings dates are US market days. Counting in UTC
- * instead dropped a company reporting this evening from "next earnings" after about 7 pm Eastern,
- * when the UTC date has already turned.
- */
-export function marketToday(now: Date = new Date()): string {
-  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' }).format(now)
-}
 
 /** Whole days from `today` to `date`, both YYYY-MM-DD. */
 export function daysUntil(date: string, today: string): number {
@@ -153,6 +162,27 @@ export function isEarningsSoon(e: Pick<UpcomingEarnings, 'date'>, today: string,
 export const EARNINGS_SOURCE_NAMES: Record<EarningsSource, string> = {
   fmp: 'Financial Modeling Prep',
   'alpha-vantage': 'Alpha Vantage',
+}
+
+/** How one source answered, as lib/server/earningsCalendar.ts reports it. */
+export interface EarningsSourceAnswer {
+  configured: boolean
+  ok: boolean
+  detail?: string
+}
+
+/**
+ * When a configured calendar failed while another answered, the sentence that says which dates may
+ * be missing; otherwise null (code audit 2026-11-09, D214). On the owner's run Alpha Vantage listed
+ * 1,873 dates and FMP 63, so a failed Alpha Vantage with FMP answering left most stocks with no
+ * date, each described as not yet announced. A page shows this sentence beside a stock with no date.
+ */
+export function earningsGap(sources: Record<EarningsSource, EarningsSourceAnswer>): string | null {
+  const answered = (Object.keys(sources) as EarningsSource[]).filter((s) => sources[s].ok)
+  const failed = (Object.keys(sources) as EarningsSource[]).filter((s) => sources[s].configured && !sources[s].ok)
+  if (answered.length === 0 || failed.length === 0) return null
+  const names = failed.map((s) => EARNINGS_SOURCE_NAMES[s])
+  return `${names.join(' and ')}’s earnings calendar could not be read right now, so a date only it lists may be missing.`
 }
 
 /** "before the market opens", "after the market closes", or null when the source does not say. */

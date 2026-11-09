@@ -31,6 +31,8 @@
 // RELEASE_DATES_LAST_VERIFIED, never for a partial check (CLAUDE.md, "Data Files Reference").
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { marketToday } from '@/lib/utils/marketDay'
+
 export type ReleaseAgency = 'bls' | 'bea'
 export type ReleaseKind = 'cpi' | 'jobs' | 'gdp' | 'pce'
 
@@ -166,7 +168,7 @@ export function releasesBetween(from: string, to: string): EconomicRelease[] {
 
 /** The next release of each kind on or after `now`'s day, in date order; a kind past the table is left out. */
 export function nextReleases(now: Date = new Date()): EconomicRelease[] {
-  const today = now.toISOString().slice(0, 10)
+  const today = marketToday(now)
   const out: EconomicRelease[] = []
   for (const kind of Object.keys(RELEASE_KINDS) as ReleaseKind[]) {
     const next = ECONOMIC_RELEASES.find((x) => x.kind === kind && x.date >= today)

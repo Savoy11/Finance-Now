@@ -1,11 +1,13 @@
 import { FOMC_MEETINGS, isFomcMeetingTentative, type FomcMeeting } from './fomcCalendar'
 import { ECONOMIC_RELEASES, RELEASE_AGENCIES, RELEASE_KINDS, nextReleases, releaseLabel, type EconomicRelease } from './releaseCalendar'
+import { addDays, marketToday } from '@/lib/utils/marketDay'
 
 // The Macro pages' calendar (T-456 a and d, D211): what comes next from the Fed's meeting table
 // and the BLS and BEA release table. Pure, with an injectable `now`, so its edge cases are tested.
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-const isoDay = (now: Date) => now.toISOString().slice(0, 10)
+// New York's day, as the tables' dates are (D214): in UTC, tomorrow's CPI read "today" from ~8 pm Eastern.
+const isoDay = (now: Date) => marketToday(now)
 
 /** "Dec 9, 2026". */
 export function shortDay(iso: string): string {
@@ -19,7 +21,7 @@ export function meetingDays(m: FomcMeeting): string {
   return ms === me ? `${MONTHS[ms - 1]} ${ds}–${de}, ${ys}` : `${MONTHS[ms - 1]} ${ds}–${MONTHS[me - 1]} ${de}, ${ys}`
 }
 
-/** "today", "tomorrow", "in 12 days", counted in whole UTC days as the tables' dates are. */
+/** "today", "tomorrow", "in 12 days", counted in whole days from New York's day. */
 export function daysUntil(iso: string, now: Date): string {
   const days = Math.round((Date.parse(`${iso}T00:00:00Z`) - Date.parse(`${isoDay(now)}T00:00:00Z`)) / 86_400_000)
   return days <= 0 ? 'today' : days === 1 ? 'tomorrow' : `in ${days} days`
@@ -52,7 +54,7 @@ export function fedMeetingsInYear(year: number, now: Date = new Date()): Array<{
 /** Every Fed decision and release in the next `days` days, in date order, for the macro agents. */
 export function macroCalendarAhead(days: number, now: Date = new Date()): Array<{ date: string; event: string; kind: 'fed' | EconomicRelease['kind']; source: string }> {
   const from = isoDay(now)
-  const to = new Date(now.getTime() + days * 86_400_000).toISOString().slice(0, 10)
+  const to = addDays(from, days)
   const fed = FOMC_MEETINGS.map((meeting, index) => ({ meeting, index }))
     .filter(({ meeting }) => meeting.end >= from && meeting.end <= to)
     .map(({ meeting, index }) => ({

@@ -177,6 +177,9 @@ function CalendarContent() {
               </div>
             </div>
           )}
+          {configured && data?.earningsGap && (
+            <p className="px-1 text-[11px] text-amber-400/90">{data.earningsGap}</p>
+          )}
           {configured && data && !data.fmpConfigured && (
             <p className="px-1 text-[11px] text-text-muted">
               Earnings here come from Alpha Vantage, which lists the next three months; with no FMP key, earlier and later months show none.

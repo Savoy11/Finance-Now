@@ -159,6 +159,24 @@ export function actualWeightsFromTracked(holdings: readonly HoldingValue[]): Act
   }
 }
 
+/**
+ * What the drift check left out of a tracked portfolio, in words, or null when nothing was.
+ *
+ * Never hidden under a threshold (code audit 2026-11-09, D214). A holding is left out because it has
+ * no live price, so how much it is worth now is not known; what it cost says nothing about that. A
+ * Bitcoin bought for $400 years ago is 0.8% of a $50,400 cost basis and can be most of the
+ * portfolio's value today. The check used to name nothing below 1% of cost and call the rest
+ * "live value".
+ */
+export function trackedLeftOutNotice(unpriced: readonly string[]): string | null {
+  const names = [...new Set(unpriced.map((s) => s.toUpperCase()))]
+  if (names.length === 0) return null
+  const shown = names.length <= 4 ? names : [...names.slice(0, 3), `${names.length - 3} more`]
+  const list = shown.length === 1 ? shown[0] : `${shown.slice(0, -1).join(', ')} and ${shown[shown.length - 1]}`
+  const one = names.length === 1
+  return `Left out: ${list}, with no live price right now. What ${one ? 'it is' : 'they are'} worth is not known, so the weights and the buy and sell amounts below are worked out without ${one ? 'it' : 'them'}.`
+}
+
 // ─── (d) What the money has earned ───────────────────────────────────────────
 
 /** The yearly figure shows once the first money put in is this many days old (owner, D208). */

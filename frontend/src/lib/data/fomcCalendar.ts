@@ -28,6 +28,7 @@
 // it. Only then move FOMC_LAST_VERIFIED — never for a partial check (CLAUDE.md, "Data
 // Files Reference").
 // ─────────────────────────────────────────────────────────────────────────────
+import { marketToday } from '@/lib/utils/marketDay'
 
 export const FOMC_SOURCE_URL = 'https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm'
 
@@ -92,8 +93,9 @@ export function fomcScheduleThrough(): string {
   return FOMC_MEETINGS[FOMC_MEETINGS.length - 1].end
 }
 
+/** The Fed's dates are Washington's, so "held" is counted from New York's day (D214). */
 function isoDay(now: Date): string {
-  return now.toISOString().slice(0, 10)
+  return marketToday(now)
 }
 
 /**

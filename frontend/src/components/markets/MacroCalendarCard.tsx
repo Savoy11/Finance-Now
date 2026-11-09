@@ -8,6 +8,7 @@ import { useIsClient } from '@/hooks/useIsClient'
 import { FOMC_SOURCE_URL, getFomcCalendarProvenance } from '@/lib/data/fomcCalendar'
 import { RELEASE_AGENCIES, RELEASE_KINDS, getReleaseDatesProvenance, releaseLabel } from '@/lib/data/releaseCalendar'
 import { fedMeetingsInYear, macroCalendarNext, daysUntil, meetingDays, shortDay } from '@/lib/data/macroCalendar'
+import { marketToday } from '@/lib/utils/marketDay'
 
 // The Fed's meetings and the four US releases on the Macro pages (T-456 a and d, D211).
 // Read from the two hand-kept tables, so nothing is fetched; drawn only once the browser has
@@ -92,7 +93,7 @@ export function MacroCalendarCard({ full = false }: {
 }
 
 function FedYear({ now }: { now: Date }) {
-  const year = now.getUTCFullYear()
+  const year = Number(marketToday(now).slice(0, 4))
   const years = [year, year + 1].map((y) => ({ y, meetings: fedMeetingsInYear(y, now) })).filter((x) => x.meetings.length)
   return (
     <div className="space-y-2">

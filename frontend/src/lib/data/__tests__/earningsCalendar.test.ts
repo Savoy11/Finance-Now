@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import fs from 'node:fs'
 import path from 'node:path'
 import {
-  EARNINGS_SOON_DAYS, cleanSymbols, daysUntil, earningsTimeLabel, isEarningsSoon, marketToday, mergeEarnings,
+  EARNINGS_SOON_DAYS, cleanSymbols, daysUntil, earningsGap, earningsTimeLabel, isEarningsSoon, marketToday, mergeEarnings,
   nextEarningsBySymbol, parseAlphaVantageEarnings, parseFmpEarnings, type UpcomingEarnings,
 } from '../earningsCalendar'
 import { fitRow, splitCsvLine } from '../alphaVantageCsv'
@@ -95,6 +95,17 @@ describe('mergeEarnings', () => {
   })
 })
 
+describe('earningsGap: which dates may be missing (D214)', () => {
+  const up = { configured: true, ok: true }, down = { configured: true, ok: false }, off = { configured: false, ok: false }
+  it('speaks only when a configured calendar failed while another answered', () => {
+    expect(earningsGap({ fmp: up, 'alpha-vantage': down })).toMatch(/^Alpha Vantage’s earnings calendar could not be read/)
+    expect(earningsGap({ fmp: down, 'alpha-vantage': up })).toMatch(/^Financial Modeling Prep’s earnings calendar/)
+    expect(earningsGap({ fmp: up, 'alpha-vantage': up })).toBeNull()
+    expect(earningsGap({ fmp: up, 'alpha-vantage': off })).toBeNull()
+    expect(earningsGap({ fmp: down, 'alpha-vantage': down })).toBeNull()
+  })
+})
+
 describe('the next date, and what counts as soon', () => {
   it('takes each company’s first report on or after today', () => {
     const next = nextEarningsBySymbol([ev('A', '2026-11-01'), ev('A', '2027-02-01'), ev('A', '2026-11-20'), ev('B', '2026-11-08')], '2026-11-08')
@@ -133,6 +144,8 @@ describe('the next date, and what counts as soon', () => {
 
 const keys: Record<string, string | undefined> = {}
 vi.mock('@/lib/api/live/providers', () => ({ getProviderKey: (id: string) => keys[id] }))
+const revalidated: string[] = []
+vi.mock('next/cache', () => ({ revalidateTag: (tag: string) => { revalidated.push(tag) } }))
 
 describe('upcomingEarnings (lib/server/earningsCalendar.ts)', () => {
   const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status })
@@ -172,6 +185,52 @@ describe('upcomingEarnings (lib/server/earningsCalendar.ts)', () => {
     const r = await upcomingEarnings('2026-11-08', '2026-12-08', now)
     expect(r).toMatchObject({ configured: false, events: [] })
     expect(calls).toEqual([])
+  })
+
+  // ── Code audit 2026-11-09 (D214) ──
+  const THROTTLED = JSON.stringify({ Information: 'Our standard API rate limit is 25 requests per day.' })
+
+  it('says which dates may be missing when Alpha Vantage fails and FMP answers', async () => {
+    const { upcomingEarnings } = await import('@/lib/server/earningsCalendar')
+    stub(() => json([{ symbol: 'NVDA', date: '2026-11-19' }]), () => text(THROTTLED))
+    const r = await upcomingEarnings('2026-11-09', '2026-12-08', now)
+    expect(r.sources['alpha-vantage']).toMatchObject({ configured: true, ok: false })
+    expect(earningsGap(r.sources)).toBe('Alpha Vantage’s earnings calendar could not be read right now, so a date only it lists may be missing.')
+  })
+
+  it('drops a failed Alpha Vantage answer from the cache, so it does not stand for a day', async () => {
+    const { upcomingEarnings, ALPHA_VANTAGE_EARNINGS_TAG } = await import('@/lib/server/earningsCalendar')
+    revalidated.length = 0
+    stub(() => json([]), () => text(THROTTLED))
+    await upcomingEarnings('2026-11-09', '2026-12-08', now)
+    expect(revalidated).toEqual([ALPHA_VANTAGE_EARNINGS_TAG])
+    revalidated.length = 0
+    now += 3_600_000
+    stub(() => json([]), () => text(NVDA_BODY))
+    await upcomingEarnings('2026-11-09', '2026-12-08', now)
+    expect(revalidated).toEqual([])
+    const src = fs.readFileSync(path.join(process.cwd(), 'src/lib/server/earningsCalendar.ts'), 'utf8')
+    expect(src).toMatch(/tags: \[ALPHA_VANTAGE_EARNINGS_TAG\]/)
+  })
+
+  it('shows a company FMP lists with FMP’s date only, in every month (one date per company)', async () => {
+    const { upcomingEarnings } = await import('@/lib/server/earningsCalendar')
+    // FMP lists XYZ on Dec 2; Alpha Vantage has it on Nov 30. FMP answers only for the range asked.
+    const fmpRows = [{ symbol: 'XYZ', date: '2026-12-02' }, { symbol: 'NVDA', date: '2026-11-19' }]
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+      const u = new URL(String(url))
+      if (u.hostname.includes('financialmodelingprep')) {
+        const from = u.searchParams.get('from')!, to = u.searchParams.get('to')!
+        return json(fmpRows.filter((r) => r.date >= from && r.date <= to))
+      }
+      return text(`${HEADER}\nXYZ,XYZ Corp,2026-11-30,,,USD,\nWMT,Walmart,2026-11-18,,,USD,\n`)
+    }))
+    const nov = await upcomingEarnings('2026-11-01', '2026-11-30', now)
+    expect(nov.events.map((e) => [e.symbol, e.date, e.source])).toEqual([
+      ['WMT', '2026-11-18', 'alpha-vantage'], ['NVDA', '2026-11-19', 'fmp'],
+    ])
+    const dec = await upcomingEarnings('2026-12-01', '2026-12-31', now)
+    expect(dec.events.map((e) => [e.symbol, e.date, e.source])).toEqual([['XYZ', '2026-12-02', 'fmp']])
   })
 
   it('asks Alpha Vantage at one address with no dates in it, cached a day, so it costs one request a day', () => {

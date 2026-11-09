@@ -6,7 +6,8 @@ import { fomcEventsBetween, mergeEconomicEvents, releaseEventsBetween, type Econ
 import { fomcScheduleThrough } from '@/lib/data/fomcCalendar'
 import { releaseScheduleSpan } from '@/lib/data/releaseCalendar'
 import { upcomingEarnings, type EarningsSourceStatus } from '@/lib/server/earningsCalendar'
-import type { EarningsSource, EarningsTime } from '@/lib/data/earningsCalendar'
+import { earningsGap, type EarningsSource, type EarningsTime } from '@/lib/data/earningsCalendar'
+import { addDays, marketToday } from '@/lib/utils/marketDay'
 
 // Earnings + economic calendar for the equities module.
 //
@@ -52,6 +53,8 @@ export interface MarketCalendarResponse {
   fmpConfigured: boolean
   /** How each earnings source answered. */
   earningsSources: Record<EarningsSource, EarningsSourceStatus>
+  /** When a configured earnings calendar failed and another answered: which dates may be missing (D214). */
+  earningsGap: string | null
   from: string
   to: string
   earnings: EarningsEvent[]
@@ -82,8 +85,9 @@ export async function GET(req: NextRequest) {
     to = new Date(Date.UTC(target.getUTCFullYear(), target.getUTCMonth() + 1, 0)).toISOString().slice(0, 10)
   } else {
     const days = Math.min(parseInt(req.nextUrl.searchParams.get('days') ?? '14', 10) || 14, 30)
-    from = new Date().toISOString().slice(0, 10)
-    to = new Date(Date.now() + days * 86_400_000).toISOString().slice(0, 10)
+    // New York's day (D214): from UTC's, that evening's reporters dropped out after ~8 pm Eastern.
+    from = marketToday()
+    to = addDays(from, days)
   }
   const span = releaseScheduleSpan()
   const base = { from, to, fomcThrough: fomcScheduleThrough(), releasesFrom: span.from, releasesThrough: span.through, updatedAt: new Date().toISOString() }
@@ -109,7 +113,7 @@ export async function GET(req: NextRequest) {
 
   if (!upcoming?.configured && !FMP_KEY) {
     return NextResponse.json({
-      ok: false, configured: false, fmpConfigured: false, earningsSources, earnings: [],
+      ok: false, configured: false, fmpConfigured: false, earningsSources, earningsGap: null, earnings: [],
       economic: mergeEconomicEvents([], fomc, 0, releases), ...base,
     } satisfies MarketCalendarResponse)
   }
@@ -150,6 +154,7 @@ export async function GET(req: NextRequest) {
     configured: !!upcoming?.configured,
     fmpConfigured: !!FMP_KEY,
     earningsSources,
+    earningsGap: earningsGap(earningsSources),
     earnings: earnings.slice(0, 120),
     economic: mergeEconomicEvents(fmpEconomic, fomc, undefined, releases),
     ...base,

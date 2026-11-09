@@ -40,15 +40,19 @@ export const MACRO_NEWS_MATCHERS: readonly MacroMatcher[] = [
   { pattern: /\b(t-bill|3-month|13-week)\b/i,      label: '13-Week Yield', href: '/macro/rates/13-week-yield' },
 ]
 
-/** At most this many instruments are tagged on one story. */
+/**
+ * At most this many instrument chips are drawn under one story. Only the chips: every instrument a
+ * story names is kept, because each instrument's own page lists the stories that name it, and a cap
+ * here dropped the yields, which are matched last, from stories that named four markets first
+ * (code audit 2026-11-09, D214).
+ */
 export const MAX_RELATED = 4
 
-/** The instruments a story's text names, each once, in matcher order. */
+/** Every instrument a story's text names, each once, in matcher order. */
 export function detectMacroRelated(text: string): Array<{ label: string; href: string }> {
   const seen = new Set<string>()
   const out: Array<{ label: string; href: string }> = []
   for (const m of MACRO_NEWS_MATCHERS) {
-    if (out.length >= MAX_RELATED) break
     if (!seen.has(m.href) && m.pattern.test(text)) {
       seen.add(m.href)
       out.push({ label: m.label, href: m.href })
