@@ -1777,11 +1777,18 @@ deliberately untouched: it works, and it is not what this decision was about.
 Claude Sonnet 5, and every model after Opus 4.6, refuses a `temperature` with a 400
 ("`temperature` is deprecated for this model"), and every Anthropic request sent the
 agent's saved one. The first `npm run agent-eval -- --run` found all of them refused; no
-test reaches the paid API. **Send a temperature only through `anthropicSampling(model,
-temperature)` (`lib/agents/sampling.ts`)**, which passes it only to Claude 4.6 and older
-and to nothing it does not recognise. `__tests__/sampling.test.ts` fails on an Anthropic
-`messages.create` that sends a bare one. The AI Agents tab says so under the slider when
-the chosen model ignores it. Other providers (OpenAI-compatible) still get it.
+test reaches the paid API. The fix (`anthropicSampling`) sent one only to Claude 4.6 and older.
+
+⚠ **Since 2026-11-09 no Claude request sends `temperature`, `top_p` or `top_k` at all (D215).**
+`@anthropic-ai/sdk` 1.x (1.6.0 here) sends API version `2026-10-21`, which refuses all three
+with a 400 on every model, even at their defaults; the owner chose to stop sending the agent's
+temperature to Claude rather than hold the upgrade back, and `lib/agents/sampling.ts` went with
+it. `__tests__/sampling.test.ts` reads every Claude request in `src/` and `scripts/` and fails on
+one that names any of the three, or spreads in a `…Sampling` object. The AI Agents tab says
+under the slider that Claude ignores it. Other providers (OpenAI-compatible) still get it. The
+Integrations Test button sends the same API version (`ANTHROPIC_API_VERSION`,
+`live-data/config/route.ts`). The SDK sends the key as `Authorization: Bearer` since 1.x, and
+its licence is Apache 2.0 (the open-source page reads it from the lockfile).
 
 **The first run that reached the agents (2026-10-17) is judged: `docs/assessments/T6-agents-2026-10-17.md`,
 verdicts D136.** Most of what was wrong sat in the app, not the prompts, and is fixed: the runner joined

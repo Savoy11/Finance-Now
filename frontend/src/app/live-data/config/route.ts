@@ -422,6 +422,11 @@ async function refused(res: Response, key: string): Promise<TestResult> {
 
 /** Room for a one-word answer, and for a model that thinks first to stop early without failing. */
 const ANTHROPIC_TEST_MAX_TOKENS = 16
+/**
+ * The API version the Test button sends, the one @anthropic-ai/sdk 1.x sends for the agents (D215),
+ * so the button tests what the agents run on. It sends no temperature, which 2026-10-21 refuses.
+ */
+const ANTHROPIC_API_VERSION = '2026-10-21'
 
 /**
  * Anthropic is tested with the kind of request the agents make, not by listing models.
@@ -435,7 +440,7 @@ async function testAnthropic(key?: string): Promise<TestResult> {
   const res = await termsGatedFetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS),
-    headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+    headers: { 'x-api-key': key, 'anthropic-version': ANTHROPIC_API_VERSION, 'content-type': 'application/json' },
     body: JSON.stringify({
       model: DEFAULT_ANTHROPIC_MODEL,
       max_tokens: ANTHROPIC_TEST_MAX_TOKENS,
