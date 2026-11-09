@@ -21,7 +21,7 @@ import {
   TRACKED_LIST_KEY, retryUnlessAnswered, trackedApi, trackedLedgerKey, trackedPricesKey,
 } from '@/lib/api/trackedPortfolios'
 import { valueLedger } from '@/lib/data/tradeLedger'
-import { actualWeightsFromTracked } from '@/lib/data/trackedPortfolioViews'
+import { actualWeightsFromTracked, trackedLeftOutNotice } from '@/lib/data/trackedPortfolioViews'
 import { FeatureNotice } from '@/components/legal/FeatureNotice'
 
 // Drift + suitability panel for one saved plan. A plan only earns its keep if
@@ -162,6 +162,9 @@ export function PlanMonitor({ saved }: { saved: SavedPlan }) {
       : null
   }, [usingTracked, ledger.data, heldKeys, trackedPrices.data, usingPortfolio, priceResult, portfolio, manual, saved.plan.inputs.amount])
   const portfolioName = usingPortfolio ? chosen?.name ?? null : null
+  // A tracked portfolio names every holding left out for want of a live price (D214).
+  const leftOut: string[] = usingTracked && actual ? (actual as { unpriced?: string[] }).unpriced ?? [] : []
+  const leftOutNotice = trackedLeftOutNotice(leftOut)
 
   const drift = useMemo(
     () => (actual ? checkDrift(saved.plan, actual.weights, actual.valueUsd) : null),
@@ -216,6 +219,7 @@ export function PlanMonitor({ saved }: { saved: SavedPlan }) {
     setPrintNotes(buildRebalanceNotes({
       planName: saved.name, drift, portfolioName,
       valueUsd: actual.valueUsd, pricedPct: actual.pricedPct, bandPct: saved.plan.driftBandPct,
+      leftOut,
       preparedAt: new Date(),
     }))
   }
@@ -269,7 +273,7 @@ export function PlanMonitor({ saved }: { saved: SavedPlan }) {
 
         {usingPortfolio && actual && (
           <span className="ml-auto text-xs text-text-muted font-mono tabular-nums">
-            {fmtUsd(actual.valueUsd)} {actual.pricedPct < 99 ? 'marked to market' : 'live value'}
+            {fmtUsd(actual.valueUsd)} {leftOut.length > 0 ? 'live value of the priced holdings' : actual.pricedPct < 99 ? 'marked to market' : 'live value'}
           </span>
         )}
       </div>
@@ -328,9 +332,13 @@ export function PlanMonitor({ saved }: { saved: SavedPlan }) {
         </p>
       )}
 
-      {usingPortfolio && actual && actual.pricedPct < 99 && (
+      {usingTracked && leftOutNotice && (
+        <p className="text-xs text-amber-400">{leftOutNotice}</p>
+      )}
+
+      {usingPortfolio && !usingTracked && actual && actual.pricedPct < 99 && (
         <p className="text-xs text-amber-400">
-          Only {actual.pricedPct}% of the portfolio{usingTracked ? ' (measured by what it cost)' : ''} could be marked to market; the rest is excluded from
+          Only {actual.pricedPct}% of the portfolio could be marked to market; the rest is excluded from
           these weights
           {actual.unpricedPct > 0 && ` (${actual.unpricedPct}% has no live price`}
           {actual.unpricedPct > 0 && actual.noCostBasisPct > 0 && ','}

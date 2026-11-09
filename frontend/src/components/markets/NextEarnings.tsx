@@ -62,6 +62,11 @@ export function NextEarningsCard({ symbol }: { symbol: string }) {
             Expected, as listed by {EARNINGS_SOURCE_NAMES[next.source]}. Companies often confirm the date late and can move it.
           </p>
         </>
+      ) : data.gap ? (
+        // A calendar failed, so "not listed" may only mean "not listed by the one that answered" (D214).
+        <p className="mt-2 text-xs text-amber-400/90 leading-relaxed">
+          No date found in the next {EARNINGS_LOOK_AHEAD_DAYS} days. {data.gap}
+        </p>
       ) : (
         <p className="mt-2 text-xs text-text-muted leading-relaxed">
           No date listed in the next {EARNINGS_LOOK_AHEAD_DAYS} days. The company may not have announced it yet.

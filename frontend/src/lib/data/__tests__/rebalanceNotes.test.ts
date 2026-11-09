@@ -73,6 +73,14 @@ describe('rebalance notes restate the drift check', () => {
   })
 })
 
+describe('holdings left out for want of a live price (D214)', () => {
+  it('names them, deduplicated, and carries none when none were passed', () => {
+    const { w } = skewed(plan.driftBandPct + 3)
+    expect(notesFor(w, { leftOut: ['btc', 'BTC', 'QQQQ'] }).leftOut).toEqual(['BTC', 'QQQQ'])
+    expect(notesFor(w).leftOut).toEqual([])
+  })
+})
+
 describe('the printed words are arithmetic, not advice', () => {
   const both = [notesFor(skewed(plan.driftBandPct + 3).w), notesFor(skewed(0).w)]
 

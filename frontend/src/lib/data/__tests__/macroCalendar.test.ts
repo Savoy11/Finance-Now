@@ -6,6 +6,7 @@ import {
   getReleaseDatesProvenance, nextReleases, releaseLabel, releaseScheduleSpan, releasesBetween,
 } from '../releaseCalendar'
 import { daysUntil, fedMeetingsInYear, macroCalendarAhead, macroCalendarNext, meetingDays, shortDay } from '../macroCalendar'
+import { FOMC_MEETINGS, isFomcMeetingTentative } from '../fomcCalendar'
 import { MACRO_NEWS_MATCHERS, MAX_RELATED, detectMacroRelated, newsCanName } from '../macroNewsMatchers'
 import { COMMODITY_CATALOG } from '../commodityCatalog'
 import { CURRENCY_CATALOG } from '../currencyCatalog'
@@ -184,10 +185,15 @@ describe('news on each instrument’s page', () => {
     expect(detectMacroRelated('Natural gas hits a 5-year high').map((r) => r.href)).not.toContain('/macro/rates/5-year-yield')
   })
 
-  it('tags at most a few instruments on one story, each once', () => {
-    const many = detectMacroRelated('Gold, silver, copper, WTI crude oil, Brent and the euro all moved; EUR/USD rose')
-    expect(many.length).toBeLessThanOrEqual(MAX_RELATED)
-    expect(new Set(many.map((r) => r.href)).size).toBe(many.length)
+  it('keeps every instrument a story names, each once, and caps only the chips (D214)', () => {
+    // The audit's story: four markets come before the yields in matcher order, and a cap of four
+    // here kept it off the 10-Year Yield page.
+    const all = detectMacroRelated('Gold and silver rallied, crude oil slipped and the euro firmed as the 10-year Treasury yield fell')
+    expect(all.map((r) => r.label)).toContain('10-Year Yield')
+    expect(all.length).toBeGreaterThan(MAX_RELATED)
+    expect(new Set(all.map((r) => r.href)).size).toBe(all.length)
+    expect(read('src/app/(dashboard)/macro/news/MacroNewsClient.tsx')).toMatch(/article\.related\.slice\(0, MAX_RELATED\)/)
+    expect(read('src/app/(dashboard)/headlines/page.tsx')).toMatch(/tagLinks \?\? \[\]\)\.slice\(0, MAX_RELATED\)/)
   })
 
   it('says when the feed cannot recognise an instrument, rather than reporting no stories', () => {
@@ -204,5 +210,42 @@ describe('news on each instrument’s page', () => {
     const headlines = read('src/app/(dashboard)/headlines/page.tsx')
     expect(headlines).toContain("fetch('/live-data/macro-news")
     expect(headlines).toContain("isEnabled('macro')")
+  })
+})
+
+describe('the Macro calendar counts from New York’s day, not UTC’s (code audit 2026-11-09, D214)', () => {
+  // 9:30 pm Eastern on Nov 9 is already Nov 10 in UTC; CPI is released on Nov 10.
+  const NOV9_EVENING = new Date('2026-11-10T02:30:00Z')
+  // 8 pm Eastern on Dec 8, and on Dec 9, the Fed's decision day.
+  const DEC8_EVENING = new Date('2026-12-09T01:00:00Z')
+  const DEC9_EVENING = new Date('2026-12-10T01:00:00Z')
+
+  it('calls tomorrow’s CPI tomorrow in the US evening', () => {
+    const cpi = macroCalendarNext(NOV9_EVENING).releases.find((r) => r.kind === 'cpi')
+    expect(cpi?.date).toBe('2026-11-10')
+    expect(daysUntil('2026-11-10', NOV9_EVENING)).toBe('tomorrow')
+  })
+
+  it('keeps the Fed decision on its day until midnight in New York', () => {
+    expect(daysUntil('2026-12-09', DEC8_EVENING)).toBe('tomorrow')
+    expect(macroCalendarNext(DEC9_EVENING).fed?.meeting.end).toBe('2026-12-09')
+    expect(daysUntil('2026-12-09', DEC9_EVENING)).toBe('today')
+  })
+
+  it('keeps a release on its own day until midnight in New York', () => {
+    // 9:30 pm Eastern on Nov 10, CPI day: UTC has turned to Nov 11 and used to drop it.
+    const cpi = nextReleases(new Date('2026-11-11T02:30:00Z')).find((r) => r.kind === 'cpi')
+    expect(cpi?.date).toBe('2026-11-10')
+  })
+
+  it('counts the next Fed meeting tentative until the one before it is over in New York', () => {
+    const jan = FOMC_MEETINGS.findIndex((m) => m.end === '2027-01-27')
+    expect(isFomcMeetingTentative(jan, DEC8_EVENING)).toBe(true)
+    expect(isFomcMeetingTentative(jan, DEC9_EVENING)).toBe(false)
+  })
+
+  it('looks ahead from New York’s day for the macro agents', () => {
+    const ahead = macroCalendarAhead(1, NOV9_EVENING)
+    expect(ahead.map((e) => e.date)).toContain('2026-11-10')
   })
 })

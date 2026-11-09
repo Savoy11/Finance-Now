@@ -15,6 +15,7 @@ import type { LiveNewsArticle } from '@/app/live-data/news/route'
 import type { MarketNewsResponse } from '@/app/live-data/market-news/route'
 import type { MacroNewsResponse } from '@/app/live-data/macro-news/route'
 import { timeAgoCompact } from '@/lib/utils/format'
+import { MAX_RELATED } from '@/lib/data/macroNewsMatchers'
 
 // Aggregate landing feed. Merges the general news sources the suite has —
 // /live-data/news (crypto), /live-data/market-news (equities) and, since T-456,
@@ -163,7 +164,7 @@ function StoryCard({ story, showModule = false, onWatchlist = false }: { story: 
             <>
               <Tag size={10} className="text-text-muted shrink-0" aria-hidden />
               <div className="flex flex-wrap gap-1">
-                {(story.tagLinks ?? []).slice(0, 4).map((t) => (
+                {(story.tagLinks ?? []).slice(0, MAX_RELATED).map((t) => (
                   <Link
                     key={t.href}
                     href={t.href}

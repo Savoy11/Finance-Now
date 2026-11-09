@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   YEARLY_AFTER_DAYS, actualWeightsFromTracked, formatReturnPct, moneyFlows, moneyWeightedRate, portfolioReturn,
-  trackedBriefSymbols, trackedClassSplit, trackedLookThroughPositions,
+  trackedBriefSymbols, trackedClassSplit, trackedLeftOutNotice, trackedLookThroughPositions,
 } from '../trackedPortfolioViews'
 import type { HoldingValue, LedgerView, TradeView } from '../tradeLedger'
 
@@ -84,6 +84,31 @@ describe('the drift check reads a tracked portfolio (c)', () => {
     expect(a.unpricedPct).toBe(1.6)
     expect(a.pricedPct).toBe(98.4)
     expect(a.unpriced).toEqual(['QQQQ'])
+  })
+})
+
+describe('the drift check names what it left out, however little it cost (code audit 2026-11-09, D214)', () => {
+  // The audit's case: 1 BTC bought for $400 with no live price this minute, and VTI that cost $50,000,
+  // worth $60,000. By cost BTC is 0.8%, under the old 1% line, so nothing was said.
+  const CASE = [holding('bitcoin', 'BTC', '1', '400', null), holding('sec:VTI', 'VTI', '200', '50000', '60000')]
+
+  it('still leaves the holding out of the weights, never valuing it at cost', () => {
+    const a = actualWeightsFromTracked(CASE)
+    expect(a.weights).toEqual({ VTI: 100 })
+    expect(a.pricedPct).toBe(99.2)
+    expect(a.unpriced).toEqual(['BTC'])
+  })
+
+  it('says so by name, at any share of cost', () => {
+    const note = trackedLeftOutNotice(actualWeightsFromTracked(CASE).unpriced)
+    expect(note).toMatch(/^Left out: BTC, with no live price right now\./)
+    expect(note).toMatch(/worked out without it\.$/)
+  })
+
+  it('names several, and says nothing when nothing was left out', () => {
+    expect(trackedLeftOutNotice(['btc', 'QQQQ', 'BTC'])).toMatch(/^Left out: BTC and QQQQ, .*without them\.$/)
+    expect(trackedLeftOutNotice(['A', 'B', 'C', 'D', 'E'])).toMatch(/^Left out: A, B, C and 2 more,/)
+    expect(trackedLeftOutNotice([])).toBeNull()
   })
 })
 

@@ -16,6 +16,7 @@ import { VideoAskDialog, useVideoAnalyzers, hasUsableAnalyzer } from '@/componen
 import type { VideoSearchResponse, SearchScope, SearchOrder, SearchDuration } from '@/app/live-data/video-search/route'
 import type { ProviderMarket } from '@/lib/api/live/providers'
 import { timeAgoCompact } from '@/lib/utils/format'
+import { videoFeedNote } from '@/lib/data/videoFeedNote'
 
 // Video feed — keyless YouTube channel Atom feeds, merged and ranked by recency.
 // Channels are managed in Integrations → Video Sources (registry-driven), and
@@ -168,23 +169,6 @@ function VideoCard({ video, eager = false, canAnalyze = false }: { video: VideoI
   )
 }
 
-/**
- * Why the channel feeds gave nothing, from the route's own account of each feed (2026-11-09).
- * "May be unreachable" was a guess; the route now says how many feeds failed and why.
- */
-function feedFailureNote(data: VideosResponse | undefined): string {
-  const failed = data?.failed ?? []
-  const tried = data?.tried ?? 0
-  if (tried === 0) return 'No video channels are switched on. Turn some on in Settings → Integrations.'
-  if (failed.length === 0) return 'No videos available: the channel feeds answered with none.'
-  const reasons = [...new Set(failed.map((f) => f.error))]
-  const shown = reasons.slice(0, 2).join('; ')
-  const more = reasons.length > 2 ? ` and ${reasons.length - 2} more reasons` : ''
-  return failed.length === tried
-    ? `None of the ${tried} channel feeds could be read (${shown}${more}).`
-    : `No videos available: ${failed.length} of ${tried} channel feeds could not be read (${shown}${more}).`
-}
-
 export default function VideosPage() {
   // Same bundle rules as /headlines: funds has no channels of its own, so it
   // shares the Markets (equities) set.
@@ -220,7 +204,7 @@ export default function VideosPage() {
   const [ytOrder, setYtOrder] = useState<SearchOrder>('relevance')
   const [ytDuration, setYtDuration] = useState<SearchDuration>('any')
 
-  const { data, isLoading, isFetching, refetch } = useQuery<VideosResponse>({
+  const { data, error, isLoading, isFetching, refetch } = useQuery<VideosResponse>({
     queryKey: ['videos'],
     // Headroom for added channels — 10 channels x 15 already exceeds 120.
     queryFn: () => fetch('/live-data/videos?limit=240').then((r) => r.json()),
@@ -650,7 +634,7 @@ export default function VideosPage() {
                 : <>Add a YouTube Data API key to search beyond the channel feeds.</>
               : activeFilterCount > 0
                 ? 'No videos match the current filters.'
-                : feedFailureNote(data)}
+                : videoFeedNote(data, error)}
           </p>
           {!isSearchMode && activeFilterCount > 0 && (
             <button
