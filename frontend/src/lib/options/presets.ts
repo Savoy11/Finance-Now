@@ -2,7 +2,8 @@
  * Common-structure presets for the Options Calculator and the Trade Risk Scorer (P2-O2).
  * Eleven more structures joined the first four on 2026-11-09 (T-061 on the calculator,
  * owner decision D216). Every preset stays at four legs or fewer, since the scorer's form
- * (switched off, D64) takes four.
+ * (switched off, D64) takes four. Since the code review of 2026-11-10 (D221) every strike
+ * sits on the underlying's own grid, anchored at the money, and butterflies have equal wings.
  *
  * Presets prefill STRUCTURE — sides, types, and strikes derived from the
  * underlying price — and nothing else. Bid/ask, open interest and delta stay
@@ -147,34 +148,79 @@ export function roundToStrike(price: number): number {
   return Math.round(price / increment) * increment
 }
 
-/**
- * Strikes for ascending fractions of the underlying price, kept apart and above 0.
- * Rounding alone can land two of them on one strike at a low price (at $5, both 95%
- * and 100% round to $5.00, which would turn a spread into nothing), so each strike
- * that would meet or pass the one below it moves up one increment.
- */
-export function strikeLadder(underlyingPrice: number, fractions: number[]): number[] {
+const cents = (x: number) => Math.round(x * 100) / 100
+
+function tooLow(underlyingPrice: number, step: number): RangeError {
+  return new RangeError(
+    `At $${underlyingPrice.toFixed(2)} this structure would need a strike of $0 or less on a $${step.toFixed(2)} strike grid. `
+    + 'Enter its strikes yourself.',
+  )
+}
+
+/** The listed strike nearest the price, on the underlying's own grid, and never below one step. */
+export function atTheMoney(underlyingPrice: number): number {
   const step = strikeIncrement(underlyingPrice)
-  const out: number[] = []
-  for (const f of fractions) {
-    let k = Math.max(roundToStrike(underlyingPrice * f), step)
-    const below = out[out.length - 1]
-    if (below !== undefined && k <= below) k = below + step
-    out.push(Math.round(k * 100) / 100)
+  return cents(Math.max(Math.round(underlyingPrice / step) * step, step))
+}
+
+/**
+ * Strikes for fractions of the underlying price, all on ONE grid, the underlying's own,
+ * and anchored at the money (code review 2026-11-10, D221):
+ *   • a fraction of 1 is the at-the-money strike;
+ *   • one below 1 sits at least one step below the at-the-money strike, and further out
+ *     than any fraction nearer 1; one above 1 likewise above.
+ * So a strike meant below the price is below it, one meant at the money stays there, and a
+ * spread's two strikes are never one. Rounding alone could do none of that at a low price:
+ * at $5, 95% and 100% both round to $5.00. Throws when a strike would reach $0, rather than
+ * pushing the structure up above the price, which the first version did.
+ */
+export function strikesAround(underlyingPrice: number, fractions: number[]): number[] {
+  const step = strikeIncrement(underlyingPrice)
+  const snap = (x: number) => Math.round(x / step) * step
+  const atm = atTheMoney(underlyingPrice)
+  const out: number[] = new Array(fractions.length)
+  const indexed = fractions.map((f, i) => ({ f, i }))
+  let prev = atm
+  for (const { f, i } of indexed.filter((x) => x.f < 1).sort((a, b) => b.f - a.f)) {
+    prev = Math.min(snap(underlyingPrice * f), prev - step)
+    out[i] = prev
   }
-  return out
+  prev = atm
+  for (const { f, i } of indexed.filter((x) => x.f > 1).sort((a, b) => a.f - b.f)) {
+    prev = Math.max(snap(underlyingPrice * f), prev + step)
+    out[i] = prev
+  }
+  for (const { f, i } of indexed) if (f === 1) out[i] = atm
+  if (out.some((k) => !(k > 1e-9))) throw tooLow(underlyingPrice, step)
+  return out.map(cents)
+}
+
+/**
+ * A butterfly's three strikes: at the money, and one equal step out either side, about
+ * `fraction` of the price away. Equal wings are what make a call butterfly's worst case the
+ * net debit paid; rounding each strike on its own left them unequal at about a quarter of
+ * all prices (code review 2026-11-10, D221).
+ */
+export function wingsAround(underlyingPrice: number, fraction: number): [number, number, number] {
+  const step = strikeIncrement(underlyingPrice)
+  const atm = atTheMoney(underlyingPrice)
+  const width = Math.max(Math.round((underlyingPrice * fraction) / step) * step, step)
+  if (!(atm - width > 1e-9)) throw tooLow(underlyingPrice, step)
+  return [cents(atm - width), atm, cents(atm + width)]
 }
 
 /**
  * Build a preset's legs from the underlying price. Throws on a non-positive
- * price — a structure anchored to nothing is not a prefill, it's noise.
+ * price — a structure anchored to nothing is not a prefill, it's noise — and, with a
+ * message to show, on a price too low for the structure's strikes to stay above $0.
  */
 export function buildPreset(id: PresetId, underlyingPrice: number): PresetResult {
   if (!Number.isFinite(underlyingPrice) || underlyingPrice <= 0) {
     throw new RangeError('Preset needs a positive underlying price')
   }
-  const at = (pct: number) => Math.max(roundToStrike(underlyingPrice * pct), strikeIncrement(underlyingPrice))
-  const ladder = (...fractions: number[]) => strikeLadder(underlyingPrice, fractions)
+  // One grid, anchored at the money (D221): see strikesAround and wingsAround.
+  const at = (fraction: number) => strikesAround(underlyingPrice, [fraction])[0]
+  const ladder = (...fractions: number[]) => strikesAround(underlyingPrice, fractions)
 
   switch (id) {
     case 'long-call':
@@ -197,13 +243,15 @@ export function buildPreset(id: PresetId, underlyingPrice: number): PresetResult
         note: 'Assumes you own 100 shares per contract — the short call alone is naked. '
           + 'Max loss is the stock’s downside, so set it from your share cost basis.',
       }
-    case 'cash-secured-put':
+    case 'cash-secured-put': {
+      const strike = at(0.95)
       return {
-        legs: [{ side: 'short', type: 'put', strike: at(0.95) }],
-        maxLossUsd: at(0.95) * 100,
+        legs: [{ side: 'short', type: 'put', strike }],
+        maxLossUsd: strike * 100,
         note: 'Worst case is assignment at the strike with the stock at zero: strike × 100, '
           + 'less the premium collected.',
       }
+    }
     case 'protective-put':
       return {
         legs: [{ side: 'long', type: 'put', strike: at(0.95) }],
@@ -301,7 +349,7 @@ export function buildPreset(id: PresetId, underlyingPrice: number): PresetResult
       }
     }
     case 'iron-butterfly': {
-      const [longPut, middle, longCall] = ladder(0.95, 1.0, 1.05)
+      const [longPut, middle, longCall] = wingsAround(underlyingPrice, 0.05)
       return {
         legs: [
           { side: 'long', type: 'put', strike: longPut },
@@ -309,12 +357,13 @@ export function buildPreset(id: PresetId, underlyingPrice: number): PresetResult
           { side: 'short', type: 'call', strike: middle },
           { side: 'long', type: 'call', strike: longCall },
         ],
-        maxLossUsd: Math.max(middle - longPut, longCall - middle) * 100,
+        // The wings are equal (wingsAround), so either one's width is the worst case.
+        maxLossUsd: (middle - longPut) * 100,
         note: 'Worst case is one wing’s width × 100, less the credit collected.',
       }
     }
     case 'long-call-butterfly': {
-      const [low, middle, high] = ladder(0.95, 1.0, 1.05)
+      const [low, middle, high] = wingsAround(underlyingPrice, 0.05)
       return {
         // Two short calls at the middle strike, entered as two legs so the
         // preset stays structure-only (side, type, strike) like every other.
