@@ -206,9 +206,10 @@ export const DATA_METHODS: readonly MethodSection[] = [
   {
     id: 'tracked-gains-income',
     title: 'Tracked portfolios: gains and income',
-    decided: '2026-11-07',
+    decided: '2026-11-10',
     paragraphs: [
       'Gains on a tracked portfolio are worked out first in, first out: a sale uses up the oldest units first. They are plain differences between what was paid and what was received, and no tax rule is applied to them.',
+      'The Sales list shows each sale with the purchases it used up, grouped by the calendar year of the sale. For each purchase it gives the date it was bought, the date it was sold, the days between them, what that part cost with its share of the purchase fee, and its share of what the sale brought in after the sale’s fee. A year’s gain is the sum of its sales, and every year together adds up to the Realized figure. A starting position entered with no date shows “Date not entered” and no days held. Units are those held at the sale, after any split. Cash paid instead of a fraction of a unit on a split appears as the small sale it is. Units sold with no purchase recorded are listed with what they brought in, and left out of every gain. Units moved out are not sales, so they are listed apart and counted in no total. The list is for checking against a broker’s statement: it is not a tax form, and it does not sort sales into short- and long-term. Every amount is worked out exactly and rounded to the cent only when shown, each on its own, so shown amounts can add up to a cent away from a shown total. The download gives the same rows, rounded the same way.',
       'Income received is shown apart from the gains. Cash income, such as a dividend, interest or a fund distribution, is the amount you enter; no units move. Units received as income, such as a staking reward or a dividend paid in shares, count as income at their value on the day, as you enter it, and that value is also what they cost. So a later sale of those units shows only what was gained after they arrived.',
       '“In the last 12 months” counts income received from the same date a year earlier up to today. A file imported from a broker is read the same way: a dividend, interest or distribution row is cash income from the file’s amount, and a staking reward row is units received at the file’s price that day.',
     ],

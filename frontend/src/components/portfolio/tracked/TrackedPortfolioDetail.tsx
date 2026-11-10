@@ -29,6 +29,7 @@ import { TrackedMixCard } from './TrackedMixCard'
 import { TradeForm } from './TradeForm'
 import { ImportTradesPanel } from './ImportTradesPanel'
 import { TradesTable } from './TradesTable'
+import { SalesList } from './SalesList'
 
 // One tracked portfolio (T-027, owner decision D65): what is held and what it
 // cost, what it is worth at live prices, the FIFO gains, the form for recording
@@ -328,6 +329,9 @@ export function TrackedPortfolioDetail({ portfolio, onBack }: {
             <h3 id={`${uid}-holdings`} className="text-sm font-semibold text-text-primary">Holdings</h3>
             <HoldingsTable holdings={valued.holdings} methodLabel={view.methodLabel} />
           </section>
+
+          {/* T-460 (D222): each sale with the purchases it used up, by year: what the Realized tile adds up. */}
+          <SalesList view={view} portfolioId={portfolio.id} />
 
           {/* What the funds held cost each year (T-448): figures only, no warning. */}
           {!pricesPending && <PortfolioCostsCard positions={costPositions} basis="tracked" />}

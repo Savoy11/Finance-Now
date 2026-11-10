@@ -5,14 +5,14 @@
 //   npm run user:export -- --user someone@example.com
 //   npm run user:export -- --user someone@example.com --out C:\some\folder
 //
-// Writes three files and reads only: nothing in the database changes, nothing is deleted. The
+// Writes four files (everything as JSON; trades, what-if holdings and sales as CSV) and reads only: nothing in the database changes, nothing is deleted. The
 // folder holds personal information, so hand it over and keep it out of the repository (the
 // default folder name is gitignored).
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import postgres from 'postgres'
 import { collectUserExport, type ExportQuery } from '../src/lib/server/userExportCollect'
-import { buildUserExport, exportFileName, holdingsCsv, tradesCsv, type Row } from '../src/lib/data/userExport'
+import { buildUserExport, exportFileName, holdingsCsv, salesCsv, tradesCsv, type Row } from '../src/lib/data/userExport'
 import { EXPORT_USAGE, defaultExportFolder, parseExportCommand } from './lib/exportCommand'
 
 /** Same dependency-free loader as drizzle.config.ts: the real environment wins over the file. */
@@ -57,6 +57,7 @@ async function main(): Promise<number> {
       [exportFileName('json', now), JSON.stringify(buildUserExport(collected, now), null, 2) + '\n'],
       [exportFileName('trades', now), tradesCsv(collected)],
       [exportFileName('holdings', now), holdingsCsv(collected)],
+      [exportFileName('sales', now), salesCsv(collected, now)],
     ]
     for (const [name, body] of files) writeFileSync(join(folder, name), body)
 

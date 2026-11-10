@@ -59,25 +59,25 @@
   "critic_gaps_added": 0
  },
  "counts": {
-  "total_verified": 414,
-  "outstanding": 398,
+  "total_verified": 421,
+  "outstanding": 405,
   "by_status": {
-   "closed": 258,
+   "closed": 259,
    "parked": 127,
-   "open": 8,
+   "open": 14,
    "blocked": 5
   },
   "by_owner_role": {
-   "remote-dev": 106,
-   "either": 55,
+   "remote-dev": 112,
+   "either": 56,
    "owner-decision": 151,
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 258,
-  "counts_recomputed_on": "2026-11-09",
+  "closed_by_annotation": 259,
+  "counts_recomputed_on": "2026-11-10",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
-  "total": 398
+  "total": 405
  },
  "blocking_decisions": [
   {
@@ -16649,6 +16649,412 @@
     "noted_on": "2026-11-09",
     "note": "2026-11-09: measured on the owner's machine by npm run audit (docs/audits/live-data-audit-2026-11-09.md): AAPL 2027-02-04, MSFT 2027-01-27 and NVDA 2026-11-17, each from FMP; over the 90 days FMP answered with 63 dates and Alpha Vantage with 1,873, so most companies' dates come from Alpha Vantage. The Market Calendar read 120 earnings and 1 economic event."
    }
+  },
+  {
+   "id": "T-459",
+   "title": "A fund’s own monthly returns, and the money moving in and out of it, from the N-PORT filing the app already downloads",
+   "status": "open",
+   "confidence": "high",
+   "blocking_decision": null,
+   "opened": {
+    "on": "2026-11-10",
+    "by": "opportunity-scout FILE mode, owner-approved 2026-11-10 (D222)",
+    "why": "Proposal 1 of docs/proposals/2026-11-10-proposals.md, proposed P1 (Importance high, Efficiency very high, Practicality very good), approved by the owner with the other five on 2026-11-10 (D222). It names no decision required; part (b), money in and out, is optional and recommended, and is the owner’s to confirm when the item is built. Nothing was built by the approval."
+   },
+   "owner_role": "remote-dev",
+   "category": "feature",
+   "effort": "medium",
+   "related_ids": [
+    "D222",
+    "D21",
+    "T-455",
+    "D212",
+    "T-457",
+    "D210",
+    "D163",
+    "D92"
+   ],
+   "summary": "A fund page shows no return of any kind: its price chart needs a quote key and shows no change figure, and the Fund Registry’s Returns columns need a Tiingo key, the one surface D21 names as having no fallback at all, with the question left open that the free providers’ prices leave distributions out, “and for mutual funds distributions are the point”. lib/server/nport.ts already downloads each fund’s NPORT-P filing, and parseNportReport keeps the report date, net assets, holdings and interest-rate risk; it drops Item B.5 (monthly total returns per share class, <monthlyTotReturn classId rtn1 rtn2 rtn3>) and Item B.6 (monthly flows: shares sold, distributions reinvested, shares redeemed, <mon1Flow> to <mon3Flow>). All five N-PORT filings in the build cache carry both (Vanguard 500 Index Fund twice, iShares Core Dividend Growth ETF twice, Growth Fund of America with one return row per share class; re-checked 2026-11-10). Three parts: (a) this share class’s total return for each of the three months the latest filing covers, and a 12-month total return wherever the last four filings join up without a gap, dated (“12 months to 31 August 2026, as reported to the SEC”); (b) for each month, the value of new shares issued, of distributions reinvested and of shares redeemed, with the net, shown against the fund’s size; (c) the in-app AI’s get_fund_details tool returns the same figures. resolveFundSeries already returns the fund’s class id, and /live-data/fund-holdings-history already lists up to 12 past filings and reads two. No key, no new host, no recurring cost.",
+   "next_action": "Build it from a cloud session; nothing needs the owner’s machine first. (1) Parse Items B.5 and B.6 in parseNportReport, tested against fixtures copied from the five cached filings (frontend/.next/cache/fetch-cache, the ones D212 used); if a later session finds that cache empty, copy one filing’s two sections on the owner’s machine instead, since a cloud session sends nothing to the SEC. (2) Read the form’s instruction for Item B.5 once, so the methods page (frontend/src/lib/legal/dataMethods.ts, D163) states exactly how the fund works its return out. (3) Put the 12-month chaining rule, pure and tested, in frontend/src/lib/utils/: a missing quarter means no 12-month figure, never a guessed one. (4) State the limits on the card: the figures are public about 60 days after the quarter ends, so the card names the month they run to; trusts that file no N-PORT (SPY, GLD and the other commodity trusts) show nothing; flows are the whole fund’s, every share class, while returns are the reader’s class; for an ETF, new shares are created for large dealers, not bought by individual investors. (5) When building, confirm part (b) with the owner; the proposal makes it optional and recommends yes. Do not feed these figures into the Fund Registry’s Returns column: each fund’s filing ends on a different month, so a column or a sort would set unlike periods side by side (the proposal’s “Considered and cut”). Facts from the fund’s own filing only, no rating (D92).",
+   "sources": [
+    {
+     "file": "docs/proposals/2026-11-10-proposals.md",
+     "lines": "Proposal 1",
+     "quote": "Every fund page gets the returns the fund itself reported to the SEC"
+    },
+    {
+     "file": "frontend/src/lib/server/nport.ts",
+     "lines": "227",
+     "quote": "export function parseNportReport(xml: string): NportReport {"
+    },
+    {
+     "file": "frontend/src/lib/server/nport.ts",
+     "lines": "109",
+     "quote": "return { seriesId: String(row[iSeries]), classId: iClass >= 0 ? String(row[iClass]) : '' }"
+    },
+    {
+     "file": "frontend/src/app/live-data/fund-holdings-history/route.ts",
+     "lines": "182",
+     "quote": "const filings = await listNportFilings(series.seriesId, 12)"
+    },
+    {
+     "file": "docs/decisions/2026-09-18-owner-decisions.md",
+     "lines": "74",
+     "quote": "for mutual funds distributions are the point"
+    },
+    {
+     "file": "frontend/src/lib/agents/tools.ts",
+     "lines": "293",
+     "quote": "name: 'get_fund_details',"
+    }
+   ]
+  },
+  {
+   "id": "T-460",
+   "title": "Every sale on a tracked portfolio with the purchases it used up, by calendar year: buy and sell dates, days held, cost, proceeds and gain, with a spreadsheet download",
+   "status": "closed",
+   "confidence": "high",
+   "blocking_decision": null,
+   "opened": {
+    "on": "2026-11-10",
+    "by": "opportunity-scout FILE mode, owner-approved 2026-11-10 (D222)",
+    "why": "Proposal 2 of docs/proposals/2026-11-10-proposals.md, proposed P1 (Importance high, Efficiency very high, Practicality very good), approved by the owner with the other five on 2026-11-10 (D222). The owner answered both of its questions at approval (“Finance Now, dates only (Recommended)”), so none is left for the build: it belongs in Finance Now, and a sale shows its buy and sell dates and days held with no “held more than a year” mark. Nothing was built by the approval."
+   },
+   "owner_role": "remote-dev",
+   "category": "feature",
+   "effort": "small",
+   "related_ids": [
+    "D222",
+    "T-027",
+    "D65",
+    "T-447",
+    "D200",
+    "T-451",
+    "D201",
+    "T-452",
+    "D199",
+    "T-058",
+    "T-064",
+    "D163"
+   ],
+   "summary": "Each tracked portfolio shows one Realized total. computeCostBasis (lib/data/costBasis.ts) already returns sales: SaleMatch[], each part of a sale matched to the lot it used up, with quantity, proceeds after the sale’s fee, cost, gain and whether it rests on a starting position (D65), and no component reads it: HoldingsTable.tsx and the Realized tile in TrackedPortfolioDetail.tsx show sums only. “Download my data” (T-452, D199) exports the trades, not the matches, so the list cannot be rebuilt from the download without redoing FIFO by hand. This adds a Sales section on each tracked portfolio, grouped by calendar year: each sale with what was sold, the purchases it used up (oldest first, as FIFO does), when each was bought and when sold, the days held, cost, proceeds after fees and gain, with the year’s totals, and a button that downloads the same list as a CSV through the existing export route (?part=sales). It lets a reader check the app’s figures against a broker’s year-end statement, which one total cannot. No key, no host, no migration, no recurring cost.",
+   "next_action": "Build it; nothing is left to ask. The owner’s answers at approval (D222), recorded so they are not asked again: (1) it belongs in Finance Now, on the tracked portfolio page, as an itemisation of gains the app already records and shows; this answers the question for this list and leaves T-064’s wider line between Finance Now and the separate personal-finance product where it is; (2) each sale shows its buy and sell dates and days held, and nothing more: no “held more than a year” mark, no short- or long-term label, no tax figure or rate (the tax-character rule; T-058 stays parked). Build the year grouping pure and tested in frontend/src/lib/data/ with an injectable now (the house rule for a figure a user acts on), joining each SaleMatch to its sale by saleId and to its lot by lotId for the dates; add part=sales to /api/user/export under the route’s existing CSV rules; and add a paragraph to the methods page’s “Tracked portfolios: gains and income” section in frontend/src/lib/legal/dataMethods.ts (D163). State on the page: FIFO and not adjusted for tax rules (REALIZED_METHOD_LABEL), and not a tax form; a starting position entered with no date shows “date not entered” and no days held; a fraction of a unit paid out in cash on a split appears as the small sale it is; units moved out are not sales and are listed apart.",
+   "sources": [
+    {
+     "file": "docs/proposals/2026-11-10-proposals.md",
+     "lines": "Proposal 2",
+     "quote": "Show that list, by calendar year, with a download."
+    },
+    {
+     "file": "docs/decisions/2026-11-10-owner-decisions.md",
+     "lines": "D222",
+     "quote": "with buy and sell dates and days held and no \"held more than a year\" mark, and no tax figure or label"
+    },
+    {
+     "file": "frontend/src/lib/data/costBasis.ts",
+     "lines": "107, 187",
+     "quote": "sales: SaleMatch[]"
+    },
+    {
+     "file": "frontend/src/components/portfolio/tracked/TrackedPortfolioDetail.tsx",
+     "lines": "297",
+     "quote": "<Tile label=\"Realized\" value={formatUsdChange(totals.realizedGainUsd)} valueCls={toneCls(totals.realizedGainUsd)}>"
+    },
+    {
+     "file": "frontend/src/app/api/user/export/route.ts",
+     "lines": "36",
+     "quote": "if (part !== 'json' && part !== 'trades' && part !== 'holdings') {"
+    },
+    {
+     "file": "frontend/src/lib/data/costBasis.ts",
+     "lines": "48",
+     "quote": "export const REALIZED_METHOD_LABEL = 'FIFO (oldest units sold first), not adjusted for tax rules'"
+    },
+    {
+     "file": "frontend/src/lib/legal/dataMethods.ts",
+     "lines": "208",
+     "quote": "title: 'Tracked portfolios: gains and income',"
+    }
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-11-10",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "Built as the owner chose at approval (D222, “Finance Now, dates only”) and picked first to build the same day. Each tracked portfolio has a Sales section: every sale with the purchases it used up, oldest first as FIFO uses them, grouped by the calendar year of the sale (newest first, the current year marked “so far”), with the buy and sell dates, days held, units, cost, proceeds after fees and gain, and each year’s totals. lib/data/salesList.ts (pure, tested) joins the lot engine’s existing SaleMatch rows to the trades by saleId and lotId for the dates; the years add up exactly to the Realized tile (a test holds it against valueLedger). As the next_action set out: a starting position with no date shows “Date not entered” and no days held; a sale dated before the starting position it used shows no days held and asks to check the dates, never a negative count; cash paid for a fraction on a split is listed as the small sale it is; units sold with no purchase recorded are listed with their proceeds and left out of every gain; units moved out are listed apart, in no total. No “held more than a year” mark, no short- or long-term label and no tax figure: salesList.test.ts fails on any such word in the module, the page or the spreadsheet’s header. The download is GET /api/user/export?part=sales, one row per purchase used up, in cents, through the route’s existing CSV rules; &portfolio=<id> keeps one portfolio and only narrows the signed-in account’s own rows. Settings → Your data and npm run user:export also give it. The methods page’s “Tracked portfolios: gains and income” section has a paragraph on it (D163), including that each amount is rounded to the cent on its own. Checked on a built app against a real PostgreSQL 16 database: a test portfolio with sales across 2025 and 2026, an undated starting position, a split paying cash for a fraction and a transfer out showed the figures worked by hand, at 1280 and 390 pixels wide, and the downloaded file matched the page.",
+    "approved_by": "owner, 2026-11-10: “T-460 sales list (Recommended)” as the first of T-459 to T-465 to build, after approving it under D222 (“Finance Now, dates only (Recommended)”)",
+    "evidence": [
+     "frontend/src/lib/data/salesList.ts",
+     "frontend/src/lib/data/__tests__/salesList.test.ts",
+     "frontend/src/components/portfolio/tracked/SalesList.tsx",
+     "frontend/src/components/portfolio/tracked/TrackedPortfolioDetail.tsx",
+     "frontend/src/lib/data/userExport.ts",
+     "frontend/src/lib/data/__tests__/userExport.test.ts",
+     "frontend/src/app/api/user/export/route.ts",
+     "frontend/src/components/settings/YourDataPanel.tsx",
+     "frontend/src/lib/legal/dataMethods.ts",
+     "docs/decisions/2026-11-10-owner-decisions.md"
+    ]
+   }
+  },
+  {
+   "id": "T-461",
+   "title": "Each stock’s last eight quarters (revenue, net income and earnings per share) from the company-facts file the stock page already downloads",
+   "status": "open",
+   "confidence": "high",
+   "blocking_decision": null,
+   "opened": {
+    "on": "2026-11-10",
+    "by": "opportunity-scout FILE mode, owner-approved 2026-11-10 (D222)",
+    "why": "Proposal 3 of docs/proposals/2026-11-10-proposals.md, proposed P1 (Importance medium to high, Efficiency high, Practicality very good), approved by the owner with the other five on 2026-11-10 (D222). It names no decision; nothing was built by the approval."
+   },
+   "owner_role": "remote-dev",
+   "category": "feature",
+   "effort": "small",
+   "related_ids": [
+    "D222",
+    "D167",
+    "T-458",
+    "D213",
+    "D163"
+   ],
+   "summary": "A stock page’s revenue and profit come only from the company’s last annual report. /live-data/company-facts downloads the company’s whole XBRL company-facts file from the SEC, which carries every quarterly report’s figures, and its annual() keeps only full-year figures from 10-K reports and skips the rest (“full-year contexts only (10-Ks also carry quarterly comparatives)”); the route’s header says income and cash-flow figures come from the latest fiscal year reported in a 10-K. So for a company whose year ends in December the page shows figures more than ten months old, though three quarterly reports have come since. This adds revenue, net income and earnings per share for each of the last eight quarters, with the change from the same quarter a year earlier, in a card beside the Next earnings card (T-458), so a reader sees what the company reported last and when it reports next. The in-app AI reads the same route (get_stock_financials), so its answers gain the quarters too. No key, no host, no recurring cost.",
+   "next_action": "Build it; the proposal names no decision. Write the quarterly reader pure and tested beside annual() in the company-facts route, and add a paragraph to the methods page in frontend/src/lib/legal/dataMethods.ts (D163). State on the card: companies file no separate fourth-quarter report, so Q4 revenue and net income are worked out as the full year minus the first three quarters, and say so; Q4 earnings per share are not worked out that way (the share count changes during the year) and show only where the company filed them; a company that files no quarterly data (foreign issuers, which file once a year) shows “no quarterly filings”. P/E and dividend yield stay on the latest full year, as D167 decided; a P/E over the last four quarters was considered and cut.",
+   "sources": [
+    {
+     "file": "docs/proposals/2026-11-10-proposals.md",
+     "lines": "Proposal 3",
+     "quote": "from the same SEC file the page already downloads"
+    },
+    {
+     "file": "frontend/src/app/live-data/company-facts/route.ts",
+     "lines": "23",
+     "quote": "// Income/cash-flow figures come from the latest fiscal year reported in a"
+    },
+    {
+     "file": "frontend/src/app/live-data/company-facts/route.ts",
+     "lines": "78, 89",
+     "quote": "continue // full-year contexts only (10-Ks also carry quarterly comparatives)"
+    },
+    {
+     "file": "frontend/src/lib/agents/tools.ts",
+     "lines": "195",
+     "quote": "name: 'get_stock_financials',"
+    },
+    {
+     "file": "frontend/src/app/(dashboard)/equities/[symbol]/page.tsx",
+     "lines": "194",
+     "quote": "<NextEarningsCard symbol={symbol} />"
+    }
+   ]
+  },
+  {
+   "id": "T-462",
+   "title": "Commodity pages: the live price and today’s change of each fund that holds the commodity, labelled as the fund’s",
+   "status": "open",
+   "confidence": "high",
+   "blocking_decision": null,
+   "opened": {
+    "on": "2026-11-10",
+    "by": "opportunity-scout FILE mode, owner-approved 2026-11-10 (D222)",
+    "why": "Proposal 4 of docs/proposals/2026-11-10-proposals.md, proposed P2 (Importance medium, Efficiency very high, Practicality very good), approved by the owner with the other five on 2026-11-10 (D222). The decision it names, whether to also chart the largest fund where the commodity’s chart is empty, is asked when the item is built, with the proposal’s recommended answer offered first; nothing was built by the approval."
+   },
+   "owner_role": "remote-dev",
+   "category": "feature",
+   "effort": "small",
+   "related_ids": [
+    "D222",
+    "T-454",
+    "D209"
+   ],
+   "summary": "A commodity’s own price has been a dash on every audit since 2026-09-09: the futures symbols get nothing from any provider on the quote ladder (DATA-AVAILABILITY.md, “Commodity / currency / rate quotes”, key-gated and unconfigured on every measurement). Each commodity page already lists the funds that hold it in its “ETF Proxies” card (CommodityDetailClient.tsx reads entry.etfProxies), as links with no quote. 13 of the 19 commodities have at least one fund, 24 funds in all, every one in the fund catalog (re-counted 2026-11-10), and those funds price through the same quote ladder that serves every stock and fund, which the audits measure as live. This adds each listed fund’s live price and today’s change to that card, under the fund’s own name and never in the commodity’s price slot, with one line saying a fund’s day can differ from the contract’s (fees, how it rolls its futures, the gap between its price and its holdings). Live quotes only: a fund’s catalog reference price is not shown here, as the price alerts refuse one. The six commodities with no fund (heating oil, coffee, cocoa, cotton, live cattle, lean hogs) are unchanged. One quote request per page; it needs a free quote key, as every stock and fund price does. No new host, no recurring cost.",
+   "next_action": "When building, ask the owner the proposal’s one decision, recommended answer first: whether to also show the largest fund’s price chart where the commodity’s chart is empty, in its own card under the fund’s name; recommended: not now, because a gold chart that is really GLD’s is easy to misread even labelled, while the prices alone carry no such risk. Then make one security-quotes request for the page’s funds and show each fund’s price and change in the existing ETF Proxies card, leaving out any quote that is a reference price (the test usePriceAlertMonitor applies: source reference, or reference: true). The six commodities with no fund keep their pages as they are.",
+   "sources": [
+    {
+     "file": "docs/proposals/2026-11-10-proposals.md",
+     "lines": "Proposal 4",
+     "quote": "but shows none of their prices"
+    },
+    {
+     "file": "frontend/src/app/(dashboard)/macro/commodities/[slug]/CommodityDetailClient.tsx",
+     "lines": "41, 122",
+     "quote": "const proxies = entry.etfProxies"
+    },
+    {
+     "file": "DATA-AVAILABILITY.md",
+     "lines": "752",
+     "quote": "| Commodity / currency / rate quotes | 🔑 Key-gated"
+    },
+    {
+     "file": "frontend/src/hooks/usePriceAlertMonitor.ts",
+     "lines": "36-37",
+     "quote": "// Never fire alerts off reference/fallback prices"
+    }
+   ]
+  },
+  {
+   "id": "T-463",
+   "title": "Join the coin pages to Staking and the Reserve Monitor: a staking line on each stakeable coin’s page, /staking?coin=, and links back to the coins’ pages",
+   "status": "open",
+   "confidence": "high",
+   "blocking_decision": null,
+   "opened": {
+    "on": "2026-11-10",
+    "by": "opportunity-scout FILE mode, owner-approved 2026-11-10 (D222)",
+    "why": "Proposal 5 of docs/proposals/2026-11-10-proposals.md, proposed P2 (Importance medium, Efficiency very high, Practicality very good), approved by the owner with the other five on 2026-11-10 (D222). It names no decision; nothing was built by the approval."
+   },
+   "owner_role": "remote-dev",
+   "category": "feature",
+   "effort": "small",
+   "related_ids": [
+    "D222",
+    "T-454",
+    "D209",
+    "D190"
+   ],
+   "summary": "A coin’s page has no way to the staking options for that coin, and neither the Staking page nor the Reserve Monitor links back to a coin’s page. staking/page.tsx keeps its coin filter in page state only (useState<StakingCoinId | 'all'>('all')) and reads only ?tab= from the address; the coin page’s only in-app moves are back to /assets and the action row (T-454); components/analytics/reserves.tsx links only out of the app (attestation reports and DefiLlama). Three parts: (a) on the 13 coin pages for stakeable coins (ETH, SOL, ADA, DOT, POL, AVAX, BNB, TRX, BTC, CRO, INJ, TIA, NEAR), one line saying how many catalog providers stake it and how many of their rates are live now, linking to the Staking page showing only that coin; (b) the Staking page opens on a chosen coin from its address (/staking?coin=eth), and each provider card’s coins link back to their pages; (c) each Reserve Monitor row links to that stablecoin’s page (all 10 monitored coins have one). These are the crypto module’s dead ends: “can I earn yield on this?” is asked on the coin’s page. No key, no host, no recurring cost.",
+   "next_action": "Build it; the proposal names no decision. The Staking page names coins its own way (its matic is the coin page’s pol; ATOM, OSMO and KSM have no coin page), so link through a small hand-kept map held by a test, never a match by ticker (the lesson of D190), and leave a coin with no page unlinked. The coin page shows a count and a link only: no list in order of rate and no “best” (the ranking line, item 4). Keep ?tab=pools working beside the new ?coin=.",
+   "sources": [
+    {
+     "file": "docs/proposals/2026-11-10-proposals.md",
+     "lines": "Proposal 5",
+     "quote": "A coin's page has no way to the staking options for that coin"
+    },
+    {
+     "file": "frontend/src/app/(dashboard)/staking/page.tsx",
+     "lines": "553, 554",
+     "quote": "const [coinFilter, setCoinFilter] = useState<StakingCoinId | 'all'>('all')"
+    },
+    {
+     "file": "frontend/src/components/analytics/reserves.tsx",
+     "lines": "472, 517",
+     "quote": "<a href={selected.attestationUrl} target=\"_blank\" rel=\"noopener noreferrer\""
+    },
+    {
+     "file": "frontend/src/lib/data/stakingProviders.ts",
+     "lines": "103",
+     "quote": "export type StakingCoinId = 'eth' | 'sol' | 'ada' | 'dot' | 'atom' | 'matic' |"
+    }
+   ]
+  },
+  {
+   "id": "T-464",
+   "title": "Bonds & Rates: the history of the 2s10s and 3m10y yield gaps from the official Treasury curve, with inverted stretches marked",
+   "status": "open",
+   "confidence": "high",
+   "blocking_decision": null,
+   "opened": {
+    "on": "2026-11-10",
+    "by": "opportunity-scout FILE mode, owner-approved 2026-11-10 (D222)",
+    "why": "Proposal 6 of docs/proposals/2026-11-10-proposals.md, proposed P2 (Importance medium for Macro readers, Efficiency very high, Practicality very good), approved by the owner with the other five on 2026-11-10 (D222). It names no decision; nothing was built by the approval."
+   },
+   "owner_role": "remote-dev",
+   "category": "feature",
+   "effort": "small",
+   "related_ids": [
+    "D222",
+    "T-446",
+    "D202",
+    "D163"
+   ],
+   "summary": "/macro/rates shows today’s gap between the 2-year and 10-year yields and between the 3-month and 10-year (RatesClient.tsx, spread2s10s and spread3m10y), and calls an inverted curve “the classic recession signal”, while showing only today’s reading. spreadsOf(snapshot) in lib/server/treasuryCurve.ts works both out from one day’s curve, and fetchYieldHistory (lib/server/treasuryHistory.ts, T-446) already reads the Treasury’s whole yearly curve files, every maturity of every day, to chart a single yield. This adds a chart of both gaps over a chosen range, one month to ten years, with the stretches when short yields were above long ones (“inverted”) shaded and the date the current stretch began; the macro AI’s yield-curve tool (get_yield_curve) can return the same. Whether the curve has just turned or has been inverted for two years is the context a reader needs for today’s number. No key, no new host, no recurring cost: the files are the ones the yield charts already fetch.",
+   "next_action": "Build it; the proposal names no decision. Work the history out pure and tested from the same yearly curve files fetchYieldHistory reads, through spreadsOf so one day’s gap is worked out one way everywhere, and add a line to the methods page in frontend/src/lib/legal/dataMethods.ts (D163). Facts only: no recession odds, no signal, no forecast. Readings are daily up to a year and weekly beyond, as on the yield charts.",
+   "sources": [
+    {
+     "file": "docs/proposals/2026-11-10-proposals.md",
+     "lines": "Proposal 6",
+     "quote": "Add their history, from one month to ten years"
+    },
+    {
+     "file": "frontend/src/app/(dashboard)/macro/rates/RatesClient.tsx",
+     "lines": "40",
+     "quote": "blurb: 'short yields above long — the classic recession signal'"
+    },
+    {
+     "file": "frontend/src/app/(dashboard)/macro/rates/RatesClient.tsx",
+     "lines": "114, 120",
+     "quote": "curve.spread2s10s"
+    },
+    {
+     "file": "frontend/src/lib/server/treasuryCurve.ts",
+     "lines": "201",
+     "quote": "export function spreadsOf(snapshot: CurveSnapshot): CurveSpreads {"
+    },
+    {
+     "file": "frontend/src/lib/server/treasuryHistory.ts",
+     "lines": "45",
+     "quote": "export async function fetchYieldHistory(maturity: string, range: YieldHistoryRange, now: Date = new Date()): Promise<YieldHistory> {"
+    }
+   ]
+  },
+  {
+   "id": "T-465",
+   "title": "Staking backup rates: show the date each was measured, stop dating them by the catalog’s compile date, and give the 24 undated rates a vintage",
+   "status": "open",
+   "confidence": "high",
+   "blocking_decision": null,
+   "opened": {
+    "on": "2026-11-10",
+    "by": "opportunity-scout FILE mode, owner-approved 2026-11-10 (D222)",
+    "why": "Proposal 3 of docs/proposals/2026-09-22-proposals.md, proposed P1 (Importance high, Efficiency high for (a) and medium for (b), Practicality good), left unmarked until the 2026-11-10 pass re-checked it in that day’s tree and carried it forward; the owner approved it on 2026-11-10 (D222: “Close two, build dates (Recommended)”). Part (a) needs no decision; the window decision for part (b) is asked when (b) is built. Nothing was built by the approval."
+   },
+   "owner_role": "either",
+   "category": "feature",
+   "effort": "medium",
+   "related_ids": [
+    "D222",
+    "D186",
+    "D175",
+    "D187",
+    "D169",
+    "T-397",
+    "T-394",
+    "D163"
+   ],
+   "summary": "frontend/src/lib/server/stakingRates.ts holds 45 backup rates (FALLBACK), served when a live source fails. 21 are measured: dated by FALLBACK_MEASURED_ON (2026-11-05, kept fresh by the weekly refresh, D186) and withheld once more than FALLBACK_STALE_AFTER_DAYS (14) old. The other 24 have no date at all, so expiredMeasurement() returns false for them by construction, and the file itself calls giving them dated provenance “separate, open work” (counts re-measured 2026-11-10; the 2026-09-22 proposal counted 51, 27 and 24). The route already returns fallbackProvenance { measuredOn, measuredKeys, unmeasuredKeys }, and no screen or other route shows it. Meanwhile /staking’s ProvenanceNotice dates every non-live rate to the catalog’s compile date (STAKING_DATA_LAST_VERIFIED, 2026-06-28), though a non-live APR there can be a backup-table figure (lib/utils/aprDisplay.ts), and /api/v1/staking/opportunities tells callers to read referenceData.verifiedAt for estimate rows. Two halves: (a) show the date each backup rate was measured, or that it has none, and date the page notice by the table a figure actually came from, carrying measuredOn into the v1 response; (b) give the 24 undated rates their own dated provenance, so a clock can cover them at all. A yield is a figure people act on, and its age is part of it. No key, no host, no recurring cost.",
+   "next_action": "(a) is small, needs no decision and can be built now from a cloud session: render fallbackProvenance on /staking, per rate and in the notice; stop the notice dating backup-table figures to STAKING_DATA_LAST_VERIFIED; carry measuredOn into /api/v1/staking/opportunities and its note; and keep the methods page (frontend/src/lib/legal/dataMethods.ts, D163) in step, which already says measured estimates carry their date. (b) is owner-machine work. Recount the undated set first, because it is not one kind: three (swell_eth, stader_matic, ankr_avax) were measured until the owner took them off the list (D175, D187), and each goes back once a refresh measures it; the other 21 are hand-written figures, mostly for desks that publish a rate on a marketing page and nowhere machine-readable, which npm run staking:refresh-fallbacks cannot reach, so each needs a hand reading, one desk at a time. When building (b), ask the owner the window decision the proposal names: a separately named anchor with its own, longer window, or an explicit “vintage unknown” marker, which is honest and costs nothing; the proposal holds both safer than the alternative and prefers neither. Do not extend the 14-day window over them: a date nobody verified, under a window that implies somebody did, is the staleness the provenance rule exists to prevent. Any new dated anchor becomes a clock npm run staleness:check discovers, so it arrives with a STALENESS-ACK or a refresh, decided rather than a surprise. Not T-394, which is lib/data/stakingProviders.ts’s 90-day catalog clock over a different table; neither gates (a).",
+   "sources": [
+    {
+     "file": "docs/proposals/2026-09-22-proposals.md",
+     "lines": "Proposal 3",
+     "quote": "Render the `fallbackProvenance` block the staking route"
+    },
+    {
+     "file": "docs/proposals/2026-11-10-proposals.md",
+     "lines": "Still waiting on your ruling",
+     "quote": "The backup table holds 45 rates: 21 were measured on 2026-11-05 by the weekly refresh (D186), 24 have no date at all."
+    },
+    {
+     "file": "frontend/src/lib/server/stakingRates.ts",
+     "lines": "240, 245",
+     "quote": "⚠ This bounds ONLY the keys in FALLBACK_MEASURED. The other 24 are undated"
+    },
+    {
+     "file": "frontend/src/lib/server/stakingRates.ts",
+     "lines": "256-257",
+     "quote": "if (!FALLBACK_MEASURED.has(key)) return false"
+    },
+    {
+     "file": "frontend/src/lib/server/stakingRates.ts",
+     "lines": "744-745",
+     "quote": "fallbackProvenance: {"
+    },
+    {
+     "file": "frontend/src/app/(dashboard)/staking/page.tsx",
+     "lines": "657",
+     "quote": "{new Date(STAKING_DATA_LAST_VERIFIED).toLocaleDateString()} ({prov.ageDays} days ago)"
+    },
+    {
+     "file": "frontend/src/lib/utils/aprDisplay.ts",
+     "lines": "70",
+     "quote": "if (live != null) return { apr: live, live: false, gap: gaps?.[liveKey] ?? 'upstream-failed' }"
+    },
+    {
+     "file": "frontend/src/app/api/v1/staking/opportunities/route.ts",
+     "lines": "153",
+     "quote": "check referenceData.verifiedAt, not updatedAt, before treating those as current"
+    }
+   ]
   }
  ],
  "closed_but_still_listed_as_open_in_docs": [
@@ -42679,6 +43085,25 @@
      "docs/decisions/2026-11-09-owner-decisions.md",
      "docs/audits/parked-review-2026-11-09.md",
      "docs/FEATURE-ADDITIONS.md"
+    ]
+   },
+   {
+    "on": "2026-11-10",
+    "what": "D222 filed (opportunity-scout FILE mode): the owner approved all six proposals in docs/proposals/2026-11-10-proposals.md, filed as T-459 to T-464 in the proposals’ ranked order, all open. Proposal 2’s two questions were answered at approval (“Finance Now, dates only”: on the tracked portfolio page, buy and sell dates and days held, no “held more than a year” mark, no tax figure or label), and T-460’s next_action records the answers so they are not asked again; T-459 and T-462 name the choice their proposals leave for the build, and T-465 the one for its part (b). The owner also ruled on the three earlier proposals that pass carried forward (“Close two, build dates”): 2026-09-22 #3 (dating the staking backup rates) approved and filed as T-465, open; 2026-09-22 #1 (what survives dropping a vendor) approved and already done by T-439 (D110, D112), so nothing is filed; 2026-09-08 #3 (a fund risk profile, T-353) rejected as superseded by D92 and D218 and logged as RP-9 in docs/audits/rejected-proposals.md. Nothing was deferred. No existing item changed: T-058, T-064, T-394, T-397 and T-457 are named in related_ids only. Counts recomputed: open 8 to 15, remote-dev 106 to 112, either 55 to 56, total 398 to 405.",
+    "evidence": [
+     "docs/proposals/2026-11-10-proposals.md",
+     "docs/proposals/2026-09-22-proposals.md",
+     "docs/proposals/2026-09-08-proposals.md",
+     "docs/decisions/2026-11-10-owner-decisions.md",
+     "docs/audits/rejected-proposals.md"
+    ]
+   },
+   {
+    "on": "2026-11-10",
+    "what": "T-460 built and closed (owner-ruling: the owner picked it first of T-459 to T-465 to build, under D222): a Sales section on each tracked portfolio and a part=sales download. No other item changed. Counts recomputed: open 15 to 14, closed 258 to 259, closed_by_annotation 258 to 259; total 405 and the owner-role counts unchanged.",
+    "evidence": [
+     "frontend/src/lib/data/salesList.ts",
+     "frontend/src/components/portfolio/tracked/SalesList.tsx"
     ]
    }
   ]

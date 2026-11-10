@@ -48,7 +48,7 @@ reason for anything rejected. Then run the scout in FILE mode.
 
 ## 1. Measure what D21 actually asks: what survives dropping a vendor · proposed `P1` · target section: `docs/TASK-QUEUE.md` → "Wave 5 — Improvement-agent intake" → "Approved proposals (build work)" (the section `docs/proposals/2026-09-08-proposals.md` proposes creating; if that batch is filed first, this joins it rather than opening a second one)
 
-**Status:** PENDING
+**Status:** APPROVED and already done (owner, 2026-11-10, D222): T-439 built it (D110, D112), so nothing is filed
 
 **What:** Give D21's optionality half a measurement that matches its own wording. Add a
 registry-derived **vendor-drop survivability** report — for every surface × every vendor,
@@ -206,7 +206,7 @@ real risk is the non-catalog coin resolution, which is nameable and avoidable up
 
 ## 3. Date the 24 fallback APRs that have no date, and show the date that exists · proposed `P1` · target section: `docs/TASK-QUEUE.md` → "Wave 5 — Improvement-agent intake" → "Approved proposals (build work)" (cross-reference the S3/staking work and T-394, which is a different clock — see below)
 
-**Status:** PENDING
+**Status:** APPROVED (owner, 2026-11-10, D222) · **Filed as:** T-465
 
 **What:** Two halves. **(a)** Render the `fallbackProvenance` block the staking route
 already computes and no screen has ever shown, and stop the page-level notice dating
