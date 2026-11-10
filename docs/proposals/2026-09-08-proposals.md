@@ -131,7 +131,7 @@ one small UX decision.
 
 ## 3. ETF/fund risk profile on the canonical scale (T-353) · proposed `P1` · target section: `docs/TASK-QUEUE.md` → new "Wave 5 — Improvement-agent intake (2026-09-08)" → "Approved proposals (build work)" (cross-reference the S6 — Fund Registry charter and P2-R3, whose pattern it copies)
 
-**Status:** PENDING — but its *symptom* is already fixed, so read the scope again
+**Status:** REJECTED (owner, 2026-11-10, D222): superseded. D92 gives funds facts from their own filings, not a rating, and T-353 closed under D218. Was marked: PENDING — but its *symptom* is already fixed, so read the scope again
 before ruling.
 
 > **Owner instruction 2026-09-08: "fix the fund risk tier to read strategy".**
