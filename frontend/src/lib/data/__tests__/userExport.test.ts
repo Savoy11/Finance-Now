@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import {
-  EXCLUDED_TABLES, LEFT_OUT, buildUserExport, csvField, entryPriceUnit, exportFileName, holdingsCsv, tradesCsv,
-  type CollectedExport,
+  EXCLUDED_TABLES, LEFT_OUT, SALES_CSV_HEADER, buildUserExport, csvField, entryPriceUnit, exportFileName, holdingsCsv,
+  salesCsv, tradesCsv, type CollectedExport,
 } from '../userExport'
 import { collectUserExport, tablesWithUserId, userExportTables } from '@/lib/server/userExportCollect'
 import { defaultExportFolder, parseExportCommand } from '../../../../scripts/lib/exportCommand'
@@ -120,6 +120,73 @@ describe('the spreadsheets', () => {
   it('names the files by day', () => {
     expect(exportFileName('json', NOW)).toBe('finance-now-data-2026-11-06.json')
     expect(exportFileName('trades', NOW)).toBe('finance-now-trades-2026-11-06.csv')
+  })
+})
+
+describe('the sales spreadsheet (T-460, D222)', () => {
+  // The rows as the database returns them: numerics as strings, timestamps as dates.
+  const salesSample = (): CollectedExport => ({
+    account: { id: UID },
+    tables: {
+      portfolios: [
+        { id: 'p-real', user_id: UID, name: 'Real account' },
+        { id: 'p-two', user_id: UID, name: 'Another' },
+      ],
+      trade_transactions: [
+        { id: 'start', user_id: UID, portfolio_id: 'p-real', instrument_id: 'i-voo', side: 'transfer_in', quantity: '10.000000000000000000', price_per_unit: '590.00000000', fee_usd: '1.50', executed_at: new Date('2026-10-01T00:00:00Z'), opening: true, note: null, created_at: new Date('2026-10-01T01:00:00Z') },
+        { id: 'sell', user_id: UID, portfolio_id: 'p-real', instrument_id: 'i-voo', side: 'sell', quantity: '4.000000000000000000', price_per_unit: '600.00000000', fee_usd: '2.00', executed_at: new Date('2026-10-20T00:00:00Z'), opening: false, note: null, created_at: new Date('2026-10-20T01:00:00Z') },
+        { id: 'oops', user_id: UID, portfolio_id: 'p-real', instrument_id: 'i-voo', side: 'sell', quantity: '1', price_per_unit: '1', fee_usd: '0', executed_at: new Date('2026-10-21T00:00:00Z'), opening: false, note: null, created_at: new Date('2026-10-21T01:00:00Z') },
+        { id: 'short', user_id: UID, portfolio_id: 'p-two', instrument_id: 'i-bnd', side: 'sell', quantity: '2', price_per_unit: '70', fee_usd: '0', executed_at: '2025-03-03T00:00:00.000Z', opening: false, note: null, created_at: '2025-03-03T01:00:00.000Z' },
+      ],
+      trade_cancellations: [{ trade_id: 'oops', user_id: UID, reason: 'typed the wrong price' }],
+      trade_splits: [],
+      trade_income: [],
+    },
+    notSetUp: [],
+    instruments: [
+      { id: 'i-voo', symbol: 'VOO', name: 'Vanguard S&P 500 ETF', user_id: null },
+      { id: 'i-bnd', symbol: 'BND', name: 'Vanguard Total Bond Market ETF', user_id: null },
+    ],
+  })
+
+  it('has one row per purchase a sale used up, in cents, with dates and days held', () => {
+    const lines = salesCsv(salesSample(), NOW).trimEnd().split('\r\n')
+    expect(lines).toEqual([
+      'portfolio,year,sold_on,symbol,name,sold_how,units,bought_on,bought_how,days_held,cost_usd,proceeds_usd,gain_usd,from_starting_position',
+      // Sold 2 with nothing held: the proceeds, and no cost or gain.
+      'Another,2025,2025-03-03,BND,Vanguard Total Bond Market ETF,Sale,2,,no purchase recorded,,,140.00,,no',
+      // Sold 4 of 10 from the starting position: cost 4 × 590 + 40% of the $1.50 fee, proceeds 2,400 − $2.
+      'Real account,2026,2026-10-20,VOO,Vanguard S&P 500 ETF,Sale,4,2026-10-01,Starting position,19,2360.60,2398.00,37.40,yes',
+    ])
+  })
+
+  it('works its figures out with the same engine as the page, cancelled trades left out', () => {
+    const csvText = salesCsv(salesSample(), NOW)
+    expect(csvText).not.toContain('2026-10-21')
+  })
+
+  it('keeps one portfolio when asked, and an id that is not one of the account’s matches nothing', () => {
+    expect(salesCsv(salesSample(), NOW, 'p-two').trimEnd().split('\r\n')).toHaveLength(2)
+    expect(salesCsv(salesSample(), NOW, '99999999-9999-9999-9999-999999999999').trimEnd().split('\r\n')).toEqual([SALES_CSV_HEADER.join(',')])
+  })
+
+  it('is empty but for its header with no tracked trades', () => {
+    expect(salesCsv({ ...salesSample(), tables: {} }, NOW)).toBe(`${SALES_CSV_HEADER.join(',')}\r\n`)
+    expect(exportFileName('sales', NOW)).toBe('finance-now-sales-2026-11-06.csv')
+  })
+
+  it('is served by the route, the owner’s command and both buttons', () => {
+    const route = readFileSync(join(__dirname, '../../../app/api/user/export/route.ts'), 'utf8')
+    expect(route).toMatch(/part === 'sales'/)
+    expect(route).toMatch(/salesCsv\(collected, now, portfolio \?\? undefined\)/)
+    // A portfolio id is read only to narrow the account's own rows, and only for sales.
+    expect(route).toMatch(/part !== 'sales' \|\| !isUuid\(portfolio\)/)
+    const command = readFileSync(join(__dirname, '../../../../scripts/user-export.ts'), 'utf8')
+    expect(command).toMatch(/salesCsv\(collected, now\)/)
+    const panel = readFileSync(join(__dirname, '../../../components/settings/YourDataPanel.tsx'), 'utf8')
+    expect(panel).toMatch(/part: 'sales'/)
+    const page = readFileSync(join(__dirname, '../../../components/portfolio/tracked/SalesList.tsx'), 'utf8')
+    expect(page).toMatch(/part=sales&portfolio=/)
   })
 })
 

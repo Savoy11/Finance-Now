@@ -3,18 +3,20 @@
 import { useState } from 'react'
 import { Download } from 'lucide-react'
 import { LEFT_OUT, ON_THIS_DEVICE } from '@/lib/data/userExport'
+import { downloadExport } from '@/lib/api/downloadExport'
 
 // "Your data" on the Settings page (T-452, D199): download a copy of everything the server keeps
 // for your account. The draft Privacy Policy (§11) promises a copy on request; this lets anyone
 // take it without asking. /api/user/export serves the signed-in account's own data only. Until
 // sign-in is on (at launch), that is the owner's local account.
 
-type Part = 'json' | 'trades' | 'holdings'
+type Part = 'json' | 'trades' | 'holdings' | 'sales'
 
 const PARTS: { part: Part; label: string; hint: string }[] = [
   { part: 'json', label: 'Everything (JSON)', hint: 'Every record kept for your account, in one file' },
   { part: 'trades', label: 'Trades (CSV)', hint: 'Your tracked portfolios’ trades, for a spreadsheet' },
   { part: 'holdings', label: 'Holdings (CSV)', hint: 'Your what-if portfolios’ holdings, for a spreadsheet' },
+  { part: 'sales', label: 'Sales (CSV)', hint: 'Every sale in your tracked portfolios, with the purchases it used up (FIFO)' },
 ]
 
 export function YourDataPanel() {
@@ -24,28 +26,8 @@ export function YourDataPanel() {
   async function download(part: Part) {
     setBusy(part)
     setError(null)
-    try {
-      const res = await fetch(part === 'json' ? '/api/user/export' : `/api/user/export?part=${part}`)
-      if (!res.ok) {
-        const body = (await res.json().catch(() => null)) as { error?: string } | null
-        setError(body?.error ?? `The download did not work (HTTP ${res.status}).`)
-        return
-      }
-      const blob = await res.blob()
-      const name = /filename="([^"]+)"/.exec(res.headers.get('Content-Disposition') ?? '')?.[1] ?? `finance-now-${part}`
-      const href = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = href
-      a.download = name
-      document.body.appendChild(a)
-      a.click()
-      a.remove()
-      URL.revokeObjectURL(href)
-    } catch {
-      setError('The download did not work. Check your connection and try again.')
-    } finally {
-      setBusy(null)
-    }
+    setError(await downloadExport(part === 'json' ? '' : `part=${part}`, `finance-now-${part}`))
+    setBusy(null)
   }
 
   return (

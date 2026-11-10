@@ -62,9 +62,9 @@
   "total_verified": 421,
   "outstanding": 405,
   "by_status": {
-   "closed": 258,
+   "closed": 259,
    "parked": 127,
-   "open": 15,
+   "open": 14,
    "blocked": 5
   },
   "by_owner_role": {
@@ -74,7 +74,7 @@
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 258,
+  "closed_by_annotation": 259,
   "counts_recomputed_on": "2026-11-10",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 405
@@ -16712,7 +16712,7 @@
   {
    "id": "T-460",
    "title": "Every sale on a tracked portfolio with the purchases it used up, by calendar year: buy and sell dates, days held, cost, proceeds and gain, with a spreadsheet download",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "blocking_decision": null,
    "opened": {
@@ -16775,7 +16775,27 @@
      "lines": "208",
      "quote": "title: 'Tracked portfolios: gains and income',"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-11-10",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "Built as the owner chose at approval (D222, “Finance Now, dates only”) and picked first to build the same day. Each tracked portfolio has a Sales section: every sale with the purchases it used up, oldest first as FIFO uses them, grouped by the calendar year of the sale (newest first, the current year marked “so far”), with the buy and sell dates, days held, units, cost, proceeds after fees and gain, and each year’s totals. lib/data/salesList.ts (pure, tested) joins the lot engine’s existing SaleMatch rows to the trades by saleId and lotId for the dates; the years add up exactly to the Realized tile (a test holds it against valueLedger). As the next_action set out: a starting position with no date shows “Date not entered” and no days held; a sale dated before the starting position it used shows no days held and asks to check the dates, never a negative count; cash paid for a fraction on a split is listed as the small sale it is; units sold with no purchase recorded are listed with their proceeds and left out of every gain; units moved out are listed apart, in no total. No “held more than a year” mark, no short- or long-term label and no tax figure: salesList.test.ts fails on any such word in the module, the page or the spreadsheet’s header. The download is GET /api/user/export?part=sales, one row per purchase used up, in cents, through the route’s existing CSV rules; &portfolio=<id> keeps one portfolio and only narrows the signed-in account’s own rows. Settings → Your data and npm run user:export also give it. The methods page’s “Tracked portfolios: gains and income” section has a paragraph on it (D163), including that each amount is rounded to the cent on its own. Checked on a built app against a real PostgreSQL 16 database: a test portfolio with sales across 2025 and 2026, an undated starting position, a split paying cash for a fraction and a transfer out showed the figures worked by hand, at 1280 and 390 pixels wide, and the downloaded file matched the page.",
+    "approved_by": "owner, 2026-11-10: “T-460 sales list (Recommended)” as the first of T-459 to T-465 to build, after approving it under D222 (“Finance Now, dates only (Recommended)”)",
+    "evidence": [
+     "frontend/src/lib/data/salesList.ts",
+     "frontend/src/lib/data/__tests__/salesList.test.ts",
+     "frontend/src/components/portfolio/tracked/SalesList.tsx",
+     "frontend/src/components/portfolio/tracked/TrackedPortfolioDetail.tsx",
+     "frontend/src/lib/data/userExport.ts",
+     "frontend/src/lib/data/__tests__/userExport.test.ts",
+     "frontend/src/app/api/user/export/route.ts",
+     "frontend/src/components/settings/YourDataPanel.tsx",
+     "frontend/src/lib/legal/dataMethods.ts",
+     "docs/decisions/2026-11-10-owner-decisions.md"
+    ]
+   }
   },
   {
    "id": "T-461",
@@ -43076,6 +43096,14 @@
      "docs/proposals/2026-09-08-proposals.md",
      "docs/decisions/2026-11-10-owner-decisions.md",
      "docs/audits/rejected-proposals.md"
+    ]
+   },
+   {
+    "on": "2026-11-10",
+    "what": "T-460 built and closed (owner-ruling: the owner picked it first of T-459 to T-465 to build, under D222): a Sales section on each tracked portfolio and a part=sales download. No other item changed. Counts recomputed: open 15 to 14, closed 258 to 259, closed_by_annotation 258 to 259; total 405 and the owner-role counts unchanged.",
+    "evidence": [
+     "frontend/src/lib/data/salesList.ts",
+     "frontend/src/components/portfolio/tracked/SalesList.tsx"
     ]
    }
   ]

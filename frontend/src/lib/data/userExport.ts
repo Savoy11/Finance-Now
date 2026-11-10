@@ -9,7 +9,11 @@
 //
 // It exports only. Nothing here changes or deletes anything.
 
+import type { IncomeKind, TradeSide } from '@/lib/db/schema/invest'
+import { toCents } from './costBasis'
 import { entryUnitName } from './instruments'
+import { BOUGHT_HOW_LABELS, SOLD_HOW_LABELS, buildSalesList } from './salesList'
+import { buildLedgerView, type StoredCancellation, type StoredTrade } from './tradeLedger'
 
 export type Row = Record<string, unknown>
 
@@ -191,8 +195,95 @@ export function holdingsCsv(c: CollectedExport): string {
   ]))
 }
 
+export const SALES_CSV_HEADER = [
+  'portfolio', 'year', 'sold_on', 'symbol', 'name', 'sold_how', 'units', 'bought_on', 'bought_how',
+  'days_held', 'cost_usd', 'proceeds_usd', 'gain_usd', 'from_starting_position',
+] as const
+
+const dateOrNull = (v: unknown): Date | null => {
+  if (v == null) return null
+  const d = v instanceof Date ? v : new Date(String(v))
+  return Number.isNaN(d.getTime()) ? null : d
+}
+
+/**
+ * A tracked portfolio's saved trades and cancellations, from the rows as stored, in the
+ * shape the trade routes read them. The instrument's id stands in for its key: it only
+ * groups the trades by holding here.
+ */
+function storedTrades(c: CollectedExport, portfolioId: string): { trades: StoredTrade[]; cancellations: StoredCancellation[] } {
+  const instruments = byId(c.instruments)
+  const splits = byId(c.tables.trade_splits, 'trade_id')
+  const income = byId(c.tables.trade_income, 'trade_id')
+  const rows = (c.tables.trade_transactions ?? []).filter((t) => String(t.portfolio_id) === portfolioId)
+  const ids = new Set(rows.map((t) => String(t.id)))
+  const trades: StoredTrade[] = rows.map((t) => {
+    const inst = instruments.get(String(t.instrument_id))
+    const split = splits.get(String(t.id))
+    const inc = income.get(String(t.id))
+    return {
+      id: String(t.id),
+      instrumentKey: `instrument:${text(t.instrument_id)}`,
+      symbol: text(inst?.symbol) || '?',
+      name: text(inst?.name),
+      side: t.side as TradeSide,
+      quantity: text(t.quantity),
+      pricePerUnit: text(t.price_per_unit),
+      feeUsd: text(t.fee_usd),
+      executedAt: dateOrNull(t.executed_at),
+      opening: t.opening === true,
+      note: t.note == null ? null : text(t.note),
+      createdAt: dateOrNull(t.created_at) ?? new Date(0),
+      split: split
+        ? { unitsAfter: Number(split.units_after), unitsBefore: Number(split.units_before), cashInLieuUsd: split.cash_in_lieu_usd == null ? null : text(split.cash_in_lieu_usd) }
+        : null,
+      income: inc ? { amountUsd: text(inc.amount_usd), kind: text(inc.kind) as IncomeKind } : null,
+    }
+  })
+  const cancellations: StoredCancellation[] = (c.tables.trade_cancellations ?? [])
+    .filter((x) => ids.has(String(x.trade_id)))
+    .map((x) => ({ tradeId: String(x.trade_id), reason: text(x.reason), createdAt: dateOrNull(x.created_at) ?? new Date(0) }))
+  return { trades, cancellations }
+}
+
+/**
+ * Every sale in the account's tracked portfolios, one row per purchase it used up (T-460, D222),
+ * as the tracked portfolio page lists them: FIFO, not adjusted for tax rules. Units sold that no
+ * purchase covered are a row with no cost and no gain. Units moved out are not sales and are not
+ * here; they are in the trades file. `portfolioId` keeps one portfolio's sales; the rows are the
+ * signed-in account's whatever it is, so another account's id matches nothing.
+ */
+export function salesCsv(c: CollectedExport, now: Date, portfolioId?: string): string {
+  const portfolios = byId(c.tables.portfolios)
+  const withTrades = [...new Set((c.tables.trade_transactions ?? []).map((t) => String(t.portfolio_id)))]
+    .filter((id) => portfolioId === undefined || id === portfolioId)
+    .map((id) => ({ id, name: text(portfolios.get(id)?.name) }))
+    .sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id))
+
+  const out: unknown[][] = []
+  for (const p of withTrades) {
+    const { trades, cancellations } = storedTrades(c, p.id)
+    const list = buildSalesList(buildLedgerView(trades, cancellations, now), now)
+    for (const year of [...list.years].reverse()) {
+      for (const s of year.sales) {
+        const sold = [p.name, year.year, s.soldOn, s.symbol, s.name, SOLD_HOW_LABELS[s.soldHow]]
+        for (const part of s.parts) {
+          out.push([
+            ...sold, part.quantity, part.boughtOn ?? 'date not entered', BOUGHT_HOW_LABELS[part.boughtHow], part.daysHeld,
+            toCents(part.costUsd), toCents(part.proceedsUsd), toCents(part.gainUsd), part.fromStartingPosition ? 'yes' : 'no',
+          ])
+        }
+        if (s.unmatched) {
+          out.push([...sold, s.unmatched.quantity, '', 'no purchase recorded', '', '', toCents(s.unmatched.proceedsUsd), '', 'no'])
+        }
+      }
+    }
+  }
+  return csv(SALES_CSV_HEADER, out)
+}
+
 /** A file name for one part of the export: "finance-now-data-2026-11-06.json". */
-export function exportFileName(part: 'json' | 'trades' | 'holdings', exportedAt: Date): string {
+export function exportFileName(part: 'json' | 'trades' | 'holdings' | 'sales', exportedAt: Date): string {
   const day = exportedAt.toISOString().slice(0, 10)
   return part === 'json' ? `finance-now-data-${day}.json` : `finance-now-${part}-${day}.csv`
 }
