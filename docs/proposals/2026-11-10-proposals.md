@@ -41,8 +41,8 @@ is the net of the three. Effort is given in rough working days for one developer
 
 ## Still waiting on your ruling from earlier passes
 
-> **Ruled 2026-11-10 (D222):** 2026-09-08 #3 REJECTED (D92, D218); 2026-09-22 #1 APPROVED and already
-> done by T-439, nothing to file; 2026-09-22 #3 APPROVED, to be filed. Owner: *"Close two, build dates"*.
+> **Ruled 2026-11-10 (D222):** 2026-09-08 #3 REJECTED (D92, D218), logged as RP-9; 2026-09-22 #1 APPROVED and already
+> done by T-439, nothing to file; 2026-09-22 #3 APPROVED, filed as T-465. Owner: *"Close two, build dates"*.
 
 Three proposals carry no marking. Each was re-checked in today's tree. They are not re-proposed below.
 
@@ -56,7 +56,7 @@ Three proposals carry no marking. Each was re-checked in today's tree. They are 
 
 ## 1. A fund's own returns, and the money moving in and out of it, from its SEC filing · proposed `P1` · target section: ledger, new item (category `feature`, ETFs & Funds)
 
-**Status:** APPROVED (owner, 2026-11-10, D222)
+**Status:** APPROVED (owner, 2026-11-10, D222) · **Filed as:** T-459
 
 **In short:** Every fund page gets the returns the fund itself reported to the SEC, and how much money investors
 put in and took out. No key is needed: the app already downloads the filing that holds both, and throws them away.
@@ -117,7 +117,7 @@ confirmed from real filings already on this machine.
 
 ## 2. What you sold, year by year: every sale with the purchases it used up · proposed `P1` · target section: ledger, new item (category `feature`, Portfolios → Tracked)
 
-**Status:** APPROVED (owner, 2026-11-10, D222) — in Finance Now, with buy and sell dates and days held, and no "held more than a year" mark (the owner's answer to both questions: "Finance Now, dates only")
+**Status:** APPROVED (owner, 2026-11-10, D222) — in Finance Now, with buy and sell dates and days held, and no "held more than a year" mark (the owner's answer to both questions: "Finance Now, dates only") · **Filed as:** T-460
 
 **In short:** Each tracked portfolio shows one "Realized" total. The app already works out, for every sale, which
 purchases it used up and the gain on each. Show that list, by calendar year, with a download.
@@ -166,7 +166,7 @@ already computes every row. · *Practicality:* Very good: two yes/no questions.
 
 ## 3. Each stock's latest quarters, not only its last full year · proposed `P1` · target section: ledger, new item (category `feature`, Equities)
 
-**Status:** APPROVED (owner, 2026-11-10, D222)
+**Status:** APPROVED (owner, 2026-11-10, D222) · **Filed as:** T-461
 
 **In short:** A stock page's revenue and profit come only from the company's last annual report. Add the last eight
 quarters, from the same SEC file the page already downloads, next to the next earnings date the page now shows.
@@ -208,7 +208,7 @@ hidden.
 
 ## 4. Commodity pages: today's prices of the funds that hold each commodity · proposed `P2` · target section: ledger, new item (category `feature`, Macro Markets)
 
-**Status:** APPROVED (owner, 2026-11-10, D222)
+**Status:** APPROVED (owner, 2026-11-10, D222) · **Filed as:** T-462
 
 **In short:** A commodity's own price has been a dash on every audit since 2026-09-09. Each commodity page already
 lists the funds that hold it (GLD for gold, USO for oil), but shows none of their prices. Show them: they are the
@@ -250,7 +250,7 @@ through a working path. · *Practicality:* Very good.
 
 ## 5. Join up the coin pages with Staking and the Reserve Monitor · proposed `P2` · target section: ledger, new item (category `feature`, Crypto)
 
-**Status:** APPROVED (owner, 2026-11-10, D222)
+**Status:** APPROVED (owner, 2026-11-10, D222) · **Filed as:** T-463
 
 **In short:** A coin's page has no way to the staking options for that coin, and the Staking page and the Reserve
 Monitor have no way back to the coins' pages. Add the links.
@@ -288,7 +288,7 @@ D190). The coin page shows a count and a link, with no list in order of rate and
 
 ## 6. How the gap between short and long Treasury yields has moved · proposed `P2` · target section: ledger, new item (category `feature`, Macro Markets)
 
-**Status:** APPROVED (owner, 2026-11-10, D222)
+**Status:** APPROVED (owner, 2026-11-10, D222) · **Filed as:** T-464
 
 **In short:** Bonds & Rates shows today's gap between the 2-year and 10-year yields, and between the 3-month and
 10-year. Add their history, from one month to ten years, with the stretches when short yields were above long ones

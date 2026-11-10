@@ -206,7 +206,7 @@ real risk is the non-catalog coin resolution, which is nameable and avoidable up
 
 ## 3. Date the 24 fallback APRs that have no date, and show the date that exists · proposed `P1` · target section: `docs/TASK-QUEUE.md` → "Wave 5 — Improvement-agent intake" → "Approved proposals (build work)" (cross-reference the S3/staking work and T-394, which is a different clock — see below)
 
-**Status:** APPROVED (owner, 2026-11-10, D222)
+**Status:** APPROVED (owner, 2026-11-10, D222) · **Filed as:** T-465
 
 **What:** Two halves. **(a)** Render the `fallbackProvenance` block the staking route
 already computes and no screen has ever shown, and stop the page-level notice dating
