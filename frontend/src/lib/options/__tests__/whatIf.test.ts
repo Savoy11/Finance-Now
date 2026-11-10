@@ -129,3 +129,28 @@ describe('the chart\'s "today" line', () => {
     expect(Number.isFinite(line[2])).toBe(true)
   })
 })
+
+// Code review 2026-11-10 (D221): three changes to whatIf() went unnoticed by the tests above.
+describe('what the "What if" card reports is worked out at the moved price and volatility', () => {
+  const p: CalcPosition = { legs: [leg('long', 'call', 100, 5)] }
+
+  it('the expiry figure is at the moved price, not the price entered', () => {
+    const r = whatIf(p, [20], M, { priceMovePct: 10, volShiftPts: 0 })
+    expect(r.pnlAtExpiry).toBeCloseTo(payoffAtExpiry(p, 110), 6) // +$500
+    expect(r.pnlAtExpiry).not.toBeCloseTo(payoffAtExpiry(p, 100), 0) // −$500
+  })
+
+  it('the Greeks are at the moved price and volatility', () => {
+    const r = whatIf(p, [20], M, { priceMovePct: 10, volShiftPts: 5 })
+    expect(r.greeks).toEqual(positionGreeks(p, [25], { ...M, spot: 110 }))
+    expect(r.greeks.delta).not.toBeCloseTo(positionGreeks(p, [20], M).delta, 1)
+  })
+
+  it('the model carries the dividend yield entered', () => {
+    const q: GreeksMarket = { ...M, dividendYieldPct: 3 }
+    const value = blackScholes({ type: 'call', spot: 100, strike: 100, years: 1, rate: 0.05, dividendYield: 0.03, volatility: 0.2 }).price
+    expect(modelPnlNow({ legs: [leg('long', 'call', 100, 0)] }, [20], q)).toBeCloseTo(value * 100, 9)
+    expect(modelPnlNow({ legs: [leg('long', 'call', 100, 0)] }, [20], q))
+      .not.toBeCloseTo(modelPnlNow({ legs: [leg('long', 'call', 100, 0)] }, [20], M), 0)
+  })
+})

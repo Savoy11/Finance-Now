@@ -216,7 +216,14 @@ function OptionsCalculatorInner() {
       setPresetNote('Enter (or fetch) the underlying price first: presets set their strikes from it.')
       return
     }
-    const preset = buildPreset(id, px)
+    let preset: ReturnType<typeof buildPreset>
+    try {
+      preset = buildPreset(id, px)
+    } catch (e) {
+      // A price too low for the structure's strikes to stay above $0 (D221): say so, change nothing.
+      setPresetNote(e instanceof Error ? e.message : String(e))
+      return
+    }
     setLegs(preset.legs.map((l) => ({ ...emptyLeg(), side: l.side, type: l.type, strike: String(l.strike) })))
     // A covered call, protective put or collar is written against shares held; the others carry none.
     if (preset.withShares) { setShares('100'); setShareCost(String(px)) } else { setShares(''); setShareCost('') }
@@ -234,11 +241,14 @@ function OptionsCalculatorInner() {
 
   const summary = useMemo(() => (parsed.position ? summarizePayoff(parsed.position) : null), [parsed.position])
 
+  const movedPrice = parsed.underlying != null ? parsed.underlying * (1 + priceMovePct / 100) : null
+
+  // The chart takes in the "what if" price, so its marker never falls off an edge (D221).
   const series = useMemo(() => {
     if (!parsed.position || parsed.underlying == null) return []
-    const { lo, hi } = chartRange(parsed.position, parsed.underlying)
+    const { lo, hi } = chartRange(parsed.position, parsed.underlying, movedPrice != null ? [movedPrice] : [])
     return payoffSeries(parsed.position, lo, hi, 160)
-  }, [parsed.position, parsed.underlying])
+  }, [parsed.position, parsed.underlying, movedPrice])
 
   // Greeks need a volatility on every leg and time left; otherwise say what's missing.
   // The same inputs drive the "what if" figures and the chart's "today" line.
@@ -259,15 +269,17 @@ function OptionsCalculatorInner() {
   }, [parsed, legs, ratePct, divPct])
 
   // The slider's lower end keeps every leg's volatility above 0; a leg edited lower pulls it in.
+  // The stored shift follows the range, so a narrowed range never leaves a hidden shift that
+  // springs back when the range widens again (code review 2026-11-10, D221). Adjusting state
+  // during render, guarded, is React's own pattern for state derived from other state.
   const volBounds = useMemo(() => volShiftBounds(greeks.vols ?? []), [greeks.vols])
   const volShift = Math.min(Math.max(volShiftPts, volBounds.min), volBounds.max)
+  if (volShift !== volShiftPts) setVolShiftPts(volShift)
 
   const scenario = useMemo((): WhatIfResult | null => {
     if (!parsed.position || !greeks.vols || !greeks.market) return null
     return whatIf(parsed.position, greeks.vols, greeks.market, { priceMovePct, volShiftPts: volShift })
   }, [parsed.position, greeks.vols, greeks.market, priceMovePct, volShift])
-
-  const movedPrice = parsed.underlying != null ? parsed.underlying * (1 + priceMovePct / 100) : null
 
   // The chart's second line: model profit or loss now, at the slider's volatility.
   const chartData = useMemo(() => {
@@ -631,7 +643,8 @@ function WhatIfPanel({
           value={priceMovePct}
           onChange={(e) => onPriceMove(Number(e.target.value))}
           disabled={underlying == null}
-          aria-label="Move the underlying price, in percent"
+          aria-label="Underlying price: move it by a percentage"
+          aria-valuetext={`${signed(priceMovePct, 0)}%${movedPrice != null ? `, ${price(movedPrice)}` : ''}`}
           className="mt-1 w-full accent-accent-blue disabled:opacity-40"
         />
       </label>
@@ -651,7 +664,8 @@ function WhatIfPanel({
           value={volShift}
           onChange={(e) => onVolShift(Number(e.target.value))}
           disabled={!scenario}
-          aria-label="Move every leg's implied volatility, in percentage points"
+          aria-label="Implied volatility, every leg: move it by percentage points"
+          aria-valuetext={`${signed(volShift, 0)} points`}
           className="mt-1 w-full accent-accent-blue disabled:opacity-40"
         />
       </label>

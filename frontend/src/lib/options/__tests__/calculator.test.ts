@@ -8,6 +8,7 @@ import {
 import { blackScholes, normCdf, positionGreeks } from '../greeks'
 import { whatIf } from '../whatIf'
 import { buildPreset, PRESETS } from '../presets'
+import { stripComments } from '../../../../scripts/lib/stripComments.mjs'
 
 const leg = (side: CalcLeg['side'], type: CalcLeg['type'], strike: number, premium: number, contracts = 1): CalcLeg =>
   ({ side, type, strike, premium, contracts })
@@ -115,6 +116,17 @@ describe('payoff series for the chart', () => {
     expect(r.lo).toBeLessThan(100)
     expect(r.hi).toBeGreaterThan(105)
   })
+
+  it('takes in the "what if" price, so its marker is never off the chart (code review 2026-11-10, D221)', () => {
+    const call: CalcPosition = { legs: [leg('long', 'call', 100, 5)] }
+    const plain = chartRange(call, 100)
+    expect(plain.lo).toBeGreaterThan(70) // the review's case: $85–$120
+    const moved = chartRange(call, 100, [70])
+    expect(moved.lo).toBeLessThan(70)
+    expect(chartRange(call, 100, [150]).hi).toBeGreaterThan(150)
+    // Nothing extra: the same range as before.
+    expect(chartRange(call, 100, [])).toEqual(plain)
+  })
 })
 
 describe('Black-Scholes — the textbook case (S=K=100, 1 year, r=5%, σ=20%)', () => {
@@ -185,14 +197,46 @@ describe('the calculator stays ungraded (D92, D93)', () => {
     'src/app/(dashboard)/equities/options-calculator/page.tsx',
   ]
 
+  // Any import of the risk engine, read from code with comments removed: `from '…'`, a bare
+  // `import '…'`, `import('…')` or `import(`…`)`, `require('…')`, by alias or by any relative
+  // path. The bare form got past this test until 2026-11-09, and relative paths from the page,
+  // `./../risk` and require() until the code review of 2026-11-10 (D221).
+  const RISK_IMPORT = /(?:\bfrom|\bimport|\brequire)\s*\(?\s*[`'"](?:@\/lib\/risk|(?:\.\.?\/)+(?:[\w.-]+\/)*risk)(?:[/`'"])/
+  const importsRisk = (src: string) => RISK_IMPORT.test(stripComments(src) as string)
+
   it('nothing in it imports the risk engine', () => {
-    for (const f of files) {
-      const src = fs.readFileSync(path.join(ROOT, f), 'utf8')
-      // Any import of it: `from '…'`, a bare `import '…'`, or `import('…')` (the bare form got
-      // past this test until 2026-11-09).
-      expect(src, f).not.toMatch(/(?:from|import)\s*\(?\s*['"]@\/lib\/risk/)
-      expect(src, f).not.toMatch(/(?:from|import)\s*\(?\s*['"](?:\.\.\/)+risk/)
-    }
+    for (const f of files) expect(importsRisk(fs.readFileSync(path.join(ROOT, f), 'utf8')), f).toBe(false)
+  })
+
+  it('the risk-engine check catches every way of importing it, and nothing else', () => {
+    for (const src of [
+      "import { x } from '@/lib/risk/visibility'",
+      "import '@/lib/risk'",
+      "const m = await import('@/lib/risk/engine')",
+      'const m = await import(`@/lib/risk/${name}`)',
+      "const m = require('@/lib/risk')",
+      "import { x } from '../risk/engine'",
+      "import { x } from './../risk'",
+      "import { x } from '../../../../lib/risk/visibility'",
+      "export { x } from '@/lib/risk/visibility'",
+      "import type { X } from '@/lib/risk'",
+    ]) expect(importsRisk(src), src).toBe(true)
+    for (const src of [
+      "// never import '@/lib/risk' here",
+      "/* import { x } from '@/lib/risk' */",
+      "import { x } from '@/lib/riskless'",
+      "import { x } from '../data/risky'",
+      "const label = 'risk'",
+    ]) expect(importsRisk(src), src).toBe(false)
+  })
+
+  it('names both sliders by their visible labels and reads their values out (D221)', () => {
+    const page = fs.readFileSync(path.join(ROOT, 'src/app/(dashboard)/equities/options-calculator/page.tsx'), 'utf8')
+    const sliders = [...page.matchAll(/<input\s+type="range"[\s\S]*?\/>/g)].map((m) => m[0])
+    expect(sliders).toHaveLength(2)
+    for (const s of sliders) expect(s).toMatch(/aria-valuetext=/)
+    expect(sliders[0]).toMatch(/aria-label="Underlying price/)
+    expect(sliders[1]).toMatch(/aria-label="Implied volatility, every leg/)
   })
 
   it('its results carry no score, grade or rating field', () => {

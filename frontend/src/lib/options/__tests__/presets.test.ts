@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildPreset, roundToStrike, strikeLadder, PRESETS, type PresetId } from '../presets'
+import { atTheMoney, buildPreset, roundToStrike, strikesAround, wingsAround, PRESETS, type PresetId } from '../presets'
 import { summarizePayoff } from '../payoff'
 
 describe('roundToStrike', () => {
@@ -158,14 +158,23 @@ describe('the structures added on 2026-11-09 (T-061, D216)', () => {
   })
 })
 
-describe('strikeLadder keeps strikes apart at low prices', () => {
-  it('at $5, 95% and 100% no longer land on one strike', () => {
+describe('strikesAround keeps strikes apart, on one grid, anchored at the money', () => {
+  it('at $5, 95% and 100% no longer land on one strike, and the at-the-money one stays put', () => {
     expect(roundToStrike(5 * 0.95)).toBe(roundToStrike(5)) // the collision it fixes
-    expect(strikeLadder(5, [0.95, 1.0])).toEqual([5, 5.5])
+    expect(strikesAround(5, [0.95, 1.0])).toEqual([4.5, 5])
+    expect(atTheMoney(5)).toBe(5)
+  })
+
+  it('wingsAround gives a butterfly equal wings where rounding each strike did not', () => {
+    expect(wingsAround(87.3, 0.05)).toEqual([83, 87, 91]) // was 83/87/92
+    expect(wingsAround(24.6, 0.05)).toEqual([23.5, 24.5, 25.5]) // was 23.5/24.5/26
+    expect(wingsAround(200, 0.05)).toEqual([190, 200, 210]) // unchanged
   })
 
   it('every multi-strike preset keeps its strikes in order at awkward prices', () => {
-    for (const price of [1.2, 3, 5, 9.9, 24.6, 87.3, 199, 640]) {
+    // $1.20 left this list on 2026-11-10 (D221): the condor and the credit spreads are refused
+    // there now, which the test below for refusals holds.
+    for (const price of [3, 5, 9.9, 24.6, 87.3, 199, 640]) {
       for (const { id } of PRESETS) {
         const legs = buildPreset(id as PresetId, price).legs
         for (const l of legs) expect(l.strike, `${id} at ${price}`).toBeGreaterThan(0)
@@ -188,5 +197,100 @@ describe('strikeLadder keeps strikes apart at low prices', () => {
   it('leaves the existing presets as they were at ordinary prices', () => {
     expect(buildPreset('iron-condor', 200).legs.map((l) => l.strike)).toEqual([180, 190, 210, 220])
     expect(buildPreset('bull-call-spread', 87.3).legs.map((l) => l.strike)).toEqual([87, 92])
+  })
+})
+
+// ── Code review 2026-11-10 (D221) ───────────────────────────────────────────
+// Every preset at a spread of awkward prices: its shape, where its strikes sit against the
+// price, its grid, its stated maximum loss against the payoff arithmetic, and equal butterfly
+// wings. The review found the call butterfly lopsided at about a quarter of all prices, so
+// its note ("Max loss is the net debit paid") was false there, and strikes drifting above
+// the price on cheap stocks.
+
+type Place = 'below' | 'atm' | 'above'
+const SHAPES: Record<PresetId, Array<[side: 'long' | 'short', type: 'call' | 'put', place: Place]>> = {
+  'long-call': [['long', 'call', 'atm']],
+  'long-put': [['long', 'put', 'atm']],
+  'covered-call': [['short', 'call', 'above']],
+  'cash-secured-put': [['short', 'put', 'below']],
+  'protective-put': [['long', 'put', 'below']],
+  'collar': [['long', 'put', 'below'], ['short', 'call', 'above']],
+  'bull-call-spread': [['long', 'call', 'atm'], ['short', 'call', 'above']],
+  'bear-put-spread': [['long', 'put', 'atm'], ['short', 'put', 'below']],
+  'bull-put-spread': [['long', 'put', 'below'], ['short', 'put', 'below']],
+  'bear-call-spread': [['short', 'call', 'above'], ['long', 'call', 'above']],
+  'long-straddle': [['long', 'call', 'atm'], ['long', 'put', 'atm']],
+  'long-strangle': [['long', 'put', 'below'], ['long', 'call', 'above']],
+  'iron-condor': [['long', 'put', 'below'], ['short', 'put', 'below'], ['short', 'call', 'above'], ['long', 'call', 'above']],
+  'iron-butterfly': [['long', 'put', 'below'], ['short', 'put', 'atm'], ['short', 'call', 'atm'], ['long', 'call', 'above']],
+  'long-call-butterfly': [['long', 'call', 'below'], ['short', 'call', 'atm'], ['short', 'call', 'atm'], ['long', 'call', 'above']],
+}
+const RANK: Record<Place, number> = { below: 0, atm: 1, above: 2 }
+// Awkward prices: the strike grid's edges (25, 100, 250), the review's examples, and a sweep.
+const PRICES = [2.6, 3.1, 5, 9.9, 24.6, 25.4, 26, 87.3, 97.65, 99, 101, 199, 249, 251, 640,
+  ...Array.from({ length: 140 }, (_, i) => Math.round((3 + i * 7.13) * 100) / 100)]
+const gridStep = (price: number) => (price < 25 ? 0.5 : price < 100 ? 1 : price < 250 ? 5 : 10)
+const zeroPremium = (legs: Array<{ side: 'long' | 'short'; type: 'call' | 'put'; strike: number }>) =>
+  legs.map((l) => ({ ...l, premium: 0, contracts: 1 }))
+
+describe('every preset, at awkward prices (code review 2026-11-10, D221)', () => {
+  it('has a shape for every preset', () => {
+    expect(Object.keys(SHAPES).sort()).toEqual(PRESETS.map((p) => p.id).sort())
+  })
+
+  it('keeps each structure: sides, types, and which side of the price each strike sits', () => {
+    for (const price of PRICES) {
+      const g = gridStep(price)
+      for (const { id } of PRESETS) {
+        const legs = buildPreset(id, price).legs
+        const shape = SHAPES[id]
+        const at = `${id} at $${price}`
+        expect(legs.map((l) => `${l.side} ${l.type}`), at).toEqual(shape.map(([s, t]) => `${s} ${t}`))
+        legs.forEach((l, i) => {
+          const place = shape[i][2]
+          expect(Math.abs(l.strike / g - Math.round(l.strike / g)), `${at}: $${l.strike} on the $${g} grid`).toBeLessThan(1e-9)
+          if (place === 'atm') expect(Math.abs(l.strike - price), `${at}: at-the-money $${l.strike}`).toBeLessThanOrEqual(g / 2 + 1e-9)
+          if (place === 'below') expect(l.strike, `${at}: $${l.strike} below the price`).toBeLessThan(price)
+          if (place === 'above') expect(l.strike, `${at}: $${l.strike} above the price`).toBeGreaterThan(price)
+        })
+        // Strikes run in the shape's order: below < at < above, and a second leg on the same
+        // side sits further out (a spread's two strikes are never one).
+        for (let i = 0; i < legs.length; i++) for (let j = i + 1; j < legs.length; j++) {
+          const [a, b] = [RANK[shape[i][2]], RANK[shape[j][2]]]
+          if (a < b) expect(legs[i].strike, at).toBeLessThan(legs[j].strike)
+          if (a === b && a !== 1) expect(legs[i].strike, at).toBeLessThan(legs[j].strike)
+          if (a === b && a === 1) expect(legs[i].strike, at).toBe(legs[j].strike)
+        }
+      }
+    }
+  })
+
+  it('states a maximum loss only as the payoff arithmetic gives it, before premium', () => {
+    for (const price of PRICES) {
+      for (const { id } of PRESETS) {
+        const p = buildPreset(id, price)
+        if (p.maxLossUsd === undefined || p.withShares) continue
+        const fromPayoff = summarizePayoff({ legs: zeroPremium(p.legs) }).maxLossUsd
+        expect(p.maxLossUsd, `${id} at $${price}`).toBeCloseTo(fromPayoff as number, 6)
+      }
+    }
+  })
+
+  it('gives both butterflies equal wings, so the call butterfly can lose only what was paid', () => {
+    for (const price of PRICES) {
+      for (const id of ['iron-butterfly', 'long-call-butterfly'] as const) {
+        const k = buildPreset(id, price).legs.map((l) => l.strike)
+        expect(k[1] - k[0], `${id} at $${price}: ${k.join('/')}`).toBeCloseTo(k[3] - k[2], 9)
+      }
+      const fly = buildPreset('long-call-butterfly', price).legs
+      expect(summarizePayoff({ legs: zeroPremium(fly) }).maxLossUsd, `call butterfly at $${price}`).toBe(0)
+    }
+  })
+
+  it('refuses a structure whose strikes would reach $0, and says so, instead of drifting above the price', () => {
+    expect(() => buildPreset('iron-condor', 1.2)).toThrow(/\$0/)
+    expect(() => buildPreset('bull-put-spread', 1.2)).toThrow(/\$0/)
+    // A structure that fits keeps working at the same price.
+    expect(buildPreset('long-call', 1.2).legs[0].strike).toBe(1)
   })
 })
