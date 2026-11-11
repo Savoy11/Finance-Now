@@ -216,6 +216,16 @@ export const DATA_METHODS: readonly MethodSection[] = [
     ],
   },
   {
+    id: 'yield-gaps',
+    title: 'The gaps between long and short yields',
+    decided: '2026-11-11',
+    paragraphs: [
+      'The two gaps are the 10-year Treasury yield minus the 2-year, and minus the 3-month, in percentage points, each worked out the same way from each day’s official par yield curve, today’s included. Below zero, short-term yields are above long-term ones, which is called an inverted curve. Exactly zero is not counted as below zero.',
+      'A stretch below zero is a run of daily readings below zero, however short: a single day counts as one. Stretches are always worked out from every day’s reading, even where the chart, over five or ten years, draws only each week’s last. A gap of more than ten days between readings, which only a year’s file that could not be read would leave, ends a stretch, and the dates beside it then say “on or before” or “or later”.',
+      'Each gap also says where it stands now: the stretch below zero it is in, or the last one before. To date that stretch whatever period is shown, earlier years are read, one at a time and up to ten years back, until its start is found. A gap not below zero in those ten years says so. These are figures from the Treasury’s own curve, not odds, a signal or a forecast.',
+    ],
+  },
+  {
     id: 'currency-pairs',
     title: 'Currency pairs',
     decided: '2026-11-07',

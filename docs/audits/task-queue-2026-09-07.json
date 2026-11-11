@@ -62,9 +62,9 @@
   "total_verified": 421,
   "outstanding": 405,
   "by_status": {
-   "closed": 262,
+   "closed": 263,
    "parked": 127,
-   "open": 11,
+   "open": 10,
    "blocked": 5
   },
   "by_owner_role": {
@@ -74,7 +74,7 @@
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 262,
+  "closed_by_annotation": 263,
   "counts_recomputed_on": "2026-11-11",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 405
@@ -16979,7 +16979,7 @@
   {
    "id": "T-464",
    "title": "Bonds & Rates: the history of the 2s10s and 3m10y yield gaps from the official Treasury curve, with inverted stretches marked",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "blocking_decision": null,
    "opened": {
@@ -17024,7 +17024,29 @@
      "lines": "45",
      "quote": "export async function fetchYieldHistory(maturity: string, range: YieldHistoryRange, now: Date = new Date()): Promise<YieldHistory> {"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-11-11",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "Built as filed; the owner said “Merge and continue” after #497, and T-464 was the next item on the 2026-11-10 list (approved under D222, no decision named). frontend/src/lib/data/curveSpreads.ts (pure, tested) works out each day’s 10-year minus 2-year and minus 3-month gaps from the official par curve through spreadsOfCurve, which treasuryCurve.ts’s spreadsOf now calls, so one day’s gap is worked out one way everywhere; the stretches below zero (exactly zero not counted, a single day counted, never carried across a gap of more than ten days between readings, with “on or before” / “or later” where the readings stop short); and where each gap stands now. frontend/src/lib/server/treasurySpreadHistory.ts reads the same yearly files as fetchYieldHistory and reads earlier years one at a time, up to ten, until each gap’s most recent stretch below zero (the one it is in, or the last before) has a known start, so where each stands is dated whatever range is shown; /live-data/treasury-spread-history serves it, 1M to 10Y, daily up to a year and each week’s last reading beyond, with the stretches always worked out from every day. YieldGapHistoryCard on Bonds & Rates draws either gap with each stretch shaded, says where it stands now and when it was last below zero, and names the longest stretch and the most recent in the period; get_yield_curve returns the same as gapHistory over ten years (gapHistoryFact). Facts only: no odds, signal or forecast. Checked against the Treasury’s 2016–2026 files already in the build cache: 2s10s below zero 2022-07-06 to 2024-08-26 (537 trading days, lowest −1.08 on 2023-07-03), 3m10y 2022-10-25 to 2024-12-12; a 20-day excerpt of the 2022 and 2024 files is a test fixture. The methods page has “The gaps between long and short yields” (D163); the live-data audit checks the July 2022 to 2024 stretch on the owner’s machine.",
+    "approved_by": "owner, 2026-11-11: “Merge and continue” after #497, continuing the 2026-11-10 list approved under D222",
+    "evidence": [
+     "frontend/src/lib/data/curveSpreads.ts",
+     "frontend/src/lib/data/__tests__/curveSpreads.test.ts",
+     "frontend/src/lib/server/treasurySpreadHistory.ts",
+     "frontend/src/lib/server/__tests__/treasurySpreadHistory.test.ts",
+     "frontend/src/lib/server/__tests__/fixtures/treasury-par-2022-2024-excerpt.xml",
+     "frontend/src/app/live-data/treasury-spread-history/route.ts",
+     "frontend/src/components/markets/YieldGapHistoryCard.tsx",
+     "frontend/src/app/(dashboard)/macro/rates/RatesClient.tsx",
+     "frontend/src/lib/agents/tools.ts",
+     "frontend/src/lib/agents/__tests__/yieldGapTool.test.ts",
+     "frontend/src/lib/legal/dataMethods.ts",
+     "frontend/scripts/test-live-data.mjs"
+    ]
+   }
   },
   {
    "id": "T-465",
@@ -43188,6 +43210,14 @@
     "evidence": [
      "frontend/src/lib/utils/aprDisplay.ts",
      "frontend/src/lib/server/stakingRates.ts"
+    ]
+   },
+   {
+    "on": "2026-11-11",
+    "what": "T-464 built and closed (owner-ruling: “Merge and continue” after #497, continuing the 2026-11-10 list approved under D222): the 2s10s and 3m10y gaps over time on Bonds & Rates and in get_yield_curve, each stretch below zero dated. No other item changed. Counts recomputed: open 11 to 10, closed 262 to 263, closed_by_annotation 262 to 263; total 405 and the owner-role counts unchanged.",
+    "evidence": [
+     "frontend/src/lib/data/curveSpreads.ts",
+     "frontend/src/components/markets/YieldGapHistoryCard.tsx"
     ]
    }
   ]

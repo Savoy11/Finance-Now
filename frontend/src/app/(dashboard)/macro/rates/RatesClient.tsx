@@ -10,6 +10,7 @@ import { SourceLine } from '@/components/ui/SourceLine'
 import { MetricCard } from '@/components/ui/MetricCard'
 import { LineChart } from '@/components/charts/LineChart'
 import { YieldHistoryCard } from '@/components/markets/YieldHistoryCard'
+import { YieldGapHistoryCard } from '@/components/markets/YieldGapHistoryCard'
 import { MacroCalendarCard } from '@/components/markets/MacroCalendarCard'
 import { REAL_MATURITIES } from '@/lib/data/yieldHistory'
 import {
@@ -167,6 +168,9 @@ export function RatesClient() {
           </p>
         )}
       </div>
+
+      {/* T-464: the two gaps above over time, with each stretch below zero shaded and dated. */}
+      <YieldGapHistoryCard />
 
       {/* T-446: real yields and the market's expected inflation, from the same official source. */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">

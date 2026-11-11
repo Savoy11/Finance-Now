@@ -2,6 +2,9 @@ import 'server-only'
 
 import { recordProviderFetch } from '@/lib/api/live/providers'
 import { expectedInflationTable, type ExpectedInflationRow } from '@/lib/data/yieldHistory'
+import { spreadsOfCurve, type CurveSpreads } from '@/lib/data/curveSpreads'
+
+export type { CurveSpreads }
 
 // Official daily Treasury par yield curve (treasury.gov XML, keyless).
 // Shared by /live-data/treasury-yield-curve (UI) and /api/v1/macro/yield-curve
@@ -24,12 +27,6 @@ export interface CurveSnapshot {
 export interface CurveChange {
   label: string
   bp: number
-}
-
-/** The two headline spreads of one curve, in percentage points. */
-export interface CurveSpreads {
-  spread2s10s?: number
-  spread3m10y?: number
 }
 
 export interface YieldCurveData {
@@ -197,15 +194,13 @@ export function changesBetween(from: CurveSnapshot, to: CurveSnapshot): CurveCha
   })
 }
 
-/** 10Y minus 2Y and 10Y minus 3M on one curve, rounded to hundredths. */
+/**
+ * 10Y minus 2Y and 10Y minus 3M on one curve, rounded to hundredths. The arithmetic is
+ * lib/data/curveSpreads.ts, which the gaps' history (T-464) reads too, so one day's gap is
+ * worked out one way everywhere.
+ */
 export function spreadsOf(snapshot: CurveSnapshot): CurveSpreads {
-  const y2 = yieldAt(snapshot, '2Y')
-  const y10 = yieldAt(snapshot, '10Y')
-  const m3 = yieldAt(snapshot, '3M')
-  return {
-    spread2s10s: y2 != null && y10 != null ? Math.round((y10 - y2) * 100) / 100 : undefined,
-    spread3m10y: m3 != null && y10 != null ? Math.round((y10 - m3) * 100) / 100 : undefined,
-  }
+  return spreadsOfCurve(snapshot)
 }
 
 /**

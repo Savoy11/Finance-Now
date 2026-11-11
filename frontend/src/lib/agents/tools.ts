@@ -10,6 +10,8 @@ import type { FundExposure } from '@/lib/utils/fundExposure'
 import type { FundProspectusResponse } from '@/app/live-data/fund-prospectus/route'
 import type { FundReturnsResponse } from '@/app/live-data/fund-returns/route'
 import type { Quarter as CompanyQuarter } from '@/lib/utils/companyQuarters'
+import type { SpreadHistoryResponse } from '@/app/live-data/treasury-spread-history/route'
+import { SPREAD_KEYS, SPREAD_NAMES, type InvertedStretch } from '@/lib/data/curveSpreads'
 import type { LiveReserveAsset } from '@/app/live-data/reserves/route'
 import { COMMODITY_CATALOG, COMMODITY_CATEGORY_INFO } from '@/lib/data/commodityCatalog'
 import { CURRENCY_CATALOG, CURRENCY_CATEGORY_INFO } from '@/lib/data/currencyCatalog'
@@ -441,7 +443,7 @@ const TOOL_REGISTRY: RegisteredTool[] = [
     market: 'macro',
     tool: {
       name: 'get_yield_curve',
-      description: 'Get the official US Treasury par yield curve (13 maturities, treasury.gov daily data) with 2s10s and 3m10y spreads, curve shape (normal/flat/inverted), and month-ago / year-start snapshots for comparison, each with its own spreads (monthAgoSpreads, yearStartSpreads) and each maturity\'s change since then in basis points (changeSinceMonthAgo, changeSinceYearStart): quote those to say how far a yield has moved and whether the curve has steepened or flattened, rather than working them out yourself. It also returns expectedInflation: at 5Y, 7Y, 10Y, 20Y and 30Y, the ordinary yield, the inflation-protected (real) yield and their difference, the inflation the bond market prices in, all from one day; quote it rather than subtracting. The authoritative rates tool — prefer it over quoting ^TNX for curve questions.',
+      description: 'Get the official US Treasury par yield curve (13 maturities, treasury.gov daily data) with 2s10s and 3m10y spreads, curve shape (normal/flat/inverted), and month-ago / year-start snapshots for comparison, each with its own spreads (monthAgoSpreads, yearStartSpreads) and each maturity\'s change since then in basis points (changeSinceMonthAgo, changeSinceYearStart): quote those to say how far a yield has moved and whether the curve has steepened or flattened, rather than working them out yourself. It also returns expectedInflation: at 5Y, 7Y, 10Y, 20Y and 30Y, the ordinary yield, the inflation-protected (real) yield and their difference, the inflation the bond market prices in, all from one day; quote it rather than subtracting. It also returns gapHistory: over the last ten years of daily readings, where each gap (10-year minus 2-year, 10-year minus 3-month) stands, the stretch it is in or when it was last below zero, its longest stretch below zero and how many there were, all dated; quote those rather than guessing how long the curve has been inverted. The authoritative rates tool — prefer it over quoting ^TNX for curve questions.',
       input_schema: { type: 'object', properties: {} },
     },
   },
@@ -664,6 +666,40 @@ export function fundReturnsFact(symbol: string, r: FundReturnsResponse | Error):
       }
       : null,
     note: "Total returns for this share class as the fund reported them, payouts included. The 12-month return compounds twelve reported months and is given only when none is missing; never work one out from fewer. Money in and out is for the whole fund, every share class; for an ETF, new and redeemed shares are dealers' creations and redemptions, not individual investors' purchases. The filings appear about 60 days after each quarter ends, so name the months these cover. Do not set them beside other funds' figures for other months, and do not rate the fund on them.",
+  }
+}
+
+const stretchFact = (s: InvertedStretch) => ({
+  start: s.start, end: s.ongoing ? null : s.end, stillBelowZero: s.ongoing,
+  startIsEarliestRead: !s.startKnown, tradingDaysBelowZero: s.readings,
+  lowestPctPoints: s.deepest, lowestOn: s.deepestOn,
+})
+
+/**
+ * The two yield gaps' history for an agent (T-464), from ten years of the official daily curve:
+ * where each stands, when it was last below zero, its longest stretch below zero and how many
+ * there were, worked out so the agent quotes dates rather than reading them off a chart. Facts,
+ * no forecast. Exported for its tests.
+ */
+export function gapHistoryFact(h: SpreadHistoryResponse): Record<string, unknown> {
+  if (!h.ok) return { error: h.error ?? 'gap history unavailable' }
+  const gaps = Object.fromEntries(SPREAD_KEYS.map((k) => {
+    const now = h.now?.[k] ?? null
+    const stretches = h.stretches?.[k] ?? []
+    const longest = stretches.reduce<InvertedStretch | null>((b, s) => (!b || s.readings > b.readings ? s : b), null)
+    return [k, {
+      name: SPREAD_NAMES[k].long,
+      now: now ? { date: now.date, pctPoints: now.value, belowZero: now.inverted } : null,
+      ...(now?.stretch ? { [now.inverted ? 'currentStretch' : 'lastStretchBelowZero']: stretchFact(now.stretch) } : {}),
+      timesBelowZero: stretches.length,
+      longestStretchBelowZero: longest ? stretchFact(longest) : null,
+    }]
+  }))
+  return {
+    period: 'the last ten years of daily readings',
+    ...gaps,
+    ...(h.missingYears?.length ? { yearsNotRead: h.missingYears } : {}),
+    note: 'Below zero means short-term Treasury yields are above the 10-year, an inverted curve. Every stretch is worked out from each day’s official reading; a one-day dip counts as one. Quote these dates and counts rather than working them out; they are history, not a forecast or a signal.',
   }
 }
 
@@ -1344,6 +1380,13 @@ async function execute(
           changeSinceMonthAgo?: unknown; changeSinceYearStart?: unknown; expectedInflation?: unknown
         }
         if (!data.ok) return { error: data.error ?? 'yield curve unavailable' }
+        // The gaps' ten-year history (T-464), best-effort: the curve stands without it.
+        let gapHistory: Record<string, unknown>
+        try {
+          gapHistory = gapHistoryFact((await get(`/live-data/treasury-spread-history?range=10y`)) as SpreadHistoryResponse)
+        } catch (err) {
+          gapHistory = { error: err instanceof Error ? err.message : 'gap history unavailable' }
+        }
         // The comparison curves' spreads and each maturity's change come worked out, so a
         // trend is read off published figures rather than the model's own subtraction
         // (2026-10-17 evaluation; on 2026-10-18 two agents put one move at +53bp and +8bp).
@@ -1353,6 +1396,7 @@ async function execute(
           monthAgoSpreads: data.monthAgoSpreads, yearStartSpreads: data.yearStartSpreads,
           changeSinceMonthAgo: data.changeSinceMonthAgo, changeSinceYearStart: data.changeSinceYearStart,
           expectedInflation: data.expectedInflation,
+          gapHistory,
           source: 'treasury.gov official daily par curve',
         }
       }

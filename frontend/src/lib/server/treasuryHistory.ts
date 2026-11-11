@@ -30,7 +30,8 @@ export interface YieldHistory {
   missingYears: number[]
 }
 
-async function yearsOf(years: number[], kind: 'par' | 'real', now: Date) {
+/** Each year's file, fetched together; a year that fails is named in `missing`. Shared with the gaps' history (T-464). */
+export async function yearsOf(years: number[], kind: 'par' | 'real', now: Date) {
   const results = await Promise.allSettled(years.map((y) => fetchCurveYear(y, kind, now)))
   const snapshots: CurveSnapshot[] = []
   const missing: number[] = []

@@ -1027,6 +1027,20 @@ const tests = [
     return `${pts.length} readings to ${last.date}, 10Y ${last.yieldPct}%, expected inflation ${last.breakevenPct ?? '—'}%`
   }},
 
+  // T-464: the two yield gaps over ten years, with each stretch below zero dated from the daily readings.
+  { group: 'macro', path: '/live-data/treasury-spread-history?range=10y', name: 'treasury-spread-history 10Y (treasury.gov)', check: (j) => {
+    if (!j.ok) throw new Error(j.error ?? 'not ok')
+    const pts = j.points ?? []
+    if (pts.length < 400) return fallback(`only ${pts.length} weekly readings for ten years`)
+    if ((j.missingYears ?? []).length > 0) return fallback(`years not read: ${j.missingYears.join(', ')}`)
+    // The 2s10s gap was below zero from July 2022 to August 2024 on the official curve; a reader
+    // that loses that stretch is reading the files wrong.
+    const long = (j.stretches?.spread2s10s ?? []).find((s) => s.start.startsWith('2022-07') && s.end.startsWith('2024-'))
+    if (!long) return fallback('no 2s10s stretch below zero from July 2022 into 2024')
+    const now = j.now?.spread2s10s
+    return `${pts.length} weekly readings, 2s10s ${now?.value ?? '—'} on ${now?.date ?? '—'}, below zero ${long.start} to ${long.end} (${long.readings} days)`
+  }},
+
   // T-445 (D203): every currency pair at the ECB's daily reference rate, and one pair's history.
   { group: 'macro', path: '/live-data/fx-reference-pairs', name: 'fx-reference-pairs (ECB via Frankfurter)', check: (j) => {
     if (!j.ok) throw new Error(j.error ?? 'not ok')

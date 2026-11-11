@@ -10,6 +10,7 @@ import {
   ResponsiveContainer,
   Legend,
   ReferenceLine,
+  ReferenceArea,
 } from 'recharts'
 import type { ChartTooltipFormatter } from './tooltipTypes'
 import { CHART_THEME } from '@/lib/utils/chart'
@@ -30,6 +31,8 @@ interface LineChartProps {
   yFormatter?: (value: unknown) => string
   tooltipFormatter?: ChartTooltipFormatter
   referenceLines?: { y: number; label?: string; color?: string }[]
+  /** Spans of the x axis to shade, by x values present in `data` (T-464: stretches below zero). */
+  referenceAreas?: { x1: string; x2: string; color?: string }[]
   height?: number
   showGrid?: boolean
   showLegend?: boolean
@@ -51,6 +54,7 @@ export function LineChart({
   yFormatter,
   tooltipFormatter,
   referenceLines,
+  referenceAreas,
   height = 240,
   showGrid = true,
   showLegend = false,
@@ -96,6 +100,17 @@ export function LineChart({
         {showLegend && (
           <Legend wrapperStyle={{ fontSize: '12px', color: CHART_THEME.axis }} />
         )}
+
+        {referenceAreas?.map((ra) => (
+          <ReferenceArea
+            key={`${ra.x1}-${ra.x2}`}
+            x1={ra.x1}
+            x2={ra.x2}
+            fill={ra.color ?? '#ef4444'}
+            fillOpacity={0.12}
+            strokeOpacity={0}
+          />
+        ))}
 
         {referenceLines?.map((rl) => (
           <ReferenceLine

@@ -531,6 +531,13 @@ export const DATA_SOURCES: DataSourceEntry[] = [
     notes: 'One maturity’s daily history from the official par curve, one file per calendar year, with the real yield and expected inflation (ordinary minus real yield, same day) at 5Y, 7Y, 10Y, 20Y and 30Y (T-446).',
   },
   {
+    id: 'treasury-spread-history', surface: 'Treasury yield gaps over time (2s10s, 3m10y)', module: 'macro',
+    route: '/live-data/treasury-spread-history', status: 'live',
+    providers: [{ name: 'U.S. Treasury', host: 'home.treasury.gov', url: 'https://home.treasury.gov', role: 'primary', auth: 'none' }],
+    cadence: '4h revalidate (current year); 1 day (earlier years)',
+    notes: 'The 10-year minus 2-year and minus 3-month yields from the same yearly par curve files as the yield history, each stretch below zero dated from the daily readings, reading earlier years (up to ten) until each gap’s most recent stretch below zero is dated (T-464).',
+  },
+  {
     id: 'macro-news', surface: 'Macro news (commodities/bonds/FX)', module: 'macro',
     route: '/live-data/macro-news', status: 'live',
     providers: [
