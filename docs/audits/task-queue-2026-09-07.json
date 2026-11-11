@@ -62,9 +62,9 @@
   "total_verified": 421,
   "outstanding": 405,
   "by_status": {
-   "closed": 260,
+   "closed": 261,
    "parked": 127,
-   "open": 13,
+   "open": 12,
    "blocked": 5
   },
   "by_owner_role": {
@@ -74,7 +74,7 @@
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 260,
+  "closed_by_annotation": 261,
   "counts_recomputed_on": "2026-11-11",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 405
@@ -16820,7 +16820,7 @@
   {
    "id": "T-461",
    "title": "Each stock’s last eight quarters (revenue, net income and earnings per share) from the company-facts file the stock page already downloads",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "blocking_decision": null,
    "opened": {
@@ -16866,7 +16866,26 @@
      "lines": "194",
      "quote": "<NextEarningsCard symbol={symbol} />"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-11-11",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "Built as filed; the owner picked it next after #495 merged (“T-461 last 8 quarters (Recommended)”). frontend/src/lib/utils/companyQuarters.ts (pure, tested) reads the quarters from the company-facts file /live-data/company-facts already downloads, beside its annual reader, and the route returns them as `quarters`: revenue, net income and earnings per share for each three-month period a 10-Q or 10-K reports (other forms, 8-K, 20-F and 6-K among them, are never read), a later filing’s restated figure winning, each with the percent change from the same quarter a year earlier and none where that figure was a loss or zero, and earnings per share compared only diluted with diluted. As the next_action set out: the fourth quarter’s revenue and net income are worked out as the 10-K’s full year less the first nine months (or less the three quarters added up), only within one XBRL tag, and marked; its earnings per share are never worked out and show only where filed; a fourth quarter the company reported itself stands; a company with no 10-Q shows “No quarterly filings”; P/E and dividend yield stay on the full year (D167). The QuarterlyResults card sits under Next earnings on the stock page, sharing the page’s one download of the file; get_stock_financials returns the same quarters with a note against working out more; the methods page has “A stock’s last eight quarters” (D163); the live-data audit’s AAPL check now tests eight quarters three months apart, plausible revenue and a worked-out fourth quarter. No company-facts file was on this machine and this session sends nothing to the SEC, so the tests use facts laid out as the SEC’s file lays them out, and a built app was checked against a made-up file on Apple’s fiscal calendar served by the SEC stand-in: the route and card gave the hand-worked figures at 1280 and 390 pixels wide, and a missing file showed “Unavailable”. The owner’s next npm run audit checks Apple’s real filings.",
+    "approved_by": "owner, 2026-11-11: “T-461 last 8 quarters (Recommended)” as the next item to build, after approving it under D222",
+    "evidence": [
+     "frontend/src/lib/utils/companyQuarters.ts",
+     "frontend/src/lib/utils/__tests__/companyQuarters.test.ts",
+     "frontend/src/app/live-data/company-facts/route.ts",
+     "frontend/src/components/markets/QuarterlyResults.tsx",
+     "frontend/src/app/(dashboard)/equities/[symbol]/page.tsx",
+     "frontend/src/lib/agents/tools.ts",
+     "frontend/src/lib/agents/__tests__/stockQuartersTool.test.ts",
+     "frontend/src/lib/legal/dataMethods.ts",
+     "frontend/scripts/test-live-data.mjs"
+    ]
+   }
   },
   {
    "id": "T-462",
@@ -43132,6 +43151,14 @@
     "evidence": [
      "frontend/src/lib/utils/fundReturns.ts",
      "docs/decisions/2026-11-11-owner-decisions.md"
+    ]
+   },
+   {
+    "on": "2026-11-11",
+    "what": "T-461 built and closed (owner-ruling: picked to build after #495 merged, under D222): each stock's last eight quarters from its SEC company-facts file, on the stock page and in get_stock_financials. No other item changed. Counts recomputed: open 13 to 12, closed 260 to 261, closed_by_annotation 260 to 261; total 405 and the owner-role counts unchanged.",
+    "evidence": [
+     "frontend/src/lib/utils/companyQuarters.ts",
+     "frontend/src/components/markets/QuarterlyResults.tsx"
     ]
    }
   ]

@@ -812,7 +812,19 @@ const tests = [
     if (!(f.sharesOutstanding > 1e9)) throw new Error(`shares implausible: ${f.sharesOutstanding}`)
     if (!(r.netMargin > 0.05 && r.netMargin < 0.6)) throw new Error(`net margin implausible: ${r.netMargin}`)
     if (!(r.currentRatio > 0.2 && r.currentRatio < 5)) throw new Error(`current ratio implausible: ${r.currentRatio}`)
-    return `rev=$${(f.revenue / 1e9).toFixed(0)}B, netMargin=${(r.netMargin * 100).toFixed(1)}%`
+    // T-461: the last eight quarters, read from the same file. Apple's fiscal year ends in late
+    // September and it files no fourth-quarter report, so its July–September quarter is worked out.
+    const q = Array.isArray(j.quarters) ? j.quarters : []
+    if (q.length !== 8) return fallback(`rev=$${(f.revenue / 1e9).toFixed(0)}B, but ${q.length} of 8 quarters`)
+    const gaps = q.slice(1).map((x, i) => (Date.parse(q[i].end) - Date.parse(x.end)) / 86_400_000)
+    if (gaps.some((d) => d < 80 || d > 100)) throw new Error(`quarters not three months apart: ${q.map((x) => x.end).join(', ')}`)
+    const bad = q.find((x) => !(x.revenue?.value > 5e10 && x.revenue.value < 2e11))
+    if (bad) throw new Error(`AAPL quarterly revenue implausible for ${bad.end}: ${bad.revenue?.value}`)
+    const workedOut = q.filter((x) => x.revenue?.workedOut).length
+    if (workedOut === 0) return fallback(`8 quarters to ${q[0].end}, but no fourth quarter was worked out`)
+    const ageDays = (Date.now() - Date.parse(q[0].end)) / 86_400_000
+    if (ageDays > 200) return fallback(`newest quarter ends ${q[0].end}, ${Math.round(ageDays)} days ago`)
+    return `rev=$${(f.revenue / 1e9).toFixed(0)}B, netMargin=${(r.netMargin * 100).toFixed(1)}%; 8 quarters to ${q[0].end}, ${workedOut} worked out`
   }},
 
   { group: 'equities', path: '/live-data/company-profile?symbol=AAPL&name=Apple', name: 'company-profile (SEC+wiki)', check: (j) => {
