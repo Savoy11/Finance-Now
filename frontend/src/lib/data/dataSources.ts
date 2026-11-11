@@ -396,7 +396,7 @@ export const DATA_SOURCES: DataSourceEntry[] = [
   {
     id: 'company-facts', surface: 'Company fundamentals / ratios', module: 'equities',
     route: '/live-data/company-facts', status: 'live', providers: [{ ...SEC_EDGAR, name: 'SEC EDGAR XBRL' }],
-    notes: 'AAPL rev/net-margin sanity-checked against reported figures.',
+    notes: 'AAPL rev/net-margin sanity-checked against reported figures. Since T-461 (2026-11-11) it also gives the last eight quarters from the same file, the fourth quarter worked out as the full year less the first nine months; the audit checks AAPL’s.',
   },
   {
     id: 'company-profile', surface: 'Company profile', module: 'equities',

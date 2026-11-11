@@ -106,6 +106,16 @@ export const DATA_METHODS: readonly MethodSection[] = [
     ],
   },
   {
+    id: 'stock-quarters',
+    title: 'A stock’s last eight quarters',
+    decided: '2026-11-11',
+    paragraphs: [
+      'A stock’s page shows the company’s revenue, net income and earnings per share for each of its last eight quarters, from the quarterly (10-Q) and annual (10-K) reports it files with the SEC. Where a later report restates a quarter, the later figure is used. Earnings per share are diluted, or basic where the company gives no diluted figure, and a quarter is only compared with a year-earlier quarter of the same kind.',
+      'Companies file no separate report for the fourth quarter of their fiscal year. Its revenue and net income are worked out as the full year in the annual report less the first nine months, which the third quarter’s report gives as one figure, or less the first three quarters added up; such a figure is marked. Both figures must come from the same line of the company’s accounts, or none is worked out. The fourth quarter’s earnings per share are not worked out this way, because the number of shares changes during the year, so they show only where the company filed them.',
+      'Each quarter shows its change from the same quarter a year earlier, as a percent of the earlier figure. Where that figure was a loss or zero, no percent is shown, since a percent of a loss means nothing. A company that files no quarterly reports, as most companies based outside the US do, shows that it has none. The stock’s P/E and dividend yield stay on its latest full fiscal year.',
+    ],
+  },
+  {
     id: 'earnings-dates',
     title: 'Earnings dates',
     decided: '2026-11-08',

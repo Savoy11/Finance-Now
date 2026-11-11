@@ -9,6 +9,7 @@ import type { FundHoldingsResponse } from '@/app/live-data/fund-holdings/route'
 import type { FundExposure } from '@/lib/utils/fundExposure'
 import type { FundProspectusResponse } from '@/app/live-data/fund-prospectus/route'
 import type { FundReturnsResponse } from '@/app/live-data/fund-returns/route'
+import type { Quarter as CompanyQuarter } from '@/lib/utils/companyQuarters'
 import type { LiveReserveAsset } from '@/app/live-data/reserves/route'
 import { COMMODITY_CATALOG, COMMODITY_CATEGORY_INFO } from '@/lib/data/commodityCatalog'
 import { CURRENCY_CATALOG, CURRENCY_CATEGORY_INFO } from '@/lib/data/currencyCatalog'
@@ -194,7 +195,7 @@ const TOOL_REGISTRY: RegisteredTool[] = [
     market: 'equities',
     tool: {
       name: 'get_stock_financials',
-      description: 'Get audited fundamentals and computed financial ratios for a stock from SEC filings: revenue, net income, margins, ROE/ROA, P/E, current ratio, debt, cash flow, and YoY growth. The primary tool for fundamental analysis.',
+      description: 'Get audited fundamentals and computed financial ratios for a stock from SEC filings: revenue, net income, margins, ROE/ROA, P/E, current ratio, debt, cash flow, and YoY growth, plus revenue, net income and earnings per share for each of the last eight quarters with the change from a year earlier. The primary tool for fundamental analysis.',
       input_schema: {
         type: 'object',
         properties: { symbol: { type: 'string', description: 'Ticker symbol, e.g. "AAPL"' } },
@@ -666,6 +667,28 @@ export function fundReturnsFact(symbol: string, r: FundReturnsResponse | Error):
   }
 }
 
+/**
+ * A company's last eight quarters for an agent (T-461): each figure with whether it was worked out
+ * and the change from a year earlier, as the stock page shows them. Exported for its tests.
+ */
+export function quartersFact(quarters: CompanyQuarter[]): Record<string, unknown> {
+  if (quarters.length === 0) {
+    return { none: 'No quarterly reports (Form 10-Q) are on file with the SEC for this company; a company based outside the US usually reports once a year. Do not estimate quarterly figures.' }
+  }
+  const fig = (q: CompanyQuarter['revenue']) => (q ? { value: q.value, workedOut: q.workedOut } : null)
+  const pct = (n: number | null) => (n === null ? null : Math.round(n * 10) / 10)
+  return {
+    quarters: quarters.map((q) => ({
+      periodStart: q.start, periodEnd: q.end,
+      revenueUsd: fig(q.revenue), revenueChangePct: pct(q.revenueChangePct),
+      netIncomeUsd: fig(q.netIncome), netIncomeChangePct: pct(q.netIncomeChangePct),
+      eps: q.eps ? { value: q.eps.value, basis: q.eps.concept === 'EarningsPerShareBasic' ? 'basic' : 'diluted' } : null,
+      epsChangePct: pct(q.epsChangePct),
+    })),
+    note: "From the company's 10-Q and 10-K reports, newest first. Each change is from the same quarter a year earlier, and is null where that figure was a loss or zero. Companies file no separate fourth-quarter report, so a figure marked workedOut is the full year less the first nine months; fourth-quarter earnings per share are given only where the company filed them, so never work one out. P/E and dividend yield stay on the latest full year.",
+  }
+}
+
 /** Exported for its tests. */
 export function fundDetails(
   symbol: string,
@@ -1021,10 +1044,14 @@ async function execute(
         const symbol = String(input.symbol ?? '').toUpperCase()
         const data = (await get(`/live-data/company-facts?symbol=${encodeURIComponent(symbol)}`)) as {
           ok?: boolean; error?: string; company?: string; fiscalYearEnd?: string; fundamentals?: unknown; ratios?: unknown
+          quarters?: CompanyQuarter[]
         }
         if (!data.ok) return { error: data.error ?? 'no fundamentals available', symbol }
-        // Trim to the analytically useful fields — omit the annual history series.
-        return { symbol, company: data.company, fiscalYearEnd: data.fiscalYearEnd, fundamentals: data.fundamentals, ratios: data.ratios }
+        // Trim to the analytically useful fields — omit the annual history series. T-461 adds the quarters.
+        return {
+          symbol, company: data.company, fiscalYearEnd: data.fiscalYearEnd, fundamentals: data.fundamentals, ratios: data.ratios,
+          lastQuarters: quartersFact(data.quarters ?? []),
+        }
       }
       case 'get_stock_profile': {
         const symbol = String(input.symbol ?? '').toUpperCase()
