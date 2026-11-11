@@ -62,9 +62,9 @@
   "total_verified": 421,
   "outstanding": 405,
   "by_status": {
-   "closed": 259,
+   "closed": 260,
    "parked": 127,
-   "open": 14,
+   "open": 13,
    "blocked": 5
   },
   "by_owner_role": {
@@ -74,8 +74,8 @@
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 259,
-  "counts_recomputed_on": "2026-11-10",
+  "closed_by_annotation": 260,
+  "counts_recomputed_on": "2026-11-11",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 405
  },
@@ -16653,7 +16653,7 @@
   {
    "id": "T-459",
    "title": "A fund’s own monthly returns, and the money moving in and out of it, from the N-PORT filing the app already downloads",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "blocking_decision": null,
    "opened": {
@@ -16707,7 +16707,27 @@
      "lines": "293",
      "quote": "name: 'get_fund_details',"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-11-11",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "Built as the owner chose: picked to build after #494 merged (“T-459 fund returns (Recommended)”), and part (b) confirmed when asked, as the next_action required (“Yes, show both (Recommended)”, D223). (1) parseNportReport now reads Item B.5.a (each share class’s monthly total returns, rtn1–rtn3) and Item B.6 (mon1Flow–mon3Flow: sales, reinvestment, redemption), tested against excerpts copied from the cached filings (Vanguard 500 Index Fund’s quarters to 2026-03-31 and 2026-06-30, Growth Fund of America’s to 2026-08-31, iShares Core Dividend Growth ETF’s); nothing was sent to the SEC. (2) Item B.5.a’s wording was confirmed from search results quoting a filed form (“Monthly total returns of the Fund for each of the preceding three months. If the Fund is a Multiple Class Fund, report returns for each class”, by Form N-1A Item 26(b)(1)’s method); the form’s own page could not be opened from this session (the two copies tried answered 503 and 404), and Form N-1A’s text was not read. Which month is month 3 was confirmed from the filings: Vanguard 500 Index Fund’s reinvested payouts fall in month 3 of both quarters, March and June, when it pays out. The methods page states only what that supports. (3) The 12-month rule is pure and tested in frontend/src/lib/utils/fundReturns.ts: returns are matched by calendar month, the later-filed report wins a month (an amendment, or an overlapping filing once the SEC’s monthly filings start), and twelve months are compounded only when every one is present, never from fewer. (4) The card on the fund page (FundReturnsCard) names the filing’s months, filing date and the 60-day lag; flows are labelled the whole fund’s, returns the reader’s class, and an ETF’s new shares as made for large dealers; SPY and GLD say they file none; a filing that cannot be read is counted and said. (5) get_fund_details returns the same figures, with the months and a note against working out a 12-month figure from fewer months or rating the fund. Not fed into the Fund Registry: a test fails if anything but the fund page’s card and the AI tool requests /live-data/fund-returns. Checked on a built app with the SEC stand-in serving only cached filings: VOO showed April–June 2026 (+10.49%, +5.26%, −0.95%) and a net +$35.80B (+2.14% of $1.67T net assets), DGRO May–July 2026, SPY its no-filing line and AGTHX a clean read failure, with no sideways scrolling at 1280 or 390 pixels. With only two quarters cached, the 12-month figure was correctly absent; the owner’s next npm run audit reads four live filings.",
+    "approved_by": "owner, 2026-11-11: “T-459 fund returns (Recommended)” as the next item to build, and “Yes, show both (Recommended)” for part (b) (D223)",
+    "evidence": [
+     "frontend/src/lib/server/nport.ts",
+     "frontend/src/lib/utils/fundReturns.ts",
+     "frontend/src/lib/utils/__tests__/fundReturns.test.ts",
+     "frontend/src/lib/server/__tests__/nport.test.ts",
+     "frontend/src/app/live-data/fund-returns/route.ts",
+     "frontend/src/app/(dashboard)/funds/[symbol]/FundReturnsCard.tsx",
+     "frontend/src/lib/agents/tools.ts",
+     "frontend/src/lib/agents/__tests__/fundReserveTools.test.ts",
+     "frontend/src/lib/legal/dataMethods.ts",
+     "docs/decisions/2026-11-11-owner-decisions.md"
+    ]
+   }
   },
   {
    "id": "T-460",
@@ -43104,6 +43124,14 @@
     "evidence": [
      "frontend/src/lib/data/salesList.ts",
      "frontend/src/components/portfolio/tracked/SalesList.tsx"
+    ]
+   },
+   {
+    "on": "2026-11-11",
+    "what": "T-459 built and closed (owner-ruling: picked to build after #494 merged; part (b) confirmed as D223): a fund's own monthly and 12-month returns and money in and out from its NPORT-P filings, on the fund page and in get_fund_details. No other item changed. Counts recomputed: open 14 to 13, closed 259 to 260, closed_by_annotation 259 to 260; total 405 and the owner-role counts unchanged.",
+    "evidence": [
+     "frontend/src/lib/utils/fundReturns.ts",
+     "docs/decisions/2026-11-11-owner-decisions.md"
     ]
    }
   ]

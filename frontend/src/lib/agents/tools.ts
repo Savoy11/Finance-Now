@@ -8,6 +8,7 @@ import { FUND_CATALOG, FUND_CATEGORY_INFO, fundAssetsFact, fundSalesCharge, fund
 import type { FundHoldingsResponse } from '@/app/live-data/fund-holdings/route'
 import type { FundExposure } from '@/lib/utils/fundExposure'
 import type { FundProspectusResponse } from '@/app/live-data/fund-prospectus/route'
+import type { FundReturnsResponse } from '@/app/live-data/fund-returns/route'
 import type { LiveReserveAsset } from '@/app/live-data/reserves/route'
 import { COMMODITY_CATALOG, COMMODITY_CATEGORY_INFO } from '@/lib/data/commodityCatalog'
 import { CURRENCY_CATALOG, CURRENCY_CATEGORY_INFO } from '@/lib/data/currencyCatalog'
@@ -291,7 +292,7 @@ const TOOL_REGISTRY: RegisteredTool[] = [
     market: 'equities',
     tool: {
       name: 'get_fund_details',
-      description: "Get an ETF or mutual fund's details from its own filings, as its page shows them: its largest holdings and how many it holds, its stock/bond/cash mix, where it invests by country and currency and, for a bond fund, who borrowed and when the bonds are repaid, its duration where it files one (bond funds), the date of the filing, its summary prospectus link, and, for a fund in the app's catalog, its expense ratio, sales charge, net assets and yield. Use it for questions about what a fund holds or costs; search_securities only finds funds.",
+      description: "Get an ETF or mutual fund's details from its own filings, as its page shows them: its largest holdings and how many it holds, its stock/bond/cash mix, where it invests by country and currency and, for a bond fund, who borrowed and when the bonds are repaid, its duration where it files one (bond funds), its own monthly total returns and 12-month return and the money moving in and out of it, as it reported them to the SEC, the date of the filing, its summary prospectus link, and, for a fund in the app's catalog, its expense ratio, sales charge, net assets and yield. Use it for questions about what a fund holds or costs; search_securities only finds funds.",
       input_schema: {
         type: 'object',
         properties: {
@@ -625,12 +626,53 @@ function whereItInvests(e: NonNullable<FundHoldingsResponse['exposure']>): Recor
   }
 }
 
+const round2 = (n: number) => Math.round(n * 100) / 100
+const wholeUsd = (n: number | null) => (n === null ? null : Math.round(n))
+
+/**
+ * A fund's own returns and money flows for an agent (T-459, D222, D223), from /live-data/fund-returns:
+ * the figures the fund page shows, with the months they cover. Exported for its tests.
+ */
+export function fundReturnsFact(symbol: string, r: FundReturnsResponse | Error): Record<string, unknown> {
+  if (r instanceof Error) return { error: `returns unavailable: ${r.message}` }
+  if (!r.ok) return { error: `returns unavailable: ${r.error ?? 'the route reported a failure'}` }
+  if (!r.filer) return { none: `${symbol} files no N-PORT report with the SEC (unit investment trusts and commodity trusts do not), so it has no reported returns here.` }
+  const v = r.returns
+  if (!v) return { none: r.error ?? 'No N-PORT filing could be read.' }
+  return {
+    source: "The fund's own NPORT-P filings with the SEC",
+    filingFor: v.asOf,
+    filedAt: v.filedAt,
+    shareClass: r.classId,
+    monthlyTotalReturnsPct: v.classFound
+      ? v.months.map((m) => ({ month: m.month, pct: m.returnPct === null ? null : round2(m.returnPct) }))
+      : null,
+    twelveMonthReturn: v.twelveMonths
+      ? { from: v.twelveMonths.from, to: v.twelveMonths.to, pct: round2(v.twelveMonths.returnPct) }
+      : null,
+    twelveMonthNote: v.twelveMonthsMissing,
+    moneyInAndOut: v.flows
+      ? {
+        months: v.flows.months.map((m) => ({
+          month: m.month, newSharesUsd: wholeUsd(m.sales), reinvestedUsd: wholeUsd(m.reinvestment),
+          redeemedUsd: wholeUsd(m.redemption), netUsd: wholeUsd(m.net),
+        })),
+        netUsd: wholeUsd(v.flows.net),
+        netAssetsUsd: wholeUsd(v.flows.netAssets),
+        netPctOfNetAssets: v.flows.netPctOfAssets === null ? null : round2(v.flows.netPctOfAssets),
+      }
+      : null,
+    note: "Total returns for this share class as the fund reported them, payouts included. The 12-month return compounds twelve reported months and is given only when none is missing; never work one out from fewer. Money in and out is for the whole fund, every share class; for an ETF, new and redeemed shares are dealers' creations and redemptions, not individual investors' purchases. The filings appear about 60 days after each quarter ends, so name the months these cover. Do not set them beside other funds' figures for other months, and do not rate the fund on them.",
+  }
+}
+
 /** Exported for its tests. */
 export function fundDetails(
   symbol: string,
   holdings: FundHoldingsResponse | Error,
   prospectus: FundProspectusResponse | Error,
   top: number,
+  returns?: FundReturnsResponse | Error,
 ): Record<string, unknown> {
   const f = getFund(symbol)
   const charge = f ? fundSalesCharge(f) : null
@@ -684,6 +726,7 @@ export function fundDetails(
     inCatalog: !!f,
     catalog,
     filing,
+    returns: returns === undefined ? null : fundReturnsFact(symbol, returns),
     prospectus: prospectusOut,
     ...(f ? {} : { note: `${symbol} is not in the app's fund catalog, so there is no expense ratio, sales charge or yield here; the filing figures above are still the fund's own. Do not estimate the missing ones.` }),
   }
@@ -879,11 +922,12 @@ async function execute(
         if (!/^[A-Z][A-Z0-9.-]{0,9}$/.test(symbol)) return { error: 'Pass a fund ticker, e.g. "VOO".' }
         const top = Math.min(Math.max(Math.round(Number(input.top ?? 15)) || 15, 1), 40)
         const q = encodeURIComponent(symbol)
-        const [holdings, prospectus] = await Promise.all([
+        const [holdings, prospectus, returns] = await Promise.all([
           (get(`/live-data/fund-holdings?symbol=${q}`) as Promise<FundHoldingsResponse>).catch((e: Error) => e),
           (get(`/live-data/fund-prospectus?symbol=${q}`) as Promise<FundProspectusResponse>).catch((e: Error) => e),
+          (get(`/live-data/fund-returns?symbol=${q}`) as Promise<FundReturnsResponse>).catch((e: Error) => e),
         ])
-        return fundDetails(symbol, holdings, prospectus, top)
+        return fundDetails(symbol, holdings, prospectus, top, returns)
       }
       case 'search_securities': {
         const query = String(input.query ?? '').trim().toLowerCase()

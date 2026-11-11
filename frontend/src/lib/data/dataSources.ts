@@ -477,6 +477,13 @@ export const DATA_SOURCES: DataSourceEntry[] = [
     notes: 'T-420 item 2 (D92). The summary prospectus filed with the share class’s latest annual 485BPOS, else that 485BPOS; looked up by class, since a series lists one 497K per share class. Trusts outside the SEC’s mutual-fund map (SPY, GLD) file neither form and correctly get no link.',
   },
   {
+    id: 'fund-returns', surface: 'Fund returns and money in and out (as filed)', module: 'funds',
+    route: '/live-data/fund-returns', status: 'live',
+    providers: [{ ...SEC_EDGAR, name: 'SEC N-PORT (Items B.5, B.6)', host: 'www.sec.gov' }],
+    cadence: 'Filings are immutable (24h cache); a new one appears about 60 days after each quarter ends',
+    notes: 'T-459 (D222, D223). Each share class’s monthly total returns and the whole fund’s money in and out, from the same NPORT-P filings the holdings come from. A 12-month return only where the last four quarters join up. Trusts that file no N-PORT (SPY, GLD) answer filer: false. Not read by the Fund Registry: every fund’s filing ends on a different month.',
+  },
+  {
     id: 'fund-holdings-history', surface: 'Holdings quarter-over-quarter diff', module: 'funds',
     route: '/live-data/fund-holdings-history', status: 'partial',
     providers: [{ ...SEC_EDGAR, name: 'SEC N-PORT' }, { name: 'FMP', host: 'financialmodelingprep.com', role: 'fallback', auth: 'key' }],
