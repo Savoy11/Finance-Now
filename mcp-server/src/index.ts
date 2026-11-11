@@ -296,12 +296,15 @@ server.tool(
       opportunities: Array<{
         provider: string; providerName: string; category: string; defunct: boolean
         coin: string; coinId: string; apr: number; aprSource: string
+        // T-465: where the figure came from, and the backup figure's measured date.
+        aprBasis?: string; aprMeasuredOn?: string | null
         lockupDays: number; lockupNote: string | null; liquid: boolean
         receiptToken: string | null; minStakeNative: number; minStakeUsd?: number | null
         custodyModel: string; features: string[]
         tvlBillions: number | null; auditCount: number | null
       }>
       total: number; updatedAt: string
+      referenceData?: { verifiedAt?: string }
     }>(`/staking/opportunities?${params}`)
 
     if (data.total === 0) {
@@ -325,7 +328,13 @@ server.tool(
       text += `### ${coinSymbol}\n`
       for (const opp of opps) {
         text += `\n**${opp.providerName}** (${opp.category}) ${custodyIcon(opp.custodyModel)}${opp.defunct ? ' — DEFUNCT' : ''}\n`
-        text += `  APY: **${opp.apr.toFixed(2)}%**${opp.aprSource === 'live' ? ' 🔴 live' : opp.aprSource === 'derived' ? ' (derived estimate)' : ' (estimate)'}`
+        // An estimate says where it came from and how old it is (T-465, D224).
+        const estimateLabel =
+          opp.aprBasis === 'backup-measured' && opp.aprMeasuredOn ? ` (backup rate, measured ${opp.aprMeasuredOn})`
+            : opp.aprBasis === 'backup-undated' ? ' (backup rate, no measured date)'
+              : opp.aprBasis === 'catalog' && data.referenceData?.verifiedAt ? ` (catalog estimate, compiled ${data.referenceData.verifiedAt})`
+                : ' (estimate)'
+        text += `  APY: **${opp.apr.toFixed(2)}%**${opp.aprSource === 'live' ? ' 🔴 live' : opp.aprSource === 'derived' ? ' (derived estimate)' : estimateLabel}`
         if (opp.receiptToken) text += ` → ${opp.receiptToken}${opp.liquid ? ' (liquid)' : ''}`
         text += '\n'
         text += `  Lock-up: ${opp.lockupDays === 0 ? 'None' : `${opp.lockupDays} days`}`

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { aprDisplay, resolveLiveAprKey } from '../aprDisplay'
+import { aprBasis, aprBasisText, aprDisplay, backupCounts, rateDay, resolveLiveAprKey } from '../aprDisplay'
 import { DEFAULT_LIVE_APR_KEY, type StakingProvider, type StakingCoinId } from '@/lib/data/stakingProviders'
 
 type Asset = StakingProvider['assets'][StakingCoinId]
@@ -115,5 +115,76 @@ describe('aprDisplay — an expired measurement shows no number', () => {
     // they have never had would blank half the catalog.
     expect(aprDisplay(4.2, undefined, {}, {}, {}))
       .toEqual({ apr: 4.2, live: false, gap: 'curated-estimate' })
+  })
+})
+
+describe('aprBasis — where a shown rate came from, and how old it is (T-465, D224)', () => {
+  const dates = { lido_eth: '2026-11-05', native_atom: null }
+  const basis = (key: string | undefined, rates: Record<string, number>, sources: Record<string, 'live' | 'estimate'>, gaps = {}) =>
+    aprBasis(aprDisplay(4.2, key, rates, sources, gaps), key, rates, dates)
+
+  it('a live reading is live', () => {
+    expect(basis('lido_eth', { lido_eth: 3.1 }, { lido_eth: 'live' })).toEqual({ kind: 'live' })
+  })
+
+  it('a backup figure carries its measured date, or null when it was never measured', () => {
+    expect(basis('lido_eth', { lido_eth: 2.25 }, { lido_eth: 'estimate' })).toEqual({ kind: 'backup', measuredOn: '2026-11-05' })
+    expect(basis('native_atom', { native_atom: 13 }, { native_atom: 'estimate' }, { native_atom: 'no-upstream' }))
+      .toEqual({ kind: 'backup', measuredOn: null })
+  })
+
+  it('a non-live figure the table does not hold was worked out from a live reading', () => {
+    expect(basis('coinbase_eth', { coinbase_eth: 2.5 }, { coinbase_eth: 'estimate' }, { coinbase_eth: 'derived-estimate' }))
+      .toEqual({ kind: 'derived' })
+  })
+
+  it('a withheld figure keeps the date it was measured', () => {
+    expect(basis('lido_eth', {}, {}, { lido_eth: 'estimate-expired' })).toEqual({ kind: 'withheld', measuredOn: '2026-11-05' })
+  })
+
+  it('the catalog’s own figure, with no live key or none from the collector, is the catalog’s', () => {
+    // Mutation: read the catalog date for a backup figure, as the page did before T-465.
+    expect(basis(undefined, { lido_eth: 3.1 }, { lido_eth: 'live' })).toEqual({ kind: 'catalog' })
+    expect(basis('coinbase_eth', {}, {})).toEqual({ kind: 'catalog' })
+  })
+})
+
+describe('aprBasisText', () => {
+  const CATALOG = '2026-06-28'
+  it('dates each kind of figure by its own date, and never a backup figure by the catalog’s', () => {
+    expect(aprBasisText({ kind: 'backup', measuredOn: '2026-11-05' }, CATALOG)).toBe('Backup rate, measured Nov 5, 2026, shown because there is no live reading.')
+    expect(aprBasisText({ kind: 'backup', measuredOn: null }, CATALOG)).toBe('Backup rate with no measured date, shown because there is no live reading.')
+    expect(aprBasisText({ kind: 'withheld', measuredOn: '2026-11-05' }, CATALOG)).toBe('Last measured Nov 5, 2026, too long ago to show.')
+    expect(aprBasisText({ kind: 'catalog' }, CATALOG)).toBe('Catalog figure, compiled Jun 28, 2026.')
+    expect(aprBasisText({ kind: 'derived' }, CATALOG)).toMatch(/Worked out from a live reading/)
+    for (const b of [{ kind: 'backup', measuredOn: null }, { kind: 'backup', measuredOn: '2026-11-05' }, { kind: 'withheld', measuredOn: null }] as const) {
+      expect(aprBasisText(b, CATALOG)).not.toMatch(/Jun 28/)
+    }
+  })
+
+  it('reads a date as a calendar day, whatever the reader’s time zone', () => {
+    // new Date('2026-06-28').toLocaleDateString() read June 27 west of Greenwich, which is how
+    // the page's notice gave the catalog's date until T-465.
+    const tz = process.env.TZ
+    try {
+      process.env.TZ = 'America/Los_Angeles'
+      expect(new Date('2026-06-28').toLocaleDateString('en-US')).toBe('6/27/2026') // the old reading
+      expect(rateDay('2026-06-28')).toBe('Jun 28, 2026')
+      expect(rateDay('2026-01-01')).toBe('Jan 1, 2026')
+      expect(rateDay('nonsense')).toBe('nonsense')
+    } finally {
+      if (tz === undefined) delete process.env.TZ
+      else process.env.TZ = tz
+    }
+  })
+})
+
+describe('backupCounts', () => {
+  it('counts the backup figures shown, measured and undated, and not the withheld ones', () => {
+    expect(backupCounts(
+      { lido_eth: '2026-11-05', jito_sol: '2026-11-05', native_atom: null, native_ada: null, kelp_eth: '2026-11-05' },
+      { lido_eth: 2.25, jito_sol: 4.79, native_atom: 13, native_ada: 4.5 },
+    )).toEqual({ measured: 2, measuredOn: '2026-11-05', undated: 2 })
+    expect(backupCounts({}, {})).toEqual({ measured: 0, measuredOn: null, undated: 0 })
   })
 })

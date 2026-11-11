@@ -62,9 +62,9 @@
   "total_verified": 421,
   "outstanding": 405,
   "by_status": {
-   "closed": 261,
+   "closed": 262,
    "parked": 127,
-   "open": 12,
+   "open": 11,
    "blocked": 5
   },
   "by_owner_role": {
@@ -74,7 +74,7 @@
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 261,
+  "closed_by_annotation": 262,
   "counts_recomputed_on": "2026-11-11",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 405
@@ -17029,7 +17029,7 @@
   {
    "id": "T-465",
    "title": "Staking backup rates: show the date each was measured, stop dating them by the catalog’s compile date, and give the 24 undated rates a vintage",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "blocking_decision": null,
    "opened": {
@@ -17048,7 +17048,8 @@
     "D169",
     "T-397",
     "T-394",
-    "D163"
+    "D163",
+    "D224"
    ],
    "summary": "frontend/src/lib/server/stakingRates.ts holds 45 backup rates (FALLBACK), served when a live source fails. 21 are measured: dated by FALLBACK_MEASURED_ON (2026-11-05, kept fresh by the weekly refresh, D186) and withheld once more than FALLBACK_STALE_AFTER_DAYS (14) old. The other 24 have no date at all, so expiredMeasurement() returns false for them by construction, and the file itself calls giving them dated provenance “separate, open work” (counts re-measured 2026-11-10; the 2026-09-22 proposal counted 51, 27 and 24). The route already returns fallbackProvenance { measuredOn, measuredKeys, unmeasuredKeys }, and no screen or other route shows it. Meanwhile /staking’s ProvenanceNotice dates every non-live rate to the catalog’s compile date (STAKING_DATA_LAST_VERIFIED, 2026-06-28), though a non-live APR there can be a backup-table figure (lib/utils/aprDisplay.ts), and /api/v1/staking/opportunities tells callers to read referenceData.verifiedAt for estimate rows. Two halves: (a) show the date each backup rate was measured, or that it has none, and date the page notice by the table a figure actually came from, carrying measuredOn into the v1 response; (b) give the 24 undated rates their own dated provenance, so a clock can cover them at all. A yield is a figure people act on, and its age is part of it. No key, no host, no recurring cost.",
    "next_action": "(a) is small, needs no decision and can be built now from a cloud session: render fallbackProvenance on /staking, per rate and in the notice; stop the notice dating backup-table figures to STAKING_DATA_LAST_VERIFIED; carry measuredOn into /api/v1/staking/opportunities and its note; and keep the methods page (frontend/src/lib/legal/dataMethods.ts, D163) in step, which already says measured estimates carry their date. (b) is owner-machine work. Recount the undated set first, because it is not one kind: three (swell_eth, stader_matic, ankr_avax) were measured until the owner took them off the list (D175, D187), and each goes back once a refresh measures it; the other 21 are hand-written figures, mostly for desks that publish a rate on a marketing page and nowhere machine-readable, which npm run staking:refresh-fallbacks cannot reach, so each needs a hand reading, one desk at a time. When building (b), ask the owner the window decision the proposal names: a separately named anchor with its own, longer window, or an explicit “vintage unknown” marker, which is honest and costs nothing; the proposal holds both safer than the alternative and prefers neither. Do not extend the 14-day window over them: a date nobody verified, under a window that implies somebody did, is the staleness the provenance rule exists to prevent. Any new dated anchor becomes a clock npm run staleness:check discovers, so it arrives with a STALENESS-ACK or a refresh, decided rather than a surprise. Not T-394, which is lib/data/stakingProviders.ts’s 90-day catalog clock over a different table; neither gates (a).",
@@ -17093,7 +17094,27 @@
      "lines": "153",
      "quote": "check referenceData.verifiedAt, not updatedAt, before treating those as current"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-11-11",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "Built in one change; the owner picked it next after #496 merged (“T-465 staking backup dates (Recommended)”) and answered the window question part (b) left open (D224: “Keep them, marked undated (Recommended)”). (a) frontend/src/lib/server/stakingRates.ts now returns fallbackProvenance.byKey: every key whose figure is the backup table’s own, served or withheld, with FALLBACK_MEASURED_ON or null for one never measured; a figure worked out from a live reading this request (the four exchange ETH rates off Lido’s, ankr_eth off Lido’s when DefiLlama misses, native_sol off Marinade and Jito) is left out and never withheld as expired. aprBasis() in frontend/src/lib/utils/aprDisplay.ts names each row’s source (live, derived, backup with its date or null, withheld with its date, catalog), shared by the staking page and the v1 route. /staking says “Backup rate, measured …” or “Backup rate with no measured date” on each such row, puts the same sentence in the marker’s panel for every non-live row (a catalog figure with the catalog’s compile date), and its notice now says the compile date covers the lock-ups, minimums and the catalog’s own rates, not the backup rates, and counts the measured and undated backup rates; the date is read as a calendar day (it had read a day early west of Greenwich). /api/v1/staking/opportunities sends aprBasis (live, derived, backup-measured, backup-undated, catalog) and aprMeasuredOn, its note and the OpenAPI spec say how to read them (the spec also gained estimate-expired and referenceData), and the MCP tool prints the date. (b) As decided under D224: the undated figures stay, each marked as having no measured date, with no new clock and no longer window over them; a key gets a date by joining FALLBACK_MEASURED once a refresh reads it. Two labels corrected on the way: an exchange’s ETH rate whose Lido anchor did not answer reported “derived” (gap derived-estimate, v1 aprSource derived) while serving the table’s figure, and now reports upstream-failed and estimate; native_matic was labelled derived-estimate though nothing works it out, and is now no-upstream. The methods page’s staking-rates section says the rule (D163).",
+    "approved_by": "owner, 2026-11-11: “T-465 staking backup dates (Recommended)” as the next item to build, after approving it under D222; and D224 for part (b)",
+    "evidence": [
+     "frontend/src/lib/server/stakingRates.ts",
+     "frontend/src/lib/utils/aprDisplay.ts",
+     "frontend/src/lib/utils/__tests__/aprDisplay.test.ts",
+     "frontend/src/lib/server/__tests__/stakingRateDates.test.ts",
+     "frontend/src/app/(dashboard)/staking/page.tsx",
+     "frontend/src/app/api/v1/staking/opportunities/route.ts",
+     "frontend/src/app/api/v1/openapi.json/route.ts",
+     "mcp-server/src/index.ts",
+     "frontend/src/lib/legal/dataMethods.ts",
+     "docs/decisions/2026-11-11-owner-decisions.md"
+    ]
+   }
   }
  ],
  "closed_but_still_listed_as_open_in_docs": [
@@ -43159,6 +43180,14 @@
     "evidence": [
      "frontend/src/lib/utils/companyQuarters.ts",
      "frontend/src/components/markets/QuarterlyResults.tsx"
+    ]
+   },
+   {
+    "on": "2026-11-11",
+    "what": "T-465 built and closed (owner-ruling: picked to build after #496 merged, under D222; part (b) decided by D224, keep the undated backup rates marked as undated): every staking rate that is not live says where it came from and its date, on the Staking page, the v1 API and the MCP tool. No other item changed. Counts recomputed: open 12 to 11, closed 261 to 262, closed_by_annotation 261 to 262; total 405 and the owner-role counts unchanged.",
+    "evidence": [
+     "frontend/src/lib/utils/aprDisplay.ts",
+     "frontend/src/lib/server/stakingRates.ts"
     ]
    }
   ]

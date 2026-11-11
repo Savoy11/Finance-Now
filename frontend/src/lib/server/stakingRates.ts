@@ -45,6 +45,14 @@ export interface StakingRatesResponse {
     measuredOn: string
     measuredKeys: number
     unmeasuredKeys: number
+    /**
+     * Each key whose figure in this response is the backup table's own, served or withheld:
+     * the date it was measured, or null for one never measured (T-465). A key read live, or
+     * worked out from a live reading this request, is absent. Without this a page could tell
+     * a backup figure from a live one but not how old it was, and dated every one by the
+     * staking catalog's compile date, which is not where these figures come from.
+     */
+    byKey: Partial<Record<string, string | null>>
   }
   /**
    * WHY each non-live key is not live, keyed the same way as `sources`.
@@ -237,12 +245,13 @@ const FALLBACK_MEASURED_ON = '2026-11-05'
  * enough slack to not demand weekly upkeep, short enough that a second period
  * cannot compound before the value is withheld.
  *
- * ⚠ This bounds ONLY the keys in FALLBACK_MEASURED. The other 24 are undated
- * hand-written figures for desks that publish a rate on a marketing page and
- * nowhere machine-readable; they report `curated-estimate`, which says exactly
- * that, and gating them on a date they have never had would blank half the
- * catalog to solve a problem they do not have. Giving them their own dated
- * provenance is separate, open work.
+ * ⚠ This bounds ONLY the keys in FALLBACK_MEASURED. The rest are undated
+ * figures with no source the app can read; gating them on a date they have
+ * never had would blank every wallet and network row they back (24 rows of the
+ * staking page on 2026-11-11) to solve a problem they do not have. Owner, 2026-11-11 (D224): they stay, and every surface says each
+ * has no measured date (`fallbackProvenance.byKey` gives it null), rather than
+ * dating them by the staking catalog's compile date, which is not theirs. A key
+ * gets a date by joining FALLBACK_MEASURED once a refresh reads it.
  *
  * ⚠ It also bites ONLY when an upstream has failed. With all 7 upstreams live,
  * as on both measurement days, no fallback is served and this changes nothing.
@@ -300,7 +309,13 @@ const GAP_BY_KEY: Record<string, GapReasonId> = {
   kraken_eth:       'derived-estimate',
   binance_eth:      'derived-estimate',
   native_sol:       'derived-estimate',
-  native_matic:     'derived-estimate',
+  // ⚠ These four are worked out only when their anchor answered. When it did not, the figure
+  //   served is the backup table's own, and the route reports `upstream-failed` instead
+  //   (T-465): "calculated from a related live reading" would be false of it.
+  // native_matic was listed here too until 2026-11-11, but nothing works it out: its anchor,
+  // Lido's stMATIC, has had no source since 2026-09-09 (lido_matic below). It is the backup
+  // table's figure every time, so it says so.
+  native_matic:     'no-upstream',
 
   // ── Upstream removed 2026-09-09 because it carries no rate AT ALL ──
   //    Not "the field moved": these hosts were probed and answer without a yield,
@@ -468,6 +483,10 @@ export function matchLlamaPools(pools: LlamaPool[], map = LLAMA_MAP): {
 export async function collectStakingRates(): Promise<StakingRatesResponse> {
   const rates  = { ...FALLBACK } as Record<string, number>
   const sources = Object.fromEntries(Object.keys(FALLBACK).map(k => [k, 'estimate'])) as Record<string, 'live' | 'estimate'>
+  // Keys whose figure this request was worked out from a live reading rather than taken from
+  // the table. Without it a derived figure and the table's own one look alike: both are
+  // 'estimate', and only the second has the table's date, or lack of one (T-465).
+  const derived = new Set<string>()
 
   // Run all external fetches in parallel with a 6-second timeout each
   const T = 6_000
@@ -575,7 +594,7 @@ export async function collectStakingRates(): Promise<StakingRatesResponse> {
         rates.binance_eth  = round2(pct - 0.6)
         // Only Lido's number is a live reading — the others are derived offsets
         sources.lido_eth = 'live'
-        for (const k of ['ankr_eth','coinbase_eth','kraken_eth','binance_eth']) sources[k] = 'estimate'
+        for (const k of ['ankr_eth','coinbase_eth','kraken_eth','binance_eth']) { sources[k] = 'estimate'; derived.add(k) }
       }
     } catch { /* keep fallback */ }
   }
@@ -627,6 +646,7 @@ export async function collectStakingRates(): Promise<StakingRatesResponse> {
     const vals = [rates.marinade_sol, rates.jito_sol].filter(Boolean) as number[]
     rates.native_sol = round2(vals.reduce((a, b) => a + b, 0) / vals.length)
     sources.native_sol = 'estimate' // derived from liquid-staking APYs, not a native-staking reading
+    derived.add('native_sol')
   }
 
   // ── 5. Stride — dropped 2026-10-14 (see the fetch list): winding down, staking closed.
@@ -722,10 +742,23 @@ export async function collectStakingRates(): Promise<StakingRatesResponse> {
   // missed THIS request reports `upstream-failed` rather than inheriting a
   // permanent excuse. Only keys whose reason is a property of the key itself come
   // from GAP_BY_KEY.
+  //
+  // `byKey` (T-465) dates every figure taken from the table: its measured date, or null.
+  // A figure worked out from a live reading this request is not the table's and is left
+  // out, and is never withheld as expired: it is today's. And a key that is worked out only
+  // when its anchor answers (GAP_BY_KEY's `derived-estimate`), but whose anchor did not, is
+  // serving the table's figure, so it reports the failure rather than "derived".
   const gaps: Partial<Record<string, GapReasonId>> = {}
+  const byKey: Partial<Record<string, string | null>> = {}
   for (const key of Object.keys(FALLBACK)) {
     if (sources[key] === 'live') continue
-    gaps[key] = expiredMeasurement(key) ? 'estimate-expired' : (GAP_BY_KEY[key] ?? 'upstream-failed')
+    const fixed = GAP_BY_KEY[key] === 'derived-estimate' ? undefined : GAP_BY_KEY[key]
+    if (derived.has(key)) {
+      gaps[key] = GAP_BY_KEY[key] === 'derived-estimate' ? 'derived-estimate' : (fixed ?? 'upstream-failed')
+      continue
+    }
+    gaps[key] = expiredMeasurement(key) ? 'estimate-expired' : (fixed ?? 'upstream-failed')
+    byKey[key] = FALLBACK_MEASURED.has(key) ? FALLBACK_MEASURED_ON : null
   }
 
   // An expired reading is withheld, not published. Leaving the number in `rates`
@@ -745,6 +778,7 @@ export async function collectStakingRates(): Promise<StakingRatesResponse> {
       measuredOn: FALLBACK_MEASURED_ON,
       measuredKeys: FALLBACK_MEASURED.size,
       unmeasuredKeys: Object.keys(FALLBACK).length - FALLBACK_MEASURED.size,
+      byKey,
     },
     gaps,
     updatedAt: new Date().toISOString(),

@@ -90,3 +90,78 @@ export function resolveLiveAprKey(
   if (provider.category === 'wallet' && coinId !== 'eth') return DEFAULT_LIVE_APR_KEY[coinId]
   return undefined
 }
+
+// ─── Where a shown rate came from, and how old it is (T-465, D224) ──────────
+//
+// A rate that is not live is one of four things, and they are dated differently:
+//   - worked out from a live reading this request (an exchange's ETH rate off Lido's): today's;
+//   - the collector's backup table's own figure: dated by when it was measured, and some
+//     never were (D224: they stay, each said to have no measured date);
+//   - withheld, because its measurement is too old to show;
+//   - the staking catalog's figure (`staticApr`), for a row with no live key or a key the
+//     collector has no figure for: dated by the catalog's compile date.
+// Until T-465 the page dated every one of them by the catalog's compile date.
+
+export type AprBasis =
+  | { kind: 'live' }
+  | { kind: 'derived' }
+  | { kind: 'backup'; measuredOn: string | null }
+  | { kind: 'withheld'; measuredOn: string | null }
+  | { kind: 'catalog' }
+
+/**
+ * Which of those `shown` is. `backupDates` is the collector's `fallbackProvenance.byKey`:
+ * every key whose figure is the backup table's, with its measured date or null.
+ */
+export function aprBasis(
+  shown: AprDisplay,
+  liveKey: string | undefined,
+  rates: Partial<Record<string, number>>,
+  backupDates: Partial<Record<string, string | null>>,
+): AprBasis {
+  if (shown.live) return { kind: 'live' }
+  if (!liveKey) return { kind: 'catalog' }
+  if (shown.apr == null) return { kind: 'withheld', measuredOn: backupDates[liveKey] ?? null }
+  if (rates[liveKey] == null) return { kind: 'catalog' }
+  if (liveKey in backupDates) return { kind: 'backup', measuredOn: backupDates[liveKey] ?? null }
+  return { kind: 'derived' }
+}
+
+/** "Nov 5, 2026" for "2026-11-05", read as a calendar day (not shifted by the reader's zone). */
+export function rateDay(date: string): string {
+  const d = new Date(`${date.slice(0, 10)}T00:00:00Z`)
+  return Number.isNaN(d.getTime()) ? date : d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' })
+}
+
+/**
+ * One sentence on where a rate came from and its date, for beside the rate.
+ * `catalogCompiled` is the staking catalog's compile date.
+ */
+export function aprBasisText(basis: AprBasis, catalogCompiled: string): string {
+  switch (basis.kind) {
+    case 'live': return 'Live rate, read just now.'
+    case 'derived': return 'Worked out from a live reading taken just now.'
+    case 'backup':
+      return basis.measuredOn
+        ? `Backup rate, measured ${rateDay(basis.measuredOn)}, shown because there is no live reading.`
+        : 'Backup rate with no measured date, shown because there is no live reading.'
+    case 'withheld':
+      return basis.measuredOn
+        ? `Last measured ${rateDay(basis.measuredOn)}, too long ago to show.`
+        : 'No current rate.'
+    case 'catalog': return `Catalog figure, compiled ${rateDay(catalogCompiled)}.`
+  }
+}
+
+/** Counts of each kind of backup figure in a collector response, for the page's notice. */
+export function backupCounts(backupDates: Partial<Record<string, string | null>>, rates: Partial<Record<string, number>>): {
+  measured: number; measuredOn: string | null; undated: number
+} {
+  let measured = 0, undated = 0
+  let measuredOn: string | null = null
+  for (const [key, date] of Object.entries(backupDates)) {
+    if (rates[key] == null) continue // withheld: not shown, so not counted as shown
+    if (date) { measured++; if (!measuredOn || date < measuredOn) measuredOn = date } else undated++
+  }
+  return { measured, measuredOn, undated }
+}
