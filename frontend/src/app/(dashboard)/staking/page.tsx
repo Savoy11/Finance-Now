@@ -7,7 +7,7 @@ import { useQuery } from '@tanstack/react-query'
 import {
   AlertTriangle, TrendingUp, Clock, Lock, ExternalLink,
   ChevronDown, ChevronUp, Info, CheckCircle, XCircle, Zap,
-  Building2, Wallet, Layers,
+  Building2, Wallet, Layers, CalendarClock,
 } from 'lucide-react'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { LivePoolsPanel } from './LivePoolsPanel'
@@ -16,7 +16,7 @@ import { ProvenanceNotice } from '@/components/ui/ProvenanceNotice'
 import { SponsoredLink } from '@/components/ui/SponsoredLink'
 import { resolveOutboundLink, affiliateCoverageByCategory, sponsoredProviders } from '@/lib/data/affiliates'
 import { clsx } from 'clsx'
-import { aprDisplay, resolveLiveAprKey } from '@/lib/utils/aprDisplay'
+import { aprBasis, aprBasisText, aprDisplay, backupCounts, rateDay, resolveLiveAprKey } from '@/lib/utils/aprDisplay'
 import {
   STAKING_PROVIDERS, STAKING_COIN_INFO,
   resolveYieldType, YIELD_TYPE_META,
@@ -104,6 +104,7 @@ function ProviderCard({
   rates,
   sources,
   gaps,
+  backupDates,
 }: {
   provider: StakingProvider
   coinFilter: StakingCoinId | 'all'
@@ -111,6 +112,8 @@ function ProviderCard({
   rates: Partial<Record<string, number>>
   sources: Partial<Record<string, 'live' | 'estimate'>>
   gaps: Partial<Record<string, GapReasonId>>
+  /** The collector's fallbackProvenance.byKey: each backup figure's measured date, or null. */
+  backupDates: Partial<Record<string, string | null>>
 }) {
   const [expanded, setExpanded] = useState(false)
   const CategoryIcon = categoryIcon(provider.category)
@@ -135,16 +138,14 @@ function ProviderCard({
   const assetRows = useMemo(
     () =>
       visibleAssets.map(([coinId, asset]) => {
-        const { apr, live, gap } = aprDisplay(
-          asset.staticApr,
-          resolveLiveAprKey(provider, coinId, asset),
-          rates,
-          sources,
-          gaps,
-        )
-        return { coinId, asset, apr, live, gap }
+        const liveKey = resolveLiveAprKey(provider, coinId, asset)
+        const shown = aprDisplay(asset.staticApr, liveKey, rates, sources, gaps)
+        // Where the figure came from and how old it is (T-465): a backup rate carries its own
+        // measured date, or says it has none, never the catalog's compile date.
+        const basis = aprBasis(shown, liveKey, rates, backupDates)
+        return { coinId, asset, ...shown, basis }
       }),
-    [visibleAssets, provider, rates, sources, gaps],
+    [visibleAssets, provider, rates, sources, gaps, backupDates],
   )
 
   // A live, non-defunct provider whose every shown rate is a static estimate
@@ -253,7 +254,7 @@ function ProviderCard({
 
       {/* Asset rows */}
       <div className="border-t border-border divide-y divide-border/50">
-        {assetRows.map(({ coinId, asset, apr, live, gap }) => {
+        {assetRows.map(({ coinId, asset, apr, live, gap, basis }) => {
           const info = STAKING_COIN_INFO[coinId]
           const yieldType = resolveYieldType(provider, asset)
           const yieldMeta = YIELD_TYPE_META[yieldType]
@@ -302,7 +303,7 @@ function ProviderCard({
                     <DataGapNote
                       reason={gap}
                       className="ml-1"
-                      detail={`${provider.name} · ${info.symbol}`}
+                      detail={`${provider.name} · ${info.symbol}. ${aprBasisText(basis, STAKING_DATA_LAST_VERIFIED)}`}
                     />
                   )}
                   {provider.defunct && (
@@ -360,6 +361,16 @@ function ProviderCard({
                   </span>
                 ))}
               </div>
+
+              {/* A backup rate says how old it is on the row itself (T-465, D224), since it is the
+                  one kind of figure the notice above cannot date for it. Catalog figures carry
+                  the catalog's date in the notice and in the marker's panel. */}
+              {!provider.defunct && (basis.kind === 'backup' || basis.kind === 'withheld') && (
+                <div className="mt-1.5 flex items-start gap-1.5">
+                  <CalendarClock size={10} className="text-text-muted mt-0.5 shrink-0" />
+                  <span className="text-[10px] text-text-muted">{aprBasisText(basis, STAKING_DATA_LAST_VERIFIED)}</span>
+                </div>
+              )}
 
               {asset.lockupNote && (
                 <div className="mt-1.5 flex items-start gap-1.5">
@@ -571,6 +582,9 @@ function StakingPageInner() {
   // Why each non-live key is not live. The route answers this because only it
   // knows which upstream owned the key — see StakingRatesResponse.gaps.
   const gaps = ratesData?.gaps ?? {}
+  // Each backup figure's measured date, or null for one never measured (T-465).
+  const backupDates = useMemo(() => ratesData?.fallbackProvenance?.byKey ?? {}, [ratesData])
+  const backups = backupCounts(backupDates, rates)
   const updatedAt = ratesData?.updatedAt
 
   const liveCount = Object.values(sources).filter(s => s === 'live').length
@@ -654,11 +668,17 @@ function StakingPageInner() {
             stale={prov.stale}
           >
             — {prov.source.toLowerCase()}, compiled{' '}
-            {new Date(STAKING_DATA_LAST_VERIFIED).toLocaleDateString()} ({prov.ageDays} days ago)
+            {rateDay(STAKING_DATA_LAST_VERIFIED)} ({prov.ageDays} days ago)
             {prov.stale && `, past the ${STAKING_DATA_STALE_AFTER_DAYS}-day review window`}.
-            {liveCount > 0
-              ? ` ${liveCount} APR${liveCount > 1 ? 's are' : ' is'} live; every other rate, lock-up and minimum is a curated estimate — confirm current terms with the provider.`
-              : ' All rates, lock-ups and minimums below are curated estimates — confirm current terms with the provider.'}
+            {' That date covers the lock-ups, minimums and the catalog’s own rates, not the backup rates.'}
+            {/* T-465: a backup rate is the staking-rates collector's figure, not the catalog's, so
+                it is dated by when it was measured, or said to have none (D224). */}
+            {liveCount > 0 && ` ${liveCount} rate${liveCount > 1 ? 's are' : ' is'} live.`}
+            {backups.measured > 0 && backups.measuredOn &&
+              ` ${backups.measured} ${backups.measured > 1 ? 'are backup rates' : 'is a backup rate'} measured ${rateDay(backups.measuredOn)}, shown because ${backups.measured > 1 ? 'their' : 'its'} live source gave no reading.`}
+            {backups.undated > 0 &&
+              ` ${backups.undated} ${backups.undated > 1 ? 'are backup rates' : 'is a backup rate'} with no measured date.`}
+            {' '}Each rate says which it is. Confirm current terms with the provider.
           </ProvenanceNotice>
         )
       })()}
@@ -767,6 +787,7 @@ function StakingPageInner() {
             rates={rates}
             sources={sources}
             gaps={gaps}
+            backupDates={backupDates}
           />
         ))}
       </div>

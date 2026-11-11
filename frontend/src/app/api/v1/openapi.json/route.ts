@@ -452,7 +452,9 @@ const SPEC = {
                 coin:           { type: 'string', example: 'ETH' },
                 coinId:         { type: 'string', example: 'eth' },
                 apr:            { type: 'number', example: 3.8, description: 'Annual percentage rate (%)' },
-                aprSource:      { type: 'string', enum: ['live', 'derived', 'estimate'], description: 'live = provider-published feed; derived = our estimate anchored to the Lido feed; estimate = curated catalog' },
+                aprSource:      { type: 'string', enum: ['live', 'derived', 'estimate', 'estimate-expired'], description: 'live = provider-published feed; derived = our estimate anchored to the Lido feed, worked out this request; estimate = not a reading, see aprBasis for where it came from; estimate-expired = its backup reading was too old to serve, so the catalog figure is shown' },
+                aprBasis:       { type: 'string', enum: ['live', 'derived', 'backup-measured', 'backup-undated', 'catalog'], description: 'Where the apr figure came from. backup-measured = the live feed\'s backup table, measured on aprMeasuredOn; backup-undated = a figure from that table that was never measured, so it has no date; catalog = the curated catalog, dated by referenceData.verifiedAt' },
+                aprMeasuredOn:  { type: 'string', format: 'date', nullable: true, example: '2026-11-05', description: 'For aprBasis backup-measured, the day the backup figure was measured; null otherwise' },
                 lockupDays:     { type: 'integer', example: 0, description: '0 means no forced lock-up' },
                 lockupNote:     { type: 'string', nullable: true },
                 liquid:         { type: 'boolean', description: 'True if the staked position is itself liquid/tradeable' },
@@ -468,6 +470,17 @@ const SPEC = {
           },
           total:     { type: 'integer' },
           updatedAt: { type: 'string', format: 'date-time' },
+          referenceData: {
+            type: 'object',
+            description: 'The curated catalog: every lock-up and minimum, and each apr with aprBasis catalog',
+            properties: {
+              source:     { type: 'string' },
+              verifiedAt: { type: 'string', format: 'date', description: 'When the catalog was compiled' },
+              ageDays:    { type: 'integer' },
+              stale:      { type: 'boolean' },
+              confidence: { type: 'string', enum: ['high', 'medium', 'low'] },
+            },
+          },
         },
       },
       NewsResponse: {

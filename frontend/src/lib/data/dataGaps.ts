@@ -89,7 +89,7 @@ export const GAP_REASONS: Record<GapReasonId, GapReason> = {
     label: 'No source publishes this',
     why:
       'Nothing we can reach publishes this figure, at any price. The value shown is a ' +
-      'dated reference estimate, not a reading.',
+      'reference estimate, not a reading; its date, or that it has none, is given with it.',
     fixability: 'no-source',
   },
   'upstream-failed': {
@@ -127,8 +127,8 @@ export const GAP_REASONS: Record<GapReasonId, GapReason> = {
     chip: 'ref',
     label: 'Hand-maintained reference',
     why:
-      'A reference value compiled by hand and dated, kept because no feed carries it. ' +
-      'Accurate as of its verification date, not as of now.',
+      'A reference value compiled by hand, kept because no feed carries it. Accurate as ' +
+      'of when it was compiled, not as of now; that date, or that it has none, is given with it.',
     fixability: 'by-design',
     fix: 'Confirm the current figure with the provider before acting on it.',
   },

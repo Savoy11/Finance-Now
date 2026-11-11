@@ -6,7 +6,7 @@ import {
   type StakingCoinId, type ProviderCategory,
 } from '@/lib/data/stakingProviders'
 import { collectStakingRates } from '@/lib/server/stakingRates'
-import { aprDisplay, resolveLiveAprKey } from '@/lib/utils/aprDisplay'
+import { aprBasis, aprDisplay, resolveLiveAprKey } from '@/lib/utils/aprDisplay'
 import { guardApiV1 } from '@/lib/server/apiKeys'
 
 export const dynamic = 'force-dynamic'
@@ -56,7 +56,8 @@ export async function GET(req: NextRequest) {
   // dimensions per row. A caller who wants a threshold applies its own to those
   // numbers, which makes the judgment theirs and inspectable.
 
-  const { rates, sources, gaps } = await collectStakingRates()
+  const { rates, sources, gaps, fallbackProvenance } = await collectStakingRates()
+  const backupDates = fallbackProvenance.byKey
 
   const opportunities: object[] = []
 
@@ -90,15 +91,24 @@ export async function GET(req: NextRequest) {
       // figure here but says WHY it is one, rather than relabelling it a plain
       // 'estimate' and erasing the distinction this whole staleness pass drew.
       const apr = shown.apr ?? asset.staticApr
-      // 'derived' = our Lido-anchored estimate for an exchange rate — a live
-      // NUMBER but not the provider's own feed. Labelling it 'live' was D-19.
-      // Read off the collector's own gap vocabulary rather than a second list
-      // of key names here, which is the kind of parallel copy that caused this.
+      // Where the figure came from (T-465), resolved by the same function the staking page
+      // uses. 'derived' = our Lido-anchored estimate for an exchange rate — a live NUMBER but
+      // not the provider's own feed. Labelling it 'live' was D-19. It is 'derived' only when
+      // it was worked out this request: when Lido did not answer, the figure is the backup
+      // table's, and was mislabelled 'derived' until T-465.
+      const basis = aprBasis(shown, liveKey, rates, backupDates)
       const aprSource: 'live' | 'derived' | 'estimate' | 'estimate-expired' =
-        shown.live ? 'live'
-          : shown.gap === 'derived-estimate' ? 'derived'
-            : shown.gap === 'estimate-expired' ? 'estimate-expired'
+        basis.kind === 'live' ? 'live'
+          : basis.kind === 'derived' ? 'derived'
+            : basis.kind === 'withheld' ? 'estimate-expired'
               : 'estimate'
+      // The served number's origin and date. An expired reading serves the catalog figure
+      // here (see above), so its basis is the catalog's.
+      const aprBasisOut: 'live' | 'derived' | 'backup-measured' | 'backup-undated' | 'catalog' =
+        basis.kind === 'backup' ? (basis.measuredOn ? 'backup-measured' : 'backup-undated')
+          : basis.kind === 'withheld' ? 'catalog'
+            : basis.kind
+      const aprMeasuredOn = basis.kind === 'backup' ? basis.measuredOn : null
 
       opportunities.push({
         provider:        provider.id,
@@ -112,6 +122,8 @@ export async function GET(req: NextRequest) {
         coinId:          assetCoinId,
         apr,
         aprSource,
+        aprBasis:        aprBasisOut,
+        aprMeasuredOn,
         lockupDays:      asset.lockupDays,
         lockupNote:      asset.lockupNote ?? null,
         liquid:          asset.liquid,
@@ -150,7 +162,7 @@ export async function GET(req: NextRequest) {
     total: opportunities.length,
     yieldTypeCounts,
     filters: { coin: coinParam ?? 'all', category: categoryParam ?? 'all', yieldType: yieldTypeParam ?? 'all', includeAdjacent, includeDefunct },
-    note: 'Each opportunity carries a yieldType (native, liquid, cefi, restaking, governance, lending). By default only products that actually stake the queried coin are returned; governance-token staking and lending yield are excluded unless include_adjacent=true or yield_type is set explicitly. SCORING: this endpoint publishes NO composite risk or safety score, and has no risk-based filter. Removed 2026-09-14: the safetyScore, band, riskScore and riskLevel fields and the max_risk, min_safety and max_safety parameters. A single number ranking providers against each other reads as a recommendation, so the endpoint reports the inputs and leaves the weighting to the caller. Those parameters are now ignored rather than rejected, so an old client still gets a 200 — but with MORE rows than before, because nothing is being filtered out. Removed 2026-09-25 (owner decision D26): the riskBreakdown object with the six curated 1–10 dimensions — a risk figure attached to a provider reads as a recommendation whichever way it is labelled. This endpoint now carries no risk figure of any kind; custody model, lock-up, liquidity and TVL are facts, and the judgement is the caller\'s. Defunct providers (e.g. Celsius) are excluded by default — use include_defunct=true. FRESHNESS: updatedAt is when this response was generated, which describes the live APRs only (per-row aprSource="live"). Rows with aprSource="derived" are our estimates anchored to the Lido feed, not provider-published rates. Rows with aprSource="estimate", and every lock-up and minimum on every row, come from the curated catalog described by referenceData — check referenceData.verifiedAt, not updatedAt, before treating those as current.',
+    note: 'Each opportunity carries a yieldType (native, liquid, cefi, restaking, governance, lending). By default only products that actually stake the queried coin are returned; governance-token staking and lending yield are excluded unless include_adjacent=true or yield_type is set explicitly. SCORING: this endpoint publishes NO composite risk or safety score, and has no risk-based filter. Removed 2026-09-14: the safetyScore, band, riskScore and riskLevel fields and the max_risk, min_safety and max_safety parameters. A single number ranking providers against each other reads as a recommendation, so the endpoint reports the inputs and leaves the weighting to the caller. Those parameters are now ignored rather than rejected, so an old client still gets a 200 — but with MORE rows than before, because nothing is being filtered out. Removed 2026-09-25 (owner decision D26): the riskBreakdown object with the six curated 1–10 dimensions — a risk figure attached to a provider reads as a recommendation whichever way it is labelled. This endpoint now carries no risk figure of any kind; custody model, lock-up, liquidity and TVL are facts, and the judgement is the caller\'s. Defunct providers (e.g. Celsius) are excluded by default — use include_defunct=true. FRESHNESS: updatedAt is when this response was generated, which describes the live APRs only (per-row aprSource="live"). Rows with aprSource="derived" are our estimates anchored to the Lido feed, not provider-published rates. A row with aprSource="estimate" or "estimate-expired" says where its figure came from in aprBasis (added 2026-11-11, T-465): "backup-measured" is the live feed\'s backup table, measured on aprMeasuredOn and shown because the feed gave no reading; "backup-undated" is a figure from that table that was never measured, so it has no date at all (owner decision D224); "catalog" is the curated catalog described by referenceData, dated by referenceData.verifiedAt. Every lock-up and minimum on every row comes from that catalog. Check those dates, not updatedAt, before treating an estimate as current.',
     source: 'Finance Now curated staking catalog + live protocol APR feeds (Lido, Marinade, Jito). Some exchange ETH rates are derived from the Lido feed (aprSource="derived").',
     updatedAt: new Date().toISOString(),
     // Provenance for the curated half of this payload. Without it the fresh
