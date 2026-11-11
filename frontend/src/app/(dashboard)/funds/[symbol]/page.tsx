@@ -11,6 +11,7 @@ import { FundHoldingsHistory } from './FundHoldingsHistory'
 import { FundHoldingsSection } from './FundHoldingsSection'
 import { FundRateSensitivityCard } from './FundRateSensitivityCard'
 import { FundExposureCard } from './FundExposureCard'
+import { FundReturnsCard } from './FundReturnsCard'
 import { ExplainedLabel } from '@/components/ui/ExplainedLabel'
 import { SourceLine } from '@/components/ui/SourceLine'
 import { AssetActions } from '@/components/markets/AssetActions'
@@ -494,6 +495,9 @@ function FundDetailInner() {
           )}
         </div>
       </div>
+
+      {/* T-459 (D222, D223): the fund's own returns and money in and out, from its N-PORT filings */}
+      <FundReturnsCard symbol={symbol} isEtf={type === 'etf'} />
 
       {/* Full breakdown of underlying investments + quarter-over-quarter changes */}
       <FundHoldingsSection symbol={symbol} />

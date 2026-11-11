@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseNportReport, parseNportFilingsAtom, parseNportRateRisk } from '../nport'
+import { parseNportReport, parseNportFilingsAtom, parseNportRateRisk, parseNportReturns, parseNportFlows } from '../nport'
 
 // The N-PORT primary_doc.xml and browse-edgar Atom parsers are regex-based:
 // malformed input must degrade to fewer/empty rows, never an uncaught throw,
@@ -423,5 +423,66 @@ describe('parseNportFilingsAtom', () => {
     expect(parseNportFilingsAtom('<feed><entry><title>no ids</title></entry></feed>')).toEqual([])
     expect(() => parseNportFilingsAtom('')).not.toThrow()
     expect(parseNportFilingsAtom('total garbage')).toEqual([])
+  })
+})
+
+// T-459: Items B.5.a and B.6, copied from filings already in the build cache (nothing fetched).
+// Vanguard 500 Index Fund's filing for the quarter to 2026-06-30 (C000092055 is VOO), and Growth
+// Fund of America's to 2026-08-31, whose returns mix 2 and 16 decimals and whose third month has a
+// negative reinvestment, as filed.
+const VFIAX_Q2 = `<repPdDate>2026-06-30</repPdDate><netAssets>1671231561960.14</netAssets>
+<returnInfo>
+        <monthlyTotReturns>
+          <monthlyTotReturn classId="C000007774" rtn1="10.49014889" rtn2="5.25936275" rtn3="-0.95490903"/>
+          <monthlyTotReturn classId="C000170274" rtn1="10.49023291" rtn2="5.26420173" rtn3="-0.95346416"/>
+          <monthlyTotReturn classId="C000007773" rtn1="10.48124793" rtn2="5.24963951" rtn3="-0.96247233"/>
+          <monthlyTotReturn classId="C000092055" rtn1="10.49057487" rtn2="5.26044899" rtn3="-0.95476134"/>
+        </monthlyTotReturns>
+        <monthlyReturnCats><commodityContracts><mon1 netRealizedGain="0.00000000" netUnrealizedAppr="0.00000000"/></commodityContracts></monthlyReturnCats>
+        <othMon1 netRealizedGain="4214747723.27000000" netUnrealizedAppr="145314910868.08000000"/>
+</returnInfo>
+<mon1Flow redemption="12174698544.92000000" reinvestment="5915.33000000" sales="40632647042.06010000"/>
+<mon2Flow redemption="16225703909.41000000" reinvestment="435.62000000" sales="32054277718.52000000"/>
+<mon3Flow redemption="102779354536.56000000" reinvestment="1706081333.02000000" sales="92586020974.68990000"/>`
+
+const GFA_Q3 = `<monthlyTotReturns>
+          <monthlyTotReturn classId="C000025064" rtn1="-0.5676239900000000" rtn2="-3.49" rtn3="3.81"/>
+          <monthlyTotReturn classId="C000224556" rtn1="-0.5299840000000000" rtn2="-3.47" rtn3="3.83"/>
+        </monthlyTotReturns>
+<mon1Flow redemption="4149250807.9100" reinvestment="11152.1500" sales="2128117167.2900"/>
+<mon2Flow redemption="4725860194.4100" reinvestment="451.2900" sales="2731525918.6200"/>
+<mon3Flow redemption="5555532035.0200" reinvestment="-2256.2700" sales="3208069595.1600"/>`
+
+describe('Items B.5.a and B.6: returns and money flows (T-459)', () => {
+  it('reads each share class’s three monthly returns', () => {
+    const r = parseNportReturns(VFIAX_Q2)
+    expect(r).toHaveLength(4)
+    expect(r.find((x) => x.classId === 'C000092055')).toEqual({ classId: 'C000092055', months: [10.49057487, 5.26044899, -0.95476134] })
+    // Not the gains-by-category <mon1> rows of Item B.5.b, which share the section.
+    expect(r.every((x) => x.classId?.startsWith('C0'))).toBe(true)
+  })
+
+  it('reads returns written to 2 or 16 decimals alike', () => {
+    expect(parseNportReturns(GFA_Q3)[0].months).toEqual([-0.56762399, -3.49, 3.81])
+  })
+
+  it('reads each month’s money in and out, a negative figure as filed', () => {
+    expect(parseNportFlows(VFIAX_Q2)[2]).toEqual({ sales: 92586020974.6899, reinvestment: 1706081333.02, redemption: 102779354536.56 })
+    expect(parseNportFlows(GFA_Q3)[2]?.reinvestment).toBe(-2256.27)
+  })
+
+  it('gives null for "N/A", a class with no id, and a filing with neither section', () => {
+    const r = parseNportReturns('<monthlyTotReturns><monthlyTotReturn rtn1="N/A" rtn2="1.5" rtn3=""/></monthlyTotReturns>')
+    expect(r).toEqual([{ classId: null, months: [null, 1.5, null] }])
+    expect(parseNportReturns('<netAssets>5</netAssets>')).toEqual([])
+    expect(parseNportFlows('<netAssets>5</netAssets>')).toEqual([null, null, null])
+    expect(parseNportFlows('<mon2Flow sales="N/A" reinvestment="0" redemption="7"/>')).toEqual([null, { sales: null, reinvestment: 0, redemption: 7 }, null])
+  })
+
+  it('comes through parseNportReport', () => {
+    const report = parseNportReport(VFIAX_Q2)
+    expect(report.asOf).toBe('2026-06-30')
+    expect(report.returns).toHaveLength(4)
+    expect(report.flows[0]?.sales).toBe(40632647042.0601)
   })
 })

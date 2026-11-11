@@ -5,7 +5,7 @@ change the registry and regenerate. This is the "where does the data come from" 
 `DATA-AVAILABILITY.md` (which tracks whether each surface is live). The same registry powers the
 in-app **/data-sources** page and the per-page provenance badges, so the app and the docs never diverge._
 
-_Last generated: **2026-11-08**_
+_Last generated: **2026-11-11**_
 
 ## Legend
 
@@ -113,11 +113,13 @@ Provider tags: `key` = needs an API key · `paid` = needs a paid plan · untagge
 | Fund universe | Live | [SEC](https://www.sec.gov/edgar) `www.sec.gov`<br>NASDAQ Trader `www.nasdaqtrader.com` | daily-cached | `/live-data/fund-universe` |
 | ETF / fund holdings | Live | [SEC N-PORT](https://www.sec.gov/edgar) `data.sec.gov`<br>FMP `financialmodelingprep.com` _(key)_<br>Catalog | — | `/live-data/fund-holdings` |
 | Fund prospectus link | Live | [SEC EDGAR (497K / 485BPOS)](https://www.sec.gov/edgar) `www.sec.gov` | 24h cache | `/live-data/fund-prospectus` |
+| Fund returns and money in and out (as filed) | Live | [SEC N-PORT (Items B.5, B.6)](https://www.sec.gov/edgar) `www.sec.gov` | Filings are immutable (24h cache); a new one appears about 60 days after each quarter ends | `/live-data/fund-returns` |
 | Holdings quarter-over-quarter diff | Partial | [SEC N-PORT](https://www.sec.gov/edgar) `data.sec.gov`<br>FMP `financialmodelingprep.com` _(key)_ | — | `/live-data/fund-holdings-history` |
 
 - **Fund universe** — Discovered funds ship as compact {symbol,name} rows (2026-07-30, audit follow-up F3). PAGINATION WAS CONSIDERED AND REJECTED in item 11, not deferred: the registry screens client-side, so a page-at-a-time API would filter as though it had seen the whole universe when it had seen fifty rows. The earlier ~11s / 14MB figure predates the compact shape and is not a current measurement — payload re-measured on the owner’s machine 2026-09-19: 2,274,590 bytes (2.27 MB), carrying 29,009 discovered funds (5,593 ETFs + 23,416 mutual funds). Reference/fallback data: `lib/data/fundFacts.generated.json (SEC N-PORT net assets and filing trust for ~25,000 fund tickers, built by scripts/build-fund-facts.mjs; 120-day review clock in lib/data/fundNetAssets.ts). Filled on symbol lookups and searches for funds outside the catalog (T-449 c)`.
 - **ETF / fund holdings** — N-PORT is keyless and authoritative, and holdings are unaffected by the Yahoo removal. Two side panels are: SECTOR WEIGHTS now need an FMP key (N-PORT carries no GICS classification), and the stock/bond/cash ASSET MIX is DERIVED FROM N-PORT’s assetCat field (NT9) rather than having no source — the earlier "no source at all" note was overtaken by that work. It is therefore keyless and unaffected by the Yahoo removal, but absent for filers that publish no N-PORT (UITs such as SPY), where the section correctly does not render. UITs (e.g. SPY) file no N-PORT and correctly fall back to indicative top holdings.
 - **Fund prospectus link** — T-420 item 2 (D92). The summary prospectus filed with the share class’s latest annual 485BPOS, else that 485BPOS; looked up by class, since a series lists one 497K per share class. Trusts outside the SEC’s mutual-fund map (SPY, GLD) file neither form and correctly get no link.
+- **Fund returns and money in and out (as filed)** — T-459 (D222, D223). Each share class’s monthly total returns and the whole fund’s money in and out, from the same NPORT-P filings the holdings come from. A 12-month return only where the last four quarters join up. Trusts that file no N-PORT (SPY, GLD) answer filer: false. Not read by the Fund Registry: every fund’s filing ends on a different month.
 - **Holdings quarter-over-quarter diff** — Works where an N-PORT series exists.
 
 ## Macro Markets
@@ -165,4 +167,4 @@ Provider tags: `key` = needs an API key · `paid` = needs a paid plan · untagge
 
 ---
 
-_61 surfaces catalogued. Regenerate with `npm run data-sources`; verify against the route code with `npm run data-sources -- --verify`._
+_62 surfaces catalogued. Regenerate with `npm run data-sources`; verify against the route code with `npm run data-sources -- --verify`._

@@ -149,6 +149,58 @@ describe('get_fund_details', () => {
     expect(out.prospectus).toEqual({ none: 'Not in the SEC list.' })
   })
 
+  it('gives the fund’s own returns and money flows as filed, with their months (T-459)', async () => {
+    routes({
+      '/live-data/fund-holdings': holdingsFor('VOO'),
+      '/live-data/fund-prospectus': prospectusFor('VOO'),
+      '/live-data/fund-returns': {
+        ok: true, symbol: 'VOO', updatedAt: '', filer: true, seriesId: 'S000002839', classId: 'C000092055',
+        source: 'SEC EDGAR, Form NPORT-P', filingsRead: [], filingsFailed: 0,
+        returns: {
+          asOf: '2026-06-30', filedAt: '2026-08-28', accession: 'a', classFound: true,
+          months: [{ month: '2026-04', returnPct: 10.49057487 }, { month: '2026-05', returnPct: 5.26044899 }, { month: '2026-06', returnPct: -0.95476134 }],
+          twelveMonths: null,
+          twelveMonthsMissing: 'The filings read give 6 of the 12 months to June 2026, so there is no 12-month figure.',
+          flows: {
+            months: [{ month: '2026-06', sales: 92586020974.6899, reinvestment: 1706081333.02, redemption: 102779354536.56, net: -8487252228.85 }],
+            net: null, netAssets: 1671231561960.14, netPctOfAssets: null,
+          },
+        },
+      },
+    })
+    const out = await runTool('get_fund_details', { symbol: 'VOO' }, 'http://x') as Record<string, any>
+    expect(out.returns.filingFor).toBe('2026-06-30')
+    expect(out.returns.shareClass).toBe('C000092055')
+    expect(out.returns.monthlyTotalReturnsPct).toEqual([
+      { month: '2026-04', pct: 10.49 }, { month: '2026-05', pct: 5.26 }, { month: '2026-06', pct: -0.95 },
+    ])
+    // No 12-month figure, and the reason, so the agent cannot work one out from three months.
+    expect(out.returns.twelveMonthReturn).toBeNull()
+    expect(out.returns.twelveMonthNote).toMatch(/6 of the 12 months/)
+    expect(out.returns.moneyInAndOut.months[0]).toEqual({
+      month: '2026-06', newSharesUsd: 92586020975, reinvestedUsd: 1706081333, redeemedUsd: 102779354537, netUsd: -8487252229,
+    })
+    expect(out.returns.note).toMatch(/never work one out from fewer/)
+    expect(out.returns.note).toMatch(/do not rate the fund/)
+  })
+
+  it('says a trust files no N-PORT, and names a returns lookup that failed', async () => {
+    routes({
+      '/live-data/fund-holdings': holdingsFor('SPY'),
+      '/live-data/fund-prospectus': prospectusFor('SPY'),
+      '/live-data/fund-returns': { ok: true, symbol: 'SPY', updatedAt: '', filer: false, seriesId: null, classId: null, returns: null, filingsRead: [], filingsFailed: 0, source: 'SEC EDGAR, Form NPORT-P' },
+    })
+    const spy = await runTool('get_fund_details', { symbol: 'SPY' }, 'http://x') as Record<string, any>
+    expect(spy.returns.none).toMatch(/files no N-PORT/)
+    routes({
+      '/live-data/fund-holdings': holdingsFor('VOO'),
+      '/live-data/fund-prospectus': prospectusFor('VOO'),
+      '/live-data/fund-returns': () => json({ ok: false, error: 'SEC unreachable' }, 502),
+    })
+    const voo = await runTool('get_fund_details', { symbol: 'VOO' }, 'http://x') as Record<string, any>
+    expect(voo.returns.error).toMatch(/returns unavailable/)
+  })
+
   it('refuses something that is not a ticker before asking any route', async () => {
     const fetch = vi.fn()
     vi.stubGlobal('fetch', fetch)

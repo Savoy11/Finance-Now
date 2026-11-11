@@ -79,6 +79,30 @@ export interface NportRateRisk {
   dv01: number
 }
 
+/**
+ * One share class's total returns for the three months the filing covers (Item B.5.a,
+ * `<monthlyTotReturn classId rtn1 rtn2 rtn3>`), in percent: "Monthly total returns of the Fund
+ * for each of the preceding three months", per class for a fund with several. `months[2]` is the
+ * month the report date falls in, `months[0]` two months before (T-459). Null where the filer
+ * wrote "N/A" or nothing.
+ */
+export interface NportClassReturns {
+  /** The SEC class id (C000…), or null when the filer gave none. */
+  classId: string | null
+  months: [number | null, number | null, number | null]
+}
+
+/**
+ * One month's money in and out of the whole fund, every share class (Item B.6,
+ * `<mon1Flow sales reinvestment redemption>`), in US dollars as filed: shares sold, shares
+ * issued for reinvested distributions, and shares redeemed. Null where unreadable.
+ */
+export interface NportFlowMonth {
+  sales: number | null
+  reinvestment: number | null
+  redemption: number | null
+}
+
 export interface NportReport {
   /** Portfolio as-of date (repPdDate), YYYY-MM-DD. */
   asOf: string | null
@@ -87,6 +111,10 @@ export interface NportReport {
   holdings: NportHolding[]
   /** Interest-rate risk per currency; empty when the filing carries none. */
   rateRisk: NportRateRisk[]
+  /** Item B.5.a, one row per share class; empty when the filing carries none (T-459). */
+  returns: NportClassReturns[]
+  /** Item B.6, month 1 to month 3; a month the filing omits is null (T-459). */
+  flows: [NportFlowMonth | null, NportFlowMonth | null, NportFlowMonth | null]
 }
 
 /** Resolve a fund ticker to its EDGAR series/class ids via the SEC's mutual-fund
@@ -210,6 +238,35 @@ export function parseNportRateRisk(xml: string): NportRateRisk[] {
   return out
 }
 
+/** An attribute's value from an element's opening tag text, by name. */
+const attrOf = (el: string, name: string): string | undefined =>
+  el.match(new RegExp(`\\b${name}="([^"]*)"`))?.[1]
+
+/** Item B.5.a: each share class's three monthly total returns, in percent. Pure. */
+export function parseNportReturns(xml: string): NportClassReturns[] {
+  const section = xml.match(/<monthlyTotReturns>([\s\S]*?)<\/monthlyTotReturns>/)?.[1]
+  if (!section) return []
+  const out: NportClassReturns[] = []
+  for (const m of section.matchAll(/<monthlyTotReturn\b([^>]*?)\/?>/g)) {
+    const el = m[1]
+    out.push({
+      classId: attrOf(el, 'classId')?.trim() || null,
+      months: [num(attrOf(el, 'rtn1')), num(attrOf(el, 'rtn2')), num(attrOf(el, 'rtn3'))],
+    })
+  }
+  return out
+}
+
+/** Item B.6: the fund's money in and out for months 1 to 3. Pure. */
+export function parseNportFlows(xml: string): NportReport['flows'] {
+  const month = (n: 1 | 2 | 3): NportFlowMonth | null => {
+    const el = xml.match(new RegExp(`<mon${n}Flow\\b([^>]*?)\\/?>`))?.[1]
+    if (el == null) return null
+    return { sales: num(attrOf(el, 'sales')), reinvestment: num(attrOf(el, 'reinvestment')), redemption: num(attrOf(el, 'redemption')) }
+  }
+  return [month(1), month(2), month(3)]
+}
+
 /** Fetch and parse one NPORT-P primary document into holdings. */
 export async function fetchNportReport(ref: NportFilingRef): Promise<NportReport> {
   const adsh = ref.accession.replace(/-/g, '')
@@ -259,5 +316,7 @@ export function parseNportReport(xml: string): NportReport {
     netAssets: num(xml.match(/<netAssets>\s*([^<]*?)\s*<\/netAssets>/)?.[1]),
     holdings,
     rateRisk: parseNportRateRisk(xml),
+    returns: parseNportReturns(xml),
+    flows: parseNportFlows(xml),
   }
 }

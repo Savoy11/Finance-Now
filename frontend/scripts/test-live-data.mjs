@@ -916,6 +916,28 @@ const tests = [
     return `no link, as expected: ${String(j.reason ?? '').slice(0, 80)}`
   }},
 
+  // T-459: VOO's own returns and money flows from its NPORT-P filings. Its newest filing must give
+  // the share class three monthly returns; the 12-month figure needs four quarters that join up,
+  // so its absence is reported, not failed. SPY files no N-PORT and must say so, not error.
+  { group: 'funds', path: '/live-data/fund-returns?symbol=VOO', name: 'fund-returns (VOO)', check: (j) => {
+    if (!j.ok) throw new Error(j.error ?? 'not ok')
+    if (!j.filer) throw new Error('VOO is a Vanguard 500 Index Fund share class and files N-PORT; the SEC fund list lookup missed it')
+    const r = j.returns
+    if (!r) throw new Error(`no filing read (${j.filingsFailed} failed)`)
+    if (!r.classFound) throw new Error(`the newest filing (${r.asOf}) has no row for class ${j.classId}`)
+    const months = r.months.filter((m) => m.returnPct !== null).length
+    if (months !== 3) return fallback(`${months} of 3 monthly returns in the filing for ${r.asOf}`)
+    const ageDays = (Date.now() - new Date(r.asOf).getTime()) / 86_400_000
+    if (ageDays > 200) return fallback(`newest filing is for ${r.asOf}, ${Math.round(ageDays)} days ago`)
+    const twelve = r.twelveMonths ? `12 months to ${r.twelveMonths.to}: ${r.twelveMonths.returnPct.toFixed(2)}%` : `no 12-month figure (${r.twelveMonthsMissing})`
+    return `quarter to ${r.asOf}, 3 monthly returns, flows ${r.flows ? 'present' : 'absent'}; ${twelve}`
+  }},
+  { group: 'funds', path: '/live-data/fund-returns?symbol=SPY', name: 'fund-returns (SPY, trust — none expected)', check: (j) => {
+    if (!j.ok) throw new Error(j.error ?? 'not ok')
+    if (j.filer) throw new Error('SPY was found in the SEC fund list; it is a unit investment trust and files no N-PORT')
+    return 'no N-PORT filer, as expected'
+  }},
+
   { group: 'funds', path: '/live-data/fund-holdings-history?symbol=SPY', name: 'fund-holdings-history (SPY)', check: (j) => {
     if (!j.ok) {
       const e = String(j.error ?? '')

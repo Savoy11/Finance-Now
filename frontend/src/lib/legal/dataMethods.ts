@@ -153,6 +153,17 @@ export const DATA_METHODS: readonly MethodSection[] = [
     ],
   },
   {
+    id: 'fund-returns',
+    title: 'A fund’s returns and money in and out',
+    decided: '2026-11-11',
+    paragraphs: [
+      'A fund’s returns are the ones it reports itself, in its quarterly Form N-PORT filing with the SEC: the total return of each share class for each of the three months the filing covers. The form asks for them worked out by the method Form N-1A sets for the returns in a fund’s prospectus, so each month’s figure counts the fund’s payouts, such as dividends, and not just the change in price. The page shows the return of the share class whose ticker it is, and never another class’s in its place.',
+      'The 12-month return compounds twelve of those monthly returns, each on the last. It is shown only when the filings read give every one of the twelve months up to the newest; if a quarter is missing or a month is not given, there is no 12-month figure, rather than one worked out from fewer months. Where a fund filed a correction for a quarter, the later filing is used.',
+      'Money in and out is from the same filing, for each of its three months and for the whole fund, every share class together: the value of shares the fund sold, of shares issued to holders who reinvested their payouts, and of shares it bought back, as the fund filed them. The net is the first two less the third, and the three months’ net is shown as a share of the fund’s net assets on the filing’s date. For an exchange-traded fund, shares are created for and bought back from large dealers, not sold to individual investors, who trade on the exchange.',
+      'Funds file N-PORT about 60 days after each quarter ends, so these figures are two to four months old, and the page names the months they cover. They are not used anywhere that sets one fund beside another, since each fund’s filing ends on a different month. A fund that files no N-PORT, such as SPY or GLD, shows none of this.',
+    ],
+  },
+  {
     id: 'crypto-charts',
     title: 'Crypto charts and the crypto scanner',
     decided: '2026-10-13',
