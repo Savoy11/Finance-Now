@@ -233,6 +233,20 @@ describe('upcomingEarnings (lib/server/earningsCalendar.ts)', () => {
     expect(dec.events.map((e) => [e.symbol, e.date, e.source])).toEqual([['XYZ', '2026-12-02', 'fmp']])
   })
 
+  it('reads the stock page’s 90 days from the window request, one FMP request in all (code audit 2026-11-12, D226)', async () => {
+    // Mutation: ask FMP for the range as well and this counts two.
+    const { upcomingEarnings } = await import('@/lib/server/earningsCalendar')
+    const { EARNINGS_LOOK_AHEAD_DAYS, addDays, marketToday } = await import('@/lib/data/earningsCalendar')
+    const fmpRows = [{ symbol: 'NVDA', date: '2026-11-19' }, { symbol: 'LATE', date: '2027-02-07' }]
+    stub(() => json(fmpRows), () => text(`${HEADER}\nWMT,Walmart,2026-11-18,,,USD,\n`))
+    const today = marketToday(new Date(now))
+    const r = await upcomingEarnings(today, addDays(today, EARNINGS_LOOK_AHEAD_DAYS), now)
+    expect(calls.filter((u) => u.includes('financialmodelingprep'))).toHaveLength(1)
+    // The window's rows past the range are left out, and the count is the range's.
+    expect(r.events.map((e) => e.symbol)).toEqual(['WMT', 'NVDA'])
+    expect(r.sources.fmp).toMatchObject({ ok: true, count: 1 })
+  })
+
   it('asks Alpha Vantage at one address with no dates in it, cached a day, so it costs one request a day', () => {
     const src = fs.readFileSync(path.join(process.cwd(), 'src/lib/server/earningsCalendar.ts'), 'utf8')
     const url = src.match(/https:\/\/www\.alphavantage\.co\/query\?[^`]*/)?.[0] ?? ''

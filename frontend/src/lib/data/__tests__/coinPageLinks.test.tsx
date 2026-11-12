@@ -9,11 +9,11 @@ import { DEFILLAMA_STABLECOINS, MONITORED_STABLECOINS } from '../stablecoinMeta'
 import { coingeckoIdFor } from '@/lib/api/live/coingeckoIds'
 import {
   RESERVE_COIN_PAGE, STAKING_COIN_PAGE, coinPageForReserve, coinPageForStaking, isStakingCoinId,
-  stakesTheCoin, stakingCoinForPage, stakingRowsFor,
+  stakesTheCoin, stakingCoinForPage, stakingPageRows, stakingRowsFor,
 } from '../coinPageLinks'
 import { CoinStakingLine } from '@/components/assets/CoinStakingLine'
 import { ReserveMonitorPanel } from '@/components/analytics/reserves'
-import { resolveLiveAprKey } from '@/lib/utils/aprDisplay'
+import { aprBasis, aprDisplay, basisCounts, resolveLiveAprKey } from '@/lib/utils/aprDisplay'
 import type { StakingRatesResponse } from '@/app/live-data/staking-rates/route'
 
 // T-463: the coin pages, the Staking page and the Reserve Monitor link to each other through
@@ -75,10 +75,54 @@ describe('the providers a coin page counts', () => {
     for (const [id, coin] of adjacent) expect(stakingRowsFor(coin).some((r) => r.provider.id === id), `${id}/${coin}`).toBe(false)
   })
 
-  it('the Staking page filters by the same rule', () => {
+  it('the Staking page draws its rows from the same list', () => {
+    // Since the code audit of 2026-11-12 (D226) the page filters nowhere itself: its cards and
+    // its notice both read stakingPageRows, which the coin page's count reads too.
     const page = read('src/app/(dashboard)/staking/page.tsx')
-    expect(page.match(/!showAdjacent && !stakesTheCoin\(/g)).toHaveLength(2)
+    expect(page).toContain('stakingPageRows({ coin: coinFilter, category: categoryFilter, showAdjacent, showDefunct })')
+    expect(page).toContain('rows={rows}')
+    expect(page).not.toMatch(/stakesTheCoin\(/)
     expect(page).not.toMatch(/YIELD_TYPE_META\[resolveYieldType\([^)]*\)\]\.stakesQueriedAsset/)
+    for (const coin of Object.keys(STAKING_COIN_INFO) as StakingCoinId[]) {
+      expect(stakingRowsFor(coin)).toEqual(stakingPageRows({ coin }))
+    }
+  })
+})
+
+describe('the Staking page’s notice (code audit 2026-11-12, D226)', () => {
+  // Counted as the page counts: each drawn row's basis.
+  const count = (coin: StakingCoinId | 'all', resp: { rates: Record<string, number>; sources: Record<string, 'live' | 'estimate'>; byKey: Record<string, string | null> }) =>
+    basisCounts(stakingPageRows({ coin }).map(({ provider, coinId, asset }) => {
+      const liveKey = resolveLiveAprKey(provider, coinId, asset)
+      return aprBasis(aprDisplay(asset.staticApr, liveKey, resp.rates, resp.sources, {}), liveKey, resp.rates, resp.byKey)
+    }))
+
+  it('counts the rows drawn, one kind each, under the coin filter', () => {
+    const c = count('all', { rates: {}, sources: {}, byKey: {} })
+    expect(c.rows).toBe(stakingPageRows({ coin: 'all' }).length)
+    expect(c.live + c.derived + c.measured + c.undated + c.withheld + c.catalog).toBe(c.rows)
+    expect(count('eth', { rates: {}, sources: {}, byKey: {} }).rows).toBe(stakingRowsFor('eth').length)
+  })
+
+  it('never counts a backup figure no row reads', () => {
+    // Mutation: count the collector's keys (the old backupCounts) and the undated figure rises.
+    const used = new Set(stakingPageRows({ coin: 'all' }).map(({ provider, coinId, asset }) => resolveLiveAprKey(provider, coinId, asset)))
+    const unread = ['kraken_eth', 'binance_eth', 'native_ksm', 'ankr_sol'].filter((k) => !used.has(k))
+    expect(unread.length).toBeGreaterThan(0)
+    const base = { rates: { lido_eth: 2.5 }, sources: { lido_eth: 'estimate' as const }, byKey: { lido_eth: null } as Record<string, string | null> }
+    const withUnread = {
+      rates: { ...base.rates, ...Object.fromEntries(unread.map((k) => [k, 3])) },
+      sources: { ...base.sources, ...Object.fromEntries(unread.map((k) => [k, 'estimate' as const])) },
+      byKey: { ...base.byKey, ...Object.fromEntries(unread.map((k) => [k, null])) },
+    }
+    expect(count('all', withUnread)).toEqual(count('all', base))
+  })
+
+  it('prints the rows’ counts, and the header’s live figure is the rows’ too', () => {
+    const page = read('src/app/(dashboard)/staking/page.tsx')
+    expect(page).toContain('rateSummary(counts)')
+    expect(page).toContain('const liveCount = counts.live')
+    expect(page).not.toMatch(/backupCounts|Object\.values\(sources\)/)
   })
 })
 

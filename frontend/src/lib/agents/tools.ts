@@ -646,6 +646,7 @@ export function fundReturnsFact(symbol: string, r: FundReturnsResponse | Error):
     source: "The fund's own NPORT-P filings with the SEC",
     filingFor: v.asOf,
     filedAt: v.filedAt,
+    ...(r.newestUnread ? { newestFilingUnread: `The fund's newest filing, filed ${r.newestUnread.filedAt}, could not be read just now, so these may not be its latest figures; say so.` } : {}),
     shareClass: r.classId,
     monthlyTotalReturnsPct: v.classFound
       ? v.months.map((m) => ({ month: m.month, pct: m.returnPct === null ? null : round2(m.returnPct) }))
@@ -703,6 +704,12 @@ export function gapHistoryFact(h: SpreadHistoryResponse): Record<string, unknown
   }
 }
 
+/** Why a fourth quarter was not worked out, for the agent (code audit 2026-11-12, D226). */
+const Q4_WITHHELD_WHY: Record<NonNullable<CompanyQuarter['revenueWithheld']>, string> = {
+  restated: 'The annual report changed earlier figures (for example after selling or spinning off a business), so the full year and the first nine months are on different bases.',
+  'not-positive': 'The full year less the first nine months came to zero or below.',
+}
+
 /**
  * A company's last eight quarters for an agent (T-461): each figure with whether it was worked out
  * and the change from a year earlier, as the stock page shows them. Exported for its tests.
@@ -720,8 +727,10 @@ export function quartersFact(quarters: CompanyQuarter[]): Record<string, unknown
       netIncomeUsd: fig(q.netIncome), netIncomeChangePct: pct(q.netIncomeChangePct),
       eps: q.eps ? { value: q.eps.value, basis: q.eps.concept === 'EarningsPerShareBasic' ? 'basic' : 'diluted' } : null,
       epsChangePct: pct(q.epsChangePct),
+      ...(q.revenueWithheld ? { revenueNotWorkedOut: Q4_WITHHELD_WHY[q.revenueWithheld] } : {}),
+      ...(q.netIncomeWithheld ? { netIncomeNotWorkedOut: Q4_WITHHELD_WHY[q.netIncomeWithheld] } : {}),
     })),
-    note: "From the company's 10-Q and 10-K reports, newest first. Each change is from the same quarter a year earlier, and is null where that figure was a loss or zero. Companies file no separate fourth-quarter report, so a figure marked workedOut is the full year less the first nine months; fourth-quarter earnings per share are given only where the company filed them, so never work one out. P/E and dividend yield stay on the latest full year.",
+    note: "From the company's 10-Q and 10-K reports, newest first. Each change is from the same quarter a year earlier, and is null where that figure was a loss or zero. Companies file no separate fourth-quarter report, so a figure marked workedOut is the full year less the first nine months; fourth-quarter earnings per share are given only where the company filed them, so never work one out. Where a fourth quarter's revenue or net income is null with a reason (revenueNotWorkedOut, netIncomeNotWorkedOut), do not work it out yourself from the full year either: the reason is that the two figures are on different bases. P/E and dividend yield stay on the latest full year.",
   }
 }
 

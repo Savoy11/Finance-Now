@@ -641,9 +641,12 @@ export async function collectStakingRates(): Promise<StakingRatesResponse> {
     } catch { /* fallback */ }
   }
 
-  // If either Solana rate is live, derive native_sol as average
-  if (sources.marinade_sol === 'live' || sources.jito_sol === 'live') {
-    const vals = [rates.marinade_sol, rates.jito_sol].filter(Boolean) as number[]
+  // If either Solana rate is live, derive native_sol as the average of the live ones only. It
+  // averaged both until the code audit of 2026-11-12 (D226), so with one source down it mixed a
+  // backup figure into a rate labelled as worked out from a live reading.
+  const liveSol = (['marinade_sol', 'jito_sol'] as const).filter((k) => sources[k] === 'live' && rates[k] != null)
+  if (liveSol.length > 0) {
+    const vals = liveSol.map((k) => rates[k] as number)
     rates.native_sol = round2(vals.reduce((a, b) => a + b, 0) / vals.length)
     sources.native_sol = 'estimate' // derived from liquid-staking APYs, not a native-staking reading
     derived.add('native_sol')

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { aprBasis, aprBasisText, aprDisplay, backupCounts, rateDay, resolveLiveAprKey } from '../aprDisplay'
+import { aprBasis, aprBasisText, aprDisplay, basisCounts, rateDay, rateSummary, resolveLiveAprKey } from '../aprDisplay'
 import { DEFAULT_LIVE_APR_KEY, type StakingProvider, type StakingCoinId } from '@/lib/data/stakingProviders'
 
 type Asset = StakingProvider['assets'][StakingCoinId]
@@ -179,12 +179,21 @@ describe('aprBasisText', () => {
   })
 })
 
-describe('backupCounts', () => {
-  it('counts the backup figures shown, measured and undated, and not the withheld ones', () => {
-    expect(backupCounts(
-      { lido_eth: '2026-11-05', jito_sol: '2026-11-05', native_atom: null, native_ada: null, kelp_eth: '2026-11-05' },
-      { lido_eth: 2.25, jito_sol: 4.79, native_atom: 13, native_ada: 4.5 },
-    )).toEqual({ measured: 2, measuredOn: '2026-11-05', undated: 2 })
-    expect(backupCounts({}, {})).toEqual({ measured: 0, measuredOn: null, undated: 0 })
+describe('basisCounts and rateSummary', () => {
+  it('counts each kind over the rows given, never the collector’s keys', () => {
+    const c = basisCounts([
+      { kind: 'live' }, { kind: 'live' }, { kind: 'derived' },
+      { kind: 'backup', measuredOn: '2026-11-05' }, { kind: 'backup', measuredOn: '2026-11-03' },
+      { kind: 'backup', measuredOn: null }, { kind: 'withheld', measuredOn: '2026-09-01' }, { kind: 'catalog' },
+    ])
+    expect(c).toEqual({ rows: 8, live: 2, derived: 1, measured: 2, measuredOn: '2026-11-03', measuredLatest: '2026-11-05', undated: 1, withheld: 1, catalog: 1 })
+    expect(rateSummary(c)).toBe(
+      'Of the 8 rates shown, 2 are live, 1 is worked out from a live reading taken just now, 2 are backup rates measured between ' +
+      'Nov 3, 2026 and Nov 5, 2026, shown because there is no live reading, 1 is a backup rate with no measured date, 1 is withheld, ' +
+      'last measured too long ago and 1 is the catalog’s own figure.')
+    expect(basisCounts([])).toEqual({ rows: 0, live: 0, derived: 0, measured: 0, measuredOn: null, measuredLatest: null, undated: 0, withheld: 0, catalog: 0 })
+    expect(rateSummary(basisCounts([]))).toBe('')
+    expect(rateSummary(basisCounts([{ kind: 'backup', measuredOn: '2026-11-05' }]))).toBe(
+      'Of the 1 rate shown, 1 is a backup rate measured Nov 5, 2026, shown because there is no live reading.')
   })
 })

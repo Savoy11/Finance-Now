@@ -190,6 +190,87 @@ describe('conceptQuarters: the fourth quarter', () => {
   })
 })
 
+describe('a fourth quarter across a change of basis (code audit 2026-11-12, D226)', () => {
+  /**
+   * The audit's case: a company spins off a segment on 2025-11-01, after its third quarter. Its
+   * 2025 10-Qs report 100 a quarter with the segment; its 2025 10-K reports continuing operations
+   * only, 300 for 2025 and 2024 restated from 400 to 300. Before the fix, both fourth quarters
+   * came out as 0 and were marked worked out.
+   */
+  const spinOff: XbrlFact[] = [
+    f('2024-01-01', '2024-03-31', 100, '10-Q', '2024-05-01'),
+    f('2024-04-01', '2024-06-30', 100, '10-Q', '2024-08-01'),
+    f('2024-07-01', '2024-09-30', 100, '10-Q', '2024-11-01'),
+    f('2024-01-01', '2024-09-30', 300, '10-Q', '2024-11-01'),
+    f('2024-01-01', '2024-12-31', 400, '10-K', '2025-02-15'),
+    f('2025-01-01', '2025-03-31', 100, '10-Q', '2025-05-01'),
+    f('2025-04-01', '2025-06-30', 100, '10-Q', '2025-08-01'),
+    f('2025-07-01', '2025-09-30', 100, '10-Q', '2025-11-01'),
+    f('2025-01-01', '2025-09-30', 300, '10-Q', '2025-11-01'),
+    f('2024-01-01', '2024-09-30', 300, '10-Q', '2025-11-01'),
+    // The 2025 10-K: continuing operations only, and 2024 restated on the same basis.
+    f('2025-01-01', '2025-12-31', 300, '10-K', '2026-02-15'),
+    f('2024-01-01', '2024-12-31', 300, '10-K', '2026-02-15'),
+  ]
+  const g: ConceptFacts = { RevenueFromContractWithCustomerExcludingAssessedTax: { units: { USD: spinOff } } }
+
+  it('works out neither fourth quarter, and says why', () => {
+    // Mutation: drop the basis check and both read 0, marked worked out.
+    const q = lastQuarters(g)
+    const q4 = q.filter((x) => x.end.endsWith('12-31'))
+    expect(q4.map((x) => [x.end, x.revenue, x.revenueWithheld])).toEqual([
+      ['2025-12-31', null, 'restated'],
+      ['2024-12-31', null, 'restated'],
+    ])
+    // The row is still there, between its neighbours, rather than vanishing.
+    expect(q.map((x) => x.end).slice(0, 4)).toEqual(['2025-12-31', '2025-09-30', '2025-06-30', '2025-03-31'])
+    expect(q[0].start).toBe('2025-10-01')
+  })
+
+  it('still works out a fourth quarter when nothing changed between the two reports', () => {
+    const before = spinOff.filter((x) => x.filed! < '2026-01-01')
+    const q = conceptQuarters(before, true)
+    expect(q.get('2024-12-31')).toEqual({ start: '2024-10-01', end: '2024-12-31', value: 100, workedOut: true })
+  })
+
+  it('does not count a later report that only repeats a figure already restated', () => {
+    // 2023's year was restated in the 2024 10-K, a year before 2025's nine months were filed. The
+    // 2025 10-K repeats the restated value: that is no change, so 2025's fourth quarter is still
+    // worked out.
+    const facts = [
+      f('2023-01-01', '2023-12-31', 500, '10-K', '2024-02-15'),
+      f('2023-01-01', '2023-12-31', 450, '10-K', '2025-02-15'),
+      f('2025-01-01', '2025-09-30', 300, '10-Q', '2025-11-01'),
+      f('2025-01-01', '2025-12-31', 420, '10-K', '2026-02-15'),
+      f('2023-01-01', '2023-12-31', 450, '10-K', '2026-02-15'),
+    ]
+    expect(conceptQuarters(facts, true).get('2025-12-31')?.value).toBe(120)
+  })
+
+  it('ignores a change under half a percent, a rounding or a small reclassification', () => {
+    const facts = [
+      f('2024-01-01', '2024-12-31', 1000, '10-K', '2025-02-15'),
+      f('2025-01-01', '2025-09-30', 780, '10-Q', '2025-11-01'),
+      f('2025-01-01', '2025-12-31', 1050, '10-K', '2026-02-15'),
+      f('2024-01-01', '2024-12-31', 1004, '10-K', '2026-02-15'), // 0.4%
+    ]
+    expect(conceptQuarters(facts, true).get('2025-12-31')?.value).toBe(270)
+    const moved = [...facts.slice(0, 3), f('2024-01-01', '2024-12-31', 1010, '10-K', '2026-02-15')] // 1%
+    expect(conceptQuarters(moved, true).has('2025-12-31')).toBe(false)
+  })
+
+  it('withholds a worked-out revenue of zero or below, but not a net loss', () => {
+    // Mutation: drop the revenue floor and a negative "revenue" is shown.
+    const rev = [f('2025-01-01', '2025-09-30', 300, '10-Q', '2025-11-01'), f('2025-01-01', '2025-12-31', 280, '10-K', '2026-02-15')]
+    const q = lastQuarters({
+      RevenueFromContractWithCustomerExcludingAssessedTax: { units: { USD: rev } },
+      NetIncomeLoss: { units: { USD: [f('2025-01-01', '2025-09-30', 30, '10-Q', '2025-11-01'), f('2025-01-01', '2025-12-31', 10, '10-K', '2026-02-15')] } },
+    })
+    expect(q[0]).toMatchObject({ end: '2025-12-31', revenue: null, revenueWithheld: 'not-positive', netIncome: { value: -20, workedOut: true } })
+    expect(q[0].netIncomeWithheld).toBeUndefined()
+  })
+})
+
 describe('changePct', () => {
   it('is a percent of the earlier figure, and none from zero or below', () => {
     expect(changePct(110, 100)).toBeCloseTo(10, 10)

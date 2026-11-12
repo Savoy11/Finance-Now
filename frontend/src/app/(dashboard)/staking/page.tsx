@@ -17,8 +17,8 @@ import { ProvenanceNotice } from '@/components/ui/ProvenanceNotice'
 import { SponsoredLink } from '@/components/ui/SponsoredLink'
 import { resolveOutboundLink, affiliateCoverageByCategory, sponsoredProviders } from '@/lib/data/affiliates'
 import { clsx } from 'clsx'
-import { aprBasis, aprBasisText, aprDisplay, backupCounts, rateDay, resolveLiveAprKey } from '@/lib/utils/aprDisplay'
-import { coinPageForStaking, isStakingCoinId, stakesTheCoin } from '@/lib/data/coinPageLinks'
+import { aprBasis, aprBasisText, aprDisplay, basisCounts, rateDay, rateSummary, resolveLiveAprKey } from '@/lib/utils/aprDisplay'
+import { coinPageForStaking, isStakingCoinId, stakingPageRows, type StakingRow } from '@/lib/data/coinPageLinks'
 import {
   STAKING_PROVIDERS, STAKING_COIN_INFO,
   resolveYieldType, YIELD_TYPE_META,
@@ -101,16 +101,15 @@ function AffiliateDisclosure() {
 
 function ProviderCard({
   provider,
-  coinFilter,
-  showAdjacent,
+  rows,
   rates,
   sources,
   gaps,
   backupDates,
 }: {
   provider: StakingProvider
-  coinFilter: StakingCoinId | 'all'
-  showAdjacent: boolean
+  /** This provider's rows under the page's filters, from stakingPageRows (the notice counts the same). */
+  rows: StakingRow[]
   rates: Partial<Record<string, number>>
   sources: Partial<Record<string, 'live' | 'estimate'>>
   gaps: Partial<Record<string, GapReasonId>>
@@ -125,16 +124,10 @@ function ProviderCard({
   // otherwise (see resolveOutboundLink).
   const outbound = resolveOutboundLink(provider)
 
-  const visibleAssets = useMemo(() => {
-    const entries = Object.entries(provider.assets) as [StakingCoinId, NonNullable<(typeof provider.assets)[StakingCoinId]>][]
-    return entries.filter(([id, asset]) => {
-      if (coinFilter !== 'all' && id !== coinFilter) return false
-      // Hide governance-token / lending yield unless explicitly shown. The coin page counts
-      // providers by the same rule (stakesTheCoin), so its count matches this list (T-463).
-      if (!showAdjacent && !stakesTheCoin(provider, asset)) return false
-      return true
-    })
-  }, [provider, coinFilter, showAdjacent])
+  // The rows come filtered from the page (stakingPageRows): governance-token and lending yield
+  // hidden unless asked for, by the rule the coin page counts with (T-463), and the notice
+  // counts exactly these rows (code audit 2026-11-12, D226).
+  const visibleAssets = useMemo(() => rows.map((r) => [r.coinId, r.asset] as const), [rows])
 
   // Resolve each visible row's live/estimate status once, so the card can both
   // render rows and disclose — at the card level — when it has no live feed at all.
@@ -595,32 +588,36 @@ function StakingPageInner() {
     refetchInterval: 1000 * 60 * 20,
   })
 
-  const rates = ratesData?.rates ?? {}
-  const sources = ratesData?.sources ?? {}
+  const rates = useMemo(() => ratesData?.rates ?? {}, [ratesData])
+  const sources = useMemo(() => ratesData?.sources ?? {}, [ratesData])
   // Why each non-live key is not live. The route answers this because only it
   // knows which upstream owned the key — see StakingRatesResponse.gaps.
-  const gaps = ratesData?.gaps ?? {}
+  const gaps = useMemo(() => ratesData?.gaps ?? {}, [ratesData])
   // Each backup figure's measured date, or null for one never measured (T-465).
   const backupDates = useMemo(() => ratesData?.fallbackProvenance?.byKey ?? {}, [ratesData])
-  const backups = backupCounts(backupDates, rates)
   const updatedAt = ratesData?.updatedAt
 
-  const liveCount = Object.values(sources).filter(s => s === 'live').length
-
+  // Every row the page draws under its filters, and the providers they belong to, in order.
+  const pageRows = useMemo(
+    () => stakingPageRows({ coin: coinFilter, category: categoryFilter, showAdjacent, showDefunct }),
+    [categoryFilter, coinFilter, showAdjacent, showDefunct],
+  )
   const filteredProviders = useMemo(() => {
-    return STAKING_PROVIDERS.filter(p => {
-      if (p.defunct && !showDefunct) return false
-      if (categoryFilter !== 'all' && p.category !== categoryFilter) return false
-      // Provider must have at least one asset that survives the coin + adjacency filters
-      const entries = Object.entries(p.assets) as [StakingCoinId, NonNullable<(typeof p.assets)[StakingCoinId]>][]
-      const hasVisible = entries.some(([id, asset]) => {
-        if (coinFilter !== 'all' && id !== coinFilter) return false
-        if (!showAdjacent && !stakesTheCoin(p, asset)) return false
-        return true
-      })
-      return hasVisible
-    })
-  }, [categoryFilter, coinFilter, showAdjacent, showDefunct])
+    const byProvider = new Map<string, { provider: StakingProvider; rows: StakingRow[] }>()
+    for (const r of pageRows) {
+      const seen = byProvider.get(r.provider.id)
+      if (seen) seen.rows.push(r)
+      else byProvider.set(r.provider.id, { provider: r.provider, rows: [r] })
+    }
+    return [...byProvider.values()]
+  }, [pageRows])
+  // What each drawn row's rate is, counted for the notice: the rows themselves, not the
+  // collector's keys, ten of which no row reads (code audit 2026-11-12, D226).
+  const counts = useMemo(() => basisCounts(pageRows.map(({ provider, coinId, asset }) => {
+    const liveKey = resolveLiveAprKey(provider, coinId, asset)
+    return aprBasis(aprDisplay(asset.staticApr, liveKey, rates, sources, gaps), liveKey, rates, backupDates)
+  })), [pageRows, rates, sources, gaps, backupDates])
+  const liveCount = counts.live
 
   const COINS = Object.keys(STAKING_COIN_INFO) as StakingCoinId[]
   const CATEGORIES: { value: CategoryFilter; label: string }[] = [
@@ -691,11 +688,7 @@ function StakingPageInner() {
             {' That date covers the lock-ups, minimums and the catalog’s own rates, not the backup rates.'}
             {/* T-465: a backup rate is the staking-rates collector's figure, not the catalog's, so
                 it is dated by when it was measured, or said to have none (D224). */}
-            {liveCount > 0 && ` ${liveCount} rate${liveCount > 1 ? 's are' : ' is'} live.`}
-            {backups.measured > 0 && backups.measuredOn &&
-              ` ${backups.measured} ${backups.measured > 1 ? 'are backup rates' : 'is a backup rate'} measured ${rateDay(backups.measuredOn)}, shown because ${backups.measured > 1 ? 'their' : 'its'} live source gave no reading.`}
-            {backups.undated > 0 &&
-              ` ${backups.undated} ${backups.undated > 1 ? 'are backup rates' : 'is a backup rate'} with no measured date.`}
+            {ratesData && counts.rows > 0 && ` ${rateSummary(counts)}`}
             {' '}Each rate says which it is. Confirm current terms with the provider.
           </ProvenanceNotice>
         )
@@ -796,12 +789,11 @@ function StakingPageInner() {
 
       {/* Provider cards */}
       <div className="space-y-3">
-        {filteredProviders.map(provider => (
+        {filteredProviders.map(({ provider, rows }) => (
           <ProviderCard
             key={provider.id}
             provider={provider}
-            coinFilter={coinFilter}
-            showAdjacent={showAdjacent}
+            rows={rows}
             rates={rates}
             sources={sources}
             gaps={gaps}

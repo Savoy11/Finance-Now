@@ -109,16 +109,22 @@ export function upcomingEarnings(from: string, to: string, now = Date.now()): Pr
 async function collect(from: string, to: string, now: number): Promise<UpcomingEarningsResult> {
   // Which companies FMP lists is decided over Alpha Vantage's whole reach, the same for every
   // range asked, so a company shows one date wherever it appears (D214). That window's FMP
-  // request is shared through the fetch cache; it is skipped when the range asked is that window.
+  // request is shared through the fetch cache. A range inside it (the stock page's 90 days) is read
+  // from it rather than asked for again: until the code audit of 2026-11-12 (D226) every stock
+  // page and watchlist made two FMP requests, since only a range equal to the window skipped one.
   const today = marketToday(new Date(now))
   const windowEnd = addDays(today, EARNINGS_LISTED_WINDOW_DAYS)
-  const sameWindow = from === today && to === windowEnd
-  const [fmp, av, fmpWindow] = await Promise.all([
-    fromFmp(from, to), fromAlphaVantage(), sameWindow ? null : fromFmp(today, windowEnd),
-  ])
+  const inWindow = from >= today && to <= windowEnd
   const inRange = (e: UpcomingEarnings) => e.date >= from && e.date <= to
+  const [fmpWindow, av, fmpRange] = await Promise.all([
+    fromFmp(today, windowEnd), fromAlphaVantage(), inWindow ? null : fromFmp(from, to),
+  ])
+  const fmp = fmpRange ?? (() => {
+    const events = fmpWindow.events.filter(inRange)
+    return { status: { ...fmpWindow.status, ...(fmpWindow.status.ok ? { count: events.length } : {}) }, events }
+  })()
   const avInRange = av.events.filter(inRange)
-  const fmpListed = (fmpWindow?.events ?? []).map((e) => e.symbol)
+  const fmpListed = fmpWindow.events.map((e) => e.symbol)
   return {
     configured: fmp.status.configured || av.status.configured,
     sources: {

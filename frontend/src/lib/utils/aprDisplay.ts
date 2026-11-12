@@ -153,15 +153,55 @@ export function aprBasisText(basis: AprBasis, catalogCompiled: string): string {
   }
 }
 
-/** Counts of each kind of backup figure in a collector response, for the page's notice. */
-export function backupCounts(backupDates: Partial<Record<string, string | null>>, rates: Partial<Record<string, number>>): {
-  measured: number; measuredOn: string | null; undated: number
-} {
-  let measured = 0, undated = 0
-  let measuredOn: string | null = null
-  for (const [key, date] of Object.entries(backupDates)) {
-    if (rates[key] == null) continue // withheld: not shown, so not counted as shown
-    if (date) { measured++; if (!measuredOn || date < measuredOn) measuredOn = date } else undated++
+/**
+ * How many of the rows a page shows are each kind, for its notice. Counted over the rows' own
+ * bases, so the notice can only count what the page draws (code audit 2026-11-12, D226: it had
+ * counted the collector's keys, ten of which no row reads). `measuredOn` is the oldest measured
+ * date among the backup rows.
+ */
+export interface BasisCounts {
+  rows: number
+  live: number
+  derived: number
+  /** Backup rates with a measured date, and the oldest and newest of those dates. */
+  measured: number
+  measuredOn: string | null
+  measuredLatest: string | null
+  undated: number
+  withheld: number
+  catalog: number
+}
+
+export function basisCounts(bases: AprBasis[]): BasisCounts {
+  const out: BasisCounts = { rows: bases.length, live: 0, derived: 0, measured: 0, measuredOn: null, measuredLatest: null, undated: 0, withheld: 0, catalog: 0 }
+  for (const b of bases) {
+    if (b.kind === 'backup') {
+      if (b.measuredOn) {
+        out.measured++
+        if (!out.measuredOn || b.measuredOn < out.measuredOn) out.measuredOn = b.measuredOn
+        if (!out.measuredLatest || b.measuredOn > out.measuredLatest) out.measuredLatest = b.measuredOn
+      } else out.undated++
+    } else out[b.kind]++
   }
-  return { measured, measuredOn, undated }
+  return out
+}
+
+/** The notice's sentence: what the rates shown are, each kind counted over the rows drawn. */
+export function rateSummary(c: BasisCounts): string {
+  const be = (n: number) => (n === 1 ? 'is' : 'are')
+  const parts: string[] = []
+  if (c.live) parts.push(`${c.live} ${be(c.live)} live`)
+  if (c.derived) parts.push(`${c.derived} ${be(c.derived)} worked out from a live reading taken just now`)
+  if (c.measured && c.measuredOn) {
+    const when = c.measuredLatest && c.measuredLatest !== c.measuredOn
+      ? `between ${rateDay(c.measuredOn)} and ${rateDay(c.measuredLatest)}`
+      : rateDay(c.measuredOn)
+    parts.push(`${c.measured} ${c.measured === 1 ? 'is a backup rate' : 'are backup rates'} measured ${when}, shown because there is no live reading`)
+  }
+  if (c.undated) parts.push(`${c.undated} ${c.undated === 1 ? 'is a backup rate' : 'are backup rates'} with no measured date`)
+  if (c.withheld) parts.push(`${c.withheld} ${c.withheld === 1 ? 'is' : 'are'} withheld, last measured too long ago`)
+  if (c.catalog) parts.push(`${c.catalog} ${c.catalog === 1 ? 'is the catalog’s own figure' : 'are the catalog’s own figures'}`)
+  if (parts.length === 0) return ''
+  const list = parts.length === 1 ? parts[0] : `${parts.slice(0, -1).join(', ')} and ${parts.at(-1)}`
+  return `Of the ${c.rows} rate${c.rows === 1 ? '' : 's'} shown, ${list}.`
 }
