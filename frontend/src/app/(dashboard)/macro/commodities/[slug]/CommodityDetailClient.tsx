@@ -3,20 +3,21 @@
 import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
 import { clsx } from 'clsx'
-import { ArrowLeft, ExternalLink } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import { PriceChartCard } from '@/components/markets/PriceChartCard'
 import { TermStructureCard } from '@/components/markets/TermStructureCard'
 import { SourceLine } from '@/components/ui/SourceLine'
 import { AssetActions } from '@/components/markets/AssetActions'
 import { InstrumentNewsCard } from '@/components/markets/InstrumentNewsCard'
+import { CommodityFundsCard } from '@/components/markets/CommodityFundsCard'
 import {
   COMMODITY_CATEGORY_INFO, getCommodity, formatCommodityPrice,
 } from '@/lib/data/commodityCatalog'
-import { getFund } from '@/lib/data/fundCatalog'
 import { STALE_TIME_SHORT } from '@/lib/constants'
 
 // Commodity contract detail — live quote, price history (shared markets
-// shell), contract facts, and ETF proxies for cash-account access.
+// shell), contract facts, and the funds that hold it, each with its own live
+// price (T-462).
 
 interface Quote { price: number | null; change: number | null; changePercent: number | null; previousClose: number | null }
 interface QuotesResponse { ok: boolean; quotes?: Record<string, Quote> }
@@ -38,9 +39,6 @@ export function CommodityDetailClient({ slug }: { slug: string }) {
   })
 
   const up = (quote?.changePercent ?? 0) >= 0
-  const proxies = entry.etfProxies
-    .map((symbol) => ({ symbol, fund: getFund(symbol) }))
-    .filter((p) => p.fund != null)
 
   return (
     <div className="space-y-6 max-w-(--breakpoint-xl) mx-auto">
@@ -117,29 +115,8 @@ export function CommodityDetailClient({ slug }: { slug: string }) {
             <p className="mt-3 pt-3 border-t border-border/60 text-xs text-text-muted leading-relaxed">{entry.description}</p>
           </div>
 
-          {/* ETF proxies */}
-          <div className="rounded-card border border-border bg-bg-card p-4">
-            <h2 className="text-sm font-medium text-text-secondary mb-3">ETF Proxies</h2>
-            {proxies.length > 0 ? (
-              <div className="space-y-2">
-                {proxies.map(({ symbol, fund }) => (
-                  <Link key={symbol} href={`/funds/${symbol.toLowerCase()}`}
-                    className="flex items-center gap-2 text-xs group">
-                    <span className="font-mono font-semibold text-text-primary group-hover:text-accent-blue transition-colors w-12">{symbol}</span>
-                    <span className="text-text-muted flex-1 truncate">{fund!.name}</span>
-                    <ExternalLink size={11} className="text-text-muted group-hover:text-accent-blue transition-colors" aria-hidden />
-                  </Link>
-                ))}
-              </div>
-            ) : (
-              <p className="text-xs text-text-muted leading-relaxed">
-                No fund in the catalog tracks this contract directly. Exposure requires a futures account or a broad-basket commodity ETF.
-              </p>
-            )}
-            <p className="mt-3 pt-3 border-t border-border/60 text-[11px] text-text-muted leading-relaxed">
-              ETFs track futures with roll costs and tracking error — a proxy, not the contract itself.
-            </p>
-          </div>
+          {/* The funds that hold it, each with its own live price (T-462). */}
+          <CommodityFundsCard entry={entry} />
         </div>
       </div>
 

@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react'
 import toast from 'react-hot-toast'
 import { usePriceAlertStore, type PriceAlert } from '@/store/usePriceAlertStore'
 import { attributionText } from '@/lib/data/dataSources'
+import { isLiveSecurityQuote } from '@/lib/data/liveQuotes'
 
 // Client-side price-alert monitor. Polls quotes for armed alerts every minute
 // while the app is open; fires a toast + browser notification once per alert.
@@ -33,8 +34,8 @@ async function fetchPrices(alerts: PriceAlert[]): Promise<Record<string, number>
         .then((r) => r.json())
         .then((d: { quotes?: Record<string, { price: number; reference?: boolean }>; source?: string }) => {
           for (const [sym, q] of Object.entries(d.quotes ?? {})) {
-            // Never fire alerts off reference/fallback prices
-            if (d.source !== 'reference' && !q.reference) prices[`security:${sym}`] = q.price
+            // Never fire alerts off reference/fallback prices (the rule in lib/data/liveQuotes.ts)
+            if (isLiveSecurityQuote(d.source, q)) prices[`security:${sym}`] = q.price
           }
         })
         .catch(() => {})

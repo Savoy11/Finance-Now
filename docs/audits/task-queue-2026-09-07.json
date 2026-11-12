@@ -62,9 +62,9 @@
   "total_verified": 421,
   "outstanding": 405,
   "by_status": {
-   "closed": 264,
+   "closed": 265,
    "parked": 127,
-   "open": 9,
+   "open": 8,
    "blocked": 5
   },
   "by_owner_role": {
@@ -74,8 +74,8 @@
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 264,
-  "counts_recomputed_on": "2026-11-11",
+  "closed_by_annotation": 265,
+  "counts_recomputed_on": "2026-11-12",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 405
  },
@@ -16890,7 +16890,7 @@
   {
    "id": "T-462",
    "title": "Commodity pages: the live price and today’s change of each fund that holds the commodity, labelled as the fund’s",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "blocking_decision": null,
    "opened": {
@@ -16929,7 +16929,25 @@
      "lines": "36-37",
      "quote": "// Never fire alerts off reference/fallback prices"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-11-12",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "Built as filed; the owner said “Continue” after #499, and T-462 was the last item on the 2026-11-10 list (approved under D222). The one decision the next_action named was asked while building, recommended answer first, and the owner chose “Not now” (D225): no fund is charted in place of the commodity’s empty chart. CommodityFundsCard, the ETF Proxies card on each commodity page, makes one security-quotes request for the page’s funds and shows each fund’s own live share price and change since the previous close, under the fund’s name and never in the commodity’s price slot, with one line saying a fund’s day can differ from the contract’s (its fees, how it holds the commodity, and the gap between its share price and what it holds). A reference price is never shown: isLiveSecurityQuote (frontend/src/lib/data/liveQuotes.ts) is the test the next_action named, and the price alerts now call it too, so the rule lives once. Where no fund has a live price, the card says a quote key provides one. The six commodities with no fund are unchanged. A test fails if the page charts a fund, adds the funds to the contract’s own quote, or shows a reference price.",
+    "approved_by": "owner, 2026-11-12: “Continue” after #499 (the 2026-11-10 list approved under D222), and “Not now (Recommended)” on the fund chart (D225)",
+    "evidence": [
+     "frontend/src/components/markets/CommodityFundsCard.tsx",
+     "frontend/src/lib/data/commodityFunds.ts",
+     "frontend/src/lib/data/liveQuotes.ts",
+     "frontend/src/lib/data/__tests__/commodityFunds.test.tsx",
+     "frontend/src/app/(dashboard)/macro/commodities/[slug]/CommodityDetailClient.tsx",
+     "frontend/src/hooks/usePriceAlertMonitor.ts",
+     "frontend/src/lib/legal/dataMethods.ts",
+     "docs/decisions/2026-11-12-owner-decisions.md"
+    ]
+   }
   },
   {
    "id": "T-463",
@@ -43243,6 +43261,14 @@
     "evidence": [
      "frontend/src/lib/data/coinPageLinks.ts",
      "frontend/src/components/assets/CoinStakingLine.tsx"
+    ]
+   },
+   {
+    "on": "2026-11-12",
+    "what": "T-462 built and closed (owner-ruling: “Continue” after #499, the last item on the 2026-11-10 list approved under D222; the fund chart declined under D225): each commodity page shows the live price and change of each fund that holds the commodity, labelled as the fund’s. No other item changed. Counts recomputed: open 9 to 8, closed 264 to 265, closed_by_annotation 264 to 265; total 405 and the owner-role counts unchanged.",
+    "evidence": [
+     "frontend/src/components/markets/CommodityFundsCard.tsx",
+     "frontend/src/lib/data/liveQuotes.ts"
     ]
    }
   ]
