@@ -45,6 +45,7 @@ const EMBED_CHART_TYPES: { type: ChartType; label: string; desc: string; Icon: L
 import { clsx } from 'clsx'
 import { useAsset } from '@/hooks/useAssets'
 import { AssetActions } from '@/components/markets/AssetActions'
+import { CoinStakingLine } from '@/components/assets/CoinStakingLine'
 import { coingeckoIdFor } from '@/lib/api/live/coingeckoIds'
 import { ReserveComposition } from '@/components/analytics/ReserveComposition'
 import { ReserveProvenance, SupplyChangePanel, normalisePegMechanism } from '@/components/analytics/reserves'
@@ -1171,6 +1172,9 @@ function AssetDetailPageInner() {
         asset={{ kind: 'coin', symbol: asset.symbol, name: asset.name, key: coingeckoIdFor(asset.id) ?? null, assetId: asset.id }}
         livePrice={asset.price ?? null}
       />
+
+      {/* How many catalog providers stake this coin, linking to the Staking page (T-463). */}
+      <CoinStakingLine assetId={asset.id} />
 
       {/* Measured-risk rating (T-420, D92). Renders nothing while
           ASSET_PAGE_RATINGS_SHOWN is false (lib/risk/visibility.ts). */}

@@ -29,6 +29,7 @@
  */
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
 import { CheckCircle, AlertTriangle, ExternalLink, Loader2, RefreshCw } from 'lucide-react'
 import { ReserveComposition } from '@/components/analytics/ReserveComposition'
@@ -44,6 +45,7 @@ import { formatCurrency, formatCompact, formatDate, formatPercent } from '@/lib/
 import { LIVE_DATA } from '@/lib/constants'
 import type { LiveReserveAsset } from '@/app/live-data/reserves/route'
 import { formatSupplyChange, type ChainSplit, type SupplyChange } from '@/lib/data/stablecoinSupply'
+import { coinPageForReserve } from '@/lib/data/coinPageLinks'
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
@@ -435,7 +437,12 @@ export function ReserveMonitorPanel() {
                     }`}
                   >
                     <div className="col-span-3 flex flex-col">
-                      <span className="font-medium text-slate-100">{r.symbol}</span>
+                      {/* The coin's own page (T-463), matched by DefiLlama's number for the coin, never
+                          its ticker. The click opens the page, not the row's detail panel. */}
+                      {coinPageForReserve(r.assetId)
+                        ? <Link href={`/assets/${coinPageForReserve(r.assetId)}`} onClick={(e) => e.stopPropagation()}
+                            className="font-medium text-slate-100 hover:text-blue-400 transition-colors w-fit" title={`${r.name}: its page`}>{r.symbol}</Link>
+                        : <span className="font-medium text-slate-100">{r.symbol}</span>}
                       <span className="text-xs text-slate-500">{r.attester}</span>
                     </div>
                     {/* Short form: the full figure ($176,776,895,353.89) ran into the next column. */}

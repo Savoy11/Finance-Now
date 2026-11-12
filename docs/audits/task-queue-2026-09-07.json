@@ -62,9 +62,9 @@
   "total_verified": 421,
   "outstanding": 405,
   "by_status": {
-   "closed": 263,
+   "closed": 264,
    "parked": 127,
-   "open": 10,
+   "open": 9,
    "blocked": 5
   },
   "by_owner_role": {
@@ -74,7 +74,7 @@
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 263,
+  "closed_by_annotation": 264,
   "counts_recomputed_on": "2026-11-11",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 405
@@ -16934,7 +16934,7 @@
   {
    "id": "T-463",
    "title": "Join the coin pages to Staking and the Reserve Monitor: a staking line on each stakeable coin’s page, /staking?coin=, and links back to the coins’ pages",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "blocking_decision": null,
    "opened": {
@@ -16974,7 +16974,24 @@
      "lines": "103",
      "quote": "export type StakingCoinId = 'eth' | 'sol' | 'ada' | 'dot' | 'atom' | 'matic' |"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-11-11",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "Built as filed; the owner said “Merge and continue” after #498, and T-463 was the next item on the 2026-11-10 list (approved under D222, no decision named). frontend/src/lib/data/coinPageLinks.ts holds the hand-kept maps the next_action asked for, each checked by a test against the coin catalog and never matched by ticker (D190): the Staking page’s coins to their pages (matic is the coin page pol; Cosmos, Osmosis and Kusama have no page and stay unlinked, and a test fails if one gains a page), and the Reserve Monitor’s coins to theirs, by DefiLlama’s number for the coin, checked against the coin page’s CoinGecko id (or, for frxUSD, which has none, its full name). (a) CoinStakingLine on each stakeable coin’s page says how many catalog providers stake it and how many of their rates are live now, and links to /staking?coin=; a count and a link only, no rates, no order and no “best” (the ranking line, item 4), counted by stakingRowsFor through stakesTheCoin, which the Staking page’s own two filters now use, so the count is the page’s default list. (b) the Staking page reads ?coin= into its filter and keeps it in the address (?tab=pools still works), and each provider card’s coin links to its page. (c) each Reserve Monitor row’s coin links to its page, without opening the row’s detail panel. The methods page’s staking section says how the count is made (D163).",
+    "approved_by": "owner, 2026-11-11: “Merge and continue” after #498, continuing the 2026-11-10 list approved under D222",
+    "evidence": [
+     "frontend/src/lib/data/coinPageLinks.ts",
+     "frontend/src/lib/data/__tests__/coinPageLinks.test.tsx",
+     "frontend/src/components/assets/CoinStakingLine.tsx",
+     "frontend/src/app/(dashboard)/assets/[id]/page.tsx",
+     "frontend/src/app/(dashboard)/staking/page.tsx",
+     "frontend/src/components/analytics/reserves.tsx",
+     "frontend/src/lib/legal/dataMethods.ts"
+    ]
+   }
   },
   {
    "id": "T-464",
@@ -43218,6 +43235,14 @@
     "evidence": [
      "frontend/src/lib/data/curveSpreads.ts",
      "frontend/src/components/markets/YieldGapHistoryCard.tsx"
+    ]
+   },
+   {
+    "on": "2026-11-11",
+    "what": "T-463 built and closed (owner-ruling: “Merge and continue” after #498, continuing the 2026-11-10 list approved under D222): coin pages, the Staking page and the Reserve Monitor link to each other through hand-kept maps. No other item changed. Counts recomputed: open 10 to 9, closed 263 to 264, closed_by_annotation 263 to 264; total 405 and the owner-role counts unchanged.",
+    "evidence": [
+     "frontend/src/lib/data/coinPageLinks.ts",
+     "frontend/src/components/assets/CoinStakingLine.tsx"
     ]
    }
   ]

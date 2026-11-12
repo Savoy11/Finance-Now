@@ -2,7 +2,8 @@
 
 import { ModuleGate } from '@/components/layout/ModuleGate'
 import React, { useState, useMemo, useRef, useEffect, Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
 import {
   AlertTriangle, TrendingUp, Clock, Lock, ExternalLink,
@@ -17,6 +18,7 @@ import { SponsoredLink } from '@/components/ui/SponsoredLink'
 import { resolveOutboundLink, affiliateCoverageByCategory, sponsoredProviders } from '@/lib/data/affiliates'
 import { clsx } from 'clsx'
 import { aprBasis, aprBasisText, aprDisplay, backupCounts, rateDay, resolveLiveAprKey } from '@/lib/utils/aprDisplay'
+import { coinPageForStaking, isStakingCoinId, stakesTheCoin } from '@/lib/data/coinPageLinks'
 import {
   STAKING_PROVIDERS, STAKING_COIN_INFO,
   resolveYieldType, YIELD_TYPE_META,
@@ -127,8 +129,9 @@ function ProviderCard({
     const entries = Object.entries(provider.assets) as [StakingCoinId, NonNullable<(typeof provider.assets)[StakingCoinId]>][]
     return entries.filter(([id, asset]) => {
       if (coinFilter !== 'all' && id !== coinFilter) return false
-      // Hide governance-token / lending yield unless explicitly shown
-      if (!showAdjacent && !YIELD_TYPE_META[resolveYieldType(provider, asset)].stakesQueriedAsset) return false
+      // Hide governance-token / lending yield unless explicitly shown. The coin page counts
+      // providers by the same rule (stakesTheCoin), so its count matches this list (T-463).
+      if (!showAdjacent && !stakesTheCoin(provider, asset)) return false
       return true
     })
   }, [provider, coinFilter, showAdjacent])
@@ -267,7 +270,10 @@ function ProviderCard({
                   <div className="size-5 rounded-full flex items-center justify-center" style={{ backgroundColor: info.color + '30', border: `1px solid ${info.color}60` }}>
                     <span className="text-[9px] font-bold" style={{ color: info.color }}>{info.symbol[0]}</span>
                   </div>
-                  <span className="text-xs font-semibold text-text-primary">{info.symbol}</span>
+                  {/* The coin's own page, where there is one (T-463); Cosmos, Osmosis and Kusama have none. */}
+                  {coinPageForStaking(coinId)
+                    ? <Link href={`/assets/${coinPageForStaking(coinId)}`} className="text-xs font-semibold text-text-primary hover:text-accent-blue transition-colors" title={`${info.name}: its page`}>{info.symbol}</Link>
+                    : <span className="text-xs font-semibold text-text-primary">{info.symbol}</span>}
                 </div>
 
                 {/* APY */}
@@ -561,8 +567,20 @@ function StakingPageInner() {
   // — is now the Live Pools tab. /staking-discovery redirects to ?tab=pools so
   // old links land on the surviving surface, not a 404.
   const params = useSearchParams()
+  const router = useRouter()
   const [tab, setTab] = useState<StakingTab>(params.get('tab') === 'pools' ? 'pools' : 'providers')
-  const [coinFilter, setCoinFilter] = useState<StakingCoinId | 'all'>('all')
+  // The coin filter lives in the address too (T-463): /staking?coin=eth opens on ETH, which is
+  // where a coin page's staking line sends its reader, and a filtered view can be shared.
+  // The address is the only place the filter is kept, so it cannot disagree with it.
+  const coinParam = params.get('coin')
+  const coinFilter: StakingCoinId | 'all' = isStakingCoinId(coinParam) ? coinParam : 'all'
+  const setCoinFilter = (coin: StakingCoinId | 'all') => {
+    const next = new URLSearchParams(params.toString())
+    if (coin === 'all') next.delete('coin')
+    else next.set('coin', coin)
+    const query = next.toString()
+    router.replace(query ? `/staking?${query}` : '/staking', { scroll: false })
+  }
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all')
   // Off by default: "ETH staking" should mean ETH staking, not governance/lending.
   const [showAdjacent, setShowAdjacent] = useState(false)
@@ -597,7 +615,7 @@ function StakingPageInner() {
       const entries = Object.entries(p.assets) as [StakingCoinId, NonNullable<(typeof p.assets)[StakingCoinId]>][]
       const hasVisible = entries.some(([id, asset]) => {
         if (coinFilter !== 'all' && id !== coinFilter) return false
-        if (!showAdjacent && !YIELD_TYPE_META[resolveYieldType(p, asset)].stakesQueriedAsset) return false
+        if (!showAdjacent && !stakesTheCoin(p, asset)) return false
         return true
       })
       return hasVisible
