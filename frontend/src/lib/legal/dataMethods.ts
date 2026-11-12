@@ -271,6 +271,7 @@ export const DATA_METHODS: readonly MethodSection[] = [
     title: 'When there is no live price',
     paragraphs: [
       'When no live quote is available for a stock, the page shows a dash, as it does for commodities, currencies and rates. For a fund it shows a stored reference price tagged “ref”. Figures that need a live price say so instead of showing a number. No price is ever made up to fill a gap.',
+      'A commodity page has no live price for the contract itself, so it lists the funds that hold the commodity, each with its own live share price and its change since the previous close, under the fund’s name. Those are the funds’ prices, not the commodity’s: a fund’s fees, how it holds the commodity and the gap between its share price and what it holds can make its day differ. A fund’s stored reference price is never shown there.',
     ],
   },
 ]
