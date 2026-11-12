@@ -49,7 +49,7 @@ function Returns({ r, symbol, failed }: { r: FundReturnsView; symbol: string; fa
         ) : (
           <p className="text-xs text-text-muted leading-relaxed">
             {r.twelveMonthsMissing}
-            {failed > 0 ? ` ${failed === 1 ? 'One older filing' : `${failed} older filings`} could not be read just now.` : ''}
+            {failed > 0 ? ` ${failed === 1 ? 'One filing' : `${failed} filings`} could not be read just now.` : ''}
           </p>
         )}
       </div>
@@ -148,6 +148,12 @@ export function FundReturnsCard({ symbol, isEtf }: { symbol: string; isEtf: bool
           From the fund&rsquo;s own N-PORT filing with the SEC for the three months to {dayLabel(r.asOf)}, filed {dayLabel(r.filedAt)}.
           Funds file these about 60 days after each quarter ends{last ? `, so these figures run to ${monthLabel(last)}` : ''}.
         </p>
+        {data.newestUnread && (
+          <p className="mt-1 text-[11px] text-amber-400/90 leading-relaxed" data-testid="newest-unread">
+            The fund&rsquo;s newest filing, filed {dayLabel(data.newestUnread.filedAt)}, could not be read just now, so
+            these may not be its latest figures.
+          </p>
+        )}
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>

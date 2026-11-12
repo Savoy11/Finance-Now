@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest'
+import { readFileSync, readdirSync, statSync } from 'node:fs'
+import { join } from 'node:path'
 import { atTheMoney, buildPreset, roundToStrike, strikesAround, wingsAround, PRESETS, type PresetId } from '../presets'
 import { summarizePayoff } from '../payoff'
 
@@ -292,5 +294,27 @@ describe('every preset, at awkward prices (code review 2026-11-10, D221)', () =>
     expect(() => buildPreset('bull-put-spread', 1.2)).toThrow(/\$0/)
     // A structure that fits keeps working at the same price.
     expect(buildPreset('long-call', 1.2).legs[0].strike).toBe(1)
+  })
+
+  it('every page that builds a preset catches the refusal and shows it (code audit 2026-11-12, D226)', () => {
+    // The switched-off Trade Risk Scorer page called buildPreset bare, so a low price would have
+    // thrown on a click. Mutation: drop either page's try and this fails.
+    const pages: string[] = []
+    const walk = (dir: string) => {
+      for (const name of readdirSync(dir)) {
+        const p = join(dir, name)
+        if (statSync(p).isDirectory()) walk(p)
+        else if (/\.tsx?$/.test(name) && !p.includes('__tests__')) pages.push(p)
+      }
+    }
+    walk(join(process.cwd(), 'src/app'))
+    walk(join(process.cwd(), 'src/components'))
+    const callers = pages.filter((p) => /\bbuildPreset\(/.test(readFileSync(p, 'utf8')))
+    expect(callers.length).toBeGreaterThanOrEqual(2)
+    for (const p of callers) {
+      const src = readFileSync(p, 'utf8')
+      expect(src, p).toMatch(/try \{\s*preset = buildPreset\([^)]*\)\s*\} catch \(e\) \{\s*[^}]*setPresetNote\(/)
+      expect(src.match(/\bbuildPreset\(/g)?.length, p).toBe(1)
+    }
   })
 })

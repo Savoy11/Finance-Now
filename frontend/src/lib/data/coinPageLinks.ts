@@ -8,7 +8,7 @@
 
 import {
   STAKING_COIN_INFO, STAKING_PROVIDERS, YIELD_TYPE_META, resolveYieldType,
-  type StakingCoinId, type StakingProvider,
+  type ProviderCategory, type StakingCoinId, type StakingProvider,
 } from './stakingProviders'
 import { DEFILLAMA_STABLECOINS, type MonitoredStablecoin } from './stablecoinMeta'
 
@@ -55,12 +55,35 @@ export function stakesTheCoin(provider: StakingProvider, asset: NonNullable<Stak
   return YIELD_TYPE_META[resolveYieldType(provider, asset)].stakesQueriedAsset
 }
 
-/** The catalog's live providers that stake `coin` itself, as the Staking page lists them by default. */
-export function stakingRowsFor(coin: StakingCoinId): { provider: StakingProvider; asset: NonNullable<StakingProvider['assets'][StakingCoinId]> }[] {
+export type StakingRow = { provider: StakingProvider; coinId: StakingCoinId; asset: NonNullable<StakingProvider['assets'][StakingCoinId]> }
+
+/**
+ * Every row the Staking page draws under its filters, in its order: one per provider and coin.
+ * The page's provider list, its notice's counts (code audit 2026-11-12, D226) and the coin
+ * page's count all read this, so none can count something the page does not show.
+ */
+export function stakingPageRows(f: {
+  coin: StakingCoinId | 'all'
+  category?: 'all' | ProviderCategory
+  showAdjacent?: boolean
+  showDefunct?: boolean
+}): StakingRow[] {
   return STAKING_PROVIDERS.flatMap((provider) => {
-    const asset = provider.assets[coin]
-    return !provider.defunct && asset && stakesTheCoin(provider, asset) ? [{ provider, asset }] : []
+    if (provider.defunct && !f.showDefunct) return []
+    if (f.category && f.category !== 'all' && provider.category !== f.category) return []
+    return (Object.entries(provider.assets) as [StakingCoinId, StakingRow['asset']][]).flatMap(([coinId, asset]) => {
+      if (!asset) return []
+      if (f.coin !== 'all' && coinId !== f.coin) return []
+      // Governance-token and lending yield only when asked for ("ETH staking should mean ETH staking").
+      if (!f.showAdjacent && !stakesTheCoin(provider, asset)) return []
+      return [{ provider, coinId, asset }]
+    })
   })
+}
+
+/** The catalog's live providers that stake `coin` itself, as the Staking page lists them by default. */
+export function stakingRowsFor(coin: StakingCoinId): StakingRow[] {
+  return stakingPageRows({ coin })
 }
 
 /**

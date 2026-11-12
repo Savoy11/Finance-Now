@@ -10,13 +10,13 @@ import { GET as opportunities } from '@/app/api/v1/staking/opportunities/route'
 // date, or null for one never measured), and a figure worked out from a live reading is not the
 // table's. These run the real collector against made-up answers from its sources.
 
-/** Answers each source by address: `lido` answers with a rate, everything else fails. */
-function sources(opts: { lido?: number } = {}) {
+/** Answers each source by address: `lido` (and `marinade`) answer with a rate, everything else fails. */
+function sources(opts: { lido?: number; marinade?: number } = {}) {
+  const json = (body: unknown) => new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } })
   return vi.fn(async (url: string | URL) => {
     const u = String(url)
-    if (u.includes('eth-api.lido.fi') && opts.lido != null) {
-      return new Response(JSON.stringify({ data: { smaApr: opts.lido } }), { status: 200, headers: { 'content-type': 'application/json' } })
-    }
+    if (u.includes('eth-api.lido.fi') && opts.lido != null) return json({ data: { smaApr: opts.lido } })
+    if (u.includes('api.marinade.finance') && opts.marinade != null) return json(opts.marinade)
     throw new TypeError('fetch failed')
   })
 }
@@ -72,6 +72,17 @@ describe('the collector dates every figure it takes from its backup table', () =
     const r = await collectStakingRates()
     expect(r.gaps.coinbase_eth).toBe('upstream-failed')
     expect(r.fallbackProvenance.byKey).toHaveProperty('coinbase_eth', null)
+  })
+
+  it('Solana’s native rate is worked out from the live readings only (code audit 2026-11-12, D226)', async () => {
+    // Marinade answers, Jito does not. Mutation: average in Jito's backup figure and this fails.
+    vi.stubGlobal('fetch', sources({ marinade: 7.1 }))
+    const r = await collectStakingRates()
+    expect(r.sources.marinade_sol).toBe('live')
+    expect(r.sources.jito_sol).not.toBe('live')
+    expect(r.rates.native_sol).toBe(7.1)
+    expect(r.gaps.native_sol).toBe('derived-estimate')
+    expect(r.fallbackProvenance.byKey).not.toHaveProperty('native_sol')
   })
 
   it('Polygon’s native rate is never worked out from anything, and says so', async () => {

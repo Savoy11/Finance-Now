@@ -13,6 +13,8 @@ import { buildFundReturns, latestPerPeriod, type FilingFigures, type FundReturns
 // A fund the SEC's fund list does not carry (SPY, GLD and the other trusts that file no N-PORT)
 // answers ok with `filer: false`, and the page shows nothing. A filing that cannot be read is
 // counted in `filingsFailed`; a 12-month figure then needs the others to cover all twelve months.
+// When the newest filing listed is one that could not be read, `newestUnread` gives its filing date:
+// the figures shown may then not be the latest (code audit 2026-11-12, D226).
 
 export const dynamic = 'force-dynamic'
 
@@ -33,6 +35,8 @@ export interface FundReturnsResponse {
   /** The filings read, newest report first. */
   filingsRead: { asOf: string; filedAt: string; accession: string }[]
   filingsFailed: number
+  /** The newest filing listed could not be read: its filing date. The figures may not be the latest. */
+  newestUnread?: { filedAt: string }
   source: 'SEC EDGAR, Form NPORT-P'
   error?: string
 }
@@ -44,9 +48,10 @@ async function readFiling(ref: NportFilingRef): Promise<FilingFigures | null> {
 }
 
 /** Reads filings in order until QUARTERS distinct report dates are in hand or MAX_READ are tried. */
-async function readQuarters(filings: NportFilingRef[]): Promise<{ read: FilingFigures[]; failed: number }> {
+async function readQuarters(filings: NportFilingRef[]): Promise<{ read: FilingFigures[]; failed: number; newestFailed: boolean }> {
   const read: FilingFigures[] = []
   let failed = 0
+  let newestFailed = false
   let next = 0
   while (next < filings.length && next < MAX_READ && latestPerPeriod(read).length < QUARTERS) {
     const want = Math.min(QUARTERS - latestPerPeriod(read).length, filings.length - next, MAX_READ - next)
@@ -54,12 +59,16 @@ async function readQuarters(filings: NportFilingRef[]): Promise<{ read: FilingFi
     next += batch.length
     // Independent documents: one failing must not lose the others.
     const settled = await Promise.allSettled(batch.map(readFiling))
-    for (const s of settled) {
+    settled.forEach((s, i) => {
       if (s.status === 'fulfilled' && s.value) read.push(s.value)
-      else failed++
-    }
+      else {
+        failed++
+        // The list is newest first (the SEC's feed order), so the first filing is the newest.
+        if (batch[i] === filings[0]) newestFailed = true
+      }
+    })
   }
-  return { read, failed }
+  return { read, failed, newestFailed }
 }
 
 export async function GET(request: NextRequest) {
@@ -74,7 +83,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ ...base, ok: true, filer: false, seriesId: null, classId: null, returns: null, filingsRead: [], filingsFailed: 0 } satisfies FundReturnsResponse)
     }
     const filings = await listNportFilings(series.seriesId, 12)
-    const { read, failed } = await readQuarters(filings)
+    const { read, failed, newestFailed } = await readQuarters(filings)
     const classId = series.classId || null
     return NextResponse.json({
       ...base,
@@ -85,6 +94,7 @@ export async function GET(request: NextRequest) {
       returns: buildFundReturns(read, classId),
       filingsRead: latestPerPeriod(read).map((f) => ({ asOf: f.asOf, filedAt: f.filedAt, accession: f.accession })),
       filingsFailed: failed,
+      ...(newestFailed && read.length > 0 ? { newestUnread: { filedAt: filings[0].filedAt } } : {}),
       ...(filings.length > 0 && read.length === 0 ? { error: `None of the fund's N-PORT filings could be read (${failed} tried).` } : {}),
     } satisfies FundReturnsResponse)
   } catch (e) {

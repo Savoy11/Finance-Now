@@ -23,6 +23,10 @@ export const FUND_PRICE_NOTE =
   'A fund’s day can differ from the contract’s: its fees, how it holds the commodity (bullion in a vault, or futures it rolls ' +
   'from month to month), and the gap between its share price and the value of what it holds.'
 
-/** Shown when none of the listed funds has a live price. */
+/**
+ * Shown when none of the listed funds has a live price. The quotes route cannot say which of the
+ * two it was (it answers reference prices either way), so the note names both (code audit
+ * 2026-11-12, D226: it had blamed a missing key when keys were set and the providers failed).
+ */
 export const NO_FUND_PRICES_NOTE =
-  'No live price for these funds right now. Fund prices need a quote key, free from several providers, on the Integrations page.'
+  'No live price for these funds right now: either no quote key is set (free from several providers, on the Integrations page) or the price providers did not answer.'

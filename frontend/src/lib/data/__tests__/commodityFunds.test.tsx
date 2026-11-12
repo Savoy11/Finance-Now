@@ -103,6 +103,11 @@ describe('the funds card on a commodity page', () => {
     expect(html).not.toContain('href="/data-sources"')
   })
 
+  it('names both reasons there may be no price, never only a missing key (code audit 2026-11-12, D226)', () => {
+    expect(NO_FUND_PRICES_NOTE).toMatch(/no quote key is set/)
+    expect(NO_FUND_PRICES_NOTE).toMatch(/providers did not answer/)
+  })
+
   it('keeps a page with no fund as it was', () => {
     const html = render('heating-oil')
     expect(text(html)).toContain('No fund in the catalog tracks this contract directly.')
