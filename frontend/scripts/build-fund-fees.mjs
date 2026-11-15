@@ -95,7 +95,7 @@ const INDEX_URLS = process.env.RR_INDEX_URL ? [process.env.RR_INDEX_URL] : [
 ]
 // EDGAR requires a descriptive UA identifying the requester — same string the
 // app's edgar.ts sends.
-const UA = { 'User-Agent': 'Finance Now research dashboard (marcusowens94@gmail.com)' }
+const UA = { 'User-Agent': 'Finance Now research dashboard (FinanceNow72@gmail.com)' }
 
 const log = (...a) => console.log(...a)
 
