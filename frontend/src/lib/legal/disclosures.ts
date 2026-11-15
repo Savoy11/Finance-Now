@@ -29,7 +29,7 @@
  * some statements describe the site as it should stand at launch rather than as
  * it is today (the draft's "Read me first" tab lists them). `disclosuresInForce()`
  * is what takes the draft notice off, and it needs BOTH an approval and zero
- * blanks — approving a page that still says "[CONTACT EMAIL]" is not possible.
+ * blanks — approving a page that still says "FinanceNow72@gmail.com" is not possible.
  */
 
 import { DATA_SOURCES, requiredAttributions } from '@/lib/data/dataSources'
@@ -68,9 +68,14 @@ export const DISCLOSURE_SOURCE = {
  * The blanks the draft defines ("Blanks to fill before publishing"). A blank
  * that is not on this list is a typo, and a test fails on it. [AD NETWORK] is
  * News Charts' and does not occur on these pages.
+ *
+ * [CONTACT EMAIL] was filled set-wide with FinanceNow72@gmail.com on 2026-11-15
+ * (owner: "Use the email address FinanceNow72@gmail.com for everything related
+ * to the project", D227). The token stays on this list so a future draft that
+ * reintroduces it still counts as a blank rather than a typo.
  */
 export const KNOWN_BLANKS = [
-  '[COMPANY LLC NAME]', '[MAILING ADDRESS]', '[CONTACT EMAIL]',
+  '[COMPANY LLC NAME]', '[MAILING ADDRESS]', 'FinanceNow72@gmail.com',
   '[FINANCE NOW URL]', '[NEWS CHARTS URL]', '[EFFECTIVE DATE]',
   '[HOSTING PROVIDER]', '[BACKUP PERIOD]', '[LOG PERIOD]', '[AD NETWORK]',
 ] as const
@@ -124,7 +129,7 @@ const section = (heading: string, ...blocks: LegalBlock[]): LegalSection => ({ i
  * on 2026-10-17. The sign-up box points at it and stores it with each agreement
  * (lib/legal/signupConsent.ts), so it is one constant rather than a second copy.
  */
-export const EMAIL_NOTICES_CLAUSE = "**Email from Finance Now.** To create an account, you agree that we may give you notices by email, at the address on your account, instead of on paper. This covers every notice the law requires us to give you, including notice of a security breach that affects your information, and notices about these terms and your account. To receive them you need an email account and a device that can open email. Tell us when your address changes. You can ask for a paper copy of any notice, at no charge, by emailing [CONTACT EMAIL] with your postal address. You can withdraw this agreement at any time by emailing [CONTACT EMAIL]. Email is the only way we can reach account holders, so withdrawing it means we close your account; you can still use Finance Now without one. Withdrawing doesn't affect notices we have already sent."
+export const EMAIL_NOTICES_CLAUSE = "**Email from Finance Now.** To create an account, you agree that we may give you notices by email, at the address on your account, instead of on paper. This covers every notice the law requires us to give you, including notice of a security breach that affects your information, and notices about these terms and your account. To receive them you need an email account and a device that can open email. Tell us when your address changes. You can ask for a paper copy of any notice, at no charge, by emailing FinanceNow72@gmail.com with your postal address. You can withdraw this agreement at any time by emailing FinanceNow72@gmail.com. Email is the only way we can reach account holders, so withdrawing it means we close your account; you can still use Finance Now without one. Withdrawing doesn't affect notices we have already sent."
 
 export const TERMS_OF_USE: LegalDocument = {
   title: 'Terms of Use',
@@ -218,7 +223,7 @@ export const TERMS_OF_USE: LegalDocument = {
       p("These terms and the documents they refer to are the whole agreement between you and us about the Services. If part of them can't be enforced, the rest still applies. If we don't enforce a term right away, we haven't given it up. You may not transfer these terms; we may transfer them to a business that takes over the Services."),
     ),
     section('20. Contact',
-      p(`[COMPANY LLC NAME], [MAILING ADDRESS]. Email: [CONTACT EMAIL]. Questions and complaints are handled as described on our [Contact & Complaints](${CONTACT_HREF}) page.`),
+      p(`[COMPANY LLC NAME], [MAILING ADDRESS]. Email: FinanceNow72@gmail.com. Questions and complaints are handled as described on our [Contact & Complaints](${CONTACT_HREF}) page.`),
     ),
   ],
 }
@@ -317,7 +322,7 @@ export const PRIVACY_POLICY: LegalDocument = {
         'correct it;',
         'delete it, including your account.',
       ),
-      p("Email [CONTACT EMAIL]. We'll check the request is yours (for an account, by replying from its email address) and answer within 30 days. Making a request won't change how we treat you. If we decline, we'll say why, and you can ask us to reconsider by replying. Where a state law gives you further rights, we will honour them. You can also delete saved items yourself at any time, and clear your browser's storage."),
+      p("Email FinanceNow72@gmail.com. We'll check the request is yours (for an account, by replying from its email address) and answer within 30 days. Making a request won't change how we treat you. If we decline, we'll say why, and you can ask us to reconsider by replying. Where a state law gives you further rights, we will honour them. You can also delete saved items yourself at any time, and clear your browser's storage."),
     ),
     section('12. Children',
       p("The Services are for adults 18 and over and aren't aimed at children. We don't knowingly collect information from anyone under 18. If you think a child has given us information, contact us and we will delete it."),
@@ -329,7 +334,7 @@ export const PRIVACY_POLICY: LegalDocument = {
       p("We'll post any update with a new effective date. For material changes, we'll give notice in the Services, and by email if you have an account, before they take effect."),
     ),
     section('15. Contact',
-      p('[COMPANY LLC NAME], [MAILING ADDRESS]. Email: [CONTACT EMAIL]. The "Privacy" link in every page footer leads here, including for California residents under the California Online Privacy Protection Act.'),
+      p('[COMPANY LLC NAME], [MAILING ADDRESS]. Email: FinanceNow72@gmail.com. The "Privacy" link in every page footer leads here, including for California residents under the California Online Privacy Protection Act.'),
     ),
   ],
 }
@@ -415,7 +420,7 @@ export const ABOUT_PAGE: { title: string; sections: LegalSection[] } = {
       blocks: [
         p('Finance Now and News Charts are operated by [COMPANY LLC NAME]. No link on either site pays us: we earn nothing when you follow a link, open an account, deposit money or trade. No company can pay to change what we cover, the order we list things in, a figure we show, or what we say. If that ever changes, this page will say so first and every paid link will be labelled.'),
         p('Finance Now charges nothing today. When paid plans start, they will be described here and in the Terms of Use.'),
-        p("If you have a question or concern about a link or an ad, email [CONTACT EMAIL] with the page and the link. We'll acknowledge it within 5 business days and answer within 30 days. Our [Contact & Complaints](#questions-and-complaints) page explains what happens next."),
+        p("If you have a question or concern about a link or an ad, email FinanceNow72@gmail.com with the page and the link. We'll acknowledge it within 5 business days and answer within 30 days. Our [Contact & Complaints](#questions-and-complaints) page explains what happens next."),
       ],
     },
     {
@@ -454,7 +459,7 @@ export const ABOUT_PAGE: { title: string; sections: LegalSection[] } = {
       id: 'your-privacy',
       heading: 'Your privacy',
       blocks: [
-        p('We collect only what the site needs to work and what you choose to save. We never sell your information or share it for advertising on other sites. You can ask for a copy of your data, or for it to be deleted, at [CONTACT EMAIL].'),
+        p('We collect only what the site needs to work and what you choose to save. We never sell your information or share it for advertising on other sites. You can ask for a copy of your data, or for it to be deleted, at FinanceNow72@gmail.com.'),
         { kind: 'more', href: LEGAL_PATHS.privacy, text: 'Read the Privacy Policy' },
       ],
     },
@@ -472,9 +477,9 @@ export const ABOUT_PAGE: { title: string; sections: LegalSection[] } = {
       id: 'questions-and-complaints',
       heading: 'Questions and complaints',
       blocks: [
-        p('One address handles everything for both products: [CONTACT EMAIL]. We acknowledge messages within 5 business days and give a full answer within 30 days.'),
+        p('One address handles everything for both products: FinanceNow72@gmail.com. We acknowledge messages within 5 business days and give a full answer within 30 days.'),
         list(
-          '**Email:** [CONTACT EMAIL]',
+          '**Email:** FinanceNow72@gmail.com',
           '**Mail:** [COMPANY LLC NAME], [MAILING ADDRESS]',
         ),
         p('Please say which product it concerns and, where it helps, the page address and what you saw.'),
