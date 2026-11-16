@@ -62,10 +62,10 @@
   "total_verified": 421,
   "outstanding": 405,
   "by_status": {
-   "closed": 265,
-   "parked": 127,
+   "closed": 270,
+   "parked": 126,
    "open": 8,
-   "blocked": 5
+   "blocked": 1
   },
   "by_owner_role": {
    "remote-dev": 112,
@@ -74,8 +74,8 @@
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 265,
-  "counts_recomputed_on": "2026-11-12",
+  "closed_by_annotation": 270,
+  "counts_recomputed_on": "2026-11-15",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 405
  },
@@ -8491,7 +8491,7 @@
   {
    "id": "T-067",
    "title": "S5 — contribution modeling (gated on scope decision)",
-   "status": "blocked",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "feature",
@@ -8508,12 +8508,24 @@
      "lines": "1965-1967",
      "quote": "(3) contribution modeling (\"$500/mo into this plan\" projections — the engine piece the removed Retirement module would have fed);"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "blocked",
+    "closed_on": "2026-11-15",
+    "basis": "owner-ruling",
+    "verdict": "superseded",
+    "reason": "T-064's answer (D228): contribution modeling goes to the personal-finance product, where The Planner already projects contributions against pay, the IRS limits and an employer match. Nothing is built in Finance Now, and the Portfolio Builder stays allocation-only. Per this item's own next step for that answer, it is dropped with this superseded note standing as S5's record.",
+    "approved_by": "owner, 2026-11-15: \"Personal-finance product (Recommended)\"",
+    "evidence": [
+     "docs/decisions/2026-11-15-owner-decisions.md",
+     "docs/audits/parked-review-2026-11-09.md"
+    ]
+   }
   },
   {
    "id": "T-068",
    "title": "S5 — taxable-vs-sheltered asset location (gated on scope decision)",
-   "status": "blocked",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "feature",
@@ -8537,6 +8549,18 @@
     "evidence": [
      "docs/decisions/2026-09-30-owner-decisions.md",
      "docs/decisions/2026-09-14-owner-decisions.md"
+    ]
+   },
+   "closure": {
+    "status_was": "blocked",
+    "closed_on": "2026-11-15",
+    "basis": "owner-ruling",
+    "verdict": "superseded",
+    "reason": "T-064's answer (D228): taxable-vs-sheltered asset location goes to the personal-finance product. Its D4 leg travels with it — the counsel gate now belongs to the product that would build it, and the Planner evaluation names that gate as its second condition. Nothing is built in Finance Now.",
+    "approved_by": "owner, 2026-11-15: \"Personal-finance product (Recommended)\"",
+    "evidence": [
+     "docs/decisions/2026-11-15-owner-decisions.md",
+     "docs/audits/parked-review-2026-11-09.md"
     ]
    }
   },
@@ -9530,7 +9554,7 @@
   {
    "id": "T-026",
    "title": "W3-10 — owner to activate and prioritise S3–S6 charters (S4/S5 first decisions)",
-   "status": "blocked",
+   "status": "closed",
    "confidence": "medium",
    "owner_role": "owner-decision",
    "category": "decision",
@@ -9556,12 +9580,24 @@
      "lines": "17",
      "quote": "S4, S5: proposed, inactive — need owner first decisions."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "blocked",
+    "closed_on": "2026-11-15",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "Both of its remaining questions are answered. S4's was settled before (D64 and D92 keep the graded scorer off; D216 built the subproject's follow-ups on the ungraded calculator; T-060 and T-063 stay parked as its record). S5's first decision is now D228: the boundary is drawn, contribution modeling and asset location move to the personal-finance product, and the one S5 item left inside Finance Now is the rebalance reminders (T-116), which carries its own gates. For W3-10's record, as this item's next step asked: S6 was activated on 2026-09-05; S3 stays withheld with the hidden Transfer Fees page (T-028); S4's extensions live on the calculator; S5 is not activated as a subproject — its surviving item is T-116.",
+    "approved_by": "owner, 2026-11-15: \"Personal-finance product (Recommended)\"",
+    "evidence": [
+     "docs/decisions/2026-11-15-owner-decisions.md",
+     "docs/audits/parked-review-2026-11-09.md"
+    ]
+   }
   },
   {
    "id": "T-064",
    "title": "S5 first decision — scope boundary vs the departed personal-finance product",
-   "status": "blocked",
+   "status": "closed",
    "confidence": "medium",
    "owner_role": "owner-decision",
    "category": "decision",
@@ -9588,6 +9624,18 @@
      "docs/decisions/2026-09-14-owner-decisions.md",
      "docs/decisions/2026-10-04-owner-decisions.md"
     ]
+   },
+   "closure": {
+    "status_was": "blocked",
+    "closed_on": "2026-11-15",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "The boundary is drawn (D228): portfolio construction stays in Finance Now; financial planning — contribution modeling and taxable-vs-sheltered asset location — belongs to the separate personal-finance product, whose working tool (The Planner, evaluated 2026-11-15) already models contributions, accounts and drawdown. The owner drew the line knowing D67's note that a Portfolio Builder review would come first; deciding earlier is the owner's call, and that review can still happen on its own. D4's legal review no longer gates this item: the S5 tools it gated leave Finance Now, and the personal-finance product carries its own counsel gate — the Planner evaluation names it as the second of its two conditions.",
+    "approved_by": "owner, 2026-11-15: \"Personal-finance product (Recommended)\"",
+    "evidence": [
+     "docs/decisions/2026-11-15-owner-decisions.md",
+     "docs/audits/parked-review-2026-11-09.md"
+    ]
    }
   },
   {
@@ -9598,7 +9646,7 @@
    "owner_role": "owner-decision",
    "category": "feature",
    "effort": "medium",
-   "blocking_decision": "Owner activation of S5 plus the reminder scope (in-app vs out-of-app).",
+   "blocking_decision": "The reminder scope (in-app via the TopBar bell, deliverable now, vs email/push, which needs hosting) and counsel brief question A15 — whether a drift-breach reminder carrying trade lists is 'timed' advice (D4). 'Owner activation of S5' is no longer a gate: D228 (2026-11-15) drew the S5 boundary and moved contribution modeling and asset location to the personal-finance product, leaving this as the one S5 item still in Finance Now.",
    "related_ids": [],
    "summary": "Owner spec item 5; PlanMonitor exists but no notifications.",
    "next_action": "Owner activates S5 and answers two questions: (1) scope — in-app reminders via the TopBar bell/toast pattern (deliverable now) vs email/push (needs hosting, parked); (2) the legality flag on advice-adjacent features, since a drift-breach reminder with trade lists is one. Then add drift-breach reminders to the S5 build-out list.",
@@ -9610,10 +9658,10 @@
     }
    ],
    "progress": {
-    "noted_on": "2026-09-30",
-    "note": "Rewritten 2026-09-30: the item-16 legality flag this item also waited on was cleared by D47 — build-by-allocation needs no legal review. The blocker was: \"Owner activation of S5 plus the reminder scope (in-app vs out-of-app) and clearance of the item 16 legality flag\"",
+    "noted_on": "2026-11-15",
+    "note": "Reworded 2026-11-15 after D228 dissolved S5 as a subproject. The blocker was: \"Owner activation of S5 plus the reminder scope (in-app vs out-of-app).\" The 2026-09-30 history: the item-16 legality flag was cleared by D47 for build-by-allocation; the advice question specific to reminders is counsel brief A15.",
     "evidence": [
-     "docs/decisions/2026-09-30-owner-decisions.md"
+     "docs/decisions/2026-11-15-owner-decisions.md"
     ]
    }
   },
@@ -11697,14 +11745,10 @@
     }
    ],
    "progress": {
-    "noted_on": "2026-10-26",
-    "note": "2026-10-26 (D174): the hosting brief's item 1 is built. On any host but the owner's machine every page and route needs the owner cookie /owner issues, until FN_SITE_OPEN=true is set at launch (frontend/src/lib/server/siteLock.ts). Section 4 now has items 3, 4 and 5 left. The host must have FN_ADMIN_TOKEN set, or nobody can unlock it. Earlier: 2026-10-26 (D173): the public API question this item cites as \"D2\" (the P3 review's label for T-087) is settled: /api/v1 needs an owner-issued key (`npm run api:key`, listed in FN_API_KEYS), each key is limited to 60 requests a minute and 2,000 a day, and with no keys set it answers only on localhost (frontend/src/lib/server/apiKeys.ts, #432). What is left of the blocker is the hosting choice (hosting brief section 6). Item 7 of the brief's section 4 is built, so items 1, 3, 4 and 5 remain. Earlier: 2026-10-26, later: two of the brief's section 4 changes are built, since neither depends on the host chosen. Owner access off localhost: /owner takes FN_ADMIN_TOKEN once and sets a 30-day HttpOnly, SameSite=Strict cookie holding an HMAC keyed by the token, which guardSensitiveRoute accepts (lib/server/ownerAccess.ts; a cross-site request is refused, and a new token voids every cookie). Health: GET /api/health calls no data source and answers 503 only when a configured database does not answer within 2 seconds (lib/server/health.ts). Tests: ownerAccess.test.ts and health.test.ts, each rule checked by breaking it. Left in section 4: items 1, 3, 4, 5 and 7. 2026-10-26: the hosting brief for the planning session is written: docs/deployment/hosting-brief-2026-10-26.md. It compares Vercel Pro with Neon (about $25-45 a month, estimate; needs the three file stores and in-memory limits moved to the database first), Railway Pro (about $20-35, estimate; recommended: runs the Dockerfile as built with a persistent volume and Postgres), a rented server (about $15-45; the owner maintains it) and the repository's AWS setup (about $1,350 a month per copy, plus Shield Advanced at $3,000 a month that ingress.yaml switches on; written for the backend D2 retired). Free plans on Vercel and Railway are personal, non-commercial use only. It lists seven app changes every host needs first, starting with locking any test copy to the owner (a reachable copy is launch under D22), and the 14 items choosing a host releases. Earlier: D74 (2026-10-04) adds an uptime check to this item's monitoring, carried over from T-221 (99.9% uptime over three months), which closed as a Series A proof point on D51's reasoning. Checked 2026-10-04: the interim fix the old next step proposed is already in place. .github/workflows/cd-staging.yml:87 runs its first job, which the rest depend on, only when the STAGING_DEPLOY_ENABLED repository variable is 'true' or on a manual run, so a push to main no longer deploys. Next step was: \"No deploy work until the owner's planning session; the one cheap interim fix is to stop cd-staging.yml running on every push to main (gate it on a repo-variable or make it workflow_dispatch-only) so main's CI signal is readable — propose it as a small PR.\"",
+    "noted_on": "2026-11-15",
+    "note": "Offered 2026-11-15 with the hosting brief's recommendation (Railway Pro, about $20–35 a month; the D174 lock keeps a deployed copy owner-only). Owner: \"Not yet\" (D229). Stays parked under D21; do not re-offer without new facts.",
     "evidence": [
-     "docs/decisions/2026-10-04-owner-decisions.md",
-     ".github/workflows/cd-staging.yml",
-     "frontend/src/lib/server/apiKeys.ts",
-     "docs/decisions/2026-10-26-owner-decisions.md",
-     "frontend/src/lib/server/siteLock.ts"
+     "docs/decisions/2026-11-15-owner-decisions.md"
     ]
    }
   },
@@ -11870,8 +11914,7 @@
   {
    "id": "T-161",
    "title": "Recover the retirement engine from archive/wave-two-pre-reset if the separate tool wants it",
-   "status": "parked",
-   "parked_on": "2026-09-07",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "feature",
@@ -11886,7 +11929,20 @@
      "lines": "734",
      "quote": "recoverable by name from the **`archive/wave-two-pre-reset`** branch (kept deliberately, 2026-08-29 owner decision — do not delete) if the separate tool wants the engine — the §402(g) shared-cap and monthly-compounding fixes live there"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "parked",
+    "closed_on": "2026-11-15",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "The separate tool wants it (D228: financial planning lives in the personal-finance product, and the Planner evaluation's first condition is a tested engine — this one is tested). Recovered from archive/wave-two-pre-reset (d236985, 2026-08-15) exactly as this item's next step prescribed: frontend/src/lib/retirement/ — engine.ts, debt.ts, limits.ts and both test files, 991 lines, carrying the §402(g) shared-cap and monthly-compounding fixes — and delivered as one handoff file in the Finance Now Ledger's library, attached to this item, for porting into the product. Nothing returns to Finance Now's tree, and the archive branch stays, per the no-deletion rule.",
+    "approved_by": "owner, 2026-11-15: \"Personal-finance product (Recommended)\"",
+    "evidence": [
+     "docs/decisions/2026-11-15-owner-decisions.md",
+     "docs/audits/parked-review-2026-11-09.md"
+    ],
+    "parked_on_was": "2026-09-07"
+   }
   },
   {
    "id": "T-279",
@@ -13148,7 +13204,7 @@
    "owner_role": "owner-machine",
    "category": "ops-infra",
    "effort": "small",
-   "blocking_decision": "Does the separate personal-finance tool exist yet and want the imported bank history?",
+   "blocking_decision": "The personal-finance product now exists (The Planner; D228 gives it financial planning) but keeps everything in the browser and has no server-side data store, so there is nowhere to import a pg_dump yet.",
    "related_ids": [
     "RP-2"
    ],
@@ -13160,7 +13216,14 @@
      "lines": "733",
      "quote": "**DB tables + imported bank history RETAINED** — schema definitions kept in `lib/db/schema/budget.ts` precisely so drizzle never generates a DROP; export instructions live in that file's banner."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-11-15",
+    "note": "The destination is settled (D228: the personal-finance product), but The Planner stores everything in the browser — no database — so the export waits for the product to grow a server-side store. The banner's pg_dump command is unchanged. The blocker was: \"Does the separate personal-finance tool exist yet and want the imported bank history?\"",
+    "evidence": [
+     "docs/decisions/2026-11-15-owner-decisions.md"
+    ]
+   }
   },
   {
    "id": "T-337",
@@ -16574,8 +16637,11 @@
    ],
    "parked_on": "2026-11-07",
    "progress": {
-    "noted_on": "2026-11-07",
-    "note": "Part (a) BUILT 2026-11-07 (D210): get_fund_details (equities agents and the Assistant) and get_stablecoin_reserves (crypto agents and the Assistant) in frontend/src/lib/agents/tools.ts, reading the routes the pages read, tested in lib/agents/__tests__/fundReserveTools.test.ts. Re-running npm run agent-eval for the agents that gained a tool is the owner's call (it bills, D20)."
+    "noted_on": "2026-11-15",
+    "note": "Offered 2026-11-15 as the one parked item buildable from a cloud session with no decision attached. Owner: \"Keep parked\" (D230). Nothing changed since D207; do not re-offer without new facts.",
+    "evidence": [
+     "docs/decisions/2026-11-15-owner-decisions.md"
+    ]
    }
   },
   {
@@ -43269,6 +43335,14 @@
     "evidence": [
      "frontend/src/components/markets/CommodityFundsCard.tsx",
      "frontend/src/lib/data/liveQuotes.ts"
+    ]
+   },
+   {
+    "on": "2026-11-15",
+    "what": "D228 (the owner, asked directly after The Planner evaluation): the S5 boundary is drawn — portfolio construction stays in Finance Now, financial planning goes to the personal-finance product. T-064 closes (decided), T-067 and T-068 close (superseded: contribution modeling and asset location are the product's, where The Planner already models them), T-026 closes (both its questions now answered), and T-161 closes (the retirement engine recovered from archive/wave-two-pre-reset, d236985, and delivered to the ledger library for the product). T-116 stays blocked with its gate reworded (reminder scope plus counsel question A15; \"activate S5\" is no longer a gate), and T-160 stays parked with a note (the product has no server store to receive the bank history yet). Also recorded on their items: hosting stays parked by the owner's word (D229, \"Not yet\"), and T-457 stays parked (D230, \"Keep parked\"). Counts recomputed: blocked 5 to 1, parked 127 to 126, closed 265 to 270, closed_by_annotation 265 to 270; open 8 and total 405 unchanged.",
+    "evidence": [
+     "docs/decisions/2026-11-15-owner-decisions.md",
+     "docs/audits/parked-review-2026-11-09.md"
     ]
    }
   ]
