@@ -62,8 +62,8 @@
   "total_verified": 421,
   "outstanding": 405,
   "by_status": {
-   "closed": 270,
-   "parked": 126,
+   "closed": 271,
+   "parked": 125,
    "open": 8,
    "blocked": 1
   },
@@ -74,8 +74,8 @@
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 270,
-  "counts_recomputed_on": "2026-11-15",
+  "closed_by_annotation": 271,
+  "counts_recomputed_on": "2026-11-16",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 405
  },
@@ -10412,7 +10412,7 @@
    "owner_role": "remote-dev",
    "category": "feature",
    "effort": "medium",
-   "blocking_decision": "PARKED 2026-09-07, reason written 2026-10-05 — D84 (2026-10-05): it waits on T-131 and T-132 (sign-in back on, a sign-up page) and on choosing an email provider.",
+   "blocking_decision": "Choosing an email provider at launch (D21). Its other gates fell: the reset machinery is built (T-435, 2026-10-15) and the sign-up page exists dark (T-132, D232, 2026-11-16).",
    "related_ids": [
     "Goal B",
     "Phase 6",
@@ -10426,7 +10426,14 @@
      "lines": "116-117",
      "quote": "6. **Then** billing (Stripe → writes `entitlements`), password reset, and OAuth via `@auth/drizzle-adapter`."
     }
-   ]
+   ],
+   "progress": {
+    "noted_on": "2026-11-16",
+    "note": "D232 closed T-132, one of the two gates D84 named. What remains is exactly the email path: sending reset links (and sign-up confirmation, if wanted) through a provider chosen at launch. The owner-issued-link flow (npm run auth:reset) covers resets until then. The blocker was: \"it waits on T-131 and T-132 (sign-in back on, a sign-up page) and on choosing an email provider.\"",
+    "evidence": [
+     "docs/decisions/2026-11-16-owner-decisions.md"
+    ]
+   }
   },
   {
    "id": "T-183",
@@ -10774,8 +10781,7 @@
   {
    "id": "T-132",
    "title": "Goal B step 5 — disable local-user mode in production and add a signup UI",
-   "status": "parked",
-   "parked_on": "2026-09-07",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "either",
    "category": "feature",
@@ -10793,7 +10799,23 @@
      "lines": "114-115",
      "quote": "5. **Turn off local-user mode** in production (`FN_ALLOW_LOCAL_USER=false`) and add a signup UI."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "parked",
+    "closed_on": "2026-11-16",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "Built dark under D232, ahead of the launch flip it was parked behind: /signup is a server wrapper reading the sign-in wall's flag (FN_REQUIRE_AUTH) over a client form that posts electronicConsent: true and SIGNUP_CONSENT's consentVersion to /api/auth/signup, shows the consent box and the full §6 clause (T-436, D127), enforces the shared password rule, and signs the new account straight in. While the wall is off it redirects away, so nothing shows before launch (D174 intact). electronicConsent.test.ts now requires the page and holds it and its form to the box. The item's other half — local-user mode off in production — was already the default (lib/auth/session.ts denies it in production); .env.example now says to leave it unset because /signup is how accounts are made.",
+    "approved_by": "owner, 2026-11-16: \"Build it all dark now (Recommended)\"",
+    "evidence": [
+     "frontend/src/app/(auth)/signup/page.tsx",
+     "frontend/src/app/(auth)/signup/SignupForm.tsx",
+     "frontend/src/lib/auth/__tests__/electronicConsent.test.ts",
+     "frontend/.env.example",
+     "docs/decisions/2026-11-16-owner-decisions.md"
+    ],
+    "parked_on_was": "2026-09-07"
+   }
   },
   {
    "id": "T-182",
@@ -11802,8 +11824,8 @@
     "Phase 6",
     "R1"
    ],
-   "summary": "Wall is off; layout.tsx's restore instruction evaluates false; login/page.tsx has LOGIN_DISABLED=true; Goal B steps 1 and 3; AUTH_SECRET required.",
-   "next_action": "At launch, in one change: turn sign-in on as below, and set FN_SITE_OPEN=true, which lifts the owner-only site lock (frontend/src/lib/server/siteLock.ts). Then: When the owner says go: set REQUIRE_AUTH = true in (dashboard)/layout.tsx and LOGIN_DISABLED = false in (auth)/login/page.tsx, generate AUTH_SECRET (`openssl rand -base64 32`), and extend src/middleware.ts with an auth() redirect matcher for dashboard routes — on a feature branch, draft PR. The middleware already exists and runs the site lock first; the auth() redirect goes after it.",
+   "summary": "Wall off until launch (D174). D232 built the kit dark: the wall lives in src/middleware.ts behind FN_REQUIRE_AUTH (lib/server/authWall.ts), the login page is a server wrapper with no LOGIN_DISABLED constant, and the launch flip is environment only.",
+   "next_action": "At launch, set three environment values and change no code: FN_REQUIRE_AUTH=true (the wall in src/middleware.ts turns on and /login + /signup render), AUTH_SECRET (openssl rand -base64 32), and FN_SITE_OPEN=true (lifts the owner-only site lock, D174). Then check /login renders, a first account signs up at /signup with the consent box, and a signed-out visitor is redirected off a dashboard page. The old recipe (REQUIRE_AUTH and LOGIN_DISABLED code flips) is gone — D232 replaced it.",
    "sources": [
     {
      "file": "CLAUDE.md",
@@ -11837,11 +11859,12 @@
     }
    ],
    "progress": {
-    "noted_on": "2026-10-26",
-    "note": "D174: kept off until launch. Until then the site lock built the same day keeps every host but the owner's machine closed to anyone without the owner cookie, so a test copy needs no sign-in.",
+    "noted_on": "2026-11-16",
+    "note": "D232 built the launch kit dark: middleware wall behind FN_REQUIRE_AUTH (failing closed when a session cannot be verified; the (auth) and (legal) pages, /api/* and /live-data/* never walled), the login page restructured as a server wrapper, /signup built (T-132 closed), and the docs and .env.example teach the environment-only flip. This item stays parked for the flip itself, which is the launch act (D174). The blocker was the code-flip recipe; authWall.test.ts now fails if a disable constant returns.",
     "evidence": [
-     "docs/decisions/2026-10-26-owner-decisions.md",
-     "frontend/src/lib/server/siteLock.ts"
+     "docs/decisions/2026-11-16-owner-decisions.md",
+     "frontend/src/lib/server/authWall.ts",
+     "frontend/src/lib/server/__tests__/authWall.test.ts"
     ]
    }
   },
@@ -43343,6 +43366,13 @@
     "evidence": [
      "docs/decisions/2026-11-15-owner-decisions.md",
      "docs/audits/parked-review-2026-11-09.md"
+    ]
+   },
+   {
+    "on": "2026-11-16",
+    "what": "D232 (the owner, taking up the sign-in and accounts cluster): the launch kit is built dark. /signup exists with the consent box (T-132 closes), the sign-in wall moved into src/middleware.ts behind FN_REQUIRE_AUTH with the login page as a server wrapper (no LOGIN_DISABLED or REQUIRE_AUTH code flips left), and the launch flip is environment only — FN_REQUIRE_AUTH=true, AUTH_SECRET, FN_SITE_OPEN=true. Sign-in itself stays off until launch (D174 unchanged): T-131 stays parked for the flip with its recipe rewritten, and T-133 stays parked for the email provider alone. Counts recomputed: parked 126 to 125, closed 270 to 271, closed_by_annotation 270 to 271; open 8, blocked 1 and total 405 unchanged.",
+    "evidence": [
+     "docs/decisions/2026-11-16-owner-decisions.md"
     ]
    }
   ]

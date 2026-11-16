@@ -132,10 +132,10 @@ describe('on any other host', () => {
 })
 
 describe('the middleware', () => {
-  it('runs the lock before anything else, on every path but Next’s build files', () => {
-    expect(middleware(req('/headlines')).status).toBe(307)
-    expect(middleware(req('/live-data/markets')).status).toBe(401)
-    expect(middleware(req('/headlines', { host: 'localhost:3000' })).headers.get('x-middleware-next')).toBe('1')
+  it('runs the lock before anything else, on every path but Next’s build files', async () => {
+    expect((await middleware(req('/headlines'))).status).toBe(307)
+    expect((await middleware(req('/live-data/markets'))).status).toBe(401)
+    expect((await middleware(req('/headlines', { host: 'localhost:3000' }))).headers.get('x-middleware-next')).toBe('1')
     expect(config.runtime).toBe('nodejs')
     expect(config.matcher).toEqual(['/((?!_next/static|_next/image|favicon.ico).*)'])
     const m = new RegExp(`^${config.matcher[0]}$`)
