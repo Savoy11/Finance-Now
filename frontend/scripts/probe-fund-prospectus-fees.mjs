@@ -49,7 +49,7 @@ const symbolArg = (() => {
 // EDGAR requires a descriptive UA identifying the requester, and asks for no more
 // than 10 requests/second. This stays well under it — a fee probe is not urgent
 // and being throttled mid-run produces a half-answer that reads like missing data.
-const UA = { 'User-Agent': 'Finance Now research dashboard (marcusowens94@gmail.com)' }
+const UA = { 'User-Agent': 'Finance Now research dashboard (FinanceNow72@gmail.com)' }
 const REQUEST_GAP_MS = 250
 
 const log = (...a) => { if (!asJson) console.log(...a) }

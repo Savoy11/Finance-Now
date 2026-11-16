@@ -81,7 +81,10 @@ describe('blanks and the draft notice', () => {
   })
 
   it('finds the blanks the draft still has — the notice has something to list', () => {
-    expect(unfilledBlanks()).toEqual(expect.arrayContaining(['[COMPANY LLC NAME]', '[CONTACT EMAIL]', '[EFFECTIVE DATE]']))
+    expect(unfilledBlanks()).toEqual(expect.arrayContaining(['[COMPANY LLC NAME]', '[EFFECTIVE DATE]']))
+    // [CONTACT EMAIL] was filled set-wide on 2026-11-15 (D227) and must stay filled.
+    expect(unfilledBlanks()).not.toContain('[CONTACT EMAIL]')
+    expect(allPublishedText().some((t) => t.includes('FinanceNow72@gmail.com'))).toBe(true)
   })
 
   it('is in force only once approved AND with no blank left', () => {

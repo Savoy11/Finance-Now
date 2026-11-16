@@ -1,7 +1,8 @@
 # Brief for counsel — Finance Now (T-289)
 
 **Status:** draft, 2026-10-26, for the owner to review before it goes to a lawyer, **updated
-2026-11-05** with section 6 (decisions made since, and four new questions marked *new*). It is
+2026-11-05** with section 6 (decisions made since, and four new questions marked *new*) **and
+2026-11-15** with section 7 (the Draft 2 review packet, and the contact email decided, D227). It is
 not legal advice. Everything in it was gathered from this repository, and each question says
 where the project records it.
 
@@ -199,13 +200,17 @@ From this repository:
 2. `docs/assessments/tokenized-securities-2026-09-21.md`, §11: area B.
 3. `docs/LEGAL-REVIEW.md`: the standing note on data licensing, for area D.
 4. The Disclosure Set's text as the app shows it: the About pages, or
-   `frontend/src/lib/legal/disclosures.ts`.
+   `frontend/src/lib/legal/disclosures.ts`. *(Superseded 2026-11-15: send the Draft 2 packet
+   from the Finance Now Ledger's file library instead — the complete set with a cover sheet
+   keyed to questions C1, C2 and E1–E4, needing review only. See section 7.)*
 5. `docs/architecture/risk-ratings-methodology.md`: how the hidden ratings are worked out.
 
 Kept outside this repository, attached by the owner:
 
 6. **The data-breach response plan** ("draft for counsel", 2026-10-17, full update), with its
-   ten questions. It is in the Finance Now Ledger's file library.
+   ten questions. It is in the Finance Now Ledger's file library. *(Revised 2026-11-15 — Draft 2,
+   in the same library: the consent and reset tables are live, income records and broker-file
+   imports join the data in scope, and the per-account export is the tool for scoping exposure.)*
 7. **The Disclosure Set, Draft v1**, the owner's document with the two consent comments (C2). It
    is in the same library, shared with News Charts (D60).
 
@@ -242,6 +247,23 @@ If counsel can take only part, the priority list in section 4 stands; C3 and C5 
 
 ---
 
+## 7. Update, 2026-11-15: the Draft 2 packet and the contact email
+
+**The review packet now exists as a finished set.** On 2026-11-15 every document this brief asks
+counsel to review was completed to "needing review only" and filed in the Finance Now Ledger's
+file library as the **Draft 2 packet**: the Terms of Use (the reserved §18 finished), the Privacy
+Policy (§2 brought up to what the app stores today; §9's retention blanks filled with proposed
+periods — backups 30 days, logs 90 days — for counsel and the eventual host to confirm, which
+narrows E4; §11 covering the built self-service download), the Not Investment Advice notice, the
+About page's ten sections with every licence-required credit written out, the sign-up consent
+one-pager (C2), the revised breach plan (E1–E2), and a cover sheet keyed to this brief. A preview
+renders the set as the finished pages will look. §5's items 4 and 6 now point there.
+
+| Decision | What changed | Touches |
+|---|---|---|
+| D227 (2026-11-15) | The project's contact email is **FinanceNow72@gmail.com** (owner: *"Use the email address FinanceNow72@gmail.com for everything related to the project"*). `[CONTACT EMAIL]` is filled set-wide — in the Draft 2 packet and in the app's own draft pages — so the sign-up consent clause now carries the real address and its stored-wording version moved (no agreement was stored under the old wording; the sign-up page is not built, T-132). The SEC and Wikipedia User-Agent contact switched from the owner's personal address to the project address. The signing facts still open are the LLC name, the mailing address, the two product URLs, the effective date and the hosting provider. | C1, C2, E4; §1 "Data it holds"; §5 items 4 and 6 |
+| D228, D231 (2026-11-15/16) | The planning boundary is drawn: portfolio construction stays in Finance Now; financial planning — contribution modeling, asset location, retirement adequacy — belongs to **The Planner**, a budgeting and planning tool joining the **News Charts website** (not a Finance Now module). The Planner works on figures the user enters plus published government statistics (BLS wages and spending, BEA prices, IRS/SSA/CMS parameters), keeps everything in the browser, and its shared scenario links never carry accounts, debts or cash. The Draft 2 Terms (§1, §6) and Privacy Policy (§1, §3, §4) now describe it on News Charts' side. Finance Now's advice-adjacent S5 items closed as moved (T-064, T-067, T-068); the one left, rebalance reminders, waits on A15. The Planner itself has its own review need before launch: it computes 2026 federal and fifty-state taxes and ranks retirement withdrawal orders by after-tax outcome — the same information-versus-advice line as A13–A15, now on the News Charts side. | C1, E3; A13–A15's analogue for News Charts |
+
 ## Sources
 
 - T-289's six areas: `docs/BUSINESS-CHECKLIST.md`, the "Federal regulations" item.
@@ -255,6 +277,8 @@ If counsel can take only part, the priority list in section 4 stands; C3 and C5 
   `docs/licensing/`; D25, D42, D96, D129, D130, D133.
 - Area E: the breach plan (attached); D122, D123, D125.
 - Facts: D21, D22, D28, D30, D96; CLAUDE.md.
+- Section 7: D227 (`docs/decisions/2026-11-15-owner-decisions.md`); the Draft 2 packet and its
+  cover sheet in the Finance Now Ledger's file library (T-291, T-426, T-436).
 - Section 6: D137, D149, D171 to D174, D176, D178, D180 to D182, D184, D190, D192, D193;
   `docs/audits/stablecoin-issuers-2026-11-05.md`; `frontend/src/lib/legal/dataMethods.ts`;
   T-016, T-087, T-112.

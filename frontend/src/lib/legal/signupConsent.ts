@@ -27,7 +27,10 @@ export const SIGNUP_CONSENT = {
   clause: EMAIL_NOTICES_CLAUSE,
   /** Where the label points: section 6 of the Terms page. */
   termsHref: `${LEGAL_PATHS.terms}#${sectionId('6. Accounts and saved data')}`,
-  version: '5323ad5e387cd238',
+  // Version moved 2026-11-15: [CONTACT EMAIL] in the clause was filled with
+  // FinanceNow72@gmail.com (D227). No agreement was stored under the old wording
+  // (sign-up has no page yet, T-132), so nothing points at the old version.
+  version: '6f026c1258ec5d4a',
   source: {
     document: DISCLOSURE_SOURCE.document,
     copiedOn: '2026-10-17',
