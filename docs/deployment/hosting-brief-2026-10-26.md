@@ -92,8 +92,9 @@ so far: items 1, 2, 6 and 7, all on 2026-10-26.
    (`lib/server/ownerAccess.ts`). The cookie holds no copy of the token, and changing the
    token ends it on every browser.
 3. **Decide who the user is.** A production build turns off the shared local account
-   (`lib/auth/session.ts`), and sign-in is switched off (`REQUIRE_AUTH = false`,
-   `LOGIN_DISABLED = true`). So on a host, portfolios and watchlists have no user unless
+   (`lib/auth/session.ts`), and sign-in is switched off (`FN_REQUIRE_AUTH` unset — since
+   2026-11-16, D232, the wall and the sign-up page are built and the switch is that
+   environment flag, not a code flip). So on a host, portfolios and watchlists have no user unless
    `FN_ALLOW_LOCAL_USER=true`, which gives every visitor one shared account. For a test copy
    locked to the owner that is acceptable, and item 1 now does the locking. For launch it is T-131
    and T-132, which the owner keeps until launch (D174).
