@@ -33,6 +33,9 @@ const sample = (): CollectedExport => ({
     trade_splits: [{ trade_id: 't3', user_id: UID, units_after: 2, units_before: 1, cash_in_lieu_usd: null }],
     password_reset_tokens: [{ id: 'r1', user_id: UID, token_hash: 'abc' }],
     user_wallets: [{ id: 'w1', user_id: UID, address: '0xabc', some_token_hash: 'zzz' }],
+    // T-088/D233: the enrollment's dates export (they are the fact of it); the key material never does.
+    two_factor_secrets: [{ user_id: UID, secret: 'GEZDGNBVTOTPSECRET234567', confirmed_at: new Date('2026-11-01T00:00:00Z'), last_used_step: 59703840, created_at: new Date('2026-10-31T00:00:00Z') }],
+    two_factor_recovery_codes: [{ id: 'rc1', user_id: UID, code_hash: 'f00df00d', used_at: null }],
   },
   notSetUp: [],
   instruments: [
@@ -54,14 +57,25 @@ describe('buildUserExport (T-452)', () => {
     expect(doc.account).toMatchObject({ email: 'me@example.com' })
   })
 
+  it('never carries the two-factor secret or a recovery-code hash, but keeps the fact of enrollment (T-088)', () => {
+    // Both guards again: OMITTED_COLUMNS names `secret`, and SECRET_COLUMN catches `code_hash`
+    // (and any *_secret) wherever it appears.
+    expect(JSON.stringify(doc)).not.toContain('GEZDGNBVTOTPSECRET234567')
+    expect(doc.data.two_factor_secrets[0]).not.toHaveProperty('secret')
+    expect(doc.data.two_factor_secrets[0]).toHaveProperty('confirmed_at')
+    expect(doc.data.two_factor_recovery_codes[0]).not.toHaveProperty('code_hash')
+  })
+
   it('says what it leaves out and what lives only in the browser', () => {
     expect(doc.leftOut).toEqual(LEFT_OUT)
-    expect(doc.leftOut.map((l) => l.what)).toEqual(['Your password', 'Password reset links'])
+    expect(doc.leftOut.map((l) => l.what)).toEqual([
+      'Your password', 'Password reset links', 'Your two-step sign-in secret and recovery codes',
+    ])
     expect(doc.onThisDevice).toMatch(/only in your browser/)
   })
 
   it('keeps every other table and row as stored, and dates the file', () => {
-    expect(Object.keys(doc.data)).toEqual(['holdings', 'portfolios', 'trade_cancellations', 'trade_income', 'trade_splits', 'trade_transactions', 'user_wallets'])
+    expect(Object.keys(doc.data)).toEqual(['holdings', 'portfolios', 'trade_cancellations', 'trade_income', 'trade_splits', 'trade_transactions', 'two_factor_recovery_codes', 'two_factor_secrets', 'user_wallets'])
     expect(doc.data.trade_transactions).toHaveLength(4)
     expect(doc.exportedAt).toBe('2026-11-06T12:00:00.000Z')
     expect(doc).not.toHaveProperty('notSetUp')

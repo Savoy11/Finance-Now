@@ -5,6 +5,7 @@ import bcrypt from 'bcryptjs'
 import { db } from '@/lib/db'
 import { users } from '@/lib/db/schema'
 import { mustResetPassword } from './passwordResetStore'
+import { twoFactorRequired, verifyTwoFactorSignIn } from './twoFactorStore'
 
 /**
  * The password was right, but the owner has forced a reset (T-435, D123), e.g. after a
@@ -12,6 +13,21 @@ import { mustResetPassword } from './passwordResetStore'
  */
 export class MustResetPasswordError extends CredentialsSignin {
   code = 'must_reset_password'
+}
+
+// Two-factor sign-in (T-088, D233). Three codes, all thrown only AFTER the password
+// matched, so none of them tells anyone but the account's holder anything:
+/** The account is enrolled and this attempt carried no code — the login form shows its second step. */
+export class TwoFactorRequiredError extends CredentialsSignin {
+  code = 'totp_required'
+}
+/** A code came and was wrong (or an already-used one was replayed). */
+export class TwoFactorInvalidError extends CredentialsSignin {
+  code = 'totp_invalid'
+}
+/** Too many wrong codes in a row; the account waits a few minutes (lib/auth/twoFactor.ts). */
+export class TwoFactorThrottledError extends CredentialsSignin {
+  code = 'totp_throttled'
 }
 
 // ─── Auth.js configuration ───────────────────────────────────────────────────
@@ -37,6 +53,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       credentials: {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
+        // The second step's code (authenticator or recovery), sent only once the first
+        // attempt answered totp_required. Absent for accounts that never enrolled.
+        otp: { label: 'Authentication code', type: 'text' },
       },
       async authorize(credentials) {
         const email = typeof credentials?.email === 'string' ? credentials.email.trim().toLowerCase() : ''
@@ -60,6 +79,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         // Checked only after the password matched, so the refusal tells nobody but the
         // account's holder that a reset is pending.
         if (await mustResetPassword(user.id)) throw new MustResetPasswordError()
+
+        // Two-factor (T-088, D233), also only after the password matched. Not enrolled —
+        // or migration 0012 not run, which reads as not enrolled — costs nothing here.
+        if (await twoFactorRequired(user.id)) {
+          const otp = typeof credentials?.otp === 'string' ? credentials.otp.trim() : ''
+          if (!otp) throw new TwoFactorRequiredError()
+          const check = await verifyTwoFactorSignIn(user.id, otp, new Date())
+          if (check === 'throttled') throw new TwoFactorThrottledError()
+          if (check !== 'ok') throw new TwoFactorInvalidError()
+        }
 
         return { id: user.id, email: user.email, name: user.name ?? undefined, image: user.image ?? undefined }
       },

@@ -12277,10 +12277,10 @@
    "owner_role": "owner-decision",
    "category": "security",
    "effort": "large",
-   "blocking_decision": "Rollout posture (2026-09-05 ruling) and D2 for the rate-limiting piece; auth wall re-enablement (auth.md Goal B step 3) for 2FA 2026-11-09 (D219): the /api/v1 rate limiting part is done by D173 (2026-10-26) put an API key and a rate limit on /api/v1: owner-issued keys listed in FN_API_KEYS, 60 requests a minute and 2,000 a day per key, counted in the server's memory (lib/server/apiKeys.ts), and documented in the OpenAPI file.",
+   "blocking_decision": "Only the audit-logging half remains open, with T-185’s append-only table, at rollout planning. The /api/v1 rate limiting was built by D173 (2026-10-26); the 2FA half was built dark by D233 (2026-11-20) once D232’s wall removed its gate.",
    "related_ids": [],
-   "summary": "None started.",
-   "next_action": "Nothing until rollout planning. The /api/v1 rate limit exists (D173). What remains, when the owner re-enables sign-in (T-131): two separate items through propose → approve → apply, two-step sign-in (TOTP) on the Auth.js credentials flow, and audit logging for /api/user and the owner's routes (with T-185's append-only table).",
+   "summary": "Two of three pieces built: the /api/v1 key + rate limit (D173) and two-step TOTP sign-in, dark (D233). Audit logging for /api/user and the owner’s routes is the piece left.",
+   "next_action": "At rollout planning, the last piece: audit logging for /api/user and the owner’s routes (with T-185’s append-only table), through propose → approve → apply. The 2FA piece is done: TOTP on the Auth.js credentials flow (lib/auth/totp.ts, RFC-vector-tested, no new dependency), enrollment on Settings behind a real session, recovery codes, migration 0012, owner command npm run auth:2fa. It is dark until the launch flip (D174/D232) because enrollment needs a signed-in session.",
    "sources": [
     {
      "file": "docs/ROADMAP.md",
@@ -12289,11 +12289,16 @@
     }
    ],
    "progress": {
-    "noted_on": "2026-10-26",
-    "note": "2026-10-26 (D173): the public API question this item cites as \"D2\" (the P3 review's label for T-087) is settled: /api/v1 needs an owner-issued key (`npm run api:key`, listed in FN_API_KEYS), each key is limited to 60 requests a minute and 2,000 a day, and with no keys set it answers only on localhost (frontend/src/lib/server/apiKeys.ts, #432). The rate-limiting piece is built. 2FA and audit logging still wait on the sign-in wall (T-131); when it returns they are queued as two items, as the next action says.",
+    "noted_on": "2026-11-20",
+    "note": "D233 (owner: \"Lets start on the two-factor sign-in work\"): the 2FA half is built, dark. Sign-in asks an enrolled account for a 6-digit authenticator code after the password matches (totp_required/totp_invalid/totp_throttled); enrollment is a Settings card that renders nothing without a real session, and the /api/user/two-factor/* routes resolve the session only, never the shared local user. Ten one-time recovery codes (SHA-256 only), replay refusal by last_used_step, a 5-wrong-codes/5-minute in-memory throttle (the D173 posture), migration 0012 with the missing-table-reads-as-not-enrolled rule (never a lockout), export stripping of the key material, and npm run auth:2fa -- --disable as the lost-phone-and-codes path. Engine hand-rolled over node:crypto and held to RFC 4226/6238’s own vectors; no QR code, so no new dependency.",
     "evidence": [
-     "frontend/src/lib/server/apiKeys.ts",
-     "docs/decisions/2026-10-26-owner-decisions.md"
+     "docs/decisions/2026-11-20-owner-decisions.md",
+     "frontend/src/lib/auth/totp.ts",
+     "frontend/src/lib/auth/twoFactor.ts",
+     "frontend/src/lib/auth/twoFactorStore.ts",
+     "frontend/src/lib/auth/__tests__/totp.test.ts",
+     "frontend/src/lib/auth/__tests__/twoFactorSignIn.test.ts",
+     "frontend/drizzle/0012_two-factor.sql"
     ]
    }
   },
@@ -43373,6 +43378,13 @@
     "what": "D232 (the owner, taking up the sign-in and accounts cluster): the launch kit is built dark. /signup exists with the consent box (T-132 closes), the sign-in wall moved into src/middleware.ts behind FN_REQUIRE_AUTH with the login page as a server wrapper (no LOGIN_DISABLED or REQUIRE_AUTH code flips left), and the launch flip is environment only — FN_REQUIRE_AUTH=true, AUTH_SECRET, FN_SITE_OPEN=true. Sign-in itself stays off until launch (D174 unchanged): T-131 stays parked for the flip with its recipe rewritten, and T-133 stays parked for the email provider alone. Counts recomputed: parked 126 to 125, closed 270 to 271, closed_by_annotation 270 to 271; open 8, blocked 1 and total 405 unchanged.",
     "evidence": [
      "docs/decisions/2026-11-16-owner-decisions.md"
+    ]
+   },
+   {
+    "on": "2026-11-20",
+    "what": "D233 (the owner, continuing the sign-in and accounts cluster): T-088’s two-factor half is built dark — TOTP on the credentials flow with recovery codes, enrollment on Settings behind a real session, migration 0012, export stripping and the auth:2fa owner command; engine dependency-free and RFC-vector-tested. T-088 stays parked for its last piece, audit logging, so no count moves.",
+    "evidence": [
+     "docs/decisions/2026-11-20-owner-decisions.md"
     ]
    }
   ]

@@ -26,6 +26,11 @@ export function LoginForm({ open }: { open: boolean }) {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Two-factor (T-088, D233): once the first attempt answers totp_required, the
+  // form keeps the email and password and asks for the code as a second step.
+  const [needsOtp, setNeedsOtp] = useState(false)
+  const [otp, setOtp] = useState('')
+  const [useRecovery, setUseRecovery] = useState(false)
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -34,18 +39,34 @@ export function LoginForm({ open }: { open: boolean }) {
       setIsLoading(true)
       // redirect: false so a bad password renders an inline error instead of
       // bouncing to Auth.js's own error page.
-      const result = await signIn('credentials', { email, password, redirect: false })
+      const result = await signIn('credentials', {
+        email,
+        password,
+        ...(needsOtp && otp ? { otp } : {}),
+        redirect: false,
+      })
       setIsLoading(false)
       if (result?.error) {
         // A forced reset (T-435) is its own code, so it is not misread as a typo.
-        setError(result.code === 'must_reset_password'
-          ? 'This account’s password has to be reset before it can sign in. Ask the site owner for a reset link.'
-          : 'Incorrect email or password.')
+        if (result.code === 'must_reset_password') {
+          setError('This account’s password has to be reset before it can sign in. Ask the site owner for a reset link.')
+        } else if (result.code === 'totp_required') {
+          // Password was right; the account wants its authenticator code.
+          setNeedsOtp(true)
+        } else if (result.code === 'totp_invalid') {
+          setNeedsOtp(true)
+          setError('That code didn’t work. Codes change every 30 seconds — enter the one showing now, or use a recovery code.')
+        } else if (result.code === 'totp_throttled') {
+          setNeedsOtp(true)
+          setError('Too many wrong codes. Wait a few minutes, then enter the code your authenticator shows then.')
+        } else {
+          setError('Incorrect email or password.')
+        }
         return
       }
       router.push('/headlines')
     },
-    [email, password, router]
+    [email, password, needsOtp, otp, router]
   )
 
   useEffect(() => {
@@ -68,9 +89,13 @@ export function LoginForm({ open }: { open: boolean }) {
       {/* Form */}
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="text-center mb-2">
-          <h2 className="text-base font-semibold text-text-primary">Institutional Sign In</h2>
+          <h2 className="text-base font-semibold text-text-primary">
+            {needsOtp ? 'Two-Step Verification' : 'Institutional Sign In'}
+          </h2>
           <p className="text-xs text-text-muted mt-1">
-            Access restricted to authorized personnel
+            {needsOtp
+              ? `Enter the ${useRecovery ? 'recovery code' : 'code from your authenticator app'} for ${email}`
+              : 'Access restricted to authorized personnel'}
           </p>
         </div>
 
@@ -81,6 +106,43 @@ export function LoginForm({ open }: { open: boolean }) {
           </div>
         )}
 
+        {needsOtp ? (
+          <div className="space-y-3">
+            <div>
+              <label htmlFor="otp" className="block text-xs font-medium text-text-secondary mb-1.5">
+                {useRecovery ? 'Recovery Code' : 'Authentication Code'}
+              </label>
+              <input
+                id="otp"
+                type="text"
+                inputMode={useRecovery ? 'text' : 'numeric'}
+                autoComplete="one-time-code"
+                autoFocus
+                value={otp}
+                onChange={(e) => setOtp(e.target.value)}
+                required
+                className="w-full px-3 py-2.5 bg-bg-secondary border border-border rounded-sm text-sm text-text-primary placeholder-text-muted tracking-widest focus:outline-hidden focus:border-accent-blue/60 focus:ring-1 focus:ring-accent-blue/30 transition-colors"
+                placeholder={useRecovery ? 'XXXXX-XXXXX' : '123456'}
+              />
+            </div>
+            <div className="flex items-center justify-between text-xs">
+              <button
+                type="button"
+                onClick={() => { setUseRecovery((v) => !v); setOtp(''); setError(null) }}
+                className="text-accent-blue hover:underline"
+              >
+                {useRecovery ? 'Use my authenticator app instead' : 'Lost your phone? Use a recovery code'}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setNeedsOtp(false); setOtp(''); setUseRecovery(false); setError(null) }}
+                className="text-text-muted hover:text-text-secondary"
+              >
+                Start over
+              </button>
+            </div>
+          </div>
+        ) : (
         <div className="space-y-3">
           <div>
             <label htmlFor="email" className="block text-xs font-medium text-text-secondary mb-1.5">
@@ -124,6 +186,7 @@ export function LoginForm({ open }: { open: boolean }) {
             </div>
           </div>
         </div>
+        )}
 
         <button
           type="submit"
@@ -140,17 +203,21 @@ export function LoginForm({ open }: { open: boolean }) {
               <Loader2 size={14} className="animate-spin" aria-hidden />
               Authenticating...
             </>
+          ) : needsOtp ? (
+            'Verify Code'
           ) : (
             'Sign In'
           )}
         </button>
 
-        <p className="text-center text-xs text-text-muted">
-          No account yet?{' '}
-          <Link href="/signup" className="text-accent-blue hover:underline">
-            Create one
-          </Link>
-        </p>
+        {!needsOtp && (
+          <p className="text-center text-xs text-text-muted">
+            No account yet?{' '}
+            <Link href="/signup" className="text-accent-blue hover:underline">
+              Create one
+            </Link>
+          </p>
+        )}
       </form>
 
       {/* Footer */}
