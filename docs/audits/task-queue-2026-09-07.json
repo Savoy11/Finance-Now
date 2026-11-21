@@ -9872,7 +9872,7 @@
     "T-112"
    ],
    "summary": "SOC 2 and hardening checklist.",
-   "next_action": "Nothing now. When the owner confirms all the features are built and the security items named above are closed: decide which accounts count as admin accounts by then, and require two-step sign-in on each. The app has none today (see progress), so unless that changes it means the accounts that control the site: GitHub, the host and database once chosen (T-112), the domain registrar, and the AI and data providers. Two-step sign-in for the app's own users is part of T-088. Then propose steward annotations on the MFA rows of production-readiness-scorecard.md and architecture/security.md with proof.",
+   "next_action": "Policy adopted and current set confirmed (D240, 2026-11-21): the admin accounts are GitHub and the AI/data provider accounts holding the owner’s API keys, and the owner confirms two-step sign-in is already on (GitHub at least; each provider account checked as next touched) — recorded on the MFA rows of docs/architecture/security.md and docs/audits/production-readiness-scorecard.md. What remains, and what this stays parked for: when the host, database and registrar exist (T-112), add them to the set and turn two-step sign-in on there in the same sitting.",
    "sources": [
     {
      "file": "docs/audits/production-readiness-scorecard.md",
@@ -9894,6 +9894,11 @@
      "frontend/src/lib/auth/config.ts",
      "frontend/src/lib/server/apiGuard.ts"
     ]
+   },
+   "reworded": {
+    "on": "2026-11-21",
+    "by": "owner decision D240, applied by the session",
+    "why": "The decidable half is decided: the policy and today’s account set are ruled and the two checklist rows carry the proof. The gate narrows to the launch-time accounts (host, database, registrar)."
    }
   },
   {
@@ -14793,7 +14798,7 @@
     "D165"
    ],
    "summary": "The Vendor Pass (30 Sep) drafted the enquiries, signed with the owner’s name: DefiLlama now (its terms entry has no document to read), and FMP, CoinDesk, Investing.com and Tiingo near build completion. Twelve Data and Dow Jones are on hold. Finnhub is a suggested drop, and trimming the 23 Sep list needs the owner’s OK. Binance.US has left the list: nothing in the app has fetched it since 2026-10-13 (T-423, D102), so there is nothing to ask it. A reply is evidence, not a licence.",
-   "next_action": "Owner: send the DefiLlama enquiry from the Vendor Pass; decide whether to drop Finnhub from the list; send the other four near build completion. Record each reply in docs/licensing/ and on the item it settles (T-154 for FMP, T-407 for CoinDesk and Investing.com).",
+   "next_action": "Owner: send the DefiLlama enquiry from the Vendor Pass (drafted, unsent); send the FMP, CoinDesk, Investing.com and Tiingo enquiries near build completion. Record each reply in docs/licensing/ and on the item it settles (T-154 for FMP, T-407 for CoinDesk and Investing.com). Finnhub is OFF the list (D241, 2026-11-21): no enquiry is sent, and at launch Finnhub comes off the quote ladder unless written approval has arrived some other way — the launch step is on its sourceTerms.ts entry and in docs/LEGAL-REVIEW.md.",
    "sources": [
     {
      "file": "docs/decisions/2026-10-07-owner-decisions.md",
@@ -14815,13 +14820,9 @@
     ]
    },
    "reworded": {
-    "on": "2026-10-14",
-    "by": "owner request (“reword them”), applied by the session",
-    "why": "It still asked the owner whether to drop Binance.US from the enquiry list. Nothing in the app has fetched Binance.US since 2026-10-13 (T-423, D102), so that question is moot; Finnhub’s stays.",
-    "was": {
-     "summary": "The Vendor Pass (30 Sep) drafted the enquiries, signed with the owner's name: DefiLlama now (its terms entry has no document to read), and FMP, CoinDesk, Investing.com and Tiingo near build completion. Twelve Data and Dow Jones are on hold; Finnhub and Binance.US are suggested drops, and trimming the 23 Sep list needs the owner's OK. A reply is evidence, not a licence.",
-     "next_action": "Owner: send the DefiLlama enquiry from the Vendor Pass; decide whether to drop Finnhub and Binance.US from the list; send the other four near build completion. Record each reply in docs/licensing/ and on the item it settles (T-154 for FMP, T-407 for CoinDesk and Investing.com)."
-    }
+    "on": "2026-11-21",
+    "by": "owner decision D241, applied by the session",
+    "why": "The Vendor Pass’s suggested drop is ruled: Finnhub leaves the enquiry list. The remaining gate is the owner sending the five enquiries on the Pass’s schedule."
    },
    "parked_on": "2026-10-25"
   },
@@ -43501,6 +43502,13 @@
    {
     "on": "2026-11-21",
     "what": "D236–D239 (the owner, asked to start addressing the decision-gated items): four rulings in one sitting. D236 confirms the billing model as tiered bundles (T-085 and T-086 close; T-084’s gates are both met and it now waits only on a Stripe account and price points). D237 builds the in-app rebalance reminders (T-116, the ledger’s last blocked item, closes — blocked is now 0; counsel brief A15 still reviews the advice-adjacency before launch). D238 rules the 64 unverifiable staking terms off the published catalog as termsUnpublished (T-394 closes; the re-verification is complete and STAKING_DATA_LAST_VERIFIED moves to 2026-11-02, the pass’s newest answer). D239 defers the desktop update mechanism until the edition is scheduled (T-127 stays parked with that gate; its ROADMAP box is ticked). Counts recomputed: closed 274 to 278, parked 122 to 120, open 8 to 7, blocked 1 to 0; total 405 unchanged.",
+    "evidence": [
+     "docs/decisions/2026-11-21-owner-decisions.md"
+    ]
+   },
+   {
+    "on": "2026-11-21",
+    "what": "D240–D241 (the owner, finishing the decision sitting’s two held questions). D240: the admin-account two-step sign-in policy is adopted — the set today is GitHub and the AI/data provider accounts, confirmed already on; the two MFA checklist rows are ticked with that proof, and T-209’s gate narrows to the launch-time accounts (host, database, registrar, T-112). D241: Finnhub is dropped from the provider-enquiry list — no email goes to it, and at launch it comes off the quote ladder unless approval arrives otherwise, recorded as the launch step on its sourceTerms.ts entry and in LEGAL-REVIEW. Both items stay parked with gates reworded; counts unchanged (278 closed · 120 parked · 7 open · 0 blocked).",
     "evidence": [
      "docs/decisions/2026-11-21-owner-decisions.md"
     ]
