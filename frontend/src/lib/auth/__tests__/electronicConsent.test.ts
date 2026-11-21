@@ -258,14 +258,17 @@ describe('POST /api/auth/signup', () => {
   })
 })
 
-describe('the sign-up page, when it is built (T-132)', () => {
+describe('the sign-up page (T-132, built dark under D232)', () => {
   it('shows this box and sends its version', () => {
-    // No page exists yet: T-132 builds it with the sign-in wall (T-131, D84). The route above
-    // already refuses a sign-up without the agreement, so a page cannot skip it; this holds the
-    // page to showing the stored words rather than its own.
+    // The route above already refuses a sign-up without the agreement, so the page cannot skip
+    // it; this holds the page to showing the stored words rather than its own. The page is a
+    // server wrapper (it reads the wall's flag) over a client form, so both files together must
+    // carry the contract: the SIGNUP_CONSENT object, and a post with electronicConsent and
+    // consentVersion.
     const page = resolve(__dirname, '../../../app/(auth)/signup/page.tsx')
-    if (!existsSync(page)) return
-    const src = readFileSync(page, 'utf8')
+    const form = resolve(__dirname, '../../../app/(auth)/signup/SignupForm.tsx')
+    expect(existsSync(page)).toBe(true)
+    const src = readFileSync(page, 'utf8') + (existsSync(form) ? readFileSync(form, 'utf8') : '')
     expect(src).toMatch(/SIGNUP_CONSENT/)
     expect(src).toMatch(/consentVersion/)
     expect(src).toMatch(/electronicConsent/)

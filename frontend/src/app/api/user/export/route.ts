@@ -5,6 +5,7 @@ import { getCurrentUserId } from '@/lib/auth/session'
 import { collectUserExport, type ExportQuery } from '@/lib/server/userExportCollect'
 import { buildUserExport, exportFileName, holdingsCsv, salesCsv, tradesCsv, type Row } from '@/lib/data/userExport'
 import { isUuid } from '@/lib/data/tradeLedger'
+import { recordAudit } from '@/lib/server/auditLog'
 
 // "Download my data" (T-452, D199): a copy of everything the server keeps for the signed-in
 // account. The Settings page's "Your data" section calls it; the owner's command
@@ -51,6 +52,11 @@ export async function GET(request: Request) {
 
   const now = new Date()
   const collected = await collectUserExport(query, userId)
+  // Downloading everything held about an account is itself an audit event
+  // (T-088, D235); the row says which part, never the content — and it is written
+  // only once the collect succeeded, since the log is append-only: a failed
+  // export must not leave a permanent "data_exported" row (2026-11-21 audit).
+  await recordAudit({ userId, actor: 'user', event: 'data_exported', detail: `part=${part}` })
   const headers = {
     'Content-Disposition': `attachment; filename="${exportFileName(part, now)}"`,
     'Cache-Control': 'no-store',

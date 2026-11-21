@@ -83,6 +83,20 @@ async function getOrCreateLocalUser(): Promise<string> {
 }
 
 /**
+ * The signed-in session's user id, or null — NEVER the shared local user. For
+ * the account-security routes (two-factor, T-088/D233): enrolling second-step
+ * protection on local@fn.local would protect nothing (it cannot be signed into)
+ * while looking protective, and in local mode every visitor shares that row. So
+ * those routes answer only a real session, which also keeps them dark until the
+ * sign-in wall is on (D174/D232).
+ */
+export async function getSessionUserId(): Promise<string | null> {
+  const session = await auth()
+  const id = session?.user?.id
+  return typeof id === 'string' && id ? id : null
+}
+
+/**
  * The user id that owns data for this request, or null when the caller must be
  * treated as unauthenticated.
  */

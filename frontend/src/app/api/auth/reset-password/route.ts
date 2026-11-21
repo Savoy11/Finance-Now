@@ -4,6 +4,7 @@ import { db, isDbConfigured } from '@/lib/db'
 import { isSchemaBehindError } from '@/lib/db/errors'
 import { applyPasswordReset } from '@/lib/auth/passwordReset'
 import { drizzleResetStore } from '@/lib/auth/passwordResetStore'
+import { recordAudit } from '@/lib/server/auditLog'
 
 export const dynamic = 'force-dynamic'
 
@@ -30,6 +31,8 @@ export async function POST(request: Request) {
       applyPasswordReset(drizzleResetStore(tx), { token, password, hashPassword: (p) => bcrypt.hash(p, 12) }, new Date()),
     )
     if (!outcome.ok) return NextResponse.json({ error: outcome.message }, { status: outcome.status })
+    // After the transaction, never inside it; recordAudit never throws (T-088, D235).
+    await recordAudit({ userId: outcome.userId, actor: 'user', event: 'password_reset' })
     return NextResponse.json({ ok: true })
   } catch (e) {
     if (isSchemaBehindError(e)) {

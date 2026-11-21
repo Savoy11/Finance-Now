@@ -14,6 +14,7 @@ import postgres from 'postgres'
 import { collectUserExport, type ExportQuery } from '../src/lib/server/userExportCollect'
 import { buildUserExport, exportFileName, holdingsCsv, salesCsv, tradesCsv, type Row } from '../src/lib/data/userExport'
 import { EXPORT_USAGE, defaultExportFolder, parseExportCommand } from './lib/exportCommand'
+import { insertAudit } from './lib/auditInsert'
 
 /** Same dependency-free loader as drizzle.config.ts: the real environment wins over the file. */
 function loadEnvLocal(): void {
@@ -62,6 +63,7 @@ async function main(): Promise<number> {
     for (const [name, body] of files) writeFileSync(join(folder, name), body)
 
     const rowCount = Object.values(collected.tables).reduce((n, rows) => n + rows.length, 0)
+    await insertAudit(sql, { userId: user.id, event: 'data_exported', detail: 'owner command, all parts' })
     console.log(`Wrote ${user.email}'s data to ${folder}:`)
     for (const [name] of files) console.log(`  ${name}`)
     console.log(`${rowCount} row(s) from ${Object.keys(collected.tables).length} table(s).`)

@@ -85,6 +85,20 @@
       "when": 1794021766016,
       "tag": "0011_trade-income",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1795218280927,
+      "tag": "0012_two-factor",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1795221165942,
+      "tag": "0013_audit-log",
+      "breakpoints": true
     }
   ]
 }

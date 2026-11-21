@@ -108,6 +108,54 @@ describe('figures the provider does not publish (D181)', () => {
   })
 })
 
+// D238 (2026-11-21): a provider that states a product's minimum or unstaking wait nowhere
+// a visitor can read — behind sign-in, or simply unstated — publishes NO figure here. The
+// T-394 pass left exactly 64 such terms rows; each asset is marked `termsUnpublished`,
+// carries no figure, and every surface shows "not published", never a 0 (a 0 lock-up
+// means liquid, D162). The one exception: a liquid receipt token keeps `lockupDays: 0`,
+// D162's own rule about the token. Restoring a figure the owner later reads logged-in
+// means removing the flag and this count moving with it.
+describe('terms the provider does not publish (D238)', () => {
+  const all = STAKING_PROVIDERS.flatMap((p) =>
+    (Object.values(p.assets) as Array<NonNullable<(typeof p.assets)[keyof typeof p.assets]>>).map((a) => [p.id, a] as const))
+  const flagged = all.filter(([, a]) => a.termsUnpublished)
+
+  it('covers the 64 facts the T-394 pass could not see, and carries no figure for them', () => {
+    expect(flagged.length).toBe(64)
+    for (const [id, a] of flagged) {
+      expect([id, a.coinId, a.minStakeNative, a.minStakeUsd, a.lockupNote]).toEqual([id, a.coinId, undefined, undefined, undefined])
+      // lockupDays is absent — unknown is never 0 — except the D162 liquid-receipt rule.
+      if (a.lockupDays !== undefined) {
+        expect([id, a.coinId, a.lockupDays, a.liquid, Boolean(a.receiptToken)]).toEqual([id, a.coinId, 0, true, true])
+      }
+    }
+  })
+
+  it('states no minimum or wait in the feature text either', () => {
+    for (const [id, a] of flagged) {
+      const stating = a.features.filter((f) => /unbond|lock[- ]?up|no lock|minimum|\d+\s*[-–]?\s*(day|week)|to unstake/i.test(f))
+      expect([id, a.coinId, stating]).toEqual([id, a.coinId, []])
+    }
+  })
+
+  it('every other asset still carries both figures — the optional fields cannot erode the catalog', () => {
+    for (const [id, a] of all) {
+      if (a.termsUnpublished) continue
+      expect([id, a.coinId, typeof a.minStakeNative, typeof a.lockupDays]).toEqual([id, a.coinId, 'number', 'number'])
+    }
+  })
+
+  it('is what every surface shows', () => {
+    const read = (rel: string) => readFileSync(join(process.cwd(), rel), 'utf8')
+    expect(read('src/app/(dashboard)/staking/page.tsx')).toMatch(/asset\.lockupDays == null \? 'Not published'/)
+    expect(read('src/app/(dashboard)/staking/page.tsx')).toMatch(/asset\.minStakeNative == null \? 'Not published'/)
+    expect(read('src/app/api/v1/staking/opportunities/route.ts')).toMatch(/termsUnpublished: asset\.termsUnpublished === true/)
+    expect(read('src/app/api/v1/staking/opportunities/route.ts')).toMatch(/lockupDays:\s+asset\.lockupDays \?\? null/)
+    expect(read('scripts/lib/stakingFactRows.ts')).toMatch(/if \(a\.termsUnpublished\) continue/)
+    expect(read('../mcp-server/src/index.ts')).toMatch(/opp\.lockupDays == null \? 'not published by the provider'/)
+  })
+})
+
 // D185 (2026-11-02): some providers state their minimum only in dollars (Nexo's $500 per
 // coin, Robinhood's $1). That figure is kept as it is stated, never turned into a coin
 // amount at some price, and the coin minimum stays 0 so nothing shows two minimums.

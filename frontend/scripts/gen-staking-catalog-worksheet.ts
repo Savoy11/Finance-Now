@@ -105,7 +105,8 @@ async function main() {
       if (live != null) liveFilled++
       lines.push([
         p.id, p.category, p.defunct ? 'DEFUNCT' : '', coinId, asset.staticApr, live ?? '', key ?? '', live != null ? pct(asset.staticApr, live) : '',
-        asset.minStakeNative, asset.lockupDays, asset.liquid, asset.receiptToken ?? '',
+        // Blank cells for terms the provider does not publish (D238) — never a 0.
+        asset.minStakeNative ?? '', asset.lockupDays ?? '', asset.liquid, asset.receiptToken ?? '',
         '', '', '', '', p.website ?? '', '', '',
       ].map(csvCell).join(','))
     }
