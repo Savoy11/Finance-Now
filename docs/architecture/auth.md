@@ -118,6 +118,17 @@ Fixed 2026-09-08 by excluding Auth.js paths: `source: '/api/:path((?!auth/).*)'`
 > environment only — `FN_REQUIRE_AUTH=true`, `AUTH_SECRET`, `FN_SITE_OPEN=true`. Steps
 > below are kept as written, as the history this lands on.
 
+> **Update 2026-11-21 (D234): step 4 is built — entitlements serve from the database.**
+> `/api/user/entitlements` reads and writes the `entitlements` table (there since migration
+> 0000), on the posture the owner chose: standard modules on for everyone as account-synced
+> toggles, Portfolio Builder granted per account for a real session (`npm run entitlements`
+> now, billing later — T-084), and a session's own toggle can never self-grant a premium
+> module. "Missing rows = denied" applies exactly where it has security weight — premium
+> modules on real accounts — while a missing standard row keeps the default ON, and local
+> mode (sign-in off, today) behaves as it always has, so the change is dark until launch.
+> The store keeps its `isEnabled`/`setEnabled` interface with localStorage as the fallback.
+> CLAUDE.md has the full block; rules in `lib/modules/entitlements.ts`.
+
 > **Update 2026-11-20 (D233): two-step sign-in (TOTP) is built dark too** — T-088's 2FA
 > piece, the first of its two remaining halves (audit logging still waits). The credentials
 > flow asks an enrolled account for a 6-digit authenticator code after the password matches

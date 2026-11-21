@@ -62,8 +62,8 @@
   "total_verified": 421,
   "outstanding": 405,
   "by_status": {
-   "closed": 271,
-   "parked": 125,
+   "closed": 272,
+   "parked": 124,
    "open": 8,
    "blocked": 1
   },
@@ -74,8 +74,8 @@
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 271,
-  "counts_recomputed_on": "2026-11-16",
+  "closed_by_annotation": 272,
+  "counts_recomputed_on": "2026-11-21",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 405
  },
@@ -11609,8 +11609,7 @@
   {
    "id": "T-083",
    "title": "D1 — rollout posture on entitlements: serve from DB instead of localStorage",
-   "status": "parked",
-   "parked_on": "2026-09-07",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "decision",
@@ -11646,7 +11645,24 @@
      "lines": "109-113, 119-120",
      "quote": "4. **Move entitlements to the database.** `useEntitlementStore` is localStorage-backed and trivially editable by the user — fine for a personal tool, unacceptable when modules are paid SKUs. The `entitlements` table already exists; read through a server route and treat missing rows as \"denied\" rather than the current \"granted\"."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "parked",
+    "closed_on": "2026-11-21",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "The decision this item waited on is made and the build it called for is done. The owner chose the posture (D234: \"Standard on, Builder granted\"): standard modules on for everyone as account-synced toggles; Portfolio Builder a premium module a real account holds only with a grant row, written by npm run entitlements now and billing later (T-084). /api/user/entitlements serves the entitlements table (in the schema since migration 0000 — no new migration); a session’s own toggle can never reach a premium module, so no account self-grants Builder; ModuleGate and the Settings panel tell a grant lock from a preference; and local mode keeps today’s behaviour exactly, with localStorage as the pre-hydration fallback and the whole behaviour when there is no database — dark until launch, the D232/D233 pattern. \"Missing rows = denied\" applies where auth.md Goal B step 4 gave it weight: premium modules on real accounts. Rules pure and tested in lib/modules/entitlements.ts + entitlements.test.ts.",
+    "approved_by": "owner, 2026-11-21: \"Standard on, Builder granted (Recommended)\"",
+    "evidence": [
+     "docs/decisions/2026-11-21-owner-decisions.md",
+     "frontend/src/lib/modules/entitlements.ts",
+     "frontend/src/app/api/user/entitlements/route.ts",
+     "frontend/src/store/useEntitlementStore.ts",
+     "frontend/src/lib/modules/__tests__/entitlements.test.ts",
+     "frontend/scripts/entitlements.ts"
+    ],
+    "parked_on_was": "2026-09-07"
+   }
   },
   {
    "id": "T-087",
@@ -43385,6 +43401,13 @@
     "what": "D233 (the owner, continuing the sign-in and accounts cluster): T-088’s two-factor half is built dark — TOTP on the credentials flow with recovery codes, enrollment on Settings behind a real session, migration 0012, export stripping and the auth:2fa owner command; engine dependency-free and RFC-vector-tested. T-088 stays parked for its last piece, audit logging, so no count moves.",
     "evidence": [
      "docs/decisions/2026-11-20-owner-decisions.md"
+    ]
+   },
+   {
+    "on": "2026-11-21",
+    "what": "D234 (the owner, continuing the sign-in and accounts cluster): module entitlements serve from the database. T-083 closes — the rollout-posture decision it was parked on is made (standard modules on for everyone as account-synced toggles; Portfolio Builder granted per account, owner command now, billing later) and the build is done: /api/user/entitlements over the table migration 0000 created, a session’s toggle never reaching a premium module, grant-aware ModuleGate and Settings, the one-time localStorage import, and local mode unchanged so the posture is dark until launch. T-084 (billing writes these rows) stays parked. Counts recomputed: parked 125 to 124, closed 271 to 272; open 8, blocked 1, total 405 unchanged.",
+    "evidence": [
+     "docs/decisions/2026-11-21-owner-decisions.md"
     ]
    }
   ]
