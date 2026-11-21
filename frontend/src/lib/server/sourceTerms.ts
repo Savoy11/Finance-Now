@@ -567,6 +567,7 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
       'Stay under 30 API calls/second in aggregate; stacking plans does NOT raise the limit',
       'Personal use only: the account must not be registered to a business, used by a business even internally, or expensed as a business cost — any one alone ends eligibility',
       'Redistribution — including DERIVED results — to anyone requires prior written approval from Finnhub. A multi-user deployment is barred by default and no tier lifts it',
+      'LAUNCH STEP (D241, 2026-11-21): the owner dropped the drafted permission enquiry — no written approval is pursued. At launch, remove Finnhub from the quote ladder unless approval has arrived some other way; FMP, Twelve Data, Tiingo and Alpha Vantage remain around it, so nothing empties (D21). See docs/decisions/2026-11-21-owner-decisions.md and docs/LEGAL-REVIEW.md §2',
       'On subscription end or lapse, delete all stored Finnhub data: “All data must be deleted should your subscription to that data ends.” Covers caches, DB rows and committed test fixtures',
       'No Finnhub trademark or logo as branding — the Terms grant no right to any mark',
     ],

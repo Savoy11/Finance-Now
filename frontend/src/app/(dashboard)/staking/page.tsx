@@ -314,7 +314,8 @@ function ProviderCard({
                 <div className="flex items-center gap-1 w-32 shrink-0">
                   <Lock size={11} className="text-text-muted shrink-0" />
                   <span className="text-xs text-text-secondary">
-                    {asset.lockupDays === 0 ? 'No lockup' : `${asset.lockupDays}d unbonding`}
+                    {/* No figure is published (D238); a liquid receipt token's 0 stays (D162). */}
+                    {asset.lockupDays == null ? 'Not published' : asset.lockupDays === 0 ? 'No lockup' : `${asset.lockupDays}d unbonding`}
                   </span>
                 </div>
 
@@ -322,7 +323,7 @@ function ProviderCard({
                 <div className="flex items-center gap-1 w-28 shrink-0">
                   <span className="text-xs text-text-muted">Min:</span>
                   <span className="text-xs text-text-secondary font-mono">
-                    {asset.minStakeUsd != null ? `$${asset.minStakeUsd.toLocaleString('en-US')}` : asset.minStakeNative === 0 ? 'None' : `${asset.minStakeNative} ${info.symbol}`}
+                    {asset.minStakeUsd != null ? `$${asset.minStakeUsd.toLocaleString('en-US')}` : asset.minStakeNative == null ? 'Not published' : asset.minStakeNative === 0 ? 'None' : `${asset.minStakeNative} ${info.symbol}`}
                   </span>
                 </div>
 
