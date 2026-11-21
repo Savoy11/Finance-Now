@@ -1472,9 +1472,42 @@ copy of the personal information held about them within 30 days. Two ways in, on
 The tables are **found, not listed** (`lib/server/userExportCollect.ts`): every table in the schema
 with a `user_id` column is read, so a new table is exported without anyone remembering it; only
 `password_reset_tokens` is left out, with its reason (`EXCLUDED_TABLES`). The password hash and any
-`*_token_hash` column are removed, a table a migration has not created is named rather than failing,
-and a spreadsheet cell typed as a formula opens as text. It reads only and deletes nothing.
-Guarded by `lib/data/__tests__/userExport.test.ts`.
+`*_token_hash`, `*_code_hash` or `*_secret` column are removed (the two-factor key material among
+them, D233 — the fact of enrollment still exports), a table a migration has not created is named
+rather than failing, and a spreadsheet cell typed as a formula opens as text. It reads only and
+deletes nothing. Guarded by `lib/data/__tests__/userExport.test.ts`.
+
+**Two-step sign-in, built dark (T-088's 2FA piece; D233, 2026-11-20).** An account can require a
+6-digit authenticator code as well as its password — the standard TOTP scheme (RFC 6238),
+implemented in `lib/auth/totp.ts` with **no new dependency** and held to the RFCs' own test vectors
+(`totp.test.ts`); rules in `lib/auth/twoFactor.ts`, database half in `twoFactorStore.ts`. How it
+holds together:
+
+- **Dark until launch, like D232.** Enrollment is a Settings card (`TwoFactorPanel`) that renders
+  nothing without a signed-in session, and every `/api/user/two-factor/*` route resolves the account
+  through `getSessionUserId()` — the session only, **never the shared local user** (second-step
+  protection on `local@fn.local`, which cannot be signed into, would protect nothing while looking
+  protective). In local mode (today) the whole surface answers 401 and shows nothing.
+- **Sign-in** (`lib/auth/config.ts`) asks for the code only after the password matched, after the
+  forced-reset check: codes `totp_required` (the login form shows its second step), `totp_invalid`,
+  `totp_throttled`. The form takes an authenticator code or a recovery code in the same box.
+- **Enrollment** hands the secret over once — an `otpauth://` link plus a manual setup key; **no QR
+  code on purpose**, which would be the app's first drawing dependency. Confirming the first code
+  turns it on and shows ten one-time **recovery codes**, stored only as SHA-256.
+- **Replay and guessing:** a code that signed someone in cannot be used again inside its window
+  (`last_used_step`), and five wrong codes in a row make the account wait five minutes — counted in
+  server memory, the D173 posture, so an unrun migration can never lock sign-in.
+- ⚠ **Migration 0012** adds `two_factor_secrets` + `two_factor_recovery_codes` (no `users` column,
+  the 0008 reasoning); until it runs everything reads as "not enrolled", never a lockout. The TOTP
+  secret is stored as written — it must be read back to verify, and sealing it under
+  `FN_SECRETS_KEY` would turn a mislaid key into every enrolled account locked out.
+- **Lost phone AND recovery codes:** `npm run auth:2fa -- --disable --user <email>` (owner,
+  identity checked offline; `--status` lists enrollments). Turning two-factor off **deletes** the
+  secret and code hashes — a revoked credential is not a record, and the no-deletion standing rule
+  is about project files and branches (D233).
+
+Guarded by `lib/auth/__tests__/totp.test.ts`, `twoFactor.test.ts` and `twoFactorSignIn.test.ts`
+(check order, the three codes, session-only routes, missing-table behaviour, the throttle).
 
 **Server-side secret stores** (gitignored, written at repo `frontend/` root):
 `.provider-config.json` (provider API keys) and `.agent-prompts.json` (agent overrides).

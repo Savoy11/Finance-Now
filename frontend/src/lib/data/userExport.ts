@@ -30,6 +30,10 @@ export const LEFT_OUT: readonly { what: string; why: string }[] = [
     what: 'Password reset links',
     why: 'Each is stored only as a one-way hash, works once and expires within an hour. They are left out.',
   },
+  {
+    what: 'Your two-step sign-in secret and recovery codes',
+    why: 'They are keys for signing in, not information about you. Whether two-step sign-in is on, and since when, is included.',
+  },
 ]
 
 /** Tables read for nothing at all, with the reason. Every other table with a user_id column is exported. */
@@ -40,10 +44,13 @@ export const EXCLUDED_TABLES: Readonly<Record<string, string>> = {
 /** Columns removed from the rows they appear in. */
 export const OMITTED_COLUMNS: Readonly<Record<string, readonly string[]>> = {
   users: ['password_hash'],
+  // The TOTP secret is a sign-in key (T-088, D233); the row's dates still export,
+  // so the fact of enrollment is in the file.
+  two_factor_secrets: ['secret'],
 }
 
 /** Any column with one of these names is removed wherever it appears: a second guard for secrets. */
-const SECRET_COLUMN = /(^|_)(password_hash|token_hash)$/
+const SECRET_COLUMN = /(^|_)(password_hash|token_hash|code_hash|secret)$/
 
 export const ON_THIS_DEVICE =
   'Some things are kept only in your browser, not on our server: price alerts, notes, chart settings, ' +

@@ -25,6 +25,7 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "auth:reset": "tsx scripts/auth-reset.ts",
+    "auth:2fa": "tsx scripts/auth-2fa.ts",
     "auth:consent": "tsx scripts/auth-consent.ts",
     "user:export": "tsx scripts/user-export.ts",
     "api:key": "node scripts/api-key.mjs",

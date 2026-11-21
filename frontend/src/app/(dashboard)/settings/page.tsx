@@ -40,6 +40,7 @@ import { BIAS_STRENGTHS } from '@/lib/watchlist/bias'
 import { migrateStorageKey } from '@/lib/utils/storageMigration'
 import { AffiliateClicksPanel } from '@/components/settings/AffiliateClicksPanel'
 import { YourDataPanel } from '@/components/settings/YourDataPanel'
+import { TwoFactorPanel } from '@/components/settings/TwoFactorPanel'
 
 // One-time key migration for the Finance Now rename — runs before any read below.
 migrateStorageKey('caep-custom-subreddits', 'fn-custom-subreddits')
@@ -1388,6 +1389,9 @@ export default function SettingsPage() {
           {/* Suite modules */}
           <ModulesPanel />
           <WatchlistBiasPanel />
+          {/* T-088/D233: two-step sign-in. Renders nothing without a signed-in
+              session, so it is dark until the launch flip (D174/D232). */}
+          <TwoFactorPanel />
           {/* T-452: download a copy of everything kept for this account. */}
           <YourDataPanel />
 
