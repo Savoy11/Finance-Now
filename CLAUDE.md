@@ -1538,6 +1538,35 @@ Guarded by `lib/modules/__tests__/entitlements.test.ts` (defaults by mode, expir
 grant locks, the import rules, the route/store/gate wiring, and the owner command's arguments —
 whose module-id literal is pinned to the registry).
 
+**The security audit log (T-088's last piece + T-185; D235, 2026-11-21).** An append-only record
+of account-security events in `audit_log` (schema `lib/db/schema/audit.ts`; writer
+`lib/server/auditLog.ts`; vocabulary `lib/auth/auditEvents.ts`). ⚠ **Migration 0013** creates the
+table **and a BEFORE UPDATE OR DELETE trigger that raises an exception**, so a row can never be
+edited or removed — tamper-evident by the database itself (WORM), the shape T-185 specified. What
+is logged, and the lines drawn:
+
+- **Events:** account created; sign-in succeeded and its refusals (wrong password, forced reset,
+  wrong or throttled two-factor code — each only for an email that matched an account, so the log
+  never records other people's typos or probes which accounts exist); password reset; two-factor
+  on/off and recovery-code use/regeneration; module toggles, grants and revocations; and data
+  exports. The four owner commands (`auth:reset`, `auth:2fa`, `entitlements`, `user:export`) log
+  as `owner-command` through `scripts/lib/auditInsert.ts`.
+- **Deliberately NOT logged:** every portfolio/watchlist edit — the trade ledger is already its
+  own append-only record, and activity noise would bury the sign-ins this log exists to answer
+  for. Widening later is additive. **No IP address or browser string** is kept: that would be new
+  personal data the draft Privacy Policy does not yet name (flagged for counsel in D235).
+- **Recording never breaks the action**: `recordAudit` swallows every failure after saying so,
+  and a database without 0013 reads as "not logging yet" (one warn), never an outage.
+- **`user_id` carries NO foreign key, deliberately**: the record of what happened to an account
+  survives the account, and a cascade DELETE would be refused by the WORM trigger anyway. The
+  column is still named `user_id`, so "Download my data" includes an account's own audit rows
+  automatically (T-452).
+
+Guarded by `lib/auth/__tests__/auditLog.test.ts`: every event is pinned to the file that records
+it (drift fails), every recorded event is in the vocabulary, the migration carries the trigger,
+the schema carries no foreign key, the export includes the table, and the writer's never-break
+behaviour is driven against a mocked database.
+
 **Server-side secret stores** (gitignored, written at repo `frontend/` root):
 `.provider-config.json` (provider API keys) and `.agent-prompts.json` (agent overrides).
 

@@ -4,6 +4,7 @@ import { db, isDbConfigured } from '@/lib/db'
 import { entitlements } from '@/lib/db/schema'
 import { isSchemaBehindError } from '@/lib/db/errors'
 import { getCurrentUserId, getSessionUserId } from '@/lib/auth/session'
+import { recordAudit } from '@/lib/server/auditLog'
 import {
   buildEntitlementsResponse, canUserToggle, isModuleId, toggleRefusalReason,
   type EntitlementMode, type EntitlementRowLike,
@@ -91,6 +92,10 @@ export async function PUT(request: Request) {
         // grant term, billing's to write (and in session mode this branch can
         // only ever be a standard module's row anyway).
       })
+    await recordAudit({
+      userId: account.userId, actor: 'user', event: 'module_toggled',
+      detail: `${moduleId} ${enabled ? 'on' : 'off'}`,
+    })
     const rows = await readRows(account.userId)
     return NextResponse.json(buildEntitlementsResponse(rows, account.mode, now))
   } catch (e) {

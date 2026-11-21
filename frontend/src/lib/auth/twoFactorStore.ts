@@ -4,6 +4,7 @@ import { and, eq, isNull } from 'drizzle-orm'
 import { db, isDbConfigured } from '@/lib/db'
 import { twoFactorRecoveryCodes, twoFactorSecrets } from '@/lib/db/schema'
 import { isSchemaBehindError } from '@/lib/db/errors'
+import { recordAudit } from '@/lib/server/auditLog'
 import {
   checkEnrollmentCode, checkSignInCode, recordFailure, recordSuccess, throttled,
   type RecoveryCode, type RecoveryCodeRow, type ThrottleState, type TwoFactorRow,
@@ -143,6 +144,11 @@ export async function verifyTwoFactorSignIn(userId: string, input: string, now: 
       .returning({ id: twoFactorRecoveryCodes.id })
     // Two sign-ins racing the same code: only the one that spent it gets in.
     if (spent.length === 0) return fail()
+    // A spent recovery code is an audit event (T-088, D235): one of the ten is gone.
+    await recordAudit({
+      userId, actor: 'user', event: 'recovery_code_used',
+      detail: `${result.codesLeft} left`,
+    })
   }
   const cleared = recordSuccess()
   if (cleared === undefined) throttle.delete(userId)

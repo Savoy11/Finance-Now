@@ -118,6 +118,16 @@ Fixed 2026-09-08 by excluding Auth.js paths: `source: '/api/:path((?!auth/).*)'`
 > environment only — `FN_REQUIRE_AUTH=true`, `AUTH_SECRET`, `FN_SITE_OPEN=true`. Steps
 > below are kept as written, as the history this lands on.
 
+> **Update 2026-11-21 (D235): the security audit log is built — T-088 is complete.** An
+> append-only `audit_log` (migration 0013: the table plus a BEFORE UPDATE OR DELETE trigger
+> that raises, so rows are tamper-evident by the database — T-185's shape) records account
+> creation, sign-in outcomes, password resets, two-factor changes, module grants/toggles and
+> data exports; the owner commands log as `owner-command`. Recording never breaks the action,
+> a database without 0013 reads as "not logging yet", and `user_id` carries no foreign key so
+> the record survives the account (the export still finds it by column name). With D173's rate
+> limit, D233's 2FA and this, every piece of T-088's Phase 6 hardening is built. CLAUDE.md has
+> the full block.
+
 > **Update 2026-11-21 (D234): step 4 is built — entitlements serve from the database.**
 > `/api/user/entitlements` reads and writes the `entitlements` table (there since migration
 > 0000), on the posture the owner chose: standard modules on for everyone as account-synced

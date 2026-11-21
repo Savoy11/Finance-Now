@@ -78,7 +78,8 @@ export function isResetTokenUsable(row: ResetTokenRow | null, now: Date): row is
 export const INVALID_LINK_MESSAGE =
   'This reset link is not valid: it may have expired or already been used. Ask for a new one.'
 
-export type ResetOutcome = { ok: true } | { ok: false; status: 400; message: string }
+/** `userId` on success, so the route can write the audit row (T-088, D235). */
+export type ResetOutcome = { ok: true; userId: string } | { ok: false; status: 400; message: string }
 
 export async function applyPasswordReset(
   store: PasswordResetStore,
@@ -92,5 +93,5 @@ export async function applyPasswordReset(
   if (problem) return { ok: false, status: 400, message: problem }
   await store.setPassword(row.userId, await input.hashPassword(input.password as string), now)
   await store.spendTokens(row.userId, now)
-  return { ok: true }
+  return { ok: true, userId: row.userId }
 }

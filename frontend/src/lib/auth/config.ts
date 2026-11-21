@@ -6,6 +6,7 @@ import { db } from '@/lib/db'
 import { users } from '@/lib/db/schema'
 import { mustResetPassword } from './passwordResetStore'
 import { twoFactorRequired, verifyTwoFactorSignIn } from './twoFactorStore'
+import { recordAudit } from '@/lib/server/auditLog'
 
 /**
  * The password was right, but the owner has forced a reset (T-435, D123), e.g. after a
@@ -73,23 +74,41 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         if (!user?.passwordHash) return null
 
+        // Every outcome below lands in the audit log (T-088, D235) — but only for an
+        // email that matched an account: logging unknown emails would record other
+        // people's typos and make the log itself a probe for which accounts exist.
+        // recordAudit never throws and never blocks the outcome.
         const ok = await bcrypt.compare(password, user.passwordHash)
-        if (!ok) return null
+        if (!ok) {
+          await recordAudit({ userId: user.id, actor: 'user', event: 'signin_failed' })
+          return null
+        }
 
         // Checked only after the password matched, so the refusal tells nobody but the
         // account's holder that a reset is pending.
-        if (await mustResetPassword(user.id)) throw new MustResetPasswordError()
+        if (await mustResetPassword(user.id)) {
+          await recordAudit({ userId: user.id, actor: 'user', event: 'signin_refused_reset' })
+          throw new MustResetPasswordError()
+        }
 
         // Two-factor (T-088, D233), also only after the password matched. Not enrolled —
         // or migration 0012 not run, which reads as not enrolled — costs nothing here.
+        // Asking for the code (totp_required) is the normal second step, not an event.
         if (await twoFactorRequired(user.id)) {
           const otp = typeof credentials?.otp === 'string' ? credentials.otp.trim() : ''
           if (!otp) throw new TwoFactorRequiredError()
           const check = await verifyTwoFactorSignIn(user.id, otp, new Date())
-          if (check === 'throttled') throw new TwoFactorThrottledError()
-          if (check !== 'ok') throw new TwoFactorInvalidError()
+          if (check === 'throttled') {
+            await recordAudit({ userId: user.id, actor: 'user', event: 'signin_code_throttled' })
+            throw new TwoFactorThrottledError()
+          }
+          if (check !== 'ok') {
+            await recordAudit({ userId: user.id, actor: 'user', event: 'signin_code_failed' })
+            throw new TwoFactorInvalidError()
+          }
         }
 
+        await recordAudit({ userId: user.id, actor: 'user', event: 'signed_in' })
         return { id: user.id, email: user.email, name: user.name ?? undefined, image: user.image ?? undefined }
       },
     }),
