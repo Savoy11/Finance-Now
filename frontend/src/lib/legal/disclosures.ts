@@ -29,7 +29,7 @@
  * some statements describe the site as it should stand at launch rather than as
  * it is today (the draft's "Read me first" tab lists them). `disclosuresInForce()`
  * is what takes the draft notice off, and it needs BOTH an approval and zero
- * blanks — approving a page that still says "FinanceNow72@gmail.com" is not possible.
+ * blanks — approving a page that still says "[CONTACT EMAIL]" is not possible.
  */
 
 import { DATA_SOURCES, requiredAttributions } from '@/lib/data/dataSources'
@@ -75,7 +75,7 @@ export const DISCLOSURE_SOURCE = {
  * reintroduces it still counts as a blank rather than a typo.
  */
 export const KNOWN_BLANKS = [
-  '[COMPANY LLC NAME]', '[MAILING ADDRESS]', 'FinanceNow72@gmail.com',
+  '[COMPANY LLC NAME]', '[MAILING ADDRESS]', '[CONTACT EMAIL]',
   '[FINANCE NOW URL]', '[NEWS CHARTS URL]', '[EFFECTIVE DATE]',
   '[HOSTING PROVIDER]', '[BACKUP PERIOD]', '[LOG PERIOD]', '[AD NETWORK]',
 ] as const

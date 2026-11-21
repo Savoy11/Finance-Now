@@ -51,10 +51,12 @@ export async function GET(request: Request) {
   }
 
   const now = new Date()
-  // Downloading everything held about an account is itself an audit event
-  // (T-088, D235); the row says which part, never the content.
-  await recordAudit({ userId, actor: 'user', event: 'data_exported', detail: `part=${part}` })
   const collected = await collectUserExport(query, userId)
+  // Downloading everything held about an account is itself an audit event
+  // (T-088, D235); the row says which part, never the content — and it is written
+  // only once the collect succeeded, since the log is append-only: a failed
+  // export must not leave a permanent "data_exported" row (2026-11-21 audit).
+  await recordAudit({ userId, actor: 'user', event: 'data_exported', detail: `part=${part}` })
   const headers = {
     'Content-Disposition': `attachment; filename="${exportFileName(part, now)}"`,
     'Cache-Control': 'no-store',

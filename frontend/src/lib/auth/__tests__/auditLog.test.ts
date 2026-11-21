@@ -62,6 +62,12 @@ describe('the event vocabulary and its call sites', () => {
     // signin_failed is recorded after the user row was found, inside the !ok branch.
     expect(config.indexOf("event: 'signin_failed'")).toBeGreaterThan(config.indexOf('if (!user?.passwordHash) return null'))
   })
+  it('the export route records data_exported only after the collect succeeded', () => {
+    // The log is append-only, so a collect that then fails must not have already
+    // written a permanent "data_exported" row (2026-11-21 audit).
+    const route = read('../../../app/api/user/export/route.ts')
+    expect(route.indexOf("event: 'data_exported'")).toBeGreaterThan(route.indexOf('await collectUserExport('))
+  })
 })
 
 describe('the table (migration 0013)', () => {

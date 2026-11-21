@@ -17,8 +17,10 @@
  * the public (legal) pages (/about and below — a signed-out visitor must reach
  * the Privacy Policy, D50), every API and data route (/api/*, including Auth.js's
  * own /api/auth/*, and /live-data/*: each guards itself — apiGuard, guardApiV1,
- * getCurrentUserId — and walling them would break the app's own fetches), and
- * files with an extension (static assets). The matcher already excludes Next's
+ * getCurrentUserId — and ROOT-level files with an extension (robots.txt, icons).
+ * Only the root: a dot deeper in is part of a page's own address — /equities/BRK.B
+ * is a stock — and reading any dot as a file let a signed-out visitor straight to
+ * every detail page (2026-11-21 audit). The matcher already excludes Next's
  * build files.
  */
 
@@ -34,8 +36,8 @@ export function walledPath(pathname: string): boolean {
   for (const prefix of OPEN_PREFIXES) {
     if (pathname === prefix || pathname.startsWith(prefix + '/')) return false
   }
-  // A dot in the last segment is a file (robots.txt, icons); pages have none.
-  const last = pathname.slice(pathname.lastIndexOf('/') + 1)
-  if (last.includes('.')) return false
+  // A dotted name at the ROOT is a file (robots.txt, icons); a dot deeper in is
+  // a page's own address (/equities/BRK.B), so it stays walled (2026-11-21 audit).
+  if (pathname.lastIndexOf('/') === 0 && pathname.includes('.')) return false
   return true
 }
