@@ -109,6 +109,15 @@ Fixed 2026-09-08 by excluding Auth.js paths: `source: '/api/:path((?!auth/).*)'`
 
 ## Goal B — full multi-user auth (do this when selling)
 
+> **Update 2026-11-16 (D232): the launch kit is built dark.** The code halves of steps 1, 3
+> and 5 exist behind an environment flag that stays unset: the login page is a server
+> wrapper over its form (`LOGIN_DISABLED` is gone), the wall lives in `src/middleware.ts`
+> behind `FN_REQUIRE_AUTH` (exactly the middleware step 3 asks for, failing closed when a
+> session cannot be verified), and `/signup` posts to `/api/auth/signup` with the consent
+> box T-436 requires. Sign-in itself stays off until launch (D174); the launch flip is
+> environment only — `FN_REQUIRE_AUTH=true`, `AUTH_SECRET`, `FN_SITE_OPEN=true`. Steps
+> below are kept as written, as the history this lands on.
+
 Not built. Deliberately deferred: nothing in the app consumes multi-user auth
 yet, and building it now means maintaining a login system with no users.
 

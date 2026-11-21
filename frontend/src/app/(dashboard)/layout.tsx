@@ -17,21 +17,21 @@ import { useGlobalRefresh } from '@/hooks/useGlobalRefresh'
 import { usePriceAlertMonitor } from '@/hooks/usePriceAlertMonitor'
 import { PullToRefresh }    from '@/components/ui/PullToRefresh'
 import { SiteFooter }       from '@/components/layout/SiteFooter'
-// LOGIN TEMPORARILY DISABLED (by request). The auth wall is fully off so it
-// cannot affect the build or block access.
+// SIGN-IN STAYS OFF UNTIL LAUNCH (D174). The wall itself moved out of this
+// client component into src/middleware.ts behind FN_REQUIRE_AUTH (D232,
+// 2026-11-16): a page request without a signed-in session is redirected to
+// /login before anything renders, which is what auth.md's Goal B step 3 asked
+// for. Launch is environment only — FN_REQUIRE_AUTH=true, AUTH_SECRET
+// (Auth.js reads it straight from env, so it appears in no source file and
+// grep won't find it) and FN_SITE_OPEN=true — with no code flip here or on
+// the login page.
 //
-// The original condition — "until the risk framework is done" — was satisfied
-// on 2026-07-19 when R2 landed. Turning the wall back on is now an owner
-// decision, not a blocked one.
-//
-// To RE-ENABLE: set REQUIRE_AUTH = true here, set LOGIN_DISABLED = false in
-// (auth)/login/page.tsx, and set AUTH_SECRET in the environment (Auth.js reads
-// it straight from env, so it appears in no source file and grep won't find it).
-//
-// This comment previously prescribed `const REQUIRE_AUTH = !LIVE_DATA`, which
-// was a broken recipe: LIVE_DATA is hardcoded `true` in lib/constants.ts, so
-// following it left the wall permanently off while looking deliberate. The
-// login page has always carried the correct version — keep the two in sync.
+// This client-side check is KEPT FALSE on purpose and is no longer the wall:
+// the middleware walls pages server-side, so flipping this would only add a
+// second, later redirect. History: the comment here once prescribed
+// `const REQUIRE_AUTH = !LIVE_DATA`, a broken recipe (LIVE_DATA is hardcoded
+// true), and until D232 the wall was this client effect plus a LOGIN_DISABLED
+// constant on the login page.
 const REQUIRE_AUTH = false
 
 function DashboardInner({ children }: { children: React.ReactNode }) {

@@ -52,7 +52,9 @@ frontend/src/
 ├── app/
 │   ├── layout.tsx                  # Root layout — wraps everything in <Providers>
 │   ├── providers.tsx               # React Query + Toaster setup
-│   ├── (auth)/                     # Login page (Auth.js credentials; wall currently off), and
+│   ├── (auth)/                     # Login + sign-up pages (Auth.js credentials; both render only
+│   │                               #   once FN_REQUIRE_AUTH turns the wall on at launch — D232
+│   │                               #   built them dark; sign-in stays off until launch, D174), and
 │   │                               #   reset-password/, which spends an owner-issued reset link
 │   │                               #   (T-435; see "Password reset" under Environment Variables),
 │   │                               #   and owner/, which unlocks the owner's tools on a host
@@ -1340,9 +1342,17 @@ DATABASE_URL=postgres://…                   # Postgres. Backs users, entitleme
                                             # the rest of the app still runs live-only.
 
 # ── Auth (Auth.js / next-auth v5) ──
-AUTH_SECRET=…                               # REQUIRED once the login wall is re-enabled — Auth.js
+AUTH_SECRET=…                               # REQUIRED once the sign-in wall is on — Auth.js
                                             # reads it directly from env (it appears in no source
                                             # file, so grep won't find it). Generate: openssl rand -base64 32
+FN_REQUIRE_AUTH=true                        # LAUNCH ONLY (D232, 2026-11-16). Turns on the sign-in wall
+                                            # in src/middleware.ts (after the site lock; pages only —
+                                            # (auth) and (legal) pages, /api/* and /live-data/* are never
+                                            # walled) and makes /login and /signup render; unset, both
+                                            # redirect away and the wall is inert. The launch flip is
+                                            # environment only — this, AUTH_SECRET and FN_SITE_OPEN=true —
+                                            # no code change (the old REQUIRE_AUTH/LOGIN_DISABLED
+                                            # constants are gone; lib/server/authWall.ts holds the rules)
 FN_ALLOW_LOCAL_USER=true|false              # (legacy CAEP_ALLOW_LOCAL_USER still honored)
                                             # Defaults: allowed in dev, denied in production.
                                             # ⚠ Setting true in production hands every anonymous
