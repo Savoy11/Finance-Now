@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid, boolean, uniqueIndex, index } from 'drizzle-orm/pg-core'
+import { pgTable, text, timestamp, uuid, boolean, uniqueIndex, index, bigint } from 'drizzle-orm/pg-core'
 import { sql } from 'drizzle-orm'
 import type { ModuleId } from '@/lib/modules/registry'
 
@@ -94,6 +94,41 @@ export const communicationConsents = pgTable('communication_consents', {
   withdrawnAt: timestamp('withdrawn_at', { withTimezone: true }),
 }, (t) => ({
   byUser: index('communication_consents_user_idx').on(t.userId),
+}))
+
+// ─── Two-factor sign-in (T-088, D233, migration 0012) ────────────────────────
+// Tables of their own, for the reason password_states is one (above): a column on `users`
+// would break sign-in on a database without 0012. A missing table reads as "not enrolled",
+// never a lockout (lib/auth/twoFactorStore.ts). The TOTP secret is stored as written —
+// verifying a code needs it back, so it cannot be hashed, and sealing it under
+// FN_SECRETS_KEY would turn a mislaid key into every enrolled account locked out — and
+// "Download my data" strips it with the password hash (lib/data/userExport.ts). Recovery
+// codes are stored only as SHA-256. Rows go with their user (CASCADE); turning two-factor
+// off removes them, because a revoked shared secret kept around is a live credential, not
+// a record (D233 — the no-deletion standing rule is about project files and branches).
+
+/** One enrollment per user; confirmed_at null is a begun, unconfirmed one that gates nothing. */
+export const twoFactorSecrets = pgTable('two_factor_secrets', {
+  userId: uuid('user_id').primaryKey().references(() => users.id, { onDelete: 'cascade' }),
+  /** TOTP secret, base32 (lib/auth/totp.ts). */
+  secret: text('secret').notNull(),
+  confirmedAt: timestamp('confirmed_at', { withTimezone: true }),
+  /** The last TOTP time step that signed someone in, so that exact code cannot be replayed. */
+  lastUsedStep: bigint('last_used_step', { mode: 'number' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+/** Single-use sign-in codes for a lost phone. Only each code's SHA-256 is stored; spent ones are marked. */
+export const twoFactorRecoveryCodes = pgTable('two_factor_recovery_codes', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  codeHash: text('code_hash').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  usedAt: timestamp('used_at', { withTimezone: true }),
+}, (t) => ({
+  userCodeUnique: uniqueIndex('two_factor_recovery_codes_user_hash_unique').on(t.userId, t.codeHash),
+  byUser: index('two_factor_recovery_codes_user_idx').on(t.userId),
 }))
 
 export type User = typeof users.$inferSelect

@@ -11,7 +11,10 @@ migrateStorageKey('caep:price-alerts:v1', 'fn:price-alerts:v1')
 // User-defined price alerts across all modules (crypto + stocks + funds).
 // Alerts are one-shot: they fire once, keep a triggered record, and can be
 // re-armed. Monitoring happens client-side while the app is open
-// (usePriceAlertMonitor); server-side delivery arrives with the backend.
+// (usePriceAlertMonitor). They are set from the action row on each asset page
+// and listed on the Watchlist page (T-454, D209), and stay in this browser, as
+// the draft Privacy Policy says; whether they move into the account is a
+// question for launch with sign-in (T-131).
 
 export type AlertInstrumentKind = 'crypto' | 'security'
 export type AlertCondition = 'above' | 'below'
@@ -22,6 +25,8 @@ export interface PriceAlert {
   /** CoinGecko id for crypto, ticker symbol for securities */
   target: string
   label: string
+  /** The asset's own page, set by the action row (T-454) so the alert list can link back. */
+  href?: string
   condition: AlertCondition
   price: number
   createdAt: string

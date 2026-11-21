@@ -34,7 +34,10 @@ const STABLECOINS = [
   { id: 'ethena-usde',      symbol: 'USDe',  pegTarget: 1.0 },
   { id: 'usds',             symbol: 'USDS',  pegTarget: 1.0 },
   { id: 'first-digital-usd',symbol: 'FDUSD', pegTarget: 1.0 },
-  { id: 'frax',             symbol: 'FRAX',  pegTarget: 1.0 },
+  // frxUSD, not 'frax': CoinGecko's 'frax' is the legacy Frax Dollar, which has had
+  // no $1 guarantee since FIP-430 and trades near $0.99, so against this peg it raised
+  // a standing warning that said nothing new (D191, 2026-11-05; see stablecoinMeta.ts).
+  { id: 'frax-usd',         symbol: 'frxUSD', pegTarget: 1.0 },
   { id: 'paypal-usd',       symbol: 'PYUSD', pegTarget: 1.0 },
   { id: 'crvusd',           symbol: 'crvUSD',pegTarget: 1.0 },
   { id: 'gho',              symbol: 'GHO',   pegTarget: 1.0 },

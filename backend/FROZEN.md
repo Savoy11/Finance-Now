@@ -46,6 +46,11 @@ This is a retirement on paper of a service that had already stopped running:
   2026-10-21 so the security scanner's alerts close: aiohttp (#384), then pyjwt, anyio,
   certifi, cryptography, mako and multidict, each to a fixed release. Nothing was added
   and `pyproject.toml` did not change; none of it runs, so this changes no behaviour.
+  Updated again on 2026-11-06 (D194) for five high alerts: pyasn1 0.6.4 → 0.6.5 and
+  dnspython 2.8.0 → 2.9.2, by the same Poetry (2.5.1). Two flagged packages have no
+  fixed release and stay as they are: python-jose 3.5.0 (GHSA-3qf3-8w2g-rqmx) and
+  ecdsa 0.19.2 (GHSA-wj6h-64fc-37mp). They stay until the owner decides the backend's
+  future; reviving it (below) would have to replace python-jose first.
 
 ## What was removed elsewhere
 

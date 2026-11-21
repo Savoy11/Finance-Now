@@ -80,8 +80,22 @@ describe('blanks and the draft notice', () => {
     expect(blanksIn('[CONTACT EMAL]').filter((b) => !(KNOWN_BLANKS as readonly string[]).includes(b))).toEqual(['[CONTACT EMAL]'])
   })
 
+  it('every known blank is a token the scanner can find — a filled value on the list is dead', () => {
+    // The D227 safety net: [CONTACT EMAIL] stays listed so a future draft that
+    // reintroduces the token counts as a blank, not a typo. The 2026-11-21 audit
+    // found the set-wide fill had replaced the token ON THIS LIST with the bare
+    // email, which the bracket scanner can never match — so each entry must be
+    // a token blanksIn() itself recognises.
+    for (const b of KNOWN_BLANKS) {
+      expect(blanksIn(`x ${b} y`), b).toEqual([b])
+    }
+  })
+
   it('finds the blanks the draft still has — the notice has something to list', () => {
-    expect(unfilledBlanks()).toEqual(expect.arrayContaining(['[COMPANY LLC NAME]', '[CONTACT EMAIL]', '[EFFECTIVE DATE]']))
+    expect(unfilledBlanks()).toEqual(expect.arrayContaining(['[COMPANY LLC NAME]', '[EFFECTIVE DATE]']))
+    // [CONTACT EMAIL] was filled set-wide on 2026-11-15 (D227) and must stay filled.
+    expect(unfilledBlanks()).not.toContain('[CONTACT EMAIL]')
+    expect(allPublishedText().some((t) => t.includes('FinanceNow72@gmail.com'))).toBe(true)
   })
 
   it('is in force only once approved AND with no blank left', () => {

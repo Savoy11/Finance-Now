@@ -6,18 +6,31 @@ import { clsx } from 'clsx'
 import { Banknote, Gem, Globe, Percent } from 'lucide-react'
 import { ModuleGate } from '@/components/layout/ModuleGate'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { STALE_TIME_SHORT } from '@/lib/constants'
+import { STALE_TIME_LONG, STALE_TIME_SHORT } from '@/lib/constants'
 import { SourceLine } from '@/components/ui/SourceLine'
+import { MacroCalendarCard } from '@/components/markets/MacroCalendarCard'
+import { RATES_CATALOG } from '@/lib/data/ratesCatalog'
+import { CURRENCY_CATALOG, formatFxRate } from '@/lib/data/currencyCatalog'
+import { curveYieldSourceLabel, yieldFromCurve, type CurveYield } from '@/lib/data/ratesFromCurve'
+import type { YieldCurveResponse } from '@/app/live-data/treasury-yield-curve/route'
+import { ecbPairBySymbol, isWorkedOut, shownPairRate } from '@/lib/data/fxReference'
+import { EcbFreeOfCharge, useFxReferencePairs } from '@/components/markets/FxHistoryCard'
 
 // Macro Markets overview — the module's landing page while the three area
 // toolsets build out (owner spec: docs/ROADMAP.md, "Macro Markets").
-// Everything shown is live via the existing security-quotes route; if a
-// symbol can't be priced it renders an explicit dash, never a made-up value.
+// Commodity and currency rows are live via the security-quotes route. The four
+// Treasury yields are read from the official par curve, as /macro/rates reads
+// them (D3, lib/data/ratesFromCurve.ts): no free provider quotes ^IRX/^FVX/
+// ^TNX/^TYX, so asking the quote ladder for them left this strip all dashes
+// while the rates page showed the same yields (found 2026-11-06). A currency
+// pair with no live quote shows the European Central Bank's daily reference
+// rate, marked "ECB" (T-445, D203); the Dollar Index has no such rate. Anything
+// that can't be priced renders an explicit dash, never a made-up value.
 
 interface MacroSymbol {
   symbol: string
   label: string
-  /** How to render the quote value. */
+  /** How to render the quote value. A 'pct-yield' row reads the Treasury curve, never a quote. */
   kind: 'usd' | 'pct-yield' | 'fx'
 }
 
@@ -50,7 +63,7 @@ const AREAS: MacroArea[] = [
     title: 'Currencies',
     icon: Banknote,
     accent: '#22c55e',
-    blurb: 'Major and EM FX pairs, dollar index, and a converter — intraday via live quotes, daily ECB reference crosses.',
+    blurb: 'Major and EM FX pairs, dollar index, and a converter: live quotes where available, otherwise the ECB’s daily reference rates, which also chart every pair.',
     href: '/macro/currencies',
     symbols: [
       { symbol: 'EURUSD=X', label: 'EUR/USD', kind: 'fx' },
@@ -63,7 +76,7 @@ const AREAS: MacroArea[] = [
     title: 'Bonds & Rates',
     icon: Percent,
     accent: '#64748b',
-    blurb: 'The official treasury yield curve, live yields and bond futures, and the bond ETF shelf. CUSIP-level bond quotes are licensed data — the page says so rather than pretending.',
+    blurb: 'The official treasury yield curve, daily Treasury yields, live bond futures, and the bond ETF shelf. CUSIP-level bond quotes are licensed data — the page says so rather than pretending.',
     href: '/macro/rates',
     symbols: [
       { symbol: '^IRX', label: '3-Month', kind: 'pct-yield' },
@@ -74,7 +87,21 @@ const AREAS: MacroArea[] = [
   },
 ]
 
-const ALL_SYMBOLS = AREAS.flatMap((a) => a.symbols.map((s) => s.symbol))
+/** The strip's pairs whose ECB rate is worked out from two euro rates (no euro leg). */
+const WORKED_OUT_PAIRS = AREAS.flatMap((a) => a.symbols)
+  .map((s) => ecbPairBySymbol(s.symbol))
+  .filter((p): p is NonNullable<typeof p> => p !== undefined && isWorkedOut(p))
+  .map((p) => p.name)
+
+/** Only these go to the quote ladder; the yields come from the curve. */
+const QUOTED_SYMBOLS = AREAS.flatMap((a) => a.symbols.filter((s) => s.kind !== 'pct-yield').map((s) => s.symbol))
+
+/** A yield row's reading from the curve, or null (a dash). */
+function curveYield(symbol: string, curve: YieldCurveResponse | undefined): CurveYield | null {
+  const entry = RATES_CATALOG.find((r) => r.symbol === symbol)
+  if (!entry || !curve?.ok) return null
+  return yieldFromCurve(entry, curve.latest ?? null)
+}
 
 interface Quote {
   price: number | null
@@ -85,9 +112,14 @@ interface QuotesResponse {
   quotes?: Record<string, { price: number | null; changePercent: number | null }>
 }
 
-function fmtValue(kind: MacroSymbol['kind'], price: number): string {
+function fmtValue(kind: MacroSymbol['kind'], price: number, symbol?: string): string {
   if (kind === 'pct-yield') return `${price.toFixed(2)}%`
-  if (kind === 'fx') return price >= 10 ? price.toFixed(2) : price.toFixed(4)
+  if (kind === 'fx') {
+    // The pair's own precision, as the Currencies table shows it, so the two pages agree.
+    const entry = CURRENCY_CATALOG.find((c) => c.symbol === symbol)
+    if (entry) return formatFxRate(entry, price)
+    return price >= 10 ? price.toFixed(2) : price.toFixed(4)
+  }
   return price >= 100 ? `$${price.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : `$${price.toFixed(2)}`
 }
 
@@ -95,13 +127,28 @@ function MacroContent() {
   const { data, isLoading, isError } = useQuery<Record<string, Quote>>({
     queryKey: ['macro-overview-quotes'],
     queryFn: async () => {
-      const res = await fetch(`/live-data/security-quotes?symbols=${encodeURIComponent(ALL_SYMBOLS.join(','))}`)
+      const res = await fetch(`/live-data/security-quotes?symbols=${encodeURIComponent(QUOTED_SYMBOLS.join(','))}`)
       const json: QuotesResponse = await res.json()
       if (!json.ok || !json.quotes) throw new Error('quotes unavailable')
       return json.quotes
     },
     staleTime: STALE_TIME_SHORT,
     refetchInterval: 1000 * 60 * 2,
+  })
+
+  // The same query key as /macro/currencies, so the pages share one cached answer.
+  const { data: reference, isLoading: referenceLoading } = useFxReferencePairs()
+  /** A currency row's figure: the live quote, else the ECB's daily rate (D203), else null. */
+  const fxShown = (symbol: string) => {
+    const pair = ecbPairBySymbol(symbol)
+    return shownPairRate(data?.[symbol], pair && reference?.ok ? reference.pairs?.[pair.slug] : null)
+  }
+
+  // The same query key as /macro/rates, so the two pages share one cached curve.
+  const { data: curve, isLoading: curveLoading } = useQuery<YieldCurveResponse>({
+    queryKey: ['treasury-yield-curve'],
+    queryFn: () => fetch('/live-data/treasury-yield-curve').then((r) => r.json()),
+    staleTime: STALE_TIME_LONG,
   })
 
   return (
@@ -145,34 +192,75 @@ function MacroContent() {
                   Derived from the priced count instead — the commodities
                   page's own "N priced live" pattern. */}
               {(() => {
-                const priced = area.symbols.filter((s) => data?.[s.symbol]?.price != null).length
-                const live = priced > 0
+                // A curve yield is a daily official reading, so it is counted
+                // as "daily", never as "live".
+                // An ECB rate is counted as "daily", never as "live", as a curve yield is.
+                const fromCurve = area.symbols.every((s) => s.kind === 'pct-yield')
+                const live = area.symbols.filter((s) =>
+                  s.kind === 'fx' ? fxShown(s.symbol)?.basis === 'live' : s.kind !== 'pct-yield' && data?.[s.symbol]?.price != null,
+                ).length
+                const daily = area.symbols.filter((s) =>
+                  s.kind === 'pct-yield' ? curveYield(s.symbol, curve) != null : s.kind === 'fx' && fxShown(s.symbol)?.basis === 'ecb',
+                ).length
+                const loading = fromCurve ? curveLoading : isLoading || (area.symbols.some((s) => s.kind === 'fx') && referenceLoading)
+                const n = area.symbols.length
+                const label = live > 0 && daily > 0 ? `${live} live · ${daily} daily` : live > 0 ? `${live}/${n} live` : `${daily}/${n} daily`
+                const any = live + daily > 0
                 return (
                   <span className={clsx('px-2 py-0.5 rounded-sm text-[10px] font-medium uppercase tracking-wider border',
-                    live ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-bg-elevated border-border text-text-muted')}>
-                    {isLoading ? '…' : live ? `${priced}/${area.symbols.length} live` : 'no live quotes'}
+                    any ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-bg-elevated border-border text-text-muted')}>
+                    {loading ? '…' : any ? label : fromCurve ? 'no reading' : 'no live quotes'}
                   </span>
                 )
               })()}
             </div>
             <div className="divide-y divide-border/40">
               {area.symbols.map((s) => {
-                const q = data?.[s.symbol]
-                const up = (q?.changePercent ?? 0) >= 0
+                if (s.kind === 'pct-yield') {
+                  const cy = curveYield(s.symbol, curve)
+                  return (
+                    <div key={s.symbol} className="px-4 py-2 flex items-center gap-3 text-sm">
+                      <span className="text-xs text-text-secondary flex-1">{s.label}</span>
+                      {cy ? (
+                        <>
+                          <span className="font-mono tabular-nums text-text-primary">{fmtValue(s.kind, cy.yieldPct)}</span>
+                          {/* A daily curve reading has no intraday change: say so rather than show none. */}
+                          <span className="font-mono text-xs w-16 text-right text-text-muted" title={curveYieldSourceLabel(cy)}>daily</span>
+                        </>
+                      ) : (
+                        <span className="font-mono text-xs text-text-muted">{curveLoading ? '…' : '—'}</span>
+                      )}
+                    </div>
+                  )
+                }
+                const raw = data?.[s.symbol]
+                const q = s.kind === 'fx'
+                  ? fxShown(s.symbol)
+                  : raw?.price != null ? { price: raw.price, changePct: raw.changePercent, basis: 'live' as const, date: undefined } : null
+                const up = (q?.changePct ?? 0) >= 0
                 return (
                   <div key={s.symbol} className="px-4 py-2 flex items-center gap-3 text-sm">
-                    <span className="text-xs text-text-secondary flex-1">{s.label}</span>
-                    {q?.price != null ? (
+                    <span className="text-xs text-text-secondary flex-1">
+                      {s.label}
+                      {q?.basis === 'ecb' && (
+                        <span className="ml-1.5 rounded-sm border border-border px-1 text-[9px] font-medium uppercase tracking-wider text-text-muted"
+                          title={`ECB reference rate, ${q.date}: daily, not a live quote`}>
+                          ECB
+                        </span>
+                      )}
+                    </span>
+                    {q ? (
                       <>
-                        <span className="font-mono tabular-nums text-text-primary">{fmtValue(s.kind, q.price)}</span>
-                        {q.changePercent != null && (
-                          <span className={clsx('font-mono tabular-nums text-xs w-16 text-right', up ? 'text-emerald-400' : 'text-red-400')}>
-                            {up ? '+' : ''}{q.changePercent.toFixed(2)}%
+                        <span className="font-mono tabular-nums text-text-primary">{fmtValue(s.kind, q.price, s.symbol)}</span>
+                        {q.changePct != null && (
+                          <span className={clsx('font-mono tabular-nums text-xs w-16 text-right', up ? 'text-emerald-400' : 'text-red-400')}
+                            title={q.basis === 'ecb' ? 'Since the ECB’s previous working day' : undefined}>
+                            {up ? '+' : ''}{q.changePct.toFixed(2)}%
                           </span>
                         )}
                       </>
                     ) : (
-                      <span className="font-mono text-xs text-text-muted">{isLoading ? '…' : '—'}</span>
+                      <span className="font-mono text-xs text-text-muted">{isLoading || (s.kind === 'fx' && referenceLoading) ? '…' : '—'}</span>
                     )}
                   </div>
                 )
@@ -183,13 +271,21 @@ function MacroContent() {
         ))}
       </div>
 
+      {/* The Fed's meetings and the four US releases (T-456). */}
+      <MacroCalendarCard />
+
       {/* Attribution comes from the registry, not hand-written prose — prose
           drifts when a provider changes and nothing forces it to be updated.
           The quoting-convention note stays, since that's about how to READ the
           numbers, not where they came from. */}
       <SourceLine id="macro-quotes" className="justify-center" />
+      <SourceLine id="treasury-yield-curve" className="justify-center" />
+      <SourceLine id="fx-reference-pairs" className="justify-center" />
       <p className="text-[11px] text-text-muted text-center leading-relaxed">
-        Yield figures are index levels quoted in percent; futures are front-month continuous contracts.
+        Treasury yields are the official par curve, published once a day, not intraday quotes; futures are front-month continuous contracts.
+        A currency rate marked ECB is the European Central Bank’s reference rate{reference?.ok && reference.date ? ` of ${reference.date}` : ''}, published once a working
+        day for information only, its change since the Bank’s previous working day; {WORKED_OUT_PAIRS.join(' and ')} {WORKED_OUT_PAIRS.length === 1 ? 'is' : 'are'} worked
+        out from the Bank’s euro rates of the same day. <EcbFreeOfCharge />
       </p>
     </div>
   )

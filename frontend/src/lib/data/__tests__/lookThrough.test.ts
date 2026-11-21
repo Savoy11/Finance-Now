@@ -54,6 +54,20 @@ describe('computeLookThrough', () => {
     expect(nvda.contributions.map((c) => c.via).sort()).toEqual(['QQQ', 'VOO'])
   })
 
+  it('names a fund once when it holds the same issuer many times over', () => {
+    // A bond fund's Treasury notes are one issuer, listed once per note.
+    const BND = fund('BND', [
+      [null, 'United States Treasury Note/Bond', 10],
+      [null, 'United States Treasury Note/Bond', 15],
+      [null, 'United States Treasury Note/Bond', 5],
+      [null, 'Apple Inc.', 70],
+    ])
+    const r = computeLookThrough([pos('BND', 50), pos('VOO', 50)], { BND, VOO })
+    const ust = r.issuers.find((i) => i.name === 'United States Treasury Note/Bond')!
+    expect(ust.weightPct).toBe(15)
+    expect(ust.contributions).toEqual([{ via: 'BND', weightPct: 15, direct: false }])
+  })
+
   it('combines a direct position with fund exposure to the same issuer', () => {
     // 10% NVDA outright + 90% VOO (35% NVDA) = 10 + 31.5 = 41.5.
     const r = computeLookThrough(

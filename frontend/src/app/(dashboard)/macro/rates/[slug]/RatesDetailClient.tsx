@@ -5,8 +5,12 @@ import { useQuery } from '@tanstack/react-query'
 import { clsx } from 'clsx'
 import { ArrowLeft, ExternalLink } from 'lucide-react'
 import { PriceChartCard } from '@/components/markets/PriceChartCard'
+import { YieldHistoryCard } from '@/components/markets/YieldHistoryCard'
+import { parLabelFor } from '@/lib/data/yieldHistory'
 import { TermStructureCard } from '@/components/markets/TermStructureCard'
 import { SourceLine } from '@/components/ui/SourceLine'
+import { AssetActions } from '@/components/markets/AssetActions'
+import { InstrumentNewsCard } from '@/components/markets/InstrumentNewsCard'
 import { RATES_CATEGORY_INFO, formatRatesQuote, getRatesEntry } from '@/lib/data/ratesCatalog'
 import { getFund } from '@/lib/data/fundCatalog'
 import { yieldFromCurve, curveYieldSourceLabel } from '@/lib/data/ratesFromCurve'
@@ -117,9 +121,17 @@ export function RatesDetailClient({ slug }: { slug: string }) {
           specific numbers was the one with no attribution. */}
       <SourceLine id={isYield ? 'treasury-yield-curve' : 'macro-quotes'} />
 
+      {/* Watch it, compare it, ask the AI (T-454). No price alert: macro quotes are
+          mostly unserved, and their units are not dollars. */}
+      <AssetActions asset={{ kind: 'macro', symbol: entry.symbol, name: entry.name, key: `sec:${entry.symbol}` }} />
+
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
         <div className="xl:col-span-2">
-          <PriceChartCard symbol={entry.symbol} valueFormat="plain" />
+          {/* T-446: a yield's history is the official curve's own, since no provider
+              serves these symbols any (D3); futures still chart through the ladder. */}
+          {isYield && parLabelFor(entry.maturityYears)
+            ? <YieldHistoryCard maturities={[parLabelFor(entry.maturityYears)!]} defaultMaturity={parLabelFor(entry.maturityYears)!} />
+            : <PriceChartCard symbol={entry.symbol} valueFormat="plain" />}
 
           {/* Treasury FUTURES have a contract curve; yield indices don't — for
               those, the curve is the Treasury par curve on /macro/rates, and
@@ -221,6 +233,9 @@ export function RatesDetailClient({ slug }: { slug: string }) {
           </div>
         </div>
       </div>
+
+      {/* The macro stories that name this instrument (T-456 b). */}
+      <InstrumentNewsCard href={`/macro/rates/${slug}`} name={entry.name} />
     </div>
   )
 }

@@ -22,6 +22,11 @@ export interface FeeImpactParams {
   years: number
   /** Assumed gross annual return, percent. */
   annualReturnPct: number
+  /**
+   * The fund is already held, so a front-end sales charge, paid once at purchase, is behind
+   * the holder and not part of what the next years cost (audit 2026-11-07, finding 2).
+   */
+  alreadyHeld?: boolean
 }
 
 export const DEFAULT_FEE_IMPACT_PARAMS: FeeImpactParams = {
@@ -68,7 +73,7 @@ export function feeImpact(
   if (!(principal > 0) || !Number.isInteger(years) || years < 1 || !(annualReturnPct >= 0)) return null
 
   const charge = fundSalesCharge(fund)
-  const verifiedFrontLoad = charge?.kind === 'front' && charge.maxPct != null ? charge.maxPct : 0
+  const verifiedFrontLoad = charge?.kind === 'front' && charge.maxPct != null && !params.alreadyHeld ? charge.maxPct : 0
 
   const series = computeFeeDrag(
     principal, fund.expenseRatioPct, years, annualReturnPct,
@@ -79,7 +84,7 @@ export function feeImpact(
     costUsd: last.feesPaid,
     endValueUsd: last.withFee,
     includesLoad: verifiedFrontLoad > 0,
-    unverifiedLoad: charge != null && charge.maxPct == null,
+    unverifiedLoad: charge != null && charge.maxPct == null && !(params.alreadyHeld && charge.kind === 'front'),
   }
 }
 

@@ -80,7 +80,7 @@ describe('applyPasswordReset', () => {
   it('sets the new password and spends every token of the account', async () => {
     const { token } = generateResetToken()
     const store = fakeStore(live())
-    expect(await applyPasswordReset(store, { token, password: GOOD, hashPassword }, NOW)).toEqual({ ok: true })
+    expect(await applyPasswordReset(store, { token, password: GOOD, hashPassword }, NOW)).toEqual({ ok: true, userId: 'u1' })
     expect(store.calls).toEqual(['find', `set:u1:hashed(${GOOD})`, 'spend:u1'])
   })
 
@@ -149,7 +149,9 @@ describe('sign-in and the stored flag', () => {
     expect(check).toBeGreaterThan(compare)
     expect(config).toMatch(/throw new MustResetPasswordError\(\)/)
     expect(config).toMatch(/code = 'must_reset_password'/)
-    expect(read('../../../app/(auth)/login/page.tsx')).toMatch(/result\.code === 'must_reset_password'/)
+    // The login form moved from page.tsx into LoginForm.tsx when the page became a
+    // server wrapper for the sign-in wall's flag (D232); the contract is unchanged.
+    expect(read('../../../app/(auth)/login/LoginForm.tsx')).toMatch(/result\.code === 'must_reset_password'/)
   })
 
   it('users gains no reset column, so sign-in works before migration 0008 runs', () => {

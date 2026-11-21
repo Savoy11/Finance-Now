@@ -12,6 +12,7 @@
  */
 import fs from 'node:fs'
 import { driftItems, linkOnlyItems, readRoutes } from './lib/routeHosts.mjs'
+import { contentToWrite } from './lib/generatedDate.mjs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { DATA_SOURCES, SOURCE_STATUS_META, type DataSourceEntry } from '../src/lib/data/dataSources'
@@ -130,9 +131,18 @@ function verify(): number {
   return items.length
 }
 
+// The date moves only when the contents do (scripts/lib/generatedDate.mjs), so a
+// --verify run that finds no drift leaves the file, and the working tree, untouched.
+const LAST_GENERATED_LINE = /^_Last generated: \*\*\d{4}-\d{2}-\d{2}\*\*_$/m
 const md = renderMarkdown()
-fs.writeFileSync(outFile, md)
-console.log(`Wrote ${path.relative(repoRoot, outFile)} (${DATA_SOURCES.length} surfaces).`)
+const previous = fs.existsSync(outFile) ? fs.readFileSync(outFile, 'utf8') : null
+const toWrite = contentToWrite(previous, md, LAST_GENERATED_LINE)
+if (toWrite === null) {
+  console.log(`${path.relative(repoRoot, outFile)} is up to date (${DATA_SOURCES.length} surfaces); left as it is.`)
+} else {
+  fs.writeFileSync(outFile, toWrite)
+  console.log(`Wrote ${path.relative(repoRoot, outFile)} (${DATA_SOURCES.length} surfaces).`)
+}
 if (process.argv.includes('--verify')) {
   const issues = verify()
   // exitCode rather than process.exit(): lets stdout flush before the runtime

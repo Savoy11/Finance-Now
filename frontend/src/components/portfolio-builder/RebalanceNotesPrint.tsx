@@ -30,7 +30,9 @@ export function RebalanceNotesSheet({ notes }: { notes: RebalanceNotes }) {
         <dt className="text-gray-700">Value used</dt>
         <dd>
           {usd(notes.valueUsd)}
-          {notes.pricedPct < 99 && ` (only ${notes.pricedPct}% of the portfolio could be valued; the rest is left out)`}
+          {notes.leftOut.length > 0
+            ? ` (left out, with no live price: ${notes.leftOut.join(', ')})`
+            : notes.pricedPct < 99 && ` (only ${notes.pricedPct}% of the portfolio could be valued; the rest is left out)`}
         </dd>
         <dt className="text-gray-700">Band</dt>
         <dd>±{notes.bandPct}% for each holding</dd>

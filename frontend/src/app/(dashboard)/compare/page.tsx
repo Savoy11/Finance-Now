@@ -9,10 +9,13 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { SourceLine } from '@/components/ui/SourceLine'
 import { LineChart } from '@/components/charts/LineChart'
 import { LiveUnavailable } from '@/components/ui/LiveUnavailable'
-import { EQUITY_CATALOG, SECTOR_INFO, getEquity } from '@/lib/data/equityCatalog'
-import { FUND_CATALOG, fundYieldFact, getFund } from '@/lib/data/fundCatalog'
-import { ASSET_CATALOG } from '@/lib/data/assetCatalog'
-import { INSTRUMENTS, securitySymbol, type InstrumentClass } from '@/lib/data/instruments'
+import { SECTOR_INFO, getEquity } from '@/lib/data/equityCatalog'
+import { fundYieldFact, getFund } from '@/lib/data/fundCatalog'
+import type { InstrumentClass } from '@/lib/data/instruments'
+import {
+  COMPARE_OPTIONS as OPTIONS, COMPARE_OPTION_BY_SYMBOL as OPTION_BY_SYMBOL, COMPARE_OPTION_BY_UPPER as OPTION_BY_UPPER,
+  provisionalCompareOption as provisionalOption, type CompareKind as Kind, type CompareOption as Option,
+} from '@/lib/data/compareUniverse'
 import { compareAssetClasses, CLASS_PROFILES } from '@/lib/data/assetClassProfiles'
 import { CHART_COLORS, STALE_TIME_LONG } from '@/lib/constants'
 import { formatCompact, formatRatio } from '@/lib/utils/format'
@@ -41,29 +44,8 @@ import { FundFactsSection } from '@/components/markets/FundFactsSection'
 // drawdown / Sharpe from the live series), a return-correlation matrix, and a
 // labeled reference-fundamentals table. Selection + range are URL-deep-linkable.
 
-type Kind = 'stock' | 'fund' | 'crypto' | 'macro'
-interface Option { symbol: string; name: string; kind: Kind; cls: InstrumentClass; id?: string }
-
-const OPTIONS: Option[] = [
-  ...EQUITY_CATALOG.map((e) => ({ symbol: e.symbol, name: e.name, kind: 'stock' as const, cls: 'equity' as const })),
-  ...FUND_CATALOG.map((f) => ({ symbol: f.symbol, name: f.name, kind: 'fund' as const, cls: (f.type === 'etf' ? 'etf' : 'mutual') as InstrumentClass })),
-  ...ASSET_CATALOG.map((a) => ({ symbol: a.symbol, name: a.name, kind: 'crypto' as const, cls: 'crypto' as const, id: a.id })),
-  // Macro instruments (commodities, FX pairs, yield indices) price through the
-  // same security-chart route stocks and funds use — zero new plumbing, per
-  // the P2-R3 integration. Coverage is provider-dependent since the Yahoo
-  // removal; a symbol with no history lands in the existing `missing` banner
-  // rather than silently vanishing.
-  ...INSTRUMENTS.filter((i) => ['commodity', 'currency', 'rate'].includes(i.class)).map((i) => ({
-    symbol: securitySymbol(i.key), name: i.name, kind: 'macro' as const, cls: i.class,
-  })),
-]
-const OPTION_BY_SYMBOL = new Map<string, Option>()
-for (const o of OPTIONS) if (!OPTION_BY_SYMBOL.has(o.symbol)) OPTION_BY_SYMBOL.set(o.symbol, o)
-// Case-insensitive lookup for URL deep links: several crypto symbols are
-// mixed-case in the catalog (USDe, lisUSD, …) and would otherwise round-trip
-// into the URL but silently drop on reload (review finding).
-const OPTION_BY_UPPER = new Map<string, Option>()
-for (const o of OPTIONS) if (!OPTION_BY_UPPER.has(o.symbol.toUpperCase())) OPTION_BY_UPPER.set(o.symbol.toUpperCase(), o)
+// The catalog options, their lookups and `provisionalOption` live in
+// lib/data/compareUniverse.ts (T-454), which the asset pages' action row reads too.
 
 // ─── Non-catalog tickers (D16 / T-096) ───────────────────────────────────────
 //
@@ -81,20 +63,6 @@ for (const o of OPTIONS) if (!OPTION_BY_UPPER.has(o.symbol.toUpperCase())) OPTIO
 //      TSLA is; resolving it to a security-chart fetch is right far more often
 //      than dropping it, and when it is wrong the existing `missing` banner says
 //      so by name.
-
-/**
- * An Option for a symbol no catalog knows.
- *
- * Typed as a security rather than crypto on purpose: `fetchPoints` sends crypto
- * to `/live-data/chart?id=` (a CoinGecko id, which an unknown symbol does not
- * have) and everything else to `/live-data/security-chart?symbol=`, which
- * accepts any ticker. So the security path is the only one that can possibly
- * succeed without more information — and a coin added through the picker carries
- * its real id, so it never lands here.
- */
-function provisionalOption(symbol: string): Option {
-  return { symbol, name: symbol, kind: 'stock', cls: 'equity' }
-}
 
 /** Maps an instrument class from the universe routes onto Compare's `kind`. */
 function kindForClass(cls: InstrumentClass): Kind {

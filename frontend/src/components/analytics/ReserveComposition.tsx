@@ -3,7 +3,7 @@
 import { useMemo } from 'react'
 import { PieChart } from '@/components/charts/PieChart'
 import { ChartContainer } from '@/components/charts/ChartContainer'
-import { RESERVE_COMPOSITION_COLORS } from '@/lib/utils/chart'
+import { reserveSliceColor } from '@/lib/utils/chart'
 import type { ReserveCompositionItem } from '@/types/asset'
 import { formatCompact, formatRatio } from '@/lib/utils/format'
 import { clsx } from 'clsx'
@@ -27,10 +27,10 @@ export function ReserveComposition({
 }: ReserveCompositionProps) {
   const pieData = useMemo(
     () =>
-      composition.map((item) => ({
+      composition.map((item, i) => ({
         name: item.category,
         value: item.percentage,
-        color: RESERVE_COMPOSITION_COLORS[item.category] ?? '#64748b',
+        color: reserveSliceColor(item.category, i),
       })),
     [composition]
   )
@@ -74,12 +74,12 @@ export function ReserveComposition({
 
       {/* Legend */}
       <div className="mt-3 space-y-2">
-        {composition.map((item) => (
+        {composition.map((item, i) => (
           <div key={item.category} className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">
               <span
                 className="size-2.5 rounded-xs shrink-0"
-                style={{ backgroundColor: RESERVE_COMPOSITION_COLORS[item.category] ?? '#64748b' }}
+                style={{ backgroundColor: reserveSliceColor(item.category, i) }}
                 aria-hidden
               />
               <span className="text-xs text-text-secondary truncate">{item.category}</span>

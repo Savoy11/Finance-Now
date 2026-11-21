@@ -567,6 +567,7 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
       'Stay under 30 API calls/second in aggregate; stacking plans does NOT raise the limit',
       'Personal use only: the account must not be registered to a business, used by a business even internally, or expensed as a business cost — any one alone ends eligibility',
       'Redistribution — including DERIVED results — to anyone requires prior written approval from Finnhub. A multi-user deployment is barred by default and no tier lifts it',
+      'LAUNCH STEP (D241, 2026-11-21): the owner dropped the drafted permission enquiry — no written approval is pursued. At launch, remove Finnhub from the quote ladder unless approval has arrived some other way; FMP, Twelve Data, Tiingo and Alpha Vantage remain around it, so nothing empties (D21). See docs/decisions/2026-11-21-owner-decisions.md and docs/LEGAL-REVIEW.md §2',
       'On subscription end or lapse, delete all stored Finnhub data: “All data must be deleted should your subscription to that data ends.” Covers caches, DB rows and committed test fixtures',
       'No Finnhub trademark or logo as branding — the Terms grant no right to any mark',
     ],
@@ -744,7 +745,7 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
       'Documented API issued against a free key, 25 requests/day on the free tier. Terms of Service (PDF), read 2026-09-26, §2(a): the licence is "for personal, non-commercial use", and use is commercial if, among four tests, "You plan to use or provide information accessed through the Alpha Vantage Platform as part of any type of commercial activity that allows individuals or entities other than User to access information directly or indirectly". Commercial use is by written agreement (premium@alphavantage.co).',
     conditions: [
       'Valid API key required', 'Free tier is 25 requests/day — do not exceed',
-      '⚠ SINGLE-USER ONLY — satisfied TODAY, blocking AT RELEASE (D22, 2026-09-23; applied 2026-09-30 under T-413 / D43). Nobody but the owner can load a page today, so this licence is currently met. The FIRST NON-OWNER PAGE LOAD — a private beta, a demo link, a shared staging URL — puts the app outside it. To operate beyond that: Terms of Service §2(a) licenses "personal, non-commercial use" and counts as commercial any use that lets individuals or entities other than the user access the information "directly or indirectly"; commercial use is by written agreement (premium@alphavantage.co). It is the IPO calendar\'s only source and the last rung of the equity quote ladder. See docs/decisions/2026-09-30-owner-decisions.md.',
+      '⚠ SINGLE-USER ONLY — satisfied TODAY, blocking AT RELEASE (D22, 2026-09-23; applied 2026-09-30 under T-413 / D43). Nobody but the owner can load a page today, so this licence is currently met. The FIRST NON-OWNER PAGE LOAD — a private beta, a demo link, a shared staging URL — puts the app outside it. To operate beyond that: Terms of Service §2(a) licenses "personal, non-commercial use" and counts as commercial any use that lets individuals or entities other than the user access the information "directly or indirectly"; commercial use is by written agreement (premium@alphavantage.co). It is the IPO calendar\'s only source, the earnings calendar\'s second source behind FMP (T-458, one request a day), and the last rung of the equity quote ladder. See docs/decisions/2026-09-30-owner-decisions.md.',
     ],
     reviewedAt: '2026-09-26',
     review: 'verified',
@@ -1023,9 +1024,65 @@ export const SOURCE_TERMS: SourceTermsEntry[] = [
     confidence: 'high',
   },
   {
+    // READ 2026-11-07 (T-456 d, D211) from a cloud session, not the owner's machine, so `seeded` until
+    // the owner marks it read: "Linking and Copyright Information" (/bls/linksite.htm, last modified
+    // 2016-08-05) and "BLS Copyright Information" (/opub/copyright-information.htm), which say the same.
+    // NOT FETCHED AT RUNTIME: the CPI and jobs-report dates are copied by hand into
+    // lib/data/releaseCalendar.ts. Registered because the app reuses BLS's information.
+    domain: 'bls.gov',
+    name: 'U.S. Bureau of Labor Statistics',
+    verdict: 'approved',
+    termsUrl: 'https://www.bls.gov/bls/linksite.htm',
+    finding:
+      'Linking and Copyright Information, read 2026-11-07: "everything that we publish, both in hard copy and electronically, is in the public domain, except for previously copyrighted photographs and illustrations. You are free to use our public domain material without specific permission, although we do ask that you cite the Bureau of Labor Statistics as the source." Linking needs no permission. The BLS emblem is a registered trademark and is not used. Nothing on automated access. Used for the CPI and jobs-report release dates only, copied by hand; every surface showing them names BLS.',
+    reviewedAt: '2026-11-07',
+    review: 'seeded',
+    confidence: 'high',
+  },
+  {
+    // READ 2026-11-07 (T-456 d, D211) from a cloud session, so `seeded` until the owner marks it read:
+    // the Linking Policy (/about/policies-and-information/linking, last modified 2018-05-09), the
+    // Policies and Information page and the Guidelines for Citing BEA. Its copyright-policy address
+    // answers 404; the linking policy carries the statement.
+    // NOT FETCHED AT RUNTIME: the GDP and PCE dates are copied by hand into lib/data/releaseCalendar.ts.
+    domain: 'bea.gov',
+    name: 'U.S. Bureau of Economic Analysis',
+    verdict: 'approved',
+    termsUrl: 'https://www.bea.gov/about/policies-and-information/linking',
+    finding:
+      'Linking Policy, read 2026-11-07: "unless stated otherwise, the information posted on the BEA Web site is in the public domain and may be used or reproduced without specific permission. A citation such as "Source: U.S. Bureau of Economic Analysis" would be appreciated." "As a U.S. Government agency, BEA is not permitted to endorse or recommend any commercial products or services"; a reference must not suggest an endorsement. The logo may be used only to identify a link, and is not used. Nothing on automated access. Used for the GDP and PCE (Personal Income and Outlays) release dates only, copied by hand; every surface showing them names BEA.',
+    reviewedAt: '2026-11-07',
+    review: 'seeded',
+    confidence: 'high',
+  },
+  {
+    // READ 2026-11-07 (T-445, D203) from this cloud session, not the owner's machine, so `seeded`
+    // until the owner marks it read: the Disclaimer & Copyright page (verbatim) and the euro
+    // reference rates page, plus the "Framework for the euro foreign exchange reference rates"
+    // (23 June 2026 PDF). No terms document is specific to the reference rates.
+    // NOT FETCHED AT RUNTIME: the rates arrive through Frankfurter (the next entry), which says
+    // "The rates themselves fall under each provider’s terms." These are those terms.
+    domain: 'ecb.europa.eu',
+    name: 'European Central Bank (euro foreign exchange reference rates)',
+    verdict: 'conditional',
+    termsUrl: 'https://www.ecb.europa.eu/services/disclaimer/html/index.en.html',
+    finding:
+      'Disclaimer & Copyright, read 2026-11-07: "Subject to the exception below, users of this website may make free use of the information obtained directly from it subject to the following conditions:" "When such information is distributed or reproduced, it must appear accurately and the ECB must be cited as the source." "Where the information is incorporated in documents that are sold (regardless of the medium), the natural or legal person publishing the information must inform buyers, both before they pay any subscription or fee and each time they access the information taken from this website, that the information may be obtained free of charge through this website." "If the information is modified by the user (e.g. by seasonal adjustment of statistical data or calculation of growth rates) this must be stated explicitly." The exception covers documents bearing authors\' names (working papers), not the rates. The reference rates page: "The reference rates are published for information purposes only. Using the rates for transaction purposes is strongly discouraged." The Framework (23 June 2026): the rates are "not intended to be used in any market transactions" and "intended for information purposes only". Nothing on automated retrieval. The app reads the rates through Frankfurter, not the ECB\'s own site.',
+    conditions: [
+      'Cite the ECB as the source wherever the rates appear: every surface names the European Central Bank (lib/data/fxReference.ts, ECB_RATE_DESCRIPTION), and the agent tools return it with the figures.',
+      'State modification explicitly. A pair without the euro (USD/JPY, GBP/USD …) and the change since the previous working day are worked out from the ECB\'s figures; every surface says how (pairRateBasis, and the methods page section "Currency pairs").',
+      'Information only, not for transactions: shown as "for information only, not a dealable price", never as a quote to trade on.',
+      '⚠ AT LAUNCH, IF THE MACRO MODULE IS SOLD: buyers must be told, before they pay and each time they see the rates, that the ECB publishes them free of charge. The "each time" half is on every surface already (ECB_FREE_OF_CHARGE); the "before they pay" half belongs on whatever page sells the module, which does not exist yet.',
+    ],
+    reviewedAt: '2026-11-07',
+    review: 'seeded',
+    confidence: 'high',
+  },
+  {
     // READ 2026-09-26 (T-005; docs/audits/terms-review-seeded-2026-09-26.md); marked verified 2026-10-04 (D54):
     // FAVOURABLE — "Is the API free for commercial use? Yes. The rates themselves fall under each
     // provider’s terms." No quotas; abuse rate-limiting; open source.
+    // The ECB's own terms, which that sentence points to, are the entry above (read 2026-11-07).
     domain: 'frankfurter.dev',
     name: 'Frankfurter (ECB reference rates)',
     verdict: 'approved',

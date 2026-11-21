@@ -76,6 +76,9 @@ describe('the Test button for an AI provider', () => {
     const body = JSON.parse(String(init.body))
     expect(body.model).toBe(DEFAULT_ANTHROPIC_MODEL)
     expect(body.max_tokens).toBeLessThanOrEqual(32)
+    // The API version the agents run on since SDK 1.x (D215), which refuses any sampling setting.
+    expect((init.headers as Record<string, string>)['anthropic-version']).toBe('2026-10-21')
+    for (const k of ['temperature', 'top_p', 'top_k']) expect(body).not.toHaveProperty(k)
     expect(JSON.stringify(fetchMock.mock.calls)).not.toContain('/v1/models')
   })
 

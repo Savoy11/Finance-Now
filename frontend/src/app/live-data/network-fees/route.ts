@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NetworkFeeMap, CoinPriceMap } from '@/lib/data/transferFees'
 import { computeNetworkFees } from '@/lib/data/networkFees'
+import { coingeckoBase, coingeckoHeaders } from '@/lib/api/live/coingecko'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,7 +17,7 @@ export interface NetworkFeesResponse {
 // from the shared single source of truth (lib/data/networkFees) so this route
 // and the public /api/v1/network-fees API can never disagree.
 export async function GET() {
-  const { fees, prices, btcSatPerVbyte, updatedAt } = await computeNetworkFees()
+  const { fees, prices, btcSatPerVbyte, updatedAt } = await computeNetworkFees({ base: coingeckoBase(), headers: coingeckoHeaders() })
 
   const coinPrices: CoinPriceMap = { ...prices }
   if (btcSatPerVbyte != null) coinPrices.btcSatPerVbyte = btcSatPerVbyte

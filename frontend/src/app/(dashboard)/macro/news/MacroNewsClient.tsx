@@ -10,6 +10,7 @@ import { SourceLine } from '@/components/ui/SourceLine'
 import { timeAgo } from '@/lib/utils/format'
 import { STALE_TIME_MEDIUM } from '@/lib/constants'
 import type { MacroNewsArticle, MacroNewsResponse, MacroPillar, MacroSentiment } from '@/app/live-data/macro-news/route'
+import { MAX_RELATED } from '@/lib/data/macroNewsMatchers'
 
 // Macro Markets news — commodities, currencies, and bonds/rates only.
 // Off-topic articles are dropped server-side; this page just filters and
@@ -58,7 +59,7 @@ function ArticleRow({ article }: { article: MacroNewsArticle }) {
                 <Zap size={10} aria-hidden /> Breaking
               </span>
             )}
-            {article.related.map((r) => (
+            {article.related.slice(0, MAX_RELATED).map((r) => (
               <Link key={r.href} href={r.href}
                 className="px-1.5 py-0.5 rounded-sm border border-border text-text-secondary hover:text-accent-blue hover:border-accent-blue/40 transition-colors">
                 {r.label}

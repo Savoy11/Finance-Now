@@ -5,6 +5,7 @@ import {
   type CoinId,
 } from '@/lib/data/transferFees'
 import { computeNetworkFees, FALLBACK_PRICES_AS_OF } from '@/lib/data/networkFees'
+import { coingeckoBase, coingeckoHeaders } from '@/lib/api/live/coingecko'
 import { fetchLiveFeeOverlay, OVERLAY_EXCHANGE_IDS } from '@/lib/server/withdrawFeeOverlay'
 import { TRANSFER_FEES_LAST_VERIFIED } from '@/lib/data/transferFees'
 import { getSource, requiredAttributions } from '@/lib/data/dataSources'
@@ -66,7 +67,7 @@ export async function GET(req: NextRequest) {
   // fail the route: without it the response is the static table, exactly as
   // before, and `liveOverlay` below reports that honestly.
   const [feesSettled, overlaySettled] = await Promise.allSettled([
-    computeNetworkFees(),
+    computeNetworkFees({ base: coingeckoBase(), headers: coingeckoHeaders() }),
     fetchLiveFeeOverlay(),
   ])
   if (feesSettled.status === 'rejected') {

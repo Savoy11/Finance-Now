@@ -2,7 +2,6 @@ import { NextRequest } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { loadAgentConfig } from '@/lib/agents/config'
 import { DEFAULT_ANTHROPIC_MODEL } from '@/lib/agents/prompts'
-import { anthropicSampling } from '@/lib/agents/sampling'
 import { guardSensitiveRoute } from '@/lib/server/apiGuard'
 import { getProviderKey } from '@/lib/api/live/providers'
 
@@ -144,7 +143,6 @@ export async function POST(req: NextRequest) {
   const agentCfg = loadAgentConfig('pump-report-investigator')
   const systemPrompt = agentCfg?.systemPrompt ?? buildSystem(target, targetType)
   const model        = agentCfg?.model        ?? DEFAULT_ANTHROPIC_MODEL
-  const temperature  = agentCfg?.temperature  ?? 0.2
 
   // Inject target into system prompt if it contains a placeholder, else append target context
   const resolvedSystem = systemPrompt.includes('${target}')
@@ -159,8 +157,7 @@ export async function POST(req: NextRequest) {
         const response = await client.messages.create({
           model,
           max_tokens: 8000,
-          // Only models that accept it: Claude Sonnet 5 and newer refuse a temperature.
-          ...anthropicSampling(model, temperature),
+          // No temperature: API version 2026-10-21 refuses one on every Claude model (D215).
           system: resolvedSystem,
 
           tools: [{ type: 'web_search_20250305', name: 'web_search' } as any],

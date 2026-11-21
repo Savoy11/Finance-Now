@@ -396,7 +396,7 @@ export const DATA_SOURCES: DataSourceEntry[] = [
   {
     id: 'company-facts', surface: 'Company fundamentals / ratios', module: 'equities',
     route: '/live-data/company-facts', status: 'live', providers: [{ ...SEC_EDGAR, name: 'SEC EDGAR XBRL' }],
-    notes: 'AAPL rev/net-margin sanity-checked against reported figures.',
+    notes: 'AAPL rev/net-margin sanity-checked against reported figures. Since T-461 (2026-11-11) it also gives the last eight quarters from the same file, the fourth quarter worked out as the full year less the first nine months; the audit checks AAPL’s.',
   },
   {
     id: 'company-profile', surface: 'Company profile', module: 'equities',
@@ -406,9 +406,9 @@ export const DATA_SOURCES: DataSourceEntry[] = [
   {
     id: 'stock-universe', surface: 'Stock Registry universe', module: 'equities',
     route: '/live-data/stock-universe', status: 'partial',
-    providers: [{ name: 'FMP company-screener', host: 'financialmodelingprep.com', role: 'primary', auth: 'paid' }, { name: 'Curated catalog', role: 'fallback', auth: 'none' }, { ...SEC_EDGAR, name: 'SEC XBRL frames (P/E backfill)', role: 'aggregator' }],
+    providers: [{ name: 'FMP company-screener', host: 'financialmodelingprep.com', role: 'primary', auth: 'paid' }, { name: 'Curated catalog', role: 'fallback', auth: 'none' }, { ...SEC_EDGAR, name: 'SEC XBRL frames (P/E backfill)', role: 'aggregator' }, { ...SEC_EDGAR, name: 'SEC company tickers & exchanges (the wider list)', host: 'www.sec.gov', url: 'https://www.sec.gov/search-filings/edgar-application-programming-interfaces', role: 'primary' }],
     staticData: ['lib/data/equityCatalog.ts (~79 names)'],
-    notes: 'FMP screener is PAID-only; without a key the registry falls back to ~79 curated names. On every path the route serves each company’s SEC per-share figures (D167) and cover-page share count (D170) from the SEC’s XBRL frames, and no price: pages work out P/E, yield and market cap against live quotes.',
+    notes: 'FMP screener is PAID-only; without a key the registry’s main list falls back to ~79 curated names. Since 2026-11-07 (T-450, D205) the registry also has “Every NYSE & Nasdaq stock”: every NYSE and Nasdaq common stock in the SEC’s company_tickers_exchange.json, keyless, which also lets search and a stock page find any listed stock with no FMP key. It has no sector outside the 79, and price-based screens are refused over it (only the 50 rows on screen have a quote). On every path the route serves each company’s SEC per-share figures (D167) and cover-page share count (D170) from the SEC’s XBRL frames, and no price: pages work out P/E, yield and market cap against live quotes.',
   },
   {
     id: 'stock-outliers', surface: 'Equity screener / outliers', module: 'equities',
@@ -427,12 +427,31 @@ export const DATA_SOURCES: DataSourceEntry[] = [
     route: '/live-data/market-calendar', status: 'key-gated',
     providers: [
       { name: 'FMP', host: 'financialmodelingprep.com', role: 'primary', auth: 'key' },
+      // T-458 (D213): earnings for companies FMP does not list, and for all of them when FMP is gone.
+      // One request a day, its whole three-month list.
+      { name: 'Alpha Vantage', host: 'www.alphavantage.co', url: 'https://www.alphavantage.co/documentation/#earnings-calendar', role: 'fallback', auth: 'key' },
       // Not fetched: the host is named so the source-terms test holds the Board's reuse terms
       // to the same check as every other source. The dates are a hand-copied table.
       { name: 'Federal Reserve Board', host: 'www.federalreserve.gov', url: 'https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm', role: 'primary', auth: 'none' },
+      // Not fetched either (T-456 d): CPI and jobs-report dates from BLS, GDP and PCE dates from BEA,
+      // copied by hand into lib/data/releaseCalendar.ts.
+      { name: 'U.S. Bureau of Labor Statistics', host: 'www.bls.gov', url: 'https://www.bls.gov/schedule/news_release/cpi.htm', role: 'primary', auth: 'none' },
+      { name: 'U.S. Bureau of Economic Analysis', host: 'www.bea.gov', url: 'https://www.bea.gov/news/schedule/full', role: 'primary', auth: 'none' },
     ],
-    staticData: ['lib/data/fomcCalendar.ts (FOMC meeting dates, copied from the Board’s calendar; 90-day review clock)'],
-    notes: 'Earnings needs a free FMP key; other US economic releases need a paid one. FOMC meeting dates are KEYLESS and NOT FETCHED: a dated table copied by hand from the Federal Reserve Board’s calendar (public domain; the Board asks to be cited), returned on every plan — including with no FMP key, where the route still reports configured:false — and never counted against the 40-row FMP cap, which keeps high-impact rows first. `ok` counts FMP rows only, so a dead FMP leg still reads ok:false.',
+    staticData: [
+      'lib/data/fomcCalendar.ts (FOMC meeting dates, copied from the Board’s calendar; 90-day review clock)',
+      'lib/data/releaseCalendar.ts (CPI, jobs report, GDP and PCE release dates, copied from the BLS and BEA schedules; 90-day review clock)',
+    ],
+    notes: 'Earnings need a free FMP key or a free Alpha Vantage key: FMP first, and Alpha Vantage’s earnings calendar (one request a day, three months ahead) fills in companies FMP does not list, or all of them without FMP (T-458). Other US economic releases need a paid FMP plan, except the CPI, jobs-report, GDP and PCE dates, which are keyless and not fetched: a dated table copied from the BLS and BEA schedules (both public domain; each asks to be cited), shown on every plan like the FOMC rows (T-456). FOMC meeting dates are KEYLESS and NOT FETCHED: a dated table copied by hand from the Federal Reserve Board’s calendar (public domain; the Board asks to be cited), returned on every plan — including with no FMP key, where the route still reports configured:false — and never counted against the 40-row FMP cap, which keeps high-impact rows first. `ok` counts keyed rows only (earnings and FMP economic releases), so dead keyed legs still read ok:false.',
+  },
+  {
+    id: 'earnings-dates', surface: 'Next earnings date (stock pages, watchlists)', module: 'equities',
+    route: '/live-data/earnings-dates', status: 'key-gated',
+    providers: [
+      { name: 'FMP', host: 'financialmodelingprep.com', role: 'primary', auth: 'key' },
+      { name: 'Alpha Vantage', host: 'www.alphavantage.co', url: 'https://www.alphavantage.co/documentation/#earnings-calendar', role: 'fallback', auth: 'key' },
+    ],
+    notes: 'T-458 (D213): each stock’s next expected report in the next 90 days, from the same two-source list as the Market Calendar (lib/server/earningsCalendar.ts). FMP’s dates stand where FMP lists a company; Alpha Vantage’s fill in the rest. Alpha Vantage’s whole list is one request a day, so asking about more stocks costs nothing more. Every date is labelled expected.',
   },
 
   // ── FUNDS ──────────────────────────────────────────────────────────────────
@@ -441,6 +460,7 @@ export const DATA_SOURCES: DataSourceEntry[] = [
     route: '/live-data/fund-universe', status: 'live',
     providers: [{ ...SEC_EDGAR, name: 'SEC', host: 'www.sec.gov' }, { name: 'NASDAQ Trader', host: 'www.nasdaqtrader.com', role: 'primary', auth: 'none' }],
     cadence: 'daily-cached',
+    staticData: ['lib/data/fundFacts.generated.json (SEC N-PORT net assets and filing trust for ~25,000 fund tickers, built by scripts/build-fund-facts.mjs; 120-day review clock in lib/data/fundNetAssets.ts). Filled on symbol lookups and searches for funds outside the catalog (T-449 c)'],
     notes: 'Discovered funds ship as compact {symbol,name} rows (2026-07-30, audit follow-up F3). PAGINATION WAS CONSIDERED AND REJECTED in item 11, not deferred: the registry screens client-side, so a page-at-a-time API would filter as though it had seen the whole universe when it had seen fifty rows. The earlier ~11s / 14MB figure predates the compact shape and is not a current measurement — payload re-measured on the owner’s machine 2026-09-19: 2,274,590 bytes (2.27 MB), carrying 29,009 discovered funds (5,593 ETFs + 23,416 mutual funds).',
   },
   {
@@ -457,6 +477,13 @@ export const DATA_SOURCES: DataSourceEntry[] = [
     notes: 'T-420 item 2 (D92). The summary prospectus filed with the share class’s latest annual 485BPOS, else that 485BPOS; looked up by class, since a series lists one 497K per share class. Trusts outside the SEC’s mutual-fund map (SPY, GLD) file neither form and correctly get no link.',
   },
   {
+    id: 'fund-returns', surface: 'Fund returns and money in and out (as filed)', module: 'funds',
+    route: '/live-data/fund-returns', status: 'live',
+    providers: [{ ...SEC_EDGAR, name: 'SEC N-PORT (Items B.5, B.6)', host: 'www.sec.gov' }],
+    cadence: 'Filings are immutable (24h cache); a new one appears about 60 days after each quarter ends',
+    notes: 'T-459 (D222, D223). Each share class’s monthly total returns and the whole fund’s money in and out, from the same NPORT-P filings the holdings come from. A 12-month return only where the last four quarters join up. Trusts that file no N-PORT (SPY, GLD) answer filer: false. Not read by the Fund Registry: every fund’s filing ends on a different month.',
+  },
+  {
     id: 'fund-holdings-history', surface: 'Holdings quarter-over-quarter diff', module: 'funds',
     route: '/live-data/fund-holdings-history', status: 'partial',
     providers: [{ ...SEC_EDGAR, name: 'SEC N-PORT' }, { name: 'FMP', host: 'financialmodelingprep.com', role: 'fallback', auth: 'key' }],
@@ -468,7 +495,21 @@ export const DATA_SOURCES: DataSourceEntry[] = [
     id: 'fx-rates', surface: 'FX rates (official tier)', module: 'macro',
     route: '/live-data/fx-rates', status: 'live',
     providers: [{ name: 'ECB via Frankfurter', host: 'api.frankfurter.dev', url: 'https://frankfurter.dev', role: 'primary', auth: 'none' }],
-    notes: 'ECB’s complete published set of ~30 reference currencies.',
+    notes: 'ECB’s complete published set of ~30 reference currencies. The ECB’s own reuse terms are registered under ecb.europa.eu (read 2026-11-07, T-445); the Bank is not fetched directly, so it is not named here as a provider, which would count it as a second vendor in the coverage matrix.',
+  },
+  {
+    id: 'fx-reference-pairs', surface: 'FX pairs at the ECB’s daily reference rate', module: 'macro',
+    route: '/live-data/fx-reference-pairs', status: 'live',
+    providers: [{ name: 'ECB via Frankfurter', host: 'api.frankfurter.dev', url: 'https://frankfurter.dev', role: 'primary', auth: 'none' }],
+    cadence: '1h revalidate (the ECB publishes once a working day, around 16:00 CET)',
+    notes: 'T-445 (D203). Every catalog pair but the Dollar Index at the ECB’s newest reference rate, with the change since its previous working day. A pair without the euro is worked out from the two euro rates of the same day, and the pages say so (an ECB condition on modified figures). The pages show a live quote first where the keyed ladder has one; this is what replaces the dash.',
+  },
+  {
+    id: 'fx-pair-history', surface: 'FX pair history (ECB reference rates)', module: 'macro',
+    route: '/live-data/fx-pair-history', status: 'live',
+    providers: [{ name: 'ECB via Frankfurter', host: 'api.frankfurter.dev', url: 'https://frankfurter.dev', role: 'primary', auth: 'none' }],
+    cadence: '1h revalidate (up to a year); 6h (5 and 10 years)',
+    notes: 'T-445 (D203). One pair’s daily reference rate over 1 month to 10 years, each week’s last rate over a span longer than a year. Charts every pair page and feeds the Macro TA page and scanner as closing figures only.',
   },
   {
     id: 'fx-rates-extended', surface: 'FX rates (extended tier, +126)', module: 'macro',
@@ -480,7 +521,21 @@ export const DATA_SOURCES: DataSourceEntry[] = [
     id: 'treasury-yield-curve', surface: 'Treasury par yield curve', module: 'macro',
     route: '/live-data/treasury-yield-curve', status: 'live',
     providers: [{ name: 'U.S. Treasury', host: 'home.treasury.gov', url: 'https://home.treasury.gov', role: 'primary', auth: 'none' }],
-    cadence: '4h revalidate', notes: 'Official 13-maturity daily par curve (XML).',
+    cadence: '4h revalidate', notes: 'Official 13-maturity daily par curve (XML), and since T-446 the real (inflation-protected) par curve for expected inflation.',
+  },
+  {
+    id: 'treasury-yield-history', surface: 'Treasury yield history and expected inflation', module: 'macro',
+    route: '/live-data/treasury-yield-history', status: 'live',
+    providers: [{ name: 'U.S. Treasury', host: 'home.treasury.gov', url: 'https://home.treasury.gov', role: 'primary', auth: 'none' }],
+    cadence: '4h revalidate (current year); 1 day (earlier years)',
+    notes: 'One maturity’s daily history from the official par curve, one file per calendar year, with the real yield and expected inflation (ordinary minus real yield, same day) at 5Y, 7Y, 10Y, 20Y and 30Y (T-446).',
+  },
+  {
+    id: 'treasury-spread-history', surface: 'Treasury yield gaps over time (2s10s, 3m10y)', module: 'macro',
+    route: '/live-data/treasury-spread-history', status: 'live',
+    providers: [{ name: 'U.S. Treasury', host: 'home.treasury.gov', url: 'https://home.treasury.gov', role: 'primary', auth: 'none' }],
+    cadence: '4h revalidate (current year); 1 day (earlier years)',
+    notes: 'The 10-year minus 2-year and minus 3-month yields from the same yearly par curve files as the yield history, each stretch below zero dated from the daily readings, reading earlier years (up to ten) until each gap’s most recent stretch below zero is dated (T-464).',
   },
   {
     id: 'macro-news', surface: 'Macro news (commodities/bonds/FX)', module: 'macro',
@@ -521,8 +576,8 @@ export const DATA_SOURCES: DataSourceEntry[] = [
   // ── SHARED / OTHER ─────────────────────────────────────────────────────────
   {
     id: 'headlines', surface: 'Headlines (cross-module landing feed)', module: 'shared',
-    route: '/live-data/news + /live-data/market-news', status: 'live',
-    providers: [{ name: 'Crypto + equity news feeds (merged client-side)', role: 'aggregator', auth: 'none' }],
+    route: '/live-data/news + /live-data/market-news + /live-data/macro-news', status: 'live',
+    providers: [{ name: 'Crypto, equity and macro news feeds (merged client-side)', role: 'aggregator', auth: 'none' }],
   },
   {
     id: 'watchlist', surface: 'Watchlist (cross-module live prices)', module: 'shared',

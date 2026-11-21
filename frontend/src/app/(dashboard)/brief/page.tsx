@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Sunrise, RefreshCw, KeyRound } from 'lucide-react'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { SourceLine } from '@/components/ui/SourceLine'
@@ -12,6 +13,8 @@ import { FeatureNotice } from '@/components/legal/FeatureNotice'
 import { FEATURE_NOTICES } from '@/lib/legal/featureNotices'
 import { RequiredCredits } from '@/components/ui/RequiredCredits'
 import { parseCredits, type RequiredCredit } from '@/lib/data/dataSources'
+import { trackedApi } from '@/lib/api/trackedPortfolios'
+import { trackedBriefSymbols } from '@/lib/data/trackedPortfolioViews'
 
 // One-time key migration for the Finance Now rename — runs before any read below.
 migrateStorageKey('caep:daily-brief:v1', 'fn:daily-brief:v1')
@@ -31,11 +34,23 @@ const LAST_BRIEF_KEY = 'fn:daily-brief:v1'
  */
 interface StoredBrief { text: string; generatedAt: string; credits?: RequiredCredit[] }
 
+/**
+ * The tickers held in tracked portfolios (T-453 a, D208): names and classes only, never units,
+ * cost or gains. A database without the tracked tables, or any failed ledger, gives none, and the
+ * brief goes ahead on the rest.
+ */
+async function trackedHoldingSymbols(): Promise<string[]> {
+  const portfolios = await trackedApi.list().catch(() => [])
+  const ledgers = await Promise.allSettled(portfolios.map((p) => trackedApi.ledger(p.id)))
+  return ledgers.flatMap((l) => (l.status === 'fulfilled' ? trackedBriefSymbols(l.value.view) : []))
+}
+
 function collectContext(
   portfolios: ReturnType<typeof usePortfolioStore.getState>['portfolios'],
   watchlists: WatchList[],
+  tracked: readonly string[],
 ): string[] {
-  const symbols = new Set<string>()
+  const symbols = new Set<string>(tracked)
   for (const p of portfolios) {
     for (const h of p.holdings) {
       const inst = INSTRUMENT_BY_KEY[h.cgId]
@@ -67,7 +82,8 @@ export default function DailyBriefPage() {
     } catch { /* ignore */ }
   }, [])
 
-  const symbols = useMemo(() => collectContext(portfolios, watchlists), [portfolios, watchlists])
+  const tracked = useQuery({ queryKey: ['brief-tracked-symbols'], queryFn: trackedHoldingSymbols, staleTime: 5 * 60_000, retry: false })
+  const symbols = useMemo(() => collectContext(portfolios, watchlists, tracked.data ?? []), [portfolios, watchlists, tracked.data])
 
   const generate = async () => {
     setLoading(true); setError(null); setNeedsKey(null)
@@ -113,14 +129,15 @@ export default function DailyBriefPage() {
             subtitle="Your holdings, what moved, why, and what's ahead — AI-generated from live data"
             description="The brief is grounded in your actual portfolios and watchlists: the research agent pulls live prices and news through the app's own data routes and synthesizes a short morning read. Requires an Anthropic API key (Settings → Integrations → AI Providers, or ANTHROPIC_API_KEY)."
             details={[
-              { label: 'Context', text: symbols.length > 0 ? `Covering ${symbols.length} instruments from your portfolios and watchlists.` : 'No portfolio/watchlist holdings found — a default market brief will be generated.' },
+              { label: 'Context', text: symbols.length > 0 ? `Covering ${symbols.length} instruments from your portfolios (tracked and what-if) and watchlists. Only their names go to the agent, never how much you hold or what it cost.` : 'No portfolio/watchlist holdings found — a default market brief will be generated.' },
               { label: 'Not advice', text: FEATURE_NOTICES.aiAnswers },
             ]}
           />
         </div>
         <button
           onClick={generate}
-          disabled={loading}
+          // Wait for the tracked holdings, so a brief started at once still covers them.
+          disabled={loading || tracked.isPending}
           className="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent-blue text-sm font-medium text-white hover:bg-blue-500 transition-colors disabled:opacity-50"
         >
           <RefreshCw size={14} className={loading ? 'animate-spin' : undefined} aria-hidden />

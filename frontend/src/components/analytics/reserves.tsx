@@ -29,6 +29,7 @@
  */
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
 import { CheckCircle, AlertTriangle, ExternalLink, Loader2, RefreshCw } from 'lucide-react'
 import { ReserveComposition } from '@/components/analytics/ReserveComposition'
@@ -43,26 +44,40 @@ import {
 import { formatCurrency, formatCompact, formatDate, formatPercent } from '@/lib/utils/format'
 import { LIVE_DATA } from '@/lib/constants'
 import type { LiveReserveAsset } from '@/app/live-data/reserves/route'
+import { formatSupplyChange, type ChainSplit, type SupplyChange } from '@/lib/data/stablecoinSupply'
+import { coinPageForReserve } from '@/lib/data/coinPageLinks'
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
 export interface LiveReservesResponse {
+  /** false when DefiLlama could not be read; the route still answers 200. */
+  ok?: boolean
+  error?: string
   assets: LiveReserveAsset[]
+  /** Monitored coins DefiLlama no longer lists under their id (D190). */
+  notFound?: { key: string; reason: string }[]
   updatedAt: string
   metaAsOf?: string
 }
 
-async function fetchLiveReserves(): Promise<LiveReservesResponse> {
-  const res = await fetch('/live-data/reserves')
+/**
+ * The route answers 200 even when DefiLlama failed, with `ok: false`. Reading only the HTTP status
+ * showed a failed read as "Live supply via DefiLlama (updated <now>)" over an empty table (audit
+ * 2026-11-05), so a reported failure is an error here, and the panel says the data is unavailable.
+ */
+export async function fetchLiveReserves(fetcher: typeof fetch = fetch): Promise<LiveReservesResponse> {
+  const res = await fetcher('/live-data/reserves')
   if (!res.ok) throw new Error('Failed to fetch reserve data')
-  return res.json()
+  const data = (await res.json()) as LiveReservesResponse
+  if (data.ok === false) throw new Error(data.error || 'DefiLlama returned no reserve data')
+  return data
 }
 
 /** Single query definition, so every surface shares one cache entry and one refresh cadence. */
 export function useLiveReserves() {
   return useQuery({
     queryKey: ['live-reserves'],
-    queryFn: fetchLiveReserves,
+    queryFn: () => fetchLiveReserves(),
     enabled: LIVE_DATA,
     staleTime: 5 * 60 * 1000,
     refetchInterval: 10 * 60 * 1000,
@@ -81,6 +96,8 @@ export interface ReserveRow {
   /** True when the issuer discloses a ratio. NOT an independent verification. */
   hasDisclosedRatio: boolean
   chains: string[]
+  supplyChange: SupplyChange | null
+  chainSplit: ChainSplit | null
   composition: { category: string; amount: number; percentage: number; description: string }[]
   pegMechanism: string
 }
@@ -97,6 +114,8 @@ export function toReserveRows(assets: LiveReserveAsset[] | undefined): ReserveRo
     collateralizationRatio: a.collateralizationRatio,
     hasDisclosedRatio: a.collateralizationRatio !== null,
     chains: a.chains,
+    supplyChange: a.supplyChange ?? null,
+    chainSplit: a.chainSplit ?? null,
     composition: a.composition.length > 0
       ? a.composition.map((c) => ({ ...c, description: '' }))
       : [{
@@ -239,6 +258,61 @@ export function reserveSubtitle(data: LiveReservesResponse | undefined): string 
 
 // ─── Monitor panel ────────────────────────────────────────────────────────────
 
+const changeClass = (pct: number | null) =>
+  pct === null || pct === 0 ? 'text-slate-400' : pct > 0 ? 'text-emerald-400' : 'text-red-400'
+
+/**
+ * A stablecoin's circulating supply over a day, a week and a month, and the
+ * blockchains it sits on (T-449 a). Facts only: no alert rings on a fall (D204).
+ * Shared by the Reserve Monitor's detail panel and each stablecoin's own page.
+ */
+export function SupplyChangePanel({ change, split }: { change: SupplyChange | null; split: ChainSplit | null }) {
+  if (!change && !split) return null
+  return (
+    <div className="space-y-3 text-xs">
+      {change && (
+        <div>
+          <p className="text-slate-400 mb-1.5">Circulating supply change</p>
+          <div className="grid grid-cols-3 gap-2">
+            {([['1 day', change.day], ['7 days', change.week], ['30 days', change.month]] as const).map(([label, pct]) => (
+              <div key={label} className="rounded-md border border-slate-800 bg-slate-900/40 px-2 py-1.5 text-center">
+                <p className={`font-mono tabular-nums text-sm ${changeClass(pct)}`}>{formatSupplyChange(pct)}</p>
+                <p className="text-[10px] text-slate-500">{label}</p>
+              </div>
+            ))}
+          </div>
+          <p className="mt-1.5 text-[11px] text-slate-500 leading-relaxed">
+            A fall means more coins were redeemed than issued. Supply figures via DefiLlama.
+          </p>
+        </div>
+      )}
+      {split && split.top.length > 0 && (
+        <div>
+          <p className="text-slate-400 mb-1.5">Supply by blockchain</p>
+          <ul className="space-y-1">
+            {split.top.map((c) => (
+              <li key={c.chain} className="flex items-center justify-between gap-2">
+                <span className="text-slate-300 truncate">{c.chain}</span>
+                <span className="font-mono tabular-nums text-slate-400 shrink-0">
+                  {formatCompact(c.amount)} · {c.pct.toFixed(1)}%
+                </span>
+              </li>
+            ))}
+            {split.others && (
+              <li className="flex items-center justify-between gap-2">
+                <span className="text-slate-500">{split.others.count} other {split.others.count === 1 ? 'chain' : 'chains'}</span>
+                <span className="font-mono tabular-nums text-slate-500 shrink-0">
+                  {formatCompact(split.others.amount)} · {split.others.pct.toFixed(1)}%
+                </span>
+              </li>
+            )}
+          </ul>
+        </div>
+      )}
+    </div>
+  )
+}
+
 /**
  * The full reserve monitor: KPIs, attestation table, and a per-asset detail
  * panel. Rendered as the "Reserve Monitor" tab on /assets; previously also the
@@ -272,7 +346,7 @@ export function ReserveMonitorPanel() {
       <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-6 text-center">
         <AlertTriangle className="mx-auto h-7 w-7 text-red-400/70" />
         <p className="mt-2 text-sm font-medium text-slate-200">Could not reach DefiLlama</p>
-        <p className="mt-1 text-xs text-slate-400">Reserve data is temporarily unavailable.</p>
+        <p className="mt-1 text-xs text-slate-400">Reserve data is temporarily unavailable. Nothing below is shown as live until it answers.</p>
         <button onClick={() => refetch()} className="mt-3 text-xs text-blue-400 hover:text-blue-300 underline">
           Retry
         </button>
@@ -295,6 +369,20 @@ export function ReserveMonitorPanel() {
       </div>
 
       <ReserveProvenance updatedAt={data?.updatedAt} />
+
+      {(data?.notFound?.length ?? 0) > 0 && (
+        <div className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-300">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          <span>
+            Not shown, because DefiLlama no longer lists {data!.notFound!.length === 1 ? 'this coin' : 'these coins'} under the
+            identifier checked: {data!.notFound!.map((m) => `${m.key} (${m.reason})`).join('; ')}.
+          </span>
+        </div>
+      )}
+
+      {reserves.length === 0 && (
+        <p className="text-sm text-slate-400">DefiLlama answered, but none of the monitored coins was found in its list.</p>
+      )}
 
       {reserves.length > 0 && (
         <>
@@ -349,11 +437,22 @@ export function ReserveMonitorPanel() {
                     }`}
                   >
                     <div className="col-span-3 flex flex-col">
-                      <span className="font-medium text-slate-100">{r.symbol}</span>
+                      {/* The coin's own page (T-463), matched by DefiLlama's number for the coin, never
+                          its ticker. The click opens the page, not the row's detail panel. */}
+                      {coinPageForReserve(r.assetId)
+                        ? <Link href={`/assets/${coinPageForReserve(r.assetId)}`} onClick={(e) => e.stopPropagation()}
+                            className="font-medium text-slate-100 hover:text-blue-400 transition-colors w-fit" title={`${r.name}: its page`}>{r.symbol}</Link>
+                        : <span className="font-medium text-slate-100">{r.symbol}</span>}
                       <span className="text-xs text-slate-500">{r.attester}</span>
                     </div>
-                    <span className="col-span-2 font-mono text-xs text-slate-300 tabular-nums self-center">
-                      {formatCurrency(r.totalReservesUsd)}
+                    {/* Short form: the full figure ($176,776,895,353.89) ran into the next column. */}
+                    <span className="col-span-2 font-mono text-xs text-slate-300 tabular-nums self-center" title={formatCurrency(r.totalReservesUsd)}>
+                      {formatCompact(r.totalReservesUsd)}
+                      {r.supplyChange && r.supplyChange.week !== null && (
+                        <span className={`block text-[10px] ${changeClass(r.supplyChange.week)}`} title="Change in circulating supply over 7 days">
+                          {formatSupplyChange(r.supplyChange.week)} 7d
+                        </span>
+                      )}
                     </span>
                     <div className="col-span-2 self-center">
                       {r.pegMechanism
@@ -410,6 +509,11 @@ export function ReserveMonitorPanel() {
                     <DisclosureBadge disclosed={selected.hasDisclosedRatio} />
                   </div>
                 </div>
+                {(selected.supplyChange || selected.chainSplit) && (
+                  <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-4">
+                    <SupplyChangePanel change={selected.supplyChange} split={selected.chainSplit} />
+                  </div>
+                )}
               </div>
             )}
           </div>

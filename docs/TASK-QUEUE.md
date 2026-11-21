@@ -1984,6 +1984,14 @@ UI polish; persistence is the one architectural call.
 **Constraint carried forward:** no chain feed — hand entry stays; RP-1 stands
 unless its reopen trigger fires.
 
+> **Status, 2026-11-09 (D216).** The scorer this section describes has been off since
+> D64 (2026-10-04), and D92 keeps it off. Build-out items (1) and (3) were built on the
+> ungraded Options Calculator instead (`/equities/options-calculator`, D93): 8 legs, 15
+> presets, and "what if" sliders for the underlying price and volatility, with no grade
+> (T-061, T-062, closed). Item (2), saved positions, stays parked (T-060), and item (4),
+> per-dimension explanations, belongs to the scorer and waits with it (T-063). The
+> scorer's own form still takes 4 legs.
+
 #### S5 — Portfolio Builder
 **State:** two modes since item 16 (questionnaire + build-by-allocation), pure
 engine, DB-backed plans, drift monitor, suitability review. The premium module.

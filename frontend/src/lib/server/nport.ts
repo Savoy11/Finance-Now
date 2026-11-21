@@ -8,6 +8,7 @@
 // that series (browse-edgar atom) → primary_doc.xml → parsed holdings.
 
 import { EDGAR_HEADERS } from './edgar'
+import { decodeEntities } from '@/lib/utils/html'
 
 export interface FundSeries {
   seriesId: string
@@ -44,6 +45,24 @@ export interface NportHolding {
    * derived from, keylessly, from a filing the app already fetches.
    */
   assetCat: string | null
+  /**
+   * The issuer's country as the filer reports it (Item C.6, `invCountry`): an ISO 3166 two-letter
+   * code, a company's home rather than where it sells. Null when the filer wrote "N/A" (swaps and
+   * other derivatives do) or nothing. T-455.
+   */
+  country: string | null
+  /**
+   * The currency the holding is in (Item C.2.c): `<curCd>`, or for a holding outside US dollars
+   * the `curCd` attribute of `<currencyConditional>`, which carries the exchange rate beside it.
+   */
+  currency: string | null
+  /**
+   * The kind of issuer (Item C.5): CORP, UST, USGA, USGSE, MUN, NUSS, PF, RF or OTHER, from
+   * `<issuerCat>` or the `issuerCat` attribute of `<issuerConditional>`.
+   */
+  issuerCat: string | null
+  /** A debt holding's maturity date (Item C.9.a, `debtSec`'s `maturityDt`), YYYY-MM-DD. */
+  maturity: string | null
 }
 
 /**
@@ -60,6 +79,30 @@ export interface NportRateRisk {
   dv01: number
 }
 
+/**
+ * One share class's total returns for the three months the filing covers (Item B.5.a,
+ * `<monthlyTotReturn classId rtn1 rtn2 rtn3>`), in percent: "Monthly total returns of the Fund
+ * for each of the preceding three months", per class for a fund with several. `months[2]` is the
+ * month the report date falls in, `months[0]` two months before (T-459). Null where the filer
+ * wrote "N/A" or nothing.
+ */
+export interface NportClassReturns {
+  /** The SEC class id (C000…), or null when the filer gave none. */
+  classId: string | null
+  months: [number | null, number | null, number | null]
+}
+
+/**
+ * One month's money in and out of the whole fund, every share class (Item B.6,
+ * `<mon1Flow sales reinvestment redemption>`), in US dollars as filed: shares sold, shares
+ * issued for reinvested distributions, and shares redeemed. Null where unreadable.
+ */
+export interface NportFlowMonth {
+  sales: number | null
+  reinvestment: number | null
+  redemption: number | null
+}
+
 export interface NportReport {
   /** Portfolio as-of date (repPdDate), YYYY-MM-DD. */
   asOf: string | null
@@ -68,6 +111,10 @@ export interface NportReport {
   holdings: NportHolding[]
   /** Interest-rate risk per currency; empty when the filing carries none. */
   rateRisk: NportRateRisk[]
+  /** Item B.5.a, one row per share class; empty when the filing carries none (T-459). */
+  returns: NportClassReturns[]
+  /** Item B.6, month 1 to month 3; a month the filing omits is null (T-459). */
+  flows: [NportFlowMonth | null, NportFlowMonth | null, NportFlowMonth | null]
 }
 
 /** Resolve a fund ticker to its EDGAR series/class ids via the SEC's mutual-fund
@@ -140,6 +187,26 @@ const tag = (block: string, name: string): string | undefined =>
 const attr = (block: string, name: string): string | undefined =>
   block.match(new RegExp(`<${name}[^>]*\\bvalue="([^"]*)"`))?.[1]
 
+/**
+ * The holding's own lines, before the nested sections. A holding's country, currency and issuer
+ * kind come before `<isRestrictedSec>`; what follows (a bond's `<debtSec>`, a swap's
+ * `<derivativeInfo>`) carries other instruments' currencies and names. Read only the head, or a
+ * convertible bond's reference stock lends the bond its currency (T-455).
+ */
+function holdingHead(block: string): string {
+  const cut = block.search(/<(isRestrictedSec|fairValLevel|securityLending|debtSec|derivativeInfo|repurchaseAgrmt)\b/)
+  return cut >= 0 ? block.slice(0, cut) : block
+}
+
+/** `<name>X</name>`, else `<nameConditional ... name="X"/>`. */
+const tagOrConditional = (head: string, name: string, conditional: string): string | undefined =>
+  tag(head, name) ?? head.match(new RegExp(`<${conditional}\\b[^>]*\\b${name}="([^"]*)"`))?.[1]
+
+const code = (raw: string | undefined, pattern: RegExp): string | null => {
+  const v = raw?.trim().toUpperCase()
+  return v && pattern.test(v) ? v : null
+}
+
 const RATE_BUCKETS = ['period3Mon', 'period1Yr', 'period5Yr', 'period10Yr', 'period30Yr'] as const
 
 /** Sum the five maturity-bucket attributes of the `<intrstRtRiskdv01>` element.
@@ -171,6 +238,35 @@ export function parseNportRateRisk(xml: string): NportRateRisk[] {
   return out
 }
 
+/** An attribute's value from an element's opening tag text, by name. */
+const attrOf = (el: string, name: string): string | undefined =>
+  el.match(new RegExp(`\\b${name}="([^"]*)"`))?.[1]
+
+/** Item B.5.a: each share class's three monthly total returns, in percent. Pure. */
+export function parseNportReturns(xml: string): NportClassReturns[] {
+  const section = xml.match(/<monthlyTotReturns>([\s\S]*?)<\/monthlyTotReturns>/)?.[1]
+  if (!section) return []
+  const out: NportClassReturns[] = []
+  for (const m of section.matchAll(/<monthlyTotReturn\b([^>]*?)\/?>/g)) {
+    const el = m[1]
+    out.push({
+      classId: attrOf(el, 'classId')?.trim() || null,
+      months: [num(attrOf(el, 'rtn1')), num(attrOf(el, 'rtn2')), num(attrOf(el, 'rtn3'))],
+    })
+  }
+  return out
+}
+
+/** Item B.6: the fund's money in and out for months 1 to 3. Pure. */
+export function parseNportFlows(xml: string): NportReport['flows'] {
+  const month = (n: 1 | 2 | 3): NportFlowMonth | null => {
+    const el = xml.match(new RegExp(`<mon${n}Flow\\b([^>]*?)\\/?>`))?.[1]
+    if (el == null) return null
+    return { sales: num(attrOf(el, 'sales')), reinvestment: num(attrOf(el, 'reinvestment')), redemption: num(attrOf(el, 'redemption')) }
+  }
+  return [month(1), month(2), month(3)]
+}
+
 /** Fetch and parse one NPORT-P primary document into holdings. */
 export async function fetchNportReport(ref: NportFilingRef): Promise<NportReport> {
   const adsh = ref.accession.replace(/-/g, '')
@@ -192,19 +288,27 @@ export function parseNportReport(xml: string): NportReport {
   const blocks = xml.split(/<invstOrSec>/).slice(1)
   for (const raw of blocks) {
     const block = raw.split(/<\/invstOrSec>/)[0]
-    const name = tag(block, 'name') ?? tag(block, 'title') ?? 'Unknown'
+    // The filing is XML, so "Eli Lilly & Co" arrives as "Eli Lilly &amp; Co".
+    const rawName = tag(block, 'name') ?? tag(block, 'title')
+    const name = rawName ? decodeEntities(rawName) : 'Unknown'
     const cusipRaw = tag(block, 'cusip')
     // EDGAR uses sentinel strings for missing identifiers
     const cusip = cusipRaw && !/^(N\/A|0{9})$/i.test(cusipRaw) ? cusipRaw : null
     const isin = attr(block, 'isin') ?? null
     const tickerRaw = attr(block, 'ticker') ?? null
     const ticker = tickerRaw && /^[A-Za-z.-]{1,10}$/.test(tickerRaw) ? tickerRaw.toUpperCase() : null
+    const head = holdingHead(block)
+    const debt = block.match(/<debtSec>([\s\S]*?)<\/debtSec>/)?.[1]
     holdings.push({
       ticker, name, cusip, isin,
       balance: num(tag(block, 'balance')),
       valueUsd: num(tag(block, 'valUSD')),
       pctVal: num(tag(block, 'pctVal')),
       assetCat: tag(block, 'assetCat')?.trim().toUpperCase() || null,
+      country: code(tag(head, 'invCountry'), /^[A-Z]{2}$/),
+      currency: code(tagOrConditional(head, 'curCd', 'currencyConditional'), /^[A-Z]{3}$/),
+      issuerCat: code(tagOrConditional(head, 'issuerCat', 'issuerConditional'), /^[A-Z]{2,6}$/),
+      maturity: debt ? (tag(debt, 'maturityDt')?.match(/^\d{4}-\d{2}-\d{2}$/)?.[0] ?? null) : null,
     })
   }
   return {
@@ -212,5 +316,7 @@ export function parseNportReport(xml: string): NportReport {
     netAssets: num(xml.match(/<netAssets>\s*([^<]*?)\s*<\/netAssets>/)?.[1]),
     holdings,
     rateRisk: parseNportRateRisk(xml),
+    returns: parseNportReturns(xml),
+    flows: parseNportFlows(xml),
   }
 }

@@ -4,7 +4,8 @@ import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import { clsx } from 'clsx'
-import { ArrowLeft, ExternalLink, FileText, Sparkles, TrendingDown, TrendingUp } from 'lucide-react'
+import { ArrowLeft, ExternalLink, FileText, TrendingDown, TrendingUp } from 'lucide-react'
+import { AssetActions } from '@/components/markets/AssetActions'
 import { ModuleGate } from '@/components/layout/ModuleGate'
 import { SourceLine } from '@/components/ui/SourceLine'
 import { PriceChartCard, FiftyTwoWeekBar } from '@/components/markets/PriceChartCard'
@@ -16,6 +17,8 @@ import { CompanyProfileCard } from '@/components/markets/CompanyProfileCard'
 import { SectorPeers } from '@/components/markets/SectorPeers'
 import { AssetRatingPanel } from '@/components/markets/AssetRatingPanel'
 import { StockBetaCard } from '@/components/markets/StockBetaCard'
+import { NextEarningsCard } from '@/components/markets/NextEarnings'
+import { QuarterlyResults } from '@/components/markets/QuarterlyResults'
 import { getEquity, secFilingsUrl, SECTOR_INFO, type SectorId } from '@/lib/data/equityCatalog'
 import { formatCurrency, formatPercent } from '@/lib/utils/format'
 import { STALE_TIME_SHORT } from '@/lib/constants'
@@ -29,7 +32,16 @@ interface DetailEntry {
   sector: SectorId
   industry: string
   website: string
+  /**
+   * False for a stock found only on the SEC's list (T-450): the app knows a sector for its
+   * curated 79 alone, and the SEC's industry code needs one request per company.
+   */
+  sectorKnown: boolean
+  exchange: string | null
 }
+
+const SECTOR_UNKNOWN_TITLE =
+  'The app has a sector only for its 79 curated stocks. This one was found on the SEC’s list of NYSE and Nasdaq stocks, which names its exchange but not its industry.'
 
 // The gate wraps at the COMPONENT boundary, not inside the returned JSX. Placed
 // inside, the inner component still mounts and its useQuery hooks still run and
@@ -49,7 +61,8 @@ function EquityDetailInner() {
   const symbol = (params.symbol ?? '').toUpperCase()
   const staticEntry = getEquity(symbol)
 
-  // Resolve non-catalog tickers from the live universe (FMP profile lookup). Asked for catalog
+  // Resolve non-catalog tickers from the live universe (FMP profile lookup, else the SEC's list
+  // of NYSE and Nasdaq stocks, T-450). Asked for catalog
   // stocks too since D170: its share-count change is the split guard for P/E and yield.
   const { data: uniData, isLoading: uniLoading } = useQuery<StockUniverseResponse>({
     queryKey: ['stock-universe', symbol],
@@ -61,9 +74,12 @@ function EquityDetailInner() {
   const dyn = uniData?.entries?.[0]
 
   const entry: DetailEntry | undefined = staticEntry
-    ? { symbol: staticEntry.symbol, name: staticEntry.name, sector: staticEntry.sector, industry: staticEntry.industry, website: staticEntry.website }
+    ? { symbol: staticEntry.symbol, name: staticEntry.name, sector: staticEntry.sector, industry: staticEntry.industry, website: staticEntry.website, sectorKnown: true, exchange: dyn?.exchange ?? null }
     : dyn
-      ? { symbol: dyn.symbol, name: dyn.name, sector: dyn.sector, industry: dyn.industry, website: dyn.website ?? '' }
+      ? {
+          symbol: dyn.symbol, name: dyn.name, sector: dyn.sector, industry: dyn.industry, website: dyn.website ?? '',
+          sectorKnown: !(uniData?.source === 'sec' && dyn.sector === 'other'), exchange: dyn.exchange,
+        }
       : undefined
 
   const { data } = useQuery<SecurityQuotesResponse>({
@@ -113,13 +129,20 @@ function EquityDetailInner() {
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-semibold text-text-primary">{entry.name}</h1>
               <span className="font-mono text-sm text-text-muted">{symbol}</span>
-              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-sm text-[11px] font-medium border border-border text-text-secondary">
-                <span className="size-1.5 rounded-full" style={{ backgroundColor: sector.color }} aria-hidden />
-                {sector.label}
-              </span>
+              {entry.sectorKnown ? (
+                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-sm text-[11px] font-medium border border-border text-text-secondary">
+                  <span className="size-1.5 rounded-full" style={{ backgroundColor: sector.color }} aria-hidden />
+                  {sector.label}
+                </span>
+              ) : (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-sm text-[11px] font-medium border border-dashed border-border text-text-muted"
+                  title={SECTOR_UNKNOWN_TITLE}>
+                  Sector not on file
+                </span>
+              )}
             </div>
             <p className="mt-1 text-xs text-text-muted">
-              {entry.industry}
+              {entry.sectorKnown ? entry.industry : `Listed on ${entry.exchange ?? 'a US exchange'} · from the SEC’s list of listed companies`}
               {entry.website && (
                 <>
                   {' · '}
@@ -142,13 +165,6 @@ function EquityDetailInner() {
                 {formatPercent(change, 2)} today
               </p>
             )}
-            <Link
-              href={`/research?symbol=${encodeURIComponent(symbol)}`}
-              className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-600 text-xs font-medium text-white hover:bg-violet-500 transition-colors"
-              title="Run the Equity Research Agent on this stock"
-            >
-              <Sparkles size={13} aria-hidden /> Analyze with AI
-            </Link>
           </div>
         </div>
       </div>
@@ -157,6 +173,10 @@ function EquityDetailInner() {
           while every registry page did, so the page with the most specific
           numbers was the one with no attribution. */}
       <SourceLine id="security-quotes" />
+
+      {/* Watch it, set a price alert, compare it, ask the AI (T-454). The page's
+          "Analyze with AI" link moved into this row as "Ask the AI". */}
+      <AssetActions asset={{ kind: 'stock', symbol, name: entry.name, key: `sec:${symbol}` }} livePrice={price} />
 
       {/* Measured-risk rating (T-420, D92). Renders nothing while
           ASSET_PAGE_RATINGS_SHOWN is false (lib/risk/visibility.ts). */}
@@ -172,6 +192,9 @@ function EquityDetailInner() {
         </div>
         <div className="space-y-4">
           <CompanyProfileCard symbol={symbol} name={entry.name} />
+          <NextEarningsCard symbol={symbol} />
+          {/* T-461 (D222): what the company reported last, beside when it reports next. */}
+          <QuarterlyResults symbol={symbol} />
           <StockBetaCard symbol={symbol} />
           <div className="rounded-card border border-border bg-bg-card p-4">
             <h2 className="text-sm font-medium text-text-secondary mb-3">Financial Statements</h2>

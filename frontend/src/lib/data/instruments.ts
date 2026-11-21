@@ -185,6 +185,35 @@ export const INSTRUMENTS: Instrument[] = [
 ]
 
 /**
+ * What an entry price is denominated in. '$' is only right for USD-quoted
+ * assets; corn quotes in cents/bushel, ^TNX is a percent yield, bond futures
+ * are points of par, FX pairs are the quote currency. The stored ratio math is
+ * unit-agnostic (entry and current just have to share a unit) — this label is
+ * what tells the user WHICH unit to type. Moved here from the Portfolios page so
+ * "Download my data" names the same unit (audit 2026-11-07, finding 5).
+ */
+export function entryUnitLabel(key: string): string {
+  const q = INSTRUMENT_BY_KEY[key]?.quoteKind
+  if (q === 'cents') return '¢'
+  if (q === 'percent') return '%'
+  if (q === 'points') return 'pts'
+  if (q === 'index') return 'idx'
+  if (q === 'fx') return INSTRUMENT_BY_KEY[key]?.quoteCurrency ?? 'fx'
+  return '$'
+}
+
+/** The same unit in words, for a file a person opens elsewhere: "USD", "US cents", "percent"… */
+export function entryUnitName(key: string): string {
+  const q = INSTRUMENT_BY_KEY[key]?.quoteKind
+  if (q === 'cents') return 'US cents'
+  if (q === 'percent') return 'percent'
+  if (q === 'points') return 'points of par'
+  if (q === 'index') return 'index points'
+  if (q === 'fx') return INSTRUMENT_BY_KEY[key]?.quoteCurrency ?? 'quote currency'
+  return 'USD'
+}
+
+/**
  * Render a quote for ANY instrument, honouring its market's convention.
  *
  * Cross-module surfaces (watchlist, portfolios, compare) hold a mixed bag of

@@ -117,6 +117,14 @@ export interface VideosResponse {
   videos: VideoItem[]
   /** Channels that answered, for the page's source filter. */
   channels: Array<{ provider: string; channel: string; market: ProviderMarket; count: number }>
+  /** Channel feeds asked for, every enabled channel in each market asked about. */
+  tried: number
+  /**
+   * Each channel feed that could not be read, with why. Until 2026-11-09 a run in which every
+   * feed failed answered `ok: true` with no videos and no reason, so nobody could tell a changed
+   * YouTube feed from a blocked one (the owner's audit that day read "0 videos").
+   */
+  failed: Array<{ provider: string; name: string; error: string }>
 }
 
 /**
@@ -186,11 +194,14 @@ function parseChannelFeed(xml: string, provider: AnyActiveProvider, market: Prov
   }).filter((v): v is VideoItem => v !== null)
 }
 
-async function fetchProvider(provider: AnyActiveProvider, market: ProviderMarket): Promise<VideoItem[]> {
+/** One channel's videos, or why there are none. */
+interface ChannelResult { items: VideoItem[]; error?: string }
+
+async function fetchProvider(provider: AnyActiveProvider, market: ProviderMarket): Promise<ChannelResult> {
   const feed = await feedUrl(provider)
   if (!feed) {
     recordProviderFetch(provider.id, { error: 'No channel id configured' })
-    return []
+    return { items: [], error: 'No channel id configured' }
   }
   const headers = {
     'User-Agent': 'Mozilla/5.0 (compatible; FinanceNow/1.0)',
@@ -207,10 +218,11 @@ async function fetchProvider(provider: AnyActiveProvider, market: ProviderMarket
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
     const items = parseChannelFeed(await res.text(), provider, market)
     recordProviderFetch(provider.id, { count: items.length })
-    return items
+    return { items }
   } catch (e) {
-    recordProviderFetch(provider.id, { error: e instanceof Error ? e.message : 'fetch failed' })
-    return []
+    const error = e instanceof Error ? e.message : 'fetch failed'
+    recordProviderFetch(provider.id, { error })
+    return { items: [], error }
   }
 }
 
@@ -245,16 +257,22 @@ export async function GET(request: NextRequest) {
 
   const videos: VideoItem[] = []
   const channels = new Map<string, { provider: string; channel: string; market: ProviderMarket; count: number }>()
+  const failed: VideosResponse['failed'] = []
 
   settled.forEach((result, i) => {
-    if (result.status !== 'fulfilled' || result.value.length === 0) return
     const { provider, market } = jobs[i]
-    videos.push(...result.value)
+    const error = result.status === 'rejected'
+      ? (result.reason instanceof Error ? result.reason.message : 'fetch failed')
+      : result.value.error
+    if (error) { failed.push({ provider: provider.id, name: provider.name, error }); return }
+    if (result.status !== 'fulfilled' || result.value.items.length === 0) return
+    const items = result.value.items
+    videos.push(...items)
     channels.set(provider.id, {
       provider: provider.id,
-      channel: result.value[0].channel,
+      channel: items[0].channel,
       market,
-      count: result.value.length,
+      count: items.length,
     })
   })
 
@@ -265,5 +283,7 @@ export async function GET(request: NextRequest) {
     updatedAt: new Date().toISOString(),
     videos: videos.slice(0, limit),
     channels: [...channels.values()].sort((a, b) => a.channel.localeCompare(b.channel)),
+    tried: jobs.length,
+    failed,
   } satisfies VideosResponse)
 }

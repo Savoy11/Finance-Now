@@ -10,7 +10,7 @@
 // portfolio, separate from the what-if ones; anything already owned is entered
 // once as a starting position; gains are FIFO, not adjusted for tax rules.
 
-import type { TradeSide } from '@/lib/db/schema/invest'
+import type { IncomeKind, TradeSide } from '@/lib/db/schema/invest'
 import { CLASS_LABELS, INSTRUMENT_BY_KEY, isSecurityKey, type InstrumentClass } from './instruments'
 import {
   COST_BASIS_METHOD, LEDGER_SIDES, MAX_SPLIT_UNITS, REALIZED_METHOD_LABEL, computeCostBasis, differenceUsd, sumUsd,
@@ -41,7 +41,22 @@ const AMOUNT_LIMITS = {
   pricePerUnit: { decimals: 8, wholeDigits: 12, label: 'price' },
   feeUsd: { decimals: 2, wholeDigits: 18, label: 'fee' },
   cashInLieuUsd: { decimals: 2, wholeDigits: 18, label: 'cash for a fraction' },
+  incomeUsd: { decimals: 2, wholeDigits: 18, label: 'amount received' },
 } as const
+
+/** The kinds of cash income (T-451), as the trade_income table stores them, with what the screen calls each. */
+export const INCOME_KIND_LABELS: Record<IncomeKind, string> = {
+  dividend: 'Dividend',
+  interest: 'Interest',
+  distribution: 'Fund distribution',
+  other: 'Other income',
+}
+
+/** Cash income's terms as they are stored (T-451): see trade_income. */
+export interface IncomeDetails {
+  amountUsd: string
+  kind: IncomeKind
+}
 
 /** Earliest date a trade may carry. A typo such as year 0026 is refused rather than sorted to the front. */
 const EARLIEST_TRADE = Date.UTC(1900, 0, 1)
@@ -96,6 +111,8 @@ export interface NewTrade {
   note: string | null
   /** On a split only. */
   split: SplitDetails | null
+  /** On cash income only (T-451). */
+  income: IncomeDetails | null
 }
 
 type Parsed<T> = { ok: true; value: T } | { ok: false; error: string }
@@ -146,8 +163,11 @@ export function parseTradeInput(body: unknown, now: Date = new Date()): Parsed<N
   }
 
   // A split (T-421) is a ratio, not an amount: it has no units, price or fee of its own.
+  // Cash income (T-451) is an amount of dollars: it has none of them either.
   const isSplit = side === 'split'
+  const isIncome = side === 'income'
   let split: SplitDetails | null = null
+  let income: IncomeDetails | null = null
   let quantity: Parsed<string> = { ok: true, value: '0' }
   let price: Parsed<string> = { ok: true, value: '0' }
   let fee: Parsed<string> = { ok: true, value: '0' }
@@ -167,6 +187,21 @@ export function parseTradeInput(body: unknown, now: Date = new Date()): Parsed<N
       cashInLieuUsd = cash.value
     }
     split = { unitsAfter: after.value, unitsBefore: before.value, cashInLieuUsd }
+  } else if (isIncome) {
+    if (body.quantity !== undefined || body.pricePerUnit !== undefined || body.feeUsd !== undefined) {
+      return fail('Cash income has no units, price or fee of its own. Send the amount received as amountUsd, such as "12.34".')
+    }
+    if (body.unitsAfter !== undefined || body.unitsBefore !== undefined || body.cashInLieuUsd !== undefined) {
+      return fail('Only a split has a ratio or cash for a fraction.')
+    }
+    const amount = readAmount(body.amountUsd, 'incomeUsd')
+    if (!amount.ok) return amount
+    if (!/[1-9]/.test(amount.value)) return fail('The amount received must be more than 0.')
+    const kind = body.incomeKind === undefined ? 'other' : body.incomeKind
+    if (typeof kind !== 'string' || !(kind in INCOME_KIND_LABELS)) {
+      return fail(`The kind of income must be one of: ${Object.keys(INCOME_KIND_LABELS).join(', ')}.`)
+    }
+    income = { amountUsd: amount.value, kind: kind as IncomeKind }
   } else {
     if (body.unitsAfter !== undefined || body.unitsBefore !== undefined || body.cashInLieuUsd !== undefined) {
       return fail('Only a split has a ratio or cash for a fraction.')
@@ -177,6 +212,13 @@ export function parseTradeInput(body: unknown, now: Date = new Date()): Parsed<N
     if (!price.ok) return price
     fee = body.feeUsd === undefined ? { ok: true as const, value: '0' } : readAmount(body.feeUsd, 'feeUsd')
     if (!fee.ok) return fee
+    // D201: units received as income cost their value on the day, so it has to be given.
+    if (side === 'income_units' && !/[1-9]/.test(price.value)) {
+      return fail('Units received as income need their value per unit on the day they arrived: that is what they cost.')
+    }
+  }
+  if (!isIncome && (body.amountUsd !== undefined || body.incomeKind !== undefined)) {
+    return fail('Only cash income has an amount received or a kind of income.')
   }
 
   if (body.opening !== undefined && typeof body.opening !== 'boolean') return fail('"opening" must be true or false.')
@@ -186,6 +228,7 @@ export function parseTradeInput(body: unknown, now: Date = new Date()): Parsed<N
   let executedAt: Date | null = null
   if (body.executedAt === undefined || body.executedAt === null || body.executedAt === '') {
     if (isSplit) return fail('A split needs the date it took effect: the first day the shares traded in the new units.')
+    if (isIncome || side === 'income_units') return fail('Income needs the date it was received.')
     if (!opening) return fail('Every trade needs a date. Only a starting position may leave it out.')
   } else {
     if (typeof body.executedAt !== 'string') return fail('The date must be sent as an ISO date, such as "2026-03-14" or "2026-03-14T15:30:00Z".')
@@ -210,6 +253,7 @@ export function parseTradeInput(body: unknown, now: Date = new Date()): Parsed<N
     opening,
     note: noteText || null,
     split,
+    income,
   }
 
   // The engine's own rules, last, so the two can never disagree about what counts.
@@ -270,6 +314,8 @@ export interface StoredTrade {
   createdAt: Date
   /** A split's terms, from trade_splits; null on every other kind. */
   split: SplitDetails | null
+  /** Cash income's amount and kind, from trade_income; null on every other kind. */
+  income: IncomeDetails | null
 }
 
 export interface StoredCancellation {
@@ -293,6 +339,8 @@ export interface TradeView {
   createdAt: string
   /** A split's terms; null on every other kind. */
   split: SplitDetails | null
+  /** Cash income's amount and kind; null on every other kind. */
+  income: IncomeDetails | null
   /** Set once the trade is cancelled; a cancelled trade stays listed and counts for nothing. */
   cancelled: { at: string; reason: string } | null
 }
@@ -330,6 +378,7 @@ export function toTradeView(t: StoredTrade, cancellation?: StoredCancellation): 
     note: t.note,
     createdAt: t.createdAt.toISOString(),
     split: t.split,
+    income: t.income,
     cancelled: cancellation ? { at: cancellation.createdAt.toISOString(), reason: cancellation.reason } : null,
   }
 }
@@ -361,6 +410,7 @@ export function buildLedgerView(trades: readonly StoredTrade[], cancellations: r
     g.trades.push({
       id: t.id, side: t.side, quantity: t.quantity, pricePerUnit: t.pricePerUnit,
       feeUsd: t.feeUsd, executedAt: t.executedAt, opening: t.opening, split: t.split,
+      income: t.income ? { amountUsd: t.income.amountUsd } : null,
     })
     groups.set(t.instrumentKey, g)
   }
@@ -392,6 +442,9 @@ export interface HoldingValue {
   unrealizedUsd: string | null
   realizedGainUsd: string
   realizedFromStartingPositionUsd: string
+  /** Income received (T-451): cash, and units received at their value on the day. */
+  incomeUsd: string
+  incomeLast12MonthsUsd: string
   issues: LedgerIssue[]
 }
 
@@ -405,6 +458,9 @@ export interface LedgerTotals {
   unrealizedUsd: string
   realizedGainUsd: string
   realizedFromStartingPositionUsd: string
+  /** Income received on every holding, sold-out ones included (T-451). */
+  incomeUsd: string
+  incomeLast12MonthsUsd: string
   /** Holdings with units still held. */
   heldCount: number
   /** Of those, how many have a live price. */
@@ -437,6 +493,8 @@ export function valueLedger(view: LedgerView, prices: Readonly<Record<string, nu
       unrealizedUsd: valueUsd === null ? null : differenceUsd(valueUsd, h.basis.costHeldUsd),
       realizedGainUsd: h.basis.realizedGainUsd,
       realizedFromStartingPositionUsd: h.basis.realizedFromStartingPositionUsd,
+      incomeUsd: h.basis.incomeUsd,
+      incomeLast12MonthsUsd: h.basis.incomeLast12MonthsUsd,
       issues: h.basis.issues,
     }
   })
@@ -454,6 +512,8 @@ export function valueLedger(view: LedgerView, prices: Readonly<Record<string, nu
       unrealizedUsd: differenceUsd(valueUsd, pricedCostUsd),
       realizedGainUsd: sumUsd(holdings.map((h) => h.realizedGainUsd)),
       realizedFromStartingPositionUsd: sumUsd(holdings.map((h) => h.realizedFromStartingPositionUsd)),
+      incomeUsd: sumUsd(holdings.map((h) => h.incomeUsd)),
+      incomeLast12MonthsUsd: sumUsd(holdings.map((h) => h.incomeLast12MonthsUsd)),
       heldCount: held.length,
       pricedCount: priced.length,
       unpriced: held.filter((h) => h.valueUsd === null).map((h) => h.symbol),
@@ -508,11 +568,15 @@ export function formatUnits(value: string): string {
  * transfer in marked as one; a split names its ratio, and one that leaves fewer
  * units is a reverse split.
  */
-export function tradeKindLabel(t: { side: TradeSide; opening: boolean; split?: SplitDetails | null }): string {
+export function tradeKindLabel(t: { side: TradeSide; opening: boolean; split?: SplitDetails | null; income?: IncomeDetails | null }): string {
   if (t.opening) return 'Starting position'
   if (t.side === 'split' && t.split) {
     return `${t.split.unitsAfter < t.split.unitsBefore ? 'Reverse split' : 'Split'}, ${t.split.unitsAfter} for ${t.split.unitsBefore}`
   }
-  return { buy: 'Buy', sell: 'Sell', transfer_in: 'Transfer in', transfer_out: 'Transfer out', split: 'Split' }[t.side]
+  if (t.side === 'income' && t.income) return INCOME_KIND_LABELS[t.income.kind]
+  return {
+    buy: 'Buy', sell: 'Sell', transfer_in: 'Transfer in', transfer_out: 'Transfer out', split: 'Split',
+    income: 'Income', income_units: 'Units received as income',
+  }[t.side]
 }
 

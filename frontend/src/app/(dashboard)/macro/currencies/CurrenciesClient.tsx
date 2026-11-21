@@ -13,6 +13,8 @@ import {
   type CurrencyCategoryId,
 } from '@/lib/data/currencyCatalog'
 import { convertFx } from '@/lib/utils/fxConvert'
+import { ECB_PAIRS, ECB_RATE_DESCRIPTION, shownPairRate, type ShownPairRate } from '@/lib/data/fxReference'
+import { EcbFreeOfCharge, useFxReferencePairs } from '@/components/markets/FxHistoryCard'
 import { STALE_TIME_SHORT, STALE_TIME_LONG } from '@/lib/constants'
 import type { FxRatesResponse } from '@/app/live-data/fx-rates/route'
 import type { FxRatesExtendedResponse } from '@/app/live-data/fx-rates-extended/route'
@@ -21,6 +23,9 @@ import type { FxRatesExtendedResponse } from '@/app/live-data/fx-rates-extended/
 // Intraday pair quotes via security-quotes (keyed providers; coverage of FX
 // pair symbols is partial since the Yahoo removal); the converter uses daily
 // ECB reference rates (/live-data/fx-rates) and says so, including the date.
+// Since T-445 (D203) a pair with no live quote shows the ECB's daily reference
+// rate (/live-data/fx-reference-pairs) instead of a dash, marked as such with
+// its date; the live quote still comes first wherever there is one.
 
 type SortKey = 'name' | 'category' | 'rate' | 'change'
 
@@ -133,7 +138,7 @@ function Converter() {
             Daily ECB reference rates{ecb?.ok && ecb.date ? ` (published ${ecb.date})` : ''} via frankfurter.dev —
             indicative mid-market conversion, not a dealable price.
           </>
-        )} Intraday moves show in the pairs table below.
+        )} The pairs table below shows a live quote where one is available, and otherwise the same daily ECB rate.
       </p>
     </div>
   )
@@ -157,6 +162,14 @@ export function CurrenciesClient() {
     refetchInterval: 1000 * 60 * 2,
   })
 
+  const { data: reference, isLoading: referenceLoading } = useFxReferencePairs()
+  // A live quote first; the ECB's daily rate only where the row would be a dash (D203).
+  const shown = useMemo(() => {
+    const out: Record<string, ShownPairRate | null> = {}
+    for (const c of CURRENCY_CATALOG) out[c.symbol] = shownPairRate(quotes?.[c.symbol], reference?.ok ? reference.pairs?.[c.slug] : null)
+    return out
+  }, [quotes, reference])
+
   const rows = useMemo(() => {
     const q = search.trim().toLowerCase()
     const filtered = CURRENCY_CATALOG.filter((c) =>
@@ -166,22 +179,24 @@ export function CurrenciesClient() {
     return [...filtered].sort((a, b) => {
       if (sortKey === 'name') return a.name.localeCompare(b.name) * dir
       if (sortKey === 'category') return (a.category.localeCompare(b.category) || a.name.localeCompare(b.name)) * dir
-      const qa = quotes?.[a.symbol], qb = quotes?.[b.symbol]
+      const qa = shown[a.symbol], qb = shown[b.symbol]
       if (sortKey === 'rate') return ((qa?.price ?? -Infinity) - (qb?.price ?? -Infinity)) * dir
-      return ((qa?.changePercent ?? -Infinity) - (qb?.changePercent ?? -Infinity)) * dir
+      return ((qa?.changePct ?? -Infinity) - (qb?.changePct ?? -Infinity)) * dir
     })
-  }, [category, search, sortKey, sortAsc, quotes])
+  }, [category, search, sortKey, sortAsc, shown])
 
   const dxy = quotes?.['DX-Y.NYB']
   const mover = useMemo(() => {
     const priced = CURRENCY_CATALOG
       .filter((c) => c.category !== 'index')
-      .map((c) => ({ c, q: quotes?.[c.symbol] }))
-      .filter((x): x is { c: (typeof CURRENCY_CATALOG)[number]; q: Quote } => x.q?.changePercent != null)
+      .map((c) => ({ c, q: shown[c.symbol] }))
+      .filter((x): x is { c: (typeof CURRENCY_CATALOG)[number]; q: ShownPairRate } => x.q?.changePct != null)
     if (priced.length === 0) return null
-    return priced.reduce((a, b) => (Math.abs(b.q.changePercent!) > Math.abs(a.q.changePercent!) ? b : a))
-  }, [quotes])
-  const pricedCount = CURRENCY_CATALOG.filter((c) => quotes?.[c.symbol]?.price != null).length
+    return priced.reduce((a, b) => (Math.abs(b.q.changePct!) > Math.abs(a.q.changePct!) ? b : a))
+  }, [shown])
+  const liveCount = CURRENCY_CATALOG.filter((c) => shown[c.symbol]?.basis === 'live').length
+  const ecbCount = CURRENCY_CATALOG.filter((c) => shown[c.symbol]?.basis === 'ecb').length
+  const changeLabel = (q: ShownPairRate) => (q.basis === 'ecb' ? 'since the previous ECB day' : 'today')
 
   const setSort = (key: SortKey) => {
     if (key === sortKey) setSortAsc((v) => !v)
@@ -207,16 +222,22 @@ export function CurrenciesClient() {
         </div>
         <PageHeader
           title="Currencies"
-          subtitle={`${CURRENCY_CATALOG.length} pairs and the dollar index, quoted live`}
-          description="Intraday FX pair quotes with a daily ECB reference-rate converter. Pairs follow market convention — a rising USD/JPY means a stronger dollar, a rising EUR/USD a weaker one — so read direction against the base currency."
+          subtitle={`${ECB_PAIRS.length} pairs and the dollar index: live where a quote is available, otherwise the ECB’s daily reference rate`}
+          description="FX pairs with a daily ECB reference-rate converter. A pair shows a live quote where the quote source has one, and otherwise the European Central Bank’s reference rate for the day, marked “ECB” with its date. Pairs follow market convention — a rising USD/JPY means a stronger dollar, a rising EUR/USD a weaker one — so read direction against the base currency."
         />
       </div>
 
       {/* Data provenance */}
       <SourceLine id="fx-rates" />
+      <SourceLine id="fx-reference-pairs" />
 
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-        <MetricCard title="Pairs" value={String(CURRENCY_CATALOG.length)} subtitle={`${pricedCount} priced live`} accentColor="#22c55e" />
+        <MetricCard
+          title="Pairs"
+          value={String(CURRENCY_CATALOG.length)}
+          subtitle={referenceLoading && isLoading ? '…' : `${liveCount} live · ${ecbCount} daily ECB rate`}
+          accentColor="#22c55e"
+        />
         <MetricCard
           title="Dollar Index"
           value={dxy?.price != null ? dxy.price.toFixed(2) : '—'}
@@ -226,7 +247,7 @@ export function CurrenciesClient() {
         <MetricCard
           title="Biggest Mover"
           value={mover ? mover.c.name : '—'}
-          subtitle={mover ? `${mover.q.changePercent! >= 0 ? '+' : ''}${mover.q.changePercent!.toFixed(2)}% today` : 'no live data'}
+          subtitle={mover ? `${mover.q.changePct! >= 0 ? '+' : ''}${mover.q.changePct!.toFixed(2)}% ${changeLabel(mover.q)}` : 'no data'}
           accentColor="#f59e0b"
         />
         <MetricCard title="Categories" value={String(Object.keys(CURRENCY_CATEGORY_INFO).length)} subtitle="majors to EM" accentColor="#3b82f6" />
@@ -236,7 +257,7 @@ export function CurrenciesClient() {
 
       {isError && (
         <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-xs text-text-secondary leading-relaxed">
-          Live FX quotes are unavailable right now. The catalog below still lists every pair; rates return when the feed recovers.
+          Live FX quotes are unavailable right now. Pairs show the ECB’s daily reference rate where it has one; the rest return when the feed recovers.
         </div>
       )}
 
@@ -278,8 +299,8 @@ export function CurrenciesClient() {
             </thead>
             <tbody className="divide-y divide-border/40">
               {rows.map((c) => {
-                const q = quotes?.[c.symbol]
-                const up = (q?.changePercent ?? 0) >= 0
+                const q = shown[c.symbol]
+                const up = (q?.changePct ?? 0) >= 0
                 const info = CURRENCY_CATEGORY_INFO[c.category]
                 return (
                   <tr key={c.slug} className="hover:bg-bg-elevated/50 transition-colors">
@@ -296,11 +317,22 @@ export function CurrenciesClient() {
                       </span>
                     </td>
                     <td className="py-2.5 px-3 text-right font-mono tabular-nums text-text-primary">
-                      {q?.price != null ? formatFxRate(c, q.price) : isLoading ? '…' : '—'}
+                      {q ? (
+                        <span className="inline-flex items-center gap-1.5">
+                          {q.basis === 'ecb' && (
+                            <span className="rounded-sm border border-border px-1 text-[9px] font-sans font-medium uppercase tracking-wider text-text-muted"
+                              title={`ECB reference rate, ${q.date}: daily, not a live quote`}>
+                              ECB
+                            </span>
+                          )}
+                          {formatFxRate(c, q.price)}
+                        </span>
+                      ) : isLoading || referenceLoading ? '…' : '—'}
                     </td>
                     <td className={clsx('py-2.5 px-3 text-right font-mono tabular-nums text-xs',
-                      q?.changePercent == null ? 'text-text-muted' : up ? 'text-emerald-400' : 'text-red-400')}>
-                      {q?.changePercent != null ? `${up ? '+' : ''}${q.changePercent.toFixed(2)}%` : '—'}
+                      q?.changePct == null ? 'text-text-muted' : up ? 'text-emerald-400' : 'text-red-400')}
+                      title={q?.basis === 'ecb' && q.previousDate ? `Since the ECB’s previous working day, ${q.previousDate}` : undefined}>
+                      {q?.changePct != null ? `${up ? '+' : ''}${q.changePct.toFixed(2)}%` : '—'}
                     </td>
                   </tr>
                 )
@@ -314,7 +346,10 @@ export function CurrenciesClient() {
       </div>
 
       <p className="text-[11px] text-text-muted text-center leading-relaxed">
-        Intraday quotes via the suite&rsquo;s live quote route; converter uses daily ECB reference rates.
+        Live quotes via the suite&rsquo;s quote route where it has them. A rate marked ECB is the European Central
+        Bank&rsquo;s reference rate{reference?.ok && reference.date ? ` of ${reference.date}` : ''}, and its change is since the Bank&rsquo;s
+        previous working day; a pair without the euro is worked out from the Bank&rsquo;s euro rates of the same day.{' '}
+        {ECB_RATE_DESCRIPTION} <EcbFreeOfCharge />{' '}
         FX markets trade around the clock Sunday evening to Friday evening US time.
       </p>
     </div>

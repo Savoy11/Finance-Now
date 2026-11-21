@@ -74,6 +74,7 @@ function literalKeys(objectText: string): { keys: string[]; spreads: string[] } 
 
 const SCREENERS = [
   { name: 'stocks', file: 'app/(dashboard)/equities/EquitiesClient.tsx' },
+  { name: 'stocks, the wider SEC list', file: 'app/(dashboard)/equities/SecWideList.tsx' },
   { name: 'funds', file: 'app/(dashboard)/funds/FundsClient.tsx' },
   { name: 'coins', file: 'app/(dashboard)/assets/AssetRegistryClient.tsx' },
 ]

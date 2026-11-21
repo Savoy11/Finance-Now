@@ -17,6 +17,11 @@ export interface RebalanceNotesInput {
   valueUsd: number
   /** Share of the portfolio that could be valued; 100 for hand-entered weights. */
   pricedPct: number
+  /**
+   * Holdings left out because they have no live price, named. A tracked portfolio passes these:
+   * its pricedPct is measured by cost, which says nothing about what an unpriced holding is worth.
+   */
+  leftOut?: string[]
   bandPct: number
   preparedAt: Date
 }
@@ -39,6 +44,8 @@ export interface RebalanceNotes {
   comparedWith: string
   valueUsd: number
   pricedPct: number
+  /** Holdings left out with no live price, named; empty when none were. */
+  leftOut: string[]
   bandPct: number
   rows: RebalanceNoteRow[]
   tradeCount: number
@@ -79,6 +86,7 @@ export function buildRebalanceNotes(input: RebalanceNotesInput): RebalanceNotes 
     comparedWith: input.portfolioName ? `Portfolio “${input.portfolioName}”` : 'Weights entered by hand',
     valueUsd: input.valueUsd,
     pricedPct: input.pricedPct,
+    leftOut: [...new Set((input.leftOut ?? []).map((s) => s.toUpperCase()))],
     bandPct: input.bandPct,
     rows,
     tradeCount: trades.length,

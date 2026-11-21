@@ -1,6 +1,9 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { fetchCoinGeckoPages } from '../coingeckoPages'
 
+const keys: Record<string, string | undefined> = {}
+vi.mock('@/lib/api/live/providers', () => ({ getProviderKey: (id: string) => keys[id] }))
+
 /**
  * The paged fetcher, and specifically what it says when CoinGecko refuses.
  *
@@ -83,5 +86,35 @@ describe('fetchCoinGeckoPages — reporting a throttle', () => {
     expect(out.pages).toEqual([[{ id: 'eth' }], [{ id: 'eth' }]])
     expect(out.throttled).toBe(false)
     expect(out.errors).toEqual([])
+  })
+})
+
+describe('fetchCoinGeckoPages — the key', () => {
+  // Found 2026-11-09: this helper sent a bare Accept header, so Coin Discovery, the coin list and
+  // the two category reads spent the keyless allowance with a Demo key saved.
+  it('sends the saved CoinGecko key on every page, and on a retry', async () => {
+    keys.coingecko = 'demo-key'
+    const seen: Array<Record<string, string>> = []
+    let n = 0
+    vi.stubGlobal('fetch', vi.fn(async (_url: string, init?: RequestInit) => {
+      seen.push(init?.headers as Record<string, string>)
+      n += 1
+      return n === 2 ? res(429, '', { 'retry-after': '0.001' }) : res(200, [{ id: 'x' }])
+    }))
+    const out = await fetchCoinGeckoPages(2, (p) => `https://example.test/p${p}`, { gapMs: 0 })
+    expect(out.pages).toHaveLength(2)
+    expect(seen).toHaveLength(3)
+    for (const h of seen) expect(h).toMatchObject({ 'x-cg-demo-api-key': 'demo-key' })
+  })
+
+  it('sends no key header when none is saved', async () => {
+    keys.coingecko = undefined
+    let headers: Record<string, string> | undefined
+    vi.stubGlobal('fetch', vi.fn(async (_url: string, init?: RequestInit) => {
+      headers = init?.headers as Record<string, string>
+      return res(200, [])
+    }))
+    await fetchCoinGeckoPages(1, () => 'https://example.test/p1')
+    expect(headers).not.toHaveProperty('x-cg-demo-api-key')
   })
 })

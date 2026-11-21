@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { fetchTreasuryYieldCurve, type CurveChange, type CurveSnapshot, type CurveSpreads } from '@/lib/server/treasuryCurve'
+import type { ExpectedInflationRow } from '@/lib/data/yieldHistory'
 
 // Official US Treasury daily par yield curve (home.treasury.gov XML, keyless).
 // Returns the latest curve plus two lookback snapshots (~1 month, start of
@@ -34,6 +35,8 @@ export interface YieldCurveResponse {
   /** 10Y minus 3M, the Fed's preferred version. */
   spread3m10y?: number
   shape?: 'normal' | 'flat' | 'inverted'
+  /** T-446: ordinary minus real par yield at 5Y, 7Y, 10Y, 20Y and 30Y, both from one day. Absent if the real curve could not be read. */
+  expectedInflation?: { date: string; rows: ExpectedInflationRow[] }
   source?: 'treasury-gov'
   error?: string
 }
@@ -53,6 +56,7 @@ export async function GET(): Promise<NextResponse<YieldCurveResponse>> {
       spread2s10s: curve.spread2s10s,
       spread3m10y: curve.spread3m10y,
       shape: curve.shape,
+      expectedInflation: curve.expectedInflation,
       source: 'treasury-gov',
     })
   } catch (err) {

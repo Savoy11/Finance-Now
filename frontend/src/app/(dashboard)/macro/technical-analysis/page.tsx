@@ -15,7 +15,11 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { SourceLine } from '@/components/ui/SourceLine'
 import { LiveUnavailable } from '@/components/ui/LiveUnavailable'
 import type { ChartType, DrawingTool, Drawing } from '@/components/charts/CandlestickChart'
-import { indicatorsFor, VOLUME_INDICATORS } from '@/components/charts/indicatorRegistry'
+import { indicatorsFor, NOT_FROM_CLOSES, VOLUME_INDICATORS } from '@/components/charts/indicatorRegistry'
+import { useYieldHistory } from '@/components/markets/YieldHistoryCard'
+import { useFxPairHistory } from '@/components/markets/FxHistoryCard'
+import { closingCandles, type YieldHistoryRange } from '@/lib/data/yieldHistory'
+import { pairClosingCandles } from '@/lib/data/fxReference'
 import { IndicatorPicker } from '@/components/charts/IndicatorPicker'
 import { DrawingToolbar } from '@/components/charts/DrawingToolbar'
 import type { LucideIcon } from 'lucide-react'
@@ -75,6 +79,15 @@ const CHART_TYPES: Array<{ type: ChartType; label: string; Icon: LucideIcon }> =
 // visible instead of just looking like a shorter menu.
 const MACRO_INDICATORS = indicatorsFor(false)
 
+// T-446 (D202): a Treasury yield charts from the official curve's daily history,
+// one figure a day, so it draws as a line and offers only what reads closes alone.
+// T-445 (D203): so does every currency pair but the Dollar Index, from the ECB's
+// daily reference rates.
+const CLOSES_INDICATORS = indicatorsFor(false, false)
+const CLOSES_KEYS = new Set(CLOSES_INDICATORS.map((i) => i.key))
+const LINE_TYPES = new Set<ChartType>(['line', 'area', 'baseline'])
+const HISTORY_RANGE: Record<Range, YieldHistoryRange> = { '3M': '3mo', '6M': '6mo', '1Y': '1y', '5Y': '5y' }
+
 const VOLUME_EXCLUDED_NOTE =
   `Not offered here: ${VOLUME_INDICATORS.map((i) => i.label).join(', ')}. ` +
   `These read candle volume, which FX pairs and yield indices do not carry.`
@@ -106,16 +119,42 @@ function ChartTab() {
   const [drawingTool, setDrawingTool] = useState<DrawingTool>('none')
   const [drawings, setDrawings] = useState<Drawing[]>([])
 
-  const { data, isLoading, isFetching, refetch } = useOhlcv(symbol, range)
-  const candles = useMemo(() => data?.candles ?? [], [data])
-
-  const summary = useMemo(() => (candles.length >= 30 ? computeSignalSummary(candles) : null), [candles])
-  const patterns: DetectedPattern[] = useMemo(
-    () => (candles.length >= 30 ? detectPatterns(candles) : []),
-    [candles],
+  const entry = BY_SYMBOL.get(symbol)
+  const curveMaturity = entry?.curveMaturity ?? null
+  const ecbPair = entry?.ecbPair ?? null
+  // One official figure a day (macroInstruments' closesOnly, written out for the React compiler).
+  const closesOnly = curveMaturity !== null || ecbPair !== null
+  const ohlcv = useOhlcv(symbol, range, !closesOnly)
+  const yieldHistory = useYieldHistory(curveMaturity ?? '10Y', HISTORY_RANGE[range], curveMaturity !== null)
+  const pairHistory = useFxPairHistory(ecbPair ?? 'eur-usd', HISTORY_RANGE[range], ecbPair !== null)
+  const history = ecbPair !== null ? pairHistory : yieldHistory
+  const { data, isLoading, isFetching, refetch } = closesOnly
+    ? { data: undefined, isLoading: history.isLoading, isFetching: history.isFetching, refetch: history.refetch }
+    : ohlcv
+  const pairData = pairHistory.data
+  const yieldData = yieldHistory.data
+  const candles = useMemo(() => {
+    const m = BY_SYMBOL.get(symbol)
+    if (m?.ecbPair) return pairData?.ok ? pairClosingCandles(pairData.points ?? []) : []
+    if (m?.curveMaturity) return yieldData?.ok ? closingCandles(yieldData.points ?? []) : []
+    return data?.candles ?? []
+  }, [symbol, pairData, yieldData, data])
+  const shownType: ChartType = closesOnly && !LINE_TYPES.has(chartType) ? 'line' : chartType
+  const shownIndicators = useMemo(
+    () => (closesOnly ? new Set([...active].filter((k) => CLOSES_KEYS.has(k))) : active),
+    [closesOnly, active],
   )
 
-  const entry = BY_SYMBOL.get(symbol)
+  const summary = useMemo(
+    () => (candles.length >= 30 ? computeSignalSummary(candles, closesOnly ? 'close' : 'ohlc') : null),
+    [candles, closesOnly],
+  )
+  // Patterns read each day's high and low, which a closing figure does not have.
+  const patterns: DetectedPattern[] = useMemo(
+    () => (candles.length >= 30 && !closesOnly ? detectPatterns(candles) : []),
+    [candles, closesOnly],
+  )
+
   const last = candles.length > 0 ? candles[candles.length - 1].close : null
 
   const toggleIndicator = (key: string) => {
@@ -170,12 +209,12 @@ function ChartTab() {
         </div>
 
         <select
-          value={chartType}
+          value={shownType}
           onChange={(e) => setChartType(e.target.value as ChartType)}
           className="bg-bg-secondary border border-border rounded-sm px-2 py-1.5 text-xs text-text-secondary focus:outline-hidden focus:border-accent-blue/60"
           aria-label="Chart type"
         >
-          {CHART_TYPES.map(({ type, label }) => (
+          {CHART_TYPES.filter(({ type }) => !closesOnly || LINE_TYPES.has(type)).map(({ type, label }) => (
             <option key={type} value={type}>{label}</option>
           ))}
         </select>
@@ -188,13 +227,23 @@ function ChartTab() {
         </button>
       </div>
 
+      {closesOnly && (
+        <p className="text-[11px] text-text-muted leading-relaxed rounded-sm border border-border bg-bg-elevated/40 px-3 py-2">
+          {ecbPair !== null
+            ? 'The European Central Bank’s euro reference rate, one figure a working day (worked out from two euro rates where the pair has no euro leg), drawn as a line.'
+            : 'The official US Treasury par yield, one figure a day, drawn as a line.'}{' '}
+          The candle chart types, the {NOT_FROM_CLOSES.length} indicators that read a day’s high, low or volume, and pattern
+          detection are not offered for it, and its signal summary counts only the readings that use a closing figure.
+        </p>
+      )}
+
       {/* Indicators */}
       <IndicatorPicker
-        indicators={MACRO_INDICATORS}
-        active={active}
+        indicators={closesOnly ? CLOSES_INDICATORS : MACRO_INDICATORS}
+        active={shownIndicators}
         onToggle={toggleIndicator}
         onClearAll={() => setActive(new Set())}
-        footnote={VOLUME_EXCLUDED_NOTE}
+        footnote={closesOnly ? `Not offered here: ${NOT_FROM_CLOSES.map((i) => i.label).join(', ')}.` : VOLUME_EXCLUDED_NOTE}
       />
 
       {/* Drawing toolbar. This page shipped without one even though it renders
@@ -220,8 +269,8 @@ function ChartTab() {
             <div className="h-[520px]">
               <CandlestickChart
                 candles={candles}
-                activeIndicators={active}
-                chartType={chartType}
+                activeIndicators={shownIndicators}
+                chartType={shownType}
                 drawingTool={drawingTool}
                 drawings={drawings}
                 onDrawingComplete={(d: Drawing) => { setDrawings((prev) => [...prev, d]); setDrawingTool('none') }}
@@ -229,12 +278,18 @@ function ChartTab() {
               />
             </div>
           ) : (
-            <LiveUnavailable
+            closesOnly ? (
+              <p className="my-12 text-center text-xs text-text-muted">
+                {ecbPair !== null ? 'The ECB’s reference rates' : 'The Treasury’s yield history'} could not be read{history.data?.error ? ` (${history.data.error})` : ''}. It returns when the feed recovers.
+              </p>
+            ) : <LiveUnavailable
               reason="needs-api-key"
               className="my-12"
               message={`No OHLCV history came back for ${symbol}. Macro contracts chart through the same keyed provider ladder as equities, and coverage of futures, FX pairs and yield indices is narrower than it was before the keyless source was withdrawn on terms grounds — many macro symbols are simply not carried. Front-month futures and thin FX crosses can also gap over holidays.`}
             />
           )}
+          {curveMaturity !== null && <SourceLine id="treasury-yield-history" className="mt-2" />}
+          {ecbPair !== null && <SourceLine id="fx-pair-history" className="mt-2" />}
         </div>
 
         <div className="space-y-4">
@@ -300,7 +355,11 @@ function ChartTab() {
                 ))}
               </ul>
             ) : (
-              <p className="text-xs text-text-muted">No chart patterns detected in this range.</p>
+              <p className="text-xs text-text-muted">
+                {closesOnly
+                  ? `Not detected for ${ecbPair !== null ? 'an ECB reference rate' : 'a Treasury yield'}: patterns read each day’s high and low, and ${ecbPair !== null ? 'the Bank' : 'the curve'} publishes one figure a day.`
+                  : 'No chart patterns detected in this range.'}
+              </p>
             )}
           </div>
 

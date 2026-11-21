@@ -62,6 +62,11 @@ const ASSET_CAT_MAP: Record<string, AssetMixLabel> = {
   RE: 'Other',        // Real estate
 }
 
+/** Whether an N-PORT asset category is a bond, by the same table the mix uses (T-455). */
+export function isBondCategory(assetCat: string | null): boolean {
+  return assetCat != null && ASSET_CAT_MAP[assetCat] === 'Bonds'
+}
+
 /** Display order, so the donut reads consistently across funds. */
 const SLICE_ORDER: AssetMixLabel[] = ['Stocks', 'Bonds', 'Cash', 'Preferred', 'Derivatives', 'Other']
 

@@ -7,7 +7,7 @@ import {
 } from '@/lib/data/tradeLedger'
 
 // One row per holding: what is held, what it cost, what it is worth at the live
-// price, and the gains (T-027, D65). Realized figures are FIFO and plain; the
+// price, the gains (T-027, D65), and the income received (T-451). Realized figures are FIFO and plain; the
 // table's caption names the method, as D65 requires of every realized figure.
 
 const changeCls = (v: string | null) =>
@@ -35,7 +35,8 @@ export function HoldingsTable({ holdings, methodLabel }: { holdings: HoldingValu
               <th scope="col" className="text-right font-medium px-3 py-2">Price</th>
               <th scope="col" className="text-right font-medium px-3 py-2">Value</th>
               <th scope="col" className="text-right font-medium px-3 py-2">Unrealized</th>
-              <th scope="col" className="text-right font-medium px-4 py-2">Realized</th>
+              <th scope="col" className="text-right font-medium px-3 py-2">Realized</th>
+              <th scope="col" className="text-right font-medium px-4 py-2">Income</th>
             </tr>
           </thead>
           <tbody>
@@ -68,12 +69,18 @@ export function HoldingsTable({ holdings, methodLabel }: { holdings: HoldingValu
                   <td className={clsx('text-right px-3 py-2.5 font-mono whitespace-nowrap', changeCls(h.unrealizedUsd))}>
                     {h.unrealizedUsd !== null ? formatUsdChange(h.unrealizedUsd) : '—'}
                   </td>
-                  <td className="text-right px-4 py-2.5">
+                  <td className="text-right px-3 py-2.5">
                     <div className={clsx('font-mono whitespace-nowrap', changeCls(h.realizedGainUsd))}>{formatUsdChange(h.realizedGainUsd)}</div>
                     {fromStart && (
                       <div className="text-[10px] text-text-muted mt-0.5 ml-auto max-w-30 leading-snug" title="This part rests on the average price you entered for your starting position.">
                         {formatUsdChange(h.realizedFromStartingPositionUsd)} from starting position
                       </div>
+                    )}
+                  </td>
+                  <td className="text-right px-4 py-2.5">
+                    <div className="font-mono whitespace-nowrap text-text-primary">{h.incomeUsd === '0' ? '—' : formatUsd(h.incomeUsd)}</div>
+                    {h.incomeUsd !== '0' && (
+                      <div className="text-[10px] text-text-muted mt-0.5 whitespace-nowrap">{formatUsd(h.incomeLast12MonthsUsd)} in 12 months</div>
                     )}
                   </td>
                 </tr>
@@ -82,7 +89,9 @@ export function HoldingsTable({ holdings, methodLabel }: { holdings: HoldingValu
           </tbody>
         </table>
       </div>
-      <p className="px-4 py-2 text-[11px] text-text-muted border-t border-border/50">Realized: {methodLabel}.</p>
+      <p className="px-4 py-2 text-[11px] text-text-muted border-t border-border/50">
+        Realized: {methodLabel}. Income: cash received, and units received at their value on the day.
+      </p>
     </div>
   )
 }

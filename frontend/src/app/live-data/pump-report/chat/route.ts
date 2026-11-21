@@ -2,7 +2,6 @@ import { NextRequest } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { loadAgentConfig } from '@/lib/agents/config'
 import { DEFAULT_ANTHROPIC_MODEL } from '@/lib/agents/prompts'
-import { anthropicSampling } from '@/lib/agents/sampling'
 import { guardSensitiveRoute } from '@/lib/server/apiGuard'
 import { getProviderKey } from '@/lib/api/live/providers'
 
@@ -45,7 +44,6 @@ export async function POST(req: NextRequest) {
   const agentCfg   = loadAgentConfig('pump-report-chat')
   const baseSystem = agentCfg?.systemPrompt ?? ''
   const model      = agentCfg?.model        ?? DEFAULT_ANTHROPIC_MODEL
-  const temperature = agentCfg?.temperature ?? 0.3
 
   const systemWithContext = context
     ? `${baseSystem}\n\n## Current investigation context:\n${context}`
@@ -58,8 +56,7 @@ export async function POST(req: NextRequest) {
         const response = await client.messages.create({
           model,
           max_tokens: 2048,
-          // Only models that accept it: Claude Sonnet 5 and newer refuse a temperature.
-          ...anthropicSampling(model, temperature),
+          // No temperature: API version 2026-10-21 refuses one on every Claude model (D215).
           system: systemWithContext,
 
           tools: [{ type: 'web_search_20250305', name: 'web_search' } as any],

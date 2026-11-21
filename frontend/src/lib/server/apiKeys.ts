@@ -1,7 +1,7 @@
 import crypto from 'crypto'
 import { NextResponse, type NextRequest } from 'next/server'
 import { CORS } from '@/app/api/_cors'
-import { clientKey, dailyBudgetExceeded, isLocalRequest, rateLimited } from './apiGuard'
+import { clientKey, dailyBudgetExceeded, isOwnerRequest, rateLimited } from './apiGuard'
 import { sameSecret } from './ownerAccess'
 
 // Keys and rate limits for the public API, /api/v1 (T-087, owner decision D173, 2026-10-26:
@@ -113,7 +113,8 @@ export function guardApiV1(req: NextRequest, opts: { open?: boolean } = {}): Nex
 
   const keys = configuredApiKeys()
   if (keys.length === 0) {
-    if (isLocalRequest(req)) return limited(`ip:${clientKey(req)}`)
+    // The owner's own machine, or the owner cookie once FN_ADMIN_TOKEN is set, never a Host header (D193).
+    if (isOwnerRequest(req)) return limited(`ip:${clientKey(req)}`)
     return deny(401, 'This API is closed on this server: no API keys are set. The owner issues keys with `npm run api:key` and lists them in FN_API_KEYS.', { 'WWW-Authenticate': 'Bearer' })
   }
   const supplied = presentedKey(req)

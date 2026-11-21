@@ -589,10 +589,15 @@ went to `docs/BUSINESS-CHECKLIST.md`, which is worked separately from both produ
       migration. The "3-scale inconsistency" premise came from a stale memo and was
       disproved against the code; the market assessment's Phase 0 blocker is obsolete.
       Do not re-litigate this — new profiles build on the shipped scale.
-- [ ] **Desktop update mechanism — and whether updates are monetized.** How does an installed
+- [x] **Desktop update mechanism — and whether updates are monetized.** How does an installed
       copy get new versions (auto-update channel? manual download? signed releases?), and does
       that ride the entitlement system (Phase 6) as paid upgrades, a subscription, or free
       updates with paid modules. Affects installer choice, code signing, and release cadence.
+      **DECIDED 2026-11-21 (owner decision D239): deferred until the desktop edition is
+      actually scheduled** — no mechanism is chosen years ahead of a build that does not
+      exist. The monetization half has its frame from D236 (the BYOK Perpetual desktop
+      edition is part of the confirmed billing model); how its updates are priced is decided
+      when the edition is planned. T-127 stays parked with that gate.
 - [ ] **Options / futures tool.** New instrument surface. Macro Markets already prices futures
       contracts through `security-quotes`/`security-chart` (19 commodity contracts, 4 CBOT rate
       futures), so the quote plumbing exists; options chains do not — that needs a provider
@@ -756,6 +761,9 @@ went to `docs/BUSINESS-CHECKLIST.md`, which is worked separately from both produ
 - Bank sync provider (Plaid vs Teller) if/when CSV import isn't enough.
 - Whether the FastAPI backend returns for scoring/backtesting workloads.
 - Billing model: per-module licenses vs. tiered bundles — Phase 6.
-  Working plan recorded 2026-09-28 (D29): **tiered bundles** — hosted Free / Core /
-  Pro / Advisor plus a BYOK Perpetual desktop edition — pending the owner's reassessment;
-  still parked under D21 (T-085).
+  **DECIDED 2026-11-21 (owner decision D236): tiered bundles**, confirming D29's working
+  plan — hosted Free / Core / Pro / Advisor plus a BYOK Perpetual desktop edition. A tier
+  maps to a set of module grant rows in the `entitlements` table (D234 built exactly that;
+  Portfolio Builder's premium flag is a tier item). Dollar amounts stay a launch-planning
+  question, so nothing is priced or bought (D21). T-085/T-086 closed; T-084 (Stripe writes
+  the grants) now waits only on a Stripe account and price points.

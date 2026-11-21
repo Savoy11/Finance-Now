@@ -32,7 +32,7 @@ describe('parseTradeInput', () => {
       ok: true,
       value: {
         instrumentKey: 'bitcoin', nameHint: '', side: 'buy', quantity: '0.5', pricePerUnit: '60000',
-        feeUsd: '0', executedAt: new Date('2026-03-14T00:00:00Z'), opening: false, note: null, split: null,
+        feeUsd: '0', executedAt: new Date('2026-03-14T00:00:00Z'), opening: false, note: null, split: null, income: null,
       },
     })
   })
@@ -125,7 +125,7 @@ describe('parseTradeInput — splits (T-421)', () => {
       value: {
         instrumentKey: 'sec:AAPL', nameHint: '', side: 'split', quantity: '0', pricePerUnit: '0', feeUsd: '0',
         executedAt: new Date('2020-08-31T00:00:00Z'), opening: false, note: null,
-        split: { unitsAfter: 4, unitsBefore: 1, cashInLieuUsd: null },
+        split: { unitsAfter: 4, unitsBefore: 1, cashInLieuUsd: null }, income: null,
       },
     })
   })
@@ -162,6 +162,36 @@ describe('parseTradeInput — splits (T-421)', () => {
   })
 })
 
+describe('parseTradeInput — income (T-451, D201)', () => {
+  const base = { instrument: 'sec:VTI', executedAt: '2026-03-14' }
+
+  it('takes cash income as an amount, a kind and a date, with no units, price or fee', () => {
+    const r = parseTradeInput({ ...base, side: 'income', amountUsd: '12.34', incomeKind: 'dividend' }, NOW)
+    expect(r.ok && r.value).toMatchObject({ side: 'income', quantity: '0', pricePerUnit: '0', feeUsd: '0', income: { amountUsd: '12.34', kind: 'dividend' } })
+    expect(parseTradeInput({ ...base, side: 'income', amountUsd: '5' }, NOW)).toMatchObject({ ok: true, value: { income: { kind: 'other' } } })
+  })
+
+  it('refuses cash income without a real amount, with units, or with an unknown kind', () => {
+    expect(parseTradeInput({ ...base, side: 'income', amountUsd: '0' }, NOW).ok).toBe(false)
+    expect(parseTradeInput({ ...base, side: 'income', amountUsd: '1.234' }, NOW).ok).toBe(false)
+    expect(parseTradeInput({ ...base, side: 'income', amountUsd: '5', quantity: '1' }, NOW).ok).toBe(false)
+    expect(parseTradeInput({ ...base, side: 'income', amountUsd: '5', incomeKind: 'bonus' }, NOW).ok).toBe(false)
+    expect(parseTradeInput({ instrument: 'sec:VTI', side: 'income', amountUsd: '5' }, NOW)).toMatchObject({ ok: false, error: 'Income needs the date it was received.' })
+    expect(parseTradeInput({ ...base, side: 'buy', quantity: '1', pricePerUnit: '1', amountUsd: '5' }, NOW).ok).toBe(false)
+  })
+
+  it('takes units received with their value that day, and refuses them without it (D201)', () => {
+    expect(parseTradeInput({ ...base, instrument: 'ethereum', side: 'income_units', quantity: '0.01', pricePerUnit: '3100' }, NOW).ok).toBe(true)
+    expect(parseTradeInput({ ...base, instrument: 'ethereum', side: 'income_units', quantity: '0.01', pricePerUnit: '0' }, NOW))
+      .toMatchObject({ ok: false, error: expect.stringContaining('value per unit on the day') })
+  })
+
+  it('names each kind of income', () => {
+    expect(tradeKindLabel({ side: 'income', opening: false, income: { amountUsd: '1', kind: 'interest' } })).toBe('Interest')
+    expect(tradeKindLabel({ side: 'income_units', opening: false })).toBe('Units received as income')
+  })
+})
+
 describe('parsePortfolioInput', () => {
   it('needs a name to create a portfolio, and an id must be a UUID', () => {
     expect(parsePortfolioInput({ name: '  Brokerage  ', description: ' taxable ' })).toEqual({ ok: true, value: { name: 'Brokerage', description: 'taxable' } })
@@ -194,7 +224,7 @@ describe('buildLedgerView', () => {
     return {
       id: `t${n}`, instrumentKey, symbol: instrumentKey === 'bitcoin' ? 'BTC' : instrumentKey.replace('sec:', ''),
       name: instrumentKey, side, quantity, pricePerUnit: price, feeUsd: '0', executedAt: at(date),
-      opening: false, note: null, createdAt: new Date(`2026-10-01T00:00:0${n % 10}Z`), split: null, ...extra,
+      opening: false, note: null, createdAt: new Date(`2026-10-01T00:00:0${n % 10}Z`), split: null, income: null, ...extra,
     }
   }
   const cancel = (tradeId: string): StoredCancellation => ({ tradeId, reason: 'wrong price', createdAt: new Date('2026-10-02T00:00:00Z') })
@@ -265,7 +295,7 @@ describe('valueLedger', () => {
     return {
       id: `v${n}`, instrumentKey, symbol, name: symbol, side, quantity, pricePerUnit: price, feeUsd: '0',
       executedAt: date === null ? null : new Date(`${date}T15:00:00Z`), opening: false, note: null,
-      createdAt: new Date('2026-10-01T00:00:00Z'), split: null, ...extra,
+      createdAt: new Date('2026-10-01T00:00:00Z'), split: null, income: null, ...extra,
     }
   }
   const view = buildLedgerView([
@@ -294,6 +324,8 @@ describe('valueLedger', () => {
       unrealizedUsd: '179.4',
       realizedGainUsd: '1187.6',
       realizedFromStartingPositionUsd: '998.33333333333333333333333333',
+      incomeUsd: '0',
+      incomeLast12MonthsUsd: '0',
       heldCount: 2,
       pricedCount: 1,
       unpriced: ['BTC'],
@@ -307,6 +339,25 @@ describe('valueLedger', () => {
       expect(totals.unpriced).toContain('BTC')
       expect(totals.valueUsd).toBe('0')
     }
+  })
+})
+
+describe('valueLedger — income (T-451)', () => {
+  it('adds income across every holding, sold-out ones included', () => {
+    const t = (id: string, key: string, side: StoredTrade['side'], q: string, p: string, d: string, extra: Partial<StoredTrade> = {}): StoredTrade => ({
+      id, instrumentKey: key, symbol: key.replace('sec:', ''), name: key, side, quantity: q, pricePerUnit: p, feeUsd: '0',
+      executedAt: new Date(`${d}T15:00:00Z`), opening: false, note: null, createdAt: new Date('2026-10-01T00:00:00Z'), split: null, income: null, ...extra,
+    })
+    const view = buildLedgerView([
+      t('a', 'sec:VTI', 'buy', '1', '100', '2026-01-02'),
+      t('b', 'sec:VTI', 'income', '0', '0', '2026-03-01', { income: { amountUsd: '2.50', kind: 'dividend' } }),
+      t('c', 'sec:KO', 'buy', '1', '60', '2026-01-02'),
+      t('d', 'sec:KO', 'income', '0', '0', '2026-02-01', { income: { amountUsd: '0.50', kind: 'dividend' } }),
+      t('e', 'sec:KO', 'sell', '1', '65', '2026-04-01'),
+    ], [], NOW)
+    const { holdings, totals } = valueLedger(view, { 'sec:VTI': 110 })
+    expect(holdings.find((h) => h.symbol === 'KO')).toMatchObject({ quantityHeld: '0', incomeUsd: '0.5' })
+    expect([totals.incomeUsd, totals.incomeLast12MonthsUsd]).toEqual(['3', '3'])
   })
 })
 

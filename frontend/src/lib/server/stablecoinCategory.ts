@@ -1,3 +1,4 @@
+import { coingeckoBase } from '@/lib/api/live/coingecko'
 import { fetchCoinGeckoPages } from './coingeckoPages'
 
 /**
@@ -21,7 +22,7 @@ export const STABLECOIN_CATEGORY = 'stablecoins'
 const REVALIDATE_SECONDS = 86_400
 
 const categoryUrl = () =>
-  'https://api.coingecko.com/api/v3/coins/markets' +
+  `${coingeckoBase()}/coins/markets` +
   `?vs_currency=usd&category=${STABLECOIN_CATEGORY}&order=market_cap_desc&per_page=250&page=1&sparkline=false`
 
 export interface StablecoinIndex {

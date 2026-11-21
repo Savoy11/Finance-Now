@@ -4,10 +4,23 @@ import { peText, perShareFromFields, stockFigures, stockFiguresLink, yieldText }
 import { marketCapText, marketCapUsd } from '@/lib/data/stockShares'
 import type { StockUniverseResponse } from '@/app/live-data/stock-universe/route'
 import type { SecurityQuotesResponse } from '@/app/live-data/security-quotes/route'
-import { FUND_CATALOG, FUND_CATEGORY_INFO, fundAssetsFact, fundYieldFact } from '@/lib/data/fundCatalog'
+import { FUND_CATALOG, FUND_CATEGORY_INFO, fundAssetsFact, fundSalesCharge, fundYieldFact, getFund, getFundFeeProvenance } from '@/lib/data/fundCatalog'
+import type { FundHoldingsResponse } from '@/app/live-data/fund-holdings/route'
+import type { FundExposure } from '@/lib/utils/fundExposure'
+import type { FundProspectusResponse } from '@/app/live-data/fund-prospectus/route'
+import type { FundReturnsResponse } from '@/app/live-data/fund-returns/route'
+import type { Quarter as CompanyQuarter } from '@/lib/utils/companyQuarters'
+import type { SpreadHistoryResponse } from '@/app/live-data/treasury-spread-history/route'
+import { SPREAD_KEYS, SPREAD_NAMES, type InvertedStretch } from '@/lib/data/curveSpreads'
+import type { LiveReserveAsset } from '@/app/live-data/reserves/route'
 import { COMMODITY_CATALOG, COMMODITY_CATEGORY_INFO } from '@/lib/data/commodityCatalog'
 import { CURRENCY_CATALOG, CURRENCY_CATEGORY_INFO } from '@/lib/data/currencyCatalog'
 import { RATES_CATALOG, RATES_CATEGORY_INFO } from '@/lib/data/ratesCatalog'
+import { parLabelFor } from '@/lib/data/yieldHistory'
+import { ECB_RATE_NOTE, ecbPairBySymbol, pairRateBasis } from '@/lib/data/fxReference'
+import { FOMC_SOURCE_URL, getFomcCalendarProvenance } from '@/lib/data/fomcCalendar'
+import { RELEASE_AGENCIES, getReleaseDatesProvenance } from '@/lib/data/releaseCalendar'
+import { macroCalendarAhead } from '@/lib/data/macroCalendar'
 import { ohlcvSourceLabel } from '@/lib/utils/ohlcvSource'
 import { candleGranularity, candleSizeWords } from '@/lib/utils/candleGranularity'
 import { RISK_RATINGS_SHOWN } from '@/lib/risk/visibility'
@@ -21,6 +34,17 @@ import { selfRequestHeaders } from '@/lib/server/apiKeys'
 // /live-data/*), so the agents read exactly what the UI reads — one source of
 // truth. The executor fetches against the app's own origin (passed in from the
 // route handler), avoiding any external hop or duplicated data logic.
+
+/**
+ * What the highest and lowest figures of a daily-history summary are of. Over a long range the
+ * routes send each week's last reading, so a day's peak between them is not seen; an agent
+ * quoting the "high" must say so (audit 2026-11-07, finding 4).
+ */
+export function extremesNote(interval: string | undefined): string {
+  return interval === 'weekly'
+    ? " Over this range the readings are each week's last, so the highest and lowest are of those weekly readings, not of every day."
+    : ''
+}
 
 export type ToolMarket = 'crypto' | 'equities' | 'macro'
 /** Which tool set an agent may call. 'all' exposes every market (App Assistant). */
@@ -114,6 +138,17 @@ const TOOL_REGISTRY: RegisteredTool[] = [
   {
     market: 'crypto',
     tool: {
+      name: 'get_stablecoin_reserves',
+      description: "Get the Reserve Monitor's figures for the monitored stablecoins, or one of them: price against its peg, circulating supply and its change over 1, 7 and 30 days, which blockchains it sits on, and the issuer's last attestation (who attests, when, the collateral ratio where disclosed, and the reserve mix). Price and supply are live; the attestation facts are kept by hand and dated (asOf). Report figures; do not grade a stablecoin's safety.",
+      input_schema: {
+        type: 'object',
+        properties: { symbol: { type: 'string', description: 'Optional stablecoin ticker, e.g. "USDC". Omit for every monitored coin.' } },
+      },
+    },
+  },
+  {
+    market: 'crypto',
+    tool: {
       name: 'get_news',
       description: 'Get recent crypto news articles for a coin, with sentiment and source.',
       input_schema: {
@@ -162,7 +197,7 @@ const TOOL_REGISTRY: RegisteredTool[] = [
     market: 'equities',
     tool: {
       name: 'get_stock_financials',
-      description: 'Get audited fundamentals and computed financial ratios for a stock from SEC filings: revenue, net income, margins, ROE/ROA, P/E, current ratio, debt, cash flow, and YoY growth. The primary tool for fundamental analysis.',
+      description: 'Get audited fundamentals and computed financial ratios for a stock from SEC filings: revenue, net income, margins, ROE/ROA, P/E, current ratio, debt, cash flow, and YoY growth, plus revenue, net income and earnings per share for each of the last eight quarters with the change from a year earlier. The primary tool for fundamental analysis.',
       input_schema: {
         type: 'object',
         properties: { symbol: { type: 'string', description: 'Ticker symbol, e.g. "AAPL"' } },
@@ -259,8 +294,24 @@ const TOOL_REGISTRY: RegisteredTool[] = [
   {
     market: 'equities',
     tool: {
+      name: 'get_fund_details',
+      description: "Get an ETF or mutual fund's details from its own filings, as its page shows them: its largest holdings and how many it holds, its stock/bond/cash mix, where it invests by country and currency and, for a bond fund, who borrowed and when the bonds are repaid, its duration where it files one (bond funds), its own monthly total returns and 12-month return and the money moving in and out of it, as it reported them to the SEC, the date of the filing, its summary prospectus link, and, for a fund in the app's catalog, its expense ratio, sales charge, net assets and yield. Use it for questions about what a fund holds or costs; search_securities only finds funds.",
+      input_schema: {
+        type: 'object',
+        properties: {
+          symbol: { type: 'string', description: 'Fund ticker, e.g. "VOO" or "BND"' },
+          top: { type: 'number', description: 'How many of the largest holdings to list (default 15, max 40)' },
+        },
+        required: ['symbol'],
+      },
+    },
+  },
+  {
+    market: 'equities',
+    tool: {
       name: 'search_securities',
-      description: 'Search the equities and funds catalogs (~70 US large-cap stocks, ~55 ETFs/mutual funds) by ticker, name, sector, or category. Use to find the right symbol, discover what stocks/funds the platform tracks, or get facts (sector, industry, expense ratio, top holdings, and for stocks P/E, yield and market cap against the live price).',
+      // The counts are worked out from the catalogs: this said "~70 … ~55" while they held 79 and 140 (D207).
+      description: `Search the equities and funds catalogs (${EQUITY_CATALOG.length} US large-cap stocks, ${FUND_CATALOG.length} ETFs/mutual funds) by ticker, name, sector, or category. Use to find the right symbol, discover what stocks/funds the platform tracks, or get facts (sector, industry, expense ratio, top holdings, and for stocks P/E, yield and market cap against the live price).`,
       input_schema: {
         type: 'object',
         properties: {
@@ -363,7 +414,7 @@ const TOOL_REGISTRY: RegisteredTool[] = [
     market: 'macro',
     tool: {
       name: 'get_macro_quote',
-      description: 'Get live prices for macro symbols: commodity futures (GC=F, CL=F), FX pairs (EURUSD=X, JPY=X), the dollar index (DX-Y.NYB), and bond futures (ZN=F). Mind each market\'s quote convention from search_macro_instruments (grains quote in cents). Treasury yield indices (^IRX/^FVX/^TNX/^TYX) are NOT quoted here — no free provider carries them; use get_yield_curve, which returns the official yields in plain percent.',
+      description: 'Get live prices for macro symbols: commodity futures (GC=F, CL=F), FX pairs (EURUSD=X, JPY=X), the dollar index (DX-Y.NYB), and bond futures (ZN=F). Mind each market\'s quote convention from search_macro_instruments (grains quote in cents). Treasury yield indices (^IRX/^FVX/^TNX/^TYX) are NOT quoted here — no free provider carries them; use get_yield_curve, which returns the official yields in plain percent. Where this returns nothing for an FX pair, get_fx_rates returns every catalog pair at the European Central Bank\'s daily reference rate, worked out for you: quote that, saying it is the ECB\'s daily rate and giving its date, not a live quote.',
       input_schema: {
         type: 'object',
         properties: {
@@ -377,7 +428,7 @@ const TOOL_REGISTRY: RegisteredTool[] = [
     market: 'macro',
     tool: {
       name: 'get_macro_price_history',
-      description: 'Get OHLC history summary for a macro symbol (futures contract, FX pair, or yield index) over a range: first/last, high, low, and percent change.',
+      description: 'Get OHLC history summary for a macro symbol (futures contract, FX pair, or yield index) over a range: first/last, high, low, and percent change. For a Treasury yield (^IRX/^FVX/^TNX/^TYX) it reads the official daily curve instead, one figure a day: first/last, highest/lowest yield and the change in basis points, worked out for you. For an FX pair (all but the dollar index) it reads the European Central Bank\'s daily reference rates, one figure a working day: first/last, highest/lowest rate and the percent change, worked out for you.',
       input_schema: {
         type: 'object',
         properties: {
@@ -392,7 +443,7 @@ const TOOL_REGISTRY: RegisteredTool[] = [
     market: 'macro',
     tool: {
       name: 'get_yield_curve',
-      description: 'Get the official US Treasury par yield curve (13 maturities, treasury.gov daily data) with 2s10s and 3m10y spreads, curve shape (normal/flat/inverted), and month-ago / year-start snapshots for comparison, each with its own spreads (monthAgoSpreads, yearStartSpreads) and each maturity\'s change since then in basis points (changeSinceMonthAgo, changeSinceYearStart): quote those to say how far a yield has moved and whether the curve has steepened or flattened, rather than working them out yourself. The authoritative rates tool — prefer it over quoting ^TNX for curve questions.',
+      description: 'Get the official US Treasury par yield curve (13 maturities, treasury.gov daily data) with 2s10s and 3m10y spreads, curve shape (normal/flat/inverted), and month-ago / year-start snapshots for comparison, each with its own spreads (monthAgoSpreads, yearStartSpreads) and each maturity\'s change since then in basis points (changeSinceMonthAgo, changeSinceYearStart): quote those to say how far a yield has moved and whether the curve has steepened or flattened, rather than working them out yourself. It also returns expectedInflation: at 5Y, 7Y, 10Y, 20Y and 30Y, the ordinary yield, the inflation-protected (real) yield and their difference, the inflation the bond market prices in, all from one day; quote it rather than subtracting. It also returns gapHistory: over the last ten years of daily readings, where each gap (10-year minus 2-year, 10-year minus 3-month) stands, the stretch it is in or when it was last below zero, its longest stretch below zero and how many there were, all dated; quote those rather than guessing how long the curve has been inverted. The authoritative rates tool — prefer it over quoting ^TNX for curve questions.',
       input_schema: { type: 'object', properties: {} },
     },
   },
@@ -409,7 +460,7 @@ const TOOL_REGISTRY: RegisteredTool[] = [
       // Corrected 2026-09-22: it said 127 until then. It has been 126 since 'bgn' was
       // removed on 2026-07-22, when Bulgaria adopted the euro — and an agent reads this
       // number out to a user.
-      description: 'Get daily USD-based FX reference rates: 30 currencies from the ECB (official tier) and, when include_extended is true, 126 more community-sourced currencies (labeled non-official). For intraday pair quotes use get_macro_quote instead.',
+      description: 'Get daily USD-based FX reference rates: 30 currencies from the ECB (official tier) and, when include_extended is true, 126 more community-sourced currencies (labeled non-official). Also returns pairRates: every catalog FX pair (EUR/USD, USD/JPY, EUR/GBP…) at the ECB\'s newest daily rate, with its date and the percent change since the ECB\'s previous working day, worked out for you; quote those rather than dividing rates yourself. For intraday pair quotes use get_macro_quote instead.',
       input_schema: {
         type: 'object',
         properties: {
@@ -430,6 +481,17 @@ const TOOL_REGISTRY: RegisteredTool[] = [
           pillar: { type: 'string', enum: ['commodities', 'currencies', 'bonds'], description: 'Optional: one pillar only' },
           limit: { type: 'number', description: 'Max articles (default 10, max 25)' },
         },
+      },
+    },
+  },
+  {
+    market: 'macro',
+    tool: {
+      name: 'get_economic_calendar',
+      description: "Get the dates of the Fed's rate decisions and of the US CPI, jobs report, GDP and PCE inflation releases in the days ahead, from the app's tables copied from the Federal Reserve Board's calendar and the BLS and BEA schedules. Use for \"when is the next Fed meeting / CPI / jobs report\". Name the source of each date; an agency can move a date, and the table ends where the published schedules end (scheduleThrough).",
+      input_schema: {
+        type: 'object',
+        properties: { days: { type: 'number', description: 'How many days ahead (default 60, max 400)' } },
       },
     },
   },
@@ -528,6 +590,251 @@ export interface ToolOutcome {
 }
 
 /** Execute a tool by name and return a JSON-serializable result for the model. */
+// ─── Fund details and stablecoin reserves (T-457, D210) ─────────────────────
+//
+// What the fund pages and the Reserve Monitor show, for the agents: read from the same routes,
+// shaped here with what an agent needs to report it honestly (where each figure comes from and
+// how old it is).
+
+const HOLDINGS_SOURCE: Record<FundHoldingsResponse['source'], string> = {
+  sec: "the fund's own N-PORT filing to the SEC",
+  fmp: 'Financial Modeling Prep',
+  catalog: "the app's catalog: a few indicative holdings typed in by hand, not a filing; say so if you use them",
+}
+
+/** A fund's sales charge for an agent: never a rate nobody has verified (fundCatalog's SalesCharge rule). */
+export function salesChargeFact(charge: NonNullable<ReturnType<typeof fundSalesCharge>>): { kind: string; maxPct: number | null; note: string } {
+  return charge.maxPct == null
+    ? { kind: charge.kind, maxPct: null, note: 'A sales charge applies; its rate has not been verified, so do not state one.' }
+    : { kind: charge.kind, maxPct: charge.maxPct, note: `Read from ${charge.source} on ${charge.verifiedAt}.` }
+}
+
+/** Where a fund invests, for an agent (T-455): the largest countries and currencies, and a bond fund's splits. */
+function whereItInvests(e: NonNullable<FundHoldingsResponse['exposure']>): Record<string, unknown> {
+  const list = (s: FundExposure['countries'], n: number) => s.slices.slice(0, n).map((x) => ({ name: x.label, code: x.code, pct: x.pct }))
+  return {
+    asOf: e.asOf,
+    countries: list(e.countries, 10),
+    countriesStatedPct: e.countries.statedPct,
+    currencies: list(e.currencies, 8),
+    currenciesStatedPct: e.currencies.statedPct,
+    bonds: e.bonds
+      ? {
+        bondsPct: e.bonds.bondsPct,
+        borrowers: e.bonds.borrowers.slices.map((x) => ({ kind: x.label, pct: x.pct })),
+        maturities: e.bonds.maturities.slices.map((x) => ({ repaid: x.label, pct: x.pct })),
+      }
+      : null,
+    note: "Shares of the fund's net assets from its own N-PORT filing, never rescaled to 100. A holding's country is where its issuer is based, not where a company sells. A field the filer left blank is left out, never guessed; the stated percent says how much of the fund each split covers. The filing carries no credit ratings, so say nothing about bond quality from it.",
+  }
+}
+
+const round2 = (n: number) => Math.round(n * 100) / 100
+const wholeUsd = (n: number | null) => (n === null ? null : Math.round(n))
+
+/**
+ * A fund's own returns and money flows for an agent (T-459, D222, D223), from /live-data/fund-returns:
+ * the figures the fund page shows, with the months they cover. Exported for its tests.
+ */
+export function fundReturnsFact(symbol: string, r: FundReturnsResponse | Error): Record<string, unknown> {
+  if (r instanceof Error) return { error: `returns unavailable: ${r.message}` }
+  if (!r.ok) return { error: `returns unavailable: ${r.error ?? 'the route reported a failure'}` }
+  if (!r.filer) return { none: `${symbol} files no N-PORT report with the SEC (unit investment trusts and commodity trusts do not), so it has no reported returns here.` }
+  const v = r.returns
+  if (!v) return { none: r.error ?? 'No N-PORT filing could be read.' }
+  return {
+    source: "The fund's own NPORT-P filings with the SEC",
+    filingFor: v.asOf,
+    filedAt: v.filedAt,
+    ...(r.newestUnread ? { newestFilingUnread: `The fund's newest filing, filed ${r.newestUnread.filedAt}, could not be read just now, so these may not be its latest figures; say so.` } : {}),
+    shareClass: r.classId,
+    monthlyTotalReturnsPct: v.classFound
+      ? v.months.map((m) => ({ month: m.month, pct: m.returnPct === null ? null : round2(m.returnPct) }))
+      : null,
+    twelveMonthReturn: v.twelveMonths
+      ? { from: v.twelveMonths.from, to: v.twelveMonths.to, pct: round2(v.twelveMonths.returnPct) }
+      : null,
+    twelveMonthNote: v.twelveMonthsMissing,
+    moneyInAndOut: v.flows
+      ? {
+        months: v.flows.months.map((m) => ({
+          month: m.month, newSharesUsd: wholeUsd(m.sales), reinvestedUsd: wholeUsd(m.reinvestment),
+          redeemedUsd: wholeUsd(m.redemption), netUsd: wholeUsd(m.net),
+        })),
+        netUsd: wholeUsd(v.flows.net),
+        netAssetsUsd: wholeUsd(v.flows.netAssets),
+        netPctOfNetAssets: v.flows.netPctOfAssets === null ? null : round2(v.flows.netPctOfAssets),
+      }
+      : null,
+    note: "Total returns for this share class as the fund reported them, payouts included. The 12-month return compounds twelve reported months and is given only when none is missing; never work one out from fewer. Money in and out is for the whole fund, every share class; for an ETF, new and redeemed shares are dealers' creations and redemptions, not individual investors' purchases. The filings appear about 60 days after each quarter ends, so name the months these cover. Do not set them beside other funds' figures for other months, and do not rate the fund on them.",
+  }
+}
+
+const stretchFact = (s: InvertedStretch) => ({
+  start: s.start, end: s.ongoing ? null : s.end, stillBelowZero: s.ongoing,
+  startIsEarliestRead: !s.startKnown, tradingDaysBelowZero: s.readings,
+  lowestPctPoints: s.deepest, lowestOn: s.deepestOn,
+})
+
+/**
+ * The two yield gaps' history for an agent (T-464), from ten years of the official daily curve:
+ * where each stands, when it was last below zero, its longest stretch below zero and how many
+ * there were, worked out so the agent quotes dates rather than reading them off a chart. Facts,
+ * no forecast. Exported for its tests.
+ */
+export function gapHistoryFact(h: SpreadHistoryResponse): Record<string, unknown> {
+  if (!h.ok) return { error: h.error ?? 'gap history unavailable' }
+  const gaps = Object.fromEntries(SPREAD_KEYS.map((k) => {
+    const now = h.now?.[k] ?? null
+    const stretches = h.stretches?.[k] ?? []
+    const longest = stretches.reduce<InvertedStretch | null>((b, s) => (!b || s.readings > b.readings ? s : b), null)
+    return [k, {
+      name: SPREAD_NAMES[k].long,
+      now: now ? { date: now.date, pctPoints: now.value, belowZero: now.inverted } : null,
+      ...(now?.stretch ? { [now.inverted ? 'currentStretch' : 'lastStretchBelowZero']: stretchFact(now.stretch) } : {}),
+      timesBelowZero: stretches.length,
+      longestStretchBelowZero: longest ? stretchFact(longest) : null,
+    }]
+  }))
+  return {
+    period: 'the last ten years of daily readings',
+    ...gaps,
+    ...(h.missingYears?.length ? { yearsNotRead: h.missingYears } : {}),
+    note: 'Below zero means short-term Treasury yields are above the 10-year, an inverted curve. Every stretch is worked out from each day’s official reading; a one-day dip counts as one. Quote these dates and counts rather than working them out; they are history, not a forecast or a signal.',
+  }
+}
+
+/** Why a fourth quarter was not worked out, for the agent (code audit 2026-11-12, D226). */
+const Q4_WITHHELD_WHY: Record<NonNullable<CompanyQuarter['revenueWithheld']>, string> = {
+  restated: 'The annual report changed earlier figures (for example after selling or spinning off a business), so the full year and the first nine months are on different bases.',
+  'not-positive': 'The full year less the first nine months came to zero or below.',
+}
+
+/**
+ * A company's last eight quarters for an agent (T-461): each figure with whether it was worked out
+ * and the change from a year earlier, as the stock page shows them. Exported for its tests.
+ */
+export function quartersFact(quarters: CompanyQuarter[]): Record<string, unknown> {
+  if (quarters.length === 0) {
+    return { none: 'No quarterly reports (Form 10-Q) are on file with the SEC for this company; a company based outside the US usually reports once a year. Do not estimate quarterly figures.' }
+  }
+  const fig = (q: CompanyQuarter['revenue']) => (q ? { value: q.value, workedOut: q.workedOut } : null)
+  const pct = (n: number | null) => (n === null ? null : Math.round(n * 10) / 10)
+  return {
+    quarters: quarters.map((q) => ({
+      periodStart: q.start, periodEnd: q.end,
+      revenueUsd: fig(q.revenue), revenueChangePct: pct(q.revenueChangePct),
+      netIncomeUsd: fig(q.netIncome), netIncomeChangePct: pct(q.netIncomeChangePct),
+      eps: q.eps ? { value: q.eps.value, basis: q.eps.concept === 'EarningsPerShareBasic' ? 'basic' : 'diluted' } : null,
+      epsChangePct: pct(q.epsChangePct),
+      ...(q.revenueWithheld ? { revenueNotWorkedOut: Q4_WITHHELD_WHY[q.revenueWithheld] } : {}),
+      ...(q.netIncomeWithheld ? { netIncomeNotWorkedOut: Q4_WITHHELD_WHY[q.netIncomeWithheld] } : {}),
+    })),
+    note: "From the company's 10-Q and 10-K reports, newest first. Each change is from the same quarter a year earlier, and is null where that figure was a loss or zero. Companies file no separate fourth-quarter report, so a figure marked workedOut is the full year less the first nine months; fourth-quarter earnings per share are given only where the company filed them, so never work one out. Where a fourth quarter's revenue or net income is null with a reason (revenueNotWorkedOut, netIncomeNotWorkedOut), do not work it out yourself from the full year either: the reason is that the two figures are on different bases. P/E and dividend yield stay on the latest full year.",
+  }
+}
+
+/** Exported for its tests. */
+export function fundDetails(
+  symbol: string,
+  holdings: FundHoldingsResponse | Error,
+  prospectus: FundProspectusResponse | Error,
+  top: number,
+  returns?: FundReturnsResponse | Error,
+): Record<string, unknown> {
+  const f = getFund(symbol)
+  const charge = f ? fundSalesCharge(f) : null
+  const y = f ? fundYieldFact(f) : null
+  const catalog = f ? {
+    name: f.name, issuer: f.issuer, type: f.type,
+    category: FUND_CATEGORY_INFO[f.category].label, indexTracked: f.indexTracked,
+    expenseRatioPct: f.expenseRatioPct,
+    expenseRatioCheckedOn: getFundFeeProvenance().verifiedAt,
+    salesCharge: charge ? salesChargeFact(charge) : null,
+    netAssetsB: f.aumB, netAssetsAsOf: f.aumAsOf ?? null, netAssetsMeasure: fundAssetsFact(f, String).label,
+    yieldPct: y?.shown ? f.yieldPct : null, yieldKind: y?.shown ? y.kind : null, yieldAsOf: y?.shown ? y.asOf : null,
+    yieldNote: y?.explain ?? null,
+    website: f.website,
+  } : null
+
+  let filing: Record<string, unknown>
+  if (holdings instanceof Error) filing = { error: `holdings unavailable: ${holdings.message}` }
+  else if (!holdings.ok) filing = { error: `holdings unavailable: ${holdings.error ?? 'the route reported a failure'}` }
+  else {
+    const shown = holdings.holdings.slice(0, top)
+    filing = {
+      source: HOLDINGS_SOURCE[holdings.source],
+      asOf: holdings.asOf,
+      positions: holdings.holdingsCount,
+      completeList: holdings.full,
+      largestHoldings: shown.map((h) => ({ name: h.name, symbol: h.symbol, weightPct: Math.round(h.weightPct * 100) / 100 })),
+      largestHoldingsTotalPct: Math.round(shown.reduce((s, h) => s + h.weightPct, 0) * 10) / 10,
+      assetMix: holdings.assetAllocation.length ? holdings.assetAllocation : null,
+      assetMixCoveredPct: holdings.assetAllocationCoverage?.coveredPct ?? null,
+      sectorWeights: holdings.sectorWeights.length ? holdings.sectorWeights : null,
+      duration: holdings.rateSensitivity
+        ? {
+          years: holdings.rateSensitivity.durationYears, asOf: holdings.rateSensitivity.asOf,
+          note: "Worked out from the interest-rate risk the fund reports in the same filing: roughly the percent its value changes for each one-point move in rates.",
+        }
+        : null,
+      whereItInvests: holdings.exposure ? whereItInvests(holdings.exposure) : null,
+      weightsNote: 'Weights are percent of the fund’s net assets as filed, never rescaled to 100.',
+    }
+  }
+
+  const prospectusOut = prospectus instanceof Error
+    ? { error: `prospectus lookup failed: ${prospectus.message}` }
+    : prospectus.prospectus
+      ? { kind: prospectus.prospectus.kind, filedAt: prospectus.prospectus.filedAt, url: prospectus.prospectus.url }
+      : { none: prospectus.reason ?? prospectus.error ?? 'No prospectus was found.' }
+
+  return {
+    symbol,
+    inCatalog: !!f,
+    catalog,
+    filing,
+    returns: returns === undefined ? null : fundReturnsFact(symbol, returns),
+    prospectus: prospectusOut,
+    ...(f ? {} : { note: `${symbol} is not in the app's fund catalog, so there is no expense ratio, sales charge or yield here; the filing figures above are still the fund's own. Do not estimate the missing ones.` }),
+  }
+}
+
+/** Exported for its tests. */
+export function stablecoinReserves(
+  assets: LiveReserveAsset[],
+  notFound: string[],
+  metaAsOf: string | null,
+  symbol: string | null,
+): Record<string, unknown> {
+  const wanted = symbol?.trim().toUpperCase() || null
+  const picked = wanted ? assets.filter((a) => a.symbol.toUpperCase() === wanted) : assets
+  if (wanted && picked.length === 0) {
+    return { error: `${wanted} is not among the monitored stablecoins.`, monitored: assets.map((a) => a.symbol) }
+  }
+  return {
+    coins: picked.map((a) => ({
+      symbol: a.symbol, name: a.name, pegType: a.pegType, pegMechanism: a.pegMechanism,
+      priceUsd: a.price,
+      // Only a dollar coin's price is against its own peg; a euro coin's dollar price is not. No
+      // price, no distance from the peg (D214).
+      pegDeviationBps: a.pegType === 'peggedUSD' && a.price !== null ? Math.round((a.price - 1) * 10_000) : null,
+      circulatingUsd: Math.round(a.circulatingUsd),
+      supplyChangePct: a.supplyChange,
+      largestChains: a.chainSplit.top.map((c) => ({ chain: c.chain, pct: c.pct })),
+      otherChains: a.chainSplit.others ? { count: a.chainSplit.others.count, pct: a.chainSplit.others.pct } : null,
+      attester: a.attester,
+      attestationUrl: a.attestationUrl === '#' ? null : a.attestationUrl,
+      lastAttestedDate: a.lastAttestedDate,
+      collateralizationRatio: a.collateralizationRatio,
+      reserveMix: a.composition.map((c) => ({ category: c.category, pct: c.percentage })),
+    })),
+    attestationFactsAsOf: metaAsOf,
+    notFound,
+    note: `Price and supply are live from DefiLlama. The attester, attestation date, collateral ratio and reserve mix are kept by hand${metaAsOf ? ` as of ${metaAsOf}` : ''}, not live; several were taken from news reports and trackers quoting the issuers, and a null collateral ratio means it is not publicly disclosed. pegDeviationBps is the price's distance from $1 in hundredths of a percent, for dollar coins only. A null priceUsd means DefiLlama sent no price for that coin: say so, and do not call it on its peg. Report the figures; do not grade a coin's safety.`,
+  }
+}
+
 export async function runTool(
   name: string,
   input: ToolInput,
@@ -607,6 +914,14 @@ async function execute(
         // so forwarding the param would set a filter the API silently ignores.
         return await get(`/api/v1/staking/opportunities?${p.toString()}`)
       }
+      case 'get_stablecoin_reserves': {
+        const data = (await get('/live-data/reserves')) as {
+          ok?: boolean; error?: string; assets?: LiveReserveAsset[]; notFound?: string[]; metaAsOf?: string
+        }
+        const failure = routeFailed(data)
+        if (failure) return { error: `reserve data unavailable: ${failure}` }
+        return stablecoinReserves(data.assets ?? [], data.notFound ?? [], data.metaAsOf ?? null, input.symbol ? String(input.symbol) : null)
+      }
       case 'get_news': {
         const p = new URLSearchParams({ coin: String(input.coin ?? '') })
         p.set('limit', String(input.limit ?? 10))
@@ -669,6 +984,18 @@ async function execute(
           periodHigh: Math.max(...rows.map((c) => c.high)), periodLow: Math.min(...rows.map((c) => c.low)),
           changePct,
         }
+      }
+      case 'get_fund_details': {
+        const symbol = String(input.symbol ?? '').trim().toUpperCase()
+        if (!/^[A-Z][A-Z0-9.-]{0,9}$/.test(symbol)) return { error: 'Pass a fund ticker, e.g. "VOO".' }
+        const top = Math.min(Math.max(Math.round(Number(input.top ?? 15)) || 15, 1), 40)
+        const q = encodeURIComponent(symbol)
+        const [holdings, prospectus, returns] = await Promise.all([
+          (get(`/live-data/fund-holdings?symbol=${q}`) as Promise<FundHoldingsResponse>).catch((e: Error) => e),
+          (get(`/live-data/fund-prospectus?symbol=${q}`) as Promise<FundProspectusResponse>).catch((e: Error) => e),
+          (get(`/live-data/fund-returns?symbol=${q}`) as Promise<FundReturnsResponse>).catch((e: Error) => e),
+        ])
+        return fundDetails(symbol, holdings, prospectus, top, returns)
       }
       case 'search_securities': {
         const query = String(input.query ?? '').trim().toLowerCase()
@@ -762,10 +1089,14 @@ async function execute(
         const symbol = String(input.symbol ?? '').toUpperCase()
         const data = (await get(`/live-data/company-facts?symbol=${encodeURIComponent(symbol)}`)) as {
           ok?: boolean; error?: string; company?: string; fiscalYearEnd?: string; fundamentals?: unknown; ratios?: unknown
+          quarters?: CompanyQuarter[]
         }
         if (!data.ok) return { error: data.error ?? 'no fundamentals available', symbol }
-        // Trim to the analytically useful fields — omit the annual history series.
-        return { symbol, company: data.company, fiscalYearEnd: data.fiscalYearEnd, fundamentals: data.fundamentals, ratios: data.ratios }
+        // Trim to the analytically useful fields — omit the annual history series. T-461 adds the quarters.
+        return {
+          symbol, company: data.company, fiscalYearEnd: data.fiscalYearEnd, fundamentals: data.fundamentals, ratios: data.ratios,
+          lastQuarters: quartersFact(data.quarters ?? []),
+        }
       }
       case 'get_stock_profile': {
         const symbol = String(input.symbol ?? '').toUpperCase()
@@ -903,6 +1234,7 @@ async function execute(
         const days = Math.min(Number(input.days ?? 14) || 14, 30)
         const data = (await get(`/live-data/market-calendar?days=${days}`)) as {
           ok?: boolean; configured?: boolean; earnings?: unknown[]; economic?: unknown[]; from?: string; to?: string
+          earningsGap?: string | null
         }
         if (data.configured === false) {
           // FOMC meeting dates are keyless (lib/data/fomcCalendar.ts) and still come back;
@@ -911,7 +1243,7 @@ async function execute(
           return {
             from: data.from, to: data.to,
             earnings: [],
-            earningsUnavailable: 'Earnings and non-Fed economic releases need an FMP API key (FMP_API_KEY) — not configured on this instance.',
+            earningsUnavailable: 'Earnings need an FMP or Alpha Vantage API key, and economic releases other than the Fed meetings and the CPI, jobs report, GDP and PCE dates need an FMP key; neither is configured on this instance.',
             economic: (data.economic ?? []).slice(0, 25),
           }
         }
@@ -924,6 +1256,8 @@ async function execute(
         return {
           from: data.from, to: data.to,
           earnings: (data.earnings ?? []).slice(0, 40),
+          earningsNote: 'Earnings dates are expected, not confirmed: companies often confirm late and can move a date. Each row names its source: FMP first, Alpha Vantage for companies FMP does not list.'
+            + (data.earningsGap ? ` ${data.earningsGap} Do not say a company has no report coming because it is missing here.` : ''),
           economic: (data.economic ?? []).slice(0, 25),
         }
       }
@@ -993,6 +1327,43 @@ async function execute(
       case 'get_macro_price_history': {
         const symbol = String(input.symbol ?? '').toUpperCase()
         const range = String(input.range ?? '1Y')
+        // T-446: a Treasury yield has no candles anywhere (D3); its history is the official curve's.
+        const curveEntry = RATES_CATALOG.find((r) => r.quoteBasis === 'pct' && r.symbol === symbol)
+        const maturity = curveEntry ? parLabelFor(curveEntry.maturityYears) : null
+        if (maturity) {
+          const hRange = ({ '1M': '1mo', '3M': '3mo', '6M': '6mo', '1Y': '1y', '5Y': '5y', MAX: '10y' } as Record<string, string>)[range] ?? '1y'
+          const h = (await get(`/live-data/treasury-yield-history?maturity=${maturity}&range=${hRange}`)) as {
+            ok?: boolean; error?: string; interval?: string; points?: { date: string; yieldPct: number }[]
+          }
+          const pts = h.points ?? []
+          if (!h.ok || pts.length === 0) return { error: h.error ?? 'no yield history available', symbol, range }
+          const ys = pts.map((p) => p.yieldPct)
+          return {
+            symbol, maturity, range, source: 'treasury.gov official daily par curve', interval: h.interval, readings: pts.length,
+            note: `One official figure a day, in percent; there is no intraday high or low.${extremesNote(h.interval)}`,
+            firstDate: pts[0].date, firstYieldPct: ys[0], lastDate: pts[pts.length - 1].date, lastYieldPct: ys[ys.length - 1],
+            highestYieldPct: Math.max(...ys), lowestYieldPct: Math.min(...ys),
+            changeBp: Math.round((ys[ys.length - 1] - ys[0]) * 100),
+          }
+        }
+        // T-445: an FX pair's history is the ECB's daily reference rates; no keyed provider has sent one since 2026-09-09.
+        const pair = ecbPairBySymbol(symbol)
+        if (pair) {
+          const hRange = ({ '1M': '1mo', '3M': '3mo', '6M': '6mo', '1Y': '1y', '5Y': '5y', MAX: '10y' } as Record<string, string>)[range] ?? '1y'
+          const h = (await get(`/live-data/fx-pair-history?pair=${pair.slug}&range=${hRange}`)) as {
+            ok?: boolean; error?: string; interval?: string; points?: { date: string; rate: number }[]
+          }
+          const pts = h.points ?? []
+          if (!h.ok || pts.length === 0) return { error: h.error ?? 'no reference rate history available', symbol, range }
+          const rs = pts.map((p) => p.rate)
+          return {
+            symbol, pair: pair.name, range, source: 'European Central Bank euro reference rates (via Frankfurter)', interval: h.interval, readings: pts.length,
+            note: `${ECB_RATE_NOTE} One figure a working day; there is no intraday high or low.${extremesNote(h.interval)} ${pairRateBasis(pair)}`,
+            firstDate: pts[0].date, firstRate: rs[0], lastDate: pts[pts.length - 1].date, lastRate: rs[rs.length - 1],
+            highestRate: Math.max(...rs), lowestRate: Math.min(...rs),
+            changePct: Number((((rs[rs.length - 1] - rs[0]) / rs[0]) * 100).toFixed(2)),
+          }
+        }
         const data = (await get(`/live-data/security-ohlcv?symbol=${encodeURIComponent(symbol)}&range=${range}`)) as {
           ok?: boolean; candles?: { time: number; open: number; high: number; low: number; close: number }[]; source?: string
         }
@@ -1015,9 +1386,16 @@ async function execute(
           ok?: boolean; error?: string; latest?: unknown; monthAgo?: unknown; yearStart?: unknown
           spread2s10s?: number; spread3m10y?: number; shape?: string
           monthAgoSpreads?: unknown; yearStartSpreads?: unknown
-          changeSinceMonthAgo?: unknown; changeSinceYearStart?: unknown
+          changeSinceMonthAgo?: unknown; changeSinceYearStart?: unknown; expectedInflation?: unknown
         }
         if (!data.ok) return { error: data.error ?? 'yield curve unavailable' }
+        // The gaps' ten-year history (T-464), best-effort: the curve stands without it.
+        let gapHistory: Record<string, unknown>
+        try {
+          gapHistory = gapHistoryFact((await get(`/live-data/treasury-spread-history?range=10y`)) as SpreadHistoryResponse)
+        } catch (err) {
+          gapHistory = { error: err instanceof Error ? err.message : 'gap history unavailable' }
+        }
         // The comparison curves' spreads and each maturity's change come worked out, so a
         // trend is read off published figures rather than the model's own subtraction
         // (2026-10-17 evaluation; on 2026-10-18 two agents put one move at +53bp and +8bp).
@@ -1026,6 +1404,8 @@ async function execute(
           spread2s10s: data.spread2s10s, spread3m10y: data.spread3m10y, shape: data.shape,
           monthAgoSpreads: data.monthAgoSpreads, yearStartSpreads: data.yearStartSpreads,
           changeSinceMonthAgo: data.changeSinceMonthAgo, changeSinceYearStart: data.changeSinceYearStart,
+          expectedInflation: data.expectedInflation,
+          gapHistory,
           source: 'treasury.gov official daily par curve',
         }
       }
@@ -1052,7 +1432,37 @@ async function execute(
           }
         }
         out.base = 'USD'
+        // T-445: each catalog pair at the ECB's newest rate, already worked out, with its change.
+        const ref = (await get(`/live-data/fx-reference-pairs`)) as {
+          ok?: boolean; error?: string; date?: string
+          pairs?: Record<string, { date: string; rate: number; previousDate?: string; changePct?: number }>
+        }
+        if (ref.ok) {
+          const wantedPair = (code: string, name: string) => !wanted?.length || name.split('/').some((c) => wanted.includes(c)) || wanted.includes(code)
+          out.pairRates = CURRENCY_CATALOG.filter((c) => ref.pairs?.[c.slug] && wantedPair(c.symbol, c.name)).map((c) => ({
+            pair: c.name, symbol: c.symbol, ...ref.pairs![c.slug],
+          }))
+          out.pairRatesNote = `${ECB_RATE_NOTE} changePct is since the ECB's previous working day (previousDate). A pair without the euro is worked out from the two euro rates of the same day.`
+        } else {
+          out.pairRatesError = ref.error ?? 'ECB pair rates unavailable'
+        }
         return out
+      }
+      case 'get_economic_calendar': {
+        const days = Math.min(Math.max(Math.round(Number(input.days ?? 60)) || 60, 1), 400)
+        const fomc = getFomcCalendarProvenance()
+        const rel = getReleaseDatesProvenance()
+        return {
+          days,
+          events: macroCalendarAhead(days),
+          scheduleThrough: { fedMeetings: fomc.through, releases: rel.through },
+          checkedOn: { fedMeetings: fomc.verifiedAt, releases: rel.verifiedAt },
+          sources: {
+            fedMeetings: `Federal Reserve Board, ${FOMC_SOURCE_URL}`,
+            releases: `U.S. Bureau of Labor Statistics (CPI, jobs report) and U.S. Bureau of Economic Analysis (GDP, PCE), ${RELEASE_AGENCIES.bls.scheduleUrls.join(', ')}, ${RELEASE_AGENCIES.bea.scheduleUrls.join(', ')}`,
+          },
+          note: 'Copied by hand from each publisher; times are as the schedules list them, with no time zone written. A Fed date stays tentative until the meeting before it. Past scheduleThrough, no date means none published yet, not none planned.',
+        }
       }
       case 'get_macro_news': {
         const limit = Math.min(Number(input.limit ?? 10) || 10, 25)

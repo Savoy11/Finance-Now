@@ -2,12 +2,13 @@
 
 import { ModuleGate } from '@/components/layout/ModuleGate'
 import React, { useState, useMemo, useRef, useEffect, Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
 import {
   AlertTriangle, TrendingUp, Clock, Lock, ExternalLink,
   ChevronDown, ChevronUp, Info, CheckCircle, XCircle, Zap,
-  Building2, Wallet, Layers,
+  Building2, Wallet, Layers, CalendarClock,
 } from 'lucide-react'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { LivePoolsPanel } from './LivePoolsPanel'
@@ -16,7 +17,8 @@ import { ProvenanceNotice } from '@/components/ui/ProvenanceNotice'
 import { SponsoredLink } from '@/components/ui/SponsoredLink'
 import { resolveOutboundLink, affiliateCoverageByCategory, sponsoredProviders } from '@/lib/data/affiliates'
 import { clsx } from 'clsx'
-import { aprDisplay, resolveLiveAprKey } from '@/lib/utils/aprDisplay'
+import { aprBasis, aprBasisText, aprDisplay, basisCounts, rateDay, rateSummary, resolveLiveAprKey } from '@/lib/utils/aprDisplay'
+import { coinPageForStaking, isStakingCoinId, stakingPageRows, type StakingRow } from '@/lib/data/coinPageLinks'
 import {
   STAKING_PROVIDERS, STAKING_COIN_INFO,
   resolveYieldType, YIELD_TYPE_META,
@@ -99,18 +101,20 @@ function AffiliateDisclosure() {
 
 function ProviderCard({
   provider,
-  coinFilter,
-  showAdjacent,
+  rows,
   rates,
   sources,
   gaps,
+  backupDates,
 }: {
   provider: StakingProvider
-  coinFilter: StakingCoinId | 'all'
-  showAdjacent: boolean
+  /** This provider's rows under the page's filters, from stakingPageRows (the notice counts the same). */
+  rows: StakingRow[]
   rates: Partial<Record<string, number>>
   sources: Partial<Record<string, 'live' | 'estimate'>>
   gaps: Partial<Record<string, GapReasonId>>
+  /** The collector's fallbackProvenance.byKey: each backup figure's measured date, or null. */
+  backupDates: Partial<Record<string, string | null>>
 }) {
   const [expanded, setExpanded] = useState(false)
   const CategoryIcon = categoryIcon(provider.category)
@@ -120,31 +124,24 @@ function ProviderCard({
   // otherwise (see resolveOutboundLink).
   const outbound = resolveOutboundLink(provider)
 
-  const visibleAssets = useMemo(() => {
-    const entries = Object.entries(provider.assets) as [StakingCoinId, NonNullable<(typeof provider.assets)[StakingCoinId]>][]
-    return entries.filter(([id, asset]) => {
-      if (coinFilter !== 'all' && id !== coinFilter) return false
-      // Hide governance-token / lending yield unless explicitly shown
-      if (!showAdjacent && !YIELD_TYPE_META[resolveYieldType(provider, asset)].stakesQueriedAsset) return false
-      return true
-    })
-  }, [provider, coinFilter, showAdjacent])
+  // The rows come filtered from the page (stakingPageRows): governance-token and lending yield
+  // hidden unless asked for, by the rule the coin page counts with (T-463), and the notice
+  // counts exactly these rows (code audit 2026-11-12, D226).
+  const visibleAssets = useMemo(() => rows.map((r) => [r.coinId, r.asset] as const), [rows])
 
   // Resolve each visible row's live/estimate status once, so the card can both
   // render rows and disclose — at the card level — when it has no live feed at all.
   const assetRows = useMemo(
     () =>
       visibleAssets.map(([coinId, asset]) => {
-        const { apr, live, gap } = aprDisplay(
-          asset.staticApr,
-          resolveLiveAprKey(provider, coinId, asset),
-          rates,
-          sources,
-          gaps,
-        )
-        return { coinId, asset, apr, live, gap }
+        const liveKey = resolveLiveAprKey(provider, coinId, asset)
+        const shown = aprDisplay(asset.staticApr, liveKey, rates, sources, gaps)
+        // Where the figure came from and how old it is (T-465): a backup rate carries its own
+        // measured date, or says it has none, never the catalog's compile date.
+        const basis = aprBasis(shown, liveKey, rates, backupDates)
+        return { coinId, asset, ...shown, basis }
       }),
-    [visibleAssets, provider, rates, sources, gaps],
+    [visibleAssets, provider, rates, sources, gaps, backupDates],
   )
 
   // A live, non-defunct provider whose every shown rate is a static estimate
@@ -253,7 +250,7 @@ function ProviderCard({
 
       {/* Asset rows */}
       <div className="border-t border-border divide-y divide-border/50">
-        {assetRows.map(({ coinId, asset, apr, live, gap }) => {
+        {assetRows.map(({ coinId, asset, apr, live, gap, basis }) => {
           const info = STAKING_COIN_INFO[coinId]
           const yieldType = resolveYieldType(provider, asset)
           const yieldMeta = YIELD_TYPE_META[yieldType]
@@ -266,7 +263,10 @@ function ProviderCard({
                   <div className="size-5 rounded-full flex items-center justify-center" style={{ backgroundColor: info.color + '30', border: `1px solid ${info.color}60` }}>
                     <span className="text-[9px] font-bold" style={{ color: info.color }}>{info.symbol[0]}</span>
                   </div>
-                  <span className="text-xs font-semibold text-text-primary">{info.symbol}</span>
+                  {/* The coin's own page, where there is one (T-463); Cosmos, Osmosis and Kusama have none. */}
+                  {coinPageForStaking(coinId)
+                    ? <Link href={`/assets/${coinPageForStaking(coinId)}`} className="text-xs font-semibold text-text-primary hover:text-accent-blue transition-colors" title={`${info.name}: its page`}>{info.symbol}</Link>
+                    : <span className="text-xs font-semibold text-text-primary">{info.symbol}</span>}
                 </div>
 
                 {/* APY */}
@@ -302,7 +302,7 @@ function ProviderCard({
                     <DataGapNote
                       reason={gap}
                       className="ml-1"
-                      detail={`${provider.name} · ${info.symbol}`}
+                      detail={`${provider.name} · ${info.symbol}. ${aprBasisText(basis, STAKING_DATA_LAST_VERIFIED)}`}
                     />
                   )}
                   {provider.defunct && (
@@ -314,7 +314,8 @@ function ProviderCard({
                 <div className="flex items-center gap-1 w-32 shrink-0">
                   <Lock size={11} className="text-text-muted shrink-0" />
                   <span className="text-xs text-text-secondary">
-                    {asset.lockupDays === 0 ? 'No lockup' : `${asset.lockupDays}d unbonding`}
+                    {/* No figure is published (D238); a liquid receipt token's 0 stays (D162). */}
+                    {asset.lockupDays == null ? 'Not published' : asset.lockupDays === 0 ? 'No lockup' : `${asset.lockupDays}d unbonding`}
                   </span>
                 </div>
 
@@ -322,7 +323,7 @@ function ProviderCard({
                 <div className="flex items-center gap-1 w-28 shrink-0">
                   <span className="text-xs text-text-muted">Min:</span>
                   <span className="text-xs text-text-secondary font-mono">
-                    {asset.minStakeUsd != null ? `$${asset.minStakeUsd.toLocaleString('en-US')}` : asset.minStakeNative === 0 ? 'None' : `${asset.minStakeNative} ${info.symbol}`}
+                    {asset.minStakeUsd != null ? `$${asset.minStakeUsd.toLocaleString('en-US')}` : asset.minStakeNative == null ? 'Not published' : asset.minStakeNative === 0 ? 'None' : `${asset.minStakeNative} ${info.symbol}`}
                   </span>
                 </div>
 
@@ -360,6 +361,16 @@ function ProviderCard({
                   </span>
                 ))}
               </div>
+
+              {/* A backup rate says how old it is on the row itself (T-465, D224), since it is the
+                  one kind of figure the notice above cannot date for it. Catalog figures carry
+                  the catalog's date in the notice and in the marker's panel. */}
+              {!provider.defunct && (basis.kind === 'backup' || basis.kind === 'withheld') && (
+                <div className="mt-1.5 flex items-start gap-1.5">
+                  <CalendarClock size={10} className="text-text-muted mt-0.5 shrink-0" />
+                  <span className="text-[10px] text-text-muted">{aprBasisText(basis, STAKING_DATA_LAST_VERIFIED)}</span>
+                </div>
+              )}
 
               {asset.lockupNote && (
                 <div className="mt-1.5 flex items-start gap-1.5">
@@ -550,8 +561,20 @@ function StakingPageInner() {
   // — is now the Live Pools tab. /staking-discovery redirects to ?tab=pools so
   // old links land on the surviving surface, not a 404.
   const params = useSearchParams()
+  const router = useRouter()
   const [tab, setTab] = useState<StakingTab>(params.get('tab') === 'pools' ? 'pools' : 'providers')
-  const [coinFilter, setCoinFilter] = useState<StakingCoinId | 'all'>('all')
+  // The coin filter lives in the address too (T-463): /staking?coin=eth opens on ETH, which is
+  // where a coin page's staking line sends its reader, and a filtered view can be shared.
+  // The address is the only place the filter is kept, so it cannot disagree with it.
+  const coinParam = params.get('coin')
+  const coinFilter: StakingCoinId | 'all' = isStakingCoinId(coinParam) ? coinParam : 'all'
+  const setCoinFilter = (coin: StakingCoinId | 'all') => {
+    const next = new URLSearchParams(params.toString())
+    if (coin === 'all') next.delete('coin')
+    else next.set('coin', coin)
+    const query = next.toString()
+    router.replace(query ? `/staking?${query}` : '/staking', { scroll: false })
+  }
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all')
   // Off by default: "ETH staking" should mean ETH staking, not governance/lending.
   const [showAdjacent, setShowAdjacent] = useState(false)
@@ -566,29 +589,36 @@ function StakingPageInner() {
     refetchInterval: 1000 * 60 * 20,
   })
 
-  const rates = ratesData?.rates ?? {}
-  const sources = ratesData?.sources ?? {}
+  const rates = useMemo(() => ratesData?.rates ?? {}, [ratesData])
+  const sources = useMemo(() => ratesData?.sources ?? {}, [ratesData])
   // Why each non-live key is not live. The route answers this because only it
   // knows which upstream owned the key — see StakingRatesResponse.gaps.
-  const gaps = ratesData?.gaps ?? {}
+  const gaps = useMemo(() => ratesData?.gaps ?? {}, [ratesData])
+  // Each backup figure's measured date, or null for one never measured (T-465).
+  const backupDates = useMemo(() => ratesData?.fallbackProvenance?.byKey ?? {}, [ratesData])
   const updatedAt = ratesData?.updatedAt
 
-  const liveCount = Object.values(sources).filter(s => s === 'live').length
-
+  // Every row the page draws under its filters, and the providers they belong to, in order.
+  const pageRows = useMemo(
+    () => stakingPageRows({ coin: coinFilter, category: categoryFilter, showAdjacent, showDefunct }),
+    [categoryFilter, coinFilter, showAdjacent, showDefunct],
+  )
   const filteredProviders = useMemo(() => {
-    return STAKING_PROVIDERS.filter(p => {
-      if (p.defunct && !showDefunct) return false
-      if (categoryFilter !== 'all' && p.category !== categoryFilter) return false
-      // Provider must have at least one asset that survives the coin + adjacency filters
-      const entries = Object.entries(p.assets) as [StakingCoinId, NonNullable<(typeof p.assets)[StakingCoinId]>][]
-      const hasVisible = entries.some(([id, asset]) => {
-        if (coinFilter !== 'all' && id !== coinFilter) return false
-        if (!showAdjacent && !YIELD_TYPE_META[resolveYieldType(p, asset)].stakesQueriedAsset) return false
-        return true
-      })
-      return hasVisible
-    })
-  }, [categoryFilter, coinFilter, showAdjacent, showDefunct])
+    const byProvider = new Map<string, { provider: StakingProvider; rows: StakingRow[] }>()
+    for (const r of pageRows) {
+      const seen = byProvider.get(r.provider.id)
+      if (seen) seen.rows.push(r)
+      else byProvider.set(r.provider.id, { provider: r.provider, rows: [r] })
+    }
+    return [...byProvider.values()]
+  }, [pageRows])
+  // What each drawn row's rate is, counted for the notice: the rows themselves, not the
+  // collector's keys, ten of which no row reads (code audit 2026-11-12, D226).
+  const counts = useMemo(() => basisCounts(pageRows.map(({ provider, coinId, asset }) => {
+    const liveKey = resolveLiveAprKey(provider, coinId, asset)
+    return aprBasis(aprDisplay(asset.staticApr, liveKey, rates, sources, gaps), liveKey, rates, backupDates)
+  })), [pageRows, rates, sources, gaps, backupDates])
+  const liveCount = counts.live
 
   const COINS = Object.keys(STAKING_COIN_INFO) as StakingCoinId[]
   const CATEGORIES: { value: CategoryFilter; label: string }[] = [
@@ -654,11 +684,13 @@ function StakingPageInner() {
             stale={prov.stale}
           >
             — {prov.source.toLowerCase()}, compiled{' '}
-            {new Date(STAKING_DATA_LAST_VERIFIED).toLocaleDateString()} ({prov.ageDays} days ago)
+            {rateDay(STAKING_DATA_LAST_VERIFIED)} ({prov.ageDays} days ago)
             {prov.stale && `, past the ${STAKING_DATA_STALE_AFTER_DAYS}-day review window`}.
-            {liveCount > 0
-              ? ` ${liveCount} APR${liveCount > 1 ? 's are' : ' is'} live; every other rate, lock-up and minimum is a curated estimate — confirm current terms with the provider.`
-              : ' All rates, lock-ups and minimums below are curated estimates — confirm current terms with the provider.'}
+            {' That date covers the lock-ups, minimums and the catalog’s own rates, not the backup rates.'}
+            {/* T-465: a backup rate is the staking-rates collector's figure, not the catalog's, so
+                it is dated by when it was measured, or said to have none (D224). */}
+            {ratesData && counts.rows > 0 && ` ${rateSummary(counts)}`}
+            {' '}Each rate says which it is. Confirm current terms with the provider.
           </ProvenanceNotice>
         )
       })()}
@@ -758,15 +790,15 @@ function StakingPageInner() {
 
       {/* Provider cards */}
       <div className="space-y-3">
-        {filteredProviders.map(provider => (
+        {filteredProviders.map(({ provider, rows }) => (
           <ProviderCard
             key={provider.id}
             provider={provider}
-            coinFilter={coinFilter}
-            showAdjacent={showAdjacent}
+            rows={rows}
             rates={rates}
             sources={sources}
             gaps={gaps}
+            backupDates={backupDates}
           />
         ))}
       </div>

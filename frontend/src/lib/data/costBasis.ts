@@ -15,6 +15,13 @@
 //     repurchase stays a loss here (no wash-sale adjustment), and nothing is
 //     split into short and long term. Tax-adjusted figures wait on D4's review.
 //
+// Income (T-451, owner decision D201) comes two ways. Cash income (a dividend,
+// interest, a fund distribution) is an amount and a date; no units move, so it
+// changes no lot and no gain, and is reported on its own. Units received as
+// income (a staking reward, a dividend paid in shares) are a new lot whose cost
+// is their value on the day, as the person enters it, so a later sale's gain is
+// only what was gained after they arrived. Both count towards income received.
+//
 // A split (T-421) is entered like a trade: a ratio and the date it took effect.
 // Every unit acquired before that date is multiplied by the ratio and keeps its
 // cost, so the cost per unit changes and nothing is gained or lost. Where the
@@ -59,6 +66,13 @@ export interface LedgerTrade {
   opening?: boolean
   /** A split's terms (T-421). Only a split carries them; its quantity, price and fee are not used. */
   split?: SplitTerms | null
+  /** Cash income's amount (T-451). Only cash income carries it; its quantity, price and fee are not used. */
+  income?: IncomeTerms | null
+}
+
+/** Cash income received on a holding: dollars, to the cent. */
+export interface IncomeTerms {
+  amountUsd: string
 }
 
 /**
@@ -120,6 +134,19 @@ export interface TransferOut {
   feeUsd: string
 }
 
+/** Income received on a holding (T-451): cash, or units received valued on the day. */
+export interface IncomeReceived {
+  tradeId: string
+  /** ISO time it was received. */
+  receivedAt: string
+  /** Cash income, or units received as income. */
+  form: 'cash' | 'units'
+  /** The cash, or the units' value on the day as entered (their cost). */
+  amountUsd: string
+  /** Units received; null for cash. */
+  quantity: string | null
+}
+
 /** What a split did to the units held when it took effect. */
 export interface SplitApplied {
   tradeId: string
@@ -166,6 +193,12 @@ export interface CostBasis {
   transfersOut: TransferOut[]
   /** Oldest first. A split also appears in `sales` when cash was paid for a fraction. */
   splits: SplitApplied[]
+  /** Income received, oldest first: cash, and units received at their value on the day. */
+  income: IncomeReceived[]
+  /** Everything in `income`. Not part of any gain: income is reported on its own. */
+  incomeUsd: string
+  /** The part of incomeUsd received in the year to `now` (from the same date a year earlier, up to now). */
+  incomeLast12MonthsUsd: string
   /** Rows left out (invalid-trade) and anything else the screen should point out. */
   issues: LedgerIssue[]
 }
@@ -265,12 +298,15 @@ export function differenceUsd(a: string, b: string): string {
 // ─── Lots ────────────────────────────────────────────────────────────────────
 
 /** What each kind of trade does to the lots. A side added to the table fails to compile here until it is placed. */
-const EFFECT: Record<TradeSide, 'acquire' | 'dispose' | 'split'> = {
+const EFFECT: Record<TradeSide, 'acquire' | 'dispose' | 'split' | 'income'> = {
   buy: 'acquire',
   sell: 'dispose',
   transfer_in: 'acquire',
   transfer_out: 'dispose',
   split: 'split',
+  // T-451: cash income moves no units; units received are a new lot at their value that day.
+  income: 'income',
+  income_units: 'acquire',
 }
 
 /** Every kind of trade the ledger knows, in the table's order. */
@@ -287,6 +323,8 @@ interface Row {
   opening: boolean
   /** A split's ratio and cash (cents), on a split only. */
   split: { after: bigint; before: bigint; cash: bigint | null } | null
+  /** Cash income in cents, on cash income only. */
+  cash: bigint | null
 }
 
 interface Lot {
@@ -326,14 +364,30 @@ function readSplit(t: LedgerTrade): Row | string {
   if (t.executedAt === null) return 'Left out: a split needs the date it took effect.'
   const at = (t.executedAt instanceof Date ? t.executedAt : new Date(t.executedAt)).getTime()
   if (Number.isNaN(at)) return `Left out: "${String(t.executedAt)}" is not a date.`
-  return { id: t.id, side: t.side, qty: ZERO, price: ZERO, fee: ZERO, at, opening: false, split: { after, before, cash } }
+  return { id: t.id, side: t.side, qty: ZERO, price: ZERO, fee: ZERO, at, opening: false, split: { after, before, cash }, cash: null }
+}
+
+/** Cash income's own rules, or the reason it has to be left out. Its quantity, price and fee are not read. */
+function readIncome(t: LedgerTrade): Row | string {
+  if (t.opening === true) return 'Left out: income is not a starting position.'
+  if (t.split != null) return 'Left out: only a split carries a ratio.'
+  const amount = t.income ? parseScaled(String(t.income.amountUsd), FEE_DP) : null
+  if (amount === null || amount <= ZERO) {
+    return `Left out: income needs an amount of dollars above 0, with at most ${FEE_DP} decimals.`
+  }
+  if (t.executedAt === null) return 'Left out: income needs the date it was received.'
+  const at = (t.executedAt instanceof Date ? t.executedAt : new Date(t.executedAt)).getTime()
+  if (Number.isNaN(at)) return `Left out: "${String(t.executedAt)}" is not a date.`
+  return { id: t.id, side: t.side, qty: ZERO, price: ZERO, fee: ZERO, at, opening: false, split: null, cash: amount }
 }
 
 /** The trade as exact numbers, or the reason it has to be left out. */
 function readTrade(t: LedgerTrade): Row | string {
   if (!Object.prototype.hasOwnProperty.call(EFFECT, t.side)) return `Left out: "${t.side}" is not a kind of trade the ledger knows.`
   if (EFFECT[t.side] === 'split') return readSplit(t)
+  if (EFFECT[t.side] === 'income') return readIncome(t)
   if (t.split != null) return 'Left out: only a split carries a ratio.'
+  if (t.income != null) return 'Left out: only cash income carries an amount.'
   const qty = parseScaled(String(t.quantity), QTY_DP)
   if (qty === null || qty <= ZERO) return `Left out: the quantity "${t.quantity}" is not a positive number with at most ${QTY_DP} decimals.`
   const price = parseScaled(String(t.pricePerUnit), PRICE_DP)
@@ -342,6 +396,8 @@ function readTrade(t: LedgerTrade): Row | string {
   if (fee === null || fee < ZERO) return `Left out: the fee "${t.feeUsd}" is not an amount of dollars (0 or more, at most ${FEE_DP} decimals).`
   const opening = t.opening === true
   if (opening && t.side !== 'transfer_in') return 'Left out: a starting position must be recorded as a transfer in.'
+  // D201: units received as income cost their value on the day, so that value has to be given.
+  if (t.side === 'income_units' && price === ZERO) return 'Left out: units received as income need their value per unit on the day they arrived.'
   let at: number | null = null
   if (t.executedAt === null) {
     if (!opening) return 'Left out: only a starting position may leave out its date.'
@@ -349,7 +405,7 @@ function readTrade(t: LedgerTrade): Row | string {
     at = (t.executedAt instanceof Date ? t.executedAt : new Date(t.executedAt)).getTime()
     if (Number.isNaN(at)) return `Left out: "${String(t.executedAt)}" is not a date.`
   }
-  return { id: t.id, side: t.side, qty, price, fee, at, opening, split: null }
+  return { id: t.id, side: t.side, qty, price, fee, at, opening, split: null, cash: null }
 }
 
 /**
@@ -362,8 +418,8 @@ export function tradeProblem(t: LedgerTrade): string | null {
   return typeof row === 'string' ? row.replace(/^Left out: (.)/, (_, c: string) => c.toUpperCase()) : null
 }
 
-/** At the same moment: a split, then purchases, then sales. */
-const SAME_MOMENT_ORDER = { split: 0, acquire: 1, dispose: 2 } as const
+/** At the same moment: a split, then purchases, then sales; cash income moves no units, so it goes last. */
+const SAME_MOMENT_ORDER = { split: 0, acquire: 1, dispose: 2, income: 3 } as const
 
 /**
  * The order FIFO works in: starting positions first (an undated one before any
@@ -434,7 +490,8 @@ export function computeCostBasis(trades: readonly LedgerTrade[], now: Date = new
   }
   const latestStart = starts.reduce<number | null>((m, r) => (r.at !== null && (m === null || r.at > m) ? r.at : m), null)
   for (const r of rows) {
-    if (!r.opening && latestStart !== null && r.at !== null && r.at < latestStart) {
+    // Cash income moves no units, so its date beside a starting position changes nothing.
+    if (!r.opening && r.cash === null && latestStart !== null && r.at !== null && r.at < latestStart) {
       issues.push(r.split
         ? {
           code: 'split-before-starting-position', tradeId: r.id,
@@ -455,8 +512,17 @@ export function computeCostBasis(trades: readonly LedgerTrade[], now: Date = new
   const unmatched: UnmatchedSale[] = []
   const transfersOut: TransferOut[] = []
   const splits: SplitApplied[] = []
+  const income: Array<{ tradeId: string; at: number; form: 'cash' | 'units'; amount: bigint; quantity: bigint | null }> = []
 
   for (const r of rows) {
+    if (r.cash !== null) {
+      income.push({ tradeId: r.id, at: r.at as number, form: 'cash', amount: r.cash * FEE_TO_USD, quantity: null })
+      continue
+    }
+    if (r.side === 'income_units') {
+      // Their value on the day is their cost (D201) and the income they count as.
+      income.push({ tradeId: r.id, at: r.at as number, form: 'units', amount: r.qty * r.price, quantity: r.qty })
+    }
     if (EFFECT[r.side] === 'acquire') {
       lots.push({
         tradeId: r.id,
@@ -571,6 +637,9 @@ export function computeCostBasis(trades: readonly LedgerTrade[], now: Date = new
   const quantityHeld = lots.reduce((s, l) => s + l.qty, ZERO)
   const costHeld = lots.reduce((s, l) => s + l.cost, ZERO)
   const gain = (m: { proceeds: bigint; cost: bigint }) => m.proceeds - m.cost
+  const yearAgo = new Date(now.getTime())
+  yearAgo.setUTCFullYear(yearAgo.getUTCFullYear() - 1)
+  const inLastYear = income.filter((i) => i.at >= yearAgo.getTime() && i.at <= now.getTime())
 
   return {
     method: COST_BASIS_METHOD,
@@ -592,6 +661,12 @@ export function computeCostBasis(trades: readonly LedgerTrade[], now: Date = new
     unmatched,
     transfersOut,
     splits,
+    income: income.map((i) => ({
+      tradeId: i.tradeId, receivedAt: new Date(i.at).toISOString(), form: i.form,
+      amountUsd: usd(i.amount), quantity: i.quantity === null ? null : units(i.quantity),
+    })),
+    incomeUsd: usd(income.reduce((s, i) => s + i.amount, ZERO)),
+    incomeLast12MonthsUsd: usd(inLastYear.reduce((s, i) => s + i.amount, ZERO)),
     issues,
   }
 }

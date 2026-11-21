@@ -398,7 +398,10 @@ const tests = [
 
   { group: 'crypto/market', path: '/live-data/reserves', name: 'reserves', check: (j) => {
     if (!j.ok || !Array.isArray(j.assets) || j.assets.length === 0) throw new Error('no reserve assets')
-    return `${j.assets.length} stablecoins`
+    // A monitored coin DefiLlama no longer lists under its id is named, never
+    // just left out of the count.
+    const missing = Array.isArray(j.notFound) ? j.notFound : []
+    return `${j.assets.length} stablecoins` + (missing.length ? `; not found: ${missing.map((m) => `${m.key} (${m.reason})`).join(', ')}` : '')
   }},
 
   // /live-data/risk-scores was REMOVED on 2026-08-29 (RP-6): the owner's position
@@ -530,8 +533,14 @@ const tests = [
   { group: 'crypto/video', path: '/live-data/videos', name: 'videos', check: (j) => {
     if (!j.ok) throw new Error(j.error ?? 'not ok')
     const v = j.videos ?? []
-    if (v.length === 0) return empty('0 videos')
-    return `${v.length} videos`
+    // Since 2026-11-09 the route names each channel feed it could not read: "0 videos" alone
+    // could not tell a changed YouTube feed from a blocked one.
+    const failed = j.failed ?? []
+    const why = failed.length
+      ? `; ${failed.length}/${j.tried ?? '?'} channel feeds failed: ${[...new Set(failed.map((f) => f.error))].slice(0, 3).join('; ')}`
+      : ''
+    if (v.length === 0) return empty(`0 videos${why}`)
+    return `${v.length} videos${why}`
   }},
 
   { group: 'crypto/video', path: '/live-data/video-search?q=bitcoin', name: 'video-search', check: (j) => {
@@ -708,6 +717,33 @@ const tests = [
     return `${j.count} stocks, source=${j.source}, ${withShares} with an SEC share count`
   }},
 
+  // The wider list (T-450, D205): every NYSE and Nasdaq common stock in the SEC's
+  // company_tickers_exchange.json, keyless. Its rules (which tickers count, which are left
+  // out) were written before the file could be read from a cloud session, so this is where
+  // they first meet the real file: a run on the owner's machine should list thousands, with
+  // AAPL, BRK-B and GOOGL on it and no well-known fund (SPY, QQQ, GLD, IBIT).
+  { group: 'equities', path: '/live-data/stock-universe?list=sec', name: 'stock-universe (wider SEC list)', check: (j) => {
+    if (!j.ok || !Array.isArray(j.entries)) throw new Error(j.error ?? 'no wider list')
+    if (j.source !== 'sec') throw new Error(`source=${j.source}, expected sec`)
+    if (j.entries.length < 2000) throw new Error(`only ${j.entries.length} stocks: the SEC's file lists thousands on NYSE and Nasdaq`)
+    const syms = new Set(j.entries.map((e) => e.symbol))
+    const missing = ['AAPL', 'BRK-B', 'GOOGL', 'JPM'].filter((s) => !syms.has(s))
+    if (missing.length) throw new Error(`missing ${missing.join(', ')}`)
+    const funds = ['SPY', 'QQQ', 'GLD', 'IBIT', 'VOO'].filter((s) => syms.has(s))
+    if (funds.length) throw new Error(`funds on the stock list: ${funds.join(', ')}`)
+    if ('marketCapB' in j.entries[0] || 'referencePrice' in j.entries[0]) throw new Error('serves a market cap or reference price, which D170 removed')
+    const withEps = j.entries.filter((e) => e.eps != null).length
+    const lo = j.leftOut ?? {}
+    return `${j.count} NYSE/Nasdaq stocks, ${withEps} with an SEC earnings figure; left out ${lo['other-exchange'] ?? '?'} elsewhere, ${lo['not-common'] ?? '?'} preferred/warrants/units, ${lo.fund ?? '?'} funds`
+  }},
+
+  { group: 'equities', path: '/live-data/stock-universe?q=ford', name: 'stock-universe (keyless search)', check: (j) => {
+    if (!j.ok || !Array.isArray(j.entries)) throw new Error('search failed')
+    // Keyless, search reads the SEC's list (T-450), so a stock outside the 79 is found.
+    if (!j.entries.some((e) => e.symbol === 'F')) throw new Error(`Ford (F) not found; got ${j.entries.map((e) => e.symbol).join(', ') || 'nothing'} from ${j.source}`)
+    return `${j.entries.length} matches from ${j.source}, Ford first: ${j.entries[0]?.symbol === 'F'}`
+  }},
+
   { group: 'equities', path: '/live-data/stock-universe?symbol=AAPL', name: 'stock-universe (single lookup)', check: (j) => {
     if (!j.ok || j.entries?.[0]?.symbol !== 'AAPL') throw new Error('AAPL lookup failed')
     return `${j.entries[0].name} · ${j.entries[0].sector}`
@@ -776,7 +812,19 @@ const tests = [
     if (!(f.sharesOutstanding > 1e9)) throw new Error(`shares implausible: ${f.sharesOutstanding}`)
     if (!(r.netMargin > 0.05 && r.netMargin < 0.6)) throw new Error(`net margin implausible: ${r.netMargin}`)
     if (!(r.currentRatio > 0.2 && r.currentRatio < 5)) throw new Error(`current ratio implausible: ${r.currentRatio}`)
-    return `rev=$${(f.revenue / 1e9).toFixed(0)}B, netMargin=${(r.netMargin * 100).toFixed(1)}%`
+    // T-461: the last eight quarters, read from the same file. Apple's fiscal year ends in late
+    // September and it files no fourth-quarter report, so its July–September quarter is worked out.
+    const q = Array.isArray(j.quarters) ? j.quarters : []
+    if (q.length !== 8) return fallback(`rev=$${(f.revenue / 1e9).toFixed(0)}B, but ${q.length} of 8 quarters`)
+    const gaps = q.slice(1).map((x, i) => (Date.parse(q[i].end) - Date.parse(x.end)) / 86_400_000)
+    if (gaps.some((d) => d < 80 || d > 100)) throw new Error(`quarters not three months apart: ${q.map((x) => x.end).join(', ')}`)
+    const bad = q.find((x) => !(x.revenue?.value > 5e10 && x.revenue.value < 2e11))
+    if (bad) throw new Error(`AAPL quarterly revenue implausible for ${bad.end}: ${bad.revenue?.value}`)
+    const workedOut = q.filter((x) => x.revenue?.workedOut).length
+    if (workedOut === 0) return fallback(`8 quarters to ${q[0].end}, but no fourth quarter was worked out`)
+    const ageDays = (Date.now() - Date.parse(q[0].end)) / 86_400_000
+    if (ageDays > 200) return fallback(`newest quarter ends ${q[0].end}, ${Math.round(ageDays)} days ago`)
+    return `rev=$${(f.revenue / 1e9).toFixed(0)}B, netMargin=${(r.netMargin * 100).toFixed(1)}%; 8 quarters to ${q[0].end}, ${workedOut} worked out`
   }},
 
   { group: 'equities', path: '/live-data/company-profile?symbol=AAPL&name=Apple', name: 'company-profile (SEC+wiki)', check: (j) => {
@@ -786,11 +834,22 @@ const tests = [
   }},
 
   { group: 'equities', path: '/live-data/market-calendar', name: 'market-calendar', check: (j) => {
-    if (j.configured === false) return unconfigured('no FMP key configured (honestly reported)')
+    if (j.configured === false) return unconfigured('no FMP or Alpha Vantage key configured (honestly reported)')
     if (!j.ok) throw new Error('not ok but reports configured')
     const n = (j.earnings ?? []).length + (j.economic ?? []).length
     if (n === 0) return empty('configured but 0 events')
     return `${(j.earnings ?? []).length} earnings, ${(j.economic ?? []).length} economic`
+  }},
+
+  // The next expected earnings date per stock (T-458): FMP, with Alpha Vantage filling in. A null
+  // date with ok:true means "not listed in the next 90 days", never a failed source.
+  { group: 'equities', path: '/live-data/earnings-dates?symbols=AAPL,MSFT,NVDA', name: 'earnings-dates', check: (j) => {
+    if (j.configured === false) return unconfigured('no FMP or Alpha Vantage key configured (honestly reported)')
+    const src = Object.entries(j.sources ?? {}).map(([k, v]) => `${k} ${v.ok ? `ok (${v.count})` : `failed: ${v.detail ?? '?'}`}`).join('; ')
+    if (!j.ok) throw new Error(`no earnings source answered: ${src}`)
+    const listed = Object.entries(j.dates ?? {}).filter(([, v]) => v)
+    if (listed.length === 0) return empty(`answered, but none of AAPL, MSFT, NVDA listed in the next 90 days (${src})`)
+    return `${listed.map(([k, v]) => `${k} ${v.date} via ${v.source}`).join(', ')} · ${src}`
   }},
 
   // Alpha Vantage's IPO_CALENDAR, on its free tier (25 requests a day). The route
@@ -869,6 +928,28 @@ const tests = [
     return `no link, as expected: ${String(j.reason ?? '').slice(0, 80)}`
   }},
 
+  // T-459: VOO's own returns and money flows from its NPORT-P filings. Its newest filing must give
+  // the share class three monthly returns; the 12-month figure needs four quarters that join up,
+  // so its absence is reported, not failed. SPY files no N-PORT and must say so, not error.
+  { group: 'funds', path: '/live-data/fund-returns?symbol=VOO', name: 'fund-returns (VOO)', check: (j) => {
+    if (!j.ok) throw new Error(j.error ?? 'not ok')
+    if (!j.filer) throw new Error('VOO is a Vanguard 500 Index Fund share class and files N-PORT; the SEC fund list lookup missed it')
+    const r = j.returns
+    if (!r) throw new Error(`no filing read (${j.filingsFailed} failed)`)
+    if (!r.classFound) throw new Error(`the newest filing (${r.asOf}) has no row for class ${j.classId}`)
+    const months = r.months.filter((m) => m.returnPct !== null).length
+    if (months !== 3) return fallback(`${months} of 3 monthly returns in the filing for ${r.asOf}`)
+    const ageDays = (Date.now() - new Date(r.asOf).getTime()) / 86_400_000
+    if (ageDays > 200) return fallback(`newest filing is for ${r.asOf}, ${Math.round(ageDays)} days ago`)
+    const twelve = r.twelveMonths ? `12 months to ${r.twelveMonths.to}: ${r.twelveMonths.returnPct.toFixed(2)}%` : `no 12-month figure (${r.twelveMonthsMissing})`
+    return `quarter to ${r.asOf}, 3 monthly returns, flows ${r.flows ? 'present' : 'absent'}; ${twelve}`
+  }},
+  { group: 'funds', path: '/live-data/fund-returns?symbol=SPY', name: 'fund-returns (SPY, trust — none expected)', check: (j) => {
+    if (!j.ok) throw new Error(j.error ?? 'not ok')
+    if (j.filer) throw new Error('SPY was found in the SEC fund list; it is a unit investment trust and files no N-PORT')
+    return 'no N-PORT filer, as expected'
+  }},
+
   { group: 'funds', path: '/live-data/fund-holdings-history?symbol=SPY', name: 'fund-holdings-history (SPY)', check: (j) => {
     if (!j.ok) {
       const e = String(j.error ?? '')
@@ -933,6 +1014,50 @@ const tests = [
       return fallback(`curve present but spreads not computed (2s10s=${j.spread2s10s}, 3m10y=${j.spread3m10y})`)
     }
     return `${pts} maturities, 2s10s=${j.spread2s10s}, 3m10y=${j.spread3m10y}, shape=${j.shape}`
+  }},
+
+  { group: 'macro', path: '/live-data/treasury-yield-history?maturity=10Y&range=1y', name: 'treasury-yield-history 10Y (treasury.gov)', check: (j) => {
+    if (!j.ok) throw new Error(j.error ?? 'not ok')
+    const pts = j.points ?? []
+    if (pts.length < 150) return fallback(`only ${pts.length} daily readings for a year`)
+    const withReal = pts.filter((p) => p.breakevenPct != null).length
+    if (withReal === 0) return fallback('no real yield, so no expected inflation, on any day')
+    if ((j.missingYears ?? []).length > 0) return fallback(`years not read: ${j.missingYears.join(', ')}`)
+    const last = pts[pts.length - 1]
+    return `${pts.length} readings to ${last.date}, 10Y ${last.yieldPct}%, expected inflation ${last.breakevenPct ?? '—'}%`
+  }},
+
+  // T-464: the two yield gaps over ten years, with each stretch below zero dated from the daily readings.
+  { group: 'macro', path: '/live-data/treasury-spread-history?range=10y', name: 'treasury-spread-history 10Y (treasury.gov)', check: (j) => {
+    if (!j.ok) throw new Error(j.error ?? 'not ok')
+    const pts = j.points ?? []
+    if (pts.length < 400) return fallback(`only ${pts.length} weekly readings for ten years`)
+    if ((j.missingYears ?? []).length > 0) return fallback(`years not read: ${j.missingYears.join(', ')}`)
+    // The 2s10s gap was below zero from July 2022 to August 2024 on the official curve; a reader
+    // that loses that stretch is reading the files wrong.
+    const long = (j.stretches?.spread2s10s ?? []).find((s) => s.start.startsWith('2022-07') && s.end.startsWith('2024-'))
+    if (!long) return fallback('no 2s10s stretch below zero from July 2022 into 2024')
+    const now = j.now?.spread2s10s
+    return `${pts.length} weekly readings, 2s10s ${now?.value ?? '—'} on ${now?.date ?? '—'}, below zero ${long.start} to ${long.end} (${long.readings} days)`
+  }},
+
+  // T-445 (D203): every currency pair at the ECB's daily reference rate, and one pair's history.
+  { group: 'macro', path: '/live-data/fx-reference-pairs', name: 'fx-reference-pairs (ECB via Frankfurter)', check: (j) => {
+    if (!j.ok) throw new Error(j.error ?? 'not ok')
+    const n = Object.keys(j.pairs ?? {}).length
+    if (n === 0) throw new Error('no pair priced')
+    if ((j.missing ?? []).length > 0) return fallback(`${n} pairs priced, ${j.missing.length} not (${j.missing.join(', ')})`)
+    const eurusd = j.pairs['eur-usd']
+    return `${n} pairs at the ECB rate of ${j.date}, EUR/USD ${eurusd?.rate ?? '—'} (${eurusd?.changePct ?? '—'}% since ${eurusd?.previousDate ?? '—'})`
+  }},
+
+  { group: 'macro', path: '/live-data/fx-pair-history?pair=usd-jpy&range=1y', name: 'fx-pair-history USD/JPY (ECB via Frankfurter)', check: (j) => {
+    if (!j.ok) throw new Error(j.error ?? 'not ok')
+    const pts = j.points ?? []
+    if (pts.length < 150) return fallback(`only ${pts.length} daily rates for a year`)
+    if (j.workedOut !== true) throw new Error('USD/JPY must be marked as worked out from two euro rates')
+    const last = pts[pts.length - 1]
+    return `${pts.length} rates to ${last.date}, USD/JPY ${last.rate}`
   }},
 
   // No source since 2026-08-06: dated contract months were priced through Yahoo,

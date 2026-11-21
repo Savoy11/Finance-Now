@@ -21,7 +21,7 @@ const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf8')
  * The crypto line is not here: the registry carries it (see below).
  */
 const PLACEMENTS: Record<FeatureNoticeId, string[]> = {
-  portfolioBuilder: ['src/app/(dashboard)/portfolio-builder/page.tsx'],
+  portfolioBuilder: ['src/app/(dashboard)/portfolio-builder/page.tsx', 'src/components/portfolio-builder/PlanMonitor.tsx'],
   calculators: [
     'src/app/(dashboard)/equities/options/page.tsx', // Trade Risk Scorer — switched off (D64), kept for its return
     'src/app/(dashboard)/equities/options-calculator/page.tsx', // Options Calculator (D93)

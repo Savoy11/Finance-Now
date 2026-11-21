@@ -160,11 +160,13 @@ export function payoffSeries(p: CalcPosition, lo: number, hi: number, steps = 12
 
 /**
  * A chart range wide enough to show every strike, every breakeven and the
- * current price, with a margin on each side.
+ * current price, with a margin on each side. `also` adds prices the chart must
+ * show too: the "what if" price, whose marker the chart would otherwise drop when
+ * the slider moves past its edge (code review 2026-11-10, D221).
  */
-export function chartRange(p: CalcPosition, underlying: number): { lo: number; hi: number } {
+export function chartRange(p: CalcPosition, underlying: number, also: number[] = []): { lo: number; hi: number } {
   const s = summarizePayoff(p)
-  const marks = [underlying, ...p.legs.map((l) => l.strike), ...s.breakevens].filter((x) => x > 0)
+  const marks = [underlying, ...p.legs.map((l) => l.strike), ...s.breakevens, ...also].filter((x) => x > 0)
   const min = Math.min(...marks), max = Math.max(...marks)
   const pad = Math.max((max - min) * 0.35, underlying * 0.15)
   return { lo: Math.max(0, min - pad), hi: max + pad }

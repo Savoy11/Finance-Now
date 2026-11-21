@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { CoinListEntry, CoinListResponse } from '@/lib/types/coinList'
 import { fetchCoinGeckoPages } from '@/lib/server/coingeckoPages'
+import { coingeckoBase } from '@/lib/api/live/coingecko'
 
 export type { CoinListEntry, CoinListResponse }
 
@@ -18,7 +19,7 @@ interface CoinGeckoMarketRow {
 }
 
 const marketsUrl = (page: number) =>
-  'https://api.coingecko.com/api/v3/coins/markets' +
+  `${coingeckoBase()}/coins/markets` +
   `?vs_currency=usd&order=market_cap_desc&per_page=250&page=${page}` +
   '&sparkline=false&locale=en'
 

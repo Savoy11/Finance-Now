@@ -14,6 +14,7 @@ import { pinnedFetch } from '@/lib/server/pinnedFetch'
 import { termsGatedFetch } from '@/lib/server/termsGatedFetch'
 import { probeSiteTerms, type TermsProbeReport } from '@/lib/server/termsProbe'
 import { describeThrottle } from '@/lib/server/coingeckoThrottle'
+import { coingeckoBase } from '@/lib/api/live/coingecko'
 import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 import { providerRefusal } from '@/lib/server/providerRefusal'
 import { DEFAULT_ANTHROPIC_MODEL } from '@/lib/agents/prompts'
@@ -261,7 +262,7 @@ async function testCustomProvider(url: string, key?: string): Promise<TestResult
 async function testCoinGecko(key?: string): Promise<TestResult> {
   const headers: Record<string, string> = { Accept: 'application/json' }
   if (key) headers['x-cg-demo-api-key'] = key
-  const res = await termsGatedFetch('https://api.coingecko.com/api/v3/ping', { signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS), headers })
+  const res = await termsGatedFetch(`${coingeckoBase()}/ping`, { signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS), headers })
   // A 429 on the connection test is the one place a user can act on the stated
   // limit directly, so report it rather than a bare status. The other providers'
   // tests below keep the plain form — this is the CoinGecko call site, and
@@ -421,6 +422,11 @@ async function refused(res: Response, key: string): Promise<TestResult> {
 
 /** Room for a one-word answer, and for a model that thinks first to stop early without failing. */
 const ANTHROPIC_TEST_MAX_TOKENS = 16
+/**
+ * The API version the Test button sends, the one @anthropic-ai/sdk 1.x sends for the agents (D215),
+ * so the button tests what the agents run on. It sends no temperature, which 2026-10-21 refuses.
+ */
+const ANTHROPIC_API_VERSION = '2026-10-21'
 
 /**
  * Anthropic is tested with the kind of request the agents make, not by listing models.
@@ -434,7 +440,7 @@ async function testAnthropic(key?: string): Promise<TestResult> {
   const res = await termsGatedFetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS),
-    headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+    headers: { 'x-api-key': key, 'anthropic-version': ANTHROPIC_API_VERSION, 'content-type': 'application/json' },
     body: JSON.stringify({
       model: DEFAULT_ANTHROPIC_MODEL,
       max_tokens: ANTHROPIC_TEST_MAX_TOKENS,

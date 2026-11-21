@@ -16,6 +16,7 @@ import { VideoAskDialog, useVideoAnalyzers, hasUsableAnalyzer } from '@/componen
 import type { VideoSearchResponse, SearchScope, SearchOrder, SearchDuration } from '@/app/live-data/video-search/route'
 import type { ProviderMarket } from '@/lib/api/live/providers'
 import { timeAgoCompact } from '@/lib/utils/format'
+import { videoFeedNote } from '@/lib/data/videoFeedNote'
 
 // Video feed — keyless YouTube channel Atom feeds, merged and ranked by recency.
 // Channels are managed in Integrations → Video Sources (registry-driven), and
@@ -203,7 +204,7 @@ export default function VideosPage() {
   const [ytOrder, setYtOrder] = useState<SearchOrder>('relevance')
   const [ytDuration, setYtDuration] = useState<SearchDuration>('any')
 
-  const { data, isLoading, isFetching, refetch } = useQuery<VideosResponse>({
+  const { data, error, isLoading, isFetching, refetch } = useQuery<VideosResponse>({
     queryKey: ['videos'],
     // Headroom for added channels — 10 channels x 15 already exceeds 120.
     queryFn: () => fetch('/live-data/videos?limit=240').then((r) => r.json()),
@@ -633,7 +634,7 @@ export default function VideosPage() {
                 : <>Add a YouTube Data API key to search beyond the channel feeds.</>
               : activeFilterCount > 0
                 ? 'No videos match the current filters.'
-                : 'No videos available — channel feeds may be unreachable.'}
+                : videoFeedNote(data, error)}
           </p>
           {!isSearchMode && activeFilterCount > 0 && (
             <button

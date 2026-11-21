@@ -84,14 +84,18 @@ function leads(coin: keyof typeof LEAD_ASKS, days: number, note: string | null, 
 }
 
 export const LOCKUP_LEADS: Readonly<Record<string, LockupLead>> = Object.fromEntries([
-  ...leads('sol', 5, null, ['kraken', 'okx', 'bybit', 'crypto-com', 'bitget', 'gate-io', 'htx']),
+  // D238 (2026-11-21) ruled the terms rows nobody could see off the check entirely
+  // (termsUnpublished), and a lead may only name a row that exists — the uniswap rule
+  // below — so the leads on okx:sol, htx:sol, binance:trx, htx:trx, crypto-com:eth,
+  // bitget:eth, robinhood:eth, bitstamp:eth and mexc:eth went with their rows.
+  ...leads('sol', 5, null, ['kraken', 'bybit', 'crypto-com', 'bitget', 'gate-io']),
   ...leads('sol', 7, null, ['kucoin']),
-  ...leads('trx', 3, null, ['binance', 'trust-wallet', 'gate-io', 'htx']),
+  ...leads('trx', 3, null, ['trust-wallet', 'gate-io']),
   // Coinbase's NEAR row left the catalog on 2026-11-02 (D185: not offered), so its lead went with it.
   ...leads('near', 4, '~4-day NEAR unstaking', ['kucoin', 'gate-io']),
   // The audit's "nine CeFi rows" at 0 with no note: Nexo and KuCoin are left out, being
   // lending and soft staking, where zero is right and their features say so.
-  ...leads('eth', 0, null, ['okx', 'crypto-com', 'bitget', 'gate-io', 'htx', 'robinhood', 'gemini', 'bitstamp', 'mexc']),
+  ...leads('eth', 0, null, ['okx', 'gate-io', 'htx', 'gemini']),
   // Two the agent evaluation of 2026-10-17 raised (docs/assessments/T6-agents-2026-10-17.md,
   // D136): the Research Analyst read both rows out as staking options, as they stand.
   // The uniswap:eth lead was answered Not offered by the 2026-10-30 search-engine check
@@ -158,6 +162,9 @@ export function stakingFactRows(
       rows.push({ key: `${p.id}:assets`, providerId: p.id, kind: 'assets', fields: [{ name: 'billions', type: 'billions', catalog: p.tvlBillions }] })
     }
     for (const [coin, a] of Object.entries(p.assets) as Array<[StakingCoinId, NonNullable<StakingProvider['assets'][StakingCoinId]>]>) {
+      // A provider that does not publish this product's terms is not asked for them —
+      // D238 (2026-11-21), the per-coin extension of D181's rule above.
+      if (a.termsUnpublished) continue
       const key = `${p.id}:${coin}:terms`
       const lead = lockupLeads[key]
       const leadHolds = lead !== undefined && a.lockupDays === lead.days && (a.lockupNote ?? null) === lead.note
@@ -170,8 +177,8 @@ export function stakingFactRows(
           // A minimum stated only in dollars is checked in dollars (D185).
           a.minStakeUsd != null
             ? { name: 'min', type: 'amount', catalog: a.minStakeUsd, unit: 'USD' }
-            : { name: 'min', type: 'amount', catalog: a.minStakeNative, unit: symbols[coin] ?? coin.toUpperCase() },
-          { name: 'lockup', type: 'days', catalog: a.lockupDays },
+            : { name: 'min', type: 'amount', catalog: a.minStakeNative ?? null, unit: symbols[coin] ?? coin.toUpperCase() },
+          { name: 'lockup', type: 'days', catalog: a.lockupDays ?? null },
         ],
         note: a.lockupNote,
         ...(leadHolds ? { lead: lead.ask, leadBy: LEAD_SOURCES[lead.from].by } : {}),

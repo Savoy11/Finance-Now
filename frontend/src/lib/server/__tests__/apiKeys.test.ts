@@ -51,6 +51,13 @@ describe('the gate', () => {
     expect(off.headers.get('access-control-allow-origin')).toBe('*')
   })
 
+  it('with no keys and FN_ADMIN_TOKEN set: a forged localhost Host does not pass (D193)', () => {
+    vi.stubEnv('FN_ADMIN_TOKEN', 'a-long-admin-token-for-tests-0123456789')
+    for (const host of ['localhost:3000', '127.0.0.1', 'localhost']) expect(guardApiV1(req({ host }))!.status, host).toBe(401)
+    // The owner, with the token, still can.
+    expect(guardApiV1(req({ headers: { 'x-fn-token': 'a-long-admin-token-for-tests-0123456789' } }))).toBeNull()
+  })
+
   it('with keys set: either header, a listed key, and nothing else, on every host', async () => {
     vi.stubEnv('FN_API_KEYS', `mcp:${KEY_A}`)
     expect(guardApiV1(req({ headers: { authorization: `Bearer ${KEY_A}` } }))).toBeNull()

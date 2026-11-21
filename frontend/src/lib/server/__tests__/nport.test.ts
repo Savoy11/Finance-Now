@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseNportReport, parseNportFilingsAtom, parseNportRateRisk } from '../nport'
+import { parseNportReport, parseNportFilingsAtom, parseNportRateRisk, parseNportReturns, parseNportFlows } from '../nport'
 
 // The N-PORT primary_doc.xml and browse-edgar Atom parsers are regex-based:
 // malformed input must degrade to fewer/empty rows, never an uncaught throw,
@@ -22,6 +22,13 @@ const APPLE = sec(`
 `)
 
 describe('parseNportReport', () => {
+  it('reads a holding name as text, not as escaped XML', () => {
+    const report = parseNportReport(`
+      <edgarSubmission><invstOrSec><name>Eli Lilly &amp; Co</name><title>ELI LILLY &amp; CO</title><pctVal>1.2</pctVal></invstOrSec></edgarSubmission>
+    `)
+    expect(report.holdings[0].name).toBe('Eli Lilly & Co')
+  })
+
   it('extracts as-of date, identifiers, balance, value, and weight', () => {
     const report = parseNportReport(`
       <edgarSubmission>
@@ -40,6 +47,10 @@ describe('parseNportReport', () => {
       valueUsd: 250000.75,
       pctVal: 6.53,
       assetCat: 'EC',
+      country: null,
+      currency: null,
+      issuerCat: null,
+      maturity: null,
     })
   })
 
@@ -159,6 +170,233 @@ describe('parseNportRateRisk (Item B.3.a)', () => {
   })
 })
 
+// T-455: four holdings exactly as two real filings carry them. They were read from copies of the
+// filings already saved on the build machine (the app's own fetch cache), not fetched for this
+// test: a cloud session sends nothing to the SEC, whose requests carry the owner's email. Copied,
+// not composed, so the parser is held to what the SEC serves.
+// Growth Fund of America, accession 0001193125-26-439060 (report date 2026-08-31).
+const LOREAL_EUR = `<invstOrSec>
+        <name>L'OREAL SA</name>
+        <lei>529900JI1GG6F7RKVI53</lei>
+        <title>L'OREAL SA (LOYALTY BONUS DIV) (NOT LISTED OR TRADING)</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <isin value="FR0011149590"/>
+          <other otherDesc="CGSymbol" value="ECL159349"/>
+        </identifiers>
+        <balance>230933.00</balance>
+        <units>NS</units>
+        <currencyConditional curCd="EUR" exchangeRt="0.860919"/>
+        <valUSD>103192015.02</valUSD>
+        <pctVal>0.0292157301</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>FR</invCountry>
+
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>2</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>`
+
+// Growth Fund of America, accession 0001193125-26-439060.
+const UBER_CONVERTIBLE = `<invstOrSec>
+        <name>UBER TECHNOLOGIES INC</name>
+        <lei>549300B2FTG34FILDR98</lei>
+        <title>UBER TECHNOLOGIES INC CV 0.0% 05-15-28</title>
+        <cusip>90353TAS9</cusip>
+        <identifiers>
+          <isin value="US90353TAS96"/>
+          <other otherDesc="CG Symbol" value="FBU9825"/>
+        </identifiers>
+        <balance>68570000.00</balance>
+        <units>PA</units>
+        <curCd>USD</curCd>
+        <valUSD>73095620.00</valUSD>
+        <pctVal>0.0206948368</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>DBT</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>2</fairValLevel>
+        <debtSec>
+          <maturityDt>2028-05-15</maturityDt>
+          <couponKind>Fixed</couponKind>
+          <annualizedRt>0.000000000000</annualizedRt>
+          <isDefault>N</isDefault>
+          <areIntrstPmntsInArrs>N</areIntrstPmntsInArrs>
+          <isPaidKind>N</isPaidKind>
+          <isMandatoryConvrtbl>N</isMandatoryConvrtbl>
+          <isContngtConvrtbl>N</isContngtConvrtbl>
+          <dbtSecRefInstruments>
+            <dbtSecRefInstrument>
+              <name>AURORA INNOVATION INC</name>
+              <title>AURORA INNOVATION INC CL A</title>
+              <curCd>USD</curCd>
+              <identifiers>
+                <cusip value="051774107"/>
+                <isin value="US0517741072"/>
+                <ticker value="AUR"/>
+                <other otherDesc="CGSymbol" value="AUR"/>
+              </identifiers>
+            </dbtSecRefInstrument>
+          </dbtSecRefInstruments>
+          <currencyInfos>
+            <currencyInfo convRatio="0.117647100000" curCd="USD"/>
+          </currencyInfos>
+          <delta>XXXX</delta>
+        </debtSec>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>`
+
+// Growth Fund of America, accession 0001193125-26-439060.
+const CENTRAL_CASH_FUND = `<invstOrSec>
+        <name>CAPITAL GROUP CENTRAL CASH FUND</name>
+        <lei>549300YD0SRETB6WWP29</lei>
+        <title>CAPITAL GROUP CENTRAL CASH FUND</title>
+        <cusip>14020B102</cusip>
+        <identifiers>
+          <isin value="US14020B1026"/>
+          <ticker value="CMQXX"/>
+          <other otherDesc="CG Symbol" value="MFC705"/>
+        </identifiers>
+        <balance>75724861.36</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>7571728887.39</valUSD>
+        <pctVal>2.1437083818</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>STIV</assetCat>
+        <issuerCat>RF</issuerCat>
+        <invCountry>US</invCountry>
+
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>`
+
+// Vanguard 500 Index Fund, accession 0000036405-26-000473 (report date 2026-06-30).
+const VISA_SWAP = `<invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>TRS:VISA INC-CLASS A SHARES USD 2026-Aug-31</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="CONTRACT_VANGUARD_ID" value="V1048202001"/>
+        </identifiers>
+        <balance>850000.00000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>10684500.00000000</valUSD>
+        <pctVal>0.000639318945</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="N/A" issuerCat="OTHER"/>
+        <invCountry>N/A</invCountry>
+
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>2</fairValLevel>
+        <derivativeInfo>
+          <swapDeriv derivCat="SWP">
+            <counterparties>
+              <counterpartyName>BANK OF AMERICA, N.A.</counterpartyName>
+              <counterpartyLei>B4TYDEB6GKMZO031MB27</counterpartyLei>
+            </counterparties>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>N/A</issuerName>
+                <issueTitle>VISA INC-CLASS A</issueTitle>
+                <identifiers>
+                  <cusip value="92826C839"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <swapFlag>Y</swapFlag>
+            <otherRecDesc fixedOrFloating="Other">Receive positive return on reference instrument</otherRecDesc>
+            <floatingPmntDesc curCd="USD" fixedOrFloating="Floating" floatingRtIndex="OBFR01" floatingRtSpread="0.00000000" pmntAmt="0.00000000">
+              <rtResetTenors>
+                <rtResetTenor rateTenor="Day" rateTenorUnit="62" resetDt="Month" resetDtUnit="1"/>
+              </rtResetTenors>
+            </floatingPmntDesc>
+            <terminationDt>2026-08-31</terminationDt>
+            <upfrontPmnt>0.00000000</upfrontPmnt>
+            <pmntCurCd>USD</pmntCurCd>
+            <upfrontRcpt>0.00000000</upfrontRcpt>
+            <rcptCurCd>USD</rcptCurCd>
+            <notionalAmt>280942000.00000000</notionalAmt>
+            <curCd>USD</curCd>
+            <unrealizedAppr>10684500.00000000</unrealizedAppr>
+          </swapDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>`
+
+
+describe('parseNportReport: where a holding is (T-455)', () => {
+  const one = (xml: string) => parseNportReport(xml).holdings[0]
+
+  it('reads the issuer country, currency and issuer kind of an ordinary holding', () => {
+    expect(one(CENTRAL_CASH_FUND)).toMatchObject({ country: 'US', currency: 'USD', issuerCat: 'RF', maturity: null })
+  })
+
+  it('reads a holding outside US dollars from its currencyConditional element', () => {
+    // L'Oréal has no <curCd>: its currency and exchange rate are attributes of <currencyConditional>.
+    expect(LOREAL_EUR).not.toContain('<curCd>')
+    expect(one(LOREAL_EUR)).toMatchObject({ country: 'FR', currency: 'EUR', issuerCat: 'CORP' })
+  })
+
+  it('reads a bond’s maturity, and its own currency rather than its reference stock’s', () => {
+    const uber = one(UBER_CONVERTIBLE)
+    expect(uber).toMatchObject({ country: 'US', currency: 'USD', issuerCat: 'CORP', maturity: '2028-05-15', assetCat: 'DBT' })
+    // The convertible's <debtSec> names Aurora's stock with a <curCd> of its own. Were the bond
+    // in euros, written as L'Oréal's is, the first <curCd> in the block would be Aurora's.
+    const inEuros = UBER_CONVERTIBLE.replace('<curCd>USD</curCd>\n        <valUSD>', '<currencyConditional curCd="EUR" exchangeRt="0.860919"/>\n        <valUSD>')
+    expect(inEuros).not.toBe(UBER_CONVERTIBLE)
+    expect(inEuros).toContain('<curCd>USD</curCd>')
+    expect(one(inEuros).currency).toBe('EUR')
+  })
+
+  it('leaves a swap’s "N/A" country blank, and reads its issuer kind from issuerConditional', () => {
+    expect(VISA_SWAP).toContain('<invCountry>N/A</invCountry>')
+    expect(one(VISA_SWAP)).toMatchObject({ country: null, currency: 'USD', issuerCat: 'OTHER', maturity: null, assetCat: 'DE' })
+  })
+
+  it('does not read a country, currency or issuer kind from a nested section', () => {
+    // Moving the swap's own fields away leaves only the ones nested in <derivativeInfo>.
+    const bare = VISA_SWAP.replace('<curCd>USD</curCd>', '').replace(/<issuerConditional[^>]*\/>/, '')
+    expect(bare).toContain('curCd="USD"')
+    expect(one(bare)).toMatchObject({ currency: null, issuerCat: null })
+  })
+
+  it('rejects values that are not codes, and a maturity that is not a date', () => {
+    const odd = sec('<name>Odd</name><pctVal>1</pctVal><curCd>US Dollar</curCd><issuerCat>corp</issuerCat><invCountry>usa</invCountry>'
+      + '<isRestrictedSec>N</isRestrictedSec><debtSec><maturityDt>N/A</maturityDt></debtSec>')
+    expect(one(odd)).toMatchObject({ country: null, currency: null, issuerCat: 'CORP', maturity: null })
+  })
+})
+
 const entry = (accession: string, date: string, cik: string) => `
   <entry>
     <accession-number>${accession}</accession-number>
@@ -185,5 +423,66 @@ describe('parseNportFilingsAtom', () => {
     expect(parseNportFilingsAtom('<feed><entry><title>no ids</title></entry></feed>')).toEqual([])
     expect(() => parseNportFilingsAtom('')).not.toThrow()
     expect(parseNportFilingsAtom('total garbage')).toEqual([])
+  })
+})
+
+// T-459: Items B.5.a and B.6, copied from filings already in the build cache (nothing fetched).
+// Vanguard 500 Index Fund's filing for the quarter to 2026-06-30 (C000092055 is VOO), and Growth
+// Fund of America's to 2026-08-31, whose returns mix 2 and 16 decimals and whose third month has a
+// negative reinvestment, as filed.
+const VFIAX_Q2 = `<repPdDate>2026-06-30</repPdDate><netAssets>1671231561960.14</netAssets>
+<returnInfo>
+        <monthlyTotReturns>
+          <monthlyTotReturn classId="C000007774" rtn1="10.49014889" rtn2="5.25936275" rtn3="-0.95490903"/>
+          <monthlyTotReturn classId="C000170274" rtn1="10.49023291" rtn2="5.26420173" rtn3="-0.95346416"/>
+          <monthlyTotReturn classId="C000007773" rtn1="10.48124793" rtn2="5.24963951" rtn3="-0.96247233"/>
+          <monthlyTotReturn classId="C000092055" rtn1="10.49057487" rtn2="5.26044899" rtn3="-0.95476134"/>
+        </monthlyTotReturns>
+        <monthlyReturnCats><commodityContracts><mon1 netRealizedGain="0.00000000" netUnrealizedAppr="0.00000000"/></commodityContracts></monthlyReturnCats>
+        <othMon1 netRealizedGain="4214747723.27000000" netUnrealizedAppr="145314910868.08000000"/>
+</returnInfo>
+<mon1Flow redemption="12174698544.92000000" reinvestment="5915.33000000" sales="40632647042.06010000"/>
+<mon2Flow redemption="16225703909.41000000" reinvestment="435.62000000" sales="32054277718.52000000"/>
+<mon3Flow redemption="102779354536.56000000" reinvestment="1706081333.02000000" sales="92586020974.68990000"/>`
+
+const GFA_Q3 = `<monthlyTotReturns>
+          <monthlyTotReturn classId="C000025064" rtn1="-0.5676239900000000" rtn2="-3.49" rtn3="3.81"/>
+          <monthlyTotReturn classId="C000224556" rtn1="-0.5299840000000000" rtn2="-3.47" rtn3="3.83"/>
+        </monthlyTotReturns>
+<mon1Flow redemption="4149250807.9100" reinvestment="11152.1500" sales="2128117167.2900"/>
+<mon2Flow redemption="4725860194.4100" reinvestment="451.2900" sales="2731525918.6200"/>
+<mon3Flow redemption="5555532035.0200" reinvestment="-2256.2700" sales="3208069595.1600"/>`
+
+describe('Items B.5.a and B.6: returns and money flows (T-459)', () => {
+  it('reads each share class’s three monthly returns', () => {
+    const r = parseNportReturns(VFIAX_Q2)
+    expect(r).toHaveLength(4)
+    expect(r.find((x) => x.classId === 'C000092055')).toEqual({ classId: 'C000092055', months: [10.49057487, 5.26044899, -0.95476134] })
+    // Not the gains-by-category <mon1> rows of Item B.5.b, which share the section.
+    expect(r.every((x) => x.classId?.startsWith('C0'))).toBe(true)
+  })
+
+  it('reads returns written to 2 or 16 decimals alike', () => {
+    expect(parseNportReturns(GFA_Q3)[0].months).toEqual([-0.56762399, -3.49, 3.81])
+  })
+
+  it('reads each month’s money in and out, a negative figure as filed', () => {
+    expect(parseNportFlows(VFIAX_Q2)[2]).toEqual({ sales: 92586020974.6899, reinvestment: 1706081333.02, redemption: 102779354536.56 })
+    expect(parseNportFlows(GFA_Q3)[2]?.reinvestment).toBe(-2256.27)
+  })
+
+  it('gives null for "N/A", a class with no id, and a filing with neither section', () => {
+    const r = parseNportReturns('<monthlyTotReturns><monthlyTotReturn rtn1="N/A" rtn2="1.5" rtn3=""/></monthlyTotReturns>')
+    expect(r).toEqual([{ classId: null, months: [null, 1.5, null] }])
+    expect(parseNportReturns('<netAssets>5</netAssets>')).toEqual([])
+    expect(parseNportFlows('<netAssets>5</netAssets>')).toEqual([null, null, null])
+    expect(parseNportFlows('<mon2Flow sales="N/A" reinvestment="0" redemption="7"/>')).toEqual([null, { sales: null, reinvestment: 0, redemption: 7 }, null])
+  })
+
+  it('comes through parseNportReport', () => {
+    const report = parseNportReport(VFIAX_Q2)
+    expect(report.asOf).toBe('2026-06-30')
+    expect(report.returns).toHaveLength(4)
+    expect(report.flows[0]?.sales).toBe(40632647042.0601)
   })
 })

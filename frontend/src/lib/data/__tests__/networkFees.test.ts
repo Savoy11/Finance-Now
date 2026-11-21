@@ -12,10 +12,12 @@ import {
 // reads as freshness.
 
 const COINGECKO = 'api.coingecko.com'
+/** What the routes pass: CoinGecko's address and the headers carrying the key. */
+const CG = { base: 'https://api.coingecko.com/api/v3', headers: { Accept: 'application/json', 'x-cg-demo-api-key': 'test-key' } }
 const MEMPOOL = 'mempool.space'
 
 function mockFetch(handlers: { prices?: unknown | null; btc?: unknown | null }) {
-  return vi.fn(async (url: string | URL) => {
+  return vi.fn(async (url: string | URL, _init?: RequestInit) => {
     const href = String(url)
     if (href.includes(COINGECKO)) {
       if (handlers.prices == null) return { ok: false, status: 502, json: async () => ({}) }
@@ -43,14 +45,14 @@ afterEach(() => { vi.unstubAllGlobals() })
 describe('computeNetworkFees', () => {
   it('returns an entry for every network in the gas table', async () => {
     vi.stubGlobal('fetch', mockFetch({ prices: priceResponse(ALL_IDS), btc: { halfHourFee: 10 } }))
-    const { fees } = await computeNetworkFees()
+    const { fees } = await computeNetworkFees(CG)
     const keys = Object.keys(NETWORK_GAS) as NetworkKey[]
     expect(Object.keys(fees).sort()).toEqual([...keys].sort())
   })
 
   it('prices each network as gas amount x token price', async () => {
     vi.stubGlobal('fetch', mockFetch({ prices: priceResponse(ALL_IDS), btc: null }))
-    const { fees, prices } = await computeNetworkFees()
+    const { fees, prices } = await computeNetworkFees(CG)
     for (const key of Object.keys(NETWORK_GAS) as NetworkKey[]) {
       const info = NETWORK_GAS[key]
       const expected = parseFloat((info.native * prices[info.priceKey]).toFixed(4))
@@ -63,7 +65,7 @@ describe('computeNetworkFees', () => {
   // price, which moves on screen while the gas component never updates.
   it('labels a network live only when a provider supplied the gas amount', async () => {
     vi.stubGlobal('fetch', mockFetch({ prices: priceResponse(ALL_IDS), btc: { halfHourFee: 20 } }))
-    const { fees } = await computeNetworkFees()
+    const { fees } = await computeNetworkFees(CG)
     expect(fees.bitcoin.source).toBe('live')
     for (const key of Object.keys(NETWORK_GAS) as NetworkKey[]) {
       if (key !== 'bitcoin') expect(fees[key].source).toBe('estimate')
@@ -75,7 +77,7 @@ describe('computeNetworkFees', () => {
   // names who measured it, and an estimate names no one, since nobody measured it.
   it('names who measured a live fee, and no one for an estimate', async () => {
     vi.stubGlobal('fetch', mockFetch({ prices: priceResponse(ALL_IDS), btc: { halfHourFee: 20 } }))
-    const { fees } = await computeNetworkFees()
+    const { fees } = await computeNetworkFees(CG)
     expect(fees.bitcoin.provider).toBe('mempool.space')
     for (const key of Object.keys(NETWORK_GAS) as NetworkKey[]) {
       if (fees[key].source === 'estimate') expect(fees[key].provider, key).toBeUndefined()
@@ -84,7 +86,7 @@ describe('computeNetworkFees', () => {
 
   it('falls back to the static Bitcoin estimate when mempool.space fails', async () => {
     vi.stubGlobal('fetch', mockFetch({ prices: priceResponse(ALL_IDS), btc: null }))
-    const { fees, btcSatPerVbyte } = await computeNetworkFees()
+    const { fees, btcSatPerVbyte } = await computeNetworkFees(CG)
     expect(fees.bitcoin.source).toBe('estimate')
     expect(fees.bitcoin.feeNative).toBe(NETWORK_GAS.bitcoin.native)
     expect(btcSatPerVbyte).toBeNull()
@@ -92,7 +94,7 @@ describe('computeNetworkFees', () => {
 
   it('derives the Bitcoin fee from sat/vByte over a 250-vByte transfer', async () => {
     vi.stubGlobal('fetch', mockFetch({ prices: priceResponse(ALL_IDS), btc: { halfHourFee: 12 } }))
-    const { fees, btcSatPerVbyte } = await computeNetworkFees()
+    const { fees, btcSatPerVbyte } = await computeNetworkFees(CG)
     expect(btcSatPerVbyte).toBe(12)
     expect(fees.bitcoin.feeNative).toBeCloseTo((12 * 250) / 1e8, 12)
   })
@@ -104,7 +106,7 @@ describe('computeNetworkFees', () => {
     // a bare figure. The 2026-09-09 audit's $11.95-vs-$0.20 gap was read as a bug
     // precisely because that assumption was invisible.
     vi.stubGlobal('fetch', mockFetch({ prices: priceResponse(ALL_IDS), btc: null }))
-    const { fees, btcSatPerVbyte, btcSatPerVbyteAssumed } = await computeNetworkFees()
+    const { fees, btcSatPerVbyte, btcSatPerVbyteAssumed } = await computeNetworkFees(CG)
     expect(fees.bitcoin.source).toBe('estimate')
     expect(btcSatPerVbyte).toBeNull()
     expect(btcSatPerVbyteAssumed).toBeGreaterThan(0)
@@ -117,7 +119,7 @@ describe('computeNetworkFees', () => {
     // Always present, so a caller never has to branch on its existence to explain
     // a number — and so the two can be compared on the same run.
     vi.stubGlobal('fetch', mockFetch({ prices: priceResponse(ALL_IDS), btc: { halfHourFee: 12 } }))
-    const { btcSatPerVbyte, btcSatPerVbyteAssumed } = await computeNetworkFees()
+    const { btcSatPerVbyte, btcSatPerVbyteAssumed } = await computeNetworkFees(CG)
     expect(btcSatPerVbyte).toBe(12)
     expect(btcSatPerVbyteAssumed).toBeCloseTo(
       (NETWORK_GAS.bitcoin.native * 1e8) / BTC_TYPICAL_VBYTES, 2)
@@ -135,13 +137,13 @@ describe('computeNetworkFees', () => {
 
   it('prefers halfHourFee, falling back to fastestFee', async () => {
     vi.stubGlobal('fetch', mockFetch({ prices: priceResponse(ALL_IDS), btc: { fastestFee: 30, hourFee: 5 } }))
-    const { btcSatPerVbyte } = await computeNetworkFees()
+    const { btcSatPerVbyte } = await computeNetworkFees(CG)
     expect(btcSatPerVbyte).toBe(30)
   })
 
   it('uses fallback prices and reports the source when CoinGecko fails', async () => {
     vi.stubGlobal('fetch', mockFetch({ prices: null, btc: { halfHourFee: 10 } }))
-    const { prices, priceSource } = await computeNetworkFees()
+    const { prices, priceSource } = await computeNetworkFees(CG)
     expect(priceSource).toBe('fallback')
     for (const [key, value] of Object.entries(FALLBACK_PRICES)) {
       expect(prices[key]).toBe(value)
@@ -150,13 +152,13 @@ describe('computeNetworkFees', () => {
 
   it('reports fallback when CoinGecko answers with nothing usable', async () => {
     vi.stubGlobal('fetch', mockFetch({ prices: {}, btc: null }))
-    const { priceSource } = await computeNetworkFees()
+    const { priceSource } = await computeNetworkFees(CG)
     expect(priceSource).toBe('fallback')
   })
 
   it('survives every upstream failing at once', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('network down') }))
-    const { fees, priceSource, btcSatPerVbyte } = await computeNetworkFees()
+    const { fees, priceSource, btcSatPerVbyte } = await computeNetworkFees(CG)
     expect(priceSource).toBe('fallback')
     expect(btcSatPerVbyte).toBeNull()
     // Still a complete, labelled table rather than a crash or a partial one.
@@ -168,10 +170,21 @@ describe('computeNetworkFees', () => {
 
   it('never emits a NaN or negative dollar figure', async () => {
     vi.stubGlobal('fetch', mockFetch({ prices: priceResponse(ALL_IDS), btc: { halfHourFee: 8 } }))
-    const { fees } = await computeNetworkFees()
+    const { fees } = await computeNetworkFees(CG)
     for (const fee of Object.values(fees)) {
       expect(Number.isFinite(fee.feeUsd)).toBe(true)
       expect(fee.feeUsd).toBeGreaterThanOrEqual(0)
     }
+  })
+})
+
+describe('the price request', () => {
+  it('goes to the address the route passes, with the key the route passes', async () => {
+    const fetchMock = mockFetch({ prices: priceResponse(ALL_IDS), btc: { halfHourFee: 10 } })
+    vi.stubGlobal('fetch', fetchMock)
+    await computeNetworkFees(CG)
+    const call = fetchMock.mock.calls.find(([url]) => String(url).includes(COINGECKO))
+    expect(String(call?.[0])).toMatch(/^https:\/\/api\.coingecko\.com\/api\/v3\/simple\/price\?/)
+    expect((call?.[1] as RequestInit | undefined)?.headers).toMatchObject({ 'x-cg-demo-api-key': 'test-key' })
   })
 })

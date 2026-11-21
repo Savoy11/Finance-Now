@@ -196,7 +196,15 @@ function OptionsScorerInner() {
       setPresetNote('Enter (or fetch) an underlying price first — presets derive their strikes from it.')
       return
     }
-    const preset = buildPreset(id, price)
+    let preset: ReturnType<typeof buildPreset>
+    try {
+      preset = buildPreset(id, price)
+    } catch (e) {
+      // A price too low for the structure's strikes to stay above $0 (D221): say so, change
+      // nothing, as the calculator does (code audit 2026-11-12, D226).
+      setPresetNote(e instanceof Error ? e.message : String(e))
+      return
+    }
     setLegs(preset.legs.map((l) => ({ ...emptyLeg(), side: l.side, type: l.type, strike: String(l.strike) })))
     if (preset.maxLossUsd !== undefined) {
       setMaxLossMode('bounded')

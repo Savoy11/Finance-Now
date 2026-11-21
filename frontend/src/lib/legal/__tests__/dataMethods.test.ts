@@ -5,6 +5,9 @@ import { DATA_METHODS } from '../dataMethods'
 import { LEGAL_PATHS } from '../links'
 import { YIELD_KIND_NAMES, FUND_CATALOG, FUND_FEES_LAST_VERIFIED, YIELD_CHECK_AFTER_DAYS, YIELD_SHOWN_FOR_DAYS } from '@/lib/data/fundCatalog'
 import { STAKING_PROVIDERS, STAKING_DATA_LAST_VERIFIED } from '@/lib/data/stakingProviders'
+import { META_AS_OF, MONITORED_STABLECOINS, getStablecoinMetaProvenance } from '@/lib/data/stablecoinMeta'
+import { BOND_PROFILE_MIN_PCT, MATURITY_BUCKETS } from '@/lib/utils/fundExposure'
+import { EARNINGS_LOOK_AHEAD_DAYS, EARNINGS_SOON_DAYS } from '@/lib/data/earningsCalendar'
 
 // The page that tells readers how the figures are worked out (D163) is only worth having while
 // it says what the code does. These hold the parts a later change could quietly falsify.
@@ -45,6 +48,58 @@ describe('how our figures are worked out (D163)', () => {
     expect(src).not.toMatch(/for \d+ providers|all \d+ funds/)
   })
 
+  it('states where earnings dates come from and that they are expected (T-458)', () => {
+    const t = text('earnings-dates')
+    expect(t).toMatch(/Financial Modeling Prep’s earnings calendar first/)
+    expect(t).toMatch(/Alpha Vantage’s earnings calendar, read once a day/)
+    expect(t).toMatch(/expected, not confirmed/)
+    expect(t).toMatch(/counted in New York/)
+    expect(t).toContain(`next ${EARNINGS_SOON_DAYS} days`)
+    expect(t).toContain(`next ${EARNINGS_LOOK_AHEAD_DAYS} days`)
+  })
+
+  it('states how a fund’s countries, currencies and bond splits are worked out (T-455)', () => {
+    const t = text('fund-countries')
+    expect(t).toMatch(/where the issuer is based, not where a company sells/)
+    expect(t).toMatch(/left out rather than guessed/)
+    expect(t).toMatch(/Nothing is rescaled to 100%/)
+    expect(t).toContain(`at least ${BOND_PROFILE_MIN_PCT}% of its net assets`)
+    for (const b of MATURITY_BUCKETS) expect(t).toContain(b.label.toLowerCase())
+    expect(t).toContain('US Treasury')
+    expect(t).toMatch(/no credit ratings/)
+    expect(t).toMatch(/held directly are left out/)
+  })
+
+  it('states how expected inflation is worked out (D202)', () => {
+    const t = text('treasury-yields')
+    expect(t).toMatch(/ordinary par yield minus the Treasury’s inflation-protected \(real\) par yield at the same maturity, both from the same day/)
+    expect(t).toMatch(/not a forecast of ours/)
+    expect(t).toMatch(/only what reads closing figures/)
+  })
+
+  it('states how a currency pair is worked out from the ECB’s euro rates (D203)', () => {
+    const t = text('currency-pairs')
+    expect(t).toMatch(/live quote where our quote source has one/)
+    expect(t).toMatch(/second currency per euro divided by the first currency per euro/)
+    expect(t).toMatch(/for information only/)
+    expect(t).toMatch(/since the Bank’s previous working day/)
+    expect(t).toMatch(/only what reads closing figures/)
+  })
+
+  it('states how the supply figures are worked out, and that a fall rings no alert (D204)', () => {
+    expect(text('stablecoin-reserves')).toMatch(/no alert rings on a fall/)
+    expect(text('coin-supply')).toMatch(/circulating supply divided by maximum supply/)
+    expect(text('fund-assets')).toMatch(/fund net assets, all share classes/)
+  })
+
+  it('states how tracked-portfolio income is counted (D201)', () => {
+    const t = text('tracked-gains-income')
+    expect(t).toMatch(/first in, first out/)
+    expect(t).toMatch(/no tax rule is applied/)
+    expect(t).toMatch(/value on the day, as you enter it, and that value is also what they cost/)
+    expect(t).toMatch(/shown apart from the gains/)
+  })
+
   it('states the yield rule the fund pages follow (D166), with the windows they use', () => {
     const t = text('fund-yields')
     expect(t).toMatch(/link beside it to the fund’s own page/)
@@ -60,6 +115,23 @@ describe('how our figures are worked out (D163)', () => {
     expect(t).toMatch(/SEC annual report/)
     expect(t).toMatch(/same fiscal year/)
     expect(t).toMatch(/link beside each figure opens the company’s SEC filings/)
+  })
+
+  it('states where the stablecoin reserve figures come from (D190, D192)', () => {
+    // #467 changed how these figures are worked out without this page, and several came
+    // from news and tracker sites quoting the issuers' reports, while the re-check section
+    // said "never from another site's copy". The owner chose to say so (D192).
+    const t = text('stablecoin-reserves')
+    expect(t).toContain(String(MONITORED_STABLECOINS.length))
+    expect(t).toContain(META_AS_OF)
+    expect(t).toMatch(/never by its ticker/)
+    expect(t).toMatch(/quoting that report/)
+    expect(t).toMatch(/“not disclosed”/)
+    expect(t).toMatch(/alert bell checks frxUSD/)
+    expect(text('rechecks')).not.toMatch(/never from another site/)
+    expect(text('rechecks')).toMatch(/section above says so/)
+    // The notice on the Reserve Monitor itself says the same.
+    expect(getStablecoinMetaProvenance().source).toMatch(/news and stablecoin trackers/)
   })
 
   it('states the liquid lock-up rule the staking catalog follows (D162)', () => {

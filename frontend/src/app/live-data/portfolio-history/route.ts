@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { describeThrottle } from '@/lib/server/coingeckoThrottle'
 import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
+import { coingeckoBase, coingeckoHeaders } from '@/lib/api/live/coingecko'
 
 export const dynamic = 'force-dynamic'
 
@@ -67,8 +68,8 @@ export async function GET(req: NextRequest) {
   const results = await Promise.allSettled(
     ids.map(async id => {
       const res = await fetch(
-        `https://api.coingecko.com/api/v3/coins/${id}/history?date=${cgDate}&localization=false`,
-        { headers: { Accept: 'application/json' }, next: { revalidate: 86400 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) } // history is immutable
+        `${coingeckoBase()}/coins/${id}/history?date=${cgDate}&localization=false`,
+        { headers: coingeckoHeaders(), next: { revalidate: 86400 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) } // history is immutable
       )
       // A refusal is not an absence: 429/5xx means "ask again", while a 200
       // carrying no price means the provider genuinely has none for that date.

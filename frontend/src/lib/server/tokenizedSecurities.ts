@@ -1,3 +1,4 @@
+import { coingeckoBase } from '@/lib/api/live/coingecko'
 import { fetchCoinGeckoPages } from './coingeckoPages'
 
 /**
@@ -59,7 +60,7 @@ const PER_CATEGORY = 250
 const REVALIDATE_SECONDS = 86_400
 
 const categoryUrl = (id: string) =>
-  'https://api.coingecko.com/api/v3/coins/markets' +
+  `${coingeckoBase()}/coins/markets` +
   `?vs_currency=usd&category=${encodeURIComponent(id)}&order=market_cap_desc&per_page=${PER_CATEGORY}&page=1&sparkline=false`
 
 /**

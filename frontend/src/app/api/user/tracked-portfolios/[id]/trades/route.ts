@@ -7,8 +7,8 @@ import {
   type LedgerView, type TradeView,
 } from '@/lib/data/tradeLedger'
 import {
-  countTrades, dbUnavailable, hasStartingPosition, insertTrade, loadTrades, notMigrated, notMigratedForSplits,
-  ownedTrackedPortfolio, resolveTradeInstrument,
+  dbUnavailable, insertTrade, loadTrades, notMigrated, notMigratedForIncome,
+  notMigratedForSplits, ownedTrackedPortfolio, resolveTradeInstrument,
 } from '@/lib/server/trackedPortfolios'
 
 // A tracked portfolio's trades (T-027 step 2, owner decision D65).
@@ -18,7 +18,10 @@ import {
 //        {instrument, side, quantity, pricePerUnit, feeUsd?, executedAt?,
 //         opening?, note?, name?}, or a split (T-421):
 //        {instrument, side: 'split', unitsAfter, unitsBefore, cashInLieuUsd?,
-//         executedAt, note?, name?}
+//         executedAt, note?, name?}, or cash income (T-451):
+//        {instrument, side: 'income', amountUsd, incomeKind?, executedAt, note?, name?},
+//        or units received as income: {instrument, side: 'income_units',
+//         quantity, pricePerUnit (their value that day), executedAt, note?, name?}
 // Amounts travel as decimal strings, as the database stores them, so nothing
 // is lost to floating point. A trade is never changed or removed; a mistake is
 // cancelled (./[tradeId]/cancel) and the right trade recorded.
@@ -78,23 +81,24 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     if (!(await ownedTrackedPortfolio(userId, id))) {
       return NextResponse.json({ ok: false, error: 'Tracked portfolio not found' }, { status: 404 })
     }
-    if ((await countTrades(userId, id)) >= MAX_TRADES_PER_PORTFOLIO) {
+    const instrumentId = await resolveTradeInstrument(trade)
+    // Both checks are made inside the save, under the portfolio's lock (audit 2026-11-07).
+    const saved = await insertTrade(userId, id, instrumentId, trade)
+    if (saved.status === 'full') {
       return NextResponse.json(
         { ok: false, error: `This portfolio already holds ${MAX_TRADES_PER_PORTFOLIO.toLocaleString('en-US')} trades, the most one portfolio keeps. Nothing was removed to make room.` },
         { status: 409 },
       )
     }
-    const instrumentId = await resolveTradeInstrument(trade)
-    if (trade.opening && (await hasStartingPosition(userId, id, instrumentId))) {
+    if (saved.status === 'has-starting-position') {
       return NextResponse.json(
         { ok: false, error: 'This holding already has a starting position. Cancel that one first if it is wrong.' },
         { status: 409 },
       )
     }
-    const saved = await insertTrade(userId, id, instrumentId, trade)
-    return NextResponse.json<LedgerResponse>({ ok: true, trade: toTradeView(saved) }, { status: 201 })
+    return NextResponse.json<LedgerResponse>({ ok: true, trade: toTradeView(saved.trade) }, { status: 201 })
   } catch (e) {
-    if (isSchemaBehindError(e)) return trade.split ? notMigratedForSplits() : notMigrated()
+    if (isSchemaBehindError(e)) return trade.split ? notMigratedForSplits() : trade.income ? notMigratedForIncome() : notMigrated()
     throw e
   }
 }

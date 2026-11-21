@@ -311,10 +311,13 @@ jobs:
       # brace-expansion DoS) sat in the tree with a green Security Scan beside
       # them. A check that cannot fail is not a check.
       #
-      # Threshold is `high`, not `moderate`: the four remaining moderates all
-      # come from esbuild via drizzle-kit, a build-time-only tool, and clearing
-      # them needs a breaking drizzle-kit downgrade. Gating on moderate would
-      # make the first action be to disable the gate again.
+      # Threshold is `high`, not `moderate`: when this was set, the four
+      # remaining moderates all came from esbuild via drizzle-kit, a build-time-
+      # only tool, and clearing them needed a breaking drizzle-kit downgrade.
+      # Gating on moderate would make the first action be to disable the gate
+      # again. Since 2026-11-05 (D189) two npm overrides in frontend/package.json
+      # clear every moderate (esbuild inside drizzle-kit, minimatch inside
+      # ESLint), so `npm audit` reports none; the threshold stays where it is.
       # ⚠ SCOPE WAS `frontend` ONLY UNTIL 2026-09-20, AND THAT GAP WAS EXPLOITED BY
       # NOTHING BUT TIME. mcp-server accumulated SIX HIGH advisories — ip-address
       # SSRF (Address4 decodes leading-zero octets as decimal while resolvers read

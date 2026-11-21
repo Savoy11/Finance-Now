@@ -1,96 +1,76 @@
 import { describe, expect, it } from 'vitest'
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
-import { anthropicAcceptsTemperature, anthropicSampling } from '../sampling'
-import { DEFAULT_ANTHROPIC_MODEL, PROVIDER_MODELS } from '../prompts'
+import { stripComments } from '../../../../scripts/lib/stripComments.mjs'
 
 /**
- * Claude Sonnet 5 and every newer model refuse a `temperature` with a 400, and the
- * app sent one on every request from 2026-09-17, when Sonnet 5 became the default,
- * until the agent evaluation of 2026-10-17 found all eleven agents refused. These
- * hold the rule (sampling.ts) and that no Anthropic request sends a bare
- * temperature again. No test reaches the paid API, which is how this went unseen.
+ * No Claude request sends a sampling setting (D215, 2026-11-09).
+ *
+ * @anthropic-ai/sdk 1.x sends API version 2026-10-21, which refuses `temperature`, `top_p` and
+ * `top_k` with a 400 on every model, even at their defaults. Before it, the app sent a temperature
+ * only to Claude 4.6 and older (`anthropicSampling`, now removed): Claude Sonnet 5 and every model
+ * after Opus 4.6 already refused one, which is how all eleven agents failed from 2026-09-17 until
+ * the agent evaluation of 2026-10-17 found it. The owner chose to stop sending it to Claude at all.
+ * Other providers (OpenAI-compatible) still get the agent's temperature. No test reaches the paid
+ * API, so this reads the request code.
  */
 
-describe('which models accept a temperature', () => {
-  it('refuses it for Claude Sonnet 5 and every model after Opus 4.6', () => {
-    for (const id of [
-      'claude-sonnet-5', 'claude-sonnet-5-5', 'claude-opus-5', 'claude-opus-5-5', 'claude-haiku-5-5',
-      'claude-opus-4-7', 'claude-opus-4-8', 'claude-fable-5', 'claude-fable-5-1', 'claude-mythos-5-1',
-    ]) expect(anthropicAcceptsTemperature(id), id).toBe(false)
-  })
+const ROOT = process.cwd()
 
-  it('keeps it for Claude 4.6 and older, in every id form', () => {
-    for (const id of [
-      'claude-opus-4-6', 'claude-sonnet-4-6', 'claude-haiku-4-5-20251001', 'claude-sonnet-4-5-20250929',
-      'claude-sonnet-4-20250514', 'claude-opus-4-1-20250805', 'claude-3-5-sonnet-20241022',
-      'claude-3-7-sonnet-20250219', 'claude-3-haiku-20240307', 'anthropic.claude-sonnet-4-6',
-      'claude-sonnet-4-6[1m]', ' Claude-Opus-4-6 ',
-    ]) expect(anthropicAcceptsTemperature(id), id).toBe(true)
-  })
-
-  it('leaves it out for an id it does not recognise, since leaving it out is always accepted', () => {
-    for (const id of ['', 'claude-something-new', 'claude-opus', 'gpt-4o', 'claude-sonnet-46']) {
-      expect(anthropicAcceptsTemperature(id), id).toBe(false)
-    }
-  })
-
-  it('sends no temperature with the default model, the case that failed', () => {
-    expect(anthropicSampling(DEFAULT_ANTHROPIC_MODEL, 0.3)).toEqual({})
-  })
-
-  it('decides every model the settings page offers', () => {
-    const decided = PROVIDER_MODELS.anthropic.map((m) => [m.id, anthropicAcceptsTemperature(m.id)])
-    // The Haiku 4.5 entry is the one that still takes it; the Claude 5 models do not.
-    expect(decided.filter(([, ok]) => ok).map(([id]) => id)).toEqual(
-      PROVIDER_MODELS.anthropic.filter((m) => /haiku-4-5/.test(m.id)).map((m) => m.id),
-    )
-  })
-
-  it('passes a real number through for a model that takes it, and nothing else', () => {
-    expect(anthropicSampling('claude-opus-4-6', 0.2)).toEqual({ temperature: 0.2 })
-    expect(anthropicSampling('claude-opus-4-6', 0)).toEqual({ temperature: 0 })
-    expect(anthropicSampling('claude-opus-4-6', undefined)).toEqual({})
-    expect(anthropicSampling('claude-opus-4-6', Number.NaN)).toEqual({})
-  })
-})
-
-describe('no Anthropic request sends a bare temperature', () => {
-  const SRC = join(process.cwd(), 'src')
-  function sourceFiles(dir: string, out: string[] = []): string[] {
-    for (const entry of readdirSync(dir)) {
-      const full = join(dir, entry)
-      if (statSync(full).isDirectory()) {
-        if (entry === '__tests__' || entry === 'node_modules') continue
-        sourceFiles(full, out)
-      } else if (/\.tsx?$/.test(entry)) out.push(full)
-    }
-    return out
+function sourceFiles(dir: string, out: string[] = []): string[] {
+  for (const entry of readdirSync(dir)) {
+    const full = join(dir, entry)
+    if (statSync(full).isDirectory()) {
+      if (entry === '__tests__' || entry === 'node_modules') continue
+      sourceFiles(full, out)
+    } else if (/\.(tsx?|mjs)$/.test(entry)) out.push(full)
   }
-  // Each `client.messages.create({ … })` call in a file that imports the Anthropic SDK,
-  // up to the first `})`, which closes the request object in every call site here.
-  const calls = sourceFiles(SRC)
-    .filter((f) => readFileSync(f, 'utf8').includes("from '@anthropic-ai/sdk'"))
-    .flatMap((f) => {
-      const src = readFileSync(f, 'utf8')
-      const out: Array<{ file: string; body: string }> = []
-      let at = src.indexOf('messages.create(')
-      while (at !== -1) {
-        const end = src.indexOf('})', at)
-        out.push({ file: f.slice(SRC.length + 1), body: src.slice(at, end === -1 ? undefined : end) })
-        at = src.indexOf('messages.create(', at + 1)
-      }
-      return out
-    })
+  return out
+}
 
-  it('finds the Anthropic calls to check', () => {
-    // The agent runner and the three Pump Report routes, today.
-    expect(calls.length).toBeGreaterThanOrEqual(4)
+/** Each Claude request call's full argument text, by balancing parentheses, with its file. */
+function claudeCalls(): Array<{ file: string; text: string }> {
+  const files = [...sourceFiles(join(ROOT, 'src')), ...sourceFiles(join(ROOT, 'scripts'))]
+    .map((f) => ({ file: f.slice(ROOT.length + 1), code: stripComments(readFileSync(f, 'utf8')) as string }))
+    .filter((f) => /from '@anthropic-ai\/sdk/.test(f.code))
+  const out: Array<{ file: string; text: string }> = []
+  for (const f of files) {
+    for (const m of f.code.matchAll(/\bmessages\.(?:create|stream|parse|countTokens)\(/g)) {
+      const open = (m.index ?? 0) + m[0].length - 1
+      let depth = 0, end = open
+      for (let i = open; i < f.code.length; i++) {
+        if (f.code[i] === '(') depth += 1
+        else if (f.code[i] === ')') { depth -= 1; if (depth === 0) { end = i; break } }
+      }
+      out.push({ file: f.file, text: f.code.slice(open, end + 1) })
+    }
+  }
+  return out
+}
+
+describe('no Claude request sends temperature, top_p or top_k', () => {
+  const calls = claudeCalls()
+
+  it('finds the Claude calls to check', () => {
+    // The agent runner, the three Pump Report routes and the site-terms and pre-fill scripts, today.
+    expect(calls.length).toBeGreaterThanOrEqual(6)
   })
 
-  it('routes every temperature through anthropicSampling', () => {
+  it('sends none of them, directly or spread in', () => {
     for (const c of calls) {
-      expect(c.body, c.file).not.toMatch(/\btemperature\s*[:,\n}]/)
+      expect(c.text, c.file).not.toMatch(/\b(?:temperature|top_p|top_k|topP|topK)\b/)
+      expect(c.text, `${c.file}: a spread could carry a sampling setting`).not.toMatch(/\.\.\.\s*\w*[Ss]ampling\b/)
     }
+  })
+
+  it('still sends the agent’s temperature to other providers', () => {
+    const runner = stripComments(readFileSync(join(ROOT, 'src/lib/agents/runner.ts'), 'utf8')) as string
+    expect(runner).toMatch(/chat\.completions\.create\(\{[\s\S]*?temperature: cfg\.temperature/)
+  })
+
+  it('says on the AI Agents tab that Claude ignores the slider', () => {
+    const page = readFileSync(join(ROOT, 'src/app/(dashboard)/agent-config/page.tsx'), 'utf8')
+    expect(page).toMatch(/provider === 'anthropic' && \(/)
+    expect(page).toContain('Claude takes no temperature setting on any model')
   })
 })

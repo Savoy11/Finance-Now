@@ -125,7 +125,7 @@ describe('the real registry', () => {
       .filter((x) => !x.host && x.auth === 'none' && x.role !== 'derived')
       .map((x) => `${providerKind(x)}: ${x.name}`))].sort()
     expect(hostless).toEqual([
-      'other: Crypto + equity news feeds (merged client-side)',
+      'other: Crypto, equity and macro news feeds (merged client-side)',
       'other: Feeds added on the Integrations page (terms checked when saved)',
       'other: Live-data routes (same feeds the UI reads)',
       'other: None — no reachable source quotes dated contract months',

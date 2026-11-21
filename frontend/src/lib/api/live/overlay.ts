@@ -76,7 +76,8 @@ export function buildLiveMarketData(assetId: string, quote: LiveQuote | undefine
     high24h: null,
     low24h: null,
     circulatingSupply: quote?.circulatingSupply ?? null,
-    totalSupply: null,
+    // Was hardcoded null while the quote carried CoinGecko's total supply (T-449 b).
+    totalSupply: quote?.totalSupply ?? null,
     timestamp: new Date().toISOString(),
   }
 }

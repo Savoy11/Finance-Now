@@ -296,12 +296,17 @@ server.tool(
       opportunities: Array<{
         provider: string; providerName: string; category: string; defunct: boolean
         coin: string; coinId: string; apr: number; aprSource: string
-        lockupDays: number; lockupNote: string | null; liquid: boolean
-        receiptToken: string | null; minStakeNative: number; minStakeUsd?: number | null
+        // T-465: where the figure came from, and the backup figure's measured date.
+        aprBasis?: string; aprMeasuredOn?: string | null
+        // D238: null when the provider does not publish the product's terms — unknown, never 0.
+        termsUnpublished?: boolean
+        lockupDays: number | null; lockupNote: string | null; liquid: boolean
+        receiptToken: string | null; minStakeNative: number | null; minStakeUsd?: number | null
         custodyModel: string; features: string[]
         tvlBillions: number | null; auditCount: number | null
       }>
       total: number; updatedAt: string
+      referenceData?: { verifiedAt?: string }
     }>(`/staking/opportunities?${params}`)
 
     if (data.total === 0) {
@@ -325,11 +330,19 @@ server.tool(
       text += `### ${coinSymbol}\n`
       for (const opp of opps) {
         text += `\n**${opp.providerName}** (${opp.category}) ${custodyIcon(opp.custodyModel)}${opp.defunct ? ' — DEFUNCT' : ''}\n`
-        text += `  APY: **${opp.apr.toFixed(2)}%**${opp.aprSource === 'live' ? ' 🔴 live' : opp.aprSource === 'derived' ? ' (derived estimate)' : ' (estimate)'}`
+        // An estimate says where it came from and how old it is (T-465, D224).
+        const estimateLabel =
+          opp.aprBasis === 'backup-measured' && opp.aprMeasuredOn ? ` (backup rate, measured ${opp.aprMeasuredOn})`
+            : opp.aprBasis === 'backup-undated' ? ' (backup rate, no measured date)'
+              : opp.aprBasis === 'catalog' && data.referenceData?.verifiedAt ? ` (catalog estimate, compiled ${data.referenceData.verifiedAt})`
+                : ' (estimate)'
+        text += `  APY: **${opp.apr.toFixed(2)}%**${opp.aprSource === 'live' ? ' 🔴 live' : opp.aprSource === 'derived' ? ' (derived estimate)' : estimateLabel}`
         if (opp.receiptToken) text += ` → ${opp.receiptToken}${opp.liquid ? ' (liquid)' : ''}`
         text += '\n'
-        text += `  Lock-up: ${opp.lockupDays === 0 ? 'None' : `${opp.lockupDays} days`}`
+        // A null figure is one the provider does not publish (D238) — said, never shown as 0.
+        text += `  Lock-up: ${opp.lockupDays == null ? 'not published by the provider' : opp.lockupDays === 0 ? 'None' : `${opp.lockupDays} days`}`
         if (opp.minStakeUsd != null) text += ` | Min: $${opp.minStakeUsd}`
+        else if (opp.minStakeNative == null) text += ` | Min: not published by the provider`
         else if (opp.minStakeNative > 0) text += ` | Min: ${opp.minStakeNative} ${opp.coinId.toUpperCase()}`
         text += '\n'
         const extras: string[] = []

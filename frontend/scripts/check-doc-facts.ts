@@ -133,7 +133,23 @@ const FACTS: Fact[] = [
     id: 'fund-catalog',
     value: () => FUND_CATALOG.length,
     source: 'FUND_CATALOG.length',
-    asserts: [{ file: 'CLAUDE.md', pattern: /\*\*`FUND_CATALOG`\*\* — (\d+) funds/ }],
+    asserts: [
+      { file: 'CLAUDE.md', pattern: /\*\*`FUND_CATALOG`\*\* — (\d+) funds/ },
+      // README said 126 for two months after the catalog reached 140 (audit 2026-11-05).
+      { file: 'README.md', pattern: /Fund registry \((\d+): \d+ ETFs \+ \d+ mutual funds\)/ },
+    ],
+  },
+  {
+    id: 'fund-etfs',
+    value: () => FUND_CATALOG.filter((f) => f.type === 'etf').length,
+    source: "FUND_CATALOG.filter(type === 'etf').length",
+    asserts: [{ file: 'README.md', pattern: /Fund registry \(\d+: (\d+) ETFs/ }],
+  },
+  {
+    id: 'fund-mutuals',
+    value: () => FUND_CATALOG.filter((f) => f.type === 'mutual').length,
+    source: "FUND_CATALOG.filter(type === 'mutual').length",
+    asserts: [{ file: 'README.md', pattern: /Fund registry \(\d+: \d+ ETFs \+ (\d+) mutual funds\)/ }],
   },
   {
     id: 'equity-catalog',
@@ -145,7 +161,11 @@ const FACTS: Fact[] = [
     id: 'staking-providers',
     value: () => STAKING_PROVIDERS.length,
     source: 'STAKING_PROVIDERS.length',
-    asserts: [{ file: 'CLAUDE.md', pattern: /\*\*`STAKING_PROVIDERS`\*\* array — (\d+) providers/ }],
+    asserts: [
+      { file: 'CLAUDE.md', pattern: /\*\*`STAKING_PROVIDERS`\*\* array — (\d+) providers/ },
+      // README said 55 after the catalog fell to 53 (audit 2026-11-05).
+      { file: 'README.md', pattern: /Staking Explorer \| 🟡 (\d+) providers/ },
+    ],
   },
   {
     id: 'optional-modules',

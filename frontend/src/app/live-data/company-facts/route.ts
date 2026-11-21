@@ -9,11 +9,12 @@ import {
   type CompanyRatios,
   type EpsBasis,
 } from '@/lib/utils/companyRatios'
+import { lastQuarters, type Quarter } from '@/lib/utils/companyQuarters'
 
 // The fundamentals/ratio shapes and every derivation live in lib/utils/companyRatios.ts
 // (pure + vitest-covered). Re-exported here so existing importers of this route's
 // types keep working.
-export type { CompanyFundamentals, CompanyRatios, EpsBasis }
+export type { CompanyFundamentals, CompanyRatios, EpsBasis, Quarter }
 
 export const dynamic = 'force-dynamic'
 
@@ -24,6 +25,8 @@ export const dynamic = 'force-dynamic'
 // 10-K (with the prior year for growth); balance-sheet figures from the most
 // recent quarter or annual report. Valuation multiples that need a live price
 // (P/E, P/S, P/B, market cap) are computed client-side from these figures.
+// `quarters` (T-461) gives the last eight quarters' revenue, net income and
+// earnings per share from the same file: lib/utils/companyQuarters.ts.
 
 export interface AnnualDataPoint {
   fiscalYearEnd: string             // YYYY-MM-DD
@@ -42,6 +45,8 @@ export interface CompanyFactsResponse {
   ratios: CompanyRatios | null
   /** Annual history, newest first (up to 12 fiscal years). */
   annualSeries: AnnualDataPoint[]
+  /** The last eight quarters, newest first (T-461); empty for a company that files no 10-Q. */
+  quarters: Quarter[]
   updatedAt: string
   source: string
   error?: string
@@ -125,7 +130,7 @@ export async function GET(req: NextRequest) {
   const fail = (status: number, error: string) => NextResponse.json(
     {
       ok: false, symbol, cik: null, company: null, fiscalYearEnd: null,
-      fundamentals: null, ratios: null, annualSeries: [],
+      fundamentals: null, ratios: null, annualSeries: [], quarters: [],
       updatedAt: new Date().toISOString(), source: 'SEC EDGAR (XBRL company facts)', error,
     } satisfies CompanyFactsResponse,
     { status }
@@ -228,7 +233,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       ok: true, symbol, cik, company,
       fiscalYearEnd: revenue.latest?.end ?? netIncome.latest?.end ?? null,
-      fundamentals, ratios, annualSeries,
+      fundamentals, ratios, annualSeries, quarters: lastQuarters(gaap),
       updatedAt: new Date().toISOString(), source: 'SEC EDGAR (XBRL company facts)',
     } satisfies CompanyFactsResponse)
   } catch (e) {

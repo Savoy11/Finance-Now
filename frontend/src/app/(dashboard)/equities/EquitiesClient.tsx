@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { clsx } from 'clsx'
@@ -18,6 +18,7 @@ import { useScreenerUrl } from '@/lib/hooks/useScreenerUrl'
 import type { StockUniverseResponse, UniverseEntry } from '@/app/live-data/stock-universe/route'
 import type { SecurityQuotesResponse } from '@/app/live-data/security-quotes/route'
 import type { SecurityReturnsResponse } from '@/app/live-data/security-returns/route'
+import { SecWideList } from './SecWideList'
 
 type SortKey = 'symbol' | 'sector' | 'price' | 'marketCap' | 'pe' | 'dividend'
 const PAGE_SIZE = 50
@@ -125,7 +126,7 @@ function SortHeader({ label, colKey, align = 'end', sortKey, sortAsc, onToggle }
 
 const parseNum = (s: string): number => parseFloat(s)
 
-export function EquitiesClient() {
+function CuratedRegistry({ modeSwitch, onConfigured }: { modeSwitch: ReactNode; onConfigured: (configured: boolean) => void }) {
   const [sector, setSector] = useState<SectorId | 'all'>('all')
   const [search, setSearch] = useState('')
   const [sortKey, setSortKey] = useState<SortKey>('marketCap')
@@ -187,6 +188,7 @@ export function EquitiesClient() {
   })
   const universe = useMemo(() => universeData?.entries ?? [], [universeData])
   const configured = universeData?.configured ?? false
+  useEffect(() => { onConfigured(configured) }, [configured, onConfigured])
 
   // ── Live quotes for the whole list (D170) ──
   // Every price-derived figure is worked out against a live quote and nothing else, so the
@@ -357,6 +359,7 @@ export function EquitiesClient() {
 
       {/* Data provenance */}
       <SourceLine id="stock-universe" />
+      {modeSwitch}
 
       {/* Not-configured notice */}
       {universeData && !configured && (
@@ -367,6 +370,7 @@ export function EquitiesClient() {
             {universeData.error?.includes('paid')
               ? <>The full daily-refreshed universe (thousands of stocks) comes from FMP’s stock-screener endpoint, which requires a <span className="text-text-primary">paid FMP plan</span>. Your free key still powers per-stock quotes, profiles, charts, and earnings — and any ticker resolves on its detail page.</>
               : <>Add a Financial Modeling Prep key in <Link href="/settings" className="text-accent-blue hover:underline">Settings → Integrations → Equity Market Data</Link>. Note: the broad universe list needs FMP’s <span className="text-text-primary">paid</span> screener endpoint; a free key still powers per-stock data.</>}
+            {' '}<span className="text-text-primary">Every NYSE &amp; Nasdaq stock</span>, above, lists every stock the SEC names with no key, screened on each company’s SEC figures.
           </p>
         </div>
       )}
@@ -563,6 +567,46 @@ export function EquitiesClient() {
           </span>
         )}
       </p>
+    </div>
+  )
+}
+
+type ListMode = 'main' | 'sec'
+
+/**
+ * The curated (or paid FMP) list, or the wider list from the SEC's file (T-450). Defined after
+ * CuratedRegistry on purpose: screenerUrlKeys.test.ts checks the first useScreenerUrl call in
+ * this file, which is the registry's own.
+ */
+export function EquitiesClient() {
+  const [list, setList] = useState<ListMode>('main')
+  const [fmpConfigured, setFmpConfigured] = useState(false)
+  useScreenerUrl({ list }, { list: 'main' }, (p) => { if (p.list === 'sec') setList('sec') })
+  const modeSwitch = <ListModeSwitch list={list} onChange={setList} fmpConfigured={fmpConfigured} />
+  return list === 'sec'
+    ? <SecWideList modeSwitch={modeSwitch} />
+    : <CuratedRegistry modeSwitch={modeSwitch} onConfigured={setFmpConfigured} />
+}
+
+function ListModeSwitch({ list, onChange, fmpConfigured }: { list: ListMode; onChange: (l: ListMode) => void; fmpConfigured: boolean }) {
+  const tab = (mode: ListMode, label: string, title: string) => (
+    <button
+      role="tab"
+      aria-selected={list === mode}
+      title={title}
+      onClick={() => onChange(mode)}
+      className={clsx('px-3 py-1 rounded-sm transition-colors',
+        list === mode ? 'bg-accent-blue/15 text-accent-blue' : 'text-text-muted hover:text-text-secondary')}
+    >
+      {label}
+    </button>
+  )
+  return (
+    <div role="tablist" aria-label="Which list of stocks" className="inline-flex flex-wrap gap-0.5 rounded-sm border border-border bg-bg-elevated p-0.5 text-xs font-medium">
+      {tab('main', fmpConfigured ? 'Full list (FMP)' : 'Curated list',
+        fmpConfigured ? 'Every actively traded stock from FMP’s paid screener, with sectors' : 'The 79 curated large-cap stocks, with sectors and live screens on every figure')}
+      {tab('sec', 'Every NYSE & Nasdaq stock',
+        'Every NYSE and Nasdaq common stock the SEC lists, no key needed; screened on each company’s SEC figures')}
     </div>
   )
 }

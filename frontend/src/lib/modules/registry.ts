@@ -92,6 +92,13 @@ export interface SuiteModule {
   routePrefixes: string[]
   /** Whether the module can be disabled. Core is always on. */
   optional: boolean
+  /**
+   * Sold under its own entitlement (D234, 2026-11-21): a real account has it only
+   * with a grant row in the entitlements table — the owner's command now, billing
+   * later — and cannot toggle it on itself. In local mode (before launch) it
+   * behaves like any optional module. Only Portfolio Builder today.
+   */
+  premium?: boolean
   navItems: ModuleNavItem[]
   /**
    * A line every page of the module carries under its content. ModuleGate
@@ -284,6 +291,7 @@ export const MODULES: SuiteModule[] = [
     label: 'Portfolio Builder',
     routePrefixes: ['/portfolio-builder'],
     optional: true,
+    premium: true,
     navItems: [
       { href: '/portfolio-builder', label: 'Portfolio Builder', icon: Compass },
     ],

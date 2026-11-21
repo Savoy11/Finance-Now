@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { coinDescription, firstUrl } from '@/lib/utils/coinDescription'
 import { cmcConfigured, fetchCmcProfiles, keylessFallbackAllowed } from '@/lib/server/cmcProfiles'
 import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
+import { coingeckoBase, coingeckoHeaders } from '@/lib/api/live/coingecko'
 
 // One coin's project profile — official website, what the project is, and its
 // category tags. CoinGecko /coins/{id}, keyless.
@@ -61,12 +62,15 @@ const empty = (cgId: string, error?: string, unresolvedReason?: string): CoinPro
   ...(error ? { error } : {}),
 })
 
-/** The keyless rung, unchanged in behaviour — one CoinGecko request per coin. */
+/**
+ * The CoinGecko rung: one request per coin. It sends the CoinGecko key when one is saved, as every
+ * CoinGecko call does (coingeckoHeaders); FN_ALLOW_KEYLESS_COIN_PROFILES=false still turns it off.
+ */
 async function fetchFromCoinGecko(id: string): Promise<CoinProfileResponse> {
-  const url = `https://api.coingecko.com/api/v3/coins/${encodeURIComponent(id)}`
+  const url = `${coingeckoBase()}/coins/${encodeURIComponent(id)}`
     + '?localization=false&tickers=false&market_data=false'
     + '&community_data=false&developer_data=false&sparkline=false'
-  const res = await fetch(url, { headers: { Accept: 'application/json' }, next: { revalidate: 86_400 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) })
+  const res = await fetch(url, { headers: coingeckoHeaders(), next: { revalidate: 86_400 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS) })
   if (!res.ok) throw new Error(`CoinGecko ${res.status}`)
   const j = await res.json() as {
     links?: { homepage?: unknown; whitepaper?: unknown }

@@ -1,8 +1,10 @@
 # Brief for counsel — Finance Now (T-289)
 
-**Status:** draft, 2026-10-26, for the owner to review before it goes to a lawyer. It is not
-legal advice. Everything in it was gathered from this repository, and each question says where
-the project records it.
+**Status:** draft, 2026-10-26, for the owner to review before it goes to a lawyer, **updated
+2026-11-05** with section 6 (decisions made since, and four new questions marked *new*) **and
+2026-11-15** with section 7 (the Draft 2 review packet, and the contact email decided, D227). It is
+not legal advice. Everything in it was gathered from this repository, and each question says
+where the project records it.
 
 **Why this exists.** Many decisions in this project wait on "the lawyer review before launch"
 (owner decision D4, 2026-09-14), but the questions for that review were spread across a dozen
@@ -179,6 +181,9 @@ question if trading were ever proposed (B2).
 | E1, E2 | The breach plan (T-426); possibly a residence field (T-438) |
 | G1 | Insurance (T-427) |
 | C4, F2 | The affiliate items, after launch (T-120, T-123, T-124, T-125) |
+| A16 (new) | Restoring the hidden backtests (T-016) |
+| C3, C5 (new) | Confirms how sourced facts and figures are stated, including adverse facts about named companies |
+| D7 (new) | Giving anyone but the owner a key to the public API |
 
 If counsel can only take part of this, **A1, A2, A6, A7, A8, C1 and C2** do the most. They
 settle the line the whole app is built on, the two features already shown that come closest to
@@ -195,17 +200,69 @@ From this repository:
 2. `docs/assessments/tokenized-securities-2026-09-21.md`, §11: area B.
 3. `docs/LEGAL-REVIEW.md`: the standing note on data licensing, for area D.
 4. The Disclosure Set's text as the app shows it: the About pages, or
-   `frontend/src/lib/legal/disclosures.ts`.
+   `frontend/src/lib/legal/disclosures.ts`. *(Superseded 2026-11-15: send the Draft 2 packet
+   from the Finance Now Ledger's file library instead — the complete set with a cover sheet
+   keyed to questions C1, C2 and E1–E4, needing review only. See section 7.)*
 5. `docs/architecture/risk-ratings-methodology.md`: how the hidden ratings are worked out.
 
 Kept outside this repository, attached by the owner:
 
 6. **The data-breach response plan** ("draft for counsel", 2026-10-17, full update), with its
-   ten questions. It is in the Finance Now Ledger's file library.
+   ten questions. It is in the Finance Now Ledger's file library. *(Revised 2026-11-15 — Draft 2,
+   in the same library: the consent and reset tables are live, income records and broker-file
+   imports join the data in scope, and the per-account export is the tool for scoping exposure.)*
 7. **The Disclosure Set, Draft v1**, the owner's document with the two consent comments (C2). It
    is in the same library, shared with News Charts (D60).
 
 ---
+
+## 6. Update, 2026-11-05: decisions since this brief
+
+The brief was written on 2026-10-26. These later owner decisions change a fact in section 1 or
+touch a question in section 3. The rest (staking-rate refreshes, package updates, chart
+arithmetic and catalog clean-ups) change nothing for counsel.
+
+| Decision | What changed | Touches |
+|---|---|---|
+| D173 (2026-10-26) | The public API (`/api/v1`) now needs a key the owner issues, with a limit of 60 requests a minute and 2,000 a day per key. With no keys set it answers only on the owner's own machine. It passes provider data to whoever holds a key: CoinGecko prices, stock quotes and charts, and publisher headlines (T-087). | New question D7 |
+| D174 (2026-10-26) | Sign-in stays off until launch. Instead, any copy of the app on a host other than the owner's machine is locked to the owner until a setting (`FN_SITE_OPEN`) is turned on at launch: everyone else sees only an unlock page. So a test copy can be put online without being a launch (D22). Nothing has been deployed yet (T-112). | Section 1, "What launch means" |
+| D193 (2026-11-05) | A code audit found that the lock in D174 could be opened by a request claiming to come from the owner's own machine (a forged `Host` header). It is fixed: on a host, only the owner's admin token or the cookie it sets opens the lock, so every host must set `FN_ADMIN_TOKEN`. Nothing had been deployed, so no one but the owner could have reached the app. | Section 1, "What launch means" |
+| D171 (2026-10-26) | The re-reading of fund yields and net assets is parked until before launch. The owner expects a paid data subscription may supply the figures fund pages do not print. | D6: one more vendor agreement may come |
+| D172 (2026-10-26) | The backtesting tools were corrected while hidden (their arithmetic, any ticker, a 2-year range). All three backtest screens stay hidden; restoring them (T-016) is the owner's call. | New question A16 |
+| D176, D178, D182, D184 (2026-10-30 to 11-02) | Staking facts (minimums, lock-ups, audit counts, founding years) were checked from search results quoting the providers' pages, from the providers' public code, and from their contract settings read on the blockchain, each with its sources recorded. The owner counts these as verified. No provider's own website was opened by software (D149). | C3 |
+| D190, D192 (2026-11-05) | The stablecoin issuer table (auditor, report date, backing ratio, reserve mix) was re-checked the same way. Several figures came from news reports and stablecoin trackers quoting the issuers' reports, not from the reports themselves, and the public methods page (`/about/data-methods`) now says so. | C3 |
+| D181, D190 (2026-11-01, 11-05) | A figure no source publishes or confirms is left out rather than estimated: 15 staking figures, and three stablecoins' backing ratios, which now read "not disclosed". | C3 |
+| D180 (2026-11-01) | The staking page now states, with sources named in the code, that Bitget lost about $387.5M in a hack on 2026-09-24. Catalog text states facts, never grades of risk (D137). | New question C5 |
+
+### New questions
+
+| # | Question | Tag | An answer would release |
+|---|---|---|---|
+| A16 (new) | The hidden backtests show how a simple trading rule would have done on past prices, for any stock or coin the user picks. If they return, is that information, and what must the page say about hypothetical past results? | Unblocks | T-016, the restore |
+| C3 (added) | For C3 above: is a figure taken from search results, news reports or a tracker that quotes the issuer's own report, labelled with that report's date, adequately substantiated, given that the methods page says so? | Live | The staking facts and the stablecoin issuer table, shown today |
+| C5 (new) | The staking catalog states adverse facts about named companies: Bitget's 2026 hack, Kraken's 2023 SEC settlement, and Celsius's collapse (kept as a cautionary example). Celsius's note goes further than a fact: it says the company's conduct had "characteristics of a Ponzi scheme" (`frontend/src/lib/data/stakingProviders.ts`). Is a sourced statement of fact enough, should a characterisation like that one be reworded, and should such a statement be reviewed before it is published? | Live | The staking page's provider descriptions |
+| D7 (new) | The public API passes provider data to anyone holding a key. Does giving a key to anyone other than the owner count as launch (D22), and as redistribution under the providers' terms? | Launch | Issuing keys to anyone but the owner |
+
+If counsel can take only part, the priority list in section 4 stands; C3 and C5 can ride with C1.
+
+---
+
+## 7. Update, 2026-11-15: the Draft 2 packet and the contact email
+
+**The review packet now exists as a finished set.** On 2026-11-15 every document this brief asks
+counsel to review was completed to "needing review only" and filed in the Finance Now Ledger's
+file library as the **Draft 2 packet**: the Terms of Use (the reserved §18 finished), the Privacy
+Policy (§2 brought up to what the app stores today; §9's retention blanks filled with proposed
+periods — backups 30 days, logs 90 days — for counsel and the eventual host to confirm, which
+narrows E4; §11 covering the built self-service download), the Not Investment Advice notice, the
+About page's ten sections with every licence-required credit written out, the sign-up consent
+one-pager (C2), the revised breach plan (E1–E2), and a cover sheet keyed to this brief. A preview
+renders the set as the finished pages will look. §5's items 4 and 6 now point there.
+
+| Decision | What changed | Touches |
+|---|---|---|
+| D227 (2026-11-15) | The project's contact email is **FinanceNow72@gmail.com** (owner: *"Use the email address FinanceNow72@gmail.com for everything related to the project"*). `[CONTACT EMAIL]` is filled set-wide — in the Draft 2 packet and in the app's own draft pages — so the sign-up consent clause now carries the real address and its stored-wording version moved (no agreement was stored under the old wording; the sign-up page is not built, T-132). The SEC and Wikipedia User-Agent contact switched from the owner's personal address to the project address. The signing facts still open are the LLC name, the mailing address, the two product URLs, the effective date and the hosting provider. | C1, C2, E4; §1 "Data it holds"; §5 items 4 and 6 |
+| D228, D231 (2026-11-15/16) | The planning boundary is drawn: portfolio construction stays in Finance Now; financial planning — contribution modeling, asset location, retirement adequacy — belongs to **The Planner**, a budgeting and planning tool joining the **News Charts website** (not a Finance Now module). The Planner works on figures the user enters plus published government statistics (BLS wages and spending, BEA prices, IRS/SSA/CMS parameters), keeps everything in the browser, and its shared scenario links never carry accounts, debts or cash. The Draft 2 Terms (§1, §6) and Privacy Policy (§1, §3, §4) now describe it on News Charts' side. Finance Now's advice-adjacent S5 items closed as moved (T-064, T-067, T-068); the one left, rebalance reminders, waits on A15. The Planner itself has its own review need before launch: it computes 2026 federal and fifty-state taxes and ranks retirement withdrawal orders by after-tax outcome — the same information-versus-advice line as A13–A15, now on the News Charts side. | C1, E3; A13–A15's analogue for News Charts |
 
 ## Sources
 
@@ -220,3 +277,8 @@ Kept outside this repository, attached by the owner:
   `docs/licensing/`; D25, D42, D96, D129, D130, D133.
 - Area E: the breach plan (attached); D122, D123, D125.
 - Facts: D21, D22, D28, D30, D96; CLAUDE.md.
+- Section 7: D227 (`docs/decisions/2026-11-15-owner-decisions.md`); the Draft 2 packet and its
+  cover sheet in the Finance Now Ledger's file library (T-291, T-426, T-436).
+- Section 6: D137, D149, D171 to D174, D176, D178, D180 to D182, D184, D190, D192, D193;
+  `docs/audits/stablecoin-issuers-2026-11-05.md`; `frontend/src/lib/legal/dataMethods.ts`;
+  T-016, T-087, T-112.

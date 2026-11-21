@@ -8,10 +8,16 @@ import Link from 'next/link'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { SourceLine } from '@/components/ui/SourceLine'
 import { INSTRUMENTS, INSTRUMENT_BY_KEY, CLASS_LABELS, isSecurityKey, securitySymbol, formatInstrumentQuote } from '@/lib/data/instruments'
+import { usePriceAlertStore } from '@/store/usePriceAlertStore'
+import { PriceAlertList } from '@/components/alerts/PriceAlertList'
+import { describeWatchKey } from '@/lib/data/assetActions'
+import { useIsClient } from '@/hooks/useIsClient'
 import { ASSET_ID_BY_COINGECKO } from '@/lib/api/live/coingeckoIds'
 import { fetchInstrumentPrices } from '@/lib/api/instrumentPrices'
 import { STALE_TIME_SHORT } from '@/lib/constants'
 import { hydrateWatchlists, useWatchlistStore } from '@/store/useWatchlistStore'
+import { earningsDay, useEarningsDates } from '@/components/markets/NextEarnings'
+import { EARNINGS_SOON_DAYS, earningsTimeLabel, isEarningsSoon, marketToday } from '@/lib/data/earningsCalendar'
 
 // Multi-list, cross-module watchlists: any coin, stock, ETF, or mutual fund
 // in any number of named lists, with live prices. DB-backed via
@@ -47,6 +53,14 @@ export default function WatchlistPage() {
     staleTime: STALE_TIME_SHORT,
     refetchInterval: 60_000,
   })
+
+  // T-458: stocks on this list, for their next expected earnings date. Funds and macro
+  // instruments report no earnings; a stock outside the instrument list is still a stock.
+  const stockSymbols = useMemo(() => keys
+    .filter((k) => isSecurityKey(k) && (INSTRUMENT_BY_KEY[k]?.class ?? 'equity') === 'equity')
+    .map((k) => securitySymbol(k)), [keys])
+  const { data: earnings } = useEarningsDates(stockSymbols)
+  const today = marketToday()
 
   const matches = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -189,19 +203,32 @@ export default function WatchlistPage() {
             </div>
             {keys.map((key) => {
               const inst = INSTRUMENT_BY_KEY[key]
+              // A coin added from its own page may be outside the instrument list (T-454).
+              const named = describeWatchKey(key)
               const price = priceData?.prices?.[key]
               return (
                 <div key={key} className="grid grid-cols-8 gap-4 px-4 py-3 text-sm items-center hover:bg-slate-800/20 transition-colors">
                   <Link href={detailHref(key)} className="col-span-3 flex flex-col group">
-                    <span className="font-medium text-slate-100 group-hover:text-accent-blue transition-colors">{inst?.symbol ?? key}</span>
-                    <span className="text-xs text-slate-500">{inst?.name ?? 'Unknown instrument'}</span>
+                    <span className="font-medium text-slate-100 group-hover:text-accent-blue transition-colors">{named?.symbol ?? key}</span>
+                    <span className="text-xs text-slate-500">{named?.name ?? 'Unknown instrument'}</span>
+                    {(() => {
+                      const next = isSecurityKey(key) ? earnings?.dates?.[securitySymbol(key).toUpperCase()] : null
+                      if (!next || !isEarningsSoon(next, today)) return null
+                      const when = earningsTimeLabel(next.time)
+                      return (
+                        <span className="mt-0.5 self-start rounded-sm bg-amber-400/10 px-1.5 py-px text-[10px] font-medium text-amber-300"
+                          title={`Expected, as listed by the earnings calendar; companies can move the date.`}>
+                          Earnings {earningsDay(next.date)}{when ? `, ${when}` : ''}
+                        </span>
+                      )
+                    })()}
                   </Link>
-                  <span className="text-xs text-slate-400">{inst ? CLASS_LABELS[inst.class] : '—'}</span>
+                  <span className="text-xs text-slate-400">{named?.classLabel ?? '—'}</span>
                   <span className="col-span-2 text-right font-mono text-slate-300 tabular-nums">
                     {formatInstrumentQuote(inst, price) ?? <span className="text-slate-600">—</span>}
                   </span>
                   <div className="col-span-2 flex justify-end">
-                    <button onClick={() => active && removeKey(active.id, key)} className="text-slate-500 hover:text-red-400 transition-colors" aria-label={`Remove ${inst?.symbol ?? key}`}>
+                    <button onClick={() => active && removeKey(active.id, key)} className="text-slate-500 hover:text-red-400 transition-colors" aria-label={`Remove ${named?.symbol ?? key}`}>
                       <Trash2 className="h-4 w-4" aria-hidden />
                     </button>
                   </div>
@@ -212,11 +239,53 @@ export default function WatchlistPage() {
         )}
       </div>
 
+      {stockSymbols.length > 0 && earnings?.configured && (
+        <div className="space-y-1">
+          <p className="text-[11px] text-text-muted text-center">
+            {earnings.ok
+              ? `Stocks reporting earnings in the next ${EARNINGS_SOON_DAYS} days are marked. The dates are expected, not confirmed: companies can move them.${earnings.gap ? ` ${earnings.gap}` : ''}`
+              : 'The earnings calendars could not be reached right now, so no earnings dates are marked.'}
+          </p>
+          {earnings.ok && <SourceLine id="earnings-dates" />}
+        </div>
+      )}
+
       {priceData && priceData.source !== 'live' && keys.length > 0 && (
         <p className="text-[11px] text-text-muted text-center">
           Some prices are unavailable right now (source: {priceData.source}) — they show “—” rather than stale values.
         </p>
       )}
+
+      <PriceAlertsSection />
     </div>
+  )
+}
+
+/**
+ * Every price alert, set from the action row on a coin, stock or fund page
+ * (T-454): what each waits for, whether it has fired, and buttons to re-arm or
+ * remove it. Read after mount: alerts are kept in this browser, so the server
+ * has none to render.
+ */
+function PriceAlertsSection() {
+  const alerts = usePriceAlertStore((s) => s.alerts)
+  const mounted = useIsClient()
+  const sorted = useMemo(
+    () => [...alerts].sort((a, b) => Number(a.triggeredAt !== null) - Number(b.triggeredAt !== null) || b.createdAt.localeCompare(a.createdAt)),
+    [alerts],
+  )
+  return (
+    <section aria-labelledby="price-alerts-heading" className="rounded-xl border border-slate-800 bg-slate-900/40 p-4 space-y-2">
+      <h2 id="price-alerts-heading" className="text-sm font-semibold text-slate-100">Your price alerts</h2>
+      <PriceAlertList
+        alerts={mounted ? sorted : []}
+        emptyText={mounted ? 'No price alerts yet. Set one from the “Set a price alert” button on any coin, stock or fund page.' : 'Loading your alerts…'}
+      />
+      <p className="text-[11px] text-text-muted leading-relaxed">
+        Alerts check prices once a minute while Finance Now is open in a browser tab, and are kept in this browser,
+        not in your account. A stock or fund alert needs a live quote, so a quote provider key; it never fires on a
+        stored reference price.
+      </p>
+    </section>
   )
 }

@@ -71,8 +71,21 @@ export interface StockPerShare {
   shareChange: number | null
 }
 
+/**
+ * A per-share figure larger than this, either way, is a tagging error in the filing's
+ * structured data and is not used (T-450). The largest real ones are Berkshire Hathaway's
+ * class A shares, which earn tens of thousands of dollars each; across every SEC filer one
+ * company tagged earnings of $9,390,000 a share against 9.7 million shares, $91 trillion of
+ * profit, and sorted to the top of the wider list.
+ */
+export const MAX_PER_SHARE_USD = 100_000
+
+/** A figure the rules can use: a finite number no larger than MAX_PER_SHARE_USD. */
+const usable = (f: PerShareFact | undefined): f is PerShareFact =>
+  !!f && Number.isFinite(f.val) && Math.abs(f.val) <= MAX_PER_SHARE_USD
+
 const latest = (...facts: Array<PerShareFact | undefined>): PerShareFact | undefined =>
-  facts.filter((f): f is PerShareFact => !!f && Number.isFinite(f.val)).sort((a, b) => b.end.localeCompare(a.end))[0]
+  facts.filter(usable).sort((a, b) => b.end.localeCompare(a.end))[0]
 
 /**
  * Applies the two guards. `knownNonPayer` is the catalog's own record that the company pays no
@@ -88,8 +101,8 @@ export function perShareFrom(facts: PerShareFacts, knownNonPayer = false, covers
 function perShareRules(facts: PerShareFacts, knownNonPayer: boolean): Omit<StockPerShare, 'shares' | 'shareChange'> {
   // Diluted is the conservative figure and the one a P/E uses; basic only where diluted is
   // missing for the latest year.
-  const diluted = facts.epsDiluted && Number.isFinite(facts.epsDiluted.val) ? facts.epsDiluted : undefined
-  const basic = facts.epsBasic && Number.isFinite(facts.epsBasic.val) ? facts.epsBasic : undefined
+  const diluted = usable(facts.epsDiluted) ? facts.epsDiluted : undefined
+  const basic = usable(facts.epsBasic) ? facts.epsBasic : undefined
   const epsFact = diluted && (!basic || diluted.end >= basic.end) ? { ...diluted, basis: 'diluted' as const }
     : basic ? { ...basic, basis: 'basic' as const } : null
   if (!epsFact) return { eps: null, dps: null, dividend: 'unknown', asOf: null }
