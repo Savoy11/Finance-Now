@@ -252,7 +252,12 @@ each verified to fail against the pre-fix code.
 > and certificate-renewal rows are reworded to fit any host (T-341, T-342).
 
 - [ ] Change default `SECRET_KEY` before production deployment
-- [ ] Enable MFA for all admin accounts
+- [x] Enable MFA for all admin accounts — **policy adopted and confirmed 2026-11-21 (D240,
+      T-209)**: the project's admin accounts are GitHub and the AI/data provider accounts
+      holding the owner's API keys; the owner confirms two-step sign-in is already on
+      (GitHub at least, each provider account checked as next touched). The host, database
+      and domain registrar join the set the day they exist (T-112) — that remainder is what
+      T-209 stays parked for. The app's own users' two-step sign-in is D233.
 - [ ] Rotate all API keys from `.env.example` defaults
 - [ ] Enable AWS GuardDuty on the account
 - [ ] Configure WAF rules on ALB

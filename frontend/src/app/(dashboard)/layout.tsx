@@ -15,6 +15,7 @@ import { useFeedStatus }    from '@/lib/feed/useFeedStatus'
 import { useRecentAlerts }  from '@/hooks/useAlerts'
 import { useGlobalRefresh } from '@/hooks/useGlobalRefresh'
 import { usePriceAlertMonitor } from '@/hooks/usePriceAlertMonitor'
+import { usePlanReminderMonitor } from '@/hooks/usePlanReminderMonitor'
 import { PullToRefresh }    from '@/components/ui/PullToRefresh'
 import { SiteFooter }       from '@/components/layout/SiteFooter'
 // SIGN-IN STAYS OFF UNTIL LAUNCH (D174). The wall itself moved out of this
@@ -39,6 +40,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
   useRecentAlerts(20)
   const { refresh } = useGlobalRefresh()   // registers auto-refresh interval
   usePriceAlertMonitor()                   // user price alerts, app-wide
+  usePlanReminderMonitor()                 // builder-plan drift reminders (T-116, D237)
 
   // Mobile navigation drawer (hidden on lg+ where the sidebar is always visible)
   const [mobileNavOpen, setMobileNavOpen] = useState(false)

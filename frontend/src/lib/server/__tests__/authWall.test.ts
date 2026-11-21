@@ -35,6 +35,13 @@ describe('walledPath', () => {
       expect(walledPath(p), p).toBe(true)
     }
   })
+  it('a dot below the root is a page, not a file — a dotted ticker cannot open the wall', () => {
+    // Found by the 2026-11-21 audit: any dotted last segment read as an asset,
+    // so /equities/BRK.B (a real ticker form) reached every detail page signed out.
+    for (const p of ['/equities/BRK.B', '/assets/usd.coin', '/funds/X.Y', '/macro/rates/10.year']) {
+      expect(walledPath(p), p).toBe(true)
+    }
+  })
   it('never walls the auth pages, the legal pages, the routes or assets', () => {
     for (const p of [
       '/login', '/signup', '/reset-password', '/owner',

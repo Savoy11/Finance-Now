@@ -1,9 +1,10 @@
 import 'server-only'
 
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq, isNull, lt, or } from 'drizzle-orm'
 import { db, isDbConfigured } from '@/lib/db'
 import { twoFactorRecoveryCodes, twoFactorSecrets } from '@/lib/db/schema'
 import { isSchemaBehindError } from '@/lib/db/errors'
+import { recordAudit } from '@/lib/server/auditLog'
 import {
   checkEnrollmentCode, checkSignInCode, recordFailure, recordSuccess, throttled,
   type RecoveryCode, type RecoveryCodeRow, type ThrottleState, type TwoFactorRow,
@@ -131,10 +132,17 @@ export async function verifyTwoFactorSignIn(userId: string, input: string, now: 
   if (!result.ok) return fail()
 
   if (result.kind === 'totp') {
-    await db
+    const recorded = await db
       .update(twoFactorSecrets)
       .set({ lastUsedStep: result.matchedStep, updatedAt: now })
-      .where(eq(twoFactorSecrets.userId, userId))
+      .where(and(
+        eq(twoFactorSecrets.userId, userId),
+        or(isNull(twoFactorSecrets.lastUsedStep), lt(twoFactorSecrets.lastUsedStep, result.matchedStep)),
+      ))
+      .returning({ userId: twoFactorSecrets.userId })
+    // Two sign-ins racing the same code: only the one that recorded the step gets
+    // in — the same rule the recovery branch applies below (2026-11-21 audit).
+    if (recorded.length === 0) return fail()
   } else {
     const spent = await db
       .update(twoFactorRecoveryCodes)
@@ -143,6 +151,11 @@ export async function verifyTwoFactorSignIn(userId: string, input: string, now: 
       .returning({ id: twoFactorRecoveryCodes.id })
     // Two sign-ins racing the same code: only the one that spent it gets in.
     if (spent.length === 0) return fail()
+    // A spent recovery code is an audit event (T-088, D235): one of the ten is gone.
+    await recordAudit({
+      userId, actor: 'user', event: 'recovery_code_used',
+      detail: `${result.codesLeft} left`,
+    })
   }
   const cleared = recordSuccess()
   if (cleared === undefined) throttle.delete(userId)

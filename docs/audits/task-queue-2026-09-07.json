@@ -62,10 +62,10 @@
   "total_verified": 421,
   "outstanding": 405,
   "by_status": {
-   "closed": 271,
-   "parked": 125,
-   "open": 8,
-   "blocked": 1
+   "closed": 278,
+   "parked": 120,
+   "open": 7,
+   "blocked": 0
   },
   "by_owner_role": {
    "remote-dev": 112,
@@ -74,8 +74,8 @@
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 271,
-  "counts_recomputed_on": "2026-11-16",
+  "closed_by_annotation": 278,
+  "counts_recomputed_on": "2026-11-21",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 405
  },
@@ -4346,7 +4346,7 @@
     "D161"
    ],
    "summary": "Owner backlog (2026-07-26).",
-   "next_action": "Put the ROADMAP.md 'Desktop update mechanism' question to the owner as a three-option decision (auto-update / manual signed download / store channel × free / paid / subscription); on an answer, record it as a dated note under the ROADMAP entry via the propose→approve path and tick the box. No code work until then.",
+   "next_action": "Owner ruling (D239, 2026-11-21): deferred until the desktop edition is actually scheduled — no update mechanism is chosen ahead of a build that does not exist, and the monetization half has its frame from D236 (the BYOK Perpetual desktop edition is part of the confirmed billing model). The ROADMAP entry is ticked with that dated note. Do not re-offer without new facts; when the edition is scheduled, put the three-option mechanism question then.",
    "sources": [
     {
      "file": "docs/ROADMAP.md",
@@ -4355,19 +4355,9 @@
     }
    ],
    "reworded": {
-    "on": "2026-10-24",
-    "by": "owner approval (\"All three groups\"), applied by the session (D161)",
-    "why": "Wording only: a next step that was done or wrong, or a line reference that had moved. The item stays parked.",
-    "was": {
-     "next_action": "Put the ROADMAP.md:425-428 question to the owner as a three-option decision (auto-update / manual signed download / store channel × free / paid / subscription); on an answer, record it as a dated note under the ROADMAP entry via the propose→approve path and tick the box. No code work until then.",
-     "sources": [
-      {
-       "file": "docs/ROADMAP.md",
-       "lines": "425-428",
-       "quote": "**Desktop update mechanism — and whether updates are monetized.** How does an installed copy get new versions (auto-update channel? manual download? signed releases?), and does that ride the entitlement system (Phase 6) as paid upgrades, a subscription, or free updates with paid modules."
-      }
-     ]
-    }
+    "on": "2026-11-21",
+    "by": "owner decision D239, applied by the session",
+    "why": "The owner answered the ledger’s standing question with \"defer until it’s scheduled\": recorded on the ROADMAP entry so the box is ticked, and the gate is now the desktop edition being scheduled."
    }
   },
   {
@@ -7221,7 +7211,7 @@
   {
    "id": "T-394",
    "title": "Re-verify the staking provider catalog's FACTUAL fields (TVL, APR, lock-ups, minimums, audits, founded, websites) before bumping STAKING_DATA_LAST_VERIFIED",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-machine",
    "category": "data-verification",
@@ -7302,6 +7292,21 @@
      "2026-11-01 (D183): WALLET CODE PASS. The public code of Ledger Live, Trezor Suite, Keplr and MetaMask was read for their seven open facts. Owner: MetaMask's ETH row now describes its own pooled staking (lock-up 0 → 44, no longer liquid), and Keplr's DOT and Ledger Live's POL rows come out as not offered. From the code: Trezor Suite's ETH minimum 0.1 → 0.01 (its wait stays open), its SOL row matches, Ledger Live's ADA minimum 5 → 0; Ledger Live's ETH row stays open. The check now stands at 121 Matches, 64 corrections in the catalog, 95 Can't see it, on 280 facts.",
      "2026-11-02 (D184): DEEPER EXCHANGE SEARCH. Owner: a deeper search pass over the 84 open exchange facts, and add Robinhood's ADA row. Search snippets only (never an exchange's own site). 26 settled: 23 changed in the catalog (Gate's nine coins, Kraken's five, Crypto.com SOL/ADA/ATOM, HTX/OKX/KuCoin ETH, OKX NEAR, Upbit and Bitget SOL) and 3 confirmed (Coinbase ETH, Binance ETH, OKX ATOM); receipt tokens (GTETH, GTSOL, BETH, ksETH, BGSOL) recorded with a 0 lock-up under D162; dollar minimums (Nexo, Robinhood) left open. Robinhood ADA added (US only), its facts open. The check now stands at 124 Matches, 87 corrections in the catalog, 70 Can't see it, on 281 facts.",
      "2026-11-02 (D185): DOLLAR MINIMUMS. Owner: a minimum stated only in dollars is recorded in dollars (StakingAsset.minStakeUsd, shown as dollars on the page, API, MCP server and check page); Coinbase's NEAR row comes out as not offered; the two Upbit rows with only pre-2025 minimum sources stay open. Nexo's five rows settle at $500 (its October 2025 blog); Robinhood's ETH, SOL and ADA carry $1 with their waits still open. The check now stands at 124 Matches, 92 corrections in the catalog, 64 Can't see it, on 280 facts."
+    ]
+   },
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-11-21",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "Complete (D238). The plan run against the check page’s 320 answers found 0 changes left to apply, 0 out of date, 0 unanswered — 124 matches, 92 already applied, and the 64 \"can’t see it\" terms rows the owner ruled on: a figure the provider states nowhere a visitor can read (52 exchange rows behind sign-in, 11 wallet rows, Robinhood’s ADA) is not published here either, extending D181 to per-coin terms. Each such asset carries termsUnpublished and no figure; the page, API and MCP tool say \"not published\", never 0 (a 0 lock-up means liquid, D162 — whose rule keeps Ledger Live’s stETH row at 0); the check page stops asking and its lock-up leads on those rows went with them. With every fact settled, STAKING_DATA_LAST_VERIFIED moved from 2026-06-28 to 2026-11-02 — the pass’s newest answer, the date staking-facts-plan itself prescribes — ending the 2026-09-20 STALENESS-ACK. The Staking Facts Check artifact is republished at 216 facts with its answers database untouched; a figure the owner later reads logged-in re-enters by removing the flag, as any catalog edit.",
+    "approved_by": "owner, 2026-11-21: \"Mark unpublished, move on (Recommended)\" (D238)",
+    "evidence": [
+     "docs/decisions/2026-11-21-owner-decisions.md",
+     "frontend/src/lib/data/stakingProviders.ts",
+     "frontend/scripts/lib/stakingFactRows.ts",
+     "frontend/src/lib/data/__tests__/stakingProviders.test.ts",
+     "frontend/src/lib/server/__tests__/stakingFactsPage.test.ts"
     ]
    }
   },
@@ -9641,7 +9646,7 @@
   {
    "id": "T-116",
    "title": "Portfolio Builder rebalance reminders need a notifications mechanism",
-   "status": "blocked",
+   "status": "closed",
    "confidence": "medium",
    "owner_role": "owner-decision",
    "category": "feature",
@@ -9662,6 +9667,20 @@
     "note": "Reworded 2026-11-15 after D228 dissolved S5 as a subproject. The blocker was: \"Owner activation of S5 plus the reminder scope (in-app vs out-of-app).\" The 2026-09-30 history: the item-16 legality flag was cleared by D47 for build-by-allocation; the advice question specific to reminders is counsel brief A15.",
     "evidence": [
      "docs/decisions/2026-11-15-owner-decisions.md"
+    ]
+   },
+   "closure": {
+    "status_was": "blocked",
+    "closed_on": "2026-11-21",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "Built (D237): in-app drift-breach reminders on the price-alert pattern. usePlanReminderMonitor (mounted app-wide in the dashboard layout) re-runs the Plan Monitor’s own checkDrift a few times a day for every saved plan linked to a portfolio — what-if or tracked — and a breach of the plan’s own band shows one toast/notification per plan per day: the breach, the band, the largest drift, where the details are, and the Builder’s not-advice line. Deliberately not in it: any trade list or buy/sell wording (counsel brief A15’s sharpest edge stays on the page), email/push (hosting), and plans without a linked portfolio. Reminder state is browser-kept (fn:plan-reminders:v1, the D209 posture). Rules pure and tested in lib/data/planReminders.ts; counsel still reviews A15 before launch, and the switch-off is one hook if they object. The gate D228 reworded (reminder scope + A15) is answered on the scope half by the owner and carried on the A15 half as a recorded launch review.",
+    "approved_by": "owner, 2026-11-21: \"Build in-app now (Recommended)\" (D237)",
+    "evidence": [
+     "docs/decisions/2026-11-21-owner-decisions.md",
+     "frontend/src/lib/data/planReminders.ts",
+     "frontend/src/hooks/usePlanReminderMonitor.ts",
+     "frontend/src/lib/data/__tests__/planReminders.test.ts"
     ]
    }
   },
@@ -9853,7 +9872,7 @@
     "T-112"
    ],
    "summary": "SOC 2 and hardening checklist.",
-   "next_action": "Nothing now. When the owner confirms all the features are built and the security items named above are closed: decide which accounts count as admin accounts by then, and require two-step sign-in on each. The app has none today (see progress), so unless that changes it means the accounts that control the site: GitHub, the host and database once chosen (T-112), the domain registrar, and the AI and data providers. Two-step sign-in for the app's own users is part of T-088. Then propose steward annotations on the MFA rows of production-readiness-scorecard.md and architecture/security.md with proof.",
+   "next_action": "Policy adopted and current set confirmed (D240, 2026-11-21): the admin accounts are GitHub and the AI/data provider accounts holding the owner’s API keys, and the owner confirms two-step sign-in is already on (GitHub at least; each provider account checked as next touched) — recorded on the MFA rows of docs/architecture/security.md and docs/audits/production-readiness-scorecard.md. What remains, and what this stays parked for: when the host, database and registrar exist (T-112), add them to the set and turn two-step sign-in on there in the same sitting.",
    "sources": [
     {
      "file": "docs/audits/production-readiness-scorecard.md",
@@ -9875,6 +9894,11 @@
      "frontend/src/lib/auth/config.ts",
      "frontend/src/lib/server/apiGuard.ts"
     ]
+   },
+   "reworded": {
+    "on": "2026-11-21",
+    "by": "owner decision D240, applied by the session",
+    "why": "The decidable half is decided: the policy and today’s account set are ruled and the two checklist rows carry the proof. The gate narrows to the launch-time accounts (host, database, registrar)."
    }
   },
   {
@@ -10508,8 +10532,7 @@
   {
    "id": "T-185",
    "title": "Risk C — WORM append-only audit log trigger",
-   "status": "parked",
-   "parked_on": "2026-09-07",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "security",
@@ -10535,6 +10558,21 @@
     "evidence": [
      "docs/decisions/2026-10-05-owner-decisions.md"
     ]
+   },
+   "closure": {
+    "status_was": "parked",
+    "closed_on": "2026-11-21",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "Built exactly as the next action specified, in the live Next.js app and not the frozen backend: frontend/src/lib/db/schema/audit.ts adds audit_log, and migration 0013 is the Drizzle custom migration creating a BEFORE UPDATE OR DELETE trigger that raises an exception — the WORM tamper-evidence the production-readiness scorecard asked for (Risk C). auditLog.test.ts holds the migration to the trigger and the schema to no foreign key on user_id, so the record survives the account. Part of D235, the audit-logging piece that closes T-088.",
+    "approved_by": "owner, 2026-11-21: \"Merge when green; then lets do the audit logging\" (D235)",
+    "evidence": [
+     "docs/decisions/2026-11-21-owner-decisions.md",
+     "frontend/drizzle/0013_audit-log.sql",
+     "frontend/src/lib/db/schema/audit.ts",
+     "frontend/src/lib/auth/__tests__/auditLog.test.ts"
+    ],
+    "parked_on_was": "2026-09-07"
    }
   },
   {
@@ -10735,7 +10773,7 @@
     "Phase 6"
    ],
    "summary": "Depends on DB-backed entitlements (D1).",
-   "next_action": "Do not start until D1 (T-083) and the billing-model decision (T-085) are settled; the first engineering step afterwards is the server-side entitlements read from T-083, which billing then writes to.",
+   "next_action": "Both gates are met — D1 by D234 (entitlements serve from the database; the grant command and expiresAt already model a subscription term) and the billing model by D236 (tiered bundles). What remains before building: a Stripe account and the tiers’ price points, both launch-planning decisions (D21). The build then maps each tier to its module grant rows and writes them from Stripe’s webhook, replacing npm run entitlements for real accounts.",
    "sources": [
     {
      "file": "docs/ROADMAP.md",
@@ -10747,7 +10785,12 @@
      "lines": "116-117",
      "quote": "6. **Then** billing (Stripe → writes `entitlements`), password reset, and OAuth via `@auth/drizzle-adapter`."
     }
-   ]
+   ],
+   "reworded": {
+    "on": "2026-11-21",
+    "by": "owner decision D236, applied by the session",
+    "why": "The gate’s two decisions (D1, billing model) are both settled; the item now waits on a Stripe account and price points at launch planning, not on any decision."
+   }
   },
   {
    "id": "T-115",
@@ -11609,8 +11652,7 @@
   {
    "id": "T-083",
    "title": "D1 — rollout posture on entitlements: serve from DB instead of localStorage",
-   "status": "parked",
-   "parked_on": "2026-09-07",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "owner-decision",
    "category": "decision",
@@ -11646,7 +11688,24 @@
      "lines": "109-113, 119-120",
      "quote": "4. **Move entitlements to the database.** `useEntitlementStore` is localStorage-backed and trivially editable by the user — fine for a personal tool, unacceptable when modules are paid SKUs. The `entitlements` table already exists; read through a server route and treat missing rows as \"denied\" rather than the current \"granted\"."
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "parked",
+    "closed_on": "2026-11-21",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "The decision this item waited on is made and the build it called for is done. The owner chose the posture (D234: \"Standard on, Builder granted\"): standard modules on for everyone as account-synced toggles; Portfolio Builder a premium module a real account holds only with a grant row, written by npm run entitlements now and billing later (T-084). /api/user/entitlements serves the entitlements table (in the schema since migration 0000 — no new migration); a session’s own toggle can never reach a premium module, so no account self-grants Builder; ModuleGate and the Settings panel tell a grant lock from a preference; and local mode keeps today’s behaviour exactly, with localStorage as the pre-hydration fallback and the whole behaviour when there is no database — dark until launch, the D232/D233 pattern. \"Missing rows = denied\" applies where auth.md Goal B step 4 gave it weight: premium modules on real accounts. Rules pure and tested in lib/modules/entitlements.ts + entitlements.test.ts.",
+    "approved_by": "owner, 2026-11-21: \"Standard on, Builder granted (Recommended)\"",
+    "evidence": [
+     "docs/decisions/2026-11-21-owner-decisions.md",
+     "frontend/src/lib/modules/entitlements.ts",
+     "frontend/src/app/api/user/entitlements/route.ts",
+     "frontend/src/store/useEntitlementStore.ts",
+     "frontend/src/lib/modules/__tests__/entitlements.test.ts",
+     "frontend/scripts/entitlements.ts"
+    ],
+    "parked_on_was": "2026-09-07"
+   }
   },
   {
    "id": "T-087",
@@ -12204,8 +12263,7 @@
   {
    "id": "T-085",
    "title": "Decide billing model: per-module licences vs tiered bundles",
-   "status": "parked",
-   "parked_on": "2026-09-07",
+   "status": "closed",
    "confidence": "medium",
    "owner_role": "owner-decision",
    "category": "decision",
@@ -12241,13 +12299,26 @@
       }
      ]
     }
+   },
+   "closure": {
+    "status_was": "parked",
+    "closed_on": "2026-11-21",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "Decided (D236): the billing model is tiered bundles, confirming D29’s working plan — hosted Free / Core / Pro / Advisor plus a BYOK Perpetual desktop edition. The \"paid-vs-free planning session alongside D1\" the gate named happened: D234 settled D1 (entitlement posture) and the owner, asked in the same sitting that addressed the decision-gated items, confirmed the model. A tier maps to module grant rows in the entitlements table, which D234 built. Dollar amounts stay a launch-planning question (D21); recorded under the ROADMAP’s Billing model entry and in MARKET-ASSESSMENT’s Recommended pricing section.",
+    "approved_by": "owner, 2026-11-21: \"Tiered bundles (Recommended)\" (D236)",
+    "evidence": [
+     "docs/decisions/2026-11-21-owner-decisions.md",
+     "docs/ROADMAP.md",
+     "docs/MARKET-ASSESSMENT.md"
+    ],
+    "parked_on_was": "2026-09-07"
    }
   },
   {
    "id": "T-086",
    "title": "Decide freemium pricing tiers and turn on a Pro tier",
-   "status": "parked",
-   "parked_on": "2026-09-07",
+   "status": "closed",
    "confidence": "medium",
    "owner_role": "owner-decision",
    "category": "decision",
@@ -12266,13 +12337,26 @@
    "progress": {
     "noted_on": "2026-09-28",
     "note": "Working plan recorded 2026-09-28 (D29): the August two-edition model (see T-085's note). Pending the owner's reassessment; stays parked under D21, no code or doc change until then."
+   },
+   "closure": {
+    "status_was": "parked",
+    "closed_on": "2026-11-21",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "Decided with T-085 (D236): the model is tiered bundles with a Pro tier among them, so \"decide freemium pricing tiers and turn on a Pro tier\" is answered at the model level — the tiers exist by decision; their dollar amounts and the turn-on are launch planning (D21). The dated note the item asked for is in MARKET-ASSESSMENT’s Recommended pricing section and the ROADMAP Phase 6 Billing model entry.",
+    "approved_by": "owner, 2026-11-21: \"Tiered bundles (Recommended)\" (D236)",
+    "evidence": [
+     "docs/decisions/2026-11-21-owner-decisions.md",
+     "docs/MARKET-ASSESSMENT.md",
+     "docs/ROADMAP.md"
+    ],
+    "parked_on_was": "2026-09-07"
    }
   },
   {
    "id": "T-088",
    "title": "Phase 6 hardening — 2FA, rate limiting on /api/v1, audit logging",
-   "status": "parked",
-   "parked_on": "2026-09-07",
+   "status": "closed",
    "confidence": "medium",
    "owner_role": "owner-decision",
    "category": "security",
@@ -12300,6 +12384,24 @@
      "frontend/src/lib/auth/__tests__/twoFactorSignIn.test.ts",
      "frontend/drizzle/0012_two-factor.sql"
     ]
+   },
+   "closure": {
+    "status_was": "parked",
+    "closed_on": "2026-11-21",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "All three pieces of the Phase 6 hardening row are built. (1) The /api/v1 key and rate limit: D173, 2026-10-26. (2) Two-step TOTP sign-in, dark until launch: D233, 2026-11-20. (3) Audit logging: D235, 2026-11-21 — an append-only audit_log (migration 0013 creates the table and T-185’s BEFORE UPDATE OR DELETE trigger raising an exception, so rows are tamper-evident by the database) recording account creation, sign-in outcomes (only for emails that matched an account), password resets, two-factor changes, module grants and toggles, and data exports, with the four owner commands logging as owner-command. Recording never breaks the action; a database without 0013 reads as not-logging-yet; user_id carries no foreign key so the record survives the account, and the export finds the rows by column name. Portfolio/watchlist edits and IP addresses are deliberately out (D235 records both lines; IPs are a counsel question).",
+    "approved_by": "owner, 2026-11-21: \"Merge when green; then lets do the audit logging\"",
+    "evidence": [
+     "docs/decisions/2026-11-21-owner-decisions.md",
+     "frontend/drizzle/0013_audit-log.sql",
+     "frontend/src/lib/server/auditLog.ts",
+     "frontend/src/lib/auth/auditEvents.ts",
+     "frontend/src/lib/auth/__tests__/auditLog.test.ts",
+     "frontend/src/lib/server/apiKeys.ts",
+     "frontend/src/lib/auth/totp.ts"
+    ],
+    "parked_on_was": "2026-09-07"
    }
   },
   {
@@ -14696,7 +14798,7 @@
     "D165"
    ],
    "summary": "The Vendor Pass (30 Sep) drafted the enquiries, signed with the owner’s name: DefiLlama now (its terms entry has no document to read), and FMP, CoinDesk, Investing.com and Tiingo near build completion. Twelve Data and Dow Jones are on hold. Finnhub is a suggested drop, and trimming the 23 Sep list needs the owner’s OK. Binance.US has left the list: nothing in the app has fetched it since 2026-10-13 (T-423, D102), so there is nothing to ask it. A reply is evidence, not a licence.",
-   "next_action": "Owner: send the DefiLlama enquiry from the Vendor Pass; decide whether to drop Finnhub from the list; send the other four near build completion. Record each reply in docs/licensing/ and on the item it settles (T-154 for FMP, T-407 for CoinDesk and Investing.com).",
+   "next_action": "Owner: send the DefiLlama enquiry from the Vendor Pass (drafted, unsent); send the FMP, CoinDesk, Investing.com and Tiingo enquiries near build completion. Record each reply in docs/licensing/ and on the item it settles (T-154 for FMP, T-407 for CoinDesk and Investing.com). Finnhub is OFF the list (D241, 2026-11-21): no enquiry is sent, and at launch Finnhub comes off the quote ladder unless written approval has arrived some other way — the launch step is on its sourceTerms.ts entry and in docs/LEGAL-REVIEW.md.",
    "sources": [
     {
      "file": "docs/decisions/2026-10-07-owner-decisions.md",
@@ -14718,13 +14820,9 @@
     ]
    },
    "reworded": {
-    "on": "2026-10-14",
-    "by": "owner request (“reword them”), applied by the session",
-    "why": "It still asked the owner whether to drop Binance.US from the enquiry list. Nothing in the app has fetched Binance.US since 2026-10-13 (T-423, D102), so that question is moot; Finnhub’s stays.",
-    "was": {
-     "summary": "The Vendor Pass (30 Sep) drafted the enquiries, signed with the owner's name: DefiLlama now (its terms entry has no document to read), and FMP, CoinDesk, Investing.com and Tiingo near build completion. Twelve Data and Dow Jones are on hold; Finnhub and Binance.US are suggested drops, and trimming the 23 Sep list needs the owner's OK. A reply is evidence, not a licence.",
-     "next_action": "Owner: send the DefiLlama enquiry from the Vendor Pass; decide whether to drop Finnhub and Binance.US from the list; send the other four near build completion. Record each reply in docs/licensing/ and on the item it settles (T-154 for FMP, T-407 for CoinDesk and Investing.com)."
-    }
+    "on": "2026-11-21",
+    "by": "owner decision D241, applied by the session",
+    "why": "The Vendor Pass’s suggested drop is ruled: Finnhub leaves the enquiry list. The remaining gate is the owner sending the five enquiries on the Pass’s schedule."
    },
    "parked_on": "2026-10-25"
   },
@@ -43385,6 +43483,34 @@
     "what": "D233 (the owner, continuing the sign-in and accounts cluster): T-088’s two-factor half is built dark — TOTP on the credentials flow with recovery codes, enrollment on Settings behind a real session, migration 0012, export stripping and the auth:2fa owner command; engine dependency-free and RFC-vector-tested. T-088 stays parked for its last piece, audit logging, so no count moves.",
     "evidence": [
      "docs/decisions/2026-11-20-owner-decisions.md"
+    ]
+   },
+   {
+    "on": "2026-11-21",
+    "what": "D234 (the owner, continuing the sign-in and accounts cluster): module entitlements serve from the database. T-083 closes — the rollout-posture decision it was parked on is made (standard modules on for everyone as account-synced toggles; Portfolio Builder granted per account, owner command now, billing later) and the build is done: /api/user/entitlements over the table migration 0000 created, a session’s toggle never reaching a premium module, grant-aware ModuleGate and Settings, the one-time localStorage import, and local mode unchanged so the posture is dark until launch. T-084 (billing writes these rows) stays parked. Counts recomputed: parked 125 to 124, closed 271 to 272; open 8, blocked 1, total 405 unchanged.",
+    "evidence": [
+     "docs/decisions/2026-11-21-owner-decisions.md"
+    ]
+   },
+   {
+    "on": "2026-11-21",
+    "what": "D235 (the owner, finishing the sign-in and accounts cluster’s buildable work): the security audit log is built, closing T-088 and T-185 together. Migration 0013 creates audit_log and the WORM trigger T-185 specified; account creation, sign-in outcomes, password resets, two-factor changes, module grants/toggles and data exports are recorded (owner commands as owner-command); recording never breaks the action; the record survives the account and the data export includes it. Deliberately out, recorded in D235: portfolio/watchlist edits, and IP addresses (new personal data — a counsel question). With D173 and D233, every piece of T-088 is built. Counts recomputed: parked 124 to 122, closed 272 to 274; open 8, blocked 1, total 405 unchanged.",
+    "evidence": [
+     "docs/decisions/2026-11-21-owner-decisions.md"
+    ]
+   },
+   {
+    "on": "2026-11-21",
+    "what": "D236–D239 (the owner, asked to start addressing the decision-gated items): four rulings in one sitting. D236 confirms the billing model as tiered bundles (T-085 and T-086 close; T-084’s gates are both met and it now waits only on a Stripe account and price points). D237 builds the in-app rebalance reminders (T-116, the ledger’s last blocked item, closes — blocked is now 0; counsel brief A15 still reviews the advice-adjacency before launch). D238 rules the 64 unverifiable staking terms off the published catalog as termsUnpublished (T-394 closes; the re-verification is complete and STAKING_DATA_LAST_VERIFIED moves to 2026-11-02, the pass’s newest answer). D239 defers the desktop update mechanism until the edition is scheduled (T-127 stays parked with that gate; its ROADMAP box is ticked). Counts recomputed: closed 274 to 278, parked 122 to 120, open 8 to 7, blocked 1 to 0; total 405 unchanged.",
+    "evidence": [
+     "docs/decisions/2026-11-21-owner-decisions.md"
+    ]
+   },
+   {
+    "on": "2026-11-21",
+    "what": "D240–D241 (the owner, finishing the decision sitting’s two held questions). D240: the admin-account two-step sign-in policy is adopted — the set today is GitHub and the AI/data provider accounts, confirmed already on; the two MFA checklist rows are ticked with that proof, and T-209’s gate narrows to the launch-time accounts (host, database, registrar, T-112). D241: Finnhub is dropped from the provider-enquiry list — no email goes to it, and at launch it comes off the quote ladder unless approval arrives otherwise, recorded as the launch step on its sourceTerms.ts entry and in LEGAL-REVIEW. Both items stay parked with gates reworded; counts unchanged (278 closed · 120 parked · 7 open · 0 blocked).",
+    "evidence": [
+     "docs/decisions/2026-11-21-owner-decisions.md"
     ]
    }
   ]

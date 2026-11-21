@@ -17,6 +17,10 @@ import { FeatureNotice } from '@/components/legal/FeatureNotice'
 
 export function ModuleGate({ module, children }: { module: ModuleId; children: React.ReactNode }) {
   const isEnabled = useEntitlementStore((s) => s.isEnabled(module))
+  // Locked by GRANT, not preference (D234): the account does not hold this
+  // premium module, so "re-enable it" would be wrong — nothing they can click
+  // turns it on. Empty in local mode, so this branch is dark until launch.
+  const grantLocked = useEntitlementStore((s) => s.grantLocked().includes(module))
   const meta = MODULES.find((m) => m.id === module)
 
   if (isEnabled) {
@@ -34,17 +38,23 @@ export function ModuleGate({ module, children }: { module: ModuleId; children: R
         <Lock size={18} className="text-amber-400" aria-hidden />
       </div>
       <p className="mt-3 text-sm font-medium text-text-primary">
-        The {meta?.label ?? module} module is disabled
+        {grantLocked
+          ? `${meta?.label ?? module} isn’t included with this account`
+          : `The ${meta?.label ?? module} module is disabled`}
       </p>
       <p className="mt-1 text-xs text-text-muted leading-relaxed">
-        Re-enable it under Integrations → Modules to access these pages.
+        {grantLocked
+          ? 'It is granted per account. The site owner can add it to yours.'
+          : 'Re-enable it under Integrations → Modules to access these pages.'}
       </p>
-      <Link
-        href="/settings"
-        className="inline-block mt-4 px-3 py-1.5 rounded-sm text-xs bg-bg-elevated border border-border text-text-secondary hover:text-text-primary transition-colors"
-      >
-        Open Integrations
-      </Link>
+      {!grantLocked && (
+        <Link
+          href="/settings"
+          className="inline-block mt-4 px-3 py-1.5 rounded-sm text-xs bg-bg-elevated border border-border text-text-secondary hover:text-text-primary transition-colors"
+        >
+          Open Integrations
+        </Link>
+      )}
     </div>
   )
 }
