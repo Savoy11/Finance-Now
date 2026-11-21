@@ -148,15 +148,15 @@ export interface StakingRatesResponse {
 const FALLBACK: Record<string, number> = {
   // ETH liquid staking
   lido_eth:        2.25,
-  rocketpool_eth:  2.26,
-  ankr_eth:        2.81,
+  rocketpool_eth:  1.83,
+  ankr_eth:        2.62,
   coinbase_eth:    3.2,
   kraken_eth:      3.5,
   binance_eth:     3.1,
 
   // Solana
-  marinade_sol:    5.9,
-  jito_sol:        4.79,
+  marinade_sol:    5.85,
+  jito_sol:        4.94,
   native_sol:      6.5,   // generic Solana native staking
 
   // Cosmos / ATOM. stride_atom, stride_inj and stride_tia went 2026-10-14: Stride is
@@ -203,38 +203,38 @@ const FALLBACK: Record<string, number> = {
 
   // ── Liquid-staking / restaking protocols (live via DeFiLlama Yields) ────────
   // ETH LSTs & restaking
-  frax_eth:         2.54,
-  stakewise_eth:    2.39,
-  stader_eth:       3.84,
+  frax_eth:         2.5,
+  stakewise_eth:    2.35,
+  stader_eth:       2.33,
   swell_eth:        0.64,
-  renzo_eth:        1.83,
-  kelp_eth:         3.67,
-  puffer_eth:       2.14,
+  renzo_eth:        1.02,
+  kelp_eth:         2.77,
+  puffer_eth:       2.21,
   origin_eth:       2.65,
-  bedrock_eth:      2.68,
-  etherfi_eth:      2.92,
+  bedrock_eth:      2.54,
+  etherfi_eth:      2.42,
   // Solana LSTs
-  sanctum_sol:      5.28,
+  sanctum_sol:      5.48,
   ankr_sol:         6.2,
   // Avalanche LSTs
-  benqi_avax:       3.29,
+  benqi_avax:       3.88,
   ankr_avax:        0.21,
   // Polygon / BNB LSTs
   stader_matic:     3.45,
   stader_bnb:       5.0,
-  ankr_bnb:         0.61,
+  ankr_bnb:         0.57,
   // Cosmos LSTs. pstake_atom, pstake_bnb and quicksilver_atom went 2026-11-01 (D178):
   // pSTAKE closed its liquid staking after 2025-12-31 and Quicksilver was exploited and
   // wound down in June 2026, so there is no rate to publish; the catalog marks both defunct.
   // Polkadot / Kusama LSTs
-  bifrost_dot:     4.15,
-  bifrost_ksm:     7.31,
+  bifrost_dot:     4.01,
+  bifrost_ksm:     7.17,
   // Bitcoin LST
-  lombard_btc:      0.95,
+  lombard_btc:      0.9,
 }
 
 /** When the FALLBACK_MEASURED keys were read from live upstreams. */
-const FALLBACK_MEASURED_ON = '2026-11-05'
+const FALLBACK_MEASURED_ON = '2026-11-16'
 
 /**
  * How long a measured reading stays worth publishing. Owner decision 2026-09-18.
