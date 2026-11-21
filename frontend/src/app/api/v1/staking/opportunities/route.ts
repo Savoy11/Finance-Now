@@ -124,11 +124,14 @@ export async function GET(req: NextRequest) {
         aprSource,
         aprBasis:        aprBasisOut,
         aprMeasuredOn,
-        lockupDays:      asset.lockupDays,
+        // Null when the provider does not publish the product's terms (D238): the
+        // figure is unknown, never 0 — a 0 lock-up means liquid (D162).
+        termsUnpublished: asset.termsUnpublished === true,
+        lockupDays:      asset.lockupDays ?? null,
         lockupNote:      asset.lockupNote ?? null,
         liquid:          asset.liquid,
         receiptToken:    asset.receiptToken ?? null,
-        minStakeNative:  asset.minStakeNative,
+        minStakeNative:  asset.minStakeNative ?? null,
         // A minimum the provider states only in dollars (D185); minStakeNative is then 0.
         minStakeUsd:     asset.minStakeUsd ?? null,
         custodyModel:    provider.custodyModel,
