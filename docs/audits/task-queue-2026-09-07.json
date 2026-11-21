@@ -62,8 +62,8 @@
   "total_verified": 421,
   "outstanding": 405,
   "by_status": {
-   "closed": 272,
-   "parked": 124,
+   "closed": 274,
+   "parked": 122,
    "open": 8,
    "blocked": 1
   },
@@ -74,7 +74,7 @@
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 272,
+  "closed_by_annotation": 274,
   "counts_recomputed_on": "2026-11-21",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 405
@@ -10508,8 +10508,7 @@
   {
    "id": "T-185",
    "title": "Risk C — WORM append-only audit log trigger",
-   "status": "parked",
-   "parked_on": "2026-09-07",
+   "status": "closed",
    "confidence": "high",
    "owner_role": "remote-dev",
    "category": "security",
@@ -10535,6 +10534,21 @@
     "evidence": [
      "docs/decisions/2026-10-05-owner-decisions.md"
     ]
+   },
+   "closure": {
+    "status_was": "parked",
+    "closed_on": "2026-11-21",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "Built exactly as the next action specified, in the live Next.js app and not the frozen backend: frontend/src/lib/db/schema/audit.ts adds audit_log, and migration 0013 is the Drizzle custom migration creating a BEFORE UPDATE OR DELETE trigger that raises an exception — the WORM tamper-evidence the production-readiness scorecard asked for (Risk C). auditLog.test.ts holds the migration to the trigger and the schema to no foreign key on user_id, so the record survives the account. Part of D235, the audit-logging piece that closes T-088.",
+    "approved_by": "owner, 2026-11-21: \"Merge when green; then lets do the audit logging\" (D235)",
+    "evidence": [
+     "docs/decisions/2026-11-21-owner-decisions.md",
+     "frontend/drizzle/0013_audit-log.sql",
+     "frontend/src/lib/db/schema/audit.ts",
+     "frontend/src/lib/auth/__tests__/auditLog.test.ts"
+    ],
+    "parked_on_was": "2026-09-07"
    }
   },
   {
@@ -12287,8 +12301,7 @@
   {
    "id": "T-088",
    "title": "Phase 6 hardening — 2FA, rate limiting on /api/v1, audit logging",
-   "status": "parked",
-   "parked_on": "2026-09-07",
+   "status": "closed",
    "confidence": "medium",
    "owner_role": "owner-decision",
    "category": "security",
@@ -12316,6 +12329,24 @@
      "frontend/src/lib/auth/__tests__/twoFactorSignIn.test.ts",
      "frontend/drizzle/0012_two-factor.sql"
     ]
+   },
+   "closure": {
+    "status_was": "parked",
+    "closed_on": "2026-11-21",
+    "basis": "owner-ruling",
+    "verdict": "close",
+    "reason": "All three pieces of the Phase 6 hardening row are built. (1) The /api/v1 key and rate limit: D173, 2026-10-26. (2) Two-step TOTP sign-in, dark until launch: D233, 2026-11-20. (3) Audit logging: D235, 2026-11-21 — an append-only audit_log (migration 0013 creates the table and T-185’s BEFORE UPDATE OR DELETE trigger raising an exception, so rows are tamper-evident by the database) recording account creation, sign-in outcomes (only for emails that matched an account), password resets, two-factor changes, module grants and toggles, and data exports, with the four owner commands logging as owner-command. Recording never breaks the action; a database without 0013 reads as not-logging-yet; user_id carries no foreign key so the record survives the account, and the export finds the rows by column name. Portfolio/watchlist edits and IP addresses are deliberately out (D235 records both lines; IPs are a counsel question).",
+    "approved_by": "owner, 2026-11-21: \"Merge when green; then lets do the audit logging\"",
+    "evidence": [
+     "docs/decisions/2026-11-21-owner-decisions.md",
+     "frontend/drizzle/0013_audit-log.sql",
+     "frontend/src/lib/server/auditLog.ts",
+     "frontend/src/lib/auth/auditEvents.ts",
+     "frontend/src/lib/auth/__tests__/auditLog.test.ts",
+     "frontend/src/lib/server/apiKeys.ts",
+     "frontend/src/lib/auth/totp.ts"
+    ],
+    "parked_on_was": "2026-09-07"
    }
   },
   {
@@ -43406,6 +43437,13 @@
    {
     "on": "2026-11-21",
     "what": "D234 (the owner, continuing the sign-in and accounts cluster): module entitlements serve from the database. T-083 closes — the rollout-posture decision it was parked on is made (standard modules on for everyone as account-synced toggles; Portfolio Builder granted per account, owner command now, billing later) and the build is done: /api/user/entitlements over the table migration 0000 created, a session’s toggle never reaching a premium module, grant-aware ModuleGate and Settings, the one-time localStorage import, and local mode unchanged so the posture is dark until launch. T-084 (billing writes these rows) stays parked. Counts recomputed: parked 125 to 124, closed 271 to 272; open 8, blocked 1, total 405 unchanged.",
+    "evidence": [
+     "docs/decisions/2026-11-21-owner-decisions.md"
+    ]
+   },
+   {
+    "on": "2026-11-21",
+    "what": "D235 (the owner, finishing the sign-in and accounts cluster’s buildable work): the security audit log is built, closing T-088 and T-185 together. Migration 0013 creates audit_log and the WORM trigger T-185 specified; account creation, sign-in outcomes, password resets, two-factor changes, module grants/toggles and data exports are recorded (owner commands as owner-command); recording never breaks the action; the record survives the account and the data export includes it. Deliberately out, recorded in D235: portfolio/watchlist edits, and IP addresses (new personal data — a counsel question). With D173 and D233, every piece of T-088 is built. Counts recomputed: parked 124 to 122, closed 272 to 274; open 8, blocked 1, total 405 unchanged.",
     "evidence": [
      "docs/decisions/2026-11-21-owner-decisions.md"
     ]

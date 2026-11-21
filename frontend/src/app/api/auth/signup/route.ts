@@ -6,6 +6,7 @@ import { communicationConsents, users } from '@/lib/db/schema'
 import { isSchemaBehindError } from '@/lib/db/errors'
 import { passwordProblem } from '@/lib/auth/passwordPolicy'
 import { checkSignupConsent, consentPrompt, signupConsentRecord } from '@/lib/auth/electronicConsent'
+import { recordAudit } from '@/lib/server/auditLog'
 
 export const dynamic = 'force-dynamic'
 
@@ -67,6 +68,10 @@ export async function POST(request: Request) {
       await tx.insert(communicationConsents).values(signupConsentRecord(user.id, new Date()))
       return user
     })
+
+    // The audit row (T-088, D235) is outside the transaction on purpose: the
+    // account exists either way, and recordAudit never throws.
+    await recordAudit({ userId: created.id, actor: 'user', event: 'account_created' })
 
     // No password, no hash, nothing but the identifiers.
     return NextResponse.json({ id: created.id, email: created.email }, { status: 201 })

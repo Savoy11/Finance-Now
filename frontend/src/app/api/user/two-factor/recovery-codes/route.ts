@@ -4,6 +4,7 @@ import { isSchemaBehindError } from '@/lib/db/errors'
 import { getSessionUserId } from '@/lib/auth/session'
 import { TWO_FACTOR_NEEDS_SESSION, generateRecoveryCodes } from '@/lib/auth/twoFactor'
 import { replaceRecoveryCodes, twoFactorStatus, verifyTwoFactorSignIn } from '@/lib/auth/twoFactorStore'
+import { recordAudit } from '@/lib/server/auditLog'
 
 // A fresh set of recovery codes (T-088, D233), for when the old ones are running
 // low or their copy was lost. Takes a current code, like /disable, and REPLACES
@@ -38,6 +39,7 @@ export async function POST(request: Request) {
     }
     const codes = generateRecoveryCodes()
     await replaceRecoveryCodes(userId, codes, new Date())
+    await recordAudit({ userId, actor: 'user', event: 'recovery_codes_regenerated' })
     return NextResponse.json({ ok: true, recoveryCodes: codes.map((c) => c.code) })
   } catch (e) {
     if (isSchemaBehindError(e)) {

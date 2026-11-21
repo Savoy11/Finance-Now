@@ -14,6 +14,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import postgres from 'postgres'
 import { parseEntitlementsCommand, ENTITLEMENTS_USAGE, GRANTABLE_MODULE_IDS } from './lib/entitlementsCommand'
+import { insertAudit } from './lib/auditInsert'
 
 /** Same dependency-free loader as auth-reset.ts: the real environment wins over the file. */
 function loadEnvLocal(): void {
@@ -71,6 +72,9 @@ async function main(): Promise<number> {
       values (${user.id}, ${cmd.moduleId}, ${enabled}, null, ${now}, ${now})
       on conflict (user_id, module_id)
       do update set enabled = ${enabled}, expires_at = null, updated_at = ${now}`
+    await insertAudit(sql, {
+      userId: user.id, event: enabled ? 'module_granted' : 'module_revoked', detail: cmd.moduleId,
+    })
     console.log(enabled
       ? `${cmd.moduleId} is ON for ${user.email} (no end date). Billing will own these rows later (T-084).`
       : `${cmd.moduleId} is OFF for ${user.email}. The row stays as the record.`)

@@ -17,6 +17,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import postgres from 'postgres'
 import { parseTwoFactorCommand, TWO_FACTOR_USAGE } from './lib/twoFactorCommand'
+import { insertAudit } from './lib/auditInsert'
 
 /** Same dependency-free loader as auth-reset.ts: the real environment wins over the file. */
 function loadEnvLocal(): void {
@@ -73,6 +74,7 @@ async function main(): Promise<number> {
       console.log(`${user.email} did not have two-step sign-in on. Nothing changed.`)
       return 0
     }
+    await insertAudit(sql, { userId: user.id, event: 'two_factor_disabled', detail: 'owner recovery' })
     console.log(`Two-step sign-in is OFF for ${user.email}. Their password now signs them in on its own.`)
     console.log('If their password may be in the wrong hands too, issue a reset: npm run auth:reset -- --user ' + user.email + ' --force')
     return 0

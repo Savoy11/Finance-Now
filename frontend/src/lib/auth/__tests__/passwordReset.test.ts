@@ -80,7 +80,7 @@ describe('applyPasswordReset', () => {
   it('sets the new password and spends every token of the account', async () => {
     const { token } = generateResetToken()
     const store = fakeStore(live())
-    expect(await applyPasswordReset(store, { token, password: GOOD, hashPassword }, NOW)).toEqual({ ok: true })
+    expect(await applyPasswordReset(store, { token, password: GOOD, hashPassword }, NOW)).toEqual({ ok: true, userId: 'u1' })
     expect(store.calls).toEqual(['find', `set:u1:hashed(${GOOD})`, 'spend:u1'])
   })
 

@@ -4,6 +4,7 @@ import { isSchemaBehindError } from '@/lib/db/errors'
 import { getSessionUserId } from '@/lib/auth/session'
 import { TWO_FACTOR_NEEDS_SESSION, generateRecoveryCodes } from '@/lib/auth/twoFactor'
 import { confirmTwoFactorEnrollment } from '@/lib/auth/twoFactorStore'
+import { recordAudit } from '@/lib/server/auditLog'
 
 // Two-factor enrollment, step 2 (T-088, D233): verify the authenticator's first
 // code. On a match the enrollment turns on and the response carries the account's
@@ -26,6 +27,7 @@ export async function POST(request: Request) {
     const codes = generateRecoveryCodes()
     const result = await confirmTwoFactorEnrollment(userId, code, codes, new Date())
     if (result.outcome === 'confirmed') {
+      await recordAudit({ userId, actor: 'user', event: 'two_factor_enabled' })
       return NextResponse.json({ ok: true, recoveryCodes: codes.map((c) => c.code) })
     }
     if (result.outcome === 'no-enrollment') {

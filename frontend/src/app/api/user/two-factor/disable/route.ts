@@ -4,6 +4,7 @@ import { isSchemaBehindError } from '@/lib/db/errors'
 import { getSessionUserId } from '@/lib/auth/session'
 import { TWO_FACTOR_NEEDS_SESSION } from '@/lib/auth/twoFactor'
 import { disableTwoFactor, twoFactorStatus, verifyTwoFactorSignIn } from '@/lib/auth/twoFactorStore'
+import { recordAudit } from '@/lib/server/auditLog'
 
 // Turn two-factor off (T-088, D233). It takes a CURRENT code — authenticator or
 // recovery — so a walked-away-from session cannot quietly strip the protection.
@@ -38,6 +39,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, error: 'That code didn’t work.' }, { status: 400 })
     }
     await disableTwoFactor(userId)
+    await recordAudit({ userId, actor: 'user', event: 'two_factor_disabled' })
     return NextResponse.json({ ok: true })
   } catch (e) {
     if (isSchemaBehindError(e)) {
