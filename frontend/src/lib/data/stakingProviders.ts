@@ -12,41 +12,28 @@
 // the reference APRs for every provider except the three with live feeds — is a
 // curated snapshot, and it was being presented with no indication of its age.
 //
-// The date is the day the catalog as a whole was compiled, taken from this
-// file's git history (28a78c5). It is deliberately NOT bumped to the later
-// partial edits: 479fccd (2026-07-20) verified only the 8 platforms it added,
-// 0f4eb2e re-checked deep links, and ed07f3c wired live APRs for three liquid
-// protocols. None of those re-verified the other ~47 providers' risk profiles,
-// and claiming they did is exactly the fabricated-freshness problem this
-// machinery exists to prevent. Bump it only after a full pass over the catalog.
+// The date is the day the T-394 re-verification pass over the whole catalog finished:
+// 2026-11-02, the newest settling answer on the Staking Facts Check, as
+// `npm run staking-facts-plan` itself prescribed once every fact had one. What the pass
+// was: the owner's hand rulings and four search passes (D176, D178, D180–D185) settled
+// 216 facts — sites, founding years, audit counts, the remaining asset figures, and
+// per-coin minimums and lock-ups — and D238 (2026-11-21) ruled the last 64, terms the
+// provider states nowhere a visitor can read (mostly behind exchange sign-in), OFF the
+// published catalog: those assets carry `termsUnpublished` and no figure, shown as
+// "not published", never a 0. The previous compile date was 2026-06-28 (git 28a78c5);
+// its 2026-09-20 STALENESS-ACK ended with it, as the plan intended.
 //
-// STALENESS-ACK: 2026-09-20 — owner: let the notice fire on 2026-09-27. Chosen, not missed.
-//
-// What it covers, measured against the live API on 2026-09-20 rather than estimated:
-// 172 published rows over 51 providers, of which 132 (77%) publish a CURATED apr from
-// `staticApr` and all 172 carry the six curated risk dimensions, lock-ups and minimums.
-// So this one date governs nearly everything on /staking — which is the argument FOR
-// letting it fire, not against. "Low confidence" will be true: nobody has re-verified
-// the catalog as a whole in 90 days, and the page should say so.
+// The date still moves only on a full pass. A partial re-read — one provider's page,
+// one coin's terms — changes rows and their notes, never this constant: claiming a
+// whole-catalog freshness from a partial edit is the fabricated-freshness problem this
+// machinery exists to prevent.
 //
 // What firing does, and does not: the ProvenanceNotice heading changes, its chip goes
 // rose, and referenceData.confidence becomes 'low' on /api/v1/staking/opportunities.
 // NO rate is withheld and nothing degrades. Contrast stakingRates.ts, whose 14-day
 // window deletes the rate outright — that one is a functional gate, this one is
 // disclosure. Do not "fix" this by copying that behaviour here.
-//
-// Why not just re-verify: the six dimensions are editorial judgments published as
-// reference INPUTS (D14), not arithmetic — 330 of them across 55 providers. That is the
-// owner's call to make, and a rushed pass to beat a date is how a wrong risk figure gets
-// published with a fresh timestamp on it.
-// (D26, 2026-09-25, then removed the six dimensions, so the 330 judgments no longer
-// exist. A full pass now means T-394's factual fields: TVL, APR, lock-ups, minimums,
-// audit counts, founded and websites. The ack below still stands as written.)
-//
-// ⚠ This ack covers the 2026-06-28 compile and nothing else. Re-verifying part of the
-// catalog still must not move the date, and `npm run staleness:check` voids this line
-// automatically if the anchor above ever moves past it.
-export const STAKING_DATA_LAST_VERIFIED = '2026-06-28'
+export const STAKING_DATA_LAST_VERIFIED = '2026-11-02'
 
 // Days after which the curated provider data is considered stale.
 //
@@ -158,11 +145,23 @@ export const STAKING_COIN_INFO: Record<StakingCoinId, { name: string; symbol: st
 export interface StakingAsset {
   coinId: StakingCoinId
   staticApr: number          // fallback APR in % (shown when live data unavailable)
-  minStakeNative: number     // minimum stake in coin units
+  /**
+   * The provider does not state this product's minimum or unstaking wait anywhere a
+   * visitor can read — sign-in-gated, or simply unstated (D238, 2026-11-21, extending
+   * D181 to per-coin terms after the T-394 search passes left exactly these 64 open).
+   * The min and lock-up fields are then ABSENT, every surface shows "not published"
+   * instead of a figure — never a 0, since a 0 lock-up means liquid (D162) — and the
+   * Staking Facts Check stops asking. One exception: a liquid receipt token keeps
+   * `lockupDays: 0`, because that is D162's rule about the token, not a provider claim.
+   */
+  termsUnpublished?: true
+  /** Minimum stake in coin units. Absent only with `termsUnpublished`. */
+  minStakeNative?: number
   /** A minimum the provider states only in dollars (D185). When set, `minStakeNative` is 0
    *  and every surface shows this figure instead, never a converted coin amount. */
   minStakeUsd?: number
-  lockupDays: number         // 0 = no forced lockup
+  /** 0 = no forced lockup. Absent only with `termsUnpublished` (see its rule). */
+  lockupDays?: number
   lockupNote?: string
   receiptToken?: string      // e.g. 'stETH', 'rETH', 'mSOL'
   liquid: boolean            // is the staked position itself liquid/tradeable?
@@ -386,16 +385,16 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     assets: {
       eth:  { coinId: 'eth',  staticApr: 3.1,  minStakeNative: 0.0001, lockupDays: 0,  receiptToken: 'WBETH', liquid: true,  features: ['WBETH — liquid wrapped ETH', 'BETH legacy token also supported', 'Unstaking queue can be long'] },
       sol:  { coinId: 'sol',  staticApr: 5.0,  minStakeNative: 0.1,    lockupDays: 0,  lockupNote: 'BNSOL can be sold at once; redeeming BNSOL for SOL takes about 4 days', receiptToken: 'BNSOL', liquid: true,  features: ['BNSOL — liquid receipt token', 'Competitive APY'] },
-      ada:  { coinId: 'ada',  staticApr: 3.5,  minStakeNative: 1,      lockupDays: 0,  liquid: false, features: ['No lockup (Cardano protocol)'] },
-      bnb:  { coinId: 'bnb',  staticApr: 5.0,  minStakeNative: 0.001,  lockupDays: 7,  liquid: false, features: ['BNB is both the fee token and staking asset', 'BSC validator delegation'] },
-      dot:  { coinId: 'dot',  staticApr: 11.5, minStakeNative: 1,      lockupDays: 28, lockupNote: '28-day unbonding', liquid: false, features: ['28-day unbonding', 'Bundled nomination'] },
-      atom: { coinId: 'atom', staticApr: 10.0, minStakeNative: 1,      lockupDays: 21, lockupNote: '21-day unbonding', liquid: false, features: ['21-day unbonding'] },
-      matic:{ coinId: 'matic',staticApr: 3.8,  minStakeNative: 1,      lockupDays: 9,  liquid: false, features: ['Polygon staking'] },
-      avax: { coinId: 'avax', staticApr: 5.2,  minStakeNative: 25,     lockupDays: 14, lockupNote: 'AVAX protocol minimum: 25 AVAX, 2 weeks', liquid: false, features: ['High minimum (25 AVAX)', '2-week lockup minimum'] },
-      trx:  { coinId: 'trx',  staticApr: 4.5,  minStakeNative: 1,      lockupDays: 3,  liquid: false, features: ['TRON energy staking model', '3-day unstake'] },
-      inj:  { coinId: 'inj',  staticApr: 13.5, minStakeNative: 1,      lockupDays: 21, lockupNote: '21-day Injective unbonding', liquid: false, features: ['21-day unbonding', 'Binance handles validator selection'] },
-      tia:  { coinId: 'tia',  staticApr: 15.5, minStakeNative: 1,      lockupDays: 21, lockupNote: '21-day Celestia unbonding', liquid: false, features: ['21-day unbonding', 'High APY reflects new network inflation'] },
-      near: { coinId: 'near', staticApr: 8.0,  minStakeNative: 1,      lockupDays: 0,  liquid: false, features: ['No lockup — NEAR protocol delegation', '~2 epoch exit delay (~48 hours)'] },
+      ada:  { coinId: 'ada', staticApr: 3.5, termsUnpublished: true, liquid: false, features: [] },
+      bnb:  { coinId: 'bnb', staticApr: 5.0, termsUnpublished: true, liquid: false, features: ['BNB is both the fee token and staking asset', 'BSC validator delegation'] },
+      dot:  { coinId: 'dot', staticApr: 11.5, termsUnpublished: true, liquid: false, features: ['Bundled nomination'] },
+      atom: { coinId: 'atom', staticApr: 10.0, termsUnpublished: true, liquid: false, features: [] },
+      matic:{ coinId: 'matic',staticApr: 3.8, termsUnpublished: true, liquid: false, features: ['Polygon staking'] },
+      avax: { coinId: 'avax', staticApr: 5.2, termsUnpublished: true, liquid: false, features: [] },
+      trx:  { coinId: 'trx', staticApr: 4.5, termsUnpublished: true, liquid: false, features: ['TRON energy staking model'] },
+      inj:  { coinId: 'inj', staticApr: 13.5, termsUnpublished: true, liquid: false, features: ['Binance handles validator selection'] },
+      tia:  { coinId: 'tia', staticApr: 15.5, termsUnpublished: true, liquid: false, features: ['High APY reflects new network inflation'] },
+      near: { coinId: 'near', staticApr: 8.0, termsUnpublished: true, liquid: false, features: [] },
     },
   },
 
@@ -412,12 +411,12 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     assets: {
       // Deeper search pass (owner's choice, 2026-11-01, D184), from search-result snippets of the provider's own pages, never the site itself (D149, D178): OKX's ETH Staking FAQ (okx.com/en-us/help/eth-staking-faq, about August 2026): minimum 0.001 ETH; BETH exits through the BETH/ETH pair (its April 2026 fast-redemption notice). Its January 2024 ATOM and NEAR launch notice gives 1 ATOM / ~21 days and 1 NEAR / 3–6 days.
       eth:  { coinId: 'eth',  staticApr: 3.2,  minStakeNative: 0.001, lockupDays: 0,  lockupNote: 'BETH sells at once on OKX\'s BETH/ETH pair (not listed in the EEA); standard redemption follows Ethereum\'s exit queue', receiptToken: 'BETH', liquid: true, features: ['On-chain ETH staking', 'BETH receipt token', 'Queue-based standard redemption', 'Slashing protection'] },
-      sol:  { coinId: 'sol',  staticApr: 5.5,  minStakeNative: 1,     lockupDays: 5,  liquid: false, features: ['On-Chain Earn product', 'Competitive rate'] },
-      dot:  { coinId: 'dot',  staticApr: 12.0, minStakeNative: 1,     lockupDays: 28, lockupNote: '28-day unbonding', liquid: false, features: ['28-day unbonding', 'Handled nomination'] },
+      sol:  { coinId: 'sol', staticApr: 5.5, termsUnpublished: true, liquid: false, features: ['On-Chain Earn product', 'Competitive rate'] },
+      dot:  { coinId: 'dot', staticApr: 12.0, termsUnpublished: true, liquid: false, features: ['Handled nomination'] },
       atom: { coinId: 'atom', staticApr: 12.0, minStakeNative: 1,     lockupDays: 21, lockupNote: '21-day Cosmos unbonding', liquid: false, features: ['21-day unbonding', 'High APY'] },
-      matic:{ coinId: 'matic',staticApr: 4.0,  minStakeNative: 1,     lockupDays: 9,  liquid: false, features: ['Polygon staking'] },
-      inj:  { coinId: 'inj',  staticApr: 13.0, minStakeNative: 1,     lockupDays: 21, lockupNote: '21-day Injective unbonding', liquid: false, features: ['21-day unbonding', 'On-Chain Earn product'] },
-      tia:  { coinId: 'tia',  staticApr: 15.0, minStakeNative: 1,     lockupDays: 21, lockupNote: '21-day Celestia unbonding', liquid: false, features: ['21-day unbonding', 'High network inflation APY'] },
+      matic:{ coinId: 'matic',staticApr: 4.0, termsUnpublished: true, liquid: false, features: ['Polygon staking'] },
+      inj:  { coinId: 'inj', staticApr: 13.0, termsUnpublished: true, liquid: false, features: ['On-Chain Earn product'] },
+      tia:  { coinId: 'tia', staticApr: 15.0, termsUnpublished: true, liquid: false, features: ['High network inflation APY'] },
       near: { coinId: 'near', staticApr: 8.0,  minStakeNative: 1,     lockupDays: 6,  lockupNote: '3–6 days to redeem, per OKX\'s launch notice', liquid: false, features: ['3–6 day redemption (OKX)', 'NEAR delegation via OKX validator'] },
     },
   },
@@ -433,13 +432,13 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     website: 'https://www.bybit.com/en/earn',
     unpublished: ['tvlBillions'],
     assets: {
-      eth:  { coinId: 'eth',  staticApr: 3.3,  minStakeNative: 0.01,  lockupDays: 7,  liquid: false, features: ['Bybit covers slashing', 'Flexible exit (queue-based)'] },
+      eth:  { coinId: 'eth', staticApr: 3.3, termsUnpublished: true, liquid: false, features: ['Bybit covers slashing', 'Flexible exit (queue-based)'] },
       sol:  { coinId: 'sol',  staticApr: 5.8,  minStakeNative: 0.1,   lockupDays: 3,  lockupNote: '~2–3 days per Bybit\'s pages; bbSOL redemptions are prompt below 400K SOL', liquid: false, features: ['Competitive APY', 'Auto-compound'] },
-      atom: { coinId: 'atom', staticApr: 11.0, minStakeNative: 1,     lockupDays: 21, lockupNote: '21-day Cosmos unbonding', liquid: false, features: ['21-day unbonding'] },
-      dot:  { coinId: 'dot',  staticApr: 11.0, minStakeNative: 1,     lockupDays: 28, lockupNote: '28-day Polkadot unbonding', liquid: false, features: ['28-day unbonding'] },
-      matic:{ coinId: 'matic',staticApr: 4.0,  minStakeNative: 1,     lockupDays: 9,  liquid: false, features: ['Polygon staking'] },
-      inj:  { coinId: 'inj',  staticApr: 12.5, minStakeNative: 1,     lockupDays: 21, lockupNote: '21-day Injective unbonding', liquid: false, features: ['21-day unbonding'] },
-      tia:  { coinId: 'tia',  staticApr: 14.5, minStakeNative: 1,     lockupDays: 21, lockupNote: '21-day Celestia unbonding', liquid: false, features: ['21-day unbonding', 'High APY from new chain inflation'] },
+      atom: { coinId: 'atom', staticApr: 11.0, termsUnpublished: true, liquid: false, features: [] },
+      dot:  { coinId: 'dot', staticApr: 11.0, termsUnpublished: true, liquid: false, features: [] },
+      matic:{ coinId: 'matic',staticApr: 4.0, termsUnpublished: true, liquid: false, features: ['Polygon staking'] },
+      inj:  { coinId: 'inj', staticApr: 12.5, termsUnpublished: true, liquid: false, features: [] },
+      tia:  { coinId: 'tia', staticApr: 14.5, termsUnpublished: true, liquid: false, features: ['High APY from new chain inflation'] },
     },
   },
 
@@ -457,7 +456,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     founded: 2014,
     website: 'https://www.ledger.com/staking',
     assets: {
-      eth:  { coinId: 'eth',  staticApr: 2.25,  minStakeNative: 0,    lockupDays: 0,  receiptToken: 'stETH', liquid: true,  liveAprKey: 'lido_eth',  features: ['Via Lido integration — stETH received', 'Keys stay on hardware wallet', 'No minimum ETH required'] },
+      eth:  { coinId: 'eth', staticApr: 2.25, termsUnpublished: true, lockupDays: 0, receiptToken: 'stETH', liquid: true, liveAprKey: 'lido_eth', features: ['Via Lido integration — stETH received', 'Keys stay on hardware wallet'] },
       sol:  { coinId: 'sol',  staticApr: 6.5,  minStakeNative: 0,    lockupDays: 3,  liquid: false, features: ['Native Solana delegation', 'You choose validator', '~2–3 day unstake cooldown', 'No strict minimum per Ledger\'s page'] },
       // Ledger Live's Cardano code asks only for a balance above 0 (coin-cardano/src/logic.ts) and,
       // on the first delegation, enough to cover the refundable stake-key deposit
@@ -503,18 +502,9 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     assets: {
       sol: {
         coinId: 'sol',
-        staticApr: 7.0,
-        minStakeNative: 0.01,
-        lockupDays: 3,
-        lockupNote: '~2-3 epoch warmup/cooldown (~2.5 days each)',
+        staticApr: 7.0, termsUnpublished: true, 
         liquid: false,
-        features: [
-          'Native delegation — you choose the validator',
-          'Keys never leave your wallet',
-          'Rewards every epoch (~2.5 days)',
-          'SOL slashing not currently enforced but exists in protocol',
-          'Also supports Marinade (mSOL) and Jito (jitoSOL) liquid staking',
-        ],
+        features: ['Native delegation — you choose the validator', 'Keys never leave your wallet', 'SOL slashing not currently enforced but exists in protocol', 'Also supports Marinade (mSOL) and Jito (jitoSOL) liquid staking'],
       },
     },
   },
@@ -530,9 +520,9 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     website: 'https://trustwallet.com/staking',
     assets: {
       bnb:  { coinId: 'bnb',  staticApr: 6.0,  minStakeNative: 1,    lockupDays: 7,  liquid: false, features: ['BSC validator delegation', '7-day unbonding', 'Owned by Binance but non-custodial'] },
-      sol:  { coinId: 'sol',  staticApr: 6.5,  minStakeNative: 0.01, lockupDays: 3,  liquid: false, features: ['Native Solana delegation', '~3-day cooldown'] },
-      ada:  { coinId: 'ada',  staticApr: 4.5,  minStakeNative: 5,    lockupDays: 0,  liquid: false, features: ['No lockup', 'ADA never leaves wallet'] },
-      atom: { coinId: 'atom', staticApr: 13.0, minStakeNative: 0.1,  lockupDays: 21, lockupNote: '21-day Cosmos unbonding', liquid: false, features: ['Validator choice', '21-day unbonding'] },
+      sol:  { coinId: 'sol', staticApr: 6.5, termsUnpublished: true, liquid: false, features: ['Native Solana delegation'] },
+      ada:  { coinId: 'ada', staticApr: 4.5, termsUnpublished: true, liquid: false, features: ['ADA never leaves wallet'] },
+      atom: { coinId: 'atom', staticApr: 13.0, termsUnpublished: true, liquid: false, features: ['Validator choice'] },
       dot:  { coinId: 'dot',  staticApr: 12.0, minStakeNative: 10,   lockupDays: 28, lockupNote: 'Up to 28 days: since mid-2026 (Referendum 1910) Polkadot unbonding is queue-based, often about 2 days but up to 28 when many unbond at once', liquid: false, features: ['Up to 28-day unbonding (often ~2 days since mid-2026)', 'Manual nomination required'] },
       avax: { coinId: 'avax', staticApr: 7.5,  minStakeNative: 25,   lockupDays: 14, lockupNote: 'AVAX protocol: 25 AVAX min, 2 weeks min', liquid: false, features: ['25 AVAX minimum', '2-week minimum lockup'] },
       trx:  { coinId: 'trx',  staticApr: 4.5,  minStakeNative: 1,    lockupDays: 14, lockupNote: 'TRON Stake 2.0 — 14-day unstake (Trust Wallet\'s page lists 14 days)', liquid: false, features: ['TRON energy model — earn bandwidth/energy rewards', '14-day unstake (Stake 2.0)'] },
@@ -840,13 +830,13 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
       // Deeper search pass (owner's choice, 2026-11-01, D184), from search-result snippets of the provider's own pages, never the site itself (D149, D178): KuCoin's 2026 ETH staking blog: “no minimum, 1:1 ksETH as your staking receipt”, convertible back to ETH instantly; its staking page lists a 5-day standard redemption.
       eth:  { coinId: 'eth',  staticApr: 3.5,  minStakeNative: 0,     lockupDays: 0,  lockupNote: 'ksETH converts back to ETH at once through KuCoin\'s Quick Redemption (since August 2025); standard redemption takes 5 days', receiptToken: 'ksETH', liquid: true, features: ['ksETH receipt token', 'Competitive rate', 'Founders indicted by the US DOJ in 2023'] },
       sol:  { coinId: 'sol',  staticApr: 6.5,  minStakeNative: 1,     lockupDays: 5,  lockupNote: '5-day redemption per KuCoin\'s staking page', liquid: false, features: ['Fixed-term and flexible options', 'Higher APY than most CeFi'] },
-      dot:  { coinId: 'dot',  staticApr: 12.5, minStakeNative: 1,     lockupDays: 28, lockupNote: '28-day Polkadot unbonding', liquid: false, features: ['28-day unbonding', 'High APY'] },
-      atom: { coinId: 'atom', staticApr: 16.0, minStakeNative: 1,     lockupDays: 21, lockupNote: '21-day Cosmos unbonding', liquid: false, features: ['Among highest CeFi ATOM rates', '21-day unbonding'] },
-      bnb:  { coinId: 'bnb',  staticApr: 5.5,  minStakeNative: 0.1,   lockupDays: 7,  liquid: false, features: ['BNB staking via BSC delegation'] },
-      ada:  { coinId: 'ada',  staticApr: 4.2,  minStakeNative: 1,     lockupDays: 0,  liquid: false, features: ['No lockup — Cardano protocol', 'Soft staking'] },
-      avax: { coinId: 'avax', staticApr: 5.8,  minStakeNative: 0.1,   lockupDays: 14, lockupNote: 'AVAX 2-week minimum', liquid: false, features: ['2-week lockup (protocol requirement)'] },
-      inj:  { coinId: 'inj',  staticApr: 13.0, minStakeNative: 1,     lockupDays: 21, lockupNote: '21-day Injective unbonding', liquid: false, features: ['Injective staking via KuCoin Earn', '21-day unbonding'] },
-      tia:  { coinId: 'tia',  staticApr: 15.5, minStakeNative: 1,     lockupDays: 21, lockupNote: '21-day Celestia unbonding', liquid: false, features: ['High inflation-driven APY', '21-day unbonding'] },
+      dot:  { coinId: 'dot', staticApr: 12.5, termsUnpublished: true, liquid: false, features: ['High APY'] },
+      atom: { coinId: 'atom', staticApr: 16.0, termsUnpublished: true, liquid: false, features: ['Among highest CeFi ATOM rates'] },
+      bnb:  { coinId: 'bnb', staticApr: 5.5, termsUnpublished: true, liquid: false, features: ['BNB staking via BSC delegation'] },
+      ada:  { coinId: 'ada', staticApr: 4.2, termsUnpublished: true, liquid: false, features: ['Soft staking'] },
+      avax: { coinId: 'avax', staticApr: 5.8, termsUnpublished: true, liquid: false, features: [] },
+      inj:  { coinId: 'inj', staticApr: 13.0, termsUnpublished: true, liquid: false, features: ['Injective staking via KuCoin Earn'] },
+      tia:  { coinId: 'tia', staticApr: 15.5, termsUnpublished: true, liquid: false, features: ['High inflation-driven APY'] },
       near: { coinId: 'near', staticApr: 10.0, minStakeNative: 1,     lockupDays: 2,  lockupNote: '~2-day redemption per KuCoin\'s table; NEAR unstaking is 4 epochs, about 2 days', liquid: false, features: ['~2-day unbonding (NEAR protocol, 4 epochs)', 'Competitive rate'] },
     },
   },
@@ -866,14 +856,14 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     website: 'https://crypto.com/staking',
     unpublished: ['tvlBillions'],
     assets: {
-      eth:  { coinId: 'eth',  staticApr: 3.0,  minStakeNative: 0.01, lockupDays: 0,  liquid: false, features: ['Flexible staking, no lockup', 'CRO staking boosts APY by up to 2×'] },
+      eth:  { coinId: 'eth', staticApr: 3.0, termsUnpublished: true, liquid: false, features: ['CRO staking boosts APY by up to 2×'] },
       // Deeper search pass (owner's choice, 2026-11-01, D184), from search-result snippets of the provider's own pages, never the site itself (D149, D178): Crypto.com's App staking table (help.crypto.com 7886980, 6800043) lists SOL 1.00E-08 / 5 days, ADA 1.00E-06 / 1 day and ATOM 1.00E-06 / 22 days; the minimum is the coin's smallest unit, and its SOL page says it never imposes minimums.
       sol:  { coinId: 'sol',  staticApr: 4.5,  minStakeNative: 0,    lockupDays: 5,  liquid: false, features: ['~5-day cooldown', 'Auto-compound'] },
       ada:  { coinId: 'ada',  staticApr: 3.0,  minStakeNative: 0,    lockupDays: 1,  lockupNote: '1-day unbonding, per Crypto.com\'s staking table', liquid: false, features: ['Cardano native delegation', '1-day unbonding (Crypto.com)'] },
-      dot:  { coinId: 'dot',  staticApr: 10.0, minStakeNative: 1,    lockupDays: 28, lockupNote: '28-day Polkadot unbonding', liquid: false, features: ['28-day unbonding'] },
+      dot:  { coinId: 'dot', staticApr: 10.0, termsUnpublished: true, liquid: false, features: [] },
       atom: { coinId: 'atom', staticApr: 8.0,  minStakeNative: 0,    lockupDays: 22, lockupNote: '22 days per Crypto.com\'s staking table (the Cosmos chain rule is 21)', liquid: false, features: ['22-day unbonding (Crypto.com)'] },
-      bnb:  { coinId: 'bnb',  staticApr: 4.0,  minStakeNative: 0.1,  lockupDays: 7,  liquid: false, features: ['BSC delegation, 7-day unbonding'] },
-      avax: { coinId: 'avax', staticApr: 5.0,  minStakeNative: 0.1,  lockupDays: 14, lockupNote: 'AVAX 2-week minimum', liquid: false, features: ['2-week lockup (protocol minimum)'] },
+      bnb:  { coinId: 'bnb', staticApr: 4.0, termsUnpublished: true, liquid: false, features: [] },
+      avax: { coinId: 'avax', staticApr: 5.0, termsUnpublished: true, liquid: false, features: [] },
       cro:  { coinId: 'cro',  staticApr: 12.0, minStakeNative: 5000, lockupDays: 365, lockupNote: 'Card-linked CRO staking (Level Up, since September 2025) locks for 365 days; the separate Exchange CRO Lock-up is 180 days', liquid: false, features: ['Required for Visa card tier benefits', '365-day lock under Level Up (since September 2025)', 'Unlocks boosted APY on all assets'] },
     },
   },
@@ -893,12 +883,12 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     website: 'https://www.bitget.com/earning/staking',
     unpublished: ['tvlBillions'],
     assets: {
-      eth:  { coinId: 'eth',  staticApr: 3.2,  minStakeNative: 0.01, lockupDays: 0,  liquid: false, features: ['Flexible ETH staking', 'Slashing protection included'] },
+      eth:  { coinId: 'eth', staticApr: 3.2, termsUnpublished: true, liquid: false, features: ['Flexible ETH staking', 'Slashing protection included'] },
       // Deeper search pass (owner's choice, 2026-11-01, D184), from search-result snippets of the provider's own pages, never the site itself (D149, D178): Bitget's BGSOL support article: “The minimum stake is 0.01 SOL with no maximum”; BGSOL/SOL trading opened 2026-03-31 (Bitget announcement).
       sol:  { coinId: 'sol',  staticApr: 5.5,  minStakeNative: 0.01, lockupDays: 0,  lockupNote: 'BGSOL trades on Bitget\'s BGSOL/SOL pair (since March 2026); unlocking it to SOL takes up to 4 days', receiptToken: 'BGSOL', liquid: true, features: ['Competitive SOL rate', 'BGSOL receipt token'] },
-      dot:  { coinId: 'dot',  staticApr: 11.0, minStakeNative: 1,    lockupDays: 28, lockupNote: '28-day unbonding', liquid: false, features: ['28-day Polkadot unbonding'] },
-      atom: { coinId: 'atom', staticApr: 10.0, minStakeNative: 1,    lockupDays: 21, lockupNote: '21-day unbonding', liquid: false, features: ['21-day Cosmos unbonding'] },
-      bnb:  { coinId: 'bnb',  staticApr: 4.5,  minStakeNative: 0.1,  lockupDays: 7,  liquid: false, features: ['BSC validator delegation'] },
+      dot:  { coinId: 'dot', staticApr: 11.0, termsUnpublished: true, liquid: false, features: [] },
+      atom: { coinId: 'atom', staticApr: 10.0, termsUnpublished: true, liquid: false, features: [] },
+      bnb:  { coinId: 'bnb', staticApr: 4.5, termsUnpublished: true, liquid: false, features: ['BSC validator delegation'] },
     },
   },
 
@@ -919,10 +909,10 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
       sol:  { coinId: 'sol',  staticApr: 6.0,  minStakeNative: 0.1,  lockupDays: 0,  lockupNote: 'GTSOL trades on Gate; redeeming it for SOL took about 3 days in an October 2026 comparison', receiptToken: 'GTSOL', liquid: true, features: ['Competitive rate', 'GTSOL receipt token, tradable on Gate'] },
       // Deeper search pass (owner's choice, 2026-11-01, D184), from search-result snippets of the provider's own pages, never the site itself (D149, D178): gate.com/staking/ADA “A minimum of 10 ADA threshold”, “standard redemptions credited on D+3”.
       ada:  { coinId: 'ada',  staticApr: 4.0,  minStakeNative: 10,   lockupDays: 3,  lockupNote: 'Gate credits standard redemptions on D+3', liquid: false, features: ['3-day redemption (Gate)'] },
-      dot:  { coinId: 'dot',  staticApr: 12.0, minStakeNative: 1,    lockupDays: 28, lockupNote: '28-day unbonding', liquid: false, features: ['28-day Polkadot unbonding'] },
+      dot:  { coinId: 'dot', staticApr: 12.0, termsUnpublished: true, liquid: false, features: [] },
       // Deeper search pass (owner's choice, 2026-11-01, D184), from search-result snippets of the provider's own pages, never the site itself (D149, D178): gate.com/staking/ATOM “a minimum of 0.5 ATOM”, “credited to your account on D+21”.
       atom: { coinId: 'atom', staticApr: 12.0, minStakeNative: 0.5,  lockupDays: 21, lockupNote: 'Gate credits standard redemptions on D+21', liquid: false, features: ['High APY, 21-day unbonding'] },
-      bnb:  { coinId: 'bnb',  staticApr: 5.0,  minStakeNative: 0.1,  lockupDays: 7,  liquid: false, features: ['BSC delegation'] },
+      bnb:  { coinId: 'bnb', staticApr: 5.0, termsUnpublished: true, liquid: false, features: ['BSC delegation'] },
       // Deeper search pass (owner's choice, 2026-11-01, D184), from search-result snippets of the provider's own pages, never the site itself (D149, D178): gate.com/earn/staking/AVAX “a minimum of 0.1 AVAX threshold”, “credited to your account on D+15”.
       avax: { coinId: 'avax', staticApr: 5.5,  minStakeNative: 0.1,  lockupDays: 15, lockupNote: 'Gate credits standard redemptions on D+15; fast redemption costs a fee', liquid: false, features: ['2-week lockup minimum'] },
       // Deeper search pass (owner's choice, 2026-11-01, D184), from search-result snippets of the provider's own pages, never the site itself (D149, D178): gate.com/staking/TRX “a minimum of 10 TRX threshold”, “credited to your account on D+15”.
@@ -949,11 +939,11 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     assets: {
       // Deeper search pass (owner's choice, 2026-11-01, D184), from search-result snippets of the provider's own pages, never the site itself (D149, D178): htx.com/en-us/staking/eth2 “Stake as low as 0.1 ETH”, “you can sell BETH anytime you wish”.
       eth:  { coinId: 'eth',  staticApr: 3.5,  minStakeNative: 0.1,  lockupDays: 0,  lockupNote: 'BETH can be sold at any time; redeeming BETH for ETH has no fixed time and depends on the Ethereum network', receiptToken: 'BETH', liquid: true, features: ['BETH receipt token, sellable at any time', 'Ownership linked to Justin Sun'] },
-      sol:  { coinId: 'sol',  staticApr: 5.5,  minStakeNative: 1,    lockupDays: 5,  liquid: false, features: ['~5-day cooldown'] },
-      dot:  { coinId: 'dot',  staticApr: 11.0, minStakeNative: 1,    lockupDays: 28, lockupNote: '28-day unbonding', liquid: false, features: ['28-day Polkadot unbonding'] },
-      atom: { coinId: 'atom', staticApr: 10.0, minStakeNative: 1,    lockupDays: 21, lockupNote: '21-day Cosmos unbonding', liquid: false, features: ['21-day unbonding'] },
-      bnb:  { coinId: 'bnb',  staticApr: 5.0,  minStakeNative: 0.1,  lockupDays: 7,  liquid: false, features: ['BSC delegation'] },
-      trx:  { coinId: 'trx',  staticApr: 5.0,  minStakeNative: 1,    lockupDays: 3,  liquid: false, features: ["TRON — Justin Sun's chain; HTX is closely associated", '3-day unstake'] },
+      sol:  { coinId: 'sol', staticApr: 5.5, termsUnpublished: true, liquid: false, features: [] },
+      dot:  { coinId: 'dot', staticApr: 11.0, termsUnpublished: true, liquid: false, features: [] },
+      atom: { coinId: 'atom', staticApr: 10.0, termsUnpublished: true, liquid: false, features: [] },
+      bnb:  { coinId: 'bnb', staticApr: 5.0, termsUnpublished: true, liquid: false, features: ['BSC delegation'] },
+      trx:  { coinId: 'trx', staticApr: 5.0, termsUnpublished: true, liquid: false, features: ['s chain; HTX is closely associated", '] },
     },
   },
 
@@ -969,13 +959,13 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     // Robinhood's minimum is in dollars (D185): “earn staking rewards on your ETH, SOL and ADA for as
     // little as $1 of crypto” (robinhood.com/us/en/crypto).
     assets: {
-      eth: { coinId: 'eth', staticApr: 3.0, minStakeNative: 0, minStakeUsd: 1, lockupDays: 0, liquid: false, features: ['FINRA-regulated broker', 'Simplified UI, no technical knowledge required', 'Robinhood covers slashing losses', 'Not available in all US states'] },
-      sol: { coinId: 'sol', staticApr: 4.5, minStakeNative: 0, minStakeUsd: 1, lockupDays: 3, liquid: false, features: ['~3-day cooldown', 'Auto-compound'] },
+      eth: { coinId: 'eth', staticApr: 3.0, termsUnpublished: true, liquid: false, features: ['FINRA-regulated broker', 'Simplified UI, no technical knowledge required', 'Robinhood covers slashing losses', 'Not available in all US states'] },
+      sol: { coinId: 'sol', staticApr: 4.5, termsUnpublished: true, liquid: false, features: ['Auto-compound'] },
       // Added 2026-11-02 at the owner's choice (D184). Robinhood's US support page: “Currently, we only
       // support staking for Solana (SOL), Ethereum (ETH), and Cardano (ADA)”; its EU page lists SOL and ETH only.
       // Rewards start after a 15-day bonding period; the minimum is about $1. Robinhood publishes no ADA rate:
       // the 2.3 is an estimate, Cardano's ~3% (2026) less the 25% of rewards Robinhood says it keeps.
-      ada: { coinId: 'ada', staticApr: 2.3, minStakeNative: 0, minStakeUsd: 1, lockupDays: 0, lockupNote: 'Cardano has no unbonding period; Robinhood says unbonding can take a few days and gives no ADA figure', liquid: false, features: ['US only, not in every state; not offered in the EU', 'Rewards start after a 15-day bonding period'] },
+      ada: { coinId: 'ada', staticApr: 2.3, termsUnpublished: true, liquid: false, features: ['US only, not in every state; not offered in the EU'] },
     },
   },
 
@@ -1041,8 +1031,8 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     founded: 2011,
     website: 'https://www.bitstamp.net/earn/',
     assets: {
-      eth: { coinId: 'eth', staticApr: 3.1, minStakeNative: 0.001, lockupDays: 0, liquid: false, features: ['Monthly reward payouts', '15% commission on rewards', 'Not available to US/CA/JP/SG residents'] },
-      ada: { coinId: 'ada', staticApr: 1.0, minStakeNative: 1,     lockupDays: 0, liquid: false, features: ['Weekly reward payouts', 'Below-protocol rate after commission'] },
+      eth: { coinId: 'eth', staticApr: 3.1, termsUnpublished: true, liquid: false, features: ['Monthly reward payouts', '15% commission on rewards', 'Not available to US/CA/JP/SG residents'] },
+      ada: { coinId: 'ada', staticApr: 1.0, termsUnpublished: true, liquid: false, features: ['Weekly reward payouts', 'Below-protocol rate after commission'] },
     },
   },
 
@@ -1056,7 +1046,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     founded: 2018,
     website: 'https://www.mexc.com/earn',
     assets: {
-      eth: { coinId: 'eth', staticApr: 2.5, minStakeNative: 0, lockupDays: 0, liquid: false, features: ['Flexible savings base rate', 'Promo events pay more but lock funds and cap size'] },
+      eth: { coinId: 'eth', staticApr: 2.5, termsUnpublished: true, liquid: false, features: ['Flexible savings base rate'] },
       sol: { coinId: 'sol', staticApr: 5.0, minStakeNative: 0.1, lockupDays: 0, lockupNote: 'MEXC\'s SOL staking product is MXSOL liquid staking; redeeming back to SOL takes up to 5 days', liquid: false, features: ['Flexible savings base rate', 'Promo staking events up to ~20% APR with 7-day lock'] },
     },
   },
@@ -1071,12 +1061,12 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     founded: 2017,
     website: 'https://upbit.com/staking',
     assets: {
-      eth:  { coinId: 'eth',  staticApr: 2.5, minStakeNative: 0.01, lockupDays: 7,  lockupNote: 'Validator exit queue applies', liquid: false, features: ['Upbit-operated validators', 'Korean residents only'] },
+      eth:  { coinId: 'eth', staticApr: 2.5, termsUnpublished: true, liquid: false, features: ['Upbit-operated validators', 'Korean residents only'] },
       // Deeper search pass (owner's choice, 2026-11-01, D184), from search-result snippets of the provider's own pages, never the site itself (D149, D178): Upbit's support table (support.upbit.com 4413819191193) gives SOL “약 3일” (about 3 days) to unstake; a May 2026 comparison and the 2022 launch notice give a 0.01 SOL minimum.
       sol:  { coinId: 'sol',  staticApr: 6.5, minStakeNative: 0.01, lockupDays: 3,  lockupNote: 'About 3 days to unstake, per Upbit\'s support centre', liquid: false, features: ['Staking suspended then restored after Nov 2025 hot-wallet hack', 'Losses fully covered by Dunamu'] },
-      ada:  { coinId: 'ada',  staticApr: 2.6, minStakeNative: 1,    lockupDays: 0,  liquid: false, features: ['Cardano native delegation'] },
-      atom: { coinId: 'atom', staticApr: 8.0, minStakeNative: 0.1,  lockupDays: 21, lockupNote: '21-day Cosmos unbonding', liquid: false, features: ['21-day unbonding'] },
-      matic:{ coinId: 'matic',staticApr: 3.5, minStakeNative: 1,    lockupDays: 9,  lockupNote: '~9 day unbonding', liquid: false, features: ['POL staking'] },
+      ada:  { coinId: 'ada', staticApr: 2.6, termsUnpublished: true, liquid: false, features: ['Cardano native delegation'] },
+      atom: { coinId: 'atom', staticApr: 8.0, termsUnpublished: true, liquid: false, features: [] },
+      matic:{ coinId: 'matic',staticApr: 3.5, termsUnpublished: true, liquid: false, features: ['POL staking'] },
     },
   },
 
@@ -1119,7 +1109,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     founded: 2021,
     website: 'https://www.solflare.com/stake/',
     assets: {
-      sol: { coinId: 'sol', staticApr: 7.0, minStakeNative: 0.01, lockupDays: 3, lockupNote: '~2-3 epoch warmup/cooldown', liquid: false, features: ['Native Solana delegation with validator analytics', 'Built-in validator performance scoring', 'Supports Marinade (mSOL), Jito (jitoSOL), Sanctum LSTs', 'Keys never leave the wallet', 'Rewards every epoch (~2.5 days)'] },
+      sol: { coinId: 'sol', staticApr: 7.0, termsUnpublished: true, liquid: false, features: ['Native Solana delegation with validator analytics', 'Built-in validator performance scoring', 'Supports Marinade (mSOL), Jito (jitoSOL), Sanctum LSTs', 'Keys never leave the wallet'] },
     },
   },
 
@@ -1134,7 +1124,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     website: 'https://www.coinbase.com/wallet',
     assets: {
       eth: { coinId: 'eth', staticApr: 2.8, minStakeNative: 0,     lockupDays: 7, lockupNote: 'Pooled exit queue applies', liquid: false, features: ['Shared ETH Staking — stake any amount, no minimum', 'Keys stay with you', 'Not covered by SEC actions against custodial programs'] },
-      sol: { coinId: 'sol', staticApr: 6.0, minStakeNative: 0.01,  lockupDays: 3, lockupNote: '~2-3 epoch cooldown', liquid: false, features: ['Native validator delegation', 'Rewards every epoch'] },
+      sol: { coinId: 'sol', staticApr: 6.0, termsUnpublished: true, liquid: false, features: ['Native validator delegation', 'Rewards every epoch'] },
     },
   },
 
@@ -1149,10 +1139,10 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
     website: 'https://atomicwallet.io/staking',
     unpublished: ['auditCount'],
     assets: {
-      sol: { coinId: 'sol', staticApr: 7.0,  minStakeNative: 0.01, lockupDays: 3,  lockupNote: '~2-3 epoch cooldown', liquid: false, features: ['Native delegation', '2023 hack hit key security — see description'] },
+      sol: { coinId: 'sol', staticApr: 7.0, termsUnpublished: true, liquid: false, features: ['Native delegation', '2023 hack hit key security — see description'] },
       eth: { coinId: 'eth', staticApr: 3.0,  minStakeNative: 0.1,  lockupDays: 0,  lockupNote: 'Staking returns stETH, which can be sold at once; redeeming through Lido takes about 1–5 days', receiptToken: 'stETH', liquid: true, features: ['In-app ETH staking returns Lido stETH'] },
-      ada: { coinId: 'ada', staticApr: 3.0,  minStakeNative: 5,    lockupDays: 0,  liquid: false, features: ['Cardano native delegation — no lockup'] },
-      bnb: { coinId: 'bnb', staticApr: 4.0,  minStakeNative: 0.1,  lockupDays: 7,  liquid: false, features: ['BSC validator delegation'] },
+      ada: { coinId: 'ada', staticApr: 3.0, termsUnpublished: true, liquid: false, features: [] },
+      bnb: { coinId: 'bnb', staticApr: 4.0, termsUnpublished: true, liquid: false, features: ['BSC validator delegation'] },
       trx: { coinId: 'trx', staticApr: 4.5,  minStakeNative: 1,    lockupDays: 14, lockupNote: 'Tron Stake 2.0 — 14-day unstake', liquid: false, features: ['Rewards claimed manually', 'No minimum beyond 1 TRX'] },
       dot: { coinId: 'dot', staticApr: 12.0, minStakeNative: 1,    lockupDays: 28, lockupNote: 'Up to 28 days: since mid-2026 (Referendum 1910) Polkadot unbonding is queue-based, often about 2 days but up to 28 when many unbond at once', liquid: false, features: ['Up to 28-day unbonding (often ~2 days since mid-2026)'] },
     },
@@ -1174,7 +1164,7 @@ export const STAKING_PROVIDERS: StakingProvider[] = [
       // quoted 0.1 ETH; the code is what the app enforces (D178). The ETH wait is fetched from
       // Everstake while the app runs, so the 7 days is still open. The SOL wait is one epoch,
       // which Trezor's app text puts at "approximately 1 day"; Solana epochs run about 2–3.
-      eth: { coinId: 'eth', staticApr: 3.2, minStakeNative: 0.01, lockupDays: 7, lockupNote: 'Validator exit queue applies', liquid: false, features: ['Pooled staking via Everstake', 'Keys stay on the hardware device'] },
+      eth: { coinId: 'eth', staticApr: 3.2, termsUnpublished: true, liquid: false, features: ['Pooled staking via Everstake', 'Keys stay on the hardware device'] },
       sol: { coinId: 'sol', staticApr: 6.5, minStakeNative: 1,   lockupDays: 3, lockupNote: 'One Solana epoch, about 2–3 days (Trezor\'s app estimates about 1)', liquid: false, features: ['Added March 2025', 'Native delegation via Everstake'] },
     },
   },
