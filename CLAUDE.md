@@ -7,7 +7,7 @@ This file is auto-loaded by Claude Code at session start. It gives instant conte
 
 ## What This Is
 
-An institutional-grade financial analytics suite built with Next.js 15 (App Router). It began as a crypto dashboard (risk, reserves, news sentiment, transfer fees, staking) and has grown into an entitlement-gated module suite (see `docs/ROADMAP.md`): a **core** section (headlines, watchlist, portfolios, compare, research, brief) plus **five** optional modules — **Crypto** (the original Finance Now), **Equities** (`/equities`), **Macro Markets** (`/macro`), **ETFs & Funds** (`/funds`), and the premium **Portfolio Builder** (`/portfolio-builder`, its own entitlement). (This said "seven" while listing five; `lib/modules/registry.ts` is the count that matters — `core` plus those five.) Modules are declared in `src/lib/modules/registry.ts`; the sidebar renders from that registry, modules can be toggled in Integrations → Suite Modules, and **every optional module's pages are wrapped in `<ModuleGate>`** so a disabled module is locked by direct URL too, not just hidden from the nav. The frontend runs **live-only** against public data providers via its `/live-data/*` route handlers. User data (portfolios, tracked portfolios and their trades, watchlists, builder plans, wallets) persists to Postgres through `/api/user/*`; module entitlements are **localStorage-only** (`useEntitlementStore` — the `entitlements` table exists in the schema but no route serves it yet, which is the Phase 6 rollout-posture question); the legacy Python backend is **retired and frozen** (owner decision D2, 2026-09-14 — `backend/FROZEN.md`): nothing in the app calls it, no CI job builds it, and the `/api/*` proxy rewrite that pointed at it is gone. The claim that it "still serves assets/market-data/alerts/risk-scores" was already stale — the axios client that did so went in the M8 sweep. Sign-in is Auth.js against the app's own `users` table. Surfaces with no free real-time source show an explicit "not available" notice — there is no mock/demo data path.
+An institutional-grade financial analytics suite built with Next.js 15 (App Router). It began as a crypto dashboard (risk, reserves, news sentiment, transfer fees, staking) and has grown into an entitlement-gated module suite (see `docs/ROADMAP.md`): a **core** section (headlines, watchlist, portfolios, compare, research, brief) plus **five** optional modules — **Crypto** (the original Finance Now), **Equities** (`/equities`), **Macro Markets** (`/macro`), **ETFs & Funds** (`/funds`), and the premium **Portfolio Builder** (`/portfolio-builder`, its own entitlement). (This said "seven" while listing five; `lib/modules/registry.ts` is the count that matters — `core` plus those five.) Modules are declared in `src/lib/modules/registry.ts`; the sidebar renders from that registry, modules can be toggled in Integrations → Suite Modules, and **every optional module's pages are wrapped in `<ModuleGate>`** so a disabled module is locked by direct URL too, not just hidden from the nav. The frontend runs **live-only** against public data providers via its `/live-data/*` route handlers. User data (portfolios, tracked portfolios and their trades, watchlists, builder plans, wallets) persists to Postgres through `/api/user/*`; module entitlements are **database-backed since D234 (T-083, 2026-11-21)** through `/api/user/entitlements` over the `entitlements` table, on the owner's posture: standard modules on for everyone as account-synced toggles, Portfolio Builder granted per account for a real session (`npm run entitlements`, billing later — T-084), and local mode (today) behaving exactly as before, with localStorage as the pre-hydration fallback and the whole behaviour when there is no database; the legacy Python backend is **retired and frozen** (owner decision D2, 2026-09-14 — `backend/FROZEN.md`): nothing in the app calls it, no CI job builds it, and the `/api/*` proxy rewrite that pointed at it is gone. The claim that it "still serves assets/market-data/alerts/risk-scores" was already stale — the axios client that did so went in the M8 sweep. Sign-in is Auth.js against the app's own `users` table. Surfaces with no free real-time source show an explicit "not available" notice — there is no mock/demo data path.
 
 **Working directory:** the repo root is the `Finance-Now` monorepo (`frontend/`, `backend/`,
 `mcp-server/`, `infrastructure/`, `docs/`); **the Next.js app and all its npm commands live in
@@ -302,7 +302,8 @@ frontend/src/
 │                                   #   whose shim reported 'connected' unconditionally)
 │
 ├── store/                          # Zustand stores
-│   ├── useEntitlementStore.ts      # Which suite modules are enabled
+│   ├── useEntitlementStore.ts      # Which suite modules the account has — DB-backed (D234;
+│   │                               #   /api/user/entitlements; localStorage is the fallback)
 │   ├── useWatchlistStore.ts        # DB-backed, optimistic
 │   ├── usePortfolioStore.ts        # DB-backed, optimistic
 │   ├── useAlertStore.ts, usePriceAlertStore.ts
@@ -1508,6 +1509,34 @@ holds together:
 
 Guarded by `lib/auth/__tests__/totp.test.ts`, `twoFactor.test.ts` and `twoFactorSignIn.test.ts`
 (check order, the three codes, session-only routes, missing-table behaviour, the throttle).
+
+**Module entitlements are database-backed (T-083, D234, 2026-11-21)** — auth.md Goal B step 4, on
+the posture the owner chose: **standard modules (crypto, equities, macro, funds) are ON for
+everyone** and stay personal on/off toggles, now synced to the account; **Portfolio Builder is a
+premium module** (the registry's `premium` flag) that a real account holds **only with a grant
+row** — `npm run entitlements -- --grant builder --user <email>` until billing writes the same
+rows (T-084). The rules are pure in `lib/modules/entitlements.ts` (tested, injectable now;
+`expiresAt` honoured for billing's future terms); `/api/user/entitlements` (GET/PUT) serves them
+over the `entitlements` table, which has existed since migration 0000 — **no new migration**.
+What keeps it honest:
+
+- **A session's own toggle can never reach a premium module** (`canUserToggle`), so no account
+  self-grants Builder; the route answers 400 with the reason, the Settings panel shows
+  "Included / Not included" instead of a toggle, and `ModuleGate` says "isn't included with this
+  account" (no dead settings link) instead of "re-enable it".
+- **Local mode is unchanged** — everything on by default and togglable, Builder included, exactly
+  as the schema promised from day one ("in local dev is granted"). Real accounts only exist after
+  the launch flip, so the grant posture is dark until then (the D232/D233 pattern).
+- **The store keeps its interface** (`isEnabled`/`setEnabled`; Sidebar, ModuleGate,
+  CommandPalette, Headlines and Settings unchanged) and its `skipHydration` contract; the server
+  truth hydrates from `<Providers>` after the persisted map, with a one-time import of the
+  browser's old toggles (only modules turned OFF, and never a saved "builder off" over a real
+  account's grant rows). **No database = today's browser-only behaviour**, quietly.
+- Rows are upserted, never deleted; a revoke sets `enabled` false and the row stays as the record.
+
+Guarded by `lib/modules/__tests__/entitlements.test.ts` (defaults by mode, expiry, togglability,
+grant locks, the import rules, the route/store/gate wiring, and the owner command's arguments —
+whose module-id literal is pinned to the registry).
 
 **Server-side secret stores** (gitignored, written at repo `frontend/` root):
 `.provider-config.json` (provider API keys) and `.agent-prompts.json` (agent overrides).

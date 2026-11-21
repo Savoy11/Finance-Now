@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { SessionProvider } from 'next-auth/react'
 import { Toaster } from 'react-hot-toast'
 import { GC_TIME, STALE_TIME_SHORT } from '@/lib/constants'
-import { useEntitlementStore } from '@/store/useEntitlementStore'
+import { useEntitlementStore, hydrateEntitlements } from '@/store/useEntitlementStore'
 import { useFeedBiasStore } from '@/store/useFeedBiasStore'
 
 function makeQueryClient() {
@@ -44,7 +44,9 @@ export function Providers({ children }: { children: ReactNode }) {
   // Consumers (Sidebar, ModuleGate) re-render with the real state immediately
   // after.
   useEffect(() => {
-    void useEntitlementStore.persist.rehydrate()
+    // The server hydrate (T-083, D234) waits for the persisted map, so the
+    // one-time import sees the browser's saved toggles.
+    void Promise.resolve(useEntitlementStore.persist.rehydrate()).then(() => hydrateEntitlements())
     void useFeedBiasStore.persist.rehydrate()
   }, [])
 
