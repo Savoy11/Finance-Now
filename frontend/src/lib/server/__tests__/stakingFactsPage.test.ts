@@ -294,8 +294,15 @@ describe('the rows, from the real catalog', () => {
     expect(new Set(rows.map((r) => r.key)).size).toBe(rows.length)
   })
 
-  it('checks a minimum and lock-up for every coin a live provider stakes', () => {
-    const expected = live.flatMap((p) => Object.keys(p.assets).map((c) => `${p.id}:${c}:terms`)).sort()
+  it('checks a minimum and lock-up for every coin a live provider stakes — except terms nobody publishes', () => {
+    // D238: an asset marked termsUnpublished carries no figure, so the check has
+    // nothing to ask about it and its row does not exist.
+    const expected = live
+      .flatMap((p) => (Object.entries(p.assets) as Array<[string, { termsUnpublished?: true }]>)
+        .filter(([, a]) => !a.termsUnpublished)
+        .map(([c]) => `${p.id}:${c}:terms`))
+      .sort()
+    expect(expected.length).toBeGreaterThan(0)
     expect(rows.filter((r) => r.kind === 'terms').map((r) => r.key).sort()).toEqual(expected)
     for (const r of rows.filter((x) => x.kind === 'terms')) {
       const a = STAKING_PROVIDERS.find((p) => p.id === r.providerId)!.assets[r.coin!]!
@@ -303,6 +310,16 @@ describe('the rows, from the real catalog', () => {
       expect(r.fields.map((f) => f.catalog)).toEqual([a.minStakeUsd ?? a.minStakeNative, a.lockupDays])
       expect(r.fields[0].unit).toBe(a.minStakeUsd != null ? 'USD' : STAKING_COIN_INFO[r.coin!].symbol)
     }
+  })
+
+  it('asks nothing about a termsUnpublished asset (D238)', () => {
+    const flagged = STAKING_PROVIDERS.flatMap((p) =>
+      (Object.entries(p.assets) as Array<[string, { termsUnpublished?: true }]>)
+        .filter(([, a]) => a.termsUnpublished)
+        .map(([c]) => `${p.id}:${c}:terms`))
+    expect(flagged.length).toBeGreaterThan(0)
+    const keys = new Set(rows.map((r) => r.key))
+    for (const k of flagged) expect(keys.has(k), k).toBe(false)
   })
 
   it('asks for an assets figure only where the catalog shows one DefiLlama does not supply', () => {

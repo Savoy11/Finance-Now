@@ -40,6 +40,7 @@ import { BIAS_STRENGTHS } from '@/lib/watchlist/bias'
 import { migrateStorageKey } from '@/lib/utils/storageMigration'
 import { AffiliateClicksPanel } from '@/components/settings/AffiliateClicksPanel'
 import { YourDataPanel } from '@/components/settings/YourDataPanel'
+import { TwoFactorPanel } from '@/components/settings/TwoFactorPanel'
 
 // One-time key migration for the Finance Now rename — runs before any read below.
 migrateStorageKey('caep-custom-subreddits', 'fn-custom-subreddits')
@@ -54,7 +55,7 @@ migrateStorageKey('caep-custom-subreddits', 'fn-custom-subreddits')
 // billing lands (docs/ROADMAP.md, Phase 6).
 
 function ModulesPanel() {
-  const { isEnabled, setEnabled } = useEntitlementStore()
+  const { isEnabled, setEnabled, isTogglable } = useEntitlementStore()
 
   return (
     <section>
@@ -66,6 +67,7 @@ function ModulesPanel() {
       <div className="space-y-2">
         {OPTIONAL_MODULES.map((mod) => {
           const enabled = isEnabled(mod.id)
+          const togglable = isTogglable(mod.id)
           return (
             <div key={mod.id} className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-900/40 px-4 py-3">
               <div>
@@ -74,15 +76,30 @@ function ModulesPanel() {
                   {mod.navItems.length} page{mod.navItems.length !== 1 ? 's' : ''} · {mod.navItems.map((item) => item.href).join(', ')}
                 </p>
               </div>
-              <button
-                onClick={() => setEnabled(mod.id, !enabled)}
-                role="switch"
-                aria-checked={enabled}
-                aria-label={`${enabled ? 'Disable' : 'Enable'} ${mod.label} module`}
-                className={`relative h-5 w-9 rounded-full transition-colors ${enabled ? 'bg-accent-blue' : 'bg-slate-700'}`}
-              >
-                <span className={`absolute top-0.5 size-4 rounded-full bg-white transition-all ${enabled ? 'left-[18px]' : 'left-0.5'}`} />
-              </button>
+              {togglable ? (
+                <button
+                  onClick={() => setEnabled(mod.id, !enabled)}
+                  role="switch"
+                  aria-checked={enabled}
+                  aria-label={`${enabled ? 'Disable' : 'Enable'} ${mod.label} module`}
+                  className={`relative h-5 w-9 rounded-full transition-colors ${enabled ? 'bg-accent-blue' : 'bg-slate-700'}`}
+                >
+                  <span className={`absolute top-0.5 size-4 rounded-full bg-white transition-all ${enabled ? 'left-[18px]' : 'left-0.5'}`} />
+                </button>
+              ) : (
+                // A premium module on a real account (D234): held or not held, never
+                // a toggle — nothing here may self-grant it.
+                <span
+                  className={`text-[11px] px-2 py-1 rounded-full border ${
+                    enabled
+                      ? 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10'
+                      : 'text-slate-400 border-slate-700 bg-slate-800/60'
+                  }`}
+                  title={enabled ? undefined : 'Granted per account. The site owner can add it to yours.'}
+                >
+                  {enabled ? 'Included' : 'Not included'}
+                </span>
+              )}
             </div>
           )
         })}
@@ -1388,6 +1405,9 @@ export default function SettingsPage() {
           {/* Suite modules */}
           <ModulesPanel />
           <WatchlistBiasPanel />
+          {/* T-088/D233: two-step sign-in. Renders nothing without a signed-in
+              session, so it is dark until the launch flip (D174/D232). */}
+          <TwoFactorPanel />
           {/* T-452: download a copy of everything kept for this account. */}
           <YourDataPanel />
 

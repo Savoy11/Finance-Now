@@ -29,7 +29,7 @@ below, which ask for a licence or for the governing instrument, and three about 
 | Provider | Asks for | Status |
 |---|---|---|
 | FMP | Order Form under §2.1; also flags that §2.6.2's Acceptable Data Use Policy URL 404s | drafted |
-| Finnhub | written approval; also requests two referenced documents nobody can locate | drafted |
+| Finnhub | written approval; also requests two referenced documents nobody can locate | **dropped (D241, 2026-11-21)** — the owner chose not to send it; at launch Finnhub comes off the quote ladder unless approval arrives some other way (launch step on its sourceTerms.ts entry) |
 | Twelve Data | Redistribution Rights Add-On; also asks where §2.3(g)'s cache limits actually live | drafted |
 | Binance.US | *not* a permission request — it names no route. Asks which instrument governs API access at all | drafted; moot since 2026-10-13, when the app stopped fetching Binance.US (§10) |
 

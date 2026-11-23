@@ -326,7 +326,7 @@ cannot be verified from the repository.
 - [ ] Conduct internal penetration test
 - [ ] Implement formal business continuity / DR plan with RTO/RPO targets
 - [ ] Set up automated backup verification (restore drills, at minimum quarterly)
-- [ ] Add MFA enforcement policy for all admin accounts
+- [x] Add MFA enforcement policy for all admin accounts — **adopted 2026-11-21 (D240, T-209)**: admin accounts are GitHub and the AI/data provider accounts holding the owner's API keys; two-step sign-in confirmed on by the owner (GitHub at least, provider accounts checked as next touched). Host/database/registrar join the set when they exist (T-112).
 
 ### Phase 3 — Evidence Collection (Months 6–9) — Type I
 - [ ] Collect 30-day evidence for all controls

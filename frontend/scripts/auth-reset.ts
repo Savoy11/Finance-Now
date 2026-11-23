@@ -19,6 +19,7 @@ import { resolve } from 'node:path'
 import postgres from 'postgres'
 import { generateResetToken, resetLink, resetTokenExpiry, RESET_TOKEN_TTL_MINUTES } from '../src/lib/auth/passwordReset'
 import { parseResetCommand, RESET_USAGE } from './lib/resetCommand'
+import { insertAudit } from './lib/auditInsert'
 
 /** Same dependency-free loader as drizzle.config.ts: the real environment wins over the file. */
 function loadEnvLocal(): void {
@@ -64,6 +65,7 @@ async function main(): Promise<number> {
         returning user_id`
       console.log(`${rows.length} account(s) must now reset their password before signing in.`)
       console.log('Next: rotate AUTH_SECRET to end existing sessions, then issue each person a link with --user <email>.')
+      await insertAudit(sql, { event: 'reset_link_issued', detail: `${rows.length} account(s) forced to reset (--all --force)` })
       return 0
     }
 
@@ -90,6 +92,11 @@ async function main(): Promise<number> {
       ? 'Its sign-in is refused until the password is reset.'
       : 'Its current password still works until a new one is set.')
     console.log('Hand it over directly. It is not stored or logged anywhere else.')
+    // The EVENT is logged (T-088, D235); the link and token never are.
+    await insertAudit(sql, {
+      userId: user.id, event: 'reset_link_issued',
+      detail: cmd.force ? 'sign-in refused until reset' : undefined,
+    })
     return 0
   } catch (e) {
     const code = (e as { code?: string })?.code

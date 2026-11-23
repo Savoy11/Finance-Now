@@ -254,6 +254,13 @@ platform" pitch dies on contact with Messari/Nansen at comparable prices and DeF
 at free.
 
 ### Recommended pricing
+
+> **Decided 2026-11-21 (owner decision D236, closing T-085/T-086): the billing model is
+> tiered bundles** — hosted Free / Core / Pro / Advisor plus a BYOK Perpetual desktop
+> edition, confirming D29's working plan. A tier maps to module grant rows in the
+> `entitlements` table (built under D234). The table below stays as the July 2026
+> research it was; the dollar amounts are a launch-planning question and none is set.
+
 | Tier | Price | Contents |
 |---|---|---|
 | Free | $0 | Full ops tools with keyless data (CoinGecko/RSS/Reddit), limited alerts |
