@@ -824,7 +824,28 @@ const tests = [
     if (workedOut === 0) return fallback(`8 quarters to ${q[0].end}, but no fourth quarter was worked out`)
     const ageDays = (Date.now() - Date.parse(q[0].end)) / 86_400_000
     if (ageDays > 200) return fallback(`newest quarter ends ${q[0].end}, ${Math.round(ageDays)} days ago`)
+    // T-471: the share split. Apple retires repurchased shares, so the true
+    // state is "no treasury tag, issued = outstanding" — if this fails, Apple
+    // changed practice or the parsing broke; read the filing before "fixing".
+    const ss = j.shareStructure
+    if (!ss?.outstanding || !(ss.outstanding.shares > 1e9)) throw new Error('share structure: no outstanding count')
+    if (ss.treasuryReported !== false) throw new Error('share structure: AAPL reported a treasury tag (it retires shares — check the filing)')
     return `rev=$${(f.revenue / 1e9).toFixed(0)}B, netMargin=${(r.netMargin * 100).toFixed(1)}%; 8 quarters to ${q[0].end}, ${workedOut} worked out`
+  }},
+
+  // T-471: who holds the stock — the generated 13F + N-PORT figures, served
+  // from stockHolders.generated.json (no upstream call at request time).
+  { group: 'equities', path: '/live-data/stock-holders?symbol=AAPL', name: 'stock-holders (13F + fund filings)', check: (j) => {
+    if (!j.ok || !j.entry) throw new Error(`no entry (${j.unresolvedReason ?? 'unknown'})`)
+    const inst = j.entry.institutional
+    if (!inst || !(inst.totalShares > 5e9 && inst.totalShares < 2e10)) throw new Error(`AAPL institutional shares implausible: ${inst?.totalShares}`)
+    if (!(inst.holderCount > 1_000)) throw new Error(`holder count implausible: ${inst.holderCount}`)
+    if (!Array.isArray(j.entry.funds) || j.entry.funds.length < 5) throw new Error(`only ${j.entry?.funds?.length ?? 0} fund holders`)
+    if (j.entry.funds.some((f) => !f.asOf)) throw new Error('a fund row has no as-of date')
+    // The owner's 2026-11-24 confirmation ask: the build covers the listed
+    // universe (the SEC's NYSE & Nasdaq common-stock list), not 79 names.
+    if (!(j.stocksCovered > 3_000)) throw new Error(`only ${j.stocksCovered} stocks covered — the wide build should settle thousands`)
+    return `${(inst.totalShares / 1e9).toFixed(1)}B sh across ${inst.holderCount.toLocaleString('en-US')} managers; ${j.entry.funds.length} fund rows; ${j.stocksCovered.toLocaleString('en-US')} stocks covered; 13F period ${j.period}`
   }},
 
   { group: 'equities', path: '/live-data/company-profile?symbol=AAPL&name=Apple', name: 'company-profile (SEC+wiki)', check: (j) => {

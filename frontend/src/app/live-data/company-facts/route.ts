@@ -10,6 +10,7 @@ import {
   type EpsBasis,
 } from '@/lib/utils/companyRatios'
 import { lastQuarters, type Quarter } from '@/lib/utils/companyQuarters'
+import { computeShareStructure, type ShareStructure } from '@/lib/utils/shareStructure'
 
 // The fundamentals/ratio shapes and every derivation live in lib/utils/companyRatios.ts
 // (pure + vitest-covered). Re-exported here so existing importers of this route's
@@ -47,6 +48,8 @@ export interface CompanyFactsResponse {
   annualSeries: AnnualDataPoint[]
   /** The last eight quarters, newest first (T-461); empty for a company that files no 10-Q. */
   quarters: Quarter[]
+  /** Issued / treasury / outstanding shares, each with its own as-of date (T-471). */
+  shareStructure: ShareStructure | null
   updatedAt: string
   source: string
   error?: string
@@ -130,7 +133,7 @@ export async function GET(req: NextRequest) {
   const fail = (status: number, error: string) => NextResponse.json(
     {
       ok: false, symbol, cik: null, company: null, fiscalYearEnd: null,
-      fundamentals: null, ratios: null, annualSeries: [], quarters: [],
+      fundamentals: null, ratios: null, annualSeries: [], quarters: [], shareStructure: null,
       updatedAt: new Date().toISOString(), source: 'SEC EDGAR (XBRL company facts)', error,
     } satisfies CompanyFactsResponse,
     { status }
@@ -234,6 +237,7 @@ export async function GET(req: NextRequest) {
       ok: true, symbol, cik, company,
       fiscalYearEnd: revenue.latest?.end ?? netIncome.latest?.end ?? null,
       fundamentals, ratios, annualSeries, quarters: lastQuarters(gaap),
+      shareStructure: computeShareStructure(gaap, dei),
       updatedAt: new Date().toISOString(), source: 'SEC EDGAR (XBRL company facts)',
     } satisfies CompanyFactsResponse)
   } catch (e) {

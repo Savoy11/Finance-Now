@@ -404,6 +404,16 @@ export const DATA_SOURCES: DataSourceEntry[] = [
     providers: [SEC_EDGAR, { name: 'Wikipedia', host: 'en.wikipedia.org', role: 'fallback', auth: 'none' }],
   },
   {
+    id: 'stock-holders', surface: 'Who holds a stock (institutions + funds)', module: 'equities',
+    route: '/live-data/stock-holders', status: 'live',
+    providers: [
+      { name: 'SEC Form 13F data set', host: 'www.sec.gov', url: 'https://www.sec.gov/data-research/sec-markets-data/form-13f-data-sets', role: 'primary', auth: 'none' },
+      { ...SEC_EDGAR, name: 'SEC N-PORT filings (catalog funds)', host: 'www.sec.gov' },
+    ],
+    staticData: ['stockHolders.generated.json'],
+    notes: 'Built offline by `npm run holders:build` over every NYSE & Nasdaq common stock on the SEC exchange list — the search’s own T-450 universe (T-471; widened same day, D244): institutional totals from the quarterly 13F structured data set, fund rows from each catalog fund’s newest N-PORT filing, joined on CUSIPs derived under scripts/lib/stockCusips.ts’ independent-filer rules (two fund families, or enough 13F filers naming the company) and pinned in the generated file. The route fetches nothing at request time. Treasury/outstanding share figures come from /live-data/company-facts, not this route.',
+  },
+  {
     id: 'stock-universe', surface: 'Stock Registry universe', module: 'equities',
     route: '/live-data/stock-universe', status: 'partial',
     providers: [{ name: 'FMP company-screener', host: 'financialmodelingprep.com', role: 'primary', auth: 'paid' }, { name: 'Curated catalog', role: 'fallback', auth: 'none' }, { ...SEC_EDGAR, name: 'SEC XBRL frames (P/E backfill)', role: 'aggregator' }, { ...SEC_EDGAR, name: 'SEC company tickers & exchanges (the wider list)', host: 'www.sec.gov', url: 'https://www.sec.gov/search-filings/edgar-application-programming-interfaces', role: 'primary' }],

@@ -19,6 +19,7 @@ import { AssetRatingPanel } from '@/components/markets/AssetRatingPanel'
 import { StockBetaCard } from '@/components/markets/StockBetaCard'
 import { NextEarningsCard } from '@/components/markets/NextEarnings'
 import { QuarterlyResults } from '@/components/markets/QuarterlyResults'
+import { StockOwnershipCards } from '@/components/markets/StockOwnershipCards'
 import { getEquity, secFilingsUrl, SECTOR_INFO, type SectorId } from '@/lib/data/equityCatalog'
 import { formatCurrency, formatPercent } from '@/lib/utils/format'
 import { STALE_TIME_SHORT } from '@/lib/constants'
@@ -189,6 +190,9 @@ function EquityDetailInner() {
           <FiftyTwoWeekBar symbol={symbol} price={price} />
           <FinancialRatios symbol={symbol} price={price} shareChange={dyn?.symbol === symbol ? dyn.shareChange : null} />
           <FundamentalsTrend symbol={symbol} />
+          {/* T-471: who holds the stock — the company's own share split with
+              institutional 13F totals, then the catalog funds holding it. */}
+          <StockOwnershipCards symbol={symbol} />
         </div>
         <div className="space-y-4">
           <CompanyProfileCard symbol={symbol} name={entry.name} />
