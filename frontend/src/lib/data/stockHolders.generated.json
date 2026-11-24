@@ -2,7 +2,7 @@
  "builtOn": "2026-11-24",
  "thirteenF": {
   "period": "2026-06-30",
-  "source": "/tmp/claude-0/-home-user-Finance-Now/c3ac9a51-9f68-5361-b18c-3267de247af1/scratchpad/13f",
+  "source": "SEC Form 13F structured data set (supplied as a local directory)",
   "managersInPeriod": 8857
  },
  "universe": {

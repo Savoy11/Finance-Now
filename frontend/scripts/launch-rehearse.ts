@@ -35,9 +35,21 @@
 
 import { spawn, type ChildProcess } from 'node:child_process'
 import { randomBytes } from 'node:crypto'
+import { createRequire } from 'node:module'
 import postgres from 'postgres'
 import { SIGNUP_CONSENT } from '../src/lib/legal/signupConsent'
 import { totpCode, totpStep } from '../src/lib/auth/totp'
+
+// Every child is Node itself on a resolved JS entrypoint, never an `npx`/`npm`
+// shim: on Windows those are .cmd files Node's spawn refuses without a shell,
+// and this repo is maintained from PowerShell — the first owner-machine run
+// would otherwise die in spawn and read as exit 1, "the launch recipe is
+// broken", when the recipe was never reached (audit 2026-11-24, finding 2).
+// It boots `next dev`: the same middleware, routes and env rules as a
+// production server, without the minutes a production build would add.
+const requireHere = createRequire(__filename)
+const NEXT_BIN = requireHere.resolve('next/dist/bin/next')
+const TSX_CLI = requireHere.resolve('tsx/cli')
 
 const args = process.argv.slice(2)
 const flag = (name: string): string | null => {
@@ -109,10 +121,11 @@ async function signIn(jar: Jar, email: string, password: string, otp?: string): 
   return { email: session?.user?.email ?? null, code }
 }
 
-function run(cmd: string, cmdArgs: string[], env: Record<string, string>): Promise<{ code: number | null; out: string }> {
+function run(entrypoint: string[], env: Record<string, string>): Promise<{ code: number | null; out: string }> {
   return new Promise((resolve) => {
-    const child = spawn(cmd, cmdArgs, { cwd: process.cwd(), env: { ...process.env, ...env } })
+    const child = spawn(process.execPath, entrypoint, { cwd: process.cwd(), env: { ...process.env, ...env } })
     let out = ''
+    child.on('error', (e) => resolve({ code: null, out: String(e) }))
     child.stdout.on('data', (d) => { out += d })
     child.stderr.on('data', (d) => { out += d })
     child.on('close', (code) => resolve({ code, out }))
@@ -120,14 +133,20 @@ function run(cmd: string, cmdArgs: string[], env: Record<string, string>): Promi
 }
 
 async function bootApp(env: Record<string, string>, port: number): Promise<ChildProcess> {
-  const child = spawn('npx', ['next', 'dev', '-p', String(port)], {
+  const child = spawn(process.execPath, [NEXT_BIN, 'dev', '-p', String(port)], {
     cwd: process.cwd(),
     env: { ...process.env, ...env },
-    detached: true,
+    // A POSIX process group, so SIGTERM fells next's children too; Windows
+    // has no groups (stopApp uses taskkill there) and detached would open a
+    // console window instead.
+    detached: process.platform !== 'win32',
     stdio: 'ignore',
   })
+  let spawnError: string | null = null
+  child.on('error', (e) => { spawnError = `the app process could not start: ${e.message}` })
   const deadline = Date.now() + 180_000
   while (Date.now() < deadline) {
+    if (spawnError != null) throw new Error(spawnError)
     try {
       const res = await fetch(`http://127.0.0.1:${port}/api/auth/csrf`, { redirect: 'manual' })
       if (res.status < 500) return child
@@ -140,6 +159,11 @@ async function bootApp(env: Record<string, string>, port: number): Promise<Child
 
 function stopApp(child: ChildProcess | null) {
   if (!child?.pid) return
+  if (process.platform === 'win32') {
+    // No POSIX process groups on Windows: taskkill fells the process tree.
+    try { spawn('taskkill', ['/pid', String(child.pid), '/t', '/f'], { stdio: 'ignore' }) } catch { /* already gone */ }
+    return
+  }
   try { process.kill(-child.pid, 'SIGTERM') } catch { /* already gone */ }
   setTimeout(() => { try { process.kill(-child!.pid!, 'SIGKILL') } catch { /* gone */ } }, 4000).unref()
 }
@@ -162,7 +186,7 @@ async function main() {
   }
 
   // ── Step 1: migrate from zero ──────────────────────────────────────────────
-  const migrate = await run('node', ['scripts/db-migrate.mjs'], { DATABASE_URL: DB })
+  const migrate = await run(['scripts/db-migrate.mjs'], { DATABASE_URL: DB })
   if (migrate.code === 0) {
     const tables = await sql<{ n: string }[]>`select table_name as n from information_schema.tables where table_schema = 'public'`
     const names = new Set(tables.map((t) => t.n))
@@ -276,7 +300,7 @@ async function main() {
       if (lockedOff) pass('entitlements-default', 'Builder reads not-included and grant-locked for a fresh account')
       else fail('entitlements-default', `expected builder off+locked, got ${JSON.stringify(before).slice(0, 200)}`)
 
-      const grant = await run('npx', ['tsx', 'scripts/entitlements.ts', '--grant', 'builder', '--user', EMAIL], { DATABASE_URL: DB })
+      const grant = await run([TSX_CLI, 'scripts/entitlements.ts', '--grant', 'builder', '--user', EMAIL], { DATABASE_URL: DB })
       const after = (await (await req(jar3, '/api/user/entitlements')).json()) as { effective?: Record<string, boolean> }
       if (grant.code === 0 && after.effective?.builder === true) pass('entitlements-grant', 'the owner command granted Builder and the account sees it')
       else fail('entitlements-grant', `grant exited ${grant.code}; builder now ${String(after.effective?.builder)}`)

@@ -44,6 +44,21 @@ describe('the launch rehearsal harness', () => {
     expect(src).toMatch(/proves nothing about the launch recipe/)
   })
 
+  it('spawns Node on resolved entrypoints, never an npx/npm shim — the owner runs this from PowerShell', () => {
+    // On Windows those shims are .cmd files Node's spawn refuses without a
+    // shell, so a bare spawn('npx', …) dies before the recipe is reached and
+    // exits 1, "the recipe is broken" (audit 2026-11-24, finding 2).
+    expect(src).toContain("requireHere.resolve('next/dist/bin/next')")
+    expect(src).toContain("requireHere.resolve('tsx/cli')")
+    expect(src).not.toMatch(/spawn\(\s*'np[mx]/)
+    // Process groups are POSIX-only: Windows fells the tree with taskkill,
+    // and detached there would open a console window instead.
+    expect(src).toMatch(/detached: process\.platform !== 'win32'/)
+    expect(src).toContain("'taskkill'")
+    // A spawn failure surfaces as inconclusive (the environment), not exit 1.
+    expect(src).toContain('the app process could not start')
+  })
+
   it('the site-lock pass sets FN_ADMIN_TOKEN, so the lock binds on localhost (D193)', () => {
     expect(src).toMatch(/FN_ADMIN_TOKEN: randomBytes\(24\)/)
     expect(src).toMatch(/delete \(lockedEnv as Record<string, string \| undefined>\)\.FN_SITE_OPEN/)

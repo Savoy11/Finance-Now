@@ -18,6 +18,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { FUND_CATALOG } from './fundCatalog'
+import { outsideShareBand } from './stockShares'
 
 /** Fund names once, for hydrating the file's per-stock fund tuples. */
 const FUND_NAMES: Record<string, string> = Object.fromEntries(FUND_CATALOG.map((f) => [f.symbol, f.name]))
@@ -178,6 +179,19 @@ export function institutionalPctOfOutstanding(totalShares: number, outstanding: 
   return (totalShares / outstanding) * 100
 }
 
+/**
+ * D170's split signal, applied to that percent (audit 2026-11-24, finding 1).
+ * The 13F total is in the reporting quarter's units while the outstanding
+ * count is the latest cover's — a split between the two makes the percent
+ * wrong by the ratio (Booking's 25-for-1 would put it off 25×). The same
+ * share-count band that withholds P/E and yield withholds the percent; the
+ * shares themselves still show. No signal (null) withholds nothing: the rule
+ * acts on evidence of a split, never on the absence of evidence.
+ */
+export function institutionalPctWithheldForSplit(shareChange: number | null | undefined): boolean {
+  return outsideShareBand(shareChange ?? null)
+}
+
 // ── Wording, pinned by tests so the honesty cannot drift ─────────────────────
 
 /** Why a 13F total is not a clean "institutions own X%". */
@@ -191,10 +205,22 @@ export function thirteenFPeriodNote(period: string): string {
   return `Holdings as reported for the quarter ended ${period}; managers file up to 45 days later, so newer trades are not in these figures.`
 }
 
-/** Card B's scope line — the count is the build's own, never typed. */
+/**
+ * Card B's scope line — both counts the build's own, never typed. The tracked
+ * universe is the whole catalog; the smaller count is the funds whose
+ * portfolio filings were read (UITs such as SPY file none) — the audit of
+ * 2026-11-24 caught the first draft calling the smaller count "the funds this
+ * app tracks".
+ */
 export function fundHoldersScopeNote(fundsRead: number): string {
-  return `Among the ${fundsRead} funds this app tracks, from each fund’s latest portfolio filing (filed up to 60 days after its date). Funds beyond this app’s catalog are not counted.`
+  return `Among the ${FUND_CATALOG.length} funds this app tracks, the ${fundsRead} that file portfolio reports were read, each at its latest filing (filed up to 60 days after its date). Funds beyond this app’s catalog are not counted.`
 }
+
+/** Why the institutional percent is withheld after a split signal. */
+export const PCT_WITHHELD_SPLIT_NOTE =
+  'No percent is shown: the company’s share count has moved by a split’s magnitude since its last '
+  + 'annual report, so the quarter’s filed holdings and today’s count may not be in the same units. '
+  + 'The next annual report clears it.'
 
 /**
  * The build's recorded unresolved reasons, in plain words for the page. The

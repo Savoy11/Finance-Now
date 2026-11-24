@@ -192,7 +192,7 @@ function EquityDetailInner() {
           <FundamentalsTrend symbol={symbol} />
           {/* T-471: who holds the stock — the company's own share split with
               institutional 13F totals, then the catalog funds holding it. */}
-          <StockOwnershipCards symbol={symbol} />
+          <StockOwnershipCards symbol={symbol} shareChange={dyn?.symbol === symbol ? dyn.shareChange : null} />
         </div>
         <div className="space-y-4">
           <CompanyProfileCard symbol={symbol} name={entry.name} />
