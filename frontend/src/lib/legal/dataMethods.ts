@@ -198,6 +198,16 @@ export const DATA_METHODS: readonly MethodSection[] = [
     ],
   },
   {
+    id: 'stablecoin-peg-history',
+    title: 'Stablecoin peg history',
+    decided: '2026-11-24',
+    paragraphs: [
+      'For each dollar-pegged coin the Reserve Monitor follows, the Monitor and the coin’s own page show how the coin’s price has sat against $1 over the last 90 days: the largest move from $1 and the day it happened, how many daily readings were more than half a percent from $1, and the readings as a small chart.',
+      'The readings are DefiLlama’s one price per day — not exchange closing prices. The move from $1 is the reading minus one dollar, as a percent. A day the feed carries no reading for a coin is left out and the counts say how many days were covered; a missing day is never read as $1.',
+      'A coin pegged to something other than the dollar gets no history here: the readings are dollar prices, so its distance from its own peg cannot be read from them, and the coin is named as excluded rather than given a wrong figure. Figures and dates only: no grade, no word like “stable”, and no alert rings on any of it.',
+    ],
+  },
+  {
     id: 'defi-protocol-value',
     title: 'A DeFi coin’s protocol value locked',
     decided: '2026-11-24',

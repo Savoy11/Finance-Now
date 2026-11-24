@@ -1,9 +1,29 @@
 import { NextResponse } from 'next/server'
-import { ATTESTATION_META, COMPOSITION_MAP, META_AS_OF, getStablecoinMetaProvenance, pickMonitoredStablecoins } from '@/lib/data/stablecoinMeta'
+import { ATTESTATION_META, COMPOSITION_MAP, DEFILLAMA_STABLECOINS, META_AS_OF, getStablecoinMetaProvenance, pickMonitoredStablecoins } from '@/lib/data/stablecoinMeta'
 import { EXTERNAL_FETCH_TIMEOUT_MS } from '@/lib/server/fetchBudget'
 import { chainSplit, supplyChange, type ChainSplit, type LlamaSupplyFields, type SupplyChange } from '@/lib/data/stablecoinSupply'
+import { PEG_HISTORY_DAYS, PEG_OFF_THRESHOLD_PCT, pegHistoryFor, windowRows, type PegHistory, type PegPriceRow } from '@/lib/data/pegHistory'
 
 export const dynamic = 'force-dynamic'
+
+// ?history=1 (T-467, D242) serves each monitored dollar-pegged coin's last 90
+// daily price readings against $1 — largest move and its date, days more than
+// half a percent off, and the readings for a small chart — from the same host
+// (stablecoins.llama.fi/stablecoinprices, cached an hour: the feed adds one row
+// a day). Figures and dates only; no grade or alert (the D204 posture). The
+// Monitor's own response is untouched.
+
+export interface PegHistoryResponse {
+  ok: boolean
+  days: number
+  thresholdPct: number
+  /** Keyed by the coin's DefiLlama id (LiveReserveAsset.id). */
+  histories: Record<string, PegHistory>
+  /** Monitored coins with no history here, each with why. */
+  excluded: Array<{ id: string; symbol: string; reason: string }>
+  updatedAt: string
+  error?: string
+}
 
 export interface LiveReserveAsset {
   id: string
@@ -44,7 +64,8 @@ interface DefiLlamaStablecoin extends LlamaSupplyFields {
   chains?: string[]
 }
 
-export async function GET() {
+export async function GET(req: Request) {
+  if (new URL(req.url).searchParams.get('history')) return pegHistoryResponse()
   try {
     const res = await fetch('https://stablecoins.llama.fi/stablecoins?includePrices=true', {
       headers: { Accept: 'application/json' },
@@ -114,5 +135,65 @@ export async function GET() {
       { ok: false, assets: [], error: String(err), updatedAt: new Date().toISOString() },
       { status: 200 }
     )
+  }
+}
+
+/**
+ * The peg history (T-467). One request to /stablecoinprices carries every
+ * coin's one price per day; the window's readings are joined per monitored
+ * coin by the geckoId the hand-kept table records (D190). The coins list is
+ * read too (same 300s cache as the Monitor) for each coin's pegType: a coin
+ * the list reports pegged to something other than the dollar is EXCLUDED with
+ * the reason — the readings are dollar prices, so its distance from ITS peg
+ * cannot be read from them. If only the list fails, histories still serve:
+ * every monitored coin today is a dollar coin by the table's own construction,
+ * and one upstream failure must not crash the route.
+ */
+async function pegHistoryResponse(): Promise<NextResponse> {
+  const updatedAt = new Date().toISOString()
+  const base = { days: PEG_HISTORY_DAYS, thresholdPct: PEG_OFF_THRESHOLD_PCT, updatedAt }
+  try {
+    const [pricesRes, listRes] = await Promise.allSettled([
+      fetch('https://stablecoins.llama.fi/stablecoinprices', {
+        headers: { Accept: 'application/json' },
+        next: { revalidate: 3600 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS),
+      }),
+      fetch('https://stablecoins.llama.fi/stablecoins?includePrices=true', {
+        headers: { Accept: 'application/json' },
+        next: { revalidate: 300 }, signal: AbortSignal.timeout(EXTERNAL_FETCH_TIMEOUT_MS),
+      }),
+    ])
+
+    if (pricesRes.status === 'rejected' || !pricesRes.value.ok) {
+      const why = pricesRes.status === 'rejected' ? String(pricesRes.reason) : `DefiLlama HTTP ${pricesRes.value.status}`
+      return NextResponse.json({ ok: false, ...base, histories: {}, excluded: [], error: why } satisfies PegHistoryResponse)
+    }
+    const rows = (await pricesRes.value.json()) as PegPriceRow[]
+    const window = windowRows(Array.isArray(rows) ? rows : [])
+
+    // pegType per monitored coin, where the list answered.
+    const pegTypes = new Map<string, string>()
+    if (listRes.status === 'fulfilled' && listRes.value.ok) {
+      const data = await listRes.value.json().catch(() => null)
+      const coins: Array<{ id: string | number; pegType?: string }> = data?.peggedAssets ?? []
+      for (const c of coins) pegTypes.set(String(c.id), c.pegType ?? 'peggedUSD')
+    }
+
+    const histories: Record<string, PegHistory> = {}
+    const excluded: PegHistoryResponse['excluded'] = []
+    for (const [symbol, { id, geckoId }] of Object.entries(DEFILLAMA_STABLECOINS)) {
+      const pegType = pegTypes.get(id)
+      if (pegType && pegType !== 'peggedUSD') {
+        excluded.push({ id, symbol, reason: `Pegged to ${pegType.replace('pegged', '')}, and the daily readings are dollar prices — its distance from its own peg cannot be read from them.` })
+        continue
+      }
+      const history = pegHistoryFor(geckoId, window)
+      if (history) histories[id] = history
+      else excluded.push({ id, symbol, reason: 'The window holds no daily reading for this coin.' })
+    }
+
+    return NextResponse.json({ ok: true, ...base, histories, excluded } satisfies PegHistoryResponse)
+  } catch (err) {
+    return NextResponse.json({ ok: false, ...base, histories: {}, excluded: [], error: String(err) } satisfies PegHistoryResponse)
   }
 }

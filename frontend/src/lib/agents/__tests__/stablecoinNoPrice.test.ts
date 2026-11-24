@@ -13,7 +13,7 @@ describe('a stablecoin with no DefiLlama price', () => {
       { id: '1', gecko_id: 'tether', name: 'Tether', symbol: 'USDT', pegType: 'peggedUSD', pegMechanism: 'fiat-backed', price: 0.9991, circulating: { peggedUSD: 1.8e11 } },
     ] }))))
     const { GET } = await import('@/app/live-data/reserves/route')
-    const j = await (await GET()).json()
+    const j = await (await GET(new Request('http://localhost:3000/live-data/reserves'))).json()
     const usdc = j.assets.find((a: { symbol: string }) => a.symbol === 'USDC')
     const usdt = j.assets.find((a: { symbol: string }) => a.symbol === 'USDT')
     expect(usdc.price).toBeNull()

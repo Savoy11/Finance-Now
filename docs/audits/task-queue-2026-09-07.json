@@ -62,9 +62,9 @@
   "total_verified": 421,
   "outstanding": 410,
   "by_status": {
-   "closed": 281,
+   "closed": 282,
    "parked": 120,
-   "open": 9,
+   "open": 8,
    "blocked": 0
   },
   "by_owner_role": {
@@ -74,7 +74,7 @@
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 281,
+  "closed_by_annotation": 282,
   "counts_recomputed_on": "2026-11-24",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 410
@@ -17408,7 +17408,7 @@
   {
    "id": "T-467",
    "title": "Stablecoin peg-deviation history on the Reserve Monitor: largest move from peg, days off, and a sparkline over 90 days",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "blocking_decision": null,
    "opened": {
@@ -17441,7 +17441,24 @@
      "lines": "Proposal 2",
      "quote": "One real response read first, on your machine"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-11-24",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "Built the same day, with the gate satisfied in substance rather than skipped: the item’s opened block said a cloud session cannot reach the host, and that claim was measured false for this environment — stablecoins.llama.fi answered through the proxy, so the one-real-response-first rule (T-455) was met here, exactly as T-469’s was: /stablecoinprices was read whole (one request, one price per coin per day since 2020, keyed by the geckoIds DEFILLAMA_STABLECOINS already records per monitored coin, D190), and a dated 95-row excerpt is the repo’s test fixture. Built on it: /live-data/reserves?history=1 (the Monitor’s response untouched; prices cached an hour — the feed adds one row a day) serves each dollar-pegged monitored coin’s last 90 readings against $1 — the largest move with its date, the readings more than 0.5% off, coverage — excluding a coin pegged to another currency with the reason (the readings are dollar prices; the fixture’s euro control EURS sits near $1.09). PegHistoryPanel renders the sparkline and the two figures on the Monitor’s detail panel and each stablecoin’s Reserves tab; a missing day is counted out, never read as $1, and the copy calls them daily readings, never closes. No grade, band, “stable” word or alert (D204). Methods page gains the section (D163). Measured on the real window as the fixture was cut: USDT’s largest move −0.218% on 2026-11-20, zero days past the threshold — the checkable fact the surface exists to state, pinned by a test. 13 tests: window and dedup rules, the stats arithmetic, the missing-day rule, every monitored geckoId finding readings in the real excerpt, the euro control, wiring and no-grade-word pins.",
+    "approved_by": "owner, D242 (recorded 2026-11-24): “Approve (Recommended)” on the proposal this item filed; built the same day",
+    "evidence": [
+     "frontend/src/lib/data/pegHistory.ts",
+     "frontend/src/lib/data/__tests__/pegHistory.test.ts",
+     "frontend/src/lib/data/__tests__/fixtures/llama-stablecoinprices-2026-11-24.json",
+     "frontend/src/app/live-data/reserves/route.ts",
+     "frontend/src/components/analytics/reserves.tsx",
+     "frontend/src/app/(dashboard)/assets/[id]/page.tsx",
+     "frontend/src/lib/legal/dataMethods.ts"
+    ]
+   }
   },
   {
    "id": "T-468",
@@ -43752,6 +43769,10 @@
    {
     "on": "2026-11-24",
     "what": "T-468, T-469 and T-470 built and closed the same day D242 filed them (the “Coming up” strip on Headlines; the DeFi protocol card with its real-feed fixture, five coins mapped and SNX deliberately out; the FMP dividend-adjusted rung behind Tiingo, closing D21’s one named no-fallback surface). Open 12 -> 9. T-466 (launch rehearsal) and T-467 (peg history, gated on the owner’s fixture read) remain open."
+   },
+   {
+    "on": "2026-11-24",
+    "what": "T-467 built and closed: stablecoin peg history on the Reserve Monitor and the coin pages. The opened block’s “cloud cannot reach the host” gate was measured false for this environment — stablecoins.llama.fi answers through the proxy — so the T-455 one-real-response rule was met here (dated 95-row fixture in the repo) and no owner-machine step was needed. Open 9 -> 8; T-466 (launch rehearsal) is the pass’s last open item."
    }
   ]
  }
