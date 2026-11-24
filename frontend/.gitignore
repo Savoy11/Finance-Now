@@ -21,3 +21,6 @@ coverage/
 
 # "Download my data" exports (npm run user:export, T-452): personal information, never committed
 user-export-*/
+
+# Downloaded SEC Form 13F data-set cache (npm run holders:build, T-471) — ~500MB extracted
+fn-13f-cache/

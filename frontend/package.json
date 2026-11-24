@@ -36,6 +36,7 @@
     "data-sources": "tsx scripts/gen-data-sources.ts",
     "terms:report": "tsx scripts/terms-report.mjs",
     "fund-facts": "node scripts/build-fund-facts.mjs",
+    "holders:build": "tsx scripts/build-stock-holders.ts",
     "fee-worksheet": "tsx scripts/gen-transfer-fee-worksheet.ts",
     "staking-worksheet": "tsx scripts/gen-staking-catalog-worksheet.ts",
     "staking-facts-page": "tsx scripts/gen-staking-facts-page.ts",

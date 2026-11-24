@@ -117,15 +117,30 @@ export interface NportReport {
   flows: [NportFlowMonth | null, NportFlowMonth | null, NportFlowMonth | null]
 }
 
+// One in-process copy of the ~11MB ticker map. Next's fetch cache already
+// dedupes the download per revalidate window; this memo spares the re-parse
+// there and, more to the point, keeps a script sweeping the whole fund catalog
+// (build-stock-holders) from downloading the file once per fund.
+let mfTickerMap: Promise<{ fields?: string[]; data?: Array<Array<string | number>> }> | null = null
+
 /** Resolve a fund ticker to its EDGAR series/class ids via the SEC's mutual-fund
  *  ticker map (covers ETFs and mutual funds — both are series/class registrants). */
 export async function resolveFundSeries(symbol: string): Promise<FundSeries | null> {
-  const res = await fetch('https://www.sec.gov/files/company_tickers_mf.json', {
-    headers: EDGAR_HEADERS,
-    next: { revalidate: 86_400 },
-  })
-  if (!res.ok) throw new Error(`SEC MF ticker map: HTTP ${res.status}`)
-  const payload = await res.json() as { fields?: string[]; data?: Array<Array<string | number>> }
+  mfTickerMap ??= (async () => {
+    const res = await fetch('https://www.sec.gov/files/company_tickers_mf.json', {
+      headers: EDGAR_HEADERS,
+      next: { revalidate: 86_400 },
+    })
+    if (!res.ok) throw new Error(`SEC MF ticker map: HTTP ${res.status}`)
+    return await res.json() as { fields?: string[]; data?: Array<Array<string | number>> }
+  })()
+  let payload
+  try {
+    payload = await mfTickerMap
+  } catch (err) {
+    mfTickerMap = null // a failed fetch is not cached
+    throw err
+  }
   const fields = payload.fields ?? []
   const iSeries = fields.indexOf('seriesId')
   const iClass = fields.indexOf('classId')
@@ -140,12 +155,22 @@ export async function resolveFundSeries(symbol: string): Promise<FundSeries | nu
   return null
 }
 
+/**
+ * browse-edgar refuses arbitrary counts since late 2026: "Invalid count,
+ * Received: 12, Count must be one of: 10, 20, 30, 40, 50, 60, 70, 80, 90, 100,
+ * 500" (measured 2026-11-24 — every N-PORT surface had been failing on it).
+ * Ask for the next allowed value at or above the limit; the parser slices.
+ */
+export function allowedBrowseCount(limit: number): number {
+  return Math.min(Math.max(Math.ceil(limit / 10) * 10, 10), 100)
+}
+
 /** List recent NPORT-P filings for a series, newest first. browse-edgar accepts
  *  a series id in the CIK slot and returns that series' filings as Atom XML. */
 export async function listNportFilings(seriesId: string, limit = 12): Promise<NportFilingRef[]> {
   const params = new URLSearchParams({
     action: 'getcompany', CIK: seriesId, type: 'NPORT-P',
-    dateb: '', owner: 'include', count: String(Math.min(limit, 40)), output: 'atom',
+    dateb: '', owner: 'include', count: String(allowedBrowseCount(limit)), output: 'atom',
   })
   const res = await fetch(`https://www.sec.gov/cgi-bin/browse-edgar?${params}`, {
     headers: { ...EDGAR_HEADERS, Accept: 'application/atom+xml' },

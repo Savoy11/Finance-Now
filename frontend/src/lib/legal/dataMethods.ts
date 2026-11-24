@@ -218,6 +218,16 @@ export const DATA_METHODS: readonly MethodSection[] = [
     ],
   },
   {
+    id: 'stock-ownership',
+    title: 'Who holds a stock',
+    decided: '2026-11-24',
+    paragraphs: [
+      'A stock’s page shows the company’s own share split — shares issued, shares the company holds back itself (treasury shares), and shares in the market — each read from the company’s SEC filings with its own filing date, since the three are not always reported on the same day. A company that cancels the shares it buys back has no treasury shares to report, and the page says that rather than showing a blank. The treasury figure as a share of issued shares is worked out here: treasury divided by issued.',
+      'Below that sits what professional investment managers reported holding. US managers over a size threshold must report their holdings to the SEC each quarter (Form 13F), and the page adds those reports up: total shares reported, how many managers, and the largest ten. The percent shown is that total divided by the company’s own count of shares in the market. The totals are as managers filed them — a share lent into a short sale is counted by two managers at once, and a parent firm and its subsidiary can each report the same shares — so the total can honestly top the company’s own count, and the page says so. Reports cover a quarter end and arrive up to 45 days later.',
+      'A second list shows which of the funds this app tracks hold the stock, from each fund’s own portfolio filing (Form N-PORT), with each figure dated by that filing. Funds beyond this app’s catalog are not counted, and the list says how many funds were read. The two lists are joined to the stock through its security identifier (CUSIP), worked out from the filings themselves: an identifier counts only when at least two independent fund companies’ filings agree on it under the same company name at a consistent per-share price, and a stock whose identifier cannot be settled that way shows no figures rather than guessed ones.',
+    ],
+  },
+  {
     id: 'coin-supply',
     title: 'Coin supply and price history',
     decided: '2026-11-07',
