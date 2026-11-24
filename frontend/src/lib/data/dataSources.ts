@@ -371,8 +371,8 @@ export const DATA_SOURCES: DataSourceEntry[] = [
   },
   {
     id: 'security-returns', surface: 'Trailing returns (1M/3M/YTD/1Y)', module: 'equities',
-    route: '/live-data/security-returns', status: 'key-gated', providers: [TIINGO],
-    notes: 'One request per symbol now (the batched source was withdrawn), so the route serves up to 60 named symbols and REFUSES whole-universe requests rather than silently truncating. Screening and sorting funds by trailing return is off as a result; the Returns columns are still live for the visible page.',
+    route: '/live-data/security-returns', status: 'key-gated', providers: [TIINGO, FMP],
+    notes: 'One request per symbol now (the batched source was withdrawn), so the route serves up to 60 named symbols and REFUSES whole-universe requests rather than silently truncating. Screening and sorting funds by trailing return is off as a result; the Returns columns are still live for the visible page. FMP backs Tiingo up per symbol since T-470 (D242), on the dividend-adjusted reader so the basis matches — fallback traffic only (free tier: 250 calls a day), and on free FMP keys it serves stocks while most funds answered 402 (measured 2026-09-18), so funds largely still rest on Tiingo.',
   },
   {
     id: 'market-news', surface: 'Stock market news', module: 'equities',

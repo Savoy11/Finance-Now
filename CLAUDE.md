@@ -2015,8 +2015,11 @@ is an honest empty or a disclosed fallback, never a purchase. The other half is 
 standing requirement: **build so that dropping any one vendor degrades a surface rather
 than removing it.** That is measured, not asserted — `npx tsx scripts/gen-coverage-matrix.ts`
 prints a "Strands if dropped" column per vendor, and those counts are the ones to drive
-to zero. Four surfaces were single-sourced when the rule was made; `security-returns` is
-the only one with no fallback at all. Full reasoning, and the measured provider coverage
+to zero. Four surfaces were single-sourced when the rule was made; `security-returns` was
+the only one with no fallback at all **until T-470 (D242, 2026-11-24) put FMP's
+dividend-adjusted history behind Tiingo** — fallback traffic only, stocks mostly
+(most funds answered 402 on the free key, measured 2026-09-18), basis labelled
+per symbol. Full reasoning, and the measured provider coverage
 behind it, in `docs/decisions/2026-09-18-owner-decisions.md`.
 
 ⚠ **That column sees only degraded surfaces and the keyed vendors that could fix them**, so
