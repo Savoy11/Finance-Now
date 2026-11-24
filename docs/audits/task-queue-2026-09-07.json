@@ -62,9 +62,9 @@
   "total_verified": 421,
   "outstanding": 410,
   "by_status": {
-   "closed": 278,
+   "closed": 281,
    "parked": 120,
-   "open": 12,
+   "open": 9,
    "blocked": 0
   },
   "by_owner_role": {
@@ -74,7 +74,7 @@
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 278,
+  "closed_by_annotation": 281,
   "counts_recomputed_on": "2026-11-24",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 410
@@ -17446,7 +17446,7 @@
   {
    "id": "T-468",
    "title": "\"This week\" on Headlines: next Fed meeting, next CPI/jobs/GDP/PCE release, and watchlist earnings, on the landing page",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "blocking_decision": null,
    "opened": {
@@ -17477,12 +17477,26 @@
      "lines": "Proposal 3",
      "quote": "those surfaces keep the detail, the landing page gets the glance"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-11-24",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "Built as the “Coming up” strip (the pass’s working name was “This week”; the shown heading is the honest one, since the next release can sit weeks out). lib/data/thisWeek.ts picks the next Fed decision (tentative flagged past the next meeting, the Board’s rule), the next release of each kind and the watchlist stocks inside T-458’s 14-day window, each row carrying its publisher’s citation; ThisWeekStrip renders the chips on Headlines with the citations printed visibly (D211), caps earnings at six with a “+N more” link to the Market Calendar, and mounts nothing with neither module on. The earnings request fires only with Equities on and stocks on a watchlist; the macro dates fetch nothing. 12 tests: next-of-each picking against the real tables, window and sort, agency citations, entitlement gating, the mount.",
+    "approved_by": "owner, D242 (recorded 2026-11-24): “Approve (Recommended)” on the proposal this item filed; built the same day",
+    "evidence": [
+     "frontend/src/lib/data/thisWeek.ts",
+     "frontend/src/components/markets/ThisWeekStrip.tsx",
+     "frontend/src/lib/data/__tests__/thisWeek.test.ts",
+     "frontend/src/app/(dashboard)/headlines/page.tsx"
+    ]
+   }
   },
   {
    "id": "T-469",
    "title": "DeFi coin pages: the protocol’s value locked, its 24h/7d change and category, from the feed the app already polls",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "blocking_decision": null,
    "opened": {
@@ -17514,12 +17528,28 @@
      "lines": "53-54",
      "quote": "name: string; tvl: number; change_1d: number | null; change_7d: number | null; category: string"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-11-24",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "Built, with the map grounded on the real feed first (read 2026-11-24 from this environment, which can reach api.llama.fi — the dated excerpt is the test fixture). What the feed showed changed two of the proposal’s assumptions, both recorded: gecko_id cannot be the join (null on most version entries; no Uniswap entry names ‘uniswap’), so the hand-kept map matches by parentProtocol/slug and the figure SUMS the protocol’s parts (Aave is seven entries), the combined 24h/7d change running each part’s own figure through its prior value and withheld when any counted part lacks one; and SNX is deliberately unmapped — the feed reports almost nothing for Synthetix’s current versions — so five coins carry the card (UNI, AAVE, MKR→Sky, CRV, LDO) and every unmapped catalog DeFi coin names its reason, a new one failing the map test until decided. /live-data/defi-tvl?coin= serves it from the same 5-minute-cached fetch, the panel’s response untouched; the card always carries the protocol-not-token line; the methods page gains the section (D163). 12 tests against the fixture plus arithmetic and wiring pins.",
+    "approved_by": "owner, D242 (recorded 2026-11-24): “Approve (Recommended)” on the proposal this item filed; built the same day",
+    "evidence": [
+     "frontend/src/lib/data/defiProtocols.ts",
+     "frontend/src/lib/data/__tests__/defiProtocols.test.ts",
+     "frontend/src/lib/data/__tests__/fixtures/llama-protocols-2026-11-24.json",
+     "frontend/src/components/assets/CoinProtocolCard.tsx",
+     "frontend/src/app/live-data/defi-tvl/route.ts",
+     "frontend/src/lib/legal/dataMethods.ts"
+    ]
+   }
   },
   {
    "id": "T-470",
    "title": "security-returns: an FMP dividend-adjusted rung behind Tiingo — closing D21’s one named no-fallback surface",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "blocking_decision": null,
    "opened": {
@@ -17552,7 +17582,20 @@
      "lines": "9-11",
      "quote": "FMP’s /dividend-adjusted endpoint is on Tiingo’s [basis] … 402 for QQQ, VOO and VTSAX, measured 2026-09-18"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-11-24",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "Built. /live-data/security-returns computes a missing symbol’s returns from FMP’s dividend-adjusted daily history through T-441’s reader (Tiingo’s basis, so the rungs cannot disagree about what a return means): never called for a symbol Tiingo answered (fallback traffic only, the free tier’s 250 calls a day), cached 900s (Tiingo’s no-persistent-cache condition is Tiingo’s alone), a 402 leaving the symbol a dash, and the /full fallback’s split-only closes labelled adjusted:false exactly as T-401 labels Tiingo’s. The response names the rung per symbol (sources) and overall (source gains fmp/mixed; consumers only test none). dataSources names FMP on the surface so the next coverage-matrix run sees the second rung, and CLAUDE.md’s “only one with no fallback” line now reads as history. 6 tests drive the fallback order, the 402 path, the basis labels, both keyless shapes and the universe refusal.",
+    "approved_by": "owner, D242 (recorded 2026-11-24): “Approve (Recommended)” on the proposal this item filed; built the same day",
+    "evidence": [
+     "frontend/src/app/live-data/security-returns/route.ts",
+     "frontend/src/lib/server/__tests__/securityReturnsRung.test.ts",
+     "frontend/src/lib/data/dataSources.ts"
+    ]
+   }
   }
  ],
  "closed_but_still_listed_as_open_in_docs": [
@@ -43705,6 +43748,10 @@
    {
     "on": "2026-11-24",
     "what": "D242 (opportunity-scout FILE mode): filed the five approved proposals of docs/proposals/2026-11-22-proposals.md as T-466..T-470, all status open, each carrying an opened block naming its proposal and D242. The owner marked every proposal \"Approve (Recommended)\"; nothing was rejected (rejected-proposals.md untouched) and nothing deferred (nothing carries forward). Counts recomputed: open 7 -> 12, outstanding/total 405 -> 410."
+   },
+   {
+    "on": "2026-11-24",
+    "what": "T-468, T-469 and T-470 built and closed the same day D242 filed them (the “Coming up” strip on Headlines; the DeFi protocol card with its real-feed fixture, five coins mapped and SNX deliberately out; the FMP dividend-adjusted rung behind Tiingo, closing D21’s one named no-fallback surface). Open 12 -> 9. T-466 (launch rehearsal) and T-467 (peg history, gated on the owner’s fixture read) remain open."
    }
   ]
  }
