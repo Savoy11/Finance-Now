@@ -62,9 +62,9 @@
   "total_verified": 421,
   "outstanding": 410,
   "by_status": {
-   "closed": 282,
+   "closed": 283,
    "parked": 120,
-   "open": 8,
+   "open": 7,
    "blocked": 0
   },
   "by_owner_role": {
@@ -74,7 +74,7 @@
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 282,
+  "closed_by_annotation": 283,
   "counts_recomputed_on": "2026-11-24",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 410
@@ -17368,7 +17368,7 @@
   {
    "id": "T-466",
    "title": "Rehearse the launch flip: run the dark sign-in kit end to end against a scratch database (npm run launch:rehearse)",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "blocking_decision": null,
    "opened": {
@@ -17403,7 +17403,21 @@
      "lines": "Proposal 1",
      "quote": "per-piece green plus never-run is how a whole breaks silently"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-11-24",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "Built AND RUN: npm run launch:rehearse (scripts/launch-rehearse.ts) boots the app with the launch environment against an explicit scratch Postgres migrated from zero and walks one account through the whole built-dark stack, reporting PASS/FAIL per step — and its first real run (2026-11-24, from a cloud container running its own Postgres 16) passed 18 of 18: migrate-from-zero (36 tables), boot, the wall redirect, sign-up refused without the consent box and accepted with it, sign-in, TOTP enrollment with ten recovery codes, totp_required after enrollment, the replay guard refusing the window’s used code, the next window’s code and a recovery code each signing in, Builder not-included-and-grant-locked then granted by the owner command and seen by the account, “Download my data” carrying the account’s own audit rows, the audit log holding the walk’s nine events (the replay refusal logged as signin_code_failed) with UPDATE and DELETE refused by the WORM trigger, and — under --site-lock, with FN_ADMIN_TOKEN set so the D174 lock binds on localhost (D193) — pages redirecting to /owner and data routes answering 401. So the launch flip is now a re-run of something known to work. THE RUN ALSO MOVED THE RECIPE: D232’s three variables do not boot Auth.js off Vercel — AUTH_TRUST_HOST=true is needed as well — and dev mode must set FN_ALLOW_LOCAL_USER=false to match production; both are in the report’s closing lines and CLAUDE.md’s launch-flip note. Safety as specified: report-only (exit 0/1, 2 inconclusive, the probe convention), the scratch --db explicit and refused when it equals the ambient DATABASE_URL, nothing deleted — the scratch database is left in place, named in the report. Guarded by launchRehearse.test.ts (the npm wiring, the ambient-URL refusal, the no-deletion scan, the launch env, the exit-code convention, the named steps and both forbidden WORM writes).",
+    "approved_by": "owner, D242 (recorded 2026-11-24): “Approve (Recommended)” on the proposal this item filed; built and run the same pass",
+    "evidence": [
+     "frontend/scripts/launch-rehearse.ts",
+     "frontend/src/lib/server/__tests__/launchRehearse.test.ts",
+     "frontend/package.json",
+     "CLAUDE.md"
+    ]
+   }
   },
   {
    "id": "T-467",
@@ -43773,6 +43787,10 @@
    {
     "on": "2026-11-24",
     "what": "T-467 built and closed: stablecoin peg history on the Reserve Monitor and the coin pages. The opened block’s “cloud cannot reach the host” gate was measured false for this environment — stablecoins.llama.fi answers through the proxy — so the T-455 one-real-response rule was met here (dated 95-row fixture in the repo) and no owner-machine step was needed. Open 9 -> 8; T-466 (launch rehearsal) is the pass’s last open item."
+   },
+   {
+    "on": "2026-11-24",
+    "what": "T-466 built and RUN: the launch rehearsal’s first real run passed 18 of 18 from a cloud container with its own Postgres — the whole D232–D235 built-dark stack plus the D174 site lock, run together for the first time — and established that the launch flip needs AUTH_TRUST_HOST=true beyond D232’s three variables on any non-Vercel host. With it the whole 2026-11-22 proposal pass (T-466..T-470) is built and closed in two days. Open 8 -> 7; every open item again waits on the owner, counsel or launch."
    }
   ]
  }

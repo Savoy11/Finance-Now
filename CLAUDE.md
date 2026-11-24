@@ -1375,7 +1375,12 @@ FN_REQUIRE_AUTH=true                        # LAUNCH ONLY (D232, 2026-11-16). Tu
                                             # redirect away and the wall is inert. The launch flip is
                                             # environment only — this, AUTH_SECRET and FN_SITE_OPEN=true —
                                             # no code change (the old REQUIRE_AUTH/LOGIN_DISABLED
-                                            # constants are gone; lib/server/authWall.ts holds the rules)
+                                            # constants are gone; lib/server/authWall.ts holds the rules).
+                                            # ⚠ On any host that is not Vercel, Auth.js also needs
+                                            # AUTH_TRUST_HOST=true or it refuses to serve sign-in —
+                                            # measured by the launch rehearsal (T-466, D242), which is
+                                            # why the flip is now a re-run: `npm run launch:rehearse`
+                                            # (see "Launch rehearsal" under Testing)
 FN_ALLOW_LOCAL_USER=true|false              # (legacy CAEP_ALLOW_LOCAL_USER still honored)
                                             # Defaults: allowed in dev, denied in production.
                                             # ⚠ Setting true in production hands every anonymous
@@ -1628,6 +1633,29 @@ Finance Now runs **live-only**. `LIVE_DATA` is hardcoded `true` in `lib/constant
 npm run smoke   # quick subset (CI)
 npm run audit   # full audit; also audit:strict and audit:json
 ```
+
+**Launch rehearsal (T-466, D242, 2026-11-24):**
+
+```bash
+npm run launch:rehearse -- --db postgres://user:pass@127.0.0.1:5432/scratch_db [--site-lock]
+```
+
+`scripts/launch-rehearse.ts` does what launch day would otherwise do for the first time: boots the
+app with the launch environment (D232's three variables, plus `AUTH_TRUST_HOST=true` — needed on
+any non-Vercel host, a rehearsal finding — and production's `FN_ALLOW_LOCAL_USER=false`) against a
+**scratch** Postgres migrated from zero, and walks one account through the whole built-dark stack:
+the wall redirect, sign-up refused without the consent box and accepted with it, sign-in, TOTP
+enrollment with the replay guard proven and a recovery code spent, entitlements (Builder
+not-included, then granted by `npm run entitlements`), "Download my data", and the audit log
+holding the walk's rows with UPDATE and DELETE refused by the WORM trigger. `--site-lock` boots a
+second server without `FN_SITE_OPEN` and with `FN_ADMIN_TOKEN` set (so the D174 lock binds even on
+localhost, D193) and asserts pages redirect to /owner and data routes answer 401. Report-only,
+probe convention: exit 0/1, **2 inconclusive** (no reachable scratch database, or no boot — says
+nothing about the code). The scratch `--db` is explicit and refused when it equals the ambient
+`DATABASE_URL`; nothing is deleted — the scratch database is left in place, named in the report.
+**First run 2026-11-24, from a cloud container with its own Postgres: 18 of 18 PASS**, so the flip
+is a re-run of something known to work. Guarded by `lib/server/__tests__/launchRehearse.test.ts`.
+Re-run after any change to auth, entitlements, the audit log or a migration.
 
 **Fee reconciliation (owner machine — needs sec.gov):**
 
