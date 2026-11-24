@@ -16,6 +16,7 @@ import type { MarketNewsResponse } from '@/app/live-data/market-news/route'
 import type { MacroNewsResponse } from '@/app/live-data/macro-news/route'
 import { timeAgoCompact } from '@/lib/utils/format'
 import { MAX_RELATED } from '@/lib/data/macroNewsMatchers'
+import { ThisWeekStrip } from '@/components/markets/ThisWeekStrip'
 
 // Aggregate landing feed. Merges the general news sources the suite has —
 // /live-data/news (crypto), /live-data/market-news (equities) and, since T-456,
@@ -421,6 +422,11 @@ export default function HeadlinesPage() {
 
       {/* Data provenance */}
       <SourceLine id="headlines" />
+
+      {/* The week's known dates (T-468) — the glance; the detail stays on
+          /macro/rates, /equities/calendar and the Watchlist marks. Renders
+          nothing when no date-carrying module is on. */}
+      <ThisWeekStrip />
 
       {/* Loading */}
       {isLoading && (
