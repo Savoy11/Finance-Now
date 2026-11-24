@@ -67,7 +67,8 @@
     "accuracy-check": "tsx scripts/accuracy-check.ts",
     "fund-assets-check": "tsx scripts/fund-assets-check.ts",
     "deps:check": "node scripts/check-dependency-audit.mjs",
-    "ratings:validate": "tsx scripts/validate-ratings.ts"
+    "ratings:validate": "tsx scripts/validate-ratings.ts",
+    "launch:rehearse": "tsx scripts/launch-rehearse.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.6.0",
