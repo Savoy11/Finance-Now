@@ -17,6 +17,8 @@ defi-tvl, security-returns, company-facts and earnings-dates routes; `lib/api/li
 Mark each proposal below: `APPROVED`, `REJECTED`, or `DEFERRED`, and add a
 reason for anything rejected. Then run the scout in FILE mode.
 
+> **Marked (recorded 2026-11-24, D242): all five APPROVED** — filed as T-466–T-470 by the FILE pass the same day. Nothing was rejected or deferred, so the rejection log is untouched and nothing carries forward.
+
 *How to read the ratings:* **Importance** = what the product and its users gain · **Efficiency** =
 that gain for the work it takes · **Practicality** = how ready it is (dependencies, risk). `P0`/`P1`/`P2`
 is the net of the three. Effort is in rough working days for one developer.
@@ -44,7 +46,7 @@ is the net of the three. Effort is in rough working days for one developer.
 
 ## 1. Rehearse the launch flip: run the dark sign-in kit end to end against a scratch database · proposed `P1` · target section: ledger, new item (category `process`, Auth & accounts)
 
-**Status:** PENDING
+**Status:** APPROVED — owner (recorded 2026-11-24, D242); filed as T-466
 
 **What:** A report-only harness, `npm run launch:rehearse`, that does once, today, what launch day will do for the
 first time otherwise: start the app with the launch environment (`FN_REQUIRE_AUTH=true`, `AUTH_SECRET`,
@@ -92,7 +94,7 @@ run into a re-run. · *Efficiency:* High — a script in the established probe p
 
 ## 2. How far each stablecoin has strayed from its peg, over the last 90 days · proposed `P2` · target section: ledger, new item (category `feature`, Crypto — Reserve Monitor)
 
-**Status:** PENDING
+**Status:** APPROVED — owner (recorded 2026-11-24, D242); filed as T-467
 
 **What:** On the Reserve Monitor (and each stablecoin's own Reserves tab), beside the supply change T-449 added:
 for each monitored coin, over the last 90 days, the largest distance its price moved from its peg and the date it
@@ -134,7 +136,7 @@ read gates it; everything after is routine.
 
 ## 3. "This week" on Headlines: the dates the app already knows, where every session starts · proposed `P2` · target section: ledger, new item (category `feature`, core — Headlines)
 
-**Status:** PENDING
+**Status:** APPROVED — owner (recorded 2026-11-24, D242); filed as T-468
 
 **What:** A one-line strip (or small card) at the top of Headlines: the next Fed meeting, the next CPI / jobs /
 GDP / PCE release, and — for stocks on your watchlists — earnings expected in the coming days, each linking to the
@@ -170,7 +172,7 @@ built parts. · *Practicality:* Very good.
 
 ## 4. A DeFi coin's protocol, measured: value locked and its change, from a feed the app already polls · proposed `P2` · target section: ledger, new item (category `feature`, Crypto — coin pages)
 
-**Status:** PENDING
+**Status:** APPROVED — owner (recorded 2026-11-24, D242); filed as T-469
 
 **What:** On the coin pages for catalog coins whose token belongs to a DeFi protocol (UNI, AAVE, MKR, CRV, LDO,
 SNX; the catalog files ten as `assetType: 'defi'`), a small card: the value locked in the protocol, its 24-hour and
@@ -208,7 +210,7 @@ the data is already on the server. · *Practicality:* Very good.
 
 ## 5. A second rung under trailing returns: FMP's dividend-adjusted history behind Tiingo · proposed `P2` · target section: ledger, new item (category `resilience`, Equities & Funds)
 
-**Status:** PENDING
+**Status:** APPROVED — owner (recorded 2026-11-24, D242); filed as T-470
 
 **What:** When Tiingo serves nothing for a symbol (no key, an outage, or the vendor gone), `/live-data/security-returns`
 computes the same trailing 1M/3M/YTD/1Y returns from FMP's dividend-adjusted daily history — the reader T-441
