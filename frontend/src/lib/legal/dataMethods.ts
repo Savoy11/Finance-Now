@@ -198,6 +198,26 @@ export const DATA_METHODS: readonly MethodSection[] = [
     ],
   },
   {
+    id: 'stablecoin-peg-history',
+    title: 'Stablecoin peg history',
+    decided: '2026-11-24',
+    paragraphs: [
+      'For each dollar-pegged coin the Reserve Monitor follows, the Monitor and the coin’s own page show how the coin’s price has sat against $1 over the last 90 days: the largest move from $1 and the day it happened, how many daily readings were more than half a percent from $1, and the readings as a small chart.',
+      'The readings are DefiLlama’s one price per day — not exchange closing prices. The move from $1 is the reading minus one dollar, as a percent. A day the feed carries no reading for a coin is left out and the counts say how many days were covered; a missing day is never read as $1.',
+      'A coin pegged to something other than the dollar gets no history here: the readings are dollar prices, so its distance from its own peg cannot be read from them, and the coin is named as excluded rather than given a wrong figure. Figures and dates only: no grade, no word like “stable”, and no alert rings on any of it.',
+    ],
+  },
+  {
+    id: 'defi-protocol-value',
+    title: 'A DeFi coin’s protocol value locked',
+    decided: '2026-11-24',
+    paragraphs: [
+      'Some coins govern a DeFi protocol — software holding deposits people can check on the blockchain. For those coins, the coin’s page shows the value locked in that protocol, its change over 24 hours and 7 days, and what kind of protocol it is, from DefiLlama’s protocol feed.',
+      'A protocol usually appears in that feed as several entries — its versions and products — so the figure shown adds the entries that belong to the protocol, matched by a hand-kept list, never by name or ticker. The change is worked out from each part’s own change: a part’s value a day ago is its value now divided by one plus its change, and the whole’s change compares today’s total with that total. If any counted part reports no change, none is shown for that window. The kind shown is the largest part’s.',
+      'The figure measures the protocol, not the token, and the page says so: the token’s price is not a claim on that value. A coin whose protocol the feed carries no dependable value for shows nothing rather than a wrong figure.',
+    ],
+  },
+  {
     id: 'coin-supply',
     title: 'Coin supply and price history',
     decided: '2026-11-07',

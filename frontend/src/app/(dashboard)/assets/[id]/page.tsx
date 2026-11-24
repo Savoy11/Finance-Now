@@ -46,9 +46,10 @@ import { clsx } from 'clsx'
 import { useAsset } from '@/hooks/useAssets'
 import { AssetActions } from '@/components/markets/AssetActions'
 import { CoinStakingLine } from '@/components/assets/CoinStakingLine'
+import { CoinProtocolCard } from '@/components/assets/CoinProtocolCard'
 import { coingeckoIdFor } from '@/lib/api/live/coingeckoIds'
 import { ReserveComposition } from '@/components/analytics/ReserveComposition'
-import { ReserveProvenance, SupplyChangePanel, normalisePegMechanism } from '@/components/analytics/reserves'
+import { PegHistoryPanel, ReserveProvenance, SupplyChangePanel, normalisePegMechanism } from '@/components/analytics/reserves'
 import { PriceHistoryChart } from '@/components/analytics/PriceHistoryChart'
 import { MetricCard } from '@/components/ui/MetricCard'
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton'
@@ -929,6 +930,12 @@ function LiveReservesView({ liveAsset }: { liveAsset: LiveReserveAsset }) {
         </div>
       )}
 
+      {/* Has it held its peg? (T-467) — renders nothing when the history
+          response carries no readings for this coin. */}
+      <div className="rounded-card border border-border bg-bg-card p-5 empty:hidden">
+        <PegHistoryPanel coinId={liveAsset.id} />
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <ErrorBoundary>
           <ReserveComposition
@@ -1175,6 +1182,10 @@ function AssetDetailPageInner() {
 
       {/* How many catalog providers stake this coin, linking to the Staking page (T-463). */}
       <CoinStakingLine assetId={asset.id} />
+
+      {/* A DeFi token's protocol, measured (T-469): value locked and its change,
+          for coins the hand-kept map names. Unmapped coins mount nothing. */}
+      <CoinProtocolCard assetId={asset.id} symbol={asset.symbol} />
 
       {/* Measured-risk rating (T-420, D92). Renders nothing while
           ASSET_PAGE_RATINGS_SHOWN is false (lib/risk/visibility.ts). */}

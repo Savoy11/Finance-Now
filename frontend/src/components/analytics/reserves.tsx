@@ -43,9 +43,10 @@ import {
 } from '@/lib/data/stablecoinMeta'
 import { formatCurrency, formatCompact, formatDate, formatPercent } from '@/lib/utils/format'
 import { LIVE_DATA } from '@/lib/constants'
-import type { LiveReserveAsset } from '@/app/live-data/reserves/route'
+import type { LiveReserveAsset, PegHistoryResponse } from '@/app/live-data/reserves/route'
 import { formatSupplyChange, type ChainSplit, type SupplyChange } from '@/lib/data/stablecoinSupply'
 import { coinPageForReserve } from '@/lib/data/coinPageLinks'
+import { formatDevPct, type PegHistory } from '@/lib/data/pegHistory'
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
@@ -314,6 +315,68 @@ export function SupplyChangePanel({ change, split }: { change: SupplyChange | nu
 }
 
 /**
+ * Peg history (T-467, D242): has this coin actually held its peg? The largest
+ * move from $1 over the window with its date, the daily readings more than
+ * half a percent off, and the readings as a small chart. Figures and dates
+ * only — no grade, no word like "stable", no alert (the D204 posture). The
+ * panel fetches the shared ?history=1 response itself (cached an hour — the
+ * feed adds one reading a day), so mounting it anywhere is one line; a coin
+ * the response carries no history for renders nothing.
+ */
+export function usePegHistory() {
+  return useQuery<PegHistoryResponse>({
+    queryKey: ['reserves', 'peg-history'],
+    queryFn: () => fetch('/live-data/reserves?history=1').then((r) => r.json()),
+    staleTime: 60 * 60 * 1000,
+    enabled: LIVE_DATA,
+  })
+}
+
+/** 90 daily readings against a dashed $1 line, as one small SVG. */
+function PegSparkline({ history }: { history: PegHistory }) {
+  const w = 240
+  const h = 36
+  const prices = history.readings.map((r) => r.price)
+  // The scale always includes the threshold band, so a quiet coin draws as a
+  // near-flat line instead of noise stretched to fill the box.
+  const span = Math.max(0.006, ...prices.map((p) => Math.abs(p - 1) * 1.2))
+  const y = (p: number) => h / 2 - ((p - 1) / span) * (h / 2 - 2)
+  const x = (i: number) => (prices.length > 1 ? (i / (prices.length - 1)) * w : w / 2)
+  const points = prices.map((p, i) => `${x(i).toFixed(1)},${y(p).toFixed(1)}`).join(' ')
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-9" role="img" aria-label={`Daily price readings against $1 over the last ${history.daysCovered} days`}>
+      <line x1={0} y1={h / 2} x2={w} y2={h / 2} stroke="currentColor" className="text-slate-700" strokeDasharray="3 3" strokeWidth={1} />
+      <polyline points={points} fill="none" stroke="currentColor" className="text-sky-400" strokeWidth={1.2} />
+    </svg>
+  )
+}
+
+export function PegHistoryPanel({ coinId }: { coinId: string }) {
+  const { data } = usePegHistory()
+  const history = data?.histories?.[coinId]
+  if (!history) return null
+  return (
+    <div className="space-y-2 text-xs">
+      <p className="text-slate-400">Peg history, last {data!.days} days</p>
+      <PegSparkline history={history} />
+      <div className="grid grid-cols-2 gap-2">
+        <div className="rounded-md border border-slate-800 bg-slate-900/40 px-2 py-1.5">
+          <p className="font-mono tabular-nums text-sm text-slate-200">{formatDevPct(history.maxDevPct)}</p>
+          <p className="text-[10px] text-slate-500">Largest move from $1 · {formatDate(history.maxDevDate)}</p>
+        </div>
+        <div className="rounded-md border border-slate-800 bg-slate-900/40 px-2 py-1.5">
+          <p className="font-mono tabular-nums text-sm text-slate-200">{history.daysOffHalfPct} of {history.daysCovered}</p>
+          <p className="text-[10px] text-slate-500">Days more than {data!.thresholdPct}% from $1</p>
+        </div>
+      </div>
+      <p className="text-[11px] text-slate-500 leading-relaxed">
+        DefiLlama&rsquo;s one price reading per day, against $1. Figures only — a day with no reading is left out, never read as $1.
+      </p>
+    </div>
+  )
+}
+
+/**
  * The full reserve monitor: KPIs, attestation table, and a per-asset detail
  * panel. Rendered as the "Reserve Monitor" tab on /assets; previously also the
  * whole of /reserves, which now redirects here.
@@ -514,6 +577,10 @@ export function ReserveMonitorPanel() {
                     <SupplyChangePanel change={selected.supplyChange} split={selected.chainSplit} />
                   </div>
                 )}
+                {/* Has it held its peg? (T-467) */}
+                <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-4 empty:hidden">
+                  <PegHistoryPanel coinId={selected.assetId} />
+                </div>
               </div>
             )}
           </div>

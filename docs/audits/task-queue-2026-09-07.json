@@ -60,24 +60,24 @@
  },
  "counts": {
   "total_verified": 421,
-  "outstanding": 405,
+  "outstanding": 410,
   "by_status": {
-   "closed": 278,
+   "closed": 282,
    "parked": 120,
-   "open": 7,
+   "open": 8,
    "blocked": 0
   },
   "by_owner_role": {
-   "remote-dev": 112,
-   "either": 56,
+   "remote-dev": 115,
+   "either": 58,
    "owner-decision": 151,
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 278,
-  "counts_recomputed_on": "2026-11-21",
+  "closed_by_annotation": 282,
+  "counts_recomputed_on": "2026-11-24",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
-  "total": 405
+  "total": 410
  },
  "blocking_decisions": [
   {
@@ -17362,6 +17362,255 @@
      "mcp-server/src/index.ts",
      "frontend/src/lib/legal/dataMethods.ts",
      "docs/decisions/2026-11-11-owner-decisions.md"
+    ]
+   }
+  },
+  {
+   "id": "T-466",
+   "title": "Rehearse the launch flip: run the dark sign-in kit end to end against a scratch database (npm run launch:rehearse)",
+   "status": "open",
+   "confidence": "high",
+   "blocking_decision": null,
+   "opened": {
+    "on": "2026-11-24",
+    "by": "opportunity-scout FILE mode, owner-approved (recorded 2026-11-24, D242)",
+    "why": "Proposal 1 of docs/proposals/2026-11-22-proposals.md, proposed P1 (Importance high, Efficiency high, Practicality very good); the owner approved it (D242: \"Approve (Recommended)\"). Nothing was built by the approval."
+   },
+   "owner_role": "either",
+   "category": "process",
+   "effort": "medium",
+   "related_ids": [
+    "D242",
+    "D232",
+    "D233",
+    "D234",
+    "D235",
+    "D174",
+    "T-131",
+    "T-363",
+    "D229"
+   ],
+   "summary": "The launch recipe is environment-only (D232: FN_REQUIRE_AUTH=true, AUTH_SECRET, FN_SITE_OPEN=true — no code change) and every piece of the built-dark account stack is unit-tested, but no process has ever run them together with the flags on: the wall redirect, consent-gated sign-up (migration 0009), sign-in, TOTP enrollment + a code at sign-in + a recovery code (0012), D234 entitlements (standard modules on; Builder \"not included\" until npm run entitlements grants it), \"Download my data\", and the WORM audit log (0013) refusing an UPDATE. Ten of the fourteen migrations are annotated \"until it runs, 503\". The repo’s recorded lesson (the 2026-10-17 model-swap finding) is that per-piece green plus never-run breaks silently, and the walled mode’s first real run is currently scheduled for launch day. A report-only harness, npm run launch:rehearse, boots the app with the launch environment against a scratch Postgres migrated from zero, walks one account through the whole stack and reports PASS per step; exit 2 (inconclusive) when there is no server or no scratch database, the probe convention. It fixes nothing and deletes nothing: it takes an explicit scratch DATABASE_URL (never the ambient one) and leaves the scratch database in place, named in the report, the owner’s to remove by hand (the no-deletion standing rule). Optional second pass, same harness: FN_SITE_OPEN unset, asserting the D174 site lock answers 401/redirect-to-/owner. Explicitly NOT T-131 (the flip itself) or T-363 (staging on a host, D229): both stay parked as they are.",
+   "next_action": "Build the harness in the probe pattern (scripts/, an npm script, exit codes 0/1/2), driving the app’s real routes over HTTP: the wall redirect; sign-up refused without electronicConsent and accepted with it; sign-in; TOTP enroll, confirm, a code at sign-in, a recovery code; entitlements before and after npm run entitlements -- --grant builder; GET /api/user/export; and audit_log holding the walk’s rows with an UPDATE refused by the WORM trigger. A cloud container can run it against a local Postgres; the owner’s machine also works. Keep it report-only, take the scratch DATABASE_URL explicitly, and name the scratch database in the report.",
+   "sources": [
+    {
+     "file": "docs/proposals/2026-11-22-proposals.md",
+     "lines": "Proposal 1",
+     "quote": "start the app with the launch environment (`FN_REQUIRE_AUTH=true`, `AUTH_SECRET`, `FN_SITE_OPEN=true`) against a scratch Postgres migrated from zero"
+    },
+    {
+     "file": "docs/proposals/2026-11-22-proposals.md",
+     "lines": "Proposal 1",
+     "quote": "per-piece green plus never-run is how a whole breaks silently"
+    }
+   ]
+  },
+  {
+   "id": "T-467",
+   "title": "Stablecoin peg-deviation history on the Reserve Monitor: largest move from peg, days off, and a sparkline over 90 days",
+   "status": "closed",
+   "confidence": "high",
+   "blocking_decision": null,
+   "opened": {
+    "on": "2026-11-24",
+    "by": "opportunity-scout FILE mode, owner-approved (recorded 2026-11-24, D242)",
+    "why": "Proposal 2 of docs/proposals/2026-11-22-proposals.md, proposed P2 (Importance medium-high, Efficiency high, Practicality good); the owner approved it (D242: \"Approve (Recommended)\"). Nothing was built by the approval; the first step is the owner’s fixture read."
+   },
+   "owner_role": "either",
+   "category": "feature",
+   "effort": "medium",
+   "related_ids": [
+    "D242",
+    "D190",
+    "D204",
+    "T-449",
+    "T-455",
+    "D96",
+    "D163"
+   ],
+   "summary": "The Reserve Monitor states the peg question’s present tense only: /live-data/reserves serves today’s price (or null), supply change (T-449) and chain split, and the alert bell fires on a current deviation — nothing answers \"has this coin actually held its peg?\", the question a reserve monitor exists for. Add, per monitored coin, over the last 90 days: the largest distance its price moved from its peg and the date it happened, the number of days it closed more than half a percent off, and a price-vs-peg sparkline — on the Monitor and each stablecoin’s own Reserves tab. Figures and dates only: no grade, no band, no \"stable/unstable\" word, no alert (the posture D204 chose for supply). The history lives on the Monitor’s own registered host (stablecoins.llama.fi, covered by the DefiLlama sourceTerms entry), and coins are already picked by DefiLlama id (pickMonitoredStablecoins, D190), so the history request reuses the same ids — no ticker matching. A deviation count is arithmetic on published prices, the kind D14 kept; it is not a per-coin risk score (RP-6): no composite, no verdict, each figure named and dated.",
+   "next_action": "GATE FIRST (the T-455 fixture rule): read one real response of DefiLlama’s per-coin stablecoin history endpoint on the owner’s machine and copy it into the repo as a test fixture before any parser relies on field names — a cloud session cannot reach the host, and if the endpoint carries no usable prices the item dies at that step having cost an hour. Then: pure, tested aggregation with an injectable now (lib/data/), the route extension on /live-data/reserves or a sibling, the surfaces, a methods-page entry (D163); SourceLine unchanged (same provider).",
+   "sources": [
+    {
+     "file": "docs/proposals/2026-11-22-proposals.md",
+     "lines": "Proposal 2",
+     "quote": "the largest distance its price moved from its peg and the date it happened, the number of days it closed more than half a percent off, and a small price-vs-peg sparkline"
+    },
+    {
+     "file": "docs/proposals/2026-11-22-proposals.md",
+     "lines": "Proposal 2",
+     "quote": "One real response read first, on your machine"
+    }
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-11-24",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "Built the same day, with the gate satisfied in substance rather than skipped: the item’s opened block said a cloud session cannot reach the host, and that claim was measured false for this environment — stablecoins.llama.fi answered through the proxy, so the one-real-response-first rule (T-455) was met here, exactly as T-469’s was: /stablecoinprices was read whole (one request, one price per coin per day since 2020, keyed by the geckoIds DEFILLAMA_STABLECOINS already records per monitored coin, D190), and a dated 95-row excerpt is the repo’s test fixture. Built on it: /live-data/reserves?history=1 (the Monitor’s response untouched; prices cached an hour — the feed adds one row a day) serves each dollar-pegged monitored coin’s last 90 readings against $1 — the largest move with its date, the readings more than 0.5% off, coverage — excluding a coin pegged to another currency with the reason (the readings are dollar prices; the fixture’s euro control EURS sits near $1.09). PegHistoryPanel renders the sparkline and the two figures on the Monitor’s detail panel and each stablecoin’s Reserves tab; a missing day is counted out, never read as $1, and the copy calls them daily readings, never closes. No grade, band, “stable” word or alert (D204). Methods page gains the section (D163). Measured on the real window as the fixture was cut: USDT’s largest move −0.218% on 2026-11-20, zero days past the threshold — the checkable fact the surface exists to state, pinned by a test. 13 tests: window and dedup rules, the stats arithmetic, the missing-day rule, every monitored geckoId finding readings in the real excerpt, the euro control, wiring and no-grade-word pins.",
+    "approved_by": "owner, D242 (recorded 2026-11-24): “Approve (Recommended)” on the proposal this item filed; built the same day",
+    "evidence": [
+     "frontend/src/lib/data/pegHistory.ts",
+     "frontend/src/lib/data/__tests__/pegHistory.test.ts",
+     "frontend/src/lib/data/__tests__/fixtures/llama-stablecoinprices-2026-11-24.json",
+     "frontend/src/app/live-data/reserves/route.ts",
+     "frontend/src/components/analytics/reserves.tsx",
+     "frontend/src/app/(dashboard)/assets/[id]/page.tsx",
+     "frontend/src/lib/legal/dataMethods.ts"
+    ]
+   }
+  },
+  {
+   "id": "T-468",
+   "title": "\"This week\" on Headlines: next Fed meeting, next CPI/jobs/GDP/PCE release, and watchlist earnings, on the landing page",
+   "status": "closed",
+   "confidence": "high",
+   "blocking_decision": null,
+   "opened": {
+    "on": "2026-11-24",
+    "by": "opportunity-scout FILE mode, owner-approved (recorded 2026-11-24, D242)",
+    "why": "Proposal 3 of docs/proposals/2026-11-22-proposals.md, proposed P2 (Importance medium, Efficiency very high, Practicality very good); the owner approved it (D242: \"Approve (Recommended)\"). Nothing was built by the approval."
+   },
+   "owner_role": "remote-dev",
+   "category": "feature",
+   "effort": "small",
+   "related_ids": [
+    "D242",
+    "T-456",
+    "D211",
+    "T-458",
+    "D213"
+   ],
+   "summary": "Every piece exists and none reaches the landing page: lib/data/fomcCalendar.ts and lib/data/releaseCalendar.ts (hand-kept, keyless, review-clocked — T-456, D211) render on /macro, /macro/rates and /equities/calendar; /live-data/earnings-dates (T-458, D213) marks watchlist stocks reporting within 14 days — on the Watchlist page. Headlines — the landing page: / and post-login both arrive there — renders a top strip and per-module news sections and not a single date. Add a one-line strip (or small card) at the top: the next Fed meeting, the next CPI / jobs / GDP / PCE release, and, for stocks on the user’s watchlists, earnings expected in the coming days, each linking to the page that has the detail. Sections follow the entitlement store exactly as the news sections do: macro dates with the Macro or Equities module on, earnings rows with Equities on; a reader with neither sees no strip. The overlap with the Watchlist marks and MacroCalendarCard is the point: those surfaces keep the detail, the landing page gets the glance.",
+   "next_action": "Build it on Headlines from the existing parts: the two hand-kept tables (no fetch), /live-data/earnings-dates for watchlist symbols (the strip’s only fetch, inheriting T-458’s \"expected, by source\" labelling), and MacroCalendarCard’s data path or a thin shared helper in components/markets (module rule 1 allows the import from a core page). Entitlement gating per section, and a test pinning the gating — including that a reader with neither module gets no strip at all.",
+   "sources": [
+    {
+     "file": "docs/proposals/2026-11-22-proposals.md",
+     "lines": "Proposal 3",
+     "quote": "Every piece exists and none reaches the landing page."
+    },
+    {
+     "file": "docs/proposals/2026-11-22-proposals.md",
+     "lines": "Proposal 3",
+     "quote": "those surfaces keep the detail, the landing page gets the glance"
+    }
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-11-24",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "Built as the “Coming up” strip (the pass’s working name was “This week”; the shown heading is the honest one, since the next release can sit weeks out). lib/data/thisWeek.ts picks the next Fed decision (tentative flagged past the next meeting, the Board’s rule), the next release of each kind and the watchlist stocks inside T-458’s 14-day window, each row carrying its publisher’s citation; ThisWeekStrip renders the chips on Headlines with the citations printed visibly (D211), caps earnings at six with a “+N more” link to the Market Calendar, and mounts nothing with neither module on. The earnings request fires only with Equities on and stocks on a watchlist; the macro dates fetch nothing. 12 tests: next-of-each picking against the real tables, window and sort, agency citations, entitlement gating, the mount.",
+    "approved_by": "owner, D242 (recorded 2026-11-24): “Approve (Recommended)” on the proposal this item filed; built the same day",
+    "evidence": [
+     "frontend/src/lib/data/thisWeek.ts",
+     "frontend/src/components/markets/ThisWeekStrip.tsx",
+     "frontend/src/lib/data/__tests__/thisWeek.test.ts",
+     "frontend/src/app/(dashboard)/headlines/page.tsx"
+    ]
+   }
+  },
+  {
+   "id": "T-469",
+   "title": "DeFi coin pages: the protocol’s value locked, its 24h/7d change and category, from the feed the app already polls",
+   "status": "closed",
+   "confidence": "high",
+   "blocking_decision": null,
+   "opened": {
+    "on": "2026-11-24",
+    "by": "opportunity-scout FILE mode, owner-approved (recorded 2026-11-24, D242)",
+    "why": "Proposal 4 of docs/proposals/2026-11-22-proposals.md, proposed P2 (Importance medium, Efficiency very high, Practicality very good); the owner approved it (D242: \"Approve (Recommended)\"). Nothing was built by the approval."
+   },
+   "owner_role": "remote-dev",
+   "category": "feature",
+   "effort": "small",
+   "related_ids": [
+    "D242",
+    "D190",
+    "T-449",
+    "T-459",
+    "T-461",
+    "D163"
+   ],
+   "summary": "app/live-data/defi-tvl/route.ts polls api.llama.fi/protocols every 5 minutes and parses name, tvl, change_1d, change_7d and category, then keeps the top 50 for its one consumer, the crypto TA page’s Market Structure panel — so a reader on AAVE’s page cannot see Aave’s value locked while the app downloads it continuously. The catalog files ten coins as assetType ‘defi’; about six have a clean protocol (UNI, AAVE, MKR, CRV, LDO, SNX). Add a small card on those coin pages: the value locked in the protocol, its 24-hour and 7-day change, and its DefiLlama category, with one plain line that this measures the protocol, not the token — the token’s price is not a claim on that value. Coins with no protocol (GRT, LINK, AMPL, vBUSD) show nothing. Stocks got their filings (T-461), funds their N-PORT figures (T-459), stablecoins their supply (T-449); DeFi tokens are the one catalog kind whose underlying thing has a public fundamental the app holds and does not show. Facts only; the TA panel’s aggregates are untouched. No network dependency: the fields are confirmed in the route’s own parser today.",
+   "next_action": "A hand-kept coin→protocol map held by a test, never a name or ticker match (D190’s lesson; the COINMETRICS_ASSETS pattern), resolved against the full protocol list before the route’s top-50 slice so a mapped protocol outside the top 50 still resolves. A serving shape on the existing route (or a thin ?protocols= view of the same fetch), the card on the coin page, a methods-page line (D163). Optional and NOT assumed: per-protocol fee revenue from the fees overview endpoint — its per-protocol fields are unconfirmed, so it takes the same one-read-first gate as T-467, or stays out.",
+   "sources": [
+    {
+     "file": "docs/proposals/2026-11-22-proposals.md",
+     "lines": "Proposal 4",
+     "quote": "The data is already fetched and shown nowhere a coin reader looks."
+    },
+    {
+     "file": "frontend/src/app/live-data/defi-tvl/route.ts",
+     "lines": "53-54",
+     "quote": "name: string; tvl: number; change_1d: number | null; change_7d: number | null; category: string"
+    }
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-11-24",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "Built, with the map grounded on the real feed first (read 2026-11-24 from this environment, which can reach api.llama.fi — the dated excerpt is the test fixture). What the feed showed changed two of the proposal’s assumptions, both recorded: gecko_id cannot be the join (null on most version entries; no Uniswap entry names ‘uniswap’), so the hand-kept map matches by parentProtocol/slug and the figure SUMS the protocol’s parts (Aave is seven entries), the combined 24h/7d change running each part’s own figure through its prior value and withheld when any counted part lacks one; and SNX is deliberately unmapped — the feed reports almost nothing for Synthetix’s current versions — so five coins carry the card (UNI, AAVE, MKR→Sky, CRV, LDO) and every unmapped catalog DeFi coin names its reason, a new one failing the map test until decided. /live-data/defi-tvl?coin= serves it from the same 5-minute-cached fetch, the panel’s response untouched; the card always carries the protocol-not-token line; the methods page gains the section (D163). 12 tests against the fixture plus arithmetic and wiring pins.",
+    "approved_by": "owner, D242 (recorded 2026-11-24): “Approve (Recommended)” on the proposal this item filed; built the same day",
+    "evidence": [
+     "frontend/src/lib/data/defiProtocols.ts",
+     "frontend/src/lib/data/__tests__/defiProtocols.test.ts",
+     "frontend/src/lib/data/__tests__/fixtures/llama-protocols-2026-11-24.json",
+     "frontend/src/components/assets/CoinProtocolCard.tsx",
+     "frontend/src/app/live-data/defi-tvl/route.ts",
+     "frontend/src/lib/legal/dataMethods.ts"
+    ]
+   }
+  },
+  {
+   "id": "T-470",
+   "title": "security-returns: an FMP dividend-adjusted rung behind Tiingo — closing D21’s one named no-fallback surface",
+   "status": "closed",
+   "confidence": "high",
+   "blocking_decision": null,
+   "opened": {
+    "on": "2026-11-24",
+    "by": "opportunity-scout FILE mode, owner-approved (recorded 2026-11-24, D242)",
+    "why": "Proposal 5 of docs/proposals/2026-11-22-proposals.md, proposed P2 (Importance medium, Efficiency high, Practicality very good); the owner approved it (D242: \"Approve (Recommended)\"). Nothing was built by the approval."
+   },
+   "owner_role": "remote-dev",
+   "category": "ops-infra",
+   "effort": "small",
+   "related_ids": [
+    "D242",
+    "D21",
+    "T-441",
+    "D138",
+    "T-401",
+    "D241",
+    "T-425"
+   ],
+   "summary": "The trailing 1M/3M/YTD/1Y returns (/live-data/security-returns: the Stock and Fund registries’ Returns columns and the stock pages) come from Tiingo alone — the D21 record calls the surface \"the only one with no fallback at all\" and the coverage matrix lists Tiingo under one-vendor surfaces for it. The 2026-09-18 reason (no free, held provider with adjusted closes) was overtaken by T-441 (D138): lib/api/live/fmpHistory.ts reads FMP’s /dividend-adjusted daily history on Tiingo’s basis (splits and dividends taken out, so the two sources cannot disagree about what a return means) for the chart and OHLCV ladders; the returns route was never revisited. The risk is no longer hypothetical: D241 just removed a quote rung at launch (Finnhub, enquiry dropped) and Tiingo’s own permission enquiry is drafted and unsent (T-425). Add the rung: when Tiingo serves nothing for a symbol, compute the same returns from fmpHistory, keep the route’s per-symbol adjusted labelling (T-401), and say in source which rung served. Free-tier limits stated, not hidden (D21): on free FMP keys the endpoint serves stocks but answered 402 for QQQ, VOO and VTSAX (measured 2026-09-18, quoted in fmpHistory.ts), so the rung mostly protects the stock side and most funds join only on the deferred paid plan; FMP’s 250-calls-a-day free budget is why it serves fallback traffic only, never a second always-on source. Tiingo’s no-persistent-cache condition is Tiingo’s alone and does not bind the FMP rung. Nobody benefits visibly today, and that is stated plainly: this is resilience, not a new figure.",
+   "next_action": "Wire fmpHistory behind Tiingo in the returns route, per symbol, only when Tiingo returned nothing usable; keep the 60-symbol cap and the ?universe= refusal; label source and adjusted per row. Tests: the fallback order, the 402 path (the symbol stays a dash, never an error), and that the rung is never called while Tiingo answered. When built, update dataSources’ limits so the coverage matrix sees the second rung, and the D21 \"only one with no fallback\" line in CLAUDE.md.",
+   "sources": [
+    {
+     "file": "docs/proposals/2026-11-22-proposals.md",
+     "lines": "Proposal 5",
+     "quote": "This is D21’s one named zero."
+    },
+    {
+     "file": "frontend/src/lib/api/live/fmpHistory.ts",
+     "lines": "9-11",
+     "quote": "FMP’s /dividend-adjusted endpoint is on Tiingo’s [basis] … 402 for QQQ, VOO and VTSAX, measured 2026-09-18"
+    }
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-11-24",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "Built. /live-data/security-returns computes a missing symbol’s returns from FMP’s dividend-adjusted daily history through T-441’s reader (Tiingo’s basis, so the rungs cannot disagree about what a return means): never called for a symbol Tiingo answered (fallback traffic only, the free tier’s 250 calls a day), cached 900s (Tiingo’s no-persistent-cache condition is Tiingo’s alone), a 402 leaving the symbol a dash, and the /full fallback’s split-only closes labelled adjusted:false exactly as T-401 labels Tiingo’s. The response names the rung per symbol (sources) and overall (source gains fmp/mixed; consumers only test none). dataSources names FMP on the surface so the next coverage-matrix run sees the second rung, and CLAUDE.md’s “only one with no fallback” line now reads as history. 6 tests drive the fallback order, the 402 path, the basis labels, both keyless shapes and the universe refusal.",
+    "approved_by": "owner, D242 (recorded 2026-11-24): “Approve (Recommended)” on the proposal this item filed; built the same day",
+    "evidence": [
+     "frontend/src/app/live-data/security-returns/route.ts",
+     "frontend/src/lib/server/__tests__/securityReturnsRung.test.ts",
+     "frontend/src/lib/data/dataSources.ts"
     ]
    }
   }
@@ -43512,6 +43761,18 @@
     "evidence": [
      "docs/decisions/2026-11-21-owner-decisions.md"
     ]
+   },
+   {
+    "on": "2026-11-24",
+    "what": "D242 (opportunity-scout FILE mode): filed the five approved proposals of docs/proposals/2026-11-22-proposals.md as T-466..T-470, all status open, each carrying an opened block naming its proposal and D242. The owner marked every proposal \"Approve (Recommended)\"; nothing was rejected (rejected-proposals.md untouched) and nothing deferred (nothing carries forward). Counts recomputed: open 7 -> 12, outstanding/total 405 -> 410."
+   },
+   {
+    "on": "2026-11-24",
+    "what": "T-468, T-469 and T-470 built and closed the same day D242 filed them (the “Coming up” strip on Headlines; the DeFi protocol card with its real-feed fixture, five coins mapped and SNX deliberately out; the FMP dividend-adjusted rung behind Tiingo, closing D21’s one named no-fallback surface). Open 12 -> 9. T-466 (launch rehearsal) and T-467 (peg history, gated on the owner’s fixture read) remain open."
+   },
+   {
+    "on": "2026-11-24",
+    "what": "T-467 built and closed: stablecoin peg history on the Reserve Monitor and the coin pages. The opened block’s “cloud cannot reach the host” gate was measured false for this environment — stablecoins.llama.fi answers through the proxy — so the T-455 one-real-response rule was met here (dated 95-row fixture in the repo) and no owner-machine step was needed. Open 9 -> 8; T-466 (launch rehearsal) is the pass’s last open item."
    }
   ]
  }
