@@ -1,0 +1,266 @@
+{
+ "readOn": "2026-11-24",
+ "from": "https://api.llama.fi/protocols — the defi-tvl route’s own upstream, read through this environment’s proxy; entries trimmed to the mapped protocols plus controls, fields trimmed to what the parser reads",
+ "entries": [
+  {
+   "name": "Binance CEX",
+   "slug": "binance-cex",
+   "tvl": 110385955504.21541,
+   "change_1d": 0.744333286283478,
+   "change_7d": -1.871195776350092,
+   "category": "CEX",
+   "parentProtocol": null,
+   "gecko_id": null
+  },
+  {
+   "name": "Lido",
+   "slug": "lido",
+   "tvl": 16769856863.576015,
+   "change_1d": 0.210821065372798,
+   "change_7d": -5.262237293165228,
+   "category": "Liquid Staking",
+   "parentProtocol": null,
+   "gecko_id": "lido-dao"
+  },
+  {
+   "name": "Aave V3",
+   "slug": "aave-v3",
+   "tvl": 15290095564.547945,
+   "change_1d": -0.02567334751788053,
+   "change_7d": 8.606845271465474,
+   "category": "Lending",
+   "parentProtocol": "parent#aave",
+   "gecko_id": null
+  },
+  {
+   "name": "Sky Lending",
+   "slug": "sky-lending",
+   "tvl": 2768881421.333123,
+   "change_1d": -2.2662573939451534,
+   "change_7d": -26.87800629840507,
+   "category": "CDP",
+   "parentProtocol": "parent#maker",
+   "gecko_id": null
+  },
+  {
+   "name": "Uniswap V4",
+   "slug": "uniswap-v4",
+   "tvl": 1320633047.342849,
+   "change_1d": -1.5652805508190397,
+   "change_7d": 29.79123855653492,
+   "category": "Dexs",
+   "parentProtocol": "parent#uniswap",
+   "gecko_id": null
+  },
+  {
+   "name": "Uniswap V3",
+   "slug": "uniswap-v3",
+   "tvl": 1287287950.5996125,
+   "change_1d": 0.7133560240323789,
+   "change_7d": -0.8100309560231125,
+   "category": "Dexs",
+   "parentProtocol": "parent#uniswap",
+   "gecko_id": null
+  },
+  {
+   "name": "Curve DEX",
+   "slug": "curve-dex",
+   "tvl": 1002536121.6879286,
+   "change_1d": 0.5265608309622962,
+   "change_7d": -1.136067607399255,
+   "category": "Dexs",
+   "parentProtocol": "parent#curve-finance",
+   "gecko_id": null
+  },
+  {
+   "name": "Aave V4",
+   "slug": "aave-v4",
+   "tvl": 847071710.1280543,
+   "change_1d": 0.9313907855180759,
+   "change_7d": 7.620980468491069,
+   "category": "Lending",
+   "parentProtocol": "parent#aave",
+   "gecko_id": null
+  },
+  {
+   "name": "Uniswap V2",
+   "slug": "uniswap-v2",
+   "tvl": 673558820.6673665,
+   "change_1d": 0.2160794074133321,
+   "change_7d": -5.7170948890739055,
+   "category": "Dexs",
+   "parentProtocol": "parent#uniswap",
+   "gecko_id": null
+  },
+  {
+   "name": "Aave Horizon RWA",
+   "slug": "aave-horizon-rwa",
+   "tvl": 250860833.4313721,
+   "change_1d": 12.550301329952703,
+   "change_7d": 13.792234993259783,
+   "category": "Lending",
+   "parentProtocol": "parent#aave",
+   "gecko_id": null
+  },
+  {
+   "name": "Curve LlamaLend",
+   "slug": "curve-llamalend",
+   "tvl": 87212480.96906178,
+   "change_1d": 0.3270330045299801,
+   "change_7d": -2.121090616169397,
+   "category": "Lending",
+   "parentProtocol": "parent#curve-finance",
+   "gecko_id": null
+  },
+  {
+   "name": "Aave V2",
+   "slug": "aave-v2",
+   "tvl": 84746231.0633527,
+   "change_1d": 0.43201290019882777,
+   "change_7d": -3.4277353696744512,
+   "category": "Lending",
+   "parentProtocol": "parent#aave",
+   "gecko_id": "aave"
+  },
+  {
+   "name": "crvUSD",
+   "slug": "crvusd",
+   "tvl": 66636595.3610787,
+   "change_1d": 0.27092217033712984,
+   "change_7d": -9.596718126939706,
+   "category": "CDP",
+   "parentProtocol": "parent#curve-finance",
+   "gecko_id": null
+  },
+  {
+   "name": "Sky RWA",
+   "slug": "sky-rwa",
+   "tvl": 62791287.13145375,
+   "change_1d": -0.0009458924601233321,
+   "change_7d": 2.423500748262512,
+   "category": "RWA",
+   "parentProtocol": "parent#maker",
+   "gecko_id": null
+  },
+  {
+   "name": "Sky Money",
+   "slug": "sky-money",
+   "tvl": 62057472.09820021,
+   "change_1d": -3.2960544155224483,
+   "change_7d": -27.58109658238284,
+   "category": "Risk Curators",
+   "parentProtocol": "parent#maker",
+   "gecko_id": null
+  },
+  {
+   "name": "Curve LlamaLend V2",
+   "slug": "curve-llamalend-v2",
+   "tvl": 26653428.27240539,
+   "change_1d": -0.9071464053695308,
+   "change_7d": -11.076723700158865,
+   "category": "Lending",
+   "parentProtocol": "parent#curve-finance",
+   "gecko_id": null
+  },
+  {
+   "name": "Aave V1",
+   "slug": "aave-v1",
+   "tvl": 6033076.506941564,
+   "change_1d": 0.7630475903515475,
+   "change_7d": -2.259718400810044,
+   "category": "Lending",
+   "parentProtocol": "parent#aave",
+   "gecko_id": null
+  },
+  {
+   "name": "Uniswap V1",
+   "slug": "uniswap-v1",
+   "tvl": 2745948.7287859083,
+   "change_1d": -0.0329856103721653,
+   "change_7d": -4.961523989895554,
+   "category": "Dexs",
+   "parentProtocol": "parent#uniswap",
+   "gecko_id": null
+  },
+  {
+   "name": "Synthetix V4",
+   "slug": "synthetix-v4",
+   "tvl": 863933.8280602181,
+   "change_1d": 0.06044456259964193,
+   "change_7d": 1.3276737065260704,
+   "category": "Derivatives",
+   "parentProtocol": "parent#synthetix",
+   "gecko_id": null
+  },
+  {
+   "name": "Aave Aptos",
+   "slug": "aave-aptos",
+   "tvl": 185186.7877306523,
+   "change_1d": 1.298742063478997,
+   "change_7d": -13.061607632564659,
+   "category": "Lending",
+   "parentProtocol": "parent#aave",
+   "gecko_id": null
+  },
+  {
+   "name": "Aave Arc",
+   "slug": "aave-arc",
+   "tvl": 57263.13079631776,
+   "change_1d": -0.002924961498308676,
+   "change_7d": 0.0009281813511279324,
+   "category": "Lending",
+   "parentProtocol": "parent#aave",
+   "gecko_id": null
+  },
+  {
+   "name": "Synthetix V3",
+   "slug": "synthetix-v3",
+   "tvl": 0.41939800063672505,
+   "change_1d": 0.0040746718769781864,
+   "change_7d": 0.008437075413652906,
+   "category": "Derivatives",
+   "parentProtocol": "parent#synthetix",
+   "gecko_id": null
+  },
+  {
+   "name": "Synthetix v1+v2",
+   "slug": "synthetix-v1+v2",
+   "tvl": null,
+   "change_1d": null,
+   "change_7d": null,
+   "category": "Synthetics",
+   "parentProtocol": "parent#synthetix",
+   "gecko_id": null
+  },
+  {
+   "name": "The Graph",
+   "slug": "the-graph",
+   "tvl": 0,
+   "change_1d": null,
+   "change_7d": null,
+   "category": "Developer Tools",
+   "parentProtocol": null,
+   "gecko_id": "the-graph"
+  },
+  {
+   "name": "Uniswap Auctions",
+   "slug": "uniswap-auctions",
+   "tvl": null,
+   "change_1d": null,
+   "change_7d": null,
+   "category": "Launchpad",
+   "parentProtocol": "parent#uniswap",
+   "gecko_id": null
+  },
+  {
+   "name": "Uniswap Aggregator",
+   "slug": "uniswap-aggregator",
+   "tvl": null,
+   "change_1d": null,
+   "change_7d": null,
+   "category": "DEX Aggregator",
+   "parentProtocol": "parent#uniswap",
+   "gecko_id": null
+  }
+ ]
+}

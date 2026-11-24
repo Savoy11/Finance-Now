@@ -198,6 +198,16 @@ export const DATA_METHODS: readonly MethodSection[] = [
     ],
   },
   {
+    id: 'defi-protocol-value',
+    title: 'A DeFi coin’s protocol value locked',
+    decided: '2026-11-24',
+    paragraphs: [
+      'Some coins govern a DeFi protocol — software holding deposits people can check on the blockchain. For those coins, the coin’s page shows the value locked in that protocol, its change over 24 hours and 7 days, and what kind of protocol it is, from DefiLlama’s protocol feed.',
+      'A protocol usually appears in that feed as several entries — its versions and products — so the figure shown adds the entries that belong to the protocol, matched by a hand-kept list, never by name or ticker. The change is worked out from each part’s own change: a part’s value a day ago is its value now divided by one plus its change, and the whole’s change compares today’s total with that total. If any counted part reports no change, none is shown for that window. The kind shown is the largest part’s.',
+      'The figure measures the protocol, not the token, and the page says so: the token’s price is not a claim on that value. A coin whose protocol the feed carries no dependable value for shows nothing rather than a wrong figure.',
+    ],
+  },
+  {
     id: 'coin-supply',
     title: 'Coin supply and price history',
     decided: '2026-11-07',
