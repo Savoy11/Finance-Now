@@ -6,16 +6,17 @@ import {
   type SubmissionRow, type CoverRow, type InfoRow,
 } from '../../../../scripts/lib/form13f'
 import {
-  CLASS_WORDS, agreeingFamilies, classCandidateCusips, cusipForClassByTitles, nameMatches,
-  resolveCusips, type HoldingForCusip,
+  CLASS_WORDS, MIN_F13_NAME_ROWS, agreeingFamilies, classWordFor, nameMatches,
+  remainingCandidate, resolveListed, type F13CusipEvidence, type HoldingForCusip,
 } from '../../../../scripts/lib/stockCusips'
 import { allowedBrowseCount } from '../nport'
 import GENERATED from '../../data/stockHolders.generated.json'
 import {
-  STOCK_HOLDERS_BUILT_ON, fundHoldersScopeNote, getStockHoldersProvenance,
+  STOCK_HOLDERS_BUILT_ON, fundHoldersScopeNote, getStockHoldersProvenance, hydrateStockHolders,
   institutionalPctOfOutstanding, thirteenFPeriodNote, unresolvedInPlainWords,
   type StockHoldersFile,
 } from '../../data/stockHolders'
+import { EQUITY_BY_SYMBOL } from '../../data/equityCatalog'
 
 const read = (p: string) => readFileSync(join(__dirname, '../../../..', p), 'utf8')
 
@@ -231,116 +232,202 @@ describe('agreeingFamilies', () => {
   })
 })
 
-describe('resolveCusips', () => {
-  const catalog = [
-    { symbol: 'AAPL', name: 'Apple' },
-    { symbol: 'GOOGL', name: 'Alphabet' },
-    { symbol: 'GOOG', name: 'Alphabet' },
-    { symbol: 'META', name: 'Meta Platforms' },
-  ]
+describe('resolveListed', () => {
+  const listed = (symbol: string, name: string, shareClasses = 1) => ({ symbol, name, shareClasses })
+  const ev = (o: { names?: Array<[string, number]>; titles?: Array<[string, number]>; holders?: number; price?: number | null }): F13CusipEvidence => ({
+    holderCount: o.holders ?? 100,
+    names: new Map(o.names ?? []),
+    titles: new Map(o.titles ?? []),
+    avgPrice: o.price ?? null,
+  })
+  const NO_F13 = new Map<string, F13CusipEvidence>()
 
-  it('resolves only with two independent fund families on one CUSIP', () => {
-    const two = resolveCusips(catalog, [
+  it('two independent fund families on one CUSIP resolve it (via fund-names)', () => {
+    const r = resolveListed([listed('AAPL', 'Apple Inc.')], [
       holding({ family: 'Vanguard' }),
       holding({ family: 'Invesco' }),
-    ])
-    expect(two.resolved.get('AAPL')).toEqual({ cusip: '037833100', families: ['Invesco', 'Vanguard'] })
-
-    const one = resolveCusips(catalog, [holding({}), holding({})])
-    expect(one.resolved.has('AAPL')).toBe(false)
-    expect(one.unresolved.find((u) => u.symbol === 'AAPL')?.reason).toContain('two independent fund families')
+    ], NO_F13)
+    expect(r.resolved.get('AAPL')).toEqual({ cusip: '037833100', families: ['Invesco', 'Vanguard'], via: 'fund-names' })
   })
 
-  it('class words keep Alphabet\'s two listings apart, and an ambiguous survivor set resolves to nothing', () => {
+  it('one fund family alone is not enough — unless the 13F filers name the company too', () => {
+    const rows = [holding({ family: 'Vanguard' }), holding({ family: 'Vanguard' })]
+    const alone = resolveListed([listed('AAPL', 'Apple Inc.')], rows, NO_F13)
+    expect(alone.resolved.has('AAPL')).toBe(false)
+    expect(alone.unresolved[0].reason).toContain('two independent fund families')
+
+    const corroborated = resolveListed([listed('AAPL', 'Apple Inc.')], rows, new Map([
+      ['037833100', ev({ names: [['APPLE INC', 2_000]] })],
+    ]))
+    expect(corroborated.resolved.get('AAPL')?.via).toBe('fund+13f-names')
+  })
+
+  it('the 13F filers carry a CUSIP on their own — a stock no tracked fund holds still resolves', () => {
+    const r = resolveListed([listed('SMLL', 'Small Example Corp')], [], new Map([
+      ['111111111', ev({ names: [['SMALL EXAMPLE CORP', 12]], titles: [['COM', 12]] })],
+    ]))
+    expect(r.resolved.get('SMLL')).toEqual({ cusip: '111111111', families: [], via: '13f-names' })
+    // Below the filer floor, the 13F set cannot carry it alone.
+    const thin = resolveListed([listed('SMLL', 'Small Example Corp')], [], new Map([
+      ['111111111', ev({ names: [['SMALL EXAMPLE CORP', MIN_F13_NAME_ROWS - 1]], titles: [['COM', MIN_F13_NAME_ROWS - 1]] })],
+    ]))
+    expect(thin.resolved.has('SMLL')).toBe(false)
+  })
+
+  it('a mismatching 13F name silences the 13F side without vetoing the fund families', () => {
+    // 13F filers abbreviate by their own conventions ("TEXAS INSTRS INC",
+    // "DISNEY WALT CO" — measured), so a mismatch is not a contradiction:
+    // two fund families still carry the CUSIP\u2026
+    const rows = [holding({ family: 'Vanguard' }), holding({ family: 'Invesco' })]
+    const r = resolveListed([listed('AAPL', 'Apple Inc.')], rows, new Map([
+      ['037833100', ev({ names: [['ABBREVIATED SPELLING CO', 500]] })],
+    ]))
+    expect(r.resolved.get('AAPL')?.via).toBe('fund-names')
+    // \u2026but it cannot CORROBORATE a single family, and the preferred/unit/
+    // note lines a company\u2019s name also covers never carry a classless
+    // listing on titles that say they are not the common stock.
+    const one = resolveListed([listed('AAPL', 'Apple Inc.')], [holding({ family: 'Vanguard' })], new Map([
+      ['037833100', ev({ names: [['ABBREVIATED SPELLING CO', 500]] })],
+    ]))
+    expect(one.resolved.has('AAPL')).toBe(false)
+    const pfd = resolveListed([listed('NEE2', 'NextEra Energy, Inc.')], [], new Map([
+      ['65339F655', ev({ names: [['NEXTERA ENERGY INC', 300]], titles: [['UNIT', 280]] })],
+    ]))
+    expect(pfd.resolved.has('NEE2')).toBe(false)
+  })
+
+  it('class words keep Alphabet\u2019s two listings apart, and ambiguity refuses', () => {
     const rows = [
       holding({ family: 'Vanguard', name: 'Alphabet Inc Class A', cusip: '02079K305', balance: 10, valueUsd: 2_000 }),
       holding({ family: 'Invesco', name: 'Alphabet Inc Class A', cusip: '02079K305', balance: 20, valueUsd: 4_000 }),
       holding({ family: 'Vanguard', name: 'Alphabet Inc Class C', cusip: '02079K107', balance: 10, valueUsd: 2_010 }),
       holding({ family: 'Invesco', name: 'Alphabet Inc Class C', cusip: '02079K107', balance: 20, valueUsd: 4_020 }),
     ]
-    const r = resolveCusips(catalog, rows)
+    const r = resolveListed([listed('GOOGL', 'Alphabet Inc.', 2), listed('GOOG', 'Alphabet Inc.', 2)], rows, NO_F13)
     expect(r.resolved.get('GOOGL')?.cusip).toBe('02079K305')
     expect(r.resolved.get('GOOG')?.cusip).toBe('02079K107')
 
-    // A classless symbol whose rows carry two CUSIPs that each pass every
-    // check resolves to NOTHING — ambiguity refuses, it never picks.
-    const amb = resolveCusips([{ symbol: 'FOO', name: 'Foo' }], [
+    // A classless single-class symbol whose rows carry two price-consistent
+    // CUSIPs resolves to NOTHING \u2014 ambiguity refuses, it never picks.
+    const amb = resolveListed([listed('FOO2', 'Foo')], [
       holding({ family: 'Vanguard', name: 'Foo Inc', cusip: '111111111', balance: 10, valueUsd: 2_000 }),
       holding({ family: 'Invesco', name: 'Foo Inc', cusip: '111111111', balance: 20, valueUsd: 4_000 }),
       holding({ family: 'Vanguard', name: 'Foo Inc', cusip: '222222222', balance: 10, valueUsd: 2_010 }),
       holding({ family: 'Invesco', name: 'Foo Inc', cusip: '222222222', balance: 20, valueUsd: 4_020 }),
-    ])
+    ], NO_F13)
     expect(amb.resolved.size).toBe(0)
     expect(amb.unresolved[0].reason).toContain('ambiguous')
   })
 
-  it('another company\'s class words do not poison a classless symbol (Meta is Class A)', () => {
-    const r = resolveCusips(catalog, [
+  it('class lines every filer names identically are decided by the 13F set\u2019s own class titles (the Berkshire shape)', () => {
+    // Fund rows name BOTH lines "Berkshire Hathaway Inc" \u2014 measured \u2014 so a
+    // class-worded symbol has no word-bearing fund row at all; the 13F side
+    // carries it, and only where its dominant TITLE carries the class words.
+    const rows = [
+      holding({ family: 'Vanguard', name: 'Berkshire Hathaway Inc', cusip: '084670702', balance: 10, valueUsd: 5_000 }),
+      holding({ family: 'Invesco', name: 'Berkshire Hathaway Inc', cusip: '084670702', balance: 20, valueUsd: 10_000 }),
+    ]
+    const f13 = new Map([
+      ['084670702', ev({ names: [['BERKSHIRE HATHAWAY INC', 4_000]], titles: [['COM CL B', 3_500], ['CL B', 400]] })],
+      ['084670108', ev({ names: [['BERKSHIRE HATHAWAY INC DEL', 900]], titles: [['COM CL A', 800]] })],
+    ])
+    const r = resolveListed([listed('BRK-B', 'BERKSHIRE HATHAWAY INC', 1)], rows, f13)
+    expect(r.resolved.get('BRK-B')).toEqual({ cusip: '084670702', families: [], via: '13f-names' })
+    // With the B title on BOTH candidates, the conflict refuses.
+    const conflicted = new Map([
+      ['084670702', ev({ names: [['BERKSHIRE HATHAWAY INC', 4_000]], titles: [['COM CL B', 3_500]] })],
+      ['084670108', ev({ names: [['BERKSHIRE HATHAWAY INC', 900]], titles: [['CL B NEW', 800]] })],
+    ])
+    expect(resolveListed([listed('BRK-B', 'BERKSHIRE HATHAWAY INC', 1)], rows, conflicted).resolved.has('BRK-B')).toBe(false)
+  })
+
+  it('a classless listing of a multi-class company takes the one identifier its siblings left (the HEICO shape)', () => {
+    // When filers write the class ("Heico Corp Class A"), the sibling-claim
+    // filter splits the lines and HEI resolves on its own rows.
+    const wordedRows = [
+      holding({ family: 'Vanguard', name: 'Heico Corp', cusip: '422806109', balance: 10, valueUsd: 2_500 }),
+      holding({ family: 'Invesco', name: 'Heico Corp', cusip: '422806109', balance: 20, valueUsd: 5_000 }),
+      holding({ family: 'Vanguard', name: 'Heico Corp Class A', cusip: '422806208', balance: 10, valueUsd: 2_000 }),
+      holding({ family: 'Invesco', name: 'Heico Corp Class A', cusip: '422806208', balance: 20, valueUsd: 4_000 }),
+    ]
+    const stocks = [listed('HEI', 'HEICO CORP', 2), listed('HEI-A', 'HEICO CORP', 2)]
+    const split = resolveListed(stocks, wordedRows, NO_F13)
+    expect(split.resolved.get('HEI-A')?.cusip).toBe('422806208')
+    expect(split.resolved.get('HEI')?.via).toBe('fund-names')
+
+    // When NO filer writes the class anywhere, HEI\u2019s candidates stay
+    // ambiguous until HEI-A takes its line through the 13F titles \u2014 then the
+    // one identifier left is HEI\u2019s, by elimination, gated on the SEC list\u2019s
+    // own share-class count.
+    const namelessRows = wordedRows.map((h) => ({ ...h, name: 'Heico Corp' }))
+    const f13 = new Map([
+      ['422806109', ev({ names: [['HEICO CORP', 600]], titles: [['COM', 550]] })],
+      ['422806208', ev({ names: [['HEICO CORP', 400]], titles: [['CL A', 380]] })],
+    ])
+    const r = resolveListed(stocks, namelessRows, f13)
+    expect(r.resolved.get('HEI-A')?.cusip).toBe('422806208')
+    expect(r.resolved.get('HEI')?.cusip).toBe('422806109')
+    expect(r.resolved.get('HEI')?.via).toBe('sibling-elimination')
+    // The same rows for a single-class company stay ambiguous.
+    const single = resolveListed([listed('HEI', 'HEICO CORP', 1)], namelessRows, NO_F13)
+    expect(single.resolved.has('HEI')).toBe(false)
+  })
+
+  it('two listings claiming the same identifier both resolve to nothing (the Blue Owl shape)', () => {
+    // Blue Owl Capital INC and Blue Owl Capital CORP are different
+    // registrants whose name cores collide once the suffixes strip \u2014
+    // measured: both symbols claimed one CUSIP on the first unified run.
+    const rows = [
+      holding({ family: 'Vanguard', name: 'Blue Owl Capital Inc', cusip: '09581B103', balance: 100, valueUsd: 1_800 }),
+      holding({ family: 'Invesco', name: 'Blue Owl Capital Inc', cusip: '09581B103', balance: 200, valueUsd: 3_600 }),
+    ]
+    const r = resolveListed([
+      listed('OWL', 'Blue Owl Capital Inc.'),
+      listed('OBDC', 'Blue Owl Capital Corp'),
+    ], rows, NO_F13)
+    expect(r.resolved.size).toBe(0)
+    expect(r.unresolved.filter((u) => u.reason.includes('cannot tell their companies apart'))).toHaveLength(2)
+  })
+
+  it('another company\u2019s class words do not poison a classless symbol (Meta is Class A)', () => {
+    const r = resolveListed([
+      listed('META', 'Meta Platforms, Inc.'),
+      listed('GOOGL', 'Alphabet Inc.', 2),
+    ], [
       holding({ family: 'Vanguard', name: 'Meta Platforms Inc Class A', cusip: '30303M102' }),
       holding({ family: 'Invesco', name: 'Meta Platforms Inc Class A', cusip: '30303M102', balance: 50, valueUsd: 10_000 }),
-    ])
+    ], NO_F13)
     expect(r.resolved.get('META')?.cusip).toBe('30303M102')
   })
 
-  it('reads a filer\'s "CL B" as that symbol\'s class words', () => {
-    const r = resolveCusips([{ symbol: 'BRK-B', name: 'BERKSHIRE HATHAWAY INC' }], [
-      holding({ family: 'Vanguard', name: 'Berkshire Hathaway Inc Class B', cusip: '084670702', balance: 10, valueUsd: 4_870 }),
-      holding({ family: 'Invesco', name: 'BERKSHIRE HATHAWAY INC CL B', cusip: '084670702', balance: 20, valueUsd: 9_740 }),
-    ])
-    expect(r.resolved.get('BRK-B')?.cusip).toBe('084670702')
-  })
-
   it('two families at irreconcilable prices cannot vouch for the CUSIP', () => {
-    const r = resolveCusips(catalog, [
+    const r = resolveListed([listed('AAPL', 'Apple Inc.')], [
       holding({ family: 'Vanguard', balance: 100, valueUsd: 20_000 }),
-      holding({ family: 'Invesco', balance: 100, valueUsd: 2_000 }), // 10× apart: not the same security
-    ])
+      holding({ family: 'Invesco', balance: 100, valueUsd: 2_000 }), // 10\u00d7 apart: not the same security
+    ], NO_F13)
     expect(r.resolved.has('AAPL')).toBe(false)
-    expect(r.unresolved.find((u) => u.symbol === 'AAPL')?.reason).toContain('agreeing per-share prices')
   })
 
-  it('a class-share symbol outside CLASS_WORDS fails loudly instead of resolving', () => {
-    const r = resolveCusips([{ symbol: 'HEI-A', name: 'Heico' }], [])
-    expect(r.unresolved[0].reason).toContain('CLASS_WORDS')
-    expect(CLASS_WORDS['BRK-B']).toBe('class b') // the ones the catalog needs today
-    expect(CLASS_WORDS.GOOGL).toBe('class a')
-  })
-})
-
-// ── Pass 2: the 13F set's class titles decide what fund names cannot ────────
-// Measured on the full run: filers name BOTH Berkshire lines "Berkshire
-// Hathaway Inc" (one at ~$500, one at ~$749,000), so no fund-name rule can
-// separate them — but the 13F set titles them "COM CL B" / "COM CL A".
-
-describe('classCandidateCusips + cusipForClassByTitles', () => {
-  const rows = [
-    holding({ family: 'Vanguard', name: 'Berkshire Hathaway Inc', cusip: '084670702', balance: 10, valueUsd: 5_000 }),
-    holding({ family: 'Invesco', name: 'Berkshire Hathaway Inc', cusip: '084670702', balance: 20, valueUsd: 10_000 }),
-    holding({ family: 'Vanguard', name: 'Berkshire Hathaway Inc', cusip: '084670108', balance: 1, valueUsd: 749_000 }),
-    holding({ family: 'Invesco', name: 'Berkshire Hathaway Inc', cusip: '084670108', balance: 2, valueUsd: 1_498_000 }),
-  ]
-
-  it('collects every name-core candidate that clears the family and price checks', () => {
-    const candidates = classCandidateCusips({ symbol: 'BRK-B', name: 'BERKSHIRE HATHAWAY INC' }, rows)
-    expect(candidates.map((c) => c.cusip).sort()).toEqual(['084670108', '084670702'])
+  it('classWordFor reads a dash suffix as the class, and the hand map covers dashless pairs', () => {
+    expect(classWordFor('BRK-B')).toBe('class b') // the ticker says its own class
+    expect(classWordFor('HEI-A')).toBe('class a')
+    expect(classWordFor('LEN-B')).toBe('class b')
+    expect(classWordFor('TSLA')).toBeNull() // ends in a letter, but no dash \u2014 single class
+    expect(classWordFor('GOOGL')).toBe('class a') // dashless pairs come from the hand map
+    expect(classWordFor('GOOG')).toBe('class c')
+    expect(classWordFor('FOX')).toBe('class b')
+    expect(classWordFor('NWSA')).toBe('class a')
+    expect(CLASS_WORDS['BRK-B']).toBeUndefined() // dash symbols need no hand entry
   })
 
-  it('the dominant 13F class title decides — and anything short of one clear match refuses', () => {
-    const candidates = classCandidateCusips({ symbol: 'BRK-B', name: 'BERKSHIRE HATHAWAY INC' }, rows)
-    const tallies = new Map([
-      ['084670702', new Map([['COM CL B', 120], ['CL B', 30]])],
-      ['084670108', new Map([['COM CL A', 40]])],
-    ])
-    expect(cusipForClassByTitles('class b', candidates, tallies)).toBe('084670702')
-    // Two candidates both titled with the class word: refuse.
-    expect(cusipForClassByTitles('class b', candidates, new Map([
-      ['084670702', new Map([['COM CL B', 120]])],
-      ['084670108', new Map([['CL B NEW', 50]])],
-    ]))).toBeNull()
-    // Too few title rows to trust.
-    expect(cusipForClassByTitles('class b', candidates, new Map([
-      ['084670702', new Map([['COM CL B', 2]])],
-    ]))).toBeNull()
+  it('sibling elimination takes the one candidate left \u2014 and refuses anything else', () => {
+    const candidates = [
+      { cusip: '111111111', families: ['Vanguard', 'Invesco'] },
+      { cusip: '222222222', families: ['Vanguard', 'iShares'] },
+    ]
+    expect(remainingCandidate(candidates, new Set(['111111111']))).toEqual({ cusip: '222222222', families: ['Vanguard', 'iShares'] })
+    expect(remainingCandidate(candidates, new Set())).toBeNull() // two left: still ambiguous
+    expect(remainingCandidate(candidates, new Set(['111111111', '222222222']))).toBeNull() // none left
   })
 })
 
@@ -354,22 +441,48 @@ describe('stockHolders.generated.json', () => {
     expect(getStockHoldersProvenance(new Date(`${STOCK_HOLDERS_BUILT_ON}T12:00:00Z`)).stale).toBe(false)
   })
 
+  it('covers the listed universe, not just the catalog (the owner\'s 2026-11-24 confirmation ask)', () => {
+    const covered = Object.keys(file.stocks).length
+    expect(covered).toBeGreaterThan(3_000) // thousands of NYSE & Nasdaq common stocks, not 79
+    expect(file.universe.listed).toBeGreaterThanOrEqual(covered)
+    expect(file.universe.source).toContain('company_tickers_exchange.json')
+    // Every catalog stock is in (the original scope survives the widening)…
+    const catalogSymbols = Object.keys(EQUITY_BY_SYMBOL)
+    for (const s of catalogSymbols) expect(file.stocks[s], s).toBeDefined()
+    // …and so are plenty of stocks beyond it.
+    expect(covered - catalogSymbols.length).toBeGreaterThan(2_000)
+  })
+
   it('every entry keeps the build\'s own rules: a reviewed CUSIP, two families, dated fund rows', () => {
     const entries = Object.entries(file.stocks)
     expect(entries.length).toBeGreaterThan(0)
-    expect(entries.length + file.unresolved.length).toBeGreaterThanOrEqual(79)
     for (const [symbol, e] of entries) {
       expect(e.cusip, symbol).toMatch(/^[0-9A-Z]{9}$/)
-      expect(e.cusipFamilies.length, symbol).toBeGreaterThanOrEqual(2)
-      expect(['fund-names', '13f-class-title'], symbol).toContain(e.cusipVia)
-      for (const f of e.funds) {
-        expect(f.asOf, `${symbol} fund ${f.symbol}`).toMatch(/^\d{4}-\d{2}-\d{2}$/)
-        expect(f.shares, `${symbol} fund ${f.symbol}`).toBeGreaterThan(0)
+      expect(['fund-names', 'fund+13f-names', '13f-names', 'sibling-elimination'], symbol).toContain(e.cusipVia)
+      // How many independent fund families must back the CUSIP depends on
+      // which filings settled it; a pure-13F resolution can have none.
+      const familyFloor = e.cusipVia === 'fund-names' ? 2 : e.cusipVia === 'fund+13f-names' ? 1 : 0
+      expect(e.cusipFamilies.length, symbol).toBeGreaterThanOrEqual(familyFloor)
+      for (const [fundSymbol, shares, , , asOf] of e.funds) {
+        expect(asOf, `${symbol} fund ${fundSymbol}`).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+        expect(shares, `${symbol} fund ${fundSymbol}`).toBeGreaterThan(0)
       }
       if (e.institutional) {
         expect(e.institutional.totalShares, symbol).toBeGreaterThan(0)
-        expect(e.institutional.topHolders.length, symbol).toBeLessThanOrEqual(10)
-        expect(e.institutional.holderCount, symbol).toBeGreaterThanOrEqual(e.institutional.topHolders.length)
+        expect(e.institutional.top.length, symbol).toBeLessThanOrEqual(10)
+        expect(e.institutional.holderCount, symbol).toBeGreaterThanOrEqual(e.institutional.top.length)
+      }
+    }
+  })
+
+  it('no two symbols share a CUSIP, and every top holder\'s name is in the managers dictionary', () => {
+    const seen = new Map<string, string>()
+    for (const [symbol, e] of Object.entries(file.stocks)) {
+      const prior = seen.get(e.cusip)
+      expect(prior, `${symbol} and ${prior} share ${e.cusip}`).toBeUndefined()
+      seen.set(e.cusip, symbol)
+      for (const [cik] of e.institutional?.top ?? []) {
+        expect(file.managers[cik], `${symbol} holder CIK ${cik}`).toBeTruthy()
       }
     }
   })
@@ -378,10 +491,20 @@ describe('stockHolders.generated.json', () => {
     expect(file.stocks.AAPL.cusip).toBe('037833100') // confirmed by two fund families' filings
     expect(file.stocks.AAPL.multiClass).toBe(false)
     expect(file.stocks['BRK-B'].cusip).toBe('084670702') // the ~$500 B line, not the ~$749,000 A line
-    expect(file.stocks['BRK-B'].cusipVia).toBe('13f-class-title')
+    expect(['13f-names', 'fund+13f-names'], 'BRK-B via').toContain(file.stocks['BRK-B'].cusipVia)
     expect(file.stocks['BRK-B'].multiClass).toBe(true)
     expect(file.stocks.GOOGL.cusip).toBe('02079K305') // the Class A line
     expect(file.stocks.GOOGL.multiClass).toBe(true)
+  })
+
+  it('hydrating a stock puts names and field words back on the compact rows', () => {
+    const aapl = hydrateStockHolders(file, 'AAPL')
+    expect(aapl).not.toBeNull()
+    expect(aapl!.institutional!.topHolders[0].name).toBeTruthy()
+    expect(aapl!.institutional!.topHolders[0].name).not.toMatch(/^CIK /)
+    expect(aapl!.funds[0].symbol).toBeTruthy()
+    expect(aapl!.funds[0].asOf).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+    expect(hydrateStockHolders(file, 'NOT-A-TICKER')).toBeNull()
   })
 })
 
@@ -397,7 +520,7 @@ describe('wording and arithmetic the cards show', () => {
     expect(fundHoldersScopeNote(103)).toContain('60 days')
     expect(thirteenFPeriodNote('2026-06-30')).toContain('quarter ended 2026-06-30')
     expect(thirteenFPeriodNote('2026-06-30')).toContain('45 days')
-    expect(unresolvedInPlainWords(null)).toContain('catalog')
+    expect(unresolvedInPlainWords(null)).toContain('NYSE and Nasdaq')
     expect(unresolvedInPlainWords('ambiguous: 2 CUSIPs')).toContain('more than one possible')
     expect(unresolvedInPlainWords('no filing row names the company')).toContain('left out rather than guessed')
   })

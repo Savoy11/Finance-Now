@@ -29,13 +29,14 @@ import { createInterface } from 'node:readline'
 import { execFileSync } from 'node:child_process'
 import path from 'node:path'
 
-import { EQUITY_CATALOG } from '../src/lib/data/equityCatalog'
+import { EQUITY_CATALOG, EQUITY_BY_SYMBOL } from '../src/lib/data/equityCatalog'
 import { FUND_CATALOG } from '../src/lib/data/fundCatalog'
+import { parseExchangeFile, selectCommonListings, type SecListing } from '../src/lib/data/secListings'
+import FUND_FACTS from '../src/lib/data/fundFacts.generated.json'
 import { fetchTickerCikMap } from '../src/lib/server/edgar'
 import { resolveFundSeries, listNportFilings, fetchNportReport } from '../src/lib/server/nport'
 import {
-  CLASS_WORDS, classCandidateCusips, cusipForClassByTitles, nameMatches, resolveCusips,
-  type HoldingForCusip,
+  classWordFor, nameMatches, resolveListed, type F13CusipEvidence, type HoldingForCusip,
 } from './lib/stockCusips'
 import {
   isoFromSetDate, normalizeAmendmentKind, dominantPeriod, effectiveFilings, foldInfoRow, aggregate,
@@ -179,7 +180,7 @@ async function readTsv(file: string, onRow: (get: (col: string) => string) => vo
   }
 }
 
-async function aggregate13F(dir: string, cusips: ReadonlySet<string>, titleCusips: ReadonlySet<string>) {
+async function aggregate13F(dir: string) {
   const submissions: SubmissionRow[] = []
   await readTsv(path.join(dir, 'SUBMISSION.tsv'), (get) => {
     submissions.push({
@@ -213,34 +214,87 @@ async function aggregate13F(dir: string, cusips: ReadonlySet<string>, titleCusip
     }
   }
 
+  // Everything is folded — the whole set is the identity evidence as well as
+  // the totals: per CUSIP, every effective share row's issuer name and class
+  // title are tallied (so the dominant spelling decides, never one odd row)
+  // alongside the per-manager share totals. CUSIP strings are interned so the
+  // millions of row-fresh strings do not all stay alive as map keys.
   const totals = new Map<string, Map<string, { shares: number; valueUsd: number }>>()
-  // Pass 2's evidence: how the 13F set itself titles each candidate CUSIP's
-  // class ("COM CL B"), tallied so one odd row cannot decide.
-  const titleTallies = new Map<string, Map<string, number>>()
+  const names = new Map<string, Map<string, number>>()
+  const titles = new Map<string, Map<string, number>>()
+  const sums = new Map<string, { shares: number; value: number }>()
+  const internMap = new Map<string, string>()
+  const intern = (s: string): string => {
+    const c = internMap.get(s)
+    if (c !== undefined) return c
+    internMap.set(s, s)
+    return s
+  }
+  const bump = (map: Map<string, Map<string, number>>, cusip: string, value: string) => {
+    if (!value) return
+    let tally = map.get(cusip)
+    if (!tally) { tally = new Map(); map.set(cusip, tally) }
+    tally.set(value, (tally.get(value) ?? 0) + 1)
+  }
   let rows = 0
   await readTsv(path.join(dir, 'INFOTABLE.tsv'), (get) => {
     rows++
-    const cusip = get('CUSIP')
-    if (titleCusips.has(cusip)) {
-      const title = get('TITLEOFCLASS')
-      if (title) {
-        let tally = titleTallies.get(cusip)
-        if (!tally) { tally = new Map(); titleTallies.set(cusip, tally) }
-        tally.set(title, (tally.get(title) ?? 0) + 1)
-      }
-    }
-    if (!cusips.has(cusip)) return
-    foldInfoRow(totals, {
-      accession: get('ACCESSION_NUMBER'),
-      cusip,
-      shares: Number(get('SSHPRNAMT')),
-      sharesType: get('SSHPRNAMTTYPE'),
-      putCall: get('PUTCALL'),
-      valueUsd: Number(get('VALUE')),
-    }, effective)
+    if (get('SSHPRNAMTTYPE') !== 'SH') return
+    if (get('PUTCALL').trim() !== '') return
+    const accession = get('ACCESSION_NUMBER')
+    if (!effective.has(accession)) return
+    const shares = Number(get('SSHPRNAMT'))
+    if (!Number.isFinite(shares) || shares <= 0) return
+    const cusip = intern(get('CUSIP'))
+    const valueUsd = Number(get('VALUE'))
+    bump(names, cusip, get('NAMEOFISSUER'))
+    bump(titles, cusip, get('TITLEOFCLASS'))
+    const sum = sums.get(cusip) ?? { shares: 0, value: 0 }
+    sum.shares += shares
+    if (Number.isFinite(valueUsd)) sum.value += valueUsd
+    sums.set(cusip, sum)
+    foldInfoRow(totals, { accession, cusip, shares, sharesType: 'SH', putCall: '', valueUsd }, effective)
   })
-  console.log(`  13F: ${rows.toLocaleString()} holdings rows streamed; period ${period}; ${effective.size.toLocaleString()} effective filings`)
-  return { period, aggregates: aggregate(totals, managerNames, TOP_HOLDERS), managersInPeriod: new Set(effective.values()).size, titleTallies }
+  const evidence = new Map<string, F13CusipEvidence>()
+  for (const [cusip, tally] of names) {
+    const sum = sums.get(cusip)
+    evidence.set(cusip, {
+      holderCount: totals.get(cusip)?.size ?? 0,
+      names: tally,
+      titles: titles.get(cusip) ?? new Map(),
+      avgPrice: sum && sum.shares > 0 && sum.value > 0 ? sum.value / sum.shares : null,
+    })
+  }
+  console.log(`  13F: ${rows.toLocaleString()} holdings rows streamed; period ${period}; ${effective.size.toLocaleString()} effective filings; ${evidence.size.toLocaleString()} CUSIPs with evidence`)
+  // Aggregation into top-ten lists happens in main(), over the resolved
+  // CUSIPs only — building ranked holder arrays for every CUSIP in the set
+  // would churn memory for stocks nothing asks about.
+  return { period, totals, managerNames, managersInPeriod: new Set(effective.values()).size, evidence }
+}
+
+/**
+ * The universe: every NYSE & Nasdaq common stock on the SEC's exchange list —
+ * the same list, through the same selection rules, as the app's stock search
+ * (T-450) — so "a given company's stock" means any stock a reader can open,
+ * not only the catalog. The catalog's own symbols are kept whatever the
+ * filters say, exactly as the app's list does.
+ */
+async function listedUniverse(): Promise<{ stocks: SecListing[]; leftOut: Record<string, number> }> {
+  const res = await fetch('https://www.sec.gov/files/company_tickers_exchange.json', {
+    headers: { 'User-Agent': 'Finance Now research dashboard (FinanceNow72@gmail.com)' },
+  })
+  if (!res.ok) throw new Error(`SEC exchange list: HTTP ${res.status}`)
+  const rows = parseExchangeFile(await res.json())
+  if (!rows || rows.length === 0) throw new Error('SEC exchange list: not in the expected shape')
+  // The same fund filter the app's list uses: the fund catalog, plus every
+  // ticker the SEC's N-PORT fund filings name.
+  const fundSymbols = new Set([...FUND_CATALOG.map((f) => f.symbol.toUpperCase()), ...Object.keys(FUND_FACTS)])
+  const { listings, leftOut } = selectCommonListings(
+    rows,
+    (symbol) => fundSymbols.has(symbol.toUpperCase()),
+    (symbol) => !!EQUITY_BY_SYMBOL[symbol],
+  )
+  return { stocks: listings, leftOut }
 }
 
 type Sweep = Awaited<ReturnType<typeof sweepFunds>>
@@ -269,52 +323,48 @@ async function main(): Promise<number> {
   // write near-legal names ("International Business Machines Corp"), which the
   // catalog's display names ("IBM") do not line up with. Catalog name only
   // when the SEC map lacks the ticker.
-  const cikMap = await fetchTickerCikMap()
-  const titleFor = (symbol: string) =>
-    cikMap.get(symbol.toUpperCase())?.company ?? EQUITY_CATALOG.find((s) => s.symbol === symbol)?.name ?? symbol
-  const resolution = resolveCusips(
-    EQUITY_CATALOG.map((s) => ({ symbol: s.symbol, name: titleFor(s.symbol) })),
-    sweep.holdingsForCusip,
-  )
-  console.log(`  CUSIPs: ${resolution.resolved.size} of ${EQUITY_CATALOG.length} stocks resolved by the fund filings' names`)
-
-  // Pass 2 candidates: class shares whose fund-filing names do not say the
-  // class at all (both Berkshire lines file as "Berkshire Hathaway Inc"). The
-  // 13F set's TITLEOFCLASS column will decide among them after the stream.
-  const taken = new Set([...resolution.resolved.values()].map((r) => r.cusip))
-  const pass2 = new Map<string, { classWord: string; candidates: Array<{ cusip: string; families: string[] }> }>()
-  for (const u of resolution.unresolved) {
-    const classWord = CLASS_WORDS[u.symbol]
-    if (!classWord) continue
-    const candidates = classCandidateCusips({ symbol: u.symbol, name: titleFor(u.symbol) }, sweep.holdingsForCusip)
-      .filter((c) => !taken.has(c.cusip))
-    if (candidates.length > 0) pass2.set(u.symbol, { classWord, candidates })
+  const universe = await listedUniverse()
+  const byCik = new Map<number, SecListing[]>()
+  for (const l of universe.stocks) {
+    const list = byCik.get(l.cik) ?? []
+    list.push(l)
+    byCik.set(l.cik, list)
   }
+  console.log(`Universe: ${universe.stocks.length} NYSE & Nasdaq common stocks (left out: ${Object.entries(universe.leftOut).map(([k, v]) => `${k} ${v}`).join(', ')})`)
+
+  // Catalog symbols the SEC list happens to lack still resolve, with the SEC
+  // registrant-title map as their name source.
+  const cikMap = await fetchTickerCikMap()
+  const missingCatalog = EQUITY_CATALOG.filter((s) => !universe.stocks.some((l) => l.symbol === s.symbol))
+  const stockList: Array<{ symbol: string; name: string; shareClasses: number }> = [
+    ...universe.stocks.map((l) => ({ symbol: l.symbol, name: l.name, shareClasses: l.shareClasses })),
+    ...missingCatalog.map((s) => ({ symbol: s.symbol, name: cikMap.get(s.symbol.toUpperCase())?.company ?? s.name, shareClasses: 1 })),
+  ]
+  if (missingCatalog.length > 0) console.log(`  (+${missingCatalog.length} catalog symbols not on the SEC list: ${missingCatalog.map((s) => s.symbol).join(', ')})`)
 
   const { dir, source } = await ensureSetDir()
-  const wanted = new Set([...resolution.resolved.values()].map((r) => r.cusip))
-  const titleCusips = new Set<string>()
-  for (const { candidates } of pass2.values()) {
-    for (const c of candidates) { wanted.add(c.cusip); titleCusips.add(c.cusip) }
-  }
-  const f13 = await aggregate13F(dir, wanted, titleCusips)
+  const f13 = await aggregate13F(dir)
 
-  const viaTitles = new Set<string>()
-  for (const [symbol, { classWord, candidates }] of pass2) {
-    const cusip = cusipForClassByTitles(classWord, candidates, f13.titleTallies)
-    if (!cusip) continue
-    resolution.resolved.set(symbol, { cusip, families: candidates.find((c) => c.cusip === cusip)?.families ?? [] })
-    viaTitles.add(symbol)
-  }
-  resolution.unresolved = resolution.unresolved.filter((u) => !resolution.resolved.has(u.symbol))
-  if (viaTitles.size > 0) console.log(`  +${viaTitles.size} resolved by the 13F set's own class titles: ${[...viaTitles].sort().join(', ')}`)
-  console.log(`  CUSIPs: ${resolution.resolved.size} of ${EQUITY_CATALOG.length} stocks resolved`)
+  // One resolution over both filing sources (scripts/lib/stockCusips.ts):
+  // fund families and 13F filers each carry identity, titles say what a
+  // fund-less line is, siblings eliminate, duplicates refuse.
+  const resolution = resolveListed(stockList, sweep.holdingsForCusip, f13.evidence)
+  const entryFor = new Map(stockList.map((s) => [s.symbol, s]))
+  const viaCounts = new Map<string, number>()
+  for (const r of resolution.resolved.values()) viaCounts.set(r.via, (viaCounts.get(r.via) ?? 0) + 1)
+  console.log(`  CUSIPs: ${resolution.resolved.size} of ${stockList.length} stocks resolved — ${[...viaCounts.entries()].sort((a, b) => b[1] - a[1]).map(([v, n]) => `${v} ${n}`).join(', ')}`)
 
+  // Unresolved, by reason — and full diagnostics for the first few, so a
+  // rules change starts from data instead of theory.
+  const reasonCounts = new Map<string, number>()
   for (const u of resolution.unresolved) {
-    console.log(`    unresolved ${u.symbol}: ${u.reason}`)
-    // Diagnostics: what the filings actually carry under that name, so the
-    // next rules change starts from data instead of theory.
-    const title = titleFor(u.symbol)
+    const key = u.reason.replace(/\d+ CUSIPs.*$/, 'several CUSIPs survive')
+    reasonCounts.set(key, (reasonCounts.get(key) ?? 0) + 1)
+  }
+  for (const [reason, n] of [...reasonCounts.entries()].sort((a, b) => b[1] - a[1])) console.log(`    ${n} unresolved: ${reason}`)
+  for (const u of resolution.unresolved.filter((x) => entryFor.get(x.symbol) && EQUITY_BY_SYMBOL[x.symbol]).slice(0, 15)) {
+    console.log(`    catalog unresolved ${u.symbol}: ${u.reason}`)
+    const title = entryFor.get(u.symbol)!.name
     const byCusip = new Map<string, HoldingForCusip[]>()
     for (const h of sweep.holdingsForCusip) {
       if (!nameMatches(title, h.name)) continue
@@ -330,49 +380,70 @@ async function main(): Promise<number> {
         .sort((a, b) => a - b)
       const fmt = (v: number) => (v >= 1 ? v.toFixed(2) : v.toPrecision(3))
       const span = prices.length ? `$${fmt(prices[0])}…$${fmt(prices[prices.length - 1])} (median $${fmt(prices[Math.floor(prices.length / 2)])})` : 'no priced rows'
-      const titles = f13.titleTallies.get(cusip)
-      const titleNote = titles ? `; 13F titles: ${[...titles.entries()].sort((a, b) => b[1] - a[1]).slice(0, 2).map(([t, n]) => `"${t}"×${n}`).join(', ')}` : ''
+      const ev = f13.evidence.get(cusip)
+      const titleNote = ev && ev.titles.size > 0 ? `; 13F titles: ${[...ev.titles.entries()].sort((a, b) => b[1] - a[1]).slice(0, 2).map(([t, n]) => `"${t}"×${n}`).join(', ')}` : ''
       console.log(`      ${cusip}: ${list.length} rows, ${families.size} families, ${span} — e.g. "${list[0].name}"${titleNote}`)
     }
   }
 
-  const stocks: Record<string, unknown> = {}
-  for (const stock of EQUITY_CATALOG) {
+  // The file: one line per stock, so a rebuild's diff reads per company, and
+  // manager names once in a dictionary rather than on every stock they hold
+  // (BlackRock is in nearly every top ten). Holders and fund rows are tuples;
+  // the reader (lib/data/stockHolders.ts hydrate) turns a stock's slice back
+  // into named objects when the route serves it.
+  const managers: Record<string, string> = {}
+  const stockLines: string[] = []
+  let covered = 0
+  // Ranked holder lists for resolved CUSIPs only.
+  const resolvedTotals = new Map<string, Map<string, { shares: number; valueUsd: number }>>()
+  for (const r of resolution.resolved.values()) {
+    const t = f13.totals.get(r.cusip)
+    if (t) resolvedTotals.set(r.cusip, t)
+  }
+  const aggregates = aggregate(resolvedTotals, f13.managerNames, TOP_HOLDERS)
+
+  for (const stock of stockList) {
     const r = resolution.resolved.get(stock.symbol)
     if (!r) continue
-    const agg = f13.aggregates.get(r.cusip)
+    covered++
+    const agg = aggregates.get(r.cusip)
+    if (agg) for (const h of agg.topHolders) managers[h.cik] = h.name
     const funds = (sweep.byCusipFunds.get(r.cusip) ?? [])
       .sort((a, b) => b.shares - a.shares)
       .slice(0, TOP_FUNDS)
-    stocks[stock.symbol] = {
+    const entry = {
       cusip: r.cusip,
       cusipFamilies: r.families,
-      cusipVia: viaTitles.has(stock.symbol) ? '13f-class-title' : 'fund-names',
+      cusipVia: r.via,
       // One listed class of several: company-wide share counts cannot place
       // this class's 13F total, so the page shows shares without a percent.
-      multiClass: stock.symbol in CLASS_WORDS,
+      multiClass: stock.shareClasses > 1 || classWordFor(stock.symbol) !== null,
       institutional: agg
-        ? { totalShares: agg.totalShares, holderCount: agg.holderCount, topHolders: agg.topHolders }
+        ? { totalShares: agg.totalShares, holderCount: agg.holderCount, top: agg.topHolders.map((h) => [h.cik, h.shares, h.valueUsd]) }
         : null,
-      funds,
+      funds: funds.map((f) => [f.symbol, f.shares, f.valueUsd, f.pctVal, f.asOf]),
     }
+    stockLines.push(`  ${JSON.stringify(stock.symbol)}: ${JSON.stringify(entry)}`)
   }
 
-  const out = {
+  const head = {
     builtOn: new Date().toISOString().slice(0, 10),
     thirteenF: { period: f13.period, source, managersInPeriod: f13.managersInPeriod },
+    universe: { source: 'SEC company_tickers_exchange.json (NYSE & Nasdaq common stocks, the app’s own T-450 selection rules) + the equity catalog', listed: stockList.length, leftOut: universe.leftOut },
     fundsRead: sweep.fundsRead,
     fundsSkipped: sweep.fundsSkipped,
     unresolved: resolution.unresolved,
-    stocks,
+    managers,
   }
-  writeFileSync(OUT_PATH, `${JSON.stringify(out, null, 1)}\n`)
-  console.log(`Wrote ${OUT_PATH}`)
+  const headJson = JSON.stringify(head, null, 1)
+  writeFileSync(OUT_PATH, `${headJson.slice(0, -2)},\n "stocks": {\n${stockLines.join(',\n')}\n }\n}\n`)
+  console.log(`Wrote ${OUT_PATH} — ${covered} stocks covered, ${resolution.unresolved.length} unresolved`)
 
   // Sanity line for the reader: the largest aggregate, in plain words.
-  const aapl = stocks.AAPL as { institutional?: { totalShares: number; holderCount: number } | null } | undefined
-  if (aapl?.institutional) {
-    console.log(`  AAPL: ${(aapl.institutional.totalShares / 1e9).toFixed(2)}B shares across ${aapl.institutional.holderCount.toLocaleString()} managers`)
+  const aapl = resolution.resolved.get('AAPL')
+  const aaplAgg = aapl ? aggregates.get(aapl.cusip) : undefined
+  if (aaplAgg) {
+    console.log(`  AAPL: ${(aaplAgg.totalShares / 1e9).toFixed(2)}B shares across ${aaplAgg.holderCount.toLocaleString()} managers`)
   }
   return 0
 }

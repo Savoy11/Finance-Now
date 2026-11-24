@@ -842,7 +842,10 @@ const tests = [
     if (!(inst.holderCount > 1_000)) throw new Error(`holder count implausible: ${inst.holderCount}`)
     if (!Array.isArray(j.entry.funds) || j.entry.funds.length < 5) throw new Error(`only ${j.entry?.funds?.length ?? 0} fund holders`)
     if (j.entry.funds.some((f) => !f.asOf)) throw new Error('a fund row has no as-of date')
-    return `${(inst.totalShares / 1e9).toFixed(1)}B sh across ${inst.holderCount.toLocaleString('en-US')} managers; ${j.entry.funds.length} fund rows; 13F period ${j.period}`
+    // The owner's 2026-11-24 confirmation ask: the build covers the listed
+    // universe (the SEC's NYSE & Nasdaq common-stock list), not 79 names.
+    if (!(j.stocksCovered > 3_000)) throw new Error(`only ${j.stocksCovered} stocks covered — the wide build should settle thousands`)
+    return `${(inst.totalShares / 1e9).toFixed(1)}B sh across ${inst.holderCount.toLocaleString('en-US')} managers; ${j.entry.funds.length} fund rows; ${j.stocksCovered.toLocaleString('en-US')} stocks covered; 13F period ${j.period}`
   }},
 
   { group: 'equities', path: '/live-data/company-profile?symbol=AAPL&name=Apple', name: 'company-profile (SEC+wiki)', check: (j) => {

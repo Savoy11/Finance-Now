@@ -17,6 +17,11 @@
 // saying why beats showing a quietly impossible percentage.
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { FUND_CATALOG } from './fundCatalog'
+
+/** Fund names once, for hydrating the file's per-stock fund tuples. */
+const FUND_NAMES: Record<string, string> = Object.fromEntries(FUND_CATALOG.map((f) => [f.symbol, f.name]))
+
 export interface StockFundHolderRow {
   symbol: string
   name: string
@@ -46,10 +51,12 @@ export interface StockHoldersEntry {
   /** The independent fund families whose filings agreed on the CUSIP. */
   cusipFamilies: string[]
   /**
-   * How the CUSIP was settled: by the fund filings' own names, or — for class
-   * shares every filer names identically — by the 13F set's class titles.
+   * How the CUSIP was settled: by the fund filings' own names; for class
+   * shares every filer names identically, by the 13F set's class titles; or,
+   * for a classless listing of a multi-class company, by elimination once its
+   * siblings' identifiers were taken.
    */
-  cusipVia: 'fund-names' | '13f-class-title'
+  cusipVia: 'fund-names' | 'fund+13f-names' | '13f-names' | 'sibling-elimination'
   /**
    * The stock is one listed class of several (Berkshire's B shares,
    * Alphabet's A shares). The company's share counts cover every class
@@ -61,13 +68,62 @@ export interface StockHoldersEntry {
   funds: StockFundHolderRow[]
 }
 
+// ── The generated file's own shape (compact, one stock per line) ────────────
+// The build covers every NYSE & Nasdaq common stock, so the file keeps
+// manager names once in a dictionary (BlackRock is in nearly every top ten)
+// and the per-stock rows as tuples; hydrateStockHolders turns one stock's
+// slice back into the named shape above when the route serves it.
+
+export interface StockHoldersFileEntry {
+  cusip: string
+  cusipFamilies: string[]
+  cusipVia: StockHoldersEntry['cusipVia']
+  multiClass: boolean
+  institutional: {
+    totalShares: number
+    holderCount: number
+    /** [manager CIK, shares, value in dollars] — names in the file's `managers`. */
+    top: Array<[string, number, number]>
+  } | null
+  /** [fund symbol, shares, value, share of the fund's portfolio, as-of date]. */
+  funds: Array<[string, number, number | null, number | null, string]>
+}
+
 export interface StockHoldersFile {
   builtOn: string
   thirteenF: { period: string; source: string; managersInPeriod: number }
+  universe: { source: string; listed: number; leftOut: Record<string, number> }
   fundsRead: number
   fundsSkipped: Array<{ symbol: string; reason: string }>
   unresolved: Array<{ symbol: string; reason: string }>
-  stocks: Record<string, StockHoldersEntry>
+  /** Manager names by CIK, shared across every stock's top holders. */
+  managers: Record<string, string>
+  stocks: Record<string, StockHoldersFileEntry>
+}
+
+/** One stock's slice of the file, with names and field words back in place. */
+export function hydrateStockHolders(file: StockHoldersFile, symbol: string): StockHoldersEntry | null {
+  const e = file.stocks[symbol]
+  if (!e) return null
+  return {
+    cusip: e.cusip,
+    cusipFamilies: e.cusipFamilies,
+    cusipVia: e.cusipVia,
+    multiClass: e.multiClass,
+    institutional: e.institutional
+      ? {
+          totalShares: e.institutional.totalShares,
+          holderCount: e.institutional.holderCount,
+          topHolders: e.institutional.top.map(([cik, shares, valueUsd]) => ({
+            cik, shares, valueUsd, name: file.managers[cik] ?? `CIK ${cik}`,
+          })),
+        }
+      : null,
+    funds: e.funds.map(([fundSymbol, shares, valueUsd, pctVal, asOf]) => ({
+      symbol: fundSymbol, shares, valueUsd, pctVal, asOf,
+      name: FUND_NAMES[fundSymbol] ?? fundSymbol,
+    })),
+  }
 }
 
 /** What /live-data/stock-holders answers for one symbol. */
@@ -79,6 +135,8 @@ export interface StockHoldersResponse {
   period: string
   managersInPeriod: number
   fundsRead: number
+  /** How many listed stocks the build settled figures for. */
+  stocksCovered: number
   entry: StockHoldersEntry | null
   /** Why the symbol has no entry (the build's recorded reason), when it has none. */
   unresolvedReason: string | null
@@ -145,7 +203,7 @@ export function fundHoldersScopeNote(fundsRead: number): string {
  */
 export function unresolvedInPlainWords(reason: string | null): string {
   if (reason == null) {
-    return 'Only stocks in this app’s own catalog are covered here.'
+    return 'This stock was not on the NYSE and Nasdaq common-stock list these figures were built over — new listings join when the data is next rebuilt, and stocks traded elsewhere are not covered.'
   }
   if (reason.includes('ambiguous')) {
     return 'The filings carry more than one possible security identifier for this stock, and guessing between them is worse than leaving the figures out.'

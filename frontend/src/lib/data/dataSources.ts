@@ -411,7 +411,7 @@ export const DATA_SOURCES: DataSourceEntry[] = [
       { ...SEC_EDGAR, name: 'SEC N-PORT filings (catalog funds)', host: 'www.sec.gov' },
     ],
     staticData: ['stockHolders.generated.json'],
-    notes: 'Built offline by `npm run holders:build` (T-471): institutional totals from the quarterly 13F structured data set, fund rows from each catalog fund’s newest N-PORT filing, joined on CUSIPs derived under scripts/lib/stockCusips.ts’ two-family agreement rules and pinned in the generated file. The route fetches nothing at request time. Treasury/outstanding share figures come from /live-data/company-facts, not this route.',
+    notes: 'Built offline by `npm run holders:build` over every NYSE & Nasdaq common stock on the SEC exchange list — the search’s own T-450 universe (T-471; widened same day, D244): institutional totals from the quarterly 13F structured data set, fund rows from each catalog fund’s newest N-PORT filing, joined on CUSIPs derived under scripts/lib/stockCusips.ts’ independent-filer rules (two fund families, or enough 13F filers naming the company) and pinned in the generated file. The route fetches nothing at request time. Treasury/outstanding share figures come from /live-data/company-facts, not this route.',
   },
   {
     id: 'stock-universe', surface: 'Stock Registry universe', module: 'equities',
