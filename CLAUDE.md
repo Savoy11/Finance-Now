@@ -459,7 +459,9 @@ Select-String -Path .github/workflows/*.yml -Pattern 'delete|prune|cleanup'
 ```
 
 Re-run 2026-11-05 with the Windows commands added (`rmdir`, `rd /s`, `del /`): the three rows
-above, plus `providerStatus.test.ts:2`, the test's import. A text search still cannot see
+above, plus `providerStatus.test.ts:2`, the test's import. Since 2026-11-24 the search also hits
+`lib/server/__tests__/launchRehearse.test.ts`, a guard ASSERTING the rehearsal deletes nothing —
+a benign hit of the same kind as the import. A text search still cannot see
 PowerShell's bare aliases (`rm`, `del`, `ri`, `erase` with no switch), so read any new `.ps1`
 file yourself.
 

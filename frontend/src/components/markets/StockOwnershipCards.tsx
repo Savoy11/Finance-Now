@@ -10,10 +10,12 @@ import {
   INSTITUTIONAL_AS_FILED_NOTE,
   MULTI_CLASS_COUNTS_NOTE,
   MULTI_CLASS_NO_PCT_NOTE,
+  PCT_WITHHELD_SPLIT_NOTE,
   STRUCTURE_DATES_DIFFER_NOTE,
   TREASURY_NOT_REPORTED_NOTE,
   fundHoldersScopeNote,
   institutionalPctOfOutstanding,
+  institutionalPctWithheldForSplit,
   thirteenFPeriodNote,
   unresolvedInPlainWords,
   type StockHoldersResponse,
@@ -73,7 +75,7 @@ function FigureRow({ label, shares, asOf, sub }: { label: string; shares: number
 }
 
 /** Card A: the company's own share split, then what institutions reported. */
-export function StockOwnershipCard({ symbol }: { symbol: string }) {
+export function StockOwnershipCard({ symbol, shareChange }: { symbol: string; shareChange?: number | null }) {
   const facts = useCompanyFacts(symbol)
   const holders = useStockHolders(symbol)
   const s = facts.data?.shareStructure
@@ -83,8 +85,12 @@ export function StockOwnershipCard({ symbol }: { symbol: string }) {
 
   const outstanding = s?.outstanding ?? null
   // A multi-class symbol's 13F total covers one class while the company's
-  // counts cover them all — shares only, never a percent of them.
-  const pct = entry?.institutional && outstanding && !entry.multiClass
+  // counts cover them all — shares only, never a percent of them. And a split
+  // since the annual report (D170's own signal, from the stock page's universe
+  // row) means the quarter's filed shares and today's count may not be in the
+  // same units, so the percent is withheld the way P/E and yield are.
+  const splitWithheld = institutionalPctWithheldForSplit(shareChange)
+  const pct = entry?.institutional && outstanding && !entry.multiClass && !splitWithheld
     ? institutionalPctOfOutstanding(entry.institutional.totalShares, outstanding.shares)
     : null
 
@@ -120,7 +126,9 @@ export function StockOwnershipCard({ symbol }: { symbol: string }) {
           )}
         </div>
       ) : facts.error ? (
-        <p className="mb-3 text-xs text-text-muted">Share figures unavailable: SEC EDGAR could not be reached.</p>
+        // Neutral about the cause on purpose: an unknown symbol, a filer with
+        // no structured facts and an unreachable EDGAR all land here.
+        <p className="mb-3 text-xs text-text-muted">Share figures could not be loaded from the company’s SEC filings.</p>
       ) : null}
 
       {entry?.institutional ? (
@@ -137,6 +145,9 @@ export function StockOwnershipCard({ symbol }: { symbol: string }) {
           </p>
           {entry.multiClass && (
             <p className="text-[10px] text-text-muted mt-0.5">{MULTI_CLASS_NO_PCT_NOTE}</p>
+          )}
+          {!entry.multiClass && splitWithheld && (
+            <p className="text-[10px] text-text-muted mt-0.5">{PCT_WITHHELD_SPLIT_NOTE}</p>
           )}
           <ul className="mt-2 space-y-1">
             {entry.institutional.topHolders.map((h) => (
@@ -221,10 +232,10 @@ export function FundHoldersCard({ symbol }: { symbol: string }) {
 }
 
 /** Both sections, in the order the owner asked for them. */
-export function StockOwnershipCards({ symbol }: { symbol: string }) {
+export function StockOwnershipCards({ symbol, shareChange }: { symbol: string; shareChange?: number | null }) {
   return (
     <>
-      <StockOwnershipCard symbol={symbol} />
+      <StockOwnershipCard symbol={symbol} shareChange={shareChange} />
       <FundHoldersCard symbol={symbol} />
     </>
   )

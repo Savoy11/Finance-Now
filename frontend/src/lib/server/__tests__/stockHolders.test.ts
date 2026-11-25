@@ -13,10 +13,12 @@ import { allowedBrowseCount } from '../nport'
 import GENERATED from '../../data/stockHolders.generated.json'
 import {
   STOCK_HOLDERS_BUILT_ON, fundHoldersScopeNote, getStockHoldersProvenance, hydrateStockHolders,
-  institutionalPctOfOutstanding, thirteenFPeriodNote, unresolvedInPlainWords,
-  type StockHoldersFile,
+  institutionalPctOfOutstanding, institutionalPctWithheldForSplit, thirteenFPeriodNote,
+  unresolvedInPlainWords, type StockHoldersFile,
 } from '../../data/stockHolders'
+import { SHARE_CHANGE_BAND } from '../../data/stockShares'
 import { EQUITY_BY_SYMBOL } from '../../data/equityCatalog'
+import { FUND_CATALOG } from '../../data/fundCatalog'
 
 const read = (p: string) => readFileSync(join(__dirname, '../../../..', p), 'utf8')
 
@@ -439,6 +441,11 @@ describe('stockHolders.generated.json', () => {
   it('the provenance clock matches the file it describes', () => {
     expect(file.builtOn).toBe(STOCK_HOLDERS_BUILT_ON)
     expect(getStockHoldersProvenance(new Date(`${STOCK_HOLDERS_BUILT_ON}T12:00:00Z`)).stale).toBe(false)
+    // The head is the file's own provenance record: the 13F source names the
+    // SEC set (or its download URL), never a build machine's local path — the
+    // first wide build recorded a container's /tmp directory (audit
+    // 2026-11-24, finding 3), which identified nothing once the session ended.
+    expect(file.thirteenF.source).toMatch(/^(https:\/\/www\.sec\.gov\/|SEC Form 13F structured data set)/)
   })
 
   it('covers the listed universe, not just the catalog (the owner\'s 2026-11-24 confirmation ask)', () => {
@@ -515,8 +522,27 @@ describe('wording and arithmetic the cards show', () => {
     expect(institutionalPctOfOutstanding(1, 0)).toBeNull()
   })
 
+  it('a split signal withholds the percent, by D170\'s own band (audit 2026-11-24)', () => {
+    // The 13F total is in the quarter's units, the outstanding count the latest
+    // cover's — Booking's 25-for-1 would put the percent off 25×.
+    expect(institutionalPctWithheldForSplit(0.04)).toBe(true) // a 25-for-1 split's signature
+    expect(institutionalPctWithheldForSplit(SHARE_CHANGE_BAND.below - 0.01)).toBe(true)
+    expect(institutionalPctWithheldForSplit(SHARE_CHANGE_BAND.above + 0.01)).toBe(true)
+    // Buybacks and issuance stay inside the band, and no signal withholds
+    // nothing: the rule acts on evidence of a split, not absence of evidence.
+    expect(institutionalPctWithheldForSplit(1)).toBe(false)
+    expect(institutionalPctWithheldForSplit(SHARE_CHANGE_BAND.below)).toBe(false)
+    expect(institutionalPctWithheldForSplit(SHARE_CHANGE_BAND.above)).toBe(false)
+    expect(institutionalPctWithheldForSplit(null)).toBe(false)
+    expect(institutionalPctWithheldForSplit(undefined)).toBe(false)
+  })
+
   it('the notes derive their figures and say the lags', () => {
-    expect(fundHoldersScopeNote(103)).toContain('the 103 funds this app tracks')
+    // Both counts derived: the catalog is what the app tracks; the smaller
+    // count is the funds whose filings were read (the audit of 2026-11-24
+    // caught the first draft calling 103 "the funds this app tracks").
+    expect(fundHoldersScopeNote(103)).toContain(`Among the ${FUND_CATALOG.length} funds this app tracks`)
+    expect(fundHoldersScopeNote(103)).toContain('the 103 that file portfolio reports were read')
     expect(fundHoldersScopeNote(103)).toContain('60 days')
     expect(thirteenFPeriodNote('2026-06-30')).toContain('quarter ended 2026-06-30')
     expect(thirteenFPeriodNote('2026-06-30')).toContain('45 days')
@@ -540,12 +566,16 @@ describe('wiring (drift fails, not review)', () => {
   })
 
   it('the stock page mounts both sections, and the cards render every honesty note', () => {
-    expect(read('src/app/(dashboard)/equities/[symbol]/page.tsx')).toContain('<StockOwnershipCards symbol={symbol} />')
+    // The page hands the card D170's split signal, so the percent can be
+    // withheld when the quarter's units and today's count disagree.
+    expect(read('src/app/(dashboard)/equities/[symbol]/page.tsx'))
+      .toContain('<StockOwnershipCards symbol={symbol} shareChange={')
     const cards = read('src/components/markets/StockOwnershipCards.tsx')
     for (const name of [
       'INSTITUTIONAL_AS_FILED_NOTE', 'TREASURY_NOT_REPORTED_NOTE', 'STRUCTURE_DATES_DIFFER_NOTE',
-      'MULTI_CLASS_NO_PCT_NOTE', 'MULTI_CLASS_COUNTS_NOTE',
+      'MULTI_CLASS_NO_PCT_NOTE', 'MULTI_CLASS_COUNTS_NOTE', 'PCT_WITHHELD_SPLIT_NOTE',
       'fundHoldersScopeNote', 'thirteenFPeriodNote', 'unresolvedInPlainWords',
+      'institutionalPctWithheldForSplit',
     ]) expect(cards).toContain(name)
   })
 

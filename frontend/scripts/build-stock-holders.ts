@@ -47,7 +47,7 @@ const FRONTEND_ROOT = path.resolve(__dirname, '..')
 const OUT_PATH = path.join(FRONTEND_ROOT, 'src', 'lib', 'data', 'stockHolders.generated.json')
 const CACHE_DIR = path.join(FRONTEND_ROOT, 'fn-13f-cache')
 const SET_INDEX_PAGES = [
-  // The SEC moved the newest sets to a new path family in 2026; read both.
+  // The SEC's current index page for the quarterly 13F data sets.
   'https://www.sec.gov/data-research/sec-markets-data/form-13f-data-sets',
 ]
 const TOP_HOLDERS = 10
@@ -140,13 +140,18 @@ async function latestSetUrl(): Promise<string> {
   throw new Error('no form13f zip link found on the SEC index page — pass --set-url or --set-dir')
 }
 
+// The recorded `source` names the SEC set, never a local path: the file's
+// head is its own provenance record (D243), and a build directory identifies
+// nothing once the machine that held it is gone — the first wide build
+// recorded a container's /tmp path (audit 2026-11-24, finding 3). The period
+// beside it names the quarter; only a download records the exact URL.
 async function ensureSetDir(): Promise<{ dir: string; source: string }> {
   if (setDirArg) {
     if (!existsSync(path.join(setDirArg, 'INFOTABLE.tsv'))) throw new Error(`--set-dir has no INFOTABLE.tsv: ${setDirArg}`)
-    return { dir: setDirArg, source: setDirArg }
+    return { dir: setDirArg, source: 'SEC Form 13F structured data set (supplied as a local directory)' }
   }
   if (existsSync(path.join(CACHE_DIR, 'INFOTABLE.tsv')) && !setUrlArg) {
-    return { dir: CACHE_DIR, source: `${CACHE_DIR} (cached; delete the folder to refresh)` }
+    return { dir: CACHE_DIR, source: 'SEC Form 13F structured data set (fn-13f-cache copy; delete the folder to refresh)' }
   }
   const url = setUrlArg ?? await latestSetUrl()
   console.log(`Downloading the 13F data set (~100MB): ${url}`)
