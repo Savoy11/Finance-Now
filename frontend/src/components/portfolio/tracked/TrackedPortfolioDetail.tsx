@@ -25,6 +25,7 @@ import {
   YEARLY_AFTER_DAYS, formatReturnPct, portfolioReturn, trackedClassSplit, trackedLookThroughPositions,
   type PortfolioReturn,
 } from '@/lib/data/trackedPortfolioViews'
+import { BenchmarkCompareCard } from '@/components/portfolio/tracked/BenchmarkCompareCard'
 import { TrackedMixCard } from './TrackedMixCard'
 import { TradeForm } from './TradeForm'
 import { ImportTradesPanel } from './ImportTradesPanel'
@@ -322,6 +323,11 @@ export function TrackedPortfolioDetail({ portfolio, onBack }: {
               </p>
             </div>
           )}
+
+          {/* T-473 (D245): the same deposits replayed into one index fund — two
+              figures and the method, no verdict word (counsel question A16).
+              Renders only when the return tile above shows a figure at all. */}
+          {!pricesPending && earned && <BenchmarkCompareCard trades={view.trades} earned={earned} />}
 
           <SourceLine id="tracked-portfolios" asOf={prices.data?.updatedAt} />
 
