@@ -1599,6 +1599,16 @@ it (drift fails), every recorded event is in the vocabulary, the migration carri
 the schema carries no foreign key, the export includes the table, and the writer's never-break
 behaviour is driven against a mocked database.
 
+**The log answers to its own account since 2026-11-25 (T-474, D245): Settings → Security
+activity.** `/api/user/security-activity` (GET, session-only through `getSessionUserId` — never
+the shared local user, the D233 rule; the account's newest 50 rows, display-only) +
+`SecurityActivityPanel` beside the two-step card, rendering the vocabulary's plain words — how an
+account holder notices a sign-in attempt they did not make. Dark without a session, like its
+neighbours; a database without migration 0013 reads "not recording yet", never an error; an event
+outside today's vocabulary shows its id rather than vanishing. No IP or browser string exists to
+show (D235's line). Guarded by `lib/auth/__tests__/securityActivity.test.ts` (mocked-db route
+behaviour + wiring pins).
+
 **Server-side secret stores** (gitignored, written at repo `frontend/` root):
 `.provider-config.json` (provider API keys) and `.agent-prompts.json` (agent overrides).
 
