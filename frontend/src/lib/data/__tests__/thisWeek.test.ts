@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import {
   EARNINGS_SOURCE, FED_SOURCE, MAX_EARNINGS_CHIPS,
-  capEarnings, earningsItems, macroDateItems, nextFomcDecision, thisWeekDay, thisWeekRows, thisWeekSources,
+  briefDatesContext, capEarnings, earningsItems, macroDateItems, nextFomcDecision, thisWeekDay, thisWeekRows, thisWeekSources,
 } from '../thisWeek'
 import { FOMC_MEETINGS } from '../fomcCalendar'
 import { ECONOMIC_RELEASES, RELEASE_AGENCIES, RELEASE_KINDS, type ReleaseKind } from '../releaseCalendar'
@@ -109,12 +109,58 @@ describe('the strip’s assembly', () => {
   })
 })
 
+describe('briefDatesContext (T-475, D245): the Brief’s "Worth watching" grounded in known dates', () => {
+  it('renders each row with its date and its publisher, and asks the agent to use them', () => {
+    const macro = macroDateItems({ macroOn: true, equitiesOn: true, now: NOW })
+    const rows = thisWeekRows(macro, earningsItems({ AAPL: earning('AAPL', '2026-12-02', 'post-market') }, NOW))
+    const text = briefDatesContext(rows)!
+    // Every label, every date and every distinct publisher reaches the prompt —
+    // the D211 citation condition travels into the agent’s context.
+    for (const r of rows) {
+      expect(text).toContain(r.label)
+      expect(text).toContain(r.date)
+      expect(text).toContain(r.source)
+    }
+    expect(text).toContain('Worth watching')
+    expect(text).toContain('do not invent other dates')
+    // Earnings keep their wording: the "expected" source line and the session.
+    expect(text).toContain(EARNINGS_SOURCE)
+    expect(text).toContain('after the market closes')
+  })
+
+  it('a tentative Fed date says so, the Board’s own rule', () => {
+    const text = briefDatesContext([
+      { id: 'fomc', kind: 'fomc', label: 'Fed rate decision', date: '2027-06-16', href: '/macro/rates', source: FED_SOURCE, tentative: true },
+    ])!
+    expect(text).toContain('tentative')
+  })
+
+  it('no rows, no context — nothing is appended to the task', () => {
+    expect(briefDatesContext([])).toBeNull()
+  })
+})
+
 describe('the wiring', () => {
   const read = (p: string) => readFileSync(join(__dirname, p), 'utf8')
 
   it('Headlines mounts the strip', () => {
     const page = read('../../../app/(dashboard)/headlines/page.tsx')
     expect(page).toContain('<ThisWeekStrip />')
+  })
+
+  it('the Daily Brief appends the dates context to its task, under the strip’s own gating (T-475)', () => {
+    const page = read('../../../app/(dashboard)/brief/page.tsx')
+    // Assembled from the same rules as the strip…
+    expect(page).toContain('briefDatesContext(thisWeekRows(macro, shown))')
+    expect(page).toMatch(/isEnabled\('macro'\)/)
+    expect(page).toMatch(/isEnabled\('equities'\)/)
+    // …fetching earnings only with Equities on (the hook’s enabled-gate sees
+    // an empty list otherwise), and reaching the task string itself.
+    expect(page).toMatch(/if \(!equitiesOn\) return \[\]/)
+    expect(page).toContain('...(datesContext ? [datesContext] : [])')
+    // A brief started at once still carries the dates (and a disabled earnings
+    // query must not pin the button: the length gate).
+    expect(page).toMatch(/equitySymbols\.length > 0 && earningsQ\.isPending/)
   })
 
   it('the strip gates on the entitlements and fetches earnings only with Equities on', () => {

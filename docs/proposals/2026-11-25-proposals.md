@@ -45,7 +45,7 @@ is the net of the three. Effort is in rough working days for one developer.
 
 ## 1. Institutional ownership change on stock pages: the quarter-over-quarter 13F diff · proposed `P1` · target section: ledger, new item (category `feature`, Equities — stock pages; owner_role `either`)
 
-**Status:** PENDING
+**Status:** APPROVED — owner, 2026-11-25: “Let’s apply all 5”
 
 **What:** Extend the "Who Holds It" card (T-471) with what changed since the previous 13F quarter, per
 stock: the change in total reported institutional shares and in the number of reporting managers, and the
@@ -108,7 +108,7 @@ plus rendering. · *Practicality:* Good — one build-time URL check; every haza
 
 ## 2. A tracked portfolio beside "the same money in an index fund" — your decision first · proposed `P2` · target section: ledger, new item (category `decision` then `feature`, Portfolios — tracked; owner_role `owner-decision`)
 
-**Status:** PENDING
+**Status:** APPROVED — owner, 2026-11-25: “Let’s apply all 5”
 
 **What:** On a tracked portfolio, one more pair of figures beside the T-453 return tile: the value the same
 deposits and withdrawals would have reached if each had gone into one broad index fund (SPY or VOO, reader's
@@ -158,7 +158,7 @@ ruling and a counsel-brief addition; the build itself is routine.
 
 ## 3. Settings → Security activity: show an account its own audit-log rows · proposed `P2` · target section: ledger, new item (category `security`, Auth & accounts; owner_role `remote-dev`)
 
-**Status:** PENDING
+**Status:** APPROVED — owner, 2026-11-25: “Let’s apply all 5”
 
 **What:** A Settings card (beside the Two-step sign-in panel) listing the signed-in account's recent
 security events from the D235 audit log — sign-ins and refused sign-ins, password resets, two-factor
@@ -198,7 +198,7 @@ the D233 pattern (session-only, missing-table behaviour). No migration, no host,
 
 ## 4. Ground the Daily Brief's "what's ahead" in the dates the app already knows · proposed `P2` · target section: ledger, new item (category `feature`, core — Daily Brief; owner_role `remote-dev`)
 
-**Status:** PENDING
+**Status:** APPROVED — owner, 2026-11-25: “Let’s apply all 5”
 
 **What:** When the Brief's prompt is assembled, append the same facts T-468's "Coming up" strip shows — the
 next Fed decision, the next CPI/jobs/GDP/PCE release, and the user's watchlist/held stocks reporting within
@@ -237,7 +237,7 @@ high — assembly of built parts. · *Practicality:* Very good.
 
 ## 5. Let the equity agents see who holds a stock — in-app tool only · proposed `P2` · target section: ledger, new item (category `feature`, AI agents; owner_role `remote-dev`)
 
-**Status:** PENDING
+**Status:** APPROVED — owner, 2026-11-25: “Let’s apply all 5”
 
 **What:** A `get_stock_holders` tool on the equities toolset (Assistant, Equity Research, Diligence)
 reading `/live-data/stock-holders` — the share split, institutional totals, largest managers and the catalog
