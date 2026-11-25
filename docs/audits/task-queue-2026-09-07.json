@@ -60,24 +60,24 @@
  },
  "counts": {
   "total_verified": 422,
-  "outstanding": 411,
+  "outstanding": 416,
   "by_status": {
    "closed": 284,
    "parked": 120,
-   "open": 7,
+   "open": 12,
    "blocked": 0
   },
   "by_owner_role": {
-   "remote-dev": 116,
-   "either": 58,
+   "remote-dev": 119,
+   "either": 60,
    "owner-decision": 151,
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
   "closed_by_annotation": 284,
-  "counts_recomputed_on": "2026-11-24",
+  "counts_recomputed_on": "2026-11-25",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
-  "total": 411
+  "total": 416
  },
  "blocking_decisions": [
   {
@@ -17679,6 +17679,186 @@
      "docs/decisions/2026-11-24-owner-decisions.md (D244)"
     ]
    }
+  },
+  {
+   "id": "T-472",
+   "title": "Stock pages: quarter-over-quarter institutional ownership change — the one-stock 13F diff on the Who Holds It card",
+   "status": "open",
+   "confidence": "high",
+   "blocking_decision": null,
+   "opened": {
+    "on": "2026-11-25",
+    "by": "opportunity-scout FILE mode, owner-approved (recorded 2026-11-25, D245)",
+    "why": "Proposal 1 of docs/proposals/2026-11-25-proposals.md, proposed P1 (Importance high, Efficiency high, Practicality good); the owner approved it (D245: \"Let’s apply all 5\"). Nothing was built by the approval."
+   },
+   "owner_role": "either",
+   "category": "feature",
+   "effort": "medium",
+   "related_ids": [
+    "D245",
+    "T-471",
+    "D243",
+    "D244",
+    "D190",
+    "D170",
+    "D163"
+   ],
+   "summary": "Extend the Who Holds It card (T-471) with what changed since the previous 13F quarter, per stock: the change in total reported institutional shares and in the number of reporting managers, and the largest position changes among managers — biggest increases, biggest reductions, largest new stakes and largest exits, each in shares with both quarter-end dates shown. Same vocabulary as the shipped card: facts, dates, \"largest\" — no word like accumulation, conviction, bullish or smart money, and explicitly NO cross-stock \"most accumulated\" list (a ranked universe is the item-4 leaderboard shape; the one-stock diff is explanation of the asset the reader opened). The 2026-11-24 build already streams the full quarter’s 3.83M rows through foldInfoRow(), which holds per-CUSIP per-manager share totals in memory (scripts/lib/form13f.ts) before keeping only one quarter’s top ten, and npm run holders:build takes --set-url for any quarter’s zip — so the diff is computed in the build, where the full data lives, never from two shipped top-ten files. Hazards have named house guards: a split between the two quarters is withheld on D170’s share-count band (the card’s own institutionalPctWithheldForSplit precedent); a CUSIP absent from the prior quarter’s filings reads \"no comparison — the identifier was not in the prior quarter’s filings\", never \"every holder is new\"; amendment semantics (restatement vs add) are already per-quarter in effectiveFilings(). While the card is reworked, each top manager’s name gains a link to its own EDGAR filings page (the CIK is already in the data) — sources travel with figures. The 2026-11-24 code audit closed naming exactly this diff as the recorded opportunity; the owner commissioned the underlying surface twice in one day (D243, D244).",
+   "next_action": "Rebuild with two quarters: the build’s own latestSetUrl() confirms the newest published set on the SEC’s 13F data-set index page (if the 2026-09-30 period set is out, the whole card refreshes to it and the diff is Q3 vs Q2; else Q2 vs Q1 today, going current on the next 120-day rebuild — STOCK_HOLDERS_BUILT_ON). Compute the diff inside the build where per-manager totals exist; add a compact per-stock change block to stockHolders.generated.json (manager names reuse the existing dictionary; ~1–2 MB on the committed 3.3 MB file, rows per direction cappable); pure diff rules + tests on synthetic rows like stockHolders.test.ts; the card section with both quarter-end dates beside the existing as-filed notes; EDGAR filing links on manager CIKs; withhold on D170’s share band and on a CUSIP absent from the prior set; a methods-page line (D163). Build order per D245: after T-475, T-476, T-474 and T-473.",
+   "sources": [
+    {
+     "file": "docs/proposals/2026-11-25-proposals.md",
+     "lines": "Proposal 1",
+     "quote": "the change in total reported institutional shares and in the number of reporting managers, and the largest position changes among managers — biggest increases, biggest reductions, largest new stakes and largest exits, each in shares with both quarter-end dates shown"
+    },
+    {
+     "file": "docs/audits/code-audit-2026-11-24.md",
+     "lines": "165-166",
+     "quote": "the generated holders file records everything needed for a \"top institutional buyers/sellers vs last quarter\" diff; that is the opportunity-scout’s call"
+    }
+   ]
+  },
+  {
+   "id": "T-473",
+   "title": "Tracked portfolios: \"the same money in one index fund\" beside the return tile — the portfolio’s own dated cash flows replayed on a benchmark’s dividend-adjusted closes",
+   "status": "open",
+   "confidence": "high",
+   "blocking_decision": null,
+   "opened": {
+    "on": "2026-11-25",
+    "by": "opportunity-scout FILE mode, owner-approved (recorded 2026-11-25, D245)",
+    "why": "Proposal 2 of docs/proposals/2026-11-25-proposals.md, proposed P2 (Importance high if approved, Efficiency high, Practicality medium) — put to the owner as a decision first, after two scout passes had cut it for advice-adjacency without asking; D245 is that decision; the owner approved it (D245: \"Let’s apply all 5\"). Nothing was built by the approval."
+   },
+   "owner_role": "either",
+   "category": "feature",
+   "effort": "medium",
+   "related_ids": [
+    "D245",
+    "T-453",
+    "D237",
+    "T-441",
+    "T-470",
+    "D170",
+    "D163"
+   ],
+   "summary": "On a tracked portfolio, one more pair of figures beside the T-453 return tile: the value the same deposits and withdrawals would have reached if each had gone into one broad index fund (SPY or VOO, reader’s pick from a short fixed list), and that path’s money-weighted rate — computed by replaying the portfolio’s own dated cash flows against the benchmark’s dividend-adjusted closes. Two figures side by side, the method named, the Builder’s not-advice line beside them. NO verdict word — not \"underperformed\", \"beat\", or any colour-coding of the gap — and no figure at all where the portfolio’s own rate is already withheld (transfer out, unpriced holding), where the benchmark history’s basis is unadjusted (the rule StockBetaCard already follows, D170), or where a cash flow predates the benchmark history’s start (withheld with the reason, never guessed backwards). The parts exist and are tested: moneyFlows() already turns the trades into dated cash flows and moneyWeightedRate() already solves the rate (lib/data/trackedPortfolioViews.ts); the replay applies the same flows to /live-data/security-chart closes, whose first two rungs are dividend-adjusted and labelled per response (T-441, with T-470’s FMP rung behind Tiingo). Pure engine, injectable now, the costBasis.ts house pattern.",
+   "next_action": "Build the pure replay engine (lib/data/, tested, injectable now) on moneyFlows() + moneyWeightedRate() + one benchmark history request through the existing keyed ladder; refuse an unadjusted basis; the tile beside the T-453 return tile with the not-advice line; a methods-page entry (D163). IN THE SAME PR, per D245: add the figure’s advice-adjacency question to the counsel brief beside A15 (docs/assessments/counsel-brief-2026-10-26.md — \"does a side-by-side with an index make the tracker comparative advice?\"), the D237 pattern of building now with counsel reviewing the edge before launch.",
+   "sources": [
+    {
+     "file": "docs/proposals/2026-11-25-proposals.md",
+     "lines": "Proposal 2",
+     "quote": "the value the same deposits and withdrawals would have reached if each had gone into one broad index fund … and that path’s money-weighted rate — computed by replaying the portfolio’s own dated cash flows against the benchmark’s dividend-adjusted closes"
+    },
+    {
+     "file": "docs/proposals/2026-11-25-proposals.md",
+     "lines": "Proposal 2",
+     "quote": "No verdict word — not \"underperformed\", \"beat\", or any colour-coding of the gap"
+    }
+   ]
+  },
+  {
+   "id": "T-474",
+   "title": "Settings → Security activity: show an account its own audit-log rows (dark until launch)",
+   "status": "open",
+   "confidence": "high",
+   "blocking_decision": null,
+   "opened": {
+    "on": "2026-11-25",
+    "by": "opportunity-scout FILE mode, owner-approved (recorded 2026-11-25, D245)",
+    "why": "Proposal 3 of docs/proposals/2026-11-25-proposals.md, proposed P2 (Importance medium, Efficiency high, Practicality very good); the owner approved it (D245: \"Let’s apply all 5\"). Nothing was built by the approval."
+   },
+   "owner_role": "remote-dev",
+   "category": "security",
+   "effort": "small",
+   "related_ids": [
+    "D245",
+    "T-185",
+    "D235",
+    "D233",
+    "T-452",
+    "T-193"
+   ],
+   "summary": "A Settings card beside the Two-step sign-in panel listing the signed-in account’s recent security events from the D235 audit log — sign-ins and refused sign-ins, password resets, two-factor changes, recovery-code use, module grants, data exports — newest first, in the plain words AUDIT_EVENTS already carries (\"Signed in\", \"Two-step sign-in turned on\"). The data is written and nothing reads it back to the person it is about: lib/server/auditLog.ts exports only recordAudit() — thirteen call sites write, zero surfaces read — while the schema was built for exactly this query (audit_log_user_idx on user_id, at). It is the user-facing half of the D233 protection: two-factor stops a break-in; seeing a refused sign-in is how an account holder notices one being attempted. No new personal data and no policy change: the rows already belong to the account (T-452 exports them), no IP or browser string exists to show (D235’s deliberate line). Built dark like its neighbours: renders nothing without a real session (getSessionUserId, never the shared local user — the D233 rule), and a database without migration 0013 reads \"not recording yet\", never an error. T-193 (signed audit export, enterprise) is a different thing and stays parked untouched.",
+   "next_action": "Add GET /api/user/security-activity (session-only via getSessionUserId, newest N rows off the existing index), the Settings card rendering AUDIT_EVENTS display strings, and tests on the D233 pattern (session-only answers 401 in local mode, missing-table behaviour reads as not-recording-yet). No migration, no new host. Build order per D245: third of the small assembly items.",
+   "sources": [
+    {
+     "file": "docs/proposals/2026-11-25-proposals.md",
+     "lines": "Proposal 3",
+     "quote": "lib/server/auditLog.ts exports only recordAudit() — thirteen call sites write, zero surfaces read"
+    },
+    {
+     "file": "docs/proposals/2026-11-25-proposals.md",
+     "lines": "Proposal 3",
+     "quote": "renders nothing without a real session (getSessionUserId, never the shared local user — the D233 rule), and a database without migration 0013 reads \"not recording yet\", never an error"
+    }
+   ]
+  },
+  {
+   "id": "T-475",
+   "title": "Daily Brief: ground \"Worth watching\" in the dates the app already knows — the T-468 calendars and watchlist earnings, publishers named",
+   "status": "open",
+   "confidence": "high",
+   "blocking_decision": null,
+   "opened": {
+    "on": "2026-11-25",
+    "by": "opportunity-scout FILE mode, owner-approved (recorded 2026-11-25, D245)",
+    "why": "Proposal 4 of docs/proposals/2026-11-25-proposals.md, proposed P2 (Importance medium, Efficiency very high, Practicality very good); the owner approved it (D245: \"Let’s apply all 5\"). Nothing was built by the approval."
+   },
+   "owner_role": "remote-dev",
+   "category": "feature",
+   "effort": "small",
+   "related_ids": [
+    "D245",
+    "T-468",
+    "D211",
+    "T-458",
+    "D136"
+   ],
+   "summary": "When the Brief’s prompt is assembled, append the same facts T-468’s \"Coming up\" strip shows — the next Fed decision, the next CPI/jobs/GDP/PCE release, and the user’s watchlist/held stocks reporting within 14 days — as given context with their publishers named (\"per the BLS schedule\"; earnings dated \"expected, per <source>\", T-458’s labelling), gated by the entitlement store exactly as the strip is. The Brief asks for exactly this and cannot reach it: its task says \"Worth watching — 2-3 upcoming considerations\" (brief/page.tsx), but it runs research-analyst — the crypto toolset — which has no get_economic_calendar (macro toolset) and no earnings tool, while briefing a cross-module universe; today the section is whatever the agent’s web search surfaces, for users whose page one screen away shows the real dates. The assembly is already pure and shipped (lib/data/thisWeek.ts, tested), the Brief page already waits on a tracked query before generating, and known dates stated as context cannot be mis-tooled — the 2026-10-17 agent-evaluation lesson (D136) was to hand agents the figures they will quote, worked out, with their sources. D211’s citation condition (BLS/BEA named wherever their dates show) travels into the prompt text, so the Brief’s output inherits it.",
+   "next_action": "Assemble the dates from lib/data/thisWeek.ts into the Brief’s task string (client-side, the page’s established pattern beside its tracked-symbols query); keep the strip’s entitlement gating (earnings only with Equities on and watchlist/held stocks present) and the publisher names in the text; a test pins that the dates and publishers reach the task string and that the gating is respected. Build order per D245: first of the small assembly items.",
+   "sources": [
+    {
+     "file": "docs/proposals/2026-11-25-proposals.md",
+     "lines": "Proposal 4",
+     "quote": "Its task says \"Worth watching — 2-3 upcoming considerations\" (brief/page.tsx:95), but it runs research-analyst — the crypto toolset (api/agents/research/route.ts:52) — which has no get_economic_calendar (macro toolset) and no earnings tool"
+    }
+   ]
+  },
+  {
+   "id": "T-476",
+   "title": "A get_stock_holders tool on the equities toolset — in-app only; T-457’s API/MCP half stays parked",
+   "status": "open",
+   "confidence": "high",
+   "blocking_decision": null,
+   "opened": {
+    "on": "2026-11-25",
+    "by": "opportunity-scout FILE mode, owner-approved (recorded 2026-11-25, D245)",
+    "why": "Proposal 5 of docs/proposals/2026-11-25-proposals.md, proposed P2 (Importance medium, Efficiency very high, Practicality very good); the owner approved it (D245: \"Let’s apply all 5\"). Nothing was built by the approval."
+   },
+   "owner_role": "remote-dev",
+   "category": "feature",
+   "effort": "small",
+   "related_ids": [
+    "D245",
+    "D210",
+    "T-457",
+    "T-471",
+    "D136"
+   ],
+   "summary": "A get_stock_holders tool on the equities toolset (Assistant, Equity Research, Diligence) reading /live-data/stock-holders — the share split, institutional totals, largest managers and the catalog funds holding the stock — returning, with the figures, everything the card shows beside them: the 13F period and 45-day-lag note, the as-filed double-counting note, builtOn, and the recorded unresolved reason when there is no entry. None of the equity-tagged tools in lib/agents/tools.ts touches the route today, so an agent asked an ownership question must web-search past data sitting in the app (the one-source-of-truth rule: tools read what the UI reads). The pattern is D210’s, three weeks old: fund-details and stablecoin-reserves landed as in-app tools while the API/MCP half parked on T-457 at the owner’s choice — this is the same move for the surface commissioned in D243/D244, and T-457’s parked half stays parked and untouched. The notes travel with the figures by design, because the measured failure mode of agent tools is handing over a number without what honest reporting needs (the 2026-10-17 evaluation, D136): the tool returns them as one payload and the tool test pins that. If T-472 lands, the quarter-over-quarter change flows through the same tool with no second build.",
+   "next_action": "Add the tool to the equities toolset in lib/agents/tools.ts reading /live-data/stock-holders, returning figures + period + lag and as-filed notes + builtOn + unresolvedReason as one payload; a test on the existing tool-test pattern pinning that the notes travel; no /api/v1 or MCP change (T-457 b stays parked). Build order per D245: second of the small assembly items.",
+   "sources": [
+    {
+     "file": "docs/proposals/2026-11-25-proposals.md",
+     "lines": "Proposal 5",
+     "quote": "returning, with the figures, everything the card shows beside them: the 13F period and 45-day-lag note, the as-filed double-counting note, `builtOn`, and the recorded unresolved reason when there is no entry"
+    },
+    {
+     "file": "docs/proposals/2026-11-25-proposals.md",
+     "lines": "Proposal 5",
+     "quote": "In-app only: T-457’s parked half (the same data on `/api/v1` and the MCP server) stays parked and untouched, exactly as D210 handled the fund-details and reserves tools"
+    }
+   ]
   }
  ],
  "closed_but_still_listed_as_open_in_docs": [
@@ -43851,6 +44031,10 @@
    {
     "on": "2026-11-24",
     "what": "T-471 widened on the owner’s confirmation ask (D244): the ownership build now covers every NYSE & Nasdaq common stock the app’s search lists — 4,269 of 5,704 resolved, with the 13F filers’ own issuer names joining the fund families as identity evidence, stale sibling identifiers losing to the fund-held line, and duplicate claims refusing (Blue Owl, measured). Counts unchanged: the widening amends T-471’s closure rather than opening a new item."
+   },
+   {
+    "on": "2026-11-25",
+    "what": "D245 (opportunity-scout FILE mode): filed the five approved proposals of docs/proposals/2026-11-25-proposals.md as T-472..T-476, all status open, each carrying an opened block naming its proposal and D245. The owner marked every proposal APPROVED (\"Let’s apply all 5\"); nothing was rejected (rejected-proposals.md untouched) and nothing deferred (nothing carries forward). T-473’s owner_role is \"either\": the decision it was proposed to obtain is D245 itself, and its build PR adds the advice-adjacency question to the counsel brief beside A15. Counts recomputed: open 7 -> 12, outstanding/total 411 -> 416."
    }
   ]
  }

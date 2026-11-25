@@ -18,6 +18,11 @@ every parked title read); `docs/audits/rejected-proposals.md` (RP-1–RP-9 + the
 Mark each proposal below: `APPROVED`, `REJECTED`, or `DEFERRED`, and add a
 reason for anything rejected. Then run the scout in FILE mode.
 
+> **Filed 2026-11-25: T-472–T-476 (D245).** All five marked APPROVED — owner: *"Let's apply all 5"*
+> (`docs/decisions/2026-11-25-owner-decisions.md`) — and inserted into the ledger as open items by the
+> FILE pass the same day. Nothing was rejected or deferred, so the rejection log is untouched and
+> nothing carries forward.
+
 *How to read the ratings:* **Importance** = what the product and its users gain · **Efficiency** =
 that gain for the work it takes · **Practicality** = how ready it is (dependencies, risk). `P0`/`P1`/`P2`
 is the net of the three. Effort is in rough working days for one developer.
