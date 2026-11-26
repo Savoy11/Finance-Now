@@ -97,13 +97,14 @@ These are the memo's §8 questions, in its numbering, with what each would relea
 | A11 | If ratings ever became personal: state registration or the SEC's internet-adviser route, and what each costs and requires. | — | Background only: the owner chose not to (D92, option C) |
 | A12 | Non-US access: block it, or comply where the app can be reached (for example the EU's MiCA rules on advice on crypto-assets, the UK's crypto financial-promotion and risk-warning rules)? | Launch; Unblocks | T-290 (country access, parked). The draft Terms already say US-only; please say whether that is enough or a block is needed |
 
-Three tools wait on D4's review because they come close to planning advice. None is built.
+These tools come close to planning advice. Two are now built ahead of the review, at the owner's word, with the review still wanted before launch: the rebalance reminders (A15 — D237, 2026-11-21; the reminder carries the fact of a drift and no trade list) and the index-fund side-by-side on tracked portfolios (A16 — D245, 2026-11-25). A13 and A14's subjects are not built.
 
 | # | Question | Tag | An answer would release |
 |---|---|---|---|
 | A13 | A federal tax estimator for selling an asset, from the user's own cost basis and holding period: information or advice? (`docs/LEGAL-REVIEW.md` §3.D) | Unblocks | T-058 (parked until the Transfer Fees page returns) |
 | A14 | Contribution modelling (how much to put in, and when) and asset location (which holdings to put in taxable or tax-sheltered accounts) in the Portfolio Builder: information, advice or financial planning? | Unblocks | T-064, T-067, T-068 (blocked) |
-| A15 | Rebalance reminders that send a user the trades that would bring a saved plan back to target when it drifts: does that make the Builder "timed" advice? | Unblocks | T-116 (blocked) |
+| A15 | Rebalance reminders that send a user the trades that would bring a saved plan back to target when it drifts: does that make the Builder "timed" advice? | Reviews | T-116 — built 2026-11-21 (D237) with the sharpest edge held back: the reminder says only that the plan drifted past its own band, never a trade list; the trades stay on the page that already had them |
+| A16 | A tracked portfolio shown beside what the same deposits and withdrawals would be worth in one broad index fund the reader picks (T-473, D245): the user’s own dated cash flows replayed at the fund’s dividend-adjusted closes, two figures side by side, the method stated, no verdict word and no colour on the gap. Does the side-by-side make the tracker comparative advice? | Reviews | T-473 — built 2026-11-25 (D245), the D237 pattern: built now, reviewed before launch |
 
 ### B. Broker-dealer and securities
 
@@ -174,7 +175,7 @@ question if trading were ever proposed (B2).
 |---|---|
 | A1, A2, A6, A10 (and D4) | Turning on the coin and stock risk ratings (T-420); the ratings in the AI tools and API (A9) |
 | A7 | The options items T-060 to T-063, and confirms the calculator already shown |
-| A13–A15 | The tax estimator (T-058), contribution modelling and asset location (T-064, T-067, T-068), rebalance reminders (T-116) |
+| A13–A16 | The tax estimator (T-058), contribution modelling and asset location (T-064, T-067, T-068); A15 and A16 review what D237 and D245 already built (the rebalance reminders, T-116, and the index-fund side-by-side, T-473) |
 | C1, C2 | The disclosure documents coming into force (T-291), the consent wording (T-436), then the sign-up page and sign-in wall (T-132, T-131) |
 | A12, E3, F1 | Country access (T-290) |
 | D1, D2, D5, D6 | The data-source launch steps (T-407, T-428, T-425, T-154) |

@@ -47,6 +47,25 @@ export interface StockInstitutional {
   topHolders: StockInstitutionalHolder[]
 }
 
+/** One direction's row in the quarter-over-quarter change (T-472, D245). */
+export interface StockChangeRow {
+  name: string
+  cik: string
+  sharesNow: number | null
+  sharesPrior: number | null
+}
+
+/** What changed since the prior 13F quarter, for one stock — facts and dates only. */
+export interface StockQuarterChange {
+  periodPrior: string
+  totalSharesPrior: number
+  holderCountPrior: number
+  largestIncreases: StockChangeRow[]
+  largestReductions: StockChangeRow[]
+  largestNewStakes: StockChangeRow[]
+  largestExits: StockChangeRow[]
+}
+
 export interface StockHoldersEntry {
   cusip: string
   /** The independent fund families whose filings agreed on the CUSIP. */
@@ -66,6 +85,13 @@ export interface StockHoldersEntry {
    */
   multiClass: boolean
   institutional: StockInstitutional | null
+  /**
+   * The quarter-over-quarter change (T-472): the named view; 'not-in-prior'
+   * when the CUSIP has no map in the prior quarter's filings (a retired or
+   * renumbered identifier reads as "every holder is new", so nothing is
+   * compared); null when the file was built with no prior set at all.
+   */
+  change: StockQuarterChange | 'not-in-prior' | null
   funds: StockFundHolderRow[]
 }
 
@@ -86,6 +112,20 @@ export interface StockHoldersFileEntry {
     /** [manager CIK, shares, value in dollars] — names in the file's `managers`. */
     top: Array<[string, number, number]>
   } | null
+  /**
+   * The quarter-over-quarter change (T-472), compact: prior totals and the
+   * largest moves per direction as [cik, sharesNow, sharesPrior] tuples
+   * ([cik, shares] for entries and exits). null = the CUSIP was not in the
+   * prior quarter's filings; absent = the file was built with no prior set.
+   */
+  change?: {
+    tp: number
+    mp: number
+    up: Array<[string, number, number]>
+    down: Array<[string, number, number]>
+    add: Array<[string, number]>
+    out: Array<[string, number]>
+  } | null
   /** [fund symbol, shares, value, share of the fund's portfolio, as-of date]. */
   funds: Array<[string, number, number | null, number | null, string]>
 }
@@ -93,6 +133,8 @@ export interface StockHoldersFileEntry {
 export interface StockHoldersFile {
   builtOn: string
   thirteenF: { period: string; source: string; managersInPeriod: number }
+  /** The prior quarter the change blocks compare against; null when none was read. */
+  thirteenFPrior?: { period: string; source: string } | null
   universe: { source: string; listed: number; leftOut: Record<string, number> }
   fundsRead: number
   fundsSkipped: Array<{ symbol: string; reason: string }>
@@ -106,6 +148,22 @@ export interface StockHoldersFile {
 export function hydrateStockHolders(file: StockHoldersFile, symbol: string): StockHoldersEntry | null {
   const e = file.stocks[symbol]
   if (!e) return null
+  const name = (cik: string) => file.managers[cik] ?? `CIK ${cik}`
+  const priorPeriod = file.thirteenFPrior?.period ?? null
+  let change: StockHoldersEntry['change']
+  if (priorPeriod == null || e.change === undefined) change = null
+  else if (e.change === null) change = 'not-in-prior'
+  else {
+    change = {
+      periodPrior: priorPeriod,
+      totalSharesPrior: e.change.tp,
+      holderCountPrior: e.change.mp,
+      largestIncreases: e.change.up.map(([cik, sharesNow, sharesPrior]) => ({ name: name(cik), cik, sharesNow, sharesPrior })),
+      largestReductions: e.change.down.map(([cik, sharesNow, sharesPrior]) => ({ name: name(cik), cik, sharesNow, sharesPrior })),
+      largestNewStakes: e.change.add.map(([cik, sharesNow]) => ({ name: name(cik), cik, sharesNow, sharesPrior: null })),
+      largestExits: e.change.out.map(([cik, sharesPrior]) => ({ name: name(cik), cik, sharesNow: null, sharesPrior })),
+    }
+  }
   return {
     cusip: e.cusip,
     cusipFamilies: e.cusipFamilies,
@@ -116,10 +174,11 @@ export function hydrateStockHolders(file: StockHoldersFile, symbol: string): Sto
           totalShares: e.institutional.totalShares,
           holderCount: e.institutional.holderCount,
           topHolders: e.institutional.top.map(([cik, shares, valueUsd]) => ({
-            cik, shares, valueUsd, name: file.managers[cik] ?? `CIK ${cik}`,
+            cik, shares, valueUsd, name: name(cik),
           })),
         }
       : null,
+    change,
     funds: e.funds.map(([fundSymbol, shares, valueUsd, pctVal, asOf]) => ({
       symbol: fundSymbol, shares, valueUsd, pctVal, asOf,
       name: FUND_NAMES[fundSymbol] ?? fundSymbol,
@@ -150,7 +209,7 @@ export interface StockHoldersResponse {
 // to the file's own builtOn so the two cannot drift. 13F sets are quarterly
 // with a 45-day filing deadline, so past ~120 days a newer quarter's set and
 // fresher N-PORT filings are out.
-export const STOCK_HOLDERS_BUILT_ON = '2026-11-24'
+export const STOCK_HOLDERS_BUILT_ON = '2026-11-25'
 export const STOCK_HOLDERS_STALE_AFTER_DAYS = 120
 
 export function stockHoldersAgeDays(now: Date = new Date()): number {
@@ -203,6 +262,33 @@ export const INSTITUTIONAL_AS_FILED_NOTE =
 /** The quarter-end + 45-day-deadline lag, with the period filled in. */
 export function thirteenFPeriodNote(period: string): string {
   return `Holdings as reported for the quarter ended ${period}; managers file up to 45 days later, so newer trades are not in these figures.`
+}
+
+/** The change section's own framing — both dates, both as-filed (T-472). */
+export function thirteenFChangeNote(period: string, periodPrior: string): string {
+  return `Changes compare what managers filed for the quarters ended ${periodPrior} and ${period}; the same as-filed limits apply to both.`
+}
+
+/** Why a stock shows no quarter-over-quarter change despite having figures. */
+export const NOT_IN_PRIOR_NOTE =
+  'No comparison with the quarter before: this stock’s security identifier was not in that quarter’s '
+  + 'filings, so “every holder is new” would be an artefact of the identifier, not a fact about buying.'
+
+/**
+ * D170's split signal, applied to the change section: the two quarters' filed
+ * share counts would not be in the same units, and every manager would read
+ * as a buyer or seller by the ratio.
+ */
+export const CHANGE_WITHHELD_SPLIT_NOTE =
+  'Quarter-over-quarter changes are not shown: the company’s share count has moved by a split’s '
+  + 'magnitude, so the two quarters’ filed share counts may not be in the same units.'
+
+/**
+ * A manager's own SEC filings page — the route from "Vanguard Group" to the
+ * primary source (T-472: sources travel with figures).
+ */
+export function managerFilingsUrl(cik: string): string {
+  return `https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=${encodeURIComponent(cik)}&type=13F&dateb=&owner=include&count=40`
 }
 
 /**

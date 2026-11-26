@@ -42,10 +42,12 @@ import {
   isoFromSetDate, normalizeAmendmentKind, dominantPeriod, effectiveFilings, foldInfoRow, aggregate,
   type SubmissionRow, type CoverRow,
 } from './lib/form13f'
+import { diffQuarter, isPriorQuarter } from './lib/holdersDiff'
 
 const FRONTEND_ROOT = path.resolve(__dirname, '..')
 const OUT_PATH = path.join(FRONTEND_ROOT, 'src', 'lib', 'data', 'stockHolders.generated.json')
 const CACHE_DIR = path.join(FRONTEND_ROOT, 'fn-13f-cache')
+const PRIOR_CACHE_DIR = path.join(FRONTEND_ROOT, 'fn-13f-cache-prior')
 const SET_INDEX_PAGES = [
   // The SEC's current index page for the quarterly 13F data sets.
   'https://www.sec.gov/data-research/sec-markets-data/form-13f-data-sets',
@@ -66,6 +68,8 @@ const setUrlArg = argValue('--set-url')
 // EDGAR for ~300 filings again. The cache holds raw filing rows, so a rules
 // change still applies to it.
 const sweepCacheArg = argValue('--sweep-cache')
+const priorSetDirArg = argValue('--prior-set-dir')
+const priorSetUrlArg = argValue('--prior-set-url')
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 const isNetworkError = (err: unknown): boolean =>
@@ -121,23 +125,39 @@ async function sweepFunds() {
   return { holdingsForCusip, byCusipFunds, fundsSkipped, fundsRead }
 }
 
-/** Newest quarterly set: the latest end date among zip links on the index page. */
-async function latestSetUrl(): Promise<string> {
+/** Every quarterly set on the index page, newest filing-window first. */
+async function listSetUrls(): Promise<Array<{ url: string; key: string }>> {
   for (const page of SET_INDEX_PAGES) {
     const res = await fetch(page, { headers: { 'User-Agent': 'Finance Now research dashboard (FinanceNow72@gmail.com)' } })
     if (!res.ok) continue
     const html = await res.text()
     const links = [...html.matchAll(/href="([^"]*form13f[^"]*\.zip)"/gi)].map((m) => m[1])
-    let best: { url: string; key: string } | null = null
+    const out: Array<{ url: string; key: string }> = []
     for (const href of links) {
       const m = /(\d{2})([a-z]{3})(\d{4})_form13f\.zip/i.exec(href)
       if (!m) continue
       const key = `${m[3]}-${isoFromSetDate(`${m[1]}-${m[2]}-${m[3]}`).slice(5)}` // sortable yyyy-mm-dd of the end date
-      if (!best || key > best.key) best = { url: new URL(href, page).toString(), key }
+      out.push({ url: new URL(href, page).toString(), key })
     }
-    if (best) return best.url
+    if (out.length > 0) return out.sort((a, b) => b.key.localeCompare(a.key))
   }
   throw new Error('no form13f zip link found on the SEC index page — pass --set-url or --set-dir')
+}
+
+async function downloadSet(url: string, dir: string): Promise<void> {
+  console.log(`Downloading the 13F data set (~100MB): ${url}`)
+  mkdirSync(dir, { recursive: true })
+  const res = await fetch(url, { headers: { 'User-Agent': 'Finance Now research dashboard (FinanceNow72@gmail.com)' } })
+  if (!res.ok) throw new Error(`13F set download: HTTP ${res.status}`)
+  const zipPath = path.join(dir, '13f.zip')
+  writeFileSync(zipPath, Buffer.from(await res.arrayBuffer()))
+  // unzip where present (Linux/macOS); bsdtar (Windows 10+'s tar.exe) also extracts zips.
+  try {
+    execFileSync('unzip', ['-o', zipPath, '-d', dir], { stdio: 'ignore' })
+  } catch {
+    execFileSync('tar', ['-xf', zipPath, '-C', dir], { stdio: 'ignore' })
+  }
+  if (!existsSync(path.join(dir, 'INFOTABLE.tsv'))) throw new Error('extracted set has no INFOTABLE.tsv')
 }
 
 // The recorded `source` names the SEC set, never a local path: the file's
@@ -153,21 +173,101 @@ async function ensureSetDir(): Promise<{ dir: string; source: string }> {
   if (existsSync(path.join(CACHE_DIR, 'INFOTABLE.tsv')) && !setUrlArg) {
     return { dir: CACHE_DIR, source: 'SEC Form 13F structured data set (fn-13f-cache copy; delete the folder to refresh)' }
   }
-  const url = setUrlArg ?? await latestSetUrl()
-  console.log(`Downloading the 13F data set (~100MB): ${url}`)
-  mkdirSync(CACHE_DIR, { recursive: true })
-  const res = await fetch(url, { headers: { 'User-Agent': 'Finance Now research dashboard (FinanceNow72@gmail.com)' } })
-  if (!res.ok) throw new Error(`13F set download: HTTP ${res.status}`)
-  const zipPath = path.join(CACHE_DIR, '13f.zip')
-  writeFileSync(zipPath, Buffer.from(await res.arrayBuffer()))
-  // unzip where present (Linux/macOS); bsdtar (Windows 10+'s tar.exe) also extracts zips.
-  try {
-    execFileSync('unzip', ['-o', zipPath, '-d', CACHE_DIR], { stdio: 'ignore' })
-  } catch {
-    execFileSync('tar', ['-xf', zipPath, '-C', CACHE_DIR], { stdio: 'ignore' })
-  }
-  if (!existsSync(path.join(CACHE_DIR, 'INFOTABLE.tsv'))) throw new Error('extracted set has no INFOTABLE.tsv')
+  const url = setUrlArg ?? (await listSetUrls())[0].url
+  await downloadSet(url, CACHE_DIR)
   return { dir: CACHE_DIR, source: url }
+}
+
+/**
+ * The PRIOR quarter's set, for the T-472 change blocks. Explicit flags first;
+ * when the current set came off the index, the second-newest link is the
+ * prior window. A --set-dir run with no prior flag builds without changes and
+ * says so — a wrong "quarter before" would be worse than none, and
+ * isPriorQuarter() still checks whatever is supplied.
+ */
+async function ensurePriorSetDir(): Promise<{ dir: string; source: string } | null> {
+  if (priorSetDirArg) {
+    if (!existsSync(path.join(priorSetDirArg, 'INFOTABLE.tsv'))) throw new Error(`--prior-set-dir has no INFOTABLE.tsv: ${priorSetDirArg}`)
+    return { dir: priorSetDirArg, source: 'SEC Form 13F structured data set (supplied as a local directory)' }
+  }
+  if (priorSetUrlArg) {
+    await downloadSet(priorSetUrlArg, PRIOR_CACHE_DIR)
+    return { dir: PRIOR_CACHE_DIR, source: priorSetUrlArg }
+  }
+  if (setDirArg || setUrlArg) {
+    console.log('  no prior set given (--prior-set-dir / --prior-set-url): quarter-over-quarter changes left out')
+    return null
+  }
+  if (existsSync(path.join(PRIOR_CACHE_DIR, 'INFOTABLE.tsv'))) {
+    return { dir: PRIOR_CACHE_DIR, source: 'SEC Form 13F structured data set (fn-13f-cache-prior copy; delete the folder to refresh)' }
+  }
+  const links = await listSetUrls()
+  if (links.length < 2) {
+    console.log('  the index lists no earlier set: quarter-over-quarter changes left out')
+    return null
+  }
+  await downloadSet(links[1].url, PRIOR_CACHE_DIR)
+  return { dir: PRIOR_CACHE_DIR, source: links[1].url }
+}
+
+/**
+ * The prior quarter's per-manager share totals — the same effective-filing
+ * and row rules as aggregate13F (foldInfoRow is shared, so the two quarters
+ * cannot drift apart), without the identity tallies the current quarter
+ * needs: the prior set only ever answers "what did this manager hold then".
+ */
+async function aggregatePrior13F(dir: string) {
+  const submissions: SubmissionRow[] = []
+  await readTsv(path.join(dir, 'SUBMISSION.tsv'), (get) => {
+    submissions.push({
+      accession: get('ACCESSION_NUMBER'),
+      filedAt: isoFromSetDate(get('FILING_DATE')),
+      type: get('SUBMISSIONTYPE'),
+      cik: get('CIK'),
+      period: isoFromSetDate(get('PERIODOFREPORT')),
+    })
+  })
+  const covers = new Map<string, CoverRow>()
+  await readTsv(path.join(dir, 'COVERPAGE.tsv'), (get) => {
+    const accession = get('ACCESSION_NUMBER')
+    covers.set(accession, {
+      accession,
+      isAmendment: get('ISAMENDMENT').toUpperCase() === 'Y',
+      amendmentKind: normalizeAmendmentKind(get('AMENDMENTTYPE')),
+      managerName: get('FILINGMANAGER_NAME'),
+    })
+  })
+  const period = dominantPeriod(submissions)
+  if (!period) throw new Error('no 13F-HR rows in the prior set')
+  const effective = effectiveFilings(submissions, covers, period)
+  const managerNames = new Map<string, string>()
+  for (const s of submissions) {
+    if (effective.get(s.accession) === s.cik) {
+      const name = covers.get(s.accession)?.managerName
+      if (name) managerNames.set(s.cik, name)
+    }
+  }
+  const totals = new Map<string, Map<string, { shares: number; valueUsd: number }>>()
+  const internMap = new Map<string, string>()
+  const intern = (s: string): string => {
+    const c = internMap.get(s)
+    if (c !== undefined) return c
+    internMap.set(s, s)
+    return s
+  }
+  let rows = 0
+  await readTsv(path.join(dir, 'INFOTABLE.tsv'), (get) => {
+    rows++
+    if (get('SSHPRNAMTTYPE') !== 'SH') return
+    if (get('PUTCALL').trim() !== '') return
+    const accession = get('ACCESSION_NUMBER')
+    if (!effective.has(accession)) return
+    const shares = Number(get('SSHPRNAMT'))
+    if (!Number.isFinite(shares) || shares <= 0) return
+    foldInfoRow(totals, { accession, cusip: intern(get('CUSIP')), shares, sharesType: 'SH', putCall: '', valueUsd: Number(get('VALUE')) }, effective)
+  })
+  console.log(`  13F prior: ${rows.toLocaleString()} holdings rows streamed; period ${period}; ${effective.size.toLocaleString()} effective filings`)
+  return { period, totals, managerNames }
 }
 
 async function readTsv(file: string, onRow: (get: (col: string) => string) => void): Promise<void> {
@@ -350,6 +450,20 @@ async function main(): Promise<number> {
   const { dir, source } = await ensureSetDir()
   const f13 = await aggregate13F(dir)
 
+  // T-472 (D245): the prior quarter, for the per-stock change blocks.
+  const priorSet = await ensurePriorSetDir()
+  let prior: Awaited<ReturnType<typeof aggregatePrior13F>> | null = null
+  let priorSource: string | null = null
+  if (priorSet) {
+    prior = await aggregatePrior13F(priorSet.dir)
+    priorSource = priorSet.source
+    if (!isPriorQuarter(f13.period, prior.period)) {
+      console.warn(`  prior set's period ${prior.period} is not the quarter before ${f13.period} — changes left out`)
+      prior = null
+      priorSource = null
+    }
+  }
+
   // One resolution over both filing sources (scripts/lib/stockCusips.ts):
   // fund families and 13F filers each carry identity, titles say what a
   // fund-less line is, siblings eliminate, duplicates refuse.
@@ -407,6 +521,21 @@ async function main(): Promise<number> {
   }
   const aggregates = aggregate(resolvedTotals, f13.managerNames, TOP_HOLDERS)
 
+  // T-472: one CUSIP's quarter-over-quarter change, compact, with every named
+  // manager's name put in the shared dictionary (current set's spelling first,
+  // the prior set's for a manager who exited; an unknown CIK stays bare and
+  // hydrate labels it).
+  const changeFor = (cusip: string) => {
+    if (!prior) return undefined
+    const d = diffQuarter(f13.totals.get(cusip) ?? new Map(), prior.totals.get(cusip))
+    if (!d) return null
+    for (const [cik] of [...d.increases, ...d.reductions, ...d.newStakes, ...d.exits]) {
+      const nm = f13.managerNames.get(cik) ?? prior.managerNames.get(cik)
+      if (nm && !managers[cik]) managers[cik] = nm
+    }
+    return { tp: d.totalSharesPrior, mp: d.holderCountPrior, up: d.increases, down: d.reductions, add: d.newStakes, out: d.exits }
+  }
+
   for (const stock of stockList) {
     const r = resolution.resolved.get(stock.symbol)
     if (!r) continue
@@ -426,6 +555,7 @@ async function main(): Promise<number> {
       institutional: agg
         ? { totalShares: agg.totalShares, holderCount: agg.holderCount, top: agg.topHolders.map((h) => [h.cik, h.shares, h.valueUsd]) }
         : null,
+      ...(prior ? { change: changeFor(r.cusip) } : {}),
       funds: funds.map((f) => [f.symbol, f.shares, f.valueUsd, f.pctVal, f.asOf]),
     }
     stockLines.push(`  ${JSON.stringify(stock.symbol)}: ${JSON.stringify(entry)}`)
@@ -434,6 +564,7 @@ async function main(): Promise<number> {
   const head = {
     builtOn: new Date().toISOString().slice(0, 10),
     thirteenF: { period: f13.period, source, managersInPeriod: f13.managersInPeriod },
+    thirteenFPrior: prior && priorSource ? { period: prior.period, source: priorSource } : null,
     universe: { source: 'SEC company_tickers_exchange.json (NYSE & Nasdaq common stocks, the app’s own T-450 selection rules) + the equity catalog', listed: stockList.length, leftOut: universe.leftOut },
     fundsRead: sweep.fundsRead,
     fundsSkipped: sweep.fundsSkipped,
@@ -449,6 +580,13 @@ async function main(): Promise<number> {
   const aaplAgg = aapl ? aggregates.get(aapl.cusip) : undefined
   if (aaplAgg) {
     console.log(`  AAPL: ${(aaplAgg.totalShares / 1e9).toFixed(2)}B shares across ${aaplAgg.holderCount.toLocaleString()} managers`)
+    if (prior && aapl) {
+      const d = diffQuarter(f13.totals.get(aapl.cusip) ?? new Map(), prior.totals.get(aapl.cusip))
+      if (d) {
+        console.log(`  AAPL vs ${prior.period}: total was ${(d.totalSharesPrior / 1e9).toFixed(2)}B across ${d.holderCountPrior.toLocaleString()} managers; `
+          + `largest increase ${d.increases[0]?.[0] ?? 'none'} (+${(((d.increases[0]?.[1] ?? 0) - (d.increases[0]?.[2] ?? 0)) / 1e6).toFixed(1)}M sh)`)
+      }
+    }
   }
   return 0
 }

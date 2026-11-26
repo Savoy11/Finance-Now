@@ -27,6 +27,7 @@ const PLACEMENTS: Record<FeatureNoticeId, string[]> = {
     'src/app/(dashboard)/equities/options-calculator/page.tsx', // Options Calculator (D93)
     'src/app/(dashboard)/funds/[symbol]/page.tsx', // Fee Drag Analyzer
     'src/components/markets/TaxEquivalentYieldCard.tsx',
+    'src/components/portfolio/tracked/BenchmarkCompareCard.tsx', // the index-fund replay (T-473, D245)
   ],
   aiAnswers: [
     'src/components/agents/AssistantWidget.tsx',

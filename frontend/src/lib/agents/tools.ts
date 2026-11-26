@@ -4,6 +4,13 @@ import { peText, perShareFromFields, stockFigures, stockFiguresLink, yieldText }
 import { marketCapText, marketCapUsd } from '@/lib/data/stockShares'
 import type { StockUniverseResponse } from '@/app/live-data/stock-universe/route'
 import type { SecurityQuotesResponse } from '@/app/live-data/security-quotes/route'
+import {
+  CHANGE_WITHHELD_SPLIT_NOTE, INSTITUTIONAL_AS_FILED_NOTE, MULTI_CLASS_NO_PCT_NOTE, NOT_IN_PRIOR_NOTE,
+  PCT_WITHHELD_SPLIT_NOTE, TREASURY_NOT_REPORTED_NOTE, STRUCTURE_DATES_DIFFER_NOTE, fundHoldersScopeNote,
+  institutionalPctOfOutstanding, institutionalPctWithheldForSplit, thirteenFChangeNote, thirteenFPeriodNote,
+  unresolvedInPlainWords, type StockHoldersResponse,
+} from '@/lib/data/stockHolders'
+import type { ShareStructure } from '@/lib/utils/shareStructure'
 import { FUND_CATALOG, FUND_CATEGORY_INFO, fundAssetsFact, fundSalesCharge, fundYieldFact, getFund, getFundFeeProvenance } from '@/lib/data/fundCatalog'
 import type { FundHoldingsResponse } from '@/app/live-data/fund-holdings/route'
 import type { FundExposure } from '@/lib/utils/fundExposure'
@@ -301,6 +308,25 @@ const TOOL_REGISTRY: RegisteredTool[] = [
         properties: {
           symbol: { type: 'string', description: 'Fund ticker, e.g. "VOO" or "BND"' },
           top: { type: 'number', description: 'How many of the largest holdings to list (default 15, max 40)' },
+        },
+        required: ['symbol'],
+      },
+    },
+  },
+  {
+    market: 'equities',
+    tool: {
+      // T-476 (D245): the agents read what the stock page's "Who Holds It"
+      // cards show, through the same routes — figures WITH their limits, so an
+      // answer cannot quote the number and drop the caveat (the D136 lesson).
+      // In-app only: the /api/v1 and MCP half stays parked on T-457, as D210
+      // handled the fund and reserve tools.
+      name: 'get_stock_holders',
+      description: "Get who holds a stock, as its page shows it: the company's own share split (shares issued, treasury shares, shares outstanding — each with its filing date), what institutional investment managers reported holding for the latest 13F quarter (total shares, how many managers, the largest ten with values), and which of the app's catalog funds hold the stock (shares, value, share of the fund, each dated). Figures are as filed and the response carries their limits as notes — quote the notes with the numbers, never the numbers alone. Use for questions like 'who owns NVDA', 'is AAPL held by index funds', 'what share do institutions hold'.",
+      input_schema: {
+        type: 'object',
+        properties: {
+          symbol: { type: 'string', description: 'Stock ticker, e.g. "AAPL"' },
         },
         required: ['symbol'],
       },
@@ -735,6 +761,108 @@ export function quartersFact(quarters: CompanyQuarter[]): Record<string, unknown
 }
 
 /** Exported for its tests. */
+/**
+ * What the stock page's "Who Holds It" cards show, shaped for an agent
+ * (T-476, D245). Every figure travels with its limits: the 13F period and
+ * 45-day lag, the as-filed double-counting note, the multi-class and
+ * split-signal withholdings, the fund list's scope, and the build date —
+ * because the measured failure mode of agent tools is handing over a number
+ * without what honest reporting needs (the 2026-10-17 evaluation, D136).
+ */
+export function stockHoldersFact(
+  symbol: string,
+  holders: StockHoldersResponse | Error,
+  facts: { ok?: boolean; error?: string; shareStructure?: ShareStructure | null } | Error,
+  universe: StockUniverseResponse | Error,
+): Record<string, unknown> {
+  // The company's own split, from its filings (same source as the card).
+  let shareSplit: Record<string, unknown>
+  if (facts instanceof Error) shareSplit = { error: `share figures unavailable: ${facts.message}` }
+  else if (!facts.ok || !facts.shareStructure) shareSplit = { error: `share figures unavailable: ${facts.error ?? 'the company has no usable structured share counts'}` }
+  else {
+    const s = facts.shareStructure
+    shareSplit = {
+      issued: s.issued ? { shares: s.issued.shares, asOf: s.issued.asOf } : null,
+      treasury: s.treasuryReported && s.treasury
+        ? { shares: s.treasury.shares, asOf: s.treasury.asOf, pctOfIssued: s.treasuryPctOfIssued }
+        : { none: TREASURY_NOT_REPORTED_NOTE },
+      outstanding: s.outstanding ? { shares: s.outstanding.shares, asOf: s.outstanding.asOf } : null,
+      ...(s.reconciles === false ? { note: STRUCTURE_DATES_DIFFER_NOTE } : {}),
+    }
+  }
+
+  if (holders instanceof Error) {
+    return { symbol, shareSplit, institutional: { error: `ownership figures unavailable: ${holders.message}` }, funds: null }
+  }
+  if (!holders.entry) {
+    return {
+      symbol, shareSplit,
+      institutional: { notCovered: unresolvedInPlainWords(holders.unresolvedReason) },
+      funds: { notCovered: unresolvedInPlainWords(holders.unresolvedReason) },
+      builtOn: holders.builtOn, stocksCovered: holders.stocksCovered,
+    }
+  }
+
+  const e = holders.entry
+  // D170's split signal, exactly as the card applies it: a split between the
+  // 13F quarter end and the latest cover makes the percent wrong by the
+  // ratio, so it is withheld — the shares still report. No signal (the
+  // universe row missing or failed) withholds nothing: evidence, not absence.
+  const row = universe instanceof Error ? undefined : universe.entries?.find((u) => u.symbol === symbol)
+  const splitWithheld = institutionalPctWithheldForSplit(row?.shareChange)
+  const outstanding = facts instanceof Error ? null : facts.shareStructure?.outstanding?.shares ?? null
+  const pct = e.institutional && !e.multiClass && !splitWithheld
+    ? institutionalPctOfOutstanding(e.institutional.totalShares, outstanding)
+    : null
+
+  const institutional = e.institutional
+    ? {
+      totalSharesReported: e.institutional.totalShares,
+      reportingManagers: e.institutional.holderCount,
+      pctOfOutstanding: pct != null ? Math.round(pct * 10) / 10 : null,
+      ...(e.multiClass ? { pctNote: MULTI_CLASS_NO_PCT_NOTE } : {}),
+      ...(splitWithheld && !e.multiClass ? { pctNote: PCT_WITHHELD_SPLIT_NOTE } : {}),
+      largestManagers: e.institutional.topHolders.map((h) => ({ name: h.name, cik: h.cik, shares: h.shares, valueUsd: h.valueUsd })),
+      notes: [thirteenFPeriodNote(holders.period), INSTITUTIONAL_AS_FILED_NOTE],
+    }
+    : null
+
+  // T-472: the quarter-over-quarter change, under the same withholdings as
+  // the card — the split signal first (unlike units), then the identifier's
+  // own absence from the prior quarter.
+  const change = e.change == null
+    ? null
+    : splitWithheld
+      ? { withheld: CHANGE_WITHHELD_SPLIT_NOTE }
+      : e.change === 'not-in-prior'
+        ? { withheld: NOT_IN_PRIOR_NOTE }
+        : {
+          periodPrior: e.change.periodPrior,
+          totalSharesPrior: e.change.totalSharesPrior,
+          reportingManagersPrior: e.change.holderCountPrior,
+          largestIncreases: e.change.largestIncreases,
+          largestReductions: e.change.largestReductions,
+          largestNewStakes: e.change.largestNewStakes,
+          largestExits: e.change.largestExits,
+          note: thirteenFChangeNote(holders.period, e.change.periodPrior),
+        }
+
+  return {
+    symbol,
+    shareSplit,
+    institutional,
+    change,
+    funds: e.funds.length
+      ? {
+        rows: e.funds.map((f) => ({ symbol: f.symbol, name: f.name, shares: f.shares, valueUsd: f.valueUsd, pctOfFundValue: f.pctVal, asOf: f.asOf })),
+        note: fundHoldersScopeNote(holders.fundsRead),
+      }
+      : { none: 'None of the funds this app tracks reported holding this stock.', note: fundHoldersScopeNote(holders.fundsRead) },
+    builtOn: holders.builtOn,
+    reportingNote: 'Quote the notes with the figures — the as-filed limits and dates are part of the answer, not footnotes to drop.',
+  }
+}
+
 export function fundDetails(
   symbol: string,
   holdings: FundHoldingsResponse | Error,
@@ -996,6 +1124,17 @@ async function execute(
           (get(`/live-data/fund-returns?symbol=${q}`) as Promise<FundReturnsResponse>).catch((e: Error) => e),
         ])
         return fundDetails(symbol, holdings, prospectus, top, returns)
+      }
+      case 'get_stock_holders': {
+        const symbol = String(input.symbol ?? '').trim().toUpperCase()
+        if (!/^[A-Z][A-Z0-9.-]{0,9}$/.test(symbol)) return { error: 'Pass a stock ticker, e.g. "AAPL".' }
+        const q = encodeURIComponent(symbol)
+        const [holders, facts, universe] = await Promise.all([
+          (get(`/live-data/stock-holders?symbol=${q}`) as Promise<StockHoldersResponse>).catch((e: Error) => e),
+          (get(`/live-data/company-facts?symbol=${q}`) as Promise<{ ok?: boolean; error?: string; shareStructure?: ShareStructure | null }>).catch((e: Error) => e),
+          (get(`/live-data/stock-universe?symbol=${q}`) as Promise<StockUniverseResponse>).catch((e: Error) => e),
+        ])
+        return stockHoldersFact(symbol, holders, facts, universe)
       }
       case 'search_securities': {
         const query = String(input.query ?? '').trim().toLowerCase()

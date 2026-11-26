@@ -7,7 +7,10 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { SourceLine } from '@/components/ui/SourceLine'
 import { hydratePortfolios, usePortfolioStore } from '@/store/usePortfolioStore'
 import { hydrateWatchlists, useWatchlistStore, type WatchList } from '@/store/useWatchlistStore'
-import { INSTRUMENT_BY_KEY } from '@/lib/data/instruments'
+import { INSTRUMENT_BY_KEY, isSecurityKey, securitySymbol } from '@/lib/data/instruments'
+import { useEntitlementStore } from '@/store/useEntitlementStore'
+import { useEarningsDates } from '@/components/markets/NextEarnings'
+import { briefDatesContext, capEarnings, earningsItems, macroDateItems, thisWeekRows } from '@/lib/data/thisWeek'
 import { migrateStorageKey } from '@/lib/utils/storageMigration'
 import { FeatureNotice } from '@/components/legal/FeatureNotice'
 import { FEATURE_NOTICES } from '@/lib/legal/featureNotices'
@@ -85,6 +88,36 @@ export default function DailyBriefPage() {
   const tracked = useQuery({ queryKey: ['brief-tracked-symbols'], queryFn: trackedHoldingSymbols, staleTime: 5 * 60_000, retry: false })
   const symbols = useMemo(() => collectContext(portfolios, watchlists, tracked.data ?? []), [portfolios, watchlists, tracked.data])
 
+  // ── "Worth watching" grounded in the dates the app knows (T-475, D245) ─────
+  // The same facts and gating as the Headlines strip: the macro dates with
+  // Macro or Equities on, earnings only with Equities on and stocks held or
+  // watched — the earnings hook's own enabled-gate keeps an empty list from
+  // fetching. The agent gets them as context with each publisher named (D211).
+  const macroOn = useEntitlementStore((s) => s.isEnabled('macro'))
+  const equitiesOn = useEntitlementStore((s) => s.isEnabled('equities'))
+  const equitySymbols = useMemo(() => {
+    if (!equitiesOn) return []
+    const out = new Set<string>()
+    for (const list of watchlists) {
+      for (const key of list.keys) {
+        if (isSecurityKey(key) && (INSTRUMENT_BY_KEY[key]?.class ?? 'equity') === 'equity') out.add(securitySymbol(key))
+      }
+    }
+    for (const p of portfolios) {
+      for (const h of p.holdings) {
+        const inst = INSTRUMENT_BY_KEY[h.cgId]
+        if (inst?.class === 'equity') out.add(inst.symbol)
+      }
+    }
+    return [...out]
+  }, [equitiesOn, watchlists, portfolios])
+  const earningsQ = useEarningsDates(equitySymbols)
+  const datesContext = useMemo(() => {
+    const macro = macroDateItems({ macroOn, equitiesOn })
+    const { shown } = capEarnings(equitiesOn ? earningsItems(earningsQ.data?.dates) : [])
+    return briefDatesContext(thisWeekRows(macro, shown))
+  }, [macroOn, equitiesOn, earningsQ.data])
+
   const generate = async () => {
     setLoading(true); setError(null); setNeedsKey(null)
     const universe = symbols.length > 0 ? symbols.join(', ') : 'BTC (crypto), ETH (crypto), SPY (etf), QQQ (etf)'
@@ -94,6 +127,7 @@ export default function DailyBriefPage() {
       '2) Their instruments — biggest movers among the list with the price change and, where news explains it, one line of why.',
       '3) Worth watching — 2-3 upcoming considerations (events, trends in the news feed).',
       'Keep it under 350 words, plain language, no financial advice, cite which data you pulled.',
+      ...(datesContext ? [datesContext] : []),
     ].join(' ')
     try {
       const res = await fetch('/api/agents/research', {
@@ -136,8 +170,10 @@ export default function DailyBriefPage() {
         </div>
         <button
           onClick={generate}
-          // Wait for the tracked holdings, so a brief started at once still covers them.
-          disabled={loading || tracked.isPending}
+          // Wait for the tracked holdings and the earnings dates, so a brief
+          // started at once still covers them. (A disabled earnings query —
+          // no stocks — stays pending forever, hence the length gate.)
+          disabled={loading || tracked.isPending || (equitySymbols.length > 0 && earningsQ.isPending)}
           className="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent-blue text-sm font-medium text-white hover:bg-blue-500 transition-colors disabled:opacity-50"
         >
           <RefreshCw size={14} className={loading ? 'animate-spin' : undefined} aria-hidden />

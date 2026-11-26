@@ -135,3 +135,30 @@ export function thisWeekSources(rows: ThisWeekItem[]): string[] {
 export function thisWeekDay(date: string): string {
   return new Date(`${date}T12:00:00Z`).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' })
 }
+
+/**
+ * The same facts, shaped as given context for the Daily Brief's prompt (T-475,
+ * D245). The Brief's task asks the agent for "Worth watching", but its runner
+ * carries no calendar tool — so the section was whatever web search surfaced,
+ * for users whose Headlines strip shows the real dates. Handing the dates over
+ * as context is the D136 lesson (give an agent the figures it will quote, with
+ * their sources, worked out); the publishers travel into the prompt because
+ * the BLS and BEA ask to be cited wherever their dates show (D211), and
+ * earnings keep T-458's "expected" wording through each row's own source line.
+ */
+export function briefDatesContext(rows: ThisWeekItem[]): string | null {
+  if (rows.length === 0) return null
+  const lines = rows.map((r) => {
+    const when = [
+      r.date,
+      r.tentative ? 'tentative, the Board’s own rule' : null,
+      r.timeLabel ?? null,
+    ].filter(Boolean).join(', ')
+    return `${r.label}: ${when} (${r.source})`
+  })
+  return (
+    'Known upcoming dates from the app’s own calendars — ground "Worth watching" in these, '
+    + 'name each date’s publisher as given, and do not invent other dates: '
+    + `${lines.join('; ')}.`
+  )
+}

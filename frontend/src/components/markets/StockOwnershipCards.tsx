@@ -7,17 +7,22 @@ import { STALE_TIME_LONG } from '@/lib/constants'
 import { formatCompact, formatCompactNumber } from '@/lib/utils/format'
 import type { CompanyFactsResponse } from '@/app/live-data/company-facts/route'
 import {
+  CHANGE_WITHHELD_SPLIT_NOTE,
   INSTITUTIONAL_AS_FILED_NOTE,
   MULTI_CLASS_COUNTS_NOTE,
   MULTI_CLASS_NO_PCT_NOTE,
+  NOT_IN_PRIOR_NOTE,
   PCT_WITHHELD_SPLIT_NOTE,
   STRUCTURE_DATES_DIFFER_NOTE,
   TREASURY_NOT_REPORTED_NOTE,
   fundHoldersScopeNote,
   institutionalPctOfOutstanding,
   institutionalPctWithheldForSplit,
+  managerFilingsUrl,
+  thirteenFChangeNote,
   thirteenFPeriodNote,
   unresolvedInPlainWords,
+  type StockChangeRow,
   type StockHoldersResponse,
 } from '@/lib/data/stockHolders'
 
@@ -57,6 +62,45 @@ function useCompanyFacts(symbol: string) {
     },
     staleTime: STALE_TIME_LONG * 6,
   })
+}
+
+/** A manager's name linking to its own SEC filings (T-472: sources travel with figures). */
+function ManagerLink({ name, cik }: { name: string; cik: string }) {
+  return (
+    <a
+      href={managerFilingsUrl(cik)}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-text-secondary truncate hover:text-accent-blue hover:underline"
+      title={`${name} — its 13F filings on SEC EDGAR`}
+    >
+      {name}
+    </a>
+  )
+}
+
+/** One direction of the quarter-over-quarter change; renders nothing when empty. */
+function ChangeList({ title, rows }: { title: string; rows: StockChangeRow[] }) {
+  if (rows.length === 0) return null
+  return (
+    <div>
+      <span className="text-[10px] uppercase tracking-wide text-text-muted">{title}</span>
+      <ul className="mt-0.5 space-y-0.5">
+        {rows.map((r) => (
+          <li key={r.cik} className="flex items-baseline justify-between gap-3 text-xs">
+            <ManagerLink name={r.name} cik={r.cik} />
+            <span className="font-mono tabular-nums text-text-primary shrink-0">
+              {r.sharesPrior != null && r.sharesNow != null
+                ? `${formatCompactNumber(r.sharesPrior)} → ${formatCompactNumber(r.sharesNow)}`
+                : r.sharesNow != null
+                  ? formatCompactNumber(r.sharesNow)
+                  : `${formatCompactNumber(r.sharesPrior ?? 0)} held`}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
 }
 
 function FigureRow({ label, shares, asOf, sub }: { label: string; shares: number; asOf: string; sub?: string }) {
@@ -152,7 +196,7 @@ export function StockOwnershipCard({ symbol, shareChange }: { symbol: string; sh
           <ul className="mt-2 space-y-1">
             {entry.institutional.topHolders.map((h) => (
               <li key={h.cik} className="flex items-baseline justify-between gap-3 text-xs">
-                <span className="text-text-secondary truncate" title={h.name}>{h.name}</span>
+                <ManagerLink name={h.name} cik={h.cik} />
                 <span className="font-mono tabular-nums text-text-primary shrink-0">
                   {formatCompactNumber(h.shares)}
                   <span className="text-text-muted"> · {formatCompact(h.valueUsd)}</span>
@@ -163,6 +207,34 @@ export function StockOwnershipCard({ symbol, shareChange }: { symbol: string; sh
           <p className="mt-2 text-[10px] text-text-muted leading-relaxed">
             {thirteenFPeriodNote(holders.data!.period)} {INSTITUTIONAL_AS_FILED_NOTE}
           </p>
+
+          {/* T-472 (D245): what changed since the prior quarter — facts with
+              both dates and the largest moves per direction; the vocabulary
+              stays at the card's own (a wording test scans this file). The
+              split signal withholds the whole section the way it withholds
+              the percent: the two quarters' filed share counts may not be in
+              the same units. */}
+          {splitWithheld ? (
+            <p className="mt-2 text-[10px] text-text-muted">{CHANGE_WITHHELD_SPLIT_NOTE}</p>
+          ) : entry.change === 'not-in-prior' ? (
+            <p className="mt-2 text-[10px] text-text-muted">{NOT_IN_PRIOR_NOTE}</p>
+          ) : entry.change ? (
+            <div className="mt-3 border-t border-border/60 pt-2 space-y-2">
+              <p className="text-[11px] text-text-secondary">
+                Changed since the quarter ended {entry.change.periodPrior}: total reported{' '}
+                {formatCompactNumber(entry.institutional.totalShares)} from {formatCompactNumber(entry.change.totalSharesPrior)},
+                across {entry.institutional.holderCount.toLocaleString('en-US')} managers from{' '}
+                {entry.change.holderCountPrior.toLocaleString('en-US')}.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
+                <ChangeList title="Largest increases" rows={entry.change.largestIncreases} />
+                <ChangeList title="Largest reductions" rows={entry.change.largestReductions} />
+                <ChangeList title="Largest new stakes" rows={entry.change.largestNewStakes} />
+                <ChangeList title="Largest exits" rows={entry.change.largestExits} />
+              </div>
+              <p className="text-[10px] text-text-muted">{thirteenFChangeNote(holders.data!.period, entry.change.periodPrior)}</p>
+            </div>
+          ) : null}
         </div>
       ) : holders.data && !holders.isLoading ? (
         <p className="text-[11px] text-text-muted leading-relaxed">
