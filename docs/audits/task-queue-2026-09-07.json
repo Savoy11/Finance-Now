@@ -62,9 +62,9 @@
   "total_verified": 422,
   "outstanding": 416,
   "by_status": {
-   "closed": 284,
+   "closed": 289,
    "parked": 120,
-   "open": 12,
+   "open": 7,
    "blocked": 0
   },
   "by_owner_role": {
@@ -74,8 +74,8 @@
    "owner-machine": 86
   },
   "closed_but_listed_open_in_docs": 60,
-  "closed_by_annotation": 284,
-  "counts_recomputed_on": "2026-11-25",
+  "closed_by_annotation": 289,
+  "counts_recomputed_on": "2026-11-26",
   "counts_note": "by_status, by_owner_role, outstanding, total and closed_by_annotation are RECOMPUTED from the items — they are NOT generation-time facts like generated_at and main_sha, which annotations.note protects. They had drifted to open:159/closed:15 against an actual 134/40, reading as current while two weeks stale. Recompute them in any change that moves a status. by_owner_role and outstanding were added to the recompute set on 2026-09-23 after an integrity check found by_owner_role summing to 338 of 348 and outstanding at 346 — neither had been touched since generation.",
   "total": 416
  },
@@ -17683,7 +17683,7 @@
   {
    "id": "T-472",
    "title": "Stock pages: quarter-over-quarter institutional ownership change — the one-stock 13F diff on the Who Holds It card",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "blocking_decision": null,
    "opened": {
@@ -17716,12 +17716,25 @@
      "lines": "165-166",
      "quote": "the generated holders file records everything needed for a \"top institutional buyers/sellers vs last quarter\" diff; that is the opportunity-scout’s call"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-11-26",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "Built: npm run holders:build reads TWO quarterly 13F sets — the newest and the one exactly three months earlier (isPriorQuarter refuses anything else, so a wrong “quarter before” never publishes; auto-picked from the SEC index, or --prior-set-dir/--prior-set-url) — and each resolved stock carries its change: the prior quarter’s total and manager count plus the largest increases, reductions, new stakes and exits (scripts/lib/holdersDiff.ts, ranked by the size of the move, capped at TOP_CHANGES), both quarter-end dates stated on the card, every manager’s name (top ten included) linking to its own SEC filings (managerFilingsUrl). D170’s split band withholds the whole section as it withholds the percent; a CUSIP absent from the prior set reads “not in the prior quarter”, never “every holder is new” (the retired-identifier hazard D244 measured); deliberately NO cross-stock “most bought” list (the item-4 line) and no accumulation vocabulary, scanned by test. The get_stock_holders tool passes the change block with its notes under the same withholdings. File regenerated over the 2026-06-30 and 2026-03-31 sets (the 2026-09-30 set was not yet published — confirmed on the SEC index; the diff goes current at the next rebuild): same 4,269 stocks, AAPL 9.36B → 9.70B across 6,011 → 6,111 managers. The audit harness asserts the change block; methods page and data-source notes updated in the same commit (D163).",
+    "evidence": [
+     "frontend/scripts/lib/holdersDiff.ts",
+     "frontend/scripts/build-stock-holders.ts",
+     "frontend/src/lib/data/stockHolders.generated.json (two-quarter build)",
+     "frontend/src/lib/server/__tests__/stockHolders.test.ts"
+    ]
+   }
   },
   {
    "id": "T-473",
    "title": "Tracked portfolios: \"the same money in one index fund\" beside the return tile — the portfolio’s own dated cash flows replayed on a benchmark’s dividend-adjusted closes",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "blocking_decision": null,
    "opened": {
@@ -17754,12 +17767,25 @@
      "lines": "Proposal 2",
      "quote": "No verdict word — not \"underperformed\", \"beat\", or any colour-coding of the gap"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-11-25",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "Built, on the owner’s D245 approval after two scout passes had cut it unasked: replayAgainstBenchmark (lib/data/benchmarkCompare.ts) applies the tracked portfolio’s own dated cash flows — the return tile’s moneyFlows — to one broad fund the reader picks (VOO/SPY/VTI, a short fixed list), each amount bought or sold at the fund’s dividend-adjusted close on or after its date, payouts reinvested, the path priced by the same moneyWeightedRate solver; BenchmarkCompareCard shows the two figures beside the return tile with the method stated and the calculators notice, no verdict word and no colour on the gap (a wording test scans both files), rendering only when the portfolio’s own return shows a figure. Withheld with its reason: an undated flow, history starting after the first deposit (never guessed backwards), closes without the payouts (T-441’s basis labels), a withdrawal larger than the path would have held. Per the D237 pattern the advice-adjacency question joined the counsel brief as A16 beside A15 (whose stale “none is built” intro was corrected), and the methods page states the replay’s rules (D163, same PR). 14 tests, hand-computed cases.",
+    "evidence": [
+     "frontend/src/lib/data/benchmarkCompare.ts",
+     "frontend/src/components/portfolio/tracked/BenchmarkCompareCard.tsx",
+     "frontend/src/lib/data/__tests__/benchmarkCompare.test.ts",
+     "docs/assessments/counsel-brief-2026-10-26.md (A16)"
+    ]
+   }
   },
   {
    "id": "T-474",
    "title": "Settings → Security activity: show an account its own audit-log rows (dark until launch)",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "blocking_decision": null,
    "opened": {
@@ -17791,12 +17817,24 @@
      "lines": "Proposal 3",
      "quote": "renders nothing without a real session (getSessionUserId, never the shared local user — the D233 rule), and a database without migration 0013 reads \"not recording yet\", never an error"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-11-25",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "Built: /api/user/security-activity (GET, session-only through getSessionUserId — never the shared local user, the D233 rule; the account’s newest SECURITY_ACTIVITY_MAX_ROWS rows, display-only, the query migration 0013’s audit_log_user_idx was built for) + SecurityActivityPanel on Settings beside the two-step card, rendering AUDIT_EVENTS’ plain words with detail and the owner-command marker. Dark without a session; a database without 0013 answers ok with recording:false and the card says “not recording yet”, never an error; an event outside today’s vocabulary shows its id rather than vanishing; no IP or browser string exists to show (D235’s line). securityActivity.test.ts drives the route against a mocked database (401, rows, missing-table, no-database) and pins the wiring: session-only source, newest-first bound, display-only, the mount, the dark gate.",
+    "evidence": [
+     "frontend/src/app/api/user/security-activity/route.ts",
+     "frontend/src/components/settings/SecurityActivityPanel.tsx",
+     "frontend/src/lib/auth/__tests__/securityActivity.test.ts"
+    ]
+   }
   },
   {
    "id": "T-475",
    "title": "Daily Brief: ground \"Worth watching\" in the dates the app already knows — the T-468 calendars and watchlist earnings, publishers named",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "blocking_decision": null,
    "opened": {
@@ -17822,12 +17860,24 @@
      "lines": "Proposal 4",
      "quote": "Its task says \"Worth watching — 2-3 upcoming considerations\" (brief/page.tsx:95), but it runs research-analyst — the crypto toolset (api/agents/research/route.ts:52) — which has no get_economic_calendar (macro toolset) and no earnings tool"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-11-25",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "Built: briefDatesContext (lib/data/thisWeek.ts) shapes the strip’s own facts — the next Fed decision, the next CPI/jobs/GDP/PCE release, the held and watched stocks’ expected reports — as given context for the Daily Brief’s task, each publisher named (D211) and earnings keeping T-458’s “expected” wording; the Brief page assembles them under the strip’s own entitlement gating (macro dates with Macro or Equities on; the earnings request fires only with Equities on and equities held or watched, the hook’s enabled-gate), appends the context to the task string, and the generate button waits for the earnings dates as it already waited for tracked holdings — with a length gate so a disabled query cannot pin it. Tests in thisWeek.test.ts: every label, date and publisher reaches the prompt; tentative wording; empty → nothing appended; wiring pins on the page’s gating and the task-string append.",
+    "evidence": [
+     "frontend/src/lib/data/thisWeek.ts (briefDatesContext)",
+     "frontend/src/app/(dashboard)/brief/page.tsx",
+     "frontend/src/lib/data/__tests__/thisWeek.test.ts"
+    ]
+   }
   },
   {
    "id": "T-476",
    "title": "A get_stock_holders tool on the equities toolset — in-app only; T-457’s API/MCP half stays parked",
-   "status": "open",
+   "status": "closed",
    "confidence": "high",
    "blocking_decision": null,
    "opened": {
@@ -17858,7 +17908,18 @@
      "lines": "Proposal 5",
      "quote": "In-app only: T-457’s parked half (the same data on `/api/v1` and the MCP server) stays parked and untouched, exactly as D210 handled the fund-details and reserves tools"
     }
-   ]
+   ],
+   "closure": {
+    "status_was": "open",
+    "closed_on": "2026-11-25",
+    "basis": "verified-here",
+    "verdict": "close",
+    "reason": "Built: get_stock_holders on the equities toolset (Assistant included via “all”), reading the three routes the Who Holds It cards read — stock-holders, company-facts’ shareStructure, stock-universe’s shareChange — and returning the figures WITH their limits as one payload (stockHoldersFact): the 13F period and 45-day-lag note, the as-filed double-counting note, the multi-class and D170 split-signal withholdings applied to the percent exactly as the card applies them, the fund list’s derived scope note, builtOn, and the recorded unresolved reason in the page’s own plain words when there is no entry. The Assistant’s prompt names the tool. In-app only: T-457’s /api/v1 and MCP half stays parked, the D210 pattern. stockHoldersTool.test.ts drives it against stubbed routes: toolset membership, every note beside its figure, the split and multi-class withholdings, unresolved and degraded paths, input refusal.",
+    "evidence": [
+     "frontend/src/lib/agents/tools.ts (stockHoldersFact)",
+     "frontend/src/lib/agents/__tests__/stockHoldersTool.test.ts"
+    ]
+   }
   }
  ],
  "closed_but_still_listed_as_open_in_docs": [
@@ -44035,6 +44096,10 @@
    {
     "on": "2026-11-25",
     "what": "D245 (opportunity-scout FILE mode): filed the five approved proposals of docs/proposals/2026-11-25-proposals.md as T-472..T-476, all status open, each carrying an opened block naming its proposal and D245. The owner marked every proposal APPROVED (\"Let’s apply all 5\"); nothing was rejected (rejected-proposals.md untouched) and nothing deferred (nothing carries forward). T-473’s owner_role is \"either\": the decision it was proposed to obtain is D245 itself, and its build PR adds the advice-adjacency question to the counsel brief beside A15. Counts recomputed: open 7 -> 12, outstanding/total 411 -> 416."
+   },
+   {
+    "on": "2026-11-26",
+    "what": "D245 build pass complete: all five scout items built, tested and closed — T-475 (Brief grounded dates) and T-476 (get_stock_holders tool) and T-474 (Security activity card) and T-473 (tracked-vs-index replay, with counsel question A16 filed beside A15) on 2026-11-25, T-472 (the two-quarter 13F ownership change) on 2026-11-26. Open 12 -> 7, closed 284 -> 289; the seven left open are the counsel- and owner-gated set unchanged."
    }
   ]
  }
