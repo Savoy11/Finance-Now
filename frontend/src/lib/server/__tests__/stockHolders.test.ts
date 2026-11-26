@@ -10,10 +10,12 @@ import {
   remainingCandidate, resolveListed, type F13CusipEvidence, type HoldingForCusip,
 } from '../../../../scripts/lib/stockCusips'
 import { allowedBrowseCount } from '../nport'
+import { TOP_CHANGES, diffQuarter, isPriorQuarter } from '../../../../scripts/lib/holdersDiff'
 import GENERATED from '../../data/stockHolders.generated.json'
 import {
-  STOCK_HOLDERS_BUILT_ON, fundHoldersScopeNote, getStockHoldersProvenance, hydrateStockHolders,
-  institutionalPctOfOutstanding, institutionalPctWithheldForSplit, thirteenFPeriodNote,
+  CHANGE_WITHHELD_SPLIT_NOTE, NOT_IN_PRIOR_NOTE, STOCK_HOLDERS_BUILT_ON, fundHoldersScopeNote,
+  getStockHoldersProvenance, hydrateStockHolders, institutionalPctOfOutstanding,
+  institutionalPctWithheldForSplit, managerFilingsUrl, thirteenFChangeNote, thirteenFPeriodNote,
   unresolvedInPlainWords, type StockHoldersFile,
 } from '../../data/stockHolders'
 import { SHARE_CHANGE_BAND } from '../../data/stockShares'
@@ -446,6 +448,33 @@ describe('stockHolders.generated.json', () => {
     // first wide build recorded a container's /tmp directory (audit
     // 2026-11-24, finding 3), which identified nothing once the session ended.
     expect(file.thirteenF.source).toMatch(/^(https:\/\/www\.sec\.gov\/|SEC Form 13F structured data set)/)
+    // T-472: the committed file carries the prior quarter, and it is exactly
+    // the quarter before — isPriorQuarter is the build's own refusal rule.
+    expect(file.thirteenFPrior).toBeTruthy()
+    expect(isPriorQuarter(file.thirteenF.period, file.thirteenFPrior!.period)).toBe(true)
+    expect(file.thirteenFPrior!.source).toMatch(/^(https:\/\/www\.sec\.gov\/|SEC Form 13F structured data set)/)
+  })
+
+  it('every change block keeps the build rules: capped directions, prior totals, known shape (T-472)', () => {
+    let withChange = 0
+    let notInPrior = 0
+    for (const [symbol, e] of Object.entries(file.stocks)) {
+      expect(e.change !== undefined, `${symbol} has a change field (the file was built with a prior set)`).toBe(true)
+      if (e.change === null) { notInPrior++; continue }
+      withChange++
+      const c = e.change!
+      expect(c.tp, symbol).toBeGreaterThanOrEqual(0)
+      expect(c.mp, symbol).toBeGreaterThanOrEqual(1)
+      for (const dir of [c.up, c.down, c.add, c.out]) expect(dir.length, symbol).toBeLessThanOrEqual(TOP_CHANGES)
+      for (const [, now, prior] of c.up) expect(now, symbol).toBeGreaterThan(prior)
+      for (const [, now, prior] of c.down) expect(now, symbol).toBeLessThan(prior)
+    }
+    // The overwhelming majority of resolved stocks existed last quarter.
+    expect(withChange).toBeGreaterThan(3_000)
+    // AAPL assuredly did.
+    const aapl = file.stocks.AAPL.change
+    expect(aapl && aapl !== null && aapl.tp).toBeGreaterThan(1e9)
+    void notInPrior
   })
 
   it('covers the listed universe, not just the catalog (the owner\'s 2026-11-24 confirmation ask)', () => {
@@ -515,6 +544,89 @@ describe('stockHolders.generated.json', () => {
   })
 })
 
+// ── The quarter-over-quarter change (T-472, D245) ───────────────────────────
+
+describe('diffQuarter', () => {
+  const m = (rows: Array<[string, number]>) => new Map(rows.map(([cik, shares]) => [cik, { shares }]))
+
+  it('classifies and ranks by the size of the move, capped per direction', () => {
+    const prior = m([['a', 100], ['b', 500], ['c', 50], ['gone', 70]])
+    const current = m([['a', 400], ['b', 100], ['c', 50], ['fresh', 900]])
+    const d = diffQuarter(current, prior)!
+    expect(d.totalSharesPrior).toBe(720)
+    expect(d.holderCountPrior).toBe(4)
+    expect(d.increases).toEqual([['a', 400, 100]])
+    expect(d.reductions).toEqual([['b', 100, 500]])
+    expect(d.newStakes).toEqual([['fresh', 900]])
+    expect(d.exits).toEqual([['gone', 70]])
+    // An unchanged stake ('c') appears in no direction.
+  })
+
+  it('ranks increases by ADDED shares, not by the stake, and caps at TOP_CHANGES', () => {
+    const prior = m(Array.from({ length: 10 }, (_, i) => [`m${i}`, 1000] as [string, number]))
+    const current = m(Array.from({ length: 10 }, (_, i) => [`m${i}`, 1000 + (i + 1) * 10] as [string, number]))
+    const d = diffQuarter(current, prior)!
+    expect(d.increases).toHaveLength(TOP_CHANGES)
+    expect(d.increases[0][0]).toBe('m9') // the largest add, however equal the stakes
+  })
+
+  it('no prior map means NULL — "every holder is new" is an identifier artefact, never a fact', () => {
+    expect(diffQuarter(m([['a', 1]]), undefined)).toBeNull()
+    expect(diffQuarter(m([['a', 1]]), m([]))).toBeNull()
+  })
+})
+
+describe('isPriorQuarter', () => {
+  it('accepts exactly three months earlier, across a year boundary too', () => {
+    expect(isPriorQuarter('2026-06-30', '2026-03-31')).toBe(true)
+    expect(isPriorQuarter('2026-03-31', '2025-12-31')).toBe(true)
+  })
+  it('refuses the same set, a year apart, and garbage — a wrong "quarter before" never publishes', () => {
+    expect(isPriorQuarter('2026-06-30', '2026-06-30')).toBe(false)
+    expect(isPriorQuarter('2026-06-30', '2025-06-30')).toBe(false)
+    expect(isPriorQuarter('2026-06-30', 'not-a-date')).toBe(false)
+  })
+})
+
+describe('hydrating the change block', () => {
+  const base = {
+    builtOn: '2026-11-25',
+    thirteenF: { period: '2026-06-30', source: 's', managersInPeriod: 2 },
+    universe: { source: 'u', listed: 1, leftOut: {} },
+    fundsRead: 1, fundsSkipped: [], unresolved: [],
+    managers: { '1': 'Vanguard Group Inc' },
+  }
+  const entry = {
+    cusip: '037833100', cusipFamilies: ['A', 'B'], cusipVia: 'fund-names' as const, multiClass: false,
+    institutional: { totalShares: 10, holderCount: 1, top: [['1', 10, 100]] as Array<[string, number, number]> },
+    funds: [] as Array<[string, number, number | null, number | null, string]>,
+  }
+
+  it('names the rows from the shared dictionary, with the CIK fallback, and carries the prior period', () => {
+    const file: StockHoldersFile = {
+      ...base,
+      thirteenFPrior: { period: '2026-03-31', source: 's2' },
+      stocks: { AAPL: { ...entry, change: { tp: 8, mp: 2, up: [['1', 10, 4]], down: [], add: [['2', 3]], out: [['3', 1]] } } },
+    }
+    const h = hydrateStockHolders(file, 'AAPL')!
+    expect(h.change).toMatchObject({ periodPrior: '2026-03-31', totalSharesPrior: 8, holderCountPrior: 2 })
+    if (h.change == null || h.change === 'not-in-prior') throw new Error('expected a change view')
+    expect(h.change.largestIncreases[0]).toEqual({ name: 'Vanguard Group Inc', cik: '1', sharesNow: 10, sharesPrior: 4 })
+    expect(h.change.largestNewStakes[0]).toEqual({ name: 'CIK 2', cik: '2', sharesNow: 3, sharesPrior: null })
+    expect(h.change.largestExits[0]).toEqual({ name: 'CIK 3', cik: '3', sharesNow: null, sharesPrior: 1 })
+  })
+
+  it('a null change reads "not-in-prior"; a file built with no prior set reads null', () => {
+    const withPrior: StockHoldersFile = {
+      ...base, thirteenFPrior: { period: '2026-03-31', source: 's2' },
+      stocks: { AAPL: { ...entry, change: null } },
+    }
+    expect(hydrateStockHolders(withPrior, 'AAPL')!.change).toBe('not-in-prior')
+    const noPrior: StockHoldersFile = { ...base, thirteenFPrior: null, stocks: { AAPL: { ...entry } } }
+    expect(hydrateStockHolders(noPrior, 'AAPL')!.change).toBeNull()
+  })
+})
+
 describe('wording and arithmetic the cards show', () => {
   it('institutionalPctOfOutstanding divides and refuses honestly', () => {
     expect(institutionalPctOfOutstanding(9_700_000_000, 14_532_259_000)).toBeCloseTo(66.75, 1)
@@ -549,6 +661,12 @@ describe('wording and arithmetic the cards show', () => {
     expect(unresolvedInPlainWords(null)).toContain('NYSE and Nasdaq')
     expect(unresolvedInPlainWords('ambiguous: 2 CUSIPs')).toContain('more than one possible')
     expect(unresolvedInPlainWords('no filing row names the company')).toContain('left out rather than guessed')
+    // T-472: the change section's framing and withholdings.
+    expect(thirteenFChangeNote('2026-06-30', '2026-03-31')).toContain('2026-03-31 and 2026-06-30')
+    expect(NOT_IN_PRIOR_NOTE).toContain('artefact of the identifier')
+    expect(CHANGE_WITHHELD_SPLIT_NOTE).toContain('split')
+    // A manager's name routes to the primary source.
+    expect(managerFilingsUrl('102909')).toBe('https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=102909&type=13F&dateb=&owner=include&count=40')
   })
 })
 
@@ -576,7 +694,14 @@ describe('wiring (drift fails, not review)', () => {
       'MULTI_CLASS_NO_PCT_NOTE', 'MULTI_CLASS_COUNTS_NOTE', 'PCT_WITHHELD_SPLIT_NOTE',
       'fundHoldersScopeNote', 'thirteenFPeriodNote', 'unresolvedInPlainWords',
       'institutionalPctWithheldForSplit',
+      // T-472: the change section's notes and the manager links.
+      'CHANGE_WITHHELD_SPLIT_NOTE', 'NOT_IN_PRIOR_NOTE', 'thirteenFChangeNote', 'managerFilingsUrl',
     ]) expect(cards).toContain(name)
+    // The vocabulary stays at facts and dates (the item-4 line): no
+    // accumulation-flavoured words anywhere in the surface or its rules.
+    for (const src of [cards, read('src/lib/data/stockHolders.ts')]) {
+      expect(src).not.toMatch(/accumulat|smart money|conviction|bullish|bearish/i)
+    }
   })
 
   it('the data-methods page carries the section, dated (D163: same PR as the figures)', () => {

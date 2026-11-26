@@ -845,7 +845,14 @@ const tests = [
     // The owner's 2026-11-24 confirmation ask: the build covers the listed
     // universe (the SEC's NYSE & Nasdaq common-stock list), not 79 names.
     if (!(j.stocksCovered > 3_000)) throw new Error(`only ${j.stocksCovered} stocks covered — the wide build should settle thousands`)
-    return `${(inst.totalShares / 1e9).toFixed(1)}B sh across ${inst.holderCount.toLocaleString('en-US')} managers; ${j.entry.funds.length} fund rows; ${j.stocksCovered.toLocaleString('en-US')} stocks covered; 13F period ${j.period}`
+    // T-472: the quarter-over-quarter change ships with the entry — a prior
+    // period dated, prior totals, and capped direction lists.
+    const ch = j.entry.change
+    if (!ch || ch === 'not-in-prior') throw new Error(`AAPL has no change block (${JSON.stringify(ch)})`)
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(ch.periodPrior)) throw new Error(`change.periodPrior malformed: ${ch.periodPrior}`)
+    if (!(ch.totalSharesPrior > 5e9)) throw new Error(`prior total implausible: ${ch.totalSharesPrior}`)
+    if (!Array.isArray(ch.largestIncreases) || ch.largestIncreases.length === 0) throw new Error('no largest-increase rows')
+    return `${(inst.totalShares / 1e9).toFixed(1)}B sh across ${inst.holderCount.toLocaleString('en-US')} managers; ${j.entry.funds.length} fund rows; ${j.stocksCovered.toLocaleString('en-US')} stocks covered; 13F ${j.period} vs ${ch.periodPrior}`
   }},
 
   { group: 'equities', path: '/live-data/company-profile?symbol=AAPL&name=Apple', name: 'company-profile (SEC+wiki)', check: (j) => {

@@ -5,9 +5,10 @@ import { marketCapText, marketCapUsd } from '@/lib/data/stockShares'
 import type { StockUniverseResponse } from '@/app/live-data/stock-universe/route'
 import type { SecurityQuotesResponse } from '@/app/live-data/security-quotes/route'
 import {
-  INSTITUTIONAL_AS_FILED_NOTE, MULTI_CLASS_NO_PCT_NOTE, PCT_WITHHELD_SPLIT_NOTE, TREASURY_NOT_REPORTED_NOTE,
-  STRUCTURE_DATES_DIFFER_NOTE, fundHoldersScopeNote, institutionalPctOfOutstanding,
-  institutionalPctWithheldForSplit, thirteenFPeriodNote, unresolvedInPlainWords, type StockHoldersResponse,
+  CHANGE_WITHHELD_SPLIT_NOTE, INSTITUTIONAL_AS_FILED_NOTE, MULTI_CLASS_NO_PCT_NOTE, NOT_IN_PRIOR_NOTE,
+  PCT_WITHHELD_SPLIT_NOTE, TREASURY_NOT_REPORTED_NOTE, STRUCTURE_DATES_DIFFER_NOTE, fundHoldersScopeNote,
+  institutionalPctOfOutstanding, institutionalPctWithheldForSplit, thirteenFChangeNote, thirteenFPeriodNote,
+  unresolvedInPlainWords, type StockHoldersResponse,
 } from '@/lib/data/stockHolders'
 import type { ShareStructure } from '@/lib/utils/shareStructure'
 import { FUND_CATALOG, FUND_CATEGORY_INFO, fundAssetsFact, fundSalesCharge, fundYieldFact, getFund, getFundFeeProvenance } from '@/lib/data/fundCatalog'
@@ -826,10 +827,31 @@ export function stockHoldersFact(
     }
     : null
 
+  // T-472: the quarter-over-quarter change, under the same withholdings as
+  // the card — the split signal first (unlike units), then the identifier's
+  // own absence from the prior quarter.
+  const change = e.change == null
+    ? null
+    : splitWithheld
+      ? { withheld: CHANGE_WITHHELD_SPLIT_NOTE }
+      : e.change === 'not-in-prior'
+        ? { withheld: NOT_IN_PRIOR_NOTE }
+        : {
+          periodPrior: e.change.periodPrior,
+          totalSharesPrior: e.change.totalSharesPrior,
+          reportingManagersPrior: e.change.holderCountPrior,
+          largestIncreases: e.change.largestIncreases,
+          largestReductions: e.change.largestReductions,
+          largestNewStakes: e.change.largestNewStakes,
+          largestExits: e.change.largestExits,
+          note: thirteenFChangeNote(holders.period, e.change.periodPrior),
+        }
+
   return {
     symbol,
     shareSplit,
     institutional,
+    change,
     funds: e.funds.length
       ? {
         rows: e.funds.map((f) => ({ symbol: f.symbol, name: f.name, shares: f.shares, valueUsd: f.valueUsd, pctOfFundValue: f.pctVal, asOf: f.asOf })),
