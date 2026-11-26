@@ -21,8 +21,11 @@ import { AUDIT_EVENTS, isAuditEventId } from '@/lib/auth/auditEvents'
 
 export const dynamic = 'force-dynamic'
 
-/** Enough to notice a pattern; the full history is in "Download my data" (T-452). */
-export const SECURITY_ACTIVITY_MAX_ROWS = 50
+// Enough to notice a pattern; the full history is in "Download my data"
+// (T-452). Not exported: a Next route file may only export handlers and
+// route-config fields — `next build` refuses any other value export, which
+// is how the first push of this route failed CI.
+const SECURITY_ACTIVITY_MAX_ROWS = 50
 
 export interface SecurityActivityRow {
   at: string
