@@ -161,6 +161,11 @@ describe('the wiring', () => {
     // A brief started at once still carries the dates (and a disabled earnings
     // query must not pin the button: the length gate).
     expect(page).toMatch(/equitySymbols\.length > 0 && earningsQ\.isPending/)
+    // "Held or watched" includes the tracked portfolios' real holdings
+    // (the 2026-11-26 audit found the dates reading only watchlists and
+    // what-ifs while T-475 and CLAUDE.md both say held stocks).
+    expect(page).toContain('tracked.data?.equity')
+    expect(page).toContain('trackedEquitySymbols')
   })
 
   it('the strip gates on the entitlements and fetches earnings only with Equities on', () => {

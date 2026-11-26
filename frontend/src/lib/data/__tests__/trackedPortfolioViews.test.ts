@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   YEARLY_AFTER_DAYS, actualWeightsFromTracked, formatReturnPct, moneyFlows, moneyWeightedRate, portfolioReturn,
-  trackedBriefSymbols, trackedClassSplit, trackedLeftOutNotice, trackedLookThroughPositions,
+  trackedBriefSymbols, trackedClassSplit, trackedEquitySymbols, trackedLeftOutNotice, trackedLookThroughPositions,
 } from '../trackedPortfolioViews'
 import type { HoldingValue, LedgerView, TradeView } from '../tradeLedger'
 
@@ -48,6 +48,13 @@ describe('the Daily Brief reads tracked holdings: tickers only (a)', () => {
       'BTC (crypto)', 'USDT (crypto)', 'VOO (etf)', 'AGTHX (mutual)', 'AAPL (equity)', 'ZZZZ (stock or fund)', 'QQQQ (stock or fund)',
     ])
     expect(symbols.join(' ')).not.toMatch(/\d{2,}|\$/)
+  })
+
+  it('the earnings dates read only the held catalog equities, bare (T-475: a tracked holding is the held case)', () => {
+    const view = { holdings: HOLDINGS.map((h) => ({ instrumentKey: h.instrumentKey, symbol: h.symbol, name: h.name, basis: { quantityHeld: h.quantityHeld } })) } as unknown as LedgerView
+    // Funds, coins, non-catalog securities and sold-out holdings all stay out
+    // of an earnings lookup; still tickers only, no units or costs.
+    expect(trackedEquitySymbols(view)).toEqual(['AAPL'])
   })
 })
 

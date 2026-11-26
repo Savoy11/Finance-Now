@@ -17,7 +17,7 @@ import { FEATURE_NOTICES } from '@/lib/legal/featureNotices'
 import { RequiredCredits } from '@/components/ui/RequiredCredits'
 import { parseCredits, type RequiredCredit } from '@/lib/data/dataSources'
 import { trackedApi } from '@/lib/api/trackedPortfolios'
-import { trackedBriefSymbols } from '@/lib/data/trackedPortfolioViews'
+import { trackedBriefSymbols, trackedEquitySymbols } from '@/lib/data/trackedPortfolioViews'
 
 // One-time key migration for the Finance Now rename — runs before any read below.
 migrateStorageKey('caep:daily-brief:v1', 'fn:daily-brief:v1')
@@ -42,10 +42,17 @@ interface StoredBrief { text: string; generatedAt: string; credits?: RequiredCre
  * cost or gains. A database without the tracked tables, or any failed ledger, gives none, and the
  * brief goes ahead on the rest.
  */
-async function trackedHoldingSymbols(): Promise<string[]> {
+async function trackedHoldingSymbols(): Promise<{ brief: string[]; equity: string[] }> {
   const portfolios = await trackedApi.list().catch(() => [])
   const ledgers = await Promise.allSettled(portfolios.map((p) => trackedApi.ledger(p.id)))
-  return ledgers.flatMap((l) => (l.status === 'fulfilled' ? trackedBriefSymbols(l.value.view) : []))
+  const views = ledgers.flatMap((l) => (l.status === 'fulfilled' ? [l.value.view] : []))
+  return {
+    brief: views.flatMap((v) => trackedBriefSymbols(v)),
+    // Held stocks for the earnings dates too (T-475's own rule): bare equity
+    // tickers, so the "Coming up" context covers real holdings, not only
+    // watchlists and what-ifs.
+    equity: views.flatMap((v) => trackedEquitySymbols(v)),
+  }
 }
 
 function collectContext(
@@ -86,7 +93,7 @@ export default function DailyBriefPage() {
   }, [])
 
   const tracked = useQuery({ queryKey: ['brief-tracked-symbols'], queryFn: trackedHoldingSymbols, staleTime: 5 * 60_000, retry: false })
-  const symbols = useMemo(() => collectContext(portfolios, watchlists, tracked.data ?? []), [portfolios, watchlists, tracked.data])
+  const symbols = useMemo(() => collectContext(portfolios, watchlists, tracked.data?.brief ?? []), [portfolios, watchlists, tracked.data])
 
   // ── "Worth watching" grounded in the dates the app knows (T-475, D245) ─────
   // The same facts and gating as the Headlines strip: the macro dates with
@@ -109,8 +116,11 @@ export default function DailyBriefPage() {
         if (inst?.class === 'equity') out.add(inst.symbol)
       }
     }
+    // Tracked portfolios are the HELD stocks — the same holdings whose tickers
+    // already ground the brief (T-453), so no new data leaves the page.
+    for (const s of tracked.data?.equity ?? []) out.add(s)
     return [...out]
-  }, [equitiesOn, watchlists, portfolios])
+  }, [equitiesOn, watchlists, portfolios, tracked.data])
   const earningsQ = useEarningsDates(equitySymbols)
   const datesContext = useMemo(() => {
     const macro = macroDateItems({ macroOn, equitiesOn })
