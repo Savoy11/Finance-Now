@@ -138,6 +138,23 @@ export function replayAgainstBenchmark(
   return { kind: 'ok', symbol, valueUsd, ratePct, totalPct, investedUsd, takenOutUsd, asOf: last.date, since }
 }
 
+/**
+ * Which figure the card shows beside the return tile — the tile's OWN
+ * vocabulary (D208): a per-year rate only while the tile itself shows one
+ * (`earnedKind === 'yearly'`), the plain total otherwise. The tile withholds
+ * its yearly figure until the first money is a year old precisely because an
+ * annualized short path overstates — the 2026-11-26 audit measured +2.5% over
+ * 90 days rendering as "+10.5% a year" beside a tile showing +2.5%, a 4× gap
+ * on identical performance. The two sides must annualize together or not at all.
+ */
+export function benchmarkShownFigure(
+  replay: Extract<BenchmarkReplay, { kind: 'ok' }>,
+  earnedKind: 'yearly' | 'total',
+): { perYear: boolean; pct: number } {
+  if (earnedKind === 'yearly' && replay.ratePct != null) return { perYear: true, pct: replay.ratePct }
+  return { perYear: false, pct: replay.totalPct }
+}
+
 /** The method, said where the figures show — every rule a reader needs to weigh them. */
 export function benchmarkMethodNote(symbol: string, asOf: string): string {
   return `Each amount you put in or took out is applied at ${symbol}’s daily closing price on or after its date, `
