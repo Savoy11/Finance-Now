@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import {
-  BENCHMARK_CHOICES, benchmarkMethodNote, benchmarkWithheldWords, replayAgainstBenchmark,
-  type BenchmarkClose, type BenchmarkReplay,
+  BENCHMARK_CHOICES, benchmarkMethodNote, benchmarkShownFigure, benchmarkWithheldWords,
+  replayAgainstBenchmark, type BenchmarkClose, type BenchmarkReplay,
 } from '../benchmarkCompare'
 import type { MoneyFlow } from '../trackedPortfolioViews'
 
@@ -121,6 +121,57 @@ describe('replayAgainstBenchmark', () => {
     expect(note).toContain('2026-01-30')
     expect(note).toContain('dividend-adjusted')
     expect(note).toContain('does not say what you should have done')
+  })
+})
+
+describe('benchmarkShownFigure — the card annualizes only while the return tile does (D208)', () => {
+  // The asymmetry the 2026-11-26 audit measured: a 90-day path up 2.5%
+  // annualizes to about +10.5% a year, beside a tile that (under a year,
+  // D208) shows the plain +2.5% total. The shown figure must follow the tile.
+  const under = replayAgainstBenchmark(
+    [flow('2025-10-03', '1000', 'in')],
+    closes(['2025-10-03', 100], ['2025-12-31', 102.5]),
+    'splits-and-dividends', 'VOO', NOW,
+  )
+
+  it('a tile showing a plain total (under a year) gets the replay’s plain total, never the rate', () => {
+    expect(under.kind).toBe('ok')
+    if (under.kind !== 'ok') return
+    // The solver DOES produce an annualized figure here — which is exactly
+    // what must not be shown while the tile’s own figure is a total.
+    expect(under.ratePct).not.toBeNull()
+    expect(under.ratePct!).toBeGreaterThan(9)
+    const shown = benchmarkShownFigure(under, 'total')
+    expect(shown.perYear).toBe(false)
+    expect(shown.pct).toBeCloseTo(2.5, 6)
+  })
+
+  it('a tile showing a yearly rate gets the replay’s yearly rate', () => {
+    const r = replayAgainstBenchmark(
+      [flow('2024-01-02', '1000', 'in')],
+      closes(['2024-01-02', 100], ['2025-12-31', 121]),
+      'splits-and-dividends', 'SPY', NOW,
+    )
+    expect(r.kind).toBe('ok')
+    if (r.kind !== 'ok') return
+    const shown = benchmarkShownFigure(r, 'yearly')
+    expect(shown.perYear).toBe(true)
+    expect(shown.pct).toBeCloseTo(10.0, 2)
+  })
+
+  it('a yearly tile beside a replay the solver could not rate falls back to the total', () => {
+    expect(under.kind).toBe('ok')
+    if (under.kind !== 'ok') return
+    const shown = benchmarkShownFigure({ ...under, ratePct: null }, 'yearly')
+    expect(shown.perYear).toBe(false)
+    expect(shown.pct).toBeCloseTo(2.5, 6)
+  })
+
+  it('the card reads the figure through the helper, keyed on the tile’s kind', () => {
+    const card = readFileSync(join(__dirname, '../../../', 'components/portfolio/tracked/BenchmarkCompareCard.tsx'), 'utf8')
+    expect(card).toContain('benchmarkShownFigure(replay, earned.kind)')
+    // The raw rate must not reach the JSX except through the helper.
+    expect(card).not.toMatch(/replay\.ratePct/)
   })
 })
 

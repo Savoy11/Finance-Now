@@ -118,5 +118,9 @@ describe('the wiring (drift fails, not review)', () => {
     expect(panel).toContain('{r.label}')
     // The not-recording state is said, not hidden.
     expect(panel).toContain('migration 0013')
+    // Every timestamp carries its year: the newest-50 list has no time bound,
+    // so an old refused sign-in must not read like a recent one (2026-11-26
+    // audit).
+    expect(panel).toContain("year: 'numeric'")
   })
 })

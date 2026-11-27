@@ -49,6 +49,19 @@ export function trackedBriefSymbols(view: LedgerView): string[] {
     .map((h) => `${h.symbol} (${classOf(h.instrumentKey) ?? 'stock or fund'})`)
 }
 
+/**
+ * The tracked tickers the Brief's earnings dates cover (T-475): bare symbols,
+ * catalog equities only — still tickers alone, never units or costs, and the
+ * class check keeps funds and coins out of an earnings lookup. T-475's rule is
+ * "stocks held or watched", and a tracked holding is the held case; the
+ * 2026-11-26 audit found the dates reading only watchlists and what-ifs.
+ */
+export function trackedEquitySymbols(view: LedgerView): string[] {
+  return view.holdings
+    .filter((h) => Number(h.basis.quantityHeld) > 0 && classOf(h.instrumentKey) === 'equity')
+    .map((h) => h.symbol)
+}
+
 // ─── (b) How the money splits, and what the funds hold ───────────────────────
 
 export interface ClassSlice {

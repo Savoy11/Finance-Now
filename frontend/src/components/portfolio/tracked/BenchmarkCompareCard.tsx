@@ -9,8 +9,8 @@ import { FeatureNotice } from '@/components/legal/FeatureNotice'
 import type { SecurityChartResponse } from '@/app/live-data/security-chart/route'
 import type { ChartRange } from '@/lib/api/live/marketData'
 import {
-  BENCHMARK_CHOICES, benchmarkMethodNote, benchmarkWithheldWords, replayAgainstBenchmark,
-  type BenchmarkSymbol,
+  BENCHMARK_CHOICES, benchmarkMethodNote, benchmarkShownFigure, benchmarkWithheldWords,
+  replayAgainstBenchmark, type BenchmarkSymbol,
 } from '@/lib/data/benchmarkCompare'
 import { formatReturnPct, moneyFlows, type PortfolioReturn } from '@/lib/data/trackedPortfolioViews'
 import { formatUsd, type TradeView } from '@/lib/data/tradeLedger'
@@ -67,6 +67,10 @@ export function BenchmarkCompareCard({ trades, earned }: {
   // The portfolio's own withholdings come first — no comparison without its figure.
   if (earned.kind === 'none') return null
 
+  // The tile's own vocabulary: annualize only while the tile does (D208 —
+  // under a year it shows a plain total, and so must this side).
+  const figure = replay && replay.kind === 'ok' ? benchmarkShownFigure(replay, earned.kind) : null
+
   return (
     <section aria-labelledby="benchmark-compare-heading" className="bg-bg-card border border-border rounded-xl p-4">
       <div className="flex items-center justify-between gap-3 mb-2">
@@ -115,10 +119,10 @@ export function BenchmarkCompareCard({ trades, earned }: {
             </div>
             <div>
               <span className="text-[11px] text-text-muted uppercase tracking-wider block">
-                {replay.ratePct != null ? `${symbol} path, per year` : `${symbol} path, total`}
+                {figure?.perYear ? `${symbol} path, per year` : `${symbol} path, total`}
               </span>
               <span className="text-xl font-semibold font-mono text-text-primary">
-                {replay.ratePct != null ? `${formatReturnPct(replay.ratePct)} a year` : formatReturnPct(replay.totalPct)}
+                {figure ? (figure.perYear ? `${formatReturnPct(figure.pct)} a year` : formatReturnPct(figure.pct)) : null}
               </span>
             </div>
           </div>

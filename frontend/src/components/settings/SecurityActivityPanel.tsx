@@ -15,8 +15,12 @@ import type { SecurityActivityResponse } from '@/app/api/user/security-activity/
 // stored — events, times and plain-words detail; no IP or browser string
 // exists to show (D235's deliberate line).
 
+// The year is always shown: the list is the newest 50 rows with no time
+// bound, so on a quiet account a refused sign-in from a year ago would
+// otherwise read like last week's — on the one surface built for noticing
+// sign-ins you did not make (2026-11-26 audit).
 const when = (iso: string) =>
-  new Date(iso).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+  new Date(iso).toLocaleString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
 
 export function SecurityActivityPanel() {
   const { data: session, status: sessionStatus } = useSession()
